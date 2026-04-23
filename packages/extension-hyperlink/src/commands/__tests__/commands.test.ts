@@ -11,9 +11,9 @@ import { describe, expect, it, mock } from 'bun:test'
 
 import { PREVENT_AUTOLINK_META } from '../../constants'
 import { createURLDecisions } from '../../url-decisions'
-import { buildHyperlinkCommands } from '../index'
-import { canonicalCommands } from '../canonical'
 import { createHyperlinkEngine } from '../engine'
+import { canonicalCommands } from '../families'
+import { buildHyperlinkCommands } from '../index'
 
 const MARK = 'hyperlink'
 

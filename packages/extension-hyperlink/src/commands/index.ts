@@ -6,13 +6,12 @@
 
 import type { HyperlinkOptions } from '../hyperlink'
 import type { URLDecisions } from '../url-decisions'
-import { canonicalCommands } from './canonical'
-import { editCommands } from './edit'
 import { createHyperlinkEngine } from './engine'
+import { canonicalCommands, editCommands, uiCommands } from './families'
 import type { HyperlinkRawCommands } from './surface'
-import { uiCommands } from './ui'
 
 export { createHyperlinkEngine, type HyperlinkEngine, type HyperlinkEngineDeps } from './engine'
+export { canonicalCommands, editCommands, uiCommands } from './families'
 export type {
   EditHyperlinkAttributes,
   HyperlinkPublicCommands,
@@ -32,6 +31,6 @@ export function buildHyperlinkCommands(ctx: BuildHyperlinkCommandsCtx): Hyperlin
   return {
     ...canonicalCommands(engine),
     ...editCommands({ markName: ctx.markName, urls: ctx.urls, validate: ctx.options.validate }),
-    ...uiCommands({ options: ctx.options, extensionName: ctx.markName })
+    ...uiCommands()
   } satisfies HyperlinkRawCommands
 }
