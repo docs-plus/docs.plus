@@ -28,9 +28,8 @@
     margin-top: 0;
   }
 
-  /* Document title: first block is H1; dynamic --hd-size from HeadingScale (fallback = MAX in scale) */
   > h1:first-child {
-    font-size: var(--hd-size, 20pt);
+    font-size: 28pt;
     margin-top: 1.33em;
   }
 
