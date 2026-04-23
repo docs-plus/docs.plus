@@ -10,7 +10,7 @@ import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlin
 // } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
-import { Placeholder, type PlaceholderRenderProps } from '@docs.plus/extension-placeholder'
+import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
@@ -62,6 +62,7 @@ import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
 import createHyperlinkMobile from './hyperlinkPopovers/createHyperlink'
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
+import { buildBreadcrumbPlaceholder } from './placeholders'
 // import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
 
@@ -91,18 +92,6 @@ const scrollDown = () => {
       el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
     }
   }, 200)
-}
-
-const PLACEHOLDER_TEXT: Record<string, string> = {
-  heading: 'Heading',
-  paragraph: 'Type something…',
-  codeBlock: 'Write code…'
-}
-
-const PARENT_PLACEHOLDER: Record<string, string> = {
-  listItem: 'List',
-  taskItem: 'To-do',
-  blockquote: 'Quote'
 }
 
 const Editor = ({
@@ -229,20 +218,17 @@ const Editor = ({
     // The built-in uses doc.descendants() — O(N) on every transaction.
     // @docs.plus/extension-placeholder uses state.init/apply with cursor-only
     // checks — O(1) for the common typing case. Critical for large collab docs.
+    //
+    // `buildBreadcrumbPlaceholder` shows the heading hierarchy leading to the
+    // cursor (e.g. `Introduction > Background > Methods > Write here`).
+    // Default scope is 'top-level' — list items / blockquotes / code blocks
+    // keep their existing 'List' / 'Quote' / 'Write code' placeholders.
+    //
+    // To render the breadcrumb on every empty textblock (including those nested
+    // inside lists / blockquotes), pass `{ scope: 'all-blocks' }`:
+    //   placeholder: (props) => buildBreadcrumbPlaceholder(props, { scope: 'all-blocks' })
     Placeholder.configure({
-      placeholder: ({ node, pos, parentName }: PlaceholderRenderProps) => {
-        if (node.type.name === 'heading' && pos === 0) return 'Enter document name'
-        if (
-          node.type.name === 'paragraph' &&
-          (node.attrs as { paragraphStyle?: string | null }).paragraphStyle === 'subtitle'
-        ) {
-          return 'Subtitle'
-        }
-        if (node.type.name === 'paragraph' && parentName in PARENT_PLACEHOLDER) {
-          return PARENT_PLACEHOLDER[parentName]
-        }
-        return PLACEHOLDER_TEXT[node.type.name] ?? ''
-      }
+      placeholder: (props) => buildBreadcrumbPlaceholder(props, { scope: 'top-level' })
     }),
     IOSCaretFix
   ]
