@@ -22,7 +22,7 @@ Describe the steps reviewers can use to verify this change.
 
 ## Checklist
 
-- [ ] I ran `bun run check:full` (or at least `bun run check`).
+- [ ] I ran `bun run check` (lint + format + styles + types).
 - [ ] I tested the change locally.
 - [ ] I added/updated tests where needed.
 - [ ] I updated related documentation where needed.

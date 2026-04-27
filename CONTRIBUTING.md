@@ -34,11 +34,14 @@ Before you begin, ensure you have:
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/docs.plus.git
    cd docs.plus
    ```
+
 3. **Add upstream remote**:
+
    ```bash
    git remote add upstream https://github.com/docs-plus/docs.plus.git
    ```
@@ -83,10 +86,10 @@ make up-dev
 
 This starts all services:
 
-- 🌐 Webapp: http://localhost:3000
-- 🔌 REST API: http://localhost:4000
+- 🌐 Webapp: <http://localhost:3000>
+- 🔌 REST API: <http://localhost:4000>
 - ⚡ WebSocket: ws://localhost:4001
-- 👷 Worker: http://localhost:4002
+- 👷 Worker: <http://localhost:4002>
 
 ## ✏️ Making Changes
 
@@ -148,16 +151,16 @@ refactor(editor): simplify toolbar component
 
 ### Formatting
 
-We use **Prettier** for code formatting. Format your code before committing:
+We use **Prettier** for code formatting. Check formatting:
 
 ```bash
 bun run format
 ```
 
-Or check formatting:
+Or auto-fix formatting:
 
 ```bash
-bun run format:check
+bun run format:fix
 ```
 
 ### Linting
@@ -177,7 +180,7 @@ We use **Husky** to enforce local quality gates before code reaches remote branc
 - Active hooks:
   - `pre-commit`: runs `bun run lint:staged` (staged-file lint/format checks)
   - `commit-msg`: validates commit message format
-  - `pre-push`: runs selective build checks and always runs `bun run check:full` for **every push** (lint + format + types + Stylelint)
+  - `pre-push`: runs selective build checks and always runs `bun run check` for **every push** (lint + format + styles + types)
   - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
 
 You can trigger hooks manually:
@@ -200,16 +203,24 @@ printf 'refs/heads/feature/demo 0000000000000000000000000000000000000000 refs/he
 - Use TypeScript for all new code
 - Avoid `any` types - use proper types or `unknown`
 - Enable strict mode in your IDE
-- Run type checking: `bun run check:types` or `bun run build` (will fail on type errors)
+- Run type checking: `bun run typecheck` or `bun run build` (will fail on type errors)
 - Tooling policy and CI parity: [docs/engineering/toolchain.md](./docs/engineering/toolchain.md)
 
 ### Quality commands (summary)
 
-| Command                | Use case                                  |
-| ---------------------- | ----------------------------------------- |
-| `bun run check`        | Lint + Prettier check + typecheck         |
-| `bun run check:full`   | Above + Stylelint (matches pre-push gate) |
-| `bun run check:static` | Lint + Prettier + Stylelint (no `tsc`)    |
+Naming rule: **bare name reports, `:fix` suffix mutates** — same convention as `cargo check` / `cargo fmt --check` and `gofmt -d` / `gofmt -w`.
+
+| Command              | Use case                                                    |
+| -------------------- | ----------------------------------------------------------- |
+| `bun run check`      | Report all: lint + format + styles + typecheck              |
+| `bun run check:fix`  | Auto-fix all: ESLint + Stylelint + Prettier (in that order) |
+| `bun run lint`       | ESLint report                                               |
+| `bun run lint:fix`   | ESLint --fix                                                |
+| `bun run format`     | Prettier --check                                            |
+| `bun run format:fix` | Prettier --write                                            |
+| `bun run styles`     | Stylelint report                                            |
+| `bun run styles:fix` | Stylelint --fix                                             |
+| `bun run typecheck`  | tsc --noEmit (report only — no fix)                         |
 
 ## 🧪 Testing
 
@@ -311,10 +322,9 @@ Aim for good test coverage, especially for:
 
    ```bash
    bun run lint
-   bun run format:check
-   bun run typecheck:webapp
-   bun run typecheck:admin
-   bun run typecheck:backend
+   bun run format
+   bun run styles
+   bun run typecheck
    ```
 
 4. **Test locally**:
@@ -409,7 +419,7 @@ We welcome contributions in all areas:
 - 🔒 **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
 
-## 🙏 Thank You!
+## 🙏 Thank You
 
 Your contributions make docs.plus better for everyone. Thank you for taking the time to contribute! ❤️
 

@@ -77,7 +77,10 @@ jobs:
         uses: ./.github/actions/setup-bun
 
       - name: 🔍 Lint, format & styles
-        run: bun run check:static
+        run: |
+          bun run lint
+          bun run format
+          bun run styles
 
   typecheck:
     name: 📝 Type Check
@@ -102,7 +105,17 @@ jobs:
             packages/extension-indent/dist
             packages/extension-inline-code/dist
             packages/extension-placeholder/dist
-          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-placeholder/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**', 'packages/extension-placeholder/src/**') }}
+          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
+            'packages/extension-hyperlink/package.json',
+            'packages/extension-hypermultimedia/package.json',
+            'packages/extension-indent/package.json',
+            'packages/extension-inline-code/package.json',
+            'packages/extension-placeholder/package.json',
+            'packages/extension-hyperlink/src/**',
+            'packages/extension-hypermultimedia/src/**',
+            'packages/extension-indent/src/**',
+            'packages/extension-inline-code/src/**',
+            'packages/extension-placeholder/src/**') }}
           restore-keys: ext-${{ runner.os }}-
 
       - name: 🔧 Build Extensions (required for types)
@@ -115,7 +128,7 @@ jobs:
           bun run --filter @docs.plus/extension-placeholder build
 
       - name: 📝 Type Check All
-        run: bun run check:types
+        run: bun run typecheck
 
   security:
     name: 🔒 Security Audit
@@ -192,7 +205,17 @@ jobs:
             packages/extension-indent/dist
             packages/extension-inline-code/dist
             packages/extension-placeholder/dist
-          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-placeholder/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**', 'packages/extension-placeholder/src/**') }}
+          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
+            'packages/extension-hyperlink/package.json',
+            'packages/extension-hypermultimedia/package.json',
+            'packages/extension-indent/package.json',
+            'packages/extension-inline-code/package.json',
+            'packages/extension-placeholder/package.json',
+            'packages/extension-hyperlink/src/**',
+            'packages/extension-hypermultimedia/src/**',
+            'packages/extension-indent/src/**',
+            'packages/extension-inline-code/src/**',
+            'packages/extension-placeholder/src/**') }}
           restore-keys: ext-${{ runner.os }}-
 
       - name: 🔧 Build TipTap Extensions
@@ -222,7 +245,8 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
-        run: docker compose -f ${{ env.COMPOSE_FILE }} --env-file scripts/env.production.build-stub build --parallel
+        run: docker compose -f ${{ env.COMPOSE_FILE }} --env-file
+          scripts/env.production.build-stub build --parallel
 
       - name: 📊 Set Build Result
         id: build_result

@@ -65,7 +65,10 @@ jobs:
         uses: ./.github/actions/setup-bun
 
       - name: 🔍 Lint, format & styles
-        run: bun run check:static
+        run: |
+          bun run lint
+          bun run format
+          bun run styles
 
   typecheck:
     name: 📝 Type Check
@@ -88,7 +91,7 @@ jobs:
           bun run --filter @docs.plus/extension-placeholder build
 
       - name: 📝 Type Check All
-        run: bun run check:types
+        run: bun run typecheck
 
   security:
     name: 🔒 Security Audit
