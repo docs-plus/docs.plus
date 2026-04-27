@@ -77,6 +77,7 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       delete window._parseMarkdown
       delete window._store
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
   return (
