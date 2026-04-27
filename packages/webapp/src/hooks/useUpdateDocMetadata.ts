@@ -19,7 +19,7 @@ interface UpdateDocMetadataResponse {
 const useUpdateDocMetadata = () => {
   const queryClient = useQueryClient()
 
-  const { isLoading, isSuccess, mutate, data } = useMutation<
+  const { isPending, isSuccess, mutate, data } = useMutation<
     UpdateDocMetadataResponse,
     Error,
     UpdateDocMetadataParams
@@ -54,7 +54,7 @@ const useUpdateDocMetadata = () => {
   })
 
   return {
-    isLoading,
+    isPending,
     isSuccess,
     mutate,
     data

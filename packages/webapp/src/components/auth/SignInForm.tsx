@@ -70,8 +70,8 @@ const SignInForm = ({
     }
   }
 
-  const { mutateAsync, isLoading } = useMutation(
-    (email: string) =>
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: (email: string) =>
       fetch('/api/validate-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,18 +83,16 @@ const SignInForm = ({
         }
         return res.json()
       }),
-    {
-      onError: (error: Error) => {
-        setEmailError(error.message)
-        setHighlightEmailInput(true)
-        console.error('Failed to validate email:', error)
-      },
-      onSuccess: () => {
-        setEmailError('')
-        setHighlightEmailInput(false)
-      }
+    onError: (error: Error) => {
+      setEmailError(error.message)
+      setHighlightEmailInput(true)
+      console.error('Failed to validate email:', error)
+    },
+    onSuccess: () => {
+      setEmailError('')
+      setHighlightEmailInput(false)
     }
-  )
+  })
 
   const handleSignInWithEmail = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,7 +129,7 @@ const SignInForm = ({
     setEmailSent(true)
   }
 
-  const isAnyLoading = isLoading || loading || googleLoading
+  const isAnyLoading = isPending || loading || googleLoading
 
   // Card variant adds its own container styling
   const containerClasses = variant === 'card' ? 'bg-base-100 rounded-box p-5 shadow-lg sm:p-6' : ''
@@ -182,7 +180,7 @@ const SignInForm = ({
               variant="primary"
               shape="block"
               className="h-11 rounded-xl font-semibold sm:h-12"
-              loading={isLoading || loading}
+              loading={isPending || loading}
               disabled={isAnyLoading}
               type="submit">
               {btnSubmitText}

@@ -29,7 +29,7 @@ const DocumentSettingsPanel = ({ className, onClose }: DocumentSettingsPanelProp
   const docMetadata = useStore((state) => state.settings.metadata)
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
-  const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
+  const { isPending, isSuccess, mutate } = useUpdateDocMetadata()
   const [tags, setTags] = useState<string[]>(docMetadata.keywords || [])
   const [readOnly, setReadOnly] = useState(docMetadata.readOnly || false)
   const [formTargetHandler, setFormTargetHandler] = useState('description')
@@ -146,7 +146,7 @@ const DocumentSettingsPanel = ({ className, onClose }: DocumentSettingsPanelProp
               <div className="flex justify-end pt-2">
                 <Button
                   variant="primary"
-                  loading={formTargetHandler === 'description' && isLoading}
+                  loading={formTargetHandler === 'description' && isPending}
                   onClick={saveDescriptionHandler}>
                   Save Changes
                 </Button>

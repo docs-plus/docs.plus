@@ -174,7 +174,7 @@ const TitleEditContent = () => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const closeDialog = useStore((state) => state.closeDialog)
-  const { isLoading, mutate } = useUpdateDocMetadata()
+  const { isPending, mutate } = useUpdateDocMetadata()
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -237,8 +237,8 @@ const TitleEditContent = () => {
           variant="primary"
           size="sm"
           onClick={handleSave}
-          disabled={isLoading || !value.trim()}>
-          {isLoading ? 'Saving…' : 'Save'}
+          disabled={isPending || !value.trim()}>
+          {isPending ? 'Saving…' : 'Save'}
         </Button>
       </div>
     </div>

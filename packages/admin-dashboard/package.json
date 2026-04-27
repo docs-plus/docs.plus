@@ -16,7 +16,7 @@
   "dependencies": {
     "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
-    "@tanstack/react-query": "^5.96.2",
+    "@tanstack/react-query": "catalog:",
     "clsx": "catalog:",
     "daisyui": "catalog:",
     "date-fns": "catalog:",

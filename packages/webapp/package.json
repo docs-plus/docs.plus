@@ -51,7 +51,7 @@
     "@hocuspocus/transformer": "catalog:",
     "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
-    "@tanstack/react-query": "^4.44.0",
+    "@tanstack/react-query": "catalog:",
     "@tanstack/react-virtual": "^3.13.23",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-blockquote": "catalog:",

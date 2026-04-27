@@ -42,7 +42,7 @@ const extractMetadataMutationResponse = (response: unknown): MetadataMutationRes
 }
 
 const DocTitle = ({ className }: { className?: string }) => {
-  const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
+  const { isPending, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState<string | undefined>('')
   const [showSaved, setShowSaved] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -198,9 +198,9 @@ const DocTitle = ({ className }: { className?: string }) => {
         />
       </Tooltip>
       <div
-        className={`mx-2 flex size-4 items-center ${isLoading || showSaved ? 'flex' : 'hidden'}`}>
+        className={`mx-2 flex size-4 items-center ${isPending || showSaved ? 'flex' : 'hidden'}`}>
         <AiOutlineLoading3Quarters
-          className={`${isLoading ? 'show' : 'hidden'} h-4 w-4 animate-spin text-blue-500`}
+          className={`${isPending ? 'show' : 'hidden'} h-4 w-4 animate-spin text-blue-500`}
         />
         <IoCheckmarkCircle className={`${showSaved ? 'show' : 'hidden'} h-4 w-4 text-green-600`} />
       </div>
