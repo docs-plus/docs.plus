@@ -1,3 +1,4 @@
+import { Icons } from '@components/icons/registry'
 import {
   createHTMLElement,
   getSpecialUrlInfo,
@@ -5,13 +6,13 @@ import {
   type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import type { IconType } from 'react-icons'
 
 import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
-import * as Icons from './iconList'
 import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
-
-type IconRenderer = (props: { size?: number }) => string
 
 /**
  * Per-app icon for the special-URL fallback path.
@@ -20,59 +21,61 @@ type IconRenderer = (props: { size?: number }) => string
  * `{ type, title, category }` — it deliberately does NOT ship an icon
  * catalog so the published bundle stays small for consumers that pick
  * their own visual treatment. This table is the webapp's choice for
- * which heroicon represents each `type`.
+ * which Lucide icon (via `@components/icons/registry`) represents each
+ * `type`, conforming to the design-system convention "all icons use
+ * Lucide" (see registry.ts).
  *
- * Typed as `Partial<Record<SpecialUrlType, …>>` so TypeScript catches
- * typos and renames against the extension's exported union, but absence
- * is allowed — domain-catalog types (`meet`, plus the web variants of
- * `github`, `notion`, …) are intentionally omitted because the favicon
- * path always wins for `https://` URLs and a static icon would never
- * render for them.
+ * Typed as `Partial<Record<SpecialUrlType, IconType>>` so TypeScript
+ * catches typos and renames against the extension's exported union, but
+ * absence is allowed — domain-catalog types (`meet`, plus the web
+ * variants of `github`, `notion`, …) are intentionally omitted because
+ * the favicon path always wins for `https://` URLs and a static icon
+ * would never render for them.
  */
-const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconRenderer>> = {
-  email: Icons.HiMail,
-  phone: Icons.HiPhone,
-  'facetime-audio': Icons.HiPhone,
-  sms: Icons.HiChatBubbleLeftRight,
-  facetime: Icons.HiVideoCamera,
-  whatsapp: Icons.HiChatBubbleLeftRight,
-  telegram: Icons.HiChatBubbleLeftRight,
-  discord: Icons.HiChatBubbleLeftRight,
-  skype: Icons.HiChatBubbleLeftRight,
-  slack: Icons.HiChatBubbleLeftRight,
-  twitter: Icons.HiUsers,
-  facebook: Icons.HiUsers,
-  instagram: Icons.HiUsers,
-  linkedin: Icons.HiUsers,
-  snapchat: Icons.HiUsers,
-  reddit: Icons.HiUsers,
-  tiktok: Icons.HiUsers,
-  contacts: Icons.HiUsers,
-  zoom: Icons.HiVideoCamera,
-  teams: Icons.HiVideoCamera,
-  webex: Icons.HiVideoCamera,
-  calendar: Icons.HiCalendar,
-  reminders: Icons.HiCalendar,
-  maps: Icons.HiMapPin,
-  uber: Icons.HiMapPin,
-  lyft: Icons.HiMapPin,
-  music: Icons.HiMusicalNote,
-  spotify: Icons.HiMusicalNote,
-  'apple-tv': Icons.HiTv,
-  youtube: Icons.HiTv,
-  netflix: Icons.HiTv,
-  twitch: Icons.HiTv,
-  notes: Icons.HiDocumentText,
-  shortcuts: Icons.HiDocumentText,
-  github: Icons.HiDocumentText,
-  gitlab: Icons.HiDocumentText,
-  vscode: Icons.HiDocumentText,
-  notion: Icons.HiDocumentText,
-  obsidian: Icons.HiDocumentText,
-  figma: Icons.HiDocumentText,
-  photos: Icons.HiPhoto,
-  'app-store': Icons.HiLightningBolt,
-  amazon: Icons.HiLightningBolt
+const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
+  email: Icons.mail,
+  phone: Icons.phone,
+  'facetime-audio': Icons.phone,
+  sms: Icons.chatroom,
+  facetime: Icons.video,
+  whatsapp: Icons.chatroom,
+  telegram: Icons.chatroom,
+  discord: Icons.chatroom,
+  skype: Icons.chatroom,
+  slack: Icons.chatroom,
+  twitter: Icons.share,
+  facebook: Icons.share,
+  instagram: Icons.share,
+  linkedin: Icons.share,
+  snapchat: Icons.share,
+  reddit: Icons.share,
+  tiktok: Icons.share,
+  contacts: Icons.share,
+  zoom: Icons.video,
+  teams: Icons.video,
+  webex: Icons.video,
+  calendar: Icons.calendar,
+  reminders: Icons.calendar,
+  maps: Icons.mapPin,
+  uber: Icons.mapPin,
+  lyft: Icons.mapPin,
+  music: Icons.music,
+  spotify: Icons.music,
+  'apple-tv': Icons.tv,
+  youtube: Icons.tv,
+  netflix: Icons.tv,
+  twitch: Icons.tv,
+  notes: Icons.fileText,
+  shortcuts: Icons.fileText,
+  github: Icons.fileText,
+  gitlab: Icons.fileText,
+  vscode: Icons.fileText,
+  notion: Icons.fileText,
+  obsidian: Icons.fileText,
+  figma: Icons.fileText,
+  photos: Icons.image,
+  'app-store': Icons.externalLink,
+  amazon: Icons.externalLink
 }
 
 /**
@@ -87,10 +90,16 @@ export interface PreviewContext {
   signal: AbortSignal
 }
 
-const createSvgIcon = (renderer: IconRenderer, className = ''): HTMLElement => {
+export const renderIconMarkup = (Icon: IconType, size = 20): string =>
+  renderToStaticMarkup(createElement(Icon, { size, 'aria-hidden': true }))
+
+// Render a Lucide React icon into the imperative-DOM popover container.
+// `aria-hidden` because the metadata title link alongside is the
+// screen-reader-readable surface; the icon is decoration.
+const createSvgIcon = (Icon: IconType, className = ''): HTMLElement => {
   return createHTMLElement('div', {
     className: `svg-icon-container ${className}`,
-    innerHTML: renderer({ size: 20 })
+    innerHTML: renderIconMarkup(Icon)
   })
 }
 
@@ -140,11 +149,9 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
     // entries (`meet`, `github`, …) intentionally have no fallback
     // because the favicon path above virtually always succeeds for
     // `https://` URLs.
-    const renderer = TYPE_TO_ICON[specialInfo.type]
-    if (renderer) {
-      container.prepend(
-        createSvgIcon(renderer, `metadata-icon-special icon-${specialInfo.category}`)
-      )
+    const Icon = TYPE_TO_ICON[specialInfo.type]
+    if (Icon) {
+      container.prepend(createSvgIcon(Icon, `metadata-icon-special icon-${specialInfo.category}`))
     }
   }
 

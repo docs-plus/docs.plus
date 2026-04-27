@@ -21,3 +21,12 @@ Coverage for `@docs.plus/extension-hyperlink` in the real editor (`TipTap.tsx`: 
 
 - **hyperlink-edge-cases.cy.js** — Boundary conditions + keyboard + misc
   - Escape dismiss, Tab focus trap, undo, multiple links, link at paragraph start/end, URL replacement, long URLs
+
+- **hyperlink-picker.cy.js** — Suggestion picker (in-doc headings + workspace bookmarks) on the create + edit popovers
+  - Create / pick heading: expand → click row inserts heading deep-link (`?h=…&id=…`) with the picked title as anchor text
+  - Create / keyboard: ArrowDown opens the panel, Enter picks the highlighted row
+  - Create / pick bookmark: workspace RPC stubbed via `setupBookmarkSuggestions`; Bookmarks section renders, archived rows show the badge, click inserts a chatroom deep-link (`?msg_id=…&chatroom=…`)
+  - Create / typed URL: typing filters by title; a full URL bypasses suggestions and Apply commits it verbatim
+  - Edit popover: pick heading re-points href and replaces link text; user-edited text (`textTouched`) survives a heading pick; pick bookmark re-points href to a chatroom deep-link
+
+  Bookmark coverage relies on `window._store` (exposed by `pages/editor.tsx` for the playground only) to seed `workspaceId` and on `cy.intercept` against the Supabase `get_user_bookmarks` RPC. See `cypress/support/hyperlinkPicker.ts` for the fixture + helper.

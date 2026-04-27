@@ -1,5 +1,6 @@
 import Controllers from '@components/pages/editor/Controllers'
 import { createDocumentFromStructure } from '@components/pages/editor/helpers/createDocumentFromStructure'
+import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
 import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
@@ -28,6 +29,8 @@ declare global {
     ) => boolean
     _getMarkdown?: () => string
     _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
+    /** Cypress escape hatch: lets specs seed Zustand state (e.g. `workspaceId` to enable bookmark RPC). Playground-only — production routes never touch this. */
+    _store?: typeof useStore
   }
 }
 
@@ -60,6 +63,10 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
     window._getMarkdown = () => editor.getMarkdown()
     window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
 
+    // Expose the Zustand store so specs can seed slices the playground
+    // doesn't populate naturally (workspaceId, etc.).
+    window._store = useStore
+
     setWorkspaceEditorSetting('instance', editor)
     setWorkspaceEditorSetting('loading', false)
     setWorkspaceEditorSetting('providerSyncing', false)
@@ -68,6 +75,7 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       delete window._moveHeading
       delete window._getMarkdown
       delete window._parseMarkdown
+      delete window._store
     }
   }, [editor])
 
@@ -102,6 +110,8 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
           </div>
         </main>
       </div>
+
+      <HyperlinkPopoverPortal />
     </div>
   )
 }

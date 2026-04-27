@@ -25,7 +25,16 @@ interface EditorWindow {
   /** Markdown helpers – available when @tiptap/markdown is loaded */
   _getMarkdown?: () => string
   _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
+  /** Zustand store handle – set in editor.tsx so specs can seed slices the playground doesn't populate naturally (e.g. `workspaceId`). */
+  _store?: {
+    getState: () => {
+      setWorkspaceSetting: (key: string, value: unknown) => void
+      [key: string]: unknown
+    }
+  }
 }
+
+export type { EditorWindow }
 
 // ---------------------------------------------------------------------------
 // Test data constants

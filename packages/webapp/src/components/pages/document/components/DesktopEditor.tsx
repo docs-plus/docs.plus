@@ -1,5 +1,6 @@
 import { Chatroom } from '@components/chatroom'
 import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
+import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { useHeadingScrollSpy } from '@components/toc/hooks'
 import { HoverMenu } from '@components/ui/HoverMenu'
@@ -175,6 +176,8 @@ const DesktopEditor = () => {
           <TOC />
         </div>
       </div>
+
+      <HyperlinkPopoverPortal />
     </>
   )
 }

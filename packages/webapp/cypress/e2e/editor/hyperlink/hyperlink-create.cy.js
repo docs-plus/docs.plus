@@ -6,10 +6,10 @@ import { TEST_TITLE } from '../../../support/commands'
 const PARAGRAPH_TEXT = 'Select this target word to apply a hyperlink.'
 const TARGET_TEXT = 'target'
 
-const POPOVER = '.hyperlink-create-popover'
-const URL_INPUT = `${POPOVER} input[name="hyperlink-url"]`
-const SUBMIT_BTN = `${POPOVER} button[type="submit"]`
-const ERROR_MSG = `${POPOVER} .error-message`
+const POPOVER = '[data-testid="hyperlink-create-popover"]'
+const URL_INPUT = `${POPOVER} [data-testid="hyperlink-editor-url"]`
+const SUBMIT_BTN = `${POPOVER} [data-testid="hyperlink-editor-submit"]`
+const ERROR_MSG = `${POPOVER} [data-testid="hyperlink-editor-error"]`
 const EDITOR_LINK = '.docy_editor a'
 const PM = '.docy_editor > .tiptap.ProseMirror'
 
@@ -99,7 +99,7 @@ describe('Hyperlink Create Popover', () => {
       cy.get(URL_INPUT).type('not a valid url')
       cy.get(SUBMIT_BTN).click()
 
-      cy.get(ERROR_MSG).should('have.class', 'show')
+      cy.get(ERROR_MSG).should('be.visible')
       cy.get(EDITOR_LINK).should('not.exist')
     })
 
@@ -109,10 +109,10 @@ describe('Hyperlink Create Popover', () => {
 
       cy.get(URL_INPUT).type('bad')
       cy.get(SUBMIT_BTN).click()
-      cy.get(ERROR_MSG).should('have.class', 'show')
+      cy.get(ERROR_MSG).should('be.visible')
 
       cy.get(URL_INPUT).clear().type('https://example.com')
-      cy.get(ERROR_MSG).should('not.have.class', 'show')
+      cy.get(ERROR_MSG).should('not.exist')
     })
   })
 
@@ -147,15 +147,18 @@ describe('Hyperlink Create Popover', () => {
   })
 
   describe('URL normalization', () => {
-    it('accepts bare domain URLs (no auto-prefix)', () => {
+    it('normalizes bare domain URLs by prepending https://', () => {
       selectTarget()
       cy.get('.docy_editor').realPress(['Meta', 'k'])
 
       cy.get(URL_INPUT).type('example.com')
       cy.get(SUBMIT_BTN).click()
 
-      // The create popover passes the URL as-is through validateURL
-      cy.get(EDITOR_LINK).contains(TARGET_TEXT).should('have.attr', 'href').and('eq', 'example.com')
+      // Picker editor canonicalizes via `normalizeHref` (https-prefix rule).
+      cy.get(EDITOR_LINK)
+        .contains(TARGET_TEXT)
+        .should('have.attr', 'href')
+        .and('eq', 'https://example.com')
     })
 
     it('preserves explicit http://', () => {

@@ -1,17 +1,20 @@
+import { Icons } from '@components/icons/registry'
 import {
-  Copy,
   copyToClipboard,
   createHTMLElement,
   getDefaultController,
-  LinkOff,
   openEditHyperlink,
-  Pencil,
   type PreviewHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
 import { useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 
-import { observeDetachment, type PreviewContext, renderMetadataInto } from './previewShared'
+import {
+  observeDetachment,
+  type PreviewContext,
+  renderIconMarkup,
+  renderMetadataInto
+} from './previewShared'
 
 /**
  * Dismiss the iOS soft keyboard before the link preview sheet seats.
@@ -68,11 +71,17 @@ const dismissSoftKeyboard = (editor: Editor): void => {
  */
 export default function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement | null {
   const { link, editor, nodePos, attrs } = options
-  const href = link.href
+  const href = attrs.href ?? link.getAttribute('href') ?? ''
   const isMobile = useStore.getState().settings.editor.isMobile ?? false
 
   if (isMobile) {
-    useSheetStore.getState().openSheet('linkPreview', { href, editor, nodePos, attrs })
+    useSheetStore.getState().openSheet('linkPreview', {
+      href,
+      editor,
+      nodePos,
+      attrs,
+      isAllowedUri: options.isAllowedUri
+    })
     dismissSoftKeyboard(editor)
     return null
   }
@@ -88,7 +97,7 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
  */
 const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLElement => {
   const { link, editor, nodePos, attrs } = options
-  const href = link.href
+  const href = attrs.href ?? link.getAttribute('href') ?? ''
   const controller = new AbortController()
   const ctx: PreviewContext = { href, editor, nodePos, attrs, signal: controller.signal }
   const built = buildDesktopPopover(ctx, options)
@@ -113,14 +122,29 @@ const buildDesktopPopover = (
   ctx: PreviewContext,
   options: PreviewHyperlinkOptions
 ): { element: HTMLElement; flush: () => void } => {
-  const { href, editor } = ctx
-  const { link, validate } = options
+  const { href, editor, nodePos } = ctx
+  const { link, validate, isAllowedUri } = options
 
   const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
   const metadataContainer = createHTMLElement('div', { className: 'metadata' })
-  const copyButton = createHTMLElement('button', { className: 'copy', innerHTML: Copy() })
-  const editButton = createHTMLElement('button', { className: 'edit', innerHTML: Pencil() })
-  const removeButton = createHTMLElement('button', { className: 'remove', innerHTML: LinkOff() })
+  const copyButton = createHTMLElement('button', {
+    className: 'copy',
+    title: 'Copy link',
+    ariaLabel: 'Copy link',
+    innerHTML: renderIconMarkup(Icons.copy, 18)
+  })
+  const editButton = createHTMLElement('button', {
+    className: 'edit',
+    title: 'Edit link',
+    ariaLabel: 'Edit link',
+    innerHTML: renderIconMarkup(Icons.pencil, 18)
+  })
+  const removeButton = createHTMLElement('button', {
+    className: 'remove',
+    title: 'Remove link',
+    ariaLabel: 'Remove link',
+    innerHTML: renderIconMarkup(Icons.unlink, 18)
+  })
 
   const { flush } = renderMetadataInto(metadataContainer, ctx)
 
@@ -132,7 +156,7 @@ const buildDesktopPopover = (
   })
 
   editButton.addEventListener('click', () => {
-    openEditHyperlink(editor, { editor, link, validate })
+    openEditHyperlink(editor, { editor, link, validate, isAllowedUri, nodePos })
   })
 
   removeButton.addEventListener('click', () => {

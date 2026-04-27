@@ -1,8 +1,10 @@
 import { Icons } from '@components/icons/registry'
 import { copyToClipboard } from '@docs.plus/extension-hyperlink'
 import { type SheetDataMap, useSheetStore } from '@stores'
+import { getMarkRange } from '@tiptap/core'
 import { useEffect } from 'react'
 
+import { applyEdit } from './commands/applyEdit'
 import { navigateHref } from './hrefEventHandler'
 import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
 import { type LinkMetadata, useLinkMetadata } from './useLinkMetadata'
@@ -41,7 +43,7 @@ const pickImageSrc = (data: LinkMetadata | null): string | undefined =>
 const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
   const closeSheet = useSheetStore((s) => s.closeSheet)
   const switchSheet = useSheetStore((s) => s.switchSheet)
-  const { href, editor, nodePos, attrs } = payload
+  const { href, editor, nodePos, attrs, isAllowedUri } = payload
 
   const { status, data } = useLinkMetadata(href, {
     initialTitle: typeof attrs?.title === 'string' ? attrs.title : undefined,
@@ -74,7 +76,7 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
         // Reuse the desktop navigation logic so in-app deep links
         // (same-doc headings, chatrooms, history hash) behave
         // identically across platforms.
-        navigateHref(href)
+        navigateHref(href, isAllowedUri)
         closeSheet()
       }
     },
@@ -94,20 +96,23 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
       label: 'Edit link',
       icon: <Icons.pencil size={ICON_SIZE} />,
       onClick: () => {
-        // switchSheet runs the close→open transition through the store,
-        // letting react-modal-sheet animate the swap rather than
-        // remounting both at once.
-        //
-        // `onBack` lets the editor sheet route the user back to this
-        // preview when they tap the header back arrow — re-using the
-        // original payload so the link is shown in its pre-edit state.
+        // Seed link text from the live document at the mark range,
+        // matching the prebuilt extension. `attrs.title` is metadata,
+        // NOT the visible label — using it would silently rename links.
+        const $pos = editor.state.doc.resolve(nodePos)
+        const mark = editor.schema.marks.hyperlink
+        const range = mark ? getMarkRange($pos, mark) : null
+        const initialText = range
+          ? editor.state.doc.textBetween(range.from, range.to, '')
+          : undefined
+
         switchSheet('linkEditor', {
           mode: 'edit',
+          editor,
           initialHref: href,
-          onSubmit: (next) => {
-            editor.chain().focus().extendMarkRange('hyperlink').editHyperlinkHref(next).run()
-          },
-          onBack: () => switchSheet('linkPreview', { href, editor, nodePos, attrs })
+          initialText,
+          onSubmit: (result) => applyEdit({ editor, nodePos }, result),
+          onBack: () => switchSheet('linkPreview', { href, editor, nodePos, attrs, isAllowedUri })
         })
       }
     },
@@ -158,12 +163,16 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
             <button
               type="button"
               onClick={action.onClick}
-              className={`hover:bg-base-200 active:bg-base-200 flex min-h-12 w-full items-center gap-3 rounded-lg px-1 py-2.5 text-left text-base transition-colors ${
-                action.danger ? 'text-error' : 'text-base-content'
+              className={`group hover:bg-base-200 active:bg-base-200 flex min-h-12 w-full items-center gap-3 rounded-lg px-1 py-2.5 text-left text-base transition-colors ${
+                action.danger
+                  ? 'text-base-content hover:text-error active:text-error'
+                  : 'text-base-content'
               }`}>
               <span
                 className={`inline-flex size-6 shrink-0 items-center justify-center ${
-                  action.danger ? 'text-error' : 'text-base-content/70'
+                  action.danger
+                    ? 'text-base-content/70 group-hover:text-error group-active:text-error'
+                    : 'text-base-content/70'
                 }`}>
                 {action.icon}
               </span>

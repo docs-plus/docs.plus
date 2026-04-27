@@ -43,9 +43,7 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.hyperlink-create-popover,
-.hyperlink-preview-popover,
-.hyperlink-edit-popover {
+.hyperlink-preview-popover {
   background-color: var(--color-base-100);
   color: var(--color-base-content);
   border: var(--border) solid var(--border-color-tint);
@@ -177,7 +175,7 @@ $pad-toolbar-height: 38px;
     }
   }
 
-  // Legacy styles for other popover variants
+  // Compact desktop preview metadata row.
   .metadata {
     width: 200px;
     display: flex;
@@ -242,10 +240,21 @@ $pad-toolbar-height: 38px;
     justify-content: center;
     transition: background-color 0.1s ease-in-out;
     cursor: pointer;
-    padding: 0.28rem;
-    border-radius: 0.25rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-selector);
+    background: transparent;
+    color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
     &:hover {
       background-color: var(--color-base-200);
+      color: var(--color-base-content);
+    }
+
+    &.remove:hover,
+    &.remove:focus-visible {
+      color: var(--color-error);
     }
 
     > svg {
@@ -255,62 +264,35 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.hyperlink-create-popover {
-  .inputs-wrapper {
-    width: auto;
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-.hyperlink-edit-popover {
-  align-items: stretch;
-
-  .inputs-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex: 1;
-    min-width: 0;
-    width: auto;
-    border: none;
-    padding: 0;
-    background-color: transparent;
-
-    &:focus-within {
-      border: none;
-      box-shadow: none;
-    }
-  }
-
-  .buttons-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex-shrink: 0;
-  }
-
-  .back-button,
-  .apply-button {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .text-wrapper svg {
-    width: 26px;
-    height: 26px;
-  }
-
-  svg {
-    fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-  }
-}
-
 .tippy-svg-arrow {
   top: -12px !important;
   fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+}
+
+// Shared chrome for the React-rendered hyperlink popovers (create + edit).
+// Kept token-for-token with `.hyperlink-preview-popover` (lines 46–53) so
+// the popover family reads as one cohesive surface; if the preview popover's
+// border / radius / shadow ever moves, update both blocks together.
+.hyperlink-link-popover-shell {
+  background-color: var(--color-base-100);
+  color: var(--color-base-content);
+  border: var(--border) solid var(--border-color-tint);
+  border-radius: var(--radius-field);
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent),
+    0 8px 24px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+
+  // daisyUI's `<label class="input">` defaults `--input-color` to base-content
+  // for both the unfocused tint and the focus outline, and uses a 2px outline
+  // offset which reads as a "double ring" against the wrapper border. The
+  // legacy hyperlink form used the primary colour for focus only, with the
+  // ring tight against the input. Mirror that here so the popover focus state
+  // matches the reference family.
+  .input:focus-within {
+    --input-color: var(--color-primary);
+    outline-offset: 0;
+    border: none;
+  }
 }
 
 // --------------------------------------------------------------------------

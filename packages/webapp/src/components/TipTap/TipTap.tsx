@@ -1,5 +1,5 @@
 import Config from '@config'
-import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlink'
+import { Hyperlink } from '@docs.plus/extension-hyperlink'
 // import {
 //   // HyperMultimediaKit,
 //   imageModal as _imageModal,
@@ -60,7 +60,14 @@ import {
 import { MarkdownPaste } from './extensions/markdown-paste'
 import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
-import createHyperlinkMobile from './hyperlinkPopovers/createHyperlink'
+import {
+  createHyperlinkDesktop,
+  editHyperlinkDesktop
+} from './hyperlinkPopovers/desktopPopoverEntries'
+import {
+  createHyperlinkMobile,
+  editHyperlinkMobile
+} from './hyperlinkPopovers/mobilePopoverEntries'
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
 import { buildBreadcrumbPlaceholder } from './placeholders'
 // import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
@@ -194,7 +201,8 @@ const Editor = ({
       exitable: true,
       popovers: {
         previewHyperlink,
-        createHyperlink: isMobile ? createHyperlinkMobile : createHyperlinkPopover
+        createHyperlink: isMobile ? createHyperlinkMobile : createHyperlinkDesktop,
+        editHyperlink: isMobile ? editHyperlinkMobile : editHyperlinkDesktop
       }
     }),
     // HyperMultimediaKit.configure({

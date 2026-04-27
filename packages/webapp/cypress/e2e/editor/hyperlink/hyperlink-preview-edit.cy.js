@@ -8,7 +8,12 @@ const LINK_HREF = 'https://example.com/page'
 const PARAGRAPH_TEXT = 'Click the example link to test preview.'
 
 const PREVIEW_POPOVER = '.hyperlink-preview-popover'
-const EDIT_POPOVER = '.hyperlink-edit-popover'
+const EDIT_POPOVER = '[data-testid="hyperlink-edit-popover"]'
+const EDIT_TEXT_INPUT = `${EDIT_POPOVER} [data-testid="hyperlink-editor-text"]`
+const EDIT_URL_INPUT = `${EDIT_POPOVER} [data-testid="hyperlink-editor-url"]`
+const EDIT_SUBMIT = `${EDIT_POPOVER} [data-testid="hyperlink-editor-submit"]`
+const EDIT_BACK = `${EDIT_POPOVER} [data-testid="hyperlink-editor-back"]`
+const EDIT_ERROR = `${EDIT_POPOVER} [data-testid="hyperlink-editor-error"]`
 const EDITOR_LINK = '.docy_editor a'
 
 const DocumentStructure = {
@@ -122,8 +127,8 @@ describe('Hyperlink Preview and Edit Popovers', () => {
       cy.get(`${PREVIEW_POPOVER} button.edit`).click()
 
       cy.get(EDIT_POPOVER).should('be.visible')
-      cy.get(`${EDIT_POPOVER} .text-wrapper input`).should('have.value', LINK_TEXT)
-      cy.get(`${EDIT_POPOVER} .href-wrapper input`).invoke('val').should('include', 'example.com')
+      cy.get(EDIT_TEXT_INPUT).should('have.value', LINK_TEXT)
+      cy.get(EDIT_URL_INPUT).invoke('val').should('include', 'example.com')
     })
 
     it('editing text updates the link text in the editor', () => {
@@ -131,8 +136,8 @@ describe('Hyperlink Preview and Edit Popovers', () => {
       cy.get(`${PREVIEW_POPOVER} button.edit`).click()
       cy.get(EDIT_POPOVER).should('be.visible')
 
-      cy.get(`${EDIT_POPOVER} .text-wrapper input`).clear().type('updated text')
-      cy.get(`${EDIT_POPOVER} button[type="submit"]`).click()
+      cy.get(EDIT_TEXT_INPUT).clear().type('updated text')
+      cy.get(EDIT_SUBMIT).click()
 
       cy.get(EDITOR_LINK).should('contain.text', 'updated text')
     })
@@ -142,8 +147,8 @@ describe('Hyperlink Preview and Edit Popovers', () => {
       cy.get(`${PREVIEW_POPOVER} button.edit`).click()
       cy.get(EDIT_POPOVER).should('be.visible')
 
-      cy.get(`${EDIT_POPOVER} .href-wrapper input`).clear().type('https://updated.com/new')
-      cy.get(`${EDIT_POPOVER} button[type="submit"]`).click()
+      cy.get(EDIT_URL_INPUT).clear().type('https://updated.com/new')
+      cy.get(EDIT_SUBMIT).click()
 
       cy.get(EDITOR_LINK).should('have.attr', 'href').and('include', 'https://updated.com/new')
     })
@@ -153,21 +158,25 @@ describe('Hyperlink Preview and Edit Popovers', () => {
       cy.get(`${PREVIEW_POPOVER} button.edit`).click()
       cy.get(EDIT_POPOVER).should('be.visible')
 
-      cy.get(`${EDIT_POPOVER} .href-wrapper input`).clear().type('not valid')
-      cy.get(`${EDIT_POPOVER} button[type="submit"]`).click()
+      cy.get(EDIT_URL_INPUT).clear().type('not valid')
+      cy.get(EDIT_SUBMIT).click()
 
-      cy.get(`${EDIT_POPOVER} .href-wrapper .error-message`).should('have.class', 'show')
+      cy.get(EDIT_ERROR).should('be.visible')
     })
 
-    it('edit with empty text shows error', () => {
+    // Note: the picker editor treats empty Text as "URL-only edit" — the
+    // anchor's existing text is preserved (no error shown). The previous
+    // "empty text shows error" test asserted behaviour from the old
+    // edit popover and is intentionally retired with the migration.
+    it('clearing text leaves the existing link text intact', () => {
       clickLink()
       cy.get(`${PREVIEW_POPOVER} button.edit`).click()
       cy.get(EDIT_POPOVER).should('be.visible')
 
-      cy.get(`${EDIT_POPOVER} .text-wrapper input`).clear()
-      cy.get(`${EDIT_POPOVER} button[type="submit"]`).click()
+      cy.get(EDIT_TEXT_INPUT).clear()
+      cy.get(EDIT_SUBMIT).click()
 
-      cy.get(`${EDIT_POPOVER} .text-wrapper .error-message`).should('have.class', 'show')
+      cy.get(EDITOR_LINK).should('contain.text', LINK_TEXT)
     })
 
     it('Back button returns to preview popover', () => {
@@ -175,7 +184,7 @@ describe('Hyperlink Preview and Edit Popovers', () => {
       cy.get(`${PREVIEW_POPOVER} button.edit`).click()
       cy.get(EDIT_POPOVER).should('be.visible')
 
-      cy.get(`${EDIT_POPOVER} .back-button`).click()
+      cy.get(EDIT_BACK).click()
 
       cy.get(PREVIEW_POPOVER).should('be.visible')
     })

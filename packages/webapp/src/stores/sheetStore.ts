@@ -45,23 +45,17 @@ export interface SheetDataMap {
     editor: Editor
     nodePos: number
     attrs: HyperlinkAttributes
+    isAllowedUri?: (uri: string) => boolean
   }
-  /**
-   * Mobile link editor sheet payload. `onSubmit` and `validate` are
-   * imperative callbacks supplied by the caller (Tiptap extension or the
-   * preview sheet's "Edit" action) since the editor command chain isn't
-   * something the sheet should know about directly.
-   *
-   * `onBack` is optional: provide it when there's a meaningful previous
-   * step to return to (e.g. the preview sheet's "Edit" action passes a
-   * callback that switches back to `linkPreview`). When provided, the
-   * sheet renders a back arrow in the header and hides the Cancel
-   * button — back implicitly means "leave without applying."
-   */
   linkEditor: {
     mode: 'create' | 'edit'
+    /** Threaded from the extension adapter; mirrors the `linkPreview` payload. No global editor reads. */
+    editor: Editor
     initialHref: string
-    onSubmit: (href: string) => void
+    /** Edit mode: seed the link-text input with the anchor's current text. */
+    initialText?: string
+    /** `text` is set when a suggestion was picked or text was manually edited; undefined = URL-only. */
+    onSubmit: (result: { href: string; text?: string }) => boolean | void
     validate?: (url: string) => boolean
     onBack?: () => void
   }

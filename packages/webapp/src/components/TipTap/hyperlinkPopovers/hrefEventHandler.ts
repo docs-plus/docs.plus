@@ -25,14 +25,14 @@ import PubSub from 'pubsub-js'
  * onClick handlers; use `hrefEventHandler` below as the curried adapter
  * for imperative DOM listeners.
  */
-export const navigateHref = (href: string): void => {
+export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boolean): void => {
   // Defense-in-depth — `parseHTML` strips dangerous schemes on document
   // load and `renderHTML` re-validates on serialize, but a tampered
   // mark could still reach this navigate path via direct `addMark`,
   // collaborative replay, or a downstream HTML transformer. Refuse
   // navigation on `javascript:`, `data:`, `vbscript:`, `file:`, `blob:`
   // before doing anything else.
-  if (!isSafeHref(href)) return
+  if (isAllowedUri ? !isAllowedUri(href) : !isSafeHref(href)) return
 
   // `isSafeHref` accepts scheme-less hrefs (relative paths, fragments,
   // root-relative URLs) by design — see AGENTS.md "Read-vs-write
@@ -103,8 +103,8 @@ export const navigateHref = (href: string): void => {
  * `event.preventDefault()` so the browser doesn't also follow the href.
  */
 export const hrefEventHandler =
-  (href: string) =>
+  (href: string, isAllowedUri?: (uri: string) => boolean) =>
   (event: MouseEvent): void => {
     event.preventDefault()
-    navigateHref(href)
+    navigateHref(href, isAllowedUri)
   }

@@ -2,13 +2,14 @@
 
 import { paragraph, section } from '../../../fixtures/docMaker'
 import { TEST_TITLE } from '../../../support/commands'
+import { ADD_LINK_KEYS } from '../../../support/hyperlinkPicker'
 
 const PARAGRAPH_TEXT = 'First word and last word in this paragraph for edge testing.'
 
-const POPOVER = '.hyperlink-create-popover'
+const POPOVER = '[data-testid="hyperlink-create-popover"]'
 const PREVIEW_POPOVER = '.hyperlink-preview-popover'
-const URL_INPUT = `${POPOVER} input[name="hyperlink-url"]`
-const SUBMIT_BTN = `${POPOVER} button[type="submit"]`
+const URL_INPUT = `${POPOVER} [data-testid="hyperlink-editor-url"]`
+const SUBMIT_BTN = `${POPOVER} [data-testid="hyperlink-editor-submit"]`
 const EDITOR_LINK = '.docy_editor a'
 const PM = '.docy_editor > .tiptap.ProseMirror'
 
@@ -172,6 +173,16 @@ describe('Hyperlink Edge Cases', () => {
       cy.get(SUBMIT_BTN).click()
 
       cy.get(EDITOR_LINK).should('have.attr', 'href').and('include', 'example.com')
+    })
+  })
+
+  describe('picker coexistence', () => {
+    it('paste-URL flow still works with the picker mounted', () => {
+      cy.get(PM).realType('Paste here: ')
+      cy.realPress(ADD_LINK_KEYS)
+      cy.get(POPOVER).find(`[data-testid="hyperlink-editor-url"]`).type('https://paste.test/page')
+      cy.get(`[data-testid="hyperlink-editor-submit"]`).click()
+      cy.get(EDITOR_LINK).should('have.attr', 'href', 'https://paste.test/page')
     })
   })
 
