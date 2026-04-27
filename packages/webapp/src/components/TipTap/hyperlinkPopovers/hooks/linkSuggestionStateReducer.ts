@@ -72,6 +72,5 @@ export function linkSuggestionStateReducer(
 
     case 'HIGHLIGHT_LAST':
       return state.totalRows === 0 ? state : { ...state, highlightIndex: state.totalRows - 1 }
-
   }
 }

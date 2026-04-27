@@ -31,7 +31,9 @@ const baseOpts = (extra?: Partial<any>) => {
       selection: { empty: true },
       schema: {
         text: jest.fn((t: string, marks: any[]) => ({ text: t, marks })),
-        marks: { hyperlink: { create: jest.fn((attrs: unknown) => ({ type: 'hyperlink', attrs })) } }
+        marks: {
+          hyperlink: { create: jest.fn((attrs: unknown) => ({ type: 'hyperlink', attrs })) }
+        }
       }
     }
   }
