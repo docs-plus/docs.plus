@@ -15,7 +15,7 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync,readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline'
