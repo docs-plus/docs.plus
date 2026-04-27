@@ -1,8 +1,7 @@
 import { getUserBookmarks } from '@api'
 import { useChatStore, useStore } from '@stores'
+import { type TBookmarkTab } from '@types'
 import { useCallback, useEffect, useRef, useState } from 'react'
-
-type TBookmarkTab = 'in progress' | 'archive' | 'read'
 
 const PAGE_SIZE = 10
 

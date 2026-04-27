@@ -87,3 +87,6 @@ export type TNotificationSummary = {
 }
 
 export type TTab = 'Unread' | 'Mentions' | 'Read'
+
+// Bookmark tab labels — used by the bookmark panel UI and the chat-bookmark store.
+export type TBookmarkTab = 'in progress' | 'archive' | 'read'

@@ -1,5 +1,6 @@
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useChatStore } from '@stores'
+import { type TBookmarkTab } from '@types'
 
 import { BookmarkHeader } from '../components/BookmarkHeader'
 import { BookmarkItem } from '../components/BookmarkItem'
@@ -7,8 +8,6 @@ import { BookmarkSkeleton } from '../components/BookmarkSkeleton'
 import { EmptyBookmarkState } from '../components/EmptyBookmarkState'
 import { useBookmarkSummary } from '../hooks/useBookmarkSummary'
 import { useInfiniteBookmarks } from '../hooks/useInfiniteBookmarks'
-
-type TBookmarkTab = 'in progress' | 'archive' | 'read'
 
 interface BookmarkPanelProps {
   onClose?: () => void

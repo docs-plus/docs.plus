@@ -55,3 +55,35 @@ export type TSendThreadMsgArgs = Database['public']['Functions']['create_thread_
 
 // Database function types
 export type TFToggleMessageBookmark = Database['public']['Functions']['toggle_message_bookmark']
+
+// Bookmarks RPC
+
+type TUserDetails = {
+  id: string
+  username: string
+  fullname: string
+  avatar_url: string | null
+  avatar_updated_at: string | null
+}
+
+export type TBookmarkWithMessage = {
+  bookmark_id: number
+  bookmark_created_at: string
+  bookmark_updated_at: string
+  bookmark_archived_at: string | null
+  bookmark_marked_at: string | null
+  bookmark_metadata: Record<string, any>
+  message_id: string
+  message_content: string
+  message_html: string
+  message_created_at: string
+  message_user_id: string
+  message_channel_id: string
+  message_type: string
+  user_details: TUserDetails
+  channel_name: string
+  channel_slug: string
+  workspace_id: string
+  workspace_name: string
+  workspace_slug: string
+}

@@ -5,10 +5,14 @@ import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
+import { type TBookmarkWithMessage } from '@types'
 import { formatTimeAgo } from '@utils/formatTime'
+import { buildBookmarkHref } from '@utils/link-helpers'
 import PubSub from 'pubsub-js'
 
 import { usePopoverState } from '../../ui/Popover'
+
+type BookmarkUrlSource = Pick<TBookmarkWithMessage, 'message_id' | 'message_channel_id'>
 
 export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
   const { bookmarkActiveTab, removeBookmark, updateBookmarkStatus, moveBookmarkBetweenTabs } =
@@ -32,16 +36,14 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
     closePopover()
   }
 
-  const handleCopyUrl = (bookmark: any) => {
-    const messageId = bookmark.message_id
-    const channelId = bookmark.message_channel_id
-
-    const newURL = new URL(location.href)
-    newURL.searchParams.set('msg_id', messageId)
-    newURL.searchParams.set('chatroom', channelId)
+  const handleCopyUrl = (bookmark: BookmarkUrlSource) => {
+    const href = buildBookmarkHref({
+      messageId: bookmark.message_id,
+      channelId: bookmark.message_channel_id
+    })
 
     navigator.clipboard
-      .writeText(newURL.toString())
+      .writeText(href)
       .then(() => {
         toast.Success('URL copied to clipboard')
       })

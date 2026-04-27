@@ -1,6 +1,5 @@
+import { type TBookmarkTab } from '@types'
 import { immer } from 'zustand/middleware/immer'
-
-type TBookmarkTab = 'in progress' | 'archive' | 'read'
 
 type TBookmarkTabData = {
   label: TBookmarkTab

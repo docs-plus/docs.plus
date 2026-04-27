@@ -1,4 +1,6 @@
-import { type LinkItem, type LinkMetadata, LinkType } from '@types'
+import type { Editor } from '@tiptap/core'
+import { type LinkItem, type LinkMetadata, LinkType, TIPTAP_NODES } from '@types'
+import slugify from 'slugify'
 
 /**
  * Build the correct href for a link based on its type.
@@ -60,4 +62,30 @@ export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => 
     icon: httpStr(raw.icon) || httpStr(raw.favicon),
     themeColor: str(publisher?.theme_color) || str(raw.themeColor)
   }
+}
+
+/** Deep-link to a chatroom message. Mirrors `BookmarkItem.handleCopyUrl` byte-for-byte. */
+export const buildBookmarkHref = (args: { messageId: string; channelId: string }): string => {
+  const url = new URL(window.location.href)
+  url.searchParams.set('msg_id', args.messageId)
+  url.searchParams.set('chatroom', args.channelId)
+  return url.toString()
+}
+
+/** Deep-link to a heading. Walks the doc top-down accumulating slugs until the target `toc-id` is found; mirrors the legacy `useTocActions.copyLink` logic. */
+export const buildHeadingHref = (editor: Editor, headingId: string): string => {
+  const doc = editor.state.doc
+  const breadcrumb: string[] = []
+
+  for (let i = 0; i < doc.content.childCount; i++) {
+    const child = doc.content.child(i)
+    if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
+    breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
+    if ((child.attrs['toc-id'] as string) === headingId) break
+  }
+
+  const url = new URL(window.location.href)
+  url.searchParams.set('h', breadcrumb.join('>'))
+  url.searchParams.set('id', headingId)
+  return url.toString()
 }

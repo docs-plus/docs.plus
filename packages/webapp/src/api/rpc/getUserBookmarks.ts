@@ -1,4 +1,5 @@
 import { PostgrestResponse } from '@supabase/supabase-js'
+import { type TBookmarkWithMessage } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
 type TGetUserBookmarks = {
@@ -6,36 +7,6 @@ type TGetUserBookmarks = {
   archived?: boolean
   limit?: number
   offset?: number
-}
-
-type TUserDetails = {
-  id: string
-  username: string
-  fullname: string
-  avatar_url: string | null
-  avatar_updated_at: string | null
-}
-
-type TBookmarkWithMessage = {
-  bookmark_id: number
-  bookmark_created_at: string
-  bookmark_updated_at: string
-  bookmark_archived_at: string | null
-  bookmark_marked_at: string | null
-  bookmark_metadata: Record<string, any>
-  message_id: string
-  message_content: string
-  message_html: string
-  message_created_at: string
-  message_user_id: string
-  message_channel_id: string
-  message_type: string
-  user_details: TUserDetails
-  channel_name: string
-  channel_slug: string
-  workspace_id: string
-  workspace_name: string
-  workspace_slug: string
 }
 
 export const getUserBookmarks = async ({

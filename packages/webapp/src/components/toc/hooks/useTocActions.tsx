@@ -5,10 +5,10 @@ import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
 import { copyToClipboard } from '@utils/clipboard'
+import { buildHeadingHref } from '@utils/link-helpers'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
-import slugify from 'slugify'
 
 function DeleteSectionDialog({ headingId }: { headingId: string }) {
   const closeDialog = useStore((state) => state.closeDialog)
@@ -77,27 +77,8 @@ export function useTocActions() {
     async (headingId: string) => {
       if (!headingId || !editor) return
 
-      const doc = editor.state.doc
-      const breadcrumb: string[] = []
-
-      for (let i = 0; i < doc.content.childCount; i++) {
-        const child = doc.content.child(i)
-
-        if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
-
-        const tocId = child.attrs['toc-id'] as string
-        if (tocId === headingId) {
-          breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
-          break
-        }
-        breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
-      }
-
-      const url = new URL(window.location.href)
-      url.searchParams.set('h', breadcrumb.join('>'))
-      url.searchParams.set('id', headingId)
-
-      const success = await copyToClipboard(url.toString())
+      const href = buildHeadingHref(editor, headingId)
+      const success = await copyToClipboard(href)
       if (success) {
         toast.Success('Section link copied to clipboard')
       } else {
