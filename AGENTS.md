@@ -1,58 +1,736 @@
 # AGENTS.md
 
-## Learned User Preferences
+Persistent memory for AI agents working in `docsy`. Preserve these rules unless a maintainer explicitly changes them.
 
-- Use Bun exclusively — never npm/yarn/pnpm (`bun install`, `bun add`, `bun run`, `bunx`)
-- Do not commit unless explicitly asked; short descriptive messages, no AI/Cursor branding or internal doc references. **A Cursor commit hook in this repo auto-injects a `Made-with: Cursor` trailer on every commit** — this conflicts with `commit-review`'s "strip auto-generated trailers" rule and is currently unresolved (visible on every recent commit); do not chase the trailer manually mid-session. **Do not propose cosmetic-whitespace YAML commits** (e.g. column-aligning `key: value` env blocks in `.github/workflows/*.yml`) — `lint-staged` runs `prettier --write` on staged YAML and Prettier does not preserve trailing-aligned whitespace, so the hook silently undoes the diff and the commit lands empty. **`scripts/hooks/commit-msg.sh` does NOT accept the Conventional Commits `!` breaking-change marker** — the regex is `^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,100}` with no `!` slot, so `feat!: …` / `feat(scope)!: …` are rejected with "Invalid commit message format". Use the body footer **`BREAKING CHANGE: <description>`** to flag breaks instead, or widen the regex to `(\(.+\))?!?: ` if/when the team wants the standard `!` syntax. The other allowed shape is the deploy trigger `(build): front|back|front back`.
-- Production code quality: DRY, KISS, YAGNI, SOLID, industry-standard; avoid overengineering and overthinking; export names must match file names; fix typos in identifiers on every refactor
-- TDD for fixes/features; schema-first test design; fix behavior when the spec is wrong — don't weaken tests to match broken behavior
-- Always run `bun run build` after major refactors to verify type-safety before claiming completion
-- Before large migrations, audit all config/doc/rule paths (.cursor/rules, Notes/, AGENTS.md) for stale references to removed concepts
-- Notes/ folder is local-only (.gitignore); never commit local notes or plans; **the root `/docs/` folder is also gitignored** (subdirs: `brainstorms/`, `engineering/`, `plans/`, `skills-output/`, `superpowers/` — agent-authored design specs / implementation plans / brainstorm RFCs / code-janitor reports live there as local working artifacts; reference them by path during a session but never `git add` them); `.cursor/hooks/state/continual-learning.json` and `continual-learning-index.json` are local hook churn — keep out of commits (restore if staged). **Committed** agent context for regressions: **`AGENTS.md`** (e.g. **Mobile document pad (iOS Safari)** under Learned Workspace Facts) — mirror important findings there; do not rely only on the continual-learning plugin JSON
-- Keep debug/info loggers on editor core paths; don't strip them for "cleanup"
-- Cypress tests: split by concern with README for scope; kebab-case dirs, `it()` not `test()`; consolidate overlapping tests; **ProseMirror click handlers** (`handleDOMEvents.click`) are NOT triggered by Cypress `realClick()` / `.click()` — dispatch native `new MouseEvent('click', { bubbles: true, clientX, clientY })` with `getBoundingClientRect()` coordinates; same pattern for floating-toolbar `keydown` (Escape dismissal)
-- Theme/UI color consistency is first-class — all surfaces (including third-party pickers) must follow design tokens; on DaisyUI-backed surfaces prefer **DaisyUI + Tailwind** over bespoke nested hover/active stacks that fight parent controls
-- Full-doc paste (⌘A→⌘V) is a critical scenario to validate
-- User sometimes prefers commands/instructions to run locally rather than the agent auto-installing
-- **Cleanup / review skills (`.cursor/skills/code-janitor`, `.cursor/skills/tech-writer`).** Cleanup is **autonomous by default** — auto-applies edits, one terse line per file; `--review` is opt-in only when explicitly asked. **Never gate at every step**; only stop when a decision is genuinely ambiguous. Reports are terse (next-step outline, not detailed plan / multi-paragraph commentary) — verbose output burns tokens. The pipeline groups files by intent then runs **Simplification → Abstraction → Readability → Documentation → Production-Readiness Sweep**, ending with **one supervisor** granting an **industry-standard production-ready flag**. Real senior/HoE-level refactors are in scope under the gated-approval mechanism — **rename exported symbols, fix typos in identifiers / i18n keys, split overgrown files, move files, bump dep versions** — only true safety rules (changing runtime behavior for handled inputs, editing generated files, etc.) are absolutely forbidden. **All prose work routes through the `tech-writer` skill** (senior-technical-writer voice for README / CHANGELOG / report / post-mortem / design doc / JSDoc prose — terse, why-not-what, no overengineering). Skills **never create a new branch or worktree** — they operate in the current directory and branch.
-- **JSDoc on the public surface of published extensions ships into the `.d.ts` bundle** (tsup emits comments to dts) — verbose preambles, multi-line per-option blocks, and restated descriptions bloat the consumer install. Keep doc-comments terse on `packages/extension-*/src/` exports: file headers 1–2 lines, per-symbol blocks 1–3 lines, point at `README.md` for option semantics. Preserve only the _why_ (collab races, intentional anti-patterns, security boundaries). Reference benchmark: the `extension-hyperlink` v2.0.0 JSDoc trim cut DTS from **14.81 KB → 13.24 KB (-10.6%)** with zero source-byte change.
+## Agent Operating Rules
 
-## Monorepo toolchain
+### Package Manager
 
-- **Bun-only** for install/run (`bun install`, `bun run`, `bunx`); see [docs/engineering/toolchain.md](docs/engineering/toolchain.md) for phases, CI parity, and version policy.
-- **Quality gates (consolidated 2026-04):** **One naming rule, no exceptions — bare name reports, `:fix` suffix mutates.** Same convention as `cargo check` / `cargo fmt --check`, `gofmt -d` / `gofmt -w`, `black --check` / `black`. Aggregates: **`bun run check`** = lint + format + styles + typecheck (the report gate, used by `pre-push` and the PR template); **`bun run check:fix`** = `lint:fix` + `styles:fix` + `format:fix` in that order (eslint/stylelint first, prettier last so it reformats whatever they just wrote). Primitives: `lint`/`lint:fix` (ESLint), `format`/`format:fix` (Prettier — note **`format` now reports**, breaking the JS-Prettier folklore of `format = write`; `format:fix` writes), `styles`/`styles:fix` (Stylelint — dropped the `lint:` prefix because Stylelint is a separate tool, not a flavor of ESLint), `typecheck` (report-only, no fix counterpart — types can't be auto-fixed). CI splits lint and tsc into parallel jobs — the lint job inlines `bun run lint && bun run format && bun run styles` directly in the workflow yaml (CI-specific composition belongs there, not in `package.json`); the typecheck job calls `bun run typecheck`. **Deleted in this consolidation:** `check:lint`, `check:format`, `check:types`, `check:full`, `check:static` (alias-of-alias and overlapping aggregates), `lint:packages` (root `eslint .` already lints every workspace file), and the asymmetric `fix` / `format:check` / `lint:styles` names (renamed to fit the rule). Do **not** reintroduce alias-of-alias chains, asymmetric verb directions, or tool-confused namespaces (e.g. don't put Stylelint back under `lint:`).
-- **Shared devtool versions** (ESLint, TypeScript, Prettier, Stylelint, etc.) are owned at the **repo root** — avoid drifting copies in leaf packages; root **`catalog:`** in `package.json` centralizes pins where used — workspaces reference matching deps as **`\"package\": \"catalog:\"`**.
-- **Jest / library unit tests:** `jest`, `babel-jest`, `jest-environment-jsdom`, `@types/jest`, `@babel/preset-typescript` — **repo root `devDependencies` only** (single version pin). Library packages use a **local** `jest.config.cjs` (inline config is fine); no per-package Jest stack in `package.json`. **`@docs.plus/webapp`** keeps **`next/jest`** for the app suite; see `.cursor/rules/monorepo-jest.mdc`.
-- **Tests:** root `test:all` → `scripts/run-tests.sh`; Jest (unit) + Cypress (E2E); parallel via `CYPRESS_PARALLEL` env.
-- **Unit test order:** `run-tests.sh` runs `@docs.plus/extension-indent` Jest (`jest.config.cjs` in that package) then `@docs.plus/webapp` Jest; webapp `test` uses `jest --passWithNoTests` so an empty or temporarily absent app Jest suite does not fail CI/local runs.
-- **Dependency updates:** `npm-check-updates` and per-package `update:packages` scripts are removed; `scripts/reinstall-packages.sh` / `reinstall:all-packages` are gone. Use **`bun update`** from the repo root, or **`bun run update:all-packages`** (`scripts/update-packages.sh`), then **`bun install`** at root if the lockfile or install tree needs healing. Do **not** run **parallel `bun update`** in multiple `packages/*` directories — shared `bun.lock` / hoisted installs can race and fail with **`EEXIST`**.
-- **ESLint config architecture** (`packages/eslint-config`, ESM, `"type": "module"`): **3-layer composition** — `index.js` (base: TS + Prettier + `simple-import-sort`, **no React**) → `next.js` (extends base + React + hooks, used by webapp/admin-dashboard) → `library.js` (extends base + `explicit-module-boundary-types` + `no-console: warn`, used by all `extension-*` packages). All consumers are 2-line ESM imports — **no `createRequire` bridges**. React plugins load **only** in `next.js`, never in library or backend configs. Dead dep `eslint-plugin-prettier` removed (only `eslint-config-prettier` is used). `simple-import-sort` added to root `catalog:` for central version pin.
-- **Shared library config — single source of truth at the monorepo root.** Three patterns at the monorepo root. `tsconfig.base.json` and `tsup.base.ts` apply to **all 5** `extension-*` packages; the `LICENSE`/`prepack` pattern is wired only on the **publishable** ones (currently `extension-hyperlink` only — copy the same wiring when a second package is prepared for publish).
-  - **`tsconfig.base.json`** at root holds shared `compilerOptions` (target ES2020, module ESNext, `moduleResolution: "bundler"` to support `exports` fields, strict, etc.). Each package's `tsconfig.json` is a 5-line `extends` + per-package `outDir`/`rootDir`/`include`/`exclude`. Do **not** re-inline shared compiler options. **`exclude` must list colocated test paths** (`src/**/__tests__/**`, `src/**/*.test.ts`) — otherwise tsc expands the computed source root above `src` and trips **`TS6059` "rootDir setting must be explicitly set"** even when `rootDir: "src"` is already declared.
-  - **`tsup.base.ts`** at root exports `defineTiptapExtensionConfig(overrides?)` factory (named for honest scope — the factory hardcodes `@tiptap/core`/`@tiptap/pm` as externals, so it's **not** generic; verb form `define*` mirrors tsup's own `defineConfig` convention). ESM+CJS, dts, prod-only sourcemaps/minify, and `esbuildOptions.pure = ['console.log','console.debug']` in prod (preserves `console.warn`/`console.error` to match the eslint allowlist; do **not** use `drop: ['console']` which strips warn/error too). Per-package `tsup.config.ts` is a 4-line call; pass overrides for genuine per-package needs (e.g. `extension-hyperlink` adds an `onSuccess` to copy `styles.css` into `dist`). **Behavior change at adoption:** `extension-hypermultimedia`'s `src/utils/floating-toolbar.ts` `Logger` class wraps `console.warn`/`console.error` and was previously fully stripped by `drop: ['console']`; under the new factory those calls now reach consumer consoles in production. This restores the author's intent — flag it in the next `extension-hypermultimedia` CHANGELOG entry. The other three silent packages (`extension-indent`, `extension-inline-code`, `extension-placeholder`) produce **byte-identical** dist trees (no console calls in source).
-  - **Factory override semantics — shallow shadow, not deep merge.** `defineTiptapExtensionConfig({...overrides})` spreads overrides into the base `Options` object; nested function-valued options (`esbuildOptions`, `dts`, `external`) are **fully replaced** by an override, not merged. Today only `extension-hyperlink` uses an override (`onSuccess`, which the base doesn't define) so this is safe. If a future caller overrides `esbuildOptions`, they must call the base's `pure` policy themselves or `console.log`/`debug` will silently survive into the production bundle. JSDoc on the factory documents this.
-  - **`LICENSE`** at root is the single committed copy. Each **publishable** package adds `/LICENSE` to its `.gitignore` and a `scripts/prepack.ts` (wired via `"prepack": "bun run scripts/prepack.ts"` in `package.json`) that copies the root `LICENSE` into the package directory before pack. **Symlinks fail** (Bun pack silently drops them from the tarball) and **hard links fail** (git stores them as two independent files, so contributors who clone get drifting copies). The `prepack` lifecycle (not `prepublishOnly`) is the right hook because both `bun publish` AND `bun pm pack` honor it — dry-run packs still produce a realistic tarball.
-  - **What we deliberately do NOT share:** `README.md`, `CHANGELOG.md`, package source (inherently per-package); the `eslint.config.js` shim (already 3 lines); `package.json` fields (synthesizing them fights semver tooling, registries, and contributor expectations).
-- **`@docs.plus/extension-*` npm publishing contract** (scope **`@docs.plus`** is org-owned — publish workspace extensions there): `exports.require.types` must point to **`./dist/index.d.cts`** (not `.d.ts`) because tsup emits `.d.cts` for CJS; `sideEffects: ['**/*.css']` (not bare `false`) so bundlers don't tree-shake imported `styles.css`; populate **`homepage`**, **`bugs`**, and discovery-oriented **`keywords`** (e.g. `autolink`, `rich-text-editor`, `floating-ui`, `url-validation`) for npm package page quality. **`publishConfig.access: "public"`** is required on every scoped package or `bun publish` defaults to private and 402-Forbidden's. **Semver discipline:** adding any re-exported symbol to the package root (via `src/index.ts` / `src/utils/index.ts`) is a **minor** bump, not a patch — a patch is bug-fix-only. Example: `normalizeHref` / `normalizeLinkifyHref` / `LinkifyMatchLike` forced **`4.3.0`** (not `4.2.1`) because they added public API surface; the `CHANGELOG.md` `[Unreleased]` section must be resolved to the correct version **before** `bun run build` + `bun pm pack` (inspection) + `bun publish` (never `npm pack` / `npm publish` — the `catalog:` peerDeps require Bun's resolver; see "Publishing packages to npm" in `.cursor/rules/bun-monorepo.mdc`). **`prepublishOnly`** runs `scripts/preflight.ts` (asserts `bun/*` user-agent + dist artifacts present + no literal `"catalog:"` leak in built bundles) so an accidental `npm publish` fails closed.
-- **Release routine (publish → announce).** **Authoritative policy: [RELEASE_POLICY.md](RELEASE_POLICY.md)** — versioning doctrine, cutover phase, lockstep activation trigger, `bun run release:family` script spec, CHANGELOG style guide, soak/promotion criteria, CI guard, per-package readiness checklist. The bullet below summarizes the per-package mechanics still in force during Phase 1 (cutover); when Phase 2 lockstep activates, the family-release script supersedes the per-package OTP loop. Publishing happens **on the maintainer's laptop** (npm 2FA-on-write means `NPM_TOKEN` deliberately stays out of CI): `bun publish --tag <next|latest> --otp <6-digit>`. **Tag policy:** major bumps go to **`@next`** for a soak window before the maintainer promotes via `npm dist-tag add <pkg>@<ver> latest`; patches/minors of stable lines go straight to `@latest`. The **GitHub Release** is the announcement gate, separate from the npm publish — create it after publish via `gh release create '<pkg>@<version>' --title '<pkg>@<version>' --notes "$(awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<pkg>/CHANGELOG.md)" [--prerelease]` (state-machine `awk` slice that extracts a single Keep-a-Changelog section; **do not** use the range form `/^## \[<ver>\]/,/^## \[/{ ... }` — both ends of the range pattern match the same start line and the slice terminates immediately). The release tag **must** follow `<package-name>@<semver>` (e.g. `@docs.plus/extension-hyperlink@4.3.0`) so the announcer workflow's regex parses package + version cleanly; `v<semver>` is a fallback for any future repo-wide release. **Discord channels are split two-ways**: push commits go to the existing channel via **`secrets.DISCORD_WEBHOOK`** (driven by `.github/workflows/discord-activity.yml`); release announcements go to a dedicated **`#releases`** channel via **`secrets.DISCORD_RELEASE_WEBHOOK`** (driven by `.github/workflows/discord-release.yml`, listening to `release.{published,prereleased}`). Naming convention for future channels: **`DISCORD_<qualifier>_WEBHOOK`** with the unqualified `DISCORD_WEBHOOK` reserved for the original push channel. The release embed color-codes by stability (green `#22c55e` stable / orange `#f97316` pre-release) and the install hint switches between `bun add <pkg>@<version>` (stable) and `bun add <pkg>@next` (pre-release); both forms are produced from the single `is_pre` branch in the workflow, do **not** hard-code per-package paths there. **Extension-family version doctrine — strict lockstep, Tiptap-style** (decided after the `extension-hyperlink` `4.3.0` mispublish was rolled back to `2.0.0`): all 5 publishable `@docs.plus/extension-*` packages share the same major, which **tracks the docs.plus product line** — `1.x` = the 2023 product (still on npm `@latest` for `extension-hyperlink` as `1.5.2`), `2.x` = **docs.plus alpha v2** (the three-year return). The extensions are **leaf packages** (no inter-extension deps; `webapp`/`hocuspocus.server` consume them via `workspace:*`), so coordination is a **policy choice**, not a graph-forced one. **Phased cutover (current state):** during the cutover phase each extension can ship its first `2.0.0` to `@next` independently — `extension-hyperlink` ships `2.0.0` first (rolled the internal `4.x`/`5.0` work into one public `[2.0.0]` CHANGELOG entry; the briefly-published `4.3.0` is being unpublished within npm's 72-hour window — `npm unpublish <pkg>@<ver>` only works **<72h after publish AND no public dependents**, otherwise use `npm deprecate`); the other four (`extension-hypermultimedia 1.4.0`, `-indent 0.2.0`, `-inline-code 0.1.1`, `-placeholder 0.1.0`) converge to `2.0.0` over coming release windows, each carrying its own `[2.0.0]` CHANGELOG entry and (for the four laggards) the `LICENSE`/`prepack.ts`/`scripts/preflight.ts` scaffolding currently only wired on `extension-hyperlink`. **Lockstep activates at a deliberate switch-flip event** (Trigger D — an explicit `AGENTS.md` / `RELEASE_POLICY.md` commit saying "lockstep on"), not auto-derived from version alignment. From that moment, coordinated minor/patch releases of the family ship together via the **implemented** `bun run release:family` runbook at **`scripts/release-family.ts`** (sequential `bun publish` per package — OTP-per-package because 2FA-on-write cannot be parallelized — followed by an **explicit** `git push origin <tag1> <tag2> ...` of only this run's tags and per-package `gh release create`); preflight refuses non-aligned versions. **Single root release entry point:** the only release/publish script in root `package.json` is **`"release:family": "bun scripts/release-family.ts"`** — the prior `release` / `release:major|minor|patch` / `version` / `version:major|minor|patch` chain (which called `bunx changeset` despite no `.changeset/` dir or `@changesets/cli` dep) and the parallel `publish` script (`bun run --filter '*' npm publish --tag latest`, which bypassed the per-package OTP rhythm and the `@next` soak window) were all **removed**; do not reintroduce them. **Script invariants** (worth preserving on edits): (1) all subprocess calls go through a `spawnSync`-based helper (no shell) so the OTP never lands on `ps aux` / shell history — **never** swap to `execSync`/`execFileSync` with shell strings; (2) GitHub release creation is **idempotent across resumes** — iterates `[...published, ...skipped]` and guards each with `gh release view <tag>` so a mid-stream interruption can be re-run without manual cleanup; (3) tag push is an **explicit list**, never `git push --tags` (which would leak unrelated local tags from experiments / rebases). CLI flags: **`--dry-run`**, **`--tag <next|latest>`**, **`--allow-noop`**, **`--generate-noop-changelogs`**, **`--help`**. The 8 preflight checks (lockstep, CHANGELOG entries, build freshness via `dist/` vs `src/` mtime walk, per-package `scripts/preflight.ts`, clean working tree + HEAD matches `origin/main`, `npm whoami` + `git user.email`, tag collision local + remote, no-op detection via `git diff <prevTag>..HEAD -- packages/<pkg>/src/`) all run **before** any OTP prompt and aggregate errors so the maintainer fixes everything in one pass. **CHANGELOG style guide** (set by the `extension-hyperlink@2.0.0` rewrite, applies to every publishable package): themed sections (Highlights → Breaking → Added → Changed → Fixed → Security → Removed → Documentation → Internal) **per major**, a code-diff **migration guide** with a one-shot rename script for the mechanical changes, **honest disclosure** of mispublishes/unpublishes, and a brief "pre-X.0 development history" narrative when public versions diverge from internal milestones. **Never** auto-generate entries from commit subject lines (Lerna `--conventional-commits` defaults to `fix: thing` lines and undercuts this bar — Lerna/Changesets/Release-Please are not adopted; the manual editorial process is the policy).
-- Stay on ESLint 9.x / TypeScript 5.x until a dedicated migration — ESLint 10 and TS 6 have breaking changes.
-- **Standalone Bun script type-check gotchas** (`scripts/*.ts`): the root `tsconfig.json` does **not** include `scripts/`, so the IDE's TS server reports false-positive `Cannot find name 'node:fs'` / missing `import.meta.dir` lints on standalone Bun scripts — these are **noise, not real errors**, do not chase them. Practical smoke check is **`bun build scripts/<file>.ts --target=bun --outfile=/tmp/out.js`** (bundles cleanly only if syntax/imports are sound). Avoid **`bunx tsc --noEmit <file>`** as an ad-hoc check — it errors with **`TS5112: Cannot use 'tsconfig.json' when '--noEmit' is specified`** when a `tsconfig.json` exists in cwd; pass `--ignoreConfig` (or just use `bun build`) to bypass.
+- Use Bun only: `bun install`, `bun add`, `bun add -d`, `bun run`, `bunx`, `bun publish`, `bun pm pack`.
+- Never use npm, yarn, pnpm, `npx`, `npm publish`, or package-lock/yarn-lock flows.
+- The user sometimes prefers local command instructions over agent-run installs; ask or provide the command when dependency changes are not clearly part of the requested task.
+- Use root workspace commands:
+  - `bun run --filter @docs.plus/webapp dev`
+  - `bun run --filter '*' build`
 
-## Learned Workspace Facts
+### Git And Commits
 
-- docs.plus / docsy — Bun monorepo (packages/\*); main app @docs.plus/webapp (Next.js Pages Router), backend @docs.plus/hocuspocus; editor code under packages/webapp/src/components/TipTap/ (extensions, nodes, plugins); `src/lib/` removed — all shared utilities in `src/utils/`, feature-local helpers stay colocated; server-side `TiptapTransformer.toYdoc` / nested→flat migration must use an extension set that covers **every** node/mark in stored docs (e.g. **TaskList** / **TaskItem** from `@tiptap/extension-list` aligned with the webapp), not StarterKit alone — missing types fail encode, not flatten logic; **batch migrations must fail closed** (do not overwrite stored Yjs for a doc when transform/encode fails — keep prior bytes and surface the doc id); **run migration CLI** via `bun run migrate:nested-to-flat` from `packages/hocuspocus.server` after root `bun install` — invoking the script path alone from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`
-- Editor uses flat heading schema (`heading block*`) with decoration-based sections; `attrs['toc-id']` renders as `data-toc-id`; shared heading utilities (computeSection, moveSection, canMapDecorations, transactionAffectsNodeType, matchSections) in TipTap/extensions/shared/; **section reorder is TOC-only** (`useTocDrag` / `moveHeading` + `moveSection`) — there is no in-editor heading drag handle extension
-- **HeadingScale (mandatory spec):** `extensions/heading-scale/heading-scale.ts` — **dynamic** heading **font size by rank within a section**, **not** fixed per HTML level or a Google-style ladder. **Each H1 starts a new section**; within a section, **distinct** heading levels are sorted and sizes are **interpolated evenly between 20pt (max) and 12pt (min)**; same level twice in one section → **same visual size**; **one distinct level in a section → 20pt**. Title (first top-level H1) is included as part of section 1. **Decorations only** (`--hd-size`, `--hd-rank`, `--hd-total`); never write sizes into the document. Plugin state `{ fingerprint, decorations }` with fingerprint = top-level heading **levels in order** (e.g. `1,2,4,1,3`); **full rebuild when fingerprint changes** or `y-sync$` meta; else **map** the decoration set. **Do not** replace this with fixed per-level pt maps — that breaks the agreed behavior.
-- Editor perf: jank is React/Zustand re-renders, not ProseMirror; never put UI flags in `useEditor` deps; `shouldRerenderOnTransaction: false` on collab; decoration plugins should avoid full rebuilds on every keystroke — use `transactionAffectsNodeType(tr, 'heading')` **or** a cheaper structural check (HeadingScale uses **heading-level fingerprint**, not only `transactionAffectsNodeType`); placeholder uses `@docs.plus/extension-placeholder` (O(1) via state.init/apply) — do NOT replace with TipTap's built-in (O(N) doc.descendants)
-- Zustand: monolithic 7-slice store; all `useStore` calls must use leaf selectors — never `(state) => state` or `(state) => state.settings`. ProseMirror: `doc.nodeAt(pos)` can throw RangeError for out-of-range — guards must not assume null-only; `transaction.before` is the pre-step document `Node`, not `EditorState` — never call `PluginKey.getState(transaction.before)`; for fold-driven UI (e.g. TOC) snapshot heading-fold plugin state from `editor.state` and diff across transactions
-- TipTap pad-only SCSS lives under `packages/webapp/src/styles/editor/` and loads via `styles.scss` → `components/_index.scss` → `@use '../editor'`; do not add parallel `.scss` next to TipTap extensions (single source of truth). **Pad chrome:** PadTitle `border-b` for header↔toolbar; `tiptap__toolbar` uses `border-b` only (no `border-t` against PadTitle); pad sheet top border from `_blocks.scss` for toolbar↔editor; mobile `.m_mobile .tiptap__toolbar` in `_blocks.scss` for floating bar. **Scrollbars:** shared `:root` tokens in `globals.scss`; `scrollbar-custom scrollbar-thin` on `.editorWrapper` and TOC `ScrollArea` — one system, avoid ad-hoc scrollbar styling on the pad column
-- **Mobile bottom sheets:** canonical mobile sheet system is **`packages/webapp/src/components/BottomSheet.tsx`** (wraps **`react-modal-sheet`**) registered through **`useSheetStore`** (`packages/webapp/src/stores/sheetStore.ts`) with **`SheetType`** + **`SheetDataMap`** discriminated union. New mobile UI surfaces (e.g. **`linkPreview`** / **`linkEditor`**) add a `SheetType` variant + a typed `SheetDataMap` entry, then a React component subscribes via `useSheetStore`. Imperative-DOM popovers from Tiptap extensions are wired to React sheets through the extension's `popovers` config gated by **`settings.deviceDetect.isMobile`** in `TipTap.tsx` (e.g. `createHyperlink: isMobile ? createHyperlinkMobile : createHyperlinkPopover`); do **not** rebuild parallel imperative-DOM bottom sheets next to the React+Zustand system. **Keyboard-dismiss-on-sheet-open is a per-sheet decision at the entry point — never globalize it in `useSheetStore` / `BottomSheet`.** The chatroom composer, `linkEditor`, and `emojiPicker` from the message composer all _want_ the keyboard up; the `linkPreview` sheet and the `chatroom` open paths (`CHAT_OPEN` / `CHAT_COMMENT` in `services/eventsHub.ts`) want it down. The reliable dismiss recipe is **not** a single synchronous `editor.view.dom.blur()` — it loses a focus race against ProseMirror's queued `editor.chain().focus(pos).setTextSelection(pos).run()` (e.g. the click handler in `extension-hyperlink/clickHandler.ts` runs that chain immediately before invoking the popover). Two proven patterns: (a) **`useClipboard.ts` style** — collapse the selection, then **`setTimeout(50)` → `editor.view.dom.blur()`** so the queued focus chain settles before the blur; (b) **`dismissDocumentKeyboardForSheet`** helper in `eventsHub.ts` for chat — `editor.setEditable(false)` (Tiptap 3.20's `setEditable(false)` synchronously calls `view.updateState`, which flips `contenteditable` to `false` in the same tick — so a separate `view.dom.setAttribute('contenteditable','false')` is **not** load-bearing for iOS timing) **plus** `editor.view.dom.blur()` (the missing piece — `contenteditable="false"` alone does not release the iOS soft keyboard while focus persists on the host element). Always early-return when `isKeyboardOpen` is false so non-mobile / read-mode opens stay no-op.
-- **Mobile document pad (iOS Safari)** — `packages/webapp` (`html.m_mobile` in `styles/_mobile.scss`): `html`/`body` **`position: fixed`**; `.mobileLayoutRoot` tracks **`window.visualViewport`** via **`syncVisualViewportToCssVars`** (`utils/visualViewportCss.ts`) and **`AppProviders`** `visualViewport` **resize + scroll** (rAF-coalesced). **Do not** skip CSS sync when height deltas are small — after a large keyboard resize, WebKit can emit further sub-threshold steps; stale **`--visual-viewport-height`** leaves a dead band above Safari’s accessory bar. **`useVisualViewportCssSyncOnFocus`** (`hooks/useVisualViewportCssSyncOnFocus.ts`): **`focusin`** (capture) on `.mobileLayoutRoot .tiptap__editor.docy_editor` (pad + mobile history) re-runs **`syncVisualViewportToCssVars`** when a final **`resize`** is missing. **Do not** use **`transform: translateZ(0)`** on `.editor.editorWrapper` or **`contain` / `will-change: height`** on `.mobileLayoutRoot` — WebKit often mis-paints the contenteditable **caret** (e.g. over the pad header). **In-pad scroll targets:** **`scrollElementInMobilePadEditor`** (`utils/scrollMobilePadEditor.ts`) for headings/TOC/deep links; avoid raw **`Element.scrollIntoView`** on doc nodes — it scrolls the **layout viewport** and fights fixed chrome + CSS vars. **Virtual keyboard / store:** **`innerHeight - visualViewport.height` can stay 0** while the keyboard is up after cycles; use **`applyVirtualKeyboardToStore`** in **`utils/virtualKeyboardMetrics.ts`** (peak `visualViewport.height` when closed, **`documentElement.clientHeight - vvh`**, **`scrollY + vvh`** when **`window.scrollY > 0`**). **`useVirtualKeyboard`** and **`nudgeVirtualKeyboardOpenFromVisualViewport`** both call that path; listen to vv **scroll** and **resize**. **`useEditableDocControl`:** never **`isEditable = isKeyboardOpen`** on every effect — keyboard opens before `resize`; only clear **`isEditable` on keyboard close** (true → false). The 500ms DOM sync must **not** set **`contenteditable: false`** when **`settings.editor.isEditable`** is still true. **Read-mode `contenteditable` leak (iOS auto-scroll on link tap):** the keyboard-close effect updates **only the store** — without a follow-up reconcile, `editor.setEditable(false)` and the DOM **`contenteditable="false"`** attribute never propagate, so the editor view stays editable forever after the first edit-mode session. iOS Safari then **natively focuses** that lingering `contenteditable=true` host on the user's next tap inside it (notably on a hyperlink that opens a **`linkPreview`** sheet) and runs its **"scroll focused element into view"** routine — visible as the viewport jolting and the focus being lost a moment later when the sheet handler blurs. Fix is a reconcile effect in `useEditableDocControl` that mirrors **`isEditable → false`** to **both** `editor.setEditable(false)` **and** the `view.dom.contenteditable` attribute (guards: **only on the false direction**, **only when `editor.isEditable` is currently true** — leaves entry-edit-mode call sites and the legacy 500ms grace untouched). **Killing the JS `.focus()` call from `extension-hyperlink/clickHandler.ts` is not enough on its own** — the user's tap itself is a second focus trigger that no JS-side fix can intercept once `contenteditable` is `true`; the only durable fix is to keep the attribute honest with read-mode state. **`AppProviders`:** if **`.mobileLayoutRoot`**, **`visualViewport.offsetTop > 0`**, and **`window.scrollY > 0`**, **`window.scrollTo(0, 0)`** — layout scroll breaks fixed-shell **`getBoundingClientRect`** for ProseMirror. **Edit entry:** **`EditFAB`** and double-tap share **`enableAndFocus()`** (`hooks/useCaretPosition.ts`); FAB uses **`onTouchEnd`** + suppress synthetic **`click`**. **`enableAndFocus`:** **`editor.commands.focus()`** only — **do not** chain TipTap **`scrollIntoView()`** with **`ensureCaretVisible` / `scrollCaretIntoView`** (double nudge). Mobile caret scroll: **`behavior: 'auto'`**; **`ensureCaretVisible`:** 2× rAF + **one** ~300ms retry
-- **Backend HTTP features go to `@docs.plus/hocuspocus.server` (Hono), not webapp `pages/api/`.** New endpoints live at `packages/hocuspocus.server/src/modules/<feature>/` with **`domain/`** (pure logic + pipeline stages), **`http/`** (controller, router, zod schema), **`infra/`** (Redis cache, external SDK adapters), and **`__tests__/`** (unit + integration). A **`module.ts`** exports **`init({ deps }): { router }`** — the server mounts via `app.route('/api/<path>', module.init({ ... }).router)` in `src/index.ts` with no top-level side effects in the module. The link-metadata feature was migrated out of `webapp/src/pages/api/metadata.ts` to establish this; do **not** reintroduce new server endpoints under `webapp/src/pages/api/`. **Pipeline vocabulary:** use **"stage"** consistently throughout the link-metadata module (cache → handlers → oembed → htmlScrape → fallback) — never "tier" (leftover from an earlier draft and treated as an editor slip in audits). Stages share a timeout via **`STAGE_TIMEOUT_MS`** in `domain/types.ts`; per-host handlers live under **`domain/stages/handlers/`** (`github`, `reddit`, `wikipedia`, `index.ts` registry). **User-Agent constant** lives in `domain/types.ts` — `htmlScrape` appends **`facebookexternalhit/1.1`** for anti-bot allowlist evasion, but **`reddit`** uses the **plain `DocsPlusBot/1.0`** (Reddit penalizes browser-mimicking UAs); keep these intentionally different. Test files mirror source filenames 1:1 (`htmlScrape.ts` → `htmlScrape.test.ts`).
-- Production: docker-compose.prod.yml with Traefik; dev compose backend services need `context: .` (repo root) to match Dockerfile.bun. **Hocuspocus image:** `migration-extensions.ts` imports `@docs.plus/extension-hypermultimedia` and `@docs.plus/extension-inline-code` at runtime (`main` → `dist/`); root `.dockerignore` excludes `**/dist`, so those packages must be **built inside the image** — copying only `package.json` stubs is not enough (other `@docs.plus/extension-*` may stay stubs for lockfile/workspace only). **Prod WebSocket issues:** verify `hocuspocus` containers are healthy and read `docker logs` before chasing Traefik; crash loops often explain edge 404s or no backend — Traefik's default "no router matched" response is a tell-tale **`HTTP/2 404` + `text/plain` + `content-length: 19`** ("404 page not found"), distinct from a backend 404. **Traefik access log filter trap:** `accessLog.filters` are combined with **AND** in `scripts/traefik/traefik.yml`; `statusCodes: 400-599` plus `retryAttempts: true` plus `minDuration: 1s` hides almost every fast 5xx — keep `statusCodes: 400-599` **alone** (don't add the other two) so real errors are logged regardless of duration/retry. **Two-URL split:** `SERVER_RESTAPI_URL` (e.g. `http://rest-api:4000/api`) is the **internal Docker-network** base SSR uses; `NEXT_PUBLIC_RESTAPI_URL` (e.g. `https://prodback.docs.plus/api`) is the **public** base shipped to the browser — verify both with `docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production exec webapp env | grep -E 'SERVER_RESTAPI_URL|NEXT_PUBLIC_RESTAPI'`. **`DocumentFetchError` "Network error while fetching document"** in `packages/webapp/src/utils/fetchDocument.ts` only fires when `fetch()` **throws** (DNS/connection refused/reset/abort/10s timeout) — **not** for 4xx/5xx HTTP responses; the most common cause is a **startup race** where SSR boots and calls REST before `rest-api` is accepting traffic, not a wrong URL. **Inside-container probe pattern** for SSR connectivity (no public DNS / TLS in the loop): `docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production exec webapp bun -e "fetch('http://rest-api:4000/health').then(r=>r.text().then(t=>console.log(r.status,t)))"` — works because the `webapp` container has the same Docker network and env as SSR. **Per-service log env vars** for live debugging via `.env.production`: `LOG_LEVEL` / `HTTP_LOG_LEVEL` everywhere; **`REST_LOG_LEVEL`** matters most because REST route logging defaults to **error-only** in `logger.ts` (set to `debug` to see route-level requests); `WS_LOG_LEVEL` (hocuspocus-server), `WORKER_LOG_LEVEL` (hocuspocus-worker), `HOCUSPOCUS_LOGGER=true` only when debugging collab noise (compose default is `false`). **Prisma `P3009` (failed migration)** in REST logs is **independent** of WebSocket / fetch failures — entrypoint says "continuing to start service" on migrate failure; resolve via Prisma's official failed-migration flow before next deploy, but it does not block traffic.
-- Supabase client architecture (Pages Router): browser singleton at `utils/supabase/index.ts`, factory in `component.ts`, GSSP in `server-props.ts`, API route in `api.ts`, URL resolver in `url.ts`; all browser code imports `supabaseClient` singleton; `types/supabase.ts` for generated DB types
-- **Standalone extension dev workflow:** after modifying any `packages/extension-*` source, **`bunx tsup`** in that package to rebuild `dist/`, then **clear `.next/cache`** (or remove `.next` entirely) and **restart the dev server** — Next.js HMR does not detect changes in Bun-workspace-symlinked packages; the browser also needs a hard-refresh. Forgetting the rebuild is the most common cause of "my change didn't take effect". **Extension playground (`bun --hot ./test/playground/server.ts`) + `bun run build` (tsup `clean: true`) race:** when tsup wipes `dist/` during rebuild, the live `--hot` server can get stuck serving **500** for `dist/styles.css` and never recover — **restart the playground** after a rebuild.
-- Standalone extension packages (`extension-hyperlink`, `-hypermultimedia`, `-indent`, `-inline-code`, `-placeholder`) share identical structure: TypeScript + tsup build + `@tiptap/core` peer dep; GFM markdown via `@tiptap/markdown`, paste at `extensions/markdown-paste/`, import/export in `utils/markdown.ts` + `toolbar/desktop/DocumentSettingsPanel`; `sanitizeJsonContent` on paste and import paths. **The webapp couples to `extension-hyperlink` through `packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts`** — `HyperlinkWithMarkdown = Hyperlink.extend({ markdownTokenName: 'link', parseMarkdown, renderMarkdown })` where `parseMarkdown` calls `helpers.applyMark('hyperlink', …)`. **The `hyperlink` mark name is locked** by this wiring **and** by every stored Yjs doc in production — renaming the schema mark (e.g. to `link` for drop-in compat with `@tiptap/extension-link`) breaks both the webapp's markdown parser and every existing document; the published package will never be a drop-in replacement for `@tiptap/extension-link`. Migration cookbooks document the path **into** `@docs.plus/extension-hyperlink` from `@tiptap/extension-link`, not a mark rename. **`extension-hyperlink` / `previewHyperlink.ts`:** **same-document** targets **update the URL** (hash/route) for in-app navigation — **not** treated as external opens. **`extension-hyperlink` click handling:** ProseMirror has **two** click detection paths — DOM `click` event (bubble phase, `handleDOMEvents.click`) **and** a `mouseup`-based `handleSingleClick` (tracks mousedown pos, fires on mouseup before the DOM `click`). The `handleSingleClick` path can reach plugin `handleClick` props and trigger `window.open`. To prevent link navigation in editable mode, `clickHandler.ts` uses **capture-phase `mousedown`** with `preventDefault + stopPropagation` (blocks ProseMirror's mousedown tracking → no `handleSingleClick`) **and** capture-phase `click` with `preventDefault` only (blocks browser `target="_blank"` navigation but lets the event bubble to `handleDOMEvents.click` for popover display). **`showPopover` invocation order:** call `options.popover(...)` **before** running `editor.chain().focus(clickPos).setTextSelection(pos).run()` — and **skip the focus call entirely** when the popover returns **`null`**. The `null` return is the host's opt-out signal (e.g. mobile sheet path); calling `.focus()` on a contenteditable when the host doesn't want a desktop floating-toolbar triggers iOS Safari's scroll-into-view and is harmful. Desktop popover path still gets focus + selection set **after** the popover returns content (so subsequent in-popover edit/remove actions operate on the right mark). **`iosCaretFixPlugin` link opt-out (webapp):** the caret-fix's `requestAnimationFrame` selection dispatch is for plain-text taps; it must **early-return on link targets** in both `touchstart` (also clears `lastTouchCoords`) and `click` — link taps are owned by the hyperlink extension, and a stray selection dispatch on a still-editable contenteditable re-triggers iOS auto-scroll. The `target` mark attribute uses **`rendered: false`** so existing Yjs docs with `target: "_blank"` don't render it on the DOM `<a>` tag (intentional product policy — do **not** flip this on a "schema round-trip" cleanup; the v2 audit re-confirmed it after initially proposing removal). The **`image`** mark attribute is also **`rendered: false`** as of v2.0.0 (was previously emitting non-standard `<a image="…">` and breaking HTML validity / downstream sanitizers); preview metadata stays mark-only and is refetched on demand. **Clean-room E2E harness** (release gate): `packages/extension-hyperlink/test/playground/` — **`Bun.serve` with HTML import** (`server.ts`, ~15 lines, no Vite / bundler config) + vanilla Tiptap + StarterKit. Bun 1.2+ natively bundles the HTML's `<script>` and `<link>` tags (TS + CSS) on demand, which replaced the prior Vite setup; `vite` is not in the root `catalog:` or any workspace. The playground loads the **built `dist/` + `styles.css` via the published exports map** — i.e. exercises what npm consumers install, not monorepo source. Cypress specs at `cypress/e2e/` cover `create`, `preview-edit`, `autolink`, `xss-guards`, `styling`, `custom-popover`, `scroll-stickiness`, and `special-schemes` (`_debug.cy.ts` is a scratch/debug spec — exclude from release counts). Run via `bun run test` in the package (pretest builds, `start-server-and-test` boots the **Bun playground** — `bun --hot ./test/playground/server.ts` — on `127.0.0.1:5173`, Cypress runs, teardown); append `?popover=custom` to swap in BYO factories for custom-popover tests. Support file is **single-file `cypress/support/e2e.ts`** — splitting it into `commands.ts` made Cypress 15's JIT loader silently skip imports; don't re-split. **Per-spec ES module isolation:** every `cypress/e2e/*.cy.ts` file MUST end with **`export {}`** — the package `tsconfig.json` covers `src/**` only, so Cypress specs are type-checked by a project-level tsconfig that **shares scope across all spec files**. Without the marker, top-level constants (`POPOVER`, `INPUT`, `WRAPPER`, `PREVIEW`, `EDIT`, …) collide between specs as TS duplicate-declaration errors. Don't strip the footer during "cleanup" even when only `describe()` blocks remain — a future spec can still collide on the same names. Editor bridge is **`window._editor` + `window._hyperlink`** (full module namespace) — tests use structural checks (`typeof re.test === 'function'`) instead of `instanceof RegExp` because Cypress's iframe realm breaks cross-realm `instanceof`. **v2.0.0 single XSS gate (`isSafeHref` + `buildHrefGate`):** `parseHTML` uses **`getAttrs` + `isSafeHref(href)`** (exported from package root via `src/utils/index.ts` → `src/index.ts`); `clickHandler.ts` and the preview popover `window.open` fallback also call **`isSafeHref`** directly. The internal **`buildHrefGate(options)`** helper (in `hyperlink.ts`) composes `isSafeHref` with the user-supplied **`isAllowedUri(href, { defaultValidate, defaultProtocol })`** option and is wired at every write boundary (`setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover form submit, `parseHTML`). **`DANGEROUS_SCHEME_RE` stays internal to `validateURL.ts`** — call sites must import `isSafeHref`, not the regex (do not regress to direct regex tests at boundaries; that is what the v2 audit closed). `editHyperlinkCommand` in `helpers/editHyperlink.ts` must return a **composable Tiptap command** that reads positions/marks off `tr.doc` — an earlier implementation dispatched a nested `editor.chain()...run()` and produced **"Applying a mismatched transaction"** when composed with `extendMarkRange`. **v2.0.0 command split (canon parity with `@tiptap/extension-link`):** **`setHyperlink({ href, target?, title?, image? })`** is **pure** — writes the mark only, returns `boolean`, fully chainable; `setHyperlink()` no-args **silently no-ops** (returns `false`) — **never** call it without `{ href }`. The popover-launching UI command is now **`openCreateHyperlinkPopover()`** and **`Mod-k`** is rebound to it. New canon options: **`defaultProtocol`** (threaded through `normalizeHref`), **`isAllowedUri(href, ctx)`** (composed with `isSafeHref` via `buildHrefGate`), **`shouldAutoLink(url)`**, **`enableClickSelection`**, **`exitable`** (arrow-right / Mod-Enter exits the mark via storedMarks dance). New commands: **`toggleHyperlink`** plus aliases **`setLink`** / **`unsetLink`** / **`toggleLink`** for drop-in compat with `@tiptap/extension-link` call shapes (the `link` mark name is still **`hyperlink`** — see Yjs / `markdown-extensions.ts` coupling above; aliases are command names only, not a schema rename). **`pasteHandler.ts`** routes through `editor.commands.setHyperlink({ href })` (not `setMark` directly) so it picks up `PREVENT_AUTOLINK_META` + `buildHrefGate` for free — **do not** revert to `setMark` on paste; the `setHyperlink` write boundary is the contract. **Webapp call-site contract** (already migrated): `MobileBubbleMenu.tsx`, `HyperlinkButton.tsx`, `EditorToolbar.tsx`, `ToolbarMobile.tsx` all call `editor.chain().focus().openCreateHyperlinkPopover().run()` (not `setHyperlink()` no-args, which v2 silently no-ops); `previewHyperlink.ts` no longer passes dead `view` / `linkCoords` args to `editHyperlinkPopover` (the popover destructured them but never used them — the type signature is canonical). **Unified href write-boundary**: every path that stores a hyperlink mark routes through `normalizeHref(raw)` or `normalizeLinkifyHref(match)` in `utils/normalizeHref.ts` — create/edit popovers, `setHyperlink` command, markdown input rule, autolink plugin, paste handler, and paste rule all produce the same canonical `href` for the same input (bare `google.com` → `https://google.com`; explicit schemes preserved; **bare email** → `mailto:<email>` via a strict full-string linkify match — prevents `https://user@example.com` storing the `user@` as HTTP basic-auth credentials; **bare E.164 phone** — `+`-prefix, **8–15 digits** per RFC 3966, formatting (space/dash/dot/parens) accepted on input and stripped from the canonical href, gated by **`utils/phone.ts::isBarePhone`** — → `tel:+<digits>`). Read-side (click handler + preview popover) prefers stored `attrs.href` over DOM `link.href` so relative hrefs don't resolve against `document.baseURI`. Phone path is wired in three places: `normalizeHref` (popover/command/markdown writes), `autolink.ts` (whitespace-boundary autolink emits `type: 'phone'` link entries with the canonical `tel:` href so `normalizeLinkifyHref` returns it verbatim), and `validateURL` (early-return `true` for bare phones — linkifyjs has no phone matcher, and the autolink "removed link if the edited text no longer looks like a link" branch needs `testUrl` to also accept the phone shape so backspacing a digit drops the mark). **Async metadata mark-attr writes (critical):** when an async `fetchMetadata` call resolves and you need to persist the resolved title/image back into the hyperlink mark, **never** dispatch `editor.chain().setTextSelection(nodePos).extendMarkRange('hyperlink').updateAttributes('hyperlink', {...}).run()` — that chain _moves the selection_ across the link, the extension's floating toolbar treats the selection change as "user navigated away", and `observeDetachment` immediately destroys the popover (the loading skeleton vanishes before the resolved metadata can render; the user has to click the link again to see it). Instead, compute the mark range with **`getMarkRange(resolvedPos, hyperlinkType)`** from `@tiptap/core` and dispatch a plain transaction that updates attributes (`tr.removeMark` + `tr.addMark` with the new attrs over the same range, **`setMeta('preventUpdate', true)`** if needed) **without touching `tr.selection`**. **Preview popover failure mode:** failed metadata fetches must degrade silently — render `createMetadataContent(null, href)` so the title falls back to the raw `href` and the link stays clickable; **do not** render an "unavailable" / warning chrome (it's a UX regression for a _preview_, especially for unreachable / bot-blocked URLs which are common). **Preview layout policy:** desktop preview popover is **title-only**, single row, ellipsis truncation inside the 200px max-width (no description, no subtitle); mobile **`LinkPreviewSheet`** has more room — show **title + description + href** with **no truncation / no `line-clamp`** (use `break-words` for wrap, render the href line only when `data?.title && data.title !== href`). Do not reintroduce `line-clamp-2` on the mobile description — this was an explicit user correction. `validateURL` additionally rejects web-scheme URLs with no plausible host (e.g. `https://googlecom`) via a **TLD-dot / `localhost` / IPv4 / IPv6** check (IPv6 detected by "host contains `:`" — `new URL()` strips brackets but leaves the colons that no real hostname can carry). Standard web schemes (`http`/`https`/`ftp`/`ftps`) are the only ones gated; non-standard schemes (mailto/tel/whatsapp/…) are validated by the `specialUrls.ts` catalog instead. **Read-vs-write separation in `isSafeHyperlinkHref`**: the safety gate is for **rendering**, not for **input validation** — it accepts **scheme-less** hrefs (bare `example.com`, root-relative `/path`, fragment-only `#section`, dot-relative `./foo`) because no XSS vector can lack a scheme; write-side normalization (popovers, `setHyperlink`, markdown rule, autolink, paste) is what canonicalizes bare domains to `https://…` via `normalizeHref` / `normalizeLinkifyHref`. Pinned by `src/utils/__tests__/isSafeHyperlinkHref.test.ts` — do **not** re-tighten `isSafeHyperlinkHref` to require a scheme, that conflates the two concerns and breaks relative hrefs that may legitimately reach the renderer (e.g. through migrations / external authoring tools). **Special-scheme catalog (`utils/specialUrls.ts`)** covers 50+ app schemes (whatsapp:, tg:, github:, vscode:, slack:, zoommtg:, …) plus a `DOMAIN_MAPPINGS` table for short links (`wa.me`, `t.me`, `discord.gg`, `meet.google.com`, …) with subdomain-suffix match (`api.github.com` → `github.com`) and `www.` strip; catalog source: `https://github.com/bhagyas/app-urls`. `getSpecialUrlInfo` returns a brand-neutral **`{ type: SpecialUrlType, title, category }`** — the extension intentionally ships **no icon catalog** so the published bundle stays small (per-platform `Fa*`/`Si*` icons were removed as dead code, then the unified `SpecialUrlIcon` semantic union was removed too — favicons cover web URLs and consumers map their own SVGs anyway). The discriminator is exported as a **string-literal union** (`SpecialUrlType`) so consumers get exhaustive autocomplete + typo protection at compile time without paying any runtime bytes. Consumers own the **`type` → icon** mapping; webapp's lookup lives in `packages/webapp/src/components/TipTap/hyperlinkPopovers/previewShared.ts::TYPE_TO_ICON` (typed `Partial<Record<SpecialUrlType, IconRenderer>>` so domain-catalog types like `meet`/web `github` can be intentionally absent — the favicon path always wins for `https://` URLs). **Naming convention**: lowercase single-word for single-word brands (`whatsapp`, `figma`), kebab-case for multi-word (`facetime-audio`, `apple-tv`, `app-store`); mirror the brand spelling, not the URL scheme abbreviation (`tg:` → `'telegram'`, `fb:` → `'facebook'`). **`utils/index.ts` is the auditable public utility surface — explicit named re-exports (no `export *`)**; module-internal helpers (`getURLScheme` (renamed from `getUrlScheme` in v2.0.0 for acronym consistency), `isBarePhone`, `normalizeLinkifyHref`, `Link`/`Title` icons) reachable from siblings but **not** through the package barrel — adding a new symbol here is a **minor** semver bump (see Bun monorepo rule). **v2.0.0 internal modules:** **`src/constants.ts`** holds **`HYPERLINK_MARK_NAME`** + **`PREVENT_AUTOLINK_META`** as internal constants (consumed by siblings via `../constants`; deliberately **not** re-exported from the barrel — they kill magic strings without committing to a public API). **`src/utils/findLinks.ts`** was extracted from `plugins/autolink.ts` so its pure linkify-result filtering is unit-testable in isolation (Bun-test in `utils/__tests__/findLinks.test.ts`). **v2.0.0 renames** (with deprecated aliases only where the symbol was public): `getUrlScheme` → `getURLScheme`, `isValidSpecialScheme` → `isRecognizedSpecialScheme`, `showPopover` → `openHyperlinkToolbar`, `TRAILING_PUNCT_RE` → `TRAILING_PUNCTUATION_RE`, `stripTrailingPunct` → `stripTrailingPunctuation`, `hrefTitle` → `hrefAnchor`, `preventAutolink` (local var) → `shouldSkipAutolink`. Only **`EditHyperlinkModalOptions`** was a public type — kept as a **`@deprecated`** alias for **`EditHyperlinkPopoverOptions`** for one major (drop in 3.x). **`floatingToolbar.ts` scroll-stickiness invariant**: the toolbar is `position: fixed`, so popovers anchored to a virtual reference (`coordinates.getBoundingClientRect`) **must recompute live viewport coords on every call** — never snapshot at popover-open. A frozen rect makes `computePosition` keep writing the same `top`/`left` while the underlying anchor scrolls away. DOM-anchored popovers should pass `referenceElement: <a>` directly (the browser recomputes `getBoundingClientRect` for free); selection-anchored popovers must pass a closure that calls `view.coordsAtPos(from)` on every invocation. Edit popover anchors to the live `<a>` (not the `linkCoords` snapshot from `clickHandler.ts`); create popover passes a recomputing closure over captured ProseMirror `from`/`to` positions. Regression-pinned by `cypress/e2e/scroll-stickiness.cy.ts` (preview / edit / create all assert popover Δtop matches anchor Δtop after a window scroll). **`floatingToolbar.ts` singleton contract**: module-level `currentToolbar`; `createFloatingToolbar(...)` destroys the previous toolbar on entry. Only **`hideCurrentToolbar`** / **`updateCurrentToolbarPosition`** (plus `FloatingToolbarInstance` / `FloatingToolbarOptions` types) are re-exported from `src/index.ts`; **`createFloatingToolbar`** and **`DEFAULT_OFFSET`** stay module-private to prevent consumers from creating orphan toolbars that bypass the singleton-replacement contract — both are still pinned by `cypress/e2e/custom-popover.cy.ts`. Wired into `scripts/run-tests.sh` unit block (after `extension-indent`, before webapp Jest). **Unit tests run on Bun's native runner** (`bun test src` in `package.json`; `src/utils/__tests__/*.test.ts` import from `bun:test`) — distinct from the Jest stack used by `extension-indent` and webapp; `pretest: bun run build` so the Cypress E2E always runs against a fresh `dist/`. **Async metadata mark-attr writes (critical):** when an async `fetchMetadata` call resolves and you need to persist the resolved title/image back into the hyperlink mark, **never** dispatch `editor.chain().setTextSelection(nodePos).extendMarkRange('hyperlink').updateAttributes('hyperlink', {...}).run()` — that chain _moves the selection_ across the link, the extension's floating toolbar treats the selection change as "user navigated away", and `observeDetachment` immediately destroys the popover (the loading skeleton vanishes before the resolved metadata can render; the user has to click the link again to see it). Instead, compute the mark range with **`getMarkRange(resolvedPos, hyperlinkType)`** from `@tiptap/core` and dispatch a plain transaction that updates attributes (`tr.removeMark` + `tr.addMark` with the new attrs over the same range, **`setMeta('preventUpdate', true)`** if needed) **without touching `tr.selection`**. **Preview popover failure mode:** failed metadata fetches must degrade silently — render `createMetadataContent(null, href)` so the title falls back to the raw `href` and the link stays clickable; **do not** render an "unavailable" / warning chrome (it's a UX regression for a _preview_, especially for unreachable / bot-blocked URLs which are common). **Preview layout policy:** desktop preview popover is **title-only**, single row, ellipsis truncation inside the 200px max-width (no description, no subtitle); mobile **`LinkPreviewSheet`** has more room — show **title + description + href** with **no truncation / no `line-clamp`** (use `break-words` for wrap, render the href line only when `data?.title && data.title !== href`). Do not reintroduce `line-clamp-2` on the mobile description — this was an explicit user correction. **`@docs.plus/extension-indent`:** keep pad (`TipTap.tsx`) and chat composer (`useTiptapEditor`) on the same `Indent.configure({ indentChars: '\t' })` (or widen together). Gating: **`allowedIndentContexts`** — allowlist of **`{ textblock, parent }`** pairs (TipTap `type.name`) where literal indent/outdent runs; default body + blockquote **paragraphs** only; **`[]`** disables literal indent. Tab / Shift-Tab: sink/lift list (`listItem` / `taskItem` when in schema) → table cell nav when table extension is present → literal indent/outdent; extension **`priority` 25** + delegation. Pad/chat default is **paragraph** under **doc** / **blockquote** only; other textblocks need explicit `allowedIndentContexts` rules. Cypress: `packages/webapp/cypress/e2e/editor/indent/`; Jest: `packages/extension-indent`.
-- **Document version history (Hocuspocus):** Stateless `history.list` / `history.watch`; server **unicasts** `{ msg: 'history.response', type, response }` on the requesting connection (not `broadcastStateless`). **Prisma always uses the collab room’s document id** (Hocuspocus `document.name`); if the client sends a different `documentId`, respond `history_failed`. Current `history.list` returns **`{ versions, latestSnapshot }`** for one RTT; client still accepts a legacy plain `HistoryItem[]`. **`applyHistoryItemToEditor`** (`pages/history/applyHistoryToEditor.ts`) is the single TipTap hydration path. **`loadingHistory` clears only after a successful apply** (not merely after the network response); **`useHistoryEditorApplyWhenReady`** applies when the editor mounts after data arrives; while **`pendingWatchVersion` is set** (in-flight `history.watch`), the apply-when-ready hook must **not** re-apply stale `activeHistory`, and **late `history.list` must not** reset pending or hydrate from `latestSnapshot` over that watch. On **`history_failed`**, clear **`pendingWatchVersion`** so the next watch isn’t dropped. **Shareable revision URLs:** same pathname/query + **`#history?version=<n>`** with **`<n>` = `HistoryItem.version`**; **`pages/history/historyShareUrl.ts`** — **`parseHistoryHash`**, **`buildHistoryShareUrl`**, **`replaceHistoryHashVersion`**. **History UI / URL:** with **no** `#history?version=`, the sidebar should treat the **latest** version as the active selection; **each entry** to the history page (including after editor ↔ history navigation) must **re-sync** sidebar selection from the **current hash + store** — do not show a **stale** prior selection.
-- TOC + heading chrome: `components/toc/` with `tocClasses.ts` kept in sync with `styles/components/_tableOfContents.scss`; `--color-docsy` = `var(--color-primary)` in both `@theme` and `:root` (globals.scss), auto-tracks DaisyUI light/dark/HC; heading widgets in `TipTap/extensions/HeadingActions/plugins/` (`hoverChatPlugin`, `selectionChatPlugin`) styled by `styles/components/_heading-actions.scss` (shared `$ha-hit-size` with plugins, DRY `$ha-group-has-unread` `:has()` selector for unread tray visibility); `_unread-badge.scss` only styles `[data-unread-count]` on `.ha-chat-btn` + notification bell — no `.toc__chat-trigger`/`.ha-group` rules; TOC uses React `UnreadBadge` only, `UNREAD_SYNC` clears `data-unread-count` on `.toc__chat-trigger`; active chat icon uses `toc__chat-icon--active` class with `fill: none` (Lucide icons are stroke-based); when nested `ul.toc__children` lives under the parent `li`, hide folded subtrees with `&.closed > .toc__children { display: none }` — fold class still comes from editor state, not CSS alone. **TOC data path:** `useToc.ts` throttles heading-driven TOC rebuilds (`lodash/throttle`); flat heading list → recursive `NestedTocNode` tree via `buildNestedToc` at `TocDesktop`/`TocMobile` roots (`utils.ts`); `useHeadingScrollSpy.ts` debounces scroll/active-heading work (`lodash/debounce`)
-- Heading fold crinkle: widget decoration driven by `data-fold-phase` attr for CSS animation; unique `Decoration.widget` key per phase (`fold-${id}-folding`/`-unfolding`/`-${id}`) forces ProseMirror remount so animation fires each toggle; width uses `margin-left/right: calc(-1 * var(--tiptap-inline-pad-end))` to span full sheet; SCSS variables `$crinkle-fold-duration`/`$crinkle-easing` for timing (no CSS custom properties); `Decoration.node` on heading-section removed — animations live on the widget itself; strip count uses `MIN_FOLD_STRIPS` / `MAX_FOLD_STRIPS` / `CONTENT_HEIGHT_PER_STRIP` in `heading-fold-plugin.ts` — if `MIN_FOLD_STRIPS === MAX_FOLD_STRIPS`, strip count is fixed regardless of content height
+- Do not commit unless the user explicitly asks.
+- Commit-review context flow: find the earliest modified or created file timestamp, inspect parent Cursor sessions from that time onward, group files by intent, then write simple Conventional Commit messages.
+- Use short descriptive commit messages. Do not add AI/Cursor branding or internal doc references.
+- A Cursor commit hook currently injects a `Made-with: Cursor` trailer on every commit. This conflicts with `commit-review`'s trailer-stripping rule; do not chase it manually mid-session.
+- Do not propose cosmetic whitespace-only YAML commits. `lint-staged` runs `prettier --write` on staged YAML, and Prettier removes trailing alignment, often leaving an empty commit.
+- `scripts/hooks/commit-msg.sh` does not accept the Conventional Commits `!` marker. Use:
+  - Subject: `feat(scope): message`
+  - Body footer: `BREAKING CHANGE: description`
+  - Deploy trigger: `(build): front`, `(build): back`, or `(build): front back`
+- If the team wants `feat!:` later, widen the hook regex to `(\(.+\))?!?:`.
+
+### Code Quality
+
+- Keep production code DRY, KISS, YAGNI, SOLID, and industry-standard. Avoid overengineering.
+- Export names must match file names. Fix typos in identifiers during refactors.
+- Feature folders use one central type module: `types.ts` or `types/index.ts`. Do not scatter feature-owned `type` / `interface` declarations across `hooks/`, `commands/`, `utils/`, `stores/`, or `components/`.
+- Keep feature layers separate and navigable: `index.ts` -> `types.ts` -> `hooks/` / `commands/` / `utils/` / `stores/` / `components/`.
+- Treat performance and memory leaks as part of production readiness, not follow-up work. Audit Tiptap/ProseMirror changes for re-render storms, unsubscribed listeners, and detached views.
+- Any `editor.on(...)` or `getDefaultController().subscribe(...)` call must return and call its unsubscribe on unmount unless it is intentionally module-scoped and guarded.
+- Keep debug/info loggers on editor core paths. Do not strip them during cleanup.
+
+### Testing And Verification
+
+- Use TDD for fixes and features.
+- Design tests from the schema/spec first. If the spec is wrong, fix behavior; do not weaken tests to match broken behavior.
+- Run `bun run build` after major refactors before claiming completion.
+- Validate full-document paste (`⌘A` -> `⌘V`) on editor changes that can affect paste or document transforms.
+- Cypress conventions:
+  - Split tests by concern and include a README for scope.
+  - Use kebab-case directories.
+  - Use `it()`, not `test()`.
+  - Consolidate overlapping tests.
+  - ProseMirror `handleDOMEvents.click` is not triggered by Cypress `realClick()` / `.click()`. Dispatch a native `MouseEvent('click', { bubbles: true, clientX, clientY })` using `getBoundingClientRect()` coordinates.
+  - Use the same native-event pattern for floating-toolbar `keydown` Escape dismissal.
+
+### Local-Only Files
+
+- `Notes/` is local-only. Never commit local notes or plans.
+- Root `/docs/` is also gitignored. Agent-authored design specs, implementation plans, brainstorm RFCs, and code-janitor reports live there during a session but must not be committed. Current subdirs include `brainstorms/`, `engineering/`, `plans/`, `skills-output/`, and `superpowers/`.
+- `.cursor/hooks/state/continual-learning.json` and `continual-learning-index.json` are local hook churn. Keep them out of commits; restore them if staged.
+- Store durable regression context in `AGENTS.md`, not only in continual-learning plugin JSON.
+- Before large migrations, audit config/doc/rule paths for stale references: `.cursor/rules`, `Notes/`, `docs/`, and `AGENTS.md`.
+
+### Skills And Prose
+
+- Cleanup/review skills are autonomous by default. Do not gate every step; stop only when a decision is genuinely ambiguous.
+- `--review` is opt-in. Default cleanup applies edits and prints one terse line per file.
+- Reports are terse next-step outlines, not detailed plans.
+- Real senior-level refactors are in scope under the gated-approval mechanism: exported symbol renames, typo fixes, file moves, file splits, and dependency bumps.
+- True safety rules remain absolute: do not change runtime behavior for handled inputs, edit generated files, or commit directly.
+- All prose work routes through `.cursor/skills/tech-writer`: README, CHANGELOG, reports, post-mortems, design docs, PR descriptions, and JSDoc/docstrings.
+- Skills never create branches or worktrees. They operate in the current directory and branch.
+
+### Documentation And Comments
+
+- Keep JSDoc terse. Public extension JSDoc ships into `.d.ts` bundles.
+- For `packages/extension-*/src/` exports:
+  - File headers: 1-2 lines.
+  - Symbol docs: 1-3 lines.
+  - Link to `README.md` for option semantics.
+  - Preserve only why: collab races, intentional anti-patterns, security boundaries.
+- The same minimum-JSDoc rule applies to `packages/webapp/src/**`.
+- Do not write multi-paragraph preambles, restated parameter lists, or obvious comments such as `// Increment counter`.
+- Benchmark: trimming `extension-hyperlink` v2.0.0 JSDoc cut DTS from 14.81 KB to 13.24 KB (-10.6%) without source-byte changes.
+
+### UI And Theme
+
+- Theme/UI color consistency is first-class. Every surface, including third-party pickers, must follow design tokens.
+- On DaisyUI-backed surfaces, prefer DaisyUI + Tailwind over bespoke nested hover/active stacks that fight parent controls.
+
+## Monorepo Toolchain
+
+### Workspace
+
+- `docs.plus` / `docsy` is a Bun monorepo with workspaces under `packages/*`.
+- Main app: `@docs.plus/webapp` (Next.js Pages Router).
+- Backend: `@docs.plus/hocuspocus` / `@docs.plus/hocuspocus.server`.
+- Editor code lives under `packages/webapp/src/components/TipTap/`.
+- Shared webapp utilities live in `packages/webapp/src/utils/`; `src/lib/` was removed. Keep feature-local helpers colocated.
+
+### Quality Gates
+
+- One naming rule: bare script names report, `:fix` suffix mutates.
+- Aggregates:
+  - `bun run check` = lint + format + styles + typecheck. This is the report gate used by `pre-push` and the PR template.
+  - `bun run check:fix` = `lint:fix` + `styles:fix` + `format:fix`.
+- Primitives:
+  - `lint` / `lint:fix` = ESLint.
+  - `format` / `format:fix` = Prettier. `format` reports only.
+  - `styles` / `styles:fix` = Stylelint.
+  - `typecheck` = report-only.
+- CI splits lint and tsc into parallel jobs. The lint job inlines `bun run lint && bun run format && bun run styles`; the typecheck job runs `bun run typecheck`.
+- Deleted names stay deleted: `check:lint`, `check:format`, `check:types`, `check:full`, `check:static`, `lint:packages`, `fix`, `format:check`, `lint:styles`.
+- Do not reintroduce alias chains, asymmetric verb directions, or tool-confused namespaces.
+
+### Dependencies
+
+- Root `package.json` owns shared devtool versions: ESLint, TypeScript, Prettier, Stylelint, Jest, Babel-Jest, and related tooling.
+- Root `catalog:` centralizes pins where used. Workspaces reference matching deps as `"package": "catalog:"`.
+- Toolchain policy details live in `docs/engineering/toolchain.md`; use it for phases, CI parity, and version policy.
+- Do not duplicate Jest/Babel dev dependencies in package workspaces unless there is an exceptional documented reason.
+- `@tanstack/react-query` is root-cataloged at v5 for webapp and admin-dashboard. Use object syntax; mutation pending state is `isPending`, while query `isLoading` remains valid.
+- Stay on ESLint 9.x and TypeScript 5.x until a dedicated migration. ESLint 10 and TS 6 have breaking changes.
+- Dependency update flow:
+  - Use `bun update` at the repo root, or `bun run update:all-packages`.
+  - Run `bun install` at root if the lockfile or install tree needs healing.
+  - Do not run parallel `bun update` in multiple package directories; shared `bun.lock` and hoisted installs can race with `EEXIST`.
+- Removed tools/scripts stay removed: `npm-check-updates`, per-package `update:packages`, `scripts/reinstall-packages.sh`, and `reinstall:all-packages`.
+
+### Tests
+
+- Root `test:all` runs `scripts/run-tests.sh`.
+- Unit + E2E stack: Jest and Cypress. `CYPRESS_PARALLEL` enables Cypress parallelism.
+- Unit order in `run-tests.sh`:
+  1. `@docs.plus/extension-indent` Jest via its local `jest.config.cjs`.
+  2. `@docs.plus/webapp` Jest.
+- Webapp `test` uses `jest --passWithNoTests` so an empty or temporarily absent app suite does not fail CI/local runs.
+- `@docs.plus/webapp` keeps `next/jest` in `jest.config.js`.
+- Library packages that need Jest use a local `jest.config.cjs`. Do not add package-local Jest stacks to `package.json`.
+
+### ESLint Config
+
+- `packages/eslint-config` is ESM with `"type": "module"`.
+- Three-layer config:
+  - `index.js`: base TypeScript + Prettier + `simple-import-sort`; no React.
+  - `next.js`: base + React + hooks; used by webapp/admin-dashboard.
+  - `library.js`: base + `explicit-module-boundary-types` + `no-console: warn`; used by `extension-*` packages.
+- Consumers use 2-line ESM imports. Do not add `createRequire` bridges.
+- React plugins load only in `next.js`, never in library or backend configs.
+- `eslint-plugin-prettier` is removed. Only `eslint-config-prettier` is used.
+
+### Shared Library Config
+
+- Keep root-level shared config as the single source of truth.
+- `tsconfig.base.json` applies to all `extension-*` packages. Package `tsconfig.json` files only declare local `outDir`, `rootDir`, `include`, and `exclude`.
+- Package `exclude` must list colocated test paths: `src/**/__tests__/**`, `src/**/*.test.ts`. Otherwise tsc can expand the computed source root above `src` and trip `TS6059`.
+- `tsup.base.ts` exports `defineTiptapExtensionConfig(overrides?)`.
+  - The factory is intentionally Tiptap-specific. It hardcodes `@tiptap/core` and `@tiptap/pm` externals.
+  - Build shape: ESM + CJS, dts, production sourcemaps/minify, and `esbuildOptions.pure = ['console.log', 'console.debug']` in production.
+  - Do not use `drop: ['console']`; it strips `console.warn` and `console.error`.
+  - Overrides are shallow. If a caller overrides `esbuildOptions`, it must preserve the base pure policy manually.
+- `extension-hypermultimedia` intentionally preserves `console.warn` / `console.error` from its `Logger` wrapper under the shared tsup factory. Note this in its next CHANGELOG entry.
+- Root `LICENSE` is the single committed license.
+  - Each publishable package adds `/LICENSE` to package `.gitignore`.
+  - Each publishable package wires `scripts/prepack.ts` through `"prepack": "bun run scripts/prepack.ts"`.
+  - `prepack` copies the root `LICENSE` before `bun publish` or `bun pm pack`.
+  - Symlinks fail because Bun pack drops them. Hard links fail because git stores independent copies.
+- Do not centralize package-specific files: `README.md`, `CHANGELOG.md`, package source, 3-line `eslint.config.js` shims, or `package.json` fields.
+
+### Docker
+
+- Use one Docker base tag everywhere: `oven/bun:1-slim`.
+- Do not mix `1-alpine`, `1-slim`, or hardcoded patch tags.
+- Do not copy `node_modules` between Docker stages. Bun uses symlinks into a virtual store; copied installs can break module resolution.
+- Any stage that runs `next build`, extension builds, or config that requires deps must run `bun install --frozen-lockfile`.
+- Copy only `package.json`, `bun.lock`, and the workspace tree between stages.
+
+### Standalone Bun Scripts
+
+- Root `tsconfig.json` does not include `scripts/`. IDE lint errors such as missing `node:fs` or `import.meta.dir` in `scripts/*.ts` are usually noise.
+- Smoke-check standalone Bun scripts with:
+
+```bash
+bun build scripts/<file>.ts --target=bun --outfile=/tmp/out.js
+```
+
+- Avoid ad-hoc `bunx tsc --noEmit <file>` unless passing `--ignoreConfig`; otherwise `TS5112` can fire when `tsconfig.json` exists.
+
+## Publishing And Releases
+
+### Extension Package Contract
+
+- Publish workspace extensions under the org-owned `@docs.plus` scope.
+- `exports.require.types` must point to `./dist/index.d.cts`, not `.d.ts`.
+- `sideEffects` must include CSS, e.g. `['**/*.css']`; do not use bare `false`.
+- Every scoped package needs `publishConfig.access: "public"` or `bun publish` defaults to private and can 402.
+- Package metadata should include `homepage`, `bugs`, and discovery-oriented `keywords`.
+- Adding any root re-export through `src/index.ts` or `src/utils/index.ts` is a minor release, not a patch.
+- Resolve `[Unreleased]` to a real version before `bun run build`, `bun pm pack`, and `bun publish`.
+- `prepublishOnly` runs `scripts/preflight.ts`; it asserts:
+  - publisher user-agent is `bun/*`;
+  - dist artifacts exist;
+  - no literal `catalog:` leaks into built bundles.
+
+### Release Policy
+
+- `RELEASE_POLICY.md` is authoritative for versioning doctrine, cutover phase, lockstep activation, `release:family`, CHANGELOG style, soak/promotion, CI guards, and readiness checklists.
+- During Phase 1 cutover, each extension can ship its first `2.0.0` to `@next` independently.
+- Lockstep activates only through an explicit switch-flip commit in `AGENTS.md` / `RELEASE_POLICY.md`, not automatically when versions align.
+- Once lockstep is active, coordinated extension-family releases use:
+
+```bash
+bun run release:family
+```
+
+- The only root release/publish script is `"release:family": "bun scripts/release-family.ts"`.
+- Do not reintroduce the removed `release`, `release:major`, `release:minor`, `release:patch`, `version*`, or parallel `publish` scripts.
+
+### Publish Flow
+
+- Publishing happens on the maintainer laptop because npm 2FA-on-write requires OTP. Do not put `NPM_TOKEN` in CI for publishing.
+- Use:
+
+```bash
+bun publish --tag <next|latest> --otp <6-digit>
+```
+
+- Major bumps go to `@next` for soak. Stable patches/minors go to `@latest`.
+- Promote later with `npm dist-tag add <pkg>@<ver> latest` when appropriate.
+- GitHub Releases are the announcement gate and happen after npm publish.
+- Release tags must be `<package-name>@<semver>`, e.g. `@docs.plus/extension-hyperlink@2.0.0`. `v<semver>` is reserved only as a fallback for future repo-wide releases.
+- Use the state-machine `awk` slice for release notes. Do not use the range form because both ends can match the same heading:
+
+```bash
+awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<pkg>/CHANGELOG.md
+```
+
+- Discord webhooks:
+  - Push activity: `secrets.DISCORD_WEBHOOK` via `.github/workflows/discord-activity.yml`.
+  - Releases: `secrets.DISCORD_RELEASE_WEBHOOK` via `.github/workflows/discord-release.yml`.
+  - Reserve unqualified `DISCORD_WEBHOOK` for the original push channel.
+- Release embeds color-code stability: green `#22c55e` for stable, orange `#f97316` for pre-release.
+- Install hints switch from one `is_pre` branch: stable uses `bun add <pkg>@<version>`, pre-release uses `bun add <pkg>@next`. Do not hard-code per-package paths in the workflow.
+
+### Extension Version Doctrine
+
+- All five publishable `@docs.plus/extension-*` packages share the same major, tracking the docs.plus product line.
+- `1.x` = 2023 product line.
+- `2.x` = docs.plus alpha v2.
+- Extensions are leaf packages; lockstep is policy, not graph-forced.
+- Current cutover state:
+  - `extension-hyperlink` ships `2.0.0` first.
+  - `extension-hyperlink@4.3.0` was a brief mispublish and is being rolled back/unpublished when npm allows it.
+  - `extension-hypermultimedia 1.4.0`, `extension-indent 0.2.0`, `extension-inline-code 0.1.1`, and `extension-placeholder 0.1.0` converge to `2.0.0` over later release windows.
+  - Laggard packages need the same `LICENSE` / `prepack.ts` / `scripts/preflight.ts` scaffolding currently wired on `extension-hyperlink`.
+- Family-release script invariants in `scripts/release-family.ts`:
+  - Use `spawnSync` helper calls, no shell strings, so OTP never lands in `ps aux` or shell history.
+  - GitHub release creation is idempotent across resumes: iterate `[...published, ...skipped]` and guard each with `gh release view <tag>`.
+  - Push an explicit tag list only. Never run `git push --tags`.
+- CLI flags: `--dry-run`, `--tag <next|latest>`, `--allow-noop`, `--generate-noop-changelogs`, `--help`.
+- Preflight aggregates errors before any OTP prompt:
+  1. lockstep;
+  2. CHANGELOG entries;
+  3. `dist/` freshness against `src/`;
+  4. per-package `scripts/preflight.ts`;
+  5. clean working tree and `HEAD` matches `origin/main`;
+  6. `npm whoami` and `git user.email`;
+  7. local and remote tag collisions;
+  8. no-op detection via `git diff <prevTag>..HEAD -- packages/<pkg>/src/`.
+- CHANGELOG style guide:
+  - Themed sections per major: Highlights, Breaking, Added, Changed, Fixed, Security, Removed, Documentation, Internal.
+  - Include code-diff migration guides and one-shot rename scripts for mechanical changes.
+  - Disclose mispublishes/unpublishes honestly.
+  - Add a brief pre-X.0 development history when public versions diverge from internal milestones.
+  - Never auto-generate entries from commit subjects. Lerna/Changesets/Release-Please are not adopted.
+
+## Editor Architecture
+
+### Document Model And Migrations
+
+- Server-side `TiptapTransformer.toYdoc` / nested-to-flat migrations must use an extension set that covers every node/mark in stored docs.
+- Include `TaskList` / `TaskItem` from `@tiptap/extension-list` aligned with the webapp. StarterKit alone is not enough.
+- Missing node/mark types fail encode; they are not flattening issues.
+- Batch migrations fail closed. Never overwrite stored Yjs bytes when transform/encode fails; keep prior bytes and surface the doc id.
+- Run the migration CLI from `packages/hocuspocus.server` after root `bun install`:
+
+```bash
+bun run migrate:nested-to-flat
+```
+
+- Invoking the script path from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`.
+
+### Heading Schema
+
+- Editor uses a flat heading schema: `heading block*`.
+- Sections are decoration-based.
+- `attrs['toc-id']` renders as `data-toc-id`.
+- Shared heading utilities live in `TipTap/extensions/shared/`: `computeSection`, `moveSection`, `canMapDecorations`, `transactionAffectsNodeType`, `matchSections`.
+- Section reorder is TOC-only via `useTocDrag` / `moveHeading` + `moveSection`. There is no in-editor heading drag handle extension.
+
+### HeadingScale
+
+- `extensions/heading-scale/heading-scale.ts` is a mandatory spec.
+- Heading font size is dynamic by rank within a section, not fixed per HTML level and not a Google-style ladder.
+- Each H1 starts a new section.
+- Within a section, distinct heading levels are sorted and sizes interpolate evenly between 20pt max and 12pt min.
+- The same heading level repeated in one section gets the same visual size.
+- A section with one distinct heading level uses 20pt.
+- The title, first top-level H1, is part of section 1.
+- Use decorations only: `--hd-size`, `--hd-rank`, `--hd-total`. Never write sizes into the document.
+- Plugin state is `{ fingerprint, decorations }`.
+- Fingerprint is top-level heading levels in order, e.g. `1,2,4,1,3`.
+- Rebuild fully when the fingerprint changes or `y-sync$` meta is present; otherwise map the decoration set.
+- Do not replace this with fixed per-level point maps.
+
+### Editor Performance
+
+- Editor jank is usually React/Zustand re-renders, not ProseMirror.
+- Never put UI flags in `useEditor` deps.
+- Use `shouldRerenderOnTransaction: false` on collaboration editors.
+- Decoration plugins should avoid full rebuilds on every keystroke. Use `transactionAffectsNodeType(tr, 'heading')` or a cheaper structural check.
+- HeadingScale uses a heading-level fingerprint, not only `transactionAffectsNodeType`.
+- Placeholder uses `@docs.plus/extension-placeholder` with O(1) state `init/apply`. Do not replace it with Tiptap's built-in placeholder, which scans with `doc.descendants`.
+
+### Zustand And ProseMirror
+
+- The app has a monolithic 7-slice Zustand store. All `useStore` calls must use leaf selectors.
+- Never select `(state) => state` or `(state) => state.settings`.
+- `doc.nodeAt(pos)` can throw `RangeError` for out-of-range positions. Guards must not assume null-only.
+- `transaction.before` is the pre-step document `Node`, not `EditorState`. Never call `PluginKey.getState(transaction.before)`.
+- For fold-driven UI such as TOC, snapshot heading-fold plugin state from `editor.state` and diff across transactions.
+
+### Editor References
+
+- The canonical editor handle is:
+
+```ts
+useStore((state) => state.settings.editor.instance)
+```
+
+- `useEditorAndProvider.ts` registers it through `setWorkspaceEditorSetting('instance', editor)`.
+- Consumers include `EditorContent.tsx`, `useTocActions.tsx`, the toolbar, and collaboration-document features.
+- `window._editor` is set only by `pages/editor.tsx`, the standalone editor playground. It is undefined on real document/collab routes.
+- Do not add new `window._editor` readers to document-route features.
+- React mobile sheets that need an editor reference should use typed `SheetDataMap` payloads, e.g. `linkPreview` and `linkEditor`.
+
+## Webapp UI Systems
+
+### TipTap Styling
+
+- TipTap pad-only SCSS lives under `packages/webapp/src/styles/editor/`.
+- Load path: `styles.scss` -> `components/_index.scss` -> `@use '../editor'`.
+- Do not add parallel `.scss` files next to TipTap extensions.
+- Pad chrome:
+  - `PadTitle` has `border-b` for header-to-toolbar.
+  - `.tiptap__toolbar` uses `border-b` only; no `border-t` against `PadTitle`.
+  - Pad sheet top border comes from `_blocks.scss` for toolbar-to-editor.
+  - Mobile `.m_mobile .tiptap__toolbar` lives in `_blocks.scss`.
+- Scrollbars:
+  - Shared `:root` tokens live in `globals.scss`.
+  - Use `scrollbar-custom scrollbar-thin` on `.editorWrapper` and TOC `ScrollArea`.
+  - Avoid ad-hoc scrollbar styling on the pad column.
+
+### Mobile Bottom Sheets
+
+- The canonical mobile sheet system is `packages/webapp/src/components/BottomSheet.tsx`, wrapping `react-modal-sheet`.
+- Sheets register through `useSheetStore` with `SheetType` + `SheetDataMap`.
+- New mobile UI surfaces add a `SheetType` variant, a typed `SheetDataMap` entry, and a React subscriber.
+- Tiptap extension imperative-DOM popovers connect to React sheets through extension `popovers` config, gated by `settings.deviceDetect.isMobile` in `TipTap.tsx`.
+- Do not build parallel imperative-DOM bottom sheets next to the React + Zustand sheet system.
+- Keyboard dismissal is a per-sheet entry-point decision. Do not globalize it in `useSheetStore` or `BottomSheet`.
+- Keep the keyboard up for chatroom composer, `linkEditor`, and message-composer `emojiPicker`.
+- Dismiss the keyboard for `linkPreview` and chatroom open paths: `CHAT_OPEN` / `CHAT_COMMENT` in `services/eventsHub.ts`.
+- A single synchronous `editor.view.dom.blur()` is not reliable; it can lose the race against queued ProseMirror focus.
+- Proven dismiss patterns:
+  - `useClipboard.ts` style: collapse selection, then `setTimeout(50)` and `editor.view.dom.blur()`.
+  - `dismissDocumentKeyboardForSheet` in `eventsHub.ts`: `editor.setEditable(false)` plus `editor.view.dom.blur()`.
+- `editor.setEditable(false)` synchronously flips `contenteditable` through `view.updateState` in Tiptap 3.20; a separate DOM attribute write is not load-bearing for that timing.
+- Always early-return when `isKeyboardOpen` is false.
+
+### Mobile Document Pad
+
+- iOS Safari rules live under `packages/webapp`, mainly `html.m_mobile` in `styles/_mobile.scss`.
+- `html` and `body` are `position: fixed`.
+- `.mobileLayoutRoot` tracks `window.visualViewport` through `syncVisualViewportToCssVars` and `AppProviders` visualViewport `resize` + `scroll`, coalesced with rAF.
+- Do not skip CSS sync when height deltas are small. WebKit can emit sub-threshold steps after a large keyboard resize.
+- `useVisualViewportCssSyncOnFocus` listens for captured `focusin` on `.mobileLayoutRoot .tiptap__editor.docy_editor` and reruns viewport CSS sync when a final resize is missing.
+- Do not use `transform: translateZ(0)` on `.editor.editorWrapper`.
+- Do not use `contain` or `will-change: height` on `.mobileLayoutRoot`; WebKit can mis-paint the contenteditable caret.
+- Use `scrollElementInMobilePadEditor` for headings, TOC, and deep links. Avoid raw `Element.scrollIntoView` on doc nodes.
+- `innerHeight - visualViewport.height` can stay 0 while the keyboard is up. Use `applyVirtualKeyboardToStore` in `utils/virtualKeyboardMetrics.ts`.
+- `useVirtualKeyboard` and `nudgeVirtualKeyboardOpenFromVisualViewport` both call that metrics path. Listen to visualViewport `scroll` and `resize`.
+- In `useEditableDocControl`, never set `isEditable = isKeyboardOpen` on every effect. Keyboard opens before resize; only clear `isEditable` on keyboard close.
+- The 500ms DOM sync must not set `contenteditable=false` while `settings.editor.isEditable` is still true.
+- Read-mode `contenteditable` leak fix:
+  - Keyboard-close store updates alone are not enough.
+  - Add/keep a reconcile effect that mirrors `isEditable -> false` to both `editor.setEditable(false)` and `view.dom.contenteditable`.
+  - Guard false-direction only and only when `editor.isEditable` is currently true.
+  - Do not remove legacy entry-edit-mode behavior or the 500ms grace.
+- Removing the JS `.focus()` call from `extension-hyperlink/clickHandler.ts` is not enough; the user tap itself can focus a lingering `contenteditable=true` host.
+- In `AppProviders`, if `.mobileLayoutRoot`, `visualViewport.offsetTop > 0`, and `window.scrollY > 0`, call `window.scrollTo(0, 0)`.
+- Edit entry:
+  - `EditFAB` and double-tap share `enableAndFocus()` from `hooks/useCaretPosition.ts`.
+  - FAB uses `onTouchEnd` and suppresses synthetic `click`.
+  - `enableAndFocus()` uses `editor.commands.focus()` only. Do not chain Tiptap `scrollIntoView()` with `ensureCaretVisible` / `scrollCaretIntoView`.
+  - Mobile caret scroll uses `behavior: 'auto'`.
+  - `ensureCaretVisible` uses 2x rAF plus one ~300ms retry.
+
+## Backend And Infrastructure
+
+### HTTP Modules
+
+- New backend HTTP features go to `@docs.plus/hocuspocus.server` (Hono), not webapp `pages/api/`.
+- New endpoints live under `packages/hocuspocus.server/src/modules/<feature>/`:
+  - `domain/`: pure logic and pipeline stages.
+  - `http/`: controller, router, zod schema.
+  - `infra/`: Redis cache and external SDK adapters.
+  - `__tests__/`: unit and integration tests.
+- A `module.ts` exports `init({ deps }): { router }`.
+- `src/index.ts` mounts with `app.route('/api/<path>', module.init({ ... }).router)`.
+- Modules must have no top-level side effects.
+- The link-metadata feature was migrated out of `webapp/src/pages/api/metadata.ts`; do not reintroduce server endpoints there.
+- Link-metadata vocabulary is `stage`, never `tier`.
+- Stages are cache -> handlers -> oembed -> htmlScrape -> fallback.
+- `STAGE_TIMEOUT_MS` and the base User-Agent constant live in `domain/types.ts`.
+- Host handlers live under `domain/stages/handlers/`.
+- `htmlScrape` appends `facebookexternalhit/1.1`; Reddit uses plain `DocsPlusBot/1.0`. Keep them intentionally different.
+- Test files mirror source filenames one-to-one, e.g. `htmlScrape.ts` -> `htmlScrape.test.ts`.
+
+### Production And Docker Compose
+
+- Production uses `docker-compose.prod.yml` with Traefik.
+- Dev compose backend services need `context: .` at repo root to match `Dockerfile.bun`.
+- Hocuspocus image:
+  - `migration-extensions.ts` imports `@docs.plus/extension-hypermultimedia` and `@docs.plus/extension-inline-code` at runtime.
+  - Root `.dockerignore` excludes `**/dist`.
+  - Those packages must be built inside the image; copying only package.json stubs is not enough.
+  - Other `@docs.plus/extension-*` packages may stay stubs for lockfile/workspace only.
+- For prod WebSocket issues, check `hocuspocus` container health and `docker logs` before chasing Traefik.
+- Traefik's no-router response is `HTTP/2 404`, `text/plain`, `content-length: 19`, body `404 page not found`; distinguish it from backend 404s.
+- Traefik access-log filters are combined with AND. Keep `statusCodes: 400-599` alone; adding retry/min-duration filters hides fast 5xxs.
+- SSR URL split:
+  - `SERVER_RESTAPI_URL`: internal Docker-network base, e.g. `http://rest-api:4000/api`.
+  - `NEXT_PUBLIC_RESTAPI_URL`: public browser base, e.g. `https://prodback.docs.plus/api`.
+- Verify container env with:
+
+```bash
+docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production exec webapp env | grep -E 'SERVER_RESTAPI_URL|NEXT_PUBLIC_RESTAPI'
+```
+
+- `DocumentFetchError "Network error while fetching document"` only fires when `fetch()` throws: DNS, connection refused/reset, abort, or 10s timeout. It does not fire for HTTP 4xx/5xx.
+- The common cause is an SSR startup race before `rest-api` accepts traffic.
+- Probe SSR connectivity from inside `webapp`:
+
+```bash
+docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production exec webapp bun -e "fetch('http://rest-api:4000/health').then(r=>r.text().then(t=>console.log(r.status,t)))"
+```
+
+- Log env vars:
+  - `LOG_LEVEL` / `HTTP_LOG_LEVEL`: all services.
+  - `REST_LOG_LEVEL`: most important for REST route logging; set to `debug`.
+  - `WS_LOG_LEVEL`: hocuspocus server.
+  - `WORKER_LOG_LEVEL`: hocuspocus worker.
+  - `HOCUSPOCUS_LOGGER=true`: only for collab noise debugging.
+- Prisma `P3009` failed migration in REST logs is independent of WebSocket/fetch failures. Resolve it through Prisma's failed-migration flow, but it does not block traffic because entrypoint continues starting the service.
+
+### Supabase
+
+- Pages Router Supabase architecture:
+  - Browser singleton: `utils/supabase/index.ts`.
+  - Factory: `component.ts`.
+  - GSSP: `server-props.ts`.
+  - API route client: `api.ts`.
+  - URL resolver: `url.ts`.
+  - Generated DB types: `types/supabase.ts`.
+- Browser code imports the `supabaseClient` singleton.
+
+## Extension Workflow
+
+### Standalone Extension Development
+
+- Standalone packages: `extension-hyperlink`, `extension-hypermultimedia`, `extension-indent`, `extension-inline-code`, `extension-placeholder`.
+- Shared structure: TypeScript + tsup build + `@tiptap/core` peer dep.
+- GFM markdown uses `@tiptap/markdown`; paste lives at `extensions/markdown-paste/`; import/export lives in `utils/markdown.ts` and `toolbar/desktop/DocumentSettingsPanel`.
+- `sanitizeJsonContent` runs on paste and import paths.
+- After modifying any `packages/extension-*` source:
+  1. Run `bunx tsup` in that package.
+  2. Clear `.next/cache` or remove `.next`.
+  3. Restart the dev server and hard-refresh the browser.
+- Next.js HMR does not reliably detect changes in Bun workspace-symlinked packages.
+- If an extension playground is running via `bun --hot ./test/playground/server.ts`, restart it after `bun run build`; tsup `clean: true` can wipe `dist/` and leave the hot server serving 500 for `dist/styles.css`.
+
+### Hyperlink Extension: Schema And Commands
+
+- Webapp couples to `extension-hyperlink` through `packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts`.
+- `HyperlinkWithMarkdown = Hyperlink.extend({ markdownTokenName: 'link', parseMarkdown, renderMarkdown })`; parsing applies mark name `hyperlink`.
+- The `hyperlink` mark name is locked by markdown wiring and stored production Yjs docs. Never rename it to `link`.
+- The package is not a drop-in schema replacement for `@tiptap/extension-link`; migration docs describe moving into `@docs.plus/extension-hyperlink`.
+- Same-document hyperlink targets update URL/hash/route for in-app navigation. Do not treat them as external opens.
+- `setHyperlink({ href, target?, title?, image? })` is pure and chainable; it only writes the mark and returns boolean.
+- `setHyperlink()` with no args returns false. Never call it to open UI.
+- UI opens through `openCreateHyperlinkPopover()`, and `Mod-k` is bound to it.
+- Migrated webapp call sites use `editor.chain().focus().openCreateHyperlinkPopover().run()`: `MobileBubbleMenu.tsx`, `HyperlinkButton.tsx`, `EditorToolbar.tsx`, and `ToolbarMobile.tsx`.
+- `previewHyperlink.ts` no longer passes dead `view` / `linkCoords` args to `editHyperlinkPopover`; keep the canonical signature.
+- Link-compatible command aliases exist: `setLink`, `unsetLink`, `toggleLink`; command names only, no schema rename.
+- Canon options include `defaultProtocol`, `isAllowedUri(href, ctx)`, `shouldAutoLink(url)`, `enableClickSelection`, and `exitable`.
+- `editHyperlinkCommand` must return a composable Tiptap command that reads positions/marks from `tr.doc`. Do not dispatch a nested chain that can cause mismatched transactions.
+
+### Hyperlink Extension: Click Handling
+
+- ProseMirror has two click paths:
+  - DOM `click` event through `handleDOMEvents.click`.
+  - `mouseup`-based `handleSingleClick`, tracking `mousedown` position before DOM `click`.
+- To prevent editable-mode navigation:
+  - Capture-phase `mousedown`: `preventDefault + stopPropagation` to block ProseMirror mousedown tracking.
+  - Capture-phase `click`: `preventDefault` only, so the event still bubbles to `handleDOMEvents.click` for popover display.
+- Call `options.popover(...)` before `editor.chain().focus(clickPos).setTextSelection(pos).run()`.
+- If the popover returns `null`, skip the focus call entirely. `null` is the host opt-out signal, especially for mobile sheets.
+- Desktop popovers still set focus/selection after content exists so edit/remove actions target the right mark.
+- `iosCaretFixPlugin` must early-return on link targets in both `touchstart` and `click`, and clear `lastTouchCoords` on `touchstart`.
+- Link taps are owned by the hyperlink extension; stray caret-fix selection dispatch can re-trigger iOS auto-scroll.
+- `target` mark attr is `rendered: false` so stored `_blank` does not render to DOM.
+- `image` mark attr is also `rendered: false`; preview metadata stays mark-only and refetches on demand.
+
+### Hyperlink Extension: Safety And Normalization
+
+- `isSafeHref` + `buildHrefGate` are the single XSS gate.
+- `parseHTML` uses `getAttrs` + `isSafeHref(href)`.
+- `clickHandler.ts` and preview popover `window.open` fallback also call `isSafeHref`.
+- `buildHrefGate(options)` composes `isSafeHref` with user `isAllowedUri(href, { defaultValidate, defaultProtocol })`.
+- All write boundaries use the composed gate: `setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover submit, and `parseHTML`.
+- `DANGEROUS_SCHEME_RE` stays internal to `validateURL.ts`. Call sites import `isSafeHref`, not the regex.
+- Every path that stores a hyperlink mark routes through `normalizeHref(raw)` or `normalizeLinkifyHref(match)`.
+- Bare domains become `https://...`; explicit schemes are preserved.
+- Bare email becomes `mailto:<email>` via strict full-string linkify match.
+- Bare E.164 phone numbers become `tel:+<digits>`:
+  - `+` prefix required.
+  - 8-15 digits per RFC 3966.
+  - spaces, dashes, dots, and parentheses accepted on input and stripped in canonical href.
+  - gated by `utils/phone.ts::isBarePhone`.
+- Phone support is wired in:
+  - `normalizeHref`;
+  - `autolink.ts`, emitting `type: 'phone'` with canonical `tel:` href;
+  - `validateURL`, so editing a phone number can remove the mark when it stops matching.
+- Read-side click/preview prefers stored `attrs.href` over DOM `link.href` so relative hrefs do not resolve against `document.baseURI`.
+- `validateURL` rejects web-scheme URLs with no plausible host, e.g. `https://googlecom`.
+- Standard web schemes `http`, `https`, `ftp`, and `ftps` require a TLD-dot, `localhost`, IPv4, or IPv6 host. IPv6 is detected by colon in `URL.host`.
+- Non-standard schemes are validated through `utils/specialUrls.ts`.
+- `isSafeHyperlinkHref` is a render safety gate, not input validation. It accepts scheme-less hrefs because no XSS vector can lack a scheme.
+- Do not tighten `isSafeHyperlinkHref` to require a scheme; relative hrefs may legitimately reach the renderer through migrations/external authoring.
+
+### Hyperlink Extension: Metadata And Preview
+
+- Async metadata mark-attr writes must not move selection.
+- Never use:
+
+```ts
+editor
+  .chain()
+  .setTextSelection(nodePos)
+  .extendMarkRange('hyperlink')
+  .updateAttributes('hyperlink', attrs)
+  .run()
+```
+
+- Instead, compute the mark range with `getMarkRange(resolvedPos, hyperlinkType)` and dispatch a plain transaction:
+  - `tr.removeMark`;
+  - `tr.addMark` with new attrs over the same range;
+  - `setMeta('preventUpdate', true)` when needed;
+  - no `tr.selection` changes.
+- Moving selection across the link makes the floating toolbar think the user navigated away and destroys the popover.
+- Failed metadata fetches degrade silently: render `createMetadataContent(null, href)` so the title falls back to raw `href`.
+- Do not render unavailable/warning chrome for preview metadata failures.
+- Desktop preview popover is title-only: one row, ellipsis truncation, 200px max width.
+- Mobile `LinkPreviewSheet` shows title + description + href with wrapping and no truncation.
+- Do not reintroduce `line-clamp-2` on the mobile description.
+- Render the mobile href line only when `data?.title && data.title !== href`.
+
+### Hyperlink Extension: Special URLs And Public Surface
+
+- `utils/specialUrls.ts` covers 50+ app schemes plus `DOMAIN_MAPPINGS`.
+- Domain matching strips `www.` and supports subdomain suffixes, e.g. `api.github.com` -> `github.com`.
+- Catalog source: `https://github.com/bhagyas/app-urls`.
+- `getSpecialUrlInfo` returns `{ type: SpecialUrlType, title, category }`.
+- The extension ships no icon catalog. Consumers own `type -> icon` mapping.
+- `SpecialUrlType` is a string-literal union for compile-time exhaustiveness without runtime bytes.
+- Naming convention:
+  - lowercase single-word brands: `whatsapp`, `figma`;
+  - kebab-case multi-word brands: `facetime-audio`, `apple-tv`, `app-store`;
+  - brand spelling over scheme abbreviation: `tg:` -> `telegram`, `fb:` -> `facebook`.
+- `utils/index.ts` is the auditable public utility surface. Use explicit named re-exports only; no `export *`.
+- Module-internal helpers such as `getURLScheme`, `isBarePhone`, `normalizeLinkifyHref`, `Link`, and `Title` are reachable from siblings but not through the package barrel.
+- Adding a public barrel export is a minor semver bump.
+- Internal constants live in `src/constants.ts`: `HYPERLINK_MARK_NAME`, `PREVENT_AUTOLINK_META`. Do not export them publicly.
+- `src/utils/findLinks.ts` contains pure linkify-result filtering with Bun tests in `utils/__tests__/findLinks.test.ts`.
+- v2.0.0 renames:
+  - `getUrlScheme` -> `getURLScheme`;
+  - `isValidSpecialScheme` -> `isRecognizedSpecialScheme`;
+  - `showPopover` -> `openHyperlinkToolbar`;
+  - `TRAILING_PUNCT_RE` -> `TRAILING_PUNCTUATION_RE`;
+  - `stripTrailingPunct` -> `stripTrailingPunctuation`;
+  - `hrefTitle` -> `hrefAnchor`;
+  - local `preventAutolink` -> `shouldSkipAutolink`.
+- `EditHyperlinkModalOptions` remains as a deprecated alias for `EditHyperlinkPopoverOptions` for one major. Drop it in 3.x.
+
+### Hyperlink Extension: Floating Toolbar
+
+- Toolbar is `position: fixed`.
+- Virtual references must recompute live viewport coords on every call; never snapshot at popover open.
+- Frozen rects make `computePosition` keep writing the same `top`/`left` while the anchor scrolls away.
+- DOM-anchored popovers should pass `referenceElement: <a>` directly.
+- Selection-anchored popovers pass a closure that calls `view.coordsAtPos(from)` on every invocation.
+- Edit popover anchors to the live `<a>`, not a `linkCoords` snapshot.
+- Create popover passes a recomputing closure over captured ProseMirror `from`/`to`.
+- Regression coverage: `cypress/e2e/scroll-stickiness.cy.ts`.
+- `floatingToolbar.ts` has a module-level singleton `currentToolbar`; creating a toolbar destroys the previous one.
+- Public exports are only `hideCurrentToolbar`, `updateCurrentToolbarPosition`, `FloatingToolbarInstance`, and `FloatingToolbarOptions`.
+- Keep `createFloatingToolbar` and `DEFAULT_OFFSET` module-private.
+- `cypress/e2e/custom-popover.cy.ts` pins the singleton contract.
+
+### Hyperlink Extension: Clean-Room Harness
+
+- Release-gate harness: `packages/extension-hyperlink/test/playground/`.
+- Uses `Bun.serve` with HTML import, vanilla Tiptap, and StarterKit; no Vite.
+- Bun 1.2+ bundles the HTML's `<script>` and `<link>` tags on demand.
+- Playground loads built `dist/` + `styles.css` via the published exports map, not monorepo source.
+- Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, and special-schemes.
+- `_debug.cy.ts` is scratch/debug and excluded from release counts.
+- Run via `bun run test` in the package. `pretest` builds, `start-server-and-test` boots the Bun playground on `127.0.0.1:5173`, Cypress runs, then teardown.
+- Append `?popover=custom` to use custom popover factories in custom-popover tests.
+- Support file is single-file `cypress/support/e2e.ts`. Do not split it; Cypress 15 JIT skipped split imports.
+- Every `cypress/e2e/*.cy.ts` file must end with `export {}` to avoid top-level constant collisions under project-level type-checking.
+- Tests use `window._editor` + `window._hyperlink`. Use structural checks instead of `instanceof RegExp` because Cypress iframe realm breaks cross-realm `instanceof`.
+- Hyperlink extension unit tests use Bun native runner: `bun test src`.
+- `scripts/run-tests.sh` runs hyperlink extension unit tests after `extension-indent` and before webapp Jest.
+
+### Webapp-Owned Hyperlink Popovers
+
+- The extension stays host-agnostic. `popovers.createHyperlink` / `popovers.editHyperlink` are callbacks returning `HTMLElement | null`.
+- Desktop create/edit entries create an empty host and set only `host.dataset.testid`. Never set `host.className`.
+- Register `{ kind, host, props }` in `useHyperlinkPopoverStore`.
+- Return the host so the extension's floating controller positions it.
+- A single React `<HyperlinkPopoverPortal>` in `TipTap.tsx` reads `active` and portals `<HyperlinkEditor>` with `<HyperlinkSuggestions>` into the host.
+- Tests select by `data-testid` only. Do not restore legacy class selectors.
+- `useHyperlinkPopoverStore` subscribes once at module load to `getDefaultController().subscribe((state) => state.kind === 'idle')`.
+- The idle discriminator is `idle`, not `closed`.
+- The subscription is guarded by `globalThis.__hyperlinkControllerSubscribed` so HMR/Jest module-cache replays do not stack listeners.
+- `__resetHyperlinkPopoverStoreForTests()` reattaches after `resetDefaultController()`.
+- Legacy `.hyperlink-create-popover` and `.hyperlink-edit-popover` SCSS blocks were removed from `styles/styles.scss`.
+- Only `.hyperlink-preview-popover` keeps SCSS because preview is still rendered by imperative DOM.
+- Create popover UX is minimal: one inline `[URL input] [Add]` row plus suggestions; no header and no Cancel.
+- Edit popover keeps back arrow, URL/Text labels, and Update.
+- Mobile `LinkEditorSheet` dismisses through drag/backdrop and also has no Cancel.
+- Controls use DaisyUI: `input input-sm`, `input-error`, `btn btn-primary btn-sm`, `btn btn-ghost btn-sm btn-square`.
+- Suggestions data:
+  - headings from top-level `doc.content` children, same source as `useTocActions.copyLink`;
+  - current-workspace bookmarks, both active and archived via parallel `getUserBookmarks` calls;
+  - active bookmarks sort before archived.
+- Suggestion URLs are absolute and reuse `useTocActions.copyLink` and `BookmarkItem.handleCopyUrl` shapes:
+  - headings: `?h=...&id=<headingId>`;
+  - bookmarks: `?msg_id=...&chatroom=...`.
+- Picker command contract: choosing a heading/bookmark during create applies only `href` when text is selected; choosing a suggestion during edit updates only URL unless the user explicitly edited the Text field.
+- Suggestion states are collapsed -> browsing -> searching.
+- Desktop default state is `collapsed`; mobile default state is `browsing`.
+- Webapp icon catalog:
+  - `hyperlinkPopovers/iconList.ts` was deleted.
+  - `previewShared.ts::TYPE_TO_ICON` maps `SpecialUrlType` to `IconType` from `@components/icons/registry` as `Partial<Record<SpecialUrlType, IconRenderer>>`.
+  - It is intentionally partial so domain-catalog types such as `meet` or web `github` can be absent; favicon wins for `https://` URLs.
+  - Use Lucide React components only.
+  - `createSvgIcon(Icon)` renders with `renderToStaticMarkup(createElement(Icon, { size: 20, 'aria-hidden': true }))`.
+  - Do not reintroduce per-platform `Fa*` / `Si*` icons or hard-coded SVG strings.
+
+### Indent Extension
+
+- Keep pad `TipTap.tsx` and chat composer `useTiptapEditor` on the same `Indent.configure({ indentChars: '\t' })`, or widen both together.
+- Literal indent/outdent is gated by `allowedIndentContexts`, an allowlist of `{ textblock, parent }` TipTap type-name pairs.
+- Default literal indent contexts: paragraphs under `doc` and `blockquote`.
+- `[]` disables literal indent.
+- Tab / Shift-Tab order:
+  1. sink/lift list (`listItem` / `taskItem` when schema supports it);
+  2. table cell navigation when table extension exists;
+  3. literal indent/outdent.
+- Extension priority is 25 plus delegation.
+- Other textblocks need explicit `allowedIndentContexts` rules.
+- Cypress lives under `packages/webapp/cypress/e2e/editor/indent/`; Jest lives under `packages/extension-indent`.
+
+## Document Features
+
+### Document Version History
+
+- Hocuspocus history uses stateless `history.list` / `history.watch`.
+- Server unicasts `{ msg: 'history.response', type, response }` to the requesting connection. Do not use `broadcastStateless`.
+- Prisma always uses the collab room document id (`document.name`).
+- If the client sends a different `documentId`, respond `history_failed`.
+- Current `history.list` returns `{ versions, latestSnapshot }` in one RTT. Client still accepts legacy plain `HistoryItem[]`.
+- `applyHistoryItemToEditor` is the single TipTap hydration path.
+- `loadingHistory` clears only after successful apply, not merely after a network response.
+- `useHistoryEditorApplyWhenReady` applies when the editor mounts after data arrives.
+- While `pendingWatchVersion` is set, do not re-apply stale `activeHistory`.
+- Late `history.list` must not reset pending watch state or hydrate from `latestSnapshot` over that watch.
+- On `history_failed`, clear `pendingWatchVersion` so the next watch is not dropped.
+- Shareable revision URLs use same pathname/query plus `#history?version=<n>`, where `<n>` is `HistoryItem.version`.
+- URL helpers live in `pages/history/historyShareUrl.ts`: `parseHistoryHash`, `buildHistoryShareUrl`, `replaceHistoryHashVersion`.
+- Without `#history?version=`, the sidebar treats the latest version as active.
+- Every entry to history page, including editor <-> history navigation, must resync sidebar selection from current hash + store.
+
+### TOC And Heading Chrome
+
+- TOC code lives under `components/toc/`.
+- Keep `tocClasses.ts` in sync with `styles/components/_tableOfContents.scss`.
+- `--color-docsy` equals `var(--color-primary)` in both `@theme` and `:root`; it tracks DaisyUI light/dark/high-contrast themes.
+- Heading widgets live in `TipTap/extensions/HeadingActions/plugins/`.
+- Heading-action styling lives in `styles/components/_heading-actions.scss`.
+- `$ha-hit-size` is shared with plugins.
+- `$ha-group-has-unread` owns the DRY `:has()` selector for unread tray visibility.
+- `_unread-badge.scss` only styles `[data-unread-count]` on `.ha-chat-btn` and notification bell. Do not add `.toc__chat-trigger` or `.ha-group` rules there.
+- TOC uses React `UnreadBadge` only.
+- `UNREAD_SYNC` clears `data-unread-count` on `.toc__chat-trigger`.
+- Active chat icon uses `toc__chat-icon--active` with `fill: none`; Lucide icons are stroke-based.
+- When nested `ul.toc__children` lives under the parent `li`, folded subtrees hide with `&.closed > .toc__children { display: none }`.
+- Fold state still comes from editor state, not CSS alone.
+- TOC data path:
+  - `useToc.ts` throttles heading-driven rebuilds with `lodash/throttle`;
+  - flat heading list converts to recursive `NestedTocNode` through `buildNestedToc`;
+  - `TocDesktop` / `TocMobile` own roots;
+  - `useHeadingScrollSpy.ts` debounces scroll/active-heading work with `lodash/debounce`.
+
+### Heading Fold Crinkle
+
+- Crinkle uses widget decorations with `data-fold-phase` for CSS animation.
+- Unique `Decoration.widget` keys per phase force ProseMirror remount so animation fires:
+  - `fold-${id}-folding`;
+  - `fold-${id}-unfolding`;
+  - `fold-${id}`.
+- Width spans the full sheet with `margin-left/right: calc(-1 * var(--tiptap-inline-pad-end))`.
+- Timing uses SCSS variables `$crinkle-fold-duration` and `$crinkle-easing`, not CSS custom properties.
+- `Decoration.node` on heading-section was removed; animations live on the widget.
+- Strip count uses `MIN_FOLD_STRIPS`, `MAX_FOLD_STRIPS`, and `CONTENT_HEIGHT_PER_STRIP` in `heading-fold-plugin.ts`.
+- If `MIN_FOLD_STRIPS === MAX_FOLD_STRIPS`, strip count is fixed regardless of content height.
