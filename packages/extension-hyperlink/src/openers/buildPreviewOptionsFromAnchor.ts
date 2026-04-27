@@ -8,12 +8,17 @@ import type { Editor } from '@tiptap/core'
 
 import { HYPERLINK_MARK_NAME } from '../constants'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
+import { findLiveEquivalentAnchor } from './liveAnchor'
 
 export interface BuildPreviewOptionsFromAnchorArgs {
   editor: Editor
   link: HTMLAnchorElement
+  /** Prefer this ProseMirror position before falling back to DOM similarity. */
+  nodePos?: number
   /** Forwarded onto the returned options; usually the configured `validate` option. */
   validate?: (url: string) => boolean
+  /** Preserve the host's composed navigation gate when rebuilding preview from edit/back. */
+  isAllowedUri?: (uri: string) => boolean
   /** Mark name to look up; defaults to `'hyperlink'`. Override only if the schema mark was renamed. */
   markName?: string
 }
@@ -22,7 +27,7 @@ export interface BuildPreviewOptionsFromAnchorArgs {
  * Build `PreviewHyperlinkOptions` for `link` by reading the hyperlink
  * mark at the live ProseMirror position. When the mark cannot be found
  * (DOM detached, foreign anchor, schema mismatch), falls back to a
- * minimal `attrs` shape derived from `link.getAttribute('href')` so the
+ * minimal `attrs` shape derived from the best available raw `href` so the
  * preview popover still has a stable `attrs.href` to render.
  *
  * The DOM `link.href` property is intentionally NOT used as a fallback
@@ -32,20 +37,29 @@ export interface BuildPreviewOptionsFromAnchorArgs {
 export function buildPreviewOptionsFromAnchor({
   editor,
   link,
+  nodePos: preferredNodePos,
   validate,
+  isAllowedUri,
   markName = HYPERLINK_MARK_NAME
 }: BuildPreviewOptionsFromAnchorArgs): PreviewHyperlinkOptions {
   const view = editor.view
-  const nodePos = view.posAtDOM(link, 0)
-  const node = view.state.doc.nodeAt(nodePos)
+  const liveLink = findLiveEquivalentAnchor(editor, link, preferredNodePos) ?? link
+  let nodePos = preferredNodePos ?? -1
+  let node: ReturnType<typeof view.state.doc.nodeAt> | null = null
+  try {
+    nodePos = view.posAtDOM(liveLink, 0)
+    if (nodePos >= 0) node = view.state.doc.nodeAt(nodePos)
+  } catch {
+    node = null
+  }
   const mark = node?.marks.find((m) => m.type.name === markName)
   const attrs = (mark?.attrs ?? {
-    href: link.getAttribute('href'),
+    href: liveLink.getAttribute('href'),
     target: null,
     rel: null,
     class: null,
     title: null,
     image: null
   }) as PreviewHyperlinkOptions['attrs']
-  return { editor, link, nodePos, attrs, validate }
+  return { editor, link: liveLink, nodePos, attrs, validate, isAllowedUri }
 }

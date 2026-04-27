@@ -75,7 +75,11 @@ export type CreateHyperlinkOptions = {
 export type EditHyperlinkOptions = {
   editor: Editor
   link: HTMLAnchorElement
+  /** Optional mark position; lets edit/back recover from ProseMirror replacing duplicate link DOM. */
+  nodePos?: number
   validate?: (url: string) => boolean
+  /** Composed XSS + `isAllowedUri` gate to preserve preview policy across edit/back. */
+  isAllowedUri?: (uri: string) => boolean
   /** Override the default Back behaviour. Default re-opens the preview popover via `openPreviewHyperlink`. */
   onBack?: () => void
   /** Mark name; defaults to `HYPERLINK_MARK_NAME`. */

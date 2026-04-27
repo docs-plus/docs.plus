@@ -37,7 +37,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
   const hrefInput = createHTMLElement('input', {
     type: 'text',
     inputMode: 'url',
-    value: link.href,
+    value: link.getAttribute('href') ?? '',
     placeholder: 'Enter URL',
     autocomplete: 'new-password',
     spellcheck: false
@@ -90,6 +90,8 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
         editor: stashed.editor,
         link: stashed.opts.link,
         validate: stashed.opts.validate,
+        isAllowedUri: stashed.opts.isAllowedUri,
+        nodePos: stashed.opts.nodePos,
         markName: stashed.opts.markName
       })
     )

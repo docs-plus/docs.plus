@@ -61,7 +61,13 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
     // wiring stays in one place. The default Back behaviour
     // (`buildPreviewOptionsFromAnchor` → `openPreviewHyperlink`) is
     // exactly what `onBack` would have re-run, so no override is needed.
-    openEditHyperlink(editor, { editor, link, validate: options.validate })
+    openEditHyperlink(editor, {
+      editor,
+      link,
+      nodePos: options.nodePos,
+      validate: options.validate,
+      isAllowedUri: options.isAllowedUri
+    })
   })
 
   copyButton.addEventListener('click', () => {

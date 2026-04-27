@@ -4,6 +4,9 @@ import { createPopover, getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import editHyperlinkPopover from '../popovers/editHyperlinkPopover'
 import { getHyperlinkOptions } from './getHyperlinkOptions'
+import { findLiveEquivalentAnchor } from './liveAnchor'
+
+const OFFSCREEN_COORD_PX = -9999
 
 // Module-local stash for the prebuilt edit popover's Back button.
 // Cleared whenever the controller transitions AWAY FROM an already-
@@ -61,15 +64,33 @@ export function openEditHyperlink(editor: Editor, opts: EditHyperlinkOptions): v
   const factory = popovers.editHyperlink ?? editHyperlinkPopover
   const content = factory(opts)
   if (!content) return
+  let referenceLink = findLiveEquivalentAnchor(editor, opts.link, opts.nodePos)
+  let hideQueued = false
   const popover = createPopover({
-    referenceElement: opts.link,
+    coordinates: {
+      getBoundingClientRect: () => {
+        referenceLink = referenceLink
+          ? findLiveEquivalentAnchor(editor, referenceLink, opts.nodePos)
+          : null
+        if (!referenceLink) {
+          if (!hideQueued) {
+            hideQueued = true
+            queueMicrotask(() => popover.hide())
+          }
+          return { x: OFFSCREEN_COORD_PX, y: OFFSCREEN_COORD_PX, width: 0, height: 0 }
+        }
+        const rect = referenceLink.getBoundingClientRect()
+        return { x: rect.left, y: rect.top, width: rect.width, height: rect.height }
+      },
+      contextElement: editor.view.dom
+    },
     content,
     placement: 'bottom',
     showArrow: true
   })
   getDefaultController().adopt(popover, 'edit', {
     element: popover.element,
-    referenceElement: opts.link
+    referenceElement: null
   })
   // Stash AFTER the `'edit'` adopt so the transient `'unknown'`
   // notification from `createPopover`'s self-adopt never sees a
