@@ -93,10 +93,6 @@ services:
         reservations:
           cpus: '0.1'
           memory: 64M
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 0
 
   # ===========================================================================
   # REDIS - Shared Cache, Pub/Sub, and Queues
@@ -156,8 +152,6 @@ services:
       context: .
       dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: production
-      args:
-        DATABASE_URL: ${DATABASE_URL}
     restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -172,7 +166,6 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
-      # Limit DB pool to prevent connection exhaustion (5 containers × 5 = 25 max)
       DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
       DB_IDLE_TIMEOUT: 30000
       SUPABASE_URL: ${SUPABASE_URL}
@@ -240,11 +233,6 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 0
-        window: 60s
 
   # ===========================================================================
   # HOCUSPOCUS WEBSOCKET SERVER
@@ -257,8 +245,6 @@ services:
       context: .
       dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: production
-      args:
-        DATABASE_URL: ${DATABASE_URL}
     restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -302,10 +288,11 @@ services:
       - 'traefik.http.routers.hocuspocus.service=hocuspocus'
       - 'traefik.http.routers.hocuspocus.middlewares=security-headers@file'
       - 'traefik.http.services.hocuspocus.loadbalancer.server.port=4001'
-      # Sticky sessions for WebSocket connections
       - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie=true'
       - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.name=hocuspocus_sticky'
       - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.httponly=true'
+      - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.secure=true'
+      - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.samesite=lax'
       # Health check for load balancer
       - 'traefik.http.services.hocuspocus.loadbalancer.healthcheck.path=/health'
       - 'traefik.http.services.hocuspocus.loadbalancer.healthcheck.interval=5s'
@@ -336,11 +323,6 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 0
-        window: 60s
 
   # ===========================================================================
   # HOCUSPOCUS WORKER (Background Jobs)
@@ -357,8 +339,6 @@ services:
       context: .
       dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: production
-      args:
-        DATABASE_URL: ${DATABASE_URL}
     restart: always
     # Grace period must exceed lockDuration (2min) to allow jobs to complete
     stop_grace_period: 150s
@@ -434,12 +414,6 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-      # Restart policy for swarm mode
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 0 # Unlimited restarts
-        window: 120s
 
   # ===========================================================================
   # WEBAPP (Next.js Frontend)
@@ -521,11 +495,6 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 0
-        window: 60s
 
   # ===========================================================================
   # ADMIN DASHBOARD (Next.js)
@@ -594,11 +563,6 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
-      restart_policy:
-        condition: any
-        delay: 5s
-        max_attempts: 0
-        window: 60s
 
 # =============================================================================
 # VOLUMES
