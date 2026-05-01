@@ -16,6 +16,7 @@ Persistent memory for AI agents working in `docsy`. Preserve these rules unless 
 ### Git And Commits
 
 - Do not commit unless the user explicitly asks.
+- When executing multi-task plans from `docs/superpowers/plans/`, every task ends in a "Review checkpoint" step: surface the touched files and a suggested `git add` / commit message for the user's reference only, then stop. Do not run `git add`, `git commit`, `git push`, `git stash`, or amend. Quality gates (`bun run … typecheck|test|build`) still run between tasks.
 - Commit-review context flow: find the earliest modified or created file timestamp, inspect parent Cursor sessions from that time onward, group files by intent, then write simple Conventional Commit messages.
 - Use short descriptive commit messages. Do not add AI/Cursor branding or internal doc references.
 - A Cursor commit hook currently injects a `Made-with: Cursor` trailer on every commit. This conflicts with `commit-review`'s trailer-stripping rule; do not chase it manually mid-session.
@@ -171,6 +172,7 @@ Persistent memory for AI agents working in `docsy`. Preserve these rules unless 
 - Do not copy `node_modules` between Docker stages. Bun uses symlinks into a virtual store; copied installs can break module resolution.
 - Any stage that runs `next build`, extension builds, or config that requires deps must run `bun install --frozen-lockfile`.
 - Copy only `package.json`, `bun.lock`, and the workspace tree between stages.
+- Any Dockerfile stage that runs `bun run build` for `@docs.plus/extension-*` must also `COPY` the root-level shared configs `tsconfig.base.json` and `tsup.base.ts` into the build context. Each extension's `tsconfig.json` extends `../../tsconfig.base.json` and each `tsup.config.ts` imports `from '../../tsup.base'`; missing either file fails the extension build with `Could not resolve "../../tsup.base"`. Affected Dockerfiles today: `packages/hocuspocus.server/docker/Dockerfile.bun` and `packages/webapp/docker/Dockerfile.bun` (`build-extensions` stage must copy them via `--from=deps`).
 
 ### Standalone Bun Scripts
 
