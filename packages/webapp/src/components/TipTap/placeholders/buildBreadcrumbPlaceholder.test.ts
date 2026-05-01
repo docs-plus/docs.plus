@@ -221,6 +221,7 @@ function makeProps(
   return {
     editor: { state: { doc } } as unknown as PlaceholderRenderProps['editor'],
     node: node as unknown as PlaceholderRenderProps['node'],
+    doc: doc as unknown as PlaceholderRenderProps['doc'],
     pos,
     hasAnchor: true,
     parentName
@@ -363,6 +364,27 @@ describe('buildBreadcrumbPlaceholder', () => {
     const props = makeProps(doc, codeBlock, positions[2])
 
     expect(buildBreadcrumbPlaceholder(props)).toBe('Write code')
+  })
+
+  it('does not throw when pos is out of range of stale editor.state.doc (newDoc-only)', () => {
+    // Simulates the apply() reentrancy on initial setContent: editor.state.doc
+    // is the small/empty old doc, but `pos` was computed from the new doc.
+    // Builder must use props.doc, not editor.state.doc.
+    const newChildren = [heading(1, 'Title'), paragraph(), paragraph(), paragraph()]
+    const { doc: newDoc, positions } = makeDoc(newChildren)
+    const staleEmpty = makeDoc([paragraph()]).doc
+    const props: PlaceholderRenderProps = {
+      editor: {
+        state: { doc: staleEmpty }
+      } as unknown as PlaceholderRenderProps['editor'],
+      node: newChildren[3] as unknown as PlaceholderRenderProps['node'],
+      doc: newDoc as unknown as PlaceholderRenderProps['doc'],
+      pos: positions[3],
+      hasAnchor: true,
+      parentName: 'doc'
+    }
+    expect(() => buildBreadcrumbPlaceholder(props)).not.toThrow()
+    expect(buildBreadcrumbPlaceholder(props)).toBe('Title > Write here')
   })
 
   it("default scope keeps existing 'Heading' for an empty heading inside a blockquote", () => {

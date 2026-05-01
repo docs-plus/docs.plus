@@ -115,7 +115,7 @@ interface HeadingRef {
 }
 
 function collectPrecedingHeadingRefs(
-  doc: PlaceholderRenderProps['editor']['state']['doc'],
+  doc: PlaceholderRenderProps['doc'],
   pos: number
 ): HeadingRef[] {
   // resolve(pos).index(0) gives the index of the top-level child that
@@ -168,7 +168,7 @@ export function buildBreadcrumbPlaceholder(
   props: PlaceholderRenderProps,
   options: BreadcrumbPlaceholderOptions = {}
 ): string {
-  const { editor, node, pos, parentName } = props
+  const { node, pos, parentName, doc } = props
   const scope = options.scope ?? 'top-level'
   const nodeName = node.type.name
 
@@ -186,7 +186,7 @@ export function buildBreadcrumbPlaceholder(
     nodeName === 'paragraph' &&
     (node.attrs as { paragraphStyle?: string | null }).paragraphStyle === 'subtitle'
 
-  const precedingRefs = collectPrecedingHeadingRefs(editor.state.doc, pos)
+  const precedingRefs = collectPrecedingHeadingRefs(doc, pos)
   const chainRefs = buildAncestorChain(precedingRefs, isHeading ? (headingLevel ?? null) : null)
   const tail = resolveTailSegment({ nodeName, headingLevel, isSubtitle })
 

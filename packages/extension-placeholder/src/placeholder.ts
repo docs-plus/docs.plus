@@ -13,6 +13,8 @@ export interface PlaceholderRenderProps {
   hasAnchor: boolean
   /** Parent node type name (e.g. 'doc', 'listItem', 'blockquote'). Safe during apply(). */
   parentName: string
+  /** Doc that `pos` resolves against. Use this — `editor.state.doc` is stale during apply(). */
+  doc: ProseMirrorNode
 }
 
 export interface PlaceholderOptions {
@@ -48,7 +50,7 @@ function buildFromCursor(
   const parentName = $anchor.depth >= 2 ? $anchor.node($anchor.depth - 1).type.name : 'doc'
   const placeholderText =
     typeof options.placeholder === 'function'
-      ? options.placeholder({ editor, node, pos, hasAnchor: true, parentName })
+      ? options.placeholder({ editor, node, pos, hasAnchor: true, parentName, doc: state.doc })
       : options.placeholder
 
   if (!placeholderText) return DecorationSet.empty
