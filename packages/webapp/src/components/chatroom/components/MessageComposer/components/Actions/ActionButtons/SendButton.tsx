@@ -9,12 +9,12 @@ type Props = React.HTMLAttributes<HTMLButtonElement> & {
 }
 
 export const SendButton = ({ className, size = 18, ...props }: Props) => {
-  const { editor, loading, submitMessage } = useMessageComposer()
+  const { editor, submitMessage } = useMessageComposer()
 
   return (
     <Button
       className={twMerge('ml-auto', className)}
-      disabled={loading || editor?.isEmpty}
+      disabled={editor?.isEmpty}
       type="submit"
       onPress={submitMessage}
       {...props}>

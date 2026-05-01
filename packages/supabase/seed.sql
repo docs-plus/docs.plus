@@ -286,7 +286,7 @@ create policy "Admins can insert"
 create policy "Admins can delete others"
     on public.admin_users for delete
     using (
-        user_id != auth.uid() and 
+        user_id != auth.uid() and
         public.is_admin(auth.uid())
     );
 
@@ -2061,71 +2061,73 @@ EXECUTE FUNCTION set_message_thread_depth();
  *   - p_html: The HTML content of the message
  *   - p_thread_id: The ID of the thread/root message
  *   - p_workspace_id: The workspace ID for the thread
- * Returns: VOID
+ *   - p_id: Optional client-supplied UUID for the inserted message; lets the
+ *           client reconcile its optimistic row with the realtime echo.
+ * Returns: UUID of the inserted message (caller-supplied or generated).
  */
+-- Return type changes from VOID to UUID; CREATE OR REPLACE cannot do that.
+DROP FUNCTION IF EXISTS public.create_thread_message(TEXT, TEXT, UUID, VARCHAR);
+
 CREATE OR REPLACE FUNCTION create_thread_message(
-    p_content TEXT,
-    p_html TEXT,
-    p_thread_id UUID,
-    p_workspace_id VARCHAR(36)
+    p_content      TEXT,
+    p_html         TEXT,
+    p_thread_id    UUID,
+    p_workspace_id VARCHAR(36),
+    p_id           UUID DEFAULT NULL
 )
-RETURNS VOID
+RETURNS UUID
 AS $$
 DECLARE
-    v_channel_exists BOOLEAN;
-    v_is_user_member BOOLEAN;
-    v_is_thread_root BOOLEAN;
+    v_channel_exists  BOOLEAN;
+    v_is_user_member  BOOLEAN;
+    v_is_thread_root  BOOLEAN;
     v_thread_owner_id UUID;
+    v_message_id      UUID := COALESCE(p_id, uuid_generate_v4());
 BEGIN
-    -- Check if the channel exists and if the user is a member
     SELECT
         EXISTS (
-            SELECT 1
-            FROM public.channels
-            WHERE id = p_thread_id
+            SELECT 1 FROM public.channels WHERE id = p_thread_id
         ),
         EXISTS (
-            SELECT 1
-            FROM public.channel_members
-            WHERE channel_id = p_thread_id
-            AND member_id = auth.uid()
+            SELECT 1 FROM public.channel_members
+             WHERE channel_id = p_thread_id
+               AND member_id = auth.uid()
         )
-    INTO v_channel_exists, v_is_user_member;
+      INTO v_channel_exists, v_is_user_member;
 
-    -- If the channel doesn't exist, create a new one and add the user as an admin
     IF NOT v_channel_exists THEN
         INSERT INTO public.channels (id, workspace_id, slug, name, created_by, description, type)
-        VALUES (p_thread_id, p_workspace_id, 'thread-' || uuid_generate_v4(), 'Thread Channel', auth.uid(), 'Automatically created channel for thread', 'THREAD');
-
+        VALUES (
+            p_thread_id, p_workspace_id, 'thread-' || uuid_generate_v4(),
+            'Thread Channel', auth.uid(),
+            'Automatically created channel for thread', 'THREAD'
+        );
         v_is_user_member := TRUE;
-    -- If the user is not a member, add them as a member
     ELSIF NOT v_is_user_member THEN
         INSERT INTO public.channel_members (channel_id, member_id, channel_member_role)
         VALUES (p_thread_id, auth.uid(), 'MEMBER')
         ON CONFLICT DO NOTHING;
-
         v_is_user_member := TRUE;
     END IF;
 
-    -- If the user is a member, update the thread and insert the new message
     IF v_is_user_member THEN
-        -- Update the message to mark it as a thread root if needed
         WITH cte_thread_root AS (
             UPDATE public.messages
-            SET thread_owner_id = COALESCE(thread_owner_id, auth.uid()),
-                is_thread_root = TRUE
-            WHERE id = p_thread_id
-            AND (thread_owner_id IS NULL OR NOT is_thread_root)
-            RETURNING thread_owner_id, is_thread_root
+               SET thread_owner_id = COALESCE(thread_owner_id, auth.uid()),
+                   is_thread_root  = TRUE
+             WHERE id = p_thread_id
+               AND (thread_owner_id IS NULL OR NOT is_thread_root)
+             RETURNING thread_owner_id, is_thread_root
         )
         SELECT thread_owner_id, is_thread_root
-        INTO v_thread_owner_id, v_is_thread_root
-        FROM cte_thread_root;
+          INTO v_thread_owner_id, v_is_thread_root
+          FROM cte_thread_root;
 
-        -- Insert the new message
-        INSERT INTO public.messages (content, channel_id, user_id, html, thread_id)
-        VALUES (p_content, p_thread_id, auth.uid(), p_html, p_thread_id);
+        INSERT INTO public.messages (id, content, channel_id, user_id, html, thread_id)
+        VALUES (v_message_id, p_content, p_thread_id, auth.uid(), p_html, p_thread_id);
     END IF;
+
+    RETURN v_message_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -6878,7 +6880,7 @@ create table if not exists public.document_views (
     is_anonymous    boolean not null default false,  -- Supabase Anonymous Auth user
     is_authenticated boolean not null default false, -- Logged in with real account
     device_type     text check (device_type in ('desktop', 'mobile', 'tablet')),
-    
+
     primary key (id, viewed_at)
 ) partition by range (viewed_at);
 
@@ -6889,7 +6891,7 @@ User types:
   - is_anonymous=true: Supabase Anonymous Auth (can be linked later)
   - Both false: Guest with session_id only';
 
-comment on table public.document_views is 
+comment on table public.document_views is
 'Raw document view events. Partitioned by month for efficient data lifecycle management.';
 
 -- Create partitions for current and next 3 months
@@ -6903,7 +6905,7 @@ begin
         start_date := date_trunc('month', current_date + (i || ' months')::interval);
         end_date := start_date + interval '1 month';
         partition_name := 'document_views_' || to_char(start_date, 'YYYY_MM');
-        
+
         -- Check if partition exists
         if not exists (
             select 1 from pg_class c
@@ -6915,7 +6917,7 @@ begin
                  for values from (%L) to (%L)',
                 partition_name, start_date, end_date
             );
-            
+
             -- Create indexes on partition
             execute format(
                 'create index %I on public.%I (document_slug, viewed_at)',
@@ -6947,7 +6949,7 @@ begin
         start_date := date_trunc('month', current_date + (i || ' months')::interval);
         end_date := start_date + interval '1 month';
         partition_name := 'document_views_' || to_char(start_date, 'YYYY_MM');
-        
+
         if not exists (
             select 1 from pg_class c
             join pg_namespace n on n.oid = c.relnamespace
@@ -6984,35 +6986,35 @@ comment on function public.create_document_views_partitions() is
 
 create table if not exists public.document_view_stats (
     document_slug       text primary key,
-    
+
     -- Lifetime stats
     total_views         bigint not null default 0,
     unique_sessions     bigint not null default 0,
     unique_users        bigint not null default 0,
-    
+
     -- User type breakdown
     authenticated_views bigint not null default 0,  -- Logged in users
     anonymous_views     bigint not null default 0,  -- Supabase Anonymous Auth
     guest_views         bigint not null default 0,  -- No auth at all
-    
+
     -- Device breakdown
     views_desktop       bigint not null default 0,
     views_mobile        bigint not null default 0,
     views_tablet        bigint not null default 0,
-    
+
     -- Engagement
     total_duration_ms   bigint not null default 0,
     avg_duration_ms     integer not null default 0,
     bounce_count        bigint not null default 0,
     bounce_rate         numeric(5,2) not null default 0,
-    
+
     -- Time-windowed stats
     views_today         integer not null default 0,
     views_7d            integer not null default 0,
     views_30d           integer not null default 0,
     unique_users_7d     integer not null default 0,
     unique_users_30d    integer not null default 0,
-    
+
     -- Metadata
     first_viewed_at     timestamp with time zone,
     last_viewed_at      timestamp with time zone,
@@ -7026,9 +7028,9 @@ User types:
   - anonymous_views: Supabase Anonymous Auth users
   - guest_views: No auth (session-based only)';
 
-create index if not exists idx_document_view_stats_views 
+create index if not exists idx_document_view_stats_views
     on public.document_view_stats (views_7d desc);
-create index if not exists idx_document_view_stats_updated 
+create index if not exists idx_document_view_stats_updated
     on public.document_view_stats (stats_updated_at);
 
 comment on table public.document_view_stats is
@@ -7048,11 +7050,11 @@ create table if not exists public.document_views_daily (
     unique_users    integer not null default 0,
     avg_duration_ms integer not null default 0,
     bounce_count    integer not null default 0,
-    
+
     primary key (document_slug, view_date)
 );
 
-create index if not exists idx_document_views_daily_date 
+create index if not exists idx_document_views_daily_date
     on public.document_views_daily (view_date desc);
 
 comment on table public.document_views_daily is
@@ -7111,17 +7113,17 @@ begin
     if p_document_slug is null or length(trim(p_document_slug)) = 0 then
         return jsonb_build_object('success', false, 'error', 'document_slug required');
     end if;
-    
+
     if p_session_id is null or length(trim(p_session_id)) < 10 then
         return jsonb_build_object('success', false, 'error', 'valid session_id required');
     end if;
-    
+
     -- Validate device type
     v_device := lower(coalesce(p_device_type, 'desktop'));
     if v_device not in ('desktop', 'mobile', 'tablet') then
         v_device := 'desktop';
     end if;
-    
+
     -- Enqueue view event (fast, ~1ms)
     perform pgmq.send('document_views', jsonb_build_object(
         'view_id', v_view_id,
@@ -7133,7 +7135,7 @@ begin
         'device_type', v_device,
         'viewed_at', now()
     ));
-    
+
     -- Return view_id so Hocuspocus can update duration later
     return jsonb_build_object(
         'success', true,
@@ -7152,7 +7154,7 @@ Fast (~1ms), no contention.
 p_is_anonymous: true if user is using Supabase Anonymous Auth.
 Returns view_id for duration updates.';
 
-grant execute on function public.enqueue_document_view(text, text, uuid, boolean, text) 
+grant execute on function public.enqueue_document_view(text, text, uuid, boolean, text)
     to authenticated, anon, service_role;
 
 
@@ -7179,11 +7181,11 @@ begin
     loop
         loop_count := loop_count + 1;
         row_count := 0;
-        
+
         if loop_count > max_loops then
             exit;
         end if;
-        
+
         -- Read batch from queue
         for rec in
             select * from pgmq.read(
@@ -7193,7 +7195,7 @@ begin
             )
         loop
             row_count := row_count + 1;
-            
+
             declare
                 v_view_id uuid := (rec.message->>'view_id')::uuid;
                 v_document_slug text := rec.message->>'document_slug';
@@ -7225,10 +7227,10 @@ begin
                     );
                     v_processed := v_processed + 1;
                 end if;
-                
+
                 -- Delete from queue
                 perform pgmq.delete('document_views', rec.msg_id);
-                
+
             exception when others then
                 v_errors := v_errors + 1;
                 raise warning 'Error processing view %: %', rec.msg_id, sqlerrm;
@@ -7236,13 +7238,13 @@ begin
                 perform pgmq.delete('document_views', rec.msg_id);
             end;
         end loop;
-        
+
         -- Exit if queue is empty
         if row_count = 0 then
             exit;
         end if;
     end loop;
-    
+
     return jsonb_build_object(
         'success', true,
         'processed', v_processed,
@@ -7275,18 +7277,18 @@ begin
     if p_view_id is null or p_duration_ms is null then
         return false;
     end if;
-    
+
     -- Cap duration at 30 minutes
     p_duration_ms := least(greatest(p_duration_ms, 0), 1800000);
-    
+
     -- Update by view_id (works across partitions)
     update public.document_views
-    set 
+    set
         duration_ms = p_duration_ms,
         is_bounce = p_duration_ms < 3000
     where id = p_view_id
       and viewed_at > now() - interval '24 hours';
-    
+
     return found;
 end;
 $$;
@@ -7294,7 +7296,7 @@ $$;
 comment on function public.update_view_duration(uuid, integer) is
 'Updates duration for a view by view_id. Called by Hocuspocus on disconnect.';
 
-grant execute on function public.update_view_duration(uuid, integer) 
+grant execute on function public.update_view_duration(uuid, integer)
     to authenticated, anon, service_role;
 
 
@@ -7320,7 +7322,7 @@ begin
     select max(stats_updated_at) into v_last_run from public.document_view_stats;
     -- Default to 30 days ago if no previous run
     v_last_run := coalesce(v_last_run - interval '1 minute', v_cutoff_30d);
-    
+
     -- Only process documents with views since last run (incremental)
     -- Use 30-day window for time-based stats (covers all needed data)
     with docs_to_update as (
@@ -7375,9 +7377,9 @@ begin
         authenticated_views, anonymous_views, guest_views,
         views_desktop, views_mobile, views_tablet,
         total_duration_ms, avg_duration_ms, bounce_count,
-        case when total_views > 0 
-            then round((bounce_count::numeric / total_views) * 100, 2) 
-            else 0 
+        case when total_views > 0
+            then round((bounce_count::numeric / total_views) * 100, 2)
+            else 0
         end,
         views_today, views_7d, views_30d, unique_users_7d, unique_users_30d,
         first_viewed_at, last_viewed_at, now()
@@ -7404,9 +7406,9 @@ begin
         first_viewed_at = coalesce(document_view_stats.first_viewed_at, excluded.first_viewed_at),
         last_viewed_at = excluded.last_viewed_at,
         stats_updated_at = now();
-    
+
     get diagnostics v_docs_updated = row_count;
-    
+
     -- Update daily stats only for today and yesterday (incremental)
     with daily_raw as (
         select
@@ -7432,9 +7434,9 @@ begin
         unique_users = excluded.unique_users,
         avg_duration_ms = excluded.avg_duration_ms,
         bounce_count = excluded.bounce_count;
-    
+
     get diagnostics v_daily_updated = row_count;
-    
+
     return jsonb_build_object(
         'success', true,
         'documents_updated', v_docs_updated,
@@ -7476,13 +7478,13 @@ begin
         execute format('drop table if exists public.%I', v_partition_name);
         v_partitions_dropped := v_partitions_dropped + 1;
     end loop;
-    
+
     -- Delete daily stats older than 1 year
     delete from public.document_views_daily
     where view_date < current_date - interval '1 year';
-    
+
     get diagnostics v_daily_deleted = row_count;
-    
+
     return jsonb_build_object(
         'success', true,
         'partitions_dropped', v_partitions_dropped,
@@ -7513,7 +7515,7 @@ as $$
         'views_7d', coalesce(sum(views_7d), 0),
         'views_30d', coalesce(sum(views_30d), 0),
         'avg_duration_ms', coalesce(
-            (sum(total_duration_ms)::numeric / nullif(sum(total_views), 0))::integer, 
+            (sum(total_duration_ms)::numeric / nullif(sum(total_views), 0))::integer,
             0
         ),
         'bounce_rate', coalesce(
@@ -7559,21 +7561,21 @@ stable
 as $$
     select
         document_slug,
-        case when p_days = 7 then views_7d 
-             when p_days = 30 then views_30d 
-             else total_views 
+        case when p_days = 7 then views_7d
+             when p_days = 30 then views_30d
+             else total_views
         end as views,
-        case when p_days = 7 then unique_users_7d 
-             when p_days = 30 then unique_users_30d 
-             else unique_users 
+        case when p_days = 7 then unique_users_7d
+             when p_days = 30 then unique_users_30d
+             else unique_users
         end as unique_visitors,
         avg_duration_ms,
         bounce_rate
     from public.document_view_stats
-    order by 
-        case when p_days = 7 then views_7d 
-             when p_days = 30 then views_30d 
-             else total_views 
+    order by
+        case when p_days = 7 then views_7d
+             when p_days = 30 then views_30d
+             else total_views
         end desc
     limit p_limit;
 $$;
@@ -7673,7 +7675,7 @@ do $$
 begin
     perform cron.unschedule('process_document_views_queue')
     where exists (select 1 from cron.job where jobname = 'process_document_views_queue');
-    
+
     perform cron.schedule(
         'process_document_views_queue',
         '*/10 * * * * *',
@@ -7689,7 +7691,7 @@ do $$
 begin
     perform cron.unschedule('aggregate_document_view_stats')
     where exists (select 1 from cron.job where jobname = 'aggregate_document_view_stats');
-    
+
     perform cron.schedule(
         'aggregate_document_view_stats',
         '*/5 * * * *',
@@ -7705,7 +7707,7 @@ do $$
 begin
     perform cron.unschedule('create_document_views_partitions')
     where exists (select 1 from cron.job where jobname = 'create_document_views_partitions');
-    
+
     perform cron.schedule(
         'create_document_views_partitions',
         '5 0 1 * *',
@@ -7721,7 +7723,7 @@ do $$
 begin
     perform cron.unschedule('cleanup_old_document_views')
     where exists (select 1 from cron.job where jobname = 'cleanup_old_document_views');
-    
+
     perform cron.schedule(
         'cleanup_old_document_views',
         '0 3 * * 0',
@@ -7785,7 +7787,7 @@ declare
     v_total_users integer;
 begin
     -- Single optimized query using FILTER
-    select 
+    select
         count(*) filter (where online_at >= now() - interval '24 hours'),
         count(*) filter (where online_at >= now() - interval '7 days'),
         count(*) filter (where online_at >= now() - interval '30 days'),
@@ -7839,14 +7841,14 @@ declare
     v_total integer;
 begin
     -- Single optimized query using FILTER
-    select 
+    select
         count(*) filter (where created_at >= now() - interval '7 days'),
         count(*) filter (where online_at >= now() - interval '7 days' and created_at < now() - interval '7 days'),
-        count(*) filter (where 
+        count(*) filter (where
             (online_at < now() - interval '14 days' and online_at >= now() - interval '30 days')
             or (online_at is null and created_at < now() - interval '14 days' and created_at >= now() - interval '30 days')
         ),
-        count(*) filter (where 
+        count(*) filter (where
             (online_at < now() - interval '30 days')
             or (online_at is null and created_at < now() - interval '30 days')
         ),
@@ -7893,14 +7895,14 @@ begin
         )::date as d
     ),
     daily_counts as (
-        select 
+        select
             online_at::date as activity_date,
             count(distinct id) as active_users
         from public.users
         where online_at >= current_date - p_days
         group by online_at::date
     )
-    select 
+    select
         ds.d as activity_date,
         coalesce(dc.active_users, 0)::integer as active_users
     from date_series ds
@@ -7927,7 +7929,7 @@ stable
 as $$
 begin
     return query
-    select 
+    select
         extract(hour from m.created_at)::integer as hour_of_day,
         extract(dow from m.created_at)::integer as day_of_week,
         count(*) as message_count
@@ -7935,7 +7937,7 @@ begin
     join public.channels c on m.channel_id = c.id
     where m.created_at >= now() - (p_days || ' days')::interval
       and c.type = 'PUBLIC'
-    group by 
+    group by
         extract(hour from m.created_at),
         extract(dow from m.created_at)
     order by day_of_week, hour_of_day;
@@ -7961,7 +7963,7 @@ stable
 as $$
 begin
     return query
-    select 
+    select
         w.id as workspace_id,
         w.slug as document_slug,
         count(m.id) as message_count,
@@ -8004,7 +8006,7 @@ begin
       and c.type = 'PUBLIC';
 
     return query
-    select 
+    select
         coalesce(m.type, 'text') as message_type,
         count(*) as count,
         case when v_total > 0 then round((count(*)::numeric / v_total) * 100, 1) else 0 end as percentage
@@ -8036,7 +8038,7 @@ declare
     v_unique_senders bigint;
 begin
     -- Count from PUBLIC channels only
-    select 
+    select
         count(*),
         count(*) filter (where m.is_thread_root = true),
         count(*) filter (where m.reactions is not null and m.reactions != '[]'::jsonb),
@@ -8090,10 +8092,10 @@ begin
        or profile_data->>'email_notifications' is null; -- Default is enabled
 
     -- Notification read rate
-    select 
-        case when count(*) > 0 
+    select
+        case when count(*) > 0
             then round((count(*) filter (where is_read = true)::numeric / count(*)) * 100, 1)
-            else 0 
+            else 0
         end
     into v_notification_read_rate
     from public.notifications

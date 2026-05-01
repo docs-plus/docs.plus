@@ -1,13 +1,8 @@
-/**
- * API types - Request/Response types for API operations
- * Types used for API function parameters and return values
- */
-
 import { Profile } from './domain'
+import type { MessageStatus } from './message'
 import { Database } from './supabase'
 
-// Message types
-export type TMsgRow = Database['public']['Tables']['messages']['Row'] & {
+export type TMsgRow = Omit<Database['public']['Tables']['messages']['Row'], 'metadata'> & {
   metadata: unknown | null
   user_details: Profile | null
   is_bookmarked?: boolean
@@ -16,16 +11,33 @@ export type TMsgRow = Database['public']['Tables']['messages']['Row'] & {
   bookmark_archived_at?: string | null
   bookmark_marked_at?: string | null
   bookmark_metadata?: unknown | null
-  isGroupEnd: boolean
-  isGroupStart: boolean
-  isNewGroupById: boolean
-  replied_message_details: {
+  replied_message_details?: {
     message: TMsgRow
-    user: Profile
+    /**
+     * Author of the replied-to message. Nullable because the row may
+     * have been written optimistically before user-presence resolved
+     * (e.g. on cold reload), and because the original author may have
+     * been soft-deleted (`users.deleted_at`).
+     */
+    user: Profile | null
   }
+  /** Local-only delivery state. Omitted means `sent`. */
+  status?: MessageStatus
+  /** Human-readable error from the last failed send attempt. */
+  statusError?: string
 }
 
-// API request types
+/**
+ * Render-time projection of `TMsgRow` carrying grouping flags.
+ * Produced by `projectMessageGroups`. Never persisted.
+ */
+export type TGroupedMsgRow = TMsgRow & {
+  isGroupStart: boolean
+  isGroupEnd: boolean
+  isNewGroupById: boolean
+  isOwner: boolean
+}
+
 export type TSendMessageArgs = {
   content: TMsgRow['content']
   channel_id: TMsgRow['channel_id']
@@ -53,10 +65,7 @@ export type TUpdateMsgArgs = {
 
 export type TSendThreadMsgArgs = Database['public']['Functions']['create_thread_message']['Args']
 
-// Database function types
 export type TFToggleMessageBookmark = Database['public']['Functions']['toggle_message_bookmark']
-
-// Bookmarks RPC
 
 type TUserDetails = {
   id: string

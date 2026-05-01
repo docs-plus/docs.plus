@@ -3,7 +3,6 @@ import { joinChannel } from '@api'
 import Config from '@config'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
-import { groupedMessages } from '@utils/index'
 import debounce from 'lodash/debounce'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
@@ -27,7 +26,6 @@ export const useChannelInitialData = (
   const bulkSetMessages = useChatStore((state) => state.bulkSetMessages)
   const clearChannelMessages = useChatStore((state) => state.clearChannelMessages)
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
-  const setLastMessage = useChatStore((state) => state.setLastMessage)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const currentChannel = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
@@ -39,28 +37,25 @@ export const useChannelInitialData = (
 
   const processChannelData = async (channelId: string) => {
     if (currentChannel === null && workspaceId) {
-      let newChannelId = channelId
       const userId = user?.id || Config.chat.systemUserId
+      const slug = slugify(channelId, { strict: true, lower: true })
       await upsertChannel({
-        id: newChannelId,
+        id: channelId,
         workspace_id: workspaceId,
         created_by: userId,
-        name: slugify(newChannelId, { strict: true, lower: true }),
-        slug: 'c' + slugify(newChannelId, { strict: true, lower: true })
+        name: slug,
+        slug: 'c' + slug
       })
     }
-
-    let fetchArgs: any = { input_channel_id: channelId, message_limit: 20 }
 
     const startMsgId =
       useChatStore.getState().chatRoom.fetchMsgsFromId ||
       new URLSearchParams(location.search).get('msg_id')
 
-    if (startMsgId) {
-      fetchArgs = {
-        ...fetchArgs,
-        anchor_message_id: startMsgId
-      }
+    const fetchArgs: any = {
+      input_channel_id: channelId,
+      message_limit: 20,
+      ...(startMsgId && { anchor_message_id: startMsgId })
     }
 
     const { data: channelData, error: channelError } = await fetchChannelInitialData(fetchArgs)
@@ -104,7 +99,7 @@ export const useChannelInitialData = (
     }
   }
 
-  // Use lodash debounce
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedFetchData = useCallback(
     debounce(() => {
       fetchInitialData()
@@ -120,6 +115,7 @@ export const useChannelInitialData = (
     return () => {
       debouncedFetchData.cancel()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId])
 
   const updateChannelState = async (channelData: any) => {
@@ -170,9 +166,7 @@ export const useChannelInitialData = (
       // TODO: and then set the new messages // Refactor needed
 
       clearChannelMessages(channelId)
-      const newMessages = groupedMessages(channelData.last_messages.reverse())
-      const lastMessage = newMessages.at(-1)
-      setLastMessage(channelId, lastMessage)
+      const newMessages = [...channelData.last_messages].reverse()
       bulkSetMessages(channelId, newMessages)
       setMsgLength(newMessages.length)
     } else {

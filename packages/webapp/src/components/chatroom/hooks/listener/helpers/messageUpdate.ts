@@ -1,52 +1,46 @@
 import { useChatStore, useStore } from '@stores'
+import type { TMsgRow } from '@types'
 
-const getChannelMessages = (channelId: string): any => {
-  const messagesByChannel = useChatStore.getState().messagesByChannel
-  return messagesByChannel.get(channelId)
-}
+/**
+ * Realtime UPDATE handler. Supabase delivers the full updated row, so
+ * `payload.new` is the authoritative `TMsgRow`. Computed fields like
+ * `replied_message_details` are NOT carried over the wire — we rebuild
+ * them from the in-memory channel map (or fall through to undefined).
+ */
+type MessageUpdatePayload = { new: TMsgRow }
 
-export const messageUpdate = (payload: any) => {
-  const channelId = payload.new.channel_id
-
+export const messageUpdate = (payload: MessageUpdatePayload): void => {
+  const row = payload.new
+  const { id, channel_id: channelId, user_id: userId } = row
   if (!channelId) return
 
-  const messages = getChannelMessages(channelId)
-  const setOrUpdateMessage = useChatStore.getState().setOrUpdateMessage
-  const removeMessage = useChatStore.getState().removeMessage
-  const usersPresence = useStore.getState().usersPresence
-  const userdata = usersPresence.get(payload.new.user_id)
-  const setLastMessage = useChatStore.getState().setLastMessage
-  const lastMessages = useChatStore.getState().lastMessages.get(channelId)
+  const { setOrUpdateMessage, removeMessage, messagesByChannel } = useChatStore.getState()
 
-  const reply_to_message_id = messages.get(payload.new.reply_to_message_id)
-  // get the message
-  const message = messages.get(payload.new.id)
-  // update the message
-  const updatedMessage = { ...message, ...payload.new }
-
-  // update the messages map
-  if (payload.new.deleted_at) {
-    removeMessage(channelId, payload.new.id)
-    if (lastMessages?.id === payload.new.id) {
-      setLastMessage(channelId, null)
-    }
-
-    // TODO: if the message is pinned, we need to remove it from the pinned messages
-
-    // TODO: if the message is the last message in a group (which have avatar), we need that group of messages
-  } else {
-    const user_details = userdata || message?.user_details
-
-    const newMessage = {
-      ...updatedMessage,
-      replied_message_details: reply_to_message_id && {
-        message: reply_to_message_id,
-        user: reply_to_message_id?.user_details
-      }
-    }
-
-    if (user_details) newMessage.user_details = user_details
-
-    setOrUpdateMessage(channelId, payload.new.id, newMessage)
+  if (row.deleted_at) {
+    removeMessage(channelId, id)
+    // TODO: if pinned, drop from pinned messages.
+    // TODO: if last in a group (carries avatar), recompute the group chrome.
+    return
   }
+
+  const messages = messagesByChannel.get(channelId)
+  if (!messages) return
+
+  const existing = messages.get(id)
+  const userPresence = useStore.getState().usersPresence.get(userId)
+  const repliedMessage = row.reply_to_message_id ? messages.get(row.reply_to_message_id) : undefined
+
+  // Fall back to the existing reply quote when the replied-to row has
+  // been paginated out of memory — otherwise edits to a message would
+  // lose the quote until the next realtime echo re-hydrates it.
+  const merged: TMsgRow = {
+    ...existing,
+    ...row,
+    user_details: userPresence ?? existing?.user_details ?? null,
+    replied_message_details: repliedMessage
+      ? { message: repliedMessage, user: repliedMessage.user_details }
+      : existing?.replied_message_details
+  }
+
+  setOrUpdateMessage(channelId, id, merged)
 }

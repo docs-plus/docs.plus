@@ -22,6 +22,7 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
 
   const lastReadTime = useMemo(
     () => new Date(lastReadMessageTimestamp).getTime(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lastReadMessageTimestamp, channels]
   )
 
@@ -74,7 +75,8 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
 
       const messageId = message.id
       const messageTimestamp = message.created_at || message.createdAt
-      if (!messageId || !messageTimestamp || messageId === 'fake_id') continue
+      if (!messageId || !messageTimestamp) continue
+      if (message.status && message.status !== 'sent') continue
 
       const messageTime = new Date(messageTimestamp).getTime()
 

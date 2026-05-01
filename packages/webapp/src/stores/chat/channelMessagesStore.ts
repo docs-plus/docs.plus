@@ -1,79 +1,81 @@
+import type { MessageStatus, TMsgRow } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
 /**
- * Message store for chat application. Manages messages using Zustand with Immer.
+ * Channel-scoped message store. Rows are keyed by their stable
+ * server/client UUID — there is no `'fake_id'` placeholder.
  *
- * - messagesByChannel: Map with channelId as key and Map of messages as value.
+ * `setMessageStatus` mutates the existing row in place. If the row
+ * does not exist, the call is a no-op (the realtime listener may
+ * race with the local error path).
  *
- * Functions:
- * - setOrUpdateMessage(channelId, messageId, messageData): Add/update a message in a channel.
- * - bulkSetMessages(channelId, newMessages): Add multiple messages to a channel.
- * - removeMessage(channelId, messageId): Remove a message from a channel.
- * - clearChannelMessages(channelId): Clear all messages from a channel.
- *
- * Using Immer for immutable updates. Note that debugging involves Proxy objects.
+ * The previous `lastMessages` side-store has been removed: its only
+ * reader was `messageUpdate`'s deletion-tracker, which now derives
+ * the most-recent row directly from `messagesByChannel`.
  */
-
 interface ChannelMessagesState {
-  messagesByChannel: Map<string, Map<string, any>>
-  lastMessages: Map<string, any> // last message for each channel
-  setOrUpdateMessage: (channelId: string, messageId: string, messageData: any) => void
-  bulkSetMessages: (channelId: string, newMessages: Array<any>) => void
+  messagesByChannel: Map<string, Map<string, TMsgRow>>
+  setOrUpdateMessage: (channelId: string, messageId: string, messageData: Partial<TMsgRow>) => void
+  bulkSetMessages: (channelId: string, newMessages: ReadonlyArray<TMsgRow>) => void
   removeMessage: (channelId: string, messageId: string) => void
   clearChannelMessages: (channelId: string) => void
-  replaceMessages: (channelId: string, newMessages: Map<string, any>) => void
-  setLastMessage: (channelId: string, message: any) => void
+  replaceMessages: (channelId: string, newMessages: Map<string, TMsgRow>) => void
+  setMessageStatus: (
+    channelId: string,
+    messageId: string,
+    status: MessageStatus,
+    error?: string
+  ) => void
 }
 
 const channelMessagesStore = immer<ChannelMessagesState>((set) => ({
   messagesByChannel: new Map(),
-  lastMessages: new Map(),
 
-  setOrUpdateMessage: (channelId: string, messageId: string, messageData: any) => {
+  setOrUpdateMessage: (channelId, messageId, messageData) => {
     set((state) => {
-      const channelMessages = state.messagesByChannel.get(channelId) || new Map()
-      channelMessages.set(messageId, {
-        ...(channelMessages.get(messageId) || {}),
-        ...messageData
-      })
+      const channelMessages = state.messagesByChannel.get(channelId) ?? new Map<string, TMsgRow>()
+      const existing = channelMessages.get(messageId)
+      channelMessages.set(messageId, { ...(existing ?? ({} as TMsgRow)), ...messageData })
       state.messagesByChannel.set(channelId, channelMessages)
     })
   },
 
-  replaceMessages: (channelId: string, newMessages: Map<string, any>) => {
+  replaceMessages: (channelId, newMessages) => {
     set((state) => {
       state.messagesByChannel.set(channelId, newMessages)
     })
   },
 
-  bulkSetMessages: (channelId: string, newMessages: Array<any>) => {
+  bulkSetMessages: (channelId, newMessages) => {
     set((state) => {
-      const existingMessages = state.messagesByChannel.get(channelId) || new Map()
-      newMessages.forEach((message) => {
-        existingMessages.set(message.id, message)
-      })
+      const existingMessages = state.messagesByChannel.get(channelId) ?? new Map<string, TMsgRow>()
+      for (const message of newMessages) existingMessages.set(message.id, message)
       state.messagesByChannel.set(channelId, existingMessages)
     })
   },
 
-  removeMessage: (channelId: string, messageId: string) => {
+  removeMessage: (channelId, messageId) => {
     set((state) => {
-      const channelMessages = state.messagesByChannel.get(channelId)
-      if (channelMessages) {
-        channelMessages.delete(messageId)
-      }
+      state.messagesByChannel.get(channelId)?.delete(messageId)
     })
   },
 
-  clearChannelMessages: (channelId: string) => {
+  clearChannelMessages: (channelId) => {
     set((state) => {
       state.messagesByChannel.delete(channelId)
     })
   },
 
-  setLastMessage: (channelId: string, message: any) => {
+  setMessageStatus: (channelId, messageId, status, error) => {
     set((state) => {
-      state.lastMessages.set(channelId, message)
+      const channel = state.messagesByChannel.get(channelId)
+      const existing = channel?.get(messageId)
+      if (!channel || !existing) return
+      channel.set(messageId, {
+        ...existing,
+        status,
+        statusError: status === 'failed' ? error : undefined
+      })
     })
   }
 }))

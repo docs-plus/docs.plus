@@ -1,6 +1,5 @@
 import { fetchMessagesPaginated } from '@api'
 import { useChatStore } from '@stores'
-import { groupedMessages } from '@utils/index'
 import { useCallback, useEffect, useState } from 'react'
 import { RefObject } from 'react'
 
@@ -119,10 +118,8 @@ export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivEl
       }
 
       if (response.messages.length > 0) {
-        // Convert pageMessages.messages to a Map
         const newMessagesMap: any = new Map(
-          // @ts-ignore
-          groupedMessages(response.messages.reverse()).map((message: any) => [message.id, message])
+          [...response.messages].reverse().map((message: any) => [message.id, message])
         )
 
         const storedMessages = [...(useChatStore.getState().messagesByChannel.get(channelId) || [])]
@@ -132,13 +129,10 @@ export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivEl
           return
         }
 
-        // Merge the new messages with the existing ones
         const updatedMessages: Map<string, any> = new Map([...newMessagesMap, ...storedMessages])
 
-        // Update messages in the store
         replaceMessages(channelId, updatedMessages)
 
-        // Adjust scroll position after DOM update to maintain same view
         adjustScrollPositionAfterLoad(initialScrollTop, initialScrollHeight)
       }
     } catch (error) {
@@ -147,6 +141,7 @@ export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivEl
       setIsLoadingMore(false)
       setLoadingMoreDirection(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     messageContainerRef.current,
     isLoadingMore,
@@ -199,10 +194,8 @@ export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivEl
       }
 
       if (response.messages.length > 0) {
-        // Convert pageMessages.messages to a Map
         const newMessagesMap: any = new Map(
-          // @ts-ignore
-          groupedMessages(response.messages).map((message: any) => [message.id, message])
+          response.messages.map((message: any) => [message.id, message])
         )
 
         const storedMessages = [...(useChatStore.getState().messagesByChannel.get(channelId) || [])]
@@ -212,10 +205,8 @@ export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivEl
           return
         }
 
-        // Merge the new messages with the existing ones
         const updatedMessages: Map<string, any> = new Map([...storedMessages, ...newMessagesMap])
 
-        // Update messages in the store
         replaceMessages(channelId, updatedMessages)
       }
     } catch (error) {
@@ -225,6 +216,7 @@ export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivEl
       setIsLoadingMore(false)
       setLoadingMoreDirection(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageContainerRef.current, isLoadingNewer, hasMoreRecent, channelId])
 
   // Intersection Observer for efficient scroll detection

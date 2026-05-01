@@ -1,5 +1,6 @@
 import { twMerge } from 'tailwind-merge'
 
+import { useMessageCardContext } from '../../MessageCardContext'
 import MessageIndicators from './components/MessageIndicators'
 import MessageReactions from './components/MessageReactions'
 
@@ -8,6 +9,8 @@ type Props = {
   children?: React.ReactNode
 }
 const MessageFooter = ({ className, children }: Props) => {
+  const { message } = useMessageCardContext()
+  if (message.status === 'failed') return null
   return <div className={twMerge('message-footer', className)}>{children}</div>
 }
 

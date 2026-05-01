@@ -1,13 +1,12 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { useAuthStore, useChatStore } from '@stores'
-import { TMsgRow } from '@types'
+import { useChatStore } from '@stores'
+import { TGroupedMsgRow } from '@types'
 import { isOnlyEmoji } from '@utils/index'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-// import { useMessageListContext } from '../MessageList/MessageListContext'
 interface MessageCardContextValue {
-  message: TMsgRow
+  message: TGroupedMsgRow
   index: number
   isEmojiOnlyMessage: boolean
   isGroupStart: boolean
@@ -33,53 +32,42 @@ export const useMessageCardContext = () => {
 }
 
 export const MessageCardProvider: React.FC<{
-  message: TMsgRow
+  message: TGroupedMsgRow
   children: React.ReactNode
   index: number
   className?: string
 }> = ({ message, children, index, className }) => {
   const cardRef = useRef<MessageCardDesktopElement>(null)
   const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
-  // const { messages } = useMessageListContext()
   const { variant } = useChatroomContext()
-  const user = useAuthStore((state) => state.profile)
   const handleDoubleClick = useCallback(() => {
-    // if (!settings.contextMenu?.reply) return
-
     setReplyMessageMemory(message.channel_id, message)
 
-    // Trigger editor focus
     document.dispatchEvent(new CustomEvent('editor:focus'))
-  }, [message, /*settings.contextMenu?.reply, */ setReplyMessageMemory])
+  }, [message, setReplyMessageMemory])
 
   const isEmojiOnlyMessage = isOnlyEmoji(message?.content?.trim() || '')
   const isGroupStart = message.isGroupStart
 
-  const isOwnerMessage = useMemo(() => {
-    return message.user_id === user?.id
-  }, [message.user_id, user?.id])
-
-  // Attach ref and message data to DOM element
   useEffect(() => {
-    // if (ref) {
-    //   ref.current = cardRef.current
-    // }
-
     if (!cardRef.current) return
 
     cardRef.current.msgId = message.id
     cardRef.current.readedAt = message.readed_at
     cardRef.current.createdAt = message.created_at
     cardRef.current.user_id = message.user_id
-  }, [/*ref,*/ message, cardRef, isOwnerMessage])
+  }, [message, cardRef])
 
-  const value: MessageCardContextValue = {
-    message,
-    index,
-    isEmojiOnlyMessage,
-    isGroupStart,
-    cardRef
-  }
+  const value = useMemo<MessageCardContextValue>(
+    () => ({
+      message,
+      index,
+      isEmojiOnlyMessage,
+      isGroupStart,
+      cardRef
+    }),
+    [message, index, isEmojiOnlyMessage, isGroupStart]
+  )
 
   return (
     <MessageCardContext.Provider value={value}>
@@ -91,7 +79,7 @@ export const MessageCardProvider: React.FC<{
             : variant !== 'mobile' && 'hover:bg-base-200',
           'transition-colors duration-150',
           variant === 'mobile'
-            ? isOwnerMessage
+            ? message.isOwner
               ? 'chat-end owner ml-auto'
               : 'chat-start mr-auto'
             : 'w-full',

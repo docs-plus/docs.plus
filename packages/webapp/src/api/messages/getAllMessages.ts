@@ -1,3 +1,4 @@
+import type { MessageStatus } from '@types'
 import { Database, Profile } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
@@ -44,9 +45,8 @@ export type TMessageWithUser = TMessage & {
   user_details: any | null
   replied_message_preview?: any
   original_message_id?: any
-  isGroupEnd: boolean
-  isGroupStart: boolean
-  isNewGroupById: boolean
+  status?: MessageStatus
+  statusError?: string
   // Bookmark fields
   is_bookmarked?: boolean
   bookmark_id?: number | null

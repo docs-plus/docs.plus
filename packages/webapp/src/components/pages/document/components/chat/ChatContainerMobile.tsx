@@ -4,15 +4,9 @@ import { useChatStore } from '@stores'
 import { Sheet } from 'react-modal-sheet'
 
 /**
- * ChatContainerMobile
- * -------------------
- * Renders the chatroom inside the main BottomSheet and manages an
- * overlay emoji-picker sheet for message reactions (z-40 sits above
- * the chatroom sheet at z-10).
- *
- * NOTE: The composer's emoji button uses `switchSheet('emojiPicker')`
- * which replaces the chatroom in BottomSheet. This overlay sheet is
- * only for the QuickReactionMenu → "More emojis" action.
+ * Renders the chatroom inside the main BottomSheet plus an overlay
+ * emoji-picker sheet for message reactions (z-40 above chatroom z-10).
+ * The composer's own emoji button uses `switchSheet('emojiPicker')` instead.
  */
 const ChatContainerMobile = () => {
   const chatRoom = useChatStore((state) => state.chatRoom)
@@ -67,6 +61,9 @@ const ChatContainerMobile = () => {
                         </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
                       </Chatroom.MessageFeed.MessageList.MessageCard.Footer>
                     </div>
+                    <Chatroom.MessageFeed.MessageList.MessageCard.FailedRow
+                      className={message.isOwner ? 'self-end pr-2' : 'self-start pl-2'}
+                    />
                   </Chatroom.MessageFeed.MessageList.MessageCard>
                 </Chatroom.MessageFeed.MessageList.MessageCard.LongPressMenu>
               )}

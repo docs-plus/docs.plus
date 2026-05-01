@@ -1,7 +1,9 @@
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import type { TGroupedMsgRow, TMsgRow } from '@types'
+import { projectMessageGroups } from '@utils/projectMessageGroups'
 import { isSameDay, parseISO } from 'date-fns'
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 
 import { useMessageListContext } from '../MessageListContext'
 import { DateChip } from './DateChip'
@@ -9,7 +11,7 @@ import { SystemNotifyChip } from './SystemNotifyChip'
 import { UnreadIndicatorLine } from './UnreadIndicatorLine'
 
 interface Props {
-  children?: (message: any, index: number, messages: any[]) => React.ReactNode
+  children?: (message: TGroupedMsgRow, index: number, messages: TGroupedMsgRow[]) => React.ReactNode
   displaySystemNotifyChip?: boolean
 }
 
@@ -17,18 +19,33 @@ const isNewDay = (currentMessageDate: string, previousMessageDate: string) => {
   return !isSameDay(parseISO(currentMessageDate), parseISO(previousMessageDate))
 }
 
-export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props) => {
-  const { messagesArray, channelId, messageContainerRef, registerVirtualizer } =
-    useMessageListContext()
+type NotificationMetadata = { type?: string }
+const getNotificationType = (m: TMsgRow): string | undefined =>
+  (m.metadata as NotificationMetadata | null)?.type
 
-  // Get channel settings for unread indicator
-  const channelSettings = useChatStore((state: any) =>
-    state.workspaceSettings.channels.get(channelId)
+export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props) => {
+  const {
+    messagesArray: rawMessages,
+    channelId,
+    messageContainerRef,
+    registerVirtualizer
+  } = useMessageListContext()
+
+  const currentUserId = useAuthStore((state) => state.profile?.id ?? null)
+
+  const messagesArray = useMemo(
+    () => projectMessageGroups(rawMessages, currentUserId),
+    [rawMessages, currentUserId]
   )
-  const { lastReadMessageId, totalMsgSinceLastRead } = channelSettings || {
-    lastReadMessageId: '',
-    totalMsgSinceLastRead: 0
-  }
+
+  // Two leaf selectors instead of one channel-settings object so that
+  // unrelated property changes on this channel don't re-render the loop.
+  const lastReadMessageId = useChatStore(
+    (state: any) => state.workspaceSettings.channels.get(channelId)?.lastReadMessageId ?? ''
+  )
+  const totalMsgSinceLastRead = useChatStore(
+    (state: any) => state.workspaceSettings.channels.get(channelId)?.totalMsgSinceLastRead ?? 0
+  )
 
   const getItemKey = useCallback(
     (index: number) => messagesArray[index]?.id ?? index,
@@ -71,6 +88,7 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
         const showDateSeparator =
           virtualRow.index === 0 ||
           (previousMessage && isNewDay(message.created_at, previousMessage.created_at))
+        const notifType = getNotificationType(message)
         const showUnreadIndicator =
           lastReadMessageId === message.id && (totalMsgSinceLastRead ?? 0) >= 6
 
@@ -105,10 +123,8 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
             }}>
             {showUnreadIndicator && <UnreadIndicatorLine index={virtualRow.index} />}
             {showDateSeparator &&
-              message.metadata?.type !== 'channel_created' &&
-              message.metadata?.type !== 'user_join_workspace' && (
-                <DateChip date={message.created_at} />
-              )}
+              notifType !== 'channel_created' &&
+              notifType !== 'user_join_workspace' && <DateChip date={message.created_at} />}
             {content}
           </div>
         )

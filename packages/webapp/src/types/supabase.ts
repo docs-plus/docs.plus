@@ -1198,10 +1198,11 @@ export type Database = {
         Args: {
           p_content: string
           p_html: string
+          p_id?: string
           p_thread_id: string
           p_workspace_id: string
         }
-        Returns: undefined
+        Returns: string
       }
       disable_failed_subscriptions: {
         Args: {

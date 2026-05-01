@@ -736,3 +736,31 @@ editor
 - `Decoration.node` on heading-section was removed; animations live on the widget.
 - Strip count uses `MIN_FOLD_STRIPS`, `MAX_FOLD_STRIPS`, and `CONTENT_HEIGHT_PER_STRIP` in `heading-fold-plugin.ts`.
 - If `MIN_FOLD_STRIPS === MAX_FOLD_STRIPS`, strip count is fixed regardless of content height.
+
+## Chatroom And Messaging
+
+### Optimistic Message Lifecycle
+
+- Client generates a UUID v4 via `crypto.randomUUID()` in `utils/clientMessageId.ts` and carries it from optimistic insert through Postgres INSERT to realtime echo. The same ID is reconciled in place; there is no remove + re-add.
+- Do not reintroduce the literal `'fake_id'` placeholder. Two rapid sends collide in the store map and corrupt the optimistic UI.
+- `MessageStatus = 'pending' | 'sent' | 'failed'` lives in `types/message.ts`. Server-fetched rows omit the field and are treated as `sent` (`status === 'sent' || !status`). No runtime `MESSAGE_STATUS` const; the literal type alone gives compile-time safety.
+- `useCheckReadMessage` skips rows where `status !== 'sent'`; this replaces the old `id === 'fake_id'` skip.
+- Send path: composer builds a `pending` row with the client UUID, calls `sendMessage({ id, … })` (object-arg signature, single caller is `MessageComposer.tsx`), flips to `failed` with `statusError` on rejection. Realtime echo upsert flips to `sent`.
+- Duplicate-key classification is centralized in `components/chatroom/utils/postgresErrors.ts::isDuplicateKeyError`. Both the composer and `retryMessage` must import it; do not inline PgError code/message checks.
+- Retry is a standalone helper `components/chatroom/utils/retryMessage.ts` with no React coupling. It routes thread vs regular by `row.thread_id` and is idempotent on stale rows.
+- Server RPC `create_thread_message` accepts `p_id UUID DEFAULT NULL` and uses `coalesce(p_id, uuid_generate_v4())`. Mirror any change in both `packages/supabase/scripts/10-4-func-threads.sql` and `packages/supabase/seed.sql`, plus add a versioned migration under `packages/supabase/migrations/`.
+
+### Message Grouping Projection
+
+- Grouping lives in the view layer, not the store. `utils/projectMessageGroups.ts` is a pure projection `(rows, currentUserId) → TGroupedMsgRow[]` run inside `MessageLoop`'s `useMemo`; it sorts by `(created_at ASC, id ASC)` and emits parallel flags.
+- `TGroupedMsgRow = TMsgRow & { isGroupStart, isGroupEnd, isNewGroupById, isOwner }`. The store keeps raw `TMsgRow`; grouping flags are never persisted and do not leak into `api/messages/*` types.
+- Do not reintroduce `utils/groupMessages.ts` or an in-store mutation that writes grouping flags back onto rows. Out-of-order realtime arrivals and pagination merges corrupt flags whenever they are stored.
+- `channelMessagesStore` is tightened from `any` to `TMsgRow` and no longer maintains a `lastMessages` side-store. Derive the most-recent row from `messagesByChannel` directly.
+- `MessageListContext` and `MessageCardContext` must memoize their context value objects (`useMemo`). A fresh object identity on every parent render cascades re-renders through every `MessageCard`.
+- `MessageFooter` self-hides on `status === 'failed'`. Consumers (`DesktopEditor`, `ChatContainerMobile`) render `MessageCard.FailedRow` for owner rows and must not re-gate on `status`.
+
+### MessageComposer Pitfalls
+
+- After submit, refocus the editor only if it was the active element. Otherwise `editor.chain().clearContent(true).focus('start').run()` force-opens the iOS keyboard right after a `SendButton` tap and produces a visible bounce. Enter-key submits keep focus naturally.
+- `useEditor(...)` in `components/chatroom/components/MessageComposer/hooks/useTiptapEditor.ts` captures `workspaceId` / `channelId` / `isToolbarOpen` in the `onUpdate` closure. Today this is masked because `Chatroom.ChannelComposer` remounts on channel key change and drafts never cross. If the composer mount is ever made persistent (a tempting perf win), drafts will silently corrupt across channels — fix with a refs pattern or lift `setComposerStateDebounced` into a `useEffect` keyed on the ids.
+- `prepareContent` must return a stable `chunks` shape (`{ htmlChunks: string[], textChunks: string[] }`) on both the happy and empty paths so callers never need an `as` cast.

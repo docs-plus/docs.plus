@@ -1,22 +1,14 @@
 import { getUserById } from '@api'
 import { useChatStore, useStore } from '@stores'
-import { Profile } from '@types'
-import { groupedMessages } from '@utils/index'
-
-const getChannelMessages = (channelId: string): any => {
-  const messagesByChannel = useChatStore.getState().messagesByChannel
-  return messagesByChannel.get(channelId)
-}
+import type { Profile } from '@types'
 
 const fetchUserDetails = async (userId: string): Promise<Profile | null> => {
   try {
     const { data, error } = await getUserById(userId)
-
     if (error || !data) {
       console.info('[UserDetails] - user not found', { userId, error })
       return null
     }
-
     return data as Profile
   } catch (err) {
     console.info('[UserDetails] - fetch failed', { userId, err })
@@ -24,67 +16,57 @@ const fetchUserDetails = async (userId: string): Promise<Profile | null> => {
   }
 }
 
+/**
+ * Realtime INSERT handler. The payload is authoritative — we upsert
+ * the row by its server id and stamp `status: 'sent'`. If the row was
+ * already in the store as `pending` (the optimistic write), this
+ * transitions it in place without a remove + re-add.
+ *
+ * No more `'fake_id'` placeholder. Two messages submitted concurrently
+ * each carry their own UUID and reconcile independently.
+ *
+ * `payload.new` is a raw `messages` row — it does NOT carry computed
+ * fields like `replied_message_details` (those come from RPCs only).
+ * We rebuild that field from the in-memory map first, and fall back
+ * to whatever the existing store row already has (e.g. an optimistic
+ * row that hydrated it from `replyMessageMemory` at send time).
+ */
 export const messageInsert = async (payload: any) => {
-  const channelId = payload.new.channel_id
-
-  const removeMessage = useChatStore.getState().removeMessage
-  const setOrUpdateMessage = useChatStore.getState().setOrUpdateMessage
-  const setLastMessage = useChatStore.getState().setLastMessage
-  const usersPresence = useStore.getState().usersPresence
-
-  removeMessage(channelId, 'fake_id')
-
+  const channelId = payload.new?.channel_id
   if (!channelId) return
-
-  const messages = getChannelMessages(channelId || '')
-  let userdata = usersPresence.get(payload.new.user_id)
-
-  // Fetch user details if not in presence store
-  // Mostly this must be handled by useOnAuthStateChange or useCatchUserPresences hook in realtime
-  if (!userdata) {
-    const fetchedUser = await fetchUserDetails(payload.new.user_id)
-    if (fetchedUser) {
-      useStore.getState().setOrUpdateUserPresence(payload.new.user_id, fetchedUser)
-      userdata = fetchedUser
-    }
-  }
-
-  const reply_to_message_id = messages?.get(payload.new.reply_to_message_id)
-  // TODO: reply message user id
-
   if (payload.new.deleted_at) return
 
-  const newMessage = {
-    ...payload.new,
-    user_details: userdata,
-    replied_message_details: reply_to_message_id && {
-      message: reply_to_message_id,
-      user: reply_to_message_id?.user_details
+  const setOrUpdateMessage = useChatStore.getState().setOrUpdateMessage
+  const usersPresence = useStore.getState().usersPresence
+  const channelMessages = useChatStore.getState().messagesByChannel.get(channelId)
+  const existingRow = channelMessages?.get(payload.new.id)
+
+  let userDetails = usersPresence.get(payload.new.user_id) ?? existingRow?.user_details ?? null
+  if (!userDetails) {
+    const fetched = await fetchUserDetails(payload.new.user_id)
+    if (fetched) {
+      useStore.getState().setOrUpdateUserPresence(payload.new.user_id, fetched)
+      userDetails = fetched
     }
   }
 
-  // if there is no messages, just add the message
-  if (!messages) {
-    setLastMessage(channelId, newMessage)
-    return setOrUpdateMessage(channelId, payload.new.id, newMessage)
+  const replyTo = payload.new.reply_to_message_id
+    ? channelMessages?.get(payload.new.reply_to_message_id)
+    : null
+
+  const repliedDetails = replyTo
+    ? { message: replyTo, user: replyTo?.user_details }
+    : existingRow?.replied_message_details
+
+  const reconciled = {
+    ...payload.new,
+    user_details: userDetails,
+    replied_message_details: repliedDetails,
+    replied_message_preview:
+      payload.new.replied_message_preview ?? existingRow?.replied_message_preview,
+    status: 'sent' as const,
+    statusError: undefined
   }
 
-  const msgs = [...(getChannelMessages(channelId)?.values() ?? [])]
-
-  // get last message and check if the last message is from the same user
-  const lastMessage0 = msgs.pop()
-  const lastMessage1 = msgs.pop()
-
-  // if the last message is from the same user, we need to group the messages
-  const newInstanceOfMessages = groupedMessages(
-    [lastMessage1, lastMessage0, newMessage].filter(Boolean)
-  )
-
-  // TODO: do we need anymore this?!/!
-  setLastMessage(channelId, newInstanceOfMessages.at(-1))
-
-  if (lastMessage0) {
-    setOrUpdateMessage(channelId, lastMessage0.id, newInstanceOfMessages.at(lastMessage1 ? 1 : 0))
-  }
-  setOrUpdateMessage(channelId, newMessage.id, newInstanceOfMessages.at(-1))
+  setOrUpdateMessage(channelId, payload.new.id, reconciled)
 }

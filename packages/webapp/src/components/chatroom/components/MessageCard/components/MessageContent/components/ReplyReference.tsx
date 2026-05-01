@@ -1,16 +1,11 @@
-import { useMemo } from 'react'
-
 import { useMessageCardContext } from '../../../MessageCardContext'
 
 export const ReplyReference = () => {
   const { message } = useMessageCardContext()
 
-  const userReplyTo = useMemo(() => {
-    return (
-      message?.replied_message_details?.user?.fullname ||
-      message?.replied_message_details?.user?.username
-    )
-  }, [message])
+  const userReplyTo =
+    message?.replied_message_details?.user?.fullname ||
+    message?.replied_message_details?.user?.username
 
   if (!message.reply_to_message_id) return null
 
@@ -20,14 +15,13 @@ export const ReplyReference = () => {
         <>
           <div className="text-xs font-bold">{userReplyTo}</div>
           <time className="text-xs whitespace-nowrap opacity-50">
-            {new Date(message?.replied_message_details?.message?.created_at).toLocaleTimeString(
-              [],
-              {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-              }
-            )}
+            {new Date(
+              message?.replied_message_details?.message?.created_at ?? ''
+            ).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            })}
           </time>
         </>
       </div>

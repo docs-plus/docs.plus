@@ -1,41 +1,30 @@
 import type { TMsgRow } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
-export const sendMessage = async (
-  content: TMsgRow['content'],
-  channel_id: TMsgRow['channel_id'],
-  user_id: TMsgRow['user_id'],
-  html: TMsgRow['html'],
-  reply_to_message_id: TMsgRow['reply_to_message_id']
-) =>
-  await supabaseClient
-    .from('messages')
-    .insert({
-      content,
-      channel_id,
-      user_id,
-      html,
-      reply_to_message_id
-    })
-    .select()
-    .returns<TMsgRow[]>()
-    .throwOnError()
+export interface SendMessageArgs {
+  /**
+   * Optional client-generated UUID. When provided, Postgres respects
+   * it (the `id` column has a default but accepts overrides). Use this
+   * to make optimistic UI reconcile cleanly with the realtime echo.
+   */
+  id?: TMsgRow['id']
+  content: TMsgRow['content']
+  channel_id: TMsgRow['channel_id']
+  user_id: TMsgRow['user_id']
+  html: TMsgRow['html']
+  reply_to_message_id?: TMsgRow['reply_to_message_id']
+}
 
-export const sendThreadMessage = async (
-  content: TMsgRow['content'],
-  channel_id: TMsgRow['channel_id'],
-  user_id: TMsgRow['user_id'],
-  html: TMsgRow['html'],
-  thread_id: TMsgRow['thread_id']
-) =>
+export const sendMessage = async (args: SendMessageArgs) =>
   await supabaseClient
     .from('messages')
     .insert({
-      content,
-      channel_id,
-      user_id,
-      html,
-      thread_id
+      ...(args.id ? { id: args.id } : {}),
+      content: args.content,
+      channel_id: args.channel_id,
+      user_id: args.user_id,
+      html: args.html,
+      reply_to_message_id: args.reply_to_message_id ?? null
     })
     .select()
     .returns<TMsgRow[]>()

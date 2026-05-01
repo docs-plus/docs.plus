@@ -1,5 +1,5 @@
 import { Avatar } from '@components/ui/Avatar'
-import { TMsgRow } from '@types'
+import { TGroupedMsgRow } from '@types'
 import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
@@ -8,7 +8,7 @@ type Props = {
   className?: string
 }
 
-export const ProfilePic = ({ message }: { message: TMsgRow }) => {
+export const ProfilePic = ({ message }: { message: TGroupedMsgRow }) => {
   const isGroupStart = message.isGroupStart
 
   return (

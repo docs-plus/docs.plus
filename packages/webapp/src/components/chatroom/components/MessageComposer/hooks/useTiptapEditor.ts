@@ -1,14 +1,11 @@
 import { setComposerStateDebounced } from '@db/messageComposerDB'
-// Links and Media
 import {
   createHyperlinkPopover,
   Hyperlink,
   previewHyperlinkPopover
 } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
-// Custom Extensions
 import { InlineCode } from '@docs.plus/extension-inline-code'
-// Code and Syntax Highlighting
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Mention } from '@tiptap/extension-mention'
 import { Placeholder } from '@tiptap/extensions'
@@ -25,7 +22,6 @@ import python from 'highlight.js/lib/languages/python'
 import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
-// load all highlight.js languages
 import { createLowlight } from 'lowlight'
 import { useEffect, useRef, useState } from 'react'
 
@@ -48,13 +44,11 @@ import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handleTyp
 const UPDATE_DEBOUNCE_MS = 150
 
 export const useTiptapEditor = ({
-  loading,
   onSubmit,
   workspaceId,
   channelId,
   isToolbarOpen
 }: {
-  loading: boolean
   onSubmit: () => void
   workspaceId?: string
   channelId: string
@@ -64,6 +58,16 @@ export const useTiptapEditor = ({
   const [text, setText] = useState('')
   const [isEmojiOnly, setIsEmojiOnly] = useState(false)
   const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // `useEditor(config, [])` freezes the entire config closure at first
+  // render — `workspaceId`, `channelId`, `isToolbarOpen` captured in
+  // `onUpdate` would go stale across channel switches if the composer
+  // were ever kept alive between channels. Route them through a ref so
+  // the debounced IDB write always targets the current channel.
+  const draftCtxRef = useRef({ workspaceId, channelId, isToolbarOpen })
+  useEffect(() => {
+    draftCtxRef.current = { workspaceId, channelId, isToolbarOpen }
+  }, [workspaceId, channelId, isToolbarOpen])
 
   const editor: Editor | null = useEditor(
     {
@@ -122,17 +126,18 @@ export const useTiptapEditor = ({
           setText(text)
           setIsEmojiOnly(isOnlyEmoji(text))
 
-          if (workspaceId && channelId && text && html) {
-            setComposerStateDebounced(workspaceId, channelId, {
+          const ctx = draftCtxRef.current
+          if (ctx.workspaceId && ctx.channelId && text && html) {
+            setComposerStateDebounced(ctx.workspaceId, ctx.channelId, {
               text,
               html,
-              isToolbarOpen
+              isToolbarOpen: ctx.isToolbarOpen
             })
           }
         }, UPDATE_DEBOUNCE_MS)
       },
-      onBlur: () => {
-        if (text.length) handleTypingIndicator(TypingIndicatorType.StopTyping)
+      onBlur: ({ editor }) => {
+        if (editor.getText().length) handleTypingIndicator(TypingIndicatorType.StopTyping)
       },
       editable: true,
       immediatelyRender: false,
@@ -176,8 +181,6 @@ export const useTiptapEditor = ({
             // Apply the transaction and scroll into view
             tr = tr.scrollIntoView()
 
-            // Set the selection to the beginning of the new paragraph
-            // const resolvedPos = tr.doc.resolve(newPos)
             tr = tr.setSelection(TextSelection.create(tr.doc, newPos))
 
             view.dispatch(tr)
@@ -203,14 +206,13 @@ export const useTiptapEditor = ({
 
               return false
             } else {
-              if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
+              if (view.state.doc.textContent.length) {
+                handleTypingIndicator(TypingIndicatorType.SentMsg)
+              }
               event.preventDefault() // Prevent the new line
-              // Dispatch a custom event that SendMessage will listen for
               onSubmit()
               setIsEmojiOnly(false)
-
-              event.preventDefault() // Prevent the new line
-              return true // We handled this event
+              return true
             }
           }
           if (event.key === 'Enter' && event.metaKey) {
@@ -235,10 +237,19 @@ export const useTiptapEditor = ({
     }
   }, [editor])
 
-  useEffect(() => {
-    if (!editor) return
-    editor.setEditable(!loading)
-  }, [loading, editor])
+  // Optimistic UI: keep the editor editable during in-flight sends.
+  // Each send carries its own client UUID; rapid-fire is supported.
+  // (The previous `editor.setEditable(!loading)` blocked the next
+  // keystroke until the network responded — anti-pattern for chat.)
+
+  // Flush the debounced onUpdate timer on unmount so the closure doesn't
+  // fire setHtml/setText on a dead component or write IDB to a stale key.
+  useEffect(
+    () => () => {
+      if (updateTimerRef.current) clearTimeout(updateTimerRef.current)
+    },
+    []
+  )
 
   return { editor, html, text, isEmojiOnly, setIsEmojiOnly }
 }

@@ -32,7 +32,6 @@ const MessageHoverMenu = (props: React.ComponentProps<typeof HoverMenu>) => {
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
-  // Hook for TOC resize functionality
   const { tocRef, tocWidth, isResizing, handleMouseDown, editorContainerStyle } = useTocResize()
 
   // @ts-ignore
@@ -40,28 +39,22 @@ const DesktopEditor = () => {
 
   useUnreadSync()
 
-  // IntersectionObserver-based scroll spy for TOC highlighting
   useHeadingScrollSpy(editorWrapperRef)
 
   return (
     <>
-      {/* Toolbar - Design System: bg-base-100 for primary canvas elements */}
       <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
         <EditorToolbar />
       </div>
 
-      {/* Main editor layout - 3 panel structure */}
       <div className="editor bg-base-200 relative flex size-full flex-row-reverse justify-around align-top">
-        {/* Editor + Chat container */}
         <div className="relative flex flex-col align-top" style={editorContainerStyle}>
-          {/* Editor wrapper - Design System: bg-base-100 for editor canvas */}
           <div
             ref={editorWrapperRef}
             className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
             <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
           </div>
 
-          {/* Chatroom Panel */}
           <Chatroom variant="desktop">
             <Chatroom.Toolbar>
               <Chatroom.Toolbar.Breadcrumb />
@@ -108,6 +101,7 @@ const DesktopEditor = () => {
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.CommentReference />
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.MessageBody />
                                   </Chatroom.MessageFeed.MessageList.MessageCard.Content>
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.FailedRow />
                                   <Chatroom.MessageFeed.MessageList.MessageCard.Footer>
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
                                       <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.ReplyCount />
@@ -134,6 +128,7 @@ const DesktopEditor = () => {
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.CommentReference />
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.MessageBody />
                                   </Chatroom.MessageFeed.MessageList.MessageCard.Content>
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.FailedRow />
                                   <Chatroom.MessageFeed.MessageList.MessageCard.Footer>
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
                                       <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions.AddReactionButton />
@@ -161,12 +156,10 @@ const DesktopEditor = () => {
           </Chatroom>
         </div>
 
-        {/* TOC Sidebar - Design System: bg-base-200 for side panels */}
         <div
           ref={tocRef}
           className="tableOfContents bg-base-200 relative isolate z-0 h-full max-h-full min-h-0 min-w-0"
           style={{ width: tocWidth }}>
-          {/* Resize Handle - Design System compliant */}
           <ResizeHandle
             orientation="vertical"
             onMouseDown={handleMouseDown}

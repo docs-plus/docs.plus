@@ -11,15 +11,16 @@ import {
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
-import { TChannelSettings } from '@types'
+import type { Profile, TChannelSettings, TMsgRow } from '@types'
 import { chunkHtmlContent } from '@utils/chunkHtmlContent'
+import { generateClientMessageId } from '@utils/clientMessageId'
 import { isOnlyEmoji } from '@utils/emojis'
 import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../ChatroomContext'
-import { messageInsert } from '../../hooks/listener/helpers'
+import { isDuplicateKeyError } from '../../utils/postgresErrors'
 import {
   Actions,
   AttachmentButton,
@@ -60,8 +61,6 @@ const MessageComposer = ({
   const { channelId } = useChatroomContext()
 
   const user = useAuthStore((state) => state.profile)
-  // const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)
-  // const usersPresence = useStore((state: any) => state.usersPresence)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
   const workspaceId = useStore((state) => state.settings.workspaceId)
@@ -75,6 +74,8 @@ const MessageComposer = ({
   const setReplyMsgMemory = useChatStore((state) => state.setReplyMessageMemory)
   const setCommentMsgMemory = useChatStore((state) => state.setCommentMessageMemory)
   const setMsgDraftMemory = useChatStore((state) => state.setMessageDraftMemory)
+  const setOrUpdateMessage = useChatStore((state) => state.setOrUpdateMessage)
+  const setMessageStatus = useChatStore((state) => state.setMessageStatus)
 
   const { request: sendMsg, loading: isSendingMsg } = useApi(sendMessage, null, false)
   const { request: sendComment, loading: isSendingComment } = useApi(
@@ -88,15 +89,11 @@ const MessageComposer = ({
     null,
     false
   )
-  const loading = useMemo(() => {
-    return isSendingMsg || isUpdatingMsg || isSendingComment || isSendingThreadMsg
-  }, [isSendingMsg, isUpdatingMsg, isSendingComment, isSendingThreadMsg])
+  const loading = isSendingMsg || isUpdatingMsg || isSendingComment || isSendingThreadMsg
 
-  // Simple ref for the submit callback
   const submitRef = useRef<(() => void) | null>(null)
 
   const { editor, text, html, isEmojiOnly, setIsEmojiOnly } = useTiptapEditor({
-    loading,
     onSubmit: () => submitRef.current?.(),
     workspaceId,
     channelId,
@@ -119,15 +116,6 @@ const MessageComposer = ({
     return null
   }, [replyMessageMemory, editMessageMemory, commentMessageMemory])
 
-  // User presence management, keep users data update insted open a new portal (supabase realtime)
-  // const updateUserPresence = useCallback(() => {
-  //   const users = [replyMessageMemory?.user_details, editMessageMemory?.user_details]
-  //     .filter(Boolean)
-  //     .filter((user) => user && !usersPresence.has(user.id))
-
-  //   users.forEach((user) => user && setOrUpdateUserPresence(user.id, user))
-  // }, [replyMessageMemory, editMessageMemory, usersPresence, setOrUpdateUserPresence])
-
   // Load persisted draft from IndexedDB on mount or channel change
   useEffect(() => {
     if (!editor || !workspaceId || !channelId) return
@@ -144,6 +132,7 @@ const MessageComposer = ({
 
       if (isOnlyEmoji(draft?.text ?? '')) setIsEmojiOnly(true)
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, workspaceId, channelId, editMessageMemory, replyMessageMemory, commentMessageMemory])
 
   // set the editor content if it is a reply message
@@ -153,28 +142,34 @@ const MessageComposer = ({
     const content = editMessageMemory.html || editMessageMemory.content
     if (!content) return
     if (!isMobile) editor.chain().setContent(content).focus('start').run()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, editMessageMemory, channelId])
 
-  // Validation helpers
-  const validateSubmission = useCallback(() => {
-    if (!editor || !user) return { isValid: false, error: 'Editor or user not available' }
-    const html = editor?.getHTML()
-    const text = editor?.getText()
+  // Intentionally NOT gated on `loading`: each send carries its own client
+  // UUID and pending row, so rapid-fire is independent (Slack/Linear/Discord).
+  const isSubmittable = useCallback(() => {
+    if (!editor || !user) return false
+    const html = editor.getHTML()
+    const text = editor.getText()
+    return !!html && !!text && html.replace(/<[^>]*>/g, '').trim() !== '' && text.trim() !== ''
+  }, [editor, user])
 
-    const isContentEmpty =
-      !html || !text || html.replace(/<[^>]*>/g, '').trim() === '' || text.trim() === ''
-    if (isContentEmpty) return { isValid: false, error: 'Content is empty' }
-
-    if (loading) return { isValid: false, error: 'Already loading' }
-
-    return { isValid: true }
-  }, [editor, user, loading])
-
-  // Content preparation
+  // Content preparation. Always returns the same `chunks` shape — an
+  // object with `htmlChunks`/`textChunks` arrays — so callers don't
+  // need defensive type assertions. The empty path is unreachable in
+  // practice (validateSubmission rejects first), but keeping the
+  // shape consistent removes a latent crash if validation is ever
+  // weakened.
   const prepareContent = useCallback(() => {
     const html = editor?.getHTML()
     const text = editor?.getText()
-    if (!html || !text) return { sanitizedHtml: '', sanitizedText: '', chunks: [] }
+    if (!html || !text) {
+      return {
+        sanitizedHtml: '',
+        sanitizedText: '',
+        chunks: { htmlChunks: [] as string[], textChunks: [] as string[] }
+      }
+    }
 
     const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
 
@@ -189,6 +184,48 @@ const MessageComposer = ({
     }
   }, [editor])
 
+  const buildOptimisticMessage = useCallback(
+    (
+      id: string,
+      content: string,
+      html: string,
+      user: Profile,
+      channelId: string,
+      replyToMessageId: string | null
+    ): TMsgRow => {
+      const now = new Date().toISOString()
+      return {
+        id,
+        content,
+        html,
+        user_id: user.id,
+        user_details: user,
+        channel_id: channelId,
+        reply_to_message_id: replyToMessageId,
+        replied_message_preview: null,
+        replied_message_details: undefined,
+        type: 'text',
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+        edited_at: null,
+        readed_at: null,
+        reactions: null,
+        medias: null,
+        metadata: null,
+        origin_message_id: null,
+        thread_id: null,
+        thread_depth: 0,
+        is_thread_root: false,
+        thread_owner_id: null,
+        is_bookmarked: false,
+        bookmark_id: null,
+        status: 'pending'
+      } as TMsgRow
+    },
+    []
+  )
+
   // Message type handlers
   const handleThreadMessage = useCallback(
     async (content: string, html: string) => {
@@ -197,56 +234,134 @@ const MessageComposer = ({
       const threadId = startThreadMessage.id
       if (!channels.has(threadId)) return false
 
-      const fakemessage = createFakeMessage(content, html, user, threadId)
-      messageInsert(fakemessage)
+      const messageId = generateClientMessageId()
+      const optimistic = buildOptimisticMessage(messageId, content, html, user, threadId, null)
 
-      // clear the editor content and focus the start of the editor
-      editor?.chain().clearContent(true).focus('start').run()
+      setOrUpdateMessage(threadId, messageId, { ...optimistic, thread_id: threadId })
 
-      await createThreadMessage({
-        p_content: content,
-        p_html: html,
-        p_thread_id: threadId,
-        p_workspace_id: workspaceId
-      })
+      try {
+        await sendThreadMsg({
+          p_id: messageId,
+          p_content: content,
+          p_html: html,
+          p_thread_id: threadId,
+          p_workspace_id: workspaceId
+        })
+        setMessageStatus(threadId, messageId, 'sent')
+      } catch (error: unknown) {
+        if (isDuplicateKeyError(error)) {
+          setMessageStatus(threadId, messageId, 'sent')
+          return true
+        }
+        const message = error instanceof Error ? error.message : 'Failed to send'
+        setMessageStatus(threadId, messageId, 'failed', message)
+        return false
+      }
+
+      // Editor cleanup is owned by submitMessage → cleanupAfterSubmit, which
+      // runs synchronously BEFORE this handler awaits the network. Don't
+      // re-clear here.
       return true
     },
-    [startThreadMessage, channels, user, workspaceId, messageInsert, createThreadMessage]
+    [
+      startThreadMessage,
+      channels,
+      user,
+      workspaceId,
+      buildOptimisticMessage,
+      setOrUpdateMessage,
+      setMessageStatus,
+      sendThreadMsg
+    ]
   )
 
   const handleEditMessage = useCallback(
     async (content: string, html: string, messageId: string) => {
-      await updateMessage(content, html, messageId)
+      await updateMsg(content, html, messageId)
       return true
     },
-    [updateMessage]
+    [updateMsg]
   )
 
   const handleCommentMessage = useCallback(
     async (content: string, html: string) => {
       if (!commentMessageMemory || !user) return false
 
-      await sendCommentMessage(content, channelId, user.id, html, {
+      await sendComment(content, channelId, user.id, html, {
         content: commentMessageMemory.content,
         html: commentMessageMemory.html
       })
       return true
     },
-    [commentMessageMemory, channelId, user, sendCommentMessage]
+    [commentMessageMemory, channelId, user, sendComment]
   )
 
   const handleRegularMessage = useCallback(
-    async (content: string, html: string, messageId: string | null) => {
+    async (content: string, html: string, replyToMessageId: string | null) => {
       if (!user) return false
 
-      const fakemessage = createFakeMessage(content, html, user, channelId)
-      messageInsert(fakemessage)
+      const messageId = generateClientMessageId()
+      const optimistic = buildOptimisticMessage(
+        messageId,
+        content,
+        html,
+        user,
+        channelId,
+        replyToMessageId
+      )
 
-      const { error } = await sendMessage(content, channelId, user.id, html, messageId)
-      if (error) console.error('[handleRegularMessage]', error)
+      // Hydrate the reply quote from local memory so it renders instantly.
+      if (replyMessageMemory && replyToMessageId) {
+        optimistic.replied_message_details = {
+          message: replyMessageMemory,
+          user: replyMessageMemory.user_details
+        }
+        optimistic.replied_message_preview = replyMessageMemory.content
+      }
+
+      setOrUpdateMessage(channelId, messageId, optimistic)
+
+      try {
+        const response = await sendMsg({
+          id: messageId,
+          content,
+          channel_id: channelId,
+          user_id: user.id,
+          html,
+          reply_to_message_id: replyToMessageId
+        })
+        const inserted = Array.isArray(response?.data) ? (response.data[0] as TMsgRow) : null
+        if (inserted) {
+          setOrUpdateMessage(channelId, messageId, {
+            ...inserted,
+            user_details: user,
+            replied_message_details: optimistic.replied_message_details,
+            replied_message_preview: optimistic.replied_message_preview,
+            status: 'sent'
+          })
+        } else {
+          setMessageStatus(channelId, messageId, 'sent')
+        }
+      } catch (error: unknown) {
+        if (isDuplicateKeyError(error)) {
+          setMessageStatus(channelId, messageId, 'sent')
+          return true
+        }
+        const message = error instanceof Error ? error.message : 'Failed to send'
+        setMessageStatus(channelId, messageId, 'failed', message)
+        return false
+      }
       return true
     },
-    [user, channelId, messageInsert, sendMessage]
+    [
+      user,
+      channelId,
+      replyMessageMemory,
+      buildOptimisticMessage,
+      setOrUpdateMessage,
+      setMessageStatus,
+      sendMsg
+    ]
   )
 
   // Message routing
@@ -281,7 +396,7 @@ const MessageComposer = ({
     ]
   )
 
-  // Chunked message handling
+  // Chunked messages stay non-optimistic for now (deliberate, see Task 8 plan).
   const sendChunkedMessages = useCallback(
     async (htmlChunks: string[], textChunks: string[]) => {
       if (!user) return
@@ -293,14 +408,20 @@ const MessageComposer = ({
         const { sanitizedHtmlChunk, sanitizedTextChunk } = sanitizeChunk(htmlChunk, textChunk)
 
         if (editMessageMemory) {
-          await updateMessage(sanitizedTextChunk, sanitizedHtmlChunk, messageId!)
+          await updateMsg(sanitizedTextChunk, sanitizedHtmlChunk, messageId!)
         } else if (commentMessageMemory) {
-          await sendCommentMessage(sanitizedTextChunk, channelId, user.id, sanitizedHtmlChunk, {
+          await sendComment(sanitizedTextChunk, channelId, user.id, sanitizedHtmlChunk, {
             content: commentMessageMemory.content,
             html: commentMessageMemory.html
           })
         } else {
-          await sendMessage(sanitizedTextChunk, channelId, user.id, sanitizedHtmlChunk, messageId)
+          await sendMsg({
+            content: sanitizedTextChunk,
+            channel_id: channelId,
+            user_id: user.id,
+            html: sanitizedHtmlChunk,
+            reply_to_message_id: messageId
+          })
         }
       }
     },
@@ -310,9 +431,9 @@ const MessageComposer = ({
       commentMessageMemory,
       channelId,
       user,
-      updateMessage,
-      sendCommentMessage,
-      sendMessage
+      updateMsg,
+      sendComment,
+      sendMsg
     ]
   )
 
@@ -332,8 +453,16 @@ const MessageComposer = ({
       clearComposerState(workspaceId, channelId)
     }
 
-    // Clear editor content
-    editor?.chain().clearContent(true).focus('start').run()
+    // Clear editor content. Only refocus if the editor was already the
+    // active element — otherwise we'd force-open the iOS keyboard right
+    // after the user taps SendButton, causing a visible bounce. Enter-key
+    // submits keep the editor focused, so they refocus normally.
+    const wasFocused = !!editor && editor.view.dom === document.activeElement
+    if (wasFocused) {
+      editor?.chain().clearContent(true).focus('start').run()
+    } else {
+      editor?.chain().clearContent(true).run()
+    }
   }, [
     editor,
     replyMessageMemory,
@@ -347,26 +476,6 @@ const MessageComposer = ({
     setMsgDraftMemory
   ])
 
-  // Helper to create fake message
-  const createFakeMessage = useCallback(
-    (content: string, html: string, user: any, channelId: string) => {
-      const currentDate = new Date().toISOString()
-      return {
-        new: {
-          id: 'fake_id',
-          content,
-          html,
-          user_details: user,
-          channel_id: channelId,
-          user_id: user.id,
-          created_at: currentDate,
-          updated_at: currentDate
-        }
-      }
-    },
-    []
-  )
-
   const openSignInModalHandler = useCallback(() => {
     // append search query to the URL, for when they back to the page they will be redirected to the channel
     const url = new URL(window.location.href)
@@ -374,58 +483,73 @@ const MessageComposer = ({
     window.history.pushState({}, '', url.href)
 
     openDialog(<SignInForm showHeader onClose={() => {}} />, { size: 'sm', dismissible: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDialog])
 
-  // Main submit function - now clean and focused
+  // Optimistic submit: snapshot content → (for optimistic paths) clear
+  // editor synchronously → fire send. The visible Enter→empty latency
+  // came from clearing AFTER the await; Slack/Linear/Discord all clear
+  // before the round-trip.
+  //
+  // Cleanup timing branches on whether the send path has an optimistic
+  // row + Retry affordance:
+  //   - Regular & thread sends: cleanup BEFORE await. The optimistic
+  //     row in the message list carries the text; `MessageFailedRow`
+  //     provides Retry/Delete on failure → no data loss.
+  //   - Edit, comment, chunked: cleanup AFTER a successful await.
+  //     These paths don't write an optimistic row, so clearing before
+  //     a failed send would silently lose the user's text.
   const submitMessage = useCallback(
     async (e?: any) => {
       e?.preventDefault()
-      editor?.view.focus()
 
-      // 0. check if user is signed in
       if (!user) {
         openSignInModalHandler()
         return
       }
 
-      // 1. Validate
-      const validation = validateSubmission()
-      if (!validation.isValid) return
+      if (!isSubmittable()) return
+
+      let prepared
+      try {
+        prepared = prepareContent()
+      } catch (error: unknown) {
+        toast.Error(error instanceof Error ? error.message : 'Invalid content')
+        return
+      }
+      const { sanitizedHtml, sanitizedText, chunks } = prepared
+      const { htmlChunks, textChunks } = chunks
+
+      const isOptimisticPath =
+        htmlChunks.length === 0 && !editMessageMemory && !commentMessageMemory
+
+      if (isOptimisticPath) cleanupAfterSubmit()
 
       try {
-        // 2. Prepare content
-        const { sanitizedHtml, sanitizedText, chunks } = prepareContent()
-        const { htmlChunks, textChunks } = chunks as { htmlChunks: string[]; textChunks: string[] }
-
-        // 3. Update user presence // TODO: review this part, we do not need it anymore
-        // updateUserPresence()
-
-        // 4. Send message(s)
         if (htmlChunks.length === 0) {
           await sendSingleMessage(sanitizedText, sanitizedHtml)
         } else {
           await sendChunkedMessages(htmlChunks, textChunks)
         }
-      } catch (error: any) {
-        toast.Error(error.message)
+      } catch (error: unknown) {
+        toast.Error(error instanceof Error ? error.message : 'Failed to send')
         return
       }
 
-      // 5. Cleanup
-      cleanupAfterSubmit()
+      if (!isOptimisticPath) cleanupAfterSubmit()
 
-      // 6. Show notification prompt (after first message)
       showNotificationPrompt()
     },
     [
       user,
-      editor,
-      validateSubmission,
+      openSignInModalHandler,
+      isSubmittable,
       prepareContent,
-      // updateUserPresence,
+      cleanupAfterSubmit,
       sendSingleMessage,
       sendChunkedMessages,
-      cleanupAfterSubmit
+      editMessageMemory,
+      commentMessageMemory
     ]
   )
 
@@ -461,9 +585,19 @@ const MessageComposer = ({
   }, [isToolbarOpen, workspaceId, channelId, editor])
 
   useEffect(() => {
-    if (editor) setOrUpdateChatRoom('editorInstance', editor)
+    if (!editor) return
+    setOrUpdateChatRoom('editorInstance', editor)
     if (editorRef.current) setOrUpdateChatRoom('editorRef', editorRef.current)
-  }, [editor, editorRef])
+    // Clear the refs on unmount so consumers don't dereference a
+    // destroyed Tiptap editor (Tiptap auto-destroys on unmount via
+    // useEditor). `undefined` matches the chatRoom store's initial
+    // shape — all consumers use truthy checks so behavior is identical
+    // to `null`, but keeping the type consistent avoids future drift.
+    return () => {
+      setOrUpdateChatRoom('editorInstance', undefined)
+      setOrUpdateChatRoom('editorRef', undefined)
+    }
+  }, [editor, setOrUpdateChatRoom])
 
   const contextValue = useMemo(
     () => ({
@@ -493,6 +627,7 @@ const MessageComposer = ({
       editorRef,
       isEmojiOnly
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       sendMsg,
       sendComment,
