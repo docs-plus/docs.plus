@@ -1,0 +1,6 @@
+# actionlint config — see https://github.com/rhysd/actionlint/blob/main/docs/config.md
+# Declares custom self-hosted runner labels used in this repo so actionlint
+# stops emitting "label is unknown" warnings for them.
+self-hosted-runner:
+  labels:
+    - prod.docs.plus
