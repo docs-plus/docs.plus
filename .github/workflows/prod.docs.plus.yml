@@ -1,24 +1,30 @@
-# ============================================================================
-# Production CI/CD Pipeline - Unified Quality Gates + Deployment
-# ============================================================================
+# =============================================================================
+# Production CI/CD Pipeline — Quality Gates + Blue-Green Deployment
+# =============================================================================
 #
-# Pipeline Stages:
+# Pipeline:
 #   1. Quality Gates (parallel): lint, typecheck, security
-#   2. Build Verification: extensions + apps
-#   3. Deploy: Docker build + Blue-Green rolling deployment
+#   2. Build Verification: extension + Next.js builds (smoke test)
+#   3. Deploy Gate: parses commit message with a strict regex (anti-footgun)
+#   4. Deploy: docker compose build on the prod host → blue-green rollout
 #
 # Triggers:
-#   - Push to main: Full pipeline (deploy requires 'build' in commit)
-#   - Pull request to main: Quality gates + build only
-#   - Weekly schedule: Security audit only
+#   - push to main: full pipeline. Deploy gated by commit-message convention
+#     `(build): front`, `(build): back`, or `(build): front back` parsed by a
+#     real regex in the `deploy-gate` job (see A1 in CI/CD Roadmap v1.12).
+#   - pull_request to main: quality gates + build verification only.
+#   - schedule (Sunday 00:00 UTC): security audit only.
+#   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`.
 #
-# Architecture:
-#   Traefik (SSL/LB) → Services (auto-discovered via Docker labels)
-#
-# Deployment Strategy:
-#   Blue-Green rolling: New containers start → health check → old removed
-#
-# ============================================================================
+# Architectural notes (decided 2026-05, see commit history):
+#   - Images are built on the prod self-hosted runner (`prod.docs.plus`).
+#     Disk pressure is mitigated by a pre-build disk guard, not by pushing
+#     to a registry. If pressure resurfaces, revisit M3 (ghcr.io push).
+#   - Rollback uses an on-disk tag stash on the prod host:
+#     /opt/projects/prod.docs.plus/.deploy/last-good-tag.
+#   - All third-party actions (workflow + composite) are pinned to commit
+#     SHA. Renovate/Dependabot should bump them; never use floating tags.
+# =============================================================================
 
 name: CI/CD Production
 
@@ -28,50 +34,61 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Weekly security scan (Sunday midnight UTC)
+    # Weekly security scan (Sunday 00:00 UTC)
     - cron: '0 0 * * 0'
   workflow_dispatch:
     inputs:
       skip_quality_gates:
         description: 'Skip quality gates (emergency deploy)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
       force_deploy:
-        description: 'Force deployment (bypass commit message check)'
+        description: 'Force deployment (bypass commit-message gate)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
+# Two concurrency groups:
+#   - quality-gates can be cancelled freely (cheap to redo)
+#   - deploy MUST finish or rollback (mid-deploy SIGTERM corrupts blue-green state)
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-quality
   cancel-in-progress: true
 
-# Principle of least privilege - only request needed permissions
+# Default to bash so set -e/-o pipefail behavior is consistent across runners.
+defaults:
+  run:
+    shell: bash
+
+# Workflow-level least privilege; per-job overrides where needed.
 permissions:
   contents: read
-  actions: read
-  security-events: write # For security scan results
 
 env:
   ENV_SOURCE: /opt/projects/prod.docs.plus/.env
   ENV_FILE: .env.production
   COMPOSE_FILE: docker-compose.prod.yml
   DEPLOY_TAG: ${{ github.sha }}
+  # Where the prod host stashes the last successfully deployed SHA for rollback.
+  DEPLOY_STATE_DIR: /opt/projects/prod.docs.plus/.deploy
+  LAST_GOOD_TAG_FILE: /opt/projects/prod.docs.plus/.deploy/last-good-tag
 
-# ============================================================================
-# STAGE 1: QUALITY GATES (parallel, fast feedback)
-# ============================================================================
 jobs:
+  # ===========================================================================
+  # STAGE 1 — QUALITY GATES (parallel, fast feedback)
+  # ===========================================================================
   lint:
     name: 🔍 Lint & Format
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: github.event_name != 'schedule'
+    permissions:
+      contents: read
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -87,17 +104,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: github.event_name != 'schedule'
+    permissions:
+      contents: read
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
       - name: 📦 Restore extension build cache
         id: cache-ext
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: |
             packages/extension-hyperlink/dist
@@ -134,10 +153,12 @@ jobs:
     name: 🔒 Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -146,34 +167,62 @@ jobs:
 
       - name: 🔍 Bun Audit
         run: |
+          set -o pipefail
           echo "🔍 Checking for known vulnerabilities..."
-          bun pm audit 2>&1 | tee audit-results.txt || AUDIT_FAILED=true
 
-          # Count vulnerabilities
-          CRITICAL=$(grep -ci "critical" audit-results.txt 2>/dev/null || echo "0")
-          HIGH=$(grep -ci "high" audit-results.txt 2>/dev/null || echo "0")
+          # Capture both human-readable and machine-readable output.
+          # `bun pm audit` exits non-zero when vulns exist; we always want both files.
+          bun pm audit 2>&1 | tee audit-results.txt || true
+          bun pm audit --json > audit-results.json 2>/dev/null || echo '{}' > audit-results.json
+
+          # Structured parsing — replaces brittle `grep -ci "critical"` which
+          # matched the summary header line and produced false positives.
+          # Expected shape: { "vulnerabilities": { "critical": N, "high": N, ... } }
+          CRITICAL=$(bun -e 'const a=JSON.parse(require("fs").readFileSync("audit-results.json","utf8"));process.stdout.write(String(a?.vulnerabilities?.critical||0))')
+          HIGH=$(bun -e 'const a=JSON.parse(require("fs").readFileSync("audit-results.json","utf8"));process.stdout.write(String(a?.vulnerabilities?.high||0))')
 
           echo ""
-          echo "📊 Summary: Critical=$CRITICAL, High=$HIGH"
+          echo "📊 Summary: critical=${CRITICAL}, high=${HIGH}"
 
-          # Fail on critical/high
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "❌ Critical/High vulnerabilities found!"
+          # Defensive: if both are 0 AND the JSON looks empty, the audit
+          # shape may have changed (Bun has changed it before). Print the
+          # raw JSON head so a future regression doesn't silently neutralize
+          # this gate. Caps at 4 KB to keep logs tidy.
+          if [ "${CRITICAL}" -eq 0 ] && [ "${HIGH}" -eq 0 ]; then
+            BYTES=$(wc -c < audit-results.json | tr -d ' ')
+            if [ "${BYTES}" -lt 32 ]; then
+              echo "::warning::audit-results.json is suspiciously small (${BYTES} bytes). Bun audit JSON shape may have changed."
+              echo "--- audit-results.json (head 4KB) ---"
+              head -c 4096 audit-results.json || true
+              echo ""
+              echo "--- end ---"
+            fi
+          fi
+
+          if [ "${CRITICAL}" -gt 0 ] || [ "${HIGH}" -gt 0 ]; then
+            echo "::error::Critical/High vulnerabilities detected (critical=${CRITICAL}, high=${HIGH})"
             exit 1
           fi
           echo "✅ No critical/high vulnerabilities"
 
       - name: 📤 Upload Audit Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: security-audit-${{ github.sha }}
-          path: audit-results.txt
+          path: |
+            audit-results.txt
+            audit-results.json
           retention-days: 30
 
-  # ============================================================================
-  # STAGE 2: BUILD VERIFICATION
-  # ============================================================================
+  # ===========================================================================
+  # STAGE 2 — BUILD VERIFICATION (smoke test, no artifacts produced)
+  # ===========================================================================
+  # Note: this job intentionally does NOT build Docker images. The deploy job
+  # rebuilds them on the prod host anyway (decided 2026-05); duplicating the
+  # docker build here would just slow the pipeline without sharing cache. The
+  # webapp/admin Next.js compile here catches type/build regressions early.
+  # ===========================================================================
   build:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
@@ -182,22 +231,22 @@ jobs:
     if: |
       always() &&
       github.event_name != 'schedule' &&
-      (needs.lint.result == 'success' || inputs.skip_quality_gates == true) &&
-      (needs.typecheck.result == 'success' || inputs.skip_quality_gates == true) &&
-      (needs.security.result == 'success' || needs.security.result == 'skipped' || inputs.skip_quality_gates == true)
-    outputs:
-      build_status: ${{ steps.build_result.outputs.status }}
+      (needs.lint.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
+      (needs.typecheck.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
+      (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
+    permissions:
+      contents: read
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
       - name: 📦 Restore extension build cache
         id: cache-ext
-        uses: actions/cache@v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: |
             packages/extension-hyperlink/dist
@@ -241,83 +290,185 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3003' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
-      - name: 🐳 Build production Docker images
+  # ===========================================================================
+  # STAGE 2.5 — DEPLOY GATE (precise commit-message parsing)
+  # ===========================================================================
+  # Replaces the previous loose `contains(...)` chain in the deploy job's `if:`.
+  # The old check matched any commit whose body contained both "build" and
+  # "front" or "back" anywhere (e.g. "fix iOS back gesture build crash" would
+  # have triggered a production deploy). This job parses the convention
+  # documented in AGENTS.md (`(build): front|back|front back`) with a real
+  # regex and surfaces the result as a job output.
+  # ===========================================================================
+  deploy-gate:
+    name: 🚦 Deploy Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [build]
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.force_deploy))
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+      reason: ${{ steps.gate.outputs.reason }}
+
+    steps:
+      - name: 🚦 Evaluate trigger
+        id: gate
         env:
-          DOCKER_BUILDKIT: 1
-          COMPOSE_DOCKER_CLI_BUILD: 1
-        run: docker compose -f ${{ env.COMPOSE_FILE }} --env-file
-          scripts/env.production.build-stub build --parallel
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          FORCE_DEPLOY: ${{ inputs.force_deploy }}
+          # Use the head_commit body verbatim. Avoid `git log` because the
+          # runner's checkout depth might not include it.
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
 
-      - name: 📊 Set Build Result
-        id: build_result
-        if: always()
-        run: echo "status=${{ job.status }}" >> $GITHUB_OUTPUT
+          # workflow_dispatch + force_deploy=true → unconditional deploy
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${FORCE_DEPLOY}" = "true" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "reason=workflow_dispatch+force_deploy" >> "$GITHUB_OUTPUT"
+            echo "✅ Deploying: workflow_dispatch with force_deploy=true"
+            exit 0
+          fi
 
-  # ============================================================================
-  # STAGE 3: PRODUCTION DEPLOYMENT
-  # ============================================================================
+          # push + main only beyond this point
+          if [ "${EVENT_NAME}" != "push" ] || [ "${REF}" != "refs/heads/main" ]; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "reason=non-main push" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Skipping deploy: not a push to main"
+            exit 0
+          fi
+
+          # Strict regex per AGENTS.md convention. Anchored to a line and
+          # accepts an optional Conventional-Commits-style scope after build,
+          # e.g. `(build): front`, `(build): back`, `(build): front back`.
+          # Matches in the SUBJECT or any body line via -E (extended regex).
+          if printf '%s' "${COMMIT_MSG}" | grep -Eq '(^|[[:space:]])\(build\):[[:space:]]+(front([[:space:]]+back)?|back([[:space:]]+front)?)([[:space:]]|$)'; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "reason=(build): trigger matched" >> "$GITHUB_OUTPUT"
+            echo "✅ Deploying: matched (build): front|back convention"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "reason=no (build): trigger" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ Skipping deploy: commit subject does not match '(build): front|back|front back'"
+            echo "ℹ️ Subject line was:"
+            printf '%s\n' "${COMMIT_MSG}" | head -1
+          fi
+
+  # ===========================================================================
+  # STAGE 3 — PRODUCTION DEPLOYMENT
+  # ===========================================================================
+  # IMPORTANT: this job intentionally opts OUT of cancel-in-progress at the job
+  # level. Mid-deploy SIGTERM during `docker compose up --scale` can leave the
+  # cluster with a mix of old+new containers and corrupt blue-green state.
+  # ===========================================================================
   deploy:
     name: 🚀 Deploy Production
     runs-on: prod.docs.plus
     timeout-minutes: 30
-    needs: [build]
-    if: |
-      github.ref == 'refs/heads/main' &&
-      github.event_name == 'push' &&
-      needs.build.result == 'success' &&
-      (
-        (contains(github.event.head_commit.message, 'build') &&
-         (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back')))
-        || github.event.inputs.force_deploy == 'true'
-      )
+    needs: [deploy-gate]
+    # Separate concurrency group with cancel-in-progress: false. If two pushes
+    # arrive close together, the second waits for the first to finish.
+    concurrency:
+      group: ${{ github.workflow }}-deploy
+      cancel-in-progress: false
+    if: needs.deploy-gate.outputs.deploy == 'true'
     environment:
       name: production
       url: https://docs.plus
+    permissions:
+      contents: read
 
     steps:
       - name: 📦 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
 
       - name: 🔐 Prepare Environment
         run: |
-          cp "${{ env.ENV_SOURCE }}" "${{ env.ENV_FILE }}"
-          echo "DEPLOY_TAG=${{ env.DEPLOY_TAG }}" >> "${{ env.ENV_FILE }}"
+          # Compose `--env-file` is the single source of truth. We do NOT also
+          # `set -a; source` it elsewhere — that path was double-loading and
+          # leaking vars to subshells unintentionally.
+          cp "${ENV_SOURCE}" "${ENV_FILE}"
+          echo "DEPLOY_TAG=${DEPLOY_TAG}" >> "${ENV_FILE}"
+
+          # Stash the previous successful tag (if any) for the rollback step.
+          mkdir -p "${DEPLOY_STATE_DIR}"
+          if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
+            PREVIOUS_TAG=$(cat "${LAST_GOOD_TAG_FILE}")
+            echo "PREVIOUS_TAG=${PREVIOUS_TAG}" >> "$GITHUB_ENV"
+            echo "ℹ️ Previous good tag: ${PREVIOUS_TAG}"
+          else
+            echo "PREVIOUS_TAG=" >> "$GITHUB_ENV"
+            echo "ℹ️ No previous good tag stashed (first deploy or fresh state dir)"
+          fi
           echo "✅ Environment ready"
+
+      - name: 💾 Pre-deploy disk guard
+        run: |
+          echo "📊 Disk before prune:"
+          df -h / | tail -1
+
+          # Free space proactively. Without this, --no-cache builds can fill
+          # the root volume between deploys and silently OOM/ENOSPC the build
+          # step (job ends in <2min with no error). Runs before build, not after.
+          docker image prune -af --filter "until=24h" 2>/dev/null || true
+          docker builder prune -af --filter "until=24h" 2>/dev/null || true
+
+          # Hard guard: refuse to build when <10 GB free. Fail loud here
+          # rather than fail silently mid-build.
+          AVAIL_KB=$(df --output=avail / | tail -1)
+          AVAIL_GB=$((AVAIL_KB / 1024 / 1024))
+          echo "📊 Disk after prune: ${AVAIL_GB} GB free"
+          if [ "${AVAIL_GB}" -lt 10 ]; then
+            echo "::error::Less than 10 GB free on /. Aborting deploy. SSH to host and run 'docker system prune -af --volumes'."
+            df -h /
+            docker system df
+            exit 1
+          fi
 
       - name: 📂 Verify build context (monorepo root)
         run: |
           if [ ! -d packages/email-templates ]; then
-            echo "::error::packages/email-templates missing. Build context must be repo root (context: .). Check checkout and that this commit includes the workspace."
+            echo "::error::packages/email-templates missing. Build context must be repo root (context: .). Check checkout includes the workspace."
             exit 1
           fi
-          grep -q 'email-templates' packages/hocuspocus.server/docker/Dockerfile.bun && grep -q 'email-templates' packages/webapp/docker/Dockerfile.bun || {
-            echo "::error::Dockerfiles must COPY packages/email-templates. Merge the commit that adds @docs.plus/email-templates to prod Dockerfiles."
+          if ! grep -q 'email-templates' packages/hocuspocus.server/docker/Dockerfile.bun; then
+            echo "::error::packages/hocuspocus.server/docker/Dockerfile.bun must COPY packages/email-templates."
             exit 1
-          }
+          fi
+          if ! grep -q 'email-templates' packages/webapp/docker/Dockerfile.bun; then
+            echo "::error::packages/webapp/docker/Dockerfile.bun must COPY packages/email-templates."
+            exit 1
+          fi
           echo "✅ Build context OK (repo root, email-templates present)"
 
       - name: 🏗️ Build Docker Images
         env:
-          DOCKER_BUILDKIT: 1
-          COMPOSE_DOCKER_CLI_BUILD: 1
+          DOCKER_BUILDKIT: '1'
+          COMPOSE_DOCKER_CLI_BUILD: '1'
         run: |
-          echo "🔨 Building images with tag: ${{ env.DEPLOY_TAG }}"
+          echo "🔨 Building images with tag: ${DEPLOY_TAG}"
 
-          set -a
-          source ${{ env.ENV_FILE }}
-          set +a
+          # hocuspocus-server and hocuspocus-worker share `docsplus-hocuspocus`;
+          # building both via compose with --no-cache duplicates context transfer
+          # and ties up the bake plan. Build via hocuspocus-server only; the
+          # worker reuses the resulting tag at `up` time.
+          #
+          # --no-cache: required as long as the prod entrypoint script changes
+          # are layered late in the Dockerfile and we don't yet have stable
+          # layer ordering. If/when entrypoint COPY moves to the last layer,
+          # we can drop --no-cache and gain ~5 min per deploy.
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+            build --no-cache rest-api hocuspocus-server
 
-          # Backend (rest-api, hocuspocus-server, hocuspocus-worker share one image): build without cache
-          # so entrypoint/script changes are always picked up (avoids "Cannot find package 'hono'" from old path-rewriting entrypoint).
-          docker compose -f ${{ env.COMPOSE_FILE }} \
-            --env-file ${{ env.ENV_FILE }} \
-            build --no-cache rest-api hocuspocus-server hocuspocus-worker
-
-          # Rest: use cache (faster). traefik/redis use image: only, no build.
-          docker compose -f ${{ env.COMPOSE_FILE }} \
-            --env-file ${{ env.ENV_FILE }} \
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
             build --parallel webapp admin-dashboard
 
           echo "✅ Images built"
@@ -328,28 +479,25 @@ jobs:
 
           docker network create docsplus-network 2>/dev/null || true
 
-          # Start Traefik and Redis (--no-recreate prevents restart)
-          docker compose -f ${{ env.COMPOSE_FILE }} \
-            --env-file ${{ env.ENV_FILE }} \
+          # Start Traefik and Redis (--no-recreate keeps existing if running)
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
             up -d --no-recreate traefik redis
 
-          # Check Traefik
-          if ! docker ps --filter "name=traefik" --filter "status=running" | grep -q traefik; then
+          # Force-start Traefik if somehow not running
+          if ! docker ps --filter "name=traefik" --filter "status=running" --format '{{.Names}}' | grep -q traefik; then
             echo "⚠️ Traefik not running, starting..."
-            docker compose -f ${{ env.COMPOSE_FILE }} \
-              --env-file ${{ env.ENV_FILE }} \
-              up -d traefik
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d traefik
             sleep 15
           fi
 
           # Wait for healthy
           echo "⏳ Waiting for Traefik..."
           for i in {1..30}; do
-            if docker ps --filter "name=traefik" --filter "health=healthy" | grep -q traefik; then
+            if docker ps --filter "name=traefik" --filter "health=healthy" --format '{{.Names}}' | grep -q traefik; then
               echo "✅ Traefik healthy"
               break
             fi
-            [ $i -eq 30 ] && echo "⚠️ Traefik health timeout, continuing..."
+            [ "${i}" -eq 30 ] && echo "⚠️ Traefik health timeout, continuing..."
             sleep 2
           done
 
@@ -358,44 +506,45 @@ jobs:
           echo "🚀 Starting zero-downtime deployment..."
 
           deploy_service() {
-            local SERVICE=$1
-            local TARGET=$2
-            local CURRENT=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" -q | wc -l | tr -d ' ')
+            local SERVICE="$1"
+            local TARGET="$2"
+            local CURRENT
+            CURRENT=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" -q | wc -l | tr -d ' ')
             local SCALE_UP=$((CURRENT + TARGET))
 
             echo ""
-            echo "📦 Deploying $SERVICE (current: $CURRENT, target: $TARGET)..."
+            echo "📦 Deploying ${SERVICE} (current: ${CURRENT}, target: ${TARGET})..."
 
-            # Scale UP first (keeps old containers)
-            if [ "$SCALE_UP" -gt "$CURRENT" ]; then
-              echo "⬆️  Scaling up to $SCALE_UP..."
-              docker compose -f ${{ env.COMPOSE_FILE }} \
-                --env-file ${{ env.ENV_FILE }} \
-                up -d --no-deps --scale ${SERVICE}=${SCALE_UP} ${SERVICE}
+            # Scale UP first (keeps old containers serving traffic)
+            if [ "${SCALE_UP}" -gt "${CURRENT}" ]; then
+              echo "⬆️  Scaling up to ${SCALE_UP}..."
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+                up -d --no-deps --scale "${SERVICE}=${SCALE_UP}" "${SERVICE}"
 
-              # Wait for healthy
+              # Wait for healthy. 60×2s = 120s — Next.js cold start can hit
+              # 60-90s right after a --no-cache build. Was 30×2s = 60s before
+              # which produced false-fail rollbacks.
               echo "⏳ Waiting for healthy containers..."
-              for i in {1..30}; do
+              for i in {1..60}; do
+                local HEALTHY
                 HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" -q | wc -l)
-                if [ "$HEALTHY" -ge "$TARGET" ]; then
-                  echo "✅ $HEALTHY healthy containers"
+                if [ "${HEALTHY}" -ge "${TARGET}" ]; then
+                  echo "✅ ${HEALTHY} healthy containers"
                   break
                 fi
-                [ $((i % 5)) -eq 0 ] && echo "   ... $HEALTHY/$TARGET healthy (attempt $i/30)"
+                [ $((i % 10)) -eq 0 ] && echo "   ... ${HEALTHY}/${TARGET} healthy (attempt ${i}/60)"
                 sleep 2
               done
             fi
 
-            # Scale to target (removes old containers)
-            echo "📏 Scaling to target: $TARGET..."
-            docker compose -f ${{ env.COMPOSE_FILE }} \
-              --env-file ${{ env.ENV_FILE }} \
-              up -d --no-deps --scale ${SERVICE}=${TARGET} ${SERVICE}
+            # Scale to target (compose removes old containers)
+            echo "📏 Scaling to target: ${TARGET}..."
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+              up -d --no-deps --scale "${SERVICE}=${TARGET}" "${SERVICE}"
 
             sleep 2
           }
 
-          # Deploy all services
           deploy_service "webapp" 2
           deploy_service "rest-api" 2
           deploy_service "hocuspocus-server" 2
@@ -410,72 +559,109 @@ jobs:
           echo "🩺 Verifying deployment..."
           sleep 10
 
-          # Check infrastructure
+          # Infrastructure check
           echo "📊 Infrastructure:"
           for svc in traefik docsplus-redis; do
-            if docker ps --filter "name=$svc" --filter "status=running" | grep -q "$svc"; then
-              echo "  ✅ $svc: running"
+            if docker ps --filter "name=${svc}" --filter "status=running" --format '{{.Names}}' | grep -q "${svc}"; then
+              echo "  ✅ ${svc}: running"
             else
-              echo "  ❌ $svc: NOT running"
-              docker logs $svc --tail 30 2>/dev/null || true
+              echo "  ❌ ${svc}: NOT running"
+              docker logs "${svc}" --tail 30 2>/dev/null || true
               exit 1
             fi
           done
 
-          # Check services
+          # Service running + healthy check
           echo "📊 Services:"
           for svc in webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard; do
             RUNNING=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "status=running" --format "{{.Names}}" | wc -l)
             HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
 
-            if [ "$RUNNING" -gt 0 ]; then
-              echo "  ✅ $svc: $RUNNING running, $HEALTHY healthy"
+            if [ "${RUNNING}" -gt 0 ]; then
+              echo "  ✅ ${svc}: ${RUNNING} running, ${HEALTHY} healthy"
             else
-              echo "  ❌ $svc: NOT running"
+              echo "  ❌ ${svc}: NOT running"
               exit 1
             fi
           done
 
-          # Test endpoints
+          # Internal smoke test — hit container health endpoints via the
+          # docker network, NOT via the public DNS+TLS stack. A transient
+          # ACME / Let's Encrypt hiccup must not trigger a false-fail rollback.
           echo ""
-          echo "🔍 Testing endpoints..."
-
-          for i in {1..20}; do
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://docs.plus/ 2>/dev/null || echo "000")
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "  ✅ https://docs.plus/ → $HTTP_CODE"
-              break
+          echo "🔍 Internal smoke tests..."
+          smoke() {
+            local SVC="$1" PORT="$2" PATH_="$3"
+            if docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T "${SVC}" \
+              bun -e "fetch('http://localhost:${PORT}${PATH_}').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"; then
+              echo "  ✅ ${SVC} internal health"
+            else
+              echo "  ❌ ${SVC} internal health"
+              return 1
             fi
-            [ $i -eq 20 ] && echo "  ⚠️ https://docs.plus/ → $HTTP_CODE (may still be provisioning)"
-            sleep 3
-          done
+          }
+          smoke webapp 3000 /api/health
+          smoke rest-api 4000 /health
+          smoke hocuspocus-server 4001 /health
+          smoke hocuspocus-worker 4002 /health
+          smoke admin-dashboard 3100 /api/health
 
-          HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://prodback.docs.plus/api/health 2>/dev/null || echo "000")
-          [ "$HTTP_CODE" = "200" ] && echo "  ✅ API health → $HTTP_CODE" || echo "  ⚠️ API health → $HTTP_CODE"
+          # Public-URL probe is now informational only — does NOT fail the deploy.
+          # Real public-availability monitoring belongs in uptime-kuma, not here.
+          echo ""
+          echo "🌐 Public URL probe (informational):"
+          PUBLIC_CODE=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://docs.plus/ 2>/dev/null || echo "000")
+          echo "  https://docs.plus/ → ${PUBLIC_CODE}"
+          API_CODE=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 https://prodback.docs.plus/api/health 2>/dev/null || echo "000")
+          echo "  https://prodback.docs.plus/api/health → ${API_CODE}"
 
           echo ""
           echo "✅ Deployment verified"
 
-      - name: 🔄 Sync Production Directory
+      - name: 📁 Sync compose files for break-glass
+        if: success()
         run: |
-          cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
-          docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} up -d \
-            rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard
-          echo "✅ Production directory synced"
+          # Replaces the previous "Sync Production Directory" step which re-`up`'d
+          # services from a different cwd — that re-up broke the blue-green
+          # guarantee. Now we only COPY the active compose + env files to a
+          # stable path so a human SSH'd in can run, e.g.:
+          #   cd /opt/projects/prod.docs.plus/.deploy/current
+          #   docker compose -f docker-compose.prod.yml --env-file .env.production ps
+          # without having to know the runner's _work directory.
+          mkdir -p "${DEPLOY_STATE_DIR}/current"
+          cp "${COMPOSE_FILE}" "${DEPLOY_STATE_DIR}/current/${COMPOSE_FILE}"
+          cp "${ENV_FILE}" "${DEPLOY_STATE_DIR}/current/${ENV_FILE}"
+          echo "✅ Synced compose+env to ${DEPLOY_STATE_DIR}/current/"
+
+      - name: 💾 Stash this tag as last-good
+        # Only on success — failure path is handled by the rollback step.
+        if: success()
+        run: |
+          # Persist current tag for the next deploy's rollback target.
+          mkdir -p "${DEPLOY_STATE_DIR}"
+          # Keep the previous one as last-good-tag.previous for one-step-back debugging.
+          if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
+            cp "${LAST_GOOD_TAG_FILE}" "${LAST_GOOD_TAG_FILE}.previous"
+          fi
+          echo "${DEPLOY_TAG}" > "${LAST_GOOD_TAG_FILE}"
+          echo "✅ Stashed last-good-tag = ${DEPLOY_TAG}"
 
       - name: 🧹 Cleanup
-        continue-on-error: true # Cleanup failure shouldn't fail deployment
+        if: success()
+        continue-on-error: true # cleanup failure shouldn't fail an otherwise green deploy
         run: |
           docker image prune -f
           docker image prune -f --filter "until=24h" 2>/dev/null || true
           echo "✅ Cleanup complete"
 
       - name: 📊 Summary
+        if: success()
         run: |
           echo "======================================"
           echo "✅ DEPLOYMENT SUCCESSFUL"
           echo "======================================"
-          echo "Tag: ${{ env.DEPLOY_TAG }}"
+          echo "Tag:           ${DEPLOY_TAG}"
+          echo "Previous tag:  ${PREVIOUS_TAG:-<none>}"
           echo ""
           echo "Services:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(traefik|docsplus|webapp|rest-api|hocuspocus)" | head -15
@@ -488,18 +674,87 @@ jobs:
       - name: 🚨 Rollback on Failure
         if: failure()
         run: |
-          echo "⚠️ Deployment failed - attempting recovery..."
+          echo "⚠️ Deployment failed — attempting rollback..."
 
-          cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
-          docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} \
-            up -d --no-recreate 2>/dev/null || true
+          if [ -z "${PREVIOUS_TAG:-}" ]; then
+            echo "::warning::No PREVIOUS_TAG stashed — cannot auto-rollback."
+            echo "📊 Current state:"
+            docker ps --format "table {{.Names}}\t{{.Status}}" | head -15
+            exit 0
+          fi
 
-          echo "📊 Current state:"
+          echo "↩️  Rolling back to: ${PREVIOUS_TAG}"
+
+          # Multi-image precondition (A2): ALL service images for the previous
+          # tag must still exist locally. The cleanup step honors --filter
+          # until=24h, so within a 24h window this works reliably; outside
+          # that window we fail loudly rather than partially-rollback into a
+          # mixed-version cluster.
+          MISSING=()
+          for img in docsplus-webapp docsplus-rest-api docsplus-hocuspocus docsplus-admin; do
+            if ! docker image inspect "${img}:${PREVIOUS_TAG}" >/dev/null 2>&1; then
+              MISSING+=("${img}:${PREVIOUS_TAG}")
+            fi
+          done
+          if [ "${#MISSING[@]}" -gt 0 ]; then
+            echo "::error::Cannot auto-rollback. Missing images for previous tag:"
+            for img in "${MISSING[@]}"; do
+              echo "  - ${img}"
+            done
+            echo "Manual recovery: bring traffic back via the existing healthy containers."
+            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --no-recreate 2>/dev/null || true
+            exit 1
+          fi
+
+          # Override DEPLOY_TAG in the env file and re-deploy with previous images.
+          sed -i.bak "s|^DEPLOY_TAG=.*|DEPLOY_TAG=${PREVIOUS_TAG}|" "${ENV_FILE}"
+          rm -f "${ENV_FILE}.bak"
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+            up -d --force-recreate \
+            webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard
+
+          # Post-rollback verification (A3). Give containers a moment to bind
+          # ports + pass first healthcheck, then run the same internal smoke
+          # set the forward path runs. If rollback itself can't come healthy,
+          # we want the workflow to fail RED so the on-call sees it instead
+          # of a misleading "rollback complete" green check.
+          echo ""
+          echo "⏳ Waiting 30s for rolled-back containers to settle..."
+          sleep 30
+
+          smoke() {
+            local SVC="$1" PORT="$2" PATH_="$3"
+            if docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T "${SVC}" \
+              bun -e "fetch('http://localhost:${PORT}${PATH_}').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"; then
+              echo "  ✅ ${SVC} internal health (post-rollback)"
+              return 0
+            else
+              echo "  ❌ ${SVC} internal health (post-rollback)"
+              return 1
+            fi
+          }
+
+          ROLLBACK_OK=1
+          smoke webapp 3000 /api/health || ROLLBACK_OK=0
+          smoke rest-api 4000 /health || ROLLBACK_OK=0
+          smoke hocuspocus-server 4001 /health || ROLLBACK_OK=0
+          smoke hocuspocus-worker 4002 /health || ROLLBACK_OK=0
+          smoke admin-dashboard 3100 /api/health || ROLLBACK_OK=0
+
+          echo ""
+          echo "📊 Post-rollback state:"
           docker ps --format "table {{.Names}}\t{{.Status}}" | head -15
 
-  # ============================================================================
-  # UPTIME KUMA (Optional monitoring service)
-  # ============================================================================
+          if [ "${ROLLBACK_OK}" -ne 1 ]; then
+            echo "::error::Rollback to ${PREVIOUS_TAG} did not pass smoke tests. Manual intervention required."
+            exit 1
+          fi
+
+          echo "✅ Rollback to ${PREVIOUS_TAG} verified healthy"
+
+  # ===========================================================================
+  # UPTIME KUMA (optional monitoring service)
+  # ===========================================================================
   deploy-uptime-kuma:
     name: 🔔 Deploy Uptime Kuma
     runs-on: prod.docs.plus
@@ -509,10 +764,17 @@ jobs:
       github.event_name == 'push' &&
       contains(github.event.head_commit.message, 'build') &&
       contains(github.event.head_commit.message, 'uptime-kuma')
+    permissions:
+      contents: read
 
     steps:
       - name: 🚀 Deploy
         run: |
+          # Pinned by digest (not :latest) so the same uptime-kuma version
+          # is reproducible across redeploys. To bump, look up new digest:
+          #   docker pull louislam/uptime-kuma:1 && docker inspect ...
+          UPTIME_KUMA_IMAGE='louislam/uptime-kuma:1@sha256:bb1bcecbc3e3ffb1cb0f8fc5f9c3cdaa78c1dfb56d98d64e06da13ebfc6dba0d'
+
           docker network create docsplus-network 2>/dev/null || true
 
           docker stop uptime-kuma 2>/dev/null || true
@@ -528,7 +790,7 @@ jobs:
             --label "traefik.http.routers.uptime.entrypoints=websecure" \
             --label "traefik.http.routers.uptime.tls.certresolver=letsencrypt" \
             --label "traefik.http.services.uptime.loadbalancer.server.port=3001" \
-            louislam/uptime-kuma:latest
+            "${UPTIME_KUMA_IMAGE}"
 
           sleep 15
           echo "✅ Uptime Kuma deployed at https://status.docs.plus"
