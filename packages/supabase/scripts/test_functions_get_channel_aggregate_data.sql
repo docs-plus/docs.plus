@@ -159,6 +159,90 @@ SELECT * FROM get_channel_aggregate_data('7fd8dc87-4222-4fce-a39f-9abd4ad190ee')
 -- - last_read_message_timestamp: NULL.
 
 -- ----------------------------------------
+-- Test Case 2.5: Pagination cursor + has_more_* outputs
+--
+-- These assertions cover the cursor outputs added by the cursor refactor.
+-- Placed BEFORE Test Case 3 because that test raises an intentional
+-- exception that aborts the wrapping transaction.
+-- ----------------------------------------
+
+-- Populated channel: cursors are non-null, has_more_* match what the
+-- paginator actually returns from those cursors.
+DO $$
+DECLARE
+  ch_id varchar(36) := '7fd8dc87-4222-4fce-a39f-9abd4ad190ee'; -- Channel One: 3 messages
+  rec record;
+  page_count int;
+BEGIN
+  FOR rec IN SELECT * FROM get_channel_aggregate_data(ch_id) LOOP
+    ASSERT rec.older_cursor IS NOT NULL,        'older_cursor null on populated channel';
+    ASSERT rec.newer_cursor IS NOT NULL,        'newer_cursor null on populated channel';
+    ASSERT rec.has_more_older IS NOT NULL,      'has_more_older null';
+    ASSERT rec.has_more_newer IS NOT NULL,      'has_more_newer null';
+
+    -- Boundary parity: paginating older from older_cursor must return the
+    -- next chronological page; has_more_older true iff that page is non-empty.
+    SELECT jsonb_array_length(messages) INTO page_count
+      FROM get_channel_messages_paginated(
+        ch_id, 20, rec.older_cursor, 'older'::varchar
+      );
+    ASSERT (page_count > 0) = rec.has_more_older,
+           format('has_more_older=%s but paginator returned %s rows',
+                  rec.has_more_older, page_count);
+
+    SELECT jsonb_array_length(messages) INTO page_count
+      FROM get_channel_messages_paginated(
+        ch_id, 20, rec.newer_cursor, 'newer'::varchar
+      );
+    ASSERT (page_count > 0) = rec.has_more_newer,
+           format('has_more_newer=%s but paginator returned %s rows',
+                  rec.has_more_newer, page_count);
+  END LOOP;
+END $$;
+
+-- Empty channel: cursors null, both flags false.
+-- Note: channel creator is auto-added as a member by a DB trigger; do not re-insert.
+INSERT INTO public.channels (id, workspace_id, slug, name, created_by, description, type)
+VALUES
+    ('a31a1c2c-bbbb-4444-aaaa-aaaaaaaaaaaa', '6b05c967-24de-4a43-8852-d803c40f997a', 'channel-empty-cursors', 'Empty Cursors Channel', '4b90fc19-8f0c-45bf-8573-a2f273ca3b8e', 'Empty channel for cursor test', 'PUBLIC');
+
+DO $$
+DECLARE
+  ch_id varchar(36) := 'a31a1c2c-bbbb-4444-aaaa-aaaaaaaaaaaa';
+  rec record;
+BEGIN
+  FOR rec IN SELECT * FROM get_channel_aggregate_data(ch_id) LOOP
+    ASSERT rec.older_cursor IS NULL,            'older_cursor non-null on empty channel';
+    ASSERT rec.newer_cursor IS NULL,            'newer_cursor non-null on empty channel';
+    ASSERT rec.has_more_older = FALSE,          'has_more_older true on empty channel';
+    ASSERT rec.has_more_newer = FALSE,          'has_more_newer true on empty channel';
+  END LOOP;
+END $$;
+
+-- Single-message channel: cursors equal, both has_more_* false.
+INSERT INTO public.channels (id, workspace_id, slug, name, created_by, description, type)
+VALUES
+    ('a31a1c2c-bbbb-4444-aaaa-bbbbbbbbbbbb', '6b05c967-24de-4a43-8852-d803c40f997a', 'channel-single-cursor', 'Single Cursor Channel', '4b90fc19-8f0c-45bf-8573-a2f273ca3b8e', 'Single message channel for cursor test', 'PUBLIC');
+
+INSERT INTO public.messages (id, content, channel_id, user_id, created_at)
+VALUES
+    ('b41a1c2c-bbbb-4444-aaaa-bbbbbbbbbbbb', 'Lone message', 'a31a1c2c-bbbb-4444-aaaa-bbbbbbbbbbbb', '4b90fc19-8f0c-45bf-8573-a2f273ca3b8e', NOW());
+
+DO $$
+DECLARE
+  ch_id varchar(36) := 'a31a1c2c-bbbb-4444-aaaa-bbbbbbbbbbbb';
+  rec record;
+BEGIN
+  FOR rec IN SELECT * FROM get_channel_aggregate_data(ch_id) LOOP
+    ASSERT rec.older_cursor IS NOT NULL,        'older_cursor null on single-message channel';
+    ASSERT rec.newer_cursor IS NOT NULL,        'newer_cursor null on single-message channel';
+    ASSERT rec.older_cursor = rec.newer_cursor, 'cursors differ on single-message channel';
+    ASSERT rec.has_more_older = FALSE,          'has_more_older true on single-message channel';
+    ASSERT rec.has_more_newer = FALSE,          'has_more_newer true on single-message channel';
+  END LOOP;
+END $$;
+
+-- ----------------------------------------
 -- Test Case 3: Channel does not exist.
 -- ----------------------------------------
 

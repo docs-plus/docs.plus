@@ -37,7 +37,11 @@ RETURNS TABLE(
     unread_message BOOLEAN,
     last_read_message_id UUID,
     last_read_message_timestamp TIMESTAMP WITH TIME ZONE,
-    anchor_message_timestamp TIMESTAMP WITH TIME ZONE
+    anchor_message_timestamp TIMESTAMP WITH TIME ZONE,
+    older_cursor TIMESTAMP WITH TIME ZONE,
+    newer_cursor TIMESTAMP WITH TIME ZONE,
+    has_more_older BOOLEAN,
+    has_more_newer BOOLEAN
 ) AS $$
 DECLARE
     channel_result JSONB;
@@ -51,6 +55,10 @@ DECLARE
     unread_message BOOLEAN := FALSE;
     anchor_message_timestamp TIMESTAMP WITH TIME ZONE;
     half_limit INT;
+    older_cursor_result TIMESTAMP WITH TIME ZONE;
+    newer_cursor_result TIMESTAMP WITH TIME ZONE;
+    has_more_older_result BOOLEAN := FALSE;
+    has_more_newer_result BOOLEAN := FALSE;
 BEGIN
     -- Check if the channel exists and is not deleted
     SELECT json_build_object(
@@ -177,7 +185,7 @@ BEGIN
                         ELSE m.created_at >= COALESCE(last_read_message_timestamp, 'epoch'::timestamp)
                     END
                 )
-            ORDER BY m.created_at DESC
+            ORDER BY m.created_at DESC, m.id DESC
             LIMIT message_limit
         ) t;
     ELSE
@@ -225,7 +233,7 @@ BEGIN
                 AND m.deleted_at IS NULL
                 AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
                 AND m.created_at <= anchor_message_timestamp
-            ORDER BY m.created_at DESC
+            ORDER BY m.created_at DESC, m.id DESC
             LIMIT half_limit
         ),
         messages_after AS (
@@ -268,7 +276,7 @@ BEGIN
                 AND m.deleted_at IS NULL
                 AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
                 AND m.created_at > anchor_message_timestamp
-            ORDER BY m.created_at ASC
+            ORDER BY m.created_at ASC, m.id ASC
             LIMIT message_limit - half_limit
         ),
         combined_messages AS (
@@ -280,9 +288,38 @@ BEGIN
         SELECT COALESCE(json_agg(cm), '[]'::json) INTO messages_result
         FROM (
             SELECT * FROM combined_messages
-            ORDER BY created_at DESC
+            ORDER BY created_at DESC, id DESC
             LIMIT message_limit
         ) cm;
+    END IF;
+
+    -- Derive pagination cursors from the materialized messages_result
+    SELECT
+        MIN((m->>'created_at')::TIMESTAMPTZ),
+        MAX((m->>'created_at')::TIMESTAMPTZ)
+    INTO older_cursor_result, newer_cursor_result
+    FROM jsonb_array_elements(messages_result) AS m;
+
+    IF older_cursor_result IS NOT NULL THEN
+        SELECT EXISTS (
+            SELECT 1
+            FROM public.messages
+            WHERE channel_id = input_channel_id
+              AND deleted_at IS NULL
+              AND NOT (type = 'notification' AND metadata->>'type' IN ('user_join_channel', 'channel_created'))
+              AND created_at < older_cursor_result
+        ) INTO has_more_older_result;
+    END IF;
+
+    IF newer_cursor_result IS NOT NULL THEN
+        SELECT EXISTS (
+            SELECT 1
+            FROM public.messages
+            WHERE channel_id = input_channel_id
+              AND deleted_at IS NULL
+              AND NOT (type = 'notification' AND metadata->>'type' IN ('user_join_channel', 'channel_created'))
+              AND created_at > newer_cursor_result
+        ) INTO has_more_newer_result;
     END IF;
 
     -- Query for the pinned messages
@@ -303,9 +340,13 @@ BEGIN
         unread_message,
         last_read_message_id,
         last_read_message_timestamp,
-        anchor_message_timestamp;
+        anchor_message_timestamp,
+        older_cursor_result,
+        newer_cursor_result,
+        has_more_older_result,
+        has_more_newer_result;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;
 --------------------------------------------------
 --------------------------------------------------
 --------------------------------------------------
