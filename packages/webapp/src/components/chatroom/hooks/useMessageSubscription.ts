@@ -31,39 +31,33 @@ export const useMessageSubscription = (channelId: string) => {
     if (!channelId || !workspaceId) return
 
     // Skip subscription if offline (prevents retry spam)
-    if (!navigator.onLine) {
-      return
-    }
+    if (!navigator.onLine) return
+
+    let cancelled = false
 
     const messageSubscription = supabaseClient
       .channel(`channel:${channelId}`)
       // todo: move to worksapce channel
-
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
         dbMessagesListener
       )
-      .subscribe(async (status) => {
+      .subscribe((status) => {
+        if (cancelled) return
         if (status !== 'SUBSCRIBED') return
-
-        // Skip if we went offline during subscription
         if (!navigator.onLine) {
           messageSubscription.unsubscribe()
           return
         }
-
         setIsDbSubscriptionReady(true)
       })
 
-    // Unsubscribe when going offline
-    const handleOffline = () => {
-      messageSubscription.unsubscribe()
-    }
-
+    const handleOffline = () => messageSubscription.unsubscribe()
     window.addEventListener('offline', handleOffline)
 
     return () => {
+      cancelled = true
       messageSubscription.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
