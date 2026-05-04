@@ -1,10 +1,8 @@
-import { fetchChannelInitialData, upsertChannel } from '@api'
-import { joinChannel } from '@api'
+import { fetchChannelInitialData, joinChannel, upsertChannel } from '@api'
 import Config from '@config'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
-import debounce from 'lodash/debounce'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
 
 interface UseChannelInitialData {
@@ -64,13 +62,6 @@ export const useChannelInitialData = (
 
     setOrUpdateChannel(channelId, channelData.channel_info)
 
-    setWorkspaceChannelSetting(
-      channelId,
-      'scrollPageOffset',
-      channelData?.total_messages_since_last_read >= 20
-        ? channelData?.total_messages_since_last_read
-        : 20
-    )
     setWorkspaceChannelSetting(channelId, 'unreadMessage', channelData?.unread_message)
     setWorkspaceChannelSetting(channelId, 'lastReadMessageId', channelData?.last_read_message_id)
     setWorkspaceChannelSetting(
@@ -85,37 +76,48 @@ export const useChannelInitialData = (
     )
 
     await updateChannelState(channelData)
-  }
 
-  const fetchInitialData = async () => {
-    setIsChannelDataLoaded(false)
-    try {
-      await processChannelData(channelId)
-    } catch (error) {
-      console.error(error)
-      setError(error)
-    } finally {
-      setIsChannelDataLoaded(true)
-    }
+    // Boot pagination cursors from the same RPC payload. Runs AFTER
+    // updateChannelState populates messagesByChannel; otherwise the
+    // cursors would point at rows that aren't loaded yet.
+    useChatStore.getState().initPagination(channelId, {
+      older_cursor: channelData.older_cursor ?? null,
+      newer_cursor: channelData.newer_cursor ?? null,
+      has_more_older: channelData.has_more_older ?? false,
+      has_more_newer: channelData.has_more_newer ?? false
+    })
   }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedFetchData = useCallback(
-    debounce(() => {
-      fetchInitialData()
-    }, 300),
-    [channelId]
-  )
 
   useEffect(() => {
     if (!channelId) return
-
-    debouncedFetchData()
-
+    let cancelled = false
+    ;(async () => {
+      setIsChannelDataLoaded(false)
+      try {
+        await processChannelData(channelId)
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err)
+          setError(err)
+        }
+      } finally {
+        if (!cancelled) setIsChannelDataLoaded(true)
+      }
+    })()
     return () => {
-      debouncedFetchData.cancel()
+      cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelId])
+
+  // Clear stale pagination state for the previous channel on switch/unmount.
+  // Closure capture: when channelId changes c1 → c2, React invokes cleanup
+  // with the old c1, then runs the new effect for c2.
+  useEffect(() => {
+    if (!channelId) return
+    return () => {
+      useChatStore.getState().clearPagination(channelId)
+    }
   }, [channelId])
 
   const updateChannelState = async (channelData: any) => {

@@ -24,8 +24,6 @@ export type TChannelSettings = {
   editMessageMemory?: any | null
   forwardMessageMemory?: any | null
   unreadMessage?: boolean
-  scrollPage?: number
-  scrollPageOffset?: number
   lastReadMessageId?: string | null
   lastReadMessageTimestamp?: Date
   totalMsgSinceLastRead?: number
