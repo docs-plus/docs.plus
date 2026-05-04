@@ -1,20 +1,14 @@
-import { Database } from '@types'
+import { Database, TPaginationCursors, TPaginationDirection } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
 type TMsgPaginatedArg = {
   input_channel_id: string
   limit_count?: number
   cursor_timestamp?: string | null
-  direction?: 'older' | 'newer'
+  direction?: TPaginationDirection
 }
 
 type TMsg = Database['public']['Tables']['messages']['Row']
-type TPaginationCursors = {
-  next_cursor: string | null
-  prev_cursor: string | null
-  has_more_recent: boolean
-  has_more_older: boolean
-}
 
 type TMsgResponse = {
   messages: TMsg[] | null
@@ -25,9 +19,9 @@ export const fetchMessagesPaginated = async (arg: TMsgPaginatedArg): Promise<TMs
   return supabaseClient
     .rpc('get_channel_messages_paginated', {
       input_channel_id: arg.input_channel_id,
-      limit_count: arg.limit_count || 20,
-      cursor_timestamp: arg.cursor_timestamp,
-      direction: arg.direction || 'older'
+      limit_count: arg.limit_count ?? 20,
+      cursor_timestamp: arg.cursor_timestamp ?? null,
+      direction: arg.direction ?? 'older'
     })
     .single()
     .then((res) => res.data as TMsgResponse)
