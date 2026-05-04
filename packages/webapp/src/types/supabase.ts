@@ -1264,10 +1264,14 @@ export type Database = {
           anchor_message_timestamp: string
           channel_info: Json
           channel_member_info: Json
+          has_more_newer: boolean
+          has_more_older: boolean
           is_user_channel_member: boolean
           last_messages: Json
           last_read_message_id: string
           last_read_message_timestamp: string
+          newer_cursor: string
+          older_cursor: string
           pinned_messages: Json
           total_messages_since_last_read: number
           unread_message: boolean
