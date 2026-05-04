@@ -1,4 +1,3 @@
-import { useChatStore } from '@stores'
 import { useCallback, useRef, useState } from 'react'
 import { LongPressEventType, useLongPress } from 'use-long-press'
 
@@ -10,7 +9,6 @@ export const useLongPressInteraction = () => {
   const [isLongPressCompleted, setIsLongPressCompleted] = useState(false)
   const onActivationRef = useRef<((event: any) => void) | null>(null)
   const messageCardElementRef = useRef<HTMLElement | null>(null)
-  const updateChatRoom = useChatStore((state) => state.updateChatRoom)
 
   const handleLongPressStart = useCallback((event: any) => {
     setIsMessagePressed(true)
@@ -30,7 +28,6 @@ export const useLongPressInteraction = () => {
   const handleLongPressFinish = useCallback((_event: any) => {
     setIsMessagePressed(false)
     setIsLongPressCompleted(true) // Mark as completed - buttons become active
-    updateChatRoom('isScrollEnabled', false)
   }, [])
 
   const handleLongPressCancel = useCallback((event: any) => {
@@ -48,7 +45,6 @@ export const useLongPressInteraction = () => {
       }
     }
 
-    updateChatRoom('isScrollEnabled', true)
     messageCardElementRef.current = null // Clear reference
   }, [])
 
@@ -73,7 +69,6 @@ export const useLongPressInteraction = () => {
 
   const setLongPressCompleted = useCallback((completed: boolean) => {
     setIsLongPressCompleted(completed)
-    updateChatRoom('isScrollEnabled', true)
   }, [])
 
   return {
