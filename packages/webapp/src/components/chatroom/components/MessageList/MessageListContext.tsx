@@ -1,10 +1,9 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { useCheckReadMessage, useMentionClick } from '@components/chatroom/hooks'
-import { useChatStore } from '@stores'
+import { useMentionClick, useReadReceipts } from '@components/chatroom/hooks'
+import { useAuthStore, useChatStore } from '@stores'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import type { TMsgRow } from '@types'
-import debounce from 'lodash/debounce'
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 
 import { useMessageFeedContext } from '../MessageFeed/MessageFeedContext'
 
@@ -12,8 +11,6 @@ interface MessageListContextValue {
   messages: Map<string, TMsgRow> | undefined
   messagesArray: TMsgRow[]
   channelId: string
-
-  isScrollingUp: boolean
 
   messageContainerRef: React.RefObject<HTMLDivElement | null>
   handleMentionClick: (e: React.MouseEvent<HTMLDivElement>) => void
@@ -47,43 +44,23 @@ export const MessageListProvider = ({ children }: Props) => {
     virtualizerRef,
     registerVirtualizer
   } = useMessageFeedContext()
-  const [isScrollingUp, setIsScrollingUp] = useState(false)
-  const lastScrollTop = useRef(0)
 
   const messages = useChatStore((state) => state.messagesByChannel.get(channelId))
   const messagesArray = useMemo<TMsgRow[]>(
     () => (messages ? Array.from(messages.values()) : []),
     [messages]
   )
+  const profile = useAuthStore((s) => s.profile)
 
   const handleMentionClick = useMentionClick()
 
-  useEffect(() => {
-    const container = messageContainerRef.current
-    if (!container) return
-
-    const handleScroll = debounce(() => {
-      const currentScrollTop = container.scrollTop
-      setIsScrollingUp(currentScrollTop < lastScrollTop.current)
-      lastScrollTop.current = currentScrollTop
-    }, 16) // ~60fps
-
-    container.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      container.removeEventListener('scroll', handleScroll)
-      handleScroll.cancel()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useCheckReadMessage({ channelId, messages: messages ?? null })
+  useReadReceipts({ channelId, messages: messagesArray, profile })
 
   const value = useMemo<MessageListContextValue>(
     () => ({
       messages,
       messagesArray,
       channelId,
-      isScrollingUp,
       messageContainerRef,
       handleMentionClick,
       isLoadingMore,
@@ -95,7 +72,6 @@ export const MessageListProvider = ({ children }: Props) => {
       messages,
       messagesArray,
       channelId,
-      isScrollingUp,
       messageContainerRef,
       handleMentionClick,
       isLoadingMore,
