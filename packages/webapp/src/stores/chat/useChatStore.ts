@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import bookmark from './bookmark'
 import channelMembersStore from './channelMembersStore'
 import channelMessagesStore from './channelMessagesStore'
+import channelPaginationStore from './channelPaginationStore'
 import channelPinnedMessagesStore from './channelPinnedMessagesStore'
 import channelsStore from './channelsStore'
 import chatRoom from './chatroom'
@@ -16,6 +17,7 @@ enableMapSet()
 interface IStore
   extends
     ReturnType<typeof channelMembersStore>,
+    ReturnType<typeof channelPaginationStore>,
     ReturnType<typeof channelPinnedMessagesStore>,
     ReturnType<typeof channelsStore>,
     ReturnType<typeof chatRoom>,
@@ -34,5 +36,6 @@ export const useChatStore = create<IStore>((...props) => ({
   ...channelsStore(...props),
   ...threadStore(...props),
   ...bookmark(...props),
-  ...emojiPickerStore(...props)
+  ...emojiPickerStore(...props),
+  ...channelPaginationStore(...props)
 }))
