@@ -17,6 +17,7 @@ interface ChannelMessagesState {
   messagesByChannel: Map<string, Map<string, TMsgRow>>
   setOrUpdateMessage: (channelId: string, messageId: string, messageData: Partial<TMsgRow>) => void
   bulkSetMessages: (channelId: string, newMessages: ReadonlyArray<TMsgRow>) => void
+  prependMessages: (channelId: string, newMessages: ReadonlyArray<TMsgRow>) => void
   removeMessage: (channelId: string, messageId: string) => void
   clearChannelMessages: (channelId: string) => void
   replaceMessages: (channelId: string, newMessages: Map<string, TMsgRow>) => void
@@ -51,6 +52,18 @@ const channelMessagesStore = immer<ChannelMessagesState>((set) => ({
       const existingMessages = state.messagesByChannel.get(channelId) ?? new Map<string, TMsgRow>()
       for (const message of newMessages) existingMessages.set(message.id, message)
       state.messagesByChannel.set(channelId, existingMessages)
+    })
+  },
+
+  prependMessages: (channelId, newMessages) => {
+    set((state) => {
+      const existing = state.messagesByChannel.get(channelId) ?? new Map<string, TMsgRow>()
+      const merged = new Map<string, TMsgRow>()
+      for (const message of newMessages) {
+        if (!existing.has(message.id)) merged.set(message.id, message)
+      }
+      for (const [id, message] of existing) merged.set(id, message)
+      state.messagesByChannel.set(channelId, merged)
     })
   },
 
