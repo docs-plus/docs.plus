@@ -1,6 +1,0 @@
-export { DocumentsShowcase } from './DocumentsShowcase'
-export { EditorShowcase } from './EditorShowcase'
-export * from './layouts'
-export { NotificationsShowcase } from './NotificationsShowcase'
-export { ProfileShowcase } from './ProfileShowcase'
-export { TypographyShowcase } from './TypographyShowcase'

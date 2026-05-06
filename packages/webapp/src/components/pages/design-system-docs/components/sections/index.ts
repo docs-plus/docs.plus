@@ -1,7 +1,0 @@
-export { AccessibilitySection } from './AccessibilitySection'
-export { ComponentsSection } from './ComponentsSection'
-export { EditorComponentsSection } from './EditorComponentsSection'
-export { FoundationsSection } from './FoundationsSection'
-export { GettingStartedSection } from './GettingStartedSection'
-export { ImplementationSection } from './ImplementationSection'
-export { PatternsSection } from './PatternsSection'
