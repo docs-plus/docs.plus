@@ -1,32 +1,53 @@
 ---
-globs: **/*.sql
+globs: **/*.sql,packages/supabase/**,packages/webapp/src/types/supabase.ts
 alwaysApply: false
 ---
-# PostgreSQL & Supabase SQL Style Guide
 
-A simple, clear set of rules for writing `.sql` files for PostgreSQL and Supabase projects.
+# Supabase And Postgres
 
----
+Focused rules for Supabase SQL, migrations, generated files, and security in docs.plus.
 
-## 📌 General Rules
+## Project Guardrails
 
-- Always use `snake_case` for all identifiers.
-- SQL keywords: lowercase (`select`, `from`, etc).
-- Use `--` for single-line comments and `/* ... */` for multi-line.
-- Keep lines under 120 chars when possible.
-- Use ISO 8601 for dates: `'YYYY-MM-DDTHH:MM:SS'`.
-- One statement per line unless it’s very short.
+- **Never edit `packages/webapp/src/types/supabase.ts`.** It is generated CLI output. After relevant DB work, the developer runs `bun run --filter @docs.plus/supabase_back types` from the repo root with local Supabase and root `.env.local`.
+- **Never edit `packages/supabase/seed.sql`.** Schema, RPC, and policy changes belong in `packages/supabase/migrations/` and `packages/supabase/scripts/`.
+- Keep Supabase architecture aligned with `AGENTS.md`: browser singleton, server/API clients, generated types, and migration workflow live there as project policy.
+- Do not expose Supabase `service_role` or secret keys to public/browser code. `NEXT_PUBLIC_*` values are browser-visible.
 
----
+## SQL Style
 
-## 🧱 Table Naming
+- Write SQL keywords in lowercase.
+- Use `snake_case` for schemas, tables, columns, functions, triggers, policies, indexes, and CTEs.
+- Prefer plural table names and singular column names.
+- Avoid reserved words, `tbl_` prefixes, and vague names such as `name` when a domain-specific name is available.
+- Use ISO 8601 timestamps for literal dates, for example `'2026-05-05T12:00:00'`.
+- Use `--` for short comments and `/* ... */` for block comments.
+- Keep simple statements compact; split larger queries by clause for readability.
+- Use explicit `as` for aliases.
+- Prefer readable CTEs for complex queries; add comments for non-obvious blocks.
 
-- Tables: plural nouns (e.g., `users`, `orders`).
-- No prefixes like `tbl_`.
-- Schema: use `public` unless specified.
-- Avoid reserved keywords.
-- Table names must be unique across DB.
-- Add a comment for every table.
+```sql
+with active_members as (
+  select
+    workspace_members.user_id,
+    workspace_members.workspace_id
+  from workspace_members
+  where workspace_members.deleted_at is null
+)
+select active_members.user_id
+from active_members
+where active_members.workspace_id = p_workspace_id;
+```
+
+## Schema Objects
+
+- Create tables in `public` unless a private schema is intentionally required.
+- Add comments for new tables and for complex or security-sensitive columns.
+- Use the project-established ID shape. For new numeric surrogate keys, prefer `bigint generated always as identity`; use UUIDs when existing APIs, RPCs, or realtime paths require UUIDs.
+- Foreign keys use `{referenced_table_singular}_id`, for example `user_id` for `users`.
+- Name indexes by table and column/purpose, for example `messages_channel_id_created_at_idx`.
+- Trigger and function names describe their action, for example `set_updated_at`.
+- Function bodies should avoid hidden side effects unless the function name and comments make the behavior explicit.
 
 ```sql
 create table users (
@@ -37,116 +58,33 @@ create table users (
 comment on table users is 'Stores registered user info.';
 ```
 
----
+## Migrations
 
-## 📄 Column Naming
+- Create versioned migrations under `packages/supabase/migrations/`.
+- Use Supabase CLI naming when generating new migration files. If creating one manually, follow the timestamped pattern already used in the folder.
+- Include a short header comment for purpose, affected objects, and special safety considerations.
+- Add clear comments around destructive operations: `drop`, `truncate`, data rewrites, column type changes, and backfills.
+- Mirror SQL script changes where `AGENTS.md` requires it, especially RPC scripts under `packages/supabase/scripts/`.
+- Apply a single migration locally without resetting shared state using:
 
-- Use `snake_case`, singular names.
-- For foreign keys: use `{referenced_table}_id`, e.g., `user_id`.
-- No generic names like `name`, `id` (unless it's the PK).
-- Add comments to complex or key columns.
-
----
-
-## 🔑 Primary & Foreign Keys
-
-- Always use `bigint generated always as identity` for PKs.
-- Foreign key: use `references` with `on delete cascade` if deletion should cascade.
-
-```sql
-create table posts (
-  id bigint generated always as identity primary key,
-  user_id bigint not null references users(id) on delete cascade,
-  content text not null
-);
+```bash
+docker exec -i supabase_db_docsplus_supabase psql -U postgres -d postgres < packages/supabase/migrations/<file>.sql
 ```
 
----
+- Do not use `bunx supabase db reset` for routine agent work; it wipes shared local state.
+- Do not use `supabase db query -f` for multi-statement migration files; it can fail with prepared-statement parsing errors.
 
-## ✅ Constraints
+## RLS And Security
 
-- Use `check` constraints to enforce rules.
-- Add `not null` where possible.
-
-```sql
-check (age >= 0)
-```
-
----
-
-## 🚀 Triggers & Functions
-
-- Triggers: use `snake_case`, describe action (`set_updated_at`, `prevent_delete_if_linked`).
-- Trigger functions: return `trigger`, no side effects.
-- Always add `if not exists` to creation.
-- Add comments for what the trigger does.
-
-```sql
-create or replace function set_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-
-create trigger update_timestamp
-before update on users
-for each row
-execute function set_updated_at();
-```
-
----
-
-## 📂 Views
-
-- Views: use `snake_case`, prefix with `v_` if needed.
-- Add comments.
-- Keep read-only unless really needed.
-
----
-
-## 📊 Indexes
-
-- Name format: `{table}_{column}_idx`.
-- Use `btree` unless otherwise needed.
-
-```sql
-create index users_username_idx on users (username);
-```
-
----
-
-## 🧩 CTEs & Queries
-
-- Use CTEs for readability.
-- Name CTEs clearly.
-- Break down complex logic.
-- Prefer `join` over subqueries.
-
-```sql
-with recent_users as (
-  select * from users where created_at > now() - interval '30 days'
-)
-select * from recent_users where active = true;
-```
-
----
-
-## 📦 Supabase Specific
-
-- Auth tables (`auth.users`, etc.): never modify structure directly.
-- Use `rpc` for custom logic, and document with comments.
-- `storage` policies: use `bucket_{name}` convention.
-- Always create policies using `auth.uid()` or `current_setting('request.jwt.claims', true)`.
-
----
-
-## 🔒 Security & Policies
-
-- Use row-level security (RLS) on all tables.
-- Always enable `row level security`.
-- Write least-permission policies first, then expand.
+- Enable RLS on every table in exposed schemas, especially `public`.
+- Write policies from the actual access model. Do not default every policy to the same `auth.uid()` expression.
+- Keep policies granular by action (`select`, `insert`, `update`, `delete`) and role (`anon`, `authenticated`) when behavior differs.
+- Remember that `update` needs a matching `select` policy; without it, updates can affect zero rows without an obvious error.
+- Never use `raw_user_meta_data` / `user_metadata` for authorization. It is user-editable. Store authorization claims in `raw_app_meta_data` / `app_metadata` instead.
+- JWT claims can be stale until token refresh; design sensitive authorization around that.
+- Views bypass RLS by default. On Postgres 15+, use `with (security_invoker = true)` when exposed views should respect caller permissions.
+- Do not put `security definer` functions in exposed schemas. Keep privileged functions private or tightly controlled.
+- Storage upsert requires `insert`, `select`, and `update` permissions; granting only `insert` allows new uploads but not replacement.
 
 ```sql
 alter table users enable row level security;
@@ -157,19 +95,8 @@ create policy "Users can view their own data"
   using (auth.uid() = id);
 ```
 
----
+## Verification
 
-## ☑️ Optional Helpers
-
-- Add UUID default generator if required:
-
-```sql
-id uuid primary key default gen_random_uuid()
-```
-
-- Use `now()` for timestamps.
-- Default status columns to enums or safe values.
-
----
-
-Use this guide to keep SQL predictable, maintainable, and safe. All features used in PostgreSQL and Supabase should follow this format to ensure clarity and ease of maintenance.
+- For Supabase features, verify against current docs or the Supabase skill before implementing; Supabase APIs and CLI behavior change often.
+- Discover CLI commands with `supabase --help` and `supabase <group> --help` instead of guessing flags.
+- For security-sensitive changes, run advisors when available and review RLS, views, functions, storage, and auth claim usage.

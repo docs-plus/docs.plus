@@ -1,0 +1,29 @@
+---
+description: Tiptap and ProseMirror reference workflow for docs.plus editor work
+globs: packages/webapp/src/components/TipTap/**,packages/webapp/src/components/chatroom/**,packages/extension-*/**,packages/hocuspocus.server/src/**
+alwaysApply: false
+---
+
+# Tiptap And ProseMirror
+
+Use this rule when modifying the Tiptap editor, ProseMirror plugins, editor extensions, collaboration/history code, markdown/import-export paths, or the chat composer editor.
+
+## References
+
+- Load `.cursor/skills/tiptap/SKILL.md` before non-trivial Tiptap work.
+- Official Tiptap LLM docs index: `https://tiptap.dev/llms.txt`.
+- Tiptap source/docs repositories: `https://github.com/ueberdosis/tiptap` and `https://github.com/ueberdosis/tiptap-docs`.
+- ProseMirror has no official `llms.txt`, Cursor rule, skill, or MCP found. Use `https://prosemirror.net/docs/ref/` and `https://prosemirror.net/docs/` as source of truth.
+
+## docs.plus Boundaries
+
+- Keep docs.plus editor invariants in `AGENTS.md`: flat heading schema, HeadingScale, editor references, mobile pad behavior, hyperlink extension rules, and chat composer constraints.
+- Do not paste the full Tiptap `llms.txt` into this repo. Use it as a live upstream index, then write only project-specific rules here or in `AGENTS.md`.
+- Use Bun and the root catalog/dependency policy from `AGENTS.md`; do not add or update `@tiptap/*` packages from memory.
+- Keep all `@tiptap/*` package versions aligned when dependency work is explicitly requested.
+
+## Implementation Notes
+
+- For Next.js/SSR editor initialization, verify the current Tiptap docs and preserve `immediatelyRender: false` where required.
+- For ProseMirror changes, prefer current transaction/plugin APIs over memory. Check the reference manual for state, transaction, decoration, and plugin behavior.
+- Treat stored documents and Yjs data as compatibility boundaries. Schema, migration, and transformer changes must be verified against existing stored node/mark shapes.
