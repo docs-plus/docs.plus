@@ -396,7 +396,7 @@ async function checkSupabaseRunning(): Promise<CheckResult> {
     name: 'Supabase',
     status: 'skip',
     message: 'Not running',
-    details: 'Start with: make supabase-start'
+    details: 'Start with: bun --filter @docs.plus/supabase_back start'
   }
 }
 
@@ -496,9 +496,9 @@ async function main() {
   } else {
     console.log('✅ All checks passed! Your environment is ready.\n')
     console.log('Quick start:')
-    console.log('  make infra-up        # Start PostgreSQL + Redis')
-    console.log('  make supabase-start  # Start Supabase')
-    console.log('  make dev-local       # Start all services\n')
+    console.log('  make infra-up                                  # Start PostgreSQL + Redis')
+    console.log('  bun --filter @docs.plus/supabase_back start    # Start Supabase')
+    console.log('  make dev-local                                 # Start all services\n')
     process.exit(0)
   }
 }

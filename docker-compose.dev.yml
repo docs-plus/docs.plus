@@ -295,7 +295,7 @@ services:
       - ./packages:/app/packages
       # Exclude root node_modules (use container's installed dependencies)
       - /app/node_modules
-    command: bun run dev
+    command: bun run dev:ci
     working_dir: /app/packages/webapp
     restart: unless-stopped
     networks:
@@ -346,7 +346,7 @@ services:
     volumes:
       - ./packages/admin-dashboard:/app/packages/admin-dashboard
       - /app/node_modules
-    command: bun run dev
+    command: bun run dev:ci
     working_dir: /app/packages/admin-dashboard
     restart: unless-stopped
     networks:

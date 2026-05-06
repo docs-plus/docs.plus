@@ -4,7 +4,7 @@
  * README screenshot gallery — regenerate with `bun run docs:screenshots`.
  *
  * This spec is intentionally OUTSIDE `cypress/e2e/` so the regular
- * `cy:run` test pattern (`cypress/e2e/**\/*.cy.ts`) ignores it. The
+ * `cypress:run` test pattern (`cypress/e2e/**\/*.cy.ts`) ignores it. The
  * `docs:screenshots` script overrides `specPattern` from the CLI to
  * point Cypress at this folder.
  *

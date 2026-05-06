@@ -23,7 +23,7 @@ export const createSupabaseError = (error: any, url: string | URL): Error => {
   const isLocal = isLocalSupabase(urlStr)
 
   if (isLocal) {
-    return new Error('Supabase is not running. Run: make supabase-start')
+    return new Error('Supabase is not running. Run: bun --filter @docs.plus/supabase_back start')
   }
 
   // Cloud Supabase - generic error
