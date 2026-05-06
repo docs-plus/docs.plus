@@ -2,7 +2,7 @@
 
 > **Status.** Authoritative, timeless rule for `package.json` script keys (root and every workspace), `Makefile` targets, and file names under `scripts/` and `packages/<pkg>/scripts/` across the docs.plus monorepo.
 >
-> **Companion docs.** [AGENTS.md](../../AGENTS.md) carries the summary and points back here. [.cursor/rules/scripts-naming.mdc](../rules/scripts-naming.mdc) is the auto-attached agent card. [docs/engineering/toolchain.md](../../docs/engineering/toolchain.md) covers the underlying tooling. One-shot migration docs (e.g. a `scripts-naming-cutover.md`) may live alongside as siblings and are deleted with the cutover PR that completes them.
+> **Companion docs.** [AGENTS.md](../../AGENTS.md) carries docs.plus operational invariants and points back here. [.cursor/rules/scripts-naming.mdc](../rules/scripts-naming.mdc) is the auto-attached agent card. One-shot migration docs (e.g. a `scripts-naming-cutover.md`) may live alongside as siblings and are deleted with the cutover PR that completes them.
 
 ## Why this exists
 

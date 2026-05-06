@@ -204,11 +204,10 @@ printf 'refs/heads/feature/demo 0000000000000000000000000000000000000000 refs/he
 - Avoid `any` types - use proper types or `unknown`
 - Enable strict mode in your IDE
 - Run type checking: `bun run typecheck` or `bun run build` (will fail on type errors)
-- Tooling policy and CI parity: [docs/engineering/toolchain.md](./docs/engineering/toolchain.md)
 
 ### Quality commands (summary)
 
-Naming rule: **bare name reports, `:fix` suffix mutates** — same convention as `cargo check` / `cargo fmt --check` and `gofmt -d` / `gofmt -w`.
+Full naming convention: [.cursor/docs/scripts-naming-convention.md](./.cursor/docs/scripts-naming-convention.md). Quick reference:
 
 | Command                   | Use case                                                    |
 | ------------------------- | ----------------------------------------------------------- |

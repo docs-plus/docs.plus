@@ -14,6 +14,7 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
   - `.cursor/rules/tiptap.mdc`: upstream Tiptap/ProseMirror reference workflow.
   - `.cursor/rules/scripts-naming.mdc`: scripts and Make-target naming convention; auto-attaches when editing `package.json`, `Makefile`, workflows, or files under `scripts/`.
 - Long-form policy docs that an `.mdc` rule points at live in `.cursor/docs/`. Today: `.cursor/docs/scripts-naming-convention.md` (timeless rule, source of truth). One-shot migration docs may live alongside as siblings (e.g. a `scripts-naming-cutover.md`) and are deleted with the cutover PR that completes them.
+- Package-internal rules that don't generalize to the repo live in **package-local `AGENTS.md`** files next to the package. Today: `packages/extension-hyperlink/AGENTS.md` for that extension's schema, commands, safety, click/preview, and clean-room harness. Cross-package rules (release flow, scripts naming, monorepo toolchain) stay in this root file; the package file is read in addition to the root file when working inside its package.
 - When guidance overlaps, keep the project-specific policy in `AGENTS.md` or `.cursor/docs/`, and the detailed authoring/reference material in the relevant `.mdc` file.
 
 ### Package Manager
@@ -46,23 +47,15 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
 
 ### Testing And Verification
 
-- Test meaningful failure modes — branching, ordering, races, parsing, projections, regressions. Skip tests that only re-assert TypeScript types or framework behavior. Coverage is not a goal.
-- Use TDD for fixes and features. Design tests from the schema/spec; if the spec is wrong, fix behavior, not the test.
+- **Default: do not write new tests.** Add a test only when (a) the user explicitly asks for it, (b) the change pins down a regression that has actually shipped or been reported, or (c) the failure mode is a real branching / ordering / race / parsing / projection bug that is hard to verify by hand. If you cannot name the specific failure mode in one sentence, do not write the test. "It seemed like a good idea to add coverage" is not a reason.
+- **Prefer integration over unit.** When a test is warranted, default to Cypress E2E or real-stack integration that exercises actual user behavior end-to-end. Reach for a unit test only when the unit has branching logic dense enough that an E2E could not isolate a regression to it — parsers, projections, schema validators, pure utilities, message-grouping projections, scroll-mode state machines.
+- **Never write these test shapes** (delete on sight, do not generate): type assertions that re-prove what `tsc` already proves; framework-behavior tests ("React renders", "Tiptap commands return truthy", "Supabase client exists", "useEffect runs"); mock-only flows where every dependency is faked and the assertion is "the mock was called with X"; snapshots of unstable output (full DOM trees, formatted JSON dumps, ProseMirror node JSON); "renders without crashing" smoke tests; trivial props-passthrough / getter / setter tests; coverage-chasing tests with no named behavior.
+- **TDD is opt-in, not default.** Follow strict TDD discipline only when the user explicitly asks for it ("write a test first", "let's TDD this", "/tdd"). This overrides any subagent skill that defaults to TDD on every fix or feature. Otherwise: design the change, ship it, verify with `bun run build` / `bun run check` and the relevant Cypress suite, and stop.
+- **Observe tests pass before declaring done.** Any test added in a change must be run locally and observed green — "should pass" is not evidence. Pre-existing tests that fail are fixed in the same change or explicitly `.skip`'d with a one-line reason and an issue link; never silently disabled.
+- **When unsure, ask.** If you are mid-test and cannot articulate in one sentence which user-visible failure it prevents, stop and ask whether the test is wanted at all. The cost of a low-value test (review burden, maintenance, false confidence) is higher than the cost of a missing one we can add later when a real bug appears.
 - Run `bun run build` after major refactors before claiming completion.
 - Validate full-document paste (`⌘A` -> `⌘V`) on editor changes that can affect paste or document transforms.
-- Cypress conventions:
-  - Split tests by concern and include a README for scope.
-  - Use `it()`, not `test()`.
-  - Consolidate overlapping tests.
-  - ProseMirror `handleDOMEvents.click` is not triggered by Cypress `realClick()` / `.click()`. Dispatch a native `MouseEvent('click', { bubbles: true, clientX, clientY })` using `getBoundingClientRect()` coordinates.
-  - Use the same native-event pattern for floating-toolbar `keydown` Escape dismissal.
-- Test naming:
-  - Cypress E2E directories and files use kebab-case: `copy-paste/`, `keyboard-shortcuts/`, `clipboard-validation.cy.js`.
-  - Cypress E2E files do not use `e2e-` or numeric ordering prefixes unless the reason is documented.
-  - Unit test files use camelCase and match the source module or concern: `<moduleName>.test.ts`; performance tests use `<moduleName>.performance.test.ts`.
-  - Avoid sprint, phase, audit, or ticket names in test files. Name the behavior or module under test.
-  - Cypress support modules use camelCase; fixture files use kebab-case; fixture directories may use camelCase when mirroring a command name.
-  - Test descriptions describe behavior, not ticket IDs. Within a file, use either `should ...` phrasing or bare verbs consistently.
+- Authoring conventions and naming live under §Tests (Monorepo Toolchain).
 
 ### Skills And Prose
 
@@ -97,23 +90,10 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
 - Editor code lives under `packages/webapp/src/components/TipTap/`.
 - Shared webapp utilities live in `packages/webapp/src/utils/`; `src/lib/` was removed. Keep feature-local helpers colocated.
 
-### Root Scripts
-
-Authoritative naming convention: [.cursor/docs/scripts-naming-convention.md](.cursor/docs/scripts-naming-convention.md). Auto-attached agent card: [.cursor/rules/scripts-naming.mdc](.cursor/rules/scripts-naming.mdc). Summary:
-
-- **Grammar.** npm/Bun: `<verb>[:<axis>][:<modifier>]` | `<tool>:<sub>` | `pre<verb>`/`post<verb>`. Make: kebab `<verb>[-<env>][-<scope>][-<modifier>]`, with `<scope>-<verb>` reserved for grouped families like `infra-*`. Script files in `scripts/` and `packages/<pkg>/scripts/`: kebab-case, verb-first when action-oriented, `.ts` for new, `.sh` only when shell is required.
-- **Closed modifiers.** `:fix`, `:ci`, `:watch`, `:coverage`, `:dry`. Environments: `:prod`, `:stage`, `:dev`. Lifecycle hooks: `prepare`, `postinstall`, `pretest`, `prepack`, `prepublishOnly`, plus `pre<verb>`/`post<verb>` — do not invent new ones (no `prebuild`, `postlint`).
-- **Banned (npm/Bun).** Suffixes `:all` / `:full` / `:everything` / `:complete` / `:local`. Verbs `validate` (use `check`), `serve` (use `start`), `watch`-as-verb (use `<verb>:watch`), `audit`, `compile` (use `build`), `all`. Filename traps `validate-*`, `*-emergency*`, `fix-production-*`, `temp-*`, `quick-*`, `wip-*`, `final-*`, `v2-*`, date prefixes. Make grammar is independent: `local` IS a valid Make env (`make dev-local`), so the npm-side `:local` ban does not apply there.
-- **One runner per concern.** Bun for code/workspace fan-out (`bun --filter`, `bun run --filter '*'`); Make for Docker orchestration and multi-process dev stacks (`make up-*`, `make dev-local`, `make dev-backend`). No `cd packages/<x> && bun run …` from root or Makefile. No `cypress:*` at root — webapp owns it.
-- **Env loading.** Node-binary scripts (`next dev`, `next build`, `supabase`) use `dotenv -e <path> -- <cmd>`. Bun-only scripts use `bun --env-file=<path> <subcommand>`. Loader matches runtime; do not force one shim into both worlds.
-- **Package types (5).** Every workspace under `packages/` is one of: **App** (webapp, admin-dashboard), **Service** (hocuspocus), **Tool-wrapper** (supabase_back), **Publishable library** (`extension-*`), or **Internal library** (eslint-config, email-templates). Each type has a Required / Recommended / Forbidden script contract documented in the rule doc. New packages copy a same-type package's script block; do not invent ad-hoc script sets.
-- **Exceptions and corner cases.** Hocuspocus has no bare `dev` (service trio `dev:rest` / `dev:ws` / `dev:worker`). Webapp `start` runtime asymmetry: bare `start` runs Node, `start:prod` / `start:stage` run Bun. `migrate:nested-to-flat[:dry]`. Single-tool wrapper workspaces (e.g. `@docs.plus/supabase_back`) use bare verbs because the workspace name encodes the tool prefix. Husky hook filenames and npm lifecycle script files keep upstream-mandated names.
-
 ### Dependencies
 
 - Root `package.json` owns shared devtool versions: ESLint, TypeScript, Prettier, Stylelint, Jest, `babel-jest`, `jest-environment-jsdom`, `@types/jest`, `@babel/preset-typescript`, and related tooling.
 - Root `catalog:` centralizes pins where used. Workspaces reference matching deps as `"package": "catalog:"`.
-- Toolchain policy details live in `docs/engineering/toolchain.md`; use it for phases, CI parity, and version policy.
 - Do not duplicate Jest/Babel dev dependencies in package workspaces unless there is an exceptional documented reason.
 - `@tanstack/react-query` is root-cataloged at v5 for webapp and admin-dashboard. Use object syntax; mutation pending state is `isPending`, while query `isLoading` remains valid.
 - Stay on ESLint 9.x and TypeScript 5.x until a dedicated migration. ESLint 10 and TS 6 have breaking changes.
@@ -125,21 +105,29 @@ Authoritative naming convention: [.cursor/docs/scripts-naming-convention.md](.cu
 
 ### Tests
 
-- Root `test` runs `scripts/run-tests.sh` (full unit + E2E suite).
-- Unit + E2E stack: Jest and Cypress. `CYPRESS_PARALLEL` enables Cypress parallelism.
-- Unit block order in `run-tests.sh`:
+- Unit + E2E stack: Jest and Cypress. Script names and `CYPRESS_PARALLEL` semantics are defined in the naming convention doc; this section captures docs.plus-specific orchestration, Jest wiring, and authoring conventions. Policy (when to write a test, what shapes to avoid) is in §Testing And Verification.
+- Run order in `run-tests.sh`:
   1. `@docs.plus/extension-indent` Jest via its local `jest.config.cjs`.
   2. `@docs.plus/extension-hyperlink` clean-room Cypress against built `dist/`.
-  3. `@docs.plus/webapp` Jest.
-- Webapp `test` uses `jest --passWithNoTests` so an empty or temporarily absent app suite does not fail CI/local runs.
-- `@docs.plus/webapp` keeps `next/jest` in `jest.config.js`.
-- Library packages that need Jest use a local `jest.config.cjs` next to that package. Configure `roots`, `testMatch`, `transform`, and `testEnvironment` there as needed.
-- Prefer inline `babel-jest` options in `jest.config.cjs`; do not add per-package `babel.config.cjs` unless package-specific Babel behavior is required.
-- Add a library package test script as `"test": "jest --config jest.config.cjs"` or the package's equivalent.
-- Do not add package-local Jest stacks to `package.json`; use the root dev dependencies.
-- Jest 30 uses the plural flag `--testPathPatterns`, not the singular `--testPathPattern` from older docs/snippets. Correct it on sight.
-- `bun test` is Bun's native runner. It is not a substitute for Jest where Next/Jest or local Jest configs are used.
-- Slice unit tests must call `enableMapSet()` from `immer` at module scope. Slice files do not enable it themselves — only `useChatStore.ts` does at production load — so isolated slice instantiations otherwise fail with "MapSet plugin not loaded".
+  3. `@docs.plus/webapp` Jest (`jest --passWithNoTests`, so an empty or temporarily absent suite does not fail CI/local runs).
+- Jest wiring:
+  - `@docs.plus/webapp` keeps `next/jest` in `jest.config.js`.
+  - Library packages that need Jest use a local `jest.config.cjs`. Configure `roots`, `testMatch`, `transform`, and `testEnvironment` there.
+  - Prefer inline `babel-jest` options in `jest.config.cjs`; do not add per-package `babel.config.cjs` unless package-specific Babel behavior is required.
+  - Add a library package test script as `"test": "jest --config jest.config.cjs"`.
+  - Do not add package-local Jest stacks to `package.json`; use the root dev dependencies.
+  - Jest 30 uses the plural flag `--testPathPatterns`, not the singular `--testPathPattern` from older docs/snippets. Correct it on sight.
+  - `bun test` is Bun's native runner — not a substitute for Jest where Next/Jest or local Jest configs are used.
+  - Slice unit tests must call `enableMapSet()` from `immer` at module scope. Slice files do not enable it themselves (only `useChatStore.ts` does at production load), so isolated slice instantiations otherwise fail with "MapSet plugin not loaded".
+- Cypress conventions:
+  - Split tests by concern and include a README for scope.
+  - Use `it()`, not `test()`. Consolidate overlapping tests.
+  - ProseMirror `handleDOMEvents.click` is not triggered by Cypress `realClick()` / `.click()`. Dispatch a native `MouseEvent('click', { bubbles: true, clientX, clientY })` using `getBoundingClientRect()` coordinates. Use the same pattern for floating-toolbar `keydown` Escape dismissal.
+- Naming:
+  - Cypress E2E directories and files use kebab-case (`copy-paste/`, `keyboard-shortcuts/`, `clipboard-validation.cy.js`); no `e2e-` or numeric ordering prefixes unless the reason is documented.
+  - Unit test files use camelCase and match the source module: `<moduleName>.test.ts`; performance tests use `<moduleName>.performance.test.ts`.
+  - Cypress support modules use camelCase; fixture files use kebab-case; fixture directories may use camelCase when mirroring a command name.
+  - Avoid sprint, phase, audit, or ticket names. Test descriptions describe behavior, not ticket IDs — within a file, use either `should ...` phrasing or bare verbs consistently.
 
 ### ESLint Config
 
@@ -166,9 +154,9 @@ Authoritative naming convention: [.cursor/docs/scripts-naming-convention.md](.cu
 - `extension-hypermultimedia` intentionally preserves `console.warn` / `console.error` from its `Logger` wrapper under the shared tsup factory. Note this in its next CHANGELOG entry.
 - Root `LICENSE` is the single committed license.
   - Each publishable package adds `/LICENSE` to package `.gitignore`.
-  - `prepack` copies the root `LICENSE` before `bun publish` or `bun pm pack`. Wired via the shared `@docs.plus/release-tooling` package, not per-package script files.
+  - `prepack` copies the root `LICENSE` before `bun publish` or `bun pm pack`.
   - Symlinks fail because Bun pack drops them. Hard links fail because git stores independent copies.
-- **Shared release scaffolding lives in `@docs.plus/release-tooling`** — an internal workspace package exposing `release-prepack` and `release-preflight` as `bin` commands. Every publishable library consumes them via `"prepack": "release-prepack"` and `"prepublishOnly": "release-preflight"` plus `"@docs.plus/release-tooling": "workspace:*"` in `devDependencies`. Never duplicate this scaffolding into per-package `scripts/prepack.ts` / `scripts/preflight.ts`. The shared scripts are data-driven: they derive the package name and dist-artifact list from the consumer's own `package.json` (`name` + `exports` map), so there is no per-consumer parameterization. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts` — cross-package scaffolding is hoisted, never copied.
+- **Shared release scaffolding lives in `@docs.plus/release-tooling`** — an internal workspace package exposing `release-prepack` and `release-preflight` as `bin` commands. The scripts are data-driven: they derive the consumer's package name and dist-artifact list from its own `package.json` (`name` + `exports` map), so there is no per-consumer parameterization. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts` — cross-package scaffolding is hoisted, never copied. Publishable libraries wire `prepack` / `prepublishOnly` to these bins per the Type 4 contract in the naming convention doc.
 - Do not centralize package-specific files: `README.md`, `CHANGELOG.md`, package source, 3-line `eslint.config.js` shims, or `package.json` fields.
 
 ### Docker
@@ -202,50 +190,43 @@ bun build scripts/<file>.ts --target=bun --outfile=/tmp/out.js
 - Package metadata should include `homepage`, `bugs`, and discovery-oriented `keywords`.
 - Adding any root re-export through `src/index.ts` or `src/utils/index.ts` is a minor release, not a patch.
 - Resolve `[Unreleased]` to a real version before `bun run build`, `bun pm pack`, and `bun publish`.
-- `prepublishOnly` runs `release-preflight` (the shared bin from `@docs.plus/release-tooling`); it asserts:
+- `prepublishOnly` runs `release-preflight`; it asserts:
   - publisher user-agent is `bun/*`;
   - every `dist/...` path in the consumer's `exports` map exists on disk;
   - no literal `catalog:` leaks into built bundles.
 
-### Release Policy
+### Release And Publish
 
-- `RELEASE_POLICY.md` is authoritative for versioning doctrine, cutover phase, lockstep activation, `release:family`, CHANGELOG style, soak/promotion, CI guards, and readiness checklists.
-- During Phase 1 cutover, each extension can ship its first `2.0.0` to `@next` independently.
-- Lockstep activates only through an explicit switch-flip commit in `AGENTS.md` / `RELEASE_POLICY.md`, not automatically when versions align.
-- Once lockstep is active, coordinated extension-family releases use:
+- `RELEASE_POLICY.md` is authoritative for versioning doctrine, cutover phase, lockstep activation, `release:family`, CHANGELOG style, soak/promotion, CI guards, and readiness checklists. Bullets below are the operational subset agents need at the keyboard.
+- Phase 1 cutover: each extension can ship its first `2.0.0` to `@next` independently. Lockstep activates only through an explicit switch-flip commit in `AGENTS.md` / `RELEASE_POLICY.md`, not automatically when versions align.
+- Lockstep release entry:
 
 ```bash
 bun run release:family
 ```
 
-- The only root release/publish script is `"release:family": "bun scripts/release-family.ts"`.
-- Do not reintroduce the removed `release`, `release:major`, `release:minor`, `release:patch`, `version*`, or parallel `publish` scripts.
+The only root release/publish script is `"release:family": "bun scripts/release-family.ts"`. Do not reintroduce the removed `release`, `release:major`, `release:minor`, `release:patch`, `version*`, or parallel `publish` scripts.
 
-### Publish Flow
-
-- Publishing happens on the maintainer laptop because npm 2FA-on-write requires OTP. Do not put `NPM_TOKEN` in CI for publishing.
-- Use:
+- Publishing happens on the maintainer laptop because npm 2FA-on-write requires OTP. Do not put `NPM_TOKEN` in CI for publishing:
 
 ```bash
 bun publish --tag <next|latest> --otp <6-digit>
 ```
 
-- Major bumps go to `@next` for soak. Stable patches/minors go to `@latest`.
-- Promote later with `npm dist-tag add <pkg>@<ver> latest` when appropriate.
-- GitHub Releases are the announcement gate and happen after npm publish.
-- Release tags must be `<package-name>@<semver>`, e.g. `@docs.plus/extension-hyperlink@2.0.0`. `v<semver>` is reserved only as a fallback for future repo-wide releases.
-- Use the state-machine `awk` slice for release notes. Do not use the range form because both ends can match the same heading:
+- Major bumps go to `@next` for soak; stable patches/minors go to `@latest`. Promote later with `npm dist-tag add <pkg>@<ver> latest` when appropriate.
+- Release tags are `<package-name>@<semver>` (e.g. `@docs.plus/extension-hyperlink@2.0.0`). `v<semver>` is reserved only as a fallback for future repo-wide releases.
+- Release notes use the state-machine `awk` slice; the range form fails because both ends can match the same heading:
 
 ```bash
 awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<pkg>/CHANGELOG.md
 ```
 
-- Discord webhooks:
-  - Push activity: `secrets.DISCORD_WEBHOOK` via `.github/workflows/discord-activity.yml`.
-  - Releases: `secrets.DISCORD_RELEASE_WEBHOOK` via `.github/workflows/discord-release.yml`.
-  - Reserve unqualified `DISCORD_WEBHOOK` for the original push channel.
-- Release embeds color-code stability: green `#22c55e` for stable, orange `#f97316` for pre-release.
-- Install hints switch from one `is_pre` branch: stable uses `bun add <pkg>@<version>`, pre-release uses `bun add <pkg>@next`. Do not hard-code per-package paths in the workflow.
+- Announcement happens after npm publish:
+  - GitHub Releases are the announcement gate.
+  - Discord push activity: `secrets.DISCORD_WEBHOOK` via `.github/workflows/discord-activity.yml`.
+  - Discord releases: `secrets.DISCORD_RELEASE_WEBHOOK` via `.github/workflows/discord-release.yml`. Reserve unqualified `DISCORD_WEBHOOK` for the original push channel.
+  - Release embeds color-code stability: green `#22c55e` for stable, orange `#f97316` for pre-release.
+  - Install hints switch on `is_pre` — stable uses `bun add <pkg>@<version>`, pre-release uses `bun add <pkg>@next`. Do not hard-code per-package paths in the workflow.
 
 ### Extension Version Doctrine
 
@@ -257,7 +238,7 @@ awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<
   - `extension-hyperlink` ships `2.0.0` first.
   - `extension-hyperlink@4.3.0` was a brief mispublish and is being rolled back/unpublished when npm allows it.
   - `extension-hypermultimedia 1.4.0`, `extension-indent 0.2.0`, `extension-inline-code 0.1.1`, and `extension-placeholder 0.1.0` converge to `2.0.0` over later release windows.
-  - Laggard packages need the same `LICENSE` policy as `extension-hyperlink` and must consume `@docs.plus/release-tooling` for `prepack` / `prepublishOnly` (no per-package script copies).
+  - Laggards must satisfy the publishable-library contract: `LICENSE` gitignored, `prepack` / `prepublishOnly` wired to `release-prepack` / `release-preflight` (no per-package script copies).
 - Family-release script invariants in `scripts/release-family.ts`:
   - Use `spawnSync` helper calls, no shell strings, so OTP never lands in `ps aux` or shell history.
   - GitHub release creation is idempotent across resumes: iterate `[...published, ...skipped]` and guard each with `gh release view <tag>`.
@@ -267,7 +248,7 @@ awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<
   1. lockstep;
   2. CHANGELOG entries;
   3. `dist/` freshness against `src/`;
-  4. per-package `prepublishOnly` (delegating to `@docs.plus/release-tooling`'s `release-preflight`);
+  4. per-package `prepublishOnly`;
   5. clean working tree and `HEAD` matches `origin/main`;
   6. `npm whoami` and `git user.email`;
   7. local and remote tag collisions;
@@ -327,27 +308,23 @@ bun run migrate:nested-to-flat
 - HeadingScale uses a heading-level fingerprint, not only `transactionAffectsNodeType`.
 - Placeholder uses `@docs.plus/extension-placeholder` with O(1) state `init/apply`. Do not replace it with Tiptap's built-in placeholder, which scans with `doc.descendants`.
 
-### Zustand And ProseMirror
+### Editor State And References
 
-- The app has a monolithic 7-slice Zustand store. All `useStore` calls must use leaf selectors.
-- Never select `(state) => state` or `(state) => state.settings`.
-- `doc.nodeAt(pos)` can throw `RangeError` for out-of-range positions. Guards must not assume null-only.
-- `transaction.before` is the pre-step document `Node`, not `EditorState`. Never call `PluginKey.getState(transaction.before)`.
-- For fold-driven UI such as TOC, snapshot heading-fold plugin state from `editor.state` and diff across transactions.
-
-### Editor References
-
-- The canonical editor handle is:
+- **Store discipline.** The app has a monolithic 7-slice Zustand store. All `useStore` calls must use leaf selectors; never select `(state) => state` or `(state) => state.settings`.
+- **Canonical editor handle:**
 
 ```ts
 useStore((state) => state.settings.editor.instance)
 ```
 
-- `useEditorAndProvider.ts` registers it through `setWorkspaceEditorSetting('instance', editor)`.
-- Consumers include `EditorContent.tsx`, `useTocActions.tsx`, the toolbar, and collaboration-document features.
-- `window._editor` is set only by `pages/editor.tsx`, the standalone editor playground. It is undefined on real document/collab routes.
-- Do not add new `window._editor` readers to document-route features.
-- React mobile sheets that need an editor reference should use typed `SheetDataMap` payloads, e.g. `linkPreview` and `linkEditor`.
+- Registered by `useEditorAndProvider.ts` via `setWorkspaceEditorSetting('instance', editor)`.
+- Consumers: `EditorContent.tsx`, `useTocActions.tsx`, the toolbar, collaboration-document features.
+- `window._editor` is set only by `pages/editor.tsx` (standalone playground); undefined on real document/collab routes. Do not add new `window._editor` readers to document-route features.
+- React mobile sheets that need an editor reference use typed `SheetDataMap` payloads (e.g. `linkPreview`, `linkEditor`), not globals.
+- **ProseMirror state pitfalls:**
+  - `doc.nodeAt(pos)` can throw `RangeError` for out-of-range positions. Guards must not assume null-only.
+  - `transaction.before` is the pre-step document `Node`, not `EditorState`. Never call `PluginKey.getState(transaction.before)`.
+  - For fold-driven UI such as TOC, snapshot heading-fold plugin state from `editor.state` and diff across transactions.
 
 ## Webapp UI Systems
 
@@ -499,149 +476,9 @@ docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production
 - Next.js HMR does not reliably detect changes in Bun workspace-symlinked packages.
 - If an extension playground is running via `bun --hot ./test/playground/server.ts`, restart it after `bun run build`; tsup `clean: true` can wipe `dist/` and leave the hot server serving 500 for `dist/styles.css`.
 
-### Hyperlink Extension: Schema And Commands
+### Hyperlink Extension
 
-- Webapp couples to `extension-hyperlink` through `packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts`.
-- `HyperlinkWithMarkdown = Hyperlink.extend({ markdownTokenName: 'link', parseMarkdown, renderMarkdown })`; parsing applies mark name `hyperlink`.
-- The `hyperlink` mark name is locked by markdown wiring and stored production Yjs docs. Never rename it to `link`.
-- The package is not a drop-in schema replacement for `@tiptap/extension-link`; migration docs describe moving into `@docs.plus/extension-hyperlink`.
-- Same-document hyperlink targets update URL/hash/route for in-app navigation. Do not treat them as external opens.
-- `setHyperlink({ href, target?, title?, image? })` is pure and chainable; it only writes the mark and returns boolean.
-- `setHyperlink()` with no args returns false. Never call it to open UI.
-- UI opens through `openCreateHyperlinkPopover()`, and `Mod-k` is bound to it.
-- Migrated webapp call sites use `editor.chain().focus().openCreateHyperlinkPopover().run()`: `MobileBubbleMenu.tsx`, `HyperlinkButton.tsx`, `EditorToolbar.tsx`, and `ToolbarMobile.tsx`.
-- `previewHyperlink.ts` no longer passes dead `view` / `linkCoords` args to `editHyperlinkPopover`; keep the canonical signature.
-- Link-compatible command aliases exist: `setLink`, `unsetLink`, `toggleLink`; command names only, no schema rename.
-- Canon options include `defaultProtocol`, `isAllowedUri(href, ctx)`, `shouldAutoLink(url)`, `enableClickSelection`, and `exitable`.
-- `editHyperlinkCommand` must return a composable Tiptap command that reads positions/marks from `tr.doc`. Do not dispatch a nested chain that can cause mismatched transactions.
-
-### Hyperlink Extension: Click Handling
-
-- ProseMirror has two click paths:
-  - DOM `click` event through `handleDOMEvents.click`.
-  - `mouseup`-based `handleSingleClick`, tracking `mousedown` position before DOM `click`.
-- To prevent editable-mode navigation:
-  - Capture-phase `mousedown`: `preventDefault + stopPropagation` to block ProseMirror mousedown tracking.
-  - Capture-phase `click`: `preventDefault` only, so the event still bubbles to `handleDOMEvents.click` for popover display.
-- Call `options.popover(...)` before `editor.chain().focus(clickPos).setTextSelection(pos).run()`.
-- If the popover returns `null`, skip the focus call entirely. `null` is the host opt-out signal, especially for mobile sheets.
-- Desktop popovers still set focus/selection after content exists so edit/remove actions target the right mark.
-- `iosCaretFixPlugin` must early-return on link targets in both `touchstart` and `click`, and clear `lastTouchCoords` on `touchstart`.
-- Link taps are owned by the hyperlink extension; stray caret-fix selection dispatch can re-trigger iOS auto-scroll.
-- `target` mark attr is `rendered: false` so stored `_blank` does not render to DOM.
-- `image` mark attr is also `rendered: false`; preview metadata stays mark-only and refetches on demand.
-
-### Hyperlink Extension: Safety And Normalization
-
-- `isSafeHref` + `buildHrefGate` are the single XSS gate.
-- `parseHTML` uses `getAttrs` + `isSafeHref(href)`.
-- `clickHandler.ts` and preview popover `window.open` fallback also call `isSafeHref`.
-- `buildHrefGate(options)` composes `isSafeHref` with user `isAllowedUri(href, { defaultValidate, defaultProtocol })`.
-- All write boundaries use the composed gate: `setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover submit, and `parseHTML`.
-- `DANGEROUS_SCHEME_RE` stays internal to `validateURL.ts`. Call sites import `isSafeHref`, not the regex.
-- Every path that stores a hyperlink mark routes through `normalizeHref(raw)` or `normalizeLinkifyHref(match)`.
-- Bare domains become `https://...`; explicit schemes are preserved.
-- Bare email becomes `mailto:<email>` via strict full-string linkify match.
-- Bare E.164 phone numbers become `tel:+<digits>`:
-  - `+` prefix required.
-  - 8-15 digits per RFC 3966.
-  - spaces, dashes, dots, and parentheses accepted on input and stripped in canonical href.
-  - gated by `utils/phone.ts::isBarePhone`.
-- Phone support is wired in:
-  - `normalizeHref`;
-  - `autolink.ts`, emitting `type: 'phone'` with canonical `tel:` href;
-  - `validateURL`, so editing a phone number can remove the mark when it stops matching.
-- Read-side click/preview prefers stored `attrs.href` over DOM `link.href` so relative hrefs do not resolve against `document.baseURI`.
-- `validateURL` rejects web-scheme URLs with no plausible host, e.g. `https://googlecom`.
-- Standard web schemes `http`, `https`, `ftp`, and `ftps` require a TLD-dot, `localhost`, IPv4, or IPv6 host. IPv6 is detected by colon in `URL.host`.
-- Non-standard schemes are validated through `utils/specialUrls.ts`.
-- `isSafeHyperlinkHref` is a render safety gate, not input validation. It accepts scheme-less hrefs because no XSS vector can lack a scheme.
-- Do not tighten `isSafeHyperlinkHref` to require a scheme; relative hrefs may legitimately reach the renderer through migrations/external authoring.
-
-### Hyperlink Extension: Metadata And Preview
-
-- Async metadata mark-attr writes must not move selection.
-- Never use:
-
-```ts
-editor
-  .chain()
-  .setTextSelection(nodePos)
-  .extendMarkRange('hyperlink')
-  .updateAttributes('hyperlink', attrs)
-  .run()
-```
-
-- Instead, compute the mark range with `getMarkRange(resolvedPos, hyperlinkType)` and dispatch a plain transaction:
-  - `tr.removeMark`;
-  - `tr.addMark` with new attrs over the same range;
-  - `setMeta('preventUpdate', true)` when needed;
-  - no `tr.selection` changes.
-- Moving selection across the link makes the floating toolbar think the user navigated away and destroys the popover.
-- Failed metadata fetches degrade silently: render `createMetadataContent(null, href)` so the title falls back to raw `href`.
-- Do not render unavailable/warning chrome for preview metadata failures.
-- Desktop preview popover is title-only: one row, ellipsis truncation, 200px max width.
-- Mobile `LinkPreviewSheet` shows title + description + href with wrapping and no truncation.
-- Do not reintroduce `line-clamp-2` on the mobile description.
-- Render the mobile href line only when `data?.title && data.title !== href`.
-
-### Hyperlink Extension: Special URLs And Public Surface
-
-- `utils/specialUrls.ts` covers 50+ app schemes plus `DOMAIN_MAPPINGS`.
-- Domain matching strips `www.` and supports subdomain suffixes, e.g. `api.github.com` -> `github.com`.
-- Catalog source: `https://github.com/bhagyas/app-urls`.
-- `getSpecialUrlInfo` returns `{ type: SpecialUrlType, title, category }`.
-- The extension ships no icon catalog. Consumers own `type -> icon` mapping.
-- `SpecialUrlType` is a string-literal union for compile-time exhaustiveness without runtime bytes.
-- Naming convention:
-  - lowercase single-word brands: `whatsapp`, `figma`;
-  - kebab-case multi-word brands: `facetime-audio`, `apple-tv`, `app-store`;
-  - brand spelling over scheme abbreviation: `tg:` -> `telegram`, `fb:` -> `facebook`.
-- `utils/index.ts` is the auditable public utility surface. Use explicit named re-exports only; no `export *`.
-- Module-internal helpers such as `getURLScheme`, `isBarePhone`, `normalizeLinkifyHref`, `Link`, and `Title` are reachable from siblings but not through the package barrel.
-- Adding a public barrel export is a minor semver bump.
-- Internal constants live in `src/constants.ts`: `HYPERLINK_MARK_NAME`, `PREVENT_AUTOLINK_META`. Do not export them publicly.
-- `src/utils/findLinks.ts` contains pure linkify-result filtering with Bun tests in `utils/__tests__/findLinks.test.ts`.
-- v2.0.0 renames:
-  - `getUrlScheme` -> `getURLScheme`;
-  - `isValidSpecialScheme` -> `isRecognizedSpecialScheme`;
-  - `showPopover` -> `openHyperlinkToolbar`;
-  - `TRAILING_PUNCT_RE` -> `TRAILING_PUNCTUATION_RE`;
-  - `stripTrailingPunct` -> `stripTrailingPunctuation`;
-  - `hrefTitle` -> `hrefAnchor`;
-  - local `preventAutolink` -> `shouldSkipAutolink`.
-- `EditHyperlinkModalOptions` remains as a deprecated alias for `EditHyperlinkPopoverOptions` for one major. Drop it in 3.x.
-
-### Hyperlink Extension: Floating Toolbar
-
-- Toolbar is `position: fixed`.
-- Virtual references must recompute live viewport coords on every call; never snapshot at popover open.
-- Frozen rects make `computePosition` keep writing the same `top`/`left` while the anchor scrolls away.
-- DOM-anchored popovers should pass `referenceElement: <a>` directly.
-- Selection-anchored popovers pass a closure that calls `view.coordsAtPos(from)` on every invocation.
-- Edit popover anchors to the live `<a>`, not a `linkCoords` snapshot.
-- Create popover passes a recomputing closure over captured ProseMirror `from`/`to`.
-- Regression coverage: `cypress/e2e/scroll-stickiness.cy.ts`.
-- `floatingToolbar.ts` has a module-level singleton `currentToolbar`; creating a toolbar destroys the previous one.
-- Public exports are only `hideCurrentToolbar`, `updateCurrentToolbarPosition`, `FloatingToolbarInstance`, and `FloatingToolbarOptions`.
-- Keep `createFloatingToolbar` and `DEFAULT_OFFSET` module-private.
-- `cypress/e2e/custom-popover.cy.ts` pins the singleton contract.
-
-### Hyperlink Extension: Clean-Room Harness
-
-- Release-gate harness: `packages/extension-hyperlink/test/playground/`.
-- Uses `Bun.serve` with HTML import, vanilla Tiptap, and StarterKit; no Vite.
-- Bun 1.2+ bundles the HTML's `<script>` and `<link>` tags on demand.
-- Playground loads built `dist/` + `styles.css` via the published exports map, not monorepo source.
-- Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, and special-schemes.
-- `_debug.cy.ts` is scratch/debug and excluded from release counts.
-- Run via `bun run test` in the package. `pretest` builds, `start-server-and-test` boots the Bun playground on `127.0.0.1:5173`, Cypress runs, then teardown.
-- Append `?popover=custom` to use custom popover factories in custom-popover tests.
-- Support file is single-file `cypress/support/e2e.ts`. Do not split it; Cypress 15 JIT skipped split imports.
-- Every `cypress/e2e/*.cy.ts` file must end with `export {}` to avoid top-level constant collisions under project-level type-checking.
-- Tests use `window._editor` + `window._hyperlink`. Use structural checks instead of `instanceof RegExp` because Cypress iframe realm breaks cross-realm `instanceof`.
-- Hyperlink extension unit tests use Bun native runner: `bun test src`.
-- `scripts/run-tests.sh` runs the hyperlink clean-room Cypress suite after `extension-indent` Jest and before webapp Jest.
+Extension-internal rules (schema, commands, click handling, safety/normalization, metadata/preview, the `specialUrls` catalog, public API surface, floating toolbar, clean-room Cypress harness) live in [`packages/extension-hyperlink/AGENTS.md`](./packages/extension-hyperlink/AGENTS.md). Read that file before touching anything under `packages/extension-hyperlink/src/`. The webapp-side popover integration is below.
 
 ### Webapp-Owned Hyperlink Popovers
 
