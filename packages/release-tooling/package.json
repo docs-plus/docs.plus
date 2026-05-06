@@ -1,0 +1,17 @@
+{
+  "name": "@docs.plus/release-tooling",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Internal release scaffolding for docs.plus publishable libraries: shared prepack (LICENSE sync) and prepublishOnly (publish guards). Consumed via bin commands; never copy these scripts per-package.",
+  "type": "module",
+  "bin": {
+    "release-prepack": "./scripts/prepack.ts",
+    "release-preflight": "./scripts/preflight.ts"
+  },
+  "files": [
+    "scripts"
+  ],
+  "devDependencies": {
+    "bun-types": "catalog:"
+  }
+}
