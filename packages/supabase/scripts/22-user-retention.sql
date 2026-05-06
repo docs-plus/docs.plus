@@ -282,17 +282,15 @@ stable
 as $$
 declare
     v_total_messages bigint;
-    v_thread_messages bigint;
     v_messages_with_reactions bigint;
     v_unique_senders bigint;
 begin
     -- Count from PUBLIC channels only
-    select 
+    select
         count(*),
-        count(*) filter (where m.is_thread_root = true),
         count(*) filter (where m.reactions is not null and m.reactions != '[]'::jsonb),
         count(distinct m.user_id)
-    into v_total_messages, v_thread_messages, v_messages_with_reactions, v_unique_senders
+    into v_total_messages, v_messages_with_reactions, v_unique_senders
     from public.messages m
     join public.channels c on m.channel_id = c.id
     where m.created_at >= now() - (p_days || ' days')::interval
@@ -300,17 +298,15 @@ begin
 
     return jsonb_build_object(
         'total_messages', v_total_messages,
-        'thread_messages', v_thread_messages,
         'messages_with_reactions', v_messages_with_reactions,
         'unique_senders', v_unique_senders,
-        'thread_rate', case when v_total_messages > 0 then round((v_thread_messages::numeric / v_total_messages) * 100, 1) else 0 end,
         'reaction_rate', case when v_total_messages > 0 then round((v_messages_with_reactions::numeric / v_total_messages) * 100, 1) else 0 end
     );
 end;
 $$;
 
 comment on function public.get_communication_stats(integer) is
-'Returns communication statistics for PUBLIC channels: messages, threads, reactions.';
+'Returns communication statistics for PUBLIC channels: messages and reactions.';
 
 -- -----------------------------------------------------------------------------
 -- 8. Get Notification Reach

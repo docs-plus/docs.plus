@@ -115,6 +115,30 @@ AFTER DELETE ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION public.on_message_delete_queue();
 
+-- 7a. Soft-delete decrement.
+-- The product path is `UPDATE deleted_at`, not hard DELETE. Without this,
+-- channel_message_counts.message_count drifts upward forever. Fires only on
+-- the NULL -> NOT NULL transition so repeated UPDATEs don't double-count.
+CREATE OR REPLACE FUNCTION public.on_message_soft_delete_queue()
+RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM pgmq.send(
+      'message_counter',
+      jsonb_build_object(
+        'channel_id', OLD.channel_id,
+        'op', 'decrement'
+      )
+    );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_on_message_soft_delete
+AFTER UPDATE OF deleted_at ON public.messages
+FOR EACH ROW
+WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
+EXECUTE FUNCTION public.on_message_soft_delete_queue();
+
 -- 8. Batch worker function to process queued events
 CREATE OR REPLACE FUNCTION public.message_counter_batch_worker()
 RETURNS void

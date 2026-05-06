@@ -336,7 +336,6 @@ BEGIN
         cm.member_id,
         NEW.user_id,
         CASE
-            WHEN NEW.thread_id IS NOT NULL THEN 'thread_message'::notification_category
             WHEN NEW.reply_to_message_id IS NOT NULL AND m.user_id = cm.member_id THEN 'reply'::notification_category
             ELSE 'message'::notification_category
         END,

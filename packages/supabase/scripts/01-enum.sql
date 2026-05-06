@@ -36,7 +36,7 @@ create type public.message_type as enum ('text', 'image', 'video', 'audio', 'lin
 -- NOTE: The following types are not currently used in the schema.
 -- Define the types of notifications that can be sent.
 create type public.notification_type as enum (
-  'message', 'channel_invite', 'mention', 'reply', 'thread_update',
+  'message', 'channel_invite', 'mention', 'reply',
   'channel_update', 'member_join', 'member_leave', 'user_activity',
   'task_assignment', 'event_reminder', 'system_update', 'security_alert',
   'like_reaction', 'feedback_request', 'performance_insight'
@@ -52,8 +52,7 @@ create type public.channel_type as enum (
     'BROADCAST',  -- BROADCAST: One-way communication channel where selected users can post, but all users can view.
     'ARCHIVE',    -- ARCHIVE: Read-only channel for historical/reference purposes. No new messages can be posted.
     'DIRECT',     -- DIRECT: One-on-one private conversation between two users.
-    'GROUP',      -- GROUP: For a specific set of users, typically used for group discussions or team collaborations.
-    'THREAD'      -- THREAD: A channel created for a specific thread or conversation, often temporary or focused on a specific topic.
+    'GROUP'       -- GROUP: For a specific set of users, typically used for group discussions or team collaborations.
 );
 
 comment on type public.channel_type is 'Defines the types of channels available in the application, each with specific accessibility and interaction rules.';
@@ -75,7 +74,6 @@ create type notification_category as enum (
     'message',
     'reply',
     'reaction',
-    'thread_message',
     'channel_event',
     'direct_message',
     'invitation',

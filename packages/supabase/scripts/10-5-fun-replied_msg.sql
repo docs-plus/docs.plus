@@ -119,31 +119,25 @@ COMMENT ON TRIGGER track_message_replies ON public.messages IS 'Updates the orig
  * Trigger: Executes after INSERT on public.messages
  * Action: Updates the last_message_preview and last_activity_at in the channel
  * Returns: The NEW record
- * Note: Only updates for non-thread messages
  */
 CREATE OR REPLACE FUNCTION update_channel_preview_on_new_message() RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT;
 BEGIN
-    -- Check if the message is part of a thread. If it is, don't update the channel preview.
-    IF NEW.thread_id IS NULL THEN
-        -- Update the last message preview in the channel with the new message content
-        truncated_content := truncate_content(NEW.content);
+    truncated_content := truncate_content(NEW.content);
 
-        -- Check if the channel exists before updating
-        IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
-            UPDATE public.channels
-            SET last_message_preview = truncated_content,
-                last_activity_at = timezone('utc', now())
-            WHERE id = NEW.channel_id;
-        END IF;
+    IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
+        UPDATE public.channels
+        SET last_message_preview = truncated_content,
+            last_activity_at = timezone('utc', now())
+        WHERE id = NEW.channel_id;
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION update_channel_preview_on_new_message() IS 'Updates the last message preview in a channel when a new message is inserted, except for thread messages.';
+COMMENT ON FUNCTION update_channel_preview_on_new_message() IS 'Updates the last message preview in a channel when a new message is inserted.';
 
 -- Trigger: update_channel_preview
 CREATE TRIGGER update_channel_preview
@@ -151,5 +145,5 @@ AFTER INSERT ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION update_channel_preview_on_new_message();
 
-COMMENT ON TRIGGER update_channel_preview ON public.messages IS 'Updates the channel preview when a new message is posted that is not part of a thread.';
+COMMENT ON TRIGGER update_channel_preview ON public.messages IS 'Updates the channel preview when a new message is posted.';
 

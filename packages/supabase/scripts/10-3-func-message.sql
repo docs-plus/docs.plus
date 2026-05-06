@@ -20,16 +20,12 @@
  */
 CREATE OR REPLACE FUNCTION handle_message_soft_delete() RETURNS TRIGGER AS $$
 DECLARE
-    truncated_content TEXT;
     current_metadata JSONB;
 BEGIN
     -- Set deleted_at timestamp for soft delete
     NEW.deleted_at := NOW();
 
     IF TG_OP = 'UPDATE' THEN
-        -- Truncate content if necessary for soft deleted messages
-        truncated_content := truncate_content(NEW.content);
-
         -- Delete pinned message
         DELETE FROM public.pinned_messages WHERE message_id = OLD.id;
 
@@ -52,17 +48,21 @@ BEGIN
         SET replied_message_preview = 'The message has been deleted'
         WHERE reply_to_message_id = OLD.id;
 
-        -- Update last message preview in the channel if it exists
+        -- Refresh the channel preview to the next-newest non-deleted message.
+        -- If OLD wasn't the latest, this resolves to the same row already in
+        -- last_message_preview (no-op effect). If OLD was the latest, this
+        -- pulls in the previous message. NULL when the channel is now empty.
         IF OLD.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
-            WITH last_msg AS (
-                SELECT id, content
-                FROM public.messages
-                WHERE channel_id = OLD.channel_id AND deleted_at IS NULL AND id <> OLD.id
-                ORDER BY created_at DESC
-                LIMIT 1
-            )
             UPDATE public.channels
-            SET last_message_preview = truncated_content,
+            SET last_message_preview = (
+                    SELECT truncate_content(m.content)
+                    FROM public.messages m
+                    WHERE m.channel_id = OLD.channel_id
+                      AND m.deleted_at IS NULL
+                      AND m.id <> OLD.id
+                    ORDER BY m.created_at DESC, m.id DESC
+                    LIMIT 1
+                ),
                 last_activity_at = NOW()
             WHERE id = OLD.channel_id;
         END IF;
@@ -129,7 +129,7 @@ BEGIN
     WHERE origin_message_id = NEW.id;
 
     -- Update last message preview in the channel of the edited message
-    IF NEW.thread_id IS NULL AND NEW.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
+    IF NEW.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
         UPDATE public.channels
         SET last_message_preview = truncated_content
         WHERE id = NEW.channel_id;

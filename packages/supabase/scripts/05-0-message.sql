@@ -18,10 +18,6 @@ create table public.messages (
     reply_to_message_id    uuid references public.messages(id) on delete set null, -- The ID of the message this message is replying to, if any.
     replied_message_preview text, -- Preview text of the message being replied to.
     origin_message_id      uuid references public.messages(id) on delete set null, -- ID of the original message if this is a forwarded message.
-    thread_id              uuid references public.messages(id) on delete set null, -- ID of the thread this message belongs to.
-    thread_depth           int default 0, -- Depth of the message in the thread.
-    is_thread_root         boolean default false, -- Indicates if the message is the root of a thread.
-    thread_owner_id        uuid references public.users(id) on delete set null, -- ID of the user who owns/opens the thread.
     readed_at              timestamp with time zone -- Timestamp for when the message was read by a user.
 );
 
@@ -44,10 +40,6 @@ comment on column public.messages.metadata is 'Additional configurable propertie
 comment on column public.messages.reply_to_message_id is 'Reference to the message being replied to, if any';
 comment on column public.messages.replied_message_preview is 'Preview text of the message being replied to';
 comment on column public.messages.origin_message_id is 'Reference to the original message if this is a forwarded message';
-comment on column public.messages.thread_id is 'Reference to the thread this message belongs to';
-comment on column public.messages.thread_depth is 'Nesting level within the thread hierarchy';
-comment on column public.messages.is_thread_root is 'Whether this message is the starting point of a thread';
-comment on column public.messages.thread_owner_id is 'Reference to the user who started the thread';
 comment on column public.messages.readed_at is 'Timestamp when the message was last read';
 
 -- TODO: partition by channel_id and created_at
@@ -71,10 +63,7 @@ comment on column public.messages.readed_at is 'Timestamp when the message was l
 --       "username": "emma",
 --       "full_name": null
 --     }
---   ],
---   "thread": {
---     "count": 0,
---   }
+--   ]
 -- }
 
 -- Media example
