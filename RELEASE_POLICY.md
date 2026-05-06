@@ -77,7 +77,7 @@ The script halts with a clear error message if any of these fail:
 1. **Lockstep:** every `packages/extension-*/package.json` has the same `version` (the target version).
 2. **CHANGELOG entry:** each package's `CHANGELOG.md` contains a `## [<target-version>]` section.
 3. **Build freshness:** each package's `dist/` exists and `mtime` is newer than its `src/`. (Or: the script runs `bun run build` per package as part of preflight.)
-4. **Per-package preflight:** each package's existing `scripts/preflight.ts` passes (asserts `bun/*` user-agent, no `catalog:` leaks in built bundles, dist artifacts present).
+4. **Per-package preflight:** each package's `prepublishOnly` script (delegated to `@docs.plus/release-tooling`'s `release-preflight` bin) passes — asserts `bun/*` user-agent, no `catalog:` leaks in built bundles, dist artifacts derived from the consumer's `exports` map all present.
 5. **Git state:** working tree is clean; HEAD matches `origin/main`; no unpushed commits.
 6. **Identity:** `npm whoami` matches the expected user; `git config user.email` matches.
 7. **Tag collision:** none of the planned tags `<pkg>@<target-version>` already exist locally or on the remote.
@@ -200,13 +200,12 @@ See RELEASE_POLICY.md "Versioning Doctrine".
 
 ## Per-package Readiness Checklist
 
-Before any extension ships its first `2.0.0` (and joins the eventual lockstep family), it needs the publishable-package scaffolding currently wired only on `extension-hyperlink`:
+Before any extension ships its first `2.0.0` (and joins the eventual lockstep family), it needs the publishable-package scaffolding:
 
-- [ ] `LICENSE` in `.gitignore` (root `LICENSE` is the single source of truth)
-- [ ] `scripts/prepack.ts` that copies the root `LICENSE` into the package directory
-- [ ] `"prepack": "bun run scripts/prepack.ts"` in `package.json`
-- [ ] `scripts/preflight.ts` that asserts `bun/*` user-agent, no `catalog:` leaks, dist artifacts present
-- [ ] `"prepublishOnly": "bun run scripts/preflight.ts"` in `package.json`
+- [ ] `LICENSE` in `.gitignore` (root `LICENSE` is the single source of truth; `prepack` regenerates it before each pack)
+- [ ] `"@docs.plus/release-tooling": "workspace:*"` in `devDependencies`
+- [ ] `"prepack": "release-prepack"` in `package.json` (copies root `LICENSE` into the package via the shared bin)
+- [ ] `"prepublishOnly": "release-preflight"` in `package.json` (asserts `bun/*` user-agent, no `catalog:` leaks, dist artifacts present — derived from the consumer's `exports` map)
 - [ ] `publishConfig.access: "public"` in `package.json`
 - [ ] `exports.require.types` points to `./dist/index.d.cts` (not `.d.ts`)
 - [ ] `sideEffects: ['**/*.css']` (not bare `false`) if the package ships any CSS
@@ -215,7 +214,7 @@ Before any extension ships its first `2.0.0` (and joins the eventual lockstep fa
 - [ ] Bun-native unit tests (`bun test src`) passing — distinct from the Jest stack used by `extension-indent` and webapp
 - [ ] `bun pm pack` dry-run produces a clean tarball
 
-The `extension-hyperlink` package is the reference — when wiring a new extension, copy from there.
+The `extension-hyperlink` package is the reference shape — when wiring a new extension, copy from there. **Never copy the `prepack` / `preflight` script bodies into per-package `scripts/` directories**; the canonical implementation lives in `@docs.plus/release-tooling` and is consumed via the bin commands above. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts`.
 
 ## Decisions Recorded
 

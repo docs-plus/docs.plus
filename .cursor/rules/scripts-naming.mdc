@@ -1,0 +1,60 @@
+---
+description: Naming convention for package.json scripts, Makefile targets, and files under scripts/
+globs: **/package.json,Makefile,**/Makefile,.github/workflows/**,scripts/**,packages/*/scripts/**,packages/*/src/scripts/**
+alwaysApply: false
+---
+
+# Scripts Naming Convention
+
+Authoritative source: [.cursor/docs/scripts-naming-convention.md](../docs/scripts-naming-convention.md). Read it before adding or renaming a script, Make target, or file under `scripts/`.
+
+## Grammar
+
+- **npm/Bun script keys:** `<verb>` | `<verb>:<axis>` | `<verb>:<scope>:<modifier>` | `<tool>:<sub>` | `pre<verb>` / `post<verb>`.
+- **Make targets:** `<verb>` | `<verb>-<env>-<scope>-<modifier>` | `<scope>-<verb>` (only for grouped families like `infra-*`). Kebab-case, no colons.
+- **Script files** in `scripts/` and `packages/<pkg>/scripts/`: kebab-case, verb-first when action-oriented, `.ts` for new scripts, `.sh` only when shell is genuinely required, `.mjs` only for JS-tooling configs.
+
+## Closed vocabularies
+
+- **Modifiers:** `:fix`, `:ci`, `:watch`, `:coverage`, `:dry`.
+- **Environments:** `:prod`, `:stage`, `:dev`.
+- **Scopes:** `:unit`, `:e2e`, `:webapp`, `:admin`, `:backend`, `:rest`, `:ws`, `:worker`, `:styles`, `:family`, `:screenshots`, `:nested-to-flat`.
+- **Lifecycle hooks:** `prepare`, `postinstall`, `pretest`, `prepack`, `prepublishOnly`, plus generic `pre<verb>`/`post<verb>` over the reserved verb list. Do not invent new ones (no `prebuild`, `postlint`).
+
+## Banned
+
+- **Suffixes:** `:all`, `:full`, `:everything`, `:complete`, `:local`.
+- **Verbs:** `validate` (use `check` or `<verb>:ci`), `serve` (use `start`), `watch` as a bare verb (use `<verb>:watch`), `audit`, `compile` (use `build`), `all`.
+- **Filename traps in `scripts/`:** `validate-*`, `*-emergency*`, `fix-production-*`, `temp-*`, `quick-*`, `wip-*`, `final-*`, `v2-*`, date prefixes, author prefixes. These are exactly the names that filled `scripts/archive/`.
+
+## Documented exceptions and corner cases
+
+- `@docs.plus/hocuspocus` has no bare `dev` (service trio: `dev:rest` / `dev:ws` / `dev:worker`).
+- Webapp `start` runtime asymmetry: bare `start` runs Node; `start:prod` / `start:stage` run Bun.
+- `migrate:nested-to-flat[:dry]` — kebab-cased migration scope + closed-vocab dry modifier.
+- Single-tool wrapper workspaces (e.g. `@docs.plus/supabase_back`) use bare verbs; the workspace name encodes the tool prefix.
+- Husky hook filenames (`pre-commit.sh`, `pre-push.sh`, `commit-msg.sh`, `post-merge.sh`) and npm-lifecycle script files (`prepack.ts`, `preflight.ts`) keep their upstream-mandated names.
+- Make's env axis includes `local` (e.g. `make dev-local`) — legitimate, not subject to the npm-side `:local` ban.
+
+## Package types
+
+Every workspace under `packages/` is exactly one of five types. Each type has a Required / Recommended / Forbidden script contract — see §"Package types and script contracts" in the rule doc.
+
+- **App** (Next.js). Required: `dev`, `dev:ci`, `build`, `build:ci`, `start`, `lint`, `lint:fix`, `typecheck`. Forbidden: `prepack`, `prepublishOnly`, `playground`. Today: webapp, admin-dashboard.
+- **Service** (Bun backend). Required: `dev[:<process>]`, `start[:<process>]`, `build`, `lint`, `lint:fix`, `typecheck`, `test`. Today: hocuspocus.
+- **Tool-wrapper** (one CLI per workspace). Bare verbs match the wrapped tool's subcommands; do NOT prefix with `<tool>:`. Today: supabase_back.
+- **Publishable library** (npm-published `@docs.plus/*`). Required: `build`, `dev`, `lint`, `lint:fix`, `prepack`, `prepublishOnly` (+ `test` if any tests exist). Today: all `extension-*` packages.
+- **Internal library** (consumed only by other workspaces). Forbidden: `build`, `prepack`, `dev`, `start`. Today: eslint-config, email-templates.
+
+When adding a new package, follow §"Adding a new package" in the rule doc — pick the type, copy a same-type package's script block, and wire env loading to match the runtime.
+
+## When to stop and read the full doc
+
+- You're about to add a verb that isn't on the reserved list.
+- You're tempted by a `:full`, `:all`, `:local`, `:everything`, or any other suffix not in the closed modifier list.
+- You're naming a new file in `scripts/` and the verb-first pattern doesn't fit cleanly.
+- You're adding a `cypress:*` script at the repo root.
+- You're inventing a new lifecycle hook (`prebuild`, `postlint`, etc.).
+- You're creating a new package, or your existing package is missing scripts the type contract requires.
+
+In all six cases, the answer is in [.cursor/docs/scripts-naming-convention.md](../docs/scripts-naming-convention.md). Don't guess.

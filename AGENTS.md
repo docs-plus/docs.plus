@@ -1,31 +1,38 @@
 # AGENTS.md
 
-Persistent memory for AI agents working in `docsy`. Preserve these rules unless a maintainer explicitly changes them.
+Persistent memory for AI agents working on **docs.plus**. Preserve these rules unless a maintainer explicitly changes them.
 
 ## Agent Operating Rules
 
+### Memory And Rule Boundaries
+
+- `AGENTS.md` stores durable docs.plus-specific invariants, maintainer preferences, and regression guardrails.
+- Keep large vendor or mechanical references in focused Cursor rules, not copied here:
+  - `.cursor/rules/daisyui.mdc`: daisyUI/Tailwind reference.
+  - `.cursor/rules/react-floating-ui.mdc`: React 19 ref and Floating UI interaction patterns.
+  - `.cursor/rules/supabase.mdc`: SQL authoring style and focused Supabase file warnings.
+  - `.cursor/rules/tiptap.mdc`: upstream Tiptap/ProseMirror reference workflow.
+  - `.cursor/rules/scripts-naming.mdc`: scripts and Make-target naming convention; auto-attaches when editing `package.json`, `Makefile`, workflows, or files under `scripts/`.
+- Long-form policy docs that an `.mdc` rule points at live in `.cursor/docs/`. Today: `.cursor/docs/scripts-naming-convention.md` (timeless rule, source of truth). One-shot migration docs may live alongside as siblings (e.g. a `scripts-naming-cutover.md`) and are deleted with the cutover PR that completes them.
+- When guidance overlaps, keep the project-specific policy in `AGENTS.md` or `.cursor/docs/`, and the detailed authoring/reference material in the relevant `.mdc` file.
+
 ### Package Manager
 
-- Use Bun only: `bun install`, `bun add`, `bun add -d`, `bun run`, `bunx`, `bun publish`, `bun pm pack`.
+- Use Bun for package management, scripts, binaries, packing, and publishing: `bun install`, `bun add`, `bun add -d`, `bun run`, `bunx`, `bun publish`, `bun pm pack`.
 - Never use npm, yarn, pnpm, `npx`, `npm publish`, or package-lock/yarn-lock flows.
+- Keep `bun.lock` as the only lockfile. Do not create `package-lock.json`, `yarn.lock`, or `pnpm-lock.yaml`.
 - The user sometimes prefers local command instructions over agent-run installs; ask or provide the command when dependency changes are not clearly part of the requested task.
 - Use root workspace commands:
   - `bun run --filter @docs.plus/webapp dev`
   - `bun run --filter '*' build`
+- Required engines: Node >= 24.11.0 and Bun >= 1.3.7.
 
 ### Git And Commits
 
 - Do not commit unless the user explicitly asks.
-- When executing multi-task plans from `docs/superpowers/plans/`, every task ends in a "Review checkpoint" step: surface the touched files and a suggested `git add` / commit message for the user's reference only, then stop. Do not run `git add`, `git commit`, `git push`, `git stash`, or amend. Quality gates (`bun run … typecheck|test|build`) still run between tasks.
-- Commit-review context flow: find the earliest modified or created file timestamp, inspect parent Cursor sessions from that time onward, group files by intent, then write simple Conventional Commit messages.
-- Use short descriptive commit messages. Do not add AI/Cursor branding or internal doc references.
-- A Cursor commit hook currently injects a `Made-with: Cursor` trailer on every commit. This conflicts with `commit-review`'s trailer-stripping rule; do not chase it manually mid-session.
-- Do not propose cosmetic whitespace-only YAML commits. `lint-staged` runs `prettier --write` on staged YAML, and Prettier removes trailing alignment, often leaving an empty commit.
-- `scripts/hooks/commit-msg.sh` does not accept the Conventional Commits `!` marker. Use:
-  - Subject: `feat(scope): message`
-  - Body footer: `BREAKING CHANGE: description`
-  - Deploy trigger: `(build): front`, `(build): back`, or `(build): front back`
-- If the team wants `feat!:` later, widen the hook regex to `(\(.+\))?!?:`.
+- When **authoring** implementation or execution plans (e.g. superpowers `writing-plans`, documents under `docs/superpowers/plans/`), do **not** include commit messages, `git commit`, `git add`, or generic “commit the changes” steps. End with review and verification only; the developer inspects the diff and commits manually.
+- When executing multi-task plans from `docs/superpowers/plans/`, every task ends in a "Review checkpoint" step: surface the touched files and a short summary for review, then stop. Do not run `git add`, `git commit`, `git push`, `git stash`, or amend. Quality gates (`bun run … typecheck|test|build`) still run between tasks.
+- Execute plans only in the **current** workspace (this git worktree). Do not switch execution to another worktree, path, or parallel checkout; all edits, shell commands, and tests must run against the open repo root.
 
 ### Code Quality
 
@@ -39,25 +46,23 @@ Persistent memory for AI agents working in `docsy`. Preserve these rules unless 
 
 ### Testing And Verification
 
-- Use TDD for fixes and features.
-- Design tests from the schema/spec first. If the spec is wrong, fix behavior; do not weaken tests to match broken behavior.
+- Test meaningful failure modes — branching, ordering, races, parsing, projections, regressions. Skip tests that only re-assert TypeScript types or framework behavior. Coverage is not a goal.
+- Use TDD for fixes and features. Design tests from the schema/spec; if the spec is wrong, fix behavior, not the test.
 - Run `bun run build` after major refactors before claiming completion.
 - Validate full-document paste (`⌘A` -> `⌘V`) on editor changes that can affect paste or document transforms.
 - Cypress conventions:
   - Split tests by concern and include a README for scope.
-  - Use kebab-case directories.
   - Use `it()`, not `test()`.
   - Consolidate overlapping tests.
   - ProseMirror `handleDOMEvents.click` is not triggered by Cypress `realClick()` / `.click()`. Dispatch a native `MouseEvent('click', { bubbles: true, clientX, clientY })` using `getBoundingClientRect()` coordinates.
   - Use the same native-event pattern for floating-toolbar `keydown` Escape dismissal.
-
-### Local-Only Files
-
-- `Notes/` is local-only. Never commit local notes or plans.
-- Root `/docs/` is also gitignored. Agent-authored design specs, implementation plans, brainstorm RFCs, and code-janitor reports live there during a session but must not be committed. Current subdirs include `brainstorms/`, `engineering/`, `plans/`, `skills-output/`, and `superpowers/`.
-- `.cursor/hooks/state/continual-learning.json` and `continual-learning-index.json` are local hook churn. Keep them out of commits; restore them if staged.
-- Store durable regression context in `AGENTS.md`, not only in continual-learning plugin JSON.
-- Before large migrations, audit config/doc/rule paths for stale references: `.cursor/rules`, `Notes/`, `docs/`, and `AGENTS.md`.
+- Test naming:
+  - Cypress E2E directories and files use kebab-case: `copy-paste/`, `keyboard-shortcuts/`, `clipboard-validation.cy.js`.
+  - Cypress E2E files do not use `e2e-` or numeric ordering prefixes unless the reason is documented.
+  - Unit test files use camelCase and match the source module or concern: `<moduleName>.test.ts`; performance tests use `<moduleName>.performance.test.ts`.
+  - Avoid sprint, phase, audit, or ticket names in test files. Name the behavior or module under test.
+  - Cypress support modules use camelCase; fixture files use kebab-case; fixture directories may use camelCase when mirroring a command name.
+  - Test descriptions describe behavior, not ticket IDs. Within a file, use either `should ...` phrasing or bare verbs consistently.
 
 ### Skills And Prose
 
@@ -71,70 +76,70 @@ Persistent memory for AI agents working in `docsy`. Preserve these rules unless 
 
 ### Documentation And Comments
 
-- Keep JSDoc terse. Public extension JSDoc ships into `.d.ts` bundles.
-- For `packages/extension-*/src/` exports:
-  - File headers: 1-2 lines.
-  - Symbol docs: 1-3 lines.
-  - Link to `README.md` for option semantics.
-  - Preserve only why: collab races, intentional anti-patterns, security boundaries.
-- The same minimum-JSDoc rule applies to `packages/webapp/src/**`.
-- Do not write multi-paragraph preambles, restated parameter lists, or obvious comments such as `// Increment counter`.
-- Benchmark: trimming `extension-hyperlink` v2.0.0 JSDoc cut DTS from 14.81 KB to 13.24 KB (-10.6%) without source-byte changes.
+- Comments and JSDoc explain non-obvious _why_, never narrate _what_. Names, types, and structure are the contract.
+- Hard cap: **≤ 4 lines** per JSDoc or block comment. If you need more, the code or the name is wrong — fix that instead. No section banners, no "Why X, not Y" preambles, no restating signatures or union members in prose.
+- Cleanup includes deleting comments that violate this. "I didn't write it" is not a reason to keep them.
 
 ### UI And Theme
 
 - Theme/UI color consistency is first-class. Every surface, including third-party pickers, must follow design tokens.
 - On DaisyUI-backed surfaces, prefer DaisyUI + Tailwind over bespoke nested hover/active stacks that fight parent controls.
+- Use `.cursor/rules/daisyui.mdc` for daisyUI/Tailwind reference details and `.cursor/rules/react-floating-ui.mdc` for generic React/Floating UI pitfalls.
 
 ## Monorepo Toolchain
 
 ### Workspace
 
-- `docs.plus` / `docsy` is a Bun monorepo with workspaces under `packages/*`.
+- **docs.plus** is a Bun monorepo with workspaces defined in root `package.json` as `"packages/*"`.
 - Main app: `@docs.plus/webapp` (Next.js Pages Router).
 - Backend: `@docs.plus/hocuspocus` / `@docs.plus/hocuspocus.server`.
+- Admin UI: `@docs.plus/admin-dashboard`.
 - Editor code lives under `packages/webapp/src/components/TipTap/`.
 - Shared webapp utilities live in `packages/webapp/src/utils/`; `src/lib/` was removed. Keep feature-local helpers colocated.
 
-### Quality Gates
+### Root Scripts
 
-- One naming rule: bare script names report, `:fix` suffix mutates.
-- Aggregates:
-  - `bun run check` = lint + format + styles + typecheck. This is the report gate used by `pre-push` and the PR template.
-  - `bun run check:fix` = `lint:fix` + `styles:fix` + `format:fix`.
-- Primitives:
-  - `lint` / `lint:fix` = ESLint.
-  - `format` / `format:fix` = Prettier. `format` reports only.
-  - `styles` / `styles:fix` = Stylelint.
-  - `typecheck` = report-only.
-- CI splits lint and tsc into parallel jobs. The lint job inlines `bun run lint && bun run format && bun run styles`; the typecheck job runs `bun run typecheck`.
-- Deleted names stay deleted: `check:lint`, `check:format`, `check:types`, `check:full`, `check:static`, `lint:packages`, `fix`, `format:check`, `lint:styles`.
-- Do not reintroduce alias chains, asymmetric verb directions, or tool-confused namespaces.
+Authoritative naming convention: [.cursor/docs/scripts-naming-convention.md](.cursor/docs/scripts-naming-convention.md). Auto-attached agent card: [.cursor/rules/scripts-naming.mdc](.cursor/rules/scripts-naming.mdc). Summary:
+
+- **Grammar.** npm/Bun: `<verb>[:<axis>][:<modifier>]` | `<tool>:<sub>` | `pre<verb>`/`post<verb>`. Make: kebab `<verb>[-<env>][-<scope>][-<modifier>]`, with `<scope>-<verb>` reserved for grouped families like `infra-*`. Script files in `scripts/` and `packages/<pkg>/scripts/`: kebab-case, verb-first when action-oriented, `.ts` for new, `.sh` only when shell is required.
+- **Closed modifiers.** `:fix`, `:ci`, `:watch`, `:coverage`, `:dry`. Environments: `:prod`, `:stage`, `:dev`. Lifecycle hooks: `prepare`, `postinstall`, `pretest`, `prepack`, `prepublishOnly`, plus `pre<verb>`/`post<verb>` — do not invent new ones (no `prebuild`, `postlint`).
+- **Banned (npm/Bun).** Suffixes `:all` / `:full` / `:everything` / `:complete` / `:local`. Verbs `validate` (use `check`), `serve` (use `start`), `watch`-as-verb (use `<verb>:watch`), `audit`, `compile` (use `build`), `all`. Filename traps `validate-*`, `*-emergency*`, `fix-production-*`, `temp-*`, `quick-*`, `wip-*`, `final-*`, `v2-*`, date prefixes. Make grammar is independent: `local` IS a valid Make env (`make dev-local`), so the npm-side `:local` ban does not apply there.
+- **One runner per concern.** Bun for code/workspace fan-out (`bun --filter`, `bun run --filter '*'`); Make for Docker orchestration and multi-process dev stacks (`make up-*`, `make dev-local`, `make dev-backend`). No `cd packages/<x> && bun run …` from root or Makefile. No `cypress:*` at root — webapp owns it.
+- **Env loading.** Node-binary scripts (`next dev`, `next build`, `supabase`) use `dotenv -e <path> -- <cmd>`. Bun-only scripts use `bun --env-file=<path> <subcommand>`. Loader matches runtime; do not force one shim into both worlds.
+- **Package types (5).** Every workspace under `packages/` is one of: **App** (webapp, admin-dashboard), **Service** (hocuspocus), **Tool-wrapper** (supabase_back), **Publishable library** (`extension-*`), or **Internal library** (eslint-config, email-templates). Each type has a Required / Recommended / Forbidden script contract documented in the rule doc. New packages copy a same-type package's script block; do not invent ad-hoc script sets.
+- **Exceptions and corner cases.** Hocuspocus has no bare `dev` (service trio `dev:rest` / `dev:ws` / `dev:worker`). Webapp `start` runtime asymmetry: bare `start` runs Node, `start:prod` / `start:stage` run Bun. `migrate:nested-to-flat[:dry]`. Single-tool wrapper workspaces (e.g. `@docs.plus/supabase_back`) use bare verbs because the workspace name encodes the tool prefix. Husky hook filenames and npm lifecycle script files keep upstream-mandated names.
 
 ### Dependencies
 
-- Root `package.json` owns shared devtool versions: ESLint, TypeScript, Prettier, Stylelint, Jest, Babel-Jest, and related tooling.
+- Root `package.json` owns shared devtool versions: ESLint, TypeScript, Prettier, Stylelint, Jest, `babel-jest`, `jest-environment-jsdom`, `@types/jest`, `@babel/preset-typescript`, and related tooling.
 - Root `catalog:` centralizes pins where used. Workspaces reference matching deps as `"package": "catalog:"`.
 - Toolchain policy details live in `docs/engineering/toolchain.md`; use it for phases, CI parity, and version policy.
 - Do not duplicate Jest/Babel dev dependencies in package workspaces unless there is an exceptional documented reason.
 - `@tanstack/react-query` is root-cataloged at v5 for webapp and admin-dashboard. Use object syntax; mutation pending state is `isPending`, while query `isLoading` remains valid.
 - Stay on ESLint 9.x and TypeScript 5.x until a dedicated migration. ESLint 10 and TS 6 have breaking changes.
 - Dependency update flow:
-  - Use `bun update` at the repo root, or `bun run update:all-packages`.
+  - Use `bun update` at the repo root, or `bun run update`.
   - Run `bun install` at root if the lockfile or install tree needs healing.
   - Do not run parallel `bun update` in multiple package directories; shared `bun.lock` and hoisted installs can race with `EEXIST`.
-- Removed tools/scripts stay removed: `npm-check-updates`, per-package `update:packages`, `scripts/reinstall-packages.sh`, and `reinstall:all-packages`.
+- Removed tools/scripts stay removed: `npm-check-updates`, per-package `update:packages`, `scripts/reinstall-packages.sh`, `reinstall:all-packages`, `update:all-packages` (now `update`).
 
 ### Tests
 
-- Root `test:all` runs `scripts/run-tests.sh`.
+- Root `test` runs `scripts/run-tests.sh` (full unit + E2E suite).
 - Unit + E2E stack: Jest and Cypress. `CYPRESS_PARALLEL` enables Cypress parallelism.
-- Unit order in `run-tests.sh`:
+- Unit block order in `run-tests.sh`:
   1. `@docs.plus/extension-indent` Jest via its local `jest.config.cjs`.
-  2. `@docs.plus/webapp` Jest.
+  2. `@docs.plus/extension-hyperlink` clean-room Cypress against built `dist/`.
+  3. `@docs.plus/webapp` Jest.
 - Webapp `test` uses `jest --passWithNoTests` so an empty or temporarily absent app suite does not fail CI/local runs.
 - `@docs.plus/webapp` keeps `next/jest` in `jest.config.js`.
-- Library packages that need Jest use a local `jest.config.cjs`. Do not add package-local Jest stacks to `package.json`.
+- Library packages that need Jest use a local `jest.config.cjs` next to that package. Configure `roots`, `testMatch`, `transform`, and `testEnvironment` there as needed.
+- Prefer inline `babel-jest` options in `jest.config.cjs`; do not add per-package `babel.config.cjs` unless package-specific Babel behavior is required.
+- Add a library package test script as `"test": "jest --config jest.config.cjs"` or the package's equivalent.
+- Do not add package-local Jest stacks to `package.json`; use the root dev dependencies.
+- Jest 30 uses the plural flag `--testPathPatterns`, not the singular `--testPathPattern` from older docs/snippets. Correct it on sight.
+- `bun test` is Bun's native runner. It is not a substitute for Jest where Next/Jest or local Jest configs are used.
+- Slice unit tests must call `enableMapSet()` from `immer` at module scope. Slice files do not enable it themselves — only `useChatStore.ts` does at production load — so isolated slice instantiations otherwise fail with "MapSet plugin not loaded".
 
 ### ESLint Config
 
@@ -156,13 +161,14 @@ Persistent memory for AI agents working in `docsy`. Preserve these rules unless 
   - The factory is intentionally Tiptap-specific. It hardcodes `@tiptap/core` and `@tiptap/pm` externals.
   - Build shape: ESM + CJS, dts, production sourcemaps/minify, and `esbuildOptions.pure = ['console.log', 'console.debug']` in production.
   - Do not use `drop: ['console']`; it strips `console.warn` and `console.error`.
-  - Overrides are shallow. If a caller overrides `esbuildOptions`, it must preserve the base pure policy manually.
+  - A package's `tsup.config.ts` should call `defineTiptapExtensionConfig()` through `defineConfig(...)`; pass overrides only for package-specific behavior.
+  - Overrides are shallow. Function-valued options such as `esbuildOptions`, `external`, and `dts` replace the base value. If a caller overrides `esbuildOptions`, it must preserve the base pure policy manually.
 - `extension-hypermultimedia` intentionally preserves `console.warn` / `console.error` from its `Logger` wrapper under the shared tsup factory. Note this in its next CHANGELOG entry.
 - Root `LICENSE` is the single committed license.
   - Each publishable package adds `/LICENSE` to package `.gitignore`.
-  - Each publishable package wires `scripts/prepack.ts` through `"prepack": "bun run scripts/prepack.ts"`.
-  - `prepack` copies the root `LICENSE` before `bun publish` or `bun pm pack`.
+  - `prepack` copies the root `LICENSE` before `bun publish` or `bun pm pack`. Wired via the shared `@docs.plus/release-tooling` package, not per-package script files.
   - Symlinks fail because Bun pack drops them. Hard links fail because git stores independent copies.
+- **Shared release scaffolding lives in `@docs.plus/release-tooling`** — an internal workspace package exposing `release-prepack` and `release-preflight` as `bin` commands. Every publishable library consumes them via `"prepack": "release-prepack"` and `"prepublishOnly": "release-preflight"` plus `"@docs.plus/release-tooling": "workspace:*"` in `devDependencies`. Never duplicate this scaffolding into per-package `scripts/prepack.ts` / `scripts/preflight.ts`. The shared scripts are data-driven: they derive the package name and dist-artifact list from the consumer's own `package.json` (`name` + `exports` map), so there is no per-consumer parameterization. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts` — cross-package scaffolding is hoisted, never copied.
 - Do not centralize package-specific files: `README.md`, `CHANGELOG.md`, package source, 3-line `eslint.config.js` shims, or `package.json` fields.
 
 ### Docker
@@ -196,9 +202,9 @@ bun build scripts/<file>.ts --target=bun --outfile=/tmp/out.js
 - Package metadata should include `homepage`, `bugs`, and discovery-oriented `keywords`.
 - Adding any root re-export through `src/index.ts` or `src/utils/index.ts` is a minor release, not a patch.
 - Resolve `[Unreleased]` to a real version before `bun run build`, `bun pm pack`, and `bun publish`.
-- `prepublishOnly` runs `scripts/preflight.ts`; it asserts:
+- `prepublishOnly` runs `release-preflight` (the shared bin from `@docs.plus/release-tooling`); it asserts:
   - publisher user-agent is `bun/*`;
-  - dist artifacts exist;
+  - every `dist/...` path in the consumer's `exports` map exists on disk;
   - no literal `catalog:` leaks into built bundles.
 
 ### Release Policy
@@ -251,7 +257,7 @@ awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<
   - `extension-hyperlink` ships `2.0.0` first.
   - `extension-hyperlink@4.3.0` was a brief mispublish and is being rolled back/unpublished when npm allows it.
   - `extension-hypermultimedia 1.4.0`, `extension-indent 0.2.0`, `extension-inline-code 0.1.1`, and `extension-placeholder 0.1.0` converge to `2.0.0` over later release windows.
-  - Laggard packages need the same `LICENSE` / `prepack.ts` / `scripts/preflight.ts` scaffolding currently wired on `extension-hyperlink`.
+  - Laggard packages need the same `LICENSE` policy as `extension-hyperlink` and must consume `@docs.plus/release-tooling` for `prepack` / `prepublishOnly` (no per-package script copies).
 - Family-release script invariants in `scripts/release-family.ts`:
   - Use `spawnSync` helper calls, no shell strings, so OTP never lands in `ps aux` or shell history.
   - GitHub release creation is idempotent across resumes: iterate `[...published, ...skipped]` and guard each with `gh release view <tag>`.
@@ -261,7 +267,7 @@ awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' packages/<
   1. lockstep;
   2. CHANGELOG entries;
   3. `dist/` freshness against `src/`;
-  4. per-package `scripts/preflight.ts`;
+  4. per-package `prepublishOnly` (delegating to `@docs.plus/release-tooling`'s `release-preflight`);
   5. clean working tree and `HEAD` matches `origin/main`;
   6. `npm whoami` and `git user.email`;
   7. local and remote tag collisions;
@@ -465,14 +471,18 @@ docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production
 
 ### Supabase
 
+- **Never edit `packages/supabase/seed.sql`.** Agents and routine changes must not modify it; use `packages/supabase/migrations/` and `packages/supabase/scripts/` only.
+- **Never edit `packages/webapp/src/types/supabase.ts`.** It is generated by the Supabase CLI via `packages/supabase` script `types` (`bunx supabase gen types typescript --local` → that path). After migration or SQL script work, the **developer** runs `bun run --filter @docs.plus/supabase_back types` from the repo root (local Supabase + root `.env.local` as today) and commits the output; agents do not hand-edit or routinely regenerate this file unless explicitly asked.
+- SQL authoring style lives in `.cursor/rules/supabase.mdc`; keep this section focused on project architecture and safety policy.
 - Pages Router Supabase architecture:
   - Browser singleton: `utils/supabase/index.ts`.
   - Factory: `component.ts`.
   - GSSP: `server-props.ts`.
   - API route client: `api.ts`.
   - URL resolver: `url.ts`.
-  - Generated DB types: `types/supabase.ts`.
+  - DB types file: `types/supabase.ts` (generated only; see above).
 - Browser code imports the `supabaseClient` singleton.
+- Apply a single migration locally without resetting (preserves shared local state across worktrees) with `docker exec -i supabase_db_docsplus_supabase psql -U postgres -d postgres < packages/supabase/migrations/<file>.sql`. `bunx supabase db reset` wipes everyone else's state; `supabase db query -f` does not handle multi-statement files (`SQLSTATE 42601: cannot insert multiple commands into a prepared statement`).
 
 ## Extension Workflow
 
@@ -631,7 +641,7 @@ editor
 - Every `cypress/e2e/*.cy.ts` file must end with `export {}` to avoid top-level constant collisions under project-level type-checking.
 - Tests use `window._editor` + `window._hyperlink`. Use structural checks instead of `instanceof RegExp` because Cypress iframe realm breaks cross-realm `instanceof`.
 - Hyperlink extension unit tests use Bun native runner: `bun test src`.
-- `scripts/run-tests.sh` runs hyperlink extension unit tests after `extension-indent` and before webapp Jest.
+- `scripts/run-tests.sh` runs the hyperlink clean-room Cypress suite after `extension-indent` Jest and before webapp Jest.
 
 ### Webapp-Owned Hyperlink Popovers
 
@@ -744,11 +754,11 @@ editor
 - Client generates a UUID v4 via `crypto.randomUUID()` in `utils/clientMessageId.ts` and carries it from optimistic insert through Postgres INSERT to realtime echo. The same ID is reconciled in place; there is no remove + re-add.
 - Do not reintroduce the literal `'fake_id'` placeholder. Two rapid sends collide in the store map and corrupt the optimistic UI.
 - `MessageStatus = 'pending' | 'sent' | 'failed'` lives in `types/message.ts`. Server-fetched rows omit the field and are treated as `sent` (`status === 'sent' || !status`). No runtime `MESSAGE_STATUS` const; the literal type alone gives compile-time safety.
-- `useCheckReadMessage` skips rows where `status !== 'sent'`; this replaces the old `id === 'fake_id'` skip.
+- `useReadReceipts` skips rows where `status !== 'sent'`; pending/failed optimistic rows must not advance the read cursor.
 - Send path: composer builds a `pending` row with the client UUID, calls `sendMessage({ id, … })` (object-arg signature, single caller is `MessageComposer.tsx`), flips to `failed` with `statusError` on rejection. Realtime echo upsert flips to `sent`.
 - Duplicate-key classification is centralized in `components/chatroom/utils/postgresErrors.ts::isDuplicateKeyError`. Both the composer and `retryMessage` must import it; do not inline PgError code/message checks.
 - Retry is a standalone helper `components/chatroom/utils/retryMessage.ts` with no React coupling. It routes thread vs regular by `row.thread_id` and is idempotent on stale rows.
-- Server RPC `create_thread_message` accepts `p_id UUID DEFAULT NULL` and uses `coalesce(p_id, uuid_generate_v4())`. Mirror any change in both `packages/supabase/scripts/10-4-func-threads.sql` and `packages/supabase/seed.sql`, plus add a versioned migration under `packages/supabase/migrations/`.
+- Server RPC `create_thread_message` accepts `p_id UUID DEFAULT NULL` and uses `coalesce(p_id, uuid_generate_v4())`. Mirror any change in `packages/supabase/scripts/10-4-func-threads.sql` and add a versioned migration under `packages/supabase/migrations/`; follow the Supabase `seed.sql` guardrail above.
 
 ### Message Grouping Projection
 
@@ -756,7 +766,7 @@ editor
 - `TGroupedMsgRow = TMsgRow & { isGroupStart, isGroupEnd, isNewGroupById, isOwner }`. The store keeps raw `TMsgRow`; grouping flags are never persisted and do not leak into `api/messages/*` types.
 - Do not reintroduce `utils/groupMessages.ts` or an in-store mutation that writes grouping flags back onto rows. Out-of-order realtime arrivals and pagination merges corrupt flags whenever they are stored.
 - `channelMessagesStore` is tightened from `any` to `TMsgRow` and no longer maintains a `lastMessages` side-store. Derive the most-recent row from `messagesByChannel` directly.
-- `MessageListContext` and `MessageCardContext` must memoize their context value objects (`useMemo`). A fresh object identity on every parent render cascades re-renders through every `MessageCard`.
+- `MessageCardContext` must memoize its context value object (`useMemo`). A fresh object identity on every parent render cascades re-renders through every `MessageCard`.
 - `MessageFooter` self-hides on `status === 'failed'`. Consumers (`DesktopEditor`, `ChatContainerMobile`) render `MessageCard.FailedRow` for owner rows and must not re-gate on `status`.
 
 ### MessageComposer Pitfalls
@@ -764,3 +774,15 @@ editor
 - After submit, refocus the editor only if it was the active element. Otherwise `editor.chain().clearContent(true).focus('start').run()` force-opens the iOS keyboard right after a `SendButton` tap and produces a visible bounce. Enter-key submits keep focus naturally.
 - `useEditor(...)` in `components/chatroom/components/MessageComposer/hooks/useTiptapEditor.ts` captures `workspaceId` / `channelId` / `isToolbarOpen` in the `onUpdate` closure. Today this is masked because `Chatroom.ChannelComposer` remounts on channel key change and drafts never cross. If the composer mount is ever made persistent (a tempting perf win), drafts will silently corrupt across channels — fix with a refs pattern or lift `setComposerStateDebounced` into a `useEffect` keyed on the ids.
 - `prepareContent` must return a stable `chunks` shape (`{ htmlChunks: string[], textChunks: string[] }`) on both the happy and empty paths so callers never need an `as` cast.
+
+### Chatroom Feed And Scroll
+
+- Single-source `FeedItem[]` rule: `projectMessageGroups` returns `FeedItem = { kind: 'day-separator' | 'message', ... }` and is computed exactly once inside `MessageFeedContext`. `MessageLoop`, `useChatroomScroll`, and `useReadReceipts` all consume the same array. Any consumer that re-projects independently will drift from the virtualizer index — `scrollToIndex` will land on the wrong row and read receipts will mark the wrong message. Do not reintroduce a second projection.
+- Day-separator extraction (hoisting day chips to discrete `'day-separator'` virtual items) makes message-row height invariant on prepend and removes the visible jolt when older pages load. The avatar/group-start collapse is a separate, smaller glitch deferred to a follow-up structural refactor.
+- `useReadReceipts` indexing contract: iterate `virtualizer.getVirtualItems()`, look up `feedItems[item.index]`, and unwrap `kind === 'message'` per slot. Never index a raw `Map.values()` array against virtualizer indices — they desync the moment a single day-separator scrolls into view. Tests must mock with separators interleaved or they cannot catch this regression.
+- `useReadReceipts` and `useChatroomScroll` are called from inside `MessageFeedProvider` itself, above the corresponding context boundary. Pass `messageContainerRef`, `virtualizerRef`, and `feedItems` as props/refs; calling `useMessageFeedContext()` from these hooks throws "must be used within MessageFeed" at runtime.
+- `MessageListContext` is gone — it was a redundant pass-through after Phase 2/3. Former consumers (`MessageListContextMenu`, `MessagesEmptyState`, `SystemNotifyChip`) read `channelId` / `messages` / `useMentionClick` directly. Do not reintroduce this layer.
+- Stabilize callback identity in scroll/read-receipts coordinators with a `feedItemsRef`: `scrollToBottom`, `applyAnchorScroll`, and `useReadReceipts.scan` read `feedItems` (or its length) through the ref so their `useCallback` identities don't churn on every realtime arrival, which would otherwise re-render the entire `MessageFeedContext` consumer subtree.
+- Deep-link cleanup must verify the current channel before clearing: `useChatroomScroll`'s cleanup effect (clears `chatRoom.fetchMsgsFromId` and `?msg_id=`) must `if (useChatStore.getState().chatRoom.headingId !== channelId) return` first. Without this guard, a fast A→B switch with a fresh `?msg_id=` for B can have A's cleanup wipe B's brand-new anchor.
+- `fetchMsgsFromId` must be a reactive selector in the boot effect, not `useChatStore.getState()` — the imperative read silently misses anchors that land after `isChannelDataLoaded` / `isDbSubscriptionReady` flip true on slow networks. Use `useChatStore((s) => s.chatRoom.fetchMsgsFromId)` and include it in deps.
+- `PROGRAMMATIC_SCROLL_GUARD_MS = 1000` (was 300). Smooth scrolls of 1000+px on slow mobile easily exceed 300ms; the user-scroll handler then mistakes the tail of our own scroll as a user-intent scroll and falsely flips mode to `free-scroll`.
