@@ -1,14 +1,13 @@
-import { createThreadMessage, sendMessage } from '@api'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { sendMessage } from '@api'
+import { useAuthStore, useChatStore } from '@stores'
 
 import { isDuplicateKeyError } from './postgresErrors'
 
 /**
  * Re-sends a previously-failed message with the same client UUID so the
- * realtime echo reconciles the existing row in place. Routes thread-channel
- * messages through `createThreadMessage`, all other rows through
- * `sendMessage`. No-op for rows that are missing, not in `failed` state,
- * or sent by a now-signed-out user.
+ * realtime echo reconciles the existing row in place. No-op for rows
+ * that are missing, not in `failed` state, or sent by a now-signed-out
+ * user.
  *
  * Multi-click safe: the synchronous status flip to `pending` makes a
  * second invocation bail before re-issuing the network call. Treats
@@ -26,22 +25,7 @@ export const retryMessage = async (channelId: string, messageId: string): Promis
 
   setMessageStatus(channelId, messageId, 'pending')
 
-  const isThreadMessage = !!row.thread_id && row.thread_id === row.channel_id
-
   try {
-    if (isThreadMessage) {
-      const workspaceId = useStore.getState().settings.workspaceId ?? ''
-      await createThreadMessage({
-        p_id: messageId,
-        p_content: row.content ?? '',
-        p_html: row.html ?? '',
-        p_thread_id: row.thread_id as string,
-        p_workspace_id: workspaceId
-      })
-      setMessageStatus(channelId, messageId, 'sent')
-      return
-    }
-
     const { data } = await sendMessage({
       id: messageId,
       content: row.content,

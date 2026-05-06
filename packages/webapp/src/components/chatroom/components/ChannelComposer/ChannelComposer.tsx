@@ -4,9 +4,7 @@ import { TChannelSettings } from '@types'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-// Message Composer
 import MsgComposer from '../MessageComposer/MessageComposer'
-// Join Components
 import {
   JoinBroadcastChannel,
   JoinDirectChannel,
@@ -51,21 +49,12 @@ const AccessControl = () => {
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings ?? {}
 
-  const channels = useChatStore((state: any) => state.channels)
-
   if (!channelId) return null
 
-  // Thread channels always allow messaging (no permission checks needed)
-  if (
-    (channels.has(channelId) && channels.get(channelId).type === 'THREAD') ||
-    !channelInfo ||
-    channelInfo.type === 'THREAD' ||
-    !user
-  ) {
+  if (!channelInfo || !user) {
     return <MsgComposer.Editor />
   }
 
-  // Handle different channel types with proper permission logic
   switch (channelInfo?.type) {
     case 'DIRECT':
       return isUserChannelMember ? <MsgComposer.Editor /> : <ChannelComposer.JoinDirect />

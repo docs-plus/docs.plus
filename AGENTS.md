@@ -594,8 +594,7 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
 - `useReadReceipts` skips rows where `status !== 'sent'`; pending/failed optimistic rows must not advance the read cursor.
 - Send path: composer builds a `pending` row with the client UUID, calls `sendMessage({ id, … })` (object-arg signature, single caller is `MessageComposer.tsx`), flips to `failed` with `statusError` on rejection. Realtime echo upsert flips to `sent`.
 - Duplicate-key classification is centralized in `components/chatroom/utils/postgresErrors.ts::isDuplicateKeyError`. Both the composer and `retryMessage` must import it; do not inline PgError code/message checks.
-- Retry is a standalone helper `components/chatroom/utils/retryMessage.ts` with no React coupling. It routes thread vs regular by `row.thread_id` and is idempotent on stale rows.
-- Server RPC `create_thread_message` accepts `p_id UUID DEFAULT NULL` and uses `coalesce(p_id, uuid_generate_v4())`. Mirror any change in `packages/supabase/scripts/10-4-func-threads.sql` and add a versioned migration under `packages/supabase/migrations/`; follow the Supabase `seed.sql` guardrail above.
+- Retry is a standalone helper `components/chatroom/utils/retryMessage.ts` with no React coupling; it re-issues `sendMessage` with the original client UUID and is idempotent on stale rows.
 
 ### Message Grouping Projection
 

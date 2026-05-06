@@ -1,9 +1,8 @@
-import { useAuthStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { TGroupedMsgRow, TMsgRow } from '@types'
-import { projectMessageGroups } from '@utils/projectMessageGroups'
 import { isSameDay, parseISO } from 'date-fns'
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect } from 'react'
 
 import { useMessageListContext } from '../MessageListContext'
 import { DateChip } from './DateChip'
@@ -25,18 +24,11 @@ const getNotificationType = (m: TMsgRow): string | undefined =>
 
 export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props) => {
   const {
-    messagesArray: rawMessages,
+    projectedMessages: messagesArray,
     channelId,
     messageContainerRef,
     registerVirtualizer
   } = useMessageListContext()
-
-  const currentUserId = useAuthStore((state) => state.profile?.id ?? null)
-
-  const messagesArray = useMemo(
-    () => projectMessageGroups(rawMessages, currentUserId),
-    [rawMessages, currentUserId]
-  )
 
   // Two leaf selectors instead of one channel-settings object so that
   // unrelated property changes on this channel don't re-render the loop.

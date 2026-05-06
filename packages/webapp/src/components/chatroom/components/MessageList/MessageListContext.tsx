@@ -2,14 +2,22 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useMentionClick, useReadReceipts } from '@components/chatroom/hooks'
 import { useAuthStore, useChatStore } from '@stores'
 import type { Virtualizer } from '@tanstack/react-virtual'
-import type { TMsgRow } from '@types'
+import type { TGroupedMsgRow, TMsgRow } from '@types'
+import { projectMessageGroups } from '@utils/projectMessageGroups'
 import React, { createContext, useContext, useMemo } from 'react'
 
 import { useMessageFeedContext } from '../MessageFeed/MessageFeedContext'
 
 interface MessageListContextValue {
   messages: Map<string, TMsgRow> | undefined
-  messagesArray: TMsgRow[]
+  /**
+   * Sorted, grouped projection that is the single source of truth for the
+   * virtualizer in MessageLoop and the read-receipt scanner in
+   * useReadReceipts. Indices into this array correspond 1:1 to virtual
+   * items; do NOT pass an unsorted Map.values() array to anything that
+   * indexes by `virtualizer.getVirtualItems()[i].index`.
+   */
+  projectedMessages: TGroupedMsgRow[]
   channelId: string
 
   messageContainerRef: React.RefObject<HTMLDivElement | null>
@@ -46,20 +54,22 @@ export const MessageListProvider = ({ children }: Props) => {
   } = useMessageFeedContext()
 
   const messages = useChatStore((state) => state.messagesByChannel.get(channelId))
-  const messagesArray = useMemo<TMsgRow[]>(
-    () => (messages ? Array.from(messages.values()) : []),
-    [messages]
-  )
   const profile = useAuthStore((s) => s.profile)
+  const currentUserId = profile?.id ?? null
+
+  const projectedMessages = useMemo<TGroupedMsgRow[]>(() => {
+    if (!messages) return []
+    return projectMessageGroups(Array.from(messages.values()), currentUserId)
+  }, [messages, currentUserId])
 
   const handleMentionClick = useMentionClick()
 
-  useReadReceipts({ channelId, messages: messagesArray, profile })
+  useReadReceipts({ channelId, messages: projectedMessages, profile })
 
   const value = useMemo<MessageListContextValue>(
     () => ({
       messages,
-      messagesArray,
+      projectedMessages,
       channelId,
       messageContainerRef,
       handleMentionClick,
@@ -70,7 +80,7 @@ export const MessageListProvider = ({ children }: Props) => {
     }),
     [
       messages,
-      messagesArray,
+      projectedMessages,
       channelId,
       messageContainerRef,
       handleMentionClick,

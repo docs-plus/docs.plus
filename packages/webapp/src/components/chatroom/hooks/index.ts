@@ -1,6 +1,5 @@
 export * from './useAutoScrollForNewMessages'
 export * from './useChannelInitialData'
-export * from './useChatContainerResizeHandler'
 export * from './useCheckReadMessage'
 export * from './useEmojiBoxHandler'
 export * from './useHighlightMessage'

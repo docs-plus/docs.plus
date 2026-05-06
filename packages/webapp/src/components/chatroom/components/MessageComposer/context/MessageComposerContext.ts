@@ -1,6 +1,6 @@
 import type { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js'
 import { Editor } from '@tiptap/react'
-import { TSendCommentArgs, TSendMessageArgs, TSendThreadMsgArgs, TUpdateMsgArgs } from '@types'
+import { TSendCommentArgs, TSendMessageArgs, TUpdateMsgArgs } from '@types'
 import { createContext } from 'react'
 
 export interface MessageComposerContextType {
@@ -13,13 +13,9 @@ export interface MessageComposerContextType {
   updateMsg: (
     args: TUpdateMsgArgs
   ) => Promise<PostgrestResponse<any> | PostgrestSingleResponse<any>>
-  sendThreadMsg: (
-    args: TSendThreadMsgArgs
-  ) => Promise<PostgrestResponse<any> | PostgrestSingleResponse<any>>
   isSendingMsg: boolean
   isSendingComment: boolean
   isUpdatingMsg: boolean
-  isSendingThreadMsg: boolean
   loading: boolean
   editor: Editor | null
   text: string

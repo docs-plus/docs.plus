@@ -1,4 +1,4 @@
-import { createThreadMessage, sendCommentMessage, sendMessage, updateMessage } from '@api'
+import { sendCommentMessage, sendMessage, updateMessage } from '@api'
 import SignInForm from '@components/auth/SignInForm'
 import { showNotificationPrompt } from '@components/NotificationPromptCard'
 import * as toast from '@components/toast'
@@ -61,8 +61,6 @@ const MessageComposer = ({
   const { channelId } = useChatroomContext()
 
   const user = useAuthStore((state) => state.profile)
-  const startThreadMessage = useChatStore((state) => state.startThreadMessage)
-  const channels = useChatStore((state) => state.channels)
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const isMobile = useStore((state) => state.settings.editor.isMobile)
   const editorRef = useRef<HTMLDivElement | null>(null)
@@ -84,12 +82,7 @@ const MessageComposer = ({
     false
   )
   const { request: updateMsg, loading: isUpdatingMsg } = useApi(updateMessage, null, false)
-  const { request: sendThreadMsg, loading: isSendingThreadMsg } = useApi(
-    createThreadMessage,
-    null,
-    false
-  )
-  const loading = isSendingMsg || isUpdatingMsg || isSendingComment || isSendingThreadMsg
+  const loading = isSendingMsg || isUpdatingMsg || isSendingComment
 
   const submitRef = useRef<(() => void) | null>(null)
 
@@ -214,65 +207,12 @@ const MessageComposer = ({
         medias: null,
         metadata: null,
         origin_message_id: null,
-        thread_id: null,
-        thread_depth: 0,
-        is_thread_root: false,
-        thread_owner_id: null,
         is_bookmarked: false,
         bookmark_id: null,
         status: 'pending'
       } as TMsgRow
     },
     []
-  )
-
-  // Message type handlers
-  const handleThreadMessage = useCallback(
-    async (content: string, html: string) => {
-      if (!startThreadMessage?.id || !user || !workspaceId) return false
-
-      const threadId = startThreadMessage.id
-      if (!channels.has(threadId)) return false
-
-      const messageId = generateClientMessageId()
-      const optimistic = buildOptimisticMessage(messageId, content, html, user, threadId, null)
-
-      setOrUpdateMessage(threadId, messageId, { ...optimistic, thread_id: threadId })
-
-      try {
-        await sendThreadMsg({
-          p_id: messageId,
-          p_content: content,
-          p_html: html,
-          p_thread_id: threadId,
-          p_workspace_id: workspaceId
-        })
-        setMessageStatus(threadId, messageId, 'sent')
-      } catch (error: unknown) {
-        if (isDuplicateKeyError(error)) {
-          setMessageStatus(threadId, messageId, 'sent')
-          return true
-        }
-        const message = error instanceof Error ? error.message : 'Failed to send'
-        setMessageStatus(threadId, messageId, 'failed', message)
-        return false
-      }
-
-      // Editor cleanup is owned by submitMessage → cleanupAfterSubmit, which
-      // runs synchronously BEFORE this handler awaits the network. Don't
-      // re-clear here.
-      return true
-    },
-    [
-      startThreadMessage,
-      channels,
-      user,
-      workspaceId,
-      buildOptimisticMessage,
-      setOrUpdateMessage,
-      setMessageStatus,
-      sendThreadMsg
-    ]
   )
 
   const handleEditMessage = useCallback(
@@ -369,10 +309,6 @@ const MessageComposer = ({
     async (content: string, html: string) => {
       const messageId = editMessageMemory?.id || replyMessageMemory?.id || null
 
-      if (startThreadMessage?.id === channelId) {
-        return handleThreadMessage(content, html)
-      }
-
       if (editMessageMemory) {
         return handleEditMessage(content, html, messageId!)
       }
@@ -386,10 +322,7 @@ const MessageComposer = ({
     [
       editMessageMemory,
       replyMessageMemory,
-      startThreadMessage,
-      channelId,
       commentMessageMemory,
-      handleThreadMessage,
       handleEditMessage,
       handleCommentMessage,
       handleRegularMessage
@@ -493,9 +426,9 @@ const MessageComposer = ({
   //
   // Cleanup timing branches on whether the send path has an optimistic
   // row + Retry affordance:
-  //   - Regular & thread sends: cleanup BEFORE await. The optimistic
-  //     row in the message list carries the text; `MessageFailedRow`
-  //     provides Retry/Delete on failure → no data loss.
+  //   - Regular sends: cleanup BEFORE await. The optimistic row in the
+  //     message list carries the text; `MessageFailedRow` provides
+  //     Retry/Delete on failure → no data loss.
   //   - Edit, comment, chunked: cleanup AFTER a successful await.
   //     These paths don't write an optimistic row, so clearing before
   //     a failed send would silently lose the user's text.
@@ -604,11 +537,9 @@ const MessageComposer = ({
       sendMsg,
       sendComment,
       updateMsg,
-      sendThreadMsg,
       isSendingMsg,
       isSendingComment,
       isUpdatingMsg,
-      isSendingThreadMsg,
       loading,
       editor,
       text,
@@ -632,7 +563,6 @@ const MessageComposer = ({
       sendMsg,
       sendComment,
       updateMsg,
-      sendThreadMsg,
       loading,
       editor,
       text,

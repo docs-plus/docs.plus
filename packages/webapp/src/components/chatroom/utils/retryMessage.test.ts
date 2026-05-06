@@ -3,11 +3,9 @@ import { useAuthStore, useChatStore } from '@stores'
 import { retryMessage } from './retryMessage'
 
 const sendMessageMock = jest.fn()
-const createThreadMessageMock = jest.fn()
 
 jest.mock('@api', () => ({
-  sendMessage: (...args: unknown[]) => sendMessageMock(...args),
-  createThreadMessage: (...args: unknown[]) => createThreadMessageMock(...args)
+  sendMessage: (...args: unknown[]) => sendMessageMock(...args)
 }))
 
 const seedFailedRow = (overrides: Record<string, unknown> = {}) => {
@@ -20,7 +18,6 @@ const seedFailedRow = (overrides: Record<string, unknown> = {}) => {
     status: 'failed',
     statusError: 'network',
     reply_to_message_id: null,
-    thread_id: null,
     ...overrides
   }
   useChatStore.getState().setOrUpdateMessage(row.channel_id as string, row.id, row as any)
@@ -30,7 +27,6 @@ const seedFailedRow = (overrides: Record<string, unknown> = {}) => {
 describe('retryMessage', () => {
   beforeEach(() => {
     sendMessageMock.mockReset()
-    createThreadMessageMock.mockReset()
     useChatStore.setState((s) => ({ ...s, messagesByChannel: new Map() }))
     useAuthStore.setState((s) => ({ ...s, profile: { id: 'u1', username: 'me' } as any }))
   })
@@ -59,18 +55,6 @@ describe('retryMessage', () => {
     const row = useChatStore.getState().messagesByChannel.get('c1')?.get('msg-1')
     expect(row?.status).toBe('failed')
     expect(row?.statusError).toBe('still down')
-  })
-
-  it('routes thread messages through createThreadMessage', async () => {
-    seedFailedRow({ thread_id: 'c1' })
-    createThreadMessageMock.mockResolvedValue({ data: null, error: null })
-
-    await retryMessage('c1', 'msg-1')
-
-    expect(createThreadMessageMock).toHaveBeenCalledWith(
-      expect.objectContaining({ p_id: 'msg-1', p_thread_id: 'c1' })
-    )
-    expect(sendMessageMock).not.toHaveBeenCalled()
   })
 
   it('is a no-op for rows that are not failed', async () => {

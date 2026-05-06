@@ -33,10 +33,9 @@ export async function handleUserSessionForServerProp(
 
   let channels = channelsResult.value as any
 
-  // TODO: need db function to get all channels by workspaceId and not thread
   channels =
     channels?.data
-      .filter((x: any) => x.workspace?.type && x.workspace?.type !== 'THREAD')
+      .filter((x: any) => x.workspace?.type)
       .map((x: any) => ({ ...x, ...x.workspace })) || []
 
   return channels

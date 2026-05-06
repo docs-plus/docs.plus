@@ -39,7 +39,6 @@ export interface Message {
   isEdited: boolean
   isBookmarked: boolean
   replyToId?: string
-  threadId?: string
   type: 'text' | 'emoji' | 'system'
   reactions: MessageReaction[]
   readBy: string[]

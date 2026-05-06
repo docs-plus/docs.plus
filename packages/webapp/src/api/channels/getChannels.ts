@@ -49,7 +49,6 @@ export const getChannels = async (
     `
     )
     .eq('workspace_id', workspaceId)
-    .neq('type', 'THREAD')
     .order('last_activity_at', { ascending: false })
     .returns<Channel[]>()
 
@@ -103,7 +102,6 @@ export const getChannelsWithMessageCounts = async (
     .from('channels')
     .select('*, count:channel_message_counts(message_count)::int')
     .eq('workspace_id', workspaceId)
-    .neq('type', 'THREAD')
     .returns<Channel[]>()
     .throwOnError()
 }

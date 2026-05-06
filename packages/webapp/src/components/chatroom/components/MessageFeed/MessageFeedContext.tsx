@@ -6,7 +6,7 @@ import {
   useScrollAndLoad
 } from '@components/chatroom/hooks'
 import type { Virtualizer } from '@tanstack/react-virtual'
-import React, { createContext, useCallback, useContext, useRef } from 'react'
+import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react'
 
 interface MessageFeedContextValue {
   isLoadingMore: boolean
@@ -64,15 +64,26 @@ export const MessageFeedProvider: React.FC<{
     loadingMoreDirection
   })
 
-  const value: MessageFeedContextValue = {
-    isLoadingMore,
-    loadingMoreDirection,
-    messageContainerRef,
-    topSentinelId,
-    bottomSentinelId,
-    virtualizerRef,
-    registerVirtualizer
-  }
+  const value = useMemo<MessageFeedContextValue>(
+    () => ({
+      isLoadingMore,
+      loadingMoreDirection,
+      messageContainerRef,
+      topSentinelId,
+      bottomSentinelId,
+      virtualizerRef,
+      registerVirtualizer
+    }),
+    [
+      isLoadingMore,
+      loadingMoreDirection,
+      messageContainerRef,
+      topSentinelId,
+      bottomSentinelId,
+      virtualizerRef,
+      registerVirtualizer
+    ]
+  )
 
   return (
     <MessageFeedContext.Provider value={value} key={channelId}>

@@ -1,6 +1,5 @@
 export * from './archiveBookmark'
 export * from './createDirectMessageChannel'
-export * from './createThreadMessage'
 export * from './fetchChannelInitialData'
 export * from './fetchMessagesPaginated'
 export * from './getBookmarkStats'

@@ -63,8 +63,6 @@ export type TUpdateMsgArgs = {
   id: TMsgRow['id']
 }
 
-export type TSendThreadMsgArgs = Database['public']['Functions']['create_thread_message']['Args']
-
 export type TFToggleMessageBookmark = Database['public']['Functions']['toggle_message_bookmark']
 
 type TUserDetails = {
