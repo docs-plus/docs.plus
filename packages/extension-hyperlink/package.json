@@ -36,7 +36,6 @@
   },
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
-    "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -44,14 +43,14 @@
     "test:unit": "bun test src",
     "test:unit:watch": "bun test --watch src",
     "pretest": "bun run build",
-    "test": "bun run test:unit && bunx start-server-and-test playground http://127.0.0.1:5173 cy:run",
-    "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5173 cy:run",
-    "test:open": "bunx start-server-and-test playground http://127.0.0.1:5173 cy:open",
-    "cy:run": "bunx cypress run",
-    "cy:open": "bunx cypress open",
+    "test": "bun run test:unit && bunx start-server-and-test playground http://127.0.0.1:5173 cypress:run",
+    "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5173 cypress:run",
+    "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5173 cypress:open",
+    "cypress:run": "bunx cypress run",
+    "cypress:open": "bunx cypress open",
     "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5173 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
-    "prepack": "bun run scripts/prepack.ts",
-    "prepublishOnly": "bun run scripts/preflight.ts"
+    "prepack": "release-prepack",
+    "prepublishOnly": "release-preflight"
   },
   "files": [
     "dist",
@@ -82,6 +81,7 @@
     "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
+    "@docs.plus/release-tooling": "workspace:*",
     "@eslint/js": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/pm": "catalog:",
@@ -89,7 +89,7 @@
     "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
-    "bun-types": "latest",
+    "bun-types": "catalog:",
     "cypress": "catalog:",
     "cypress-real-events": "catalog:",
     "eslint": "catalog:",

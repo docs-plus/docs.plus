@@ -303,14 +303,14 @@ function checkBuildArtifacts(packages: PackageInfo[]): PreflightResult {
 function checkPerPackagePreflight(packages: PackageInfo[]): PreflightResult {
   const errors: string[] = []
   for (const pkg of packages) {
-    const preflightPath = join(pkg.packagePath, 'scripts', 'preflight.ts')
-    if (!existsSync(preflightPath)) {
+    const pkgJson = JSON.parse(readFileSync(join(pkg.packagePath, 'package.json'), 'utf8'))
+    if (pkgJson.scripts?.prepublishOnly !== 'release-preflight') {
       errors.push(
-        `${pkg.fullName}: scripts/preflight.ts not found — see RELEASE_POLICY.md "Per-package readiness checklist"`
+        `${pkg.fullName}: package.json scripts.prepublishOnly must be "release-preflight" — see RELEASE_POLICY.md "Per-package readiness checklist"`
       )
       continue
     }
-    const r = run('bun', ['run', 'scripts/preflight.ts'], { cwd: pkg.packagePath, allowFail: true })
+    const r = run('bun', ['run', 'prepublishOnly'], { cwd: pkg.packagePath, allowFail: true })
     if (r.status !== 0) {
       errors.push(`${pkg.fullName}: preflight failed\n${r.stderr || r.stdout}`)
     } else {

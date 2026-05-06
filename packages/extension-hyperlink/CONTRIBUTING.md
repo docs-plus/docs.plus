@@ -9,7 +9,7 @@ bun run test             # unit + build + Cypress headless
 bun run test:unit        # unit only (Bun native, ~95 ms)
 bun run test:unit:watch  # unit in watch mode
 bun run test:e2e         # build + Cypress headless (skip unit)
-bun run test:open        # build + open the Cypress runner
+bun run test:e2e:watch   # build + open the Cypress runner
 bun run playground       # playground only, http://127.0.0.1:5173
 bun run docs:screenshots # regenerate README hero PNGs in docs/screenshots/
 ```
@@ -40,4 +40,4 @@ The playground accepts query-string flags so the dedicated specs can exercise op
 | `custom-popover.cy.ts`    | BYO factory contract — options, mount lifecycle, exports.                                        |
 | `scroll-stickiness.cy.ts` | Popover follows its anchor across scroll without drift.                                          |
 
-The suite also runs from the repo root via `bun run test:all`, alongside the Jest and webapp Cypress suites.
+The suite also runs from the repo root via `bun run test`, alongside the Jest and webapp Cypress suites.

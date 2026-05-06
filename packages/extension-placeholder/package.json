@@ -12,14 +12,19 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
+  "homepage": "https://github.com/docs-plus/docs.plus/tree/main/packages/extension-placeholder#readme",
+  "bugs": {
+    "url": "https://github.com/docs-plus/docs.plus/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/docs-plus/docs.plus",
@@ -27,14 +32,20 @@
   },
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
-    "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "prepack": "release-prepack",
+    "prepublishOnly": "release-preflight"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "tiptap",
     "tiptap extension",
@@ -47,6 +58,7 @@
     "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
+    "@docs.plus/release-tooling": "workspace:*",
     "@tiptap/core": "catalog:",
     "@tiptap/pm": "catalog:",
     "typescript": "catalog:",
