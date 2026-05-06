@@ -12,6 +12,6 @@
     "eta": "^3.5.0"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "catalog:"
   }
 }

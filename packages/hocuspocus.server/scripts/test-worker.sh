@@ -44,13 +44,13 @@ echo "Worker will run for 30 seconds, then shutdown"
 echo ""
 
 # Start worker with timeout
-timeout 30s bun run dev:worker || true
+timeout 30s bun --filter @docs.plus/hocuspocus dev:worker || true
 
 echo ""
 echo -e "${GREEN}✓ Worker test complete${NC}"
 echo ""
 echo "Next steps:"
-echo "  1. Run 'bun run dev:worker' to start worker"
+echo "  1. Run 'bun --filter @docs.plus/hocuspocus dev:worker' to start worker"
 echo "  2. Check health: curl http://localhost:3003/health"
 echo "  3. Monitor logs for job processing"
 

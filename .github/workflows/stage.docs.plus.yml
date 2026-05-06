@@ -68,7 +68,7 @@ jobs:
         run: |
           bun run lint
           bun run format
-          bun run styles
+          bun run lint:styles
 
   typecheck:
     name: 📝 Type Check

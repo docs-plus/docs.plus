@@ -73,7 +73,7 @@ Update `.env.development` with your local configuration. See `.env.example` for 
 ### 3. Initialize Supabase
 
 ```bash
-make supabase-start
+bun --filter @docs.plus/supabase_back start
 ```
 
 Then follow the Supabase setup instructions in the [README.md](README.md#3-initialize-supabase).
@@ -178,7 +178,7 @@ We use **Husky** to enforce local quality gates before code reaches remote branc
 - `.husky/*` contains lightweight wrapper scripts.
 - `scripts/hooks/*.sh` contains the actual hook logic.
 - Active hooks:
-  - `pre-commit`: runs `bun run lint:staged` (staged-file lint/format checks)
+  - `pre-commit`: runs `bun run lint-staged` (staged-file lint/format checks)
   - `commit-msg`: validates commit message format
   - `pre-push`: runs selective build checks and always runs `bun run check` for **every push** (lint + format + styles + types)
   - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
@@ -210,17 +210,17 @@ printf 'refs/heads/feature/demo 0000000000000000000000000000000000000000 refs/he
 
 Naming rule: **bare name reports, `:fix` suffix mutates** — same convention as `cargo check` / `cargo fmt --check` and `gofmt -d` / `gofmt -w`.
 
-| Command              | Use case                                                    |
-| -------------------- | ----------------------------------------------------------- |
-| `bun run check`      | Report all: lint + format + styles + typecheck              |
-| `bun run check:fix`  | Auto-fix all: ESLint + Stylelint + Prettier (in that order) |
-| `bun run lint`       | ESLint report                                               |
-| `bun run lint:fix`   | ESLint --fix                                                |
-| `bun run format`     | Prettier --check                                            |
-| `bun run format:fix` | Prettier --write                                            |
-| `bun run styles`     | Stylelint report                                            |
-| `bun run styles:fix` | Stylelint --fix                                             |
-| `bun run typecheck`  | tsc --noEmit (report only — no fix)                         |
+| Command                   | Use case                                                    |
+| ------------------------- | ----------------------------------------------------------- |
+| `bun run check`           | Report all: lint + lint:styles + format + typecheck         |
+| `bun run check:fix`       | Auto-fix all: ESLint + Stylelint + Prettier (in that order) |
+| `bun run lint`            | ESLint report                                               |
+| `bun run lint:fix`        | ESLint --fix                                                |
+| `bun run lint:styles`     | Stylelint report                                            |
+| `bun run lint:styles:fix` | Stylelint --fix                                             |
+| `bun run format`          | Prettier --check                                            |
+| `bun run format:fix`      | Prettier --write                                            |
+| `bun run typecheck`       | tsc --noEmit (report only — no fix)                         |
 
 ## 🧪 Testing
 
@@ -229,7 +229,7 @@ Naming rule: **bare name reports, `:fix` suffix mutates** — same convention as
 Run unit + E2E tests together with a single command:
 
 ```bash
-bun run test:all          # unit + E2E, report saved to Notes/
+bun run test              # unit + E2E, report saved to Notes/
 bun run test:unit         # unit only
 bun run test:e2e          # E2E only (4 parallel workers by default)
 ```
@@ -254,13 +254,10 @@ bun run cypress:open
 # Headless — parallel (default 4 workers)
 bun run test:e2e
 
-# Explicit worker counts
-bun run test:e2e:2        # 2 parallel workers
-bun run test:e2e:4        # 4 parallel workers
-bun run test:e2e:8        # 8 parallel workers
-
-# Ad-hoc worker count
+# Custom worker count via env var
+CYPRESS_PARALLEL=2 bun run test:e2e
 CYPRESS_PARALLEL=6 bun run test:e2e
+CYPRESS_PARALLEL=8 bun run test:e2e
 ```
 
 > **Prerequisites:** The dev server must be running (`make dev-local`) before running E2E tests. By default tests hit `http://localhost:3001` — override with `BASE_URL`.
@@ -323,7 +320,7 @@ Aim for good test coverage, especially for:
    ```bash
    bun run lint
    bun run format
-   bun run styles
+   bun run lint:styles
    bun run typecheck
    ```
 

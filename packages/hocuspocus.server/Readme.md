@@ -25,26 +25,26 @@ Backend services for docs.plus — REST API, WebSocket server, and background wo
 make dev-backend        # Start all backend services
 
 # Individual services
-bun run dev:rest        # REST API only
-bun run dev:hocuspocus.server   # WebSocket only
-bun run dev:hocuspocus.worker   # Worker only
+bun --filter @docs.plus/hocuspocus dev:rest      # REST API only
+bun --filter @docs.plus/hocuspocus dev:ws        # WebSocket only
+bun --filter @docs.plus/hocuspocus dev:worker    # Worker only
 ```
 
 ## Scripts
 
-| Script                    | Description                |
-| ------------------------- | -------------------------- |
-| `dev:rest`                | Start REST API in dev mode |
-| `dev:hocuspocus.server`   | Start WebSocket server     |
-| `dev:hocuspocus.worker`   | Start background worker    |
-| `start:rest`              | Production REST API        |
-| `start:hocuspocus.server` | Production WebSocket       |
-| `start:hocuspocus.worker` | Production Worker          |
-| `build`                   | Build all services         |
-| `lint`                    | Run ESLint                 |
-| `test`                    | Run tests                  |
-| `prisma:generate`         | Generate Prisma client     |
-| `prisma:migrate:dev`      | Run database migrations    |
+| Script            | Description                |
+| ----------------- | -------------------------- |
+| `dev:rest`        | Start REST API in dev mode |
+| `dev:ws`          | Start WebSocket server     |
+| `dev:worker`      | Start background worker    |
+| `start:rest`      | Production REST API        |
+| `start:ws`        | Production WebSocket       |
+| `start:worker`    | Production Worker          |
+| `build`           | Build all services         |
+| `lint`            | Run ESLint                 |
+| `test`            | Run tests                  |
+| `prisma:generate` | Generate Prisma client     |
+| `prisma:migrate`  | Run database migrations    |
 
 ## Project Structure
 

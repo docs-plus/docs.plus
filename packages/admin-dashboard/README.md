@@ -17,20 +17,20 @@ Admin dashboard for docs.plus — manage users, workspaces, and monitor platform
 bun run dev:admin       # Start on port 3100
 
 # From this directory
-bun run dev:local       # Uses .env.local
+bun run dev             # Uses ../../.env.local
 ```
 
 ## Scripts
 
-| Script        | Description                   |
-| ------------- | ----------------------------- |
-| `dev`         | Start dev server on port 3100 |
-| `dev:local`   | Dev with local env vars       |
-| `build`       | Production build              |
-| `build:local` | Build with local env          |
-| `start`       | Start production server       |
-| `lint`        | Run ESLint                    |
-| `lint:fix`    | Fix ESLint issues             |
+| Script      | Description                               |
+| ----------- | ----------------------------------------- |
+| `dev`       | Start dev server on port 3100 (local env) |
+| `build`     | Production build (`.env.production`)      |
+| `build:ci`  | Clean-room build (CI sets env vars)       |
+| `start`     | Start standalone server with local env    |
+| `lint`      | Run ESLint                                |
+| `lint:fix`  | Fix ESLint issues                         |
+| `typecheck` | Run `tsc --noEmit`                        |
 
 ## Project Structure
 

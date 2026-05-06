@@ -146,10 +146,10 @@ cp .env.example .env.development
 **Step 1: Start Supabase** 🚀
 
 ```bash
-make supabase-start
+bun --filter @docs.plus/supabase_back start
 ```
 
-First run downloads Docker images. Verify with `make supabase-status`.
+First run downloads Docker images. Verify with `bun --filter @docs.plus/supabase_back status`.
 
 **Step 2: Activate Extensions** 🔌
 
@@ -293,7 +293,7 @@ make infra-up
 **Step 2: Start Supabase** 🗄️
 
 ```bash
-make supabase-start
+bun --filter @docs.plus/supabase_back start
 ```
 
 **Step 3: Start Apps** 💻
@@ -301,30 +301,30 @@ make supabase-start
 **Option 3a: All in one command (recommended)**
 
 ```bash
-bun run dev:local
+make dev-local
 ```
 
 **Option 3b: Separate terminals (better for debugging)**
 
 ```bash
 # Terminal 1 - Backend REST API
-cd packages/hocuspocus.server && bun run dev:rest
+bun --filter @docs.plus/hocuspocus dev:rest
 
 # Terminal 2 - Backend WebSocket
-cd packages/hocuspocus.server && bun run dev:hocuspocus.server
+bun --filter @docs.plus/hocuspocus dev:ws
 
 # Terminal 3 - Backend Worker
-cd packages/hocuspocus.server && bun run dev:hocuspocus.worker
+bun --filter @docs.plus/hocuspocus dev:worker
 
 # Terminal 4 - Frontend
-cd packages/webapp && bun run dev
+bun run dev
 ```
 
-**Or use convenience scripts:**
+**Or use convenience commands:**
 
 ```bash
-bun run dev:backend  # Start all backend services
-bun run dev:webapp   # Start frontend only
+make dev-backend     # Start all backend services (REST + WS + worker)
+bun run dev          # Start frontend only
 ```
 
 **Environment Variables:**
@@ -332,9 +332,7 @@ bun run dev:webapp   # Start frontend only
 - ✅ **`.env.local` file** at root - automatically created from `.env.development` on first run
 - **`.env.development`** - Used by `docker-compose.dev.yml` (Docker service names: `rest-api:4000`, `redis`)
 - **`.env.local`** - Used by `docker-compose.local.yml` and native apps (localhost addresses, gitignored)
-- Scripts automatically load root `.env.local`:
-  - Backend: Uses `bun --env-file ../../.env.local`
-  - Frontend: Uses `dotenv-cli` to load root `.env.local`
+- Scripts automatically load root `.env.local` via `dotenv -e ../../.env.local --` (uniform across backend, frontend, and admin).
 - **Key differences:** `.env.local` uses `localhost` instead of Docker service names:
   - `SERVER_RESTAPI_URL=http://localhost:4000/api` (vs `http://rest-api:4000/api` in `.env.development`)
   - `REDIS_HOST=localhost` (vs `redis` in `.env.development`)
@@ -420,8 +418,6 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
 # Building
 make build             # Production build
 make build-dev         # Development build
-make build-backend-prod   # Backend prod image only
-make run-backend-prod-local  # Run backend prod image locally (needs .env.local, ports 4000/4001/4002)
 
 # Running (Full Docker)
 make up-prod           # Start production
@@ -430,36 +426,23 @@ make up-dev            # Start development (all in Docker)
 # Running (Local Development - macOS-friendly)
 make infra-up          # Start infrastructure only (postgres, redis)
 make infra-down        # Stop infrastructure
-make infra-logs        # View infrastructure logs
 make dev-local         # Start all services (backend + frontend)
 make dev-backend       # Start backend services (REST, WS, Worker)
-make dev-webapp        # Start frontend only
-make dev-rest          # Start REST API only
-make dev-ws            # Start WebSocket server only
-make dev-worker        # Start Worker only
-make migrate           # Run database migrations
+
+# Frontend / Admin / Supabase (Bun, not Make)
+bun run dev                                          # Webapp
+bun run dev:admin                                    # Admin dashboard
+bun --filter @docs.plus/supabase_back start          # Supabase
+bun --filter @docs.plus/hocuspocus prisma:migrate    # Run DB migrations
 
 # Management
 make down              # Stop services (auto-detects env)
-make restart           # Restart services (auto-detects env)
 make logs              # All logs
-make logs-webapp       # Webapp logs
-make logs-backend      # Backend logs
 make ps                # Container status
-make stats             # Resource usage
 make clean             # ⚠️ Cleanup + delete volumes (DATA LOSS!)
-
-# Scaling (production)
-make scale-webapp      # Scale webapp to 3 replicas
-make scale-hocuspocus  # Scale backend services
-
-# Supabase (uses .env.local)
-make supabase-start    # Start local Supabase
-make supabase-stop     # Stop local Supabase
-make supabase-status   # Show Supabase status
 ```
 
-Run `make help` for complete command list.
+Run `make help` for the complete Make surface; `bun run` (no args) for all root scripts.
 
 ## 📁 Project Structure
 

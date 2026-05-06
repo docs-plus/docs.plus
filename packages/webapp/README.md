@@ -15,28 +15,35 @@ The main docs.plus web application — a real-time collaborative documentation p
 
 ```bash
 # From monorepo root
-make dev-local          # Start all services
+make dev-local          # Full local stack
 # OR
-bun run dev:webapp      # Webapp only (needs backend running)
+bun run dev             # Webapp only (needs backend already running)
 
 # From this directory
-bun run dev:local       # Uses .env.local
+bun run dev             # Uses ../../.env.local
 ```
 
 ## Scripts
 
-| Script         | Description                     |
-| -------------- | ------------------------------- |
-| `dev`          | Start dev server with Turbopack |
-| `dev:local`    | Dev with local env vars         |
-| `build`        | Production build                |
-| `build:local`  | Build with local env            |
-| `start`        | Start production server         |
-| `lint`         | Run ESLint                      |
-| `lint:fix`     | Fix ESLint issues               |
-| `test`         | Run Jest unit tests             |
-| `cypress:open` | Open Cypress E2E (interactive)  |
-| `cypress:run`  | Run Cypress E2E (headless)      |
+| Script                 | Description                                               |
+| ---------------------- | --------------------------------------------------------- |
+| `dev`                  | Dev server with Turbopack (loads `.env.local`)            |
+| `dev:ci`               | Dev server, no env-file (Docker compose / CI sets env)    |
+| `dev:coverage`         | Dev server on :3001 with `CYPRESS_COVERAGE=true`          |
+| `build`                | Production build (`.env.production`)                      |
+| `build:ci`             | Clean-room build (CI sets env vars)                       |
+| `start`                | Standalone server on **Node** (local preview)             |
+| `start:prod`           | Standalone server on **Bun**, port 3001 (container entry) |
+| `start:stage`          | Standalone server on **Bun**, port 3000 (container entry) |
+| `lint` / `lint:fix`    | ESLint                                                    |
+| `typecheck`            | `tsc --noEmit`                                            |
+| `test`                 | Jest unit tests                                           |
+| `test:coverage`        | Jest with coverage                                        |
+| `cypress:open`         | Cypress E2E (interactive)                                 |
+| `cypress:run`          | Cypress E2E (headless)                                    |
+| `cypress:run:coverage` | Cypress E2E (headless) with coverage instrumentation      |
+
+`start` runs on Node (`next start`-style standalone server) for local preview; `start:prod`/`start:stage` run on Bun as container entry points. The runtime asymmetry is deliberate.
 
 ## Project Structure
 
@@ -72,15 +79,14 @@ See `.env.example` in the monorepo root. Key variables:
 bun run test
 
 # E2E tests — parallel (from monorepo root)
-bun run test:e2e          # 4 workers (default)
-bun run test:e2e:2        # 2 workers
-bun run test:e2e:8        # 8 workers
+bun run test:e2e                    # 4 workers (default)
+CYPRESS_PARALLEL=2 bun run test:e2e # custom worker count
 
 # E2E — interactive (single instance)
 bun run cypress:open
 
 # Run everything (unit + E2E, report saved to Notes/)
-bun run test:all
+bun run test
 ```
 
 E2E tests use [cypress-split](https://github.com/bahmutov/cypress-split) to distribute spec files across parallel Cypress instances. Results are aggregated into a dashboard with per-worker stats, timing, and parallelism factor. See [CONTRIBUTING.md](../../CONTRIBUTING.md#-testing) for details.

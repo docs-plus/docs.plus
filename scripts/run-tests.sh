@@ -8,15 +8,17 @@
 #   3. @docs.plus/webapp (Jest)
 #
 # Usage:
-#   bun run test:all                  # unit + E2E, report saved to Notes/
+#   bun run test                      # unit + E2E, report saved to Notes/
 #   bun run test:unit                 # unit only, report saved to Notes/
 #   bun run test:e2e                  # E2E only, report saved to Notes/
-#   sh scripts/run-tests.sh           # same as test:all
+#   sh scripts/run-tests.sh           # same as `bun run test`
 #   sh scripts/run-tests.sh --unit    # unit only
 #   sh scripts/run-tests.sh --e2e     # E2E only
 #
+#   CYPRESS_PARALLEL=N bun run test:e2e   # control E2E worker count
+#
 # Prerequisites:
-#   - For E2E tests: dev server must be running (make dev-local)
+#   - For E2E tests: dev server must be running (`make dev-local`)
 #   - Cypress is managed at the monorepo root (bunx cypress)
 #
 # Output:

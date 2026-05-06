@@ -10,7 +10,7 @@ import { $ } from 'bun'
 
 const rootDir = process.cwd()
 
-console.log('🔍 Running check (lint + format + styles + types)...\n')
+console.log('🔍 Running check (lint + lint:styles + format + types)...\n')
 
 const result = await $`bun run check`.cwd(rootDir)
 process.exit(result.exitCode ?? 0)

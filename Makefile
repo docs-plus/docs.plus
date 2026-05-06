@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev validate-prod-build build-backend-prod run-backend-prod-local up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-admin dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
+.PHONY: help build build-dev build-prod-ci build-prod-backend run-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats deploy-prod rollback-prod status-prod logs-traefik
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -11,14 +11,13 @@ help:
 	@echo "Building:"
 	@echo "  make build             - Build all services (production)"
 	@echo "  make build-dev         - Build all services (development)"
-	@echo "  make validate-prod-build - Build prod images with stub env (no .env.production needed)"
-	@echo "  make build-backend-prod  - Build only backend prod images (rest-api, hocuspocus, worker)"
-	@echo "  make run-backend-prod-local - Run backend prod images locally (needs .env.local)"
+	@echo "  make build-prod-ci       - Build prod images with stub env (no .env.production needed)"
+	@echo "  make build-prod-backend  - Build only backend prod images (rest-api, hocuspocus, worker)"
+	@echo "  make run-prod-backend    - Run backend prod images locally (needs .env.local)"
 	@echo ""
 	@echo "Running:"
 	@echo "  make up-prod           - Start all services (production)"
 	@echo "  make up-dev            - Start all services (development - Docker)"
-	@echo "  make up-local          - Start local dev (infra in Docker, apps native)"
 	@echo ""
 	@echo "Local Development (macOS-friendly, no Docker IO):"
 	@echo "  make infra-up           - Start infrastructure only (postgres, redis)"
@@ -26,12 +25,14 @@ help:
 	@echo "  make infra-logs         - View infrastructure logs"
 	@echo "  make dev-local          - Start all services (backend + frontend)"
 	@echo "  make dev-backend        - Start backend services (REST, WS, Worker)"
-	@echo "  make dev-webapp         - Start frontend only"
-	@echo "  make dev-admin          - Start admin dashboard only"
-	@echo "  make dev-rest           - Start REST API only"
-	@echo "  make dev-ws             - Start WebSocket server only"
-	@echo "  make dev-worker         - Start Worker only"
-	@echo "  make migrate            - Run database migrations"
+	@echo ""
+	@echo "Individual processes (Bun, not Make):"
+	@echo "  bun run dev                                       - Frontend (webapp)"
+	@echo "  bun run dev:admin                                 - Admin dashboard"
+	@echo "  bun --filter @docs.plus/hocuspocus dev:rest       - REST API"
+	@echo "  bun --filter @docs.plus/hocuspocus dev:ws         - WebSocket server"
+	@echo "  bun --filter @docs.plus/hocuspocus dev:worker     - Worker"
+	@echo "  bun --filter @docs.plus/supabase_back start       - Supabase"
 	@echo ""
 	@echo "Production Deployment (Traefik):"
 	@echo "  make deploy-prod             - Deploy full stack with Traefik"
@@ -54,11 +55,6 @@ help:
 	@echo "Utilities:"
 	@echo "  make ps                - Show running containers (auto-detects dev/prod/local)"
 	@echo "  make stats             - Show resource usage"
-	@echo ""
-	@echo "Supabase (uses .env.local):"
-	@echo "  make supabase-start    - Start Supabase local instance"
-	@echo "  make supabase-stop     - Stop Supabase local instance"
-	@echo "  make supabase-status   - Show Supabase local instance status"
 
 # =============================================================================
 # BUILD COMMANDS
@@ -71,15 +67,15 @@ build:
 
 # Build prod images with stub env — run before push to catch Docker build failures.
 # Does not require .env.production. Uses same compose + BuildKit as CI deploy.
-validate-prod-build:
+build-prod-ci:
 	@echo "🏗️  Validating production Docker build (stub env)..."
 	@test -f scripts/env.production.build-stub || (echo "❌ scripts/env.production.build-stub missing"; exit 1)
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml --env-file scripts/env.production.build-stub build --parallel
 	@echo "✅ Production build validation passed"
 
 # Build only backend (rest-api, hocuspocus-server, hocuspocus-worker) prod images. Same image, 3 services.
-# Use before pushing to verify backend Dockerfile builds; then run with run-backend-prod-local.
-build-backend-prod:
+# Use before pushing to verify backend Dockerfile builds; then run with run-prod-backend.
+build-prod-backend:
 	@echo "🏗️  Building backend production images (rest-api, hocuspocus-server, hocuspocus-worker)..."
 	@test -f scripts/env.production.build-stub || (echo "❌ scripts/env.production.build-stub missing"; exit 1)
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml --env-file scripts/env.production.build-stub build rest-api hocuspocus-server hocuspocus-worker
@@ -87,7 +83,7 @@ build-backend-prod:
 
 # Run backend prod images locally: Redis + rest-api + hocuspocus-server + hocuspocus-worker (1 replica each).
 # Uses .env.local for DATABASE_URL and secrets. No Traefik; override publishes 4000/4001/4002.
-run-backend-prod-local: build-backend-prod
+run-prod-backend: build-prod-backend
 	@test -f .env.local || (echo "❌ .env.local required (DATABASE_URL, SUPABASE_*, JWT_SECRET, etc.)"; exit 1)
 	@echo "🚀 Starting backend (prod images) + Redis locally..."
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml -f docker-compose.backend-local.override.yml --env-file .env.local up -d redis rest-api hocuspocus-server hocuspocus-worker
@@ -197,14 +193,14 @@ infra-up:
 	@echo "  🔴 Redis:      localhost:${REDIS_PORT:-6379}"
 	@echo ""
 	@echo "Next steps:"
-	@echo "  1. Start Supabase:  make supabase-start"
-	@echo "  2. Start apps:       make dev-local"
+	@echo "  1. Start Supabase:  bun --filter @docs.plus/supabase_back start"
+	@echo "  2. Start apps:      make dev-local"
 	@echo ""
 	@echo "Or run manually:"
-	@echo "  Backend REST API:    cd packages/hocuspocus.server && bun run dev:rest"
-	@echo "  Backend WebSocket:   cd packages/hocuspocus.server && bun run dev:hocuspocus.server"
-	@echo "  Backend Worker:      cd packages/hocuspocus.server && bun run dev:hocuspocus.worker"
-	@echo "  Frontend:            cd packages/webapp && bun run dev"
+	@echo "  Backend REST API:    bun --filter @docs.plus/hocuspocus dev:rest"
+	@echo "  Backend WebSocket:   bun --filter @docs.plus/hocuspocus dev:ws"
+	@echo "  Backend Worker:      bun --filter @docs.plus/hocuspocus dev:worker"
+	@echo "  Frontend:            bun run dev"
 
 infra-down:
 	@echo "🛑 Stopping infrastructure services..."
@@ -231,58 +227,26 @@ dev-local:
 	fi
 	@if ! lsof -Pi :54321 -sTCP:LISTEN -t >/dev/null 2>&1; then \
 		echo "⚠️  Starting Supabase..."; \
-		cd packages/supabase && dotenv -e ../../.env.local -- supabase start > /dev/null 2>&1 || true; \
+		bun --filter @docs.plus/supabase_back start > /dev/null 2>&1 || true; \
 	fi
 	@echo "🔧 Ensuring Prisma client is generated..."
-	@cd packages/hocuspocus.server && bun run prisma:generate > /dev/null 2>&1 || true
-	@echo "🔧 Ensuring database migrations are applied..."
-	@cd packages/hocuspocus.server && bun --env-file ../../.env.local -e "import { $$ } from 'bun'; await $$\`bunx prisma migrate deploy\`" > /dev/null 2>&1 || true
+	@bun --filter @docs.plus/hocuspocus prisma:generate > /dev/null 2>&1 || true
+	@echo "🔧 Applying database migrations..."
+	@cd packages/hocuspocus.server && dotenv -e ../../.env.local -- bunx prisma migrate deploy > /dev/null 2>&1 || true
 	@echo ""
 	@echo "Starting all services..."
 	@bunx concurrently -n "REST,WS,WORKER,WEBAPP" -c "blue,green,yellow,magenta" \
-		"$(MAKE) dev-rest" \
-		"$(MAKE) dev-ws" \
-		"$(MAKE) dev-worker" \
-		"$(MAKE) dev-webapp"
-
-migrate:
-	@echo "🔧 Running database migrations..."
-	@if [ ! -f .env.local ]; then \
-		echo "⚠️  .env.local not found. Using .env.development..."; \
-		cd packages/hocuspocus.server && bun --env-file ../../.env.development -e "import { $$ } from 'bun'; await $$\`bunx prisma migrate deploy\`"; \
-	else \
-		cd packages/hocuspocus.server && bun --env-file ../../.env.local -e "import { $$ } from 'bun'; await $$\`bunx prisma migrate deploy\`"; \
-	fi
+		"bun --filter @docs.plus/hocuspocus dev:rest" \
+		"bun --filter @docs.plus/hocuspocus dev:ws" \
+		"bun --filter @docs.plus/hocuspocus dev:worker" \
+		"bun --filter @docs.plus/webapp dev"
 
 dev-backend:
 	@echo "🚀 Starting backend services (REST API, WebSocket, Worker)..."
 	@bunx concurrently -n "REST,WS,WORKER" -c "blue,green,yellow" \
-		"$(MAKE) dev-rest" \
-		"$(MAKE) dev-ws" \
-		"$(MAKE) dev-worker"
-
-dev-webapp:
-	@echo "🚀 Starting frontend..."
-	@cd packages/webapp && bunx dotenv -e ../../.env.local -- next dev --turbopack
-
-dev-admin:
-	@echo "🎛️  Starting Admin Dashboard..."
-	@cd packages/admin-dashboard && bunx dotenv -e ../../.env.local -- next dev -p 3100 --turbopack
-
-dev-rest:
-	@cd packages/hocuspocus.server && NODE_ENV=development bun --env-file ../../.env.local --watch src/index.ts
-
-dev-ws:
-	@cd packages/hocuspocus.server && NODE_ENV=development bun --env-file ../../.env.local --watch src/hocuspocus.server.ts
-
-dev-worker:
-	@cd packages/hocuspocus.server && NODE_ENV=development bun --env-file ../../.env.local --watch src/hocuspocus.worker.ts
-
-up-local: infra-up
-	@echo ""
-	@echo "💡 Infrastructure is ready. Run 'make dev-local' to start apps, or start them manually:"
-	@echo "   Backend:  cd packages/hocuspocus.server && bun run dev:rest"
-	@echo "   Frontend: cd packages/webapp && bun run dev"
+		"bun --filter @docs.plus/hocuspocus dev:rest" \
+		"bun --filter @docs.plus/hocuspocus dev:ws" \
+		"bun --filter @docs.plus/hocuspocus dev:worker"
 
 # =============================================================================
 # SCALING COMMANDS
@@ -317,7 +281,7 @@ down:
 		echo "✅ Infrastructure stopped"; \
 		echo "💡 Apps are running natively - stop them manually (Ctrl+C)"; \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev', 'make up-prod', or 'make up-local'"; \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
 
 logs:
@@ -403,7 +367,7 @@ ps:
 		echo ""; \
 		echo "💡 Apps are running natively (not shown above)"; \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev', 'make up-prod', or 'make up-local'"; \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
 
 stats:
@@ -414,28 +378,6 @@ stats:
 	else \
 		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
-
-# =============================================================================
-# SUPABASE COMMANDS
-# =============================================================================
-
-supabase-start:
-	@echo "🚀 Starting Supabase local instance..."
-	@if [ ! -f .env.local ]; then \
-		echo "⚠️  Warning: .env.local not found. Creating from .env.development..."; \
-		cp .env.development .env.local 2>/dev/null || true; \
-	fi
-	@cd packages/supabase && bun run start
-	@echo "✅ Supabase started"
-
-supabase-stop:
-	@echo "🛑 Stopping Supabase local instance..."
-	@cd packages/supabase && bun run stop
-	@echo "✅ Supabase stopped"
-
-supabase-status:
-	@echo "📊 Supabase local instance status:"
-	@cd packages/supabase && bun run status
 
 # =============================================================================
 # PRODUCTION DEPLOYMENT COMMANDS (Traefik)
