@@ -155,6 +155,12 @@ packages/hocuspocus.server/temp/
 # Cursor — local hook state (machine-specific; do not commit)
 .cursor/hooks/state/
 
+# Claude Code — per-machine personal settings (do not commit)
+.claude/settings.local.json
+
+# Claude Code — session artefacts (review reports, debugging output, etc.)
+.full-review/
+
 # local Notes and scripts
 Notes/
 
