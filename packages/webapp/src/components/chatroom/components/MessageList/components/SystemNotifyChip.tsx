@@ -18,6 +18,11 @@ type Props = {
   message: TMsgRow
 }
 
+const CHIP_CLASSES =
+  'bg-info/10 inline-flex max-w-[90%] flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 rounded-full px-3 py-1.5 text-center text-xs leading-relaxed'
+
+const WRAPPER_CLASSES = 'msg_card chat my-3 flex justify-center px-2 pb-1'
+
 export const SystemNotifyChip = ({ message }: Props) => {
   const docMetadata = useStore((state) => state.settings.metadata)
   const cardRef = useRef<MessageCardDesktopElement>(null)
@@ -25,30 +30,23 @@ export const SystemNotifyChip = ({ message }: Props) => {
   const { handleMentionClick } = useMessageListContext()
 
   useEffect(() => {
-    // if (ref) {
-    //   ref.current = cardRef.current
-    // }
-
     if (!cardRef.current) return
-
     cardRef.current.msgId = message.id
     cardRef.current.readedAt = message.readed_at
     cardRef.current.createdAt = message.created_at
     cardRef.current.user_id = message.user_id
-  }, [/*ref,*/ message, cardRef])
+  }, [message])
 
   const metadataType = getMetadataProperty<string>(message.metadata, 'type')
 
-  // Don't render join channel notifications
   if (metadataType === 'user_join_channel') return null
+
+  const timeAgo = formatDistanceToNow(new Date(message.created_at), { addSuffix: true })
 
   if (metadataType === 'user_join_workspace') {
     return (
-      <div
-        className="msg_card chat my-2 flex justify-center pb-1"
-        onClick={handleMentionClick}
-        ref={cardRef}>
-        <div className="badge bg-info/10 py-3">
+      <div className={WRAPPER_CLASSES} onClick={handleMentionClick} ref={cardRef}>
+        <div className={CHIP_CLASSES}>
           <span
             className="mention text-primary cursor-pointer !p-0 font-semibold"
             data-type="mention"
@@ -57,14 +55,11 @@ export const SystemNotifyChip = ({ message }: Props) => {
             @{message?.user_details?.username}
           </span>
           <span>joined</span>
-          <span className="bg-info/10 flex items-center gap-1 py-0.5">
-            <DocsPlusIcon size={12} className="mb-1" />
+          <span className="inline-flex items-center gap-1">
+            <DocsPlusIcon size={12} />
             <span className="font-medium underline">{docMetadata.title}</span>
-            {'-'}{' '}
-            {formatDistanceToNow(new Date(message.created_at), {
-              addSuffix: true
-            })}
           </span>
+          <span>— {timeAgo}</span>
         </div>
       </div>
     )
@@ -72,20 +67,15 @@ export const SystemNotifyChip = ({ message }: Props) => {
 
   if (metadataType === 'channel_created') {
     return (
-      <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
-        <div className="badge bg-info/10 border-none">
-          Heading created -{' '}
-          {formatDistanceToNow(new Date(message.created_at), {
-            addSuffix: true
-          })}
-        </div>
+      <div className={WRAPPER_CLASSES} ref={cardRef}>
+        <div className={CHIP_CLASSES}>Heading created — {timeAgo}</div>
       </div>
     )
   }
 
   return (
-    <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
-      <div className="badge bg-info/10 border-none">{message.content}</div>
+    <div className={WRAPPER_CLASSES} ref={cardRef}>
+      <div className={CHIP_CLASSES}>{message.content}</div>
     </div>
   )
 }
