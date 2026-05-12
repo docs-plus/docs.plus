@@ -20,17 +20,20 @@ export const useAutoScrollForNewMessages = ({
 }: Props) => {
   const { channelId, isChannelDataLoaded, isDbSubscriptionReady } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
-  const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
-  const messagesByChannel = useChatStore((state) => state.messagesByChannel)
+  const isInitialScrollSettled = useChatStore((state) => state.chatRoom.isInitialScrollSettled)
+  // Leaf selector — the outer messagesByChannel Map reference flips on
+  // every write to *any* channel; reading only the inner Map for this
+  // channel scopes the re-render trigger to this chatroom.
+  const channelMessages = useChatStore((state) => state.messagesByChannel.get(channelId))
 
   const prevCountRef = useRef(0)
   const prevLastMessageIdRef = useRef<string | null>(null)
   const skipNextAutoScrollRef = useRef(true)
 
-  const messages = useMemo(() => {
-    const map = messagesByChannel.get(channelId)
-    return map ? Array.from(map.values()) : []
-  }, [messagesByChannel, channelId])
+  const messages = useMemo(
+    () => (channelMessages ? Array.from(channelMessages.values()) : []),
+    [channelMessages]
+  )
 
   useEffect(() => {
     prevCountRef.current = 0
@@ -39,20 +42,15 @@ export const useAutoScrollForNewMessages = ({
   }, [channelId])
 
   useEffect(() => {
-    if (!isReadyToDisplayMessages) {
+    if (!isInitialScrollSettled) {
       skipNextAutoScrollRef.current = true
     }
-  }, [isReadyToDisplayMessages])
+  }, [isInitialScrollSettled])
 
   useEffect(() => {
     const virtualizer = virtualizerRef.current
 
-    if (
-      !virtualizer ||
-      !isDbSubscriptionReady ||
-      !isChannelDataLoaded ||
-      !isReadyToDisplayMessages
-    ) {
+    if (!virtualizer || !isDbSubscriptionReady || !isChannelDataLoaded || !isInitialScrollSettled) {
       return
     }
 
@@ -109,7 +107,7 @@ export const useAutoScrollForNewMessages = ({
   }, [
     isChannelDataLoaded,
     isDbSubscriptionReady,
-    isReadyToDisplayMessages,
+    isInitialScrollSettled,
     messages,
     isLoadingOlderMessages,
     highlightedMessageExists,

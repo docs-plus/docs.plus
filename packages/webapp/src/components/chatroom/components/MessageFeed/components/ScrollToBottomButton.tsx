@@ -15,7 +15,7 @@ export const ScrollToBottom = () => {
   const { channelId } = useChatroomContext()
   const { messageContainerRef, virtualizerRef } = useMessageFeedContext()
   const unreadCount = useUnreadCount(channelId)
-  const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
+  const isInitialScrollSettled = useChatStore((state) => state.chatRoom.isInitialScrollSettled)
   const selectMessageCount = useCallback(
     (state: IChatStore) => state.messagesByChannel.get(channelId)?.size ?? 0,
     [channelId]
@@ -26,7 +26,7 @@ export const ScrollToBottom = () => {
     const container = messageContainerRef.current
     const virtualizer = virtualizerRef.current
 
-    if (!container || !virtualizer || !isReadyToDisplayMessages || messageCount === 0) {
+    if (!container || !virtualizer || !isInitialScrollSettled || messageCount === 0) {
       setIsVisible(false)
       return
     }
@@ -49,7 +49,7 @@ export const ScrollToBottom = () => {
       const next = !shouldHideButton
       return prev === next ? prev : next
     })
-  }, [messageContainerRef, virtualizerRef, isReadyToDisplayMessages, messageCount])
+  }, [messageContainerRef, virtualizerRef, isInitialScrollSettled, messageCount])
 
   useEffect(() => {
     updateVisibility()
@@ -57,7 +57,7 @@ export const ScrollToBottom = () => {
 
   useEffect(() => {
     const container = messageContainerRef.current
-    if (!container || !isReadyToDisplayMessages) return
+    if (!container || !isInitialScrollSettled) return
 
     const handleScroll = () => updateVisibility()
     container.addEventListener('scroll', handleScroll, { passive: true })
@@ -65,7 +65,7 @@ export const ScrollToBottom = () => {
     return () => {
       container.removeEventListener('scroll', handleScroll)
     }
-  }, [messageContainerRef, updateVisibility, isReadyToDisplayMessages])
+  }, [messageContainerRef, updateVisibility, isInitialScrollSettled])
 
   const scrollToBottomHandler = useCallback(() => {
     const virtualizer = virtualizerRef.current

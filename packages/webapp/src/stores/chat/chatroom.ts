@@ -16,7 +16,7 @@ type TChatRoom = {
   fetchMsgsFromId?: string
   editorInstance?: any
   editorRef?: any
-  isReadyToDisplayMessages?: boolean
+  isInitialScrollSettled?: boolean
 }
 
 interface IChatroomStore {
@@ -65,7 +65,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     fetchMsgsFromId: undefined,
     editorInstance: undefined,
     editorRef: undefined,
-    isReadyToDisplayMessages: false
+    isInitialScrollSettled: false
   },
 
   updateChatRoom: (key, value) => {

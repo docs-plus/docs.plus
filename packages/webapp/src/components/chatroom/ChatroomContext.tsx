@@ -21,7 +21,7 @@ export const ChatroomProvider: React.FC<{
   children: React.ReactNode
 }> = ({ channelId, variant, children }) => {
   const [error, setError] = useState<string | null>(null)
-  const { isReadyToDisplayMessages } = useChatStore((state) => state.chatRoom)
+  const { isInitialScrollSettled } = useChatStore((state) => state.chatRoom)
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null)
@@ -50,20 +50,36 @@ export const ChatroomProvider: React.FC<{
   }, [])
 
   const initLoadMessages = useMemo(() => {
-    return !isDbSubscriptionReady || !isChannelDataLoaded || !isReadyToDisplayMessages
-  }, [isDbSubscriptionReady, isChannelDataLoaded, isReadyToDisplayMessages])
+    return !isDbSubscriptionReady || !isChannelDataLoaded || !isInitialScrollSettled
+  }, [isDbSubscriptionReady, isChannelDataLoaded, isInitialScrollSettled])
 
-  const value: ChatroomContextValue = {
-    channelId,
-    variant,
-    error,
-    isChannelDataLoaded,
-    isDbSubscriptionReady,
-    openDialog,
-    closeDialog,
-    isDialogOpen,
-    initLoadMessages
-  }
+  // Memoised so the four nested contexts (MessageFeed/List/Card and every
+  // consumer of useChatroomContext) don't re-render on every realtime tick.
+  // openDialog/closeDialog are already stable via useCallback above.
+  const value = useMemo<ChatroomContextValue>(
+    () => ({
+      channelId,
+      variant,
+      error,
+      isChannelDataLoaded,
+      isDbSubscriptionReady,
+      openDialog,
+      closeDialog,
+      isDialogOpen,
+      initLoadMessages
+    }),
+    [
+      channelId,
+      variant,
+      error,
+      isChannelDataLoaded,
+      isDbSubscriptionReady,
+      openDialog,
+      closeDialog,
+      isDialogOpen,
+      initLoadMessages
+    ]
+  )
 
   return (
     <ChatroomContext.Provider value={value}>

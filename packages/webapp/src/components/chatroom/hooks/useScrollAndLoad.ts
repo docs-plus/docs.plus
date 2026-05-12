@@ -1,12 +1,12 @@
 import { useChatStore } from '@stores'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { TChannelSettings } from '@types'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect } from 'react'
 
 import { useChatroomContext } from '../ChatroomContext'
 
 interface UseScrollAndLoadReturn {
-  isReadyToDisplayMessages: boolean
+  isInitialScrollSettled: boolean
   messageContainerRef: React.RefObject<HTMLDivElement | null>
 }
 
@@ -21,16 +21,14 @@ export const useScrollAndLoad = ({
 }: UseScrollAndLoadArgs): UseScrollAndLoadReturn => {
   const { channelId, isChannelDataLoaded, isDbSubscriptionReady } = useChatroomContext()
 
-  const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
+  const isInitialScrollSettled = useChatStore((state) => state.chatRoom.isInitialScrollSettled)
   const updateChatRoom = useChatStore((state) => state.updateChatRoom)
   const messageCount = useChatStore((state) => state.messagesByChannel.get(channelId)?.size ?? 0)
 
-  const { channels } = useChatStore((state) => state.workspaceSettings)
-
-  // Memoized selectors
-  const channelSettings = useMemo<TChannelSettings | null>(
-    () => channels.get(channelId) ?? null,
-    [channels, channelId]
+  // Leaf selector — avoids re-rendering on every workspaceSettings.channels
+  // mutation (e.g. unread-count flip on a different channel).
+  const channelSettings = useChatStore<TChannelSettings | null>(
+    (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
 
   const getMessagesArray = useCallback(() => {
@@ -162,16 +160,16 @@ export const useScrollAndLoad = ({
   )
 
   useEffect(() => {
-    updateChatRoom('isReadyToDisplayMessages', false)
+    updateChatRoom('isInitialScrollSettled', false)
   }, [channelId, updateChatRoom])
 
   useEffect(() => {
     if (!isDbSubscriptionReady || !isChannelDataLoaded) return
-    if (isReadyToDisplayMessages) return
+    if (isInitialScrollSettled) return
 
     // If no messages, mark ready immediately
     if (messageCount === 0) {
-      updateChatRoom('isReadyToDisplayMessages', true)
+      updateChatRoom('isInitialScrollSettled', true)
       return
     }
 
@@ -182,7 +180,7 @@ export const useScrollAndLoad = ({
     const markReady = () => {
       if (cancelled || hasResolved) return
       hasResolved = true
-      updateChatRoom('isReadyToDisplayMessages', true)
+      updateChatRoom('isInitialScrollSettled', true)
     }
 
     const frameId = requestAnimationFrame(() => {
@@ -201,13 +199,13 @@ export const useScrollAndLoad = ({
     isDbSubscriptionReady,
     isChannelDataLoaded,
     messageCount,
-    isReadyToDisplayMessages,
+    isInitialScrollSettled,
     scrollToLastMessage,
     updateChatRoom
   ])
 
   return {
-    isReadyToDisplayMessages: isReadyToDisplayMessages ?? false,
+    isInitialScrollSettled: isInitialScrollSettled ?? false,
     messageContainerRef
   }
 }

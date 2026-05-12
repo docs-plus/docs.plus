@@ -15,7 +15,7 @@ type Prop = {
 
 export const useHighlightMessage = ({ messageContainerRef, virtualizerRef }: Prop) => {
   const { channelId, isChannelDataLoaded, isDbSubscriptionReady } = useChatroomContext()
-  const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
+  const isInitialScrollSettled = useChatStore((state) => state.chatRoom.isInitialScrollSettled)
   const [highlightedMessageExists, setHighlightedMessageExists] = useState(false)
 
   const getFetchMessageId = useCallback(() => {
@@ -131,7 +131,7 @@ export const useHighlightMessage = ({ messageContainerRef, virtualizerRef }: Pro
   ])
 
   useEffect(() => {
-    if (!isDbSubscriptionReady || !isChannelDataLoaded || isReadyToDisplayMessages) return
+    if (!isDbSubscriptionReady || !isChannelDataLoaded || isInitialScrollSettled) return
     const fetchMsgsFromId = getFetchMessageId()
     if (!fetchMsgsFromId) return
 
@@ -140,7 +140,7 @@ export const useHighlightMessage = ({ messageContainerRef, virtualizerRef }: Pro
   }, [
     isDbSubscriptionReady,
     isChannelDataLoaded,
-    isReadyToDisplayMessages,
+    isInitialScrollSettled,
     scrollToMessage,
     getFetchMessageId
   ])
