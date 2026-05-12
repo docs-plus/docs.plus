@@ -1,67 +1,70 @@
-import { useChatStore } from '@stores'
-import { useAuthStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
+import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useState } from 'react'
 
 import { dbMessagesListener } from './listener'
 
-// there is not relation join in realtime subscription
-// so we first get the online members and save it to the channel member state store
-// and then we put the current user into that state store
-// then if new message comes from the online user, we have those user data in the channel member state store
-// and if a new user online or join the channel, we put it into the channel member state store
-
-// with this approach we can have runtime join and we do not need to have join or view or other approach!
-// I suppose this approch hase more performance than the other one!
-
-// reply message!
-// forward message!
-
-// for forward messages we need first check if for the coming message we have the user data in state store.
-// otherwise we need to fetch the user data from the database and then put it into the state store
-
-// pinned message, I just put the contnet to the pinned message
-
 export const useMessageSubscription = (channelId: string) => {
   const [isDbSubscriptionReady, setIsDbSubscriptionReady] = useState(false)
   const { documentId: workspaceId } = useChatStore((state) => state.chatRoom)
 
-  const user = useAuthStore((state) => state.profile)
+  const userId = useAuthStore((state) => state.profile?.id)
+
   useEffect(() => {
+    // Reset ready on identity/context change so downstream gates don't trust stale SUBSCRIBED.
+    setIsDbSubscriptionReady(false)
     if (!channelId || !workspaceId) return
 
-    // Skip subscription if offline (prevents retry spam)
-    if (!navigator.onLine) return
-
     let cancelled = false
+    let realtimeChannel: RealtimeChannel | null = null
 
-    const messageSubscription = supabaseClient
-      .channel(`channel:${channelId}`)
-      // todo: move to worksapce channel
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
-        dbMessagesListener
-      )
-      .subscribe((status) => {
-        if (cancelled) return
-        if (status !== 'SUBSCRIBED') return
-        if (!navigator.onLine) {
-          messageSubscription.unsubscribe()
-          return
-        }
-        setIsDbSubscriptionReady(true)
-      })
+    const disconnect = () => {
+      realtimeChannel?.unsubscribe()
+      realtimeChannel = null
+      setIsDbSubscriptionReady(false)
+    }
 
-    const handleOffline = () => messageSubscription.unsubscribe()
-    window.addEventListener('offline', handleOffline)
+    const connect = () => {
+      if (cancelled || !navigator.onLine) return
+      disconnect()
+
+      realtimeChannel = supabaseClient
+        .channel(`channel:${channelId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
+          dbMessagesListener
+        )
+        .subscribe((status) => {
+          if (cancelled) return
+          if (status === 'SUBSCRIBED') {
+            if (!navigator.onLine) {
+              disconnect()
+              return
+            }
+            setIsDbSubscriptionReady(true)
+            return
+          }
+          setIsDbSubscriptionReady(false)
+        })
+    }
+
+    connect()
+
+    const onOffline = () => disconnect()
+    const onOnline = () => connect()
+
+    window.addEventListener('offline', onOffline)
+    window.addEventListener('online', onOnline)
 
     return () => {
       cancelled = true
-      messageSubscription.unsubscribe()
-      window.removeEventListener('offline', handleOffline)
+      disconnect()
+      window.removeEventListener('offline', onOffline)
+      window.removeEventListener('online', onOnline)
     }
-  }, [channelId, workspaceId, user])
+  }, [channelId, workspaceId, userId])
 
   return { isDbSubscriptionReady }
 }

@@ -26,14 +26,11 @@ type NotificationBroadcastPayload = {
 }
 
 /**
- * Hook to get realtime unread notification count.
- *
- * Uses Supabase Realtime Broadcast from Database:
- * - Database trigger broadcasts to user-specific topic: notifications:{userId}
- * - Includes workspace_id for filtering
- * - O(1) routing - events go directly to intended user, no server-side filtering
- *
- * Trade-off: Uses separate channel from workspace channel, but most efficient for notifications
+ * Realtime unread-notification counter on the per-user broadcast topic
+ * `notifications:<auth.uid()>`. Topic is private — the SQL trigger sends
+ * with `private := true` and the `notifications_topic_access` RLS policy
+ * gates SELECT; the client constructor must pass `{ config: { private:
+ * true } }` or subscribe() silently fails.
  */
 export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps) => {
   const profile = useAuthStore((state) => state.profile)
@@ -57,10 +54,13 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
     // Skip subscription if offline
     if (!navigator.onLine) return
 
-    // Subscribe to user-specific notification broadcast
+    // Subscribe to user-specific notification broadcast.
+    // `private: true` is required for the SQL trigger's private broadcast, RLS policy on realtime.messages.
     const topic = `notifications:${profile.id}`
 
-    const channel = supabaseClient.channel(topic)
+    const channel = supabaseClient.channel(topic, {
+      config: { private: true }
+    })
 
     // Handle INSERT - new notification
     channel.on('broadcast', { event: 'INSERT' }, (data: NotificationBroadcastPayload) => {
