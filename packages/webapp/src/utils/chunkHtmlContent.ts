@@ -58,5 +58,12 @@ export function chunkHtmlContent(
 
   traverse(doc.body)
 
+  // Flush trailing buffer only when a split already fired; the empty-array
+  // path is the call site's "fits in one send → optimistic" signal.
+  if (htmlChunks.length > 0 && currentHtmlChunk.length > 0) {
+    htmlChunks.push(currentHtmlChunk + closeOpenTags())
+    textChunks.push(currentTextChunk)
+  }
+
   return { htmlChunks, textChunks }
 }
