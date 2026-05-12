@@ -1,4 +1,4 @@
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { TChannelSettings } from '@types'
 import { useCallback, useEffect } from 'react'
@@ -24,6 +24,10 @@ export const useScrollAndLoad = ({
   const isInitialScrollSettled = useChatStore((state) => state.chatRoom.isInitialScrollSettled)
   const updateChatRoom = useChatStore((state) => state.updateChatRoom)
   const messageCount = useChatStore((state) => state.messagesByChannel.get(channelId)?.size ?? 0)
+  // Anon viewers land at the top (oldest message) — no initial scroll.
+  // Reading the id (string | undefined) instead of the whole profile keeps
+  // the scroll callback's identity stable across profile updates.
+  const userId = useAuthStore((state) => state.profile?.id)
 
   // Leaf selector — avoids re-rendering on every workspaceSettings.channels
   // mutation (e.g. unread-count flip on a different channel).
@@ -112,6 +116,13 @@ export const useScrollAndLoad = ({
         return undefined
       }
 
+      // Anon: skip the bottom-scroll. Top-of-list (oldest first) is the
+      // intended landing for read-only viewers.
+      if (!userId) {
+        onSettled()
+        return undefined
+      }
+
       const scheduleScroll = (
         targetIndex: number,
         options: { align: 'start' | 'center' | 'end'; behavior: 'auto' | 'smooth' },
@@ -155,7 +166,8 @@ export const useScrollAndLoad = ({
       getFetchMessageId,
       waitForScrollSettled,
       lastReadMessageId,
-      getMessagesArray
+      getMessagesArray,
+      userId
     ]
   )
 
