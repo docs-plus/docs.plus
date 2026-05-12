@@ -1,20 +1,7 @@
-/*
- * Notification Management Functions
- * This file contains functions and triggers related to system notifications:
- * - Mention notifications (@user)
- * - Group notifications (@everyone)
- * - Regular message notifications
- * - Reaction notifications
- * - Unread message count tracking
- */
+-- Fan-out triggers for message-driven notifications (mentions, @everyone,
+-- replies, reactions, regular sends) and unread-count maintenance.
 
-/**
- * Function: create_mention_notifications
- * Description: Creates notifications for users mentioned in a message with @username
- * Trigger: Executes after INSERT on public.messages when content contains '@'
- * Action: Creates notifications for each mentioned user who is a member of the channel
- * Returns: The NEW record (trigger standard)
- */
+-- Fans out one notification per channel member mentioned by @username.
 CREATE OR REPLACE FUNCTION create_mention_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -51,12 +38,14 @@ BEGIN
     -- 3) Truncate message content for preview
     truncated_content := truncate_content(NEW.content);
 
-    -- 4) For each mentioned username, attempt to create a notification
+    -- 4) For each mentioned username, attempt to create a notification.
+    --    Anchored regex prevents `@al` from matching `alice`/`alpha`.
+    --    Usernames are validated as `^[a-z][a-z0-9_-]{2,29}$` at the
+    --    table level, so concatenating into the pattern is safe.
     FOR mentioned_user_id IN
         SELECT u.id
           FROM public.users u
-         WHERE NEW.content LIKE ('%@' || u.username || ' %')
-            OR NEW.content LIKE ('%@' || u.username || '%')
+         WHERE NEW.content ~ ('(^|[^a-z0-9_-])@' || u.username || '($|[^a-z0-9_-])')
     LOOP
         -- Check membership in the channel AND notification settings
         IF EXISTS (
@@ -104,16 +93,8 @@ EXECUTE FUNCTION create_mention_notifications();
 
 COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates notifications for users mentioned with @username in a message.';
 
-/**
- * Function: create_reply_notification
- * Description: Creates notification when someone replies to a message
- * Trigger: Executes after INSERT on public.messages when reply_to_message_id is set
- * Action: Always notifies the original message author (regardless of notif_state)
- * Returns: The NEW record (trigger standard)
- *
- * Note: Replies are high-signal notifications - if someone replies to YOUR message,
- * you should always be notified (unless you've muted the channel).
- */
+-- Replies are high-signal: always notify the original author unless the
+-- channel is muted, regardless of notif_state.
 CREATE OR REPLACE FUNCTION create_reply_notification()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -199,13 +180,7 @@ EXECUTE FUNCTION create_reply_notification();
 COMMENT ON TRIGGER create_reply_notification ON public.messages IS
 'Notifies the original message author when someone replies to their message.';
 
-/**
- * Function: create_everyone_notifications
- * Description: Creates notifications for all channel members when @everyone is used
- * Trigger: Executes after INSERT on public.messages when content contains '@everyone'
- * Action: Creates notifications for all channel members except sender
- * Returns: The NEW record (trigger standard)
- */
+-- Fans out @everyone to every non-sender channel member that hasn't muted.
 CREATE OR REPLACE FUNCTION create_everyone_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -235,8 +210,9 @@ BEGIN
     -- 3) Truncate message content for preview
     truncated_content := truncate_content(NEW.content);
 
-    -- 4) Check if the message contains "@everyone"
-    IF NEW.content LIKE '%@everyone%' THEN
+    -- 4) Check for an actual @everyone token (not a substring inside
+    --    something like `@everyone_team`).
+    IF NEW.content ~ '(^|[^a-z0-9_-])@everyone($|[^a-z0-9_-])' THEN
         -- 5) Loop over channel members (excluding sender) who have not muted notifications
         FOR channel_member_id IN
             SELECT cm.member_id
@@ -275,25 +251,18 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION create_everyone_notifications() IS 'Creates notifications for all channel members when @everyone is used in a message.';
 
 -- Trigger: create_everyone_notifications
+-- Tokenised match — must mirror the IF inside the function body.
+DROP TRIGGER IF EXISTS create_everyone_notifications ON public.messages;
 CREATE TRIGGER create_everyone_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content LIKE '%@everyone%')
+WHEN (NEW.content ~ '(^|[^a-z0-9_-])@everyone($|[^a-z0-9_-])')
 EXECUTE FUNCTION create_everyone_notifications();
 
 COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates notifications for all channel members when @everyone is used.';
 
-/**
- * Function: create_regular_message_notifications
- * Description: Creates notifications for regular messages based on user preferences
- * Trigger: Executes after INSERT on public.messages
- * Action: Creates notifications for channel members who:
- *   - Have notifications enabled (notif_state = 'ALL')
- *   - Are not the sender
- *   - Are not currently online
- *   - Have not muted the channel
- * Returns: The NEW record (trigger standard)
- */
+-- Notifies offline, ALL-state, non-muted channel members for plain (no
+-- mention / no @everyone) messages. Trigger predicate filters the rest.
 CREATE OR REPLACE FUNCTION create_regular_message_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -332,20 +301,18 @@ BEGIN
         message_preview,
         created_at
     )
+    -- Reply notifications for the original-message author are emitted by
+    -- create_reply_notification; do not duplicate the row here.
     SELECT
         cm.member_id,
         NEW.user_id,
-        CASE
-            WHEN NEW.reply_to_message_id IS NOT NULL AND m.user_id = cm.member_id THEN 'reply'::notification_category
-            ELSE 'message'::notification_category
-        END,
+        'message'::notification_category,
         NEW.id,
         NEW.channel_id,
         truncated_content,
         timezone('utc', now())
     FROM public.channel_members cm
     JOIN public.users u ON u.id = cm.member_id
-    LEFT JOIN public.messages m ON m.id = NEW.reply_to_message_id
     WHERE cm.channel_id = NEW.channel_id
       AND cm.member_id  != NEW.user_id
       AND (u.status IS NULL OR u.status != 'ONLINE')
@@ -373,16 +340,8 @@ EXECUTE FUNCTION create_regular_message_notifications();
 
 COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'Creates notifications for regular messages that contain no @mention and no @everyone.';
 
-/**
- * Function: create_reaction_notifications
- * Description: Creates notifications for new reactions on messages
- * Trigger: Executes after UPDATE of reactions on public.messages
- * Action: Always notifies message owner when their message receives a reaction
- * Returns: The NEW record (trigger standard)
- *
- * Note: Reactions are high-signal notifications - if someone reacts to YOUR message,
- * you should always be notified (unless you've muted the channel).
- */
+-- Reactions are high-signal: always notify the message owner per new
+-- reaction entry, regardless of notif_state. Channel mute still applies.
 CREATE OR REPLACE FUNCTION create_reaction_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -486,13 +445,9 @@ EXECUTE FUNCTION create_reaction_notifications();
 
 COMMENT ON TRIGGER create_reaction_notifications ON public.messages IS 'Creates notifications when a message receives new reactions.';
 
-/**
- * Function: increment_unread_count_on_new_message
- * Description: Increments unread message count for all workspace members
- * Trigger: Executes after INSERT on public.messages
- * Action: Increments unread_message_count for ALL workspace members except the message sender
- * Returns: The NEW record (trigger standard)
- */
+-- Bumps unread_message_count for every workspace member (creating their
+-- channel_members row if missing) except the sender, so unread badges
+-- include people who never explicitly joined the channel.
 CREATE OR REPLACE FUNCTION increment_unread_count_on_new_message() RETURNS TRIGGER AS $$
 DECLARE
     workspace_id_var VARCHAR(36);
