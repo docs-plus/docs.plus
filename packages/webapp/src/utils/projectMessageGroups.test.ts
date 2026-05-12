@@ -92,6 +92,19 @@ describe('projectMessageGroups', () => {
     expect(out[1].isOwner).toBe(false)
   })
 
+  it('does not break the group across page seams', () => {
+    // Same user, same day, two rows from separate pagination pages — should group as
+    // one run. Projection is purely id/user/day-driven; load-batch identity is gone.
+    const out = projectMessageGroups(
+      [
+        m({ id: 'a', user_id: 'u1', created_at: '2026-05-01T10:00:00Z' }),
+        m({ id: 'b', user_id: 'u1', created_at: '2026-05-01T10:00:30Z' })
+      ],
+      'me'
+    )
+    expect(out.map((x) => x.isGroupStart)).toEqual([true, false])
+  })
+
   it('produces structurally equal output for identical input', () => {
     const a = m({ id: 'a', created_at: '2026-05-01T10:00:00Z' })
     const b = m({ id: 'b', created_at: '2026-05-01T10:00:30Z' })
