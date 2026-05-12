@@ -40,8 +40,7 @@ export default function JoinBroadcastChannel() {
     try {
       if (user) {
         const { error, data } = await request2JoinChannel({
-          channel_id: channelId,
-          member_id: user?.id
+          channel_id: channelId
         })
         if (error) console.error(error)
         setOrUpdateChannel(channelId, {
@@ -55,7 +54,14 @@ export default function JoinBroadcastChannel() {
     } catch (error) {
       console.error(error)
     }
-  }, [user, channelId, channel])
+  }, [
+    user,
+    channelId,
+    channel,
+    request2JoinChannel,
+    setOrUpdateChannel,
+    setWorkspaceChannelSetting
+  ])
 
   // we do not need to reload the page, the mute/unmute notification will be handled from the server
   const muteHandler = useCallback(

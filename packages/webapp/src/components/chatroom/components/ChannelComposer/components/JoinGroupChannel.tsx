@@ -23,8 +23,7 @@ export default function JoinGroupChannel() {
     try {
       if (user) {
         const { error, data } = await request2JoinChannel({
-          channel_id: channelId,
-          member_id: user?.id
+          channel_id: channelId
         })
         if (error) {
           console.error(error)
@@ -41,7 +40,14 @@ export default function JoinGroupChannel() {
     } catch (error) {
       console.error(error)
     }
-  }, [user, channelId, channel])
+  }, [
+    user,
+    channelId,
+    channel,
+    request2JoinChannel,
+    setOrUpdateChannel,
+    setWorkspaceChannelSetting
+  ])
 
   if (!user || !channelId) return null
 

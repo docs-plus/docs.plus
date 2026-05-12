@@ -9,7 +9,7 @@ export const newChannel = async (newChannelPayload: TNewChannel) =>
 export const upsertChannel = async (newChannelPayload: TNewChannel) => {
   return await supabaseClient
     .from('channels')
-    .upsert(newChannelPayload, { onConflict: 'id' })
+    .upsert(newChannelPayload, { onConflict: 'id', ignoreDuplicates: true })
     .select()
     .throwOnError()
 }
