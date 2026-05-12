@@ -2,6 +2,7 @@ import type { Profile } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
 import { useAuthStore } from '../authStore'
+import { useStore } from '../useStore'
 
 type TChatRoom = {
   headingPath: Array<any>
@@ -83,7 +84,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     })
 
     if (user) {
-      const broadcaster = (get() as any).settings?.broadcaster
+      const broadcaster = useStore.getState().settings?.broadcaster
       broadcastPresence(broadcaster, user, headingId)
     }
   },
@@ -120,15 +121,18 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
 
     const user = useAuthStore.getState().profile
     if (user) {
-      const broadcaster = (get() as any).settings?.broadcaster
+      const broadcaster = useStore.getState().settings?.broadcaster
       broadcastPresence(broadcaster, user, channelId)
     }
   },
 
   destroyChatRoom: () => {
-    const broadcaster = (get() as any).settings?.broadcaster
-    set((state) => {
-      state.chatRoom = {
+    const state = get() as any
+    const broadcaster = useStore.getState().settings?.broadcaster
+    const closingChannelId: string | undefined = state.chatRoom.headingId
+
+    set((s) => {
+      s.chatRoom = {
         headingId: undefined,
         documentId: undefined,
         headingPath: [],
@@ -138,6 +142,13 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         editorRef: undefined
       }
     })
+
+    // Per-mount runtime state goes; channel settings stay so TOC unread badges keep working.
+    if (closingChannelId) {
+      state.clearChannelMessages?.(closingChannelId)
+      state.clearPagination?.(closingChannelId)
+    }
+
     const user = useAuthStore.getState().profile
     if (user) broadcastPresence(broadcaster, user, null)
   }

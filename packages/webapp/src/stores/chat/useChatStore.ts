@@ -13,7 +13,7 @@ import workspaceSettingsStore from './workspaceSettingsStore'
 
 enableMapSet()
 
-interface IStore
+export interface IStore
   extends
     ReturnType<typeof channelMembersStore>,
     ReturnType<typeof channelPaginationStore>,

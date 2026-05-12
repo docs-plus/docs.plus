@@ -1,6 +1,6 @@
-export { useAuthStore } from './authStore'
 export { default as authStore } from './authStore'
-export { useChatStore } from './chat/useChatStore'
+export { useAuthStore } from './authStore'
+export { type IStore as IChatStore, useChatStore } from './chat/useChatStore'
 export * from './dialogStore'
 export * from './focusedHeadingStore'
 export * from './sheetStore'

@@ -12,18 +12,23 @@ interface IUsersPresenceStore {
 const usersPresence = immer<IUsersPresenceStore>((set) => ({
   usersPresence: new Map(),
 
+  // New Map reference per write so consumers' useEffect/useMemo deps fire — in-place mutation
+  // keeps the same reference and selectors don't notice the change.
   setOrUpdateUserPresence: (userId, userData) => {
     set((state) => {
-      state.usersPresence.set(userId, userData)
+      const next = new Map(state.usersPresence)
+      next.set(userId, userData)
+      state.usersPresence = next
     })
   },
 
   updateUserStatus: (userId, status) => {
     set((state) => {
       const user = state.usersPresence.get(userId)
-      if (user) {
-        state.usersPresence.set(userId, { ...user, status })
-      }
+      if (!user) return
+      const next = new Map(state.usersPresence)
+      next.set(userId, { ...user, status })
+      state.usersPresence = next
     })
   }
 }))

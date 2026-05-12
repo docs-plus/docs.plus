@@ -2,6 +2,7 @@ import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { CHAT_CLOSE } from '@services/eventsHub'
 import { useChatStore } from '@stores'
+import { stripChatDeepLinkFromBrowserUrl } from '@utils/stripChatDeepLinkFromUrl'
 import PubSub from 'pubsub-js'
 import { twMerge } from 'tailwind-merge'
 
@@ -13,7 +14,9 @@ export const CloseButton = ({ className }: Props) => {
   const chatRoom = useChatStore((state) => state.chatRoom)
 
   const handleCloseChatRoom = () => {
-    PubSub.publish(CHAT_CLOSE, { headingId: chatRoom.headingId })
+    const headingId = chatRoom.headingId
+    PubSub.publish(CHAT_CLOSE, { headingId })
+    stripChatDeepLinkFromBrowserUrl(headingId)
   }
 
   return (
