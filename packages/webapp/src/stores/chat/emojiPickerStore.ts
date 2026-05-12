@@ -5,7 +5,7 @@ export type EmojiPickerPosition = {
   left: number
 }
 
-export type EmojiPickerEventType = 'react2Message' | 'inserEmojiToEditor' | 'inserEmojiToMessage'
+export type EmojiPickerEventType = 'reactToMessage' | 'insertEmojiToEditor' | 'insertEmojiToMessage'
 
 type EmojiPickerState = {
   isOpen: boolean

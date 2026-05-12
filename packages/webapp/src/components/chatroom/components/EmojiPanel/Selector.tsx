@@ -29,7 +29,7 @@ export const EmojiSelector = () => {
     // ------------------------------------------------------------------
     // Mobile: emoji selected from the composer's emoji picker sheet
     // ------------------------------------------------------------------
-    if (variant === 'mobile' && emojiPicker.eventType !== 'react2Message') {
+    if (variant === 'mobile' && emojiPicker.eventType !== 'reactToMessage') {
       const emojiData = sheetData as SheetDataMap['emojiPicker']
       const headingId = emojiData?.chatRoomState?.headingId
 
@@ -58,7 +58,7 @@ export const EmojiSelector = () => {
     // ------------------------------------------------------------------
     // React-to-message: add reaction (both mobile & desktop)
     // ------------------------------------------------------------------
-    if (emojiPicker.eventType === 'react2Message') {
+    if (emojiPicker.eventType === 'reactToMessage') {
       emojiReaction(emojiPicker.selectedMessage, nativeEmoji)
       closeEmojiPicker()
       return

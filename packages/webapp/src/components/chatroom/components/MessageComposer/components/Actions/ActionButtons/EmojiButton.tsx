@@ -52,7 +52,7 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
           top: pickerOpenPosition?.top || 0,
           left: pickerOpenPosition?.left || 0
         },
-        'inserEmojiToEditor'
+        'insertEmojiToEditor'
       )
     }
   }, [editor, isMobile, switchSheet, headingId, toggleEmojiPicker])

@@ -65,7 +65,7 @@ const ContextMenuItems = ({ message }: Props) => {
               top: pickerOpenPosition?.top || 0,
               left: pickerOpenPosition?.left || 0
             },
-            'react2Message',
+            'reactToMessage',
             message
           )
         }

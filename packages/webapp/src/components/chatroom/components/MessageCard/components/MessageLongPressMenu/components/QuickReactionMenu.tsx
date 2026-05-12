@@ -71,7 +71,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
 
     const handleMoreEmojisClick = () => {
       if (!isInteractive) return
-      openEmojiPicker({ top: 0, left: 0 }, 'react2Message', message, null)
+      openEmojiPicker({ top: 0, left: 0 }, 'reactToMessage', message, null)
       hideMenu()
     }
 

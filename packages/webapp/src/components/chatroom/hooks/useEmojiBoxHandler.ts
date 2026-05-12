@@ -22,7 +22,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
   const { userPickingEmoji } = channelSettings ?? {}
 
   useEffect(() => {
-    const toggelEmojiPickerHandler = (e: any) => {
+    const toggleEmojiPickerHandler = (e: any) => {
       if (!emojiPikerRef?.current) return
       const event = e.detail.clickEvent
       const message = e.detail?.message
@@ -76,11 +76,12 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       setSelectedMessage(message)
     }
 
-    document.addEventListener('toggelEmojiPicker', toggelEmojiPickerHandler)
+    document.addEventListener('toggleEmojiPicker', toggleEmojiPickerHandler)
 
     return () => {
-      document.removeEventListener('toggelEmojiPicker', toggelEmojiPickerHandler)
+      document.removeEventListener('toggleEmojiPicker', toggleEmojiPickerHandler)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emojiPikerRef])
 
   const handleEvent = useCallback(
@@ -88,6 +89,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       if (event.type === 'scroll' && userPickingEmoji) return
       closeEmojiPicker()
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [userPickingEmoji]
   )
 
@@ -107,10 +109,12 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       msgContainer.removeEventListener('scroll', handleEvent)
       window.removeEventListener('resize', handleEvent)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEmojiBoxOpen]) // Depend only on isEmojiBoxOpen
 
   const openEmojiPicker = useCallback(() => {
     setIsEmojiBoxOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEmojiBoxOpen])
 
   const closeEmojiPicker = useCallback(() => {
@@ -121,14 +125,15 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
     (emoji: any) => {
       if (!isEmojiBoxOpen) return
       setSelectedEmoji(emoji)
-      if (eventTypes === 'react2Message') {
+      if (eventTypes === 'reactToMessage') {
         emojiReaction(selectedMessage, emoji.native)
       }
-      if (eventTypes === 'inserEmojiToEditor') {
+      if (eventTypes === 'insertEmojiToEditor') {
         editor?.chain().focus().insertContent(emoji.native).run()
       }
       closeEmojiPicker()
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isEmojiBoxOpen]
   )
 
@@ -160,6 +165,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       setEmojiPickerPosition({ top: newTop, left: newLeft })
       setIsEmojiBoxOpen(!isEmojiBoxOpen)
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isEmojiBoxOpen]
   )
 
@@ -171,6 +177,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
     return () => {
       document.removeEventListener('closeEmojiPicker', handleCloseEmojiPicker)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return {

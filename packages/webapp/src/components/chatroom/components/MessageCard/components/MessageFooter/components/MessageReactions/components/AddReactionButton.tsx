@@ -27,10 +27,11 @@ const AddReactionButton = ({ className: _className }: Props) => {
           top: pickerOpenPosition?.top || 0,
           left: pickerOpenPosition?.left || 0
         },
-        'react2Message',
+        'reactToMessage',
         message
       )
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [message]
   )
 
