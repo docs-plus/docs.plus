@@ -1,5 +1,4 @@
-export * from './channelInsert'
-export * from './channelMessageCountsInsert'
-export * from './channelUpdate'
+export * from './channelMessageCountsUpsert'
+export * from './channelUpsert'
 export * from './messageInsert'
 export * from './messageUpdate'

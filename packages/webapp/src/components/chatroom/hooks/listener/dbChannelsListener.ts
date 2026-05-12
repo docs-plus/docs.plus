@@ -1,16 +1,21 @@
-import { channelInsert, channelMessageCountsInsert, channelUpdate } from './helpers'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import type { Channel as TChannel, Database } from '@types'
 
-export const dbChannelsListener = (payload: any) => {
-  if (payload.eventType === 'INSERT') {
-    channelInsert(payload)
-  }
-  if (payload.eventType === 'UPDATE') {
-    channelUpdate(payload)
+import { channelMessageCountsUpsert, channelUpsert } from './helpers'
+
+type TChannelRow = NonNullable<TChannel>
+type TChannelMessageCountsRow = Database['public']['Tables']['channel_message_counts']['Row']
+
+export const dbChannelsListener = (payload: RealtimePostgresChangesPayload<TChannelRow>) => {
+  if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+    channelUpsert(payload)
   }
 }
 
-export const dbChannelMessageCountsListener = (payload: any) => {
+export const dbChannelMessageCountsListener = (
+  payload: RealtimePostgresChangesPayload<TChannelMessageCountsRow>
+) => {
   if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-    channelMessageCountsInsert(payload)
+    channelMessageCountsUpsert(payload)
   }
 }
