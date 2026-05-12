@@ -12,8 +12,8 @@ interface MessageFeedContextValue {
   isLoadingMore: boolean
   loadingMoreDirection: 'older' | 'newer' | null
   messageContainerRef: React.RefObject<HTMLDivElement | null>
-  topSentinelId: string
-  bottomSentinelId: string
+  topSentinelRef: React.RefObject<HTMLDivElement | null>
+  bottomSentinelRef: React.RefObject<HTMLDivElement | null>
   virtualizerRef: React.MutableRefObject<Virtualizer<HTMLDivElement, HTMLElement> | null>
   registerVirtualizer: (instance: Virtualizer<HTMLDivElement, HTMLElement> | null) => void
 }
@@ -34,6 +34,10 @@ export const MessageFeedProvider: React.FC<{
 }> = ({ children, messageContainerRef }) => {
   const { channelId } = useChatroomContext()
   const virtualizerRef = useRef<Virtualizer<HTMLDivElement, HTMLElement> | null>(null)
+  // Sentinels live on refs (not global ids) so a future multi-chatroom
+  // mount can't collide on `document.querySelector('#top-sentinel')`.
+  const topSentinelRef = useRef<HTMLDivElement | null>(null)
+  const bottomSentinelRef = useRef<HTMLDivElement | null>(null)
   const registerVirtualizer = useCallback(
     (instance: Virtualizer<HTMLDivElement, HTMLElement> | null) => {
       virtualizerRef.current = instance
@@ -42,8 +46,11 @@ export const MessageFeedProvider: React.FC<{
   )
 
   // pagination
-  const { isLoadingMore, loadingMoreDirection, topSentinelId, bottomSentinelId } =
-    useInfiniteLoadMessages(messageContainerRef)
+  const { isLoadingMore, loadingMoreDirection } = useInfiniteLoadMessages({
+    messageContainerRef,
+    topSentinelRef,
+    bottomSentinelRef
+  })
 
   useScrollAndLoad({
     messageContainerRef,
@@ -69,20 +76,12 @@ export const MessageFeedProvider: React.FC<{
       isLoadingMore,
       loadingMoreDirection,
       messageContainerRef,
-      topSentinelId,
-      bottomSentinelId,
+      topSentinelRef,
+      bottomSentinelRef,
       virtualizerRef,
       registerVirtualizer
     }),
-    [
-      isLoadingMore,
-      loadingMoreDirection,
-      messageContainerRef,
-      topSentinelId,
-      bottomSentinelId,
-      virtualizerRef,
-      registerVirtualizer
-    ]
+    [isLoadingMore, loadingMoreDirection, messageContainerRef, registerVirtualizer]
   )
 
   return (

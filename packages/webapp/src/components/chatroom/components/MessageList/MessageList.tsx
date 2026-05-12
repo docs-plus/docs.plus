@@ -14,7 +14,7 @@ type Props = {
 }
 
 const MessageList = ({ children, className }: Props) => {
-  const { topSentinelId, bottomSentinelId, isLoadingMore, loadingMoreDirection } =
+  const { topSentinelRef, bottomSentinelRef, isLoadingMore, loadingMoreDirection } =
     useMessageFeedContext()
   return (
     <MessageListProvider>
@@ -30,10 +30,10 @@ const MessageList = ({ children, className }: Props) => {
           )}
 
           {/* Top sentinel for Intersection Observer */}
-          <div id={topSentinelId} className="h-px w-full" />
+          <div ref={topSentinelRef} className="h-px w-full" />
           {children}
           {/* Bottom sentinel for Intersection Observer */}
-          <div id={bottomSentinelId} className="h-px w-full" />
+          <div ref={bottomSentinelRef} className="h-px w-full" />
         </div>
       </MessagesEmptyState>
     </MessageListProvider>
