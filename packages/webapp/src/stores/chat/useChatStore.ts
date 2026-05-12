@@ -2,6 +2,7 @@ import { enableMapSet } from 'immer'
 import { create } from 'zustand'
 
 import bookmark from './bookmark'
+import bootstrapStore from './bootstrapStore'
 import channelMembersStore from './channelMembersStore'
 import channelMessagesStore from './channelMessagesStore'
 import channelPaginationStore from './channelPaginationStore'
@@ -23,7 +24,8 @@ export interface IStore
     ReturnType<typeof workspaceSettingsStore>,
     ReturnType<typeof bookmark>,
     ReturnType<typeof channelMessagesStore>,
-    ReturnType<typeof emojiPickerStore> {}
+    ReturnType<typeof emojiPickerStore>,
+    ReturnType<typeof bootstrapStore> {}
 
 export const useChatStore = create<IStore>((...props) => ({
   ...workspaceSettingsStore(...props),
@@ -34,5 +36,6 @@ export const useChatStore = create<IStore>((...props) => ({
   ...channelsStore(...props),
   ...bookmark(...props),
   ...emojiPickerStore(...props),
-  ...channelPaginationStore(...props)
+  ...channelPaginationStore(...props),
+  ...bootstrapStore(...props)
 }))

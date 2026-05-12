@@ -1,8 +1,7 @@
 import { fetchChannelInitialData, joinChannel, upsertChannel } from '@api'
-import Config from '@config'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import slugify from 'slugify'
 
 interface UseChannelInitialData {
@@ -18,29 +17,26 @@ export const useChannelInitialData = (
   const [msgLength, setMsgLength] = useState<number>(0)
   const workspaceId = useStore((state) => state.settings.metadata?.documentId)
 
-  const bulkSetChannelPinnedMessages = useChatStore(
-    (state: any) => state.bulkSetChannelPinnedMessages
+  // Leaf selector — see useScrollAndLoad for the rationale.
+  const currentChannel = useChatStore<TChannelSettings | null>(
+    (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
-  const bulkSetMessages = useChatStore((state) => state.bulkSetMessages)
-  const clearChannelMessages = useChatStore((state) => state.clearChannelMessages)
-  const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
-  const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const currentChannel = useMemo<TChannelSettings | null>(
-    () => channels.get(channelId) ?? null,
-    [channels, channelId]
-  )
-  const addChannelMember = useChatStore((state) => state.addChannelMember)
-  const user = useAuthStore((state: any) => state.profile)
-  const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
+  const user = useAuthStore((state) => state.profile)
 
   const processChannelData = async (channelId: string) => {
-    if (currentChannel === null && workspaceId) {
-      const userId = user?.id || Config.chat.systemUserId
+    // Anon users are read-only. The `channels` INSERT policy is
+    // `TO authenticated` (13-RLS.sql:157-162), so an anon upsert would
+    // 42501 and the whole chatroom load fails. The system-user fallback
+    // never worked past RLS either. For anon: skip the bootstrap and
+    // rely on the channel already existing (created the first time any
+    // signed-in user opened the doc); fetchChannelInitialData reads it
+    // via the PUBLIC anon-select policies.
+    if (currentChannel === null && workspaceId && user?.id) {
       const slug = slugify(channelId, { strict: true, lower: true })
       await upsertChannel({
         id: channelId,
         workspace_id: workspaceId,
-        created_by: userId,
+        created_by: user.id,
         name: slug,
         slug: 'c' + slug
       })
@@ -56,36 +52,26 @@ export const useChannelInitialData = (
       ...(startMsgId && { anchor_message_id: startMsgId })
     }
 
-    const { data: channelData, error: channelError } = await fetchChannelInitialData(fetchArgs)
-
+    const { data, error: channelError } = await fetchChannelInitialData(fetchArgs)
     if (channelError) throw new Error(channelError.message)
+    const channelData = data as any
 
-    setOrUpdateChannel(channelId, channelData.channel_info)
+    // Auto-join the channel for signed-in users who aren't yet members.
+    // Must run BEFORE bootstrapChannel so the channel_member_info reflects
+    // the join. Uses profile.id (not session.id): only profile-rows have a
+    // corresponding public.users row; anonymous sessions carry a UUID that
+    // doesn't exist there and would FK-fail.
+    const userId = useAuthStore.getState()?.profile?.id || ''
+    if (userId && !channelData.is_user_channel_member) {
+      await joinChannel({ channel_id: channelId, member_id: userId })
+      channelData.is_user_channel_member = true
+    }
 
-    setWorkspaceChannelSetting(channelId, 'unreadMessage', channelData?.unread_message)
-    setWorkspaceChannelSetting(channelId, 'lastReadMessageId', channelData?.last_read_message_id)
-    setWorkspaceChannelSetting(
-      channelId,
-      'lastReadMessageTimestamp',
-      channelData?.last_read_message_timestamp
-    )
-    setWorkspaceChannelSetting(
-      channelId,
-      'totalMsgSinceLastRead',
-      channelData?.total_messages_since_last_read
-    )
-
-    await updateChannelState(channelData)
-
-    // Boot pagination cursors from the same RPC payload. Runs AFTER
-    // updateChannelState populates messagesByChannel; otherwise the
-    // cursors would point at rows that aren't loaded yet.
-    useChatStore.getState().initPagination(channelId, {
-      older_cursor: channelData.older_cursor ?? null,
-      newer_cursor: channelData.newer_cursor ?? null,
-      has_more_older: channelData.has_more_older ?? false,
-      has_more_newer: channelData.has_more_newer ?? false
-    })
+    // Single immer pass: 6-slice channel state lands atomically. Consumers
+    // gated on readiness flags (ChatroomContext.initLoadMessages) no longer
+    // observe transiently partial state between writes.
+    useChatStore.getState().bootstrapChannel(channelId, channelData, userId || undefined)
+    setMsgLength(channelData.last_messages?.length ?? 0)
   }
 
   useEffect(() => {
@@ -119,62 +105,6 @@ export const useChannelInitialData = (
       useChatStore.getState().clearPagination(channelId)
     }
   }, [channelId])
-
-  const updateChannelState = async (channelData: any) => {
-    // Use profile.id (not session.id) — profile only exists for real users
-    // who have a row in public.users. Anonymous/stale sessions have a session
-    // UUID that does NOT exist in public.users, causing FK violations.
-    const userId = useAuthStore.getState()?.profile?.id || ''
-
-    if (userId && channelData.channel_member_info) {
-      addChannelMember(channelId, {
-        ...channelData.channel_member_info,
-        id: userId
-      })
-    }
-    // TODO: refactor/revise needed
-    if (userId && !channelData.is_user_channel_member) {
-      await joinChannel({
-        channel_id: channelId,
-        member_id: userId
-      }).catch((error) => {
-        console.error('[useChannelInitialData] joinChannel error', error)
-        throw error
-      })
-
-      addChannelMember(channelId, {
-        ...channelData.channel_member_info,
-        id: userId
-      })
-      channelData.is_user_channel_member = true
-    }
-
-    setWorkspaceChannelSetting(
-      channelId,
-      'isUserChannelMember',
-      channelData?.is_user_channel_member || false
-    )
-
-    if (channelData.channel_info) {
-      setWorkspaceChannelSetting(channelId, 'channelInfo', channelData.channel_info)
-    }
-
-    if (channelData.pinned_messages) {
-      bulkSetChannelPinnedMessages(channelId, channelData.pinned_messages)
-    }
-
-    if (channelData.last_messages) {
-      // TODO: if the channel is already loaded with anchor messages, we need to clear the channel messages
-      // TODO: and then set the new messages // Refactor needed
-
-      clearChannelMessages(channelId)
-      const newMessages = [...channelData.last_messages].reverse()
-      bulkSetMessages(channelId, newMessages)
-      setMsgLength(newMessages.length)
-    } else {
-      setMsgLength(0)
-    }
-  }
 
   return {
     isChannelDataLoaded,
