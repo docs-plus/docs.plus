@@ -5,14 +5,8 @@ import { getMetadataProperty } from '@utils/metadata'
 import { formatDistanceToNow } from 'date-fns'
 import { useEffect, useRef } from 'react'
 
+import type { MessageCardDesktopElement } from '../../MessageCard/MessageCardContext'
 import { useMessageListContext } from '../MessageListContext'
-
-export interface MessageCardDesktopElement extends HTMLDivElement {
-  msgId?: string
-  readedAt?: string | null
-  createdAt?: string | null
-  user_id?: string | null
-}
 
 type Props = {
   message: TMsgRow
@@ -26,9 +20,10 @@ const WRAPPER_CLASSES = 'msg_card chat my-3 flex justify-center px-2 pb-1'
 export const SystemNotifyChip = ({ message }: Props) => {
   const docMetadata = useStore((state) => state.settings.metadata)
   const cardRef = useRef<MessageCardDesktopElement>(null)
-
   const { handleMentionClick } = useMessageListContext()
 
+  // Stamp identity onto the DOM node so the context menu can read it
+  // via `messageCard.msgId` instead of an HTML data-attribute.
   useEffect(() => {
     if (!cardRef.current) return
     cardRef.current.msgId = message.id

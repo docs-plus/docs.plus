@@ -9,6 +9,7 @@ import { twMerge } from 'tailwind-merge'
 
 import ContextMenuItems from '../../MessageCard/components/MessageContextMenu/ContextMenuItems'
 import UserReadStatus from '../../MessageCard/components/MessageContextMenu/UserReadStatus'
+import type { MessageCardDesktopElement } from '../../MessageCard/MessageCardContext'
 import { useMessageListContext } from '../MessageListContext'
 
 type Props = {
@@ -50,9 +51,10 @@ export const MessageListContextMenu = ({ children, className }: Props) => {
 
       if (!messageCard) return null
 
-      // MessageLoop stamps each row with `data-message-id` — use the attribute
-      // (not an expando) so the lookup stays type-safe across renders.
-      const messageId = messageCard.closest('[data-message-id]')?.getAttribute('data-message-id')
+      // MessageCard / SystemNotifyChip stamp identity directly onto the
+      // .msg_card DOM node (cardRef.current.msgId = …) — read it back as
+      // a typed property, no HTML data-attribute round-trip.
+      const messageId = (messageCard as MessageCardDesktopElement).msgId ?? null
       if (!messageId || !messages) return null
 
       // Get message from the messages Map
