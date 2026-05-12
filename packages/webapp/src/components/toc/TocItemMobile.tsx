@@ -1,12 +1,12 @@
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
-import UnreadBadge from '@components/ui/UnreadBadge'
 import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { type NestedTocNode, scrollToHeading } from './utils'
@@ -111,15 +111,12 @@ export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProp
           )}
           data-heading-id={item.id}
           onClick={handleChatClick}
-          aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
-          {unreadCount > 0 ? (
-            <UnreadBadge count={unreadCount} size="sm" variant="error" />
-          ) : (
-            <Icons.chatroom
-              className={twMerge('text-base-content/40', isActive && 'text-accent')}
-              size={20}
-            />
-          )}
+          aria-label={chatTriggerAriaLabel(unreadCount)}>
+          <ChatTriggerContent
+            unreadCount={unreadCount}
+            iconSize={20}
+            iconClassName={twMerge('text-base-content/40', isActive && 'text-accent')}
+          />
         </button>
       </a>
 

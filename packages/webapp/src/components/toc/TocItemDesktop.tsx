@@ -1,7 +1,6 @@
 import AvatarStack from '@components/AvatarStack'
 import Button from '@components/ui/Button'
 import { Tooltip } from '@components/ui/Tooltip'
-import UnreadBadge from '@components/ui/UnreadBadge'
 import { useSortable } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
@@ -9,6 +8,7 @@ import type { TocItem as TocItemType } from '@types'
 import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { type NestedTocNode, scrollToHeading } from './utils'
@@ -170,22 +170,20 @@ export function TocItemDesktop({
         {/* Chat button */}
         <Tooltip title="Chat Room" placement="left">
           <span
-            className={`${TOC_CLASSES.chatTrigger} relative ml-auto size-5 min-w-5`}
+            className={`${TOC_CLASSES.chatTrigger} relative ml-auto flex items-center justify-center`}
             data-heading-id={item.id}
-            onClick={handleChatClick}>
-            {unreadCount > 0 ? (
-              <UnreadBadge count={unreadCount} size="sm" variant="error" />
-            ) : (
-              <Icons.chatroom
-                className={twMerge(
-                  TOC_CLASSES.chatIcon,
-                  'cursor-pointer fill-none transition-colors',
-                  isActive && TOC_CLASSES.chatIconActive,
-                  !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
-                )}
-                size={20}
-              />
-            )}
+            onClick={handleChatClick}
+            aria-label={chatTriggerAriaLabel(unreadCount)}>
+            <ChatTriggerContent
+              unreadCount={unreadCount}
+              iconSize={20}
+              iconClassName={twMerge(
+                TOC_CLASSES.chatIcon,
+                'cursor-pointer fill-none transition-colors',
+                isActive && TOC_CLASSES.chatIconActive,
+                !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
+              )}
+            />
           </span>
         </Tooltip>
 

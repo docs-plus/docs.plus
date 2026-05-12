@@ -44,10 +44,6 @@ const variantClasses: Record<UnreadBadgeVariant, string> = {
   neutral: 'bg-neutral text-neutral-content'
 }
 
-/**
- * Animated unread count badge using daisyUI countdown for smooth sliding transitions.
- * Works for both count up and count down - the CSS transition animates automatically.
- */
 const UnreadBadge = ({
   count,
   max = 99,
@@ -63,16 +59,14 @@ const UnreadBadge = ({
   return (
     <span
       className={twMerge(
-        'badge inline-flex items-center justify-center rounded-full font-semibold tabular-nums',
+        'badge inline-flex items-center justify-center rounded-full leading-none font-semibold tabular-nums',
         sizeClasses[size],
         variantClasses[variant],
         className
       )}
       aria-live="polite"
       aria-label={`${count} unread`}>
-      <span className="countdown">
-        <span style={{ '--value': displayCount } as React.CSSProperties}>{displayCount}</span>
-      </span>
+      {displayCount}
       {isOverMax && '+'}
     </span>
   )

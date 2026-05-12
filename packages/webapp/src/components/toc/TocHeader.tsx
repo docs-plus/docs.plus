@@ -1,11 +1,10 @@
 import AvatarStack from '@components/AvatarStack'
 import { useModal } from '@components/ui/ModalDrawer'
 import { Tooltip } from '@components/ui/Tooltip'
-import UnreadBadge from '@components/ui/UnreadBadge'
-import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 
+import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { scrollToDocTitle } from './utils'
@@ -56,19 +55,16 @@ export function TocHeader({ variant }: TocHeaderProps) {
             className={`${TOC_CLASSES.chatTrigger} flex size-8 items-center justify-center rounded-full`}
             data-heading-id={workspaceId || undefined}
             onClick={handleChatClick}
-            aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
-            {unreadCount > 0 ? (
-              <UnreadBadge count={unreadCount} size="sm" variant="error" />
-            ) : (
-              <Icons.chatroom
-                className={twMerge(
-                  TOC_CLASSES.chatIcon,
-                  'text-base-content/40',
-                  isActive && 'text-accent'
-                )}
-                size={18}
-              />
-            )}
+            aria-label={chatTriggerAriaLabel(unreadCount)}>
+            <ChatTriggerContent
+              unreadCount={unreadCount}
+              iconSize={18}
+              iconClassName={twMerge(
+                TOC_CLASSES.chatIcon,
+                'text-base-content/40',
+                isActive && 'text-accent'
+              )}
+            />
           </button>
         </div>
       </div>
@@ -90,15 +86,13 @@ export function TocHeader({ variant }: TocHeaderProps) {
           <span
             className={`${TOC_CLASSES.chatTrigger} relative ml-auto shrink-0`}
             data-heading-id={workspaceId || undefined}
-            onClick={handleChatClick}>
-            {unreadCount > 0 ? (
-              <UnreadBadge count={unreadCount} size="sm" variant="error" />
-            ) : (
-              <Icons.chatroom
-                className={`${TOC_CLASSES.chatIcon} text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-colors`}
-                size={16}
-              />
-            )}
+            onClick={handleChatClick}
+            aria-label={chatTriggerAriaLabel(unreadCount)}>
+            <ChatTriggerContent
+              unreadCount={unreadCount}
+              iconSize={16}
+              iconClassName={`${TOC_CLASSES.chatIcon} text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-colors`}
+            />
           </span>
         </Tooltip>
         <div className="absolute -right-9">
