@@ -42,17 +42,21 @@ export const UserReadStatus = ({
     }
 
     fetchData()
+    // Fetch fires only when the menu opens; channelId / created_at are
+    // captured by closure at that moment and are stable for the lifetime
+    // of one open-cycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   if (!message.readed_at) return null
 
   const content = (
     <div className={twMerge('flex items-center gap-2 pt-2', className)}>
-      <span className="text-base-content/50 text-xs">
+      <span className="text-base-content/50 shrink-0 text-xs">
         {!message.readed_at ? (
           <Icons.check size={16} className="text-base-content/40" />
         ) : (
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1 whitespace-nowrap">
             <Icons.checkDouble size={16} className="text-base-content/40" />
             {readUsers.length} seen
           </span>
@@ -69,7 +73,7 @@ export const UserReadStatus = ({
           avatar_updated_at: user.avatar_updated_at
         }))}
         size="sm"
-        maxDisplay={5}
+        maxDisplay={3}
       />
     </div>
   )
