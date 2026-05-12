@@ -54,7 +54,9 @@ DECLARE
     last_read_message_timestamp TIMESTAMP WITH TIME ZONE;
     unread_message BOOLEAN := FALSE;
     anchor_message_timestamp TIMESTAMP WITH TIME ZONE;
-    half_limit INT;
+    resolved_anchor_id UUID;
+    before_n INT;
+    after_n INT;
     older_cursor_result TIMESTAMP WITH TIME ZONE;
     newer_cursor_result TIMESTAMP WITH TIME ZONE;
     has_more_older_result BOOLEAN := FALSE;
@@ -78,8 +80,47 @@ BEGIN
     FROM public.channels c
     WHERE c.id = input_channel_id AND c.deleted_at IS NULL;
 
+    -- Empty-room signal: a chatroom is heading-keyed and is created
+    -- lazily by the first authenticated chatter. Anonymous visitors and
+    -- authenticated visitors who land before any author has chatted in
+    -- this heading hit the missing-channel case. Treat it as a normal
+    -- empty state, not an error: return one row with channel_info NULL
+    -- so the FE wrapper's `.single()` succeeds and the caller can render
+    -- the "no messages yet" view instead of the failure badge.
     IF channel_result IS NULL THEN
-        RAISE EXCEPTION 'Channel % does not exist or has been deleted.', input_channel_id;
+        RETURN QUERY SELECT
+            NULL::JSONB                       AS channel_info,
+            '[]'::JSONB                       AS last_messages,
+            '[]'::JSONB                       AS pinned_messages,
+            FALSE                             AS is_user_channel_member,
+            NULL::JSONB                       AS channel_member_info,
+            0                                 AS total_messages_since_last_read,
+            FALSE                             AS unread_message,
+            NULL::UUID                        AS last_read_message_id,
+            NULL::TIMESTAMP WITH TIME ZONE    AS last_read_message_timestamp,
+            NULL::TIMESTAMP WITH TIME ZONE    AS anchor_message_timestamp,
+            NULL::TIMESTAMP WITH TIME ZONE    AS older_cursor,
+            NULL::TIMESTAMP WITH TIME ZONE    AS newer_cursor,
+            FALSE                             AS has_more_older,
+            FALSE                             AS has_more_newer;
+        RETURN;
+    END IF;
+
+    -- Authorization: PUBLIC channels are readable by anyone; everything
+    -- else requires explicit channel membership. Without this gate, the
+    -- function streams full message history + sender PII to anyone who
+    -- learns a channel id (the schema currently has no live RLS on
+    -- `messages` / `channel_members`).
+    IF (channel_result->>'type') <> 'PUBLIC'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM public.channel_members cm
+           WHERE cm.channel_id = input_channel_id
+             AND cm.member_id  = auth.uid()
+             AND cm.left_at IS NULL
+       )
+    THEN
+        RAISE EXCEPTION 'Access denied: caller is not a member of channel %.', input_channel_id;
     END IF;
 
     -- Attempt to get channel member details
@@ -113,19 +154,19 @@ BEGIN
         END IF;
     END IF;
 
-    -- Count messages since the last read message
+    -- Count messages strictly after the last-read cursor (TOC badge / unread line).
     SELECT COUNT(*) INTO total_messages_since_last_read
     FROM public.messages
     WHERE channel_id = input_channel_id
         AND deleted_at IS NULL
         AND created_at > COALESCE(last_read_message_timestamp, 'epoch'::timestamp);
 
-    IF total_messages_since_last_read >= message_limit THEN
-        message_limit := total_messages_since_last_read;
-        unread_message := TRUE;
-    END IF;
+    unread_message := (total_messages_since_last_read > 0);
 
-    -- If anchor_message_id is provided, get its timestamp
+    -- Initial window anchor: explicit msg_id deep-link, else member last-read row (bounded window — never inflate LIMIT to full unread count).
+    resolved_anchor_id := NULL;
+    anchor_message_timestamp := NULL;
+
     IF anchor_message_id IS NOT NULL THEN
         SELECT created_at INTO anchor_message_timestamp
         FROM public.messages
@@ -134,12 +175,19 @@ BEGIN
         IF anchor_message_timestamp IS NULL THEN
             RAISE EXCEPTION 'Anchor message % does not exist or has been deleted.', anchor_message_id;
         END IF;
+        resolved_anchor_id := anchor_message_id;
+    ELSIF last_read_message_id IS NOT NULL THEN
+        SELECT created_at INTO anchor_message_timestamp
+        FROM public.messages
+        WHERE id = last_read_message_id AND channel_id = input_channel_id AND deleted_at IS NULL;
+
+        IF anchor_message_timestamp IS NOT NULL THEN
+            resolved_anchor_id := last_read_message_id;
+        END IF;
     END IF;
 
-    -- Query for the messages with user details, including replied message details
-    -- Logic differs based on whether anchor_message_id is provided
-    IF anchor_message_id IS NULL THEN
-        -- Standard logic without anchor (unchanged)
+    IF resolved_anchor_id IS NULL THEN
+        -- Newest tail: anon, non-member PUBLIC read, no last-read row, or deleted last-read message.
         SELECT COALESCE(json_agg(t), '[]'::json) INTO messages_result
         FROM (
             SELECT m.*,
@@ -170,7 +218,6 @@ BEGIN
                          WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
                     ELSE NULL
                 END AS replied_message_details,
-                -- Bookmark information
                 (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
                 mb.id AS bookmark_id
             FROM public.messages m
@@ -179,19 +226,18 @@ BEGIN
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
                 AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
-                AND (
-                    CASE
-                        WHEN total_messages_since_last_read < 20 THEN TRUE
-                        ELSE m.created_at >= COALESCE(last_read_message_timestamp, 'epoch'::timestamp)
-                    END
-                )
             ORDER BY m.created_at DESC, m.id DESC
             LIMIT message_limit
         ) t;
     ELSE
-        -- Anchor-based logic: get messages around the anchor message
-        -- Split the limit to get messages before and after the anchor
-        half_limit := GREATEST(message_limit / 2, 1);
+        -- Implicit last-read (large unread): bias toward newer rows so newer_cursor/has_more_newer match pagination.
+        IF anchor_message_id IS NULL AND total_messages_since_last_read > message_limit / 2 THEN
+            before_n := GREATEST(message_limit / 5, 1);
+            after_n := message_limit - before_n;
+        ELSE
+            before_n := GREATEST(message_limit / 2, 1);
+            after_n := message_limit - before_n;
+        END IF;
 
         WITH messages_before AS (
             -- Get messages before or at the anchor
@@ -234,7 +280,7 @@ BEGIN
                 AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
                 AND m.created_at <= anchor_message_timestamp
             ORDER BY m.created_at DESC, m.id DESC
-            LIMIT half_limit
+            LIMIT before_n
         ),
         messages_after AS (
             -- Get messages after the anchor
@@ -277,7 +323,7 @@ BEGIN
                 AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
                 AND m.created_at > anchor_message_timestamp
             ORDER BY m.created_at ASC, m.id ASC
-            LIMIT message_limit - half_limit
+            LIMIT after_n
         ),
         combined_messages AS (
             -- Combine the before and after messages
@@ -375,6 +421,27 @@ BEGIN
            AND deleted_at IS NULL
     ) THEN
         RAISE EXCEPTION 'Channel % does not exist or is deleted', input_channel_id;
+    END IF;
+
+    -- Authorization: PUBLIC channels are readable by anyone; everything
+    -- else requires explicit channel membership. Mirrors the gate in
+    -- get_channel_aggregate_data; without it pagination is a backdoor.
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.channels c
+         WHERE c.id = input_channel_id
+           AND (
+                c.type = 'PUBLIC'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.channel_members cm
+                    WHERE cm.channel_id = c.id
+                      AND cm.member_id  = auth.uid()
+                      AND cm.left_at IS NULL
+                )
+           )
+    ) THEN
+        RAISE EXCEPTION 'Access denied: caller is not a member of channel %.', input_channel_id;
     END IF;
 
     -- 2) Branch on direction for ordering & cursor logic
@@ -547,13 +614,19 @@ BEGIN
         RAISE EXCEPTION 'Channel % does not exist or has been deleted.', p_channel_id;
     END IF;
 
-    -- Check if the message exists and is not deleted
+    -- Require (channel_id, message_id) match. Without this, a member of
+    -- channel A could call mark_messages_as_read(A, message_in_B) and
+    -- corrupt channel A's last_read_message_id by pinning it to a row
+    -- that lives in B (cross-channel read-cursor corruption).
     SELECT created_at INTO target_timestamp
     FROM public.messages
-    WHERE id = p_message_id AND deleted_at IS NULL;
+    WHERE id = p_message_id
+      AND channel_id = p_channel_id
+      AND deleted_at IS NULL;
 
     IF target_timestamp IS NULL THEN
-        RAISE EXCEPTION 'Message % does not exist or has been deleted.', p_message_id;
+        RAISE EXCEPTION 'Message % does not exist in channel % or has been deleted.',
+            p_message_id, p_channel_id;
     END IF;
 
     -- Ensure the user is a member of the channel
@@ -603,7 +676,7 @@ BEGIN
         unread_message_count = CASE WHEN is_last_message THEN 0 ELSE GREATEST(unread_message_count - messages_to_mark_count, 0) END
     WHERE channel_id = p_channel_id AND member_id = auth.uid();
 END;
-$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
+$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public;
 
 -------------------------------
 -------------------------------
@@ -899,6 +972,17 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 AS $$
 BEGIN
+  -- Authorization: workspace mention lists must not enumerate users
+  -- across workspaces. Caller must be an active workspace member.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.workspace_members wm
+    WHERE wm.workspace_id = _workspace_id
+      AND wm.member_id    = auth.uid()
+      AND wm.left_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Access denied: caller is not a member of workspace %.', _workspace_id;
+  END IF;
+
   IF _username IS NULL OR _username = '' THEN
     -- If no username is provided, return the 6 most recent users
     RETURN QUERY
@@ -1001,6 +1085,7 @@ CREATE OR REPLACE FUNCTION join_workspace(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     user_id UUID;
@@ -1118,6 +1203,17 @@ BEGIN
         RAISE EXCEPTION 'Channel % does not exist or has been deleted', _channel_id;
     END IF;
 
+    -- Authorization: read-receipts are not public-readable, even on
+    -- PUBLIC channels. Members only.
+    IF NOT EXISTS (
+        SELECT 1 FROM public.channel_members cm
+        WHERE cm.channel_id = _channel_id
+          AND cm.member_id  = auth.uid()
+          AND cm.left_at IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Access denied: caller is not a member of channel %.', _channel_id;
+    END IF;
+
     RETURN QUERY
     SELECT
         u.avatar_updated_at,
@@ -1140,3 +1236,20 @@ $$;
 COMMENT ON FUNCTION public.get_channel_members_by_last_read_update(VARCHAR(36), TIMESTAMP WITH TIME ZONE) IS
 'Returns channel members whose last_read_update_at is equal to or greater than the specified timestamp.
 Only returns active members (not left) and non-deleted users.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.user_details_json(u users) SET search_path = public;
+ALTER FUNCTION public.get_channel_aggregate_data(input_channel_id character varying, message_limit integer, anchor_message_id uuid) SET search_path = public;
+ALTER FUNCTION public.get_channel_messages_paginated(input_channel_id character varying, limit_count integer, cursor_timestamp timestamp with time zone, direction character varying) SET search_path = public;
+ALTER FUNCTION public.mark_messages_as_read(p_channel_id character varying, p_message_id uuid) SET search_path = public;
+ALTER FUNCTION public.create_direct_message_channel(workspace_uid character varying, user_id uuid) SET search_path = public;
+ALTER FUNCTION public.notifications_summary(_workspace_id character varying) SET search_path = public;
+ALTER FUNCTION public.get_unread_notifications_paginated(_workspace_id character varying, _type text, _page integer, _page_size integer) SET search_path = public;
+ALTER FUNCTION public.fetch_mentioned_users(_workspace_id character varying, _username text) SET search_path = public;
+ALTER FUNCTION public.get_unread_notif_count(_workspace_id character varying) SET search_path = public;
+ALTER FUNCTION public.get_channel_notif_state(_channel_id character varying) SET search_path = public;
+ALTER FUNCTION public.join_workspace(_workspace_id character varying) SET search_path = public;
+ALTER FUNCTION public.get_channel_members_by_last_read_update(_channel_id character varying, _timestamp timestamp with time zone) SET search_path = public;

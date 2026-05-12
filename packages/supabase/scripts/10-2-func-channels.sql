@@ -372,3 +372,20 @@ execute function prevent_duplicate_channel_member();
 
 comment on trigger check_duplicate_member on public.channel_members is
 'Ensures a user cannot be added to the same channel multiple times.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.add_channel_creator_as_admin() SET search_path = public;
+ALTER FUNCTION public.increment_channel_member_count() SET search_path = public;
+ALTER FUNCTION public.decrement_channel_member_count() SET search_path = public;
+ALTER FUNCTION public.prevent_duplicate_channel_member() SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.add_channel_creator_as_admin() SECURITY DEFINER;
+ALTER FUNCTION public.increment_channel_member_count() SECURITY DEFINER;
+ALTER FUNCTION public.decrement_channel_member_count() SECURITY DEFINER;
+ALTER FUNCTION public.prevent_duplicate_channel_member() SECURITY DEFINER;

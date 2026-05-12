@@ -77,3 +77,9 @@ create policy "Admins can delete others"
         user_id != auth.uid() and 
         public.is_admin(auth.uid())
     );
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.is_admin(check_user_id uuid) SET search_path = public;

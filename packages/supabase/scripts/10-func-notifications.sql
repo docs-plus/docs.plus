@@ -359,13 +359,19 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notifications for regular messages based on user notification preferences.';
 
 -- Trigger: create_regular_message_notifications
+-- Fire only on messages that contain NO @user mention and NO @everyone.
+-- Original predicate `(... NOT LIKE '%@%' OR ... NOT LIKE '%@everyone%')`
+-- is true for nearly every string containing '@' (any @user that isn't
+-- exactly @everyone) and produced duplicate inbox rows alongside the
+-- mention/reply/everyone notification creators. Use a regex that matches
+-- either pattern and negate with `!~`.
 CREATE TRIGGER create_regular_message_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content NOT LIKE '%@%' OR NEW.content NOT LIKE '%@everyone%')
+WHEN (NEW.content !~ '@[A-Za-z0-9_]+|@everyone')
 EXECUTE FUNCTION create_regular_message_notifications();
 
-COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'Creates notifications for regular messages that don''t contain mentions.';
+COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'Creates notifications for regular messages that contain no @mention and no @everyone.';
 
 /**
  * Function: create_reaction_notifications
@@ -573,3 +579,24 @@ DROP TRIGGER IF EXISTS update_unread_count_on_hard_delete ON public.messages;
 
 -- Drop the old function (if it exists)
 DROP FUNCTION IF EXISTS update_unread_count_on_message_delete();
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.create_mention_notifications() SET search_path = public;
+ALTER FUNCTION public.create_reply_notification() SET search_path = public;
+ALTER FUNCTION public.create_everyone_notifications() SET search_path = public;
+ALTER FUNCTION public.create_regular_message_notifications() SET search_path = public;
+ALTER FUNCTION public.create_reaction_notifications() SET search_path = public;
+ALTER FUNCTION public.increment_unread_count_on_new_message() SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.create_mention_notifications() SECURITY DEFINER;
+ALTER FUNCTION public.create_reply_notification() SECURITY DEFINER;
+ALTER FUNCTION public.create_everyone_notifications() SECURITY DEFINER;
+ALTER FUNCTION public.create_regular_message_notifications() SECURITY DEFINER;
+ALTER FUNCTION public.create_reaction_notifications() SECURITY DEFINER;
+ALTER FUNCTION public.increment_unread_count_on_new_message() SECURITY DEFINER;

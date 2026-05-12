@@ -113,3 +113,11 @@ grant execute on function public.get_inactive_users(integer) to service_role;
 grant execute on function public.get_user_deletion_impact(uuid) to service_role;
 grant execute on function public.get_ghost_summary_public() to service_role;
 
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.get_inactive_users(p_min_age_days integer) SET search_path = public;
+ALTER FUNCTION public.get_user_deletion_impact(p_user_id uuid) SET search_path = public;
+ALTER FUNCTION public.get_ghost_summary_public() SET search_path = public;

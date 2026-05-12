@@ -51,6 +51,10 @@ create index idx_workspaces_slug on public.workspaces (slug);
 -- Optimizes common queries that only retrieve non-deleted messages.
 create index idx_messages_channel_id_not_deleted on public.messages (channel_id) where deleted_at is null;
 
+-- workspace_members lookups by member alone (RLS hot path: is_workspace_member()).
+-- The unique constraint covers (workspace_id, member_id); reverse direction needs its own index.
+create index idx_workspace_members_member_id on public.workspace_members (member_id);
+
 -- Create system user for system messages and notifications
 -- This user serves as the sender for automated system notifications and messages.
 insert into auth.users (id, email)

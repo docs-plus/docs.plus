@@ -17,8 +17,9 @@
  *        updating channel counts in batches. This reduces row-level
  *        contention.
  *   3. Near-Real-Time:
- *      - The pg_cron job runs frequently (every 10 seconds here), providing
- *        near-real-time counts without a long-lived process.
+ *      - The pg_cron job runs every minute (`* * * * *`, portable 5-field),
+ *        so the aggregate counter can trail realtime by up to ~60s; messages
+ *        still arrive live via Supabase Realtime.
  *   4. Simpler Maintenance:
  *      - All logic is contained in the database. You do not need an external
  *        worker service.
@@ -35,20 +36,16 @@
  *      - Updates channel_message_counts accordingly.
  *      - Deletes processed messages from the queue.
  *   5. pg_cron Schedule
- *      - Runs message_counter_batch_worker() every 10 seconds to process
- *        any queued events.
+ *      - Runs message_counter_batch_worker() on the schedule defined at the
+ *        bottom of this file (today: every minute). Sub-minute 6-field cron
+ *        requires `cron.use_background_workers = on` and a Postgres restart;
+ *        see the comment block above `cron.schedule` in this file.
  *
  * Maintenance Notes:
- *   - You can adjust the pg_cron schedule ('* * * * * *') to meet your
- *     performance needs. If performance is an issue, consider changing:
- *       * The frequency of the schedule.
- *       * The read_limit (batch size) in the worker function.
- *       * The max_loops to process more events per run if needed.
+ *   - Tune read_limit / max_loops in the worker before shortening the cron.
  *   - Ensure you have granted privileges on the pgmq schema and the
  *     underlying queue table (pgmq.q_message_counter) to the role executing
  *     these operations.
- *   - If you only need updates every minute or less, you can change the
- *     cron pattern. Some Supabase plans may not support sub-minute intervals.
  ****************************************************************************/
 
 
@@ -73,15 +70,25 @@ CREATE INDEX IF NOT EXISTS idx_channel_msg_counts_workspace_id
 -- 3. Create the queue
 SELECT FROM pgmq.create('message_counter');
 
--- 4. Trigger function to enqueue an increment event on message insert
+-- 4. Trigger function to enqueue an increment event on message insert.
+-- Resolves workspace_id at enqueue time so a later hard-delete of the
+-- channel doesn't poison the worker (channels.workspace_id is NULL after
+-- the row is gone). Lookup is a PK probe on channels and adds < 1ms to
+-- the message INSERT path.
 CREATE OR REPLACE FUNCTION public.on_message_insert_queue()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_workspace_id text;
 BEGIN
+    SELECT workspace_id INTO v_workspace_id
+    FROM public.channels WHERE id = NEW.channel_id;
+
     PERFORM pgmq.send(
       'message_counter',
       jsonb_build_object(
-        'channel_id', NEW.channel_id,
-        'op', 'increment'
+        'channel_id',   NEW.channel_id,
+        'workspace_id', v_workspace_id,
+        'op',           'increment'
       )
     );
   RETURN NEW;
@@ -94,15 +101,21 @@ AFTER INSERT ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION public.on_message_insert_queue();
 
--- 6. Trigger function to enqueue a decrement event on message delete
+-- 6. Trigger function to enqueue a decrement event on message delete.
 CREATE OR REPLACE FUNCTION public.on_message_delete_queue()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_workspace_id text;
 BEGIN
+    SELECT workspace_id INTO v_workspace_id
+    FROM public.channels WHERE id = OLD.channel_id;
+
     PERFORM pgmq.send(
       'message_counter',
       jsonb_build_object(
-        'channel_id', OLD.channel_id,
-        'op', 'decrement'
+        'channel_id',   OLD.channel_id,
+        'workspace_id', v_workspace_id,
+        'op',           'decrement'
       )
     );
   RETURN OLD;
@@ -121,12 +134,18 @@ EXECUTE FUNCTION public.on_message_delete_queue();
 -- the NULL -> NOT NULL transition so repeated UPDATEs don't double-count.
 CREATE OR REPLACE FUNCTION public.on_message_soft_delete_queue()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_workspace_id text;
 BEGIN
+    SELECT workspace_id INTO v_workspace_id
+    FROM public.channels WHERE id = OLD.channel_id;
+
     PERFORM pgmq.send(
       'message_counter',
       jsonb_build_object(
-        'channel_id', OLD.channel_id,
-        'op', 'decrement'
+        'channel_id',   OLD.channel_id,
+        'workspace_id', v_workspace_id,
+        'op',           'decrement'
       )
     );
   RETURN NEW;
@@ -170,46 +189,38 @@ BEGIN
     LOOP
       row_count := row_count + 1;
 
-      -- Extract channel_id and operation from the event payload
+      -- Read the event payload. workspace_id is captured at enqueue time
+      -- by the triggers above; we still fall back to a channel lookup to
+      -- handle legacy events (pre-`workspace_id`-in-payload) gracefully.
       DECLARE
         v_channel_id   TEXT := rec.message->>'channel_id';
         v_op           TEXT := rec.message->>'op';
-        v_workspace_id TEXT;
+        v_workspace_id TEXT := rec.message->>'workspace_id';
       BEGIN
-        /*
-          1. Look up the workspace_id from channels (assuming "workspace_id"
-             is a column in public.channels).
-        */
-        SELECT workspace_id
-          INTO v_workspace_id
-          FROM public.channels
-         WHERE id = v_channel_id
-         LIMIT 1;
+        IF v_workspace_id IS NULL THEN
+          SELECT workspace_id INTO v_workspace_id
+          FROM public.channels WHERE id = v_channel_id;
+        END IF;
 
-        /*
-          If no row is found, v_workspace_id will be null.
-          You can decide how you want to handle that (raise an error,
-          skip, or default to something).
-        */
+        -- Channel was hard-deleted before the event was processed. The
+        -- counter row is removed by FK CASCADE, so the event is a no-op;
+        -- drop it from the queue and move on. Without this branch, a
+        -- single orphan event poisons every subsequent cron run via the
+        -- channel_message_counts.workspace_id NOT NULL constraint.
+        IF v_workspace_id IS NULL THEN
+          PERFORM pgmq.delete('message_counter', rec.msg_id);
+          CONTINUE;
+        END IF;
 
         IF v_op = 'increment' THEN
-          /*
-            2. Upsert: if channel_id does not exist, create row.
-               If it does exist, increment the count.
-          */
           INSERT INTO public.channel_message_counts (channel_id, workspace_id, message_count)
           VALUES (v_channel_id, v_workspace_id, 1)
           ON CONFLICT (channel_id)
           DO UPDATE
             SET message_count = public.channel_message_counts.message_count + 1,
-                -- Optionally sync workspace_id if channels can move between workspaces
-                workspace_id   = EXCLUDED.workspace_id;
+                workspace_id  = EXCLUDED.workspace_id;
 
         ELSIF v_op = 'decrement' THEN
-          /*
-            If the row doesn’t exist, create it with a count of 0.
-            Otherwise, decrement (but not below zero).
-          */
           INSERT INTO public.channel_message_counts (channel_id, workspace_id, message_count)
           VALUES (v_channel_id, v_workspace_id, 0)
           ON CONFLICT (channel_id)
@@ -231,12 +242,45 @@ BEGIN
 END;
 $$;
 
--- 9. Schedule the worker function to run every 10 seconds
--- CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- 9. Schedule the worker. Default = every minute (portable 5-field cron).
+--
+-- pg_cron only honors sub-minute schedules ("*/10 * * * * *", 6-field
+-- form including seconds) when `cron.use_background_workers = on` in
+-- postgresql.conf — that setting requires a server restart since
+-- pg_cron is in shared_preload_libraries. With the launcher-only mode
+-- (the default on local Supabase Docker), a 6-field schedule gets
+-- silently truncated to 5 fields and "*/10 * * * * *" is interpreted as
+-- "*/10 * * * *" = every 10 minutes, which is way too laggy for the
+-- unread badge UX.
+--
+-- A 1-minute cadence covers chat unread display fine: messages still
+-- propagate live via realtime; only the aggregate counter trails by up
+-- to 60s. To upgrade to ~10s on a host that supports it:
+--   ALTER SYSTEM SET cron.use_background_workers = 'on';
+--   -- then restart Postgres and reschedule with '*/10 * * * * *'
+SELECT cron.unschedule('message_counter_batch_job')
+FROM cron.job WHERE jobname = 'message_counter_batch_job';
+
 SELECT cron.schedule(
             'message_counter_batch_job',      -- A job name for reference
-            '*/10 * * * * *',                 -- Run every 10 seconds (if supported)
+            '* * * * *',                      -- Every minute (portable)
     $$
             SELECT public.message_counter_batch_worker();
     $$
         );
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.on_message_insert_queue() SET search_path = public;
+ALTER FUNCTION public.on_message_delete_queue() SET search_path = public;
+ALTER FUNCTION public.on_message_soft_delete_queue() SET search_path = public;
+ALTER FUNCTION public.message_counter_batch_worker() SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.on_message_insert_queue() SECURITY DEFINER;
+ALTER FUNCTION public.on_message_delete_queue() SECURITY DEFINER;
+ALTER FUNCTION public.on_message_soft_delete_queue() SECURITY DEFINER;

@@ -26,12 +26,36 @@ begin
     where user_id = v_user_id and message_id = p_message_id;
 
     if v_bookmark_id is not null then
-        -- Bookmark exists, remove it
+        -- Unbookmark path: do NOT gate on visibility. Users must be able
+        -- to clean up bookmarks pointing at messages that have since been
+        -- soft-deleted or whose channel they've left.
         delete from message_bookmarks
         where id = v_bookmark_id;
         v_action := 'removed';
     else
-        -- Bookmark doesn't exist, create it
+        -- Bookmark path: gate on visibility (PUBLIC channel or active
+        -- member, message not soft-deleted). Closes the message-id
+        -- existence probe via FK-error-vs-success.
+        if not exists (
+            select 1
+            from public.messages m
+            join public.channels c on c.id = m.channel_id
+            where m.id = p_message_id
+              and m.deleted_at is null
+              and (
+                  c.type = 'PUBLIC'
+                  or exists (
+                      select 1
+                      from public.channel_members cm
+                      where cm.channel_id = m.channel_id
+                        and cm.member_id  = v_user_id
+                        and cm.left_at is null
+                  )
+              )
+        ) then
+            raise exception 'Access denied: message % is not visible to this user.', p_message_id;
+        end if;
+
         insert into message_bookmarks (user_id, message_id)
         values (v_user_id, p_message_id)
         returning id into v_bookmark_id;
@@ -307,3 +331,14 @@ end;
 $$;
 
 comment on function public.get_bookmark_stats is 'Returns bookmark statistics for the current user including total, archived, active, read, and unread counts.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.toggle_message_bookmark(p_message_id uuid) SET search_path = public;
+ALTER FUNCTION public.get_user_bookmarks(p_workspace_id character varying, p_archived boolean, p_limit integer, p_offset integer) SET search_path = public;
+ALTER FUNCTION public.archive_bookmark(p_bookmark_id bigint, p_archive boolean) SET search_path = public;
+ALTER FUNCTION public.mark_bookmark_as_read(p_bookmark_id bigint, p_mark_as_read boolean) SET search_path = public;
+ALTER FUNCTION public.get_bookmark_count(p_workspace_id character varying, p_archived boolean) SET search_path = public;
+ALTER FUNCTION public.get_bookmark_stats(p_workspace_id character varying) SET search_path = public;

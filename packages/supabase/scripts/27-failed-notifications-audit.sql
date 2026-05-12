@@ -319,3 +319,44 @@ BEGIN
   RETURN QUERY SELECT v_count, COALESCE(v_ids, ARRAY[]::uuid[]);
 END;
 $$;
+
+-- =============================================================================
+-- 7. Security: lock these audit functions to service_role only
+-- =============================================================================
+-- These functions read across ALL users' push/email failures and, in the case
+-- of disable_failed_subscriptions, can deactivate many subscriptions in a
+-- single call. Postgres grants EXECUTE to `public` by default; without an
+-- explicit REVOKE, the existing GRANT TO service_role is non-exclusive and
+-- any authenticated PostgREST caller can invoke them.
+--
+-- Admin gating happens at the Hocuspocus admin controller (service_role key);
+-- mirror the grant pattern used in 28-ghost-accounts-audit.sql.
+
+REVOKE EXECUTE ON FUNCTION public.get_push_failure_summary() FROM public, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_push_failure_summary() TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.get_email_failure_summary() FROM public, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_email_failure_summary() TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.get_failed_push_subscriptions(integer, integer) FROM public, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_failed_push_subscriptions(integer, integer) TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.get_email_bounces(text, integer, integer) FROM public, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_email_bounces(text, integer, integer) TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.get_notification_health() FROM public, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.get_notification_health() TO service_role;
+
+REVOKE EXECUTE ON FUNCTION public.disable_failed_subscriptions(integer, text, uuid[]) FROM public, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.disable_failed_subscriptions(integer, text, uuid[]) TO service_role;
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.get_push_failure_summary() SET search_path = public;
+ALTER FUNCTION public.get_email_failure_summary() SET search_path = public;
+ALTER FUNCTION public.get_failed_push_subscriptions(p_min_failures integer, p_limit integer) SET search_path = public;
+ALTER FUNCTION public.get_email_bounces(p_bounce_type text, p_days integer, p_limit integer) SET search_path = public;
+ALTER FUNCTION public.get_notification_health() SET search_path = public;
+ALTER FUNCTION public.disable_failed_subscriptions(p_min_failures integer, p_error_pattern text, p_subscription_ids uuid[]) SET search_path = public;

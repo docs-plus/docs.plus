@@ -171,3 +171,16 @@ COMMENT ON FUNCTION internal.is_user_online(uuid) IS
 
 -- Grant execute to service_role for push notification trigger
 GRANT EXECUTE ON FUNCTION internal.is_user_online(uuid) TO service_role;
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.handle_new_user() SET search_path = public;
+ALTER FUNCTION public.update_user_online_at() SET search_path = public;
+ALTER FUNCTION internal.is_user_online(p_user_id uuid) SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.update_user_online_at() SECURITY DEFINER;

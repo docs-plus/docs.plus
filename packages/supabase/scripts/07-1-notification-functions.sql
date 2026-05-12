@@ -121,3 +121,9 @@ $$ language plpgsql;
 
 comment on function get_workspace_notifications(uuid, varchar, int, int, boolean) is
 'Returns notifications for a specific user filtered by workspace, with pagination and read/unread filtering options.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.get_workspace_notifications(p_user_id uuid, p_workspace_id character varying, p_limit integer, p_offset integer, p_is_read boolean) SET search_path = public;

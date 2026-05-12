@@ -1143,3 +1143,87 @@ $$;
 drop function if exists internal.get_email_gateway_config() cascade;
 drop function if exists internal.http_post_signed(text, jsonb, jsonb, text) cascade;
 
+
+-- =============================================================================
+-- 14. Security: lock email/queue/admin functions to service_role
+-- =============================================================================
+-- This file shipped with no explicit GRANT/REVOKE lines, which means every
+-- SECURITY DEFINER function below is callable by `public` (Postgres default).
+-- That includes the bounce-recording RPC, the queue consumer/ack RPCs, the
+-- digest compiler, the admin stats RPC, and helper functions that compose
+-- unsubscribe links. Lock them all to service_role; the Hocuspocus worker
+-- and admin controller invoke them with the service_role key.
+--
+-- Note: `process_unsubscribe(text)` is also locked to service_role here.
+-- The user-facing /unsubscribe URL handler in the webapp must call it via
+-- the service-role key (server-side route), NOT via the browser session.
+-- This is the safer default; relax only if a real browser-direct call site
+-- emerges with a documented threat model.
+
+-- Bounce ingestion (called by email worker)
+revoke execute on function public.record_email_bounce(text, text, text, text) from public, anon, authenticated;
+grant  execute on function public.record_email_bounce(text, text, text, text) to service_role;
+
+-- pgmq queue producer (cron)
+revoke execute on function public.process_email_queue() from public, anon, authenticated;
+grant  execute on function public.process_email_queue() to service_role;
+
+-- Digest compiler (cron)
+revoke execute on function public.compile_digest_emails() from public, anon, authenticated;
+grant  execute on function public.compile_digest_emails() to service_role;
+
+-- Queue consumer + ack (worker)
+revoke execute on function public.consume_email_queue(integer, integer) from public, anon, authenticated;
+grant  execute on function public.consume_email_queue(integer, integer) to service_role;
+
+revoke execute on function public.ack_email_message(bigint) from public, anon, authenticated;
+grant  execute on function public.ack_email_message(bigint) to service_role;
+
+-- Worker callbacks (status writeback)
+revoke execute on function public.update_email_status(uuid, text, text) from public, anon, authenticated;
+grant  execute on function public.update_email_status(uuid, text, text) to service_role;
+
+-- Cleanup (cron)
+revoke execute on function public.cleanup_email_queue() from public, anon, authenticated;
+grant  execute on function public.cleanup_email_queue() to service_role;
+
+-- Admin stats
+revoke execute on function public.get_email_notification_stats() from public, anon, authenticated;
+grant  execute on function public.get_email_notification_stats() to service_role;
+
+-- Unsubscribe link helpers (server-side composition; HMAC over secret).
+-- generate_/get_*_url are called from email composer; process_unsubscribe
+-- is called from the /unsubscribe API route with service_role.
+revoke execute on function public.generate_unsubscribe_token(uuid, text) from public, anon, authenticated;
+grant  execute on function public.generate_unsubscribe_token(uuid, text) to service_role;
+
+revoke execute on function public.process_unsubscribe(text) from public, anon, authenticated;
+grant  execute on function public.process_unsubscribe(text) to service_role;
+
+revoke execute on function public.get_unsubscribe_url(uuid, text, text) from public, anon, authenticated;
+grant  execute on function public.get_unsubscribe_url(uuid, text, text) to service_role;
+
+revoke execute on function public.get_email_footer_links(uuid, text) from public, anon, authenticated;
+grant  execute on function public.get_email_footer_links(uuid, text) to service_role;
+
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run). supabase_admin-owned functions
+-- (mask_email, is_email_suppressed, check_email_rate_limit,
+-- clear_email_bounce_info, ack_email_message, compile_digest_emails,
+-- consume_email_queue, record_email_bounce) are pinned by
+-- 29-lint-hardening.sql under the appropriate role context.
+-- ============================================================
+ALTER FUNCTION internal.is_email_enabled(p_user_id uuid) SET search_path = public;
+ALTER FUNCTION internal.get_email_preferences(p_user_id uuid) SET search_path = public;
+ALTER FUNCTION internal.get_unsubscribe_secret() SET search_path = public;
+ALTER FUNCTION internal.verify_unsubscribe_token(p_token text) SET search_path = public;
+ALTER FUNCTION public.queue_email_notification() SET search_path = public;
+ALTER FUNCTION public.process_email_queue() SET search_path = public;
+ALTER FUNCTION public.cleanup_email_queue() SET search_path = public;
+ALTER FUNCTION public.get_email_notification_stats() SET search_path = public;
+ALTER FUNCTION public.generate_unsubscribe_token(p_user_id uuid, p_action text) SET search_path = public;
+ALTER FUNCTION public.process_unsubscribe(p_token text) SET search_path = public;
+ALTER FUNCTION public.get_unsubscribe_url(p_user_id uuid, p_action text, p_base_url text) SET search_path = public;
+ALTER FUNCTION public.get_email_footer_links(p_user_id uuid, p_base_url text) SET search_path = public;

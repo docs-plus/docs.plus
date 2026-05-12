@@ -109,3 +109,14 @@ execute function prepare_forwarded_message();
 
 comment on trigger set_forwarded_message_content on public.messages is
 'Copies content from the original message when a message is being forwarded.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.prepare_forwarded_message() SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.prepare_forwarded_message() SECURITY DEFINER;

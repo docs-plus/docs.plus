@@ -145,3 +145,18 @@ execute function update_channel_activity_on_pin();
 
 comment on trigger track_channel_activity_on_pin on public.pinned_messages is
 'Tracks channel activity by updating last_activity_at when a message is pinned.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.update_message_on_pin() SET search_path = public;
+ALTER FUNCTION public.update_message_on_unpin() SET search_path = public;
+ALTER FUNCTION public.update_channel_activity_on_pin() SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.update_message_on_pin() SECURITY DEFINER;
+ALTER FUNCTION public.update_message_on_unpin() SECURITY DEFINER;
+ALTER FUNCTION public.update_channel_activity_on_pin() SECURITY DEFINER;

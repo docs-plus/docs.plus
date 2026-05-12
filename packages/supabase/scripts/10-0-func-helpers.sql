@@ -34,3 +34,9 @@ $$ language plpgsql;
 
 comment on function truncate_content(text, int) is
 'Utility function to truncate text content to a specified length with ellipsis, used for preview text generation.';
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.truncate_content(input_content text, max_length integer) SET search_path = public;

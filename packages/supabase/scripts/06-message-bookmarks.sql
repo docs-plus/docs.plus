@@ -69,3 +69,14 @@ create policy "Users can delete their own bookmarks"
     on public.message_bookmarks
     for delete
     using (auth.uid() = user_id);
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.update_message_bookmarks_updated_at() SET search_path = public;
+
+-- Trigger functions run as postgres (DEFINER) so internal side effects
+-- (counters, previews, notifications) bypass RLS on side-effect tables.
+-- search_path is already pinned above; flipping security mode is safe.
+ALTER FUNCTION public.update_message_bookmarks_updated_at() SECURITY DEFINER;

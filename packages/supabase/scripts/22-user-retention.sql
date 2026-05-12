@@ -25,6 +25,7 @@ returns jsonb
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 declare
     v_dau integer;
@@ -36,7 +37,7 @@ declare
     v_total_users integer;
 begin
     -- Single optimized query using FILTER
-    select 
+    select
         count(*) filter (where online_at >= now() - interval '24 hours'),
         count(*) filter (where online_at >= now() - interval '7 days'),
         count(*) filter (where online_at >= now() - interval '30 days'),
@@ -81,6 +82,7 @@ returns jsonb
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 declare
     v_new integer;
@@ -90,14 +92,14 @@ declare
     v_total integer;
 begin
     -- Single optimized query using FILTER
-    select 
+    select
         count(*) filter (where created_at >= now() - interval '7 days'),
         count(*) filter (where online_at >= now() - interval '7 days' and created_at < now() - interval '7 days'),
-        count(*) filter (where 
+        count(*) filter (where
             (online_at < now() - interval '14 days' and online_at >= now() - interval '30 days')
             or (online_at is null and created_at < now() - interval '14 days' and created_at >= now() - interval '30 days')
         ),
-        count(*) filter (where 
+        count(*) filter (where
             (online_at < now() - interval '30 days')
             or (online_at is null and created_at < now() - interval '30 days')
         ),
@@ -133,6 +135,7 @@ returns table (
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 begin
     return query
@@ -144,14 +147,14 @@ begin
         )::date as d
     ),
     daily_counts as (
-        select 
+        select
             online_at::date as activity_date,
             count(distinct id) as active_users
         from public.users
         where online_at >= current_date - p_days
         group by online_at::date
     )
-    select 
+    select
         ds.d as activity_date,
         coalesce(dc.active_users, 0)::integer as active_users
     from date_series ds
@@ -175,10 +178,11 @@ returns table (
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 begin
     return query
-    select 
+    select
         extract(hour from m.created_at)::integer as hour_of_day,
         extract(dow from m.created_at)::integer as day_of_week,
         count(*) as message_count
@@ -186,7 +190,7 @@ begin
     join public.channels c on m.channel_id = c.id
     where m.created_at >= now() - (p_days || ' days')::interval
       and c.type = 'PUBLIC'
-    group by 
+    group by
         extract(hour from m.created_at),
         extract(dow from m.created_at)
     order by day_of_week, hour_of_day;
@@ -209,10 +213,11 @@ returns table (
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 begin
     return query
-    select 
+    select
         w.id as workspace_id,
         w.slug as document_slug,
         count(m.id) as message_count,
@@ -243,6 +248,7 @@ returns table (
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 declare
     v_total bigint;
@@ -255,7 +261,7 @@ begin
       and c.type = 'PUBLIC';
 
     return query
-    select 
+    select
         coalesce(m.type, 'text') as message_type,
         count(*) as count,
         case when v_total > 0 then round((count(*)::numeric / v_total) * 100, 1) else 0 end as percentage
@@ -279,6 +285,7 @@ returns jsonb
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 declare
     v_total_messages bigint;
@@ -316,6 +323,7 @@ returns jsonb
 language plpgsql
 security definer
 stable
+set search_path = public
 as $$
 declare
     v_total_users integer;
@@ -337,10 +345,10 @@ begin
        or profile_data->>'email_notifications' is null; -- Default is enabled
 
     -- Notification read rate
-    select 
-        case when count(*) > 0 
+    select
+        case when count(*) > 0
             then round((count(*) filter (where is_read = true)::numeric / count(*)) * 100, 1)
-            else 0 
+            else 0
         end
     into v_notification_read_rate
     from public.notifications
@@ -363,11 +371,45 @@ comment on function public.get_notification_reach() is
 -- -----------------------------------------------------------------------------
 -- Grant Permissions
 -- -----------------------------------------------------------------------------
-grant execute on function public.get_retention_metrics() to service_role;
-grant execute on function public.get_user_lifecycle_segments() to service_role;
-grant execute on function public.get_dau_trend(integer) to service_role;
-grant execute on function public.get_activity_by_hour(integer) to service_role;
-grant execute on function public.get_top_active_documents(integer, integer) to service_role;
-grant execute on function public.get_message_type_distribution(integer) to service_role;
-grant execute on function public.get_communication_stats(integer) to service_role;
-grant execute on function public.get_notification_reach() to service_role;
+-- These functions read full-table aggregates from public.users, public.messages,
+-- public.notifications, etc. Postgres grants EXECUTE to `public` by default,
+-- so an explicit GRANT TO service_role is non-exclusive without a matching
+-- REVOKE FROM public. Admin gating happens at the Hocuspocus controller
+-- (service_role key).
+
+revoke execute on function public.get_retention_metrics() from public, anon, authenticated;
+grant  execute on function public.get_retention_metrics() to service_role;
+
+revoke execute on function public.get_user_lifecycle_segments() from public, anon, authenticated;
+grant  execute on function public.get_user_lifecycle_segments() to service_role;
+
+revoke execute on function public.get_dau_trend(integer) from public, anon, authenticated;
+grant  execute on function public.get_dau_trend(integer) to service_role;
+
+revoke execute on function public.get_activity_by_hour(integer) from public, anon, authenticated;
+grant  execute on function public.get_activity_by_hour(integer) to service_role;
+
+revoke execute on function public.get_top_active_documents(integer, integer) from public, anon, authenticated;
+grant  execute on function public.get_top_active_documents(integer, integer) to service_role;
+
+revoke execute on function public.get_message_type_distribution(integer) from public, anon, authenticated;
+grant  execute on function public.get_message_type_distribution(integer) to service_role;
+
+revoke execute on function public.get_communication_stats(integer) from public, anon, authenticated;
+grant  execute on function public.get_communication_stats(integer) to service_role;
+
+revoke execute on function public.get_notification_reach() from public, anon, authenticated;
+grant  execute on function public.get_notification_reach() to service_role;
+
+-- ============================================================
+-- Hardening: pin search_path = public on functions defined above
+-- (idempotent — safe to re-run)
+-- ============================================================
+ALTER FUNCTION public.get_retention_metrics() SET search_path = public;
+ALTER FUNCTION public.get_user_lifecycle_segments() SET search_path = public;
+ALTER FUNCTION public.get_dau_trend(p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_activity_by_hour(p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_top_active_documents(p_limit integer, p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_message_type_distribution(p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_communication_stats(p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_notification_reach() SET search_path = public;
