@@ -1,5 +1,4 @@
 import { getChannels, getChannelsWithMessageCounts, upsertWorkspace } from '@api'
-import Config from '@config'
 import { useAuthStore, useChatStore } from '@stores'
 import { Channel } from '@types'
 import { logger } from '@utils/logger'
@@ -29,11 +28,15 @@ const useMapDocumentAndWorkspace = (
   const authLoading = useAuthStore((state) => state.loading)
   const clearAndInitialChannels = useChatStore((state) => state.clearAndInitialChannels)
 
+  useEffect(() => {
+    setIsWorkspaceUpserted(false)
+  }, [docMetadata.documentId, profile?.id])
+
   // Handle initial channels
   useEffect(() => {
     if (!initialChannels) return
     clearAndInitialChannels(initialChannels)
-  }, [initialChannels])
+  }, [clearAndInitialChannels, initialChannels])
 
   const fetchChannels = async (
     documentId: string,
@@ -66,14 +69,19 @@ const useMapDocumentAndWorkspace = (
       setLoading(true)
       setError(null)
       try {
-        // move this to server side
-        await upsertWorkspace({
-          id: docMetadata.documentId,
-          name: docMetadata.title,
-          description: docMetadata.description,
-          slug: docMetadata.slug,
-          created_by: profile?.id || Config.chat.systemUserId
-        })
+        // Workspace bootstrap is authenticated-only. RLS requires
+        // `created_by = auth.uid()`, so anon callers can't insert. Anon
+        // still fetches channels via getChannelsWithMessageCounts below
+        // (read-only path through PUBLIC RLS policies).
+        if (profile?.id) {
+          await upsertWorkspace({
+            id: docMetadata.documentId,
+            name: docMetadata.title,
+            description: docMetadata.description,
+            slug: docMetadata.slug,
+            created_by: profile.id
+          })
+        }
 
         const channels = await fetchChannels(docMetadata.documentId, profile?.id)
         if (isMounted && channels) {
@@ -96,7 +104,16 @@ const useMapDocumentAndWorkspace = (
     return () => {
       isMounted = false
     }
-  }, [authLoading, profile])
+  }, [
+    authLoading,
+    isWorkspaceUpserted,
+    profile?.id,
+    docMetadata.documentId,
+    docMetadata.title,
+    docMetadata.description,
+    docMetadata.slug,
+    bulkSetChannels
+  ])
 
   return { loading, error }
 }
