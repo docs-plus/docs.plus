@@ -641,7 +641,7 @@ drop function if exists public.set_push_config(text, text) cascade;
 -- 10. Enable Realtime for Notification Tables
 -- =============================================================================
 -- NOTE: `notifications` is delivered to clients via the per-user broadcast
--- trigger in 18-notification-broadcast.sql (`realtime.send` -> topic
+-- trigger in 07-3-notification-broadcast.sql (`realtime.send` -> topic
 -- `notifications:<user_id>`). Do not also add it to `supabase_realtime`;
 -- that double-fans every notification through both postgres_changes and
 -- broadcast. Drop it defensively here in case an earlier run added it.

@@ -1,6 +1,11 @@
--- Table: public.notifications
--- Description: Manages notifications sent to users within the application. Notifications can be related to messages, channel activities, mentions, or other events.
--- This table tracks the notification's type, associated references (messages, channels), and its read status.
+-- Notification pipeline:
+--   07-0  this file — notifications table & enums
+--   07-1  notification read RPCs (used by FE)
+--   07-3  in-app realtime broadcast (private topic per user)
+--   07-4  web-push PGMQ producer (consumer in hocuspocus.server)
+--   07-5  email PGMQ producer (consumer in hocuspocus.server)
+-- Fan-out triggers live in 10-func-notifications.sql.
+
 create table public.notifications (
     id                  uuid default uuid_generate_v4() not null primary key,
     type                notification_category not null, -- Type of the notification (e.g., message, invite, mention).
