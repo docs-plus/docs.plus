@@ -1,7 +1,9 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { useUnreadCount } from '@components/toc/hooks'
 import Button from '@components/ui/Button'
+import UnreadBadge from '@components/ui/UnreadBadge'
 import { Icons } from '@icons'
-import { useChatStore } from '@stores'
+import { type IChatStore, useChatStore } from '@stores'
 import React, { useCallback, useEffect, useState } from 'react'
 
 import { useMessageFeedContext } from '../MessageFeedContext'
@@ -12,9 +14,10 @@ export const ScrollToBottom = () => {
   const [isVisible, setIsVisible] = useState(false)
   const { channelId } = useChatroomContext()
   const { messageContainerRef, virtualizerRef } = useMessageFeedContext()
+  const unreadCount = useUnreadCount(channelId)
   const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
   const selectMessageCount = useCallback(
-    (state: any) => state.messagesByChannel.get(channelId)?.size ?? 0,
+    (state: IChatStore) => state.messagesByChannel.get(channelId)?.size ?? 0,
     [channelId]
   )
   const messageCount = useChatStore(selectMessageCount)
@@ -86,7 +89,13 @@ export const ScrollToBottom = () => {
           ? 'bottom-3 opacity-100 delay-200'
           : 'pointer-events-none bottom-[-60px] opacity-0'
       }`}
-      startIcon={<Icons.chevronDown size={20} className="text-primary-content" />}
-    />
+      startIcon={<Icons.chevronDown size={20} className="text-primary-content" />}>
+      <UnreadBadge
+        count={unreadCount}
+        size="sm"
+        variant="error"
+        className="absolute -top-1 -right-1"
+      />
+    </Button>
   )
 }

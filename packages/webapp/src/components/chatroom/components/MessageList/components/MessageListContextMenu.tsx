@@ -29,7 +29,6 @@ export const MessageListContextMenu = ({ children, className }: Props) => {
   const { channelId, messages } = useMessageListContext()
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const contextMenuRef = useRef<HTMLDivElement>(null)
-  // Context menu state
   const [contextMenuState, setContextMenuState] = useState<{
     message: TMsgRow | null
     messageCardElement: Element | null
@@ -51,9 +50,9 @@ export const MessageListContextMenu = ({ children, className }: Props) => {
 
       if (!messageCard) return null
 
-      // Get message ID from data attribute
-      // @ts-ignore
-      const messageId = messageCard.msgId
+      // MessageLoop stamps each row with `data-message-id` — use the attribute
+      // (not an expando) so the lookup stays type-safe across renders.
+      const messageId = messageCard.closest('[data-message-id]')?.getAttribute('data-message-id')
       if (!messageId || !messages) return null
 
       // Get message from the messages Map
@@ -82,21 +81,19 @@ export const MessageListContextMenu = ({ children, className }: Props) => {
 
   // Handle cleanup when context menu closes
   const handleContextMenuClose = useCallback(() => {
-    // Remove CSS class from the message card
-    // find all .msg_card and the remove the class
     removeContextMenuActiveClass()
-
-    // Clear the context state
     setContextMenuState({
       message: null,
       messageCardElement: null
     })
-  }, [contextMenuState.messageCardElement])
+  }, [])
 
   if (variant === 'mobile' || !profile) return children
 
   return (
-    <div className={className} ref={contextMenuRef}>
+    // Pass-through wrapper: layout ownership lives in MessageList; we just keep
+    // the flex chain alive so Virtuoso's `height:100%` has a sized parent.
+    <div className={twMerge('flex min-h-0 w-full flex-1 flex-col', className)} ref={contextMenuRef}>
       <ContextMenu
         className={twMerge(
           'menu bg-base-100 absolute z-20 m-0 w-48 rounded-lg p-2 shadow outline-none'
