@@ -16,6 +16,7 @@ export default {
     let component: any
     let popup: HTMLDivElement | null = null
     let cleanup: (() => void) | null = null
+    let virtualElement: { getBoundingClientRect: any } | null = null
 
     return {
       onStart: (props: any) => {
@@ -38,14 +39,15 @@ export default {
         popup.appendChild(component.element)
         document.body.appendChild(popup)
 
-        // Virtual element for positioning
-        const virtualElement = {
+        // Virtual element for positioning; we keep one autoUpdate attached
+        // for the popup's lifetime and only swap the rect-getter on update.
+        virtualElement = {
           getBoundingClientRect: props.clientRect
         }
 
         // Smart positioning with autoUpdate - automatically repositions on scroll/resize
         cleanup = autoUpdate(virtualElement, popup, async () => {
-          if (!popup) return
+          if (!popup || !virtualElement) return
 
           const { x, y, placement, middlewareData } = await computePosition(virtualElement, popup, {
             placement: 'bottom-start',
@@ -88,59 +90,13 @@ export default {
       onUpdate(props: any) {
         component.updateProps(props)
 
-        if (!props.clientRect) {
+        if (!props.clientRect || !virtualElement) {
           return
         }
 
-        // Position updates automatically via autoUpdate
-        // Just update the virtual element's reference
-        if (popup) {
-          const virtualElement = {
-            getBoundingClientRect: props.clientRect
-          }
-
-          // Restart autoUpdate with new reference
-          if (cleanup) {
-            cleanup()
-          }
-
-          cleanup = autoUpdate(virtualElement, popup, async () => {
-            if (!popup) return
-
-            const { x, y, placement, middlewareData } = await computePosition(
-              virtualElement,
-              popup,
-              {
-                placement: 'bottom-start',
-                middleware: [
-                  floatingOffset(8),
-                  flip({
-                    fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
-                    padding: 8
-                  }),
-                  shift({ padding: 8 }),
-                  size({
-                    padding: 8,
-                    apply({ availableHeight, elements }) {
-                      Object.assign(elements.floating.style, {
-                        maxHeight: `${Math.max(100, availableHeight)}px`
-                      })
-                    }
-                  }),
-                  hide({ padding: 8 })
-                ]
-              }
-            )
-
-            Object.assign(popup.style, {
-              left: `${x}px`,
-              top: `${y}px`,
-              visibility: middlewareData.hide?.referenceHidden === true ? 'hidden' : 'visible'
-            })
-
-            popup.setAttribute('data-placement', placement)
-          })
-        }
+        // Rebind the rect-getter; the existing autoUpdate listener
+        // re-runs on scroll/resize and will pick up the new caret position.
+        virtualElement.getBoundingClientRect = props.clientRect
       },
 
       onKeyDown(props: any) {
@@ -183,6 +139,8 @@ export default {
           popup.remove()
           popup = null
         }
+
+        virtualElement = null
 
         // Destroy component
         if (component) {
