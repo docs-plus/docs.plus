@@ -15,23 +15,12 @@ interface UseReadReceiptsArgs {
 const FLUSH_DEBOUNCE_MS = 200
 
 /**
- * Mark-as-read coordinator.
- *
- * Mirrors useCheckReadMessage's semantics exactly — finds the newest
- * message intersecting the viewport via virtualizer + viewport math,
- * filters out pending/failed rows (AGENTS rule), only considers rows
- * with created_at > the locally cached lastReadMessageTimestamp,
- * updates that local timestamp, then fires mark_messages_as_read once.
- *
- * The original three triggers (deps effect, 150ms timeout, 120ms
- * debounced scroll listener) collapse to one debounced scroll listener
- * plus one debounced run when `messages` changes (catches realtime
- * arrivals while parked at bottom).
- *
- * Local writes are limited to lastReadMessageTimestamp. The server RPC
- * updates channel_members.last_read_message_id and last_read_update_at;
- * the next channel boot rehydrates lastReadMessageId via
- * get_channel_aggregate_data — DO NOT write lastReadMessageId locally.
+ * Mark-as-read coordinator. Finds the newest message intersecting the
+ * viewport, filters out pending/failed rows, only considers rows newer
+ * than the cached lastReadMessageTimestamp, then fires
+ * mark_messages_as_read once. Local writes are limited to that
+ * timestamp — lastReadMessageId rehydrates from the next channel boot
+ * via get_channel_aggregate_data.
  */
 export const useReadReceipts = ({ channelId, messages, profile }: UseReadReceiptsArgs) => {
   const { messageContainerRef, virtualizerRef } = useMessageFeedContext()

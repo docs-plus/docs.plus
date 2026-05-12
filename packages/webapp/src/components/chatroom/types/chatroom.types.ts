@@ -27,33 +27,3 @@ export interface ChatroomContextValue {
   isDialogOpen: boolean
   initLoadMessages: boolean
 }
-
-// src/components/chatroom/types/message.types.ts
-export interface Message {
-  id: string
-  content: string
-  authorId: string
-  channelId: string
-  createdAt: string
-  updatedAt?: string
-  isEdited: boolean
-  isBookmarked: boolean
-  replyToId?: string
-  type: 'text' | 'emoji' | 'system'
-  reactions: MessageReaction[]
-  readBy: string[]
-  replyCount: number
-}
-
-export interface MessageReaction {
-  emoji: string
-  users: string[]
-  count: number
-}
-
-export interface MessageCardProps {
-  messageId: string
-  variant?: keyof ChatroomVariant
-  className?: string
-  children: React.ReactNode
-}
