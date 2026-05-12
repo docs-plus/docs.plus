@@ -33,6 +33,10 @@ create index if not exists idx_admin_users_created_at
 -- -----------------------------------------------------------------------------
 -- Security definer function to check admin status without RLS recursion
 -- -----------------------------------------------------------------------------
+-- Self-check only: the parameter is kept for backward compatibility with
+-- callers that pass `auth.uid()` explicitly, but `is_admin(other_uuid)`
+-- now always returns false. Prevents authenticated users from probing
+-- which platform users hold admin status.
 create or replace function public.is_admin(check_user_id uuid)
 returns boolean
 language sql
@@ -40,9 +44,8 @@ security definer
 set search_path = public
 stable
 as $$
-  select exists (
-    select 1 from admin_users where user_id = check_user_id
-  );
+  select check_user_id = auth.uid()
+     and exists (select 1 from admin_users where user_id = auth.uid());
 $$;
 
 comment on function public.is_admin(uuid) is 'Check if a user has admin dashboard access';

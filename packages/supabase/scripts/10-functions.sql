@@ -680,11 +680,19 @@ $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public;
 
 -------------------------------
 -------------------------------
--- It's like a server function, and we do not concern ourselves with performance issues!
+-- SECURITY DEFINER: the function needs to read u.email (column-revoked
+-- from authenticated in 13-RLS.sql) and to insert a channel_members row
+-- for `user_id != auth.uid()` (blocked by channel_members_join_insert).
+-- Both are intended bypasses for the DM-create flow; auth.uid()-based
+-- checks inside the function body enforce the actual authorisation.
 CREATE OR REPLACE FUNCTION create_direct_message_channel(
     workspace_uid VARCHAR(36),
     user_id UUID
-) RETURNS JSONB AS $$
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     user_name TEXT;
     display_name TEXT;
@@ -776,7 +784,7 @@ BEGIN
 
     RETURN new_channel;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 
 ---------------------
@@ -1078,7 +1086,14 @@ END;
 $$;
 
 -----------------------------------
--- Function to add the current user to a workspace
+-- Function to add the current user to a workspace.
+--
+-- Product invariant: docs.plus workspaces are document slugs. Opening any
+-- doc auto-bootstraps the workspace (creates if missing) and joins the
+-- caller. Membership is intentionally self-service — there is no invite
+-- gate. Workspace isolation is therefore "anyone signed in can see any
+-- workspace's PUBLIC content" by design; PRIVATE channels still require
+-- per-channel membership (`channels_member_insert` in 13-RLS.sql).
 CREATE OR REPLACE FUNCTION join_workspace(
     _workspace_id VARCHAR(36)
 )
