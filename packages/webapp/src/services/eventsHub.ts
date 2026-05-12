@@ -293,22 +293,18 @@ export const eventsHub = (router: NextRouter) => {
   })
 
   /**
-   * UNREAD_SYNC: Updates unread count badges via DOM attributes.
-   * CSS handles all visuals and animations - zero React re-renders.
+   * UNREAD_SYNC: Updates unread count badges on the ProseMirror heading-action
+   * chat buttons (`.ha-chat-btn`). Those buttons are vanilla DOM nodes injected
+   * by a ProseMirror plugin and can't trivially host a React subtree, so they
+   * stay on the data-attribute + CSS-`::before` path.
+   *
+   * Everything else (TOC, header, chatroom, notification bell) uses the React
+   * <UnreadBadge> component directly. Do not set data-unread-count on those
+   * surfaces — the TOC clear-step below exists for legacy cleanup.
    *
    * Animation direction:
    * - data-count-dir="up" → number slides from bottom (count increased)
    * - data-count-dir="down" → number slides from top (count decreased)
-   *
-   * Selectors updated (by data-heading-id):
-   * - .ha-chat-btn[data-heading-id] (editor heading chat, ProseMirror)
-   *
-   * TOC uses React (useUnreadCount + UnreadBadge); do not set data-unread-count on .toc__chat-trigger.
-   *
-   * Fallback (inside [data-toc-id] heading):
-   * - .ha-chat-btn without data-heading-id (legacy)
-   *
-   * - [data-notification-badge] (notification bell)
    */
   PubSub.subscribe(UNREAD_SYNC, (msg, data: TUnreadSyncData) => {
     const { channels } = data
@@ -366,16 +362,6 @@ export const eventsHub = (router: NextRouter) => {
       if (el) {
         updateElement(el, channel.unread_message_count ?? 0)
       }
-    })
-
-    // Update notification bell badge
-    const totalUnread = Array.from(channels.values()).reduce(
-      (sum, ch) => sum + (ch?.unread_message_count ?? 0),
-      0
-    )
-
-    document.querySelectorAll<HTMLElement>('[data-notification-badge]').forEach((el) => {
-      updateElement(el, totalUnread)
     })
   })
 }

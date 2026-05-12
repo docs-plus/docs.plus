@@ -1,11 +1,12 @@
 // =============================================================================
-// Unread Badge - Unified CSS-only solution
+// Unread Badge - CSS-attr path for ProseMirror widgets only
 // =============================================================================
-// All elements with [data-unread-count] get a badge via ::before pseudo-element.
-// CSS handles all visuals and animations - zero JS overhead.
+// React surfaces (TOC, header, chatroom, notification bell) use
+// <UnreadBadge> from @components/ui. This file only styles the editor
+// heading-action chat button, which is a vanilla DOM node injected by a
+// ProseMirror plugin and can't easily host a React subtree.
 // =============================================================================
 
-// Shared badge styles via mixin
 @mixin unread-badge($top: -4px, $right: -8px, $size: 20px, $font-size: 11px) {
   position: relative;
 
@@ -50,13 +51,6 @@
   &[data-count-dir='down']::before {
     animation: badge-count-down 0.25s ease-out forwards;
   }
-}
-
-// =============================================================================
-// Notification Bell Badge ([data-notification-badge])
-// =============================================================================
-[data-notification-badge][data-unread-count]:not([data-unread-count='']) {
-  @include unread-badge($top: -2px, $right: -4px, $size: 18px, $font-size: 10px);
 }
 
 // =============================================================================

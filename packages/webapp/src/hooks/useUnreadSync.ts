@@ -3,19 +3,13 @@ import { useChatStore } from '@stores'
 import { useEffect } from 'react'
 
 /**
- * Hook to sync unread counts to DOM via UNREAD_SYNC event.
- * Should be called once at the app/document level.
+ * Hook to sync unread counts onto the ProseMirror heading-action chat buttons
+ * (`.ha-chat-btn`) via data attributes. Those buttons are injected by a
+ * ProseMirror plugin and can't host a React subtree, so they use CSS `::before`
+ * driven by `data-unread-count`. Everything else (TOC, header, bell) uses the
+ * React <UnreadBadge> component and does not need this hook.
  *
- * Architecture:
- * 1. Subscribes to zustand chat store
- * 2. Publishes UNREAD_SYNC event when channels change
- * 3. Event handler updates DOM attributes for editor heading buttons + notification bell
- * 4. TOC unread uses useUnreadCount + UnreadBadge (React); UNREAD_SYNC clears stale attrs on .toc__chat-trigger
- *
- * Performance:
- * - Zero React re-renders for badge elements
- * - CSS animations are GPU-accelerated
- * - Single event for all badge updates
+ * Call once at the app/document level.
  */
 export function useUnreadSync() {
   const channels = useChatStore((state) => state.channels)
