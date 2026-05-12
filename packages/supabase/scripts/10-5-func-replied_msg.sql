@@ -1,18 +1,8 @@
-/*
- * Reply Message Functions
- * This file contains functions and triggers related to message replies:
- * - Reply message preview generation
- * - Reply metadata management
- * - Channel preview updates for new messages
- */
+-- Reply-aware row hooks: snapshot the parent preview, mirror the new id
+-- onto the parent's replied[] metadata, and refresh the channel preview.
 
-/**
- * Function: set_replied_message_preview
- * Description: Sets the preview content for the message being replied to
- * Trigger: Executes before INSERT on public.messages
- * Action: Retrieves and truncates the original message content for preview
- * Returns: The modified NEW record with replied_message_preview set
- */
+-- Stamps the parent's truncated content onto the reply row before insert
+-- so the UI can render the quoted preview without an extra join.
 CREATE OR REPLACE FUNCTION set_replied_message_preview()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -43,6 +33,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION set_replied_message_preview() IS 'Sets the preview content for replied messages by truncating the original message content.';
 
 -- Trigger: set_reply_message_preview
+DROP TRIGGER IF EXISTS set_reply_message_preview ON public.messages;
 CREATE TRIGGER set_reply_message_preview
 BEFORE INSERT ON public.messages
 FOR EACH ROW
@@ -50,13 +41,8 @@ EXECUTE FUNCTION set_replied_message_preview();
 
 COMMENT ON TRIGGER set_reply_message_preview ON public.messages IS 'Sets the replied_message_preview field when a new reply message is created.';
 
-/**
- * Function: update_original_message_metadata
- * Description: Updates the metadata of the original message when a reply is posted
- * Trigger: Executes before INSERT on public.messages
- * Action: Adds the new reply message ID to the 'replied' array in the original message metadata
- * Returns: The modified NEW record
- */
+-- Appends the new reply id into the parent's metadata.replied[] so the
+-- parent row carries an inline list of replies for the UI.
 CREATE OR REPLACE FUNCTION update_original_message_metadata()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -106,6 +92,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION update_original_message_metadata() IS 'Updates the metadata of the original message to track reply message IDs.';
 
 -- Trigger: track_message_replies
+DROP TRIGGER IF EXISTS track_message_replies ON public.messages;
 CREATE TRIGGER track_message_replies
 BEFORE INSERT ON public.messages
 FOR EACH ROW
@@ -113,13 +100,8 @@ EXECUTE FUNCTION update_original_message_metadata();
 
 COMMENT ON TRIGGER track_message_replies ON public.messages IS 'Updates the original message metadata to track reply message IDs.';
 
-/**
- * Function: update_channel_preview_on_new_message
- * Description: Updates the channel preview with the content of new messages
- * Trigger: Executes after INSERT on public.messages
- * Action: Updates the last_message_preview and last_activity_at in the channel
- * Returns: The NEW record
- */
+-- Bumps last_message_preview / last_activity_at on the channel so the
+-- sidebar can sort and preview without scanning messages.
 CREATE OR REPLACE FUNCTION update_channel_preview_on_new_message() RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT;
@@ -140,6 +122,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION update_channel_preview_on_new_message() IS 'Updates the last message preview in a channel when a new message is inserted.';
 
 -- Trigger: update_channel_preview
+DROP TRIGGER IF EXISTS update_channel_preview ON public.messages;
 CREATE TRIGGER update_channel_preview
 AFTER INSERT ON public.messages
 FOR EACH ROW

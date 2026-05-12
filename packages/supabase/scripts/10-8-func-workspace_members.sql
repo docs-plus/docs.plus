@@ -1,10 +1,5 @@
-/**
- * Function: notify_user_join_workspace
- * Description: Creates a notification message when a user joins a workspace
- * Trigger: Executes after INSERT on public.workspace_members
- * Action: Creates a notification message showing who joined
- * Returns: The NEW record (trigger standard)
- */
+-- Posts a synthetic notification message into the workspace's channel
+-- when a new member joins, so the chat shows a "joined" line.
 create or replace function notify_user_join_workspace()
 returns trigger as $$
 declare
@@ -78,6 +73,7 @@ comment on function notify_user_join_workspace() is
 'Creates a notification message when a user joins a workspace.';
 
 -- Trigger: notify_on_workspace_join
+drop trigger if exists notify_on_workspace_join on public.workspace_members;
 create trigger notify_on_workspace_join
 after insert on public.workspace_members
 for each row
