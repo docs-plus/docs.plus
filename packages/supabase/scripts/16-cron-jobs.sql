@@ -15,6 +15,17 @@ select cron.schedule(
     $$
 );
 
+-- Drains failed/expired push subscriptions so they do not accumulate
+-- forever; function body is defined in 07-4 (push pipeline).
+select cron.unschedule('cleanup-push-subscriptions')
+from cron.job where jobname = 'cleanup-push-subscriptions';
+
+select cron.schedule(
+    'cleanup-push-subscriptions',
+    '*/5 * * * *',
+    $$ select internal.cleanup_push_subscriptions(); $$
+);
+
 -- Commented out: Delete read notifications
 -- This job would delete all notifications that have been read by users.
 -- Uncomment if you want to periodically clean up read notifications from the database.
