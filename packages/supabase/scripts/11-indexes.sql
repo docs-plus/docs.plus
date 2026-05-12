@@ -10,14 +10,13 @@
 create index idx_users_username on public.users (username);
 
 -- Indexes on public.messages Table
--- Optimizes query performance for frequently accessed columns.
-create index idx_messages_channel_id on public.messages (channel_id);
+-- idx_messages_channel_id is covered by the composite (channel_id, created_at desc) below.
 create index idx_messages_user_id on public.messages (user_id);
-create index idx_messages_updated_at on public.messages (updated_at);
+-- idx_messages_type serves m.type = 'notification' filters in get_channel_aggregate_data
+-- and pin/forward RPCs (10-functions.sql); keep despite low cardinality.
 create index idx_messages_type on public.messages (type);
 
 -- Composite Index on public.messages
--- Optimizes query performance for filtering by channel_id and sorting by updated_at.
 create index idx_messages_channel_id_created_at on public.messages (channel_id, created_at desc);
 
 -- Indexes on public.channels Table
@@ -47,13 +46,35 @@ create index idx_notifications_receiver_readed on public.notifications (receiver
 -- Optimizes query performance for created_by.
 create index idx_workspaces_slug on public.workspaces (slug);
 
--- Filtered index for active messages in channels
--- Optimizes common queries that only retrieve non-deleted messages.
-create index idx_messages_channel_id_not_deleted on public.messages (channel_id) where deleted_at is null;
+-- Partial composite for the hot pagination read path under the soft-delete filter.
+-- Replaces idx_messages_channel_id_not_deleted (channel_id only) which couldn't serve ORDER BY.
+create index idx_messages_channel_id_created_at_active
+  on public.messages (channel_id, created_at desc)
+  where deleted_at is null;
 
 -- workspace_members lookups by member alone (RLS hot path: is_workspace_member()).
 -- The unique constraint covers (workspace_id, member_id); reverse direction needs its own index.
 create index idx_workspace_members_member_id on public.workspace_members (member_id);
+
+-- FK indexes on message-edit / soft-delete / reply hot triggers. Without
+-- these every edit, soft-delete, or forward does a seq scan on messages /
+-- notifications inside an AFTER trigger on the synchronous send path.
+create index if not exists idx_messages_reply_to_message_id
+  on public.messages (reply_to_message_id)
+  where reply_to_message_id is not null;
+
+create index if not exists idx_messages_origin_message_id
+  on public.messages (origin_message_id)
+  where origin_message_id is not null;
+
+create index if not exists idx_notifications_message_id
+  on public.notifications (message_id);
+
+-- channel_members(member_id) — reverse-direction lookup for user-keyed
+-- joins (e.g. get_channel_users). The unique (channel_id, member_id) index
+-- only serves channel-keyed scans.
+create index if not exists idx_channel_members_member_id
+  on public.channel_members (member_id);
 
 -- Create system user for system messages and notifications
 -- This user serves as the sender for automated system notifications and messages.
