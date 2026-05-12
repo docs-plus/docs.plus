@@ -1,4 +1,5 @@
-import { forwardRef } from 'react'
+import DOMPurify from 'dompurify'
+import { forwardRef, useMemo } from 'react'
 
 interface HighlightedMessageCardProps {
   messageElement: HTMLElement | null
@@ -14,6 +15,15 @@ export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMess
     if (!messageElement || !messageBounds) {
       return null
     }
+
+    // Defense-in-depth: the source DOM came from DOMPurify-gated render
+    // paths, but a future regression upstream would silently turn this
+    // clone-card into a parallel XSS sink. Re-sanitise on the way back in.
+
+    const sanitizedHtml = useMemo(
+      () => DOMPurify.sanitize(messageElement.outerHTML),
+      [messageElement]
+    )
 
     // Handle both DOMRect (left/top) and custom bounds (x/y) formats
     const leftPosition =
@@ -36,7 +46,7 @@ export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMess
           transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.9)'
         }}
         onClick={(e) => e.stopPropagation()}
-        dangerouslySetInnerHTML={{ __html: messageElement.outerHTML }}
+        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       />
     )
   }
