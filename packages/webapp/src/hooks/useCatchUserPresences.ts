@@ -5,7 +5,7 @@ import {
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export const useCatchUserPresences = () => {
   const profile = useAuthStore((state) => state.profile)
@@ -15,24 +15,38 @@ export const useCatchUserPresences = () => {
 
   const updateChannelRow = useChatStore((state) => state.updateChannelRow)
   const addChannelMember = useChatStore((state) => state.addChannelMember)
-  const channelMembers = useChatStore((state) => state.channelMembers)
 
   const anonymousSubscription = useRef<RealtimeChannel | null>(null)
 
-  const channelMembersHandler = (payload: any) => {
-    if (payload.table === 'channel_members') {
-      updateChannelRow(payload.new.channel_id, payload.new)
-      if (!channelMembers.has(payload.new.channel_id)) {
-        addChannelMember(payload.new.channel_id, { ...payload.new, id: payload.new.member_id })
-      }
-    }
-  }
+  // Bumped on the `online` window event so the subscription effect re-runs
+  // and rebuilds the channel after a network drop. Mirrors the
+  // online/offline pair in useMessageSubscription.
+  const [reconnectTick, setReconnectTick] = useState(0)
+
+  useEffect(() => {
+    const handleOnline = () => setReconnectTick((tick) => tick + 1)
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [])
 
   useEffect(() => {
     if (!workspaceId) return
 
     // Skip subscriptions if offline (prevents retry spam)
     if (!navigator.onLine) return
+
+    // Inline handler — reads channelMembers from useChatStore.getState()
+    // at event time, avoiding the stale-closure bug that froze the map at
+    // subscribe time. Defined inside the effect so the dep list stays at
+    // the actual subscription inputs.
+    const channelMembersHandler = (payload: any) => {
+      if (payload.table !== 'channel_members') return
+      const currentMembers = useChatStore.getState().channelMembers
+      updateChannelRow(payload.new.channel_id, payload.new)
+      if (!currentMembers.has(payload.new.channel_id)) {
+        addChannelMember(payload.new.channel_id, { ...payload.new, id: payload.new.member_id })
+      }
+    }
 
     if (!profile) {
       anonymousSubscription.current = supabaseClient
@@ -149,7 +163,8 @@ export const useCatchUserPresences = () => {
         setWorkspaceSetting('broadcaster', messageSubscription)
       })
 
-    // Unsubscribe when going offline
+    // Unsubscribe when going offline; reconnect via the `online` listener
+    // above which bumps reconnectTick and re-runs this effect.
     const handleOffline = () => {
       anonymousSubscription.current?.unsubscribe()
       messageSubscription?.unsubscribe()
@@ -162,5 +177,13 @@ export const useCatchUserPresences = () => {
       messageSubscription?.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [profile, workspaceId, setOrUpdateUserPresence])
+  }, [
+    profile,
+    workspaceId,
+    reconnectTick,
+    setOrUpdateUserPresence,
+    setWorkspaceSetting,
+    updateChannelRow,
+    addChannelMember
+  ])
 }
