@@ -69,6 +69,7 @@ export type Database = {
           id: string
           joined_at: string
           last_read_message_id: string | null
+          last_read_seq: number
           last_read_update_at: string | null
           left_at: string | null
           member_id: string
@@ -84,6 +85,7 @@ export type Database = {
           id?: string
           joined_at?: string
           last_read_message_id?: string | null
+          last_read_seq?: number
           last_read_update_at?: string | null
           left_at?: string | null
           member_id: string
@@ -99,6 +101,7 @@ export type Database = {
           id?: string
           joined_at?: string
           last_read_message_id?: string | null
+          last_read_seq?: number
           last_read_update_at?: string | null
           left_at?: string | null
           member_id?: string
@@ -367,7 +370,7 @@ export type Database = {
           }
         ]
       }
-      document_views_2026_01: {
+      document_views_2026_05: {
         Row: {
           device_type: string | null
           document_slug: string
@@ -409,7 +412,7 @@ export type Database = {
         }
         Relationships: []
       }
-      document_views_2026_02: {
+      document_views_2026_06: {
         Row: {
           device_type: string | null
           document_slug: string
@@ -451,7 +454,7 @@ export type Database = {
         }
         Relationships: []
       }
-      document_views_2026_03: {
+      document_views_2026_07: {
         Row: {
           device_type: string | null
           document_slug: string
@@ -493,7 +496,7 @@ export type Database = {
         }
         Relationships: []
       }
-      document_views_2026_04: {
+      document_views_2026_08: {
         Row: {
           device_type: string | null
           document_slug: string
@@ -697,13 +700,13 @@ export type Database = {
       messages: {
         Row: {
           channel_id: string
+          client_id: string | null
           content: string | null
           created_at: string
           deleted_at: string | null
           edited_at: string | null
           html: string | null
           id: string
-          is_thread_root: boolean | null
           medias: Json | null
           metadata: Json | null
           origin_message_id: string | null
@@ -711,22 +714,20 @@ export type Database = {
           readed_at: string | null
           replied_message_preview: string | null
           reply_to_message_id: string | null
-          thread_depth: number | null
-          thread_id: string | null
-          thread_owner_id: string | null
+          seq: number
           type: Database['public']['Enums']['message_type'] | null
           updated_at: string
           user_id: string
         }
         Insert: {
           channel_id: string
+          client_id?: string | null
           content?: string | null
           created_at?: string
           deleted_at?: string | null
           edited_at?: string | null
           html?: string | null
           id?: string
-          is_thread_root?: boolean | null
           medias?: Json | null
           metadata?: Json | null
           origin_message_id?: string | null
@@ -734,22 +735,20 @@ export type Database = {
           readed_at?: string | null
           replied_message_preview?: string | null
           reply_to_message_id?: string | null
-          thread_depth?: number | null
-          thread_id?: string | null
-          thread_owner_id?: string | null
+          seq?: number
           type?: Database['public']['Enums']['message_type'] | null
           updated_at?: string
           user_id: string
         }
         Update: {
           channel_id?: string
+          client_id?: string | null
           content?: string | null
           created_at?: string
           deleted_at?: string | null
           edited_at?: string | null
           html?: string | null
           id?: string
-          is_thread_root?: boolean | null
           medias?: Json | null
           metadata?: Json | null
           origin_message_id?: string | null
@@ -757,9 +756,7 @@ export type Database = {
           readed_at?: string | null
           replied_message_preview?: string | null
           reply_to_message_id?: string | null
-          thread_depth?: number | null
-          thread_id?: string | null
-          thread_owner_id?: string | null
+          seq?: number
           type?: Database['public']['Enums']['message_type'] | null
           updated_at?: string
           user_id?: string
@@ -784,20 +781,6 @@ export type Database = {
             columns: ['reply_to_message_id']
             isOneToOne: false
             referencedRelation: 'messages'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'messages_thread_id_fkey'
-            columns: ['thread_id']
-            isOneToOne: false
-            referencedRelation: 'messages'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'messages_thread_owner_id_fkey'
-            columns: ['thread_owner_id']
-            isOneToOne: false
-            referencedRelation: 'users'
             referencedColumns: ['id']
           },
           {
@@ -936,7 +919,7 @@ export type Database = {
           is_active: boolean
           last_error: string | null
           last_used_at: string | null
-          platform: string
+          platform: string | null
           push_credentials: Json
           updated_at: string
           user_id: string
@@ -950,7 +933,7 @@ export type Database = {
           is_active?: boolean
           last_error?: string | null
           last_used_at?: string | null
-          platform?: string
+          platform?: string | null
           push_credentials: Json
           updated_at?: string
           user_id: string
@@ -964,7 +947,7 @@ export type Database = {
           is_active?: boolean
           last_error?: string | null
           last_used_at?: string | null
-          platform?: string
+          platform?: string | null
           push_credentials?: Json
           updated_at?: string
           user_id?: string
@@ -1120,6 +1103,10 @@ export type Database = {
     Functions: {
       ack_email_message: { Args: { p_msg_id: number }; Returns: boolean }
       ack_push_message: { Args: { p_msg_id: number }; Returns: boolean }
+      add_reaction: {
+        Args: { p_emoji: string; p_message_id: string }
+        Returns: Json
+      }
       admin_get_document_member_counts: {
         Args: { p_slugs: string[] }
         Returns: {
@@ -1164,6 +1151,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      advance_read_cursor: {
+        Args: { p_channel_id: string; p_up_to_seq: number }
+        Returns: undefined
+      }
       aggregate_document_view_stats: { Args: never; Returns: Json }
       archive_bookmark: {
         Args: { p_archive?: boolean; p_bookmark_id: number }
@@ -1171,7 +1162,6 @@ export type Database = {
       }
       cleanup_email_queue: { Args: never; Returns: undefined }
       cleanup_old_document_views: { Args: never; Returns: Json }
-      cleanup_push_subscriptions: { Args: never; Returns: undefined }
       compile_digest_emails: { Args: never; Returns: Json }
       consume_email_queue: {
         Args: { p_batch_size?: number; p_visibility_timeout?: number }
@@ -1194,16 +1184,6 @@ export type Database = {
         Returns: Json
       }
       create_document_views_partitions: { Args: never; Returns: undefined }
-      create_thread_message: {
-        Args: {
-          p_content: string
-          p_html: string
-          p_id?: string
-          p_thread_id: string
-          p_workspace_id: string
-        }
-        Returns: string
-      }
       disable_failed_subscriptions: {
         Args: {
           p_error_pattern?: string
@@ -1236,6 +1216,46 @@ export type Database = {
           id: string
           username: string
         }[]
+      }
+      fetch_message_window: {
+        Args: {
+          p_after_limit?: number
+          p_anchor_kind: string
+          p_anchor_value?: string
+          p_before_limit?: number
+          p_channel_id: string
+        }
+        Returns: Json
+      }
+      fetch_messages_since: {
+        Args: { p_channel_id: string; p_limit?: number; p_since_seq: number }
+        Returns: {
+          channel_id: string
+          client_id: string | null
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          html: string | null
+          id: string
+          medias: Json | null
+          metadata: Json | null
+          origin_message_id: string | null
+          reactions: Json | null
+          readed_at: string | null
+          replied_message_preview: string | null
+          reply_to_message_id: string | null
+          seq: number
+          type: Database['public']['Enums']['message_type'] | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'messages'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       generate_unsubscribe_token: {
         Args: { p_action: string; p_user_id: string }
@@ -1270,6 +1290,7 @@ export type Database = {
           last_messages: Json
           last_read_message_id: string
           last_read_message_timestamp: string
+          last_read_seq: number
           newer_cursor: string
           older_cursor: string
           pinned_messages: Json
@@ -1413,19 +1434,7 @@ export type Database = {
           sample_errors: string[]
         }[]
       }
-      get_push_notification_stats: { Args: never; Returns: Json }
       get_push_queue_stats: { Args: never; Returns: Json }
-      get_push_subscriptions: {
-        Args: never
-        Returns: {
-          created_at: string
-          device_id: string
-          device_name: string
-          id: string
-          is_active: boolean
-          platform: string
-        }[]
-      }
       get_retention_metrics: { Args: never; Returns: Json }
       get_top_active_documents: {
         Args: { p_days?: number; p_limit?: number }
@@ -1547,6 +1556,10 @@ export type Database = {
         }
         Returns: string
       }
+      remove_reaction: {
+        Args: { p_emoji: string; p_message_id: string }
+        Returns: Json
+      }
       toggle_message_bookmark: { Args: { p_message_id: string }; Returns: Json }
       truncate_content: {
         Args: { input_content: string; max_length?: number }
@@ -1554,6 +1567,10 @@ export type Database = {
       }
       unregister_push_subscription: {
         Args: { p_device_id: string }
+        Returns: boolean
+      }
+      update_email_status: {
+        Args: { p_error_message?: string; p_queue_id: string; p_status: string }
         Returns: boolean
       }
       update_view_duration: {
@@ -1582,7 +1599,7 @@ export type Database = {
       app_role: 'admin' | 'moderator' | 'member' | 'guest'
       channel_member_role: 'MEMBER' | 'ADMIN' | 'MODERATOR' | 'GUEST'
       channel_notification_state: 'MENTIONS' | 'ALL' | 'MUTED'
-      channel_type: 'PUBLIC' | 'PRIVATE' | 'BROADCAST' | 'ARCHIVE' | 'DIRECT' | 'GROUP' | 'THREAD'
+      channel_type: 'PUBLIC' | 'PRIVATE' | 'BROADCAST' | 'ARCHIVE' | 'DIRECT' | 'GROUP'
       message_type:
         | 'text'
         | 'image'
@@ -1597,7 +1614,6 @@ export type Database = {
         | 'message'
         | 'reply'
         | 'reaction'
-        | 'thread_message'
         | 'channel_event'
         | 'direct_message'
         | 'invitation'
@@ -1607,7 +1623,6 @@ export type Database = {
         | 'channel_invite'
         | 'mention'
         | 'reply'
-        | 'thread_update'
         | 'channel_update'
         | 'member_join'
         | 'member_leave'
@@ -1765,14 +1780,13 @@ export const Constants = {
       app_role: ['admin', 'moderator', 'member', 'guest'],
       channel_member_role: ['MEMBER', 'ADMIN', 'MODERATOR', 'GUEST'],
       channel_notification_state: ['MENTIONS', 'ALL', 'MUTED'],
-      channel_type: ['PUBLIC', 'PRIVATE', 'BROADCAST', 'ARCHIVE', 'DIRECT', 'GROUP', 'THREAD'],
+      channel_type: ['PUBLIC', 'PRIVATE', 'BROADCAST', 'ARCHIVE', 'DIRECT', 'GROUP'],
       message_type: ['text', 'image', 'video', 'audio', 'link', 'giphy', 'file', 'notification'],
       notification_category: [
         'mention',
         'message',
         'reply',
         'reaction',
-        'thread_message',
         'channel_event',
         'direct_message',
         'invitation',
@@ -1783,7 +1797,6 @@ export const Constants = {
         'channel_invite',
         'mention',
         'reply',
-        'thread_update',
         'channel_update',
         'member_join',
         'member_leave',
