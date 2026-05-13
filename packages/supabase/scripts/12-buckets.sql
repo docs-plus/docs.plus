@@ -13,6 +13,10 @@
   - 'user_avatars': For storing user profile images.
   - 'channel_avatars': For storing images representing chat channels.
   - 'media': For storing general media files related to messages.
+
+  Idempotency:
+  - storage schema persists across `DROP SCHEMA public CASCADE`, so inserts
+    must guard against existing rows and policy creates against existing names.
 */
 
 -- User Avatars Bucket Configuration
@@ -23,15 +27,20 @@ insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
     ('user_avatars', 'user_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}');
+     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
+on conflict (id) do nothing;
 
 -- Policies for User Avatars Bucket
+drop policy if exists "User Avatar is publicly accessible" on storage.objects;
 create policy "User Avatar is publicly accessible" on storage.objects
     for select to authenticated using (bucket_id = 'user_avatars');
+drop policy if exists "User can upload an avatar" on storage.objects;
 create policy "User can upload an avatar" on storage.objects
     for insert with check (bucket_id = 'user_avatars');
+drop policy if exists "User can update own avatar" on storage.objects;
 create policy "User can update own avatar" on storage.objects
     for update to authenticated using (auth.uid() = owner and bucket_id = 'user_avatars');
+drop policy if exists "User can delete own avatar" on storage.objects;
 create policy "User can delete own avatar" on storage.objects
     for delete to authenticated using (auth.uid() = owner and  bucket_id = 'user_avatars');
 
@@ -43,15 +52,20 @@ insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
     ('channel_avatars', 'channel_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}');
+     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
+on conflict (id) do nothing;
 
 -- Policies for Channel Avatars Bucket
+drop policy if exists "Channel Avatar is publicly accessible" on storage.objects;
 create policy "Channel Avatar is publicly accessible" on storage.objects
     for select to authenticated using (bucket_id = 'channel_avatars');
+drop policy if exists "User can upload a channel avatar" on storage.objects;
 create policy "User can upload a channel avatar" on storage.objects
     for insert with check (bucket_id = 'channel_avatars');
+drop policy if exists "User can update own channel avatar" on storage.objects;
 create policy "User can update own channel avatar" on storage.objects
     for update to authenticated using (auth.uid() = owner and bucket_id = 'channel_avatars');
+drop policy if exists "User can delete own channel avatar" on storage.objects;
 create policy "User can delete own channel avatar" on storage.objects
     for delete to authenticated using (auth.uid() = owner and bucket_id = 'channel_avatars');
 
@@ -62,14 +76,19 @@ create policy "User can delete own channel avatar" on storage.objects
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
-    ('media', 'media', true, 2097152, '{"*/*"}');
+    ('media', 'media', true, 2097152, '{"*/*"}')
+on conflict (id) do nothing;
 
 -- Policies for Media Files Bucket
+drop policy if exists "Media files are publicly accessible" on storage.objects;
 create policy "Media files are publicly accessible" on storage.objects
     for select to authenticated using (bucket_id = 'media');
+drop policy if exists "User can upload media files" on storage.objects;
 create policy "User can upload media files" on storage.objects
     for insert to authenticated with check (bucket_id = 'media');
+drop policy if exists "User can update own media files" on storage.objects;
 create policy "User can update own media files" on storage.objects
     for update to authenticated using (auth.uid() = owner and bucket_id = 'media');
+drop policy if exists "User can delete own media files" on storage.objects;
 create policy "User can delete own media files" on storage.objects
     for delete to authenticated using (auth.uid() = owner and bucket_id = 'media');
