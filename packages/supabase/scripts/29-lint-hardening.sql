@@ -201,7 +201,6 @@ DECLARE
         'join_workspace', 'update_user_online_at',
         -- Push subscriptions (per-user)
         'register_push_subscription', 'unregister_push_subscription',
-        'get_push_subscriptions',
         -- Policy primitive — used inside admin_users RLS, must remain
         -- callable in policy expressions for authenticated callers
         'is_admin'

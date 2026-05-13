@@ -673,13 +673,10 @@ ALTER FUNCTION public.update_push_subscriptions_updated_at() SET search_path = p
 ALTER FUNCTION public.ack_push_message(p_msg_id bigint) SET search_path = public;
 ALTER FUNCTION public.register_push_subscription(p_device_id text, p_device_name text, p_platform text, p_push_credentials jsonb) SET search_path = public;
 ALTER FUNCTION public.unregister_push_subscription(p_device_id text) SET search_path = public;
-ALTER FUNCTION public.get_push_subscriptions() SET search_path = public;
 ALTER FUNCTION public.get_push_queue_stats() SET search_path = public;
 ALTER FUNCTION public.admin_get_user_notification_subs() SET search_path = public;
 ALTER FUNCTION public.admin_get_recent_push_activity(p_limit integer) SET search_path = public;
 ALTER FUNCTION public.admin_get_failed_push_subs(p_limit integer) SET search_path = public;
-ALTER FUNCTION public.cleanup_push_subscriptions() SET search_path = public;
-ALTER FUNCTION public.get_push_notification_stats() SET search_path = public;
 
 -- Trigger functions run as postgres (DEFINER) so internal side effects
 -- (counters, previews, notifications) bypass RLS on side-effect tables.
