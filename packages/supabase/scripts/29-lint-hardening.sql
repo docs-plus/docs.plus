@@ -115,10 +115,28 @@ REVOKE SELECT, INSERT, UPDATE, DELETE ON public.email_bounces          FROM auth
 REVOKE SELECT, INSERT, UPDATE, DELETE ON public.push_subscriptions     FROM authenticated;
 REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_view_stats    FROM authenticated;
 REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views         FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views_2026_01 FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views_2026_02 FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views_2026_03 FROM authenticated;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON public.document_views_2026_04 FROM authenticated;
+
+-- Partition tables (document_views_YYYY_MM) are created dynamically by
+-- 09-document-views.sql for current + next 3 months, so the exact set
+-- depends on when the script runs. Discover and revoke at runtime.
+DO $$
+DECLARE
+    rec record;
+BEGIN
+    FOR rec IN
+        SELECT n.nspname, c.relname
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public'
+          AND c.relname ~ '^document_views_[0-9]{4}_[0-9]{2}$'
+    LOOP
+        EXECUTE format(
+            'REVOKE SELECT, INSERT, UPDATE, DELETE ON %I.%I FROM authenticated',
+            rec.nspname, rec.relname
+        );
+    END LOOP;
+END
+$$;
 
 -- document_views_daily may exist on remote but not local; guard.
 DO $$
