@@ -50,7 +50,10 @@ max_client_conn = 100
 
 [db.migrations]
 # If disabled, migrations will be skipped during a db push or reset.
-enabled = true
+# Local: scripts/*.sql are concatenated into seed.sql by generate-seed.ts and
+# applied as the canonical schema. Migrations exist for remote `db push` only.
+# Re-enabling locally would fail because migrations assume the seed schema.
+enabled = false
 # Specifies an ordered list of schema files that describe your database.
 # Supports glob patterns relative to supabase directory: "./schemas/*.sql"
 schema_paths = ["./scripts/*.sql"]
@@ -60,7 +63,9 @@ schema_paths = ["./scripts/*.sql"]
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+# Bootstrap runs first so its CREATE EXTENSION statements commit before
+# the main seed.sql parses references to pgmq/pg_cron/internal.
+sql_paths = ["./scripts/00-bootstrap.sql", "./seed.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

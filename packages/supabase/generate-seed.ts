@@ -14,8 +14,16 @@ const rootDir = import.meta.dir
 const scriptsDir = join(rootDir, 'scripts')
 const seedFile = join(rootDir, 'seed.sql')
 
-// Files to exclude (test files, non-schema files)
-const excludePatterns = [/^test_/i, /^dummy_/i, /^idea\.sql$/i]
+// Files to exclude (test files, non-schema files, demo seeds, bootstrap).
+// 00-bootstrap.sql is listed separately in config.toml's [db.seed].sql_paths
+// so CREATE EXTENSION statements commit before the main seed parses.
+const excludePatterns = [
+  /^test_/i,
+  /^dummy_/i,
+  /^idea\.sql$/i,
+  /^30-seed-car-conversation\.sql$/i,
+  /^00-bootstrap\.sql$/i
+]
 
 // Files that start with numbers (e.g., 01-, 02-, 10-0-, etc.)
 const isNumberedScript = (filename: string): boolean => {
