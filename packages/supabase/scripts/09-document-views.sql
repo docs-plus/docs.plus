@@ -252,7 +252,9 @@ select from pgmq.create('document_views');
 -- Enable RLS on the queue table (for consistency with other queues)
 alter table pgmq.q_document_views enable row level security;
 
--- Policy for service_role (Hocuspocus writes)
+-- Policy for service_role (Hocuspocus writes). pgmq schema persists across
+-- `DROP SCHEMA public CASCADE`, so the policy survives — guard the create.
+drop policy if exists "service_role_all" on pgmq.q_document_views;
 create policy "service_role_all" on pgmq.q_document_views
   for all
   to service_role
