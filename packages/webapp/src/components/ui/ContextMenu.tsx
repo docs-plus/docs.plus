@@ -158,9 +158,8 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
         e.preventDefault()
 
         // If onBeforeShow is provided, call it to get the target element
-        let targetElement = null
         if (onBeforeShow) {
-          targetElement = onBeforeShow(e, e.target)
+          const targetElement = onBeforeShow(e, e.target)
           // If onBeforeShow returns null, don't show the context menu
           if (!targetElement) return
         }
@@ -215,13 +214,17 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
         }
       }
 
-      parrentRef?.current?.addEventListener('contextmenu', onContextMenu)
+      const parent = parrentRef?.current
+      parent?.addEventListener('contextmenu', onContextMenu)
       document.addEventListener('mouseup', onMouseUp)
       return () => {
-        parrentRef?.current?.removeEventListener('contextmenu', onContextMenu)
+        parent?.removeEventListener('contextmenu', onContextMenu)
         document.removeEventListener('mouseup', onMouseUp)
         clearTimeout(timeout)
       }
+      // onClose is intentionally omitted to avoid re-binding the listener
+      // every render when the parent doesn't memoize the callback.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refs, parrentRef, externalIsOpen, setIsOpen, onBeforeShow, onOpenChange])
 
     // Handle mouse event from external control
@@ -242,6 +245,9 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       if (!isOpen && onClose) {
         onClose()
       }
+      // onClose intentionally omitted; firing on identity change would
+      // double-invoke the parent's handler on every render.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
     // If using external control and no parrentRef, we can still render

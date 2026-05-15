@@ -1,5 +1,5 @@
 import type { IconType } from 'react-icons'
-import { FaDiscord } from 'react-icons/fa'
+import { FaDiscord, FaGithub } from 'react-icons/fa'
 import {
   LuArchive,
   LuArrowLeft,
@@ -237,7 +237,8 @@ export const Icons = {
   userPlus: LuUserPlus,
 
   // ── Brand ────────────────────────────────────────────────
-  discord: FaDiscord
+  discord: FaDiscord,
+  github: FaGithub
 } as const satisfies Record<string, IconType>
 
 /** Union type of all registered icon names */

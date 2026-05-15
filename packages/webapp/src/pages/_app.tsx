@@ -5,7 +5,9 @@ import '@config'
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import NotificationPromptCard from '@components/NotificationPromptCard'
 import { PWAInstallPrompt } from '@components/pwa'
+import { FloatingTree } from '@floating-ui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { VirtuosoMessageListLicense } from '@virtuoso.dev/message-list'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useState } from 'react'
@@ -47,9 +49,13 @@ export default function MyApp({ Component, pageProps }: any) {
       <NotificationPromptCard />
       <PWAInstallPrompt />
       <AppProviders isMobileInitial={isMobileInitial} />
-      <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
-      </QueryClientProvider>
+      <VirtuosoMessageListLicense licenseKey={process.env.NEXT_PUBLIC_VIRTUOSO_LICENSE ?? ''}>
+        <FloatingTree>
+          <QueryClientProvider client={queryClient}>
+            <Component {...pageProps} />
+          </QueryClientProvider>
+        </FloatingTree>
+      </VirtuosoMessageListLicense>
       <Toaster />
     </div>
   )

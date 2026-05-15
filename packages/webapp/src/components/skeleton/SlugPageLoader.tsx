@@ -165,7 +165,11 @@ const LoadingToast = ({
   loadingPage: boolean
 }) => {
   const getMessage = () => {
-    if (loading) return 'Fetching profile data'
+    // "Loading workspace" is accurate for both auth states: authed users
+    // run `upsertWorkspace` + `fetchChannels`, anon viewers just run the
+    // channel fetch. The old label ("Fetching profile data") was wrong
+    // for anon — anon viewers never fetch a profile.
+    if (loading) return 'Loading workspace'
     if (providerSyncing) return 'Syncing document'
     if (loadingPage) return 'Loading components'
     return 'Loading'

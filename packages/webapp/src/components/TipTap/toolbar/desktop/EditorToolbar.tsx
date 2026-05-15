@@ -281,6 +281,12 @@ const EditorToolbar = () => {
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />
           </ToolbarButton>
 
+          <ToolbarButton
+            onClick={() => window.open('https://github.com/docs-plus/docs.plus', '_blank')}
+            tooltip="View Source on GitHub">
+            <Icons.github size={ICON_SIZE} />
+          </ToolbarButton>
+
           <ToolbarDivider />
 
           <ToolbarButton
@@ -305,18 +311,20 @@ const EditorToolbar = () => {
 
           {user && <ToolbarDivider />}
 
-          <Popover placement="bottom-end">
-            <PopoverTrigger asChild>
-              <div>
-                <ToolbarButton tooltip="Bookmarks">
-                  <Icons.bookmark size={ICON_SIZE} />
-                </ToolbarButton>
-              </div>
-            </PopoverTrigger>
-            <PopoverContent className={PANEL_CLASS}>
-              <BookmarkPanel />
-            </PopoverContent>
-          </Popover>
+          {user && (
+            <Popover placement="bottom-end">
+              <PopoverTrigger asChild>
+                <div>
+                  <ToolbarButton tooltip="Bookmarks">
+                    <Icons.bookmark size={ICON_SIZE} />
+                  </ToolbarButton>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className={PANEL_CLASS}>
+                <BookmarkPanel />
+              </PopoverContent>
+            </Popover>
+          )}
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>

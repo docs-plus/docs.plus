@@ -1,12 +1,10 @@
 import { getBookmarkStats, getUserBookmarks } from '@api'
-import { usePopoverState } from '@components/ui/Popover'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { useEffect } from 'react'
 
 export const useBookmarkSummary = () => {
   const workspaceId = useStore((state) => state.settings.workspaceId)
-  const { isOpen } = usePopoverState()
   const user = useAuthStore((state) => state.profile)
   const {
     setBookmarkSummary,
@@ -21,13 +19,17 @@ export const useBookmarkSummary = () => {
   const { request: archivedRequest } = useApi(getUserBookmarks, null, false)
 
   useEffect(() => {
-    if (!user || !workspaceId) return
+    if (!user) return
     setLoadingBookmarks(true)
     clearBookmarks()
 
     const fetchBookmarkSummary = async () => {
       try {
-        // Get bookmark stats
+        // Get bookmark stats. `workspaceId` may be undefined during initial
+        // doc bootstrap; the RPC treats null as "all workspaces" (see
+        // get_user_bookmarks: `p_workspace_id is null or w.id = p_workspace_id`).
+        // Passing null is the correct behavior — the user's bookmarks across
+        // workspaces all surface, then the panel filters/groups them.
         const { data: statsData, error: statsError } = await statsRequest({ workspaceId })
         if (statsError) throw statsError
 
@@ -76,5 +78,10 @@ export const useBookmarkSummary = () => {
     }
 
     fetchBookmarkSummary()
-  }, [user, workspaceId, isOpen])
+    // Panel mounts fresh on every open (PopoverContent returns null when
+    // closed), so `isOpen` is always true here — kept off the deps. Adding
+    // it back re-introduces a fragile chain through React.lazy + Popover
+    // context propagation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, workspaceId])
 }

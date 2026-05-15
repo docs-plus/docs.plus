@@ -692,7 +692,7 @@ html:not(.m_mobile) {
   display: none;
 }
 
-/* Highlight glow — used by chat message highlight (useHighlightMessage) */
+/* Highlight glow — used by chat message highlight (useMessageHighlight) */
 .border-ping-glow {
   position: relative;
   border-width: 2px;
@@ -797,6 +797,40 @@ html:not(.m_mobile) {
 /* Context menu active state for message cards */
 .msg_card.context-menu-active {
   background-color: color-mix(in oklch, var(--color-primary) 8%, transparent) !important;
+}
+
+/* Long-press host: suppress iOS callout / selection while the timer is armed. */
+.msg_card_long_press_host {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: contain;
+}
+.msg_long_press_backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  backdrop-filter: blur(6px);
+  z-index: 40;
+}
+.msg_long_press_overlay {
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  /* QuickReactionMenu / ContextActionsMenu still ship their legacy
+     position:fixed|absolute + translateX(-50%) styles from the v1 manual-
+     positioning era. Until Deploy 2 rewrites those menus, neutralize here so
+     they flow inside the Floating-UI overlay instead of fixing to (0,0). */
+  > * {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
 }
 
 .overflow-anchor-auto {

@@ -9,17 +9,28 @@ export const useOnAuthStateChange = () => {
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
   const anonymousSignInAttempted = useRef(false)
 
-  const getUserProfile = useCallback(async (user: any) => {
-    const { data, error } = (await getUserByIdRequest(user.id)) as any
-    if (error) throw error
-    useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' })
-    setLoading(false)
-  }, [])
+  const getUserProfile = useCallback(
+    async (user: any) => {
+      const { data, error } = (await getUserByIdRequest(user.id)) as any
+      if (error) throw error
+      useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' })
+      setLoading(false)
+    },
+    [getUserByIdRequest, setLoading]
+  )
 
   /**
    * Sign in anonymously if no session exists.
    * Anonymous users get a persistent user_id that can be linked to a real account later.
    * @see https://supabase.com/docs/guides/auth/auth-anonymous
+   *
+   * The success path resolves the auth-loading state synchronously via
+   * `setSession(data.user, true)` (which sets `loading: false` in the store).
+   * Do NOT rely on the post-signin `SIGNED_IN` event — the
+   * `onAuthStateChange` handler below intentionally omits SIGNED_IN from
+   * its branches to avoid re-fetching the profile on every tab focus /
+   * token refresh in older Supabase versions, so the event has no
+   * listener and the loading state would stick forever.
    */
   const signInAnonymously = useCallback(async () => {
     // Prevent multiple attempts
@@ -33,8 +44,11 @@ export const useOnAuthStateChange = () => {
         setLoading(false)
         return
       }
-      console.info('Anonymous user created:', data.user?.id)
-      // The onAuthStateChange will handle setting the session
+      if (data?.user) {
+        useAuthStore.getState().setSession(data.user, true)
+      } else {
+        setLoading(false)
+      }
     } catch (err) {
       console.warn('Anonymous sign-in error:', err)
       setLoading(false)
@@ -101,5 +115,5 @@ export const useOnAuthStateChange = () => {
       data.subscription.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [signInAnonymously])
+  }, [signInAnonymously, getUserProfile, setLoading])
 }

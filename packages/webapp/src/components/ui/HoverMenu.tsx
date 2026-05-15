@@ -63,12 +63,29 @@ const hoverMenuManager = new HoverMenuManager()
 
 type ScrollParentResolver = () => Element | Window | null
 
+type BoundaryResolver = () => Element | null
+
 interface HoverMenuOptions {
   placement?: Placement
   offset?: number
   delay?: number | { open?: number; close?: number }
   disabled?: boolean
   scrollParent?: Element | Window | ScrollParentResolver | null
+  /** Opt-in portal target id (find-or-create per FloatingPortal docs).
+   *  Default unset → mounts to body. Pass an id matching a DOM element
+   *  inside a parent stacking context to escape z-index war with that
+   *  context's other children (toolbars, jump-to-present, etc.). */
+  portalId?: string
+  /** Floating-UI flip/shift boundary. Resolved at lookup time so the
+   *  boundary element can mount after this hook (e.g., chatroom panel
+   *  with `.group/chat` wrapper). When set, the menu CANNOT render
+   *  outside this rectangle — flip swaps top↔bottom and shift clamps
+   *  left/right when the default placement would overflow. This is the
+   *  correct fix when `position: fixed` portals would otherwise float
+   *  over toolbars / outside their visual container; z-index can't
+   *  constrain that because fixed-positioned elements are viewport-
+   *  relative, not parent-relative. */
+  boundary?: Element | BoundaryResolver | null
 }
 
 interface HoverMenuContextType {
@@ -112,9 +129,10 @@ const resolveScrollTargets = (
 function useHoverMenu({
   placement = 'top',
   offset: offsetValue = 8,
-  delay = { open: 200, close: 150 },
+  delay = { open: 100, close: 150 },
   disabled = false,
-  scrollParent = null
+  scrollParent = null,
+  boundary = null
 }: HoverMenuOptions = {}) {
   const [open, setOpen] = useState(false)
   const [openDropdownCount, setOpenDropdownCount] = useState(0)
@@ -170,6 +188,14 @@ function useHoverMenu({
     }
   }, [scrollParent])
 
+  // Resolve boundary at render-time. The boundary element may mount AFTER
+  // this hook (e.g., chatroom panel wrapper). Re-evaluating on each render
+  // means the first hover may not have a boundary (falls back to
+  // 'clippingAncestors'), the next render after panel mount picks it up,
+  // and autoUpdate refreshes the position. Cost: one querySelector per
+  // render — negligible.
+  const resolvedBoundary = typeof boundary === 'function' ? boundary() : (boundary ?? null)
+
   const data = useFloating({
     placement,
     open: open && !disabled && !scrollLocked && isInViewport,
@@ -198,9 +224,16 @@ function useHoverMenu({
       flip({
         crossAxis: false, // Prevent left-right flipping for consistent positioning
         fallbackAxisSideDirection: 'end',
-        padding: 5
+        // Bumped from 5 to 10: with a tight padding, flip only fires when
+        // the menu extends >5px past the boundary. 10px makes flip more
+        // eager once the boundary is narrow (e.g., `.message-feed` only).
+        padding: 10,
+        ...(resolvedBoundary && { boundary: resolvedBoundary })
       }),
-      shift({ padding: 5 })
+      shift({
+        padding: 10,
+        ...(resolvedBoundary && { boundary: resolvedBoundary })
+      })
     ]
   })
 
@@ -211,7 +244,10 @@ function useHoverMenu({
     enabled: !disabled && !scrollLocked && isInViewport,
     delay,
     handleClose: safePolygon({
-      buffer: 1
+      // 8px transit corridor — 1px required pixel-precise mouse movement
+      // from reference into the floating menu and made users feel they
+      // had to "exact-focus" each row.
+      buffer: 8
     })
   })
   const dismiss = useDismiss(context)
@@ -219,61 +255,55 @@ function useHoverMenu({
 
   const interactions = useInteractions([hover, dismiss, role])
 
-  // Check if reference element is within viewport of scrollParent
+  // Track `open` via ref so the IntersectionObserver effect below doesn't
+  // re-create the observer every open/close.
+  const openRef = useRef(open)
+  useEffect(() => {
+    openRef.current = open
+  }, [open])
+
+  // Track reference visibility against the scroll container via
+  // IntersectionObserver, NOT getBoundingClientRect-on-scroll. The manual
+  // rect check captured stale values at mount time before Virtuoso had
+  // measured items (initial channel open) and didn't refire on
+  // layout-only changes after mount (bookmark indicator / reactions
+  // rendering on bookmarked rows). Both bugs collapsed `isInViewport` to
+  // `false`, which gated `useHover.enabled`, which silently disabled the
+  // menu until the user scrolled and the manual check ran again.
+  // IntersectionObserver fires on the initial measurement *and* on every
+  // subsequent layout change that affects intersection, so both cases
+  // are handled by construction.
   useEffect(() => {
     const targets = resolveScrollTargets(scrollParent)
     if (!targets.length) {
       setIsInViewport(true)
       return
     }
-
     const scrollContainer = targets[0]
-
-    const checkVisibility = () => {
-      const referenceEl = data.refs.reference.current
-      if (!referenceEl || !(scrollContainer instanceof Element)) {
-        setIsInViewport(true)
-        return
-      }
-
-      const containerRect = scrollContainer.getBoundingClientRect()
-      const elementRect = referenceEl.getBoundingClientRect()
-
-      // Calculate visible area
-      const visibleTop = Math.max(elementRect.top, containerRect.top)
-      const visibleBottom = Math.min(elementRect.bottom, containerRect.bottom)
-      const visibleLeft = Math.max(elementRect.left, containerRect.left)
-      const visibleRight = Math.min(elementRect.right, containerRect.right)
-
-      const visibleHeight = Math.max(0, visibleBottom - visibleTop)
-      const visibleWidth = Math.max(0, visibleRight - visibleLeft)
-      const visibleArea = visibleHeight * visibleWidth
-
-      const totalHeight = elementRect.bottom - elementRect.top
-      const totalWidth = elementRect.right - elementRect.left
-      const totalArea = totalHeight * totalWidth
-
-      // Require at least 50% of the element to be visible
-      const visibilityThreshold = 0.5
-      const isVisible = totalArea > 0 && visibleArea / totalArea >= visibilityThreshold
-
-      setIsInViewport(isVisible)
-
-      if (!isVisible && open) setOpen(false)
+    const referenceEl = data.refs.reference.current
+    if (!(referenceEl instanceof Element) || typeof IntersectionObserver === 'undefined') {
+      setIsInViewport(true)
+      return
     }
-
-    // Check initially
-    checkVisibility()
-
-    // Check on scroll
-    scrollContainer.addEventListener('scroll', checkVisibility, { passive: true })
-    window.addEventListener('resize', checkVisibility, { passive: true })
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', checkVisibility)
-      window.removeEventListener('resize', checkVisibility)
-    }
-  }, [scrollParent, data.refs.reference, open])
+    // Use `threshold: [0, 0.5, 1]` (not just `0.5`) so the observer fires
+    // on the initial paint regardless of the starting intersection ratio.
+    // With a single threshold the observer only fires when the ratio
+    // *crosses* it — so a message that mounts already 80% visible may
+    // never trigger a callback until the user scrolls.
+    const root = scrollContainer instanceof Element ? scrollContainer : null
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1]
+        if (!entry) return
+        const isVisible = entry.intersectionRatio >= 0.5
+        setIsInViewport(isVisible)
+        if (!isVisible && openRef.current) setOpen(false)
+      },
+      { root, threshold: [0, 0.5, 1] }
+    )
+    observer.observe(referenceEl)
+    return () => observer.disconnect()
+  }, [scrollParent, data.refs.reference])
 
   return useMemo(
     () => ({
@@ -304,10 +334,20 @@ export interface HoverMenuProps extends HoverMenuOptions {
   children: ReactNode
   menu: ReactNode
   className?: string
+  /** Extra classes merged onto the floating menu element. Use to override
+   *  z-index when portaling into a child stacking context. */
+  menuClassName?: string
   id?: string
 }
 
-export function HoverMenu({ children, menu, className, id, ...options }: HoverMenuProps) {
+export function HoverMenu({
+  children,
+  menu,
+  className,
+  menuClassName,
+  id,
+  ...options
+}: HoverMenuProps) {
   const hoverMenu = useHoverMenu(options)
 
   return (
@@ -318,7 +358,11 @@ export function HoverMenu({ children, menu, className, id, ...options }: HoverMe
         {...hoverMenu.getReferenceProps()}
         className={twMerge('inline-block', className)}>
         {children}
-        {hoverMenu.open && <HoverMenuContent>{menu}</HoverMenuContent>}
+        {hoverMenu.open && (
+          <HoverMenuContent portalId={options.portalId} menuClassName={menuClassName}>
+            {menu}
+          </HoverMenuContent>
+        )}
       </div>
     </HoverMenuContext.Provider>
   )
@@ -326,15 +370,17 @@ export function HoverMenu({ children, menu, className, id, ...options }: HoverMe
 
 interface HoverMenuContentProps {
   children: ReactNode
+  portalId?: string
+  menuClassName?: string
 }
 
-const HoverMenuContent: FC<HoverMenuContentProps> = ({ children }) => {
+const HoverMenuContent: FC<HoverMenuContentProps> = ({ children, portalId, menuClassName }) => {
   const context = useHoverMenuContext()
 
   if (!context.open) return null
 
   return (
-    <FloatingPortal>
+    <FloatingPortal id={portalId}>
       <div
         ref={context.refs.setFloating}
         style={{
@@ -343,7 +389,10 @@ const HoverMenuContent: FC<HoverMenuContentProps> = ({ children }) => {
           maxWidth: '100%'
         }}
         {...context.getFloatingProps()}
-        className="join border-base-300 bg-base-200 z-50 flex flex-row rounded-lg border shadow-md">
+        className={twMerge(
+          'join border-base-300 bg-base-200 z-50 flex flex-row rounded-lg border shadow-md',
+          menuClassName
+        )}>
         {children}
       </div>
     </FloatingPortal>

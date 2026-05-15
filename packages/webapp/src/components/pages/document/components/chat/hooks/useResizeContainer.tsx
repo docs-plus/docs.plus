@@ -75,18 +75,29 @@ const useResizeContainer = () => {
       // Disable editor during resize to prevent interference
       if (editor?.isEditable) editor.setEditable(false)
 
+      // Bypass React during drag: write `style.height` directly on the
+      // container ref and broadcast a CustomEvent for sibling consumers
+      // (editor wrapper marginBottom in `useAdjustEditorSizeForChatRoom`).
+      // Writing to Zustand on every mousemove cascades 60×/sec through
+      // every `state.chatRoom` subscriber → Virtuoso's ResizeObserver →
+      // bottom-smooth scroll thrash. Commit to the store ONCE on mouseup.
+      let lastHeight = startHeight
       const doDrag = (e: MouseEvent) => {
         e.preventDefault()
         const deltaY = startY - e.clientY
         const newHeight = startHeight + deltaY
-
-        // Clamp to min/max constraints
         const clampedHeight = Math.min(maxHeight, Math.max(CHAT_MIN_HEIGHT, newHeight))
-        setOrUpdateChatPanelHeight(clampedHeight)
+        if (!containerRef.current) return
+        containerRef.current.style.height = `${clampedHeight}px`
+        lastHeight = clampedHeight
+        window.dispatchEvent(new CustomEvent('chat-panel-resize-tick', { detail: clampedHeight }))
       }
 
       const stopDrag = () => {
         setIsResizing(false)
+        // Single store commit at the end of drag — drives localStorage
+        // persistence, useEffect mirrors, and the one Virtuoso re-measure.
+        setOrUpdateChatPanelHeight(lastHeight)
         // Re-enable editor
         if (editor && !editor.isEditable) editor.setEditable(true)
         // Re-enable text selection

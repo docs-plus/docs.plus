@@ -8,9 +8,15 @@ const AVATARS_BUCKET_URL = `${PUBLIC_BUCKET_URL}/user_avatars`
 const config: Config = {
   app: {
     profile: {
-      // "id" is user id, "avatarUpdatedAt" is the timestamp of the avatar update
+      // Path: `{userId}/avatar.png` inside the user_avatars bucket. The
+      // {userId} folder prefix encodes ownership — the bucket's RLS
+      // policies parse it via `(storage.foldername(name))[1]` and compare
+      // against `auth.uid()`, so storage writes only succeed when the
+      // path's first folder matches the caller's user id.
+      // The `?{avatarUpdatedAt}` query string busts the browser cache
+      // on every avatar change.
       getAvatarURL: (id: string, avatarUpdatedAt: string) => {
-        return `${AVATARS_BUCKET_URL}/public/${id}.png?${avatarUpdatedAt}`
+        return `${AVATARS_BUCKET_URL}/${id}/avatar.png?${avatarUpdatedAt}`
       },
       avatarBucketName: 'user_avatars'
     }
