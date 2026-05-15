@@ -9,7 +9,7 @@ import { twMerge } from 'tailwind-merge'
 
 const RenderLoader = ({ className }: { className?: string }) => {
   return (
-    <div className={twMerge('ProseMirror tiptap__editor w-full', className)}>
+    <div className={twMerge('ProseMirror tiptap__editor skeleton w-full', className)}>
       <DocumentSimpleLoader className="heading !h-auto" level="1" />
       <DocumentWithPictureLoader className="heading !h-auto" level="1" />
       <DocumentSimpleLoader className="heading !h-auto" level="1" />
