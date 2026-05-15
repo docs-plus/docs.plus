@@ -1,5 +1,6 @@
 import { getUserProfileForModal } from '@api'
-import { getSocialColor, getSocialIcon } from '@components/settings/constants'
+import SocialIcon from '@components/settings/components/SocialIcon'
+import { getSocialColor, isSocialDomain } from '@components/settings/utils/socialIcons'
 import { Avatar } from '@components/ui/Avatar'
 import CloseButtonUI from '@components/ui/CloseButton'
 import Loading from '@components/ui/Loading'
@@ -10,8 +11,6 @@ import type { LinkItem } from '@types'
 import { getGoogleFaviconUrl } from '@utils/link-helpers'
 import { useEffect, useMemo } from 'react'
 import { LuLink, LuMail, LuPhone } from 'react-icons/lu'
-
-// --- Types ---
 
 interface UserProfileDialogProps {
   userId: string
@@ -32,8 +31,6 @@ type SanitizedLink = {
 
 type UserProfileResponse = Awaited<ReturnType<typeof getUserProfileForModal>>
 type UserProfileRecord = NonNullable<UserProfileResponse['data']>
-
-// --- Helpers ---
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
@@ -75,8 +72,6 @@ const sanitizeLinks = (rawLinks: unknown): SanitizedLink[] => {
   }, [])
 }
 
-// --- Link icon renderer (uses constants lookup — DRY) ---
-
 const getLinkIcon = (link: SanitizedLink) => {
   if (link.type === 'email') {
     return <LuMail className="text-base-content/60 size-5" aria-hidden="true" />
@@ -90,10 +85,16 @@ const getLinkIcon = (link: SanitizedLink) => {
   if (link.type === 'social') {
     try {
       const domain = new URL(link.url).hostname.replace('www.', '')
-      const SocialIcon = getSocialIcon(domain)
-      const color = getSocialColor(domain)
-      if (SocialIcon) {
-        return <SocialIcon className="size-5" style={color ? { color } : undefined} />
+      if (isSocialDomain(domain)) {
+        const color = getSocialColor(domain)
+        return (
+          <SocialIcon
+            domain={domain}
+            size={20}
+            className="size-5"
+            style={color ? { color } : undefined}
+          />
+        )
       }
     } catch {
       // fall through to favicon
@@ -125,8 +126,6 @@ const getLinkIcon = (link: SanitizedLink) => {
 
   return <LuLink className="text-base-content/60 size-5" aria-hidden="true" />
 }
-
-// --- Component ---
 
 export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
   const closeDialog = useStore((state) => state.closeDialog)

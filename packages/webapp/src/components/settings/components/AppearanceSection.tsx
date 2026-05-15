@@ -1,9 +1,7 @@
 import { type ThemePreference, useThemeStore } from '@stores'
 import { LuContrast, LuMonitor, LuMoon, LuPalette, LuSun } from 'react-icons/lu'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import SettingsCard from './SettingsCard'
 
 interface ThemeOptionProps {
   value: ThemePreference
@@ -13,10 +11,6 @@ interface ThemeOptionProps {
   selected: boolean
   onSelect: (value: ThemePreference) => void
 }
-
-// ---------------------------------------------------------------------------
-// Theme option card
-// ---------------------------------------------------------------------------
 
 const ThemeOption = ({
   value,
@@ -54,10 +48,6 @@ const ThemeOption = ({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Options config
-// ---------------------------------------------------------------------------
-
 const THEME_OPTIONS: {
   value: ThemePreference
   label: string
@@ -90,17 +80,13 @@ const THEME_OPTIONS: {
   }
 ]
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
-
 const AppearanceSection = () => {
   const preference = useThemeStore((s) => s.preference)
   const setPreference = useThemeStore((s) => s.setPreference)
 
   return (
     <div className="space-y-4">
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuPalette size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Theme</h2>
@@ -127,7 +113,7 @@ const AppearanceSection = () => {
             />
           ))}
         </div>
-      </section>
+      </SettingsCard>
     </div>
   )
 }

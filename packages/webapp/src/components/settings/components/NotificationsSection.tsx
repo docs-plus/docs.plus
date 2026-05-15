@@ -1,4 +1,4 @@
-import { updateUser } from '@api'
+import { updateNotificationPreferences } from '@api'
 import { showPWAInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
@@ -8,10 +8,12 @@ import Toggle from '@components/ui/Toggle'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import debounce from 'lodash/debounce'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { LuBell, LuClock, LuInfo, LuMail, LuSmartphone, LuTriangleAlert } from 'react-icons/lu'
 
 import type { NotificationPreferences } from '../types'
+import SettingsCard from './SettingsCard'
 
 interface ToggleRowProps {
   id: string
@@ -22,7 +24,6 @@ interface ToggleRowProps {
   disabled?: boolean
 }
 
-// Get user's browser timezone
 const getBrowserTimezone = (): string => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -31,7 +32,6 @@ const getBrowserTimezone = (): string => {
   }
 }
 
-// Get all supported timezones
 const getAllTimezones = (): string[] => {
   try {
     // Modern browsers support this
@@ -137,7 +137,6 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'Pacific/Auckland': 'New Zealand'
 }
 
-// Format time for display (24h to 12h with AM/PM)
 const formatTimeDisplay = (time: string): string => {
   const [hours, minutes] = time.split(':').map(Number)
   const period = hours >= 12 ? 'PM' : 'AM'
@@ -153,7 +152,6 @@ const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 48
   return { value, label: formatTimeDisplay(value) }
 })
 
-// Email frequency options
 const EMAIL_FREQUENCY_OPTIONS: { value: string; label: string }[] = [
   { value: 'immediate', label: 'Immediately (after 15 min if unread)' },
   { value: 'daily', label: 'Daily digest (9 AM)' },
@@ -161,7 +159,6 @@ const EMAIL_FREQUENCY_OPTIONS: { value: string; label: string }[] = [
   { value: 'never', label: 'Never' }
 ]
 
-// Get timezone offset string
 const getTimezoneOffset = (tz: string): string => {
   try {
     const now = new Date()
@@ -176,7 +173,6 @@ const getTimezoneOffset = (tz: string): string => {
   }
 }
 
-// Format timezone for display - shows friendly name if available
 const formatTimezoneLabel = (tz: string): string => {
   const alias = TIMEZONE_ALIASES[tz]
   const cityName = tz.replace(/_/g, ' ')
@@ -193,7 +189,6 @@ const formatTimezoneLabel = (tz: string): string => {
   return cityName
 }
 
-// Get searchable text for a timezone (includes all aliases)
 const getTimezoneSearchText = (tz: string): string => {
   const parts = [tz, tz.replace(/_/g, ' ')]
   const alias = TIMEZONE_ALIASES[tz]
@@ -211,7 +206,6 @@ interface TimezoneSelectProps {
 }
 
 const TimezoneSelect = ({ value, onChange, disabled }: TimezoneSelectProps) => {
-  // Memoize timezone options with search text
   const timezoneOptions = useMemo(
     () =>
       ALL_TIMEZONES.map((tz) => ({
@@ -260,9 +254,7 @@ const ToggleRow = ({ id, label, description, checked, onChange, disabled }: Togg
   </div>
 )
 
-// --- iOS PWA Notice ---
-// Shown when iOS user is in Safari (not PWA) and push requires "Add to Home Screen"
-
+// Shown on iOS Safari (not PWA): push requires "Add to Home Screen".
 interface IOSPWANoticeProps {
   iosSupportsWebPush: boolean
 }
@@ -314,11 +306,8 @@ const IOSPWANotice = ({ iosSupportsWebPush }: IOSPWANoticeProps) => {
   )
 }
 
-// --- Main Component ---
-
 const NotificationsSection = () => {
-  const profile = useAuthStore((state) => state.profile)
-  const setProfile = useAuthStore((state) => state.setProfile)
+  const profileData = useAuthStore((state) => state.profile?.profile_data)
 
   // Platform detection (iOS PWA requirements)
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
@@ -326,13 +315,10 @@ const NotificationsSection = () => {
   // iOS in Safari (not PWA) — push won't work, show install guidance
   const isIOSBrowser = platform === 'ios' && !isPWAInstalled
 
-  // Push notification state
   const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } =
     usePushNotifications()
 
-  // Local preferences state - detect browser timezone on init
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => ({
-    // Push defaults
     push_mentions: true,
     push_replies: true,
     push_reactions: true,
@@ -340,7 +326,6 @@ const NotificationsSection = () => {
     quiet_hours_start: '22:00',
     quiet_hours_end: '08:00',
     timezone: getBrowserTimezone(),
-    // Email defaults
     email_enabled: false,
     email_mentions: true,
     email_replies: true,
@@ -351,67 +336,66 @@ const NotificationsSection = () => {
 
   // Load preferences from profile
   useEffect(() => {
-    if (profile?.profile_data) {
-      const saved = (profile.profile_data as Record<string, unknown>)
+    if (profileData) {
+      const saved = (profileData as Record<string, unknown>)
         .notification_preferences as NotificationPreferences
       if (saved) {
         setPreferences((prev) => ({ ...prev, ...saved }))
       }
     }
-  }, [profile?.profile_data])
+  }, [profileData])
 
-  // Save preferences to profile
-  const savePreferences = useCallback(
-    async (newPrefs: NotificationPreferences) => {
-      if (!profile?.id) return
+  // Accumulate multi-key patches across rapid toggles. `debounce` is
+  // trailing-only and keeps the LAST call's args, so a per-call patch
+  // would drop earlier keys. The buffer merges everything and clears on
+  // flush.
+  const pendingPatchRef = useRef<Partial<NotificationPreferences>>({})
 
-      setSaving(true)
-      try {
-        const updatedProfileData = {
-          ...(profile.profile_data || {}),
-          notification_preferences: newPrefs
-        }
-
-        const { error } = await updateUser(profile.id, {
-          profile_data: updatedProfileData
-        })
-
-        if (error) {
+  const flushPreferences = useMemo(
+    () =>
+      debounce(async () => {
+        const patch = pendingPatchRef.current
+        if (Object.keys(patch).length === 0) return
+        pendingPatchRef.current = {}
+        setSaving(true)
+        try {
+          const { error } = await updateNotificationPreferences(patch)
+          if (error) toast.Error('Failed to save preferences')
+        } catch {
           toast.Error('Failed to save preferences')
-        } else {
-          setProfile({ ...profile, profile_data: updatedProfileData })
+        } finally {
+          setSaving(false)
         }
-      } catch {
-        toast.Error('Failed to save preferences')
-      } finally {
-        setSaving(false)
-      }
-    },
-    [profile, setProfile]
+      }, 500),
+    []
   )
 
-  // Handle preference change — clears bounce info when user re-enables email
-  const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean | string) => {
-    const newPrefs = { ...preferences, [key]: value }
+  useEffect(() => () => flushPreferences.cancel(), [flushPreferences])
 
-    // Clear bounce info when user explicitly enables email
-    if (key === 'email_enabled' && value === true && newPrefs.email_bounce_info) {
-      delete newPrefs.email_bounce_info
+  const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean | string) => {
+    const patch: Partial<NotificationPreferences> = {
+      [key]: value
+    } as Partial<NotificationPreferences>
+
+    if (key === 'email_enabled' && value === true && preferences.email_bounce_info) {
+      patch.email_bounce_info = null
     }
 
-    setPreferences(newPrefs)
-    savePreferences(newPrefs)
+    setPreferences((prev) => {
+      // Strip the null sentinel locally so the banner hides; the RPC's
+      // JSONB merge writes `null` server-side which we treat as cleared.
+      const next = { ...prev, ...patch }
+      if (patch.email_bounce_info === null) delete next.email_bounce_info
+      return next
+    })
+    Object.assign(pendingPatchRef.current, patch)
+    flushPreferences()
   }
 
-  // Handle re-enable from bounce banner: clear bounce info + enable email
   const handleClearBounceAndEnable = () => {
-    const newPrefs = { ...preferences, email_enabled: true }
-    delete newPrefs.email_bounce_info
-    setPreferences(newPrefs)
-    savePreferences(newPrefs)
+    handlePreferenceChange('email_enabled', true)
   }
 
-  // Handle push toggle
   const handlePushChange = async (checked: boolean) => {
     if (checked) {
       const result = await subscribe()
@@ -445,7 +429,7 @@ const NotificationsSection = () => {
   return (
     <div className="space-y-4">
       {/* Push Notifications */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuBell size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Push Notifications</h2>
@@ -502,11 +486,11 @@ const NotificationsSection = () => {
             )}
           </div>
         )}
-      </section>
+      </SettingsCard>
 
       {/* Quiet Hours */}
       {isPushEnabled && (
-        <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+        <SettingsCard>
           <div className="mb-3 flex items-center gap-2">
             <LuClock size={20} className="text-primary" />
             <h2 className="text-base-content text-base font-semibold">Quiet Hours</h2>
@@ -556,11 +540,11 @@ const NotificationsSection = () => {
               </>
             )}
           </div>
-        </section>
+        </SettingsCard>
       )}
 
       {/* Email Notifications */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuMail size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Email Notifications</h2>
@@ -651,7 +635,7 @@ const NotificationsSection = () => {
             </>
           )}
         </div>
-      </section>
+      </SettingsCard>
     </div>
   )
 }

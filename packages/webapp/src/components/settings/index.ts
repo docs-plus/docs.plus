@@ -1,7 +1,0 @@
-export { default as DocumentsSection } from './components/DocumentsSection'
-export { default as NotificationsSection } from './components/NotificationsSection'
-export { default as ProfileSection } from './components/ProfileSection'
-export { default as SecuritySection } from './components/SecuritySection'
-export { default as SocialLinks } from './components/SocialLinks'
-export { default as SettingsPanel } from './SettingsPanel'
-export * from './types'

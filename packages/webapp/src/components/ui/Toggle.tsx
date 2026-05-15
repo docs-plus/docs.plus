@@ -48,8 +48,14 @@ const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
     const generatedId = useId()
     const id = _id || generatedId
 
+    // Explicit checked/unchecked tokens — daisyUI's default `toggle-<variant>`
+    // applies the color on the knob (subtle on muted themes). Forcing the
+    // track to base-300 when off and primary when on makes the state
+    // unmistakable.
     const toggleClasses = twMerge(
       'toggle',
+      'bg-base-300 border-base-content/20',
+      'checked:bg-primary checked:border-primary checked:text-primary-content',
       size && `toggle-${size}`,
       variant && `toggle-${variant}`,
       className

@@ -1,10 +1,15 @@
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
+import { useAuthStore } from '@stores'
 import { useQuery } from '@tanstack/react-query'
 import debounce from 'lodash/debounce'
-import { useCallback, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { LuChevronLeft, LuChevronRight, LuFileText, LuSearch } from 'react-icons/lu'
+
+import SettingsCard from './SettingsCard'
+
+type DocFilter = 'all' | 'mine'
 
 interface DocumentOwner {
   avatar_url?: string
@@ -20,7 +25,6 @@ interface Document {
   slug: string
   ownerId?: string
   owner?: DocumentOwner
-  user?: DocumentOwner
   updatedAt: string
 }
 
@@ -32,15 +36,21 @@ interface DocumentsResponse {
 const ITEMS_PER_PAGE = 9
 
 const DocumentsSection = () => {
+  const userId = useAuthStore((state) => state.profile?.id)
   const [currentPage, setCurrentPage] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [inputValue, setInputValue] = useState('')
+  const [docFilter, setDocFilter] = useState<DocFilter>('all')
 
   const fetchDocuments = async ({ queryKey }: { queryKey: (string | number)[] }) => {
-    const [, page, search] = queryKey
-    const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?limit=${ITEMS_PER_PAGE}&offset=${
-      Number(page) * ITEMS_PER_PAGE
-    }${search ? '&title=' + search : ''}`
+    const [, page, search, filter] = queryKey
+    const params = new URLSearchParams({
+      limit: String(ITEMS_PER_PAGE),
+      offset: String(Number(page) * ITEMS_PER_PAGE)
+    })
+    if (search) params.set('title', String(search))
+    if (filter === 'mine' && userId) params.set('ownerId', userId)
+    const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?${params}`
     const response = await fetch(url)
     if (!response.ok) throw new Error(`Failed to fetch documents: ${response.status}`)
     const json = await response.json()
@@ -48,17 +58,27 @@ const DocumentsSection = () => {
   }
 
   const { isLoading, isError, data } = useQuery({
-    queryKey: ['documents', currentPage, searchQuery],
-    queryFn: fetchDocuments
+    queryKey: ['documents', currentPage, searchQuery, docFilter],
+    queryFn: fetchDocuments,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev
   })
 
-  const debouncedSearch = useCallback(
-    debounce((value: string) => {
-      setSearchQuery(value)
-      setCurrentPage(0)
-    }, 700),
+  const handleFilterChange = (next: DocFilter) => {
+    setDocFilter(next)
+    setCurrentPage(0)
+  }
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((value: string) => {
+        setSearchQuery(value)
+        setCurrentPage(0)
+      }, 700),
     []
   )
+
+  useEffect(() => () => debouncedSearch.cancel(), [debouncedSearch])
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target
@@ -76,7 +96,6 @@ const DocumentsSection = () => {
     setCurrentPage(page)
   }
 
-  // Generate pagination buttons
   const renderPaginationButtons = () => {
     const buttons = []
     const maxVisible = 5
@@ -89,7 +108,6 @@ const DocumentsSection = () => {
       start = Math.max(0, end - maxVisible + 1)
     }
 
-    // First page + ellipsis
     if (start > 0) {
       buttons.push(
         <Button key={0} size="sm" className="join-item" onClick={() => handlePageChange(0)}>
@@ -105,7 +123,6 @@ const DocumentsSection = () => {
       }
     }
 
-    // Visible range
     for (let i = start; i <= end; i++) {
       buttons.push(
         <Button
@@ -119,7 +136,6 @@ const DocumentsSection = () => {
       )
     }
 
-    // Ellipsis + last page
     if (end < totalPages - 1) {
       if (end < totalPages - 2) {
         buttons.push(
@@ -144,19 +160,50 @@ const DocumentsSection = () => {
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
-        <TextInput
-          labelPosition="floating"
-          startIcon={LuSearch}
-          placeholder="Search by title..."
-          value={inputValue}
-          onChange={handleSearch}
-        />
-      </section>
+      <SettingsCard>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <TextInput
+              labelPosition="floating"
+              startIcon={LuSearch}
+              placeholder="Search by title..."
+              value={inputValue}
+              onChange={handleSearch}
+            />
+          </div>
 
-      {/* Documents Table */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+          {userId && (
+            <div className="join shrink-0" role="radiogroup" aria-label="Document filter">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={docFilter === 'all'}
+                onClick={() => handleFilterChange('all')}
+                className={`join-item btn btn-sm ${
+                  docFilter === 'all'
+                    ? 'btn-primary'
+                    : 'btn-ghost border-base-300 text-base-content/60 border'
+                }`}>
+                All
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={docFilter === 'mine'}
+                onClick={() => handleFilterChange('mine')}
+                className={`join-item btn btn-sm ${
+                  docFilter === 'mine'
+                    ? 'btn-primary'
+                    : 'btn-ghost border-base-300 text-base-content/60 border'
+                }`}>
+                Mine
+              </button>
+            </div>
+          )}
+        </div>
+      </SettingsCard>
+
+      <SettingsCard>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <span className="loading loading-spinner loading-lg text-primary" />
@@ -194,22 +241,20 @@ const DocumentsSection = () => {
                       </td>
                       <td className="max-w-[150px]">
                         <div className="flex items-center gap-2">
-                          {doc.ownerId ? (
+                          {doc.owner ? (
                             <>
                               <Avatar
-                                src={doc?.owner?.avatar_url || doc?.user?.avatar_url}
-                                avatarUpdatedAt={
-                                  doc?.owner?.avatar_updated_at || doc?.user?.avatar_updated_at
-                                }
-                                id={doc?.user?.id}
-                                alt={doc?.owner?.display_name}
-                                online={doc?.owner?.status === 'ONLINE'}
+                                id={doc.owner.id}
+                                src={doc.owner.avatar_url}
+                                avatarUpdatedAt={doc.owner.avatar_updated_at}
+                                alt={doc.owner.display_name}
+                                online={doc.owner.status === 'ONLINE'}
                                 displayPresence={true}
                                 size="xs"
                                 className="shrink-0"
                               />
                               <span className="text-base-content/70 truncate text-sm">
-                                {doc.user?.display_name}
+                                {doc.owner.display_name}
                               </span>
                             </>
                           ) : (
@@ -226,7 +271,6 @@ const DocumentsSection = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-6 flex justify-center">
                 <div className="join">
@@ -262,7 +306,7 @@ const DocumentsSection = () => {
             </p>
           </div>
         )}
-      </section>
+      </SettingsCard>
     </div>
   )
 }

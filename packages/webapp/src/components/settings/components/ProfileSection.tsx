@@ -6,12 +6,13 @@ import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import type { ProfileData } from '@types'
 import debounce from 'lodash/debounce'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LuCamera, LuLink, LuUser } from 'react-icons/lu'
 
 import { useAvatarUpload } from '../hooks/useAvatarUpload'
 import { useProfileUpdate } from '../hooks/useProfileUpdate'
 import { useUsernameValidation } from '../hooks/useUsernameValidation'
+import SettingsCard from './SettingsCard'
 import SocialLinks from './SocialLinks'
 
 const USERNAME_DEBOUNCE_MS = 1000
@@ -23,16 +24,25 @@ const ProfileSection = () => {
   const { validateUsername } = useUsernameValidation()
   const { uploading, handleUpload, handleRemove } = useAvatarUpload()
 
-  // Avatar — derived from store, file input ref for hidden <input>
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasCustomAvatar = !!user?.avatar_url
 
-  // Username state
+  // Locally controlled inputs — committed to the store only on Save so
+  // keystrokes don't fan out re-renders to every `profile` subscriber.
   const [inputUsername, setInputUsername] = useState(user?.username || '')
+  const [inputFullName, setInputFullName] = useState(user?.full_name || '')
+  const [inputBio, setInputBio] = useState(user?.profile_data?.bio || '')
   const [usernameError, setUsernameError] = useState<boolean | undefined>(undefined)
   const latestUsernameRef = useRef<string>('')
 
-  // --- Avatar handlers ---
+  // Resync only on user identity change so a different-device update of
+  // `full_name` via realtime does not clobber in-flight typing.
+  useEffect(() => {
+    setInputUsername(user?.username || '')
+    setInputFullName(user?.full_name || '')
+    setInputBio(user?.profile_data?.bio || '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const handleAvatarClick = useCallback(() => {
     fileInputRef.current?.click()
@@ -48,23 +58,22 @@ const ProfileSection = () => {
     [handleUpload]
   )
 
-  // --- Username validation with debounce ---
-
-  const debouncedValidate = useCallback(
-    debounce((username: string, resolve: (value: boolean) => void) => {
-      validateUsername(username).then(({ isValid, errorMessage }) => {
-        setUsernameError(!isValid)
-        if (errorMessage && username === latestUsernameRef.current) {
-          toast.Error(errorMessage)
-        }
-        resolve(isValid)
-      })
-    }, USERNAME_DEBOUNCE_MS),
+  const debouncedValidate = useMemo(
+    () =>
+      debounce((username: string) => {
+        validateUsername(username).then(({ isValid, errorMessage }) => {
+          setUsernameError(!isValid)
+          if (errorMessage && username === latestUsernameRef.current) {
+            toast.Error(errorMessage)
+          }
+        })
+      }, USERNAME_DEBOUNCE_MS),
     [validateUsername]
   )
 
-  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) return
+  useEffect(() => () => debouncedValidate.cancel(), [debouncedValidate])
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newUsername = e.target.value.toLowerCase()
     setInputUsername(newUsername)
     latestUsernameRef.current = newUsername
@@ -74,45 +83,50 @@ const ProfileSection = () => {
       return
     }
 
-    const isValid = await new Promise<boolean>((resolve) => {
-      debouncedValidate(newUsername, resolve)
-    })
-
-    if (isValid) {
-      setProfile({ ...user, username: newUsername })
-    }
+    debouncedValidate(newUsername)
   }
 
-  // --- Field handlers ---
-
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) return
-    const newFullName = e.target.value
-    if (newFullName !== user.full_name) {
-      setProfile({ ...user, full_name: newFullName })
-    }
+    setInputFullName(e.target.value)
   }
 
   const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (!user) return
-    const bio = e.target.value
-    const newProfileData: ProfileData = {
-      ...((user?.profile_data as ProfileData) ?? {}),
-      bio
-    }
-    setProfile({ ...user, profile_data: newProfileData })
+    setInputBio(e.target.value)
   }
 
   const handleSubmit = () => {
+    if (!user) return
+    debouncedValidate.cancel()
+    const trimmedUsername = inputUsername.trim()
+    if (trimmedUsername === '') {
+      toast.Error('Username cannot be empty.')
+      return
+    }
+    // Only block on a known-bad username. `undefined` means the user
+    // never edited the field (or the debounce hasn't fired) — the
+    // server-side `validateUsername` inside `handleSave` will catch
+    // anything the FE missed.
+    if (usernameError === true) {
+      toast.Error('Fix the username before saving.')
+      return
+    }
+    const nextProfileData: ProfileData = {
+      ...((user.profile_data as ProfileData) ?? {}),
+      bio: inputBio
+    }
+    setProfile({
+      ...user,
+      username: inputUsername,
+      full_name: inputFullName,
+      profile_data: nextProfileData
+    })
     handleSave()
   }
-
-  // --- Render ---
 
   return (
     <div className="space-y-4">
       {/* Profile Picture */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <SettingsCard>
         <div className="flex items-center gap-5">
           <div className="relative">
             <Button
@@ -174,10 +188,10 @@ const ProfileSection = () => {
             </div>
           </div>
         </div>
-      </section>
+      </SettingsCard>
 
       {/* Account Info + Bio Combined */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuUser size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Account Information</h2>
@@ -188,7 +202,7 @@ const ProfileSection = () => {
             label="Full Name"
             labelPosition="floating"
             placeholder="Full Name"
-            value={user?.full_name || ''}
+            value={inputFullName}
             onChange={handleFullNameChange}
           />
 
@@ -210,15 +224,15 @@ const ProfileSection = () => {
             label="About"
             labelPosition="floating"
             placeholder="About"
-            value={user?.profile_data?.bio || ''}
+            value={inputBio}
             onChange={handleBioChange}
             rows={4}
           />
         </div>
-      </section>
+      </SettingsCard>
 
       {/* Social Links */}
-      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <SettingsCard>
         <div className="mb-3">
           <div className="flex items-center gap-2">
             <LuLink size={20} className="text-primary" />
@@ -229,7 +243,7 @@ const ProfileSection = () => {
           </p>
         </div>
         <SocialLinks onSave={handleSave} saveLoading={loading} />
-      </section>
+      </SettingsCard>
 
       {/* Spacer to account for sticky footer */}
       <div className="h-16" />

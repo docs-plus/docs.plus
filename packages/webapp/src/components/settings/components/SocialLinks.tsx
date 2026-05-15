@@ -8,55 +8,85 @@ import { getFormattedHref, getGoogleFaviconUrl } from '@utils/link-helpers'
 import { useCallback, useMemo, useState } from 'react'
 import { LuExternalLink, LuLink, LuMail, LuPhone, LuPlus, LuTrash2 } from 'react-icons/lu'
 
-import { getSocialColor, getSocialIcon, isSocialDomain } from '../constants'
+import { MAX_LINKS, MIN_PHONE_DIGITS } from '../constants'
 import type { LinkItem, LinkMetadata } from '../types'
-import { extractDomain, MAX_LINKS, normalizeUrl, validateLink } from '../types'
+import { LinkType } from '../types'
+import { getSocialColor, isSocialDomain } from '../utils/socialIcons'
+import SocialIcon from './SocialIcon'
 
-// --- Pure helper functions ---
+type ValidateLinkResult = { valid: true; type: LinkType } | { valid: false; error: string }
 
-/** Get the icon component for a link based on its type and domain. */
-const getLinkIcon = (link: LinkItem) => {
-  if (link.type === 'email') return LuMail
-  if (link.type === 'phone') return LuPhone
-
-  const domain = extractDomain(link.url)
-  if (domain) {
-    const brandIcon = getSocialIcon(domain)
-    if (brandIcon) return brandIcon
+/** Lowercase hostname, ensure protocol, strip trailing slash. */
+const normalizeUrl = (url: string): string => {
+  try {
+    const withProtocol = url.startsWith('http') ? url : `https://${url}`
+    const parsed = new URL(withProtocol)
+    parsed.hostname = parsed.hostname.toLowerCase()
+    if (parsed.pathname.length > 1 && parsed.pathname.endsWith('/')) {
+      parsed.pathname = parsed.pathname.slice(0, -1)
+    }
+    return parsed.toString()
+  } catch {
+    return url.trim().toLowerCase()
   }
+}
 
+/** Bare hostname for a URL (no www., lowercased). */
+const extractDomain = (url: string): string | null => {
+  try {
+    const withProtocol = url.startsWith('http') ? url : `https://${url}`
+    return new URL(withProtocol).hostname.replace('www.', '').toLowerCase()
+  } catch {
+    return null
+  }
+}
+
+const PHONE_REGEX = /^(?:\+?\d{1,4}[-.\s]?)?\(?\d{1,}\)?[-.\s]?\d{1,}[-.\s]?\d{1,}$/
+
+const validateLink = (url: string): ValidateLinkResult => {
+  const trimmed = url.trim()
+  const digitsOnly = trimmed.replace(/\D/g, '')
+  if (PHONE_REGEX.test(trimmed.replace(/\s+/g, '')) && digitsOnly.length >= MIN_PHONE_DIGITS) {
+    return { valid: true, type: LinkType.Phone }
+  }
+  if (/^mailto:/.test(trimmed) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return { valid: true, type: LinkType.Email }
+  }
+  const domain = extractDomain(trimmed)
+  if (domain) {
+    return { valid: true, type: isSocialDomain(domain) ? LinkType.Social : LinkType.Simple }
+  }
+  return { valid: false, error: 'Invalid URL format!' }
+}
+
+/** Get the leading Lu* icon for non-social link types. */
+const getFallbackIcon = (link: LinkItem) => {
+  if (link.type === LinkType.Email) return LuMail
+  if (link.type === LinkType.Phone) return LuPhone
   return LuLink
 }
 
-/** Get the brand color for a social link, or undefined for non-social types. */
+/** Brand colour for known social domains; undefined otherwise. */
 const getLinkIconColor = (link: LinkItem): string | undefined => {
-  if (link.type !== 'social') return undefined
+  if (link.type !== LinkType.Social) return undefined
   const domain = extractDomain(link.url)
   return domain ? getSocialColor(domain) : undefined
 }
 
-/** Check if a URL already exists in the links list (normalized comparison). */
 const isDuplicate = (links: LinkItem[], url: string): boolean => {
   const normalized = normalizeUrl(url)
   return links.some((l) => normalizeUrl(l.url) === normalized)
 }
 
-/** Get a favicon URL for a link (skips email/phone — no favicon needed). */
 const getFaviconUrl = (link: LinkItem): string | undefined => {
-  if (link.type === 'email' || link.type === 'phone') return undefined
+  if (link.type === LinkType.Email || link.type === LinkType.Phone) return undefined
   return getGoogleFaviconUrl(link.url)
 }
 
-// --- Props ---
-
 interface SocialLinksProps {
-  /** Save handler from parent (single save channel — SOLID SRP). */
   onSave: (options?: { successToast?: string; skipUsernameValidation?: boolean }) => Promise<void>
-  /** Whether a save operation is in progress. */
   saveLoading: boolean
 }
-
-// --- Component ---
 
 const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
   const user = useAuthStore((state) => state.profile)
@@ -72,8 +102,6 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
   const isLoading = fetching || saveLoading
   const isAtLimit = links.length >= MAX_LINKS
 
-  // --- Handlers ---
-
   const updateLinkTree = useCallback(
     (newLinkTree: LinkItem[]) => {
       if (!user) return
@@ -85,6 +113,8 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
     [user, setProfile]
   )
 
+  // Optimistic — onSave failures surface a toast but the local tree
+  // already shows the change; the next profile fetch reconciles.
   const handleAddLink = useCallback(async () => {
     if (!user || !newLink.trim()) return
 
@@ -93,11 +123,12 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
       return
     }
 
-    const { valid, type, error } = validateLink(newLink, isSocialDomain)
-    if (!valid) {
-      toast.Error(error || 'Invalid link')
+    const result = validateLink(newLink)
+    if (!result.valid) {
+      toast.Error(result.error)
       return
     }
+    const { type } = result
 
     if (isDuplicate(links, newLink)) {
       toast.Warning('Link already exists!')
@@ -106,34 +137,22 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
 
     setFetching(true)
 
-    // Capture state for rollback
-    const previousLinks = links
-
     try {
-      // Fetch metadata for URLs (skip for phone/email — no OG tags)
+      // Skip metadata fetch for phone/email — no OG tags to read.
       const metadata: LinkMetadata =
-        type === 'phone' || type === 'email'
+        type === LinkType.Phone || type === LinkType.Email
           ? { title: newLink.trim() }
           : await fetchLinkMetadata(newLink.trim())
 
       const link: LinkItem = {
         url: newLink.trim(),
-        type: type!,
+        type,
         metadata
       }
 
-      const newLinkTree = [...links, link]
-      updateLinkTree(newLinkTree)
-
-      // Only clear input after successful save
-      try {
-        await onSave({ successToast: 'Link added successfully!', skipUsernameValidation: true })
-        setNewLink('')
-      } catch {
-        // Rollback optimistic update
-        updateLinkTree(previousLinks)
-        toast.Error('Failed to save link. Please try again.')
-      }
+      updateLinkTree([...links, link])
+      await onSave({ successToast: 'Link added successfully!', skipUsernameValidation: true })
+      setNewLink('')
     } catch {
       toast.Error('An error occurred while adding the link.')
     } finally {
@@ -144,25 +163,14 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
   const handleRemoveLink = useCallback(
     async (url: string) => {
       if (!user) return
-
-      // Capture state for rollback
-      const previousLinks = links
-      const newLinkTree = links.filter((link) => link.url !== url)
-      updateLinkTree(newLinkTree)
-
-      try {
-        await onSave({ successToast: 'Link removed successfully!', skipUsernameValidation: true })
-      } catch {
-        // Rollback optimistic update
-        updateLinkTree(previousLinks)
-        toast.Error('Failed to remove link. Please try again.')
-      }
+      updateLinkTree(links.filter((link) => link.url !== url))
+      await onSave({ successToast: 'Link removed successfully!', skipUsernameValidation: true })
     },
     [user, links, updateLinkTree, onSave]
   )
 
   const handleLinkClick = useCallback((e: React.MouseEvent, link: LinkItem) => {
-    if (link.type === 'phone' || link.type === 'email') {
+    if (link.type === LinkType.Phone || link.type === LinkType.Email) {
       return // Let default browser behavior handle tel:/mailto:
     }
     e.preventDefault()
@@ -175,8 +183,6 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
     },
     [handleAddLink]
   )
-
-  // --- Render ---
 
   return (
     <div className="space-y-3">
@@ -216,22 +222,20 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
           </p>
 
           {links.map((link) => {
-            const Icon = getLinkIcon(link)
+            const FallbackIcon = getFallbackIcon(link)
             const iconColor = getLinkIconColor(link)
             const faviconUrl = getFaviconUrl(link)
-            const hasBrandIcon = link.type === 'social' && !!iconColor
+            const domain = link.type === LinkType.Social ? extractDomain(link.url) : null
+            const hasBrandIcon = !!domain && !!iconColor
 
             return (
               <div
                 key={link.url}
                 className="bg-base-200 hover:bg-base-300 group rounded-box flex items-center gap-3 p-2.5 transition-all">
-                {/* Icon — brand icon for known socials, Google favicon for other URLs, Lu* for email/phone */}
                 <div className="bg-base-100 rounded-field flex size-8 shrink-0 items-center justify-center shadow-sm">
-                  {/* For known social domains, show brand icon directly (no need for favicon) */}
-                  {hasBrandIcon ? (
-                    <Icon className="size-4" style={{ color: iconColor }} />
+                  {hasBrandIcon && domain ? (
+                    <SocialIcon domain={domain} className="size-4" style={{ color: iconColor }} />
                   ) : faviconUrl ? (
-                    /* For URL-based links, use Google Favicon Service (always returns valid PNG) */
                     <>
                       <img
                         src={faviconUrl}
@@ -239,20 +243,17 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
                         className="size-5 rounded-sm object-contain"
                         loading="lazy"
                         onError={(e) => {
-                          // Hide broken favicon — fallback icon renders underneath
                           e.currentTarget.style.display = 'none'
                           const fallback = e.currentTarget.nextElementSibling as HTMLElement | null
                           if (fallback) fallback.style.display = 'flex'
                         }}
                       />
-                      {/* Fallback: generic icon if Google favicon also fails (extremely rare) */}
                       <span className="hidden items-center justify-center">
-                        <Icon className="text-base-content/60 size-4" />
+                        <FallbackIcon className="text-base-content/60 size-4" />
                       </span>
                     </>
                   ) : (
-                    /* Email / Phone — use Lucide icon */
-                    <Icon className="text-base-content/60 size-4" />
+                    <FallbackIcon className="text-base-content/60 size-4" />
                   )}
                 </div>
 
@@ -263,7 +264,7 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
                     onClick={(e) => handleLinkClick(e, link)}
                     className="text-base-content hover:text-primary flex items-center gap-1 truncate text-sm font-medium transition-colors">
                     {link.metadata?.title || link.url}
-                    {link.type !== 'email' && link.type !== 'phone' && (
+                    {link.type !== LinkType.Email && link.type !== LinkType.Phone && (
                       <LuExternalLink size={14} className="text-base-content/50 shrink-0" />
                     )}
                   </a>
