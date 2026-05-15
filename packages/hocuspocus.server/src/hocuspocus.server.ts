@@ -137,7 +137,7 @@ const serverConfig = {
       wsLogger.error({ err: error, documentName }, 'Auth error')
 
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('Authentication failed')
+        throw new Error('Authentication failed', { cause: error })
       }
 
       return { user: null, slug: '', documentId: documentName, deviceType: 'desktop' }
