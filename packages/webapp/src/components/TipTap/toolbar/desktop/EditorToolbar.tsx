@@ -281,12 +281,6 @@ const EditorToolbar = () => {
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />
           </ToolbarButton>
 
-          <ToolbarButton
-            onClick={() => window.open('https://github.com/docs-plus/docs.plus', '_blank')}
-            tooltip="View Source on GitHub">
-            <Icons.github size={ICON_SIZE} />
-          </ToolbarButton>
-
           <ToolbarDivider />
 
           <ToolbarButton
