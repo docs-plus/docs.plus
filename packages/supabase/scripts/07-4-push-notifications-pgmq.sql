@@ -139,7 +139,7 @@ as $$
             coalesce((profile_data->'notification_preferences'->>'quiet_hours_enabled')::boolean, false) as enabled,
             coalesce(profile_data->'notification_preferences'->>'quiet_hours_start', '22:00') as start_time,
             coalesce(profile_data->'notification_preferences'->>'quiet_hours_end', '08:00') as end_time,
-            coalesce(profile_data->>'timezone', 'UTC') as tz
+            coalesce(profile_data->'notification_preferences'->>'timezone', 'UTC') as tz
         from public.users
         where id = p_user_id
     )
@@ -226,13 +226,13 @@ begin
     v_notify_type := new.type;
 
     -- Check if this notification type is enabled
-    if v_notify_type = 'mention' and not coalesce((v_prefs->>'mentions_enabled')::boolean, true) then
+    if v_notify_type = 'mention' and not coalesce((v_prefs->>'push_mentions')::boolean, true) then
         return new;
     end if;
-    if v_notify_type = 'reply' and not coalesce((v_prefs->>'replies_enabled')::boolean, true) then
+    if v_notify_type = 'reply' and not coalesce((v_prefs->>'push_replies')::boolean, true) then
         return new;
     end if;
-    if v_notify_type = 'reaction' and not coalesce((v_prefs->>'reactions_enabled')::boolean, true) then
+    if v_notify_type = 'reaction' and not coalesce((v_prefs->>'push_reactions')::boolean, true) then
         return new;
     end if;
 

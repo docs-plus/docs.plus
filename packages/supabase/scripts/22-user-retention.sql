@@ -338,16 +338,16 @@ begin
     from public.push_subscriptions
     where user_id is not null;
 
-    -- Users with email notifications enabled (check profile_data)
+    -- Users with email notifications enabled (check profile_data.notification_preferences)
     select count(*) into v_email_enabled
     from public.users
-    where profile_data->>'email_notifications' = 'true'
-       or profile_data->>'email_notifications' is null; -- Default is enabled
+    where (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
+       or profile_data->'notification_preferences'->>'email_enabled' is null; -- Default is enabled
 
     -- Notification read rate
     select
         case when count(*) > 0
-            then round((count(*) filter (where is_read = true)::numeric / count(*)) * 100, 1)
+            then round((count(*) filter (where readed_at is not null)::numeric / count(*)) * 100, 1)
             else 0
         end
     into v_notification_read_rate
