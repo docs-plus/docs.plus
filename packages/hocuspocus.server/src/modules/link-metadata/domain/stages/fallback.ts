@@ -11,7 +11,7 @@ export const runFallback = (
   canonicalUrl: string,
   requestedUrl: string = canonicalUrl
 ): NonNullable<StageResult> => {
-  let parsed: URL | null = null
+  let parsed: URL | null
   try {
     parsed = new URL(canonicalUrl)
   } catch {

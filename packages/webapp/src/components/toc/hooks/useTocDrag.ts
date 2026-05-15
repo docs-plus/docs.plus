@@ -248,8 +248,6 @@ export function useTocDrag(items: TocItem[]) {
       if (levelDiff !== 0) {
         let headingPos: number
         if (source.sectionFrom < insertPos) {
-          headingPos = tr.mapping.map(insertPos) - (source.sectionTo - source.sectionFrom)
-          headingPos = Math.max(0, headingPos)
           const sectionSize = source.sectionTo - source.sectionFrom
           const mappedInsert = tr.mapping.map(insertPos)
           headingPos = mappedInsert - sectionSize

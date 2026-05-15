@@ -18,7 +18,7 @@ export const useAsyncRequest = <TData = unknown, TError = AuthError | null>(
   const request = useCallback(
     async (...args: any) => {
       setLoading(true)
-      let response = null
+      let response
       try {
         response = await apiFunc(...args)
 

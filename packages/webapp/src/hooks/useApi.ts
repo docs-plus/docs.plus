@@ -23,7 +23,7 @@ export const useApi = <TData = unknown, TError = PostgrestError>(
   const request = useCallback(
     async (...args: any) => {
       setLoading(true)
-      let response = null
+      let response
       try {
         response = await apiFunc(...args)
         if (response.error) {

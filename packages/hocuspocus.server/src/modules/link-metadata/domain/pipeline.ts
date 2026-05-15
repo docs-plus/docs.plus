@@ -58,7 +58,7 @@ export const runPipeline = async (input: PipelineInput): Promise<PipelineResult>
 
   for (const name of orderedStageNames) {
     const start = Date.now()
-    let result: StageResult = null
+    let result: StageResult
     try {
       result =
         name === 'html'

@@ -36,7 +36,7 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
       console.log('element', { element })
       if (!element) return false
 
-      let targetElement: HTMLElement | null = null
+      let targetElement: HTMLElement | null
 
       // Find the appropriate element to select based on the requested level
       switch (level) {
