@@ -30,10 +30,19 @@ values
      '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}')
 on conflict (id) do nothing;
 
--- Policies for User Avatars Bucket
+-- Policies for User Avatars Bucket.
+-- SELECT is scoped to the caller's own folder. Public-URL reads are
+-- served by storage's HTTP handler (bucket.public = true) and don't
+-- pass through this policy; the SELECT is required only so the upload
+-- INSERT-then-readback succeeds (otherwise storage maps the empty
+-- readback to a misleading "new row violates row-level security
+-- policy" 403). Folder-scoping blocks bucket enumeration.
 drop policy if exists "User Avatar is publicly accessible" on storage.objects;
 create policy "User Avatar is publicly accessible" on storage.objects
-    for select to authenticated using (bucket_id = 'user_avatars');
+    for select to authenticated using (
+        bucket_id = 'user_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 drop policy if exists "User can upload an avatar" on storage.objects;
 create policy "User can upload an avatar" on storage.objects
     for insert to authenticated
@@ -68,9 +77,13 @@ values
 on conflict (id) do nothing;
 
 -- Policies for Channel Avatars Bucket
+-- Channel avatars: same SELECT-for-upload-readback rationale as above.
 drop policy if exists "Channel Avatar is publicly accessible" on storage.objects;
 create policy "Channel Avatar is publicly accessible" on storage.objects
-    for select to authenticated using (bucket_id = 'channel_avatars');
+    for select to authenticated using (
+        bucket_id = 'channel_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 drop policy if exists "User can upload a channel avatar" on storage.objects;
 create policy "User can upload a channel avatar" on storage.objects
     for insert to authenticated
@@ -103,10 +116,16 @@ values
     ('media', 'media', true, 2097152, '{"*/*"}')
 on conflict (id) do nothing;
 
--- Policies for Media Files Bucket
+-- Policies for Media Files Bucket.
+-- SELECT scoped to the uploader (owner_id) matches the UPDATE/DELETE
+-- policies below. Public URLs are still served by storage's HTTP
+-- handler; the SELECT exists for the upload INSERT-then-readback.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 create policy "Media files are publicly accessible" on storage.objects
-    for select to authenticated using (bucket_id = 'media');
+    for select to authenticated using (
+        bucket_id = 'media'
+        and (select auth.uid())::text = owner_id
+    );
 drop policy if exists "User can upload media files" on storage.objects;
 create policy "User can upload media files" on storage.objects
     for insert to authenticated with check (bucket_id = 'media');

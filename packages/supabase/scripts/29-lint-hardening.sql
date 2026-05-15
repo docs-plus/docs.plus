@@ -56,16 +56,16 @@ $$;
 
 
 -- =====================================================================
--- 2. Drop overbroad public-bucket SELECT/listing policies
+-- 2. (Removed) public-bucket SELECT policies are kept, but scoped.
 -- =====================================================================
--- Public buckets serve files via direct URL; the SELECT-on-objects
--- policies allow listing every file in the bucket, which exposes the
--- file inventory. URL-based read access is unaffected (controlled by
--- the bucket's `public` flag in storage.buckets).
-
-DROP POLICY IF EXISTS "Channel Avatar is publicly accessible" ON storage.objects;
-DROP POLICY IF EXISTS "Media files are publicly accessible"   ON storage.objects;
-DROP POLICY IF EXISTS "User Avatar is publicly accessible"    ON storage.objects;
+-- Previous revisions dropped the three SELECT policies on the premise
+-- that public buckets serve files via direct URL and the SELECT only
+-- enables bucket-listing. That missed Supabase Storage's upload path,
+-- which runs INSERT then a readback — without SELECT the readback
+-- fails and storage emits a misleading 42501 "new row violates RLS".
+-- 12-buckets.sql now scopes SELECT to the caller's own folder /
+-- owner_id so the upload readback succeeds without exposing the
+-- bucket inventory.
 
 
 -- =====================================================================
