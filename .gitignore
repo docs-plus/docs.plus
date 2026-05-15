@@ -164,9 +164,13 @@ packages/hocuspocus.server/temp/
 # local Notes and scripts
 Notes/
 
-# Temporary scratch files (e.g. tmp/badge-icon-only.svg)
+# Temporary scratch files (e.g. tmp/badge-icon-only.svg, .tmp-*.jpeg)
 tmp/
 **/tmp/
+.tmp-*
+
+# Supabase Studio scratch (user-local snippets)
+packages/supabase/snippets/
 
 # Sensitive documentation (contains env templates)
 QUICKSTART.md

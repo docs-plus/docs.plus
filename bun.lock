@@ -366,6 +366,7 @@
         "@tiptap/pm": "catalog:",
         "@tiptap/react": "catalog:",
         "@tiptap/starter-kit": "catalog:",
+        "@virtuoso.dev/message-list": "^1.16.7",
         "daisyui": "catalog:",
         "date-fns": "catalog:",
         "dexie": "^4.4.2",
@@ -1669,6 +1670,10 @@
     "@unrs/resolver-binding-win32-ia32-msvc": ["@unrs/resolver-binding-win32-ia32-msvc@1.11.1", "", { "os": "win32", "cpu": "ia32" }, "sha512-DCEI6t5i1NmAZp6pFonpD5m7i6aFrpofcp4LA2i8IIq60Jyo28hamKBxNrZcyOwVOZkgsRp9O2sXWBWP8MnvIQ=="],
 
     "@unrs/resolver-binding-win32-x64-msvc": ["@unrs/resolver-binding-win32-x64-msvc@1.11.1", "", { "os": "win32", "cpu": "x64" }, "sha512-lrW200hZdbfRtztbygyaq/6jP6AKE8qQN2KvPcJ+x7wiD038YtnYtZ82IMNJ69GJibV7bwL3y9FgK+5w/pYt6g=="],
+
+    "@virtuoso.dev/gurx": ["@virtuoso.dev/gurx@1.2.3", "", { "peerDependencies": { "react": ">= 16 || >= 17 || >= 18 || >= 19", "react-dom": ">= 16 || >= 17 || >= 18 || >= 19" } }, "sha512-zqIzVOQgJGEbrG+hvNiNHdrtM2G/9zBVgBSRUAW2yT8iUOouSHAsPIxpCU/xsAYEwicXURGhU6cxzgBPVjXL+g=="],
+
+    "@virtuoso.dev/message-list": ["@virtuoso.dev/message-list@1.16.7", "", { "dependencies": { "@virtuoso.dev/gurx": "^1.2.3" }, "peerDependencies": { "react": ">= 16 || >= 17 || >= 18 || >= 19", "react-dom": ">= 16 || >= 17 || >= 18 || >= 19" } }, "sha512-esyAlAQ50WHUY/u8lkaf9B9R4inajCRna8QoS7mFYFpR5DigjFOsYd7Rp8UlEgDk4iNzerOs5ennMjaQQeQgwA=="],
 
     "@vue/compiler-core": ["@vue/compiler-core@3.5.29", "", { "dependencies": { "@babel/parser": "^7.29.0", "@vue/shared": "3.5.29", "entities": "^7.0.1", "estree-walker": "^2.0.2", "source-map-js": "^1.2.1" } }, "sha512-cuzPhD8fwRHk8IGfmYaR4eEe4cAyJEL66Ove/WZL7yWNL134nqLddSLwNRIsFlnnW1kK+p8Ck3viFnC0chXCXw=="],
 
