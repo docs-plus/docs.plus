@@ -10,14 +10,16 @@ export type TUser = Database['public']['Tables']['users']['Row']
  * fails for both anon and authenticated; the whitelist below mirrors
  * the GRANT so the query lands.
  */
-const USER_PROFILE_COLUMNS =
+export const USER_PROFILE_COLUMNS =
   'id, username, full_name, display_name, avatar_url, avatar_updated_at, profile_data, status, online_at, created_at, updated_at, deleted_at'
 
 export const getUserById = async (userId: string): Promise<PostgrestSingleResponse<TUser>> => {
+  // `maybeSingle()` returns `data: null` instead of throwing the misleading
+  // "Cannot coerce the result to a single JSON object" when the row is
+  // missing (e.g. local DB reset orphans a JWT). Callers must handle null.
   return supabaseClient
     .from('users')
     .select(USER_PROFILE_COLUMNS)
     .eq('id', userId)
-    .single()
-    .throwOnError() as unknown as Promise<PostgrestSingleResponse<TUser>>
+    .maybeSingle() as unknown as Promise<PostgrestSingleResponse<TUser>>
 }

@@ -13,6 +13,14 @@ export const useOnAuthStateChange = () => {
     async (user: any) => {
       const { data, error } = (await getUserByIdRequest(user.id)) as any
       if (error) throw error
+      if (!data) {
+        // Authenticated but no public.users row — usually a stale session
+        // surviving a local DB reset. Sign out so the next entry hits the
+        // signup flow's handle_new_user trigger cleanly.
+        console.warn('No public.users row for authenticated user; signing out.')
+        await supabaseClient.auth.signOut()
+        return
+      }
       useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' })
       setLoading(false)
     },
