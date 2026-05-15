@@ -14,3 +14,4 @@
 **/next.config.ts
 **/public
 ./components/icons/icons.jsx
+packages/webapp/src/types/supabase.ts

@@ -1,3 +1,3 @@
 import nextConfig from '../eslint-config/next.js'
 
-export default nextConfig
+export default [{ ignores: ['src/types/supabase.ts'] }, ...nextConfig]

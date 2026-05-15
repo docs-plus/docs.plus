@@ -33,7 +33,8 @@ export default [
       '**/*.spec.{ts,tsx,js}',
       '**/__tests__/**',
       '**/*.min.js',
-      '**/workbox-*.js'
+      '**/workbox-*.js',
+      'packages/webapp/src/types/supabase.ts'
     ]
   },
 
