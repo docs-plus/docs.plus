@@ -65,6 +65,7 @@ const MessageComposer = ({
   const [isToolbarOpen, setIsToolbarOpen] = useState(false)
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
   const openDialog = useStore((state) => state.openDialog)
+  const closeDialog = useStore((state) => state.closeDialog)
 
   const setEditMsgMemory = useChatStore((state) => state.setEditMessageMemory)
   const setReplyMsgMemory = useChatStore((state) => state.setReplyMessageMemory)
@@ -321,9 +322,9 @@ const MessageComposer = ({
     url.searchParams.set('open_heading_chat', channelId)
     window.history.pushState({}, '', url.href)
 
-    openDialog(<SignInForm showHeader onClose={() => {}} />, { size: 'sm', dismissible: true })
+    openDialog(<SignInForm showHeader onClose={closeDialog} />, { size: 'sm', dismissible: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openDialog])
+  }, [openDialog, closeDialog])
 
   // Optimistic submit: snapshot content → (for optimistic paths) clear
   // editor synchronously → fire send. The visible Enter→empty latency
