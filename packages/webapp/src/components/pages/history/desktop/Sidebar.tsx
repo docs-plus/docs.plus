@@ -4,6 +4,7 @@ import {
 } from '@components/pages/history/historyShareUrl'
 import SidebarLoader from '@components/skeleton/SidebarLoader'
 import Button from '@components/ui/Button'
+import CloseButton from '@components/ui/CloseButton'
 import { useModal } from '@components/ui/ModalDrawer'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { Icons } from '@icons'
@@ -94,11 +95,21 @@ const Sidebar = ({ className }: { className?: string }) => {
     return (
       <div className={shellClass}>
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
-          <header className="border-base-300 bg-base-200 sticky top-0 z-10 shrink-0 border-b px-4 py-3">
-            <h2 className="text-base-content text-base font-semibold sm:text-lg">
-              Version History
-            </h2>
-            <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">0 versions</p>
+          <header className="border-base-300 bg-base-200 sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base-content text-base font-semibold sm:text-lg">
+                Version History
+              </h2>
+              <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">0 versions</p>
+            </div>
+            {closeModal && (
+              <CloseButton
+                onClick={closeModal}
+                size="sm"
+                aria-label="Close history"
+                className="-mt-1 -mr-1 shrink-0"
+              />
+            )}
           </header>
           {/* §5.6 empty state */}
           <div className="flex flex-1 flex-col items-center justify-center space-y-3 px-4 py-8">
@@ -125,11 +136,23 @@ const Sidebar = ({ className }: { className?: string }) => {
   return (
     <div className={shellClass}>
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <header className="border-base-300 bg-base-200 sticky top-0 z-10 shrink-0 border-b px-4 py-3">
-          <h2 className="text-base-content text-base font-semibold sm:text-lg">Version History</h2>
-          <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
-            {historyList.length} version{historyList.length !== 1 ? 's' : ''}
-          </p>
+        <header className="border-base-300 bg-base-200 sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base-content text-base font-semibold sm:text-lg">
+              Version History
+            </h2>
+            <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
+              {historyList.length} version{historyList.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          {closeModal && (
+            <CloseButton
+              onClick={closeModal}
+              size="sm"
+              aria-label="Close history"
+              className="-mt-1 -mr-1 shrink-0"
+            />
+          )}
         </header>
 
         <ScrollArea className="min-h-0 flex-1 !pt-0" scrollbarSize="thin" hideScrollbar>
