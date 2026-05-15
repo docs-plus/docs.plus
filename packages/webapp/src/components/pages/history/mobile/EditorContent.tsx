@@ -14,7 +14,7 @@ const EditorContent = () => {
   if (loadingHistory || !editor) {
     return (
       <ScrollArea className={scrollRootClass} scrollbarSize="thin">
-        <div className="ProseMirror tiptap__editor docy_editor relative w-full">
+        <div className="ProseMirror tiptap__editor docy_editor skeleton relative w-full">
           <DocumentSimpleLoader className="heading !h-auto" level="1" />
           <DocumentWithPictureLoader className="heading !h-auto" level="1" />
           <DocumentSimpleLoader className="heading !h-auto" level="1" />
