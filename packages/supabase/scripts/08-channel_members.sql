@@ -13,6 +13,7 @@ create table public.channel_members (
     notif_state           channel_notification_state default 'MENTIONS'::public.channel_notification_state, -- User's notification preference for this channel
     channel_member_role   channel_member_role default 'MEMBER'::public.channel_member_role, -- The role of the user in the channel (e.g., admin, moderator, member).
     unread_message_count  int default 0, -- The number of unread messages for the user in the channel.
+    last_read_seq         bigint not null default 0, -- v2 read cursor; replaces last_read_message_id in deploy 4 cleanup.
     created_at            timestamp with time zone default timezone('utc', now()) not null, -- Timestamp when the membership record was created.
     updated_at            timestamp with time zone default timezone('utc', now()) -- Timestamp when the membership record was last updated.
 );

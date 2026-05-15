@@ -202,10 +202,7 @@ DECLARE
     user_facing_names text[] := ARRAY[
         -- Channel/feed reads
         'get_channel_aggregate_data',
-        'get_channel_messages_paginated',
         'get_channel_members_by_last_read_update',
-        -- Read receipts / message lifecycle
-        'mark_messages_as_read',
         -- Bookmarks
         'toggle_message_bookmark', 'archive_bookmark', 'mark_bookmark_as_read',
         'get_bookmark_count', 'get_bookmark_stats', 'get_user_bookmarks',
@@ -247,10 +244,9 @@ $$;
 -- 7. GRANT EXECUTE TO anon (+ authenticated) — analytics + read whitelist
 -- =====================================================================
 -- These RPCs power anonymous document-view tracking AND anonymous read
--- access to PUBLIC chat. The two read RPCs (get_channel_aggregate_data,
--- get_channel_messages_paginated) gate internally on
--- `type = 'PUBLIC' OR is_channel_member(...)` (Sprint 2.2), so the anon
--- caller can only fetch PUBLIC-channel rows.
+-- access to PUBLIC chat. `get_channel_aggregate_data` gates internally
+-- on `type = 'PUBLIC' OR is_channel_member(...)`, so the anon caller
+-- can only fetch PUBLIC-channel rows.
 
 GRANT EXECUTE ON FUNCTION public.enqueue_document_view(text, text, uuid, boolean, text)
     TO anon, authenticated;
@@ -267,7 +263,7 @@ BEGIN
         FROM pg_proc p
         JOIN pg_namespace n ON n.oid = p.pronamespace
         WHERE n.nspname = 'public'
-          AND p.proname IN ('get_channel_aggregate_data', 'get_channel_messages_paginated')
+          AND p.proname IN ('get_channel_aggregate_data')
     LOOP
         EXECUTE format(
             'GRANT EXECUTE ON FUNCTION %I.%I(%s) TO anon',

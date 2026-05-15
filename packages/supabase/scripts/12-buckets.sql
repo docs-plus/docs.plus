@@ -36,13 +36,25 @@ create policy "User Avatar is publicly accessible" on storage.objects
     for select to authenticated using (bucket_id = 'user_avatars');
 drop policy if exists "User can upload an avatar" on storage.objects;
 create policy "User can upload an avatar" on storage.objects
-    for insert with check (bucket_id = 'user_avatars');
+    for insert to authenticated
+    with check (
+        bucket_id = 'user_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 drop policy if exists "User can update own avatar" on storage.objects;
 create policy "User can update own avatar" on storage.objects
-    for update to authenticated using (auth.uid() = owner and bucket_id = 'user_avatars');
+    for update to authenticated
+    using (
+        bucket_id = 'user_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 drop policy if exists "User can delete own avatar" on storage.objects;
 create policy "User can delete own avatar" on storage.objects
-    for delete to authenticated using (auth.uid() = owner and  bucket_id = 'user_avatars');
+    for delete to authenticated
+    using (
+        bucket_id = 'user_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 
 -- Channel Avatars Bucket Configuration
 -- Purpose: Store images for chat channels.
@@ -61,13 +73,25 @@ create policy "Channel Avatar is publicly accessible" on storage.objects
     for select to authenticated using (bucket_id = 'channel_avatars');
 drop policy if exists "User can upload a channel avatar" on storage.objects;
 create policy "User can upload a channel avatar" on storage.objects
-    for insert with check (bucket_id = 'channel_avatars');
+    for insert to authenticated
+    with check (
+        bucket_id = 'channel_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 drop policy if exists "User can update own channel avatar" on storage.objects;
 create policy "User can update own channel avatar" on storage.objects
-    for update to authenticated using (auth.uid() = owner and bucket_id = 'channel_avatars');
+    for update to authenticated
+    using (
+        bucket_id = 'channel_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 drop policy if exists "User can delete own channel avatar" on storage.objects;
 create policy "User can delete own channel avatar" on storage.objects
-    for delete to authenticated using (auth.uid() = owner and bucket_id = 'channel_avatars');
+    for delete to authenticated
+    using (
+        bucket_id = 'channel_avatars'
+        and (storage.foldername(name))[1] = (select auth.uid()::text)
+    );
 
 -- Media Files Bucket Configuration
 -- Purpose: Store various media files related to messages.
@@ -88,7 +112,7 @@ create policy "User can upload media files" on storage.objects
     for insert to authenticated with check (bucket_id = 'media');
 drop policy if exists "User can update own media files" on storage.objects;
 create policy "User can update own media files" on storage.objects
-    for update to authenticated using (auth.uid() = owner and bucket_id = 'media');
+    for update to authenticated using ((select auth.uid())::text = owner_id and bucket_id = 'media');
 drop policy if exists "User can delete own media files" on storage.objects;
 create policy "User can delete own media files" on storage.objects
-    for delete to authenticated using (auth.uid() = owner and bucket_id = 'media');
+    for delete to authenticated using ((select auth.uid())::text = owner_id and bucket_id = 'media');

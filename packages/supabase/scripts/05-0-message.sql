@@ -1,8 +1,15 @@
 -- Table: public.messages
 -- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio.
 -- The table also tracks message status (edited, deleted) and associations (user, channel, replies, and forwardings).
+
+-- Live sequence for messages.seq starts at 1_000_000_000; backfill sequence in the
+-- paired migration is bounded below it so historical rows sort before any live insert.
+create sequence if not exists public.messages_seq_seq start with 1000000000;
+
 create table public.messages (
     id                     uuid default uuid_generate_v4() not null primary key,
+    seq                    bigint not null default nextval('public.messages_seq_seq'), -- Global monotonic ordering cursor for v2 paging and realtime gap detection.
+    client_id              text, -- Idempotency token from utils/clientMessageId.ts for optimistic-send dedupe.
     created_at             timestamp with time zone default timezone('utc', now()) not null, -- Creation timestamp of the message.
     updated_at             timestamp with time zone default timezone('utc', now()) not null, -- Last update timestamp of the message.
     deleted_at             timestamp with time zone, -- Timestamp for when the message was marked as deleted.
@@ -20,6 +27,12 @@ create table public.messages (
     origin_message_id      uuid references public.messages(id) on delete set null, -- ID of the original message if this is a forwarded message.
     readed_at              timestamp with time zone -- Timestamp for when the message was read by a user.
 );
+
+alter sequence public.messages_seq_seq owned by public.messages.seq;
+alter table public.messages add constraint messages_seq_key unique (seq);
+create unique index if not exists idx_messages_client_id
+  on public.messages (client_id)
+  where client_id is not null;
 
 comment on table public.messages is 'Contains individual messages sent by users, including their content, type, and associated metadata.';
 

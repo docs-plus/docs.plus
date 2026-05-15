@@ -76,6 +76,14 @@ create index if not exists idx_notifications_message_id
 create index if not exists idx_channel_members_member_id
   on public.channel_members (member_id);
 
+-- v2 chatroom hot paths: seq-ordered scans and per-member read cursor.
+create index if not exists idx_messages_channel_id_seq_desc
+  on public.messages (channel_id, seq desc)
+  where deleted_at is null;
+
+create index if not exists idx_channel_members_channel_member_lastread
+  on public.channel_members (channel_id, member_id, last_read_seq);
+
 -- Create system user for system messages and notifications
 -- This user serves as the sender for automated system notifications and messages.
 insert into auth.users (id, email)

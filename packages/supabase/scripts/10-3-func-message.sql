@@ -83,6 +83,21 @@ BEGIN
             END IF;
         END IF;
 
+        -- Anon viewers can't observe soft-deletes via postgres_changes — the
+        -- anon SELECT policy (messages_public_anon_select) filters
+        -- `deleted_at IS NULL`, so the realtime layer drops the UPDATE event
+        -- whose NEW row fails the policy. Emit a broadcast on the NULL → NOT
+        -- NULL transition so subscribers prune locally. Payload is id +
+        -- channel only; no content leak.
+        IF OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL THEN
+            PERFORM realtime.send(
+                jsonb_build_object('id', NEW.id, 'channel_id', NEW.channel_id),
+                'message:deleted',
+                'chatroom:' || NEW.channel_id,
+                FALSE
+            );
+        END IF;
+
         RETURN NEW;
     END IF;
 
@@ -191,3 +206,125 @@ ALTER FUNCTION public.update_message_edited_at() SET search_path = public;
 ALTER FUNCTION public.handle_message_soft_delete() SECURITY DEFINER;
 ALTER FUNCTION public.update_message_preview_on_edit() SECURITY DEFINER;
 ALTER FUNCTION public.update_message_edited_at() SECURITY DEFINER;
+
+-- ============================================================
+-- v2 reactions RPCs. Direct messages.update from the FE is removed;
+-- reactions go through these. SELECT ... FOR UPDATE prevents lost
+-- updates on concurrent toggles. The persisted shape is the v1 object
+-- { [emoji]: [{user_id, created_at}, …] } so ReactionList /
+-- AddReactionButton readers stay untouched.
+-- ============================================================
+
+create or replace function public.add_reaction(
+  p_message_id uuid,
+  p_emoji      text
+) returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_channel_id varchar(36);
+  v_reactions jsonb;
+  v_users jsonb;
+  v_already_reacted boolean;
+begin
+  if v_uid is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+  if length(p_emoji) = 0 or length(p_emoji) > 16 then
+    raise exception 'invalid emoji' using errcode = '22023';
+  end if;
+
+  select channel_id into v_channel_id
+  from public.messages
+  where id = p_message_id and deleted_at is null;
+  if v_channel_id is null then
+    raise exception 'message not found' using errcode = '42501';
+  end if;
+  if not internal.can_read_channel(v_channel_id) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+
+  select coalesce(reactions, '{}'::jsonb) into v_reactions
+  from public.messages where id = p_message_id for update;
+
+  v_users := coalesce(v_reactions -> p_emoji, '[]'::jsonb);
+  v_already_reacted := exists (
+    select 1 from jsonb_array_elements(v_users) elt
+    where elt->>'user_id' = v_uid::text
+  );
+
+  if not v_already_reacted then
+    v_users := v_users || jsonb_build_array(
+      jsonb_build_object(
+        'user_id', v_uid::text,
+        'created_at', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+      )
+    );
+    v_reactions := v_reactions || jsonb_build_object(p_emoji, v_users);
+    update public.messages set reactions = v_reactions where id = p_message_id;
+  end if;
+
+  return v_reactions;
+end;
+$$;
+
+grant execute on function public.add_reaction(uuid, text) to authenticated;
+revoke execute on function public.add_reaction(uuid, text) from anon, public;
+
+create or replace function public.remove_reaction(
+  p_message_id uuid,
+  p_emoji      text
+) returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_channel_id varchar(36);
+  v_reactions jsonb;
+  v_users jsonb;
+begin
+  if v_uid is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  select channel_id into v_channel_id
+  from public.messages
+  where id = p_message_id and deleted_at is null;
+  if v_channel_id is null then
+    raise exception 'message not found' using errcode = '42501';
+  end if;
+  if not internal.can_read_channel(v_channel_id) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+
+  select coalesce(reactions, '{}'::jsonb) into v_reactions
+  from public.messages where id = p_message_id for update;
+
+  v_users := coalesce(v_reactions -> p_emoji, '[]'::jsonb);
+  v_users := coalesce((
+    select jsonb_agg(elt)
+    from jsonb_array_elements(v_users) elt
+    where elt->>'user_id' <> v_uid::text
+  ), '[]'::jsonb);
+
+  if jsonb_array_length(v_users) = 0 then
+    v_reactions := v_reactions - p_emoji;
+  else
+    v_reactions := v_reactions || jsonb_build_object(p_emoji, v_users);
+  end if;
+
+  update public.messages set reactions = v_reactions where id = p_message_id;
+
+  return v_reactions;
+end;
+$$;
+
+grant execute on function public.remove_reaction(uuid, text) to authenticated;
+revoke execute on function public.remove_reaction(uuid, text) from anon, public;

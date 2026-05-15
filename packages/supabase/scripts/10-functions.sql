@@ -37,6 +37,7 @@ RETURNS TABLE(
     unread_message BOOLEAN,
     last_read_message_id UUID,
     last_read_message_timestamp TIMESTAMP WITH TIME ZONE,
+    last_read_seq BIGINT,
     anchor_message_timestamp TIMESTAMP WITH TIME ZONE,
     older_cursor TIMESTAMP WITH TIME ZONE,
     newer_cursor TIMESTAMP WITH TIME ZONE,
@@ -52,6 +53,7 @@ DECLARE
     total_messages_since_last_read INT;
     last_read_message_id UUID;
     last_read_message_timestamp TIMESTAMP WITH TIME ZONE;
+    last_read_seq_result BIGINT;
     unread_message BOOLEAN := FALSE;
     anchor_message_timestamp TIMESTAMP WITH TIME ZONE;
     resolved_anchor_id UUID;
@@ -98,6 +100,7 @@ BEGIN
             FALSE                             AS unread_message,
             NULL::UUID                        AS last_read_message_id,
             NULL::TIMESTAMP WITH TIME ZONE    AS last_read_message_timestamp,
+            NULL::BIGINT                      AS last_read_seq,
             NULL::TIMESTAMP WITH TIME ZONE    AS anchor_message_timestamp,
             NULL::TIMESTAMP WITH TIME ZONE    AS older_cursor,
             NULL::TIMESTAMP WITH TIME ZONE    AS newer_cursor,
@@ -123,9 +126,11 @@ BEGIN
         RAISE EXCEPTION 'Access denied: caller is not a member of channel %.', input_channel_id;
     END IF;
 
-    -- Attempt to get channel member details
+    -- Attempt to get channel member details. v2: include last_read_seq as the
+    -- new cursor source; last_read_message_id is kept for deploy-4 cleanup.
     SELECT json_build_object(
             'last_read_message_id', cm.last_read_message_id,
+            'last_read_seq', cm.last_read_seq,
             'last_read_update_at', cm.last_read_update_at,
             'joined_at', cm.joined_at,
             'left_at', cm.left_at,
@@ -140,9 +145,11 @@ BEGIN
     -- Set is_member_result based on whether channel_member_info_result is null
     is_member_result := (channel_member_info_result IS NOT NULL);
 
-    -- Get the last_read_message_id and timestamp for the current user in the channel
+    -- Get the last_read_message_id, last_read_seq, and timestamp for the current
+    -- user in the channel. last_read_seq is the v2 cursor used by useReadCursor.
     IF is_member_result THEN
-        SELECT cm.last_read_message_id INTO last_read_message_id
+        SELECT cm.last_read_message_id, cm.last_read_seq
+          INTO last_read_message_id, last_read_seq_result
         FROM public.channel_members cm
         WHERE cm.channel_id = input_channel_id AND cm.member_id = auth.uid();
 
@@ -386,6 +393,7 @@ BEGIN
         unread_message,
         last_read_message_id,
         last_read_message_timestamp,
+        last_read_seq_result,
         anchor_message_timestamp,
         older_cursor_result,
         newer_cursor_result,
@@ -393,291 +401,6 @@ BEGIN
         has_more_newer_result;
 END;
 $$ LANGUAGE plpgsql STABLE;
---------------------------------------------------
---------------------------------------------------
---------------------------------------------------
-CREATE OR REPLACE FUNCTION get_channel_messages_paginated(
-    input_channel_id   VARCHAR(36),
-    limit_count        INT                DEFAULT 20,
-    cursor_timestamp   TIMESTAMPTZ        DEFAULT NULL,
-    direction          VARCHAR(10)        DEFAULT 'older'  -- 'older' or 'newer'
-)
-RETURNS TABLE(
-    messages            JSONB,
-    pagination_cursors  JSONB
-) AS $$
-BEGIN
-    -- 1) Validation
-    IF limit_count <= 0 THEN
-        RAISE EXCEPTION 'limit_count must be > 0';
-    END IF;
-    IF direction NOT IN ('older','newer') THEN
-        RAISE EXCEPTION 'direction must be "older" or "newer"';
-    END IF;
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.channels
-         WHERE id = input_channel_id
-           AND deleted_at IS NULL
-    ) THEN
-        RAISE EXCEPTION 'Channel % does not exist or is deleted', input_channel_id;
-    END IF;
-
-    -- Authorization: PUBLIC channels are readable by anyone; everything
-    -- else requires explicit channel membership. Mirrors the gate in
-    -- get_channel_aggregate_data; without it pagination is a backdoor.
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.channels c
-         WHERE c.id = input_channel_id
-           AND (
-                c.type = 'PUBLIC'
-                OR EXISTS (
-                    SELECT 1
-                    FROM public.channel_members cm
-                    WHERE cm.channel_id = c.id
-                      AND cm.member_id  = auth.uid()
-                      AND cm.left_at IS NULL
-                )
-           )
-    ) THEN
-        RAISE EXCEPTION 'Access denied: caller is not a member of channel %.', input_channel_id;
-    END IF;
-
-    -- 2) Branch on direction for ordering & cursor logic
-    IF direction = 'older' THEN
-
-        WITH paged AS (
-            SELECT m.*,
-                json_build_object(
-                    'id', u.id,
-                    'username', u.username,
-                    'fullname', u.full_name,
-                    'avatar_url', u.avatar_url,
-                    'avatar_updated_at', u.avatar_updated_at
-                ) AS user_details,
-                CASE
-                    WHEN m.reply_to_message_id IS NOT NULL THEN
-                        (SELECT json_build_object(
-                                'message', json_build_object(
-                                    'id', rm.id,
-                                    'created_at', rm.created_at
-                                ),
-                                'user', json_build_object(
-                                    'id', ru.id,
-                                    'username', ru.username,
-                                    'fullname', ru.full_name,
-                                    'avatar_url', ru.avatar_url,
-                                    'avatar_updated_at', ru.avatar_updated_at
-                                )
-                            )
-                         FROM public.messages rm
-                         LEFT JOIN public.users ru ON rm.user_id = ru.id
-                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
-                    ELSE NULL
-                END AS replied_message_details,
-                -- Bookmark information
-                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
-                mb.id AS bookmark_id
-            FROM public.messages m
-            LEFT JOIN public.users u ON m.user_id = u.id
-            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
-            WHERE
-              m.channel_id = input_channel_id
-              AND m.deleted_at IS NULL
-              AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
-              AND ( cursor_timestamp IS NULL OR m.created_at < cursor_timestamp )
-            ORDER BY m.created_at DESC, m.id DESC
-            LIMIT limit_count
-        )
-        SELECT
-          COALESCE(jsonb_agg(to_jsonb(paged)), '[]'::jsonb) AS messages,
-          jsonb_build_object(
-            'older_cursor', MIN(created_at),
-            'newer_cursor', MAX(created_at),
-            'has_more_older',
-              EXISTS(
-                SELECT 1
-                  FROM public.messages
-                 WHERE channel_id = input_channel_id
-                   AND deleted_at IS NULL
-                   AND NOT (type = 'notification' AND metadata->>'type' IN ('user_join_channel', 'channel_created'))
-                   AND created_at < MIN(paged.created_at)
-              ),
-            'has_more_newer',
-              EXISTS(
-                SELECT 1
-                  FROM public.messages
-                 WHERE channel_id = input_channel_id
-                   AND deleted_at IS NULL
-                   AND NOT (type = 'notification' AND metadata->>'type' IN ('user_join_channel', 'channel_created'))
-                   AND created_at > MAX(paged.created_at)
-              )
-          ) AS pagination_cursors
-        INTO messages, pagination_cursors
-        FROM paged;
-
-    ELSE  -- direction = 'newer'
-
-        WITH paged AS (
-            SELECT m.*,
-                json_build_object(
-                    'id', u.id,
-                    'username', u.username,
-                    'fullname', u.full_name,
-                    'avatar_url', u.avatar_url,
-                    'avatar_updated_at', u.avatar_updated_at
-                ) AS user_details,
-                CASE
-                    WHEN m.reply_to_message_id IS NOT NULL THEN
-                        (SELECT json_build_object(
-                                'message', json_build_object(
-                                    'id', rm.id,
-                                    'created_at', rm.created_at
-                                ),
-                                'user', json_build_object(
-                                    'id', ru.id,
-                                    'username', ru.username,
-                                    'fullname', ru.full_name,
-                                    'avatar_url', ru.avatar_url,
-                                    'avatar_updated_at', ru.avatar_updated_at
-                                )
-                            )
-                         FROM public.messages rm
-                         LEFT JOIN public.users ru ON rm.user_id = ru.id
-                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
-                    ELSE NULL
-                END AS replied_message_details,
-                -- Bookmark information
-                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
-                mb.id AS bookmark_id
-            FROM public.messages m
-            LEFT JOIN public.users u ON m.user_id = u.id
-            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
-            WHERE
-              m.channel_id = input_channel_id
-              AND m.deleted_at IS NULL
-              AND NOT (m.type = 'notification' AND m.metadata->>'type' IN ('user_join_channel', 'channel_created'))
-              AND ( cursor_timestamp IS NULL OR m.created_at > cursor_timestamp )
-            ORDER BY m.created_at  ASC, m.id  ASC
-            LIMIT limit_count
-        )
-        SELECT
-          COALESCE(jsonb_agg(to_jsonb(paged)), '[]'::jsonb) AS messages,
-          jsonb_build_object(
-            'older_cursor', MIN(created_at),
-            'newer_cursor', MAX(created_at),
-            'has_more_older',
-              EXISTS(
-                SELECT 1
-                  FROM public.messages
-                 WHERE channel_id = input_channel_id
-                   AND deleted_at IS NULL
-                   AND NOT (type = 'notification' AND metadata->>'type' IN ('user_join_channel', 'channel_created'))
-                   AND created_at < MIN(paged.created_at)
-              ),
-            'has_more_newer',
-              EXISTS(
-                SELECT 1
-                  FROM public.messages
-                 WHERE channel_id = input_channel_id
-                   AND deleted_at IS NULL
-                   AND NOT (type = 'notification' AND metadata->>'type' IN ('user_join_channel', 'channel_created'))
-                   AND created_at > MAX(paged.created_at)
-              )
-          ) AS pagination_cursors
-        INTO messages, pagination_cursors
-        FROM paged;
-
-    END IF;
-
-    RETURN NEXT;
-END;
-$$ LANGUAGE plpgsql STABLE;
---------------------------------------------------
---------------------------------------------------
---------------------------------------------------
--- p_message_id =: is the last message inserted in the channel
-CREATE OR REPLACE FUNCTION mark_messages_as_read(
-    p_channel_id VARCHAR(36),
-    p_message_id UUID
-)
-RETURNS VOID AS $$
-DECLARE
-    current_utc_timestamp TIMESTAMP WITH TIME ZONE := timezone('utc', now());
-    target_timestamp TIMESTAMP WITH TIME ZONE;
-    is_last_message BOOLEAN;
-    messages_to_mark_count INT;
-BEGIN
-    -- Check if the channel exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.channels WHERE id = p_channel_id AND deleted_at IS NULL) THEN
-        RAISE EXCEPTION 'Channel % does not exist or has been deleted.', p_channel_id;
-    END IF;
-
-    -- Require (channel_id, message_id) match. Without this, a member of
-    -- channel A could call mark_messages_as_read(A, message_in_B) and
-    -- corrupt channel A's last_read_message_id by pinning it to a row
-    -- that lives in B (cross-channel read-cursor corruption).
-    SELECT created_at INTO target_timestamp
-    FROM public.messages
-    WHERE id = p_message_id
-      AND channel_id = p_channel_id
-      AND deleted_at IS NULL;
-
-    IF target_timestamp IS NULL THEN
-        RAISE EXCEPTION 'Message % does not exist in channel % or has been deleted.',
-            p_message_id, p_channel_id;
-    END IF;
-
-    -- Ensure the user is a member of the channel
-    IF NOT EXISTS (SELECT 1 FROM public.channel_members WHERE channel_id = p_channel_id AND member_id = auth.uid()) THEN
-        RAISE EXCEPTION 'User % is not a member of channel %.', auth.uid(), p_channel_id;
-    END IF;
-
-    -- Check if the given message ID is the last message in the channel by timestamp
-    SELECT created_at = (SELECT MAX(created_at) FROM public.messages WHERE channel_id = p_channel_id AND deleted_at IS NULL)
-    INTO is_last_message
-    FROM public.messages
-    WHERE id = p_message_id AND deleted_at IS NULL;
-
-    -- Count the number of unread messages sent before or at the target timestamp, excluding those sent by the current user
-    SELECT COUNT(*)
-    INTO messages_to_mark_count
-    FROM public.messages
-    WHERE channel_id = p_channel_id
-      AND user_id != auth.uid()
-      AND created_at <= target_timestamp
-      AND readed_at IS NULL
-      AND deleted_at IS NULL;
-
-    IF messages_to_mark_count > 0 THEN
-        -- Update readed_at for these messages
-        UPDATE public.messages
-        SET readed_at = current_utc_timestamp
-        WHERE channel_id = p_channel_id
-          AND user_id != auth.uid()
-          AND created_at <= target_timestamp
-          AND readed_at IS NULL
-          AND deleted_at IS NULL;
-
-        -- Mark the notifications as read
-        UPDATE public.notifications
-        SET readed_at = current_utc_timestamp
-        WHERE channel_id = p_channel_id
-          AND receiver_user_id = auth.uid()
-          AND message_id = p_message_id
-          AND readed_at IS NULL;
-    END IF;
-
-    -- Update the last_read_message_id and adjust the unread_message_count
-    UPDATE public.channel_members
-    SET last_read_message_id = p_message_id,
-        last_read_update_at = current_utc_timestamp,
-        unread_message_count = CASE WHEN is_last_message THEN 0 ELSE GREATEST(unread_message_count - messages_to_mark_count, 0) END
-    WHERE channel_id = p_channel_id AND member_id = auth.uid();
-END;
-$$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public;
-
 -------------------------------
 -------------------------------
 -- SECURITY DEFINER: the function needs to read u.email (column-revoked
@@ -1258,8 +981,6 @@ Only returns active members (not left) and non-deleted users.';
 -- ============================================================
 ALTER FUNCTION public.user_details_json(u users) SET search_path = public;
 ALTER FUNCTION public.get_channel_aggregate_data(input_channel_id character varying, message_limit integer, anchor_message_id uuid) SET search_path = public;
-ALTER FUNCTION public.get_channel_messages_paginated(input_channel_id character varying, limit_count integer, cursor_timestamp timestamp with time zone, direction character varying) SET search_path = public;
-ALTER FUNCTION public.mark_messages_as_read(p_channel_id character varying, p_message_id uuid) SET search_path = public;
 ALTER FUNCTION public.create_direct_message_channel(workspace_uid character varying, user_id uuid) SET search_path = public;
 ALTER FUNCTION public.notifications_summary(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_unread_notifications_paginated(_workspace_id character varying, _type text, _page integer, _page_size integer) SET search_path = public;
@@ -1268,3 +989,292 @@ ALTER FUNCTION public.get_unread_notif_count(_workspace_id character varying) SE
 ALTER FUNCTION public.get_channel_notif_state(_channel_id character varying) SET search_path = public;
 ALTER FUNCTION public.join_workspace(_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION public.get_channel_members_by_last_read_update(_channel_id character varying, _timestamp timestamp with time zone) SET search_path = public;
+
+-- ============================================================
+-- v2 chatroom RPCs (paired with migrations 20260513140500..20260513142000).
+-- ============================================================
+
+-- fetch_message_window: anchor-aware window. Four anchor kinds:
+--   'tail', 'first_unread', 'message_id' (raises 42501 if forbidden),
+--   'before_seq' (loadOlder cursor). Returns
+--   { rows, anchor_seq, has_more_before, has_more_after }.
+create or replace function public.fetch_message_window(
+  p_channel_id   varchar(36),
+  p_anchor_kind  text,
+  p_anchor_value text default null,
+  p_before_limit int default 40,
+  p_after_limit  int default 40
+) returns jsonb
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_anchor_seq bigint;
+  -- v_anchor_seq drives the local before/after window query; v_response_anchor
+  -- is what the FE sees. They diverge for 'first_unread' when no real unread
+  -- exists (anon viewers, or authed users caught up to tail) — we still need
+  -- a seq to center the window on (tail), but the FE must NOT render the
+  -- "Unread messages" sentinel since there's nothing to flag.
+  v_response_anchor bigint;
+  v_rows jsonb;
+  v_has_more_before boolean;
+  v_has_more_after boolean;
+  v_target_msg_id uuid;
+  v_target_channel varchar(36);
+begin
+  if p_anchor_kind = 'tail' then
+    select coalesce(max(seq), 0) into v_anchor_seq
+    from public.messages
+    where channel_id = p_channel_id and deleted_at is null;
+    v_response_anchor := v_anchor_seq;
+
+  elsif p_anchor_kind = 'first_unread' then
+    if v_uid is null then
+      -- Anon has no per-user read cursor; window around tail but null out
+      -- the response anchor so the FE skips the sentinel.
+      select coalesce(max(seq), 0) into v_anchor_seq
+      from public.messages
+      where channel_id = p_channel_id and deleted_at is null;
+      v_response_anchor := null;
+    else
+      select min(m.seq) into v_anchor_seq
+      from public.messages m
+      join public.channel_members cm on cm.channel_id = m.channel_id
+      where m.channel_id = p_channel_id
+        and m.deleted_at is null
+        and cm.member_id = v_uid
+        and m.seq > cm.last_read_seq;
+      if v_anchor_seq is null then
+        -- Authed user is caught up; same treatment as anon.
+        select coalesce(max(seq), 0) into v_anchor_seq
+        from public.messages
+        where channel_id = p_channel_id and deleted_at is null;
+        v_response_anchor := null;
+      else
+        v_response_anchor := v_anchor_seq;
+      end if;
+    end if;
+
+  elsif p_anchor_kind = 'message_id' then
+    v_target_msg_id := p_anchor_value::uuid;
+    select channel_id, seq into v_target_channel, v_anchor_seq
+    from public.messages
+    where id = v_target_msg_id and deleted_at is null;
+    if v_target_channel is null or v_target_channel <> p_channel_id then
+      raise exception 'message not found or not in channel' using errcode = '42501';
+    end if;
+    v_response_anchor := v_anchor_seq;
+
+  elsif p_anchor_kind = 'before_seq' then
+    v_anchor_seq := (p_anchor_value::bigint) - 1;
+    v_response_anchor := v_anchor_seq;
+    -- Inline json_build_object instead of public.user_details_json(u): the
+    -- composite-row form requires SELECT on every users column (including
+    -- `email`, which is excluded from anon + authenticated column grants),
+    -- so security-invoker callers get "permission denied for table users".
+    select coalesce(jsonb_agg(row_to_json(t) order by t.seq asc), '[]'::jsonb)
+      into v_rows
+      from (
+        select m.*,
+          json_build_object(
+            'id', u.id,
+            'username', u.username,
+            'fullname', u.full_name,
+            'avatar_url', u.avatar_url,
+            'avatar_updated_at', u.avatar_updated_at
+          ) as user_details,
+          (mb.id is not null and mb.archived_at is null and mb.marked_at is null) as is_bookmarked,
+          mb.id as bookmark_id
+        from public.messages m
+        left join public.users u on u.id = m.user_id
+        left join public.message_bookmarks mb
+          on mb.message_id = m.id and mb.user_id = (select auth.uid())
+        where m.channel_id = p_channel_id
+          and m.deleted_at is null
+          and m.seq < (p_anchor_value::bigint)
+        order by m.seq desc
+        limit p_before_limit
+      ) t;
+    v_has_more_before := exists (
+      select 1 from public.messages
+      where channel_id = p_channel_id and deleted_at is null
+        and seq < coalesce(
+          (select min((value->>'seq')::bigint) from jsonb_array_elements(v_rows)),
+          (p_anchor_value::bigint)
+        )
+    );
+    v_has_more_after := true;
+    return jsonb_build_object(
+      'rows', v_rows,
+      'anchor_seq', v_response_anchor,
+      'has_more_before', v_has_more_before,
+      'has_more_after', v_has_more_after
+    );
+
+  else
+    raise exception 'invalid anchor_kind: %', p_anchor_kind using errcode = '22023';
+  end if;
+
+  select coalesce(jsonb_agg(row_to_json(t) order by t.seq asc), '[]'::jsonb)
+  into v_rows
+  from (
+    (
+      select m.*,
+        json_build_object(
+          'id', u.id,
+          'username', u.username,
+          'fullname', u.full_name,
+          'avatar_url', u.avatar_url,
+          'avatar_updated_at', u.avatar_updated_at
+        ) as user_details,
+        (mb.id is not null and mb.archived_at is null and mb.marked_at is null) as is_bookmarked,
+        mb.id as bookmark_id
+      from public.messages m
+      left join public.users u on u.id = m.user_id
+      left join public.message_bookmarks mb
+        on mb.message_id = m.id and mb.user_id = (select auth.uid())
+      where m.channel_id = p_channel_id and m.deleted_at is null and m.seq <= v_anchor_seq
+      order by m.seq desc limit p_before_limit + 1
+    )
+    union all
+    (
+      select m.*,
+        json_build_object(
+          'id', u.id,
+          'username', u.username,
+          'fullname', u.full_name,
+          'avatar_url', u.avatar_url,
+          'avatar_updated_at', u.avatar_updated_at
+        ) as user_details,
+        (mb.id is not null and mb.archived_at is null and mb.marked_at is null) as is_bookmarked,
+        mb.id as bookmark_id
+      from public.messages m
+      left join public.users u on u.id = m.user_id
+      left join public.message_bookmarks mb
+        on mb.message_id = m.id and mb.user_id = (select auth.uid())
+      where m.channel_id = p_channel_id and m.deleted_at is null and m.seq > v_anchor_seq
+      order by m.seq asc limit p_after_limit
+    )
+  ) t;
+
+  select exists (
+    select 1 from public.messages
+    where channel_id = p_channel_id and deleted_at is null
+      and seq < coalesce(
+        (select min((value->>'seq')::bigint) from jsonb_array_elements(v_rows)),
+        v_anchor_seq + 1
+      )
+  ) into v_has_more_before;
+
+  select exists (
+    select 1 from public.messages
+    where channel_id = p_channel_id and deleted_at is null
+      and seq > coalesce(
+        (select max((value->>'seq')::bigint) from jsonb_array_elements(v_rows)),
+        v_anchor_seq - 1
+      )
+  ) into v_has_more_after;
+
+  return jsonb_build_object(
+    'rows', v_rows,
+    'anchor_seq', v_response_anchor,
+    'has_more_before', v_has_more_before,
+    'has_more_after', v_has_more_after
+  );
+end;
+$$;
+
+grant execute on function public.fetch_message_window(varchar, text, text, int, int)
+  to authenticated, anon;
+
+-- fetch_messages_since: connection-event refetch. Returns a jsonb array of
+-- message rows (each row enriched with user_details via user_details_json)
+-- with seq > p_since_seq, ordered ascending. Returning jsonb instead of
+-- setof public.messages lets us inline user_details for display parity
+-- with fetch_message_window without changing the base messages rowtype.
+drop function if exists public.fetch_messages_since(varchar, bigint, int);
+create or replace function public.fetch_messages_since(
+  p_channel_id varchar(36),
+  p_since_seq  bigint,
+  p_limit      int default 100
+) returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(row_to_json(t) order by t.seq asc), '[]'::jsonb)
+  from (
+    select m.*,
+      json_build_object(
+        'id', u.id,
+        'username', u.username,
+        'fullname', u.full_name,
+        'avatar_url', u.avatar_url,
+        'avatar_updated_at', u.avatar_updated_at
+      ) as user_details,
+      (mb.id is not null and mb.archived_at is null and mb.marked_at is null) as is_bookmarked,
+      mb.id as bookmark_id
+    from public.messages m
+    left join public.users u on u.id = m.user_id
+    left join public.message_bookmarks mb
+      on mb.message_id = m.id and mb.user_id = (select auth.uid())
+    where m.channel_id = p_channel_id
+      and m.seq > p_since_seq
+      and m.deleted_at is null
+    order by m.seq asc
+    limit p_limit
+  ) t;
+$$;
+
+grant execute on function public.fetch_messages_since(varchar, bigint, int)
+  to authenticated, anon;
+
+-- advance_read_cursor: single-row UPDATE on channel_members.last_read_seq,
+-- recomputes unread_message_count, stamps last_read_update_at. One row
+-- broadcasts via realtime — useful for cross-tab sync without flooding.
+create or replace function public.advance_read_cursor(
+  p_channel_id varchar(36),
+  p_up_to_seq  bigint
+) returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_new_seq bigint;
+  v_unread int;
+begin
+  if v_uid is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  select greatest(last_read_seq, p_up_to_seq) into v_new_seq
+  from public.channel_members
+  where channel_id = p_channel_id and member_id = v_uid;
+
+  if v_new_seq is null then
+    return;
+  end if;
+
+  select coalesce(count(*), 0) into v_unread
+  from public.messages
+  where channel_id = p_channel_id
+    and deleted_at is null
+    and seq > v_new_seq;
+
+  update public.channel_members
+  set last_read_seq = v_new_seq,
+      unread_message_count = v_unread,
+      last_read_update_at = (now() at time zone 'utc')
+  where channel_id = p_channel_id and member_id = v_uid;
+end;
+$$;
+
+grant execute on function public.advance_read_cursor(varchar, bigint) to authenticated;
+revoke execute on function public.advance_read_cursor(varchar, bigint) from anon, public;

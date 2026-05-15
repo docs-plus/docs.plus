@@ -1229,33 +1229,7 @@ export type Database = {
       }
       fetch_messages_since: {
         Args: { p_channel_id: string; p_limit?: number; p_since_seq: number }
-        Returns: {
-          channel_id: string
-          client_id: string | null
-          content: string | null
-          created_at: string
-          deleted_at: string | null
-          edited_at: string | null
-          html: string | null
-          id: string
-          medias: Json | null
-          metadata: Json | null
-          origin_message_id: string | null
-          reactions: Json | null
-          readed_at: string | null
-          replied_message_preview: string | null
-          reply_to_message_id: string | null
-          seq: number
-          type: Database['public']['Enums']['message_type'] | null
-          updated_at: string
-          user_id: string
-        }[]
-        SetofOptions: {
-          from: '*'
-          to: 'messages'
-          isOneToOne: false
-          isSetofReturn: true
-        }
+        Returns: Json
       }
       generate_unsubscribe_token: {
         Args: { p_action: string; p_user_id: string }
@@ -1308,18 +1282,6 @@ export type Database = {
           last_read_update_at: string
           user_id: string
           username: string
-        }[]
-      }
-      get_channel_messages_paginated: {
-        Args: {
-          cursor_timestamp?: string
-          direction?: string
-          input_channel_id: string
-          limit_count?: number
-        }
-        Returns: {
-          messages: Json
-          pagination_cursors: Json
         }[]
       }
       get_channel_notif_state: {
@@ -1528,10 +1490,6 @@ export type Database = {
       mark_bookmark_as_read: {
         Args: { p_bookmark_id: number; p_mark_as_read?: boolean }
         Returns: boolean
-      }
-      mark_messages_as_read: {
-        Args: { p_channel_id: string; p_message_id: string }
-        Returns: undefined
       }
       message_counter_batch_worker: { Args: never; Returns: undefined }
       notifications_summary: { Args: { _workspace_id?: string }; Returns: Json }

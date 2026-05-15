@@ -1,14 +1,9 @@
 -- =====================================================================
--- 13-RLS.sql — Row-Level Security: helpers + policies for chat surface
+-- 20260513130000_chat_rls_rollout_catchup.sql
 -- =====================================================================
--- Source of truth for the chat-surface RLS rollout. Mirrored by the
--- migration `20260513130000_chat_rls_rollout_catchup.sql`. See
--- docs/superpowers/plans/chatroom-s3-1-rls-rollout.md for design rationale.
---
--- Load order: this file runs after the table-creation scripts (02-08),
--- the function/RPC scripts (10-*), and the message-counter / cron / extension
--- scripts (11-12). Helpers come first in this file so the policy
--- expressions below can reference them.
+-- Catch-up migration mirroring packages/supabase/scripts/13-RLS.sql.
+-- Idempotent: every CREATE POLICY is preceded by DROP POLICY IF EXISTS.
+-- Restores parity per memory `project_supabase_scripts_vs_migrations`.
 -- =====================================================================
 
 
@@ -206,13 +201,15 @@ DROP POLICY IF EXISTS channel_members_join_insert ON public.channel_members;
 CREATE POLICY channel_members_join_insert ON public.channel_members
   FOR INSERT TO authenticated
   WITH CHECK (
-    member_id = (SELECT auth.uid())
+    member_id = auth.uid()
     AND EXISTS (
       SELECT 1 FROM public.channels c
       WHERE c.id = channel_id
         AND c.deleted_at IS NULL
-        AND c.type IN ('PUBLIC', 'PRIVATE')
-        AND internal.is_workspace_member(c.workspace_id)
+        AND (
+          c.type = 'PUBLIC'
+          OR internal.is_workspace_member(c.workspace_id)
+        )
     )
   );
 
@@ -396,18 +393,3 @@ CREATE POLICY workspaces_public_anon_select ON public.workspaces
 ALTER FUNCTION internal.is_workspace_member(p_workspace_id character varying) SET search_path = public;
 ALTER FUNCTION internal.is_channel_member(p_channel_id character varying) SET search_path = public;
 ALTER FUNCTION internal.can_read_channel(p_channel_id character varying) SET search_path = public;
-
--- ============================================================
--- v2 chatroom RPC grants (paired with migrations 20260513140500..20260513141500).
--- Mirrored here so privilege review reads in one place.
--- ============================================================
-grant execute on function public.fetch_message_window(varchar, text, text, int, int)
-  to authenticated, anon;
-grant execute on function public.fetch_messages_since(varchar, bigint, int)
-  to authenticated, anon;
-grant execute on function public.advance_read_cursor(varchar, bigint) to authenticated;
-revoke execute on function public.advance_read_cursor(varchar, bigint) from anon, public;
-grant execute on function public.add_reaction(uuid, text) to authenticated;
-revoke execute on function public.add_reaction(uuid, text) from anon, public;
-grant execute on function public.remove_reaction(uuid, text) to authenticated;
-revoke execute on function public.remove_reaction(uuid, text) from anon, public;
