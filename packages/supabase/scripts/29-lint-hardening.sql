@@ -209,7 +209,7 @@ DECLARE
         -- Notifications
         'notifications_summary', 'get_unread_notif_count',
         'get_unread_notifications_paginated', 'get_channel_notif_state',
-        'get_workspace_notifications',
+        'get_workspace_notifications', 'update_notification_preferences',
         -- Mentions / DMs
         'fetch_mentioned_users', 'create_direct_message_channel',
         -- Workspace / presence
