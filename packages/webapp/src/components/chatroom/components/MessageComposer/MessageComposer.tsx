@@ -11,16 +11,14 @@ import {
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
-import type { Profile, TChannelSettings, TMsgRow } from '@types'
+import type { TChannelSettings } from '@types'
 import { chunkHtmlContent } from '@utils/chunkHtmlContent'
-import { generateClientMessageId } from '@utils/clientMessageId'
 import { isOnlyEmoji } from '@utils/emojis'
 import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../ChatroomContext'
-import { isDuplicateKeyError } from '../../utils/postgresErrors'
 import {
   Actions,
   AttachmentButton,
@@ -58,7 +56,7 @@ const MessageComposer = ({
   children: React.ReactNode
   className?: string
 }) => {
-  const { channelId } = useChatroomContext()
+  const { channelId, send: contextSend } = useChatroomContext()
 
   const user = useAuthStore((state) => state.profile)
   const workspaceId = useStore((state) => state.settings.workspaceId)
@@ -72,8 +70,6 @@ const MessageComposer = ({
   const setReplyMsgMemory = useChatStore((state) => state.setReplyMessageMemory)
   const setCommentMsgMemory = useChatStore((state) => state.setCommentMessageMemory)
   const setMsgDraftMemory = useChatStore((state) => state.setMessageDraftMemory)
-  const setOrUpdateMessage = useChatStore((state) => state.setOrUpdateMessage)
-  const setMessageStatus = useChatStore((state) => state.setMessageStatus)
 
   const { request: sendMsg, loading: isSendingMsg } = useApi(sendMessage, null, false)
   const { request: sendComment, loading: isSendingComment } = useApi(
@@ -177,44 +173,6 @@ const MessageComposer = ({
     }
   }, [editor])
 
-  const buildOptimisticMessage = useCallback(
-    (
-      id: string,
-      content: string,
-      html: string,
-      user: Profile,
-      channelId: string,
-      replyToMessageId: string | null
-    ): TMsgRow => {
-      const now = new Date().toISOString()
-      return {
-        id,
-        content,
-        html,
-        user_id: user.id,
-        user_details: user,
-        channel_id: channelId,
-        reply_to_message_id: replyToMessageId,
-        replied_message_preview: null,
-        replied_message_details: undefined,
-        type: 'text',
-        created_at: now,
-        updated_at: now,
-        deleted_at: null,
-        edited_at: null,
-        readed_at: null,
-        reactions: null,
-        medias: null,
-        metadata: null,
-        origin_message_id: null,
-        is_bookmarked: false,
-        bookmark_id: null,
-        status: 'pending'
-      } as TMsgRow
-    },
-    []
-  )
-
   const handleEditMessage = useCallback(
     async (content: string, html: string, messageId: string) => {
       await updateMsg(content, html, messageId)
@@ -236,72 +194,20 @@ const MessageComposer = ({
     [commentMessageMemory, channelId, user, sendComment]
   )
 
+  // Delegates the optimistic + send + status-flip pipeline to
+  // `useSendMessage` via ChatroomContext; Virtuoso's `data` store owns
+  // optimistic row state.
   const handleRegularMessage = useCallback(
     async (content: string, html: string, replyToMessageId: string | null) => {
       if (!user) return false
-
-      const messageId = generateClientMessageId()
-      const optimistic = buildOptimisticMessage(
-        messageId,
+      await contextSend({
         content,
         html,
-        user,
-        channelId,
-        replyToMessageId
-      )
-
-      // Hydrate the reply quote from local memory so it renders instantly.
-      if (replyMessageMemory && replyToMessageId) {
-        optimistic.replied_message_details = {
-          message: replyMessageMemory,
-          user: replyMessageMemory.user_details
-        }
-        optimistic.replied_message_preview = replyMessageMemory.content
-      }
-
-      setOrUpdateMessage(channelId, messageId, optimistic)
-
-      try {
-        const response = await sendMsg({
-          id: messageId,
-          content,
-          channel_id: channelId,
-          user_id: user.id,
-          html,
-          reply_to_message_id: replyToMessageId
-        })
-        const inserted = Array.isArray(response?.data) ? (response.data[0] as TMsgRow) : null
-        if (inserted) {
-          setOrUpdateMessage(channelId, messageId, {
-            ...inserted,
-            user_details: user,
-            replied_message_details: optimistic.replied_message_details,
-            replied_message_preview: optimistic.replied_message_preview,
-            status: 'sent'
-          })
-        } else {
-          setMessageStatus(channelId, messageId, 'sent')
-        }
-      } catch (error: unknown) {
-        if (isDuplicateKeyError(error)) {
-          setMessageStatus(channelId, messageId, 'sent')
-          return true
-        }
-        const message = error instanceof Error ? error.message : 'Failed to send'
-        setMessageStatus(channelId, messageId, 'failed', message)
-        return false
-      }
+        reply_to_message_id: replyToMessageId
+      })
       return true
     },
-    [
-      user,
-      channelId,
-      replyMessageMemory,
-      buildOptimisticMessage,
-      setOrUpdateMessage,
-      setMessageStatus,
-      sendMsg
-    ]
+    [user, contextSend]
   )
 
   // Message routing

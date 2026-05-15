@@ -10,7 +10,9 @@ type Props = {
 export const BookmarkIndicator = ({ className }: Props) => {
   const { message } = useMessageCardContext()
 
-  if (!message.is_bookmarked || !message.bookmark_id) return null
+  // Either field truthy = bookmarked (matches the OR pattern everywhere
+  // else — MessageCardContext, ContextMenuItems, BookmarkButton).
+  if (!message.is_bookmarked && !message.bookmark_id) return null
 
   return (
     <div

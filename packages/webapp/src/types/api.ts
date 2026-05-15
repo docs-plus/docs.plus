@@ -29,7 +29,7 @@ export type TMsgRow = Omit<Database['public']['Tables']['messages']['Row'], 'met
 
 /**
  * Render-time projection of `TMsgRow` carrying grouping flags.
- * Produced by `projectMessageGroups`. Never persisted.
+ * Computed in `ItemContent` against the prev sibling; never persisted.
  */
 export type TGroupedMsgRow = TMsgRow & {
   isGroupStart: boolean

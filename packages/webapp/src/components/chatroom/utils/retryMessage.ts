@@ -1,57 +1,39 @@
 import { sendMessage } from '@api'
-import { useAuthStore, useChatStore } from '@stores'
+import { useAuthStore } from '@stores'
+import type { TMsgRow } from '@types'
 
 import { isDuplicateKeyError } from './postgresErrors'
 
+export type RetryMessageInput = Pick<
+  TMsgRow,
+  'id' | 'channel_id' | 'content' | 'html' | 'reply_to_message_id'
+>
+
+export type RetryMessageResult = { ok: true } | { ok: false; error: string }
+
 /**
- * Re-sends a previously-failed message with the same client UUID so the
- * realtime echo reconciles the existing row in place. No-op for rows
- * that are missing, not in `failed` state, or sent by a now-signed-out
- * user.
- *
- * Multi-click safe: the synchronous status flip to `pending` makes a
- * second invocation bail before re-issuing the network call. Treats
- * Postgres `23505` (duplicate key) as success because the row was
- * already persisted on a prior attempt.
+ * Pure helper: re-issues `sendMessage` with the original client UUID so the
+ * realtime echo reconciles the existing row in place. Treats Postgres 23505
+ * as success (row was already persisted on a prior attempt). Caller owns
+ * pending/sent/failed UI flips against its data source.
  */
-export const retryMessage = async (channelId: string, messageId: string): Promise<void> => {
+export const retryMessage = async (row: RetryMessageInput): Promise<RetryMessageResult> => {
   const profile = useAuthStore.getState().profile
-  if (!profile) return
-
-  const row = useChatStore.getState().messagesByChannel.get(channelId)?.get(messageId)
-  if (!row || row.status !== 'failed') return
-
-  const { setMessageStatus, setOrUpdateMessage } = useChatStore.getState()
-
-  setMessageStatus(channelId, messageId, 'pending')
+  if (!profile) return { ok: false, error: 'not signed in' }
 
   try {
-    const { data } = await sendMessage({
-      id: messageId,
-      content: row.content,
-      channel_id: channelId,
+    await sendMessage({
+      id: row.id,
+      content: row.content ?? '',
+      channel_id: row.channel_id,
       user_id: profile.id,
-      html: row.html,
+      html: row.html ?? null,
       reply_to_message_id: row.reply_to_message_id ?? null
     })
-
-    if (data?.[0]) {
-      setOrUpdateMessage(channelId, messageId, {
-        ...data[0],
-        user_details: profile,
-        replied_message_details: row.replied_message_details,
-        replied_message_preview: row.replied_message_preview,
-        status: 'sent'
-      })
-    } else {
-      setMessageStatus(channelId, messageId, 'sent')
-    }
+    return { ok: true }
   } catch (error: unknown) {
-    if (isDuplicateKeyError(error)) {
-      setMessageStatus(channelId, messageId, 'sent')
-      return
-    }
+    if (isDuplicateKeyError(error)) return { ok: true }
     const message = error instanceof Error ? error.message : 'Failed to send'
-    setMessageStatus(channelId, messageId, 'failed', message)
+    return { ok: false, error: message }
   }
 }

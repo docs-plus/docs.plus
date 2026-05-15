@@ -7,6 +7,8 @@ interface IUsersPresenceStore {
   usersPresence: Map<string, TProfile>
   setOrUpdateUserPresence: (userId: string, userData: TProfile) => void
   updateUserStatus: (userId: string, status: UserStatus) => void
+  /** Reset the map — used when swapping realtime subscriptions (e.g. anon→authed). */
+  clearUsersPresence: () => void
 }
 
 const usersPresence = immer<IUsersPresenceStore>((set) => ({
@@ -29,6 +31,12 @@ const usersPresence = immer<IUsersPresenceStore>((set) => ({
       const next = new Map(state.usersPresence)
       next.set(userId, { ...user, status })
       state.usersPresence = next
+    })
+  },
+
+  clearUsersPresence: () => {
+    set((state) => {
+      state.usersPresence = new Map()
     })
   }
 }))

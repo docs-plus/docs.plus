@@ -32,6 +32,12 @@ export const DesktopLayout = ({ children }: Props) => {
 
       {/* Chat content */}
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+
+      {/* Portal target for the message hover menu — lives inside the
+          chatroom panel's stacking context so the menu's z-30 plays
+          inside the same context as toolbar z-50 and jump-to-present z-40.
+          Empty by default; FloatingPortal appends children at runtime. */}
+      <div id="chat-hover-portal" />
     </div>
   )
 }

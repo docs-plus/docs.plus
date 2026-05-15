@@ -1,26 +1,27 @@
-import { useChatStore } from '@stores'
+import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { isMessage } from '@components/chatroom/types/chat-items'
 import { twMerge } from 'tailwind-merge'
 
-import { retryMessage } from '../../../utils/retryMessage'
 import { useMessageCardContext } from '../MessageCardContext'
 
 /**
  * Owner-only inline failure row: `Failed to send · Retry · Delete`.
- * Delete is local-only (the message never reached the server), no confirm.
+ * Delete is local-only — the message never reached the server — and
+ * removes the optimistic row from the Virtuoso feed directly.
  */
 export const MessageFailedRow = ({ className }: { className?: string }) => {
   const { message } = useMessageCardContext()
-  const removeMessage = useChatStore((state) => state.removeMessage)
+  const { retry, listRef } = useChatroomContext()
 
   if (!message.isOwner) return null
   if (message.status !== 'failed') return null
 
   const onRetry = () => {
-    void retryMessage(message.channel_id, message.id)
+    void retry(message.id)
   }
 
   const onDelete = () => {
-    removeMessage(message.channel_id, message.id)
+    listRef.current?.data.findAndDelete((i) => isMessage(i) && i.id === message.id)
   }
 
   return (

@@ -1,1 +1,0 @@
-export { PinnedMessages } from './PinnedMessages'

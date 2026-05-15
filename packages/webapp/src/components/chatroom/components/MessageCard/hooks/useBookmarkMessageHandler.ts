@@ -1,13 +1,21 @@
 import { toggleMessageBookmark } from '@api'
+import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { isMessage } from '@components/chatroom/types/chat-items'
 import * as toast from '@components/toast'
 import { useApi } from '@hooks/useApi'
-import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { useCallback } from 'react'
 
+/**
+ * `toggle_message_bookmark` writes to the separate `message_bookmarks`
+ * table, so realtime postgres_changes on `messages` doesn't fire (and
+ * the bookmark fields are per-user anyway — a single message row can't
+ * carry them). We patch the Virtuoso row in place from the RPC's
+ * `{ action, bookmark_id }` response so the BookmarkIndicator and the
+ * tinted-bg in MessageCardContext flip instantly.
+ */
 export const useBookmarkMessageHandler = () => {
-  const setOrUpdateMessage = useChatStore((state) => state.setOrUpdateMessage)
-
+  const { listRef } = useChatroomContext()
   const { request: toggleBookmark, loading: bookmarkLoading } = useApi(
     toggleMessageBookmark,
     null,
@@ -25,18 +33,27 @@ export const useBookmarkMessageHandler = () => {
         return
       }
 
-      if (data) {
-        setOrUpdateMessage(message.channel_id, message.id, {
-          // @ts-ignore
-          bookmark_id: data.action === 'added' ? data.bookmark_id : null,
-          // @ts-ignore
-          is_bookmarked: data.action === 'added' ? true : false
-        })
-      }
-      // @ts-ignore
-      toast.Success(data?.action === 'added' ? 'Bookmark added' : 'Bookmark removed')
+      const payload = data as { action?: string; bookmark_id?: number | null } | null
+      const added = payload?.action === 'added'
+      const newBookmarkId = added ? (payload?.bookmark_id ?? null) : null
+
+      listRef.current?.data.map((item) => {
+        if (isMessage(item) && item.id === message.id) {
+          return {
+            ...item,
+            row: {
+              ...item.row,
+              is_bookmarked: added,
+              bookmark_id: newBookmarkId
+            }
+          }
+        }
+        return item
+      })
+
+      toast.Success(added ? 'Bookmark added' : 'Bookmark removed')
     },
-    [toggleBookmark, setOrUpdateMessage]
+    [toggleBookmark, listRef]
   )
 
   return {

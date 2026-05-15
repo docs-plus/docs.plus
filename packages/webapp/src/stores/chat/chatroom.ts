@@ -129,7 +129,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
   destroyChatRoom: () => {
     const state = get() as any
     const broadcaster = useStore.getState().settings?.broadcaster
-    const closingChannelId: string | undefined = state.chatRoom.headingId
 
     set((s) => {
       s.chatRoom = {
@@ -142,12 +141,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         editorRef: undefined
       }
     })
-
-    // Per-mount runtime state goes; channel settings stay so TOC unread badges keep working.
-    if (closingChannelId) {
-      state.clearChannelMessages?.(closingChannelId)
-      state.clearPagination?.(closingChannelId)
-    }
 
     const user = useAuthStore.getState().profile
     if (user) broadcastPresence(broadcaster, user, null)

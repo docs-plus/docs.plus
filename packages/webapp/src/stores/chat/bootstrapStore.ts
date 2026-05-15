@@ -46,27 +46,6 @@ const bootstrapStore = immer<IBootstrapStore>((set) => ({
         ;(channelData.pinned_messages as TMsgRow[]).forEach((msg) => pinned.set(msg.id, msg))
         state.pinnedMessages.set(channelId, pinned)
       }
-
-      // 5. Message window (clear-and-replace; the RPC returns the
-      //    authoritative page newest-first, the UI renders oldest-first)
-      if (channelData.last_messages) {
-        const messages = new Map()
-        const reversed = [...(channelData.last_messages as TMsgRow[])].reverse()
-        reversed.forEach((msg) => messages.set(msg.id, msg))
-        state.messagesByChannel.set(channelId, messages)
-      } else {
-        state.messagesByChannel.delete(channelId)
-      }
-
-      // 6. Pagination cursors
-      state.paginationByChannel.set(channelId, {
-        olderCursor: channelData.older_cursor ?? null,
-        newerCursor: channelData.newer_cursor ?? null,
-        hasMoreOlder: channelData.has_more_older ?? false,
-        hasMoreNewer: channelData.has_more_newer ?? false,
-        isLoadingOlder: false,
-        isLoadingNewer: false
-      })
     })
   }
 }))

@@ -2,6 +2,7 @@ import { useNotificationToggle } from '@components/chatroom/hooks/useNotificatio
 import Button from '@components/ui/Button'
 import { ButtonSize } from '@components/ui/Button'
 import { Icons } from '@icons'
+import { useAuthStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -25,7 +26,13 @@ const notificationConfig = {
 }
 
 export const NotificationToggle = ({ className, size = 'sm' }: Props) => {
+  // Anon viewers can't subscribe/mute notifications — there's no
+  // channel_members row for them. Hide the toggle entirely rather than
+  // showing a button that 401s on click.
+  const profile = useAuthStore((state) => state.profile)
   const { notificationState, loading, handleToggle } = useNotificationToggle()
+
+  if (!profile?.id) return null
 
   const config = notificationConfig[notificationState]
   const Icon = config.icon

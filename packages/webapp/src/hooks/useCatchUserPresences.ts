@@ -11,6 +11,7 @@ export const useCatchUserPresences = () => {
   const profile = useAuthStore((state) => state.profile)
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
+  const clearUsersPresence = useStore((state) => state.clearUsersPresence)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
   const updateChannelRow = useChatStore((state) => state.updateChannelRow)
@@ -19,8 +20,7 @@ export const useCatchUserPresences = () => {
   const anonymousSubscription = useRef<RealtimeChannel | null>(null)
 
   // Bumped on the `online` window event so the subscription effect re-runs
-  // and rebuilds the channel after a network drop. Mirrors the
-  // online/offline pair in useMessageSubscription.
+  // and rebuilds the channel after a network drop.
   const [reconnectTick, setReconnectTick] = useState(0)
 
   useEffect(() => {
@@ -34,6 +34,11 @@ export const useCatchUserPresences = () => {
 
     // Skip subscriptions if offline (prevents retry spam)
     if (!navigator.onLine) return
+
+    // Resubscribing (channel switch, sign-in, online reconnect) — drop the
+    // previous channel's presence so stale ONLINE entries from the old
+    // subscription don't survive into the new socket's state.
+    clearUsersPresence()
 
     // Inline handler — reads channelMembers from useChatStore.getState()
     // at event time, avoiding the stale-closure bug that froze the map at
@@ -49,11 +54,52 @@ export const useCatchUserPresences = () => {
     }
 
     if (!profile) {
-      anonymousSubscription.current = supabaseClient
-        .channel(`anonymous:${workspaceId}`, {
-          config: {
-            broadcast: { self: true }
+      // Anon viewers share the authenticated `workspace:${workspaceId}`
+      // channel so they receive presence join/leave + broadcast events
+      // and AvatarStack (TOC header, TOC items, pad header, chatroom
+      // participants) renders the same set of online users an authed
+      // viewer would see. Anon must NOT call `track()` — they observe
+      // only, never broadcast themselves into presence state.
+      const anonChannel = supabaseClient.channel(`workspace:${workspaceId}`, {
+        // Anon never `send()`s — `self` echo is moot; explicit `false`
+        // signals "anon is observer-only" alongside the no-`track()` rule.
+        config: { broadcast: { self: false } }
+      })
+      anonymousSubscription.current = anonChannel
+        .on('presence', { event: 'sync' }, () => {
+          // Cold-open seed: Supabase fires `sync` once on subscribe with
+          // the full current presence snapshot, BEFORE any `join` events
+          // for existing peers. Without this handler, an anon viewer that
+          // opens a tab while N authed users are already online sees an
+          // empty AvatarStack until someone joins/leaves.
+          const state = anonChannel.presenceState() as Record<string, any[]>
+          for (const entries of Object.values(state)) {
+            for (const presence of entries) {
+              if (presence?.id) {
+                setOrUpdateUserPresence(presence.id, { ...presence, status: 'ONLINE' })
+              }
+            }
           }
+        })
+        .on('presence', { event: 'join' }, ({ newPresences }) => {
+          newPresences.forEach((presence: any) => {
+            setOrUpdateUserPresence(presence.id, { ...presence, status: 'ONLINE' })
+          })
+        })
+        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+          const leaving: any = leftPresences.at(0)
+          if (leaving?.id) setOrUpdateUserPresence(leaving.id, { ...leaving, status: 'OFFLINE' })
+        })
+        .on('broadcast', { event: 'presenceSync' }, (data) => {
+          const usersPresence = useStore.getState().usersPresence
+          const payload = data.payload
+          if (!Array.isArray(payload) || payload.length === 0) return
+          payload.forEach((user: any) => {
+            setOrUpdateUserPresence(user.id, { ...usersPresence.get(user.id), ...user })
+          })
+        })
+        .on('broadcast', { event: 'presence' }, (data) => {
+          setOrUpdateUserPresence(data.payload.id, data.payload)
         })
         .on(
           'postgres_changes',
@@ -73,6 +119,8 @@ export const useCatchUserPresences = () => {
 
     const messageSubscription = supabaseClient
       .channel(`workspace:${workspaceId}`, {
+        // `self: true` so the authed user's own `presenceSync` broadcast
+        // echoes back and seeds its `usersPresence` map symmetrically.
         config: {
           broadcast: { self: true }
         }
@@ -182,6 +230,7 @@ export const useCatchUserPresences = () => {
     workspaceId,
     reconnectTick,
     setOrUpdateUserPresence,
+    clearUsersPresence,
     setWorkspaceSetting,
     updateChannelRow,
     addChannelMember
