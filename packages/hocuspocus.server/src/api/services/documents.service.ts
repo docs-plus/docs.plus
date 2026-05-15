@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
@@ -7,25 +7,52 @@ import { handlePrismaError, ValidationError } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 
-export const getOwnerProfile = async (userId: string) => {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null
+// Service-role client — bypasses RLS so the server can read full user
+// rows (the `anon` column GRANT excludes `email` and silently 42501s a
+// `select('email')`, which was the symptom showing every owner as
+// "Unknown" in Settings → Documents).
+let supabaseService: SupabaseClient | null = null
+const getSupabase = (): SupabaseClient | null => {
+  if (supabaseService) return supabaseService
+  const url = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  supabaseService = createClient(url, key, { auth: { persistSession: false } })
+  return supabaseService
+}
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
-  const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
+
+export const getOwnerProfile = async (userId: string) => {
+  const supabase = getSupabase()
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('users')
+    .select(OWNER_PROFILE_COLUMNS)
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) {
+    documentsServiceLogger.warn({ err: error, userId }, 'Owner profile lookup failed')
+    return null
+  }
   return data || null
 }
 
 export const getOwnerProfiles = async (userIds: string[]) => {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY || userIds.length === 0) {
+  if (userIds.length === 0) return []
+  const supabase = getSupabase()
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('users')
+    .select(OWNER_PROFILE_COLUMNS)
+    .in('id', userIds)
+  if (error) {
+    documentsServiceLogger.warn(
+      { err: error, count: userIds.length },
+      'Owner profiles lookup failed'
+    )
     return []
   }
-
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
-  const { data } = await supabase
-    .from('users')
-    .select('avatar_url, id, full_name, display_name, email, status')
-    .in('id', userIds)
-
   return data || []
 }
 
@@ -110,7 +137,7 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
 }
 
 export const searchDocuments = async (prisma: PrismaClient, params: SearchDocumentsParams) => {
-  const { title, keywords: reqKeywords, description, limit, offset } = params
+  const { title, keywords: reqKeywords, description, ownerId, limit, offset } = params
 
   // Validate pagination parameters
   if (limit < 1 || limit > 100) {
@@ -125,6 +152,11 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     let docs
     let total
 
+    // AND `ownerId` onto any existing WHERE so the search and owner
+    // filter compose. When neither is set, the WHERE is undefined and
+    // Prisma returns every row.
+    const ownerWhere = ownerId ? { ownerId } : undefined
+
     if (title || reqKeywords || description) {
       const searchTokens = [
         ...(title ? decodeURIComponent(title).split(' ') : []),
@@ -133,19 +165,21 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       ].filter((x) => x && x !== 'undefined')
 
       const searchQuery = searchTokens.join(' & ')
+      const searchWhere = {
+        OR: [
+          { title: { contains: searchQuery } },
+          { title: { search: searchQuery } },
+          { keywords: { search: searchQuery } },
+          { description: { search: searchQuery } }
+        ],
+        ...(ownerWhere ?? {})
+      }
 
       ;[docs, total] = await Promise.all([
         prisma.documentMetadata.findMany({
           skip: offset,
           take: limit,
-          where: {
-            OR: [
-              { title: { contains: searchQuery } },
-              { title: { search: searchQuery } },
-              { keywords: { search: searchQuery } },
-              { description: { search: searchQuery } }
-            ]
-          },
+          where: searchWhere,
           select: {
             id: true,
             slug: true,
@@ -159,21 +193,12 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
             updatedAt: true
           }
         }),
-        prisma.documentMetadata.count({
-          where: {
-            OR: [
-              { title: { contains: searchQuery } },
-              { title: { search: searchQuery } },
-              { keywords: { search: searchQuery } },
-              { description: { search: searchQuery } }
-            ]
-          }
-        })
+        prisma.documentMetadata.count({ where: searchWhere })
       ])
     } else {
       ;[docs, total] = await Promise.all([
-        prisma.documentMetadata.findMany({ skip: offset, take: limit }),
-        prisma.documentMetadata.count()
+        prisma.documentMetadata.findMany({ skip: offset, take: limit, where: ownerWhere }),
+        prisma.documentMetadata.count({ where: ownerWhere })
       ])
     }
 
@@ -195,15 +220,18 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       if (!doc.ownerId) return doc
 
       const ownerProfile = ownerProfiles.find((profile: any) => profile.id === doc.ownerId)
-      const displayName =
-        ownerProfile?.display_name || ownerProfile?.full_name || ownerProfile?.email
+      if (!ownerProfile) return doc
 
+      // snake_case mirrors `public.users` so the FE consumes the same
+      // shape it gets from every other user-profile fetch.
       return {
         ...doc,
         owner: {
-          avatar_url: ownerProfile?.avatar_url,
-          displayName,
-          status: ownerProfile?.status
+          id: ownerProfile.id,
+          avatar_url: ownerProfile.avatar_url,
+          avatar_updated_at: ownerProfile.avatar_updated_at,
+          display_name: ownerProfile.display_name || ownerProfile.full_name,
+          status: ownerProfile.status
         }
       }
     })

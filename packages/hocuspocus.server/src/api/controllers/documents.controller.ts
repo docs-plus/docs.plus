@@ -60,6 +60,7 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
       title: query.title,
       keywords: query.keywords,
       description: query.description,
+      ownerId: query.ownerId,
       limit,
       offset
     })

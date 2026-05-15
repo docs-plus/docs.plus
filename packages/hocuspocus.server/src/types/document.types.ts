@@ -37,6 +37,7 @@ export interface SearchDocumentsParams {
   title?: string
   keywords?: string
   description?: string
+  ownerId?: string
   limit: number
   offset: number
 }

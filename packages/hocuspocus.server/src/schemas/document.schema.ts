@@ -18,6 +18,8 @@ export const documentQuerySchema = z.object({
   title: z.string().optional(),
   keywords: z.string().optional(),
   description: z.string().optional(),
+  // Filter by owner — used by the Settings → Documents "Mine" pill.
+  ownerId: z.string().uuid().optional(),
   limit: z.string().optional().default('10'),
   offset: z.string().optional().default('0')
 })
