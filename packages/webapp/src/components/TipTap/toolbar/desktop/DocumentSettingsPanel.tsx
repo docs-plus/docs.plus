@@ -58,40 +58,9 @@ const DocumentSettingsPanel = ({ className, onClose }: DocumentSettingsPanelProp
     }
   }, [isSuccess, formTargetHandler])
 
-  const OwnerProfile = () => {
-    const { full_name, username } = docMetadata.ownerProfile
-
-    return (
-      <div className="rounded-box border-base-300 bg-base-200/50 mt-4 border p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <Image
-            className="border-base-100 size-10 rounded-full border-2"
-            src={
-              docMetadata?.ownerProfile?.avatar_url || docMetadata?.ownerProfile?.default_avatar_url
-            }
-            height={40}
-            width={40}
-            alt={full_name}
-            title={full_name}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-base-content truncate text-sm font-medium">{full_name}</p>
-            {username && <p className="text-base-content/50 truncate text-xs">@{username}</p>}
-          </div>
-        </div>
-        {user?.id === docMetadata?.ownerId && (
-          <div className="border-base-300 border-t pt-3">
-            <ToggleSection
-              name="Read-only"
-              description="Make this document read-only for viewers"
-              checked={readOnly}
-              onChange={saveDocReadOnlyHandler}
-            />
-          </div>
-        )}
-      </div>
-    )
-  }
+  const isOwner = user?.id === docMetadata?.ownerId
+  const ownerProfile = docMetadata?.ownerProfile
+  const showOwnerHeader = ownerProfile && isAuthServiceAvailable
 
   return (
     <div className={twMerge('bg-base-100 flex w-full flex-col', className)}>
@@ -102,6 +71,43 @@ const DocumentSettingsPanel = ({ className, onClose }: DocumentSettingsPanelProp
           <CloseButton onClick={handleClose} size="sm" />
         </div>
       </div>
+
+      {showOwnerHeader && (
+        <div className="bg-base-200 border-base-300 flex items-center gap-3 border-b px-4 py-3">
+          <Image
+            className="border-base-300 size-8 shrink-0 rounded-full border"
+            src={ownerProfile.avatar_url || ownerProfile.default_avatar_url}
+            height={32}
+            width={32}
+            alt={ownerProfile.full_name}
+            title={ownerProfile.full_name}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
+              Owned by
+            </p>
+            <p className="text-base-content truncate text-sm font-medium">
+              {ownerProfile.full_name}
+            </p>
+          </div>
+          {isOwner ? (
+            <ToggleSection
+              name="Read-only"
+              description="Make this document read-only for viewers"
+              checked={readOnly}
+              onChange={saveDocReadOnlyHandler}
+              className="py-0"
+            />
+          ) : (
+            <span
+              className={`badge badge-sm badge-soft shrink-0 ${
+                readOnly ? 'badge-error' : 'badge-success'
+              }`}>
+              {readOnly ? 'Read-only' : 'Editable'}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex flex-col gap-4 p-4">
@@ -151,9 +157,6 @@ const DocumentSettingsPanel = ({ className, onClose }: DocumentSettingsPanelProp
                   Save Changes
                 </Button>
               </div>
-
-              {/* Owner Profile */}
-              {docMetadata.ownerProfile && isAuthServiceAvailable && <OwnerProfile />}
             </div>
           </div>
         </div>
