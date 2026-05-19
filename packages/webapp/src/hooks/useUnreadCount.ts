@@ -4,6 +4,6 @@ export function useUnreadCount(channelId: string): number {
   const serverCount = useChatStore(
     (state) => state.channels.get(channelId)?.unread_message_count ?? 0
   )
-  const optical = useChatStore((state) => state.opticalUnread.get(channelId))
-  return typeof optical === 'number' ? optical : serverCount
+  const optimistic = useChatStore((state) => state.optimisticUnread.get(channelId))
+  return typeof optimistic === 'number' ? optimistic : serverCount
 }

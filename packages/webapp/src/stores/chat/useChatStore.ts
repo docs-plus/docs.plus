@@ -8,7 +8,7 @@ import channelPinnedMessagesStore from './channelPinnedMessagesStore'
 import channelsStore from './channelsStore'
 import chatRoom from './chatroom'
 import emojiPickerStore from './emojiPickerStore'
-import opticalUnreadStore from './opticalUnreadStore'
+import optimisticUnreadStore from './optimisticUnreadStore'
 import peerReadCursorStore from './peerReadCursorStore'
 import workspaceSettingsStore from './workspaceSettingsStore'
 
@@ -23,7 +23,7 @@ export interface IStore
     ReturnType<typeof workspaceSettingsStore>,
     ReturnType<typeof bookmark>,
     ReturnType<typeof emojiPickerStore>,
-    ReturnType<typeof opticalUnreadStore>,
+    ReturnType<typeof optimisticUnreadStore>,
     ReturnType<typeof peerReadCursorStore>,
     ReturnType<typeof bootstrapStore> {}
 
@@ -35,7 +35,7 @@ export const useChatStore = create<IStore>((...props) => ({
   ...channelsStore(...props),
   ...bookmark(...props),
   ...emojiPickerStore(...props),
-  ...opticalUnreadStore(...props),
+  ...optimisticUnreadStore(...props),
   ...peerReadCursorStore(...props),
   ...bootstrapStore(...props)
 }))

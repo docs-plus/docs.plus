@@ -68,7 +68,7 @@ export const ChatroomProvider: React.FC<{
 
   const { error: metadataError, isChannelDataLoaded } = useChannelMetadata(channelId)
   const advanceRef = useRef<(idx: number) => void>(() => {})
-  const lastOpticalSeqRef = useRef<number>(0)
+  const lastOptimisticSeqRef = useRef<number>(0)
   const onInitialVisible = useCallback((idx: number) => advanceRef.current(idx), [])
   const {
     newestSeqRef,
@@ -114,10 +114,24 @@ export const ChatroomProvider: React.FC<{
 
   useEffect(() => {
     return () => {
-      useChatStore.getState().clearOpticalUnread(channelId)
-      lastOpticalSeqRef.current = 0
+      useChatStore.getState().clearOptimisticUnread(channelId)
+      useChatStore.getState().clearPeerReadSeq(channelId)
+      lastOptimisticSeqRef.current = 0
     }
   }, [channelId])
+
+  // Seed lastOptimisticSeq from the user's persisted read cursor once channel
+  // data is loaded. Without this seed, the first onLastVisibleIndexChange walk
+  // counts every message in the loaded window as "newly crossed" and
+  // decrements unread by the entire window — opening a chatroom with many
+  // unread would instantly zero the count instead of decrementing per scroll.
+  useEffect(() => {
+    if (!isChannelDataLoaded || !currentUserId) return
+    if (lastOptimisticSeqRef.current > 0) return
+    const member = useChatStore.getState().channelMembers.get(channelId)?.get(currentUserId)
+    const lastReadSeq = (member as { last_read_seq?: number } | undefined)?.last_read_seq ?? 0
+    if (lastReadSeq > 0) lastOptimisticSeqRef.current = lastReadSeq
+  }, [channelId, currentUserId, isChannelDataLoaded])
 
   const snapToPresent = useCallback(async () => {
     setNewCount(0)
@@ -150,11 +164,11 @@ export const ChatroomProvider: React.FC<{
       const maxSeq = newestSeqRef.current ?? 0
       if (maxSeq <= 0) return
       advance(maxSeq, 'sent')
-      // Tail snap: at-bottom means everything's been seen. Drop optical
-      // immediately for the Telegram-style "click-and-clear" feel rather
-      // than waiting on the realtime UPDATE round-trip.
-      useChatStore.getState().setOpticalUnread(channelId, 0)
-      lastOpticalSeqRef.current = maxSeq
+      // Tail snap: at-bottom means everything's been seen. Drop optimistic
+      // unread immediately for the Telegram-style "click-and-clear" feel
+      // rather than waiting on the realtime UPDATE round-trip.
+      useChatStore.getState().setOptimisticUnread(channelId, 0)
+      lastOptimisticSeqRef.current = maxSeq
     },
     [advance, channelId, newestSeqRef, dataIncludesTailRef]
   )
@@ -173,25 +187,25 @@ export const ChatroomProvider: React.FC<{
         const it = items[i]
         if (!isMessage(it)) continue
         if (it.status !== 'sent' || typeof it.seq !== 'number') continue
-        // Optical decrement: walk backward counting sent messages with
-        // seq in (lastOpticalSeq, newSeq]. Early-break once we cross
+        // Optimistic decrement: walk backward counting sent messages with
+        // seq in (lastOptimisticSeq, newSeq]. Early-break once we cross
         // back into the previously-counted region. Messages are appended
         // in seq order so this is O(crossed), not O(items).
         const newSeq = it.seq
-        if (newSeq > lastOpticalSeqRef.current) {
+        if (newSeq > lastOptimisticSeqRef.current) {
           let crossed = 0
           for (let j = i; j >= 0; j--) {
             const item = items[j]
             if (!isMessage(item)) continue
             if (item.status !== 'sent' || typeof item.seq !== 'number') continue
-            if (item.seq <= lastOpticalSeqRef.current) break
+            if (item.seq <= lastOptimisticSeqRef.current) break
             crossed++
           }
           if (crossed > 0) {
             const seed = useChatStore.getState().channels.get(channelId)?.unread_message_count ?? 0
-            useChatStore.getState().decrementOpticalUnread(channelId, crossed, seed)
+            useChatStore.getState().decrementOptimisticUnread(channelId, crossed, seed)
           }
-          lastOpticalSeqRef.current = newSeq
+          lastOptimisticSeqRef.current = newSeq
         }
         advance(it.seq, 'sent')
         return
