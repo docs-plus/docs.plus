@@ -89,7 +89,7 @@ export const ItemContent = ({ index, data, prevData, context }: ItemContentProps
   if (isDay(data)) return <DateChip date={data.date} />
   if (isUnread(data)) return <UnreadIndicatorLine index={index} />
   if (isMessage(data) && (data.row as any).type === 'notification') {
-    return <SystemNotifyChip message={data.row} />
+    return <SystemNotifyChip message={data.row} variant={variant} />
   }
   if (isMessage(data) && grouped) {
     const onRetry = data.client_id ? () => context?.retry(data.client_id!) : undefined
