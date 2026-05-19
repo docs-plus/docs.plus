@@ -7,6 +7,8 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       # ----------------------------------------------------------------------
       # Build the per-commit lines.
@@ -31,28 +33,72 @@ jobs:
       #   - Control characters (\u0000-\u001f) are still stripped because
       #     they break Discord rendering and have no legitimate place in a
       #     commit subject.
+      #   - GitHub push webhooks include at most 20 commits in
+      #     github.event.commits. For larger pushes we load the full range
+      #     via the compare API (repos/.../compare/before...after).
       # ----------------------------------------------------------------------
       - name: Build commit summary (for push)
         id: build
         env:
           EVENT_JSON: ${{ toJSON(github.event) }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          COUNT=$(jq -r '.commits | length' <<< "$EVENT_JSON")
           REF=$(jq -r '.ref' <<< "$EVENT_JSON" | sed 's|refs/heads/||')
           COMPARE=$(jq -r '.compare' <<< "$EVENT_JSON")
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          REPO="${{ github.repository }}"
+
+          normalize_webhook() {
+            jq '{
+              commits: [
+                .commits[]? | {
+                  id: .id,
+                  message: .message,
+                  author: {name: (.author.name // "unknown")}
+                }
+              ]
+            }' <<< "$EVENT_JSON"
+          }
+
+          if [ "$BEFORE" = "$ZERO_SHA" ] || [ -z "$BEFORE" ]; then
+            COMMITS_JSON=$(normalize_webhook)
+          else
+            API_PAGES=$(gh api "repos/${REPO}/compare/${BEFORE}...${AFTER}" --paginate 2>/dev/null) || API_PAGES=""
+            if [ -n "$API_PAGES" ]; then
+              COMMITS_JSON=$(jq -s '
+                [.[].commits[]?]
+                | unique_by(.sha)
+                | {commits: map({
+                    id: .sha,
+                    message: .commit.message,
+                    author: {name: (.commit.author.name // "unknown")}
+                  })}
+              ' <<< "$API_PAGES")
+              if [ "$(jq -r '.commits | length' <<< "$COMMITS_JSON")" -eq 0 ]; then
+                COMMITS_JSON=$(normalize_webhook)
+              fi
+            else
+              echo "::warning::compare API failed; falling back to webhook commits (max 20)"
+              COMMITS_JSON=$(normalize_webhook)
+            fi
+          fi
+
+          COUNT=$(jq -r '.commits | length' <<< "$COMMITS_JSON")
 
           # Skip the synthetic "build front back" deploy-trigger commit so
           # the channel does not get a one-line notification with no signal.
           SKIP_NOTIFICATION="false"
           if [ "$COUNT" -eq 1 ]; then
-            FIRST_MSG=$(jq -r '.commits[0].message // "" | split("\n")[0]' <<< "$EVENT_JSON")
-            if [ "$FIRST_MSG" = "build front back" ]; then
+            FIRST_MSG=$(jq -r '.commits[0].message // "" | split("\n")[0]' <<< "$COMMITS_JSON")
+            if [ "$FIRST_MSG" = "build front back" ] || [ "$FIRST_MSG" = "(build): front back" ]; then
               SKIP_NOTIFICATION="true"
               echo "⏭️ Skipping Discord notification (build trigger commit)"
             fi
           fi
 
-          REPO_URL="https://github.com/${{ github.repository }}"
+          REPO_URL="https://github.com/${REPO}"
 
           jq -r --arg repo "$REPO_URL" '
             .commits | to_entries[] |
@@ -65,10 +111,6 @@ jobs:
                 | gsub("\\s+"; " ")
                 | gsub("^\\s+|\\s+$"; "")
               ) as $subject |
-              # capture() returns an empty stream (not null) on no match,
-              # which would silently drop the entire commit line. Wrap it in
-              # an array so non-conventional commits resolve to null and fall
-              # through to the plain-subject branch below.
               ([$subject
                 | capture("^(?<prefix>[a-zA-Z]+(?:\\([^)]+\\))?!?:)\\s*(?<rest>.*)$")
               ] | .[0]) as $cc |
@@ -78,7 +120,7 @@ jobs:
                   ($subject | .[0:200])
                 end) as $title |
               $n + ". " + $title + " · [`" + $sha + "`](" + $url + ") · " + .value.author.name
-          ' <<< "$EVENT_JSON" > /tmp/commits.txt
+          ' <<< "$COMMITS_JSON" > /tmp/commits.txt
 
           {
             echo "COUNT=$COUNT"
@@ -130,7 +172,7 @@ jobs:
               if [ $CHUNK_NUM -eq 1 ]; then
                 send_chunk "${HEADER}${CURRENT_CHUNK}"
               else
-                send_chunk "${CURRENT_CHUNK}"
+                send_chunk $'*(continued)*\n'"${CURRENT_CHUNK}"
               fi
 
               CHUNK_NUM=$((CHUNK_NUM + 1))
@@ -144,6 +186,6 @@ jobs:
             if [ $CHUNK_NUM -eq 1 ]; then
               send_chunk "${HEADER}${CURRENT_CHUNK}"
             else
-              send_chunk "${CURRENT_CHUNK}"
+              send_chunk $'*(continued)*\n'"${CURRENT_CHUNK}"
             fi
           fi
