@@ -7,6 +7,15 @@ export type CommentMessageMemory = {
   user: any
 }
 
+/** Reply/edit composer context — subset of message row fields the UI needs. */
+export type ComposerMessageMemory = {
+  id?: string
+  channel_id?: string
+  content?: string
+  html?: string | null
+  user_details?: { fullname?: string; username?: string }
+}
+
 export type TChannelSettings = {
   name: any
   channelId?: string | null
@@ -17,10 +26,6 @@ export type TChannelSettings = {
   userPickingEmoji?: boolean
   replyMessageMemory?: any | null
   commentMessageMemory?: CommentMessageMemory | null
-  messageDraftMemory?: {
-    text: string | null
-    html: string | null
-  } | null
   editMessageMemory?: any | null
   forwardMessageMemory?: any | null
   unreadMessage?: boolean
