@@ -33,10 +33,12 @@ lowlight.register('css', css)
 lowlight.register('js', js)
 lowlight.register('ts', ts)
 lowlight.register('markdown', md)
-lowlight.register('python', python as any)
+// @ts-expect-error highlight.js language modules ship loose types
+lowlight.register('python', python)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
-lowlight.register('bash', bash as any)
+// @ts-expect-error highlight.js language modules ship loose types
+lowlight.register('bash', bash)
 
 import { isOnlyEmoji } from '@utils/emojis'
 
@@ -76,11 +78,11 @@ export const useTiptapEditor = ({
           codeBlock: false,
           bulletList: {
             keepMarks: true,
-            keepAttributes: false // TODO : Making this as `false` becase marks are not preserved when I try to preserve attrs, awaiting a bit of help
+            keepAttributes: false // TODO: keepAttributes:true loses marks; investigating upstream.
           },
           orderedList: {
             keepMarks: true,
-            keepAttributes: false // TODO : Making this as `false` becase marks are not preserved when I try to preserve attrs, awaiting a bit of help
+            keepAttributes: false // TODO: keepAttributes:true loses marks; investigating upstream.
           }
         }),
         InlineCode,

@@ -63,7 +63,6 @@ const MessageComposer = ({
   const {
     editor,
     text,
-    html,
     isEmojiOnly,
     setIsEmojiOnly,
     cancelPendingEditorDraftCapture,
@@ -74,11 +73,11 @@ const MessageComposer = ({
     channelId
   })
 
-  const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings | null>(
-    () => chatChannels.get(channelId) ?? null,
-    [chatChannels, channelId]
-  )
+  // Leaf-selector: subscribe to just this channel's settings row so unrelated
+  // workspaceSettings.channels mutations don't rerender the composer.
+  const channelSettings = useChatStore(
+    (state) => state.workspaceSettings.channels.get(channelId) ?? null
+  ) as TChannelSettings | null
 
   const { replyMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
 
@@ -106,7 +105,7 @@ const MessageComposer = ({
     setShowFormattingToolbar(expanded ?? false)
   }, [workspaceId, channelId])
 
-  const { submitMessage, isSubmittable, canPressSend } = useComposerSubmit({
+  const { submitMessage } = useComposerSubmit({
     channelId,
     workspaceId,
     user,
@@ -152,11 +151,15 @@ const MessageComposer = ({
     }
   }, [editor, setOrUpdateChatRoom])
 
+  // Reactive boolean derived from the debounced `text` from useTiptapEditor.
+  // Keeps the context value identity stable across keystrokes that don't
+  // transition empty <-> non-empty, killing the typing-cadence rerender cascade
+  // through the composer subtree.
+  const canSend = text.trim().length > 0
+
   const contextValue = useMemo(
     () => ({
       editor,
-      text,
-      html,
       replyMessageMemory,
       editMessageMemory,
       commentMessageMemory,
@@ -167,15 +170,12 @@ const MessageComposer = ({
       showFormattingToolbar,
       toggleToolbar,
       submitMessage,
-      isSubmittable,
-      canPressSend,
+      canSend,
       editorRef,
       isEmojiOnly
     }),
     [
       editor,
-      text,
-      html,
       replyMessageMemory,
       editMessageMemory,
       commentMessageMemory,
@@ -186,8 +186,7 @@ const MessageComposer = ({
       showFormattingToolbar,
       toggleToolbar,
       submitMessage,
-      isSubmittable,
-      canPressSend,
+      canSend,
       isEmojiOnly
     ]
   )

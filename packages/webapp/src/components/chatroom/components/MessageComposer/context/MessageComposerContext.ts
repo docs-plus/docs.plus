@@ -4,8 +4,6 @@ import { createContext } from 'react'
 
 export interface MessageComposerContextType {
   editor: Editor | null
-  text: string
-  html: string
   replyMessageMemory: ComposerMessageMemory | null | undefined
   editMessageMemory: ComposerMessageMemory | null | undefined
   commentMessageMemory: CommentMessageMemory | null | undefined
@@ -16,9 +14,8 @@ export interface MessageComposerContextType {
   showFormattingToolbar: boolean
   toggleToolbar: () => void
   submitMessage: (e?: { preventDefault?: () => void }) => Promise<void>
-  isSubmittable: () => boolean
-  /** Send affordance: true when editor has non-whitespace content (incl. anon sign-in path). */
-  canPressSend: () => boolean
+  /** Reactive send affordance: true when editor has non-whitespace content. */
+  canSend: boolean
   editorRef: React.RefObject<HTMLDivElement | null>
   isEmojiOnly: boolean
 }

@@ -11,7 +11,7 @@ import { chunkHtmlContent } from '@utils/chunkHtmlContent'
 import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
 import { useCallback } from 'react'
 
-type Args = {
+export type ComposerSubmitArgs = {
   channelId: string
   workspaceId?: string
   user: { id?: string } | null
@@ -39,23 +39,15 @@ export const useComposerSubmit = ({
   setEditMsgMemory,
   setCommentMsgMemory,
   cancelPendingEditorDraftCapture
-}: Args) => {
+}: ComposerSubmitArgs) => {
   const { request: updateMsg } = useApi(updateMessage, null, false)
   const { request: sendComment } = useApi(sendCommentMessage, null, false)
 
-  const hasSendableContent = useCallback(() => {
-    if (!editor) return false
-    const html = editor.getHTML()
-    const text = editor.getText()
-    return !!html && !!text && html.replace(/<[^>]*>/g, '').trim() !== '' && text.trim() !== ''
-  }, [editor])
-
-  const canPressSend = hasSendableContent
-
+  // editor.getText() is authoritative — strips marks/whitespace already.
   const isSubmittable = useCallback(() => {
-    if (!user) return false
-    return hasSendableContent()
-  }, [user, hasSendableContent])
+    if (!user || !editor) return false
+    return editor.getText().trim() !== ''
+  }, [user, editor])
 
   const cleanupAfterSubmit = useCallback(() => {
     if (replyMessageMemory) setReplyMsgMemory(channelId, null)
@@ -169,5 +161,5 @@ export const useComposerSubmit = ({
     ]
   )
 
-  return { submitMessage, isSubmittable, canPressSend }
+  return { submitMessage }
 }

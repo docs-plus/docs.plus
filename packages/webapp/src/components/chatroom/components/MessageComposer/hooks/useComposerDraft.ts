@@ -5,7 +5,7 @@ import type { CommentMessageMemory, ComposerMessageMemory } from '@types'
 import { isOnlyEmoji } from '@utils/emojis'
 import { useEffect } from 'react'
 
-type Args = {
+export type ComposerDraftArgs = {
   editor: Editor | null
   workspaceId?: string
   channelId: string
@@ -25,7 +25,7 @@ export const useComposerDraft = ({
   commentMessageMemory,
   setIsEmojiOnly,
   setDraftHydrated
-}: Args) => {
+}: ComposerDraftArgs) => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   useEffect(() => {

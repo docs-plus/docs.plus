@@ -114,6 +114,14 @@ export async function clearComposerState(workspaceId: string, roomId: string): P
   }
 }
 
+// Walk memory fallback rows for a given workspace prefix.
+function* memoryRowsForWorkspace(workspaceId: string) {
+  const prefix = `${workspaceId}::`
+  for (const [key, row] of memory) {
+    if (key.startsWith(prefix)) yield [key, row] as const
+  }
+}
+
 export async function clearWorkspaceComposerStates(workspaceId: string): Promise<number> {
   try {
     const db = await getDB()
@@ -122,20 +130,16 @@ export async function clearWorkspaceComposerStates(workspaceId: string): Promise
     await coll.delete()
 
     let memDeleted = 0
-    for (const [mk] of memory) {
-      if (mk.startsWith(`${workspaceId}::`)) {
-        memory.delete(mk)
-        memDeleted++
-      }
+    for (const [key] of memoryRowsForWorkspace(workspaceId)) {
+      memory.delete(key)
+      memDeleted++
     }
     return keys.length + memDeleted
   } catch {
     let count = 0
-    for (const [mk] of memory) {
-      if (mk.startsWith(`${workspaceId}::`)) {
-        memory.delete(mk)
-        count++
-      }
+    for (const [key] of memoryRowsForWorkspace(workspaceId)) {
+      memory.delete(key)
+      count++
     }
     return count
   }
@@ -150,9 +154,8 @@ export async function listRoomsWithDrafts(
     return rows.map(({ roomId, updatedAt }) => ({ roomId, updatedAt }))
   } catch {
     const out: Array<{ roomId: string; updatedAt: number }> = []
-    for (const [mk, row] of memory) {
-      if (mk.startsWith(`${workspaceId}::`))
-        out.push({ roomId: row.roomId, updatedAt: row.updatedAt })
+    for (const [, row] of memoryRowsForWorkspace(workspaceId)) {
+      out.push({ roomId: row.roomId, updatedAt: row.updatedAt })
     }
     return out
   }
