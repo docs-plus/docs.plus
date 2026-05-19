@@ -1,3 +1,4 @@
+import { fetchChannelInitialData } from '@api'
 import type { ChatItem, MessageItem, MessageRow } from '@components/chatroom/types/chat-items'
 import { isMessage } from '@components/chatroom/types/chat-items'
 import { useChatStore } from '@stores'
@@ -52,6 +53,7 @@ export const useChannelRealtime = ({
   const flushScheduledRef = useRef(false)
   const mountedRef = useRef(true)
   const pendingRafRef = useRef<number | null>(null)
+  const catchUpInFlightRef = useRef(false)
   // Upper bound on Virtuoso mount-wait. At 60fps this is ~5s — well past
   // any realistic measure delay; past that the rAF poll would be spinning
   // on a permanently-empty handle (error boundary, route flip, mobile
@@ -186,7 +188,35 @@ export const useChannelRealtime = ({
   useEffect(() => {
     if (!channelId) return
 
+    // Re-seed peer_max_read_seq after a reconnect: a dropped `read:advanced`
+    // would otherwise leave sender-side check-marks stuck until reload.
+    const refetchPeerSeq = async () => {
+      if (!currentUserId) return
+      const { data, error } = await fetchChannelInitialData({
+        input_channel_id: channelId,
+        message_limit: 0
+      })
+      if (error || !data) return
+      const seq = (data as { peer_max_read_seq?: number | null }).peer_max_read_seq
+      if (typeof seq === 'number' && seq > 0) {
+        useChatStore.getState().setPeerReadSeq(channelId, seq)
+      }
+    }
+
     const catchUp = async () => {
+      // Reentrancy guard: rapid focus/online flapping can stack catchUp
+      // chains (each up to 20 pages x 100 rows). Short-circuit if a prior
+      // drain hasn't returned yet.
+      if (catchUpInFlightRef.current) return
+      catchUpInFlightRef.current = true
+      try {
+        await catchUpInner()
+      } finally {
+        catchUpInFlightRef.current = false
+      }
+    }
+
+    const catchUpInner = async () => {
       // Wait for the initial fetch_message_window to set newestSeqRef.
       // Without this, a fast SUBSCRIBED on a slow initial fetch falls
       // through with `since=0`, fetches the entire channel history into
@@ -314,25 +344,33 @@ export const useChannelRealtime = ({
           }
         }
       )
-      .on(
-        'broadcast',
-        { event: 'read:advanced' },
-        ({ payload }: { payload: { user_id?: string; seq?: number } }) => {
-          // Emitted by advance_read_cursor when a peer advances. Skip
-          // until auth has hydrated — otherwise an own echo arriving in
-          // the null-id window writes our own seq into peerReadSeq and
-          // sticks (the setter is monotonic).
-          if (!currentUserId) return
-          if (!payload?.user_id || typeof payload.seq !== 'number') return
-          if (payload.user_id === currentUserId) return
-          useChatStore.getState().setPeerReadSeq(channelId, payload.seq)
-        }
-      )
       .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') catchUp()
       })
 
-    const onOnline = () => catchUp()
+    // Private topic gated by `chatroom_read_topic_access` on
+    // realtime.messages (members only). Split from `chatroom:{id}`
+    // so postgres_changes can stay on the public topic for anon
+    // PUBLIC-channel readers.
+    const readChannel = currentUserId
+      ? supabaseClient
+          .channel(`chatroom-read:${channelId}`, { config: { private: true } })
+          .on(
+            'broadcast',
+            { event: 'read:advanced' },
+            ({ payload }: { payload: { user_id?: string; seq?: number } }) => {
+              if (!payload?.user_id || typeof payload.seq !== 'number') return
+              if (payload.user_id === currentUserId) return
+              useChatStore.getState().setPeerReadSeq(channelId, payload.seq)
+            }
+          )
+          .subscribe()
+      : null
+
+    const onOnline = () => {
+      void refetchPeerSeq()
+      void catchUp()
+    }
     const onFocus = () => catchUp()
     window.addEventListener('online', onOnline)
     window.addEventListener('focus', onFocus)
@@ -341,6 +379,7 @@ export const useChannelRealtime = ({
       window.removeEventListener('online', onOnline)
       window.removeEventListener('focus', onFocus)
       supabaseClient.removeChannel(ch)
+      if (readChannel) supabaseClient.removeChannel(readChannel)
     }
   }, [channelId, listRef, newestSeqRef, dataIncludesTailRef, currentUserId, scheduleFlush])
 }

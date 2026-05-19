@@ -4,6 +4,7 @@ import { immer } from 'zustand/middleware/immer'
 export interface PeerReadCursorState {
   peerReadSeq: Map<string, number>
   setPeerReadSeq: (channelId: string, seq: number | null | undefined) => void
+  clearPeerReadSeq: (channelId: string) => void
 }
 
 const peerReadCursorStore = immer<PeerReadCursorState>((set) => ({
@@ -14,6 +15,10 @@ const peerReadCursorStore = immer<PeerReadCursorState>((set) => ({
       const current = state.peerReadSeq.get(channelId) ?? 0
       if (seq <= current) return
       state.peerReadSeq.set(channelId, seq)
+    }),
+  clearPeerReadSeq: (channelId) =>
+    set((state) => {
+      state.peerReadSeq.delete(channelId)
     })
 }))
 
