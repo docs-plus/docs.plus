@@ -1285,6 +1285,7 @@ export type Database = {
           last_read_seq: number
           newer_cursor: string
           older_cursor: string
+          peer_max_read_seq: number
           pinned_messages: Json
           total_messages_since_last_read: number
           unread_message: boolean

@@ -203,6 +203,8 @@ DECLARE
         -- Channel/feed reads
         'get_channel_aggregate_data',
         'get_channel_members_by_last_read_update',
+        -- Chat writes (each gates on auth.uid + channel access internally)
+        'advance_read_cursor', 'add_reaction', 'remove_reaction',
         -- Bookmarks
         'toggle_message_bookmark', 'archive_bookmark', 'mark_bookmark_as_read',
         'get_bookmark_count', 'get_bookmark_stats', 'get_user_bookmarks',
