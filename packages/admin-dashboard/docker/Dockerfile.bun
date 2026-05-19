@@ -17,6 +17,7 @@ WORKDIR /app
 COPY package.json bun.lock* bunfig.toml ./
 COPY packages/email-templates ./packages/email-templates
 COPY packages/eslint-config ./packages/eslint-config
+COPY packages/release-tooling/package.json ./packages/release-tooling/
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/webapp/package.json ./packages/webapp/
 COPY packages/hocuspocus.server/package.json ./packages/hocuspocus.server/

@@ -25,6 +25,7 @@ COPY packages/email-templates ./packages/email-templates
 COPY packages/hocuspocus.server ./packages/hocuspocus.server
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/release-tooling/package.json ./packages/release-tooling/
 COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
 # Full source: migration-extensions imports these; package "main" points at dist/ (not in repo).
 COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia/
