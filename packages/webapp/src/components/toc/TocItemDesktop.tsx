@@ -11,7 +11,7 @@ import { twMerge } from 'tailwind-merge'
 import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
-import { type NestedTocNode, scrollToHeading } from './utils'
+import { type NestedTocNode, scrollToHeading, tocTrailingRailPx } from './utils'
 
 interface TocItemDesktopProps {
   item: TocItemType
@@ -47,7 +47,7 @@ export function TocItemDesktop({
   const isActive = headingId === item.id
   const hasChildren = nestedNodes.length > 0
   const hasPresentUsers = presentUsers.length > 0
-  const presentUsersCount = presentUsers.length
+  const trailingRailPx = tocTrailingRailPx(presentUsers.length, unreadCount)
 
   // Drag state
   const isDragging = sortable.isDragging
@@ -102,16 +102,12 @@ export function TocItemDesktop({
   )
 
   const aClassName = twMerge(
-    'group relative rounded has-drag-handle whitespace-pre-line hyphens-auto',
+    'group relative flex items-center gap-1 overflow-hidden rounded has-drag-handle whitespace-pre-line hyphens-auto',
     isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`
   )
 
   return (
-    <li
-      ref={sortable.setNodeRef}
-      className={liClassName}
-      data-id={item.id}
-      {...(presentUsersCount > 0 && { 'data-present-users-count': presentUsersCount })}>
+    <li ref={sortable.setNodeRef} className={liClassName} data-id={item.id}>
       <a className={aClassName} onClick={handleClick} href={`?${item.id}`} data-id={item.id}>
         {/* Level badge - visible during drag */}
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
@@ -165,40 +161,42 @@ export function TocItemDesktop({
         )}
 
         {/* Heading text */}
-        <span className="toc__link hyphens-auto whitespace-pre-line">{item.textContent}</span>
+        <span className="toc__link min-w-0 flex-1 hyphens-auto whitespace-pre-line">
+          {item.textContent}
+        </span>
 
-        {/* Chat button */}
-        <Tooltip title="Chat Room" placement="left">
-          <span
-            className={`${TOC_CLASSES.chatTrigger} relative ml-auto flex items-center justify-center`}
-            data-heading-id={item.id}
-            onClick={handleChatClick}
-            aria-label={chatTriggerAriaLabel(unreadCount)}>
-            <ChatTriggerContent
-              unreadCount={unreadCount}
-              iconSize={20}
-              iconClassName={twMerge(
-                TOC_CLASSES.chatIcon,
-                'cursor-pointer fill-none transition-colors',
-                isActive && TOC_CLASSES.chatIconActive,
-                !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
-              )}
-            />
-          </span>
-        </Tooltip>
-
-        {/* Present users */}
-        {hasPresentUsers && (
-          <div className="absolute -right-6">
-            <AvatarStack
-              maxDisplay={4}
-              size="sm"
-              users={presentUsers}
-              showStatus={true}
-              tooltipPosition="left"
-            />
-          </div>
-        )}
+        <div className="relative ml-auto h-8 shrink-0" style={{ width: trailingRailPx }}>
+          <Tooltip title="Chat Room" placement="left">
+            <button
+              type="button"
+              className={`${TOC_CLASSES.chatTrigger} absolute top-1/2 left-0 z-[3] flex -translate-y-1/2 items-center justify-center`}
+              data-heading-id={item.id}
+              onClick={handleChatClick}
+              aria-label={chatTriggerAriaLabel(unreadCount)}>
+              <ChatTriggerContent
+                unreadCount={unreadCount}
+                iconSize={20}
+                iconClassName={twMerge(
+                  TOC_CLASSES.chatIcon,
+                  'cursor-pointer fill-none transition-colors',
+                  isActive && TOC_CLASSES.chatIconActive,
+                  !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
+                )}
+              />
+            </button>
+          </Tooltip>
+          {hasPresentUsers && (
+            <div className="absolute top-1/2 right-0 z-[2] -translate-y-1/2">
+              <AvatarStack
+                maxDisplay={4}
+                size="sm"
+                users={presentUsers}
+                showStatus={true}
+                tooltipPosition="left"
+              />
+            </div>
+          )}
+        </div>
       </a>
 
       {/* Nested children */}

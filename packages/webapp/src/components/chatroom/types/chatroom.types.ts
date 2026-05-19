@@ -48,10 +48,13 @@ export interface ChatroomContextValue {
   onAtBottomChange: (atBottom: boolean) => void
   /** Fired with the bottom-most fully-visible item index for read-cursor advance. */
   onLastVisibleIndexChange: (index: number) => void
-  // Older-message pagination wired from useChannelMessages through to
-  // ChatList; the Virtuoso surface owns the top-edge trigger.
+  // Bidirectional pagination wired from useChannelMessages through to
+  // ChatList; the Virtuoso surface owns the edge triggers. loadNewer
+  // fires only when the loaded window does NOT include the live tail.
   loadOlder: () => Promise<void> | void
   hasMoreOlder: boolean
   loadingOlder: boolean
+  loadNewer: () => Promise<void> | void
+  loadingNewer: boolean
   currentUserId: string | null
 }

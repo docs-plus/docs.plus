@@ -1,5 +1,7 @@
 import { twMerge } from 'tailwind-merge'
 
+import RollingNumber from './RollingNumber'
+
 export type UnreadBadgeSize = 'xs' | 'sm' | 'md' | 'lg'
 export type UnreadBadgeVariant =
   | 'primary'
@@ -12,19 +14,13 @@ export type UnreadBadgeVariant =
   | 'neutral'
 
 export interface UnreadBadgeProps {
-  /** The count to display */
   count: number
-  /** Maximum count before showing "99+" */
   max?: number
-  /** Size of the badge */
   size?: UnreadBadgeSize
-  /** Color variant */
   variant?: UnreadBadgeVariant
-  /** Additional className */
   className?: string
 }
 
-// Size classes
 const sizeClasses: Record<UnreadBadgeSize, string> = {
   xs: 'text-[10px] min-w-4 h-4 px-1',
   sm: 'text-xs min-w-5 h-5 px-1.5',
@@ -32,7 +28,6 @@ const sizeClasses: Record<UnreadBadgeSize, string> = {
   lg: 'text-sm min-w-7 h-7 px-2'
 }
 
-// Variant classes
 const variantClasses: Record<UnreadBadgeVariant, string> = {
   primary: 'bg-primary text-primary-content',
   secondary: 'bg-secondary text-secondary-content',
@@ -51,23 +46,20 @@ const UnreadBadge = ({
   variant = 'primary',
   className
 }: UnreadBadgeProps) => {
-  if (count === 0) return null
-
-  const isOverMax = count > max
-  const displayCount = isOverMax ? max : count
+  if (count <= 0) return null
 
   return (
     <span
       className={twMerge(
-        'badge inline-flex items-center justify-center rounded-full leading-none font-semibold tabular-nums',
+        'badge inline-flex items-center justify-center rounded-full leading-none font-semibold',
         sizeClasses[size],
         variantClasses[variant],
         className
       )}
       aria-live="polite"
+      aria-atomic="true"
       aria-label={`${count} unread`}>
-      {displayCount}
-      {isOverMax && '+'}
+      <RollingNumber value={count} max={max} />
     </span>
   )
 }

@@ -1,22 +1,19 @@
-import { useStore } from '@stores'
-import { useEffect, useState } from 'react'
+import { useAuthStore, useStore } from '@stores'
+import { useMemo } from 'react'
 
 /**
- * Hook to get users currently present in a specific channel/heading
+ * Users present in a heading channel (excludes self — authed track() adds self to the map).
  */
 export function usePresentUsers(channelId: string) {
   const usersPresence = useStore((state) => state.usersPresence)
-  const [presentUsers, setPresentUsers] = useState<any[]>([])
+  const profileId = useAuthStore((state) => state.profile?.id)
 
-  useEffect(() => {
-    if (!usersPresence) return
+  return useMemo(() => {
+    if (!usersPresence || !channelId) return []
 
-    const users = Array.from(usersPresence.values()).filter(
-      (user) => user?.channelId === channelId && user?.status !== 'OFFLINE'
+    return Array.from(usersPresence.values()).filter(
+      (user) =>
+        user?.channelId === channelId && user?.status !== 'OFFLINE' && user?.id !== profileId
     )
-
-    setPresentUsers(users)
-  }, [usersPresence, channelId])
-
-  return presentUsers
+  }, [usersPresence, channelId, profileId])
 }

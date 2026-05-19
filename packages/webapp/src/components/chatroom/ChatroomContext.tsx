@@ -1,4 +1,5 @@
 import { Modal, ModalContent } from '@components/ui/Dialog'
+import { useUnreadCount } from '@hooks/useUnreadCount'
 import { useAuthStore, useChatStore } from '@stores'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import React, {
@@ -22,6 +23,7 @@ import { useSendMessage } from './hooks/useSendMessage'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
+import { openComposerSignIn } from './utils/openComposerSignIn'
 
 const ChatroomContext = createContext<ChatroomContextValue | null>(null)
 
@@ -57,7 +59,7 @@ export const ChatroomProvider: React.FC<{
   // advance_read_cursor (which now decrements it). Mirrors the value the
   // TOC chat-icon UnreadBadge renders, so the jump-to-present chip and
   // the TOC stay in lockstep.
-  const unreadCount = useChatStore((s) => s.channels.get(channelId)?.unread_message_count ?? 0)
+  const unreadCount = useUnreadCount(channelId)
 
   const anchorKind: AnchorKind = useMemo(
     () => (deepLinkMessageId ? 'message_id' : 'first_unread'),
@@ -66,15 +68,23 @@ export const ChatroomProvider: React.FC<{
 
   const { error: metadataError, isChannelDataLoaded } = useChannelMetadata(channelId)
   const advanceRef = useRef<(idx: number) => void>(() => {})
+  const lastOpticalSeqRef = useRef<number>(0)
   const onInitialVisible = useCallback((idx: number) => advanceRef.current(idx), [])
-  const { newestSeqRef, dataIncludesTailRef, loadOlder, hasMoreOlder, loadingOlder } =
-    useChannelMessages({
-      channelId,
-      listRef,
-      anchorKind,
-      anchorValue: deepLinkMessageId,
-      onInitialVisible
-    })
+  const {
+    newestSeqRef,
+    dataIncludesTailRef,
+    loadOlder,
+    hasMoreOlder,
+    loadingOlder,
+    loadNewer,
+    loadingNewer
+  } = useChannelMessages({
+    channelId,
+    listRef,
+    anchorKind,
+    anchorValue: deepLinkMessageId,
+    onInitialVisible
+  })
 
   const handleBufferedArrival = useCallback((delta: BufferedArrival) => {
     setNewCount((n) => n + delta.count)
@@ -102,6 +112,13 @@ export const ChatroomProvider: React.FC<{
     return () => window.clearTimeout(t)
   }, [deepLinkMessageId, flash])
 
+  useEffect(() => {
+    return () => {
+      useChatStore.getState().clearOpticalUnread(channelId)
+      lastOpticalSeqRef.current = 0
+    }
+  }, [channelId])
+
   const snapToPresent = useCallback(async () => {
     setNewCount(0)
     setHasMention(false)
@@ -109,13 +126,7 @@ export const ChatroomProvider: React.FC<{
   }, [jumpTo])
 
   const onAuthRequired = useCallback(() => {
-    // Mirrors v1 SignInToJoinChannel.openSignInModalHandler — there is no
-    // central modal API; the global "btn_signin" element opens the auth
-    // sheet. Anon writes that hit this path get the same UX as channel-join.
-    const url = new URL(window.location.href)
-    url.searchParams.set('open_heading_chat', channelId)
-    window.history.pushState({}, '', url.href)
-    document.getElementById('btn_signin')?.click()
+    openComposerSignIn(channelId)
   }, [channelId])
 
   const { send, retry } = useSendMessage({
@@ -137,9 +148,15 @@ export const ChatroomProvider: React.FC<{
       if (!b) return
       if (!dataIncludesTailRef.current) return
       const maxSeq = newestSeqRef.current ?? 0
-      if (maxSeq > 0) advance(maxSeq, 'sent')
+      if (maxSeq <= 0) return
+      advance(maxSeq, 'sent')
+      // Tail snap: at-bottom means everything's been seen. Drop optical
+      // immediately for the Telegram-style "click-and-clear" feel rather
+      // than waiting on the realtime UPDATE round-trip.
+      useChatStore.getState().setOpticalUnread(channelId, 0)
+      lastOpticalSeqRef.current = maxSeq
     },
-    [advance, newestSeqRef, dataIncludesTailRef]
+    [advance, channelId, newestSeqRef, dataIncludesTailRef]
   )
 
   // Viewport-driven advance: when the user scrolls (or items first render)
@@ -156,11 +173,31 @@ export const ChatroomProvider: React.FC<{
         const it = items[i]
         if (!isMessage(it)) continue
         if (it.status !== 'sent' || typeof it.seq !== 'number') continue
+        // Optical decrement: walk backward counting sent messages with
+        // seq in (lastOpticalSeq, newSeq]. Early-break once we cross
+        // back into the previously-counted region. Messages are appended
+        // in seq order so this is O(crossed), not O(items).
+        const newSeq = it.seq
+        if (newSeq > lastOpticalSeqRef.current) {
+          let crossed = 0
+          for (let j = i; j >= 0; j--) {
+            const item = items[j]
+            if (!isMessage(item)) continue
+            if (item.status !== 'sent' || typeof item.seq !== 'number') continue
+            if (item.seq <= lastOpticalSeqRef.current) break
+            crossed++
+          }
+          if (crossed > 0) {
+            const seed = useChatStore.getState().channels.get(channelId)?.unread_message_count ?? 0
+            useChatStore.getState().decrementOpticalUnread(channelId, crossed, seed)
+          }
+          lastOpticalSeqRef.current = newSeq
+        }
         advance(it.seq, 'sent')
         return
       }
     },
-    [advance]
+    [advance, channelId]
   )
   // Stable bridge: `useChannelMessages.onInitialVisible` is the rAF-polled
   // post-replace seed and must not re-trigger the fetch effect when
@@ -242,6 +279,8 @@ export const ChatroomProvider: React.FC<{
       loadOlder,
       hasMoreOlder,
       loadingOlder,
+      loadNewer,
+      loadingNewer,
       currentUserId
     }),
     [
@@ -267,6 +306,8 @@ export const ChatroomProvider: React.FC<{
       loadOlder,
       hasMoreOlder,
       loadingOlder,
+      loadNewer,
+      loadingNewer,
       currentUserId
     ]
   )

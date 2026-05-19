@@ -51,6 +51,12 @@ export const useCatchUserPresences = () => {
       if (!currentMembers.has(payload.new.channel_id)) {
         addChannelMember(payload.new.channel_id, { ...payload.new, id: payload.new.member_id })
       }
+      // Reconcile optical to server truth. Covers (a) cross-tab sync,
+      // (b) new message bumping unread while we're scrolled mid-channel,
+      // (c) optical drift from a failed advance_read_cursor RPC.
+      useChatStore
+        .getState()
+        .setOpticalUnread(payload.new.channel_id, payload.new.unread_message_count)
     }
 
     if (!profile) {

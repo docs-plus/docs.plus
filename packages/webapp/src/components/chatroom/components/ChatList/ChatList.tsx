@@ -4,7 +4,8 @@ import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import {
   type ListScrollLocation,
   VirtuosoMessageList,
-  type VirtuosoMessageListMethods
+  type VirtuosoMessageListMethods,
+  type VirtuosoMessageListProps
 } from '@virtuoso.dev/message-list'
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react'
 
@@ -20,7 +21,28 @@ export type ChatListContext = {
   onAtBottomChange: (atBottom: boolean) => void
   currentUserId: string | null
   variant: keyof ChatroomVariant
+  loadingOlder: boolean
+  loadingNewer: boolean
 }
+
+/**
+ * Module-scope so identity stays stable across renders: Virtuoso silently
+ * drops captured props if `Header` / `Footer` re-mount (inline or memoized
+ * closures both re-mount). Changing values flow through the `context` prop
+ * and are read from the `{ context }` slot here.
+ */
+const ChatListHeader: VirtuosoMessageListProps<ChatItem, ChatListContext>['Header'] = ({
+  context
+}) => (context.loadingOlder ? <PaginationLoader /> : null)
+
+const ChatListFooter: VirtuosoMessageListProps<ChatItem, ChatListContext>['Footer'] = ({
+  context
+}) => (
+  <>
+    {context.loadingNewer ? <PaginationLoader /> : null}
+    <AtBottomTracker onChange={context.onAtBottomChange} />
+  </>
+)
 
 export type ChatListProps = {
   channelId: string
@@ -31,18 +53,23 @@ export type ChatListProps = {
   loadingOlder?: boolean
   loadOlder?: () => Promise<void> | void
   hasMoreOlder?: boolean
+  loadNewer?: () => Promise<void> | void
+  loadingNewer?: boolean
   currentUserId?: string | null
   variant?: keyof ChatroomVariant
 }
 
 /**
- * Virtuoso has no `startReached` prop; load-older is wired through
- * `onScroll`. We trigger when the list top has reached the viewport top
- * (within a small px threshold) and the hook still has more older rows.
- * `loadingOlderRef` inside `useChannelMessages` already guards re-entry,
- * so a per-scroll-tick call is safe.
+ * Virtuoso has no `startReached`/`endReached` props; both ends are
+ * wired through `onScroll`. We trigger load-older when the list top
+ * has reached the viewport top (within `LOAD_OLDER_PX_THRESHOLD` px)
+ * and load-newer when the list bottom is within
+ * `LOAD_NEWER_PX_THRESHOLD` of the viewport bottom. Re-entry is gated
+ * inside `useChannelMessages` (loadingOlderRef / loadingNewerRef and
+ * dataIncludesTailRef), so a per-scroll-tick call is safe.
  */
 const LOAD_OLDER_PX_THRESHOLD = 80
+const LOAD_NEWER_PX_THRESHOLD = 80
 
 export const ChatList = forwardRef<
   VirtuosoMessageListMethods<ChatItem, ChatListContext>,
@@ -58,6 +85,8 @@ export const ChatList = forwardRef<
       loadingOlder = false,
       loadOlder,
       hasMoreOlder = false,
+      loadNewer,
+      loadingNewer = false,
       currentUserId = null,
       variant = 'desktop'
     },
@@ -65,13 +94,17 @@ export const ChatList = forwardRef<
   ) => {
     const internalRef = useRef<VirtuosoMessageListMethods<ChatItem, ChatListContext>>(null)
     useImperativeHandle(externalRef, () => internalRef.current!)
-    const Footer = useMemo(
-      () => () => <AtBottomTracker onChange={onAtBottomChange} />,
-      [onAtBottomChange]
-    )
     const context = useMemo<ChatListContext>(
-      () => ({ channelId, retry, onAtBottomChange, currentUserId, variant }),
-      [channelId, retry, onAtBottomChange, currentUserId, variant]
+      () => ({
+        channelId,
+        retry,
+        onAtBottomChange,
+        currentUserId,
+        variant,
+        loadingOlder,
+        loadingNewer
+      }),
+      [channelId, retry, onAtBottomChange, currentUserId, variant, loadingOlder, loadingNewer]
     )
     const onScroll = useCallback(
       (location: ListScrollLocation) => {
@@ -84,15 +117,22 @@ export const ChatList = forwardRef<
         if (onLastVisibleIndexChange && typeof location.lastVisibleItemIndex === 'number') {
           onLastVisibleIndexChange(location.lastVisibleItemIndex)
         }
-        if (!loadOlder || !hasMoreOlder) return
         // listOffset is the distance between list top and viewport top;
         // 0 means at top, slightly-negative means just-past-top. Threshold
         // covers momentum scroll where we want to prefetch a bit early.
-        if (location.listOffset >= -LOAD_OLDER_PX_THRESHOLD) {
+        if (loadOlder && hasMoreOlder && location.listOffset >= -LOAD_OLDER_PX_THRESHOLD) {
           void loadOlder()
         }
+        // Mirror for the bottom edge. `bottomOffset` is 0 when the list
+        // bottom is flush with the viewport bottom; positive means there's
+        // unloaded list below. The hook's own `dataIncludesTailRef` guard
+        // disarms loadNewer once the live tail is reached, so we don't
+        // need a separate `hasMoreNewer` flag here.
+        if (loadNewer && location.bottomOffset <= LOAD_NEWER_PX_THRESHOLD) {
+          void loadNewer()
+        }
       },
-      [loadOlder, hasMoreOlder, onLastVisibleIndexChange]
+      [loadOlder, hasMoreOlder, loadNewer, onLastVisibleIndexChange]
     )
     return (
       <VirtuosoMessageList<ChatItem, ChatListContext>
@@ -102,8 +142,8 @@ export const ChatList = forwardRef<
         computeItemKey={computeItemKey as any}
         ItemContent={ItemContent as any}
         StickyHeader={StickyDayHeader as any}
-        Header={loadingOlder ? PaginationLoader : undefined}
-        Footer={Footer}
+        Header={ChatListHeader}
+        Footer={ChatListFooter}
         EmptyPlaceholder={MessagesEmptyState as any}
         onScroll={onScroll}
         shortSizeAlign={'bottom-smooth' as any}

@@ -81,15 +81,6 @@
   width: 100%;
   transition: width 0.2s ease-in-out;
 
-  // Width adjustments for present users avatars
-  $base: 20px;
-  $per: 8px;
-  @for $i from 1 through 7 {
-    &[data-present-users-count='#{$i}'] {
-      width: calc(100% - #{$base + $per * ($i * 0.5)});
-    }
-  }
-
   &.has-present-users {
     margin: 2px 0;
   }
@@ -255,7 +246,7 @@
       color 0.2s ease-in-out;
   }
 
-  &:hover > a > span > .toc__chat-icon {
+  &:hover > a .toc__chat-icon {
     opacity: 1;
   }
 }

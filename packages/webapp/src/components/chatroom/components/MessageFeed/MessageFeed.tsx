@@ -37,6 +37,8 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
     loadOlder,
     hasMoreOlder,
     loadingOlder,
+    loadNewer,
+    loadingNewer,
     currentUserId
   } = useChatroomContext()
 
@@ -59,6 +61,8 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
               loadOlder={loadOlder}
               hasMoreOlder={hasMoreOlder}
               loadingOlder={loadingOlder}
+              loadNewer={loadNewer}
+              loadingNewer={loadingNewer}
               currentUserId={currentUserId}
               variant={variant}
             />

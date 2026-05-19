@@ -14,7 +14,6 @@ import slugify from 'slugify'
  */
 export const useChannelMetadata = (channelId: string) => {
   const [error, setError] = useState<unknown>(null)
-  const [retryKey, setRetryKey] = useState(0)
   const [isChannelDataLoaded, setIsChannelDataLoaded] = useState(false)
   const workspaceId = useStore((state) => state.settings.metadata?.documentId)
 
@@ -79,7 +78,7 @@ export const useChannelMetadata = (channelId: string) => {
     return () => {
       cancelled = true
     }
-  }, [channelId, retryKey, workspaceId])
+  }, [channelId, workspaceId])
 
-  return { error, isChannelDataLoaded, retry: () => setRetryKey((k) => k + 1) }
+  return { error, isChannelDataLoaded }
 }

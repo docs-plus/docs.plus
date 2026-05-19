@@ -6,7 +6,7 @@ export { useTocDrag } from './useTocDrag'
 // Helper hooks
 export { useActiveHeading } from './useActiveHeading'
 export { usePresentUsers } from './usePresentUsers'
-export { useUnreadCount } from './useUnreadCount'
+export { useUnreadCount } from '@hooks/useUnreadCount'
 
 // Scroll spy hooks
 export { useHeadingScrollSpy, useTocAutoScroll } from './useHeadingScrollSpy'

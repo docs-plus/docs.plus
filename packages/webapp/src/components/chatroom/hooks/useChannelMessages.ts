@@ -52,11 +52,13 @@ export const useChannelMessages = ({
   const [loading, setLoading] = useState(true)
   const [hasMoreOlder, setHasMoreOlder] = useState(true)
   const [loadingOlder, setLoadingOlder] = useState(false)
+  const [loadingNewer, setLoadingNewer] = useState(false)
   const oldestSeqRef = useRef<number | null>(null)
   const newestSeqRef = useRef<number | null>(null)
   /** False after a non-tail data.replace; gates realtime appends. */
   const dataIncludesTailRef = useRef<boolean>(true)
   const loadingOlderRef = useRef(false)
+  const loadingNewerRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -99,11 +101,36 @@ export const useChannelMessages = ({
             requestAnimationFrame(apply)
             return
           }
-          list.data.replace(items, {
-            initialLocation: resolveInitialLocation(win, anchorKind, channelId, items),
-            purgeItemSizes: true
-          })
+          const initialLocation = resolveInitialLocation(win, anchorKind, channelId, items)
+          list.data.replace(items, { initialLocation, purgeItemSizes: true })
           setLoading(false)
+          // Virtuoso's `align: 'end'` for `LAST` at `data.replace` time
+          // computes against items-only coords and ignores the StickyHeader
+          // slot height — initial scroll lands ~1 row short of the true
+          // tail. Re-issue scrollToItem once measurements settle; by then
+          // Virtuoso's math includes the header offset and lands flush.
+          // Gated by referential identity on tailLocation so anchored
+          // scrolls (first_unread sentinel, message_id deep-link) aren't
+          // hijacked to the tail.
+          if (initialLocation === tailLocation) {
+            let tailAttempt = 0
+            const settleTail = () => {
+              if (cancelled) return
+              const loc = listRef.current?.getScrollLocation?.()
+              const measured = loc && loc.scrollHeight > loc.visibleListHeight + 1
+              if (!measured && tailAttempt < 20) {
+                tailAttempt++
+                requestAnimationFrame(settleTail)
+                return
+              }
+              listRef.current?.scrollToItem({
+                index: 'LAST',
+                align: 'end',
+                behavior: 'instant'
+              })
+            }
+            requestAnimationFrame(settleTail)
+          }
           // `onScroll` is the read-cursor signal once the user moves, but
           // it doesn't fire from a `data.replace`. Read the post-measure
           // location off the imperative handle on the next frame to seed
@@ -165,21 +192,13 @@ export const useChannelMessages = ({
     // before prepending the rest.
     const lastPrepended = [...olderItems].reverse().find(isMessage)
     const lastPrependedDate = lastPrepended ? lastPrepended.row.created_at?.slice(0, 10) : null
-    let droppedHeadDay = false
     if (lastPrependedDate) {
-      listRef.current?.data.map((item, index) => {
-        if (index === 0 && isDay(item) && item.date === lastPrependedDate) {
-          droppedHeadDay = true
-          // Sentinel — actual drop happens via findAndDelete below; we can't
-          // return undefined from map, so just return the item and clean up.
-        }
-        return item
-      })
-    }
-    if (droppedHeadDay) {
-      listRef.current?.data.findAndDelete(
-        (i, index) => index === 0 && isDay(i) && i.date === lastPrependedDate
-      )
+      const head = listRef.current?.data.get()[0]
+      if (head && isDay(head) && head.date === lastPrependedDate) {
+        listRef.current?.data.findAndDelete(
+          (i, index) => index === 0 && isDay(i) && i.date === lastPrependedDate
+        )
+      }
     }
     listRef.current?.data.prepend(olderItems)
     const seqs = olderMessageItems.map((m) => m.seq).filter((s): s is number => s != null)
@@ -187,18 +206,92 @@ export const useChannelMessages = ({
     setHasMoreOlder(Boolean(win.has_more_before))
   }, [channelId, hasMoreOlder, listRef])
 
+  // Scroll-down pagination: fetches messages with seq > newest loaded.
+  // Only fires when the loaded window does NOT include the tail — once
+  // it does, realtime postgres_changes is the source of new messages and
+  // a fetch here would loop on empty pages. A short response (< limit)
+  // is the tail signal: flip dataIncludesTailRef so the trigger disarms
+  // and realtime arrivals start appending directly.
+  const loadNewer = useCallback(async () => {
+    if (loadingNewerRef.current) return
+    if (dataIncludesTailRef.current) return
+    if (newestSeqRef.current == null) return
+    loadingNewerRef.current = true
+    setLoadingNewer(true)
+    const { data, error } = await supabaseClient.rpc('fetch_messages_since', {
+      p_channel_id: channelId,
+      p_since_seq: newestSeqRef.current,
+      p_limit: PAGE_LIMIT
+    })
+    loadingNewerRef.current = false
+    setLoadingNewer(false)
+    if (error || !Array.isArray(data) || data.length === 0) {
+      if (!error) dataIncludesTailRef.current = true
+      return
+    }
+    const rows = data as MessageRow[]
+    // Build items with a leading day separator only if the date crosses
+    // the boundary with the last currently-loaded message.
+    const items: ChatItem[] = []
+    const existing = listRef.current?.data.get() ?? []
+    let prevDate: string | null = null
+    for (let i = existing.length - 1; i >= 0; i--) {
+      const it = existing[i]
+      if (isMessage(it)) {
+        prevDate = it.row.created_at?.slice(0, 10) ?? null
+        break
+      }
+    }
+    for (const row of rows) {
+      const date = (row.created_at ?? '').slice(0, 10)
+      if (date && date !== prevDate) {
+        items.push({ kind: 'day', id: `day-${date}-${channelId}`, date })
+        prevDate = date
+      }
+      items.push({
+        kind: 'message',
+        id: row.id,
+        client_id: row.client_id ?? null,
+        seq: row.seq,
+        status: 'sent',
+        row
+      })
+    }
+    // Explicitly pass `false` (no autoscroll). The default `atBottom`
+    // callback would smooth-scroll on every page because loadNewer fires
+    // when bottomOffset is within LOAD_NEWER_PX_THRESHOLD — interpreted
+    // as at-bottom — and the post-append scroll snap re-triggers the
+    // same threshold, cascading into a runaway auto-scroll to tail.
+    // Pagination keeps the viewport anchored; only optimistic sends and
+    // at-tail peer arrivals deserve a follow-the-tail scroll.
+    listRef.current?.data.append(items, false)
+    const seqs = items
+      .filter(isMessage)
+      .map((m) => m.seq)
+      .filter((s): s is number => s != null)
+    newestSeqRef.current = seqs.length
+      ? Math.max(newestSeqRef.current ?? 0, ...seqs)
+      : newestSeqRef.current
+    if (rows.length < PAGE_LIMIT) dataIncludesTailRef.current = true
+  }, [channelId, listRef])
+
   return {
     loading,
     loadingOlder,
     hasMoreOlder,
     loadOlder,
+    loadingNewer,
+    loadNewer,
     oldestSeqRef,
     newestSeqRef,
     dataIncludesTailRef
   }
 }
 
-const buildItemsFromWindow = (
+/** Shared with useJumpTo / useScrollToMessage — kept as the single source
+ *  of truth for "rows → ChatItem[] with day-separator interleaving + optional
+ *  first-unread sentinel" so the three load paths cannot drift in shape. */
+export const buildItemsFromWindow = (
   win: MessageWindow,
   channelId: string,
   anchorKind: AnchorKind
