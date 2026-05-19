@@ -6737,7 +6737,8 @@ RETURNS TABLE(
     older_cursor TIMESTAMP WITH TIME ZONE,
     newer_cursor TIMESTAMP WITH TIME ZONE,
     has_more_older BOOLEAN,
-    has_more_newer BOOLEAN
+    has_more_newer BOOLEAN,
+    peer_max_read_seq BIGINT
 ) AS $$
 DECLARE
     channel_result JSONB;
@@ -6758,6 +6759,7 @@ DECLARE
     newer_cursor_result TIMESTAMP WITH TIME ZONE;
     has_more_older_result BOOLEAN := FALSE;
     has_more_newer_result BOOLEAN := FALSE;
+    peer_max_read_seq_result BIGINT;
 BEGIN
     -- Check if the channel exists and is not deleted
     SELECT json_build_object(
@@ -6800,7 +6802,8 @@ BEGIN
             NULL::TIMESTAMP WITH TIME ZONE    AS older_cursor,
             NULL::TIMESTAMP WITH TIME ZONE    AS newer_cursor,
             FALSE                             AS has_more_older,
-            FALSE                             AS has_more_newer;
+            FALSE                             AS has_more_newer,
+            NULL::BIGINT                      AS peer_max_read_seq;
         RETURN;
     END IF;
 
@@ -6839,6 +6842,14 @@ BEGIN
 
     -- Set is_member_result based on whether channel_member_info_result is null
     is_member_result := (channel_member_info_result IS NOT NULL);
+
+    -- Bootstrap seed for the sender-side check-mark; later advances
+    -- arrive via the `read:advanced` broadcast in advance_read_cursor.
+    SELECT MAX(cm.last_read_seq) INTO peer_max_read_seq_result
+    FROM public.channel_members cm
+    WHERE cm.channel_id = input_channel_id
+      AND cm.member_id <> auth.uid()
+      AND cm.left_at IS NULL;
 
     -- Get the last_read_message_id, last_read_seq, and timestamp for the current
     -- user in the channel. last_read_seq is the v2 cursor used by useReadCursor.
@@ -7093,7 +7104,8 @@ BEGIN
         older_cursor_result,
         newer_cursor_result,
         has_more_older_result,
-        has_more_newer_result;
+        has_more_newer_result,
+        peer_max_read_seq_result;
 END;
 $$ LANGUAGE plpgsql STABLE;
 -------------------------------
@@ -7968,6 +7980,22 @@ begin
       unread_message_count = v_unread,
       last_read_update_at = (now() at time zone 'utc')
   where channel_id = p_channel_id and member_id = v_uid;
+
+  -- Fan out to peers so sender-side check-marks flip without subscribing
+  -- to channel_members postgres_changes (workspace-scoped to own rows in
+  -- useCatchUserPresences). The cursor write is the durable contract;
+  -- the broadcast is a hint, so a realtime.send failure (broker hiccup,
+  -- missing extension on a fresh deploy) must not roll back the UPDATE.
+  begin
+    perform realtime.send(
+      jsonb_build_object('user_id', v_uid, 'seq', v_new_seq),
+      'read:advanced',
+      'chatroom:' || p_channel_id,
+      false
+    );
+  exception when others then
+    raise warning 'read:advanced broadcast failed: %', sqlerrm;
+  end;
 end;
 $$;
 
@@ -9906,6 +9934,8 @@ DECLARE
         -- Channel/feed reads
         'get_channel_aggregate_data',
         'get_channel_members_by_last_read_update',
+        -- Chat writes (each gates on auth.uid + channel access internally)
+        'advance_read_cursor', 'add_reaction', 'remove_reaction',
         -- Bookmarks
         'toggle_message_bookmark', 'archive_bookmark', 'mark_bookmark_as_read',
         'get_bookmark_count', 'get_bookmark_stats', 'get_user_bookmarks',

@@ -2,9 +2,10 @@
 --   1. get_channel_aggregate_data returns new column `peer_max_read_seq`
 --      so the FE seeds the check-mark on initial chatroom mount.
 --   2. advance_read_cursor fans out a `read:advanced` realtime
---      broadcast on `chatroom:{channel_id}` so peer clients flip the
---      check-mark without subscribing to channel_members postgres_changes
---      (workspace-scoped to own rows only in useCatchUserPresences).
+--      broadcast on a private `chatroom-read:{channel_id}` topic gated
+--      by `chatroom_read_topic_access` on `realtime.messages` (members
+--      only). Sender-side check-marks flip without subscribing to
+--      channel_members postgres_changes.
 -- Paired with packages/supabase/scripts/10-functions.sql.
 
 DROP FUNCTION IF EXISTS get_channel_aggregate_data(VARCHAR(36), INT, UUID);
@@ -137,11 +138,14 @@ BEGIN
 
     -- Bootstrap seed for the sender-side check-mark; later advances
     -- arrive via the `read:advanced` broadcast in advance_read_cursor.
-    SELECT MAX(cm.last_read_seq) INTO peer_max_read_seq_result
-    FROM public.channel_members cm
-    WHERE cm.channel_id = input_channel_id
-      AND cm.member_id <> auth.uid()
-      AND cm.left_at IS NULL;
+    -- Members only: leaks peer activity (online-status recon) otherwise.
+    IF is_member_result THEN
+      SELECT MAX(cm.last_read_seq) INTO peer_max_read_seq_result
+      FROM public.channel_members cm
+      WHERE cm.channel_id = input_channel_id
+        AND cm.member_id <> auth.uid()
+        AND cm.left_at IS NULL;
+    END IF;
 
     -- Get the last_read_message_id, last_read_seq, and timestamp for the current
     -- user in the channel. last_read_seq is the v2 cursor used by useReadCursor.
@@ -422,9 +426,12 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
 
+  -- FOR UPDATE locks the row so concurrent advances (open tab + mobile)
+  -- cannot interleave SELECT/UPDATE and flap unread_message_count.
   select greatest(last_read_seq, p_up_to_seq) into v_new_seq
   from public.channel_members
-  where channel_id = p_channel_id and member_id = v_uid;
+  where channel_id = p_channel_id and member_id = v_uid
+  for update;
 
   if v_new_seq is null then
     return;
@@ -442,17 +449,16 @@ begin
       last_read_update_at = (now() at time zone 'utc')
   where channel_id = p_channel_id and member_id = v_uid;
 
-  -- Fan out to peers so sender-side check-marks flip without subscribing
-  -- to channel_members postgres_changes (workspace-scoped to own rows in
-  -- useCatchUserPresences). The cursor write is the durable contract;
-  -- the broadcast is a hint, so a realtime.send failure (broker hiccup,
-  -- missing extension on a fresh deploy) must not roll back the UPDATE.
+  -- Private topic `chatroom-read:{id}` gated by chatroom_read_topic_access
+  -- on realtime.messages (members-only). The cursor write is the durable
+  -- contract; broadcast failure (broker hiccup, missing extension) must
+  -- not roll back the UPDATE.
   begin
     perform realtime.send(
       jsonb_build_object('user_id', v_uid, 'seq', v_new_seq),
       'read:advanced',
-      'chatroom:' || p_channel_id,
-      false
+      'chatroom-read:' || p_channel_id,
+      true
     );
   exception when others then
     raise warning 'read:advanced broadcast failed: %', sqlerrm;
@@ -462,3 +468,31 @@ $$;
 
 grant execute on function public.advance_read_cursor(varchar, bigint) to authenticated;
 revoke execute on function public.advance_read_cursor(varchar, bigint) from anon, public;
+
+-- ---------------------------------------------------------------------------
+-- Authorization for `chatroom-read:{channel_id}` private topic.
+--   - Subscribers must be authenticated channel members (left_at IS NULL).
+--   - `realtime.messages` RLS is already enabled by 07-3-notification-broadcast.
+--   - 14-char prefix `chatroom-read:` -> substring starts at position 15.
+-- ---------------------------------------------------------------------------
+
+drop policy if exists "chatroom_read_topic_access" on realtime.messages;
+
+create policy "chatroom_read_topic_access"
+on realtime.messages
+for select
+to authenticated
+using (
+  realtime.messages.topic like 'chatroom-read:%'
+  and exists (
+    select 1
+    from public.channel_members cm
+    where cm.channel_id = substr(realtime.messages.topic, 15)
+      and cm.member_id  = (select auth.uid())
+      and cm.left_at    is null
+  )
+);
+
+comment on policy "chatroom_read_topic_access" on realtime.messages is
+'Members-only subscription to chatroom-read:{channel_id}. Pairs with
+advance_read_cursor which fans out read:advanced with private := TRUE.';
