@@ -10,7 +10,6 @@ import { twMerge } from 'tailwind-merge'
 // without an HTML data-attribute round-trip.
 export interface MessageCardDesktopElement extends HTMLDivElement {
   msgId?: string
-  readedAt?: string | null
   createdAt?: string | null
   user_id?: string | null
 }
@@ -57,7 +56,6 @@ export const MessageCardProvider: React.FC<{
   useEffect(() => {
     if (!cardRef.current) return
     cardRef.current.msgId = message.id
-    cardRef.current.readedAt = message.readed_at
     cardRef.current.createdAt = message.created_at
     cardRef.current.user_id = message.user_id
   }, [message])

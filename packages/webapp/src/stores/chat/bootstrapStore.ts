@@ -12,11 +12,13 @@ interface IBootstrapStore {
 const bootstrapStore = immer<IBootstrapStore>((set) => ({
   bootstrapChannel: (channelId, channelData, userId) => {
     set((state: any) => {
+      const channelInfo = channelData.channel_info as Record<string, unknown> | undefined
+
       // 1. Canonical channel row
-      if (channelData.channel_info) {
+      if (channelInfo) {
         state.channels.set(channelId, {
           ...state.channels.get(channelId),
-          ...(channelData.channel_info as Record<string, unknown>)
+          ...channelInfo
         })
       }
 
@@ -27,7 +29,7 @@ const bootstrapStore = immer<IBootstrapStore>((set) => ({
       channelSettings.lastReadMessageTimestamp = channelData.last_read_message_timestamp
       channelSettings.totalMsgSinceLastRead = channelData.total_messages_since_last_read
       channelSettings.isUserChannelMember = channelData.is_user_channel_member || false
-      if (channelData.channel_info) channelSettings.channelInfo = channelData.channel_info
+      if (channelInfo) channelSettings.channelInfo = channelInfo
       state.workspaceSettings.channels.set(channelId, channelSettings)
 
       // 3. Caller's channel-member row (signed-in only)
@@ -45,6 +47,13 @@ const bootstrapStore = immer<IBootstrapStore>((set) => ({
         const pinned = new Map()
         ;(channelData.pinned_messages as TMsgRow[]).forEach((msg) => pinned.set(msg.id, msg))
         state.pinnedMessages.set(channelId, pinned)
+      }
+
+      // 5. Peer read high-watermark seed for sender-side check-marks.
+      const peerSeq = channelData.peer_max_read_seq
+      if (typeof peerSeq === 'number') {
+        const current = state.peerReadSeq.get(channelId) ?? 0
+        if (peerSeq > current) state.peerReadSeq.set(channelId, peerSeq)
       }
     })
   }

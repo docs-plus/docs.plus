@@ -1,6 +1,7 @@
 import { ChannelMemberReadUpdate, getChannelMembersByLastReadUpdate } from '@api'
 import AvatarStack from '@components/AvatarStack'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { usePeerReadSeq } from '@components/chatroom/hooks'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
@@ -25,6 +26,8 @@ export const UserReadStatus = ({
   className
 }: Props) => {
   const { channelId } = useChatroomContext()
+  const peerReadSeq = usePeerReadSeq(channelId)
+  const isSeen = typeof message.seq === 'number' && message.seq <= peerReadSeq
 
   const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[]>([])
   const { request: fetchReadUsers, loading: readUsersLoading } = useApi(
@@ -48,19 +51,15 @@ export const UserReadStatus = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
-  if (!message.readed_at) return null
+  if (!isSeen) return null
 
   const content = (
     <div className={twMerge('flex items-center gap-2 pt-2', className)}>
       <span className="text-base-content/50 shrink-0 text-xs">
-        {!message.readed_at ? (
-          <Icons.check size={16} className="text-base-content/40" />
-        ) : (
-          <span className="flex items-center gap-1 whitespace-nowrap">
-            <Icons.checkDouble size={16} className="text-base-content/40" />
-            {readUsers.length} seen
-          </span>
-        )}
+        <span className="flex items-center gap-1 whitespace-nowrap">
+          <Icons.checkDouble size={16} className="text-base-content/40" />
+          {readUsers.length} seen
+        </span>
       </span>
 
       <AvatarStack

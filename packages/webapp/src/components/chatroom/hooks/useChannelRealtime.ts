@@ -1,10 +1,30 @@
-import type { ChatItem, MessageItem } from '@components/chatroom/types/chat-items'
+import type { ChatItem, MessageItem, MessageRow } from '@components/chatroom/types/chat-items'
 import { isMessage } from '@components/chatroom/types/chat-items'
+import { useChatStore } from '@stores'
 import { supabaseClient } from '@utils/supabase'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback, useEffect, useRef } from 'react'
 
 export type BufferedArrival = { count: number; hasMention: boolean }
+
+// postgres_changes payloads omit RPC-computed columns (user_details,
+// is_bookmarked, bookmark_id). Use `user_details` presence as the
+// discriminator: hydrated → authoritative; raw → graft existing. Both
+// merge sites call this so the AGENTS.md lockstep rule is enforced.
+const mergeRowPreservingComputedColumns = (
+  incoming: MessageRow | null | undefined,
+  existing: MessageRow | null | undefined
+): MessageRow => {
+  const i = (incoming ?? {}) as MessageRow
+  if (i.user_details != null) return i
+  const e = (existing ?? {}) as MessageRow
+  return {
+    ...i,
+    user_details: e.user_details ?? null,
+    is_bookmarked: e.is_bookmarked,
+    bookmark_id: e.bookmark_id
+  }
+}
 
 export type ChannelRealtimeArgs = {
   channelId: string
@@ -21,6 +41,7 @@ export const useChannelRealtime = ({
   listRef,
   newestSeqRef,
   dataIncludesTailRef,
+  currentUserId,
   currentUsername,
   onBufferedArrival
 }: ChannelRealtimeArgs) => {
@@ -59,6 +80,20 @@ export const useChannelRealtime = ({
         pendingRafRef.current = requestAnimationFrame(drain)
         return
       }
+      // Wait for the initial fetch_message_window to populate the window
+      // and set newestSeqRef. Without this gate, arrivals captured by
+      // postgres_changes / catchUp before the window resolves would be
+      // appended onto an empty list and then survive past data.replace,
+      // landing AFTER the loaded window items — visible as a reversed
+      // pagination block (newer at top, older at tail).
+      if (newestSeqRef.current == null) {
+        if (++attempts >= MAX_DRAIN_ATTEMPTS) {
+          flushScheduledRef.current = false
+          return
+        }
+        pendingRafRef.current = requestAnimationFrame(drain)
+        return
+      }
       flushScheduledRef.current = false
       const arrivals = [...arrivalBufferRef.current.values()]
       const updates = [...updateBufferRef.current.values()]
@@ -72,28 +107,7 @@ export const useChannelRealtime = ({
       for (const item of updates) {
         listRef.current?.data.map((i) => {
           if (isMessage(i) && i.id === item.id) {
-            // Postgres_changes payloads are raw messages.* — they don't
-            // carry the computed columns from the RPCs (user_details,
-            // is_bookmarked, bookmark_id). Use `user_details` presence
-            // as the discriminator: when present, the row was hydrated
-            // by fetch_message_window / fetch_messages_since and is
-            // authoritative for all computed fields. When absent, this
-            // is a postgres_changes payload (reaction add, edit, etc.)
-            // and we MUST preserve the existing in-memory row's
-            // computed fields — otherwise reactions blank out the
-            // avatar AND wipe the bookmark indicator.
-            const incomingRow = (item.row ?? {}) as any
-            const existingRow = (i.row ?? {}) as any
-            const isHydrated = incomingRow.user_details != null
-            const mergedRow = isHydrated
-              ? incomingRow
-              : {
-                  ...incomingRow,
-                  user_details: existingRow.user_details ?? null,
-                  is_bookmarked: existingRow.is_bookmarked,
-                  bookmark_id: existingRow.bookmark_id
-                }
-            return { ...item, row: mergedRow }
+            return { ...item, row: mergeRowPreservingComputedColumns(item.row, i.row) }
           }
           return i
         })
@@ -111,20 +125,37 @@ export const useChannelRealtime = ({
           listRef.current?.data.map((i) => {
             if (isMessage(i) && i.id === item.id) {
               merged = true
-              const incomingRow = (item.row ?? {}) as any
-              const existingRow = (i.row ?? {}) as any
-              const mergedRow = incomingRow.user_details
-                ? incomingRow
-                : { ...incomingRow, user_details: existingRow.user_details ?? null }
-              return { ...item, row: mergedRow }
+              return { ...item, row: mergeRowPreservingComputedColumns(item.row, i.row) }
             }
             return i
           })
-          if (merged) continue
-          // Always defer to `atBottom`: optimistic append in useSendMessage
-          // already moved the viewport when appropriate, so an own-echo
-          // arriving while scrolled up must not yank the reader back down.
-          listRef.current?.data.append([item], ({ atBottom }) => (atBottom ? 'smooth' : false))
+          if (merged) {
+            if (typeof item.seq === 'number') {
+              newestSeqRef.current = Math.max(newestSeqRef.current ?? 0, item.seq)
+            }
+            continue
+          }
+          // Pending-block fence: own optimistic sends sit at the list tail
+          // with `status: 'pending'` until their echo merges in place. A
+          // peer arrival appended naïvely lands AFTER the pending block,
+          // and when the user's own echo later merges by id it inherits
+          // a position behind the peer — visible as an out-of-order tail.
+          // Insert peer arrivals BEFORE the first trailing pending item
+          // so the echo merge stays sort-correct.
+          const pendingIdx = listRef.current?.data.findIndex(
+            (i: ChatItem) => isMessage(i) && i.status === 'pending'
+          )
+          if (typeof pendingIdx === 'number' && pendingIdx >= 0) {
+            listRef.current?.data.insert([item], pendingIdx)
+          } else {
+            // Always defer to `atBottom`: optimistic append in useSendMessage
+            // already moved the viewport when appropriate, so an own-echo
+            // arriving while scrolled up must not yank the reader back down.
+            listRef.current?.data.append([item], ({ atBottom }) => (atBottom ? 'smooth' : false))
+          }
+          if (typeof item.seq === 'number') {
+            newestSeqRef.current = Math.max(newestSeqRef.current ?? 0, item.seq)
+          }
         }
       } else if (detached.length > 0) {
         const tag = currentUsername ? `@${currentUsername}` : null
@@ -138,7 +169,7 @@ export const useChannelRealtime = ({
       }
     }
     pendingRafRef.current = requestAnimationFrame(drain)
-  }, [listRef, dataIncludesTailRef, currentUsername, onBufferedArrival])
+  }, [listRef, newestSeqRef, dataIncludesTailRef, currentUsername, onBufferedArrival])
 
   useEffect(() => {
     mountedRef.current = true
@@ -156,20 +187,36 @@ export const useChannelRealtime = ({
     if (!channelId) return
 
     const catchUp = async () => {
+      // Wait for the initial fetch_message_window to set newestSeqRef.
+      // Without this, a fast SUBSCRIBED on a slow initial fetch falls
+      // through with `since=0`, fetches the entire channel history into
+      // arrivalBuffer, and those rows tail-pile after data.replace —
+      // visible as reversed pagination (newer block on top, older on
+      // bottom). Bounded so we don't hang forever on a stalled fetch.
+      let waitAttempts = 0
+      while (newestSeqRef.current == null && mountedRef.current && waitAttempts < 100) {
+        await new Promise((r) => setTimeout(r, 50))
+        waitAttempts++
+      }
+      if (!mountedRef.current || newestSeqRef.current == null) return
       // Loop until the server returns fewer than CATCHUP_PAGE rows (i.e. the
       // gap is closed). `fetch_messages_since` truncates at p_limit, so a
       // single-shot 100-row call silently drops anything past that — a user
       // returning to a busy channel after hours would lose the middle. Cap
       // pages so a runaway gap (or a misbehaving server) can't spin forever;
       // realtime stays correct going forward even if we bail.
+      // Local pagination cursor — must NOT advance newestSeqRef because
+      // catchUp messages route to detachedBuffer when the list doesn't
+      // include the tail (deep-link / first_unread mid-channel mounts),
+      // and loadNewer relies on newestSeqRef tracking LIST max only.
       const CATCHUP_PAGE = 100
       const MAX_PAGES = 20
+      let sinceLocal = newestSeqRef.current
       for (let page = 0; page < MAX_PAGES; page++) {
         if (!mountedRef.current) return
-        const since = newestSeqRef.current ?? 0
         const { data, error } = await supabaseClient.rpc('fetch_messages_since', {
           p_channel_id: channelId,
-          p_since_seq: since,
+          p_since_seq: sinceLocal,
           p_limit: CATCHUP_PAGE
         })
         if (error || !data || !Array.isArray(data) || data.length === 0) return
@@ -183,8 +230,12 @@ export const useChannelRealtime = ({
             row
           }
           arrivalBufferRef.current.set(row.id, item)
-          if (!dataIncludesTailRef.current) detachedBufferRef.current.push(item)
-          newestSeqRef.current = Math.max(newestSeqRef.current ?? 0, row.seq)
+          // Intentionally NOT pushing to detachedBufferRef here: these rows
+          // are paginated out, not session arrivals. Counting them inflates
+          // the JumpToPresent chip with phantom unreads on deep-link or
+          // first_unread mid-channel mounts. Genuine "new while reading"
+          // still flows via the postgres_changes INSERT handler below.
+          if (typeof row.seq === 'number' && row.seq > sinceLocal) sinceLocal = row.seq
         }
         scheduleFlush()
         if (data.length < CATCHUP_PAGE) return
@@ -217,7 +268,11 @@ export const useChannelRealtime = ({
           }
           arrivalBufferRef.current.set(row.id, item)
           if (!dataIncludesTailRef.current) detachedBufferRef.current.push(item)
-          newestSeqRef.current = Math.max(newestSeqRef.current ?? 0, row.seq)
+          // newestSeqRef is intentionally NOT bumped here. It tracks the
+          // LIST's max seq so loadNewer can use it as the `since` cursor;
+          // arrivals routed to detachedBuffer (mid-channel mount) must not
+          // race ahead of the list and disarm loadNewer. Drain updates the
+          // ref when items actually enter the list.
           scheduleFlush()
         }
       )
@@ -259,6 +314,20 @@ export const useChannelRealtime = ({
           }
         }
       )
+      .on(
+        'broadcast',
+        { event: 'read:advanced' },
+        ({ payload }: { payload: { user_id?: string; seq?: number } }) => {
+          // Emitted by advance_read_cursor when a peer advances. Skip
+          // until auth has hydrated — otherwise an own echo arriving in
+          // the null-id window writes our own seq into peerReadSeq and
+          // sticks (the setter is monotonic).
+          if (!currentUserId) return
+          if (!payload?.user_id || typeof payload.seq !== 'number') return
+          if (payload.user_id === currentUserId) return
+          useChatStore.getState().setPeerReadSeq(channelId, payload.seq)
+        }
+      )
       .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') catchUp()
       })
@@ -273,5 +342,5 @@ export const useChannelRealtime = ({
       window.removeEventListener('focus', onFocus)
       supabaseClient.removeChannel(ch)
     }
-  }, [channelId, listRef, newestSeqRef, dataIncludesTailRef, scheduleFlush])
+  }, [channelId, listRef, newestSeqRef, dataIncludesTailRef, currentUserId, scheduleFlush])
 }
