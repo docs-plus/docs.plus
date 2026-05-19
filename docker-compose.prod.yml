@@ -435,6 +435,7 @@ services:
         NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
         NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+        NEXT_PUBLIC_VIRTUOSO_LICENSE: ${NEXT_PUBLIC_VIRTUOSO_LICENSE}
     restart: always # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM

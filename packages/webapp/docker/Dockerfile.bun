@@ -18,13 +18,13 @@ FROM oven/bun:1-slim AS base
 
 # Install system dependencies (Debian slim; build tools for potential native deps)
 RUN rm -rf /var/lib/apt/lists/* && \
-    apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    python3 \
-    make \
-    g++ \
-    nodejs \
-    && rm -rf /var/lib/apt/lists/*
+  apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  python3 \
+  make \
+  g++ \
+  nodejs \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -120,21 +120,23 @@ ARG NEXT_PUBLIC_GA_ID
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ARG NEXT_PUBLIC_VIRTUOSO_LICENSE
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    BUILD_ID=${BUILD_ID} \
-    GIT_HASH=${GIT_HASH} \
-    NODE_ENV=${NODE_ENV} \
-    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
-    NEXT_PUBLIC_SUPABASE_WS_URL=${NEXT_PUBLIC_SUPABASE_WS_URL} \
-    NEXT_PUBLIC_PROVIDER_URL=${NEXT_PUBLIC_PROVIDER_URL} \
-    NEXT_PUBLIC_RESTAPI_URL=${NEXT_PUBLIC_RESTAPI_URL} \
-    NEXT_PUBLIC_SSE_URL=${NEXT_PUBLIC_SSE_URL} \
-    NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID} \
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID} \
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+  BUILD_ID=${BUILD_ID} \
+  GIT_HASH=${GIT_HASH} \
+  NODE_ENV=${NODE_ENV} \
+  NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+  NEXT_PUBLIC_SUPABASE_WS_URL=${NEXT_PUBLIC_SUPABASE_WS_URL} \
+  NEXT_PUBLIC_PROVIDER_URL=${NEXT_PUBLIC_PROVIDER_URL} \
+  NEXT_PUBLIC_RESTAPI_URL=${NEXT_PUBLIC_RESTAPI_URL} \
+  NEXT_PUBLIC_SSE_URL=${NEXT_PUBLIC_SSE_URL} \
+  NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID} \
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID} \
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY} \
+  NEXT_PUBLIC_VIRTUOSO_LICENSE=${NEXT_PUBLIC_VIRTUOSO_LICENSE}
 
 # Copy workspace layout from build-extensions (built extensions + full packages). Do NOT copy
 # node_modules from deps: Bun's node_modules uses symlinks into a virtual store; copying breaks
@@ -164,13 +166,13 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
-    HOSTNAME="0.0.0.0"
+  NEXT_TELEMETRY_DISABLED=1 \
+  PORT=3000 \
+  HOSTNAME="0.0.0.0"
 
 # Create non-root user (Debian slim: groupadd/useradd)
 RUN groupadd -r -g 1001 nodejs && \
-    useradd -r -u 1001 -g nodejs nextjs
+  useradd -r -u 1001 -g nodejs nextjs
 
 # Copy standalone build output to root (Next.js standalone expects to run from its own root)
 # Standalone already includes server.js, node_modules, and minimal dependencies
@@ -186,9 +188,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/webapp/public ./packages
 
 # Clean up unnecessary files and fix any nested static directories created by postbuild
 RUN rm -rf ./packages/webapp/.next/cache && \
-    rm -rf ./packages/webapp/.next/static/static && \
-    find ./packages/webapp -name "*.test.*" -type f -delete && \
-    find ./packages/webapp -name "*.spec.*" -type f -delete
+  rm -rf ./packages/webapp/.next/static/static && \
+  find ./packages/webapp -name "*.test.*" -type f -delete && \
+  find ./packages/webapp -name "*.spec.*" -type f -delete
 
 # Copy built extension packages (needed at runtime for workspace resolution)
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hyperlink/dist ./packages/extension-hyperlink/dist
@@ -210,7 +212,7 @@ EXPOSE 3000
 
 # Simple healthcheck - less overhead than fetch
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD bun -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+  CMD bun -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
 # Next.js standalone preserves monorepo structure, so server.js is at packages/webapp/server.js
 # After extracting standalone to root, the path is correct
