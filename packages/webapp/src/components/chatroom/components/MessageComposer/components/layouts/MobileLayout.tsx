@@ -84,21 +84,25 @@ const MobileToolbar = () => {
 export const MobileLayout = () => {
   return (
     <div className="chat_editor_container flex w-full flex-col">
-      <MsgComposer className="bg-base-100 border-base-300 rounded-t-md border border-b-0 shadow-sm">
-        <MsgComposer.MobileWrapper>
-          <MsgComposer.Context>
-            <MsgComposer.ReplyContext />
-            <MsgComposer.EditContext />
-            <MsgComposer.CommentContext />
-          </MsgComposer.Context>
+      <div
+        data-chat-composer-surface
+        className="bg-base-100 border-base-300 rounded-t-md border border-b-0 shadow-sm">
+        <MsgComposer>
+          <MsgComposer.MobileWrapper>
+            <MsgComposer.Context>
+              <MsgComposer.ReplyContext />
+              <MsgComposer.EditContext />
+              <MsgComposer.CommentContext />
+            </MsgComposer.Context>
 
-          <div className="flex flex-row items-end gap-2 px-2 py-1.5">
-            <MsgComposer.AttachmentButton size={20} className="btn-square bg-base-200" />
-            <MsgComposer.Input className="py-0.5" />
-          </div>
-          <MobileToolbar />
-        </MsgComposer.MobileWrapper>
-      </MsgComposer>
+            <div className="flex flex-row items-end gap-2 px-2 py-1.5">
+              <MsgComposer.AttachmentButton size={20} className="btn-square bg-base-200" />
+              <MsgComposer.Input className="py-0.5" />
+            </div>
+            <MobileToolbar />
+          </MsgComposer.MobileWrapper>
+        </MsgComposer>
+      </div>
     </div>
   )
 }

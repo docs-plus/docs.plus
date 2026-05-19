@@ -22,7 +22,9 @@ export const DesktopLayout = () => {
         <MsgComposer.EditContext />
         <MsgComposer.CommentContext />
       </MsgComposer.Context>
-      <div className="border-base-300 rounded-md border bg-transparent shadow-md">
+      <div
+        data-chat-composer-surface
+        className="border-base-300 rounded-md border bg-transparent shadow-md">
         <MsgComposer.Toolbar className="bg-base-300/60 border-base-100 h-10 rounded-t-md border-b p-2 px-1">
           <MsgComposer.BoldButton size={16} />
           <MsgComposer.ItalicButton size={16} />

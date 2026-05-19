@@ -1,139 +1,161 @@
 import { searchWorkspaceUsers } from '@api'
-import { useApi } from '@hooks/useApi'
-import { useStore } from '@stores'
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { useAuthStore, useStore } from '@stores'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 
-import MentionItem from './MentionItem'
+import { MentionSuggestions } from './MentionSuggestions'
+import {
+  EVERYONE_ENTRY,
+  type MentionPickerEntry,
+  type MentionPickerUser,
+  showEveryoneForQuery
+} from './mentionTypes'
 
-const everyoneOption = {
-  id: 0,
-  username: 'everyone',
-  full_name: 'All Users',
-  isEveryoneOption: true
+const DEBOUNCE_MS = 150
+
+export type MentionListProps = {
+  query: string
+  command: (item: { id: string; label: string }) => void
 }
 
-const LoadingSkeleton = () => (
-  <div className="item flex items-center px-3 py-1">
-    <div className="flex items-center gap-4">
-      <div className="skeleton h-14 w-14 !rounded-full" />
-      <div className="flex flex-col gap-4">
-        <div className="skeleton h-4 w-28" />
-        <div className="skeleton h-4 w-20" />
-      </div>
-    </div>
-  </div>
-)
+export type MentionListRef = {
+  onKeyDown: (props: { event: KeyboardEvent }) => boolean
+}
 
-export default forwardRef((props, ref) => {
+const MentionList = forwardRef<MentionListRef, MentionListProps>(function MentionList(
+  { query, command },
+  ref
+) {
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [workspaceUsers, setWorkspaceUsers] = useState([])
-  const workspaceId = useStore((state) => state.settings.workspaceId)
-  const listRef = useRef(null)
+  const [members, setMembers] = useState<MentionPickerUser[]>([])
+  const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { request: searchWorkspaceUsersRequest, loading: searchWorkspaceUsersLoading } = useApi(
-    searchWorkspaceUsers,
-    null,
-    false
-  )
+  const workspaceId = useStore((s) => s.settings.workspaceId)
+  const usersPresence = useStore((s) => s.usersPresence)
+  const currentUserId = useAuthStore((s) => s.profile?.id)
+
+  const showEveryone = showEveryoneForQuery(query)
+
+  const flatEntries = useMemo((): MentionPickerEntry[] => {
+    const entries: MentionPickerEntry[] = []
+    if (showEveryone) entries.push(EVERYONE_ENTRY)
+    entries.push(...members)
+    return entries
+  }, [showEveryone, members])
+
+  const onlineByUserId = useMemo(() => {
+    const map = new Map<string, boolean>()
+    for (const [id, presence] of usersPresence) {
+      map.set(id, presence.status === 'ONLINE')
+    }
+    return map
+  }, [usersPresence])
 
   useEffect(() => {
-    const fetchWorkspaceUsers = async () => {
-      const { data, error } = await searchWorkspaceUsersRequest({ workspaceId })
-      if (error) {
-        console.error(error)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    let cancelled = false
+
+    if (!workspaceId || !currentUserId) {
+      setMembers([])
+      setLoading(false)
+      setFetchError(false)
+    } else {
+      setLoading(true)
+      setFetchError(false)
+    }
+
+    debounceRef.current = setTimeout(() => {
+      if (!workspaceId || !currentUserId) {
         return
       }
 
-      // @ts-ignore
-      setWorkspaceUsers([everyoneOption, ...data])
-      // Ensure first item is selected by default
-      setSelectedIndex(0)
+      void searchWorkspaceUsers({ workspaceId, username: query })
+        .then((res) => {
+          if (cancelled) return
+          if (res.error) {
+            console.warn('[mention] fetch_mentioned_users error:', res.error)
+            setMembers([])
+            setFetchError(true)
+            return
+          }
+          setFetchError(false)
+          const rows = (Array.isArray(res.data) ? res.data : []) as MentionPickerUser[]
+          setMembers(rows.filter((u) => u.id !== currentUserId))
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, DEBOUNCE_MS)
+
+    return () => {
+      cancelled = true
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-    fetchWorkspaceUsers()
-  }, [workspaceId])
+  }, [query, workspaceId, currentUserId])
 
-  // Scroll selected item into view when it changes
-  useEffect(() => {
-    if (listRef.current && workspaceUsers.length > 0) {
-      //@ts-ignore
-      const selectedElement = listRef.current.querySelector(
-        `.mention-item:nth-child(${selectedIndex + 1})`
-      )
-      if (selectedElement) {
-        selectedElement.scrollIntoView({ block: 'nearest' })
-      }
-    }
-  }, [selectedIndex, workspaceUsers.length])
-
-  //@ts-ignore
-  const selectItem = (index) => {
-    const item = workspaceUsers[index]
-    if (item) {
-      //@ts-ignore
-      props.command({ id: item.id, label: item.username })
-    }
-  }
-
-  const upHandler = () => {
-    setSelectedIndex((selectedIndex + workspaceUsers.length - 1) % workspaceUsers.length)
-  }
-
-  const downHandler = () => {
-    setSelectedIndex((selectedIndex + 1) % workspaceUsers.length)
-  }
-
-  const enterHandler = () => {
-    selectItem(selectedIndex)
-  }
-
-  // Reset selection index whenever the user list changes
   useEffect(() => {
     setSelectedIndex(0)
-  }, [workspaceUsers])
+  }, [query])
+
+  useEffect(() => {
+    setSelectedIndex((i) => {
+      if (flatEntries.length === 0) return 0
+      return Math.min(i, flatEntries.length - 1)
+    })
+  }, [flatEntries.length])
+
+  useEffect(() => {
+    if (flatEntries.length === 0) return
+    const entry = flatEntries[selectedIndex]
+    if (!entry) return
+    const el = listRef.current?.querySelector(`[data-mention-option-id="${CSS.escape(entry.id)}"]`)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [selectedIndex, flatEntries])
+
+  const selectItem = (index: number) => {
+    const item = flatEntries[index]
+    if (!item) return
+    command({ id: item.id, label: item.username })
+  }
+
+  const clampIndex = (next: number) => {
+    if (flatEntries.length === 0) return 0
+    return ((next % flatEntries.length) + flatEntries.length) % flatEntries.length
+  }
 
   useImperativeHandle(ref, () => ({
-    //@ts-ignore
-    onKeyDown: (props) => {
-      const { event } = props
-
+    onKeyDown: ({ event }) => {
       if (event.key === 'ArrowUp') {
-        upHandler()
-        event.preventDefault()
+        setSelectedIndex((i) => clampIndex(i - 1))
         return true
       }
-
       if (event.key === 'ArrowDown') {
-        downHandler()
-        event.preventDefault()
+        setSelectedIndex((i) => clampIndex(i + 1))
         return true
       }
-
       if (event.key === 'Enter') {
-        enterHandler()
-        event.preventDefault()
+        selectItem(selectedIndex)
         return true
       }
-
       return false
     }
   }))
 
   return (
-    <div className="dropdown-menu max-h-[300px] overflow-y-auto !p-1" ref={listRef}>
-      {searchWorkspaceUsersLoading ? (
-        <LoadingSkeleton />
-      ) : workspaceUsers.length ? (
-        workspaceUsers.map((item, index) => (
-          <MentionItem
-            item={item}
-            index={index}
-            selectedIndex={selectedIndex}
-            onSelect={selectItem}
-          />
-        ))
-      ) : (
-        <div className="item text-base-content/50 px-3 py-1">No results found</div>
-      )}
-    </div>
+    <MentionSuggestions
+      flatEntries={flatEntries}
+      selectedIndex={selectedIndex}
+      loading={loading}
+      fetchError={fetchError}
+      onlineByUserId={onlineByUserId}
+      listRef={listRef}
+      onSelect={selectItem}
+      onRowHover={setSelectedIndex}
+    />
   )
 })
+
+export default MentionList

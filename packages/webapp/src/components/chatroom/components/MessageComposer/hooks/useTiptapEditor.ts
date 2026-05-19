@@ -25,6 +25,7 @@ import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
 import { useEffect, useRef, useState } from 'react'
 
+import { isMentionSuggestionPopupVisible } from '../helpers/mentionTypes'
 import suggestion from '../helpers/suggestion'
 const lowlight = createLowlight()
 lowlight.register('html', html)
@@ -195,14 +196,9 @@ export const useTiptapEditor = ({
             return true // We handled this event
           }
           if (event.key === 'Enter' && !event.shiftKey) {
-            // Check if mention popup is visible (Floating UI)
-            const mentionPopup = document.querySelector('.mention-suggestion-popup')
-            const isPopupVisible =
-              mentionPopup && window.getComputedStyle(mentionPopup).display !== 'none'
-
-            if (isPopupVisible) {
+            // Block send while picker is open; Enter selection stays in suggestion onKeyDown.
+            if (isMentionSuggestionPopupVisible()) {
               event.preventDefault()
-              event.stopPropagation()
 
               return false
             } else {

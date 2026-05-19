@@ -12,7 +12,7 @@ export const useMentionClick = () => {
       ) as HTMLElement | null
 
       const userId = mentionElement?.dataset?.id?.trim()
-      if (!userId) return
+      if (!userId || userId === 'everyone' || userId === '0') return
 
       openDialog(<UserProfileDialog userId={userId} />, {
         size: 'md'
