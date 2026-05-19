@@ -1,3 +1,4 @@
+import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignIn'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useChatStore } from '@stores'
@@ -8,15 +9,8 @@ import { useChatroomContext } from '../../../ChatroomContext'
 export default function SignInToJoinChannel({ className }: { className?: string }) {
   const { channelId } = useChatroomContext()
 
-  const openSignInModalHandler = () => {
-    // append search query to the URL
-    const url = new URL(window.location.href)
-    url.searchParams.set('open_heading_chat', channelId)
-    window.history.pushState({}, '', url.href)
-
-    document.getElementById('btn_signin')?.click()
-
-    // destroy the chat room
+  const handleSignIn = () => {
+    openComposerSignIn(channelId)
     useChatStore.getState().destroyChatRoom()
   }
 
@@ -31,7 +25,7 @@ export default function SignInToJoinChannel({ className }: { className?: string 
         shape="wide"
         size="sm"
         startIcon={Icons.logIn}
-        onClick={openSignInModalHandler}>
+        onClick={handleSignIn}>
         Sign in to join
       </Button>
     </div>

@@ -1,4 +1,4 @@
-import { setComposerStateDebounced } from '@db/messageComposerDB'
+import { syncComposerDraft } from '@db/messageComposerDB'
 import {
   createHyperlinkPopover,
   Hyperlink,
@@ -23,7 +23,7 @@ import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { isMentionSuggestionPopupVisible } from '../helpers/mentionTypes'
 import suggestion from '../helpers/suggestion'
@@ -47,28 +47,26 @@ const UPDATE_DEBOUNCE_MS = 150
 export const useTiptapEditor = ({
   onSubmit,
   workspaceId,
-  channelId,
-  isToolbarOpen
+  channelId
 }: {
   onSubmit: () => void
   workspaceId?: string
   channelId: string
-  isToolbarOpen?: boolean
 }) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
   const [isEmojiOnly, setIsEmojiOnly] = useState(false)
   const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const draftHydratedRef = useRef(false)
 
-  // `useEditor(config, [])` freezes the entire config closure at first
-  // render — `workspaceId`, `channelId`, `isToolbarOpen` captured in
-  // `onUpdate` would go stale across channel switches if the composer
-  // were ever kept alive between channels. Route them through a ref so
-  // the debounced IDB write always targets the current channel.
-  const draftCtxRef = useRef({ workspaceId, channelId, isToolbarOpen })
+  const draftCtxRef = useRef({ workspaceId, channelId })
   useEffect(() => {
-    draftCtxRef.current = { workspaceId, channelId, isToolbarOpen }
-  }, [workspaceId, channelId, isToolbarOpen])
+    draftCtxRef.current = { workspaceId, channelId }
+  }, [workspaceId, channelId])
+
+  const setDraftHydrated = useCallback((hydrated: boolean) => {
+    draftHydratedRef.current = hydrated
+  }, [])
 
   const editor: Editor | null = useEditor(
     {
@@ -128,12 +126,8 @@ export const useTiptapEditor = ({
           setIsEmojiOnly(isOnlyEmoji(text))
 
           const ctx = draftCtxRef.current
-          if (ctx.workspaceId && ctx.channelId && text && html) {
-            setComposerStateDebounced(ctx.workspaceId, ctx.channelId, {
-              text,
-              html,
-              isToolbarOpen: ctx.isToolbarOpen
-            })
+          if (draftHydratedRef.current && ctx.workspaceId && ctx.channelId) {
+            syncComposerDraft(ctx.workspaceId, ctx.channelId, { text, html })
           }
         }, UPDATE_DEBOUNCE_MS)
       },
@@ -233,19 +227,28 @@ export const useTiptapEditor = ({
     }
   }, [editor])
 
-  // Optimistic UI: keep the editor editable during in-flight sends.
-  // Each send carries its own client UUID; rapid-fire is supported.
-  // (The previous `editor.setEditable(!loading)` blocked the next
-  // keystroke until the network responded — anti-pattern for chat.)
+  const cancelPendingEditorDraftCapture = () => {
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current)
+      updateTimerRef.current = null
+    }
+  }
 
-  // Flush the debounced onUpdate timer on unmount so the closure doesn't
-  // fire setHtml/setText on a dead component or write IDB to a stale key.
+  // Flush debounced onUpdate on unmount so IDB doesn't write to a stale key.
   useEffect(
     () => () => {
-      if (updateTimerRef.current) clearTimeout(updateTimerRef.current)
+      cancelPendingEditorDraftCapture()
     },
     []
   )
 
-  return { editor, html, text, isEmojiOnly, setIsEmojiOnly }
+  return {
+    editor,
+    html,
+    text,
+    isEmojiOnly,
+    setIsEmojiOnly,
+    cancelPendingEditorDraftCapture,
+    setDraftHydrated
+  }
 }

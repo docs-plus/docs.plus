@@ -15,7 +15,6 @@ export interface IWorkspaceSettingsStore {
   setWorkspaceSetting: (key: keyof WorkspaceSettings, value: any) => void
   setCommentMessageMemory: (channelId: string, message: any) => void
   setReplyMessageMemory: (channelId: string, message: any) => void
-  setMessageDraftMemory: (channelId: string, message: any) => void
   setEditMessageMemory: (channelId: string, message: any) => void
   setTypingIndicator: (channelId: string, user: any) => void
   removeTypingIndicator: (channelId: string, user: any) => void
@@ -43,13 +42,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   setWorkspaceSetting: (key, value) => {
     set((state) => {
       state.workspaceSettings[key] = value
-    })
-  },
-
-  setMessageDraftMemory: (channelId, message) => {
-    setMemory(set, 'messageDraftMemory', channelId, {
-      text: message.text,
-      html: message.html
     })
   },
 
@@ -90,7 +82,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   clearMemoryStates: (channelId) => {
     set((state: any) => {
       const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
-      channelSettings.messageDraftMemory = null
       channelSettings.replyMessageMemory = null
       channelSettings.editMessageMemory = null
       channelSettings.forwardMessageMemory = null
@@ -105,7 +96,6 @@ function setMemory(set: any, memoryType: string, channelId: string, message: any
   set((state: any) => {
     const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
     // clear all memory states for the channel before setting the memory type to the message
-    channelSettings.messageDraftMemory = null
     channelSettings.replyMessageMemory = null
     channelSettings.editMessageMemory = null
     channelSettings.forwardMessageMemory = null

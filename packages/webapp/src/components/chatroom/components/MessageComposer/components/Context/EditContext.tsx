@@ -1,38 +1,42 @@
-import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
 
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
+import { useScrollFeedOnContextOpen } from '../../hooks/useScrollFeedOnContextOpen'
+import { MessageContextBar } from './MessageContextBar'
 
 const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()
   const { setEditMsgMemory, editMessageMemory } = useMessageComposer()
 
-  const replyToUser =
-    editMessageMemory?.user_details?.fullname || editMessageMemory?.user_details?.username || ''
-
-  if (!editMessageMemory) return null
-  if (editMessageMemory.channel_id !== channelId) return null
+  useScrollFeedOnContextOpen(editMessageMemory)
 
   const handleClose = () => {
     setEditMsgMemory(channelId, null)
     onDismiss?.()
   }
 
+  if (!editMessageMemory) return null
+  if (editMessageMemory.channel_id !== channelId) return null
+
+  const author =
+    editMessageMemory.user_details?.fullname?.trim() ||
+    editMessageMemory.user_details?.username?.trim() ||
+    ''
+
   return (
-    <div className="text-base-content border-base-300 -mb-1 flex w-full items-center justify-between rounded-t-lg border border-b-0 px-4 py-2 shadow-sm">
-      <Icons.edit size={24} />
-      <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
-        <span className="text-primary font-semibold antialiased">
-          Edit message
-          <span className="ml-1 font-normal">{replyToUser}</span>
-        </span>
-        <span className="text-sm text-wrap break-words wrap-anywhere whitespace-pre-line whitespace-pre-wrap">
-          {editMessageMemory?.content}
-        </span>
-      </div>
-      <CloseButton onClick={handleClose} size="xs" aria-label="Cancel edit" />
-    </div>
+    <MessageContextBar
+      icon={<Icons.edit size={24} />}
+      onDismiss={handleClose}
+      dismissLabel="Cancel edit">
+      <span className="text-primary font-semibold antialiased">
+        Edit message
+        {author ? <span className="ml-1 font-normal">{author}</span> : null}
+      </span>
+      <span className="text-base-content/80 text-sm break-words wrap-anywhere whitespace-pre-wrap">
+        {editMessageMemory.content}
+      </span>
+    </MessageContextBar>
   )
 }
 

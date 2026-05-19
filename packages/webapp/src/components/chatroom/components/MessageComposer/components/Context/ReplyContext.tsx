@@ -1,41 +1,42 @@
-import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
 
 import { useChatroomContext } from '../../../../ChatroomContext'
-import { useAutoScrollOnMessageContext } from '../../hooks/useAutoScrollOnMessageContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
+import { useScrollFeedOnContextOpen } from '../../hooks/useScrollFeedOnContextOpen'
+import { MessageContextBar } from './MessageContextBar'
 
 const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()
   const { replyMessageMemory, setReplyMsgMemory } = useMessageComposer()
+
+  useScrollFeedOnContextOpen(replyMessageMemory)
 
   const handleClose = () => {
     setReplyMsgMemory(channelId, null)
     onDismiss?.()
   }
 
-  useAutoScrollOnMessageContext(replyMessageMemory)
-
-  const replyToUser =
-    replyMessageMemory?.user_details?.fullname || replyMessageMemory?.user_details?.username || ''
-
   if (!replyMessageMemory) return null
   if (replyMessageMemory.channel_id !== channelId) return null
 
+  const replyToUser =
+    replyMessageMemory.user_details?.fullname?.trim() ||
+    replyMessageMemory.user_details?.username?.trim() ||
+    'someone'
+
   return (
-    <div className="text-base-content border-base-300 -mb-1 flex w-full items-center justify-between rounded-t-lg border border-b-0 px-4 py-2 shadow-sm">
-      <Icons.reply size={24} />
-      <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
-        <span className="text-primary font-semibold antialiased">
-          Reply to
-          <span className="ml-1 font-normal">{replyToUser}</span>
-        </span>
-        <span className="text-sm text-wrap break-words wrap-anywhere whitespace-pre-line whitespace-pre-wrap">
-          {replyMessageMemory?.content}
-        </span>
-      </div>
-      <CloseButton onClick={handleClose} size="xs" aria-label="Dismiss reply" />
-    </div>
+    <MessageContextBar
+      icon={<Icons.reply size={24} />}
+      onDismiss={handleClose}
+      dismissLabel="Dismiss reply">
+      <span className="text-primary font-semibold antialiased">
+        Reply to
+        <span className="ml-1 font-normal">{replyToUser}</span>
+      </span>
+      <span className="text-base-content/80 text-sm break-words wrap-anywhere whitespace-pre-wrap">
+        {replyMessageMemory.content}
+      </span>
+    </MessageContextBar>
   )
 }
 

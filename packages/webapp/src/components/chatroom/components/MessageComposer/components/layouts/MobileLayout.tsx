@@ -9,7 +9,7 @@ import MsgComposer from '../../MessageComposer'
  */
 const MobileToolbar = () => {
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
-  const { isToolbarOpen, toggleToolbar } = useMessageComposer()
+  const { showFormattingToolbar, toggleToolbar } = useMessageComposer()
 
   if (!isKeyboardOpen) return null
 
@@ -17,7 +17,7 @@ const MobileToolbar = () => {
     <div className="relative h-10 overflow-hidden">
       <div
         className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
-          isToolbarOpen ? 'translate-y-0' : '-translate-y-full'
+          showFormattingToolbar ? '-translate-y-full' : 'translate-y-0'
         }`}>
         <MsgComposer.Actions>
           <MsgComposer.ToggleToolbarButton />
@@ -29,7 +29,7 @@ const MobileToolbar = () => {
 
       <div
         className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
-          isToolbarOpen ? 'translate-y-full' : 'translate-y-0'
+          showFormattingToolbar ? 'translate-y-0' : 'translate-y-full'
         }`}>
         <MsgComposer.Toolbar className="bg-base-200 h-full border-b p-2">
           <MsgComposer.ToggleToolbarButton
@@ -96,7 +96,6 @@ export const MobileLayout = () => {
             </MsgComposer.Context>
 
             <div className="flex flex-row items-end gap-2 px-2 py-1.5">
-              <MsgComposer.AttachmentButton size={20} className="btn-square bg-base-200" />
               <MsgComposer.Input className="py-0.5" />
             </div>
             <MobileToolbar />

@@ -1,40 +1,25 @@
-import type { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js'
 import { Editor } from '@tiptap/react'
-import { TSendCommentArgs, TSendMessageArgs, TUpdateMsgArgs } from '@types'
+import type { CommentMessageMemory, ComposerMessageMemory } from '@types'
 import { createContext } from 'react'
 
 export interface MessageComposerContextType {
-  sendMsg: (
-    args: TSendMessageArgs
-  ) => Promise<PostgrestResponse<any> | PostgrestSingleResponse<any>>
-  sendComment: (
-    args: TSendCommentArgs
-  ) => Promise<PostgrestResponse<any> | PostgrestSingleResponse<any>>
-  updateMsg: (
-    args: TUpdateMsgArgs
-  ) => Promise<PostgrestResponse<any> | PostgrestSingleResponse<any>>
-  isSendingMsg: boolean
-  isSendingComment: boolean
-  isUpdatingMsg: boolean
-  loading: boolean
   editor: Editor | null
   text: string
   html: string
-  replyMessageMemory: any
-  editMessageMemory: any
-  commentMessageMemory: any
-  setEditMsgMemory: (channelId: string, value: any) => void
-  setReplyMsgMemory: (channelId: string, value: any) => void
-  setCommentMsgMemory: (channelId: string, value: any) => void
+  replyMessageMemory: ComposerMessageMemory | null | undefined
+  editMessageMemory: ComposerMessageMemory | null | undefined
+  commentMessageMemory: CommentMessageMemory | null | undefined
+  setEditMsgMemory: (channelId: string, value: ComposerMessageMemory | null) => void
+  setReplyMsgMemory: (channelId: string, value: ComposerMessageMemory | null) => void
+  setCommentMsgMemory: (channelId: string, value: CommentMessageMemory | null) => void
   contextType: 'reply' | 'edit' | 'comment' | null
-  isToolbarOpen: boolean
+  showFormattingToolbar: boolean
   toggleToolbar: () => void
-  submitMessage: (e?: any) => Promise<void>
+  submitMessage: (e?: { preventDefault?: () => void }) => Promise<void>
+  isSubmittable: () => boolean
+  /** Send affordance: true when editor has non-whitespace content (incl. anon sign-in path). */
+  canPressSend: () => boolean
   editorRef: React.RefObject<HTMLDivElement | null>
-  messageDraftMemory: {
-    text: string | null
-    html: string | null
-  } | null
   isEmojiOnly: boolean
 }
 

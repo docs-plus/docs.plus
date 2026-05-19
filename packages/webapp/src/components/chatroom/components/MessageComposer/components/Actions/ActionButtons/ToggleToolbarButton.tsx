@@ -14,15 +14,16 @@ export const ToggleToolbarButton = ({
   iconType = 'MdFormatColorText',
   ...props
 }: Props) => {
-  const { isToolbarOpen, toggleToolbar } = useMessageComposer()
+  const { showFormattingToolbar, toggleToolbar } = useMessageComposer()
 
   return (
     <Button
       className={className}
       onPress={toggleToolbar}
-      tooltip="Toolbar"
+      tooltip={showFormattingToolbar ? 'Hide formatting' : 'Show formatting'}
       tooltipPosition="top"
-      isActive={!isToolbarOpen}
+      isActive={showFormattingToolbar}
+      aria-pressed={showFormattingToolbar}
       {...props}>
       <Icon type={iconType} size={size} />
     </Button>

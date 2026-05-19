@@ -1,4 +1,3 @@
-export * from './AttachmentButton'
 export * from './EmojiButton'
 export * from './MentionButton'
 export * from './SendButton'

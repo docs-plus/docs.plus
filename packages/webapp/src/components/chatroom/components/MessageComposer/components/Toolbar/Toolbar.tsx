@@ -7,12 +7,12 @@ type Props = {
   children: React.ReactNode
 }
 export const Toolbar = ({ className, children }: Props) => {
-  const { isToolbarOpen } = useMessageComposer()
+  const { showFormattingToolbar } = useMessageComposer()
   return (
     <div
       className={twMerge(
         'chatroom__toolbar flex w-full flex-row items-center justify-start gap-1',
-        isToolbarOpen && 'hidden',
+        !showFormattingToolbar && 'hidden',
         className
       )}>
       {children}

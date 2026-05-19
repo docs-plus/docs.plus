@@ -10,13 +10,11 @@ type TChatRoom = {
   documentId?: string
   open: boolean
   panelHeight: number
-  userPickingEmoji?: any
   replyMessageMemory?: any
   editMessageMemory?: any
   fetchMsgsFromId?: string
   editorInstance?: any
   editorRef?: any
-  isInitialScrollSettled?: boolean
 }
 
 interface IChatroomStore {
@@ -58,14 +56,11 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     headingPath: [],
     open: false,
     panelHeight: 410,
-    userPickingEmoji: undefined,
     replyMessageMemory: undefined,
     editMessageMemory: undefined,
-    commentMessageMemory: undefined,
     fetchMsgsFromId: undefined,
     editorInstance: undefined,
-    editorRef: undefined,
-    isInitialScrollSettled: false
+    editorRef: undefined
   },
 
   updateChatRoom: (key, value) => {
