@@ -33,7 +33,7 @@ export function TocItemDesktop({
     disabled: collapsedIds.has(item.id)
   })
 
-  const { headingId } = useChatStore((state) => state.chatRoom)
+  const headingId = useChatStore((state) => state.chatRoom.headingId)
   const editor = useStore((state) => state.settings.editor.instance)
 
   const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
