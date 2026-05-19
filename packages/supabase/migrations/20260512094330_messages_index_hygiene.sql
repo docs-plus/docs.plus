@@ -1,12 +1,12 @@
 -- Messages index hygiene; mirrors packages/supabase/scripts/11-indexes.sql.
--- Drops two indexes redundant with / weaker than the composite below, and
--- adds a partial composite that serves the channel-pagination read path
--- with the soft-delete filter.
+-- Non-concurrent DDL: Supabase migrations run inside a transaction; CONCURRENTLY
+-- is rejected (SQLSTATE 25001). For very large prod tables, run CONCURRENTLY
+-- manually outside db push during a maintenance window if lock time matters.
 
-drop index concurrently if exists public.idx_messages_channel_id;
-drop index concurrently if exists public.idx_messages_updated_at;
-drop index concurrently if exists public.idx_messages_channel_id_not_deleted;
+drop index if exists public.idx_messages_channel_id;
+drop index if exists public.idx_messages_updated_at;
+drop index if exists public.idx_messages_channel_id_not_deleted;
 
-create index concurrently if not exists idx_messages_channel_id_created_at_active
+create index if not exists idx_messages_channel_id_created_at_active
   on public.messages (channel_id, created_at desc)
   where deleted_at is null;
