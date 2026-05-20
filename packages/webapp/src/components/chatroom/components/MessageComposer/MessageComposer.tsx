@@ -21,7 +21,7 @@ import CommentContext from './components/Context/CommentContext'
 import EditContext from './components/Context/EditContext'
 import ReplyContext from './components/Context/ReplyContext'
 import { Input } from './components/Input'
-import { ComposerDesktopChrome, ComposerMobileChrome, Editor } from './components/layouts'
+import { ComposerDesktopLayout, ComposerLayout, ComposerMobileLayout } from './components/layouts'
 import {
   BlockquoteButton,
   BoldButton,
@@ -211,6 +211,6 @@ MessageComposer.MentionButton = MentionButton
 MessageComposer.SendButton = SendButton
 MessageComposer.ToggleToolbarButton = ToggleToolbarButton
 MessageComposer.Input = Input
-MessageComposer.ComposerDesktopChrome = ComposerDesktopChrome
-MessageComposer.ComposerMobileChrome = ComposerMobileChrome
-MessageComposer.Editor = Editor
+MessageComposer.ComposerDesktopLayout = ComposerDesktopLayout
+MessageComposer.ComposerMobileLayout = ComposerMobileLayout
+MessageComposer.ComposerLayout = ComposerLayout
