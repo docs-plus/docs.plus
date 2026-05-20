@@ -9,7 +9,7 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 - This package is **not** a drop-in schema replacement for `@tiptap/extension-link`; migration docs describe moving into `@docs.plus/extension-hyperlink`.
 - Same-document hyperlink targets update URL/hash/route for in-app navigation. Do not treat them as external opens.
 - `setHyperlink({ href, target?, title?, image? })` is pure and chainable — it only writes the mark and returns boolean. `setHyperlink()` with no args returns false; never call it to open UI.
-- UI opens through `openCreateHyperlinkPopover()`, bound to `Mod-k`. Webapp call sites: `MobileBubbleMenu.tsx`, `HyperlinkButton.tsx`, `EditorToolbar.tsx`, `ToolbarMobile.tsx`.
+- UI opens through `openCreateHyperlinkPopover()`, bound to `Mod-k`. Webapp call sites: `HyperlinkButton.tsx`, `EditorToolbar.tsx`, `ToolbarMobile.tsx`.
 - `previewHyperlink.ts` no longer passes dead `view` / `linkCoords` args to `editHyperlinkPopover`; keep the canonical signature.
 - Link-compatible command aliases: `setLink`, `unsetLink`, `toggleLink` — command names only, no schema rename.
 - Canon options: `defaultProtocol`, `isAllowedUri(href, ctx)`, `shouldAutoLink(url)`, `enableClickSelection`, `exitable`.
