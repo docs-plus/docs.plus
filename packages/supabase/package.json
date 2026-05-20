@@ -9,7 +9,8 @@
     "status": "dotenv -e ../../.env.local -- supabase status",
     "reset": "dotenv -e ../../.env.local -- supabase db reset --debug",
     "types": "dotenv -e ../../.env.local -- bunx supabase gen types typescript --local > ../webapp/src/types/supabase.ts",
-    "seed": "bun generate-seed.ts"
+    "seed": "bun generate-seed.ts",
+    "generate:functions-parity-migration": "bun generate-functions-parity-migration.ts"
   },
   "keywords": [],
   "author": "",

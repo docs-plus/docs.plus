@@ -74,7 +74,7 @@
   ],
   "dependencies": {
     "@floating-ui/dom": "^1.7.6",
-    "linkifyjs": "^4.3.2"
+    "linkifyjs": "^4.3.3"
   },
   "peerDependencies": {
     "@tiptap/core": "catalog:",

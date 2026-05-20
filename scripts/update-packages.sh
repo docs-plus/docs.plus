@@ -1,109 +1,120 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Set formatting
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 BOLD='\033[1m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-echo -e "${BLUE}${BOLD}📦 DOCS.PLUS PACKAGE UPDATER (Bun)${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
 
-if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-  echo -e "Usage: ./scripts/update-packages.sh [OPTIONS]"
-  echo -e ""
-  echo -e "Runs \`bun update\` across all workspaces from the repo root."
-  echo -e ""
-  echo -e "Options:"
-  echo -e "  --target <value>    latest (default) or compatible — latest may bump"
-  echo -e "                      across semver ranges; compatible stays within"
-  echo -e "                      existing ranges in package.json"
-  echo -e "  --interactive, -i   Interactive package selection"
-  echo -e "  --dry-run           Show updates without writing package.json / lockfile"
-  echo -e "  --prod-only         Only production dependencies (--production)"
-  echo -e "  -h, --help          Show this help message"
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  echo "Usage: bun run update [--upgrade] [--dry-run] ..."
+  echo ""
+  echo "Default: bump package.json ranges for patch + minor only (no major jumps)."
+  echo "Pass --upgrade to allow major version upgrades (target latest)."
+  echo "Root catalog + every packages/* workspace. Then run bun install."
+  echo ""
+  echo "Options:"
+  echo "  --upgrade           Include major upgrades (ncu --target latest)"
+  echo "  --interactive, -i   Pick upgrades interactively"
+  echo "  --dry-run           Preview only; do not write package.json"
+  echo "  --prod-only         Production dependencies only"
+  echo "  -h, --help          This message"
   exit 0
 fi
 
-if ! command -v bun &> /dev/null; then
-  echo -e "${RED}❌ Error: bun is not installed. Please install Bun first.${NC}"
-  echo -e "   Install from: https://bun.sh"
+if ! command -v bunx &>/dev/null; then
+  echo -e "${RED}❌ bunx not found. Install Bun: https://bun.sh${NC}"
   exit 1
 fi
 
-TARGET="latest"
+TARGET="minor"
 INTERACTIVE=""
-DRY_RUN=""
-PROD_ONLY=""
+UPGRADE="--upgrade"
+DEP_FLAG=""
+FULL_UPGRADE=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --target)
-      TARGET="$2"
-      shift 2
+    --upgrade)
+      FULL_UPGRADE=true
+      TARGET="latest"
+      shift
       ;;
-    --interactive|-i)
-      INTERACTIVE=1
+    --interactive | -i)
+      INTERACTIVE="--interactive"
       shift
       ;;
     --dry-run)
-      DRY_RUN=1
+      UPGRADE=""
       shift
       ;;
     --prod-only)
-      PROD_ONLY=1
+      DEP_FLAG="--dep prod"
       shift
       ;;
+    --target)
+      echo -e "${RED}--target is not supported; use default (minor) or --upgrade (latest).${NC}" >&2
+      exit 1
+      ;;
     *)
-      echo -e "${RED}Unknown option: $1${NC}"
+      echo -e "${RED}Unknown option: $1${NC}" >&2
       exit 1
       ;;
   esac
 done
 
-declare -a BUN_ARGS=(update --recursive)
+NCU=(bunx npm-check-updates --format group --color "$UPGRADE" --target "$TARGET")
+[[ -n "$INTERACTIVE" ]] && NCU+=("$INTERACTIVE")
+[[ -n "$DEP_FLAG" ]] && NCU+=($DEP_FLAG)
 
-case "$TARGET" in
-  latest)
-    BUN_ARGS+=(--latest)
-    ;;
-  compatible|minor|patch|semver|range)
-    # Bun resolves to newest versions allowed by current package.json ranges.
-    ;;
-  *)
-    echo -e "${RED}Unknown --target: ${TARGET}${NC}"
-    echo -e "   Use: latest | compatible (also: minor, patch, semver, range)"
-    exit 1
-    ;;
-esac
-
-if [ -n "$DRY_RUN" ]; then
-  BUN_ARGS+=(--dry-run)
-fi
-if [ -n "$INTERACTIVE" ]; then
-  BUN_ARGS+=(-i)
-fi
-if [ -n "$PROD_ONLY" ]; then
-  BUN_ARGS+=(--production)
-fi
-
-echo -e "${GREEN}🔄 Running: bun ${BUN_ARGS[*]}${NC}"
-
-if ! bun "${BUN_ARGS[@]}"; then
-  echo -e "${RED}❌ bun update failed${NC}"
-  exit 1
-fi
-
-echo -e "\n${GREEN}${BOLD}✨ Package update finished.${NC}"
-
-if [ -z "$DRY_RUN" ]; then
-  echo -e "\n${YELLOW}${BOLD}⚠️  Review package.json and lockfile changes.${NC}"
-  echo -e "   Then refresh installs if needed:"
-  echo -e "   ${GREEN}bun install${NC}"
+if [ "$FULL_UPGRADE" = true ]; then
+  MODE_LABEL="latest (patch, minor, major)"
 else
-  echo -e "\n${YELLOW}${BOLD}ℹ️  Dry run only — no files were modified.${NC}"
-  echo -e "   To apply updates: ${GREEN}./scripts/update-packages.sh${NC}"
+  MODE_LABEL="minor (patch + minor only)"
 fi
-echo -e ""
+
+echo -e "${BLUE}${BOLD}📦 DOCS.PLUS PACKAGE UPDATER (npm-check-updates)${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}Mode: ${MODE_LABEL}${NC}"
+
+echo -e "${GREEN}🔄 Root (devDependencies + catalog)${NC}"
+"${NCU[@]}" || {
+  echo -e "${RED}❌ Failed at repo root${NC}"
+  exit 1
+}
+
+PACKAGES=()
+for d in packages/*/; do
+  [ -f "${d}package.json" ] && PACKAGES+=("${d%/}")
+done
+PACKAGE_COUNT=${#PACKAGES[@]}
+
+echo -e "\n${GREEN}📦 Workspaces (${PACKAGE_COUNT} under packages/)${NC}\n"
+
+CURRENT=0
+for PACKAGE_DIR in "${PACKAGES[@]}"; do
+  CURRENT=$((CURRENT + 1))
+  if command -v jq &>/dev/null; then
+    PACKAGE_NAME=$(jq -r '.name // "unknown"' "$PACKAGE_DIR/package.json")
+  else
+    PACKAGE_NAME=$(grep -m 1 '"name"' "$PACKAGE_DIR/package.json" | sed 's/.*"name"[^"]*"\([^"]*\)".*/\1/')
+  fi
+  echo -e "${YELLOW}→ [${CURRENT}/${PACKAGE_COUNT}] ${BOLD}${PACKAGE_NAME}${NC} ${BLUE}(${PACKAGE_DIR})${NC}"
+  (cd "$PACKAGE_DIR" && "${NCU[@]}") || echo -e "${RED}  ⚠️  Skipped ${PACKAGE_NAME}${NC}"
+done
+
+echo -e "\n${GREEN}${BOLD}✨ Done.${NC}"
+if [ -n "$UPGRADE" ]; then
+  echo -e "${YELLOW}Review package.json + root catalog, then:${NC} ${GREEN}bun install${NC}"
+  if [ "$FULL_UPGRADE" = false ]; then
+    echo -e "${YELLOW}Major upgrades:${NC} ${GREEN}bun run update --upgrade${NC}"
+  fi
+else
+  echo -e "${YELLOW}Dry run only. Apply:${NC} ${GREEN}bun run update${NC}"
+  echo -e "${YELLOW}With majors:${NC} ${GREEN}bun run update --upgrade${NC}"
+fi
