@@ -53,6 +53,7 @@ export const ItemContent = ({ index, data, prevData, context }: ItemContentProps
   const clientId = data && isMessage(data) ? (data.client_id ?? null) : null
   const rowId = (row as any)?.id
   const rowReactions = (row as any)?.reactions
+  const rowHtml = (row as any)?.html
   const rowDeletedAt = (row as any)?.deleted_at
   const rowEditedAt = (row as any)?.edited_at
   // Memo keeps `grouped` referentially stable across parent re-renders so
@@ -77,6 +78,7 @@ export const ItemContent = ({ index, data, prevData, context }: ItemContentProps
     row,
     rowId,
     rowReactions,
+    rowHtml,
     rowDeletedAt,
     rowEditedAt,
     compact,

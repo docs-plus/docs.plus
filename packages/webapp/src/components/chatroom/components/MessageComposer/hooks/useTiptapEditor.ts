@@ -1,11 +1,9 @@
+import { getHyperlinkPopoverConfig } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { syncComposerDraft } from '@db/messageComposerDB'
-import {
-  createHyperlinkPopover,
-  Hyperlink,
-  previewHyperlinkPopover
-} from '@docs.plus/extension-hyperlink'
+import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
+import { useStore } from '@stores'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Mention } from '@tiptap/extension-mention'
 import { Placeholder } from '@tiptap/extensions'
@@ -61,6 +59,8 @@ export const useTiptapEditor = ({
   const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftHydratedRef = useRef(false)
 
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
+
   const draftCtxRef = useRef({ workspaceId, channelId })
   useEffect(() => {
     draftCtxRef.current = { workspaceId, channelId }
@@ -74,6 +74,7 @@ export const useTiptapEditor = ({
     {
       extensions: [
         StarterKit.configure({
+          link: false, // Hyperlink extension owns <a> marks; StarterKit Link duplicates autolink/schema.
           code: false, // Disable default code to use our custom InlineCode extension
           codeBlock: false,
           bulletList: {
@@ -107,10 +108,7 @@ export const useTiptapEditor = ({
           linkOnPaste: true,
           openOnClick: true,
           autolink: true,
-          popovers: {
-            previewHyperlink: previewHyperlinkPopover,
-            createHyperlink: createHyperlinkPopover
-          }
+          popovers: getHyperlinkPopoverConfig(isMobile)
         })
       ],
       onUpdate: ({ editor }) => {

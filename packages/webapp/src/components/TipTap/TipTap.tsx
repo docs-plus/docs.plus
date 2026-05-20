@@ -60,15 +60,7 @@ import {
 import { MarkdownPaste } from './extensions/markdown-paste'
 import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
-import {
-  createHyperlinkDesktop,
-  editHyperlinkDesktop
-} from './hyperlinkPopovers/desktopPopoverEntries'
-import {
-  createHyperlinkMobile,
-  editHyperlinkMobile
-} from './hyperlinkPopovers/mobilePopoverEntries'
-import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
+import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { buildBreadcrumbPlaceholder } from './placeholders'
 // import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
@@ -199,11 +191,7 @@ const Editor = ({
       linkOnPaste: false,
       autolink: true,
       exitable: true,
-      popovers: {
-        previewHyperlink,
-        createHyperlink: isMobile ? createHyperlinkMobile : createHyperlinkDesktop,
-        editHyperlink: isMobile ? editHyperlinkMobile : editHyperlinkDesktop
-      }
+      popovers: getHyperlinkPopoverConfig(isMobile)
     }),
     // HyperMultimediaKit.configure({
     //   Image: false

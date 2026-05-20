@@ -566,6 +566,17 @@ html:not(.m_mobile) {
     margin: 0;
     line-height: 1.5rem;
   }
+
+  a {
+    font-weight: 600;
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
 }
 
 .ProseMirror,

@@ -38,12 +38,6 @@
     color: var(--color-error);
   }
 
-  .message--card__content a {
-    font-weight: 600;
-    color: var(--color-primary);
-    text-decoration: inherit;
-  }
-
   p.is-empty::before {
     color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
     content: attr(data-placeholder);
