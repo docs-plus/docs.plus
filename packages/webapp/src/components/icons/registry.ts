@@ -36,7 +36,6 @@ import {
   LuFilterX,
   LuFolderOpen,
   LuFoldVertical,
-  LuForward,
   LuGripVertical,
   LuHash,
   LuHighlighter,
@@ -204,7 +203,6 @@ export const Icons = {
   plus: LuPlus,
   pin: LuPin,
   pinOff: LuPinOff,
-  forward: LuForward,
 
   // ── Status ───────────────────────────────────────────────
   cloud: LuCloud,

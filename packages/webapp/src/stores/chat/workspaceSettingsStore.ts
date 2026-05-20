@@ -84,7 +84,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
       const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
       channelSettings.replyMessageMemory = null
       channelSettings.editMessageMemory = null
-      channelSettings.forwardMessageMemory = null
       channelSettings.commentMessageMemory = null
       state.workspaceSettings.channels.set(channelId, channelSettings)
     })
@@ -98,7 +97,6 @@ function setMemory(set: any, memoryType: string, channelId: string, message: any
     // clear all memory states for the channel before setting the memory type to the message
     channelSettings.replyMessageMemory = null
     channelSettings.editMessageMemory = null
-    channelSettings.forwardMessageMemory = null
     channelSettings.commentMessageMemory = null
     // set the memory type to the message
     channelSettings[memoryType] = message

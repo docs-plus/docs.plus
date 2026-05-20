@@ -1,6 +1,4 @@
-export * from './getChannelMessageCounts'
 export * from './getChannels'
 export * from './joinChannel'
 export * from './newChannel'
-export * from './readMessage'
 export * from './updateChannelNotifState'

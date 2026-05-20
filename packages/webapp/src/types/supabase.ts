@@ -727,7 +727,6 @@ export type Database = {
           id: string
           medias: Json | null
           metadata: Json | null
-          origin_message_id: string | null
           reactions: Json | null
           readed_at: string | null
           replied_message_preview: string | null
@@ -748,7 +747,6 @@ export type Database = {
           id?: string
           medias?: Json | null
           metadata?: Json | null
-          origin_message_id?: string | null
           reactions?: Json | null
           readed_at?: string | null
           replied_message_preview?: string | null
@@ -769,7 +767,6 @@ export type Database = {
           id?: string
           medias?: Json | null
           metadata?: Json | null
-          origin_message_id?: string | null
           reactions?: Json | null
           readed_at?: string | null
           replied_message_preview?: string | null
@@ -785,13 +782,6 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "channels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_origin_message_id_fkey"
-            columns: ["origin_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {

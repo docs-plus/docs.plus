@@ -24,10 +24,6 @@ const bootstrapStore = immer<IBootstrapStore>((set) => ({
 
       // 2. Per-channel UI settings (unread cursor, member flag, info)
       const channelSettings = state.workspaceSettings.channels.get(channelId) ?? {}
-      channelSettings.unreadMessage = channelData.unread_message
-      channelSettings.lastReadMessageId = channelData.last_read_message_id
-      channelSettings.lastReadMessageTimestamp = channelData.last_read_message_timestamp
-      channelSettings.totalMsgSinceLastRead = channelData.total_messages_since_last_read
       channelSettings.isUserChannelMember = channelData.is_user_channel_member || false
       if (channelInfo) channelSettings.channelInfo = channelInfo
       state.workspaceSettings.channels.set(channelId, channelSettings)

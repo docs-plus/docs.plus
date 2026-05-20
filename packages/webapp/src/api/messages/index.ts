@@ -1,7 +1,5 @@
 export * from './deleteMessage'
 export * from './emojiReaction'
-export * from './forwardMessage'
-export * from './getAllMessages'
 export * from './pinMessage'
 export * from './sendCommentMessage'
 export * from './sendMessage'
