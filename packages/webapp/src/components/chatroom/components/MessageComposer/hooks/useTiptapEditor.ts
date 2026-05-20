@@ -8,6 +8,7 @@ import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Mention } from '@tiptap/extension-mention'
 import { Placeholder } from '@tiptap/extensions'
 import { TextSelection } from '@tiptap/pm/state'
+import type { EditorView } from '@tiptap/pm/view'
 import { Editor, useEditor } from '@tiptap/react'
 import { StarterKit } from '@tiptap/starter-kit'
 import { TIPTAP_NODES } from '@types'
@@ -44,14 +45,52 @@ import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handleTyp
 
 const UPDATE_DEBOUNCE_MS = 150
 
+function insertComposerNewline(view: EditorView, editor: Editor | null): boolean {
+  const { $from } = view.state.selection
+  const inList = $from.node(2)?.type.name === TIPTAP_NODES.LISTITEM_TYPE
+  if (inList) {
+    editor?.commands.splitListItem(TIPTAP_NODES.LISTITEM_TYPE)
+    return true
+  }
+
+  const isEmptyParagraph =
+    $from.parent.type.name === TIPTAP_NODES.PARAGRAPH_TYPE && $from.parent.content.size === 0
+
+  let tr
+  let newPos
+
+  if (isEmptyParagraph) {
+    const pos = $from.after()
+    const newNode = view.state.schema.nodes.paragraph.create()
+    tr = view.state.tr.insert(pos, newNode)
+    newPos = pos + 1
+  } else {
+    const newNode = view.state.schema.nodes.paragraph.create()
+    tr = view.state.tr.replaceSelectionWith(newNode)
+    newPos = $from.pos + 1
+  }
+
+  tr = tr.scrollIntoView()
+  tr = tr.setSelection(TextSelection.create(tr.doc, newPos))
+  view.dispatch(tr)
+
+  setTimeout(() => {
+    if (editor && !editor.isDestroyed) editor.commands.focus('end')
+  }, 0)
+
+  return true
+}
+
 export const useTiptapEditor = ({
   onSubmit,
   workspaceId,
-  channelId
+  channelId,
+  submitOnEnter = true
 }: {
   onSubmit: () => void
   workspaceId?: string
   channelId: string
+  submitOnEnter?: boolean
 }) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
@@ -60,6 +99,9 @@ export const useTiptapEditor = ({
   const draftHydratedRef = useRef(false)
 
   const isMobile = useStore((state) => state.settings.editor.isMobile)
+  const submitOnEnterRef = useRef(submitOnEnter)
+  submitOnEnterRef.current = submitOnEnter
+  const editorInstanceRef = useRef<Editor | null>(null)
 
   const draftCtxRef = useRef({ workspaceId, channelId })
   useEffect(() => {
@@ -139,82 +181,33 @@ export const useTiptapEditor = ({
       shouldRerenderOnTransaction: false,
       editorProps: {
         handleKeyDown: (view, event) => {
-          if (event.key === 'Enter' && event.shiftKey) {
-            // Check if the current selection is inside a list item
-            const { $from } = view.state.selection
+          if (event.key === 'Enter' && event.metaKey) return false
+          if (event.key !== 'Enter') return false
 
-            // Check if we're inside a list item
-            const inList = $from.node(2)?.type.name === TIPTAP_NODES.LISTITEM_TYPE
-            if (inList) {
-              // Create a new list item by splitting the current one
-              editor?.commands.splitListItem(TIPTAP_NODES.LISTITEM_TYPE)
-
-              return true // We handled this event
-            }
-
-            const isEmptyParagraph =
-              $from.parent.type.name === TIPTAP_NODES.PARAGRAPH_TYPE &&
-              $from.parent.content.size === 0
-
-            // Create a new paragraph
-            let tr
-            let newPos
-
-            if (isEmptyParagraph) {
-              // For empty paragraphs, we need to insert a new node after the current one
-              const pos = $from.after()
-              const newNode = view.state.schema.nodes.paragraph.create()
-              tr = view.state.tr.insert(pos, newNode)
-              newPos = pos + 1 // Position inside the new paragraph
-            } else {
-              // For non-empty paragraphs, replace selection with new paragraph
-              const newNode = view.state.schema.nodes.paragraph.create()
-              tr = view.state.tr.replaceSelectionWith(newNode)
-              newPos = $from.pos + 1 // Position inside the new paragraph
-            }
-
-            // Apply the transaction and scroll into view
-            tr = tr.scrollIntoView()
-
-            tr = tr.setSelection(TextSelection.create(tr.doc, newPos))
-
-            view.dispatch(tr)
-
-            // Ensure focus is maintained after the operation
-            setTimeout(() => {
-              if (editor) {
-                editor.commands.focus('end')
-              }
-            }, 0)
-
-            return true // We handled this event
+          if (isMentionSuggestionPopupVisible()) {
+            event.preventDefault()
+            return false
           }
-          if (event.key === 'Enter' && !event.shiftKey) {
-            // Block send while picker is open; Enter selection stays in suggestion onKeyDown.
-            if (isMentionSuggestionPopupVisible()) {
-              event.preventDefault()
 
-              return false
-            } else {
-              if (view.state.doc.textContent.length) {
-                handleTypingIndicator(TypingIndicatorType.SentMsg)
-              }
-              event.preventDefault() // Prevent the new line
-              onSubmit()
-              setIsEmojiOnly(false)
-              return true
-            }
+          if (event.shiftKey || !submitOnEnterRef.current) {
+            event.preventDefault()
+            return insertComposerNewline(view, editorInstanceRef.current)
           }
-          if (event.key === 'Enter' && event.metaKey) {
-            return false // Let TipTap handle Cmd+Enter
+
+          if (view.state.doc.textContent.length) {
+            handleTypingIndicator(TypingIndicatorType.SentMsg)
           }
-          // Return false to let other keydown handlers (or TipTap defaults) process the event
-          return false
+          event.preventDefault()
+          onSubmit()
+          setIsEmojiOnly(false)
+          return true
         }
       }
     },
     []
   )
+
+  editorInstanceRef.current = editor
 
   useEffect(() => {
     if (!editor) return

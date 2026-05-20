@@ -46,7 +46,7 @@ const MessageComposer = ({
   children: React.ReactNode
   className?: string
 }) => {
-  const { channelId, send: contextSend } = useChatroomContext()
+  const { channelId, send: contextSend, variant } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const editorRef = useRef<HTMLDivElement | null>(null)
@@ -69,7 +69,8 @@ const MessageComposer = ({
   } = useTiptapEditor({
     onSubmit: () => submitRef.current?.(),
     workspaceId,
-    channelId
+    channelId,
+    submitOnEnter: variant === 'desktop'
   })
 
   // Leaf-selector: subscribe to just this channel's settings row so unrelated
@@ -119,10 +120,11 @@ const MessageComposer = ({
   }, [submitMessage])
 
   useEffect(() => {
-    const firstChild = editorRef.current?.firstChild as HTMLElement | null
-    firstChild?.setAttribute('inputmode', 'text')
-    firstChild?.setAttribute('enterkeyhint', 'send')
-  }, [editor])
+    const host = editorRef.current?.querySelector('.ProseMirror')
+    if (!(host instanceof HTMLElement)) return
+    host.setAttribute('inputmode', 'text')
+    host.setAttribute('enterkeyhint', variant === 'mobile' ? 'enter' : 'send')
+  }, [editor, variant])
 
   const toggleToolbar = useCallback(() => {
     setShowFormattingToolbar((prev) => {
