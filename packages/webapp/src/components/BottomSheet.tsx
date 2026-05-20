@@ -8,8 +8,8 @@ import {
   useSheetStore,
   useStore
 } from '@stores'
-import { useEffect, useMemo } from 'react'
-import { Sheet, SheetProps } from 'react-modal-sheet'
+import { type RefObject, useEffect, useMemo, useRef } from 'react'
+import { Sheet, SheetProps, type SheetRef } from 'react-modal-sheet'
 
 import { EmojiPanel } from './chatroom/components/EmojiPanel'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
@@ -44,13 +44,17 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
 // Per-sheet configuration for react-modal-sheet
 // ---------------------------------------------------------------------------
 
+const CHATROOM_SNAP_POINTS: NonNullable<SheetProps['snapPoints']> = [0, 0.7, 0.8, 0.9, 1]
+const CHATROOM_TOP_SNAP_INDEX = CHATROOM_SNAP_POINTS.length - 1
+
 const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   chatroom: {
     id: 'chatroom_sheet',
     detent: 'default',
     disableScrollLocking: true,
     disableDismiss: true,
-    snapPoints: [0, 0.7, 0.8, 0.9, 1],
+    snapPoints: CHATROOM_SNAP_POINTS,
+    initialSnap: CHATROOM_TOP_SNAP_INDEX,
     modalEffectThreshold: 0.5
   },
   notifications: {
@@ -78,6 +82,40 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
 
 const DEFAULT_SHEET_PROPS: Partial<SheetProps> = { id: 'bottom_sheet' }
 
+const NON_TEXT_INPUT_TYPES = new Set([
+  'button',
+  'checkbox',
+  'color',
+  'file',
+  'image',
+  'radio',
+  'range',
+  'reset',
+  'submit'
+])
+
+function isChatroomComposerFocus(target: EventTarget | null): target is HTMLElement {
+  if (!(target instanceof HTMLElement)) return false
+  if (target instanceof HTMLTextAreaElement) return true
+  if (target instanceof HTMLInputElement) {
+    return !NON_TEXT_INPUT_TYPES.has(target.type)
+  }
+  if (target.isContentEditable) return true
+  return Boolean(target.closest('#chatroom-editor, [data-chat-composer-surface]'))
+}
+
+function snapSheetToTop(sheetRef: RefObject<SheetRef | null>, snapIndex: number) {
+  const run = (attempt: number) => {
+    const sheet = sheetRef.current
+    if (sheet?.snapPoints?.length) {
+      void sheet.snapTo(snapIndex)
+      return
+    }
+    if (attempt < 10) requestAnimationFrame(() => run(attempt + 1))
+  }
+  run(0)
+}
+
 // ---------------------------------------------------------------------------
 // BottomSheet component
 // ---------------------------------------------------------------------------
@@ -89,9 +127,36 @@ const BottomSheet = () => {
   const chatRoomOpen = useChatStore((state) => state.chatRoom.open)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const setSheetState = useSheetStore((state) => state.setSheetState)
-  const deviceDetect = useStore((state) => state.settings.deviceDetect)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
+  const sheetRef = useRef<SheetRef>(null)
+  const sheetContainerRef = useRef<HTMLDivElement | null>(null)
 
-  const isDeviceIOS = useMemo(() => deviceDetect?.os() === 'iOS', [deviceDetect])
+  const mergeSheetContainerRef = (node: HTMLDivElement | null) => {
+    sheetContainerRef.current = node
+    setSheetContainerRef(node)
+  }
+
+  const isChatroom = activeSheet === 'chatroom'
+  const chatroomKeyboardExpand = isChatroom && isKeyboardOpen
+
+  // Chatroom: composer focus or keyboard up → full-height snap.
+  useEffect(() => {
+    if (!isChatroom) return
+
+    const snapFull = () => snapSheetToTop(sheetRef, CHATROOM_TOP_SNAP_INDEX)
+
+    const onFocusIn = (event: FocusEvent) => {
+      const el = event.target
+      if (!isChatroomComposerFocus(el)) return
+      if (!sheetContainerRef.current?.contains(el)) return
+      snapFull()
+    }
+
+    document.addEventListener('focusin', onFocusIn, true)
+    if (isKeyboardOpen) snapFull()
+
+    return () => document.removeEventListener('focusin', onFocusIn, true)
+  }, [isChatroom, isKeyboardOpen])
 
   // ---------------------------------------------------------------------------
   // Sync chat store ↔ sheet store
@@ -133,8 +198,12 @@ const BottomSheet = () => {
 
   const sheetProps = useMemo<Partial<SheetProps>>(() => {
     if (!activeSheet) return DEFAULT_SHEET_PROPS
-    return SHEET_PROPS[activeSheet] ?? DEFAULT_SHEET_PROPS
-  }, [activeSheet])
+    const base = SHEET_PROPS[activeSheet] ?? DEFAULT_SHEET_PROPS
+    if (chatroomKeyboardExpand) {
+      return { ...base, detent: 'full' }
+    }
+    return base
+  }, [activeSheet, chatroomKeyboardExpand])
 
   // ---------------------------------------------------------------------------
   // Close handler – each sheet type may need specific teardown logic
@@ -178,12 +247,11 @@ const BottomSheet = () => {
   // Render
   // ---------------------------------------------------------------------------
 
-  const isChatroom = activeSheet === 'chatroom'
-
   return (
     <div className="bottom-sheet-container relative">
       <Sheet
-        avoidKeyboard={isDeviceIOS}
+        ref={sheetRef}
+        avoidKeyboard
         className="bottom-sheet !z-10"
         isOpen={!!activeSheet}
         onClose={handleClose}
@@ -192,7 +260,7 @@ const BottomSheet = () => {
         onCloseStart={handleCloseStart}
         onCloseEnd={handleCloseEnd}
         {...sheetProps}>
-        <Sheet.Container ref={setSheetContainerRef}>
+        <Sheet.Container ref={mergeSheetContainerRef}>
           <Sheet.Header />
           <Sheet.Content
             disableDrag={isChatroom}
