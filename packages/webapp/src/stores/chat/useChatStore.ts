@@ -10,6 +10,7 @@ import chatRoom from './chatroom'
 import emojiPickerStore from './emojiPickerStore'
 import optimisticUnreadStore from './optimisticUnreadStore'
 import peerReadCursorStore from './peerReadCursorStore'
+import unreadSuppressionStore from './unreadSuppressionStore'
 import workspaceSettingsStore from './workspaceSettingsStore'
 
 enableMapSet()
@@ -25,6 +26,7 @@ export interface IStore
     ReturnType<typeof emojiPickerStore>,
     ReturnType<typeof optimisticUnreadStore>,
     ReturnType<typeof peerReadCursorStore>,
+    ReturnType<typeof unreadSuppressionStore>,
     ReturnType<typeof bootstrapStore> {}
 
 export const useChatStore = create<IStore>((...props) => ({
@@ -37,5 +39,6 @@ export const useChatStore = create<IStore>((...props) => ({
   ...emojiPickerStore(...props),
   ...optimisticUnreadStore(...props),
   ...peerReadCursorStore(...props),
+  ...unreadSuppressionStore(...props),
   ...bootstrapStore(...props)
 }))

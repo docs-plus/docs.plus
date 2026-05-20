@@ -126,8 +126,12 @@ export const ChatroomProvider: React.FC<{
 
   useEffect(() => {
     return () => {
-      useChatStore.getState().clearOptimisticUnread(channelId)
-      useChatStore.getState().clearPeerReadSeq(channelId)
+      const store = useChatStore.getState()
+      store.clearOptimisticUnread(channelId)
+      store.clearPeerReadSeq(channelId)
+      // Suppression is single-valued and tied to this mounted context, so an
+      // unconditional clear cannot clobber another channel's marker.
+      store.setUnreadSuppressedChannel(null)
       lastOptimisticSeqRef.current = 0
     }
   }, [channelId])
@@ -171,8 +175,16 @@ export const ChatroomProvider: React.FC<{
   const onAtBottomChange = useCallback(
     (b: boolean) => {
       setAtBottom(b)
-      if (!b) return
+      if (!b) {
+        // Release before the next realtime UPDATE so the server unread
+        // can land in the store and the badge resumes tracking.
+        useChatStore.getState().setUnreadSuppressedChannel(null)
+        return
+      }
       if (!dataIncludesTailRef.current) return
+      // Set suppression BEFORE the optimistic-zero below so the slice
+      // clamp agrees with the immediate write.
+      useChatStore.getState().setUnreadSuppressedChannel(channelId)
       const maxSeq = newestSeqRef.current ?? 0
       if (maxSeq <= 0) return
       advance(maxSeq, 'sent')

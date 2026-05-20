@@ -12,14 +12,21 @@ const optimisticUnreadStore = immer<OptimisticUnreadState>((set) => ({
   optimisticUnread: new Map(),
 
   setOptimisticUnread: (channelId, value) =>
-    set((state) => {
+    set((state: any) => {
       if (typeof value !== 'number') return
-      state.optimisticUnread.set(channelId, Math.max(0, value))
+      // Suppression clamp at the slice boundary covers every realtime /
+      // cross-tab caller, not just the read site.
+      const suppressed = state.unreadSuppressedChannelId === channelId
+      state.optimisticUnread.set(channelId, suppressed ? 0 : Math.max(0, value))
     }),
 
   decrementOptimisticUnread: (channelId, by, seed) =>
-    set((state) => {
+    set((state: any) => {
       if (by <= 0) return
+      if (state.unreadSuppressedChannelId === channelId) {
+        state.optimisticUnread.set(channelId, 0)
+        return
+      }
       const current = state.optimisticUnread.get(channelId) ?? seed
       state.optimisticUnread.set(channelId, Math.max(0, current - by))
     }),

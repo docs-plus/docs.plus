@@ -1,9 +1,10 @@
 import { useChatStore } from '@stores'
 
 export function useUnreadCount(channelId: string): number {
-  const serverCount = useChatStore(
-    (state) => state.channels.get(channelId)?.unread_message_count ?? 0
-  )
-  const optimistic = useChatStore((state) => state.optimisticUnread.get(channelId))
-  return typeof optimistic === 'number' ? optimistic : serverCount
+  return useChatStore((state) => {
+    if (state.unreadSuppressedChannelId === channelId) return 0
+    const optimistic = state.optimisticUnread.get(channelId)
+    if (typeof optimistic === 'number') return optimistic
+    return state.channels.get(channelId)?.unread_message_count ?? 0
+  })
 }
