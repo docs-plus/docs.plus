@@ -16,6 +16,7 @@ interface ToolbarButtonProps {
   disabled?: boolean
   variant?: ButtonVariant
   shape?: ButtonShape
+  onPointerDown?: React.PointerEventHandler<HTMLButtonElement>
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
@@ -31,7 +32,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       isActive,
       disabled,
       variant = 'ghost',
-      shape
+      shape,
+      onPointerDown
     },
     ref
   ) => {
@@ -52,6 +54,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           e.preventDefault()
           onPress?.(e)
         }}
+        onPointerDown={onPointerDown}
         disabled={disabled}
         tooltip={tooltip}
         tooltipPlacement={tooltipPosition}>

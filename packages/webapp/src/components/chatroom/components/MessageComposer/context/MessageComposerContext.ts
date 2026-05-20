@@ -15,6 +15,7 @@ export interface MessageComposerContextType {
   submitMessage: (e?: { preventDefault?: () => void }) => Promise<void>
   /** Reactive send affordance: true when editor has non-whitespace content. */
   canSend: boolean
+  isMobile: boolean
   editorRef: React.RefObject<HTMLDivElement | null>
   isEmojiOnly: boolean
 }

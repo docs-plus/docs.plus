@@ -47,6 +47,7 @@ const MessageComposer = ({
   className?: string
 }) => {
   const { channelId, send: contextSend, variant } = useChatroomContext()
+  const isMobile = variant === 'mobile'
   const user = useAuthStore((state) => state.profile)
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const editorRef = useRef<HTMLDivElement | null>(null)
@@ -70,7 +71,7 @@ const MessageComposer = ({
     onSubmit: () => submitRef.current?.(),
     workspaceId,
     channelId,
-    submitOnEnter: variant === 'desktop'
+    submitOnEnter: !isMobile
   })
 
   // Leaf-selector: subscribe to just this channel's settings row so unrelated
@@ -110,7 +111,8 @@ const MessageComposer = ({
     setReplyMsgMemory,
     setEditMsgMemory,
     setCommentMsgMemory,
-    cancelPendingEditorDraftCapture
+    cancelPendingEditorDraftCapture,
+    keepKeyboardAfterSubmit: isMobile
   })
 
   useEffect(() => {
@@ -123,8 +125,8 @@ const MessageComposer = ({
     const host = editorRef.current?.querySelector('.ProseMirror')
     if (!(host instanceof HTMLElement)) return
     host.setAttribute('inputmode', 'text')
-    host.setAttribute('enterkeyhint', variant === 'mobile' ? 'enter' : 'send')
-  }, [editor, variant])
+    host.setAttribute('enterkeyhint', isMobile ? 'enter' : 'send')
+  }, [editor, isMobile])
 
   const toggleToolbar = useCallback(() => {
     setShowFormattingToolbar((prev) => {
@@ -164,6 +166,7 @@ const MessageComposer = ({
       toggleToolbar,
       submitMessage,
       canSend,
+      isMobile,
       editorRef,
       isEmojiOnly
     }),
@@ -179,6 +182,7 @@ const MessageComposer = ({
       toggleToolbar,
       submitMessage,
       canSend,
+      isMobile,
       isEmojiOnly
     ]
   )

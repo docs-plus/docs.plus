@@ -24,6 +24,7 @@ export type ComposerSubmitArgs = {
   setEditMsgMemory: (channelId: string, value: null) => void
   setCommentMsgMemory: (channelId: string, value: null) => void
   cancelPendingEditorDraftCapture: () => void
+  keepKeyboardAfterSubmit?: boolean
 }
 
 export const useComposerSubmit = ({
@@ -38,7 +39,8 @@ export const useComposerSubmit = ({
   setReplyMsgMemory,
   setEditMsgMemory,
   setCommentMsgMemory,
-  cancelPendingEditorDraftCapture
+  cancelPendingEditorDraftCapture,
+  keepKeyboardAfterSubmit = false
 }: ComposerSubmitArgs) => {
   const { request: updateMsg } = useApi(updateMessage, null, false)
   const { request: sendComment } = useApi(sendCommentMessage, null, false)
@@ -57,8 +59,11 @@ export const useComposerSubmit = ({
     cancelPendingEditorDraftCapture()
     if (workspaceId && channelId) void discardComposerDraft(workspaceId, channelId)
 
-    const wasFocused = !!editor && editor.view.dom === document.activeElement
-    if (wasFocused) editor?.chain().clearContent(true).focus('start').run()
+    const shouldRefocus =
+      keepKeyboardAfterSubmit ||
+      (editor != null && editor.view.dom.contains(document.activeElement))
+
+    if (shouldRefocus) editor?.chain().clearContent(true).focus('start').run()
     else editor?.chain().clearContent(true).run()
   }, [
     editor,
@@ -70,7 +75,8 @@ export const useComposerSubmit = ({
     setReplyMsgMemory,
     setEditMsgMemory,
     setCommentMsgMemory,
-    cancelPendingEditorDraftCapture
+    cancelPendingEditorDraftCapture,
+    keepKeyboardAfterSubmit
   ])
 
   const submitMessage = useCallback(
