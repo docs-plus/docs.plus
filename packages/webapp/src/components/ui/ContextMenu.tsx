@@ -41,13 +41,17 @@ export const useContextMenuContext = () => {
   return context
 }
 
-export const MenuItem = forwardRef<HTMLLIElement, React.LiHTMLAttributes<HTMLLIElement>>(
-  ({ children, ...props }) => {
-    return <li {...props}>{children}</li>
-  }
-)
+type MenuItemProps = React.LiHTMLAttributes<HTMLLIElement> & {
+  ref?: React.Ref<HTMLLIElement>
+}
 
-MenuItem.displayName = 'MenuItem'
+export function MenuItem({ children, ref, ...props }: MenuItemProps) {
+  return (
+    <li ref={ref} {...props}>
+      {children}
+    </li>
+  )
+}
 
 interface Props {
   label?: string
