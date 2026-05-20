@@ -63,7 +63,6 @@ To enhance readability and clarity, the features have been categorized based on 
 - [ ] Edit Messages
 - [ ] Delete Messages
 - [ ] Reply to Messages
-- [ ] Forward Messages
 
 ### Advanced Messaging Features
 

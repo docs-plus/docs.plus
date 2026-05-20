@@ -13,7 +13,7 @@ create index idx_users_username on public.users (username);
 -- idx_messages_channel_id is covered by the composite (channel_id, created_at desc) below.
 create index idx_messages_user_id on public.messages (user_id);
 -- idx_messages_type serves m.type = 'notification' filters in get_channel_aggregate_data
--- and pin/forward RPCs (10-functions.sql); keep despite low cardinality.
+-- and pin RPCs (10-functions.sql); keep despite low cardinality.
 create index idx_messages_type on public.messages (type);
 
 -- Composite Index on public.messages
@@ -57,15 +57,11 @@ create index idx_messages_channel_id_created_at_active
 create index idx_workspace_members_member_id on public.workspace_members (member_id);
 
 -- FK indexes on message-edit / soft-delete / reply hot triggers. Without
--- these every edit, soft-delete, or forward does a seq scan on messages /
+-- these every edit or soft-delete does a seq scan on messages /
 -- notifications inside an AFTER trigger on the synchronous send path.
 create index if not exists idx_messages_reply_to_message_id
   on public.messages (reply_to_message_id)
   where reply_to_message_id is not null;
-
-create index if not exists idx_messages_origin_message_id
-  on public.messages (origin_message_id)
-  where origin_message_id is not null;
 
 create index if not exists idx_notifications_message_id
   on public.notifications (message_id);

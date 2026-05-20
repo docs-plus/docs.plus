@@ -118,7 +118,7 @@ COMMENT ON TRIGGER message_soft_delete ON public.messages IS 'Handles additional
  * Function: update_message_preview_on_edit
  * Description: Updates message previews across the system when a message is edited
  * Trigger: Executes after UPDATE of content on public.messages
- * Action: Updates previews in notifications, replies, forwarded messages, and channel
+ * Action: Updates previews in notifications, replies, and channel
  * Returns: The NEW record (trigger standard)
  */
 CREATE OR REPLACE FUNCTION update_message_preview_on_edit()
@@ -137,11 +137,6 @@ BEGIN
     UPDATE public.messages
     SET replied_message_preview = truncated_content
     WHERE reply_to_message_id = NEW.id;
-
-    -- Update content for messages that are forwards of the edited message
-    UPDATE public.messages
-    SET content = NEW.content
-    WHERE origin_message_id = NEW.id;
 
     -- Update last message preview in the channel of the edited message
     IF NEW.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN

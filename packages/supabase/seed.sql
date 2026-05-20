@@ -410,7 +410,7 @@ comment on column public.channels.deleted_at is 'Timestamp when this channel was
 
 -- Table: public.messages
 -- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio.
--- The table also tracks message status (edited, deleted) and associations (user, channel, replies, and forwardings).
+-- The table also tracks message status (edited, deleted) and associations (user, channel, replies).
 
 -- Live sequence for messages.seq starts at 1_000_000_000; backfill sequence in the
 -- paired migration is bounded below it so historical rows sort before any live insert.
@@ -434,7 +434,6 @@ create table public.messages (
     metadata               jsonb, -- Additional metadata about the message in JSONB format.
     reply_to_message_id    uuid references public.messages(id) on delete set null, -- The ID of the message this message is replying to, if any.
     replied_message_preview text, -- Preview text of the message being replied to.
-    origin_message_id      uuid references public.messages(id) on delete set null, -- ID of the original message if this is a forwarded message.
     readed_at              timestamp with time zone -- Timestamp for when the message was read by a user.
 );
 
@@ -462,7 +461,6 @@ comment on column public.messages.type is 'The type of message (text, image, vid
 comment on column public.messages.metadata is 'Additional configurable properties for the message';
 comment on column public.messages.reply_to_message_id is 'Reference to the message being replied to, if any';
 comment on column public.messages.replied_message_preview is 'Preview text of the message being replied to';
-comment on column public.messages.origin_message_id is 'Reference to the original message if this is a forwarded message';
 comment on column public.messages.readed_at is 'Timestamp when the message was last read';
 
 -- TODO: partition by channel_id and created_at
@@ -474,19 +472,7 @@ comment on column public.messages.readed_at is 'Timestamp when the message was l
 --   "replied": [
 --     "68d37413-e405-40e8-aec6-4a741be8982b"
 --   ],
---   "is_important": true,
---   "forwarding_chain": [
---     {
---       "user_id": "35477c6b-f9a0-4bad-af0b-545c99b33fae",
---       "username": "philip",
---       "full_name": null
---     },
---     {
---       "user_id": "1059dbd0-3478-46f9-b8a9-dcd23ed0a23a",
---       "username": "emma",
---       "full_name": null
---     }
---   ]
+--   "is_important": true
 -- }
 
 -- Media example
@@ -5314,7 +5300,7 @@ COMMENT ON TRIGGER message_soft_delete ON public.messages IS 'Handles additional
  * Function: update_message_preview_on_edit
  * Description: Updates message previews across the system when a message is edited
  * Trigger: Executes after UPDATE of content on public.messages
- * Action: Updates previews in notifications, replies, forwarded messages, and channel
+ * Action: Updates previews in notifications, replies, and channel
  * Returns: The NEW record (trigger standard)
  */
 CREATE OR REPLACE FUNCTION update_message_preview_on_edit()
@@ -5333,11 +5319,6 @@ BEGIN
     UPDATE public.messages
     SET replied_message_preview = truncated_content
     WHERE reply_to_message_id = NEW.id;
-
-    -- Update content for messages that are forwards of the edited message
-    UPDATE public.messages
-    SET content = NEW.content
-    WHERE origin_message_id = NEW.id;
 
     -- Update last message preview in the channel of the edited message
     IF NEW.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
@@ -5677,134 +5658,6 @@ ALTER FUNCTION public.update_channel_preview_on_new_message() SET search_path = 
 ALTER FUNCTION public.set_replied_message_preview() SECURITY DEFINER;
 ALTER FUNCTION public.update_original_message_metadata() SECURITY DEFINER;
 ALTER FUNCTION public.update_channel_preview_on_new_message() SECURITY DEFINER;
-
-
--- ============================================================================
--- File: 10-6-func-forward_msg.sql
--- ============================================================================
-
-/*
- * Forwarded Message Functions
- * This file contains functions and triggers related to message forwarding:
- * - Content copying from original messages
- * - Handling forwarding chain metadata
- * - Maintaining message integrity during forwarding
- */
-
-/**
- * Function: prepare_forwarded_message
- * Description: Copies content from original message when forwarding a message
- * Trigger: Executes before INSERT on public.messages
- * Action: Copies content, media, and HTML from the original message and tracks forwarding history
- * Returns: The modified NEW record with content and metadata from the original message
- */
-create or replace function prepare_forwarded_message()
-returns trigger as $$
-declare
-  original_message record;
-  forwarding_user record;
-  user_details jsonb;
-begin
-  -- Only proceed if the message is a forward (has origin_message_id)
-  if new.origin_message_id is not null then
-    -- Retrieve content, html, medias, metadata, user_id from the original message if not soft-deleted
-    select content, html, medias, metadata, user_id into original_message
-    from public.messages
-    where id = new.origin_message_id and deleted_at is null;
-
-    -- Check if the original message exists
-    if not found then
-      -- Assign default values since the original message is not available
-      new.content := 'Original message is not available.';
-      new.medias := null;
-      new.html := null;
-      new.metadata := null;
-    else
-      -- Proceed with copying content from the original message
-
-      -- Retrieve the original user's details
-      select id, username, full_name, avatar_url, avatar_updated_at into forwarding_user
-      from public.users
-      where id = original_message.user_id;
-
-      -- Check if the original user exists
-      if not found then
-        -- Handle the case where the user does not exist
-        forwarding_user.id := null;
-        forwarding_user.username := 'Unknown';
-        forwarding_user.full_name := 'Unknown User';
-        forwarding_user.avatar_url := null;
-        forwarding_user.avatar_updated_at := null;
-      end if;
-
-      -- Prepare user details JSON object
-      user_details := jsonb_build_object(
-          'id', forwarding_user.id,
-          'username', forwarding_user.username,
-          'full_name', forwarding_user.full_name,
-          'avatar_url', forwarding_user.avatar_url,
-          'avatar_updated_at', forwarding_user.avatar_updated_at
-      );
-
-      -- Initialize new.metadata if null
-      if new.metadata is null then
-        new.metadata := '{}'::jsonb;
-      end if;
-
-      -- Track forwarding chain
-      if original_message.metadata ? 'forwarding_chain' then
-          -- Append the new user details to the existing array
-          new.metadata := jsonb_set(
-              original_message.metadata,
-              '{forwarding_chain}',
-              (original_message.metadata->'forwarding_chain') || user_details
-          );
-      else
-          -- Create a new 'forwarding_chain' array with the user details
-          new.metadata := new.metadata || jsonb_build_object(
-              'forwarding_chain',
-              jsonb_build_array(user_details)
-          );
-      end if;
-
-      -- Copy content from the original message
-      new.content := original_message.content;
-      new.medias := original_message.medias;
-      new.html := original_message.html;
-    end if;
-
-    -- Clear fields not relevant for a forwarded message
-    new.reactions := null;
-    new.reply_to_message_id := null;
-    new.replied_message_preview := null;
-  end if;
-
-  return new;
-end;
-$$ language plpgsql;
-
-comment on function prepare_forwarded_message() is
-'Prepares a forwarded message by copying content from the original message and tracking forwarding history.';
-
--- Trigger: set_forwarded_message_content
-create trigger set_forwarded_message_content
-before insert on public.messages
-for each row
-execute function prepare_forwarded_message();
-
-comment on trigger set_forwarded_message_content on public.messages is
-'Copies content from the original message when a message is being forwarded.';
-
--- ============================================================
--- Hardening: pin search_path = public on functions defined above
--- (idempotent — safe to re-run)
--- ============================================================
-ALTER FUNCTION public.prepare_forwarded_message() SET search_path = public;
-
--- Trigger functions run as postgres (DEFINER) so internal side effects
--- (counters, previews, notifications) bypass RLS on side-effect tables.
--- search_path is already pinned above; flipping security mode is safe.
-ALTER FUNCTION public.prepare_forwarded_message() SECURITY DEFINER;
 
 
 -- ============================================================================
@@ -6845,11 +6698,14 @@ BEGIN
 
     -- Bootstrap seed for the sender-side check-mark; later advances
     -- arrive via the `read:advanced` broadcast in advance_read_cursor.
-    SELECT MAX(cm.last_read_seq) INTO peer_max_read_seq_result
-    FROM public.channel_members cm
-    WHERE cm.channel_id = input_channel_id
-      AND cm.member_id <> auth.uid()
-      AND cm.left_at IS NULL;
+    -- Members only: leaks peer activity (online-status recon) otherwise.
+    IF is_member_result THEN
+      SELECT MAX(cm.last_read_seq) INTO peer_max_read_seq_result
+      FROM public.channel_members cm
+      WHERE cm.channel_id = input_channel_id
+        AND cm.member_id <> auth.uid()
+        AND cm.left_at IS NULL;
+    END IF;
 
     -- Get the last_read_message_id, last_read_seq, and timestamp for the current
     -- user in the channel. last_read_seq is the v2 cursor used by useReadCursor.
@@ -7961,9 +7817,12 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
 
+  -- FOR UPDATE locks the row so concurrent advances (open tab + mobile)
+  -- cannot interleave SELECT/UPDATE and flap unread_message_count.
   select greatest(last_read_seq, p_up_to_seq) into v_new_seq
   from public.channel_members
-  where channel_id = p_channel_id and member_id = v_uid;
+  where channel_id = p_channel_id and member_id = v_uid
+  for update;
 
   if v_new_seq is null then
     return;
@@ -7981,17 +7840,16 @@ begin
       last_read_update_at = (now() at time zone 'utc')
   where channel_id = p_channel_id and member_id = v_uid;
 
-  -- Fan out to peers so sender-side check-marks flip without subscribing
-  -- to channel_members postgres_changes (workspace-scoped to own rows in
-  -- useCatchUserPresences). The cursor write is the durable contract;
-  -- the broadcast is a hint, so a realtime.send failure (broker hiccup,
-  -- missing extension on a fresh deploy) must not roll back the UPDATE.
+  -- Private topic `chatroom-read:{id}` gated by chatroom_read_topic_access
+  -- on realtime.messages (members-only). The cursor write is the durable
+  -- contract; broadcast failure (broker hiccup, missing extension) must
+  -- not roll back the UPDATE.
   begin
     perform realtime.send(
       jsonb_build_object('user_id', v_uid, 'seq', v_new_seq),
       'read:advanced',
-      'chatroom:' || p_channel_id,
-      false
+      'chatroom-read:' || p_channel_id,
+      true
     );
   exception when others then
     raise warning 'read:advanced broadcast failed: %', sqlerrm;
@@ -8001,6 +7859,34 @@ $$;
 
 grant execute on function public.advance_read_cursor(varchar, bigint) to authenticated;
 revoke execute on function public.advance_read_cursor(varchar, bigint) from anon, public;
+
+-- ---------------------------------------------------------------------------
+-- Authorization for `chatroom-read:{channel_id}` private topic.
+--   - Subscribers must be authenticated channel members (left_at IS NULL).
+--   - `realtime.messages` RLS is already enabled by 07-3-notification-broadcast.
+--   - 14-char prefix `chatroom-read:` -> substring starts at position 15.
+-- ---------------------------------------------------------------------------
+
+drop policy if exists "chatroom_read_topic_access" on realtime.messages;
+
+create policy "chatroom_read_topic_access"
+on realtime.messages
+for select
+to authenticated
+using (
+  realtime.messages.topic like 'chatroom-read:%'
+  and exists (
+    select 1
+    from public.channel_members cm
+    where cm.channel_id = substr(realtime.messages.topic, 15)
+      and cm.member_id  = (select auth.uid())
+      and cm.left_at    is null
+  )
+);
+
+comment on policy "chatroom_read_topic_access" on realtime.messages is
+'Members-only subscription to chatroom-read:{channel_id}. Pairs with
+advance_read_cursor which fans out read:advanced with private := TRUE.';
 
 
 -- ============================================================================
@@ -8126,10 +8012,6 @@ create index idx_workspace_members_member_id on public.workspace_members (member
 create index if not exists idx_messages_reply_to_message_id
   on public.messages (reply_to_message_id)
   where reply_to_message_id is not null;
-
-create index if not exists idx_messages_origin_message_id
-  on public.messages (origin_message_id)
-  where origin_message_id is not null;
 
 create index if not exists idx_notifications_message_id
   on public.notifications (message_id);

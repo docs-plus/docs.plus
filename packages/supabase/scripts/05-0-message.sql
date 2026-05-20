@@ -1,6 +1,6 @@
 -- Table: public.messages
 -- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio.
--- The table also tracks message status (edited, deleted) and associations (user, channel, replies, and forwardings).
+-- The table also tracks message status (edited, deleted) and associations (user, channel, replies).
 
 -- Live sequence for messages.seq starts at 1_000_000_000; backfill sequence in the
 -- paired migration is bounded below it so historical rows sort before any live insert.
@@ -24,7 +24,6 @@ create table public.messages (
     metadata               jsonb, -- Additional metadata about the message in JSONB format.
     reply_to_message_id    uuid references public.messages(id) on delete set null, -- The ID of the message this message is replying to, if any.
     replied_message_preview text, -- Preview text of the message being replied to.
-    origin_message_id      uuid references public.messages(id) on delete set null, -- ID of the original message if this is a forwarded message.
     readed_at              timestamp with time zone -- Timestamp for when the message was read by a user.
 );
 
@@ -52,7 +51,6 @@ comment on column public.messages.type is 'The type of message (text, image, vid
 comment on column public.messages.metadata is 'Additional configurable properties for the message';
 comment on column public.messages.reply_to_message_id is 'Reference to the message being replied to, if any';
 comment on column public.messages.replied_message_preview is 'Preview text of the message being replied to';
-comment on column public.messages.origin_message_id is 'Reference to the original message if this is a forwarded message';
 comment on column public.messages.readed_at is 'Timestamp when the message was last read';
 
 -- TODO: partition by channel_id and created_at
@@ -64,19 +62,7 @@ comment on column public.messages.readed_at is 'Timestamp when the message was l
 --   "replied": [
 --     "68d37413-e405-40e8-aec6-4a741be8982b"
 --   ],
---   "is_important": true,
---   "forwarding_chain": [
---     {
---       "user_id": "35477c6b-f9a0-4bad-af0b-545c99b33fae",
---       "username": "philip",
---       "full_name": null
---     },
---     {
---       "user_id": "1059dbd0-3478-46f9-b8a9-dcd23ed0a23a",
---       "username": "emma",
---       "full_name": null
---     }
---   ]
+--   "is_important": true
 -- }
 
 -- Media example
