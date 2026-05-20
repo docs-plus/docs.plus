@@ -12,7 +12,6 @@ type Props = {
 
 export function ComposerBar({ variant, className }: Props) {
   const isDesktop = variant === 'desktop'
-  const iconSize = isDesktop ? 18 : 20
 
   return (
     <div
@@ -30,15 +29,15 @@ export function ComposerBar({ variant, className }: Props) {
 
       <div
         className={twMerge(
-          'composer-bar__input-row flex w-full items-end gap-1 px-3',
+          'composer-bar__input-row flex w-full items-end gap-1.5 px-3',
           isDesktop ? 'py-2' : 'py-1.5'
         )}>
+        <MsgComposer.ToggleToolbarButton className="composer-bar__format-toggle shrink-0" />
         <MsgComposer.Input className="min-w-0 flex-1 py-0" />
-        <MsgComposer.Actions className="composer-bar__actions">
-          <MsgComposer.ToggleToolbarButton size={iconSize} />
-          <MsgComposer.EmojiButton size={iconSize} />
-          <MsgComposer.MentionButton size={iconSize} />
-          <MsgComposer.SendButton size={iconSize} />
+        <MsgComposer.Actions>
+          <MsgComposer.EmojiButton />
+          <MsgComposer.MentionButton />
+          <MsgComposer.SendButton />
         </MsgComposer.Actions>
       </div>
     </div>

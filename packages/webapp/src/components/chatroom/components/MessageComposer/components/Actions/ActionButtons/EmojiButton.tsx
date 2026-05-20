@@ -1,14 +1,14 @@
-import Icon from '@components/TipTap/toolbar/Icon'
+import { Icons } from '@icons'
 import { useChatStore, useSheetStore, useStore } from '@stores'
 import { Editor } from '@tiptap/react'
 import { useCallback } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import Button from '../../ui/Button'
 
-type Props = React.HTMLAttributes<HTMLButtonElement> & {
-  className?: string
+type Props = React.ComponentProps<typeof Button> & {
   size?: number
 }
 
@@ -39,8 +39,6 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
     if (!editor) return
 
     if (isMobile) {
-      // Switch to the emoji picker sheet, preserving chatroom reference
-      // so BottomSheet can restore the chatroom when the picker closes.
       switchSheet('emojiPicker', {
         chatRoomState: { headingId: headingId ?? '' }
       })
@@ -59,13 +57,16 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
 
   return (
     <Button
-      className={className}
+      className={twMerge(
+        'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+        className
+      )}
       onPress={openEmojiPickerHandler}
       tooltip="Emoji"
       tooltipPosition="top"
       aria-label="Open emoji picker"
       {...props}>
-      <Icon type="MdOutlineEmojiEmotions" size={size} />
+      <Icons.emoji size={size} className="pointer-events-none shrink-0 stroke-[1.75]" />
     </Button>
   )
 }

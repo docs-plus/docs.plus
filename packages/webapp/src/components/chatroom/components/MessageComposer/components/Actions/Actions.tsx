@@ -10,7 +10,10 @@ export const Actions = ({ children, className = '' }: Props) => {
     <div
       role="group"
       aria-label="Message actions"
-      className={twMerge('flex shrink-0 items-center gap-0.5', className)}>
+      className={twMerge(
+        'composer-bar__actions flex shrink-0 items-end gap-1 pb-0.5 sm:items-center sm:gap-1.5 sm:pb-0',
+        className
+      )}>
       {children}
     </div>
   )

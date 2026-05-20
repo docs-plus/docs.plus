@@ -1,4 +1,5 @@
-import Icon from '@components/TipTap/toolbar/Icon'
+import { Icons } from '@icons'
+import { twMerge } from 'tailwind-merge'
 
 import { useMessageComposer } from '../../../hooks'
 import Button from '../../ui/Button'
@@ -7,7 +8,8 @@ type Props = {
   className?: string
   size?: number
 }
-export const BlockquoteButton = ({ className, size = 16, ...props }: Props) => {
+
+export const BlockquoteButton = ({ className, size = 18, ...props }: Props) => {
   const { editor } = useMessageComposer()
 
   return (
@@ -16,9 +18,12 @@ export const BlockquoteButton = ({ className, size = 16, ...props }: Props) => {
       editor={editor}
       type="blockquote"
       tooltip="Blockquote (⌘+⇧+9)"
-      className={className}
+      className={twMerge(
+        'btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0',
+        className
+      )}
       {...props}>
-      <Icon type="TbBlockquote" size={size} />
+      <Icons.blockquote size={size} className="pointer-events-none shrink-0 stroke-[1.75]" />
     </Button>
   )
 }

@@ -1,4 +1,4 @@
-import SharedButton from '@components/ui/Button'
+import SharedButton, { type ButtonShape, type ButtonVariant } from '@components/ui/Button'
 import { Placement } from '@floating-ui/react'
 import { Editor } from '@tiptap/react'
 import React from 'react'
@@ -14,6 +14,8 @@ interface ToolbarButtonProps {
   className?: string
   isActive?: boolean
   disabled?: boolean
+  variant?: ButtonVariant
+  shape?: ButtonShape
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
@@ -27,7 +29,9 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       tooltipPosition = 'bottom',
       className,
       isActive,
-      disabled
+      disabled,
+      variant = 'ghost',
+      shape
     },
     ref
   ) => {
@@ -36,11 +40,11 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     return (
       <SharedButton
         ref={ref}
-        variant="ghost"
+        variant={variant}
         size="sm"
-        shape="square"
+        shape={shape}
         className={twMerge(
-          'size-8 cursor-pointer touch-manipulation border-0 p-0 antialiased',
+          'min-h-0 cursor-pointer touch-manipulation border-0 p-0 antialiased',
           isButtonActive && 'is-active btn-active',
           className
         )}

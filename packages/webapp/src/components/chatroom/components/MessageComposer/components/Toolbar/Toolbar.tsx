@@ -7,11 +7,7 @@ type Props = {
 
 export const Toolbar = ({ className, children }: Props) => {
   return (
-    <div
-      className={twMerge(
-        'chatroom__toolbar flex w-full flex-row items-center justify-start gap-1',
-        className
-      )}>
+    <div className={twMerge('chatroom__toolbar flex min-w-0 flex-row items-center', className)}>
       {children}
     </div>
   )

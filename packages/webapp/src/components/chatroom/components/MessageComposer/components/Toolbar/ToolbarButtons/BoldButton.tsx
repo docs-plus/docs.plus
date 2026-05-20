@@ -1,5 +1,5 @@
-import Icon from '@components/TipTap/toolbar/Icon'
-import React from 'react'
+import { Icons } from '@icons'
+import { twMerge } from 'tailwind-merge'
 
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import Button from '../../ui/Button'
@@ -9,7 +9,7 @@ type Props = {
   size?: number
 }
 
-export const BoldButton = ({ className, size = 16, ...props }: Props) => {
+export const BoldButton = ({ className, size = 18, ...props }: Props) => {
   const { editor } = useMessageComposer()
 
   return (
@@ -18,9 +18,12 @@ export const BoldButton = ({ className, size = 16, ...props }: Props) => {
       editor={editor}
       type="bold"
       tooltip="Bold (⌘+B)"
-      className={className}
+      className={twMerge(
+        'btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0',
+        className
+      )}
       {...props}>
-      <Icon type="Bold" size={size} />
+      <Icons.bold size={size} className="pointer-events-none shrink-0 stroke-[1.75]" />
     </Button>
   )
 }
