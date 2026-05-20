@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 
-/**
- * Handles message cloning and highlighting for long press menu
- */
+const OWNER_BUBBLE_OPAQUE_BG =
+  'color-mix(in oklch, var(--color-primary) 20%, var(--color-base-100))'
+
 export const useMessageHighlighting = (
   isMessagePressed: boolean,
   fallbackCardElement?: HTMLElement | null
@@ -13,19 +13,7 @@ export const useMessageHighlighting = (
   const [originalMessageBounds, setOriginalMessageBounds] = useState<DOMRect | null>(null)
 
   const createHighlightedMessage = (event: any) => {
-    // Try multiple fallback strategies to find the message card
-    let cardEl = null
-
-    // Strategy 1: Use closest on event.target
-    if (event.target?.closest) {
-      cardEl = event.target.closest('.msg_card')
-    }
-
-    // Strategy 2: Use fallback card element from long press interaction
-    if (!cardEl && fallbackCardElement) {
-      cardEl = fallbackCardElement
-      console.info('Using fallback card element from long press interaction')
-    }
+    const cardEl = event.target?.closest?.('.msg_card') ?? fallbackCardElement ?? null
 
     if (!cardEl) {
       console.warn('Could not find message card element', {
@@ -38,11 +26,11 @@ export const useMessageHighlighting = (
       return null
     }
 
-    const rect = cardEl.querySelector('.chat-bubble')?.getBoundingClientRect()
-    const clonedElement = cardEl.querySelector('.chat-bubble')?.cloneNode(true) as HTMLElement
+    const sourceBubble = cardEl.querySelector('.chat-bubble') as HTMLElement | null
+    const rect = sourceBubble?.getBoundingClientRect()
+    const clonedElement = (sourceBubble?.cloneNode(true) as HTMLElement | null) ?? null
 
-    // Add custom styles to the cloned element
-    if (clonedElement) {
+    if (clonedElement && sourceBubble) {
       clonedElement.style.cssText = `
         margin: 0!important;
         width: 100%!important;
@@ -51,10 +39,14 @@ export const useMessageHighlighting = (
         transition: transform 150ms;
         transition-delay: 150ms;
       `
+      // bg-primary/20 mixes with transparent; opaque mix keeps the clone readable over blur.
+      if (sourceBubble.className.includes('bg-primary/20')) {
+        clonedElement.style.setProperty('background-color', OWNER_BUBBLE_OPAQUE_BG, 'important')
+      }
     }
 
     setHighlightedMessageElement(clonedElement)
-    setOriginalMessageBounds(rect || null)
+    setOriginalMessageBounds(rect ?? null)
 
     return { rect, clonedElement, cardEl }
   }
@@ -64,7 +56,6 @@ export const useMessageHighlighting = (
     setOriginalMessageBounds(null)
   }
 
-  // Handle highlighting scale effect
   useEffect(() => {
     if (!isMessagePressed && highlightedMessageElement) {
       highlightedMessageElement.style.transform = 'scale(1)'
