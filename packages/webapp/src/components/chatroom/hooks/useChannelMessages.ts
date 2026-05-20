@@ -1,34 +1,16 @@
 import type { ChatItem, MessageRow } from '@components/chatroom/types/chat-items'
 import { isDay, isMessage } from '@components/chatroom/types/chat-items'
-import type { Json } from '@types'
+import {
+  type AnchorKind,
+  buildItemsFromWindow,
+  type MessageWindow,
+  parseWindow
+} from '@components/chatroom/utils/messageWindow'
 import { supabaseClient } from '@utils/supabase'
 import type { ItemLocation, VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export type AnchorKind = 'tail' | 'first_unread' | 'message_id'
-
-export type MessageWindow = {
-  rows: MessageRow[]
-  anchor_seq: number | null
-  has_more_before: boolean
-  has_more_after: boolean
-}
-
-/** `fetch_message_window` returns Json; cast to the documented row+meta shape. */
-export const parseWindow = (data: Json): MessageWindow => {
-  const obj = (data ?? {}) as {
-    rows?: MessageRow[]
-    anchor_seq?: number | null
-    has_more_before?: boolean
-    has_more_after?: boolean
-  }
-  return {
-    rows: obj.rows ?? [],
-    anchor_seq: obj.anchor_seq ?? null,
-    has_more_before: Boolean(obj.has_more_before),
-    has_more_after: Boolean(obj.has_more_after)
-  }
-}
+export type { AnchorKind, MessageWindow } from '@components/chatroom/utils/messageWindow'
 
 export type ChannelMessagesArgs = {
   channelId: string
@@ -279,6 +261,7 @@ export const useChannelMessages = ({
     loading,
     loadingOlder,
     hasMoreOlder,
+    setHasMoreOlder,
     loadOlder,
     loadingNewer,
     loadNewer,
@@ -286,43 +269,6 @@ export const useChannelMessages = ({
     newestSeqRef,
     dataIncludesTailRef
   }
-}
-
-/** Shared with useJumpTo / useScrollToMessage — kept as the single source
- *  of truth for "rows → ChatItem[] with day-separator interleaving + optional
- *  first-unread sentinel" so the three load paths cannot drift in shape. */
-export const buildItemsFromWindow = (
-  win: MessageWindow,
-  channelId: string,
-  anchorKind: AnchorKind
-): ChatItem[] => {
-  const items: ChatItem[] = []
-  let prevDate: string | null = null
-  const insertUnreadAt = anchorKind === 'first_unread' ? win.anchor_seq : null
-
-  for (const row of win.rows) {
-    const date = (row.created_at ?? '').slice(0, 10)
-    if (date && date !== prevDate) {
-      items.push({ kind: 'day', id: `day-${date}-${channelId}`, date })
-      prevDate = date
-    }
-    if (
-      insertUnreadAt != null &&
-      row.seq === insertUnreadAt &&
-      !items.some((i) => i.kind === 'unread')
-    ) {
-      items.push({ kind: 'unread', id: `unread-${channelId}` })
-    }
-    items.push({
-      kind: 'message',
-      id: row.id,
-      client_id: row.client_id ?? null,
-      seq: row.seq,
-      status: 'sent',
-      row
-    })
-  }
-  return items
 }
 
 const tailLocation: ItemLocation = {

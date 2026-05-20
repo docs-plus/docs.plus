@@ -1,25 +1,8 @@
 import { useVirtuosoMethods } from '@virtuoso.dev/message-list'
-import { format, parseISO } from 'date-fns'
 import { useEffect, useState } from 'react'
 
-/**
- * Telegram-style floating date pill. Visible only while the user is
- * actively scrolling; fades out after a short idle window. The first
- * message/day item whose bottom edge is still inside (or below) the
- * scroller's visible top determines the date. Inline `DateChip` rows
- * still render between day groups; this header coexists with them.
- *
- * Implementation notes:
- *  - `scrollerElement()` returns null on first commit (Virtuoso mounts
- *    its imperative handle after the initial render); rAF-poll until it
- *    attaches, mirroring `useChannelMessages.apply`.
- *  - Use `getBoundingClientRect()` not `offsetTop`. Virtuoso positions
- *    each item `absolute`, so `node.offsetTop` is 0 relative to the
- *    per-item wrapper, not the scroller — `offsetTop` comparisons would
- *    silently return the first item regardless of scroll.
- *  - `visible` toggles via opacity (not unmount) so the fade animates
- *    cleanly.
- */
+import { FeedSeparator } from './FeedSeparator'
+
 const HIDE_AFTER_MS = 1500
 
 export const StickyDayHeader = () => {
@@ -72,8 +55,6 @@ export const StickyDayHeader = () => {
       }
 
       scroller.addEventListener('scroll', onScroll, { passive: true })
-      // Seed date silently on mount so the first scroll already has a
-      // value to show — without flipping `visible`, so we stay idle-hidden.
       update()
 
       cleanup = () => {
@@ -92,11 +73,8 @@ export const StickyDayHeader = () => {
 
   if (!date) return null
   return (
-    <div
-      className={`pointer-events-none flex w-full justify-center pt-2 transition-opacity duration-200 ${
-        visible ? 'opacity-100' : 'opacity-0'
-      }`}>
-      <div className="badge bg-base-100 shadow-sm">{format(parseISO(date), 'MMMM do, yyyy')}</div>
+    <div className={`transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+      <FeedSeparator variant="day" date={date} floating className="bg-base-100/90 pt-2" />
     </div>
   )
 }

@@ -12,7 +12,7 @@ import React, {
   useState
 } from 'react'
 
-import { type AnchorKind, useChannelMessages } from './hooks/useChannelMessages'
+import { useChannelMessages } from './hooks/useChannelMessages'
 import { useChannelMetadata } from './hooks/useChannelMetadata'
 import { type BufferedArrival, useChannelRealtime } from './hooks/useChannelRealtime'
 import { useJumpTo } from './hooks/useJumpTo'
@@ -23,6 +23,7 @@ import { useSendMessage } from './hooks/useSendMessage'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
+import type { AnchorKind } from './utils/messageWindow'
 import { openComposerSignIn } from './utils/openComposerSignIn'
 
 const ChatroomContext = createContext<ChatroomContextValue | null>(null)
@@ -71,10 +72,12 @@ export const ChatroomProvider: React.FC<{
   const lastOptimisticSeqRef = useRef<number>(0)
   const onInitialVisible = useCallback((idx: number) => advanceRef.current(idx), [])
   const {
+    oldestSeqRef,
     newestSeqRef,
     dataIncludesTailRef,
     loadOlder,
     hasMoreOlder,
+    setHasMoreOlder,
     loadingOlder,
     loadNewer,
     loadingNewer
@@ -102,8 +105,17 @@ export const ChatroomProvider: React.FC<{
   })
 
   const { advance } = useReadCursor(channelId)
-  const scrollToMessage = useScrollToMessage(channelId, listRef, dataIncludesTailRef)
-  const jumpTo = useJumpTo(channelId, listRef, dataIncludesTailRef)
+  const windowSeqRefs = useMemo(
+    () => ({
+      oldestSeqRef,
+      newestSeqRef,
+      dataIncludesTailRef,
+      setHasMoreOlder
+    }),
+    [oldestSeqRef, newestSeqRef, dataIncludesTailRef, setHasMoreOlder]
+  )
+  const scrollToMessage = useScrollToMessage(channelId, listRef, windowSeqRefs)
+  const jumpTo = useJumpTo(channelId, listRef, windowSeqRefs)
   const { flash } = useMessageHighlight()
 
   useEffect(() => {

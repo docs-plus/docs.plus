@@ -10,7 +10,6 @@ export interface MessageComposerContextType {
   setEditMsgMemory: (channelId: string, value: ComposerMessageMemory | null) => void
   setReplyMsgMemory: (channelId: string, value: ComposerMessageMemory | null) => void
   setCommentMsgMemory: (channelId: string, value: CommentMessageMemory | null) => void
-  contextType: 'reply' | 'edit' | 'comment' | null
   showFormattingToolbar: boolean
   toggleToolbar: () => void
   submitMessage: (e?: { preventDefault?: () => void }) => Promise<void>

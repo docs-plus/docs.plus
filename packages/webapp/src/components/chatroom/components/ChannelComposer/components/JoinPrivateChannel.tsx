@@ -2,6 +2,7 @@ import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 
 import { useChatroomContext } from '../../../ChatroomContext'
+import { ChannelInfoSurface } from './ChannelInfoSurface'
 
 export default function JoinPrivateChannel() {
   const { channelId } = useChatroomContext()
@@ -10,11 +11,6 @@ export default function JoinPrivateChannel() {
   if (!user || !channelId) return null
 
   return (
-    <div className="border-base-300 bg-base-100 flex w-full items-center justify-center gap-2 border-t p-3">
-      <div className="bg-base-200 text-base-content/60 flex items-center gap-2 rounded-full px-4 py-2 text-sm">
-        <Icons.lock size={14} className="shrink-0" />
-        <span>Private channel - join by invitation only</span>
-      </div>
-    </div>
+    <ChannelInfoSurface icon={Icons.lock} message="Private channel — join by invitation only" />
   )
 }

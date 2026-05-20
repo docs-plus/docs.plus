@@ -1,6 +1,7 @@
 export * from './useChannelMessages'
 export * from './useChannelMetadata'
 export * from './useChannelRealtime'
+export * from './useJoinChannel'
 export * from './useJumpTo'
 export * from './useMentionClick'
 export * from './useMessageHighlight'

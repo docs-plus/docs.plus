@@ -1,7 +1,4 @@
-import {
-  dbChannelMessageCountsListener,
-  dbChannelsListener
-} from '@components/chatroom/hooks/listener/dbChannelsListener'
+import { dbChannelMessageCountsListener, dbChannelsListener } from '@components/chatroom/sync'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'

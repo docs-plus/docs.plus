@@ -19,7 +19,8 @@
 // Lucide icons are stroke-based; forcing `fill` on `.is-active` paints closed paths solid (wrong look).
 .tiptap__toolbar,
 .chatroom__toolbar,
-.tiptap-toolbar-mobile {
+.tiptap-toolbar-mobile,
+.composer-bar__actions {
   button {
     // `.select.select-ghost` from StyleSelect can outrank plain `button.is-active` in the cascade
     &.is-active,

@@ -80,11 +80,13 @@ export const MessageCardProvider: React.FC<{
           // color bg overlay (theme-agnostic) — together they're at the
           // Slack/Linear-equivalent contrast level rather than the previous
           // ~2% which users couldn't perceive as a state change.
-          'message-card group/msgcard chat msg_card relative rounded-md pl-3',
+          'message-card group/msgcard chat msg_card relative rounded-md px-3',
           'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:rounded-l-md before:bg-transparent before:transition-colors',
           'transition-colors duration-150',
+          variant !== 'mobile' && isGroupStart && 'py-1',
+          variant !== 'mobile' && !isGroupStart && 'py-0.5',
           variant !== 'mobile' && (message.is_bookmarked || message.bookmark_id)
-            ? 'bg-primary/5 hover:bg-primary/10 my-1'
+            ? 'bg-primary/5 hover:bg-primary/10 my-0.5'
             : variant !== 'mobile' &&
                 'hover:bg-base-content/[0.04] hover:before:bg-base-content/25',
           variant === 'mobile'
@@ -92,7 +94,7 @@ export const MessageCardProvider: React.FC<{
               ? 'chat-end owner ml-auto'
               : 'chat-start mr-auto'
             : 'w-full',
-          variant === 'mobile' && 'mt-1',
+          variant === 'mobile' && (isGroupStart ? 'mt-1' : 'mt-0.5'),
           className
         )}
         data-mode={mode}

@@ -1,16 +1,17 @@
-import { joinChannel } from '@api'
+import { useJoinChannel } from '@components/chatroom/hooks/useJoinChannel'
 import Button from '@components/ui/Button'
-import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
-import { useAuthStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useChatroomContext } from '../../../ChatroomContext'
+import { ChannelComposerSurface } from './ChannelComposerSurface'
 
 export default function JoinBroadcastChannel() {
   const { channelId } = useChatroomContext()
+  const { join, loading: joinLoading, user } = useJoinChannel(channelId)
 
   const [mute, setMute] = useState(false)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
@@ -18,70 +19,26 @@ export default function JoinBroadcastChannel() {
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
-  // @ts-ignore
   const { isUserChannelMember } = channelSettings || {}
-  const user = useAuthStore((state) => state.profile)
-  const { loading, request: request2JoinChannel } = useApi(joinChannel, null, false)
-
   const channelMemberInfo = useChatStore((state) => state.channelMembers.get(channelId))
-  const setOrUpdateChannel = useChatStore((state) => state.setOrUpdateChannel)
-  const channelChat = useChatStore((state) => state.channels)
-  const channel = useMemo(() => channelChat.get(channelId) ?? {}, [channelChat, channelId])
-  const setWorkspaceChannelSetting = useChatStore((state: any) => state.setWorkspaceChannelSetting)
 
   useEffect(() => {
     if (!channelMemberInfo || !user) return
     const currentChannelMember = channelMemberInfo.get(user.id)
-    setMute(currentChannelMember?.mute_in_app_notifications)
+    setMute(currentChannelMember?.mute_in_app_notifications ?? false)
   }, [channelMemberInfo, user])
 
-  const joinUserToChannel = useCallback(async () => {
-    if (!channel) return
-    try {
-      if (user) {
-        const { error, data } = await request2JoinChannel({
-          channel_id: channelId
-        })
-        if (error) console.error(error)
-        setOrUpdateChannel(channelId, {
-          ...data.channel,
-          //@ts-ignore
-          member_count: (channel?.member_count ?? 0) + 1
-        })
-      }
-
-      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', user ? true : false)
-    } catch (error) {
-      console.error(error)
-    }
-  }, [
-    user,
-    channelId,
-    channel,
-    request2JoinChannel,
-    setOrUpdateChannel,
-    setWorkspaceChannelSetting
-  ])
-
-  // we do not need to reload the page, the mute/unmute notification will be handled from the server
   const muteHandler = useCallback(
     async (muteOrUnmute: boolean) => {
       setMute(muteOrUnmute)
-
       try {
-        // TODO: move to api layer
         const { error } = await supabaseClient
           .from('channel_members')
-          .update({
-            mute_in_app_notifications: muteOrUnmute
-          })
+          .update({ mute_in_app_notifications: muteOrUnmute })
           .eq('channel_id', channelId)
           .eq('member_id', user?.id)
           .select()
-
-        if (error) {
-          console.error(error)
-        }
+        if (error) console.error(error)
       } catch (error) {
         console.error(error)
       }
@@ -92,7 +49,7 @@ export default function JoinBroadcastChannel() {
   if (!user || !channelId) return null
 
   return (
-    <div className="border-base-300 bg-base-100 flex w-full items-center justify-center border-t p-3">
+    <ChannelComposerSurface>
       {isUserChannelMember ? (
         <Button
           variant="ghost"
@@ -108,11 +65,11 @@ export default function JoinBroadcastChannel() {
           shape="wide"
           size="sm"
           startIcon={Icons.userPlus}
-          onClick={joinUserToChannel}
-          loading={loading}>
+          onClick={() => void join()}
+          loading={joinLoading}>
           Join Channel
         </Button>
       )}
-    </div>
+    </ChannelComposerSurface>
   )
 }

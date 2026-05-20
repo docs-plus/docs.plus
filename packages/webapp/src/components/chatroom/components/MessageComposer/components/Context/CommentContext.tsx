@@ -18,7 +18,7 @@ const CommentContext = ({ onDismiss }: { onDismiss?: () => void }) => {
 
   return (
     <MessageContextBar
-      icon={<Icons.comment size={24} />}
+      icon={<Icons.comment size={16} />}
       onDismiss={handleClose}
       dismissLabel="Dismiss comment">
       <span className="text-base-content/80 text-sm break-words wrap-anywhere whitespace-pre-wrap">

@@ -8,15 +8,15 @@ export const Input = ({ className }: { className?: string }) => {
 
   return (
     <div
-      className={twMerge('text-base-content flex-1 px-1 py-2 text-base sm:px-2', className)}
+      className={twMerge('text-base-content flex min-h-8 min-w-0 flex-1 items-center', className)}
       tabIndex={1}>
       <EditorContent
         id="chatroom-editor"
         tabIndex={2}
         ref={editorRef}
         className={twMerge(
-          'text-base-content max-h-52 w-full overflow-auto wrap-anywhere break-all whitespace-pre-line transition-all duration-200 ease-in-out',
-          isEmojiOnly ? 'text-xl sm:text-2xl' : 'text-base'
+          'text-base-content max-h-52 w-full overflow-y-auto break-words wrap-anywhere whitespace-pre-line',
+          isEmojiOnly ? 'text-xl leading-8 sm:text-2xl' : 'text-base leading-8'
         )}
         editor={editor}
         dir="auto"

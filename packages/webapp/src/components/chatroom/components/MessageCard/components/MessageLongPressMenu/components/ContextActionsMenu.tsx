@@ -1,8 +1,8 @@
+import { UserReadStatus } from '@components/chatroom/components/MessageCard/components/common/UserReadStatus'
 import { TMsgRow } from '@types'
 import { forwardRef } from 'react'
 
 import { LongPressMenuItems } from './ContextMenuItems'
-import { UserReadStatus } from './UserReadStatus'
 
 interface ContextActionsMenuProps {
   position: { x: number; y: number }
@@ -30,7 +30,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
         onClick={(e) => e.stopPropagation()}>
         <LongPressMenuItems message={message} isInteractive={isInteractive} />
         <div className="border-base-300 mt-1 border-t pt-1">
-          <UserReadStatus message={message} />
+          <UserReadStatus message={message} isOpen wrapper="li" />
         </div>
       </ul>
     )

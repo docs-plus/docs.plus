@@ -2,11 +2,11 @@ import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignI
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useChatStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../../ChatroomContext'
+import { ChannelComposerSurface } from './ChannelComposerSurface'
 
-export default function SignInToJoinChannel({ className }: { className?: string }) {
+export default function SignInToJoinChannel() {
   const { channelId } = useChatroomContext()
 
   const handleSignIn = () => {
@@ -15,11 +15,7 @@ export default function SignInToJoinChannel({ className }: { className?: string 
   }
 
   return (
-    <div
-      className={twMerge(
-        'border-base-300 bg-base-100 flex w-full items-center justify-center border-t p-3',
-        className
-      )}>
+    <ChannelComposerSurface>
       <Button
         variant="primary"
         shape="wide"
@@ -28,6 +24,6 @@ export default function SignInToJoinChannel({ className }: { className?: string 
         onClick={handleSignIn}>
         Sign in to join
       </Button>
-    </div>
+    </ChannelComposerSurface>
   )
 }

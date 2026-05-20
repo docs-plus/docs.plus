@@ -1,33 +1,38 @@
 import type { ChatItem } from '@components/chatroom/types/chat-items'
 import { isMessage } from '@components/chatroom/types/chat-items'
-import { supabaseClient } from '@utils/supabase'
+import { fetchMessageWindow } from '@components/chatroom/utils/fetchMessageWindow'
+import { applyWindowSeqRefs } from '@components/chatroom/utils/messageWindow'
 import type { ItemLocation, VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback } from 'react'
 
-import { buildItemsFromWindow, parseWindow } from './useChannelMessages'
-
 export type JumpTarget = { mode: 'present' } | { mode: 'message'; id: string }
+
+type WindowRefs = {
+  oldestSeqRef: React.MutableRefObject<number | null>
+  newestSeqRef: React.MutableRefObject<number | null>
+  dataIncludesTailRef: React.MutableRefObject<boolean>
+  setHasMoreOlder: (value: boolean) => void
+}
 
 export const useJumpTo = (
   channelId: string,
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>,
-  dataIncludesTailRef: React.MutableRefObject<boolean>
+  windowRefs: WindowRefs
 ) =>
   useCallback(
     async (target: JumpTarget) => {
       const anchorKind = target.mode === 'present' ? 'tail' : 'message_id'
       const anchorValue = target.mode === 'message' ? target.id : undefined
-      const { data, error } = await supabaseClient.rpc('fetch_message_window', {
-        p_channel_id: channelId,
-        p_anchor_kind: anchorKind,
-        p_anchor_value: anchorValue,
-        p_before_limit: 80,
-        p_after_limit: target.mode === 'present' ? 0 : 40
+      const result = await fetchMessageWindow({
+        channelId,
+        anchorKind,
+        anchorValue,
+        beforeLimit: 80,
+        afterLimit: target.mode === 'present' ? 0 : 40
       })
-      if (error || !data) return
-      const win = parseWindow(data)
-      const items = buildItemsFromWindow(win, channelId, 'tail')
-      dataIncludesTailRef.current = target.mode === 'present' ? true : !win.has_more_after
+      if (!result) return
+      const { win, items } = result
+      applyWindowSeqRefs(win, items, windowRefs)
       const initialLocation: ItemLocation = (() => {
         if (target.mode === 'present') return { index: 'LAST', align: 'end', behavior: 'instant' }
         const idx = items.findIndex((i) => isMessage(i) && i.id === target.id)
@@ -36,5 +41,5 @@ export const useJumpTo = (
       })()
       listRef.current?.data.replace(items, { initialLocation, purgeItemSizes: true })
     },
-    [channelId, listRef, dataIncludesTailRef]
+    [channelId, listRef, windowRefs]
   )

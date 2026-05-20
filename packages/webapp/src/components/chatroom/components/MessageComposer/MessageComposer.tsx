@@ -21,7 +21,7 @@ import CommentContext from './components/Context/CommentContext'
 import EditContext from './components/Context/EditContext'
 import ReplyContext from './components/Context/ReplyContext'
 import { Input } from './components/Input'
-import { DesktopLayout, Editor, MobileLayout } from './components/layouts'
+import { ComposerDesktopChrome, ComposerMobileChrome, Editor } from './components/layouts'
 import {
   BlockquoteButton,
   BoldButton,
@@ -38,7 +38,6 @@ import { MessageComposerContext } from './context/MessageComposerContext'
 import { useComposerDraft } from './hooks/useComposerDraft'
 import { useComposerSubmit } from './hooks/useComposerSubmit'
 import { useTiptapEditor } from './hooks/useTiptapEditor'
-import { MobileWrapper } from './Mobile'
 
 const MessageComposer = ({
   children,
@@ -80,13 +79,6 @@ const MessageComposer = ({
   ) as TChannelSettings | null
 
   const { replyMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
-
-  const contextType = useMemo((): 'reply' | 'edit' | 'comment' | null => {
-    if (replyMessageMemory) return 'reply'
-    if (editMessageMemory) return 'edit'
-    if (commentMessageMemory) return 'comment'
-    return null
-  }, [replyMessageMemory, editMessageMemory, commentMessageMemory])
 
   useComposerDraft({
     editor,
@@ -166,7 +158,6 @@ const MessageComposer = ({
       setEditMsgMemory,
       setReplyMsgMemory,
       setCommentMsgMemory,
-      contextType,
       showFormattingToolbar,
       toggleToolbar,
       submitMessage,
@@ -182,7 +173,6 @@ const MessageComposer = ({
       setEditMsgMemory,
       setReplyMsgMemory,
       setCommentMsgMemory,
-      contextType,
       showFormattingToolbar,
       toggleToolbar,
       submitMessage,
@@ -221,7 +211,6 @@ MessageComposer.MentionButton = MentionButton
 MessageComposer.SendButton = SendButton
 MessageComposer.ToggleToolbarButton = ToggleToolbarButton
 MessageComposer.Input = Input
-MessageComposer.MobileWrapper = MobileWrapper
-MessageComposer.MobileLayout = MobileLayout
-MessageComposer.DesktopLayout = DesktopLayout
+MessageComposer.ComposerDesktopChrome = ComposerDesktopChrome
+MessageComposer.ComposerMobileChrome = ComposerMobileChrome
 MessageComposer.Editor = Editor

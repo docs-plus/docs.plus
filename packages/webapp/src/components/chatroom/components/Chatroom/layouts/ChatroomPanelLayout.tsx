@@ -15,7 +15,7 @@ type Props = {
  * - Shadow: subtle elevation
  * - Resize handle: horizontal orientation
  */
-export const DesktopLayout = ({ children }: Props) => {
+export const ChatroomPanelLayout = ({ children }: Props) => {
   const { handleMouseDown, containerRef, height, isResizing } = useResizeContainer()
 
   return (

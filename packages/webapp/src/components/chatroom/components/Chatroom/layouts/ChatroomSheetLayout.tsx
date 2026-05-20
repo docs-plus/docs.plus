@@ -41,7 +41,7 @@ const ChatRoomHeader = () => {
   )
 }
 
-export const MobileLayout = ({ children }: Props) => {
+export const ChatroomSheetLayout = ({ children }: Props) => {
   return (
     <>
       <ChatRoomHeader />

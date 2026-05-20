@@ -1,5 +1,6 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import React from 'react'
+import { backlogCount } from '@components/chatroom/utils/backlogCount'
+import { useChatStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 
 import { ChatList } from '../ChatList/ChatList'
@@ -8,18 +9,13 @@ import { JumpToPresentButton } from '../JumpToPresentButton'
 import { PinnedMessagesBar } from '../PinnedMessagesBar'
 import { MessageFeedError } from './components/FeedStates/MessageFeedError'
 import { MessageFeedLoading } from './components/FeedStates/MessageFeedLoading'
+import { NewMessagesBanner } from './NewMessagesBanner'
 
 interface Props {
   className?: string
-  children?: React.ReactNode
   showScrollToBottom?: boolean
 }
 
-/**
- * v2 feed shim: preserves the `Chatroom.MessageFeed` static-property API
- * for desktop and mobile call-sites, but renders the new Virtuoso-backed
- * `<ChatList>` plus overlays. Pinned strip now uses the v2 PinnedMessagesBar.
- */
 const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
   const {
     channelId,
@@ -42,6 +38,16 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
     currentUserId
   } = useChatroomContext()
 
+  const backlog = backlogCount(unreadCount, newCount)
+  const showNewMessagesBanner = !!currentUserId && !atBottom && backlog > 0
+  const lastReadSince = useChatStore((state) => {
+    if (!currentUserId) return null
+    const member = state.channelMembers.get(channelId)?.get(currentUserId)
+    return (
+      (member as { last_read_update_at?: string | null } | undefined)?.last_read_update_at ?? null
+    )
+  })
+
   return (
     <MessageFeedError>
       <MessageFeedLoading>
@@ -51,6 +57,13 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
             'message-feed scrollbar-custom scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-hidden',
             className
           )}>
+          {showNewMessagesBanner && (
+            <NewMessagesBanner
+              count={backlog}
+              sinceIso={lastReadSince}
+              onMarkAsRead={snapToPresent}
+            />
+          )}
           <ChatListContextMenu>
             <ChatList
               ref={listRef as any}
@@ -74,6 +87,7 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
               newCount={newCount}
               unreadCount={unreadCount}
               hasMention={hasMention}
+              subdued={showNewMessagesBanner}
             />
           )}
         </div>
@@ -84,7 +98,4 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
 
 export default MessageFeed
 
-// Preserve the static-property name for external call-sites (DesktopEditor,
-// ChatContainerMobile) but retarget to the v2 PinnedMessagesBar shim. The
-// legacy PinnedMessages folder is now unreferenced and pruned.
 MessageFeed.PinnedMessages = PinnedMessagesBar

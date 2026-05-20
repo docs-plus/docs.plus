@@ -60,10 +60,9 @@ const MentionLabel = ({ message, className }: { message: MessageRow; className?:
   )
 }
 
-/** Centered pill for desktop panel width. */
 const DesktopChip = ({ children, dateAttr, onClick }: ChipShellProps) => (
   <div
-    className="msg_card chat my-3 flex justify-center px-2 pb-1"
+    className="msg_card chat my-2 flex justify-center px-4 pb-1"
     data-msg-date={dateAttr}
     onClick={onClick}>
     <div className="bg-info/10 inline-flex max-w-[90%] flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 rounded-full px-3 py-1.5 text-center text-xs leading-relaxed">
@@ -77,7 +76,6 @@ type MobileChipProps = ChipShellProps & {
   showAvatar?: boolean
 }
 
-/** Mobile system row — 70% width, centered. */
 const MobileChip = ({
   message,
   children,
@@ -114,7 +112,6 @@ const MobileTimedRow = ({
   </div>
 )
 
-/** Centered chip (desktop) or 70% centered banner (mobile) for notification rows. */
 export const SystemNotifyChip = ({ message, variant = 'desktop' }: Props) => {
   const docMetadata = useStore((state) => state.settings.metadata)
   const handleMentionClick = useMentionClick()

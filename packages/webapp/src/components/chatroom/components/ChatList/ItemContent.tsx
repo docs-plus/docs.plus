@@ -4,11 +4,10 @@ import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import type { TGroupedMsgRow } from '@types'
 import { useMemo } from 'react'
 
-import { DateChip } from './DateChip'
 import { DesktopMessageBody } from './DesktopMessageBody'
+import { FeedSeparator } from './FeedSeparator'
 import { MobileMessageBody } from './MobileMessageBody'
 import { SystemNotifyChip } from './SystemNotifyChip'
-import { UnreadIndicatorLine } from './UnreadIndicatorLine'
 
 export type ItemContentContext = {
   channelId: string
@@ -86,8 +85,8 @@ export const ItemContent = ({ index, data, prevData, context }: ItemContentProps
     clientId
   ])
   if (!data) return null
-  if (isDay(data)) return <DateChip date={data.date} />
-  if (isUnread(data)) return <UnreadIndicatorLine index={index} />
+  if (isDay(data)) return <FeedSeparator variant="day" date={data.date} />
+  if (isUnread(data)) return <FeedSeparator variant="unread" />
   if (isMessage(data) && (data.row as any).type === 'notification') {
     return <SystemNotifyChip message={data.row} variant={variant} />
   }

@@ -2,6 +2,7 @@ import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 
 import { useChatroomContext } from '../../../ChatroomContext'
+import { ChannelInfoSurface } from './ChannelInfoSurface'
 
 export default function JoinDirectChannel() {
   const { channelId } = useChatroomContext()
@@ -9,12 +10,5 @@ export default function JoinDirectChannel() {
 
   if (!user || !channelId) return null
 
-  return (
-    <div className="border-base-300 bg-base-100 flex w-full items-center justify-center gap-2 border-t p-3">
-      <div className="bg-base-200 text-base-content/60 flex items-center gap-2 rounded-full px-4 py-2 text-sm">
-        <Icons.thread size={14} className="shrink-0" />
-        <span>Direct message - private conversation</span>
-      </div>
-    </div>
-  )
+  return <ChannelInfoSurface icon={Icons.thread} message="Direct message — private conversation" />
 }

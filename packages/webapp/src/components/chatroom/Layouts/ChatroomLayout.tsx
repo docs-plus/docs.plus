@@ -1,4 +1,4 @@
-import { DesktopLayout, MobileLayout } from '../components/Chatroom/layouts'
+import { ChatroomPanelLayout, ChatroomSheetLayout } from '../components/Chatroom/layouts'
 
 type Props = {
   children: React.ReactNode
@@ -6,7 +6,7 @@ type Props = {
 }
 
 export const ChatroomLayout = ({ children, variant }: Props) => {
-  if (variant === 'desktop') return <DesktopLayout>{children}</DesktopLayout>
+  if (variant === 'desktop') return <ChatroomPanelLayout>{children}</ChatroomPanelLayout>
 
-  return <MobileLayout>{children}</MobileLayout>
+  return <ChatroomSheetLayout>{children}</ChatroomSheetLayout>
 }

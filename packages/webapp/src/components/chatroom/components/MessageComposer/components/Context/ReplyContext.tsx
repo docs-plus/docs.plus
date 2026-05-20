@@ -26,14 +26,14 @@ const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
 
   return (
     <MessageContextBar
-      icon={<Icons.reply size={24} />}
+      icon={<Icons.reply size={16} />}
       onDismiss={handleClose}
       dismissLabel="Dismiss reply">
       <span className="text-primary font-semibold antialiased">
         Reply to
         <span className="ml-1 font-normal">{replyToUser}</span>
       </span>
-      <span className="text-base-content/80 text-sm break-words wrap-anywhere whitespace-pre-wrap">
+      <span className="text-base-content/80 break-words wrap-anywhere whitespace-pre-wrap">
         {replyMessageMemory.content}
       </span>
     </MessageContextBar>

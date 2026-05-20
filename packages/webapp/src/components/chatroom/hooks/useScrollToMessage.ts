@@ -1,15 +1,21 @@
 import type { ChatItem } from '@components/chatroom/types/chat-items'
 import { isMessage } from '@components/chatroom/types/chat-items'
-import { supabaseClient } from '@utils/supabase'
+import { fetchMessageWindow } from '@components/chatroom/utils/fetchMessageWindow'
+import { applyWindowSeqRefs } from '@components/chatroom/utils/messageWindow'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback } from 'react'
 
-import { buildItemsFromWindow, parseWindow } from './useChannelMessages'
+type WindowRefs = {
+  oldestSeqRef: React.MutableRefObject<number | null>
+  newestSeqRef: React.MutableRefObject<number | null>
+  dataIncludesTailRef: React.MutableRefObject<boolean>
+  setHasMoreOlder: (value: boolean) => void
+}
 
 export const useScrollToMessage = (
   channelId: string,
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>,
-  dataIncludesTailRef: React.MutableRefObject<boolean>
+  windowRefs: WindowRefs
 ) =>
   useCallback(
     async (messageId: string) => {
@@ -18,17 +24,16 @@ export const useScrollToMessage = (
         listRef.current?.scrollToItem({ index: existingIdx, align: 'center', behavior: 'smooth' })
         return
       }
-      const { data, error } = await supabaseClient.rpc('fetch_message_window', {
-        p_channel_id: channelId,
-        p_anchor_kind: 'message_id',
-        p_anchor_value: messageId,
-        p_before_limit: 40,
-        p_after_limit: 40
+      const result = await fetchMessageWindow({
+        channelId,
+        anchorKind: 'message_id',
+        anchorValue: messageId,
+        beforeLimit: 40,
+        afterLimit: 40
       })
-      if (error || !data) return
-      const win = parseWindow(data)
-      const items = buildItemsFromWindow(win, channelId, 'tail')
-      dataIncludesTailRef.current = !win.has_more_after
+      if (!result) return
+      const { win, items } = result
+      applyWindowSeqRefs(win, items, windowRefs)
       const targetIdx = items.findIndex((i) => isMessage(i) && i.id === messageId)
       listRef.current?.data.replace(items, {
         initialLocation:
@@ -38,5 +43,5 @@ export const useScrollToMessage = (
         purgeItemSizes: true
       })
     },
-    [channelId, listRef, dataIncludesTailRef]
+    [channelId, listRef, windowRefs]
   )

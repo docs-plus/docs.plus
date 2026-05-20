@@ -2,7 +2,6 @@ import { useChatStore } from '@stores'
 
 import { ChatroomProvider } from './ChatroomContext'
 import ChannelComposer from './components/ChannelComposer/ChannelComposer'
-import { DesktopLayout, MobileLayout } from './components/Chatroom/layouts'
 import ChatroomToolbar from './components/ChatroomToolbar/ChatroomToolbar'
 import MessageFeed from './components/MessageFeed/MessageFeed'
 import { ChatroomLayout } from './Layouts/ChatroomLayout'
@@ -46,9 +45,5 @@ export default ChatRoom
 
 ChatRoom.Toolbar = ChatroomToolbar
 ChatRoom.ChannelComposer = ChannelComposer
-
-ChatRoom.DesktopLayout = DesktopLayout
-ChatRoom.MobileLayout = MobileLayout
 ChatRoom.Layout = ChatroomLayout
-
 ChatRoom.MessageFeed = MessageFeed

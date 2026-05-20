@@ -26,7 +26,7 @@ const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
 
   return (
     <MessageContextBar
-      icon={<Icons.edit size={24} />}
+      icon={<Icons.edit size={16} />}
       onDismiss={handleClose}
       dismissLabel="Cancel edit">
       <span className="text-primary font-semibold antialiased">

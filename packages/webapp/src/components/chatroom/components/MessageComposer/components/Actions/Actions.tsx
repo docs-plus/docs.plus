@@ -7,7 +7,10 @@ interface Props {
 
 export const Actions = ({ children, className = '' }: Props) => {
   return (
-    <div className={twMerge('actions flex items-center gap-1 px-1 pb-1 sm:px-2', className)}>
+    <div
+      role="group"
+      aria-label="Message actions"
+      className={twMerge('flex shrink-0 items-center gap-0.5', className)}>
       {children}
     </div>
   )

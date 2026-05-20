@@ -1,3 +1,5 @@
-export * from './DesktopLayout'
+export * from './ComposerBar'
+export * from './ComposerDesktopChrome'
+export * from './ComposerMobileChrome'
 export * from './Editor'
-export * from './MobileLayout'
+export * from './FormattingToolbar'

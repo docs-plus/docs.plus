@@ -1,14 +1,14 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
-import { ContextMenu } from '@components/ui/ContextMenu'
+import { ContextMenu, useContextMenuContext } from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { TMsgRow } from '@types'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { UserReadStatus } from '../MessageCard/components/common/UserReadStatus'
 import ContextMenuItems from '../MessageCard/components/MessageContextMenu/ContextMenuItems'
-import UserReadStatus from '../MessageCard/components/MessageContextMenu/UserReadStatus'
 import type { MessageCardDesktopElement } from '../MessageCard/MessageCardContext'
 
 type Props = {
@@ -29,6 +29,12 @@ const removeContextMenuActiveClass = () => {
  * then looked up through `listRef.current.data.findIndex` so we stay on
  * the Virtuoso-owned data store without a parallel id->row map.
  */
+const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
+  const { isOpen } = useContextMenuContext()
+  if (!message) return null
+  return <UserReadStatus message={message} isOpen={isOpen} wrapper="MenuItem" />
+}
+
 export const ChatListContextMenu = ({ children, className }: Props) => {
   const { channelId, variant, listRef } = useChatroomContext()
   const profile = useAuthStore((state) => state.profile)
@@ -95,7 +101,7 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
         onClose={handleContextMenuClose}>
         <ContextMenuItems message={contextMenuState?.message ?? null} />
         <div className="border-base-300 mt-1 border-t pt-1">
-          <UserReadStatus message={contextMenuState?.message ?? null} />
+          <ContextMenuReadStatus message={contextMenuState?.message ?? null} />
         </div>
       </ContextMenu>
       {children}

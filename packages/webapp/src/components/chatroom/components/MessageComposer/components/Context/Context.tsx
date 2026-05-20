@@ -1,43 +1,16 @@
 import { twMerge } from 'tailwind-merge'
 
-import { useMessageComposer } from '../../hooks'
 import { useHandleEscKey } from '../../hooks/useHandleEscKey'
-import CommentContext from './CommentContext'
-import EditContext from './EditContext'
-import ReplyContext from './ReplyContext'
 
-interface TContextProps {
-  type?: 'reply' | 'edit' | 'comment'
-  onDismiss?: () => void
+type Props = {
   children?: React.ReactNode
   className?: string
 }
 
-export const Context = ({ type, className = '', children }: TContextProps) => {
-  const { contextType } = useMessageComposer()
-  // close context when esc key is pressed
+export const Context = ({ className = '', children }: Props) => {
   useHandleEscKey()
 
-  const renderContextContent = (type: 'reply' | 'edit' | 'comment' | null) => {
-    switch (type) {
-      case 'reply':
-        return <ReplyContext />
-      case 'edit':
-        return <EditContext />
-      case 'comment':
-        return <CommentContext />
-    }
-  }
-
-  return (
-    <div className={twMerge('message-context', className)}>
-      {type ? renderContextContent(type || contextType) : children}
-    </div>
-  )
+  return <div className={twMerge('message-context', className)}>{children}</div>
 }
 
 Context.displayName = 'Context'
-
-Context.ReplyContext = ReplyContext
-Context.EditContext = EditContext
-Context.CommentContext = CommentContext

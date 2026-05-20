@@ -1,9 +1,5 @@
-/**
- * Channel Access Components
- *
- * These components handle different channel join scenarios and user authentication
- */
-
+export { ChannelComposerSurface } from './ChannelComposerSurface'
+export { ChannelInfoSurface } from './ChannelInfoSurface'
 export { default as JoinBroadcastChannel } from './JoinBroadcastChannel'
 export { default as JoinDirectChannel } from './JoinDirectChannel'
 export { default as JoinGroupChannel } from './JoinGroupChannel'
