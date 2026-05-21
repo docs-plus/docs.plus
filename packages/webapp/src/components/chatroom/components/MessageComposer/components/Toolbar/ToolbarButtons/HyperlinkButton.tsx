@@ -1,3 +1,4 @@
+import { snapshotComposerLinkSelection } from '@components/chatroom/components/MessageComposer/stores/composerLinkSelectionRef'
 import { Icons } from '@icons'
 import { twMerge } from 'tailwind-merge'
 
@@ -14,7 +15,11 @@ export const HyperlinkButton = ({ className, size = 18, ...props }: Props) => {
 
   return (
     <Button
-      onPress={() => editor?.chain().focus().openCreateHyperlinkPopover().run()}
+      onPointerDown={(e) => {
+        e.preventDefault()
+        if (editor) snapshotComposerLinkSelection(editor)
+      }}
+      onPress={() => editor?.commands.openCreateHyperlinkPopover()}
       editor={editor}
       type="hyperlink"
       tooltip="Hyperlink (⌘+K)"

@@ -1,4 +1,5 @@
 import BottomSheet from '@components/BottomSheet'
+import { ComposerLinkDialogHost } from '@components/chatroom/components/MessageComposer/components/ComposerLinkDialog'
 import EditFAB from '@components/pages/document/components/EditFAB'
 import TocModal from '@components/pages/document/components/TocModal'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
@@ -52,6 +53,7 @@ const MobileLayout = () => {
         after many keyboard cycles, leave dead space above the real visual viewport bottom.
       */}
       <BottomSheet />
+      <ComposerLinkDialogHost />
     </>
   )
 }

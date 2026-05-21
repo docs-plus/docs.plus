@@ -3,7 +3,6 @@ import { syncComposerDraft } from '@db/messageComposerDB'
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
-import { useStore } from '@stores'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Mention } from '@tiptap/extension-mention'
 import { Placeholder } from '@tiptap/extensions'
@@ -26,6 +25,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { isMentionSuggestionPopupVisible } from '../helpers/mentionTypes'
 import suggestion from '../helpers/suggestion'
+import { isComposerLinkDialogOpen } from '../stores/composerLinkDialogStore'
+import { snapshotComposerLinkSelection } from '../stores/composerLinkSelectionRef'
 const lowlight = createLowlight()
 lowlight.register('html', html)
 lowlight.register('css', css)
@@ -85,12 +86,15 @@ export const useTiptapEditor = ({
   onSubmit,
   workspaceId,
   channelId,
-  submitOnEnter = true
+  submitOnEnter = true,
+  isComposerMobile = false
 }: {
   onSubmit: () => void
   workspaceId?: string
   channelId: string
   submitOnEnter?: boolean
+  /** Chatroom surface — not `settings.editor.isMobile`, which is set in an effect after first paint. */
+  isComposerMobile?: boolean
 }) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
@@ -98,9 +102,10 @@ export const useTiptapEditor = ({
   const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftHydratedRef = useRef(false)
 
-  const isMobile = useStore((state) => state.settings.editor.isMobile)
   const submitOnEnterRef = useRef(submitOnEnter)
   submitOnEnterRef.current = submitOnEnter
+  const isComposerMobileRef = useRef(isComposerMobile)
+  isComposerMobileRef.current = isComposerMobile
   const editorInstanceRef = useRef<Editor | null>(null)
 
   const draftCtxRef = useRef({ workspaceId, channelId })
@@ -150,7 +155,7 @@ export const useTiptapEditor = ({
           linkOnPaste: true,
           openOnClick: true,
           autolink: true,
-          popovers: getHyperlinkPopoverConfig(isMobile)
+          popovers: getHyperlinkPopoverConfig(isComposerMobile, 'composer')
         })
       ],
       onUpdate: ({ editor }) => {
@@ -189,6 +194,11 @@ export const useTiptapEditor = ({
             return false
           }
 
+          if (isComposerMobileRef.current && isComposerLinkDialogOpen()) {
+            event.preventDefault()
+            return false
+          }
+
           if (event.shiftKey || !submitOnEnterRef.current) {
             event.preventDefault()
             return insertComposerNewline(view, editorInstanceRef.current)
@@ -219,6 +229,17 @@ export const useTiptapEditor = ({
       document.removeEventListener('editor:focus', handleFocus)
     }
   }, [editor])
+
+  useEffect(() => {
+    if (!editor || !isComposerMobile) return
+    const onSelectionUpdate = ({ editor: ed }: { editor: Editor }) => {
+      snapshotComposerLinkSelection(ed)
+    }
+    editor.on('selectionUpdate', onSelectionUpdate)
+    return () => {
+      editor.off('selectionUpdate', onSelectionUpdate)
+    }
+  }, [editor, isComposerMobile])
 
   const cancelPendingEditorDraftCapture = () => {
     if (updateTimerRef.current) {

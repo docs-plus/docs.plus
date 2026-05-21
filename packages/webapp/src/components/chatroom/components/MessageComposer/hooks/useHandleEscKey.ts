@@ -2,6 +2,10 @@ import { useCallback, useEffect } from 'react'
 
 import { useChatroomContext } from '../../../ChatroomContext'
 import { isMentionSuggestionPopupVisible } from '../helpers/mentionTypes'
+import {
+  isComposerLinkDialogOpen,
+  useComposerLinkDialogStore
+} from '../stores/composerLinkDialogStore'
 import { useMessageComposer } from './useMessageComposer'
 
 export const useHandleEscKey = () => {
@@ -19,6 +23,12 @@ export const useHandleEscKey = () => {
   const handleEsc = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (isComposerLinkDialogOpen()) {
+          event.preventDefault()
+          event.stopPropagation()
+          useComposerLinkDialogStore.getState().cancel()
+          return
+        }
         if (isMentionSuggestionPopupVisible()) return
 
         if (replyMessageMemory) setReplyMsgMemory(channelId, null)

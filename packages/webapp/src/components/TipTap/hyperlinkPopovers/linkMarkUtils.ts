@@ -1,6 +1,8 @@
 import type { Editor } from '@tiptap/core'
 import { getMarkRange } from '@tiptap/core'
 
+import type { DocSelectionRange } from './types'
+
 /**
  * Defense-in-depth: only allow http(s) image sources. `<img src="javascript:…">`
  * is inert in modern browsers, but `data:` URIs can carry SVG with embedded
@@ -90,4 +92,32 @@ export const writeLinkMetadataAttrs = (
     .setMeta('addToHistory', false)
 
   editor.view.dispatch(tr)
+}
+
+/** Visible anchor text from doc mark range; falls back to live DOM link text. */
+export const getHyperlinkDisplayText = (
+  editor: Editor,
+  nodePos: number,
+  link?: Pick<HTMLAnchorElement, 'innerText' | 'textContent'>
+): string => {
+  const mark = editor.schema.marks.hyperlink
+  if (mark) {
+    const range = getMarkRange(editor.state.doc.resolve(nodePos), mark)
+    if (range) return editor.state.doc.textBetween(range.from, range.to, '')
+  }
+  return link?.innerText ?? link?.textContent ?? ''
+}
+
+export const isValidDocRange = (docSize: number, from: number, to: number) =>
+  from >= 0 && to <= docSize && from < to
+
+export function resolveDocSelection(
+  editor: Editor,
+  snap: DocSelectionRange | null | undefined
+): DocSelectionRange | undefined {
+  const { from, to, empty } = editor.state.selection
+  const docSize = editor.state.doc.content.size
+  if (!empty && isValidDocRange(docSize, from, to)) return { from, to }
+  if (snap && isValidDocRange(docSize, snap.from, snap.to)) return snap
+  return undefined
 }

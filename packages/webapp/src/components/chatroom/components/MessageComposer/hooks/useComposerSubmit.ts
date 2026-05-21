@@ -12,6 +12,7 @@ import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
 import { useCallback } from 'react'
 
 import { useComposerEmojiPanelStore } from '../stores/composerEmojiPanelStore'
+import { isComposerLinkDialogOpen } from '../stores/composerLinkDialogStore'
 
 export type ComposerSubmitArgs = {
   channelId: string
@@ -64,8 +65,10 @@ export const useComposerSubmit = ({
     // Panel-open ⇒ editor was intentionally blurred to show the picker;
     // refocusing would reopen the iOS keyboard and yank the panel away.
     const panelOpen = useComposerEmojiPanelStore.getState().isOpen
+    const linkDialogOpen = isComposerLinkDialogOpen()
     const shouldRefocus =
       !panelOpen &&
+      !linkDialogOpen &&
       (keepKeyboardAfterSubmit ||
         (editor != null && editor.view.dom.contains(document.activeElement)))
 

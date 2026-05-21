@@ -73,7 +73,8 @@ const MessageComposer = ({
     onSubmit: () => submitRef.current?.(),
     workspaceId,
     channelId,
-    submitOnEnter: !isMobile
+    submitOnEnter: !isMobile,
+    isComposerMobile: isMobile
   })
 
   // Leaf-selector: subscribe to just this channel's settings row so unrelated

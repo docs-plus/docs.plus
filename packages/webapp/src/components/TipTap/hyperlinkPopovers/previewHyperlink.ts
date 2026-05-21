@@ -34,9 +34,10 @@ import {
  * focus landed on a descendant (e.g. the tapped `<a>`); blurring the
  * editor host alone wouldn't release a focused child.
  */
-const KEYBOARD_DISMISS_DELAY_MS = 50
+/** Shared iOS keyboard dismiss / refocus cadence (clipboard, preview sheet, composer link dialog). */
+export const KEYBOARD_DISMISS_DELAY_MS = 50
 
-const dismissSoftKeyboard = (editor: Editor): void => {
+export const dismissSoftKeyboard = (editor: Editor): void => {
   const { to } = editor.state.selection
   editor.chain().setTextSelection(to).run()
 

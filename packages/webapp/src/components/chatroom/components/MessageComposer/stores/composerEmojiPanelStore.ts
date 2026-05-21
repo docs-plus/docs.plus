@@ -1,6 +1,8 @@
 import { useStore } from '@stores'
 import { create } from 'zustand'
 
+import { useComposerLinkDialogStore } from './composerLinkDialogStore'
+
 export type ComposerEmojiPanelMode = 'peek' | 'expanded'
 
 const PEEK_FALLBACK_PX = 300
@@ -25,6 +27,9 @@ export const useComposerEmojiPanelStore = create<ComposerEmojiPanelState>((set, 
   mode: 'peek',
   peekHeightPx: PEEK_FALLBACK_PX,
   open: () => {
+    // Symmetric closure with the composer link dialog (its open() mirrors this).
+    // close() is idempotent on `idle`, so safe before the isOpen early-return below.
+    useComposerLinkDialogStore.getState().close()
     // Idempotent — guard against double-push of history entries from any
     // accidental second call (e.g., a future deep-link / programmatic opener).
     if (get().isOpen) return

@@ -2,6 +2,10 @@ import type { Editor } from '@tiptap/core'
 
 // ── Domain ────────────────────────────────────────────────────
 
+export type HyperlinkSurface = 'pad' | 'composer'
+
+export type DocSelectionRange = { from: number; to: number }
+
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
 
 export interface HeadingSuggestion {
