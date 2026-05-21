@@ -5,6 +5,7 @@ import {
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
 import type { TChannelSettings } from '@types'
+import { nudgeVirtualKeyboardOpenFromVisualViewport } from '@utils/virtualKeyboardMetrics'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -159,7 +160,11 @@ const MessageComposer = ({
       return next
     })
     editor?.commands.focus()
-  }, [workspaceId, channelId, editor])
+    if (isMobile) {
+      nudgeVirtualKeyboardOpenFromVisualViewport()
+      requestAnimationFrame(() => nudgeVirtualKeyboardOpenFromVisualViewport())
+    }
+  }, [workspaceId, channelId, editor, isMobile])
 
   useEffect(() => {
     if (!editor) return

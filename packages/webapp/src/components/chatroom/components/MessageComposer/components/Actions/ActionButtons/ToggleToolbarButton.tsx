@@ -8,8 +8,8 @@ interface Props extends React.ComponentProps<typeof Button> {
   size?: number
 }
 
-export const ToggleToolbarButton = ({ className, size = 18, ...props }: Props) => {
-  const { showFormattingToolbar, toggleToolbar } = useMessageComposer()
+export const ToggleToolbarButton = ({ className, size = 18, onPointerDown, ...props }: Props) => {
+  const { showFormattingToolbar, toggleToolbar, isMobile } = useMessageComposer()
 
   return (
     <Button
@@ -18,6 +18,10 @@ export const ToggleToolbarButton = ({ className, size = 18, ...props }: Props) =
         className
       )}
       onPress={toggleToolbar}
+      onPointerDown={(e) => {
+        if (isMobile) e.preventDefault()
+        onPointerDown?.(e)
+      }}
       tooltip={showFormattingToolbar ? 'Hide formatting' : 'Show formatting'}
       tooltipPosition="top"
       isActive={showFormattingToolbar}

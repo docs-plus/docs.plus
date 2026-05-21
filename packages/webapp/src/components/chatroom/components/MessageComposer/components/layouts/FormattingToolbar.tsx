@@ -1,6 +1,5 @@
 import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import ToolbarDivider from '@components/TipTap/toolbar/ToolbarDivider'
-import { useStore } from '@stores'
 import { type ComponentType, Fragment } from 'react'
 
 import { useMessageComposer } from '../../hooks/useMessageComposer'
@@ -56,14 +55,12 @@ function FormatButtonGroups() {
 
 export function FormattingToolbar({ variant }: Props) {
   const { showFormattingToolbar } = useMessageComposer()
-  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
 
   if (!showFormattingToolbar) return null
-  if (variant === 'mobile' && !isKeyboardOpen) return null
 
-  if (variant === 'mobile') {
-    return (
-      <MsgComposer.Toolbar className="composer-bar__format-toolbar border-base-300/80 bg-base-200 flex min-h-9 w-full items-center gap-0.5 border-b px-2 py-1 sm:min-h-10 sm:px-3">
+  return (
+    <MsgComposer.Toolbar className="composer-bar__format-toolbar border-base-300/80 bg-base-200 flex min-h-9 w-full items-center gap-0.5 border-b px-2 py-1 sm:min-h-10 sm:px-3">
+      {variant === 'mobile' ? (
         <div className="hide-scrollbar flex flex-1 snap-x snap-mandatory items-center gap-1 overflow-x-auto">
           {FORMAT_GROUPS.flat().map((Button, index) => (
             <Button
@@ -73,13 +70,9 @@ export function FormattingToolbar({ variant }: Props) {
             />
           ))}
         </div>
-      </MsgComposer.Toolbar>
-    )
-  }
-
-  return (
-    <MsgComposer.Toolbar className="composer-bar__format-toolbar border-base-300/80 bg-base-200 flex min-h-9 w-full items-center gap-0.5 border-b px-2 py-1 sm:min-h-10 sm:px-3">
-      <FormatButtonGroups />
+      ) : (
+        <FormatButtonGroups />
+      )}
     </MsgComposer.Toolbar>
   )
 }
