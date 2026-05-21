@@ -29,3 +29,18 @@ export function getHyperlinkPopoverConfig(
     editHyperlink: mobile ? editHyperlinkMobile : editHyperlinkDesktop
   }
 }
+
+/** Stable factory refs for `useEditor(..., [])`; reads mobile/surface on each open. */
+export function getHyperlinkPopoverConfigAtInvoke(
+  getIsMobile: () => boolean,
+  getSurface: () => HyperlinkSurface = () => 'pad'
+): NonNullable<HyperlinkOptions['popovers']> {
+  return {
+    previewHyperlink: (opts) =>
+      getHyperlinkPopoverConfig(getIsMobile(), getSurface()).previewHyperlink!(opts),
+    createHyperlink: (opts) =>
+      getHyperlinkPopoverConfig(getIsMobile(), getSurface()).createHyperlink!(opts),
+    editHyperlink: (opts) =>
+      getHyperlinkPopoverConfig(getIsMobile(), getSurface()).editHyperlink!(opts)
+  }
+}

@@ -1,3 +1,5 @@
+// TipTap adapter → chatroom store, same boundary as pad `mobilePopoverEntries` →
+// `useSheetStore`. Extension stays host-agnostic; composer owns the modal UI.
 import { useComposerLinkDialogStore } from '@components/chatroom/components/MessageComposer/stores/composerLinkDialogStore'
 import { resolveComposerCreateSelection } from '@components/chatroom/components/MessageComposer/stores/composerLinkSelectionRef'
 import {

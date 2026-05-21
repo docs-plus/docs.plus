@@ -1,4 +1,4 @@
-import { getHyperlinkPopoverConfig } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { getHyperlinkPopoverConfigAtInvoke } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { syncComposerDraft } from '@db/messageComposerDB'
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
@@ -155,7 +155,10 @@ export const useTiptapEditor = ({
           linkOnPaste: true,
           openOnClick: true,
           autolink: true,
-          popovers: getHyperlinkPopoverConfig(isComposerMobile, 'composer')
+          popovers: getHyperlinkPopoverConfigAtInvoke(
+            () => isComposerMobileRef.current,
+            () => 'composer'
+          )
         })
       ],
       onUpdate: ({ editor }) => {
@@ -214,6 +217,7 @@ export const useTiptapEditor = ({
         }
       }
     },
+    // Stable editor per mount; popover factories read isComposerMobileRef at invoke time.
     []
   )
 

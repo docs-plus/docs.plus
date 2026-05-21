@@ -8,7 +8,7 @@ import { ComposerLinkEditorDialog } from './ComposerLinkEditorDialog'
 import { ComposerLinkPreviewDialog } from './ComposerLinkPreviewDialog'
 
 export function ComposerLinkDialogHost() {
-  const { phase, preview, create, edit, removeLink, close, openEditFromPreview, save, cancel } =
+  const { phase, preview, create, edit, removeLink, openEditFromPreview, save, cancel } =
     useComposerLinkDialogStore(
       useShallow((s) => ({
         phase: s.phase,
@@ -16,7 +16,6 @@ export function ComposerLinkDialogHost() {
         create: s.create,
         edit: s.edit,
         removeLink: s.removeLink,
-        close: s.close,
         openEditFromPreview: s.openEditFromPreview,
         save: s.save,
         cancel: s.cancel
@@ -53,7 +52,7 @@ export function ComposerLinkDialogHost() {
           key="preview"
           href={preview.href}
           onRemove={removeLink}
-          onClose={close}
+          onClose={cancel}
           onEdit={openEditFromPreview}
         />
       )}
