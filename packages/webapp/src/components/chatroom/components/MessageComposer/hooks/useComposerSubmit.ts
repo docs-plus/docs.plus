@@ -11,6 +11,8 @@ import { chunkHtmlContent } from '@utils/chunkHtmlContent'
 import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
 import { useCallback } from 'react'
 
+import { useComposerEmojiPanelStore } from '../stores/composerEmojiPanelStore'
+
 export type ComposerSubmitArgs = {
   channelId: string
   workspaceId?: string
@@ -59,9 +61,13 @@ export const useComposerSubmit = ({
     cancelPendingEditorDraftCapture()
     if (workspaceId && channelId) void discardComposerDraft(workspaceId, channelId)
 
+    // Panel-open ⇒ editor was intentionally blurred to show the picker;
+    // refocusing would reopen the iOS keyboard and yank the panel away.
+    const panelOpen = useComposerEmojiPanelStore.getState().isOpen
     const shouldRefocus =
-      keepKeyboardAfterSubmit ||
-      (editor != null && editor.view.dom.contains(document.activeElement))
+      !panelOpen &&
+      (keepKeyboardAfterSubmit ||
+        (editor != null && editor.view.dom.contains(document.activeElement)))
 
     if (shouldRefocus) editor?.chain().clearContent(true).focus('start').run()
     else editor?.chain().clearContent(true).run()

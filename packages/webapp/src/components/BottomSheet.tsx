@@ -1,6 +1,6 @@
+import { useComposerEmojiPanelStore } from '@components/chatroom/components/MessageComposer/stores/composerEmojiPanelStore'
 import FilterModal from '@components/pages/document/components/FilterModal'
 import {
-  CHATROOM_OVERLAY_SHEETS,
   type SheetData,
   type SheetDataMap,
   type SheetType,
@@ -11,7 +11,6 @@ import {
 import { type RefObject, useEffect, useMemo, useRef } from 'react'
 import { Sheet, SheetProps, type SheetRef } from 'react-modal-sheet'
 
-import { EmojiPanel } from './chatroom/components/EmojiPanel'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
 import LinkEditorSheet from './TipTap/hyperlinkPopovers/LinkEditorSheet'
@@ -31,11 +30,6 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   chatroom: () => <ChatContainerMobile />,
   notifications: () => <NotificationModal />,
   filters: () => <FilterModal />,
-  emojiPicker: () => (
-    <EmojiPanel variant="mobile">
-      <EmojiPanel.Selector />
-    </EmojiPanel>
-  ),
   linkPreview: (data) => <LinkPreviewSheet data={data} />,
   linkEditor: (data) => <LinkEditorSheet data={data} />
 }
@@ -65,10 +59,6 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
     id: 'filter_sheet',
     detent: 'content',
     snapPoints: [0, 0.5, 1]
-  },
-  emojiPicker: {
-    id: 'emoji_picker_sheet',
-    detent: 'content'
   },
   linkPreview: {
     id: 'link_preview_sheet',
@@ -121,13 +111,14 @@ function snapSheetToTop(sheetRef: RefObject<SheetRef | null>, snapIndex: number)
 // ---------------------------------------------------------------------------
 
 const BottomSheet = () => {
-  const { activeSheet, closeSheet, sheetData, switchSheet } = useSheetStore()
+  const { activeSheet, closeSheet, sheetData } = useSheetStore()
   const closeChatRoom = useChatStore((state) => state.closeChatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const chatRoomOpen = useChatStore((state) => state.chatRoom.open)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const setSheetState = useSheetStore((state) => state.setSheetState)
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
+  const isComposerEmojiPanelOpen = useComposerEmojiPanelStore((s) => s.isOpen)
   const sheetRef = useRef<SheetRef>(null)
   const sheetContainerRef = useRef<HTMLDivElement | null>(null)
 
@@ -137,9 +128,9 @@ const BottomSheet = () => {
   }
 
   const isChatroom = activeSheet === 'chatroom'
-  const chatroomKeyboardExpand = isChatroom && isKeyboardOpen
+  const chatroomKeyboardExpand = isChatroom && (isKeyboardOpen || isComposerEmojiPanelOpen)
 
-  // Chatroom: composer focus or keyboard up → full-height snap.
+  // Chatroom: composer focus, keyboard, or emoji panel up → full-height snap.
   useEffect(() => {
     if (!isChatroom) return
 
@@ -153,30 +144,22 @@ const BottomSheet = () => {
     }
 
     document.addEventListener('focusin', onFocusIn, true)
-    if (isKeyboardOpen) snapFull()
+    if (isKeyboardOpen || isComposerEmojiPanelOpen) snapFull()
 
     return () => document.removeEventListener('focusin', onFocusIn, true)
-  }, [isChatroom, isKeyboardOpen])
+  }, [isChatroom, isKeyboardOpen, isComposerEmojiPanelOpen])
 
   // ---------------------------------------------------------------------------
   // Sync chat store ↔ sheet store
-  // When the chatroom sheet is dismissed (and no overlay / pending sheet exists),
+  // When the chatroom sheet is dismissed (and no pending sheet exists),
   // tear down the chat store so resources are released.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!chatRoomOpen || activeSheet === 'chatroom') return
 
-    // Don't destroy if an overlay sheet (e.g. emojiPicker) is active
-    if (activeSheet && CHATROOM_OVERLAY_SHEETS.has(activeSheet)) return
-
-    // Don't destroy while a transition is pending back to chatroom or an overlay
+    // Don't destroy while a transition back to chatroom is pending.
     const { pendingSheet } = useSheetStore.getState()
-    if (
-      pendingSheet &&
-      (pendingSheet.sheet === 'chatroom' || CHATROOM_OVERLAY_SHEETS.has(pendingSheet.sheet))
-    ) {
-      return
-    }
+    if (pendingSheet?.sheet === 'chatroom') return
 
     closeChatRoom()
     destroyChatRoom()
@@ -214,19 +197,6 @@ const BottomSheet = () => {
         closeChatRoom()
         destroyChatRoom()
         closeSheet()
-        break
-      }
-
-      case 'emojiPicker': {
-        // If the emoji picker was opened from the chatroom composer,
-        // switch back to the chatroom without tearing it down.
-        const chatRoomState = (sheetData as { chatRoomState?: { headingId: string } }).chatRoomState
-
-        if (chatRoomState?.headingId) {
-          switchSheet('chatroom', { headingId: chatRoomState.headingId })
-        } else {
-          closeSheet()
-        }
         break
       }
 

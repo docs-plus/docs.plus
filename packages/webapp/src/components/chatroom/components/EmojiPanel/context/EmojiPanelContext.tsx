@@ -1,7 +1,10 @@
 import React, { createContext, useContext } from 'react'
 
+export type EmojiPanelVariant = 'mobile' | 'desktop'
+
 type EmojiPanelContextType = {
-  variant: 'mobile' | 'desktop'
+  variant: EmojiPanelVariant
+  onSelect: (native: string) => void
 }
 
 const EmojiPanelContext = createContext<EmojiPanelContextType | undefined>(undefined)
@@ -16,7 +19,8 @@ export const useEmojiPanelContext = () => {
 
 export const EmojiPanelProvider: React.FC<{
   children: React.ReactNode
-  variant: 'mobile' | 'desktop'
-}> = ({ children, variant }) => {
-  return <EmojiPanelContext.Provider value={{ variant }}>{children}</EmojiPanelContext.Provider>
-}
+  variant: EmojiPanelVariant
+  onSelect: (native: string) => void
+}> = ({ children, variant, onSelect }) => (
+  <EmojiPanelContext.Provider value={{ variant, onSelect }}>{children}</EmojiPanelContext.Provider>
+)

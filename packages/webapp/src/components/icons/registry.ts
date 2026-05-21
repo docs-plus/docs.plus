@@ -43,6 +43,7 @@ import {
   LuImage,
   LuInfo,
   LuItalic,
+  LuKeyboard,
   LuLink,
   LuLink2Off,
   LuList,
@@ -223,6 +224,7 @@ export const Icons = {
   // ── Misc ─────────────────────────────────────────────────
   emoji: LuSmile,
   emojiAdd: LuSmilePlus,
+  keyboard: LuKeyboard,
   mention: LuAtSign,
   send: LuSend,
   archive: LuArchive,

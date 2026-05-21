@@ -16,6 +16,7 @@ import {
   SendButton,
   ToggleToolbarButton
 } from './components/Actions'
+import { ComposerEmojiPanel } from './components/ComposerEmojiPanel'
 import { Context } from './components/Context'
 import CommentContext from './components/Context/CommentContext'
 import EditContext from './components/Context/EditContext'
@@ -38,6 +39,7 @@ import { MessageComposerContext } from './context/MessageComposerContext'
 import { useComposerDraft } from './hooks/useComposerDraft'
 import { useComposerSubmit } from './hooks/useComposerSubmit'
 import { useTiptapEditor } from './hooks/useTiptapEditor'
+import { useComposerEmojiPanelStore } from './stores/composerEmojiPanelStore'
 
 const MessageComposer = ({
   children,
@@ -126,6 +128,27 @@ const MessageComposer = ({
     if (!(host instanceof HTMLElement)) return
     host.setAttribute('inputmode', 'text')
     host.setAttribute('enterkeyhint', isMobile ? 'enter' : 'send')
+  }, [editor, isMobile])
+
+  useEffect(() => {
+    if (!isMobile || !editor) return
+    const dom = editor.view.dom
+    const onFocusIn = () => {
+      const { isOpen, close } = useComposerEmojiPanelStore.getState()
+      if (isOpen) close()
+    }
+    const onPopState = () => {
+      const { isOpen, close } = useComposerEmojiPanelStore.getState()
+      if (!isOpen) return
+      close()
+      editor.commands.focus()
+    }
+    dom.addEventListener('focusin', onFocusIn)
+    window.addEventListener('popstate', onPopState)
+    return () => {
+      dom.removeEventListener('focusin', onFocusIn)
+      window.removeEventListener('popstate', onPopState)
+    }
   }, [editor, isMobile])
 
   const toggleToolbar = useCallback(() => {
@@ -220,3 +243,4 @@ MessageComposer.Input = Input
 MessageComposer.ComposerDesktopLayout = ComposerDesktopLayout
 MessageComposer.ComposerMobileLayout = ComposerMobileLayout
 MessageComposer.ComposerLayout = ComposerLayout
+MessageComposer.ComposerEmojiPanel = ComposerEmojiPanel

@@ -11,7 +11,7 @@ import { useCallback, useMemo } from 'react'
  * UI components – it keeps coupling low and makes refactors easier.
  */
 export const useBottomSheet = () => {
-  const { openSheet, closeSheet, switchSheet, activeSheet, sheetState } = useSheetStore()
+  const { openSheet, closeSheet, activeSheet, sheetState } = useSheetStore()
 
   const openChatRoom = useCallback(
     (headingId: string) => openSheet('chatroom', { headingId }),
@@ -21,11 +21,6 @@ export const useBottomSheet = () => {
   const openNotifications = useCallback(() => openSheet('notifications'), [openSheet])
 
   const openFilters = useCallback(() => openSheet('filters'), [openSheet])
-
-  const openEmojiPicker = useCallback(
-    (chatRoomState?: { headingId: string }) => switchSheet('emojiPicker', { chatRoomState }),
-    [switchSheet]
-  )
 
   const close = useCallback(() => closeSheet(), [closeSheet])
 
@@ -38,8 +33,6 @@ export const useBottomSheet = () => {
     openNotifications,
     /** Open the filter / search sheet. */
     openFilters,
-    /** Switch to the emoji picker (from chatroom context). */
-    openEmojiPicker,
     /** Close whatever sheet is currently open. */
     close,
     /** Currently active sheet type (or null). */

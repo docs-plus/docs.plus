@@ -11,16 +11,10 @@ export type SheetType =
   | 'chatroom'
   | 'notifications'
   | 'filters'
-  | 'emojiPicker'
   | 'linkPreview'
   | 'linkEditor'
   | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
-
-/** Sheets that operate as overlays on the chatroom and should not trigger chatroom teardown. */
-export const CHATROOM_OVERLAY_SHEETS: ReadonlySet<Exclude<SheetType, null>> = new Set([
-  'emojiPicker'
-])
 
 /**
  * Animation breather between `closeSheet` and the queued `openSheet`
@@ -34,7 +28,6 @@ export interface SheetDataMap {
   chatroom: { headingId: string }
   notifications: Record<string, never>
   filters: Record<string, never>
-  emojiPicker: { chatRoomState?: { headingId: string } }
   /**
    * Mobile hyperlink preview sheet payload. `editor`, `nodePos`, and
    * `attrs` are passed through so the sheet can render metadata, write
