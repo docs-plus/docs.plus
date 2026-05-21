@@ -24,17 +24,24 @@ const makeChainSpy = () => {
 
 const baseOpts = (extra?: Partial<any>) => {
   const { chain, calls } = makeChainSpy()
+  const schema = {
+    text: jest.fn((t: string, marks: any[]) => ({ text: t, marks })),
+    marks: {
+      hyperlink: { create: jest.fn((attrs: unknown) => ({ type: 'hyperlink', attrs })) }
+    }
+  }
   const editor: any = {
+    isDestroyed: false,
     chain: () => chain,
     can: () => ({ setHyperlink: jest.fn(() => true) }),
+    schema,
     state: {
-      selection: { empty: true },
-      schema: {
-        text: jest.fn((t: string, marks: any[]) => ({ text: t, marks })),
-        marks: {
-          hyperlink: { create: jest.fn((attrs: unknown) => ({ type: 'hyperlink', attrs })) }
-        }
-      }
+      selection: { empty: false, from: 1, to: 5 },
+      doc: {
+        content: { size: 10 },
+        textBetween: jest.fn(() => 'hello')
+      },
+      schema
     }
   }
   return {
@@ -43,7 +50,7 @@ const baseOpts = (extra?: Partial<any>) => {
       attributes: { target: '_blank' },
       validate: undefined,
       ...extra,
-      editor: { ...editor, ...extra?.editor }
+      editor: { ...editor, ...extra?.editor, state: { ...editor.state, ...extra?.editor?.state } }
     } as any,
     calls
   }
@@ -62,7 +69,14 @@ describe('applyCreate', () => {
   })
 
   it('uses insertContent + preventAutolink when text is provided and selection is empty', () => {
-    const { opts, calls } = baseOpts()
+    const { opts, calls } = baseOpts({
+      editor: {
+        state: {
+          selection: { empty: true, from: 1, to: 1 },
+          doc: { content: { size: 10 }, textBetween: jest.fn(() => '') }
+        }
+      }
+    })
     applyCreate(opts, { href: 'https://x.test', text: 'Picked' })
     expect(calls.some((c) => c.method === 'insertContent')).toBe(true)
     expect(
@@ -74,7 +88,7 @@ describe('applyCreate', () => {
 
   it('uses replaceSelectionWith via command + preventAutolink when text is provided and selection is non-empty', () => {
     const { opts, calls } = baseOpts()
-    opts.editor.state.selection.empty = false
+    opts.editor.state.selection = { empty: false, from: 1, to: 5 }
     applyCreate(opts, { href: 'https://x.test', text: 'Picked' })
     expect(calls.some((c) => c.method === 'command')).toBe(true)
     expect(
@@ -99,7 +113,13 @@ describe('applyCreate', () => {
 
   it('returns false without writing when the extension gate rejects the href', () => {
     const { opts, calls } = baseOpts({
-      editor: { can: () => ({ setHyperlink: jest.fn(() => false) }) }
+      editor: {
+        can: () => ({ setHyperlink: jest.fn(() => false) }),
+        state: {
+          selection: { empty: true, from: 1, to: 1 },
+          doc: { content: { size: 10 }, textBetween: jest.fn(() => '') }
+        }
+      }
     })
     expect(applyCreate(opts, { href: 'https://blocked.test', text: 'Blocked' })).toBe(false)
     expect(calls).toHaveLength(0)

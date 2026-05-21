@@ -9,7 +9,6 @@ export function removeHyperlinkAtPos(deps: { editor: Editor; nodePos: number }):
   if (!markType) return false
   const range = getMarkRange(editor.state.doc.resolve(nodePos), markType)
   if (!range) return false
-  // No leading `.focus()`: preview already blurred the editor; refocus is
-  // owned by store `close({ refocus: true })` to avoid an iOS keyboard flicker.
+  // Refocus after remove is owned by store `close({ refocus })` when the keyboard was open at open.
   return editor.chain().setTextSelection(range).unsetHyperlink().run()
 }

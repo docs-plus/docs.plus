@@ -3,7 +3,10 @@ import { AnimatePresence } from 'motion/react'
 import { useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
-import { useComposerLinkDialogStore } from '../../stores/composerLinkDialogStore'
+import {
+  handleComposerLinkDialogPopState,
+  useComposerLinkDialogStore
+} from '../../stores/composerLinkDialogStore'
 import { ComposerLinkEditorDialog } from './ComposerLinkEditorDialog'
 import { ComposerLinkPreviewDialog } from './ComposerLinkPreviewDialog'
 
@@ -25,11 +28,7 @@ export function ComposerLinkDialogHost() {
   const isChatroomOpen = useSheetStore((s) => s.activeSheet === 'chatroom')
 
   useEffect(() => {
-    const onPopState = () => {
-      if (useComposerLinkDialogStore.getState().phase !== 'idle') {
-        useComposerLinkDialogStore.getState().cancel()
-      }
-    }
+    const onPopState = () => handleComposerLinkDialogPopState()
     window.addEventListener('popstate', onPopState)
     return () => {
       window.removeEventListener('popstate', onPopState)

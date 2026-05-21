@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import { getMarkRange } from '@tiptap/core'
 
-import type { ApplyHyperlinkArgs } from '../types'
+import type { ApplyHyperlinkArgs, ApplyHyperlinkCommandOpts } from '../types'
 
 interface ApplyEditDeps {
   editor: Editor
@@ -12,10 +12,15 @@ interface ApplyEditDeps {
 }
 
 /** Apply an edit result. Falls through to `editHyperlinkHref` when no text is provided so the rendered link text isn't touched needlessly. Smaller-than-`EditHyperlinkOptions` deps shape so this is reusable from `LinkPreviewSheet` (which only carries an editor). */
-export function applyEdit(deps: ApplyEditDeps, { href, text }: ApplyHyperlinkArgs): boolean {
+export function applyEdit(
+  deps: ApplyEditDeps,
+  { href, text }: ApplyHyperlinkArgs,
+  commandOpts?: ApplyHyperlinkCommandOpts
+): boolean {
   if (deps.editor.isDestroyed) return false
+  const focus = commandOpts?.focus !== false
   const markName = deps.markName ?? 'hyperlink'
-  const chain = deps.editor.chain().focus()
+  const chain = focus ? deps.editor.chain().focus() : deps.editor.chain()
   if (typeof deps.nodePos === 'number') {
     const markType = deps.editor.schema.marks[markName]
     if (!markType) return false

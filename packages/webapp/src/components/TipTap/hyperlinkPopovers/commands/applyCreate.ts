@@ -1,15 +1,23 @@
 import type { CreateHyperlinkOptions } from '@docs.plus/extension-hyperlink'
 
 import { isValidDocRange } from '../linkMarkUtils'
-import type { ApplyHyperlinkArgs, DocSelectionRange } from '../types'
+import type { ApplyHyperlinkArgs, ApplyHyperlinkCommandOpts, DocSelectionRange } from '../types'
 
 type ApplyCreateOpts = CreateHyperlinkOptions & {
   selection?: DocSelectionRange
 }
 
+const chainWithOptionalFocus = (editor: CreateHyperlinkOptions['editor'], focus: boolean) =>
+  focus ? editor.chain().focus() : editor.chain()
+
 /** Apply a create result. text + empty selection → insertContent; text + selection → replaceSelectionWith; no text → setMark. Every branch stamps `preventAutolink` on the same chain so autolink doesn't re-mark our href. Closing the popover/sheet is the caller's job. */
-export function applyCreate(opts: ApplyCreateOpts, { href, text }: ApplyHyperlinkArgs): boolean {
+export function applyCreate(
+  opts: ApplyCreateOpts,
+  { href, text }: ApplyHyperlinkArgs,
+  commandOpts?: ApplyHyperlinkCommandOpts
+): boolean {
   if (opts.editor.isDestroyed) return false
+  const focus = commandOpts?.focus !== false
   const { editor, extensionName, attributes } = opts
   const markAttrs = { ...attributes, href }
   const markType = editor.schema.marks[extensionName]
@@ -26,9 +34,7 @@ export function applyCreate(opts: ApplyCreateOpts, { href, text }: ApplyHyperlin
   if (!hasRange) {
     if (!text) return false
     if (!editor.can().setHyperlink(markAttrs)) return false
-    return editor
-      .chain()
-      .focus()
+    return chainWithOptionalFocus(editor, focus)
       .insertContent({
         type: 'text',
         text,
@@ -44,9 +50,7 @@ export function applyCreate(opts: ApplyCreateOpts, { href, text }: ApplyHyperlin
   const wantsReplace = Boolean(text && text.trim() !== selectedText)
 
   if (wantsReplace && text) {
-    return editor
-      .chain()
-      .focus()
+    return chainWithOptionalFocus(editor, focus)
       .setTextSelection({ from: rangeFrom, to: rangeTo })
       .command(({ tr, state }) => {
         tr.replaceSelectionWith(state.schema.text(text, [markType.create(markAttrs)]))
@@ -56,9 +60,7 @@ export function applyCreate(opts: ApplyCreateOpts, { href, text }: ApplyHyperlin
       .run()
   }
 
-  return editor
-    .chain()
-    .focus()
+  return chainWithOptionalFocus(editor, focus)
     .setTextSelection({ from: rangeFrom, to: rangeTo })
     .setHyperlink(markAttrs)
     .setMeta('preventAutolink', true)

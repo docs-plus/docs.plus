@@ -160,3 +160,8 @@ export interface ApplyHyperlinkArgs {
   href: string
   text?: string
 }
+
+/** Optional command behavior; pad paths default `focus: true`. */
+export interface ApplyHyperlinkCommandOpts {
+  focus?: boolean
+}

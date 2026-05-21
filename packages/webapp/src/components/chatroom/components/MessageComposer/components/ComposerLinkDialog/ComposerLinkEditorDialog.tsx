@@ -3,12 +3,13 @@ import type { HyperlinkResult } from '@components/TipTap/hyperlinkPopovers/types
 import { normalizeHref, validateURL } from '@docs.plus/extension-hyperlink'
 import { type FormEvent, useId, useLayoutEffect, useRef, useState } from 'react'
 
+import { useComposerLinkDialogStore } from '../../stores/composerLinkDialogStore'
 import { ComposerLinkModalShell } from './ComposerLinkModalShell'
 
 type Props = {
   initialHref: string
   initialText: string
-  /** True when this edit was reached via preview→edit (keyboard was dismissed). */
+  /** True when this edit was opened from preview (href focus may defer). */
   cameFromPreview?: boolean
   validate?: (url: string) => boolean
   onSave: (result: HyperlinkResult) => boolean
@@ -31,13 +32,12 @@ export function ComposerLinkEditorDialog({
 
   useLayoutEffect(() => {
     const focusHref = () => hrefRef.current?.focus()
-    if (!cameFromPreview) {
+    const deferFocus =
+      cameFromPreview && !useComposerLinkDialogStore.getState().keyboardWasOpenAtOpen
+    if (!deferFocus) {
       focusHref()
       return
     }
-    // Preview just dismissed the keyboard via dismissSoftKeyboard (50ms blur);
-    // match that cadence so iOS has released the prior focus before we ask
-    // for a new one. Otherwise the keyboard sometimes refuses to reopen.
     const id = window.setTimeout(focusHref, KEYBOARD_DISMISS_DELAY_MS)
     return () => window.clearTimeout(id)
   }, [cameFromPreview])

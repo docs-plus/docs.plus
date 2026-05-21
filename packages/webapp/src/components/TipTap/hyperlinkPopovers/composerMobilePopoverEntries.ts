@@ -10,7 +10,6 @@ import {
 } from '@docs.plus/extension-hyperlink'
 
 import { getHyperlinkDisplayText } from './linkMarkUtils'
-import { dismissSoftKeyboard } from './previewHyperlink'
 
 export function previewComposerHyperlink(options: PreviewHyperlinkOptions): HTMLElement | null {
   const { link, editor, nodePos, attrs } = options
@@ -21,7 +20,6 @@ export function previewComposerHyperlink(options: PreviewHyperlinkOptions): HTML
     nodePos,
     validate: options.validate
   })
-  dismissSoftKeyboard(editor)
   return null
 }
 

@@ -17,6 +17,15 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
 
   useLayoutEffect(() => {
     syncVisualViewportToCssVars()
+    const vv = window.visualViewport
+    if (!vv) return
+    const onViewportChange = () => syncVisualViewportToCssVars()
+    vv.addEventListener('resize', onViewportChange)
+    vv.addEventListener('scroll', onViewportChange)
+    return () => {
+      vv.removeEventListener('resize', onViewportChange)
+      vv.removeEventListener('scroll', onViewportChange)
+    }
   }, [])
 
   // Tab/Shift+Tab wrap inside the card. Initial focus is owned by each dialog
@@ -30,6 +39,13 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
           'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
         )
       ).filter((el) => !el.hasAttribute('aria-hidden'))
+
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target
+      if (!(target instanceof Node) || card.contains(target)) return
+      const items = focusables()
+      items[0]?.focus()
+    }
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
@@ -47,7 +63,11 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
       }
     }
     card.addEventListener('keydown', onKey)
-    return () => card.removeEventListener('keydown', onKey)
+    document.addEventListener('focusin', onFocusIn, true)
+    return () => {
+      card.removeEventListener('keydown', onKey)
+      document.removeEventListener('focusin', onFocusIn, true)
+    }
   }, [])
 
   if (typeof document === 'undefined') return null
@@ -70,7 +90,7 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
         exit={{ opacity: 0 }}
         transition={BACKDROP_TRANSITION}
       />
-      <div className="pointer-events-none relative flex min-h-full items-center justify-center p-4">
+      <div className="pointer-events-none grid h-full min-h-0 place-items-center p-4">
         <motion.div
           ref={cardRef}
           role="dialog"

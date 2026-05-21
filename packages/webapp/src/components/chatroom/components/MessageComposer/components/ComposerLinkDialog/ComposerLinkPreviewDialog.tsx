@@ -1,3 +1,4 @@
+import { copyToClipboard } from '@utils/clipboard'
 import { useId } from 'react'
 
 import { ComposerLinkModalShell } from './ComposerLinkModalShell'
@@ -11,6 +12,12 @@ type Props = {
 
 export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: Props) {
   const titleId = useId()
+
+  const handleCopy = async () => {
+    const ok = await copyToClipboard(href)
+    if (!ok) console.error('Failed to copy link to clipboard')
+  }
+
   return (
     <ComposerLinkModalShell titleId={titleId} onBackdropClick={onClose}>
       <div data-testid="composer-link-preview">
@@ -21,6 +28,13 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
           {href}
         </p>
         <div className="mt-3 flex flex-col gap-1">
+          <button
+            type="button"
+            className="btn btn-ghost justify-start"
+            onClick={() => void handleCopy()}
+            data-testid="composer-link-preview-copy">
+            Copy link
+          </button>
           <button
             type="button"
             className="btn btn-ghost text-error justify-start"
