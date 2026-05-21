@@ -8,6 +8,9 @@
     },
     "supabase": {
       "enabled": true
+    },
+    "claude-plugins-official/code-simplifier": {
+      "enabled": true
     }
   }
 }
