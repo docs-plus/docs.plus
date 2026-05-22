@@ -3,17 +3,17 @@ import { applyEdit } from '@components/TipTap/hyperlinkPopovers/commands/applyEd
 import { removeHyperlinkAtPos } from '@components/TipTap/hyperlinkPopovers/commands/removeHyperlinkAtPos'
 import { getHyperlinkDisplayText } from '@components/TipTap/hyperlinkPopovers/linkMarkUtils'
 import type { HyperlinkResult } from '@components/TipTap/hyperlinkPopovers/types'
-import { useStore } from '@stores'
+import { useChatStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
 
+import { dismissComposerEmojiAndMentionOverlays } from '../helpers/dismissComposerOverlays'
 import type {
   ComposerLinkCreatePayload,
   ComposerLinkEditPayload,
   ComposerLinkPhase,
   ComposerLinkPreviewPayload
 } from '../types'
-import { useComposerEmojiPanelStore } from './composerEmojiPanelStore'
 import { clearComposerLinkSelection } from './composerLinkSelectionRef'
 
 export type { ComposerLinkPhase } from '../types'
@@ -26,8 +26,7 @@ export const isComposerLinkDialogOpen = (): boolean =>
  *  with the emoji panel; `composerEmojiPanelStore.open()` mirrors this in the
  *  opposite direction. */
 const dismissOtherComposerOverlays = () => {
-  const emoji = useComposerEmojiPanelStore.getState()
-  if (emoji.isOpen) emoji.close()
+  dismissComposerEmojiAndMentionOverlays(useChatStore.getState().chatRoom.editorInstance)
 }
 
 type HistoryState = { composerLinkDialog: true }

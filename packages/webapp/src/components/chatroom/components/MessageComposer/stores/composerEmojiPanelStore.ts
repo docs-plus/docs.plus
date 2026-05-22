@@ -1,6 +1,8 @@
-import { useStore } from '@stores'
+import { useChatStore, useStore } from '@stores'
+import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
 
+import { dismissComposerMentionSuggestion } from '../helpers/mentionTypes'
 import { useComposerLinkDialogStore } from './composerLinkDialogStore'
 
 export type ComposerEmojiPanelMode = 'peek' | 'expanded'
@@ -16,7 +18,7 @@ interface ComposerEmojiPanelState {
    *  open so the panel renders at the right height even after `blur()`
    *  resets the live keyboard-height to 0. */
   peekHeightPx: number
-  open: () => void
+  open: (editor?: Editor | null) => void
   expand: () => void
   collapse: () => void
   close: () => void
@@ -26,10 +28,11 @@ export const useComposerEmojiPanelStore = create<ComposerEmojiPanelState>((set, 
   isOpen: false,
   mode: 'peek',
   peekHeightPx: PEEK_FALLBACK_PX,
-  open: () => {
+  open: (editor) => {
     // Symmetric closure with the composer link dialog (its open() mirrors this).
     // close() is idempotent on `idle`, so safe before the isOpen early-return below.
     useComposerLinkDialogStore.getState().close()
+    dismissComposerMentionSuggestion(editor ?? useChatStore.getState().chatRoom.editorInstance)
     // Idempotent — guard against double-push of history entries from any
     // accidental second call (e.g., a future deep-link / programmatic opener).
     if (get().isOpen) return

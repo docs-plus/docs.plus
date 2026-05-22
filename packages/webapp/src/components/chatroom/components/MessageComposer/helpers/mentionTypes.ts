@@ -1,3 +1,4 @@
+import type { Editor } from '@tiptap/core'
 import type { Database } from '@types'
 
 export type MentionPickerUser =
@@ -16,8 +17,57 @@ export const MENTION_LISTBOX_ID = 'mention-suggestion-listbox'
 
 export const MENTION_SUGGESTION_POPUP_SELECTOR = '.mention-suggestion-popup'
 
+let mentionPopupOpen = false
+let mentionPickerActive = false
+const mentionPopupListeners = new Set<() => void>()
+
+function notifyMentionPopupListeners(): void {
+  mentionPopupListeners.forEach((listener) => listener())
+}
+
+export function setMentionPopupOpen(open: boolean): void {
+  if (mentionPopupOpen === open) return
+  mentionPopupOpen = open
+  syncMentionPickerActive()
+}
+
+/** Sync toolbar active state when Floating UI hides the popup without tearing down. */
+export function syncMentionPickerActive(): void {
+  const active = isMentionSuggestionPopupVisible()
+  if (mentionPickerActive === active) return
+  mentionPickerActive = active
+  notifyMentionPopupListeners()
+}
+
+export function getMentionPickerActive(): boolean {
+  return mentionPickerActive
+}
+
+export function subscribeMentionPopup(listener: () => void): () => void {
+  mentionPopupListeners.add(listener)
+  return () => mentionPopupListeners.delete(listener)
+}
+
+export function getMentionPopupOpen(): boolean {
+  return mentionPopupOpen
+}
+
+/** Route mention teardown through `@tiptap/suggestion` onExit (Escape contract). */
+export function dismissComposerMentionSuggestion(editor: Editor | null | undefined): void {
+  if (!editor || !getMentionPopupOpen()) return
+  editor.view.dom.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      code: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+  )
+}
+
 /** True while the Floating UI mention picker is mounted and visible. */
 export function isMentionSuggestionPopupVisible(): boolean {
+  if (!getMentionPopupOpen()) return false
   const el = document.querySelector(MENTION_SUGGESTION_POPUP_SELECTOR)
   return (
     el instanceof HTMLElement &&

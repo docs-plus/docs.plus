@@ -5,8 +5,11 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
+import { isComposerInsertEmojiPickerOpen } from '../../../helpers/dismissComposerOverlays'
+import { dismissComposerMentionSuggestion } from '../../../helpers/mentionTypes'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import { useComposerEmojiPanelStore } from '../../../stores/composerEmojiPanelStore'
+import { useComposerLinkDialogStore } from '../../../stores/composerLinkDialogStore'
 import Button from '../../ui/Button'
 
 type Props = React.ComponentProps<typeof Button> & {
@@ -28,13 +31,18 @@ const getCaretPosition = (editor: Editor) => {
 
 export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
   const { editor, isMobile } = useMessageComposer()
-  const toggleEmojiPicker = useChatStore((s) => s.toggleEmojiPicker)
-  // Subscribed because the icon + aria-label flip on this. Other panel
-  // actions and the live keyboard flag are read fresh at click-time.
+  const openEmojiPicker = useChatStore((s) => s.openEmojiPicker)
+  const closeEmojiPicker = useChatStore((s) => s.closeEmojiPicker)
+  const isDesktopComposerPickerOpen = useChatStore((s) =>
+    isComposerInsertEmojiPickerOpen(s.emojiPicker)
+  )
   const isPanelOpen = useComposerEmojiPanelStore((s) => s.isOpen)
+  const isActive = isMobile ? isPanelOpen : isDesktopComposerPickerOpen
 
   const onPress = useCallback(() => {
     if (!editor) return
+
+    dismissComposerMentionSuggestion(editor)
 
     if (isMobile) {
       const panel = useComposerEmojiPanelStore.getState()
@@ -47,16 +55,21 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
       }
       // Order matters: open() snapshots the current keyboard height into
       // the store before blur() resets useStore.keyboardHeight to 0.
-      panel.open()
+      panel.open(editor)
       if (useStore.getState().isKeyboardOpen) editor.view.dom.blur()
       return
     }
 
-    // Desktop: portal-positioned picker near the caret.
+    const { emojiPicker } = useChatStore.getState()
+    const insertOpen = isComposerInsertEmojiPickerOpen(emojiPicker)
+    if (emojiPicker.isOpen) closeEmojiPicker()
+    if (insertOpen) return
+
+    useComposerLinkDialogStore.getState().close()
     const caret = getCaretPosition(editor)
     const position = calculateEmojiPickerPosition(caret as DOMRect)
-    toggleEmojiPicker({ top: position?.top || 0, left: position?.left || 0 }, 'insertEmojiToEditor')
-  }, [editor, isMobile, toggleEmojiPicker])
+    openEmojiPicker({ top: position?.top || 0, left: position?.left || 0 }, 'insertEmojiToEditor')
+  }, [closeEmojiPicker, editor, isMobile, openEmojiPicker])
 
   const Icon = isMobile && isPanelOpen ? Icons.keyboard : Icons.emoji
   const ariaLabel = isMobile && isPanelOpen ? 'Show keyboard' : 'Open emoji picker'
@@ -70,9 +83,18 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
       onPress={onPress}
       tooltip={ariaLabel}
       tooltipPosition="top"
+      isActive={isActive}
+      aria-pressed={isActive}
       aria-label={ariaLabel}
+      aria-expanded={isActive}
       {...props}>
-      <Icon size={size} className="pointer-events-none shrink-0 stroke-[1.75]" />
+      <Icon
+        size={size}
+        className={twMerge(
+          'pointer-events-none shrink-0 stroke-[1.75]',
+          isActive && 'text-primary'
+        )}
+      />
     </Button>
   )
 }

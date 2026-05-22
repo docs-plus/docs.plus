@@ -1,6 +1,10 @@
 import { useCallback, useEffect } from 'react'
 
 import { useChatroomContext } from '../../../ChatroomContext'
+import {
+  dismissComposerEmojiOverlays,
+  isComposerEmojiOverlayOpen
+} from '../helpers/dismissComposerOverlays'
 import { isMentionSuggestionPopupVisible } from '../helpers/mentionTypes'
 import {
   isComposerLinkDialogOpen,
@@ -29,6 +33,14 @@ export const useHandleEscKey = () => {
           useComposerLinkDialogStore.getState().cancel()
           return
         }
+
+        if (isComposerEmojiOverlayOpen()) {
+          event.preventDefault()
+          event.stopPropagation()
+          dismissComposerEmojiOverlays()
+          return
+        }
+
         if (isMentionSuggestionPopupVisible()) return
 
         if (replyMessageMemory) setReplyMsgMemory(channelId, null)

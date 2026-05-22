@@ -9,7 +9,9 @@ import {
 import type { Editor } from '@tiptap/core'
 import { ReactRenderer } from '@tiptap/react'
 
+import { dismissComposerOverlaysBeforeMention } from './dismissComposerOverlays'
 import MentionList, { type MentionListRef } from './MentionList'
+import { setMentionPopupOpen, syncMentionPickerActive } from './mentionTypes'
 
 type MentionSuggestionRenderProps = {
   editor: Editor
@@ -40,6 +42,7 @@ export default {
     let surface: HTMLElement | null = null
 
     const destroyPopup = () => {
+      setMentionPopupOpen(false)
       cleanup?.()
       cleanup = null
       popup?.remove()
@@ -51,6 +54,8 @@ export default {
 
     return {
       onStart: (props: MentionSuggestionRenderProps) => {
+        dismissComposerOverlaysBeforeMention()
+
         surface = getComposerSurface(props.editor)
         if (!surface) {
           console.warn(
@@ -69,6 +74,7 @@ export default {
         popup.style.position = 'absolute'
         popup.appendChild(component.element)
         document.body.appendChild(popup)
+        setMentionPopupOpen(true)
 
         const virtualElement = {
           getBoundingClientRect: () => rectFromSurface(surface!)
@@ -109,6 +115,7 @@ export default {
             top: `${y}px`,
             visibility: middlewareData.hide?.referenceHidden === true ? 'hidden' : 'visible'
           })
+          syncMentionPickerActive()
         })
       },
 
