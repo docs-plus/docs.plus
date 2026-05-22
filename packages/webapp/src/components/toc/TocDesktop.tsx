@@ -1,9 +1,10 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import { ContextMenu } from '@components/ui/ContextMenu'
+import { ContextMenu, contextMenuPanelClassName } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
 import React, { useCallback, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
@@ -83,8 +84,8 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
         <SortableContext items={flatItems.map((f) => f.id)} strategy={verticalListSortingStrategy}>
           <ul className={`toc__list menu w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
             <ContextMenu
-              className="menu bg-base-100 border-base-300 absolute z-40 m-0 rounded-xl border p-1.5 shadow-xl outline-none"
-              parrentRef={contextMenuRef}
+              className={twMerge(contextMenuPanelClassName, 'absolute z-40')}
+              parentRef={contextMenuRef}
               onBeforeShow={handleBeforeShow}
               onClose={handleContextMenuClose}>
               <TocContextMenu

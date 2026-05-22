@@ -1,44 +1,23 @@
-import { useMessageActionMenuItems } from '@components/chatroom/components/MessageCard/hooks/useMessageActionMenuItems'
+import { MessageActionMenuList } from '@components/chatroom/components/MessageCard/components/MessageActionMenuList'
 import { useContextMenuContext } from '@components/ui/ContextMenu'
 import { TMsgRow } from '@types'
-import React from 'react'
-
-import { MenuItem } from '../../../../../ui/ContextMenu'
 
 type Props = {
   message?: TMsgRow | null
 }
 
-const ContextMenuItemsLoaded = ({ message }: { message: TMsgRow }) => {
+const ContextMenuItems = ({ message }: Props) => {
   const { setIsOpen } = useContextMenuContext()
-  const items = useMessageActionMenuItems(message, { iconSize: 18, includeReaction: true })
+  if (!message) return null
 
   return (
-    <>
-      {items.map(
-        (item) =>
-          item.display && (
-            <MenuItem
-              key={item.title}
-              onClick={(e: React.MouseEvent) => {
-                item.onClickFn(e)
-                setIsOpen(false)
-              }}
-              className={item.className}>
-              <a href="#">
-                {item.icon}
-                {item.title}
-              </a>
-            </MenuItem>
-          )
-      )}
-    </>
+    <MessageActionMenuList
+      message={message}
+      surface="contextMenu"
+      onClose={() => setIsOpen(false)}
+      includeReaction
+    />
   )
-}
-
-const ContextMenuItems = ({ message }: Props) => {
-  if (!message) return null
-  return <ContextMenuItemsLoaded message={message} />
 }
 
 export default ContextMenuItems

@@ -1,6 +1,12 @@
-import { MenuItem, useContextMenuContext } from '@components/ui/ContextMenu'
+import {
+  ContextMenuDivider,
+  ContextMenuRow,
+  MenuItem,
+  useContextMenuContext
+} from '@components/ui/ContextMenu'
 import { Tooltip } from '@components/ui/Tooltip'
 import { Icons } from '@icons'
+import { twMerge } from 'tailwind-merge'
 
 import { useTocActions } from './hooks'
 
@@ -24,45 +30,24 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
       title: 'Chat Room',
       icon: <Icons.chatroom size={16} />,
       onClick: () => openChatroom(headingId, { scrollTo: true }),
-      className: 'text-primary'
+      variant: 'primary' as const
     },
     {
       title: isOpen ? 'Fold Section' : 'Unfold Section',
       icon: isOpen ? <Icons.foldVertical size={16} /> : <Icons.unfoldVertical size={16} />,
-      onClick: () => onToggle(headingId),
-      className: ''
+      onClick: () => onToggle(headingId)
     },
     {
       title: 'Focus Section',
       icon: <Icons.crosshair size={16} />,
-      onClick: () => focusSection(headingId),
-      className: ''
+      onClick: () => focusSection(headingId)
     },
     {
       title: 'Link Section',
       icon: <Icons.link size={16} />,
-      onClick: () => copyLink(headingId),
-      className: ''
+      onClick: () => copyLink(headingId)
     }
   ]
-
-  const dangerItem = {
-    title: (
-      <span className="flex items-center gap-1.5">
-        Delete Section
-        <Tooltip
-          title="Delete this heading and all nested sub-headings beneath it"
-          placement="right"
-          className="max-w-48 text-pretty">
-          <span className="flex items-center">
-            <Icons.info size={14} className="opacity-60" />
-          </span>
-        </Tooltip>
-      </span>
-    ),
-    icon: <Icons.trash size={16} />,
-    onClick: () => deleteSection(headingId)
-  }
 
   const insertItems = [
     {
@@ -91,56 +76,67 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
 
   return (
     <>
-      {/* Primary actions */}
-      {menuItems.map((item, index) => (
+      {menuItems.map((item) => (
         <MenuItem
-          key={index}
-          className={`${item.className} rounded-lg`}
+          key={item.title}
           onClick={() => {
             item.onClick()
             setIsOpen(false)
           }}>
-          <a className="hover:bg-base-200 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors">
-            <span className="flex-shrink-0 opacity-70">{item.icon}</span>
-            <span className="font-medium">{item.title}</span>
-          </a>
+          <ContextMenuRow icon={item.icon} variant={item.variant}>
+            {item.title}
+          </ContextMenuRow>
         </MenuItem>
       ))}
 
-      {/* Danger zone — separated */}
+      <ContextMenuDivider />
+
       <MenuItem
-        className="border-base-300 mt-1 rounded-lg border-t pt-1"
         onClick={() => {
-          dangerItem.onClick()
+          deleteSection(headingId)
           setIsOpen(false)
         }}>
-        <a className="hover:bg-error/10 text-error flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors">
-          <span className="flex-shrink-0">{dangerItem.icon}</span>
-          <span className="font-medium">{dangerItem.title}</span>
-        </a>
+        <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger" className="items-center">
+          <span className="flex items-center gap-1.5">
+            Delete Section
+            <Tooltip
+              title="Delete this heading and all nested sub-headings beneath it"
+              placement="right"
+              className="max-w-48 text-pretty">
+              <span className="flex items-center">
+                <Icons.info size={14} className="opacity-60" />
+              </span>
+            </Tooltip>
+          </span>
+        </ContextMenuRow>
       </MenuItem>
 
-      {/* Insert sub-menu */}
-      <li className="border-base-300 mt-1 border-t pt-1">
+      <ContextMenuDivider />
+
+      <li>
         <details>
-          <summary className="hover:bg-base-200 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors">
+          <summary className="hover:bg-base-300 cursor-pointer rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150">
             Insert
           </summary>
           <ul className="bg-base-100 mt-0.5 space-y-0.5 rounded-lg p-1">
-            {insertItems.map((item, index) => (
+            {insertItems.map((item) => (
               <MenuItem
-                key={index}
-                className={item.highlight ? 'bg-base-200 rounded-md' : 'rounded-md'}
+                key={item.title}
+                className={twMerge('rounded-md', item.highlight && 'bg-base-200')}
                 onClick={() => {
                   item.onClick()
                   setIsOpen(false)
                 }}>
-                <a className="hover:bg-base-200 flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors">
-                  <span className="bg-primary/80 text-primary-content inline-flex items-center justify-center rounded px-1.5 text-xs leading-5 font-bold">
-                    {item.badge}
-                  </span>
-                  <span>{item.title}</span>
-                </a>
+                <ContextMenuRow
+                  dimIcon={false}
+                  className="py-1.5"
+                  icon={
+                    <span className="bg-primary/80 text-primary-content inline-flex items-center justify-center rounded px-1.5 text-xs leading-5 font-bold">
+                      {item.badge}
+                    </span>
+                  }>
+                  {item.title}
+                </ContextMenuRow>
               </MenuItem>
             ))}
           </ul>

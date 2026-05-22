@@ -24,6 +24,59 @@ import {
   useRef,
   useState
 } from 'react'
+import { twMerge } from 'tailwind-merge'
+
+/** Shared shell for TOC + chatroom right-click menus — Tailwind flex column, not daisyUI `menu`. */
+export const contextMenuPanelClassName =
+  'flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-xl border p-1.5 shadow-xl outline-none'
+
+export type ContextMenuRowVariant = 'default' | 'primary' | 'danger'
+
+type ContextMenuRowProps = {
+  icon: React.ReactNode
+  children: React.ReactNode
+  variant?: ContextMenuRowVariant
+  className?: string
+  dimIcon?: boolean
+}
+
+const contextMenuRowVariantClass: Record<ContextMenuRowVariant, string> = {
+  default: 'group-hover:bg-base-300 group-active:bg-base-300/90',
+  primary: 'group-hover:bg-base-300 group-active:bg-base-300/90 text-primary',
+  danger: 'group-hover:bg-error/20 group-active:bg-error/25 text-error'
+}
+
+export function ContextMenuRow({
+  icon,
+  children,
+  variant = 'default',
+  className,
+  dimIcon = true
+}: ContextMenuRowProps) {
+  return (
+    <span
+      className={twMerge(
+        'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors duration-150',
+        contextMenuRowVariantClass[variant],
+        className
+      )}>
+      <span className={twMerge('flex-shrink-0', dimIcon && variant === 'default' && 'opacity-70')}>
+        {icon}
+      </span>
+      <span className="font-medium">{children}</span>
+    </span>
+  )
+}
+
+export function ContextMenuDivider({ className }: { className?: string }) {
+  return (
+    <li
+      role="separator"
+      aria-hidden
+      className={twMerge('bg-base-300 pointer-events-none my-[4px] h-px shrink-0 p-0', className)}
+    />
+  )
+}
 
 interface ContextMenuContextType {
   setIsOpen: (open: boolean) => void
@@ -45,18 +98,23 @@ type MenuItemProps = React.LiHTMLAttributes<HTMLLIElement> & {
   ref?: React.Ref<HTMLLIElement>
 }
 
-export function MenuItem({ children, ref, ...props }: MenuItemProps) {
+export function MenuItem({ children, ref, className, ...props }: MenuItemProps) {
   return (
-    <li ref={ref} {...props}>
+    <li ref={ref} className={twMerge('group cursor-pointer rounded-lg', className)} {...props}>
       {children}
     </li>
   )
 }
 
+type ContextMenuChildProps = {
+  label?: string
+  onClick?: (e: React.MouseEvent, mouseEvent: MouseEvent | null) => void
+}
+
 interface Props {
   label?: string
   nested?: boolean
-  parrentRef?: any
+  parentRef?: React.RefObject<HTMLElement | null>
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
   mousePosition?: { x: number; y: number } | null
@@ -68,7 +126,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
   (
     {
       children,
-      parrentRef,
+      parentRef,
       className,
       isOpen: externalIsOpen,
       onOpenChange,
@@ -87,12 +145,11 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     const setIsOpen = onOpenChange || setInternalIsOpen
 
     // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-    const listItemsRef = useRef<Array<HTMLUListElement | null>>([])
-    const listContentRef = useRef(
+    const listItemsRef = useRef<Array<HTMLLIElement | null>>([])
+    const listContentRef = useRef<Array<string | null>>(
       Children.map(children, (child) =>
-        // @ts-ignore
-        isValidElement(child) ? child.props.label : null
-      ) as Array<string | null>
+        isValidElement<ContextMenuChildProps>(child) ? (child.props.label ?? null) : null
+      ) ?? []
     )
     const allowMouseUpCloseRef = useRef(false)
 
@@ -211,14 +268,11 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
             onOpenChange(false)
           }
           // Call cleanup callback
-          if (onClose) {
-            console.log('close context menu!!!')
-            onClose()
-          }
+          onClose?.()
         }
       }
 
-      const parent = parrentRef?.current
+      const parent = parentRef?.current
       parent?.addEventListener('contextmenu', onContextMenu)
       document.addEventListener('mouseup', onMouseUp)
       return () => {
@@ -229,7 +283,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       // onClose is intentionally omitted to avoid re-binding the listener
       // every render when the parent doesn't memoize the callback.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [refs, parrentRef, externalIsOpen, setIsOpen, onBeforeShow, onOpenChange])
+    }, [refs, parentRef, externalIsOpen, setIsOpen, onBeforeShow, onOpenChange])
 
     // Handle mouse event from external control
     useEffect(() => {
@@ -254,9 +308,9 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
-    // If using external control and no parrentRef, we can still render
+    // If using external control and no parentRef, we can still render
     // This check is moved after all hooks to comply with Rules of Hooks
-    if (!parrentRef?.current && externalIsOpen === undefined) return null
+    if (!parentRef?.current && externalIsOpen === undefined) return null
 
     if (!isOpen) return null
 
@@ -271,12 +325,12 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
                 style={floatingStyles}
                 {...getFloatingProps()}>
                 {Children.map(children, (child, index) => {
-                  if (isValidElement(child)) {
+                  if (isValidElement<ContextMenuChildProps>(child)) {
                     return cloneElement(
                       child,
                       getItemProps({
                         tabIndex: activeIndex === index ? 0 : -1,
-                        ref(node: HTMLUListElement) {
+                        ref(node: HTMLLIElement | null) {
                           listItemsRef.current[index] = node
                         },
                         onClick(e) {
@@ -284,8 +338,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
                           e.stopPropagation()
                           e.preventDefault()
 
-                          // Execute the menu item action
-                          // @ts-ignore
                           child.props.onClick?.(e, mouseEvent)
 
                           // Close menu - handle both internal and external control
@@ -297,11 +349,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
                             setIsOpen(false)
                           }
 
-                          // Call cleanup callback
-                          if (onClose) {
-                            console.log('close context menu!!!')
-                            onClose()
-                          }
+                          onClose?.()
                         }
                       })
                     )

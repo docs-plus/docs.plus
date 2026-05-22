@@ -8,6 +8,7 @@ import { useEditMessageHandler } from '@components/chatroom/components/MessageCa
 import { usePinMessageHandler } from '@components/chatroom/components/MessageCard/hooks/usePinMessageHandler'
 import { useReplyInMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInMessageHandler'
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
+import type { ContextMenuRowVariant } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
 import { useAuthStore, useChatStore } from '@stores'
 import { TMsgRow } from '@types'
@@ -19,7 +20,9 @@ export type MessageActionMenuItem = {
   icon: React.ReactNode
   onClickFn: (e?: React.MouseEvent) => void
   display: boolean
-  className: string
+  variant?: ContextMenuRowVariant
+  separatorBefore?: boolean
+  className?: string
 }
 
 type Options = {
@@ -51,8 +54,7 @@ export const useMessageActionMenuItems = (
         title: 'Reply',
         icon: <Icons.reply size={iconSize} />,
         onClickFn: () => replyInMessageHandler(message),
-        display: true,
-        className: ''
+        display: true
       }
     ]
 
@@ -73,23 +75,23 @@ export const useMessageActionMenuItems = (
             message
           )
         },
-        display: true,
-        className: ''
+        display: true
       })
     }
 
+    list.push({
+      title: linkCopied ? 'Copied!' : 'Copy Link',
+      icon: linkCopied ? (
+        <Icons.check size={iconSize} className="text-success" />
+      ) : (
+        <Icons.link size={iconSize} />
+      ),
+      onClickFn: () => copyMessageLinkHandler(message),
+      display: true,
+      className: linkCopied ? 'text-success' : undefined
+    })
+
     list.push(
-      {
-        title: linkCopied ? 'Copied!' : 'Copy Link',
-        icon: linkCopied ? (
-          <Icons.check size={iconSize} className="text-success" />
-        ) : (
-          <Icons.link size={iconSize} />
-        ),
-        onClickFn: () => copyMessageLinkHandler(message),
-        display: true,
-        className: `border-b border-base-300 pb-1 mb-1 ${linkCopied ? 'text-success' : ''}`
-      },
       {
         title: 'Bookmark',
         icon:
@@ -100,35 +102,33 @@ export const useMessageActionMenuItems = (
           ),
         onClickFn: () => bookmarkMessageHandler(message),
         display: true,
-        className: ''
+        separatorBefore: true
       },
       {
         title: 'Copy to Doc',
         icon: <Icons.fileOpen size={iconSize} />,
         onClickFn: () => copyMessageToDocHandler(message),
-        display: true,
-        className: ''
+        display: true
       },
       {
         title: 'Reply in Thread',
         icon: <Icons.thread size={iconSize} />,
         onClickFn: () => replyInThreadHandler(message),
         display: true,
-        className: 'text-primary'
+        variant: 'primary'
       },
       {
         title: isPinned ? 'Unpin' : 'Pin',
         icon: isPinned ? <Icons.pinOff size={iconSize} /> : <Icons.pin size={iconSize} />,
         onClickFn: () => pinMessageHandler(message),
-        display: false,
-        className: ''
+        display: false
       },
       {
         title: 'Edit',
         icon: <Icons.edit size={iconSize} />,
         onClickFn: () => editMessageHandler(message),
         display: isOwner,
-        className: 'border-t pt-1 mt-1 border-base-300'
+        separatorBefore: true
       },
       {
         title: 'Delete',
@@ -137,7 +137,9 @@ export const useMessageActionMenuItems = (
           openDialog(<DeleteMessageConfirmationDialog message={message} />, { size: 'sm' })
         },
         display: isOwner,
-        className: 'text-error'
+        variant: 'danger',
+        // Divider before Delete when Edit is hidden (non-owner); Edit owns separatorBefore when owner
+        separatorBefore: !isOwner
       }
     )
 

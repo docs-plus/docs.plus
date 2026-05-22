@@ -1,13 +1,17 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
-import { ContextMenu, useContextMenuContext } from '@components/ui/ContextMenu'
+import {
+  ContextMenu,
+  contextMenuPanelClassName,
+  useContextMenuContext
+} from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { TMsgRow } from '@types'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { UserReadStatus } from '../MessageCard/components/common/UserReadStatus'
+import { MessageMenuReadStatus } from '../MessageCard/components/common/MessageMenuReadStatus'
 import ContextMenuItems from '../MessageCard/components/MessageContextMenu/ContextMenuItems'
 import type { MessageCardDesktopElement } from '../MessageCard/MessageCardContext'
 
@@ -32,7 +36,15 @@ const removeContextMenuActiveClass = () => {
 const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
   const { isOpen } = useContextMenuContext()
   if (!message) return null
-  return <UserReadStatus message={message} isOpen={isOpen} wrapper="MenuItem" />
+
+  return (
+    <MessageMenuReadStatus
+      message={message}
+      isOpen={isOpen}
+      wrapper="MenuItem"
+      className="px-2.5 py-2"
+    />
+  )
 }
 
 export const ChatListContextMenu = ({ children, className }: Props) => {
@@ -93,16 +105,12 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
   return (
     <div className={twMerge('flex min-h-0 w-full flex-1 flex-col', className)} ref={contextMenuRef}>
       <ContextMenu
-        className={twMerge(
-          'menu bg-base-100 absolute z-20 m-0 w-48 rounded-lg p-2 shadow outline-none'
-        )}
-        parrentRef={contextMenuRef}
+        className={twMerge(contextMenuPanelClassName, 'absolute z-40 min-w-[12rem]')}
+        parentRef={contextMenuRef}
         onBeforeShow={handleBeforeShow}
         onClose={handleContextMenuClose}>
         <ContextMenuItems message={contextMenuState?.message ?? null} />
-        <div className="border-base-300 mt-1 border-t pt-1">
-          <ContextMenuReadStatus message={contextMenuState?.message ?? null} />
-        </div>
+        <ContextMenuReadStatus message={contextMenuState?.message ?? null} />
       </ContextMenu>
       {children}
     </div>

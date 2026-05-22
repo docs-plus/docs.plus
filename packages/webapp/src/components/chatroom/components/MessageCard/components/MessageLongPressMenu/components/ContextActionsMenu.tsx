@@ -1,6 +1,8 @@
-import { UserReadStatus } from '@components/chatroom/components/MessageCard/components/common/UserReadStatus'
+import { MessageMenuReadStatus } from '@components/chatroom/components/MessageCard/components/common/MessageMenuReadStatus'
+import { contextMenuPanelClassName } from '@components/ui/ContextMenu'
 import { TMsgRow } from '@types'
 import { forwardRef } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 import { LongPressMenuItems } from './ContextMenuItems'
 
@@ -17,7 +19,11 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
     return (
       <ul
         ref={ref}
-        className={`menu bg-base-100 z-20 m-0 w-48 rounded-lg p-2 shadow transition-all duration-200 ease-out outline-none ${className || ''}`}
+        className={twMerge(
+          contextMenuPanelClassName,
+          'min-w-[12rem] transition-all duration-200 ease-out',
+          className
+        )}
         style={{
           position: 'absolute',
           left: position.x,
@@ -29,9 +35,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
         }}
         onClick={(e) => e.stopPropagation()}>
         <LongPressMenuItems message={message} isInteractive={isInteractive} />
-        <div className="border-base-300 mt-1 border-t pt-1">
-          <UserReadStatus message={message} isOpen wrapper="li" />
-        </div>
+        <MessageMenuReadStatus message={message} isOpen wrapper="li" className="px-2.5 py-2" />
       </ul>
     )
   }
