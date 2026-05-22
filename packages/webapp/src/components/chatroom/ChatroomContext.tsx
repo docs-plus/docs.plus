@@ -23,7 +23,9 @@ import { useSendMessage } from './hooks/useSendMessage'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
+import { MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS, scrollFlashGate } from './utils/messageJumpTiming'
 import type { AnchorKind } from './utils/messageWindow'
+import { findMessageItemIndex } from './utils/messageWindow'
 import { openComposerSignIn } from './utils/openComposerSignIn'
 
 const ChatroomContext = createContext<ChatroomContextValue | null>(null)
@@ -114,14 +116,14 @@ export const ChatroomProvider: React.FC<{
     }),
     [oldestSeqRef, newestSeqRef, dataIncludesTailRef, setHasMoreOlder]
   )
-  const scrollToMessage = useScrollToMessage(channelId, listRef, windowSeqRefs)
-  const jumpTo = useJumpTo(channelId, listRef, windowSeqRefs)
   const { flash } = useMessageHighlight()
+  const scrollToMessage = useScrollToMessage(channelId, listRef, windowSeqRefs, flash)
+  const jumpTo = useJumpTo(channelId, listRef, windowSeqRefs)
 
   useEffect(() => {
     if (!deepLinkMessageId) return
-    const t = window.setTimeout(() => flash(deepLinkMessageId), 250)
-    return () => window.clearTimeout(t)
+    scrollFlashGate.runAfter(MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS, () => flash(deepLinkMessageId))
+    return () => scrollFlashGate.invalidate()
   }, [deepLinkMessageId, flash])
 
   useEffect(() => {
@@ -263,8 +265,9 @@ export const ChatroomProvider: React.FC<{
     if (process.env.NEXT_PUBLIC_E2E !== 'true') return
     ;(window as any).__chatTestApi = {
       scrollToItem: (id: string, align?: any, behavior?: any) => {
-        const idx = listRef.current?.data.findIndex((i) => isMessage(i) && i.id === id)
-        if (typeof idx !== 'number' || idx < 0) return
+        const items = listRef.current?.data.get() ?? []
+        const idx = findMessageItemIndex(items, id)
+        if (idx < 0) return
         listRef.current?.scrollToItem({
           index: idx,
           align: align ?? 'center',

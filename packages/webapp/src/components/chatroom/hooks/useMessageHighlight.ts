@@ -1,12 +1,16 @@
+import {
+  highlightClearGate,
+  MESSAGE_HIGHLIGHT_MS
+} from '@components/chatroom/utils/messageJumpTiming'
 import { useCallback, useEffect, useState } from 'react'
 
-/**
- * Module-scoped pub/sub so every MessageCard reads the same highlight
- * state without prop drilling. Resets to null after the flash window.
- */
-const HIGHLIGHT_MS = 1500
 const listeners = new Set<(id: string | null) => void>()
 let current: string | null = null
+
+function publishHighlight(id: string | null) {
+  current = id
+  listeners.forEach((l) => l(id))
+}
 
 export const useMessageHighlight = () => {
   const [highlightedId, setHighlightedId] = useState<string | null>(current)
@@ -16,13 +20,11 @@ export const useMessageHighlight = () => {
       listeners.delete(setHighlightedId)
     }
   }, [])
+
   const flash = useCallback((id: string) => {
-    current = id
-    listeners.forEach((l) => l(id))
-    window.setTimeout(() => {
-      current = null
-      listeners.forEach((l) => l(null))
-    }, HIGHLIGHT_MS)
+    publishHighlight(id)
+    highlightClearGate.runAfter(MESSAGE_HIGHLIGHT_MS, () => publishHighlight(null))
   }, [])
+
   return { highlightedId, flash }
 }

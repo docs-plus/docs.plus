@@ -11,6 +11,7 @@ export const sendCommentMessage = async (
   comment: {
     content: string
     html: string
+    heading_id: string
   }
 ) =>
   await supabaseClient
@@ -20,9 +21,7 @@ export const sendCommentMessage = async (
       channel_id,
       user_id,
       html,
-      metadata: {
-        comment
-      }
+      metadata: { comment }
     })
     .select()
     .returns<TMessage[]>()

@@ -805,6 +805,22 @@ html:not(.m_mobile) {
   animation: badge-count-down 0.25s ease-out forwards;
 }
 
+/* Deep-link / reply-jump highlight — duration matches MESSAGE_HIGHLIGHT_MS */
+.msg_card.msg_card--flash {
+  animation: msg-card-flash 1.5s ease-out;
+}
+
+@keyframes msg-card-flash {
+  0%,
+  20% {
+    background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
 /* Context menu active state for message cards */
 .msg_card.context-menu-active {
   background-color: color-mix(in oklch, var(--color-primary) 8%, transparent) !important;

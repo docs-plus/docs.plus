@@ -25,29 +25,31 @@ export const DesktopMessageBody = ({ index, grouped, compact, status, onRetry }:
       compact={compact}
       status={status}
       onRetry={onRetry}>
-      <MessageHoverMenu
-        id="message-actions"
-        placement="top-end"
-        offset={-10}
-        className="w-full overflow-auto"
-        menu={<MessageCard.Actions.HoverMenu />}>
-        <MessageCard.Header.BookmarkIndicator />
-        <div className="flex w-full items-start gap-2">
-          {!compact && (
-            <div className="relative flex flex-col items-center space-y-2">
-              <MessageCard.Header.UserAvatar />
-            </div>
-          )}
-          {!compact ? (
-            <div className="flex w-full flex-col">
-              <MessageCard.Header className="flex items-center">
-                <MessageCard.Header.Username className="text-sm" />
-                <MessageCard.Header.Timestamp className="ml-1" />
-              </MessageCard.Header>
-              <div className="!mt-0 flex w-full flex-col overflow-hidden text-[15px] font-normal antialiased">
+      <div className="flex w-full items-start gap-2">
+        {!compact && (
+          <div className="relative flex flex-col items-center space-y-2">
+            <MessageCard.Header.UserAvatar />
+          </div>
+        )}
+        {!compact ? (
+          <div className="flex w-full flex-col">
+            <MessageCard.Header className="flex items-center">
+              <MessageCard.Header.Username className="text-sm" />
+              <MessageCard.Header.Timestamp className="ml-1" />
+            </MessageCard.Header>
+            <div className="!mt-0 flex w-full flex-col overflow-hidden text-[15px] font-normal antialiased">
+              <MessageCard.Content>
+                <MessageCard.Content.ReplyReference />
+                <MessageCard.Content.CommentReference />
+              </MessageCard.Content>
+              <MessageHoverMenu
+                id="message-actions"
+                placement="top-end"
+                offset={-10}
+                className="w-full overflow-auto"
+                menu={<MessageCard.Actions.HoverMenu />}>
+                <MessageCard.Header.BookmarkIndicator />
                 <MessageCard.Content>
-                  <MessageCard.Content.ReplyReference />
-                  <MessageCard.Content.CommentReference />
                   <MessageCard.Content.MessageBody />
                 </MessageCard.Content>
                 <MessageCard.FailedRow />
@@ -61,19 +63,29 @@ export const DesktopMessageBody = ({ index, grouped, compact, status, onRetry }:
                     <MessageCard.Footer.Reactions.ReactionList />
                   </MessageCard.Footer.Reactions>
                 </MessageCard.Footer>
-              </div>
+              </MessageHoverMenu>
             </div>
-          ) : (
-            <div className="flex w-full flex-row items-center">
-              <div className="relative ml-3 flex flex-col items-center space-y-2">
-                <MessageCard.Header className="chat-header">
-                  <MessageCard.Header.Timestamp />
-                </MessageCard.Header>
-              </div>
-              <div className="!mt-0 flex w-full flex-col overflow-hidden pl-2 text-[15px] font-normal antialiased">
+          </div>
+        ) : (
+          <div className="flex w-full flex-row items-center">
+            <div className="relative ml-3 flex flex-col items-center space-y-2">
+              <MessageCard.Header className="chat-header">
+                <MessageCard.Header.Timestamp />
+              </MessageCard.Header>
+            </div>
+            <div className="!mt-0 flex w-full flex-col overflow-hidden pl-2 text-[15px] font-normal antialiased">
+              <MessageCard.Content>
+                <MessageCard.Content.ReplyReference />
+                <MessageCard.Content.CommentReference />
+              </MessageCard.Content>
+              <MessageHoverMenu
+                id="message-actions"
+                placement="top-end"
+                offset={-10}
+                className="w-full overflow-auto"
+                menu={<MessageCard.Actions.HoverMenu />}>
+                <MessageCard.Header.BookmarkIndicator />
                 <MessageCard.Content>
-                  <MessageCard.Content.ReplyReference />
-                  <MessageCard.Content.CommentReference />
                   <MessageCard.Content.MessageBody />
                 </MessageCard.Content>
                 <MessageCard.FailedRow />
@@ -89,11 +101,11 @@ export const DesktopMessageBody = ({ index, grouped, compact, status, onRetry }:
                     </div>
                   </MessageCard.Footer.Reactions>
                 </MessageCard.Footer>
-              </div>
+              </MessageHoverMenu>
             </div>
-          )}
-        </div>
-      </MessageHoverMenu>
+          </div>
+        )}
+      </div>
     </MessageCard>
   )
 }

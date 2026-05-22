@@ -12,6 +12,17 @@ export type MessageWindow = {
   has_more_after: boolean
 }
 
+export type MessageWindowRefs = {
+  oldestSeqRef: MutableRefObject<number | null>
+  newestSeqRef: MutableRefObject<number | null>
+  dataIncludesTailRef: MutableRefObject<boolean>
+  setHasMoreOlder: (value: boolean) => void
+}
+
+export function findMessageItemIndex(items: ChatItem[], messageId: string): number {
+  return items.findIndex((item) => isMessage(item) && item.id === messageId)
+}
+
 export const parseWindow = (data: Json): MessageWindow => {
   const obj = (data ?? {}) as {
     rows?: MessageRow[]
@@ -62,16 +73,7 @@ export const buildItemsFromWindow = (
 }
 
 /** After jump/scroll `data.replace`, keep pagination + read-cursor refs aligned with the window. */
-export function applyWindowSeqRefs(
-  win: MessageWindow,
-  items: ChatItem[],
-  refs: {
-    oldestSeqRef: MutableRefObject<number | null>
-    newestSeqRef: MutableRefObject<number | null>
-    dataIncludesTailRef: MutableRefObject<boolean>
-    setHasMoreOlder: (value: boolean) => void
-  }
-) {
+export function applyWindowSeqRefs(win: MessageWindow, items: ChatItem[], refs: MessageWindowRefs) {
   const seqs = items
     .filter(isMessage)
     .map((m) => m.seq)

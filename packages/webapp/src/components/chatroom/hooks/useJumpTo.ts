@@ -1,23 +1,19 @@
 import type { ChatItem } from '@components/chatroom/types/chat-items'
-import { isMessage } from '@components/chatroom/types/chat-items'
 import { fetchMessageWindow } from '@components/chatroom/utils/fetchMessageWindow'
-import { applyWindowSeqRefs } from '@components/chatroom/utils/messageWindow'
+import {
+  applyWindowSeqRefs,
+  findMessageItemIndex,
+  type MessageWindowRefs
+} from '@components/chatroom/utils/messageWindow'
 import type { ItemLocation, VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback } from 'react'
 
 export type JumpTarget = { mode: 'present' } | { mode: 'message'; id: string }
 
-type WindowRefs = {
-  oldestSeqRef: React.MutableRefObject<number | null>
-  newestSeqRef: React.MutableRefObject<number | null>
-  dataIncludesTailRef: React.MutableRefObject<boolean>
-  setHasMoreOlder: (value: boolean) => void
-}
-
 export const useJumpTo = (
   channelId: string,
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>,
-  windowRefs: WindowRefs
+  windowRefs: MessageWindowRefs
 ) =>
   useCallback(
     async (target: JumpTarget) => {
@@ -31,14 +27,21 @@ export const useJumpTo = (
         afterLimit: target.mode === 'present' ? 0 : 40
       })
       if (!result) return
+
       const { win, items } = result
       applyWindowSeqRefs(win, items, windowRefs)
-      const initialLocation: ItemLocation = (() => {
-        if (target.mode === 'present') return { index: 'LAST', align: 'end', behavior: 'instant' }
-        const idx = items.findIndex((i) => isMessage(i) && i.id === target.id)
-        if (idx < 0) return { index: 'LAST', align: 'end', behavior: 'instant' }
-        return { index: idx, align: 'center', behavior: 'instant' }
-      })()
+
+      let initialLocation: ItemLocation
+      if (target.mode === 'present') {
+        initialLocation = { index: 'LAST', align: 'end', behavior: 'instant' }
+      } else {
+        const idx = findMessageItemIndex(items, target.id)
+        initialLocation =
+          idx >= 0
+            ? { index: idx, align: 'center', behavior: 'instant' }
+            : { index: 'LAST', align: 'end', behavior: 'instant' }
+      }
+
       listRef.current?.data.replace(items, { initialLocation, purgeItemSizes: true })
     },
     [channelId, listRef, windowRefs]

@@ -130,7 +130,8 @@ export const useComposerSubmit = ({
         } else if (commentMessageMemory) {
           await sendComment(content, channelId, user.id!, html, {
             content: commentMessageMemory.content,
-            html: commentMessageMemory.html
+            html: commentMessageMemory.html,
+            heading_id: commentMessageMemory.channel_id
           })
         } else {
           await contextSend({

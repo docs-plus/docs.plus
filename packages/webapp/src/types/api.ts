@@ -54,6 +54,7 @@ export type TSendCommentArgs = {
   comment: {
     content: string
     html: string
+    heading_id: string
   }
 }
 

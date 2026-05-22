@@ -3,6 +3,7 @@ import { isDay, isMessage } from '@components/chatroom/types/chat-items'
 import {
   type AnchorKind,
   buildItemsFromWindow,
+  findMessageItemIndex,
   type MessageWindow,
   parseWindow
 } from '@components/chatroom/utils/messageWindow'
@@ -297,7 +298,7 @@ const resolveInitialLocation = (
   }
   const anchor = win.rows.find((r) => r.seq === win.anchor_seq)
   if (!anchor) return tailLocation
-  const idx = items.findIndex((i) => i.kind === 'message' && i.id === anchor.id)
+  const idx = findMessageItemIndex(items, anchor.id)
   if (idx < 0) return tailLocation
   return { index: idx, align: 'center', behavior: 'instant' }
 }
