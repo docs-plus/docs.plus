@@ -62,7 +62,7 @@ const MentionLabel = ({ message, className }: { message: MessageRow; className?:
 
 const DesktopChip = ({ children, dateAttr, onClick }: ChipShellProps) => (
   <div
-    className="msg_card chat my-2 flex justify-center px-4 pb-1"
+    className="msg_card my-2 flex w-full justify-center px-4 pb-1"
     data-msg-date={dateAttr}
     onClick={onClick}>
     <div className="bg-info/10 inline-flex max-w-[90%] flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 rounded-full px-3 py-1.5 text-center text-xs leading-relaxed">
@@ -83,9 +83,11 @@ const MobileChip = ({
   onClick,
   showAvatar = false
 }: MobileChipProps) => (
-  <div className="msg_card chat my-2 flex w-full justify-center px-3 pb-1" data-msg-date={dateAttr}>
+  <div
+    className="msg_card my-6 flex w-full items-center justify-center px-3 pb-1"
+    data-msg-date={dateAttr}>
     <div
-      className="border-info/15 bg-info/10 text-base-content flex w-[70%] max-w-[70%] min-w-0 items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-snug"
+      className="border-info/15 bg-info/10 text-base-content flex w-[94%] max-w-[94%] min-w-0 items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-snug"
       onClick={onClick}>
       {showAvatar && message ? <NotifyUserAvatar message={message} /> : null}
       <div className="min-w-0 flex-1">{children}</div>
