@@ -1,3 +1,4 @@
+import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
@@ -12,7 +13,6 @@ import { downloadAsMarkdown, importMarkdownFile } from '@utils/markdown'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { TagsInput } from 'react-tag-input-component'
-import { twMerge } from 'tailwind-merge'
 
 import ToggleSection from '../ToggleSection'
 
@@ -69,6 +69,41 @@ const DocumentSettingsPanel = ({
   const isOwner = user?.id === docMetadata?.ownerId
   const ownerProfile = docMetadata?.ownerProfile
   const showOwnerHeader = ownerProfile && isAuthServiceAvailable
+
+  const ownerHeader = showOwnerHeader ? (
+    <div className="bg-base-200 border-base-300 flex shrink-0 items-center gap-3 border-b px-4 py-3">
+      <Image
+        className="border-base-300 size-8 shrink-0 rounded-full border"
+        src={ownerProfile.avatar_url || ownerProfile.default_avatar_url}
+        height={32}
+        width={32}
+        alt={ownerProfile.full_name}
+        title={ownerProfile.full_name}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
+          Owned by
+        </p>
+        <p className="text-base-content truncate text-sm font-medium">{ownerProfile.full_name}</p>
+      </div>
+      {isOwner ? (
+        <ToggleSection
+          name="Read-only"
+          description="Make this document read-only for viewers"
+          checked={readOnly}
+          onChange={saveDocReadOnlyHandler}
+          className="py-0"
+        />
+      ) : (
+        <span
+          className={`badge badge-sm badge-soft shrink-0 ${
+            readOnly ? 'badge-error' : 'badge-success'
+          }`}>
+          {readOnly ? 'Read-only' : 'Editable'}
+        </span>
+      )}
+    </div>
+  ) : null
 
   const settingsBody = (
     <div className="flex flex-col gap-4 p-4">
@@ -163,56 +198,19 @@ const DocumentSettingsPanel = ({
   )
 
   return (
-    <div
-      className={twMerge(
-        'bg-base-100 flex w-full flex-col',
-        isSheet && 'min-h-0 flex-1 overflow-hidden',
-        className
-      )}>
-      <div className="border-base-300 shrink-0 border-b px-4 py-3">
+    <PanelSurfaceShell
+      variant={variant}
+      title="Settings"
+      fillHeight
+      bodyClassName="min-h-0 overflow-hidden"
+      className={className}
+      popoverHeader={
         <div className="flex items-center justify-between">
           <h2 className="text-base-content text-lg font-semibold">Settings</h2>
-          {!isSheet && <CloseButton onClick={handleClose} size="sm" />}
+          <CloseButton onClick={handleClose} size="sm" />
         </div>
-      </div>
-
-      {showOwnerHeader && (
-        <div className="bg-base-200 border-base-300 flex shrink-0 items-center gap-3 border-b px-4 py-3">
-          <Image
-            className="border-base-300 size-8 shrink-0 rounded-full border"
-            src={ownerProfile.avatar_url || ownerProfile.default_avatar_url}
-            height={32}
-            width={32}
-            alt={ownerProfile.full_name}
-            title={ownerProfile.full_name}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
-              Owned by
-            </p>
-            <p className="text-base-content truncate text-sm font-medium">
-              {ownerProfile.full_name}
-            </p>
-          </div>
-          {isOwner ? (
-            <ToggleSection
-              name="Read-only"
-              description="Make this document read-only for viewers"
-              checked={readOnly}
-              onChange={saveDocReadOnlyHandler}
-              className="py-0"
-            />
-          ) : (
-            <span
-              className={`badge badge-sm badge-soft shrink-0 ${
-                readOnly ? 'badge-error' : 'badge-success'
-              }`}>
-              {readOnly ? 'Read-only' : 'Editable'}
-            </span>
-          )}
-        </div>
-      )}
-
+      }>
+      {ownerHeader}
       {isSheet ? (
         <ScrollArea
           className="min-h-0 flex-1"
@@ -224,7 +222,7 @@ const DocumentSettingsPanel = ({
       ) : (
         settingsBody
       )}
-    </div>
+    </PanelSurfaceShell>
   )
 }
 

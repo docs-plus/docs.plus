@@ -1,63 +1,34 @@
 import CloseButton from '@components/ui/CloseButton'
-import { useSheetStore } from '@stores'
-import React from 'react'
+import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface SheetHeaderProps {
-  title?: string
+type SheetHeaderProps = {
   onClose?: () => void
   className?: string
-  children?: React.ReactNode
+  children?: ReactNode
 }
 
-interface SheetHeaderTitleProps {
-  children: React.ReactNode
-  className?: string
-}
-
-interface SheetHeaderActionsProps {
-  children: React.ReactNode
-  className?: string
-}
-
-const SheetHeaderTitle: React.FC<SheetHeaderTitleProps> = ({ children, className }) => (
-  <p className={twMerge('text-base-content flex-1 text-lg font-semibold', className)}>{children}</p>
-)
-
-const SheetHeaderActions: React.FC<SheetHeaderActionsProps> = ({ children, className }) => (
-  <div className={twMerge('flex flex-row items-center justify-end', className)}>{children}</div>
-)
-
-const SheetHeader: React.FC<SheetHeaderProps> & {
-  Title: typeof SheetHeaderTitle
-  Actions: typeof SheetHeaderActions
-} = ({ title, onClose, className, children }) => {
-  const { closeSheet } = useSheetStore()
-  const handleClose = onClose || closeSheet
-
-  // Compound component usage
-  if (children) {
-    return (
-      <div
-        className={twMerge(
-          'bg-base-100 mb-4 flex w-full items-center justify-between py-2',
-          className
-        )}>
-        {children}
-      </div>
-    )
-  }
-
+function SheetHeaderTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={twMerge(
-        'bg-base-100 mb-4 flex w-full items-center justify-between py-2',
-        className
-      )}>
-      <p className="text-base-content flex-1 text-lg font-bold">{title}</p>
-      <div className="flex flex-row items-center justify-end">
-        <CloseButton onClick={handleClose} />
-      </div>
+    <p className={twMerge('text-base-content flex-1 text-lg font-semibold', className)}>
+      {children}
+    </p>
+  )
+}
+
+function SheetHeaderActions({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={twMerge('flex flex-row items-center justify-end gap-1', className)}>
+      {children}
+    </div>
+  )
+}
+
+function SheetHeader({ onClose, className, children }: SheetHeaderProps) {
+  return (
+    <div className={twMerge('flex w-full items-center justify-between gap-2', className)}>
+      {children}
+      {onClose !== undefined && <CloseButton onClick={onClose} size="sm" className="shrink-0" />}
     </div>
   )
 }

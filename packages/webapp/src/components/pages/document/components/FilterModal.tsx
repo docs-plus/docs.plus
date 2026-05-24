@@ -1,10 +1,10 @@
-import SheetHeader from '@components/SheetHeader'
-import Button from '@components/ui/Button'
+import { SheetLayout } from '@components/SheetLayout'
+import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import TextInput from '@components/ui/TextInput'
 import { Icons } from '@icons'
 import { useSheetStore } from '@stores'
 import { useRouter } from 'next/router'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react'
 
 const FilterModal = () => {
   const filterSearchRef = useRef<HTMLInputElement>(null)
@@ -38,7 +38,7 @@ const FilterModal = () => {
   }, [router.query.slugs])
 
   const handleKeyUp = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: KeyboardEvent<HTMLInputElement>) => {
       setSearch((e.target as HTMLInputElement).value)
       if (e.key === 'Enter') applySearch()
     },
@@ -49,40 +49,36 @@ const FilterModal = () => {
     if (isSheetOpen('filters')) countHeadings()
   }, [isSheetOpen, countHeadings])
 
-  return (
-    <div className="bg-base-100 h-full max-h-96 w-full rounded-t-2xl p-4 pt-0">
-      <SheetHeader title="Filters" />
+  const applyDisabled = !search || totalSearch === 0 || totalSearch === totalHeading
 
-      {/* Search Input */}
-      <div className="flex items-center gap-2">
-        <TextInput
-          id="filterModalBottom"
-          startIcon={Icons.search}
-          placeholder="Find in document..."
-          onKeyUp={handleKeyUp}
-          ref={filterSearchRef}
-          className="flex-1"
+  return (
+    <SheetLayout
+      title="Filters"
+      footer={
+        <SheetPrimaryFooter
+          label="Apply filter"
+          onClick={applySearch}
+          disabled={applyDisabled}
+          testId="filter-sheet-apply"
         />
-        <div className="bg-base-200 rounded-field flex shrink-0 flex-col items-center justify-center px-3 py-2">
-          <span className="text-base-content text-xs font-semibold">{totalSearch}</span>
-          <span className="text-base-content/60 text-[10px]">of {totalHeading}</span>
+      }>
+      <div className="flex flex-col gap-4 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <TextInput
+            id="filterModalBottom"
+            startIcon={Icons.search}
+            placeholder="Find in document..."
+            onKeyUp={handleKeyUp}
+            ref={filterSearchRef}
+            className="flex-1"
+          />
+          <div className="bg-base-200 rounded-field flex shrink-0 flex-col items-center justify-center px-3 py-2">
+            <span className="text-base-content text-xs font-semibold">{totalSearch}</span>
+            <span className="text-base-content/60 text-[10px]">of {totalHeading}</span>
+          </div>
         </div>
       </div>
-
-      {/* Apply Button */}
-      <div className="mt-6">
-        <Button
-          variant="primary"
-          shape="block"
-          onTouchStart={applySearch}
-          onClick={applySearch}
-          disabled={
-            !search || search.length === 0 || totalSearch === 0 || totalSearch === totalHeading
-          }>
-          Apply Filter
-        </Button>
-      </div>
-    </div>
+    </SheetLayout>
   )
 }
 
