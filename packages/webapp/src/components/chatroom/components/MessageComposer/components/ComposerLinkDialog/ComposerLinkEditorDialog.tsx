@@ -1,3 +1,4 @@
+import { HyperlinkUrlTextarea } from '@components/TipTap/hyperlinkPopovers/components/HyperlinkUrlTextarea'
 import { KEYBOARD_DISMISS_DELAY_MS } from '@components/TipTap/hyperlinkPopovers/previewHyperlink'
 import type { HyperlinkResult } from '@components/TipTap/hyperlinkPopovers/types'
 import { normalizeHref, validateURL } from '@docs.plus/extension-hyperlink'
@@ -28,7 +29,12 @@ export function ComposerLinkEditorDialog({
   const [href, setHref] = useState(initialHref)
   const [text, setText] = useState(initialText)
   const [showError, setShowError] = useState(false)
-  const hrefRef = useRef<HTMLInputElement>(null)
+  const hrefRef = useRef<HTMLTextAreaElement>(null)
+
+  const commitHref = (value: string) => {
+    setHref(value)
+    if (showError) setShowError(false)
+  }
 
   useLayoutEffect(() => {
     const focusHref = () => hrefRef.current?.focus()
@@ -71,19 +77,19 @@ export function ComposerLinkEditorDialog({
         </label>
         <label className="form-control">
           <span className="label-text mb-1">Link</span>
-          <input
-            ref={hrefRef}
-            type="url"
-            inputMode="url"
-            autoCapitalize="off"
-            spellCheck={false}
-            className={`input input-bordered input-primary w-full ${showError ? 'input-error' : ''}`}
+          <HyperlinkUrlTextarea
+            inputRef={hrefRef}
             value={href}
-            onChange={(e) => {
-              setHref(e.target.value)
-              if (showError) setShowError(false)
+            onCommit={commitHref}
+            testId="composer-link-editor-url"
+            placeholder="https://"
+            className={`textarea textarea-primary min-h-10 w-full ${showError ? 'textarea-error' : ''}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                if (href.trim()) e.currentTarget.form?.requestSubmit()
+              }
             }}
-            data-testid="composer-link-editor-url"
           />
         </label>
         {showError && <span className="text-error text-xs">Please enter a valid URL</span>}

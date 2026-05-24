@@ -1,7 +1,5 @@
 import type { Editor } from '@tiptap/core'
 
-// ── Domain ────────────────────────────────────────────────────
-
 export type HyperlinkSurface = 'pad' | 'composer'
 
 export type DocSelectionRange = { from: number; to: number }
@@ -29,8 +27,6 @@ export interface BookmarkSuggestion {
 
 export type Suggestion = HeadingSuggestion | BookmarkSuggestion
 
-// ── Search filter ─────────────────────────────────────────────
-
 export interface FilterArgs {
   query: string
   headings: HeadingSuggestion[]
@@ -41,8 +37,6 @@ export interface FilterResult {
   headings: HeadingSuggestion[]
   bookmarks: BookmarkSuggestion[]
 }
-
-// ── Picker UI state machine ───────────────────────────────────
 
 export type SuggestionPanel = 'collapsed' | 'browsing' | 'searching'
 
@@ -66,8 +60,6 @@ export type LinkSuggestionAction =
   | { type: 'HIGHLIGHT_FIRST' }
   | { type: 'HIGHLIGHT_LAST' }
 
-// ── HyperlinkEditor public contract ───────────────────────────
-
 export type HyperlinkMode = 'create' | 'edit'
 export type HyperlinkVariant = 'desktop' | 'mobile'
 
@@ -88,8 +80,6 @@ export interface HyperlinkEditorProps {
   onBack?: () => void
   onClose: () => void
 }
-
-// ── Hook contracts ────────────────────────────────────────────
 
 export interface UseHyperlinkSuggestionsArgs {
   editor: Editor
@@ -121,14 +111,14 @@ export interface UseLinkSuggestionStateResult {
   highlightLast: () => void
 }
 
-// ── Component prop contracts ──────────────────────────────────
-
 export interface SuggestionRowProps {
   id: string
   suggestion: Suggestion
   selected: boolean
   onPick: (s: Suggestion) => void
   onMouseEnter?: () => void
+  rowPadClass: string
+  rowInsetPx: number
 }
 
 export interface HyperlinkSuggestionsProps {
@@ -142,9 +132,8 @@ export interface HyperlinkSuggestionsProps {
   onBack?: () => void
   onRowHover: (index: number) => void
   rowIdPrefix: string
+  variant?: HyperlinkVariant
 }
-
-// ── Desktop popover store ─────────────────────────────────────
 
 export type ActivePopoverKind = 'create' | 'edit'
 
@@ -153,8 +142,6 @@ export interface ActivePopover {
   host: HTMLElement
   props: Omit<HyperlinkEditorProps, 'variant'>
 }
-
-// ── Command args ──────────────────────────────────────────────
 
 export interface ApplyHyperlinkArgs {
   href: string

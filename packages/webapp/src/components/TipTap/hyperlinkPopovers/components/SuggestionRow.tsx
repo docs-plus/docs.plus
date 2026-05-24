@@ -1,5 +1,6 @@
 import { Icons } from '@components/icons/registry'
 import { memo, type ReactNode } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 import type { SuggestionRowProps } from '../types'
 
@@ -13,7 +14,9 @@ export const SuggestionRow = memo(function SuggestionRow({
   suggestion,
   selected,
   onPick,
-  onMouseEnter
+  onMouseEnter,
+  rowPadClass,
+  rowInsetPx
 }: SuggestionRowProps): ReactNode {
   const isHeading = suggestion.kind === 'heading'
   const indent = isHeading ? headingIndentPx(suggestion.level) : 0
@@ -35,10 +38,13 @@ export const SuggestionRow = memo(function SuggestionRow({
         e.preventDefault()
       }}
       onClick={() => onPick(suggestion)}
-      className={`hover:bg-base-200 flex min-h-11 w-full cursor-pointer items-center gap-2 rounded px-2 py-2 text-left text-sm ${
-        selected ? 'bg-base-200' : ''
-      } ${archived ? 'opacity-60' : ''}`}
-      style={{ paddingLeft: `${8 + indent}px` }}>
+      className={twMerge(
+        'hover:bg-base-200 flex min-h-11 w-full cursor-pointer items-center gap-2 py-2 text-left text-sm',
+        rowPadClass,
+        selected && 'bg-base-200',
+        archived && 'opacity-60'
+      )}
+      style={{ paddingLeft: `${rowInsetPx + indent}px` }}>
       <span className="text-base-content/70 shrink-0" aria-hidden>
         {isHeading ? <Icons.heading size={ICON_SIZE} /> : <Icons.bookmark size={ICON_SIZE} />}
       </span>
