@@ -1,5 +1,6 @@
 import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import ToolbarDivider from '@components/TipTap/toolbar/ToolbarDivider'
+import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
 import { type ComponentType, Fragment } from 'react'
 
 import { useMessageComposer } from '../../hooks/useMessageComposer'
@@ -35,9 +36,7 @@ function FormatButtonGroups() {
     <div className="flex min-w-0 flex-1 items-center gap-0.5">
       {FORMAT_GROUPS.map((group, groupIndex) => (
         <Fragment key={groupIndex}>
-          {groupIndex > 0 ? (
-            <ToolbarDivider className="mx-1 h-5 w-px shrink-0 self-center" />
-          ) : null}
+          {groupIndex > 0 && <ToolbarDivider className="mx-1 h-5 w-px shrink-0 self-center" />}
           <div className="flex items-center gap-0.5">
             {group.map((Button, index) => (
               <Button
@@ -54,7 +53,8 @@ function FormatButtonGroups() {
 }
 
 export function FormattingToolbar({ variant }: Props) {
-  const { showFormattingToolbar } = useMessageComposer()
+  const { showFormattingToolbar, editor } = useMessageComposer()
+  useReRenderOnEditorTransaction(editor ?? null)
 
   if (!showFormattingToolbar) return null
 

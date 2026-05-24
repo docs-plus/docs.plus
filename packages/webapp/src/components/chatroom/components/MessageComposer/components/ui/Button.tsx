@@ -1,7 +1,7 @@
 import SharedButton, { type ButtonShape, type ButtonVariant } from '@components/ui/Button'
 import { Placement } from '@floating-ui/react'
 import { Editor } from '@tiptap/react'
-import React from 'react'
+import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ToolbarButtonProps {
@@ -37,7 +37,23 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     },
     ref
   ) => {
+    const touchPressRef = useRef(false)
     const isButtonActive = isActive || editor?.isActive(type || '')
+
+    function handleClick(e: React.MouseEvent) {
+      e.preventDefault()
+      if (touchPressRef.current) {
+        touchPressRef.current = false
+        return
+      }
+      onPress?.(e)
+    }
+
+    function handleTouchEnd(e: React.TouchEvent) {
+      e.preventDefault()
+      touchPressRef.current = true
+      onPress?.(e)
+    }
 
     return (
       <SharedButton
@@ -50,10 +66,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           isButtonActive && 'is-active btn-active',
           className
         )}
-        onClick={(e) => {
-          e.preventDefault()
-          onPress?.(e)
-        }}
+        onTouchEnd={editor && type && onPress ? handleTouchEnd : undefined}
+        onClick={handleClick}
         onPointerDown={onPointerDown}
         disabled={disabled}
         tooltip={tooltip}
