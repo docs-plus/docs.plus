@@ -1,6 +1,7 @@
 import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
 import { TOC_CLASSES } from '@components/toc/tocClasses'
 import { SheetType, useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
+import { formatCappedCount } from '@utils/formatCappedCount'
 import { scrollToHeading } from '@utils/index'
 import { NextRouter } from 'next/router'
 import PubSub from 'pubsub-js'
@@ -321,7 +322,7 @@ export const eventsHub = (router: NextRouter) => {
       const oldCount = parseInt(el.dataset.unreadCount || '0', 10)
 
       if (count > 0) {
-        const displayCount = count > 99 ? '99+' : String(count)
+        const displayCount = formatCappedCount(count)
 
         // Only animate if count actually changed
         if (count !== oldCount) {

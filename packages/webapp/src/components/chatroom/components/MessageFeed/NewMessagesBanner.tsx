@@ -1,5 +1,6 @@
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
+import { formatCappedCount } from '@utils/formatCappedCount'
 import { format, parseISO } from 'date-fns'
 
 export type NewMessagesBannerProps = {
@@ -9,8 +10,7 @@ export type NewMessagesBannerProps = {
 }
 
 function formatBannerLabel(count: number, sinceIso: string | null | undefined) {
-  const countLabel =
-    count > 99 ? '99+ new messages' : count === 1 ? '1 new message' : `${count} new messages`
+  const countLabel = `${formatCappedCount(count)} new message${count === 1 ? '' : 's'}`
 
   if (!sinceIso) return countLabel
 
