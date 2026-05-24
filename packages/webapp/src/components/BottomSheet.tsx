@@ -1,4 +1,6 @@
 import { useComposerEmojiPanelStore } from '@components/chatroom/components/MessageComposer/stores/composerEmojiPanelStore'
+import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
+import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
 import FilterModal from '@components/pages/document/components/FilterModal'
 import {
   type SheetData,
@@ -30,6 +32,8 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   chatroom: () => <ChatContainerMobile />,
   notifications: () => <NotificationModal />,
   filters: () => <FilterModal />,
+  bookmarks: () => <BookmarkSheet />,
+  documentSettings: () => <DocumentSettingsSheet />,
   linkPreview: (data) => <LinkPreviewSheet data={data} />,
   linkEditor: (data) => <LinkEditorSheet data={data} />
 }
@@ -59,6 +63,14 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
     id: 'filter_sheet',
     detent: 'content',
     snapPoints: [0, 0.5, 1]
+  },
+  bookmarks: {
+    id: 'bookmark_sheet',
+    detent: 'default'
+  },
+  documentSettings: {
+    id: 'document_settings_sheet',
+    detent: 'default'
   },
   linkPreview: {
     id: 'link_preview_sheet',

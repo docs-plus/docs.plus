@@ -1,90 +1,9 @@
-import { ScrollArea } from '@components/ui/ScrollArea'
-import { useStore } from '@stores'
-import { TTab } from '@types'
+import { NotificationPanel } from '../desktop/NotificationPanel'
 
-import { EmptyNotificationState } from '../components/EmptyNotificationState'
-import { NotificationHeader } from '../components/NotificationHeader'
-import { NotificationItem } from '../components/NotificationItem'
-import { NotificationSkeleton } from '../components/NotificationSkeleton'
-import { useInfiniteNotifications } from '../hooks/useInfiniteNotifications'
-import { useNotificationSummary } from '../hooks/useNotificationSummary'
-
-const NotificationModal = () => {
-  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
-  const notificationTabs = useStore((state) => state.notificationTabs)
-  const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
-
-  useNotificationSummary()
-
-  const { notifications, isLoading, isLoadingMore, hasMore, sentinelRef } =
-    useInfiniteNotifications()
-
-  return (
-    <div className="bg-base-100 flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="border-base-300 shrink-0 border-b px-4 py-3">
-        <NotificationHeader showClose={false} />
-      </div>
-
-      {/* Tabs */}
-      <div className="border-base-300 flex shrink-0 gap-1 overflow-x-auto border-b px-4 py-2">
-        {notificationTabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setNotificationActiveTab(tab.label as TTab)}
-            className={`rounded-selector px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              notificationActiveTab === tab.label
-                ? 'bg-primary text-primary-content'
-                : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'
-            }`}>
-            {tab.label}
-            {tab.count !== undefined && tab.count > 0 && (
-              <span
-                className={`ml-1.5 ${
-                  notificationActiveTab === tab.label
-                    ? 'text-primary-content/80'
-                    : 'text-base-content/50'
-                }`}>
-                ({tab.count})
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Content with infinite scroll */}
-      <ScrollArea className="min-h-0 flex-1 p-3" scrollbarSize="thin" hideScrollbar>
-        {/* Loading skeleton */}
-        {isLoading && notifications.length === 0 && <NotificationSkeleton count={5} />}
-
-        {/* Empty state */}
-        <EmptyNotificationState show={!isLoading && notifications.length === 0} />
-
-        {/* Notifications list */}
-        {notifications.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {notifications.map((notification) => (
-              <NotificationItem key={notification.id} notification={notification} />
-            ))}
-
-            {/* Infinite scroll sentinel */}
-            {hasMore && (
-              <div ref={sentinelRef} className="flex justify-center py-4">
-                {isLoadingMore && (
-                  <div className="loading loading-spinner loading-sm text-primary" />
-                )}
-              </div>
-            )}
-
-            {/* End of list indicator */}
-            {!hasMore && notifications.length > 0 && (
-              <p className="text-base-content/40 py-4 text-center text-xs">No more notifications</p>
-            )}
-          </div>
-        )}
-      </ScrollArea>
-    </div>
-  )
-}
+const NotificationModal = () => (
+  <div className="bg-base-100 flex h-full w-full flex-col overflow-hidden">
+    <NotificationPanel variant="sheet" />
+  </div>
+)
 
 export default NotificationModal

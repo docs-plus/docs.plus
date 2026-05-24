@@ -7,11 +7,9 @@ import { buildNestedToc } from './utils'
 
 interface TocMobileProps {
   className?: string
-  /** Hide the append-heading button (e.g. when the consumer renders it in a sticky footer) */
-  hideAppendButton?: boolean
 }
 
-export function TocMobile({ className = '', hideAppendButton = false }: TocMobileProps) {
+export function TocMobile({ className = '' }: TocMobileProps) {
   const { items, toggleSection } = useToc()
 
   // Auto-scroll TOC to the focused heading when the drawer opens (mirrors TocDesktop)
@@ -30,7 +28,7 @@ export function TocMobile({ className = '', hideAppendButton = false }: TocMobil
           <TocItemMobile key={item.id} item={item} nestedNodes={nodes} onToggle={toggleSection} />
         ))}
       </ul>
-      {!hideAppendButton && <AppendHeadingButton className="mt-4" />}
+      <AppendHeadingButton className="mt-4" />
     </div>
   )
 }

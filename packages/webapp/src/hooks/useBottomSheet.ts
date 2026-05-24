@@ -22,6 +22,10 @@ export const useBottomSheet = () => {
 
   const openFilters = useCallback(() => openSheet('filters'), [openSheet])
 
+  const openBookmarks = useCallback(() => openSheet('bookmarks'), [openSheet])
+
+  const openDocumentSettings = useCallback(() => openSheet('documentSettings'), [openSheet])
+
   const close = useCallback(() => closeSheet(), [closeSheet])
 
   const isOpen = useMemo(() => !!activeSheet, [activeSheet])
@@ -33,6 +37,10 @@ export const useBottomSheet = () => {
     openNotifications,
     /** Open the filter / search sheet. */
     openFilters,
+    /** Open the bookmarks sheet. */
+    openBookmarks,
+    /** Open the document settings sheet. */
+    openDocumentSettings,
     /** Close whatever sheet is currently open. */
     close,
     /** Currently active sheet type (or null). */

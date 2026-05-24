@@ -11,6 +11,8 @@ export type SheetType =
   | 'chatroom'
   | 'notifications'
   | 'filters'
+  | 'bookmarks'
+  | 'documentSettings'
   | 'linkPreview'
   | 'linkEditor'
   | null
@@ -28,6 +30,8 @@ export interface SheetDataMap {
   chatroom: { headingId: string }
   notifications: Record<string, never>
   filters: Record<string, never>
+  bookmarks: Record<string, never>
+  documentSettings: Record<string, never>
   /**
    * Mobile hyperlink preview sheet payload. `editor`, `nodePos`, and
    * `attrs` are passed through so the sheet can render metadata, write

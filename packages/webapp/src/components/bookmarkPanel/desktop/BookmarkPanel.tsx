@@ -1,6 +1,8 @@
+import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useChatStore } from '@stores'
-import { type TBookmarkTab } from '@types'
+import { type PanelSurfaceVariant, type TBookmarkTab } from '@types'
+import { twMerge } from 'tailwind-merge'
 
 import { BookmarkHeader } from '../components/BookmarkHeader'
 import { BookmarkItem } from '../components/BookmarkItem'
@@ -11,68 +13,51 @@ import { useInfiniteBookmarks } from '../hooks/useInfiniteBookmarks'
 
 interface BookmarkPanelProps {
   onClose?: () => void
+  variant?: PanelSurfaceVariant
 }
 
-export const BookmarkPanel = ({ onClose }: BookmarkPanelProps) => {
-  const { bookmarkActiveTab, bookmarkTabs, setBookmarkActiveTab } = useChatStore((state) => state)
+export const BookmarkPanel = ({ onClose, variant = 'popover' }: BookmarkPanelProps) => {
+  const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
+  const bookmarkTabs = useChatStore((state) => state.bookmarkTabs)
+  const setBookmarkActiveTab = useChatStore((state) => state.setBookmarkActiveTab)
+  const isSheet = variant === 'sheet'
 
   useBookmarkSummary()
 
   const { bookmarks, isLoading, isLoadingMore, hasMore, sentinelRef } = useInfiniteBookmarks()
 
   return (
-    <div className="bg-base-100 flex min-h-0 w-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="border-base-300 border-b px-4 py-3">
-        <BookmarkHeader onClose={onClose} />
+    <div
+      className={twMerge(
+        'bg-base-100 flex min-h-0 w-full flex-col overflow-hidden',
+        isSheet && 'h-full flex-1'
+      )}>
+      <div className="border-base-300 shrink-0 border-b px-4 py-3">
+        <BookmarkHeader onClose={onClose} showClose={!isSheet} />
       </div>
 
-      {/* Tabs */}
-      <div className="border-base-300 flex gap-1 border-b px-4 py-2">
-        {bookmarkTabs.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setBookmarkActiveTab(tab.label as TBookmarkTab)}
-            className={`rounded-selector px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
-              bookmarkActiveTab === tab.label
-                ? 'bg-primary text-primary-content'
-                : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'
-            }`}>
-            {tab.label}
-            {tab.count !== undefined && tab.count > 0 && (
-              <span
-                className={`ml-1.5 ${
-                  bookmarkActiveTab === tab.label
-                    ? 'text-primary-content/80'
-                    : 'text-base-content/50'
-                }`}>
-                ({tab.count})
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <PanelTabBar<TBookmarkTab>
+        tabs={bookmarkTabs}
+        activeTab={bookmarkActiveTab}
+        onSelect={setBookmarkActiveTab}
+        capitalize
+      />
 
-      {/* Content with infinite scroll */}
       <ScrollArea
-        className="max-h-96 min-h-48 p-3"
+        className={twMerge('p-3', isSheet ? 'min-h-0 flex-1' : 'max-h-96 min-h-48')}
         scrollbarSize="thin"
         hideScrollbar
         preserveWidth={false}>
-        {/* Loading skeleton */}
         {isLoading && bookmarks.length === 0 && <BookmarkSkeleton count={4} />}
 
-        {/* Empty state */}
         <EmptyBookmarkState show={!isLoading && bookmarks.length === 0} />
 
-        {/* Bookmarks list */}
         {bookmarks.length > 0 && (
           <div className="flex flex-col gap-2">
             {bookmarks.map((bookmark) => (
               <BookmarkItem key={bookmark.bookmark_id} bookmark={bookmark} />
             ))}
 
-            {/* Infinite scroll sentinel */}
             {hasMore && (
               <div ref={sentinelRef} className="flex justify-center py-3">
                 {isLoadingMore && (
@@ -81,7 +66,6 @@ export const BookmarkPanel = ({ onClose }: BookmarkPanelProps) => {
               </div>
             )}
 
-            {/* End of list indicator */}
             {!hasMore && bookmarks.length > 0 && (
               <p className="text-base-content/40 py-3 text-center text-xs">No more bookmarks</p>
             )}

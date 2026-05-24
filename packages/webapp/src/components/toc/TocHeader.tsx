@@ -47,8 +47,8 @@ export function TocHeader({ variant }: TocHeaderProps) {
 
   if (variant === 'mobile') {
     return (
-      <div className="border-base-300 bg-base-100 isolate z-30 shrink-0 border-b">
-        <div className="group relative flex items-center justify-between py-2">
+      <div className="border-base-300 bg-base-100 isolate z-30 shrink-0 border-b px-4 py-3">
+        <div className="group relative flex items-center justify-between gap-3">
           <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
           <button
             type="button"
