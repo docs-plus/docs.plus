@@ -125,6 +125,8 @@ jobs:
             packages/extension-inline-code/dist
             packages/extension-placeholder/dist
           key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
+            'packages/floating-popover/package.json',
+            'packages/floating-popover/src/**',
             'packages/extension-hyperlink/package.json',
             'packages/extension-hypermultimedia/package.json',
             'packages/extension-indent/package.json',
@@ -140,6 +142,7 @@ jobs:
       - name: 🔧 Build Extensions (required for types)
         if: steps.cache-ext.outputs.cache-hit != 'true'
         run: |
+          bun run --filter @docs.plus/floating-popover build
           bun run --filter @docs.plus/extension-hyperlink build
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
@@ -255,6 +258,8 @@ jobs:
             packages/extension-inline-code/dist
             packages/extension-placeholder/dist
           key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
+            'packages/floating-popover/package.json',
+            'packages/floating-popover/src/**',
             'packages/extension-hyperlink/package.json',
             'packages/extension-hypermultimedia/package.json',
             'packages/extension-indent/package.json',
@@ -270,6 +275,7 @@ jobs:
       - name: 🔧 Build TipTap Extensions
         if: steps.cache-ext.outputs.cache-hit != 'true'
         run: |
+          bun run --filter @docs.plus/floating-popover build
           bun run --filter @docs.plus/extension-hyperlink build
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build

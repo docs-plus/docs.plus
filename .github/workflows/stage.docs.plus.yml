@@ -84,6 +84,7 @@ jobs:
 
       - name: 🔧 Build Extensions (required for types)
         run: |
+          bun run --filter @docs.plus/floating-popover build
           bun run --filter @docs.plus/extension-hyperlink build
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
@@ -146,6 +147,7 @@ jobs:
 
       - name: 🔧 Build TipTap Extensions
         run: |
+          bun run --filter @docs.plus/floating-popover build
           bun run --filter @docs.plus/extension-hyperlink build
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
