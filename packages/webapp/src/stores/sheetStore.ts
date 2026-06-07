@@ -15,6 +15,7 @@ export type SheetType =
   | 'documentSettings'
   | 'linkPreview'
   | 'linkEditor'
+  | 'mediaControls'
   | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
 
@@ -55,6 +56,17 @@ export interface SheetDataMap {
     onSubmit: (result: { href: string; text?: string }) => boolean | void
     validate?: (url: string) => boolean
     onBack?: () => void
+  }
+  /**
+   * Mobile media-controls sheet. The hypermultimedia kit's `mediaToolbar`
+   * factory returns `null` on mobile and opens this with a stable `keyId`
+   * so collab edits cannot stale the target node. Position resolves at apply
+   * time via `findMediaNodePosByKeyId`. No global reads.
+   */
+  mediaControls: {
+    editor: Editor
+    keyId: string
+    nodeType: string
   }
 }
 

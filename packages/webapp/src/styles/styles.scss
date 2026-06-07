@@ -461,6 +461,13 @@ $pad-toolbar-height: 38px;
     justify-content: center;
     transition: all 150ms ease-out;
 
+    &--text {
+      font-size: 0.75rem;
+      line-height: 1;
+      padding: 6px 8px;
+      min-width: 4.5rem;
+    }
+
     &:hover {
       background-color: var(--color-base-200);
       border-color: var(--color-base-300);
@@ -494,6 +501,13 @@ $pad-toolbar-height: 38px;
     &:hover {
       background-color: var(--color-base-200);
     }
+  }
+
+  &__divider {
+    width: 1px;
+    align-self: stretch;
+    background-color: var(--color-base-300);
+    margin: 0 2px;
   }
 }
 

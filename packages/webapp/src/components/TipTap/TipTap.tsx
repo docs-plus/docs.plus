@@ -1,13 +1,6 @@
 import Config from '@config'
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
-// import {
-//   // HyperMultimediaKit,
-//   imageModal as _imageModal,
-//   soundCloudModal as _soundCloudModal,
-//   twitterModal as _twitterModal,
-//   vimeoModal as _vimeoModal,
-//   youtubeModal as _youtubeModal
-// } from '@docs.plus/extension-hypermultimedia'
+import { HyperMultimediaKit, isMediaUrl } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
 import { Placeholder } from '@docs.plus/extension-placeholder'
@@ -49,20 +42,14 @@ import { HeadingFilter } from './extensions/heading-filter'
 import { HeadingFold, headingFoldPluginKey } from './extensions/heading-fold'
 import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
-import {
-  HighlightWithMarkdown,
-  // Kept as a roll-back hatch for the legacy markdown-link path; flip the
-  // import name back to `HyperlinkWithMarkdown` and swap it into `extensions`
-  // below if the new mobile sheet pipeline regresses.
-  HyperlinkWithMarkdown as _HyperlinkWithMarkdown
-  // ImageWithMarkdown
-} from './extensions/markdown-extensions'
+import { Highlight } from './extensions/highlight'
 import { MarkdownPaste } from './extensions/markdown-paste'
 import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
+import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { buildBreadcrumbPlaceholder } from './placeholders'
-// import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
 
 const headingTableUid = new ShortUniqueId()
@@ -191,18 +178,19 @@ const Editor = ({
       linkOnPaste: false,
       autolink: true,
       exitable: true,
+      // Yield media-provider URLs to hypermultimedia's paste-rules so a pasted
+      // YouTube/Vimeo/SoundCloud/X/image link becomes an embed node, not a link.
+      shouldAutoLink: (url: string) => !isMediaUrl(url),
       popovers: getHyperlinkPopoverConfig(isMobile)
     }),
-    // HyperMultimediaKit.configure({
-    //   Image: false
-    // }),
-    // ImageWithMarkdown.configure({
-    //   inline: true,
-    //   allowBase64: true
-    // }),
-    // MediaUploadPlaceholder,
+    HyperMultimediaKit.configure({
+      Image: { inline: true, allowBase64: true },
+      // Host-agnostic toolbar: desktop floating toolbar, mobile bottom-sheet.
+      mediaToolbar: getMediaToolbarFactory(!!isMobile)
+    }),
+    MediaUploadPlaceholder,
     MarkdownPaste,
-    HighlightWithMarkdown,
+    Highlight,
     Typography,
     Table.configure({
       resizable: true
@@ -241,7 +229,11 @@ const Editor = ({
 
     if (localPersistence && docName && canUseIndexedDb) {
       const ydoc = new Y.Doc()
-      new IndexeddbPersistence(docName, ydoc)
+      // `::media-v2` invalidates IndexedDB caches holding pre-2.0 PascalCase
+      // media node bytes, forcing a one-time re-sync from the (migrating)
+      // server. A camelCase-only client binding stale bytes would throw
+      // "Unknown node type: Image" before the server transform runs.
+      new IndexeddbPersistence(`${docName}::media-v2`, ydoc)
 
       extensions.push(
         Collaboration.configure({

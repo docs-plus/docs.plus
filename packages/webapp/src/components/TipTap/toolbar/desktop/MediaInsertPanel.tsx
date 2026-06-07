@@ -4,47 +4,33 @@ import { usePopoverState } from '@components/ui/Popover'
 import TextInput from '@components/ui/TextInput'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
-import { type ProseMirrorNode, TIPTAP_NODES } from '@types'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FaSoundcloud, FaVimeo, FaXTwitter, FaYoutube } from 'react-icons/fa6'
 import { FiFilm } from 'react-icons/fi'
 import { MdAudiotrack, MdCloudUpload, MdOutlineImage } from 'react-icons/md'
 
-// Types and Interfaces
-type MediaType = 'Picture' | 'Video' | 'Audio' | 'Youtube' | 'Vimeo' | 'SoundCloud' | 'x.com'
+import {
+  calculateAdaptiveDimensions,
+  type ImageDimensions,
+  uploadMediaFile
+} from '../../mediaPopovers/uploadMediaFile'
+
+const LOOM_URL_REGEX = /https?:\/\/(www\.)?loom\.com\/(share|embed)\/[a-zA-Z0-9]+(?:\?[^\s]*)?/
+
+type MediaType =
+  | 'Picture'
+  | 'Video'
+  | 'Audio'
+  | 'Youtube'
+  | 'Vimeo'
+  | 'SoundCloud'
+  | 'Loom'
+  | 'x.com'
 
 interface MediaConfig {
   icon: React.ComponentType<{ size?: number }>
   command: string
   regex: RegExp
-}
-
-interface ImageDimensions {
-  width: number
-  height: number
-  aspectRatio: number
-  originalWidth?: number
-  originalHeight?: number
-}
-
-interface DocumentMetadata {
-  documentId: string
-}
-
-interface UploadedMediaResponse {
-  fileAddress: string
-  fileType: keyof typeof FILE_TYPE_MAP
-}
-
-interface UploadPlaceholderAttributes {
-  src: string
-  width?: number
-  height?: number
-}
-
-interface EditorFileUploadEventDetail {
-  file: File
-  editor: Editor
 }
 
 type MediaCommandPayload = {
@@ -53,7 +39,6 @@ type MediaCommandPayload = {
   height?: number
 }
 
-// Constants
 const MEDIA_CONFIG: Record<MediaType, MediaConfig> = {
   Picture: {
     icon: MdOutlineImage,
@@ -76,90 +61,27 @@ const MEDIA_CONFIG: Record<MediaType, MediaConfig> = {
   Youtube: {
     icon: FaYoutube,
     command: 'setYoutubeVideo',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/g
+    regex: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/
   },
   Vimeo: {
     icon: FaVimeo,
     command: 'setVimeo',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:vimeo\.com)\/?(.+)/g
+    regex: /(?:https?:\/\/)?(?:www\.)?(?:vimeo\.com)\/?(.+)/
   },
   SoundCloud: {
     icon: FaSoundcloud,
     command: 'setSoundCloud',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:soundcloud\.com)\/?(.+)/g
+    regex: /(?:https?:\/\/)?(?:www\.)?(?:soundcloud\.com)\/?(.+)/
+  },
+  Loom: {
+    icon: FiFilm,
+    command: 'setLoom',
+    regex: LOOM_URL_REGEX
   },
   'x.com': {
     icon: FaXTwitter,
-    command: 'setTwitter',
-    regex: /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/?(.+)/g
-  }
-}
-
-const DEFAULT_DIMENSIONS = {
-  maxWidth: 800,
-  maxHeight: 600,
-  minWidth: 200,
-  minHeight: 150
-} as const
-
-const FILE_TYPE_MAP = {
-  image: 'Image',
-  video: 'Video',
-  audio: 'Audio'
-} as const
-
-// Utility Functions
-const generateUploadId = (): string =>
-  `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-const getFileType = (file: File): keyof typeof FILE_TYPE_MAP => {
-  if (file.type.startsWith('image/')) return 'image'
-  if (file.type.startsWith('video/')) return 'video'
-  if (file.type.startsWith('audio/')) return 'audio'
-  return 'image'
-}
-
-const calculateAdaptiveDimensions = (
-  originalWidth: number,
-  originalHeight: number
-): ImageDimensions => {
-  if (!originalWidth || !originalHeight) {
-    return { width: 400, height: 300, aspectRatio: 4 / 3 }
-  }
-
-  const { maxWidth, maxHeight, minWidth, minHeight } = DEFAULT_DIMENSIONS
-  const aspectRatio = originalWidth / originalHeight
-  let targetWidth = originalWidth
-  let targetHeight = originalHeight
-
-  // Scale down if too large
-  if (originalWidth > maxWidth) {
-    targetWidth = maxWidth
-    targetHeight = Math.round(maxWidth / aspectRatio)
-  }
-
-  if (targetHeight > maxHeight) {
-    targetHeight = maxHeight
-    targetWidth = Math.round(maxHeight * aspectRatio)
-  }
-
-  // Scale up if too small
-  if (targetWidth < minWidth && targetHeight < minHeight) {
-    if (aspectRatio >= 1) {
-      targetWidth = minWidth
-      targetHeight = Math.round(minWidth / aspectRatio)
-    } else {
-      targetHeight = minHeight
-      targetWidth = Math.round(minHeight * aspectRatio)
-    }
-  }
-
-  return {
-    width: Math.round(targetWidth),
-    height: Math.round(targetHeight),
-    aspectRatio: Math.round(aspectRatio * 100) / 100,
-    originalWidth,
-    originalHeight
+    command: 'setX',
+    regex: /(?:https?:\/\/)?(?:www\.)?(?:x\.com|twitter\.com)\/?(.+)/
   }
 }
 
@@ -170,156 +92,42 @@ const detectMediaType = (url: string): MediaType => {
   return 'Picture'
 }
 
-const getImageDimensions = async (file: File): Promise<ImageDimensions & { localUrl: string }> => {
-  const localUrl = URL.createObjectURL(file)
-
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => {
-      const dimensions = calculateAdaptiveDimensions(img.width, img.height)
-      resolve({ ...dimensions, localUrl })
-    }
-    img.onerror = () =>
-      resolve({
-        width: 400,
-        height: 300,
-        aspectRatio: 4 / 3,
-        localUrl
-      })
-    img.src = localUrl
-  })
-}
-
 const runMediaCommand = (
   editor: Editor,
   commandName: string,
   payload: MediaCommandPayload
 ): void => {
   const chain = editor.chain().focus()
-  const typedChain = chain as unknown as Record<
-    string,
-    (attrs: MediaCommandPayload) => { run: () => boolean }
-  >
-  const command = typedChain[commandName]
-  if (typeof command !== 'function') {
-    throw new Error(`Unsupported media command: ${commandName}`)
+  switch (commandName) {
+    case 'setImage':
+      chain.setImage(payload).run()
+      break
+    case 'setVideo':
+      chain.setVideo(payload).run()
+      break
+    case 'setAudio':
+      chain.setAudio(payload).run()
+      break
+    case 'setYoutubeVideo':
+      chain.setYoutubeVideo(payload).run()
+      break
+    case 'setVimeo':
+      chain.setVimeo(payload).run()
+      break
+    case 'setSoundCloud':
+      chain.setSoundCloud(payload).run()
+      break
+    case 'setLoom':
+      chain.setLoom(payload).run()
+      break
+    case 'setX':
+      chain.setX(payload).run()
+      break
+    default:
+      throw new Error(`Unsupported media command: ${commandName}`)
   }
-  command(payload).run()
 }
 
-// Custom Hooks
-const useUploadManager = (editor: Editor | null) => {
-  const uploadFile = useCallback(
-    async (file: File, docMetadata: DocumentMetadata) => {
-      if (!editor) return
-      const uploadId = generateUploadId()
-      const fileType = getFileType(file)
-
-      let imageData: Partial<ImageDimensions & { localUrl: string }> = {}
-      if (fileType === 'image') {
-        imageData = await getImageDimensions(file)
-      }
-
-      // Insert placeholder
-      editor.commands.insertContent({
-        type: TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE,
-        attrs: {
-          progress: 0,
-          fileName: file.name,
-          fileType,
-          uploadId,
-          ...imageData
-        }
-      })
-
-      const formData = new FormData()
-      formData.append('mediaFile', file, file.name)
-
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${docMetadata.documentId}`,
-          {
-            method: 'POST',
-            body: formData
-          }
-        )
-
-        if (!response.ok) throw new Error('Upload failed')
-
-        const result = (await response.json()) as UploadedMediaResponse
-        const mediaURL = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${result.fileAddress}`
-
-        if (!result.fileType) {
-          throw new Error('File type is not recognized.')
-        }
-
-        // Replace placeholder with actual media
-        const mediaType = FILE_TYPE_MAP[result.fileType as keyof typeof FILE_TYPE_MAP] || 'Image'
-        const { state } = editor
-        let placeholderPos: number | null = null
-
-        state.doc.descendants((node: ProseMirrorNode, pos: number) => {
-          if (
-            node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
-            node.attrs.uploadId === uploadId
-          ) {
-            placeholderPos = pos
-            return false
-          }
-        })
-
-        if (placeholderPos !== null) {
-          const tr = state.tr
-          const nodeAttrs: UploadPlaceholderAttributes = { src: mediaURL }
-
-          if (mediaType === 'Image' && typeof imageData.width === 'number') {
-            nodeAttrs.width = imageData.width
-          }
-          if (mediaType === 'Image' && typeof imageData.height === 'number') {
-            nodeAttrs.height = imageData.height
-          }
-
-          tr.replaceWith(
-            placeholderPos,
-            placeholderPos + 1,
-            state.schema.nodes[mediaType].create(nodeAttrs)
-          )
-          editor.view.dispatch(tr)
-        }
-
-        toast.Success('Upload successful!')
-      } catch (error) {
-        console.error('Upload error:', error)
-        toast.Error(error instanceof Error ? error.message : 'Error uploading file')
-
-        // Remove placeholder on error
-        const { state } = editor
-        let placeholderPos: number | null = null
-
-        state.doc.descendants((node: ProseMirrorNode, pos: number) => {
-          if (
-            node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
-            node.attrs.uploadId === uploadId
-          ) {
-            placeholderPos = pos
-            return false
-          }
-        })
-
-        if (placeholderPos !== null) {
-          const tr = state.tr
-          tr.delete(placeholderPos, placeholderPos + 1)
-          editor.view.dispatch(tr)
-        }
-      }
-    },
-    [editor]
-  )
-
-  return { uploadFile }
-}
-
-// Components
 interface MediaTypeButtonProps {
   type: MediaType
   isActive: boolean
@@ -357,7 +165,6 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    // Only reset if actually leaving the container
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setIsDragOver(false)
     }
@@ -437,27 +244,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
   const [mediaURL, setMediaURL] = useState('')
   const [mediaType, setMediaType] = useState<MediaType>('Picture')
   const inputRef = useRef<HTMLInputElement>(null)
-  const { uploadFile } = useUploadManager(editor)
   const { close } = usePopoverState()
-
-  // Listen for clipboard file uploads from the extension
-  useEffect(() => {
-    const handleEditorFileUpload = (event: Event) => {
-      if (!(event instanceof CustomEvent)) return
-      const { file, editor: eventEditor } = event.detail as EditorFileUploadEventDetail
-
-      // Only handle if this is for our editor instance
-      if (eventEditor === editor && file && docMetadata) {
-        uploadFile(file, docMetadata)
-      }
-    }
-
-    document.addEventListener('editorFileUpload', handleEditorFileUpload)
-
-    return () => {
-      document.removeEventListener('editorFileUpload', handleEditorFileUpload)
-    }
-  }, [editor, uploadFile, docMetadata])
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 300)
@@ -485,7 +272,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
 
   const handleFileUpload = (file: File) => {
     if (file && docMetadata) {
-      uploadFile(file, docMetadata)
+      void uploadMediaFile(editor, file, docMetadata)
       close()
     }
   }
@@ -495,7 +282,6 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
   return (
     <div className="w-96 px-3 py-1 pt-0">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Media Type Selector */}
         <div className="w-full">
           <h3 className="label-text mb-2 font-medium">Media Type</h3>
           <div className="join bg-base-300 relative z-1 flex rounded-md">
@@ -510,7 +296,6 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
           </div>
         </div>
 
-        {/* URL Input */}
         <div className="form-control">
           <div className="join w-full">
             <TextInput
@@ -533,7 +318,6 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
           </div>
         </div>
 
-        {/* File Upload */}
         <UploadDropzone onFileUpload={handleFileUpload} />
       </form>
     </div>

@@ -17,6 +17,7 @@ import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
 import LinkEditorSheet from './TipTap/hyperlinkPopovers/LinkEditorSheet'
 import LinkPreviewSheet from './TipTap/hyperlinkPopovers/LinkPreviewSheet'
+import MediaControlsSheet from './TipTap/mediaPopovers/MediaControlsSheet'
 
 // ---------------------------------------------------------------------------
 // Sheet content registry – maps a sheet type to its rendered content.
@@ -35,7 +36,8 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   bookmarks: () => <BookmarkSheet />,
   documentSettings: () => <DocumentSettingsSheet />,
   linkPreview: (data) => <LinkPreviewSheet data={data} />,
-  linkEditor: (data) => <LinkEditorSheet data={data} />
+  linkEditor: (data) => <LinkEditorSheet data={data} />,
+  mediaControls: (data) => <MediaControlsSheet data={data} />
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +80,10 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   },
   linkEditor: {
     id: 'link_editor_sheet',
+    detent: 'content'
+  },
+  mediaControls: {
+    id: 'media_controls_sheet',
     detent: 'content'
   }
 }

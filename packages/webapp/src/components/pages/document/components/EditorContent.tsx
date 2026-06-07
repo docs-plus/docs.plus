@@ -1,5 +1,6 @@
 import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
 import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
+import { useMediaPasteUpload } from '@components/TipTap/mediaPopovers/useMediaPasteUpload'
 import { useEditorFocusScroll, useEnableEditor } from '@hooks/useCaretPosition'
 import useDoubleTap from '@hooks/useDoubleTap'
 import { useStore } from '@stores'
@@ -24,6 +25,9 @@ const EditorContent = ({ className }: { className?: string }) => {
   const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
   const editorElement = useRef<HTMLDivElement>(null)
   const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
+
+  // Clipboard/file uploads dispatched by the image extension's paste plugin.
+  useMediaPasteUpload(editor)
 
   // Auto-scroll caret into view on any focus (direct tap, etc.)
   useEditorFocusScroll()
