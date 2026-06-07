@@ -1,13 +1,4 @@
-export {
-  type AdoptMetadata,
-  type ControllerState,
-  createPopoverController,
-  getDefaultController,
-  type ManagedPopover,
-  type PopoverController,
-  type PopoverKind,
-  resetDefaultController,
-  setDefaultController,
-  type VirtualCoordinates
-} from './controller'
-export { createPopover, DEFAULT_OFFSET, type Popover, type PopoverOptions } from './createPopover'
+// The floating engine was hoisted to its own published package so the
+// hypermultimedia extension can share one popover surface. This shim keeps
+// every internal `../floating-popover` import path stable.
+export * from '@docs.plus/floating-popover'

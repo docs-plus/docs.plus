@@ -4,7 +4,7 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 
 ## Schema And Commands
 
-- The webapp couples to this extension through `packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts` as `HyperlinkWithMarkdown = Hyperlink.extend({ markdownTokenName: 'link', parseMarkdown, renderMarkdown })`. Parsing applies mark name `hyperlink`.
+- Markdown import/export lives **in this package** on the `Hyperlink` mark itself: `markdownTokenName: 'link'` + `parseMarkdown`/`renderMarkdown` (in `hyperlink.ts`). The hooks are inert unless the host also loads a Markdown extension; the webapp uses the base `Hyperlink` directly (no `*WithMarkdown` wrapper). Parsing applies mark name `hyperlink` (the `HYPERLINK_MARK_NAME` constant).
 - The `hyperlink` mark name is locked by markdown wiring and stored production Yjs docs. Never rename it to `link`.
 - This package is **not** a drop-in schema replacement for `@tiptap/extension-link`; migration docs describe moving into `@docs.plus/extension-hyperlink`.
 - Same-document hyperlink targets update URL/hash/route for in-app navigation. Do not treat them as external opens.

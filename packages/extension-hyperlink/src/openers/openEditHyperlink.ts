@@ -8,20 +8,18 @@ import { findLiveEquivalentAnchor } from './liveAnchor'
 
 const OFFSCREEN_COORD_PX = -9999
 
-// Module-local stash for the prebuilt edit popover's Back button.
-// Cleared whenever the controller transitions AWAY FROM an already-
-// established edit kind (close, replaced by a non-edit popover) so a
-// stale stash never leaks into a future re-open via
-// `consumeStashedEditOptions()`. The "already-established" guard
-// matters because `createPopover` self-adopts under the transient
-// `'unknown'` kind before the opener tags it as `'edit'`; without the
-// guard, that mid-flight notification would wipe the stash we just
-// wrote (regression: prebuilt edit popover's Back button would close
-// instead of returning to preview).
+// Stash for the prebuilt edit popover's Back button, cleared only when leaving
+// an *established* edit. `createPopover` self-adopts as transient `'unknown'`
+// before the opener tags `'edit'`; an unguarded clear on that notification
+// wipes the just-written stash and Back closes instead of returning to preview.
 let stashed: { editor: Editor; opts: EditHyperlinkOptions } | null = null
 let unsubscribe: (() => void) | null = null
 let wasEdit = false
 
+// Lazily subscribe only while an edit popover is live, and tear the
+// subscription down once the controller idles — previously the module-level
+// subscription was created on first edit and never released (it outlived the
+// popover and survived `resetDefaultController()`).
 function ensureSubscription(): void {
   if (unsubscribe) return
   unsubscribe = getDefaultController().subscribe((state) => {
@@ -32,6 +30,10 @@ function ensureSubscription(): void {
     if (wasEdit) {
       stashed = null
       wasEdit = false
+    }
+    if (state.kind === 'idle') {
+      unsubscribe?.()
+      unsubscribe = null
     }
   })
 }
@@ -92,10 +94,9 @@ export function openEditHyperlink(editor: Editor, opts: EditHyperlinkOptions): v
     element: popover.element,
     referenceElement: null
   })
-  // Stash AFTER the `'edit'` adopt so the transient `'unknown'`
-  // notification from `createPopover`'s self-adopt never sees a
-  // populated stash to clear (the subscriber's `wasEdit` guard makes
-  // that defensive too — belt-and-braces).
+  // Stash after the `'edit'` adopt so the transient `'unknown'` notification
+  // never sees a populated stash to clear (the `wasEdit` guard is redundant
+  // insurance for that ordering).
   stashed = { editor, opts }
   popover.show()
 }

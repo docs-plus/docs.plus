@@ -81,6 +81,7 @@
     "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
+    "@docs.plus/floating-popover": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@eslint/js": "catalog:",
     "@tiptap/core": "catalog:",

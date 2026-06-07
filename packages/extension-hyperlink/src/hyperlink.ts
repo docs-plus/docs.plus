@@ -1,4 +1,13 @@
-import { Editor, Mark, mergeAttributes } from '@tiptap/core'
+import {
+  Editor,
+  type JSONContent,
+  Mark,
+  type MarkdownParseHelpers,
+  type MarkdownRendererHelpers,
+  type MarkdownToken,
+  mergeAttributes,
+  type RenderContext
+} from '@tiptap/core'
 import { MarkType } from '@tiptap/pm/model'
 import { registerCustomProtocol } from 'linkifyjs'
 
@@ -126,6 +135,22 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   priority: 1000,
 
   keepOnSplit: false,
+
+  // Markdown import/export lives with the mark itself (inert unless the host
+  // also loads a Markdown extension). Parsing applies the locked `hyperlink`
+  // mark name; the `[text](href)` escaping mirrors marked.js link tokens.
+  markdownTokenName: 'link',
+
+  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) =>
+    helpers.applyMark(HYPERLINK_MARK_NAME, helpers.parseInline(token.tokens ?? []), {
+      href: token.href || ''
+    }),
+
+  renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
+    const content = helpers.renderChildren(node).replace(/\]/g, '\\]')
+    const href = (node.attrs?.href || '').replace(/\)/g, '%29')
+    return `[${content}](${href})`
+  },
 
   addStorage() {
     return { context: null }

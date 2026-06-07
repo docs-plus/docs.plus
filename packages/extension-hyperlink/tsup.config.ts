@@ -6,6 +6,7 @@ import { defineTiptapExtensionConfig } from '../../tsup.base'
 
 export default defineConfig(
   defineTiptapExtensionConfig({
+    external: ['@tiptap/core', '@tiptap/pm', '@docs.plus/floating-popover'],
     async onSuccess() {
       copyFileSync(resolve('src/styles.css'), resolve('dist/styles.css'))
     }
