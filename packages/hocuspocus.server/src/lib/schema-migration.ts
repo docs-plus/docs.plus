@@ -8,7 +8,7 @@
  * It is idempotent — already-flat documents pass through unchanged.
  */
 
-interface PMNode {
+export interface PMNode {
   type: string
   attrs?: Record<string, unknown>
   content?: PMNode[]
@@ -52,7 +52,6 @@ function normalizeHeadingAttrs(
     normalized['toc-id'] = tocId
   }
 
-  // Clamp level to 1-6 range
   if (typeof normalized.level === 'number') {
     normalized.level = Math.max(1, Math.min(6, normalized.level))
   }
@@ -247,4 +246,31 @@ export function transformNestedToFlat(doc: PMNode): PMNode {
   }
 
   return out
+}
+
+/** Media node types: PascalCase → camelCase for hypermultimedia 2.0 stored docs. */
+const MEDIA_RENAME: Record<string, string> = {
+  Image: 'image',
+  Video: 'video',
+  Audio: 'audio',
+  Youtube: 'youtube',
+  Vimeo: 'vimeo',
+  SoundCloud: 'soundcloud',
+  Twitter: 'x'
+}
+
+/** True if any node still uses a legacy PascalCase media type. */
+export function hasLegacyMediaNodes(doc: PMNode): boolean {
+  const walk = (n: PMNode): boolean => n.type in MEDIA_RENAME || (n.content?.some(walk) ?? false)
+  return doc.content?.some(walk) ?? false
+}
+
+/** Idempotent rewrite of legacy media node types to their camelCase names. */
+export function renameMediaNodes(doc: PMNode): PMNode {
+  const map = (n: PMNode): PMNode => ({
+    ...n,
+    type: MEDIA_RENAME[n.type] ?? n.type,
+    content: n.content?.map(map)
+  })
+  return map(doc)
 }

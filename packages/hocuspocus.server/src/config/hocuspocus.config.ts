@@ -11,7 +11,12 @@ import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extensi
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
 import { prisma } from '../lib/prisma'
 import { dbLogger } from '../lib/logger'
-import { isOldSchema, transformNestedToFlat } from '../lib/schema-migration'
+import {
+  hasLegacyMediaNodes,
+  isOldSchema,
+  renameMediaNodes,
+  transformNestedToFlat
+} from '../lib/schema-migration'
 import { migrationExtensions } from '../lib/migration-extensions'
 
 export { Database }
@@ -96,11 +101,14 @@ const configureExtensions = () => {
                 unknown
               > | null
 
-              if (pmJson && isOldSchema(pmJson as any)) {
-                dbLogger.info({ documentName }, 'On-load schema migration: nested → flat')
-                const flatJson = transformNestedToFlat(pmJson as any)
+              if (pmJson && (isOldSchema(pmJson as any) || hasLegacyMediaNodes(pmJson as any))) {
+                dbLogger.info(
+                  { documentName },
+                  'On-load schema migration: nested→flat + media node rename'
+                )
+                const migrated = renameMediaNodes(transformNestedToFlat(pmJson as any) as any)
                 const newYdoc = TiptapTransformer.toYdoc(
-                  flatJson as unknown as Record<string, unknown>,
+                  migrated as unknown as Record<string, unknown>,
                   'default',
                   migrationExtensions
                 )
@@ -141,8 +149,6 @@ const configureExtensions = () => {
           meta.delete('isDraft')
         }
 
-        // Create a new Y.Doc to store the updated state
-        Y.applyUpdate(ydoc, state)
         const newState = Y.encodeStateAsUpdate(ydoc)
         const stateBase64 = Buffer.from(newState).toString('base64')
 

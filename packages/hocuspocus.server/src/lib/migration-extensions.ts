@@ -75,7 +75,8 @@ export const migrationExtensions = [
     Youtube: true,
     Vimeo: true,
     SoundCloud: true,
-    Twitter: true
+    Loom: true,
+    X: true
   }),
   MediaUploadPlaceholderNode,
   Hyperlink,

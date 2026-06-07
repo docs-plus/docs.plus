@@ -10,7 +10,13 @@ import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 
 import { migrationExtensions } from './migration-extensions'
-import { isOldSchema, transformNestedToFlat } from './schema-migration'
+import {
+  hasLegacyMediaNodes,
+  isOldSchema,
+  type PMNode,
+  renameMediaNodes,
+  transformNestedToFlat
+} from './schema-migration'
 
 /** Interactive transaction budget for documents with many history rows. */
 export const MIGRATION_TRANSACTION_TIMEOUT_MS = 120_000
@@ -130,6 +136,75 @@ export function planRow(data: Uint8Array): PlanRowResult {
   const nestedCheck = verifyRoundTripAndNotNested(newBytes)
   if (!nestedCheck.ok) {
     return { ok: false, phase: nestedCheck.phase, error: nestedCheck.error }
+  }
+
+  return { ok: true, plan: { action: 'update', bytes: newBytes } }
+}
+
+/**
+ * Plan media node rename (PascalCase→camelCase) for one Yjs payload.
+ * Fail-closed decode → rename → encode → round-trip verify; no I/O.
+ */
+export function planMediaRenameRow(data: Uint8Array): PlanRowResult {
+  const inputLen = data.byteLength
+
+  const decoded = ydocToPmJson(data)
+  if (!decoded.ok) {
+    return { ok: false, phase: 'decode_yjs', error: decoded.error }
+  }
+
+  const json = decoded.json as unknown as PMNode
+  if (!hasLegacyMediaNodes(json)) {
+    return { ok: true, plan: { action: 'skip' } }
+  }
+
+  let renamed: ReturnType<typeof renameMediaNodes>
+  try {
+    renamed = renameMediaNodes(json)
+  } catch (error) {
+    return { ok: false, phase: 'transform', error }
+  }
+
+  let newBytes: Uint8Array
+  try {
+    newBytes = pmJsonToYdocBytes(renamed as unknown as Record<string, unknown>)
+  } catch (error) {
+    return { ok: false, phase: 'encode_yjs', error }
+  }
+
+  if (inputLen > 0 && newBytes.byteLength === 0) {
+    return {
+      ok: false,
+      phase: 'encode_yjs',
+      error: new Error(
+        'Refusing to persist empty Yjs update: input had bytes but encode produced zero length'
+      )
+    }
+  }
+
+  try {
+    const ydoc = new Y.Doc()
+    Y.applyUpdate(ydoc, newBytes)
+    const decodedAfter = TiptapTransformer.fromYdoc(ydoc, 'default') as Record<
+      string,
+      unknown
+    > | null
+    if (decodedAfter == null) {
+      return {
+        ok: false,
+        phase: 'verify_roundtrip',
+        error: new Error('Round-trip fromYdoc returned null')
+      }
+    }
+    if (hasLegacyMediaNodes(decodedAfter as unknown as PMNode)) {
+      return {
+        ok: false,
+        phase: 'post_verify',
+        error: new Error('Decoded migrated state still contains legacy PascalCase media node types')
+      }
+    }
+  } catch (error) {
+    return { ok: false, phase: 'verify_roundtrip', error }
   }
 
   return { ok: true, plan: { action: 'update', bytes: newBytes } }
