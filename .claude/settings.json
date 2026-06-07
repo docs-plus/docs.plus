@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "buildkite@claude-plugins-official": true
+  }
+}
