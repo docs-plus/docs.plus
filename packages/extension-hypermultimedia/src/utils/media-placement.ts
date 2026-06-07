@@ -1,85 +1,42 @@
-import { Editor } from '@tiptap/core'
+export const MEDIA_MARGIN_OPTIONS = [
+  { value: '0in', label: '0"' },
+  { value: '0.06in', label: '1/16"' },
+  { value: '0.13in', label: '1/8"' },
+  { value: '0.25in', label: '1/4"' },
+  { value: '0.38in', label: '3/8"' },
+  { value: '0.5in', label: '1/2"' },
+  { value: '0.75in', label: '3/4"' },
+  { value: '1in', label: '1"' }
+] as const
 
-import * as Icons from './icons'
-import {
-  applyStyleAndAttributes,
-  btnPlacementSettings,
-  clearChildNodes,
-  createElement,
-  createMarginSelection,
-  highlightButton,
-  Ttooltip
-} from './utils'
+export type MediaPlacementId = 'inline' | 'center' | 'float-left' | 'float-right'
 
-export type MediaPlacement = {
-  editor: Editor
-  tooltip: Ttooltip
-  tippyModal: HTMLElement
-  iframe: HTMLIFrameElement | HTMLImageElement | HTMLAudioElement | HTMLVideoElement | HTMLElement
-  wrapper: HTMLElement
-  extraActions?: HTMLElement[]
+export const MEDIA_PLACEMENT_OPTIONS: ReadonlyArray<{ id: MediaPlacementId; label: string }> = [
+  { id: 'inline', label: 'Left' },
+  { id: 'center', label: 'Center' },
+  { id: 'float-left', label: 'Wrap left' },
+  { id: 'float-right', label: 'Wrap right' }
+]
+
+export function getMediaPlacementAttrs(
+  id: MediaPlacementId,
+  margin = '0.5in'
+): Record<string, string> {
+  switch (id) {
+    case 'inline':
+      return { display: 'block', float: 'none', clear: 'none', margin: '0' }
+    case 'center':
+      return { display: 'block', float: 'none', clear: 'none', margin: 'auto' }
+    case 'float-left':
+      return { display: 'block', float: 'left', clear: 'none', margin }
+    case 'float-right':
+      return { display: 'block', float: 'right', clear: 'none', margin }
+  }
 }
 
-const buttonTypes: Icons.IconKeys[] = ['Inline', 'Left', 'InlineCenter', 'Right']
-
-export const mediaPlacement = (options: MediaPlacement): void => {
-  const { editor, tooltip, tippyModal, iframe: targetElement, wrapper, extraActions } = options
-  const nodePos = editor.view.posAtDOM(wrapper, 0)
-  const { attrs: mediaNodeAttrs = {} } = editor.state.doc.nodeAt(nodePos) || {}
-  const { float, display, margin: mediaMargin } = mediaNodeAttrs
-
-  clearChildNodes(tippyModal)
-
-  const div = createElement('div', 'hypermultimedia__modal')
-  const [buttonInline, btnSquareLeft, btnSquareCenter, btnSquareRight] = buttonTypes.map((type) => {
-    return createElement('button', '', Icons[type]())
-  })
-
-  btnPlacementSettings(mediaMargin, [
-    buttonInline,
-    btnSquareCenter,
-    btnSquareLeft,
-    btnSquareRight
-  ]).forEach(({ button, style, attributes }) => {
-    button.addEventListener('click', () => {
-      return applyStyleAndAttributes(wrapper, style, attributes, editor, tooltip, nodePos)
-    })
-    button.addEventListener('touchstart', (e) => {
-      e.preventDefault()
-      return applyStyleAndAttributes(wrapper, style, attributes, editor, tooltip, nodePos)
-    })
-  })
-
-  highlightButton(float, mediaMargin, display, {
-    btnSquareLeft,
-    btnSquareRight,
-    buttonInline,
-    btnSquareCenter
-  })
-
-  const marginDivider = createElement('div', 'hypermultimedia__modal__divider')
-
-  const selectMargin = createMarginSelection(nodePos, wrapper, tooltip, editor, mediaMargin)
-
-  selectMargin.style.display = marginDivider.style.display = 'none'
-
-  if (['left', 'right'].includes(float)) {
-    selectMargin.style.display = marginDivider.style.display = 'block'
-  }
-
-  div.append(
-    buttonInline,
-    btnSquareCenter,
-    btnSquareLeft,
-    btnSquareRight,
-    marginDivider,
-    selectMargin
-  )
-
-  tippyModal.append(div)
-
-  if (extraActions) div.append(...extraActions)
-
-  // Update the modal position
-  tooltip.update(options.editor.view, { placement: 'bottom-start' }, targetElement)
+export function getCurrentMediaPlacement(attrs: Record<string, unknown>): MediaPlacementId {
+  if (attrs.float === 'left') return 'float-left'
+  if (attrs.float === 'right') return 'float-right'
+  if (attrs.display === 'block' && attrs.margin === 'auto') return 'center'
+  return 'inline'
 }

@@ -18,7 +18,7 @@ export const MediaResizeGripper = Extension.create<MediaResizeGripperOptions>({
 
   addOptions() {
     return {
-      acceptedNodes: ['Image']
+      acceptedNodes: ['image']
     }
   },
 
@@ -34,10 +34,7 @@ export const MediaResizeGripper = Extension.create<MediaResizeGripperOptions>({
     return [
       new Plugin({
         key: new PluginKey('MediaResizeGripper'),
-        state: createDecorationPluginState(buildDecorations, acceptedNodes, () => {
-          // Optional initialization callback
-          // console.log('MediaResizeGripper plugin initialized')
-        }),
+        state: createDecorationPluginState(buildDecorations, acceptedNodes),
         props: createDecorationPluginProps()
       })
     ]

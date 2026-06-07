@@ -7,7 +7,7 @@ Use this extension to render `<audio>` HTML tags. Block Or Inline level node.
 ## Installation
 
 ```bash
-npm install @docs.plus/extension-hypermultimedia
+bun add @docs.plus/extension-hypermultimedia
 ```
 
 Then, import the extension into your editor:
@@ -19,6 +19,10 @@ HyperMultimediaKit.configure({
   Audio
 })
 ```
+
+## Kit options vs node attributes
+
+`HyperMultimediaKit.configure({ Audio: { controls: true, … } })` sets schema defaults on each inserted node. The node view and `renderHTML` read **node attrs** (`controls`, `autoplay`, `loop`, `muted`, `preload`, `volume`) — not live kit options after insert. Override per insert via `setAudio({ … })`.
 
 ## Settings
 
@@ -160,6 +164,13 @@ HyperMultimediaKit.configure({
   }
 })
 ```
+
+## Caption
+
+Add a caption from the toolbar; the text is stored in the node `caption` attribute
+and persists via collaboration and JSON. Audio emits no `<figure>` in HTML — the
+caption is editor and attribute only (HTML `<figure>` round-trip is `image`-only).
+Audio also exposes a Download action.
 
 ## Commands
 

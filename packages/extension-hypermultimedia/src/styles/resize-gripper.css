@@ -1,0 +1,129 @@
+/* Media resize: 1px selection border + eight square handles (Google Docs pattern). */
+.hypermultimedia__resize-gripper {
+  position: absolute;
+  margin: 0;
+  display: none;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.hypermultimedia__resize-gripper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--hm-resize-border, #1a73e8);
+  pointer-events: none;
+}
+
+.hypermultimedia__resize-gripper--active {
+  display: block;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  display: none;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.hypermultimedia__resize-gripper--active .media-resize-clamp {
+  display: block;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  background: var(--hm-resize-handle-bg, #fff);
+  border: 1px solid var(--hm-resize-border, #1a73e8);
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--left {
+  left: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: ew-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--right {
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  cursor: ew-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--top {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  cursor: ns-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--bottom {
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  cursor: ns-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--top-left {
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  cursor: nwse-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--top-right {
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  cursor: nesw-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--bottom-left {
+  bottom: 0;
+  left: 0;
+  transform: translate(-50%, 50%);
+  cursor: nesw-resize;
+}
+
+.hypermultimedia__resize-gripper .media-resize-clamp--bottom-right {
+  bottom: 0;
+  right: 0;
+  transform: translate(50%, 50%);
+  cursor: nwse-resize;
+}
+
+/* Drag: gripper decoration captures pointer — never inject into node-view contentDOM. */
+.hypermultimedia__resize-gripper--dragging {
+  pointer-events: auto;
+}
+
+.hypermultimedia__resize-gripper--dragging::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  touch-action: none;
+  pointer-events: auto;
+  cursor: inherit;
+}
+
+.hypermultimedia__resize-gripper--dragging .media-resize-clamp {
+  z-index: 3;
+}
+
+html.hypermultimedia--resize-dragging,
+html.hypermultimedia--resize-dragging * {
+  user-select: none !important;
+  cursor: inherit;
+}

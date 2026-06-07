@@ -1,27 +1,63 @@
+// Re-exported so the `media` command augmentation in surface.ts lands in the
+// bundled .d.ts (it is the single declaration point for every node's commands).
+export type { MediaPublicCommands } from './commands/surface'
 export * from './hyperMultimediaKit'
-export * from './modals/image'
-export * from './modals/twitter'
-export * from './modals/youtube'
-export { Image as HyperMultimediaImage } from './nodes/image/image'
-export * from './utils/floating-toolbar'
-export * from './utils/media-placement'
+export {
+  createDefaultMediaLoadingShell,
+  type MediaLoadingBindLoadOptions,
+  type MediaLoadingController,
+  type MediaLoadingKind,
+  type MediaLoadingShellContext,
+  type MediaLoadingShellFactory,
+  type MediaLoadingShellOption,
+  type MediaLoadingShellWrapOptions,
+  wrapMediaWithLoadingShell
+} from './loading'
+export {
+  buildXOEmbedParams,
+  resolveXEmbedSizeId,
+  X_EMBED_DEFAULT_MAXWIDTH,
+  X_EMBED_SIZE_OPTIONS,
+  X_EMBED_THEME_OPTIONS,
+  type XEmbedSizeId,
+  type XEmbedTheme
+} from './nodes/x/embedOptions'
+export {
+  canViewOriginal,
+  closeMediaToolbar,
+  copyMediaNode,
+  createMediaToolbar,
+  downloadMedia,
+  isDownloadable,
+  type MediaAction,
+  type MediaActionContext,
+  type MediaActionList,
+  type MediaActionPlacement,
+  type MediaActionsResolver,
+  type MediaToolbarFactory,
+  type MediaToolbarOptions,
+  openMediaToolbar,
+  removeMediaNode,
+  resolveMediaActions,
+  viewOriginalMedia
+} from './toolbar'
+export {
+  fitDimensionsToBounds,
+  fitLayoutToEditorColumn,
+  getEditorContentWidth
+} from './utils/fitImageDimensions'
+export { isMediaUrl } from './utils/isMediaUrl'
+export { applyNodeAttributes } from './utils/media-node-attrs'
+export {
+  getCurrentMediaPlacement,
+  getMediaPlacementAttrs,
+  MEDIA_MARGIN_OPTIONS,
+  MEDIA_PLACEMENT_OPTIONS,
+  type MediaPlacementId
+} from './utils/media-placement'
 
 import { HyperMultimediaKit } from './hyperMultimediaKit'
-import { imageModal } from './modals/image'
-import { twitterModal } from './modals/twitter'
-import { youtubeModal } from './modals/youtube'
-
-export const vimeoModal = youtubeModal
-
-export const soundCloudModal = youtubeModal
-
-export const videoModal = youtubeModal
-
-export const audioModal = twitterModal
 
 export default {
-  HyperMultimediaKit,
-  imageModal,
-  youtubeModal,
-  twitterModal
+  HyperMultimediaKit
 }

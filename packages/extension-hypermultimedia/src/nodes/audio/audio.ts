@@ -1,29 +1,25 @@
 import { mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
 
-import { MediaPlacement } from '../../utils/media-placement'
+import {
+  captionAttribute,
+  type CaptionHandle,
+  createCaptionElement,
+  readCaption
+} from '../../caption'
+import { wrapMediaWithLoadingShell } from '../../loading'
+import { embedAttrsEqual } from '../../utils/embedKit'
+import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
 import {
   applyStyles,
   createStyleString,
-  createTooltip,
   generateShortId,
-  StyleLayoutOptions
+  omitNullishAndFalse,
+  type StyleLayoutOptions
 } from '../../utils/utils'
 import { inputRegex } from './helper'
 
-interface AudioAttributes {
-  src?: string | null
-  controls?: boolean
-  autoplay?: boolean
-  loop?: boolean
-  muted?: boolean
-  preload?: 'none' | 'metadata' | 'auto'
-  volume?: number
-  [key: string]: any // Add an index signature
-}
-
 interface NodeOptions {
-  HTMLAttributes: Record<string, any>
-  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null
+  HTMLAttributes: Record<string, unknown>
 }
 
 export interface AudioOptions extends StyleLayoutOptions, NodeOptions {
@@ -42,25 +38,33 @@ export interface AudioOptions extends StyleLayoutOptions, NodeOptions {
 
 export type SetAudioOptions = {
   src: string
+  controls?: boolean
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  preload?: 'none' | 'metadata' | 'auto'
+  volume?: number
 } & StyleLayoutOptions
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    Audio: {
-      setAudio: (options: { src: string; title?: string; controls?: boolean }) => ReturnType
-    }
-  }
-}
+/** `<audio>` element attrs; remount the node view when any change. */
+const AUDIO_REMOUNT_ATTR_KEYS = [
+  'src',
+  'controls',
+  'autoplay',
+  'loop',
+  'muted',
+  'preload',
+  'volume'
+] as const
 
 export const Audio = Node.create<AudioOptions>({
-  name: 'Audio',
+  name: 'audio',
   draggable: true,
 
   addOptions() {
     return {
       src: null,
       controls: true,
-      modal: null,
       margin: 'auto',
       clear: 'none',
       float: null,
@@ -82,7 +86,7 @@ export const Audio = Node.create<AudioOptions>({
   addAttributes() {
     return {
       keyId: {
-        default: generateShortId()
+        default: null
       },
       src: {
         default: null
@@ -125,16 +129,15 @@ export const Audio = Node.create<AudioOptions>({
       },
       height: {
         default: null
-      }
+      },
+      caption: captionAttribute()
     }
   },
 
   addNodeView() {
-    return ({ node, HTMLAttributes }) => {
-      const editor = this.editor
-      const modal = this.options.modal
-      const { tooltip, tippyModal } = createTooltip(editor)
+    const editor = this.editor
 
+    return ({ node, HTMLAttributes, getPos }) => {
       const dom = document.createElement('div')
       const content = document.createElement('div')
       const audioTag = document.createElement('audio')
@@ -153,51 +156,68 @@ export const Audio = Node.create<AudioOptions>({
 
       applyStyles(dom, styles)
 
-      const htmlAttributes: AudioAttributes = {
-        src: this.options.src || HTMLAttributes.src,
-        controls: this.options.controls,
-        autoplay: this.options.autoplay,
-        loop: this.options.loop,
-        muted: this.options.muted,
-        preload: this.options.preload,
-        volume: this.options.volume
-      }
-
-      // loop through the attributes and remove any that are null or false
-      // (since they're not needed)
-      Object.keys(htmlAttributes).forEach((key) => {
-        if (htmlAttributes[key] === null || htmlAttributes[key] === false) {
-          delete htmlAttributes[key]
-        }
+      const htmlAttributes = omitNullishAndFalse({
+        src: node.attrs.src ?? HTMLAttributes.src,
+        controls: node.attrs.controls,
+        autoplay: node.attrs.autoplay,
+        loop: node.attrs.loop,
+        muted: node.attrs.muted,
+        preload: node.attrs.preload,
+        volume: node.attrs.volume
       })
 
       const attributes = mergeAttributes(htmlAttributes, {
         'data-node-name': this.name
       })
 
-      if (modal) {
-        audioTag.addEventListener('mouseenter', () => {
-          if (tooltip && tippyModal) {
-            modal({ editor, tooltip, tippyModal, iframe: audioTag, wrapper: dom })
-          }
-        })
-      }
-
       Object.entries(attributes).forEach(
         ([key, value]) => value && audioTag.setAttribute(key, value)
       )
 
       content.append(audioTag)
-      dom.append(content)
+
+      const shellWidth = parseInt(String(node.attrs.width), 10) || 450
+      const shellHeight = parseInt(String(node.attrs.height), 10) || 120
+
+      const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
+        editor,
+        { kind: 'audio', width: shellWidth, height: shellHeight },
+        content,
+        {
+          bindLoad: {
+            element: audioTag,
+            isAlreadyReady: () => audioTag.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+          }
+        }
+      )
+
+      dom.append(loadingHost)
+
+      const caption: CaptionHandle = createCaptionElement({
+        editor,
+        getPos,
+        initial: readCaption(node)
+      })
+      dom.append(caption.el)
 
       return {
         dom,
         contentDOM: content,
-        ignoreMutation: (mutation) => {
-          return !dom.contains(mutation.target) || dom === mutation.target
+        // Caption is a nested contenteditable the node view owns; keep PM out of its events.
+        stopEvent: (event: Event) => caption.el.contains(event.target as globalThis.Node | null),
+        destroy: () => {
+          controller.destroy()
+          caption.destroy()
         },
+        ignoreMutation: (mutation) => ignoreNodeViewSubtreeMutation(mutation, dom),
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
+
+          if (!embedAttrsEqual(updatedNode.attrs, node.attrs, AUDIO_REMOUNT_ATTR_KEYS)) {
+            return false
+          }
+
+          caption.sync(readCaption(updatedNode))
           return true
         }
       }
@@ -212,7 +232,7 @@ export const Audio = Node.create<AudioOptions>({
     ]
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     const style = createStyleString(this.options, {
       height: parseInt(HTMLAttributes.height),
       width: parseInt(HTMLAttributes.width),
@@ -221,22 +241,14 @@ export const Audio = Node.create<AudioOptions>({
       margin: HTMLAttributes.margin
     })
 
-    const htmlAttributes: AudioAttributes = {
-      src: this.options.src || HTMLAttributes.src,
-      controls: this.options.controls,
-      autoplay: this.options.autoplay,
-      loop: this.options.loop,
-      muted: this.options.muted,
-      preload: this.options.preload,
-      volume: this.options.volume
-    }
-
-    // loop through the attributes and remove any that are null or false
-    // (since they're not needed)
-    Object.keys(htmlAttributes).forEach((key) => {
-      if (htmlAttributes[key] === null || htmlAttributes[key] === false) {
-        delete htmlAttributes[key]
-      }
+    const htmlAttributes = omitNullishAndFalse({
+      src: node.attrs.src ?? HTMLAttributes.src,
+      controls: node.attrs.controls,
+      autoplay: node.attrs.autoplay,
+      loop: node.attrs.loop,
+      muted: node.attrs.muted,
+      preload: node.attrs.preload,
+      volume: node.attrs.volume
     })
 
     return [
@@ -245,7 +257,7 @@ export const Audio = Node.create<AudioOptions>({
       [
         'audio',
         mergeAttributes(htmlAttributes, { class: 'hypermultimedia--audio__content', style }),
-        0 // Zero indicates that this node can have content. For audio, it's usually empty.
+        0
       ]
     ]
   },
@@ -253,7 +265,7 @@ export const Audio = Node.create<AudioOptions>({
   addInputRules() {
     return [
       nodeInputRule({
-        find: inputRegex, // You'll need to define a regex for the audio similar to the video regex
+        find: inputRegex,
         type: this.type,
         getAttributes: (match) => {
           const [, , src, width, height] = match
@@ -275,7 +287,7 @@ export const Audio = Node.create<AudioOptions>({
 
           return commands.insertContent({
             type: this.name,
-            attrs: options
+            attrs: { ...options, keyId: generateShortId() }
           })
         }
     }

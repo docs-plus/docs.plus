@@ -1,416 +1,90 @@
 # SoundCloud
 
-This extension allows embedding SoundCloud tracks/playlist within your editor as a block-level node.
+Embeds SoundCloud tracks and playlists via the official HTML5 widget (`w.soundcloud.com/player`).
 
 ## Installation
 
 ```bash
-npm install @docs.plus/extension-hypermultimedia
+bun add @docs.plus/extension-hypermultimedia
 ```
-
-Then, import the extension into your editor:
-
-```js
-import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
-
-HyperMultimediaKit.configure({
-  SoundCloud
-})
-```
-
-## Settings
-
-### inline
-
-Controls if the node should be handled inline or as a block.
-
-- Target: `Node`
-- Default: `false`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    inline: true
-  }
-})
-```
-
-### visual
-
-Switch to a video player with `true` or an audio player with `false`.
-
-- target: `URLSearchParams`
-- Default: `false`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    visual: true
-  }
-})
-```
-
-### autoPlay
-
-Set to `true` to autoplay the track on load.
-
-- target: `URLSearchParams`
-- Default: `false`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    autoPlay: true
-  }
-})
-```
-
-### showComments, showReposts
-
-Toggle visibility of related tracks, comments and reposts respectively.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    showComments: false,
-    showReposts: false
-  }
-})
-```
-
-### hideRelated
-
-Toggle visibility of related tracks.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    hideRelated: true
-  }
-})
-```
-
-### autoPlay
-
-Set to `true` to autoplay the track on load. This attribute is used in `URLSearchParams` for the SoundCloud API request.
-
-- target: `URLSearchParams`
-- Default: `false`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    autoPlay: true
-  }
-})
-```
-
-### hide_related
-
-Toggle visibility of related tracks.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    hide_related: true
-  }
-})
-```
-
-### color
-
-Specify the color of the embedded player. Default color is `#ff5500`.
-
-- target: `URLSearchParams`
-- Default: `#ff5500`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    color: '#ff5500'
-  }
-})
-```
-
-### buying
-
-Toggle visibility of the buy button.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    buying: false
-  }
-})
-```
-
-### sharing
-
-Toggle visibility of the share button.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    sharing: false
-  }
-})
-```
-
-### download
-
-Toggle visibility of the download button.
-
-- target: `URLSearchParams`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    download: false
-  }
-})
-```
-
-### show_artwork
-
-Toggle visibility of the artwork.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    show_artwork: false
-  }
-})
-```
-
-### show_playcount
-
-Toggle visibility of the play count.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    show_playcount: false
-  }
-})
-```
-
-### show_user
-
-Toggle visibility of the uploader name and avatar.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    show_user: false
-  }
-})
-```
-
-### start_track
-
-Specify the track number to start playing from.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    start_track: 2
-  }
-})
-```
-
-### single_active
-
-Toggle the single active player.
-
-- target: `URLSearchParams`
-- Default: `null`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    single_active: false
-  }
-})
-```
-
-### width, height
-
-Specify the dimensions of the embedded player. Default width is `460` and height is `130`.
-
-- target: `iframe`
-- Default: `460` x `130`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    width: 500,
-    height: 160
-  }
-})
-```
-
-### scrolling
-
-Toggle scrolling of the embedded player.
-
-- target: `iframe`
-- Default: `no`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    scrolling: 'yes'
-  }
-})
-```
-
-### frameborder
-
-Toggle the frame border of the embedded player.
-
-- target: `iframe`
-- Default: `no`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    frameborder: 'yes'
-  }
-})
-```
-
-### allow
-
-Toggle autoplay of the embedded player.
-
-- target: `iframe`
-- Default: `autoplay`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    allow: 'autoplay'
-  }
-})
-```
-
-### addPasteHandler
-
-Enable the auto-embedding of SoundCloud tracks by pasting URLs directly into the editor.
-
-- target: `Node`
-- Default: `true`
-
-```js
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    addPasteHandler: false
-  }
-})
-```
-
-### HTMLAttributes
-
-Custom HTML attributes that should be added to the rendered HTML wrapper tag.
-
-- target: `Node`
-- Default: `{}`
 
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   SoundCloud: {
-    HTMLAttributes: {
-      class: 'my-custom-class'
-    }
+    visual: false,
+    auto_play: false
   }
 })
 ```
 
-### modal
+## Kit options vs node attributes
 
-A modal box that appears when you <u>**click on the track**</u>. A default modal box is provided which you can utilize or replace with your custom modal.
+Configure defaults on `HyperMultimediaKit.configure({ SoundCloud: { … } })`. Widget params use SoundCloud’s snake_case names ([widget docs](https://developers.soundcloud.com/docs/api/html5-widget)). Each node stores attrs; unset values fall back to kit defaults.
 
-- target: `Node`
-- Default: `true`
+The widget `url` param is always the SoundCloud page URL from `src`. Heights above ~130px default to `visual: true` (waveform player) unless `visual` is set explicitly on the node or command.
 
-```js
-import { hypermultimedia, soundCloudModal } from '@docs.plus/extension-hypermultimedia'
+## Layout
 
-HyperMultimediaKit.configure({
-  SoundCloud: {
-    modal: soundCloudModal // default modal
-  }
-})
-```
+| Option                                                  | Default                                  |
+| ------------------------------------------------------- | ---------------------------------------- |
+| `inline`                                                | `false`                                  |
+| `width`, `height`                                       | `450`, `120`                             |
+| `margin`, `float`, `clear`, `display`, `justifyContent` | `auto`, `null`, `none`, `block`, `start` |
 
-> To implement your own modal box, examine the default modal box and replicate the same methods. You can refer to the [source code](../../modals/youtube.ts) for more details.
+## Widget parameters
+
+| Kit / attr name  | Default | Notes                           |
+| ---------------- | ------- | ------------------------------- |
+| `auto_play`      | `false` |                                 |
+| `hide_related`   | `false` |                                 |
+| `show_comments`  | `true`  |                                 |
+| `show_user`      | `true`  |                                 |
+| `show_reposts`   | `true`  |                                 |
+| `visual`         | `false` | `true` = tall waveform player   |
+| `color`          | —       | Hex, e.g. `#0066CC`             |
+| `buying`         | `true`  |                                 |
+| `sharing`        | `true`  |                                 |
+| `download`       | `true`  |                                 |
+| `show_artwork`   | `true`  |                                 |
+| `show_playcount` | `true`  |                                 |
+| `start_track`    | —       | Playlist track index            |
+| `single_active`  | `true`  | Only one player plays at a time |
+
+Boolean widget values are sent as `true` / `false` strings.
+
+## Iframe HTML attributes
+
+| Option        | Default    |
+| ------------- | ---------- |
+| `scrolling`   | `no`       |
+| `frameborder` | `no`       |
+| `allow`       | `autoplay` |
+
+## Paste
+
+| Option            | Default |
+| ----------------- | ------- |
+| `addPasteHandler` | `true`  |
 
 ## Commands
 
-### setSoundCloud()
+### setSoundCloud(options)
 
-Embed a SoundCloud track into the current node.
+Returns `false` for an invalid URL.
 
 ```js
 editor.commands.setSoundCloud({
-  src: 'https://soundcloud.com/artist/track'
-})
-
-editor.commands.setSoundCloud({
   src: 'https://soundcloud.com/artist/track',
   visual: true,
-  autoPlay: false,
-  width: 500,
-  height: 160,
-  float: 'unset',
-  clear: 'none',
-  display: 'block',
-  margin: '0.2in'
+  height: 166,
+  hide_related: true
 })
 ```
 
-### Options
+Layout options plus any widget row above can be passed on the command.
 
-| Option         | Description                                                              | Default | Optional |
-| -------------- | ------------------------------------------------------------------------ | ------- | -------- |
-| src            | The URL of the youtube, (Iframe Source Attribute)                        | `null`  |          |
-| width          | The embed width (overrides the default option, optional)                 | `450`   | ✅       |
-| height         | The embed height (overrides the default option, optional)                | `120`   | ✅       |
-| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
-| clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
-| display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
-| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
-| justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
+## Source code
 
-## Source Code
-
-[packages/extension-hyperMultimedia/soundcloud](./soundCloud.ts)
+[`soundcloud.ts`](./soundcloud.ts), [`embedOptions.ts`](./embedOptions.ts)

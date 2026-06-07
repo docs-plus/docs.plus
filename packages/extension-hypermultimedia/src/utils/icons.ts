@@ -4,65 +4,64 @@ interface IconProps {
   className?: string
 }
 
-export type IconKeys = 'Inline' | 'Left' | 'InlineCenter' | 'Right' | 'Resize' | 'Sun' | 'Moon'
+const VIEW_BOX = '0 -960 960 960'
 
-export const Inline = ({ size = 22, fill = 'black', className = '' }: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 24 24" width=${size} xmlns="http://www.w3.org/2000/svg" >
-      <path d="M21 7H3V5h18v2zm0 10H3v2h18v-2zM11 9H3v6h8V9z" />
-    </svg>
-  `
+/** Google Material Symbols (outlined) path → inline SVG for imperative toolbar DOM. */
+function materialIcon(
+  path: string,
+  { size = 20, fill = 'currentColor', className = '' }: IconProps = {}
+): string {
+  const klass = className ? ` class="${className}"` : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg"${klass} height="${size}" width="${size}" viewBox="${VIEW_BOX}" fill="${fill}" aria-hidden="true"><path d="${path}"/></svg>`
 }
 
-export const InlineCenter = ({
-  size = 22,
-  fill = 'black',
-  className = ''
-}: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 24 24" width=${size} xmlns="http://www.w3.org/2000/svg" >
-      <path d="M3 5h18v2H3V5zm0 14h18v-2H3v2zm5-4h8V9H8v6z"/>
-    </svg>
-  `
+/** Official Material Symbols outlined paths — matches `@docs.plus/extension-hyperlink` icon style. */
+const PATHS = {
+  alignLeft:
+    'M120-120v-80h720v80H120Zm0-160v-80h480v80H120Zm0-160v-80h720v80H120Zm0-160v-80h480v80H120Zm0-160v-80h720v80H120Z',
+  alignCenter:
+    'M120-120v-80h720v80H120Zm160-160v-80h400v80H280ZM120-440v-80h720v80H120Zm160-160v-80h400v80H280ZM120-760v-80h720v80H120Z',
+  imageLeft:
+    'M120-280v-400h400v400H120Zm80-80h240v-240H200v240Zm-80-400v-80h720v80H120Zm480 160v-80h240v80H600Zm0 160v-80h240v80H600Zm0 160v-80h240v80H600ZM120-120v-80h720v80H120Z',
+  imageRight:
+    'M440-280v-400h400v400H440Zm80-80h240v-240H520v240ZM120-120v-80h720v80H120Zm0-160v-80h240v80H120Zm0-160v-80h240v80H120Zm0-160v-80h240v80H120Zm0-160v-80h720v80H120Z',
+  caption:
+    'M240-320h320v-80H240v80Zm400 0h80v-80h-80v80ZM240-480h80v-80h-80v80Zm160 0h320v-80H400v80ZM160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm0 0v-480 480Z',
+  externalLink:
+    'M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z',
+  download:
+    'M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z',
+  copy: 'M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z',
+  trash:
+    'M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z',
+  more: 'M240-400q-33 0-56.5-23.5T160-480q0-33 23.5-56.5T240-560q33 0 56.5 23.5T320-480q0 33-23.5 56.5T240-400Zm240 0q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm240 0q-33 0-56.5-23.5T640-480q0-33 23.5-56.5T720-560q33 0 56.5 23.5T800-480q0 33-23.5 56.5T720-400Z'
+} as const
+
+export type IconKeys =
+  | 'AlignLeft'
+  | 'AlignCenter'
+  | 'ImageLeft'
+  | 'ImageRight'
+  | 'Caption'
+  | 'ExternalLink'
+  | 'Download'
+  | 'Copy'
+  | 'Trash'
+  | 'More'
+
+type IconRenderer = (props?: IconProps) => string
+
+function icon(path: string): IconRenderer {
+  return (props) => materialIcon(path, props)
 }
 
-export const Left = ({ size = 22, fill = 'black', className = '' }: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 24 24" width=${size} xmlns="http://www.w3.org/2000/svg" >
-      <path d="M3 5h18v2H3V5zm0 14h18v-2H3v2zm0-4h8V9H3v6zm10 0h8v-2h-8v2zm0-4h8V9h-8v2z" />
-    </svg>
-  `
-}
-
-export const Right = ({ size = 22, fill = 'black', className = '' }: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 24 24" width=${size} xmlns="http://www.w3.org/2000/svg" >
-        <path d="M21 7H3V5h18v2zm0 10H3v2h18v-2zm0-8h-8v6h8V9zm-10 4H3v2h8v-2zm0-4H3v2h8V9z" />
-    </svg>
-  `
-}
-
-export const Resize = ({ size = 24, fill = 'black', className = '' }: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 20 20" width=${size} xmlns="http://www.w3.org/2000/svg" >
-      <path d="M17.5 6.25V2.5h-3.75v1.25H6.25V2.5H2.5v3.75h1.25v7.5H2.5v3.75h3.75v-1.25h7.5v1.25h3.75v-3.75h-1.25v-7.5H17.5zM15 3.75h1.25v1.25H15V3.75zM3.75 3.75H5v1.25H3.75V3.75zM5 16.25H3.75v-1.25H5v1.25zM16.25 16.25h-1.25v-1.25h1.25v1.25zM15 13.75h-1.25v1.25H6.25v-1.25H5v-7.5h1.25V5h7.5v1.25H15v7.5z"/>
-      <polygon points="10.625,7.5 9.375,7.5 9.375,9.375 7.5,9.375 7.5,10.625 9.375,10.625 9.375,12.5 10.625,12.5 10.625,10.625 12.5,10.625 12.5,9.375 10.625,9.375 "/>
-    </svg>
-  `
-}
-
-export const Sun = ({ size = 20, fill = 'black', className = '' }: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 20 20" width=${size} xmlns="http://www.w3.org/2000/svg" >
-      <path d="M10 15a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0-11a1 1 0 0 0 1-1V1a1 1 0 0 0-2 0v2a1 1 0 0 0 1 1Zm0 12a1 1 0 0 0-1 1v2a1 1 0 1 0 2 0v-2a1 1 0 0 0-1-1ZM4.343 5.757a1 1 0 0 0 1.414-1.414L4.343 2.929a1 1 0 0 0-1.414 1.414l1.414 1.414Zm11.314 8.486a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414l-1.414-1.414ZM4 10a1 1 0 0 0-1-1H1a1 1 0 0 0 0 2h2a1 1 0 0 0 1-1Zm15-1h-2a1 1 0 1 0 0 2h2a1 1 0 0 0 0-2ZM4.343 14.243l-1.414 1.414a1 1 0 1 0 1.414 1.414l1.414-1.414a1 1 0 0 0-1.414-1.414ZM14.95 6.05a1 1 0 0 0 .707-.293l1.414-1.414a1 1 0 1 0-1.414-1.414l-1.414 1.414a1 1 0 0 0 .707 1.707Z"></path>
-    </svg>
-  `
-}
-
-export const Moon = ({ size = 18, fill = 'black', className = '' }: IconProps = {}): string => {
-  return `
-    <svg fill=${fill} class="${className}" viewBox="0 0 20 20" width=${size} xmlns="http://www.w3.org/2000/svg" >
-      <path d="M17.8 13.75a1 1 0 0 0-.859-.5A7.488 7.488 0 0 1 10.52 2a1 1 0 0 0 0-.969A1.035 1.035 0 0 0 9.687.5h-.113a9.5 9.5 0 1 0 8.222 14.247 1 1 0 0 0 .004-.997Z"></path>
-    </svg>
-  `
-}
+export const AlignLeft = icon(PATHS.alignLeft)
+export const AlignCenter = icon(PATHS.alignCenter)
+export const ImageLeft = icon(PATHS.imageLeft)
+export const ImageRight = icon(PATHS.imageRight)
+export const Caption = icon(PATHS.caption)
+export const ExternalLink = icon(PATHS.externalLink)
+export const Download = icon(PATHS.download)
+export const Copy = icon(PATHS.copy)
+export const Trash = icon(PATHS.trash)
+export const More = icon(PATHS.more)

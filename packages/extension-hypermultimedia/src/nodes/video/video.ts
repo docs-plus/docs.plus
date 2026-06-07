@@ -1,28 +1,29 @@
 import { mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
 
-import { MediaPlacement } from '../../utils/media-placement'
 import {
-  applyStyles,
+  captionAttribute,
+  type CaptionHandle,
+  createCaptionElement,
+  readCaption
+} from '../../caption'
+import {
+  layoutAttrsChanged,
+  parseLayoutDimensions,
+  syncVideoNodeLayout,
+  wrapMediaWithLoadingShell
+} from '../../loading'
+import { embedAttrsEqual, resolveEmbedLayoutDimensions } from '../../utils/embedKit'
+import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
+import {
   createStyleString,
-  createTooltip,
   generateShortId,
-  StyleLayoutOptions
+  omitNullishAndFalse,
+  type StyleLayoutOptions
 } from '../../utils/utils'
 import { inputRegex } from './helper'
 
-interface VideoAttributes {
-  src?: string | null
-  controls?: boolean
-  autoplay?: boolean
-  loop?: boolean
-  muted?: boolean
-  preload?: 'none' | 'metadata' | 'auto'
-  [key: string]: any // Add an index signature
-}
-
 interface NodeOptions {
-  HTMLAttributes: Record<string, any>
-  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null
+  HTMLAttributes: Record<string, unknown>
 }
 
 export interface VideoOptions extends StyleLayoutOptions, NodeOptions {
@@ -41,24 +42,32 @@ export interface VideoOptions extends StyleLayoutOptions, NodeOptions {
 
 export type SetVideoOptions = {
   src: string
+  controls?: boolean
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  poster?: string | null
+  preload?: 'none' | 'metadata' | 'auto'
 } & StyleLayoutOptions
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    Video: {
-      setVideo: (options: SetVideoOptions) => ReturnType
-    }
-  }
-}
+/** `<video>` element attrs; remount the node view when any change. */
+const VIDEO_REMOUNT_ATTR_KEYS = [
+  'src',
+  'controls',
+  'autoplay',
+  'loop',
+  'muted',
+  'preload',
+  'poster'
+] as const
 
 export const Video = Node.create<VideoOptions>({
-  name: 'Video',
+  name: 'video',
   draggable: true,
 
   addOptions() {
     return {
       src: null,
-      modal: null,
       margin: 'auto',
       clear: 'none',
       float: null,
@@ -83,7 +92,7 @@ export const Video = Node.create<VideoOptions>({
   addAttributes() {
     return {
       keyId: {
-        default: generateShortId()
+        default: null
       },
       src: {
         default: null
@@ -126,99 +135,103 @@ export const Video = Node.create<VideoOptions>({
       },
       height: {
         default: this.options.height
-      }
+      },
+      caption: captionAttribute()
     }
   },
 
   addNodeView() {
-    return ({ node, HTMLAttributes }) => {
-      const editor = this.editor
-      const modal = this.options.modal
-      const { tooltip, tippyModal } = createTooltip(editor)
+    const editor = this.editor
 
+    return ({ node, HTMLAttributes, getPos }) => {
+      let attrsSnapshot = node.attrs
       const dom = document.createElement('div')
       const content = document.createElement('div')
       const videoTag = document.createElement('video') as HTMLVideoElement
 
       dom.classList.add('hypermultimedia--video__content')
-
-      const styles = {
-        display: node.attrs.display,
-        height: parseInt(HTMLAttributes.height),
-        width: parseInt(HTMLAttributes.width),
-        float: node.attrs.float,
-        clear: node.attrs.clear,
-        margin: node.attrs.margin,
-        justifyContent: node.attrs.justifyContent
+      if (node.attrs.keyId) {
+        dom.setAttribute('data-key-id', String(node.attrs.keyId))
       }
 
-      applyStyles(dom, styles)
+      const dims = parseLayoutDimensions(node.attrs)
 
-      const htmlAttributes: VideoAttributes = {
-        src: this.options.src || HTMLAttributes.src,
-        controls: this.options.controls,
-        autoplay: this.options.autoplay,
-        loop: this.options.loop,
-        muted: this.options.muted,
-        preload: this.options.preload
-      }
-
-      const style = createStyleString(this.options, styles)
-
-      // loop through the attributes and remove any that are null or false
-      // (since they're not needed)
-      Object.keys(htmlAttributes).forEach((key) => {
-        if (htmlAttributes[key] === null || htmlAttributes[key] === false) {
-          delete htmlAttributes[key]
-        }
+      const htmlAttributes = omitNullishAndFalse({
+        src: node.attrs.src ?? HTMLAttributes.src,
+        controls: node.attrs.controls,
+        autoplay: node.attrs.autoplay,
+        loop: node.attrs.loop,
+        muted: node.attrs.muted,
+        preload: node.attrs.preload,
+        poster: node.attrs.poster
       })
 
-      const attributes = mergeAttributes(htmlAttributes, {
-        'data-node-name': this.name,
-        style
-      })
-
-      if (modal) {
-        videoTag.addEventListener('mouseenter', () => {
-          if (tooltip && tippyModal) {
-            modal({ editor, tooltip, tippyModal, iframe: videoTag, wrapper: dom })
+      Object.entries(mergeAttributes(htmlAttributes, { 'data-node-name': this.name })).forEach(
+        ([key, value]) => {
+          if (value !== undefined && value !== null && value !== false) {
+            videoTag.setAttribute(key, String(value))
           }
-        })
-      }
-
-      Object.entries(attributes).forEach(
-        ([key, value]) => value && videoTag.setAttribute(key, value)
+        }
       )
 
       content.append(videoTag)
-      dom.append(content)
+
+      const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
+        editor,
+        { kind: 'video', width: dims.width, height: dims.height },
+        content,
+        {
+          bindLoad: {
+            element: videoTag,
+            isAlreadyReady: () => videoTag.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+          }
+        }
+      )
+
+      dom.append(loadingHost)
+      syncVideoNodeLayout({
+        wrapper: dom,
+        attrs: node.attrs,
+        loadingHost,
+        video: videoTag,
+        dims
+      })
+
+      const caption: CaptionHandle = createCaptionElement({
+        editor,
+        getPos,
+        initial: readCaption(node)
+      })
+      dom.append(caption.el)
 
       return {
         dom,
         contentDOM: content,
-        ignoreMutation: (mutation) => {
-          return !dom.contains(mutation.target) || dom === mutation.target
+        // Caption is a nested contenteditable the node view owns; keep PM out of its events.
+        stopEvent: (event: Event) => caption.el.contains(event.target as globalThis.Node | null),
+        destroy: () => {
+          controller.destroy()
+          caption.destroy()
         },
+        ignoreMutation: (mutation) => ignoreNodeViewSubtreeMutation(mutation, dom),
         update: (updatedNode) => {
-          if (
-            updatedNode.type.name === this.name &&
-            (updatedNode.attrs.height !== this.options.height ||
-              updatedNode.attrs.width !== this.options.width)
-          ) {
-            dom.style.height = `${updatedNode.attrs.height}px`
-            dom.style.width = `${updatedNode.attrs.width}px`
-
-            videoTag.style.height = `${updatedNode.attrs.height}px`
-            videoTag.style.width = `${updatedNode.attrs.width}px`
-
-            // @ts-expect-error video tag attributes
-            videoTag.width = `${updatedNode.attrs.width}`
-            // @ts-expect-error video tag attributes
-            videoTag.height = `${updatedNode.attrs.height}`
-
-            return true
-          }
           if (updatedNode.type.name !== this.name) return false
+
+          if (layoutAttrsChanged(updatedNode.attrs, attrsSnapshot)) {
+            syncVideoNodeLayout({
+              wrapper: dom,
+              attrs: updatedNode.attrs,
+              loadingHost,
+              video: videoTag
+            })
+          }
+
+          if (!embedAttrsEqual(updatedNode.attrs, attrsSnapshot, VIDEO_REMOUNT_ATTR_KEYS)) {
+            return false
+          }
+
+          caption.sync(readCaption(updatedNode))
+          attrsSnapshot = updatedNode.attrs
           return true
         }
       }
@@ -233,7 +246,7 @@ export const Video = Node.create<VideoOptions>({
     ]
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     const style = createStyleString(this.options, {
       height: parseInt(HTMLAttributes.height),
       width: parseInt(HTMLAttributes.width),
@@ -242,22 +255,14 @@ export const Video = Node.create<VideoOptions>({
       margin: HTMLAttributes.margin
     })
 
-    const htmlAttributes: VideoAttributes = {
-      src: this.options.src || HTMLAttributes.src,
-      controls: this.options.controls,
-      autoplay: this.options.autoplay,
-      loop: this.options.loop,
-      muted: this.options.muted,
-      preload: this.options.preload,
-      poster: this.options.poster
-    }
-
-    // loop through the attributes and remove any that are null or false
-    // (since they're not needed)
-    Object.keys(htmlAttributes).forEach((key) => {
-      if (htmlAttributes[key] === null || htmlAttributes[key] === false) {
-        delete htmlAttributes[key]
-      }
+    const htmlAttributes = omitNullishAndFalse({
+      src: node.attrs.src ?? HTMLAttributes.src,
+      controls: node.attrs.controls,
+      autoplay: node.attrs.autoplay,
+      loop: node.attrs.loop,
+      muted: node.attrs.muted,
+      preload: node.attrs.preload,
+      poster: node.attrs.poster
     })
 
     return [
@@ -266,7 +271,7 @@ export const Video = Node.create<VideoOptions>({
       [
         'video',
         mergeAttributes(htmlAttributes, { class: 'hypermultimedia--video__content', style }),
-        0 // Zero indicates that this node can have content. For audio, it's usually empty.
+        0
       ]
     ]
   },
@@ -277,9 +282,9 @@ export const Video = Node.create<VideoOptions>({
         find: inputRegex,
         type: this.type,
         getAttributes: (match) => {
-          const [, , src, title, width, height] = match
+          const [, , src, width, height] = match
 
-          return { src, title, width, height }
+          return { src, width, height }
         }
       })
     ]
@@ -291,12 +296,15 @@ export const Video = Node.create<VideoOptions>({
         (options) =>
         ({ commands }) => {
           if (!options.src) {
-            throw new Error('VideoAttributes source is required')
+            throw new Error('Video source is required')
           }
+
+          const { width, height, ...rest } = options
+          const layout = resolveEmbedLayoutDimensions(this.editor, { width, height }, this.options)
 
           return commands.insertContent({
             type: this.name,
-            attrs: options
+            attrs: { ...rest, ...layout, keyId: generateShortId() }
           })
         }
     }

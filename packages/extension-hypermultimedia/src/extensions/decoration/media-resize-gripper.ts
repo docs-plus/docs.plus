@@ -1,9 +1,8 @@
 import { Editor } from '@tiptap/core'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
-import handleCornerClampsMove from './handleCornerClampsMove'
-import handleSideClampsMove from './handleSideClampsMove'
-import { ClampType, MediaGripperInfo } from './types'
+import { attachGripperDrag, computeCornerBox, computeSideBox } from './gripperDrag'
+import { ClampType, Corner, MediaGripperInfo } from './types'
 
 function createClamp(extraClass: ClampType): HTMLDivElement {
   const clamp = document.createElement('div')
@@ -13,7 +12,6 @@ function createClamp(extraClass: ClampType): HTMLDivElement {
 
 function createClamps() {
   return {
-    rotate: createClamp(ClampType.Rotate),
     sides: [
       createClamp(ClampType.Left),
       createClamp(ClampType.Right),
@@ -29,7 +27,10 @@ function createClamps() {
   }
 }
 
-export function extractImageNode(nodeNames: string[], doc: ProseMirrorNode): MediaGripperInfo[] {
+export function collectMediaGripperInfo(
+  nodeNames: string[],
+  doc: ProseMirrorNode
+): MediaGripperInfo[] {
   const result: MediaGripperInfo[] = []
   doc.descendants((node, pos) => {
     if (nodeNames.includes(node.type.name)) {
@@ -52,24 +53,25 @@ export const createMediaResizeGripper = (
 ): HTMLDivElement => {
   const gripper = document.createElement('div')
   gripper.classList.add('hypermultimedia__resize-gripper')
+  if (mediaInfo.keyId) {
+    gripper.dataset.mediaKeyId = mediaInfo.keyId
+  }
 
   const clamps = createClamps()
-  gripper.append(/*clamps.rotate,*/ ...clamps.sides, ...Object.values(clamps.corners))
+  gripper.append(...clamps.sides, ...Object.values(clamps.corners))
 
-  // Set up side clamps
   clamps.sides.forEach((clamp) => {
-    handleSideClampsMove(clamp, gripper, editor, mediaInfo)
+    attachGripperDrag({ clamp, gripper, editor, mediaInfo, computeBox: computeSideBox })
   })
 
-  // Set up corner clamps with aspect ratio support
-  Object.entries(clamps.corners).forEach(([corner, clampElement]) => {
-    handleCornerClampsMove(
-      clampElement,
-      corner as keyof typeof clamps.corners,
+  Object.entries(clamps.corners).forEach(([corner, clamp]) => {
+    attachGripperDrag({
+      clamp,
       gripper,
       editor,
-      mediaInfo
-    )
+      mediaInfo,
+      computeBox: computeCornerBox(corner as Corner)
+    })
   })
 
   return gripper

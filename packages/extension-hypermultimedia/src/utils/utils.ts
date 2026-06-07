@@ -1,14 +1,3 @@
-import { Editor } from '@tiptap/core'
-import { EditorView } from '@tiptap/pm/view'
-import { Instance, Props as TippyProps } from 'tippy.js'
-
-import Tippy from './tippyHelper'
-
-interface MarginOption {
-  value: string
-  text: string
-}
-
 export interface StyleAttributes {
   display?: string
   height?: number | string
@@ -19,24 +8,7 @@ export interface StyleAttributes {
   justifyContent?: string
 }
 
-export type Ttooltip = {
-  hide: () => void
-  update: (view: EditorView, options: Partial<TippyProps>, target: HTMLElement) => void
-  show: () => void
-}
-
-const MARGIN_OPTIONS: MarginOption[] = [
-  { value: '0in', text: '0"' },
-  { value: '0.06in', text: '1/16"' },
-  { value: '0.13in', text: '1/8"' },
-  { value: '0.25in', text: '1/4"' },
-  { value: '0.38in', text: '3/8"' },
-  { value: '0.5in', text: '1/2"' },
-  { value: '0.75in', text: '3/4"' },
-  { value: '1in', text: '1"' }
-]
-
-export const clearChildNodes = (node: HTMLElement) => {
+export const clearChildNodes = (node: HTMLElement): void => {
   while (node.firstChild) node.removeChild(node.firstChild)
 }
 
@@ -47,187 +19,17 @@ export const createElement = (tag: string, className = '', innerHTML = ''): HTML
   return elem
 }
 
-export const applyStyleAndAttributes = (
-  element: HTMLElement,
-  style: string | object,
-  attributes: object,
-  editor: Editor,
-  tooltip: Ttooltip,
-  nodePos: number
-) => {
-  // Apply styles to element
-  Object.assign(element.style, style)
-
-  // Start a new transaction
-  const { state, dispatch } = editor.view
-  let transaction = state.tr
-
-  const node = transaction.doc.nodeAt(nodePos)
-
-  if (node) {
-    transaction.setNodeMarkup(nodePos, null, {
-      ...node.attrs,
-      ...attributes
-    })
-    dispatch(transaction)
-  }
-}
-
-const updateNodeAttribute = (editor: Editor, nodePos: number, attribute: string, value: string) => {
-  const { state } = editor
-  const { tr } = state
-  tr.setNodeAttribute(nodePos, attribute, value)
-  editor.view.dispatch(tr)
-}
-
-export const createMarginSelection = (
-  nodePos: number,
-  targetElement: HTMLElement,
-  tooltip: Ttooltip,
-  editor: Editor,
-  mediaMargin: string
-): HTMLSelectElement => {
-  const selectMargin = createElement('select') as HTMLSelectElement
-  MARGIN_OPTIONS.forEach(({ value, text }) => {
-    const option = createElement('option', '', `${text} margin`) as HTMLOptionElement
-    option.value = value
-    if (mediaMargin === value) option.selected = true
-    selectMargin.append(option)
-  })
-
-  selectMargin.addEventListener('change', (e) => {
-    const newMargin = (e.target as HTMLSelectElement).value
-    updateNodeAttribute(editor, nodePos, 'margin', newMargin)
-    targetElement.style.margin = newMargin
-
-    // Update the modal position
-    const imageDOM = editor.view.nodeDOM(nodePos) as HTMLElement
-    tooltip.update(editor.view, { placement: 'bottom-start' }, imageDOM)
-  })
-
-  return selectMargin
-}
-
-export const btnPlacementSettings = (
-  mediaElementMargin: string,
-  [buttonInline, btnSquareCenter, btnSquareLeft, btnSquareRight]: HTMLElement[]
-) => [
-  {
-    button: buttonInline,
-    style: { display: 'block', float: 'none', clear: 'none', margin: '0' },
-    attributes: { display: 'block', float: 'none', clear: 'none', margin: '0' }
-  },
-  {
-    button: btnSquareCenter,
-    style: {
-      display: 'flex',
-      'justify-content': 'center',
-      float: 'none',
-      clear: 'none',
-      margin: 'auto'
-    },
-    attributes: {
-      display: 'flex',
-      justifyContent: 'center',
-      float: 'none',
-      clear: 'none',
-      margin: 'auto'
-    }
-  },
-  {
-    button: btnSquareLeft,
-    style: { display: 'block', float: 'left', clear: 'none', margin: mediaElementMargin },
-    attributes: { display: 'block', float: 'left', clear: 'none', margin: mediaElementMargin }
-  },
-  {
-    button: btnSquareRight,
-    style: { display: 'block', float: 'right', clear: 'none', margin: mediaElementMargin },
-    attributes: { display: 'block', float: 'right', clear: 'none', margin: mediaElementMargin }
-  }
-]
-
-export const highlightButton = (
-  float: string,
-  imgMargin: string,
-  display: string,
-  buttons: { [key: string]: HTMLElement }
-) => {
-  const activeClass = 'hypermultimedia__modal--active'
-  const { btnSquareLeft, btnSquareRight, buttonInline, btnSquareCenter } = buttons
-
-  ;[btnSquareLeft, btnSquareRight, buttonInline, btnSquareCenter].forEach((btn) =>
-    btn.classList.remove(activeClass)
-  )
-
-  // Handle left float
-  if (float === 'left') {
-    btnSquareLeft.classList.add(activeClass)
-  }
-  // Handle right float
-  else if (float === 'right') {
-    btnSquareRight.classList.add(activeClass)
-  }
-  // Handle centered content (auto margin)
-  else if (imgMargin === 'auto' || (float === 'none' && imgMargin === 'auto')) {
-    btnSquareCenter.classList.add(activeClass)
-  }
-  // Handle inline/block content (including default cases)
-  else {
-    buttonInline.classList.add(activeClass)
-  }
-}
-
-let tooltipInstance: {
-  tooltip: Tippy | null
-  tippyModal: HTMLElement | null
-  tippyInstance: Instance | undefined
-} | null = null
-
-export const createTooltip = (
-  editor: Editor
-): {
-  tooltip: Tippy | null
-  tippyModal: HTMLElement | null
-  tippyInstance: Instance | undefined
-} => {
-  // Return existing instance if available
-  if (tooltipInstance) return tooltipInstance
-
-  const tooltip = new Tippy({
-    editor: editor
-    // targetElement: "#editorContents",
-  })
-
-  const { tippyModal, tippyInstance } = tooltip.init()
-
-  // Store the instance
-  tooltipInstance = {
-    tooltip,
-    tippyModal,
-    tippyInstance
-  }
-
-  return tooltipInstance
-}
-
-export const getTooltipInstance = (): {
-  tooltip: Tippy | null
-  tippyModal: HTMLElement | null
-  tippyInstance: Instance | undefined
-} | null => {
-  return tooltipInstance
-}
-
 export const applyStyles = (dom: HTMLElement, styles: StyleAttributes): void => {
+  const style = dom.style as unknown as Record<string, string>
   for (const [key, value] of Object.entries(styles)) {
     if (value !== undefined && value !== null) {
-      dom.style[key as any] = typeof value === 'number' ? `${value}px` : value
+      style[key] = typeof value === 'number' ? `${value}px` : value
     }
   }
 }
 
-export const generateShortId = () => {
-  const randomPart = Math.random().toString(36).substr(2, 5) // 5 random characters
+export const generateShortId = (): string => {
+  const randomPart = Math.random().toString(36).slice(2, 7) // 5 random characters
   const timePart = Date.now().toString(36).slice(-5) // last 5 characters of the current time
   return `${randomPart}-${timePart}`
 }
@@ -242,23 +44,32 @@ export interface StyleLayoutOptions {
   justifyContent?: string
 }
 
-/**
- * Filters and formats style properties.
- * @param {Record<string, string | number | null>} styleProps - An object containing style properties and their values.
- * @returns {string} - The formatted style string.
- */
+/** Drops null/undefined entries and joins the rest into a `key:value;` style string. */
 const formatStyleProperties = (styleProps: Record<string, string | number | null>): string =>
   Object.entries(styleProps)
-    .filter(([, value]) => value != null) // Filter out null or undefined values.
-    .map(([key, value]) => `${key}:${value};`) // Map to "key:value;" format.
-    .join(' ') // Join all entries into a single string.
+    .filter(([, value]) => value != null)
+    .map(([key, value]) => `${key}:${value};`)
+    .join(' ')
 
-/**
- * Creates a style string from the options and HTMLAttributes.
- * @param {StyleLayoutOptions} options - The node options that may contain style properties.
- * @param {StyleLayoutOptions} HTMLAttributes - The HTML attributes that may contain style properties.
- * @returns {string} - The concatenated style string.
- */
+/** Layout wrapper style for iframe embed nodes (export / static HTML). */
+export const createEmbedWrapperStyle = (
+  attrs: StyleLayoutOptions & { display?: string; justifyContent?: string }
+): string => {
+  const height = parseInt(String(attrs.height), 10)
+  const width = parseInt(String(attrs.width), 10)
+
+  return formatStyleProperties({
+    display: attrs.display ?? 'block',
+    height: Number.isNaN(height) ? null : `${height}px`,
+    width: Number.isNaN(width) ? null : `${width}px`,
+    float: attrs.float ?? null,
+    clear: attrs.clear ?? null,
+    margin: attrs.margin ?? null,
+    'justify-content': attrs.justifyContent ?? null
+  })
+}
+
+/** Builds a layout style string from node options merged with HTML attributes. */
 export const createStyleString = (
   options: StyleLayoutOptions,
   HTMLAttributes: StyleLayoutOptions
@@ -278,4 +89,13 @@ export const createStyleString = (
   }
 
   return formatStyleProperties(styles)
+}
+
+/** Drops null/false entries before writing boolean HTML attributes onto media tags. */
+export function omitNullishAndFalse(attrs: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value !== null && value !== false) result[key] = value
+  }
+  return result
 }

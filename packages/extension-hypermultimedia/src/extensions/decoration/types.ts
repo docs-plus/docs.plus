@@ -1,5 +1,4 @@
 export type Corner = 'topRight' | 'bottomLeft' | 'topLeft' | 'bottomRight'
-export type Side = 'left' | 'right' | 'top' | 'bottom'
 
 export interface MediaGripperInfo {
   from: number
@@ -33,11 +32,12 @@ export enum ClampType {
   TopRight = 'media-resize-clamp--top-right',
   TopLeft = 'media-resize-clamp--top-left',
   BottomRight = 'media-resize-clamp--bottom-right',
-  BottomLeft = 'media-resize-clamp--bottom-left',
-  Rotate = 'media-resize-clamp--rotate'
+  BottomLeft = 'media-resize-clamp--bottom-left'
 }
 
 export interface ResizeConstraints {
   minWidth: number
   minHeight: number
+  maxWidth?: number
+  maxHeight?: number
 }

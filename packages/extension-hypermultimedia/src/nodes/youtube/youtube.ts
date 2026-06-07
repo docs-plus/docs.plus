@@ -1,90 +1,57 @@
-import { mergeAttributes, Node, nodePasteRule } from '@tiptap/core'
+import { Node, nodePasteRule } from '@tiptap/core'
 
-import { MediaPlacement } from '../../utils/media-placement'
-import { applyStyles, createTooltip, generateShortId } from '../../utils/utils'
-import { getEmbedUrlFromYoutubeUrl, isValidYoutubeUrl, YOUTUBE_REGEX_GLOBAL } from './helper'
+import { captionAttribute } from '../../caption'
+import {
+  EMBED_BLOCK_LAYOUT_DEFAULTS,
+  type EmbedNodeOptions,
+  kitAttrDefaults,
+  layoutAttrDefaults,
+  resolveEmbedLayoutDimensions
+} from '../../utils/embedKit'
+import {
+  createIframeEmbedNodeView,
+  defineFullscreenIframeEmbedConfig,
+  renderIframeEmbedHTML
+} from '../../utils/iframeEmbedNode'
+import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
+import {
+  buildYoutubeEmbedUrl,
+  parseYoutubeStartSeconds,
+  YOUTUBE_EMBED_ATTR_KEYS,
+  YOUTUBE_PLAYER_KIT_DEFAULTS,
+  type YoutubeEmbedColor,
+  type YoutubeListType,
+  type YoutubePlayerKitOptions
+} from './embedOptions'
+import { isValidYoutubeUrl, YOUTUBE_REGEX_GLOBAL } from './helper'
 
-interface LayoutOptions {
-  width?: number
-  height?: number
-  margin?: string
-  clear?: string
-  float?: string | null
-  display?: string
-  justifyContent?: string
-}
+export interface YoutubeOptions
+  extends StyleLayoutOptions, EmbedNodeOptions, YoutubePlayerKitOptions {}
 
-interface NodeOptions {
-  inline: boolean
-  addPasteHandler: boolean
-  HTMLAttributes: Record<string, any>
-  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null
-}
-
-export interface YoutubeOptions extends LayoutOptions, NodeOptions {
-  // URL Search Params attributes
-  autoplay: 0 | 1
-  ccLanguage?: string
-  ccLoadPolicy?: 0 | 1
-  controls: 0 | 1
-  disableKBcontrols: 0 | 1
-  enableIFrameApi: 0 | 1
-  endTime?: number
-  interfaceLanguage?: string
-  ivLoadPolicy: 1 | 3
-  loop: 0 | 1
-  nocookie?: boolean
-  origin?: string
-  playlist?: string
-
-  // Iframe html attributes
-  frameborder?: number // 0
-  allow?: string // accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture
-  allowfullscreen?: boolean
-}
-
-type SetYoutubeVideoOptions = {
+export type SetYoutubeVideoOptions = {
   src: string
-} & LayoutOptions
+  start?: number
+} & StyleLayoutOptions &
+  Partial<YoutubePlayerKitOptions>
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    Youtube: {
-      setYoutubeVideo: (options: SetYoutubeVideoOptions) => ReturnType
-    }
-  }
-}
+const YOUTUBE_IFRAME_CONFIG = defineFullscreenIframeEmbedConfig<YoutubeOptions>({
+  wrapperClass: 'hypermultimedia--youtube__content',
+  dataVideoAttr: 'data-youtube-video',
+  renderWrapperClass: 'youtube-video',
+  embedAttrKeys: YOUTUBE_EMBED_ATTR_KEYS,
+  contentEditableFalse: true,
+  loadingProvider: 'YouTube',
+  buildEmbedUrl: buildYoutubeEmbedUrl
+})
 
 export const Youtube = Node.create<YoutubeOptions>({
-  name: 'Youtube',
+  name: 'youtube',
+  draggable: true,
 
   addOptions() {
     return {
-      addPasteHandler: true,
-      allowFullscreen: true,
-      autoplay: 0,
-      ccLanguage: undefined,
-      ccLoadPolicy: undefined,
-      controls: 0,
-      disableKBcontrols: 0,
-      enableIFrameApi: 0,
-      endTime: 0,
-      height: 480,
-      modal: null,
-      interfaceLanguage: undefined,
-      ivLoadPolicy: 1,
-      loop: 0,
-      HTMLAttributes: {},
-      nocookie: false,
-      origin: undefined,
-      playlist: undefined,
-      width: 640,
-      justifyContent: 'start',
-      margin: 'auto',
-      clear: 'none',
-      float: null,
-      display: 'block',
-      inline: false
+      ...YOUTUBE_PLAYER_KIT_DEFAULTS,
+      ...EMBED_BLOCK_LAYOUT_DEFAULTS
     }
   },
 
@@ -98,145 +65,25 @@ export const Youtube = Node.create<YoutubeOptions>({
 
   addAttributes() {
     return {
-      keyId: {
-        default: generateShortId()
-      },
-      margin: {
-        default: this.options.margin
-      },
-      clear: {
-        default: this.options.clear
-      },
-      float: {
-        default: this.options.float
-      },
-      display: {
-        default: this.options.display
-      },
-      justifyContent: {
-        default: this.options.justifyContent
-      },
-      src: {
-        default: null
-      },
-      start: {
-        default: 0
-      },
-      width: {
-        default: this.options.width
-      },
-      height: {
-        default: this.options.height
-      }
+      keyId: { default: null },
+      src: { default: null },
+      start: { default: 0 },
+      caption: captionAttribute(),
+      ...layoutAttrDefaults(this.options),
+      ...kitAttrDefaults(this.options, YOUTUBE_PLAYER_KIT_DEFAULTS)
     }
   },
 
   addNodeView() {
-    return ({ node, HTMLAttributes, editor }) => {
-      const modal = this.options.modal
-
-      const { tooltip, tippyModal } = createTooltip(editor)
-
-      const dom = document.createElement('div')
-      const content = document.createElement('div')
-      const iframe = document.createElement('iframe')
-
-      dom.contentEditable = 'false'
-
-      dom.classList.add('hypermultimedia--youtube__content')
-
-      const styles = {
-        display: node.attrs.display,
-        height: parseInt(node.attrs.height),
-        width: parseInt(node.attrs.width),
-        float: node.attrs.float,
-        clear: node.attrs.clear,
-        margin: node.attrs.margin,
-        justifyContent: node.attrs.justifyContent
-      }
-
-      applyStyles(dom, styles)
-
-      const youtubeAttrs = {
-        url: HTMLAttributes.src,
-        autoplay: node.attrs.autoplay,
-        ccLanguage: node.attrs.ccLanguage,
-        ccLoadPolicy: node.attrs.ccLoadPolicy,
-        controls: node.attrs.controls,
-        disableKBcontrols: node.attrs.disableKBcontrols,
-        enableIFrameApi: node.attrs.enableIFrameApi,
-        endTime: node.attrs.endTime,
-        interfaceLanguage: node.attrs.interfaceLanguage,
-        ivLoadPolicy: node.attrs.ivLoadPolicy,
-        loop: node.attrs.loop,
-        nocookie: node.attrs.nocookie,
-        origin: node.attrs.origin,
-        playlist: node.attrs.playlist
-      }
-
-      const embedUrl = getEmbedUrlFromYoutubeUrl(youtubeAttrs) as string
-
-      HTMLAttributes.src = embedUrl
-
-      const attributes = mergeAttributes(this.options.HTMLAttributes, {
-        'data-node-name': this.name,
-        width: node.attrs.width,
-        height: node.attrs.height,
-        allow: node.attrs.allow,
-        frameborder: node.attrs.frameborder,
-        autoplay: node.attrs.autoplay
-      })
-
-      if (modal) {
-        iframe.addEventListener('mouseenter', () => {
-          if (tooltip && tippyModal) {
-            modal({ editor, tooltip, tippyModal, iframe, wrapper: dom })
-          }
-        })
-      }
-
-      iframe.setAttribute('src', embedUrl)
-
-      Object.entries(attributes).forEach(([key, value]) => iframe.setAttribute(key, value))
-
-      content.append(iframe)
-
-      dom.append(content)
-
-      return {
-        dom,
-        contentDOM: content,
-        ignoreMutation: (mutation) => {
-          return !dom.contains(mutation.target) || dom === mutation.target
-        },
-        update: (updatedNode) => {
-          if (
-            updatedNode.type.name === this.name &&
-            (updatedNode.attrs.height !== this.options.height ||
-              updatedNode.attrs.width !== this.options.width)
-          ) {
-            dom.style.height = `${updatedNode.attrs.height}px`
-            iframe.style.height = `${updatedNode.attrs.height}px`
-            dom.style.width = `${updatedNode.attrs.width}px`
-            iframe.style.width = `${updatedNode.attrs.width}px`
-            iframe.width = `${updatedNode.attrs.width}`
-            iframe.height = `${updatedNode.attrs.height}`
-
-            return true
-          }
-          if (updatedNode.type.name !== this.name) return false
-          return true
-        }
-      }
-    }
+    return createIframeEmbedNodeView(YOUTUBE_IFRAME_CONFIG, () => ({
+      name: this.name,
+      options: this.options,
+      editor: this.editor
+    }))
   },
 
   parseHTML() {
-    return [
-      {
-        tag: 'div[data-youtube-video] iframe'
-      }
-    ]
+    return [{ tag: 'div[data-youtube-video] iframe' }]
   },
 
   addCommands() {
@@ -246,57 +93,26 @@ export const Youtube = Node.create<YoutubeOptions>({
         ({ commands }) => {
           if (!isValidYoutubeUrl(options.src)) return false
 
+          const startFromUrl = parseYoutubeStartSeconds(options.src)
+          const start = options.start ?? (startFromUrl !== undefined ? startFromUrl : 0)
+          const { width, height, ...rest } = options
+          const layout = resolveEmbedLayoutDimensions(this.editor, { width, height }, this.options)
+
           return commands.insertContent({
             type: this.name,
-            attrs: options
+            attrs: {
+              ...rest,
+              ...layout,
+              start,
+              keyId: generateShortId()
+            }
           })
         }
     }
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const embedUrl = getEmbedUrlFromYoutubeUrl({
-      url: HTMLAttributes.src,
-      autoplay: node.attrs.autoplay,
-      ccLanguage: node.attrs.ccLanguage,
-      ccLoadPolicy: node.attrs.ccLoadPolicy,
-      controls: node.attrs.controls,
-      disableKBcontrols: node.attrs.disableKBcontrols,
-      enableIFrameApi: node.attrs.enableIFrameApi,
-      endTime: node.attrs.endTime,
-      interfaceLanguage: node.attrs.interfaceLanguage,
-      ivLoadPolicy: node.attrs.ivLoadPolicy,
-      loop: node.attrs.loop,
-      nocookie: node.attrs.nocookie,
-      origin: node.attrs.origin,
-      playlist: node.attrs.playlist
-    })
-
-    HTMLAttributes.src = embedUrl
-
-    const height = parseInt(HTMLAttributes.height)
-    const width = parseInt(HTMLAttributes.width)
-    const float = HTMLAttributes.float
-    const clear = HTMLAttributes.clear
-    const margin = HTMLAttributes.margin
-    const display = HTMLAttributes.display
-
-    const style = `display: ${display}; height:${height}px; width: ${width}px; float: ${float}; clear: ${clear}; margin: ${margin}`
-
-    return [
-      'div',
-      { 'data-youtube-video': '', class: 'youtube-video', style },
-      [
-        'iframe',
-        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-          width: node.attrs.width,
-          height: node.attrs.height,
-          allow: node.attrs.allow,
-          frameborder: node.attrs.frameborder,
-          autoplay: node.attrs.autoplay
-        })
-      ]
-    ]
+    return renderIframeEmbedHTML(YOUTUBE_IFRAME_CONFIG, this.options, { node, HTMLAttributes })
   },
 
   addPasteRules() {
@@ -307,13 +123,19 @@ export const Youtube = Node.create<YoutubeOptions>({
         find: YOUTUBE_REGEX_GLOBAL,
         type: this.type,
         getAttributes: (match) => {
-          return { src: match.input }
+          const src = match.input?.trim()
+          if (!src || !isValidYoutubeUrl(src)) return false
+
+          const start = parseYoutubeStartSeconds(src)
+
+          return {
+            src,
+            ...(start !== undefined && start > 0 ? { start } : {})
+          }
         }
       })
     ]
-  },
-
-  addProseMirrorPlugins() {
-    return []
   }
 })
+
+export type { YoutubeEmbedColor, YoutubeListType }

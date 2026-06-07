@@ -1,5 +1,6 @@
 import { Editor } from '@tiptap/core'
 
+import { fitDimensionsToBounds, getEditorContentWidth } from '../../utils/fitImageDimensions'
 import { PointerPosition, ResizeConstraints } from './types'
 
 export const DEFAULT_CONSTRAINTS: ResizeConstraints = {
@@ -7,10 +8,10 @@ export const DEFAULT_CONSTRAINTS: ResizeConstraints = {
   minHeight: 80
 }
 
-/**
- * Extract pointer position from mouse or touch event
- */
-export function getPointerPosition(e: MouseEvent | TouchEvent): PointerPosition {
+export function getPointerPosition(e: MouseEvent | TouchEvent | PointerEvent): PointerPosition {
+  if (e instanceof PointerEvent) {
+    return { x: e.clientX, y: e.clientY }
+  }
   if (e.type.startsWith('touch') && 'touches' in e && e.touches.length > 0) {
     return { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }
@@ -18,9 +19,7 @@ export function getPointerPosition(e: MouseEvent | TouchEvent): PointerPosition 
   return { x: mouseEvent.clientX, y: mouseEvent.clientY }
 }
 
-/**
- * Calculate dimensions while maintaining aspect ratio
- */
+/** Aspect-locked resize: the larger pointer delta drives the axis the other follows. */
 export function calculateAspectRatioDimensions(
   deltaX: number,
   deltaY: number,
@@ -71,20 +70,28 @@ export function calculateAspectRatioDimensions(
   return { width: newWidth, height: newHeight }
 }
 
-/**
- * Check if dimensions meet minimum constraints
- */
-export function meetsConstraints(
-  width: number,
-  height: number,
-  constraints: ResizeConstraints = DEFAULT_CONSTRAINTS
-): boolean {
-  return width >= constraints.minWidth && height >= constraints.minHeight
+export function resolveResizeConstraints(editor: Editor): ResizeConstraints {
+  const maxWidth = getEditorContentWidth(editor)
+  return {
+    ...DEFAULT_CONSTRAINTS,
+    ...(maxWidth > 0 ? { maxWidth } : {})
+  }
 }
 
-/**
- * Update ProseMirror node with new dimensions
- */
+export function clampDimensionsToConstraints(
+  width: number,
+  height: number,
+  constraints: ResizeConstraints
+): { width: number; height: number } {
+  const maxWidth = constraints.maxWidth ?? Number.POSITIVE_INFINITY
+  const maxHeight = constraints.maxHeight ?? Number.POSITIVE_INFINITY
+  const fitted = fitDimensionsToBounds(width, height, { maxWidth, maxHeight })
+  return {
+    width: Math.max(constraints.minWidth, fitted.width),
+    height: Math.max(constraints.minHeight, fitted.height)
+  }
+}
+
 export function updateNodeDimensions(
   editor: Editor,
   nodePos: number,
@@ -96,10 +103,11 @@ export function updateNodeDimensions(
 
   const nodeAtPos = state.doc.nodeAt(nodePos)
   if (nodeAtPos) {
+    const clamped = clampDimensionsToConstraints(width, height, resolveResizeConstraints(editor))
     tr.setNodeMarkup(nodePos, null, {
       ...nodeAtPos.attrs,
-      width,
-      height
+      width: clamped.width,
+      height: clamped.height
     })
 
     tr.setMeta('resizeMedia', true)
@@ -108,9 +116,18 @@ export function updateNodeDimensions(
   }
 }
 
-/**
- * Reset gripper position to initial values
- */
+/** Style pixels are the source of truth: the gripper may be detached/`display:none` post-rebuild. */
+export function readGripperDimensions(gripper: HTMLElement): {
+  width: number
+  height: number
+} {
+  const fromStyle = (axis: 'width' | 'height') => parseFloat(gripper.style[axis])
+  return {
+    width: fromStyle('width') || gripper.offsetWidth,
+    height: fromStyle('height') || gripper.offsetHeight
+  }
+}
+
 export function resetGripperPosition(
   gripper: HTMLElement,
   initialLeft: number,
@@ -120,9 +137,7 @@ export function resetGripperPosition(
   gripper.style.top = `${initialTop}px`
 }
 
-/**
- * Add keyboard event listeners for detecting shift key
- */
+/** Drag-scoped Shift tracking; caller must `cleanup()` on drag end to avoid leaking listeners. */
 export function setupKeyboardListeners(): {
   isShiftPressed: () => boolean
   cleanup: () => void

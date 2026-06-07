@@ -7,7 +7,7 @@ Use this extension to render `<video>` HTML tags. Block Or Inline level node.
 ## Installation
 
 ```bash
-npm install @docs.plus/extension-hypermultimedia
+bun add @docs.plus/extension-hypermultimedia
 ```
 
 Then, import the extension into your editor:
@@ -19,6 +19,10 @@ HyperMultimediaKit.configure({
   Video
 })
 ```
+
+## Kit options vs node attributes
+
+`HyperMultimediaKit.configure({ Video: { controls: true, … } })` sets schema defaults on each inserted node. The node view and `renderHTML` read **node attrs** (`controls`, `autoplay`, `loop`, `muted`, `preload`, `poster`) — not live kit options after insert. Override per insert via `setVideo({ … })`.
 
 ## Settings
 
@@ -180,6 +184,13 @@ HyperMultimediaKit.configure({
 ```
 
 > To implement your own modal box, examine the default modal box and replicate the same methods. You can refer to the [source code](../../modals/youtube.ts) for more details.
+
+## Caption
+
+Add a caption from the toolbar; the text is stored in the node `caption` attribute
+and persists via collaboration and JSON. Video emits no `<figure>` in HTML — the
+caption is editor and attribute only (HTML `<figure>` round-trip is `image`-only).
+Video also exposes a Download action.
 
 ## Commands
 

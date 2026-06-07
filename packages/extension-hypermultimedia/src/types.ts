@@ -1,6 +1,3 @@
-import { Editor } from '@tiptap/core'
-import { Transaction } from '@tiptap/pm/state'
-
 // ============================================================================
 // Core Image Types
 // ============================================================================
@@ -56,21 +53,8 @@ export type SetImageOptions = {
 } & ImageLayoutOptions
 
 // ============================================================================
-// Storage and Command Types
+// Command Types
 // ============================================================================
-
-/**
- * Stored image dimension data
- */
-export interface ImageDimensions {
-  width: number | null
-  height: number | null
-}
-
-/**
- * Storage structure for image dimensions by key ID
- */
-export type ImageDimensionsStorage = Map<string, ImageDimensions>
 
 /**
  * Parameters for updating image dimensions
@@ -82,54 +66,6 @@ export interface UpdateImageDimensionsParams {
   width?: number | null
   /** New height value */
   height?: number | null
-}
-
-/**
- * Parameters for retrieving image dimensions
- */
-export interface GetImageDimensionsParams {
-  /** Unique key identifier for the image */
-  keyId: string
-}
-
-/**
- * Command execution context for dimension updates
- */
-export interface ImageCommandContext {
-  tr: Transaction
-  dispatch?: (tr: Transaction) => void
-}
-
-// ============================================================================
-// Plugin Types
-// ============================================================================
-
-/**
- * Configuration options for the HyperImage plugin
- */
-export interface HyperImagePluginOptions {
-  /** Name of the image node type */
-  nodeName: string
-  /** Optional toolbar configuration */
-  toolbar?: ImageToolbarFunction | string
-}
-
-/**
- * Options for image click event handling
- */
-export interface ImageClickHandlerOptions {
-  /** TipTap editor instance */
-  editor: Editor
-  /** Optional toolbar configuration */
-  toolbar?: ImageToolbarFunction | string
-}
-
-/**
- * Options for image keyboard event handling
- */
-export interface ImageKeyDownHandlerOptions {
-  /** Name of the image node type */
-  nodeName: string
 }
 
 // ============================================================================
@@ -147,29 +83,6 @@ export type ImageToolbarFunction = (target: HTMLElement) => HTMLElement | string
  * Image URL validation function type
  */
 export type ImageUrlValidator = (url: string) => boolean
-
-// ============================================================================
-// TipTap Command Extensions
-// ============================================================================
-
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    image: {
-      /**
-       * Insert a new image with the specified options
-       */
-      setImage: (options: SetImageOptions) => ReturnType
-      /**
-       * Update dimensions of an existing image by key ID
-       */
-      updateImageDimensions: (options: UpdateImageDimensionsParams) => ReturnType
-      /**
-       * Retrieve stored dimensions for an image by key ID
-       */
-      getImageDimensions: (options: GetImageDimensionsParams) => ReturnType
-    }
-  }
-}
 
 // ============================================================================
 // Utility Types

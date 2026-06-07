@@ -4,438 +4,163 @@
 [![Downloads](https://img.shields.io/npm/dm/@docs.plus/extension-hypermultimedia.svg)](https://npmcharts.com/compare/@docs.plus/extension-hypermultimedia)
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-hypermultimedia.svg)](https://www.npmjs.com/package/@docs.plus/extension-hypermultimedia)
 
-HyperMultimedia is a powerful extension for the TipTap editor, enabling the embedding of various types of multimedia and posts directly within the editor.
+Tiptap extension for embedding media in the editor: images, audio, video, and provider embeds (YouTube, Vimeo, SoundCloud, X, Loom). The media toolbar mounts in the node's top-right corner; its overflow and submenu popovers render through [`@docs.plus/floating-popover`](../floating-popover) (Floating UI) — no tippy.js.
 
-Below is a list of supported media types:
+| Node         | Embeds               | Docs                                  |
+| ------------ | -------------------- | ------------------------------------- |
+| `image`      | images (+ markdown)  | [image](./src/nodes/image/)           |
+| `audio`      | audio files          | [audio](./src/nodes/audio/)           |
+| `video`      | video files          | [video](./src/nodes/video/)           |
+| `youtube`    | YouTube videos       | [youtube](./src/nodes/youtube/)       |
+| `vimeo`      | Vimeo videos         | [vimeo](./src/nodes/vimeo/)           |
+| `soundcloud` | SoundCloud audio     | [soundcloud](./src/nodes/soundcloud/) |
+| `x`          | X (formerly Twitter) | [x](./src/nodes/x/)                   |
+| `loom`       | Loom recordings      | [loom](./src/nodes/loom/)             |
 
-| Media Type   | Description                               | Documentation                           |
-| ------------ | ----------------------------------------- | --------------------------------------- |
-| `Images`     | Embed images within the editor.           | [More details](./src/nodes/image/)      |
-| `Audio`      | Embed Audio within the editor.            | [More details](./src/nodes/audio/)      |
-| `Video`      | Embed Video within the editor.            | [More details](./src/nodes/video/)      |
-| `YouTube`    | Embed YouTube videos within the editor.   | [More details](./src/nodes/youtube/)    |
-| `Vimeo`      | Embed Vimeo videos within the editor.     | [More details](./src/nodes/vimeo/)      |
-| `SoundCloud` | Embed SoundCloud audio within the editor. | [More details](./src/nodes/soundcloud/) |
-| `Twitter`    | Embed Twitter posts within the editor.    | [More details](./src/nodes/twitter/)    |
-
-> Missing a media type? Let us know. 📬
-
-## Installation
-
-Install the `extension-hypermultimedia` package via npm:
+## Install
 
 ```bash
-npm install @docs.plus/extension-hypermultimedia
+bun add @docs.plus/extension-hypermultimedia
 ```
 
-## Configuration
+## Usage
 
-Configure the `HyperMultimediaKit` by passing an object with the desired settings for each media type you wish to use.
-
-```javascript
-import { HyperMultimediaKit, vimeoModal } from '@docs.plus/extension-hypermultimedia'
-
-HyperMultimediaKit.configure({
-  Image,
-  Youtube,
-  Vimeo: {
-    modal: vimeoModal, // default modal
-    inline: true // default false
-  },
-  SoundCloud: false,
-  Twitter: false
-})
-```
-
-### Modals, Exciting Features 💡
-
-The `HyperMultimedia` extension comes with a <u>modal</u> for each media type.
-You can use the default modal or create your own.
-
-#### Default Modals
-
-you import and use the default modal for each media type like this:
-
-<details>
-<summary>The `hypermultimedia` styles.scss</summary>
-
-```scss
-.hypermultimedia {
-  iframe,
-  audio,
-  video {
-    background-color: #cfcfcf;
-  }
-
-  &__resize-gripper {
-    position: absolute;
-    margin: 0;
-    display: none;
-    z-index: 1;
-
-    .media-resize-clamp {
-      width: 10px;
-      height: 10px;
-      background-color: #1a73e8;
-      border: 1px solid #fff;
-      display: none;
-      z-index: 4;
-
-      &--rotate {
-        border-radius: 50%;
-        position: absolute;
-        top: -28px;
-        left: 50%;
-        transform: translateX(-50%);
-        cursor: crosshair;
-
-        &::after {
-          content: '';
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 1.5px;
-          height: 30px;
-          background-color: #1a73e8;
-        }
-      }
-
-      &--left {
-        position: absolute;
-        top: 50%;
-        left: -5px;
-        transform: translateY(-50%);
-        cursor: ew-resize;
-        z-index: 2;
-      }
-
-      &--right {
-        position: absolute;
-        top: 50%;
-        right: -5px;
-        transform: translateY(-50%);
-        cursor: ew-resize;
-        z-index: 2;
-      }
-
-      &--top {
-        position: absolute;
-        top: -5px;
-        left: 50%;
-        transform: translateX(-50%);
-        cursor: ns-resize;
-        z-index: 2;
-      }
-
-      &--bottom {
-        position: absolute;
-        bottom: -5px;
-        left: 50%;
-        transform: translateX(-50%);
-        cursor: ns-resize;
-        z-index: 2;
-      }
-
-      &--top-left {
-        position: absolute;
-        top: -5px;
-        left: -5px;
-        cursor: nwse-resize;
-      }
-
-      &--top-right {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        cursor: nesw-resize;
-      }
-
-      &--bottom-left {
-        position: absolute;
-        bottom: -5px;
-        left: -5px;
-        cursor: nesw-resize;
-      }
-
-      &--bottom-right {
-        position: absolute;
-        bottom: -5px;
-        right: -5px;
-        cursor: nwse-resize;
-      }
-    }
-
-    &--active {
-      border: 1.5px solid #1a73e8;
-      display: block;
-      .media-resize-clamp {
-        display: block;
-      }
-    }
-  }
-
-  &__modal {
-    padding: 8px 8px;
-    background-color: #fff;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-
-    &__divider {
-      border-left: 2px solid #e5e7eb;
-      height: 5px;
-      margin: 6px 10px;
-    }
-
-    select {
-      @apply rounded-md border-gray-300 px-2 py-2;
-      &:hover {
-        background-color: #eee;
-      }
-    }
-
-    button {
-      border-color: #d1d5db;
-      padding: 8px;
-      border-radius: 0.375rem;
-      &:hover {
-        background-color: #eee;
-      }
-    }
-
-    &__btn--resize {
-      svg {
-      }
-    }
-
-    &--active {
-      background-color: #1a73e8;
-      fill: #fff;
-      &:hover {
-        svg {
-          fill: black;
-        }
-      }
-      svg {
-        fill: #fff;
-      }
-    }
-  }
-}
-```
-
-</details>
-
-```javascript
-import { HyperMultimediaKit, vimeoModal } from '@docs.plus/extension-hypermultimedia'
-
-HyperMultimediaKit.configure({
-  Vimeo: {
-    modal: vimeoModal
-  }
-})
-```
-
-#### Custom Modals
-
-OR you can create your own modal for each media type. To do so, you must pass a function.
-
-<details>
-<summary>Custom TwitterModal</summary>
-
-```js
-const twitterModal = (options) => {
-  const { editor, tooltip, tippyModal, iframe, wrapper } = options
-  const nodePos = editor.view.posAtDOM(wrapper, 0)
-
-  // Get the node attributes.
-  const node = editor.state.doc.nodeAt(nodePos)
-  const { float, display, margin } = attrs.attrs
-
-  // Remove all children from the modal, clear the modal content.
-  while (tippyModal.firstChild) node.removeChild(tippyModal.firstChild)
-
-  // Create a wrapper for the modal content.
-  const div = createElement('div', 'twitter-modal__wrapper')
-
-  // Create action buttons for the node.
-  const buttonFloadLeft = createElement('button', 'twitter-modal__fload__left')
-  const btnFloadRight = createElement('button', 'twitter-modal__fload__right')
-
-  buttonFloadLeft.addEventListener('click', () => {
-    const { state, dispatch } = editor.view
-    const { tr } = state
-
-    tr.setNodeAttribute('Twitter', 'float', 'left')
-    tooltip.hide()
-    dispatch(tr)
-  })
-
-  btnFloadRight.addEventListener('click', () => {
-    const { state, dispatch } = editor.view
-    const { tr } = state
-
-    tr.setNodeAttribute('Twitter', 'float', 'right')
-    tooltip.hide()
-    dispatch(tr)
-  })
-
-  // Append the buttons to the modal.
-  div.append(buttonFloadLeft, btnFloadRight)
-
-  // Append the modal wrapper to the modal.
-  tippyModal.append(div)
-
-  // Update the modal position, and place it on the bottom of the iframe,
-  // then display the modal.
-  tooltip.update(editor.view, { placement: 'bottom-start' }, iframe)
-}
-```
-
-</details>
+One `HyperMultimediaKit.configure` call adds every enabled node. Set a node to `false` to disable it; pass an options object to configure it.
 
 ```javascript
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
-Editor = new Editor({
-  // Other configurations
+new Editor({
   extensions: [
-    // Other extensions
     HyperMultimediaKit.configure({
-      Twitter: {
-        modal: twitterModal
-      }
+      Image: { inline: true, allowBase64: true },
+      Vimeo: { inline: true },
+      SoundCloud: false
     })
   ]
 })
 ```
 
-> For more details, check out [the modal document](./src/modals/twitter.ts).
+Markdown image import/export lives on the `image` node — no separate extension. With a Markdown extension loaded, `![alt](src)` round-trips.
 
 ## Commands
 
-### Youtube
+Each node contributes one insert command; the provider commands return `false` for an invalid URL.
 
-```js
-editor.commands.setYoutubeVideo({
-  src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-  width: 560,
-  height: 315
+```javascript
+editor.commands.setImage({ src: 'https://example.com/photo.png', alt: 'Example' })
+editor.commands.setVideo({ src: 'https://example.com/clip.mp4' })
+editor.commands.setAudio({ src: 'https://example.com/track.mp3' })
+editor.commands.setYoutubeVideo({ src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' })
+editor.commands.setVimeo({ src: 'https://vimeo.com/123456789' })
+editor.commands.setSoundCloud({ src: 'https://soundcloud.com/artist/track' })
+editor.commands.setX({ src: 'https://x.com/user/status/123' })
+editor.commands.setLoom({ src: 'https://www.loom.com/share/abcdef1234567890' })
+```
+
+The embed commands also accept layout options: `width`, `height`, `margin`, `float`, `display`, `justifyContent`. Provider embeds accept player options documented per node (for example YouTube `controls`, `start`, `modestbranding`). Per-node detail lives under [`src/nodes/`](./src/nodes/).
+
+## Paste precedence
+
+`isMediaUrl(url)` lets a host yield media URLs to this kit instead of autolinking them:
+
+```javascript
+Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })
+```
+
+## Media toolbar
+
+Hover a media node (desktop) or tap it (touch) and a toolbar appears at the node's top-right corner. Common actions sit inline; the rest live behind a `…` overflow menu.
+
+| Action                     | Placement | Nodes                                                                   |
+| -------------------------- | --------- | ----------------------------------------------------------------------- |
+| Caption                    | inline    | all                                                                     |
+| Alignment                  | inline    | all                                                                     |
+| View original              | inline    | any node with an external `src` (hidden for uploaded image/video/audio) |
+| Download                   | inline    | image, video, audio                                                     |
+| Copy                       | overflow  | all                                                                     |
+| Delete                     | overflow  | all                                                                     |
+| Post options (size, theme) | overflow  | x                                                                       |
+
+Desktop hosts import the toolbar stylesheet `dist/media-toolbar.css` (renamed from `media-toolbar-popover.css`) alongside the gripper and loading-shell CSS listed below.
+
+### Customizing actions
+
+Two kit hooks, in order of reach.
+
+`mediaActions` rewrites the resolved action list per node — add, hide, or reorder:
+
+```javascript
+HyperMultimediaKit.configure({
+  mediaActions: (defaults, { nodeType }) => {
+    if (nodeType !== 'image') return defaults
+    return [
+      ...defaults.filter((action) => action.id !== 'download'), // hide one
+      { id: 'alt', label: 'Edit alt text', placement: 'menu', run: (ctx) => editAltText(ctx) } // add one
+    ]
+  }
 })
 ```
 
-> For more details, check out [the Youtube document](./src/nodes/youtube/).
+A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'menu', isVisible?(ctx), isActive?(ctx), run(ctx), renderSubmenu?(ctx) }`. The returned array order is final; the built-in `order` field only seeds the defaults.
 
-### Vimeo
+`mediaToolbar` replaces the toolbar element outright — return an element, or `null` to let the host render its own surface (the webapp returns `null` on mobile and renders a bottom-sheet):
 
-```js
-editor.commands.setVimeo({
-  src: 'https://vimeo.com/123456789'
+```javascript
+HyperMultimediaKit.configure({
+  mediaToolbar: (ctx) => buildCustomToolbar(ctx)
+  // mediaToolbar: () => null, // opt out
 })
 ```
 
-> For more details, check out [the Vimeo document](./src/nodes/vimeo/).
+`isUploadedMedia` marks which image/video/audio nodes are host uploads, so View original stays hidden for them (it always shows for provider embeds):
 
-### Twitter
-
-```js
-editor.commands.setTwitter({
-  src: 'https://twitter.com/tim_cook/status/1719021344854069441'
-  float: "left",
-});
-```
-
-> For more details, check out [the Twitter document](./src/nodes/twitter/).
-
-### SoundCloud
-
-```js
-editor.commands.setSoundCloud({
-  src: 'https://soundcloud.com/artist/track'
-  margin: "0.2in"
-});
-```
-
-> For more details, check out [the SoundCloud document](./src/nodes/soundcloud/).
-
-### Image
-
-```js
-editor.commands.setImage({
-  src: 'https://example.com/foobar.png',
-  alt: 'A boring example image',
-  title: 'An example'
+```javascript
+HyperMultimediaKit.configure({
+  isUploadedMedia: (ctx) => Boolean(ctx.attrs['data-upload-id'])
 })
 ```
 
-#### Markdown syntax
+`createMediaToolbar`, `resolveMediaActions`, the `MediaAction` types, and the action handlers (`viewOriginalMedia`, `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`, `isDownloadable`) are exported for hosts that build their own surface.
 
-```md
-![alt text](src alt title)
+### Caption
 
-![alt text](https://example.com/foobar.png)
+Every media node view has an editable `<figcaption>`; the text is stored in the node's `caption` attribute, which is the source of truth — it persists through collaboration, JSON, and same-editor copy/paste. Two limits: markdown export keeps `![alt](src)` only, and standalone-HTML `<figure>/<figcaption>` round-trip (render **and** parse) is supported for `image` only. Video, audio, embeds, and X keep the editable caption and attribute but emit no `<figure>` in HTML, so re-importing exported HTML can't resurrect a caption as stray text.
+
+## Loading shell (built-in UX)
+
+Remote images, iframe embeds, and X oEmbed show a reserved-size shimmer shell until the asset is ready — same pattern as Notion/Slack embed cards. Nothing is persisted except the real media node; the shell is node-view chrome only.
+
+Import the stylesheets next to the resize gripper CSS:
+
+```javascript
+import '@docs.plus/extension-hypermultimedia/dist/resize-gripper.css'
+import '@docs.plus/extension-hypermultimedia/dist/media-loading-shell.css'
+import '@docs.plus/extension-hypermultimedia/dist/media-toolbar.css'
 ```
 
-> For more details, check out [the Image document](./src/nodes/image/).
+Theme with CSS variables on the editor root (see `src/styles/media-loading-shell.css`): `--hm-loading-bg`, `--hm-loading-shimmer`, `--hm-loading-provider`, `--hm-loading-message`, `--hm-loading-spinner-active`.
 
-### Video
+Customize or disable on the kit:
 
-```js
-editor.commands.setVideo({
-  src: 'https://example.com/foobar.mp4'
+```javascript
+HyperMultimediaKit.configure({
+  loadingShell: true // default built-in shell
+  // loadingShell: false, // no overlay
+  // loadingShell: (ctx) => { ... return overlay HTMLElement }, // replace overlay UI
 })
 ```
 
-#### Markdown syntax
+Custom overlays should include a `.hm-loading-shell__message` element if you want `markError(message)` to show text. Without it, the host sets `aria-label` on the overlay and shell root instead.
 
-```md
-![video](src title width height)
+Advanced: `createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`, and types are exported from the package entry for hosts that build custom node views.
 
-![video](https://example.com/foobar.mp4)
-```
+## Migrating from 1.x
 
-> For more details, check out [the Video document](./src/nodes/video/).
+2.0.0 renames node types to camelCase and rebrands Twitter to X. See the [CHANGELOG](./CHANGELOG.md) for the full breaking-change list, and the [media-node-rename runbook](../hocuspocus.server/docs/migrate-media-node-names.md) to migrate stored documents.
 
-### Audio
+## Links
 
-```js
-editor.commands.setAudio({
-  src: 'https://example.com/foobar.mp3'
-})
-```
-
-#### Markdown syntax
-
-```md
-![audio](src width height)
-
-![audio](https://example.com/foobar.mp3)
-```
-
-> For more details, check out [the Audio document](./src/nodes/audio/).
-
-## Sorce code and Example
-
-- Demo: [extension-hypermultimedia](https://github.com/HMarzban/extension-hypermultimedia#demo-time-)
-- Extension: [packages/extension-hypermultimedia](https://github.com/HMarzban/extension-hypermultimedia/tree/main/packages/extension-hypermultimedia)
-- Usage: [packages/nextjs/src/components/Tiptap.tsx](https://github.com/HMarzban/extension-hypermultimedia/blob/main/packages/nextjs/src/components/Tiptap.tsx#L47)
-
-## Inspiration and Acknowledgment, Let's Connect
-
-Thank you for exploring our `HyperMultimedia` extension from docs.plus! We aim to make collaboration and knowledge sharing not just easy, but also enjoyable.
-
-Our extension is inspired by Tiptap's [extension-image](https://tiptap.dev/api/nodes/image) and [extension-youtube](https://tiptap.dev/api/nodes/youtube). While we've incorporated our own enhancements, we'd like to tip our hats to Tiptap for pioneering the "headless" approach that we admire greatly.
-
-> Please note: We're not affiliated with Tiptap, but we believe in recognizing foundational work.
-
-Your feedback and interest in [docs.plus](https://github.com/docs-plus/docs.plus) are invaluable to us. Share your thoughts, suggestions, or dive deeper into our mission at the docs.plus repository.
-
-Wish to converse?
-Connect with us [here](https://github.com/docs-plus/docs.plus#-connect-with-us).
+- Extension: [packages/extension-hypermultimedia](https://github.com/docs-plus/docs.plus/tree/main/packages/extension-hypermultimedia)
+- Inspired by Tiptap's [extension-image](https://tiptap.dev/api/nodes/image) and [extension-youtube](https://tiptap.dev/api/nodes/youtube). Not affiliated with Tiptap.
+- [Connect with us](https://github.com/docs-plus/docs.plus#-connect-with-us).

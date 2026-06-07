@@ -7,7 +7,7 @@ A powerful, performance-optimized image extension for TipTap with advanced resiz
 ## Installation
 
 ```bash
-npm install @docs.plus/extension-hypermultimedia
+bun add @docs.plus/extension-hypermultimedia
 ```
 
 ```js
@@ -151,7 +151,16 @@ HyperMultimediaKit.configure({
 })
 ```
 
+## Caption
+
+Add a caption from the toolbar; the text is stored in the node `caption` attribute
+and persists via collaboration and JSON. Image is the only node whose caption also
+round-trips through standalone HTML as `<figure>/<figcaption>`. Image, video, and
+audio also expose a Download action.
+
 ## Markdown Syntax
+
+Markdown export keeps `![alt](src)` only — the caption is not represented.
 
 ```md
 ![alt text](src alt)
@@ -190,23 +199,13 @@ editor.commands.setImage({
 
 ### updateImageDimensions()
 
-Updates image dimensions using the storage system.
+Sets the `width` / `height` attributes of the image with the given `keyId`.
 
 ```js
 editor.commands.updateImageDimensions({
   keyId: 'img-abc123',
   width: 500,
   height: 350
-})
-```
-
-### getImageDimensions()
-
-Retrieves stored image dimensions.
-
-```js
-const dimensions = editor.commands.getImageDimensions({
-  keyId: 'img-abc123'
 })
 ```
 
@@ -238,7 +237,7 @@ const dimensions = editor.commands.getImageDimensions({
 - **Transaction Batching**: Efficient ProseMirror state updates
 - **Constraint Checking**: Early validation prevents unnecessary DOM updates
 - **Keyboard Monitoring**: Lightweight Shift key detection
-- **Storage Optimization**: Key-based dimension caching
+- **Single Source of Truth**: Dimensions live on the node attributes, so resizes persist and sync
 
 ### Visual Performance
 
@@ -261,29 +260,27 @@ const DEFAULT_CONSTRAINTS = {
 
 ### Event Handling
 
-The extension provides comprehensive event handling:
+Resize handles and the floating placement toolbar are wired automatically by the
+kit: hover (desktop) or tap (touch) a media node and the controls appear. The
+image node adds one plugin of its own, for clipboard handling:
 
 ```js
-// Click handling with touch support
-imageClickHandler(view, event, options)
-
-// Keyboard shortcuts
-imageKeyDownHandler(view, event, options)
-
-// Smart paste detection
+// Inserts an image from a pasted file or URL
 HyperImagePastePlugin(editor, { nodeName: 'Image' })
 ```
 
-### Storage System
+### Dimension Persistence
 
-Images use a key-based storage system for dimension persistence:
+Each image gets a unique `keyId`, and its `width` / `height` are stored as node
+attributes — the single source of truth. Resizes are committed with
+`setNodeMarkup`, so they survive re-renders and sync through collaboration:
 
 ```js
 // Each image gets a unique keyId
 const keyId = generateShortId()
 
-// Dimensions are stored and retrieved efficiently
-this.storage.imageDimensions.set(keyId, { width, height })
+// Resize commits dimensions onto the node attributes
+editor.commands.updateImageDimensions({ keyId, width, height })
 ```
 
 ## Browser Support
@@ -295,11 +292,11 @@ this.storage.imageDimensions.set(keyId, { width, height })
 
 ## Source Code
 
-- [Main Implementation](./image.ts) - Core image node with storage system
-- [Helper Functions](./helper.ts) - Click handling, URL detection, event management
-- [Plugin System](./plugin.ts) - Event handling and paste detection
+- [Main Implementation](./image.ts) - Core image node, attributes, and resize commands
+- [Helper Functions](./helper.ts) - URL detection and input rules
+- [Plugin System](./plugin.ts) - Clipboard paste detection
 - [Resize System](../extensions/decoration/) - Advanced resize grippers and controls
-- [Toolbar System](../../utils/media-toolbar.ts) - Floating toolbar with placement controls
+- [Toolbar System](../../toolbar/) - Declarative action registry and renderer
 
 ## Migration from Basic Image Extensions
 
