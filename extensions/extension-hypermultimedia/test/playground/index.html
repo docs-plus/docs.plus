@@ -1,239 +1,240 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>@docs.plus/extension-hypermultimedia — clean-room playground</title>
-  <link rel="stylesheet" href="../../src/styles/resize-gripper.css" />
-  <link rel="stylesheet" href="../../src/styles/media-loading-shell.css" />
-  <link rel="stylesheet" href="../../src/styles/media-toolbar.css" />
-  <style>
-    /* Page chrome — light by default, dark via [data-theme="dark"].
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@docs.plus/extension-hypermultimedia — clean-room playground</title>
+    <link rel="stylesheet" href="../../src/styles/resize-gripper.css" />
+    <link rel="stylesheet" href="../../src/styles/media-loading-shell.css" />
+    <link rel="stylesheet" href="../../src/styles/media-toolbar.css" />
+    <style>
+      /* Page chrome — light by default, dark via [data-theme="dark"].
          Higher specificity than :root so manual theme choice wins over
          prefers-color-scheme when the user toggles Light/Dark. */
-    html {
-      color-scheme: light;
-    }
+      html {
+        color-scheme: light;
+      }
 
-    html[data-theme='dark'] {
-      color-scheme: dark;
-    }
+      html[data-theme='dark'] {
+        color-scheme: dark;
+      }
 
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      font-family:
-        system-ui,
-        -apple-system,
-        sans-serif;
-    }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
 
-    html {
-      background: #f9fafb;
-      color: #111827;
-      min-height: 100%;
-    }
+      html {
+        background: #f9fafb;
+        color: #111827;
+        min-height: 100%;
+      }
 
-    html[data-theme='dark'] {
-      background: #0b1220;
-      color: #f3f4f6;
-    }
+      html[data-theme='dark'] {
+        background: #0b1220;
+        color: #f3f4f6;
+      }
 
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      box-sizing: border-box;
-    }
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        box-sizing: border-box;
+      }
 
-    main {
-      width: 100%;
-      max-width: 720px;
-      padding: 1.5rem;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      box-sizing: border-box;
-    }
+      main {
+        width: 100%;
+        max-width: 720px;
+        padding: 1.5rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
 
-    html[data-theme='dark'] main {
-      background: #1f2937;
-      border-color: #374151;
-    }
+      html[data-theme='dark'] main {
+        background: #1f2937;
+        border-color: #374151;
+      }
 
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
 
-    h1 {
-      font-size: 1rem;
-      color: #6b7280;
-      margin: 0;
-      font-weight: 500;
-    }
+      h1 {
+        font-size: 1rem;
+        color: #6b7280;
+        margin: 0;
+        font-weight: 500;
+      }
 
-    html[data-theme='dark'] h1 {
-      color: #9ca3af;
-    }
+      html[data-theme='dark'] h1 {
+        color: #9ca3af;
+      }
 
-    .theme-toggle {
-      appearance: none;
-      border: 1px solid #e5e7eb;
-      background: transparent;
-      color: inherit;
-      border-radius: 6px;
-      padding: 0.35rem 0.75rem;
-      font: inherit;
-      font-size: 0.875rem;
-      line-height: 1;
-      min-width: 4rem;
-      cursor: pointer;
-    }
+      .theme-toggle {
+        appearance: none;
+        border: 1px solid #e5e7eb;
+        background: transparent;
+        color: inherit;
+        border-radius: 6px;
+        padding: 0.35rem 0.75rem;
+        font: inherit;
+        font-size: 0.875rem;
+        line-height: 1;
+        min-width: 4rem;
+        cursor: pointer;
+      }
 
-    .theme-toggle:hover {
-      background: #f3f4f6;
-    }
+      .theme-toggle:hover {
+        background: #f3f4f6;
+      }
 
-    html[data-theme='dark'] .theme-toggle {
-      border-color: #374151;
-    }
+      html[data-theme='dark'] .theme-toggle {
+        border-color: #374151;
+      }
 
-    html[data-theme='dark'] .theme-toggle:hover {
-      background: #374151;
-    }
+      html[data-theme='dark'] .theme-toggle:hover {
+        background: #374151;
+      }
 
-    #editor {
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      min-height: 200px;
-      padding: 1rem;
-      --hm-resize-border: #1a73e8;
-      --hm-resize-handle-bg: #fff;
-      --hm-loading-bg: #f3f4f6;
-      --hm-loading-shimmer: rgba(255, 255, 255, 0.55);
-      --hm-loading-provider: #374151;
-      --hm-loading-message: #6b7280;
-      --hm-loading-spinner-track: #e5e7eb;
-      --hm-loading-spinner-active: #2563eb;
-    }
+      #editor {
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        min-height: 200px;
+        padding: 1rem;
+        --hm-resize-border: #1a73e8;
+        --hm-resize-handle-bg: #fff;
+        --hm-loading-bg: #f3f4f6;
+        --hm-loading-shimmer: rgba(255, 255, 255, 0.55);
+        --hm-loading-provider: #374151;
+        --hm-loading-message: #6b7280;
+        --hm-loading-spinner-track: #e5e7eb;
+        --hm-loading-spinner-active: #2563eb;
+      }
 
-    html[data-theme='dark'] #editor {
-      border-color: #374151;
-      --hm-resize-border: #60a5fa;
-      --hm-resize-handle-bg: #1f2937;
-      --hm-loading-bg: #111827;
-      --hm-loading-shimmer: rgba(255, 255, 255, 0.08);
-      --hm-loading-provider: #e5e7eb;
-      --hm-loading-message: #9ca3af;
-      --hm-loading-spinner-track: #374151;
-      --hm-loading-spinner-active: #60a5fa;
-    }
+      html[data-theme='dark'] #editor {
+        border-color: #374151;
+        --hm-resize-border: #60a5fa;
+        --hm-resize-handle-bg: #1f2937;
+        --hm-loading-bg: #111827;
+        --hm-loading-shimmer: rgba(255, 255, 255, 0.08);
+        --hm-loading-provider: #e5e7eb;
+        --hm-loading-message: #9ca3af;
+        --hm-loading-spinner-track: #374151;
+        --hm-loading-spinner-active: #60a5fa;
+      }
 
-    #editor:focus-within {
-      border-color: #2563eb;
-      outline: none;
-    }
+      #editor:focus-within {
+        border-color: #2563eb;
+        outline: none;
+      }
 
-    html[data-theme='dark'] #editor:focus-within {
-      border-color: #60a5fa;
-    }
+      html[data-theme='dark'] #editor:focus-within {
+        border-color: #60a5fa;
+      }
 
-    #editor .ProseMirror {
-      outline: none;
-      min-height: 180px;
-    }
+      #editor .ProseMirror {
+        outline: none;
+        min-height: 180px;
+      }
 
-    #editor .ProseMirror p {
-      margin: 0.5em 0;
-    }
+      #editor .ProseMirror p {
+        margin: 0.5em 0;
+      }
 
-    /* Toolbar + caption chrome ships in media-toolbar.css (linked above).
+      /* Toolbar + caption chrome ships in media-toolbar.css (linked above).
          The bar mounts inside #editor; its `…`/submenu popovers portal to the
          body, so dark theme vars live at the html root to reach both. */
-    html[data-theme='dark'] {
-      --hm-toolbar-bg: #1f2937;
-      --hm-toolbar-fg: #e5e7eb;
-      --hm-toolbar-border: rgba(255, 255, 255, 0.12);
-      --hm-toolbar-hover: #374151;
-      --hm-toolbar-active: #1e3a8a;
-      --hm-toolbar-active-fg: #bfdbfe;
-      --hm-toolbar-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-      --hm-caption-fg: #9ca3af;
-      --hm-caption-placeholder: #6b7280;
-    }
-
-    .floating-popover {
-      position: fixed;
-      z-index: 50;
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .footer {
-      width: 100%;
-      max-width: 720px;
-      margin-top: 0.75rem;
-      font-size: 0.8125rem;
-      color: #6b7280;
-    }
-
-    html[data-theme='dark'] .footer {
-      color: #9ca3af;
-    }
-
-    .footer a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .footer a:hover {
-      color: #2563eb;
-      text-decoration: underline;
-    }
-
-    html[data-theme='dark'] .footer a:hover {
-      color: #60a5fa;
-    }
-  </style>
-  <script>
-    ; (function () {
-      var saved = null
-      try {
-        saved = localStorage.getItem('theme')
-      } catch (_) { }
-      if (saved === 'dark' || saved === 'light') {
-        document.documentElement.setAttribute('data-theme', saved)
+      html[data-theme='dark'] {
+        --hm-toolbar-bg: #1f2937;
+        --hm-toolbar-fg: #e5e7eb;
+        --hm-toolbar-border: rgba(255, 255, 255, 0.12);
+        --hm-toolbar-hover: #374151;
+        --hm-toolbar-active: #1e3a8a;
+        --hm-toolbar-active-fg: #bfdbfe;
+        --hm-toolbar-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        --hm-caption-fg: #9ca3af;
+        --hm-caption-placeholder: #6b7280;
       }
-    })()
-  </script>
-</head>
 
-<body>
-  <main>
-    <div class="header">
-      <h1>@docs.plus/extension-hypermultimedia — clean-room playground</h1>
-      <button id="theme-toggle" class="theme-toggle" type="button"></button>
-    </div>
-    <div id="editor"></div>
-  </main>
-  <footer class="footer">
-    <a href="https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia" target="_blank"
-      rel="noopener noreferrer">
-      GitHub
-    </a>
-    ·
-    <a href="https://discord.gg/25JPG38J59" target="_blank" rel="noopener noreferrer">Discord</a>
-  </footer>
-  <script>
-      ; (function () {
+      .floating-popover {
+        position: fixed;
+        z-index: 50;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .footer {
+        width: 100%;
+        max-width: 720px;
+        margin-top: 0.75rem;
+        font-size: 0.8125rem;
+        color: #6b7280;
+      }
+
+      html[data-theme='dark'] .footer {
+        color: #9ca3af;
+      }
+
+      .footer a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        color: #2563eb;
+        text-decoration: underline;
+      }
+
+      html[data-theme='dark'] .footer a:hover {
+        color: #60a5fa;
+      }
+    </style>
+    <script>
+      ;(function () {
+        var saved = null
+        try {
+          saved = localStorage.getItem('theme')
+        } catch (_) {}
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved)
+        }
+      })()
+    </script>
+  </head>
+
+  <body>
+    <main>
+      <div class="header">
+        <h1>@docs.plus/extension-hypermultimedia — clean-room playground</h1>
+        <button id="theme-toggle" class="theme-toggle" type="button"></button>
+      </div>
+      <div id="editor"></div>
+    </main>
+    <footer class="footer">
+      <a
+        href="https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia"
+        target="_blank"
+        rel="noopener noreferrer">
+        GitHub
+      </a>
+      ·
+      <a href="https://discord.gg/25JPG38J59" target="_blank" rel="noopener noreferrer">Discord</a>
+    </footer>
+    <script>
+      ;(function () {
         var btn = document.getElementById('theme-toggle')
         var root = document.documentElement
         function render() {
@@ -251,13 +252,12 @@
           root.setAttribute('data-theme', next)
           try {
             localStorage.setItem('theme', next)
-          } catch (_) { }
+          } catch (_) {}
           render()
         })
         render()
       })()
-  </script>
-  <script type="module" src="./main.ts"></script>
-</body>
-
+    </script>
+    <script type="module" src="./main.ts"></script>
+  </body>
 </html>

@@ -301,10 +301,7 @@ async function checkNodeModules(): Promise<CheckResult> {
 }
 
 async function checkPrismaClient(): Promise<CheckResult> {
-  const prismaClientPath = resolve(
-    ROOT_DIR,
-    'apps/hocuspocus.server/node_modules/.prisma/client'
-  )
+  const prismaClientPath = resolve(ROOT_DIR, 'apps/hocuspocus.server/node_modules/.prisma/client')
 
   if (existsSync(prismaClientPath)) {
     return {

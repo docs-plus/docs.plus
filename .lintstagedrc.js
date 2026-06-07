@@ -28,7 +28,10 @@ module.exports = {
   '{apps,extensions,packages}/**/public/**/*.{js,ts}': ['prettier --write'],
 
   // CSS/SCSS files - lint and format
-  '{apps,extensions,packages}/**/*.{css,scss}': ['stylelint --fix --allow-empty-input', 'prettier --write'],
+  '{apps,extensions,packages}/**/*.{css,scss}': [
+    'stylelint --fix --allow-empty-input',
+    'prettier --write'
+  ],
 
   // Config files at root and in packages
   '*.{json,yml,yaml}': ['prettier --write'],
