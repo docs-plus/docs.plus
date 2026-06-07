@@ -39,7 +39,7 @@
     "eslint": "catalog:",
     "eslint-config-next": "^16.2.6",
     "postcss": "^8.5.15",
-    "sass": "^1.99.0",
+    "sass": "^1.100.0",
     "typescript": "catalog:"
   }
 }
