@@ -5,7 +5,7 @@ Entry point for Claude Code working on **docs.plus**. Read [AGENTS.md](AGENTS.md
 ## Read order
 
 1. **[AGENTS.md](AGENTS.md)** — durable rules: package manager, git/commit policy, code quality, testing, skills, UI/theme, monorepo toolchain, publishing, and release flow. Treat it as memory: do not deviate without an explicit maintainer instruction.
-2. **Package-local `AGENTS.md`** when working inside a package (e.g. [packages/extension-hyperlink/AGENTS.md](packages/extension-hyperlink/AGENTS.md)). Read in addition to the root file.
+2. **Package-local `AGENTS.md`** when working inside a package (e.g. [extensions/extension-hyperlink/AGENTS.md](extensions/extension-hyperlink/AGENTS.md)). Read in addition to the root file.
 3. The relevant `.cursor/rules/*.mdc` for the file you are editing (see index below).
 
 If guidance overlaps, project policy in `AGENTS.md` and `.cursor/docs/` wins; `.mdc` files are reference material for authoring.
@@ -27,8 +27,8 @@ Reference material that auto-attaches in Cursor. In Claude Code, open the releva
 
 - [daisyui.mdc](.cursor/rules/daisyui.mdc) — daisyUI 5 + Tailwind reference for UI work.
 - [react-floating-ui.mdc](.cursor/rules/react-floating-ui.mdc) — React 19.2 + `@floating-ui/react` 0.27 conventions and pitfalls.
-- [supabase.mdc](.cursor/rules/supabase.mdc) — SQL authoring, Supabase migrations, generated files, RLS. Triggers on `**/*.sql`, `packages/supabase/**`, `packages/webapp/src/types/supabase.ts`.
-- [tiptap.mdc](.cursor/rules/tiptap.mdc) — Tiptap/ProseMirror reference workflow for editor code under `packages/webapp/src/components/TipTap/**`, `chatroom/**`, `extension-*/**`, `hocuspocus.server/src/**`.
+- [supabase.mdc](.cursor/rules/supabase.mdc) — SQL authoring, Supabase migrations, generated files, RLS. Triggers on `**/*.sql`, `packages/supabase/**`, `apps/webapp/src/types/supabase.ts`.
+- [tiptap.mdc](.cursor/rules/tiptap.mdc) — Tiptap/ProseMirror reference workflow for editor code under `apps/webapp/src/components/TipTap/**`, `chatroom/**`, `extension-*/**`, `hocuspocus.server/src/**`.
 - [scripts-naming.mdc](.cursor/rules/scripts-naming.mdc) — script and Make-target naming. Triggers on `package.json`, `Makefile`, `.github/workflows/**`, `scripts/**`.
 
 ## Long-form policy — `.cursor/docs/`
@@ -50,11 +50,11 @@ Skills never create branches or worktrees and never commit — they operate in t
 
 ## Workspace shape
 
-- Bun monorepo, workspaces = `packages/*`. Engines: Node ≥ 24.11.0, Bun ≥ 1.3.7.
-- Webapp: [@docs.plus/webapp](packages/webapp/) (Next.js Pages Router).
-- Realtime backend: [@docs.plus/hocuspocus.server](packages/hocuspocus.server/).
-- Admin: [@docs.plus/admin-dashboard](packages/admin-dashboard/).
-- Editor: [packages/webapp/src/components/TipTap/](packages/webapp/src/components/TipTap/).
-- Publishable extensions: `packages/extension-*` (use [@docs.plus/release-tooling](packages/release-tooling/) for `prepack` / `prepublishOnly`).
+- Bun monorepo, workspaces = `apps/*` (webapp, hocuspocus.server, admin-dashboard), `extensions/*` (the five `@docs.plus/extension-*`), `packages/*` (floating-popover, eslint-config, release-tooling, supabase, email-templates). Engines: Node ≥ 24.11.0, Bun ≥ 1.3.7.
+- Webapp: [@docs.plus/webapp](apps/webapp/) (Next.js Pages Router).
+- Realtime backend: [@docs.plus/hocuspocus.server](apps/hocuspocus.server/).
+- Admin: [@docs.plus/admin-dashboard](apps/admin-dashboard/).
+- Editor: [apps/webapp/src/components/TipTap/](apps/webapp/src/components/TipTap/).
+- Publishable extensions: `extensions/extension-*` (use [@docs.plus/release-tooling](packages/release-tooling/) for `prepack` / `prepublishOnly`).
 
 Run scripts from the repo root with workspace filters, e.g. `bun run --filter @docs.plus/webapp dev`.

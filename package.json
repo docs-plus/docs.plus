@@ -3,6 +3,8 @@
   "private": true,
   "license": "MIT",
   "workspaces": [
+    "apps/*",
+    "extensions/*",
     "packages/*"
   ],
   "prettier": "./.prettierrc.json",
@@ -17,8 +19,8 @@
     "check:fix": "bun run lint:fix && bun run lint:styles:fix && bun run format:fix",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:styles": "stylelint 'packages/**/*.{css,scss}' --allow-empty-input",
-    "lint:styles:fix": "stylelint 'packages/**/*.{css,scss}' --fix --allow-empty-input",
+    "lint:styles": "stylelint '{apps,extensions,packages}/**/*.{css,scss}' --allow-empty-input",
+    "lint:styles:fix": "stylelint '{apps,extensions,packages}/**/*.{css,scss}' --fix --allow-empty-input",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "typecheck": "bun run --filter '*' typecheck",

@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev build-prod-ci build-prod-backend run-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats deploy-prod rollback-prod status-prod logs-traefik
+.PHONY: help build build-dev build-prod-ci build-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats deploy-prod rollback-prod status-prod logs-traefik
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -13,7 +13,6 @@ help:
 	@echo "  make build-dev         - Build all services (development)"
 	@echo "  make build-prod-ci       - Build prod images with stub env (no .env.production needed)"
 	@echo "  make build-prod-backend  - Build only backend prod images (rest-api, hocuspocus, worker)"
-	@echo "  make run-prod-backend    - Run backend prod images locally (needs .env.local)"
 	@echo ""
 	@echo "Running:"
 	@echo "  make up-prod           - Start all services (production)"
@@ -74,7 +73,7 @@ build-prod-ci:
 	@echo "✅ Production build validation passed"
 
 # Build only backend (rest-api, hocuspocus-server, hocuspocus-worker) prod images. Same image, 3 services.
-# Use before pushing to verify backend Dockerfile builds; then run with run-prod-backend.
+# Use before pushing to verify backend Dockerfile builds.
 build-prod-backend:
 	@echo "🏗️  Building backend production images (rest-api, hocuspocus-server, hocuspocus-worker)..."
 	@test -f scripts/env.production.build-stub || (echo "❌ scripts/env.production.build-stub missing"; exit 1)
@@ -83,13 +82,6 @@ build-prod-backend:
 
 # Run backend prod images locally: Redis + rest-api + hocuspocus-server + hocuspocus-worker (1 replica each).
 # Uses .env.local for DATABASE_URL and secrets. No Traefik; override publishes 4000/4001/4002.
-run-prod-backend: build-prod-backend
-	@test -f .env.local || (echo "❌ .env.local required (DATABASE_URL, SUPABASE_*, JWT_SECRET, etc.)"; exit 1)
-	@echo "🚀 Starting backend (prod images) + Redis locally..."
-	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml -f docker-compose.backend-local.override.yml --env-file .env.local up -d redis rest-api hocuspocus-server hocuspocus-worker
-	@echo "✅ Backend running. REST: http://localhost:4000  WS: ws://localhost:4001  Health: http://localhost:4000/health"
-	@echo "  make logs-backend  - view logs"
-
 build-dev:
 	@echo "🏗️  Building all services (development)..."
 	@docker compose -f docker-compose.dev.yml --env-file .env.development build
@@ -232,7 +224,7 @@ dev-local:
 	@echo "🔧 Ensuring Prisma client is generated..."
 	@bun --filter @docs.plus/hocuspocus prisma:generate > /dev/null 2>&1 || true
 	@echo "🔧 Applying database migrations..."
-	@cd packages/hocuspocus.server && dotenv -e ../../.env.local -- bunx prisma migrate deploy > /dev/null 2>&1 || true
+	@cd apps/hocuspocus.server && dotenv -e ../../.env.local -- bunx prisma migrate deploy > /dev/null 2>&1 || true
 	@echo ""
 	@echo "Starting all services..."
 	@bunx concurrently -n "REST,WS,WORKER,WEBAPP" -c "blue,green,yellow,magenta" \

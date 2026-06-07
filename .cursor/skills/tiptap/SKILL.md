@@ -15,12 +15,10 @@ Instructions for coding agents integrating the Tiptap rich text editor
 
 Clone the tiptap and tiptap-docs repositories so you can search the source code and documentation.
 
-- https://github.com/ueberdosis/tiptap
-- https://github.com/ueberdosis/tiptap-docs
+- <https://github.com/ueberdosis/tiptap>
+- <https://github.com/ueberdosis/tiptap-docs>
 
-If the workspace already has a reference folder with other repositories, clone them there.
-
-Otherwise, clone the repositories in a new `.reference` folder. The reference folder should be git-ignored.
+Clone them locally outside the workspace (do not commit upstream clones into this repo).
 
 Before you start a task, make sure the repositories are updated to the latest version.
 

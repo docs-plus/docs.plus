@@ -11,14 +11,14 @@ Every package needs an `eslint.config.js`. Use **relative paths** for reliable r
 ### CommonJS Packages
 
 ```js
-// packages/webapp/eslint.config.js
+// apps/webapp/eslint.config.js
 module.exports = require('../eslint-config/next.js')
 ```
 
 ### ESM Packages (`"type": "module"`)
 
 ```js
-// packages/hocuspocus.server/eslint.config.js
+// apps/hocuspocus.server/eslint.config.js
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 

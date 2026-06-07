@@ -72,10 +72,10 @@ services:
   rest-api:
     build:
       context: .
-      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
+      dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
       target: base
     restart: unless-stopped
-    entrypoint: ['/app/packages/hocuspocus.server/scripts/docker-entrypoint.sh']
+    entrypoint: ['/app/apps/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/index.ts']
     container_name: docsy-rest-api-dev
     ports:
@@ -103,8 +103,8 @@ services:
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
     volumes:
-      - ./packages/hocuspocus.server/src:/app/packages/hocuspocus.server/src
-      - ./packages/hocuspocus.server/package.json:/app/packages/hocuspocus.server/package.json
+      - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
+      - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
       # Use started instead of healthy for faster dev startup
@@ -134,10 +134,10 @@ services:
   hocuspocus-server:
     build:
       context: .
-      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
+      dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
       target: base
     restart: unless-stopped
-    entrypoint: ['/app/packages/hocuspocus.server/scripts/docker-entrypoint.sh']
+    entrypoint: ['/app/apps/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/hocuspocus.server.ts']
     container_name: docsy-hocuspocus-server-dev
     # All environment variables loaded from .env.development file
@@ -160,8 +160,8 @@ services:
       HOCUSPOCUS_THROTTLE_ATTEMPTS: ${HOCUSPOCUS_THROTTLE_ATTEMPTS:-100}
       HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-60000}
     volumes:
-      - ./packages/hocuspocus.server/src:/app/packages/hocuspocus.server/src
-      - ./packages/hocuspocus.server/package.json:/app/packages/hocuspocus.server/package.json
+      - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
+      - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
       # Use started instead of healthy for faster dev startup
@@ -191,10 +191,10 @@ services:
   hocuspocus-worker:
     build:
       context: .
-      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
+      dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
       target: base
     restart: unless-stopped
-    entrypoint: ['/app/packages/hocuspocus.server/scripts/docker-entrypoint.sh']
+    entrypoint: ['/app/apps/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/hocuspocus.worker.ts']
     container_name: docsy-hocuspocus-worker-dev
     # All environment variables loaded from .env.development file
@@ -222,8 +222,8 @@ services:
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
     volumes:
-      - ./packages/hocuspocus.server/src:/app/packages/hocuspocus.server/src
-      - ./packages/hocuspocus.server/package.json:/app/packages/hocuspocus.server/package.json
+      - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
+      - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
       # Use started instead of healthy for faster dev startup
@@ -257,7 +257,7 @@ services:
   webapp:
     build:
       context: .
-      dockerfile: packages/webapp/docker/Dockerfile.bun
+      dockerfile: apps/webapp/docker/Dockerfile.bun
       target: build-extensions
       args:
         NODE_ENV: development
@@ -296,7 +296,7 @@ services:
       # Exclude root node_modules (use container's installed dependencies)
       - /app/node_modules
     command: bun run dev:ci
-    working_dir: /app/packages/webapp
+    working_dir: /app/apps/webapp
     restart: unless-stopped
     networks:
       - docsy-network-dev
@@ -322,7 +322,7 @@ services:
   admin-dashboard:
     build:
       context: .
-      dockerfile: packages/admin-dashboard/docker/Dockerfile.bun
+      dockerfile: apps/admin-dashboard/docker/Dockerfile.bun
       args:
         NODE_ENV: development
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
@@ -344,10 +344,10 @@ services:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       NEXT_PUBLIC_API_URL: http://rest-api:4000/api
     volumes:
-      - ./packages/admin-dashboard:/app/packages/admin-dashboard
+      - ./apps/admin-dashboard:/app/apps/admin-dashboard
       - /app/node_modules
     command: bun run dev:ci
-    working_dir: /app/packages/admin-dashboard
+    working_dir: /app/apps/admin-dashboard
     restart: unless-stopped
     networks:
       - docsy-network-dev

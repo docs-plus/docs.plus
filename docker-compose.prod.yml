@@ -150,7 +150,7 @@ services:
     env_file: .env.production
     build:
       context: .
-      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
+      dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
       target: production
     restart: always
     stop_grace_period: 30s
@@ -159,7 +159,7 @@ services:
     environment:
       NODE_ENV: production
       APP_PORT: 4000
-      # Pino — see packages/hocuspocus.server/src/lib/logger.ts
+      # Pino — see apps/hocuspocus.server/src/lib/logger.ts
       LOG_LEVEL: ${LOG_LEVEL:-info}
       HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
       REST_LOG_LEVEL: ${REST_LOG_LEVEL:-error}
@@ -243,7 +243,7 @@ services:
     env_file: .env.production
     build:
       context: .
-      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
+      dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
       target: production
     restart: always
     stop_grace_period: 30s
@@ -337,7 +337,7 @@ services:
     env_file: .env.production
     build:
       context: .
-      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
+      dockerfile: apps/hocuspocus.server/docker/Dockerfile.bun
       target: production
     restart: always
     # Grace period must exceed lockDuration (2min) to allow jobs to complete
@@ -423,7 +423,7 @@ services:
     env_file: .env.production
     build:
       context: .
-      dockerfile: packages/webapp/docker/Dockerfile.bun
+      dockerfile: apps/webapp/docker/Dockerfile.bun
       target: runner
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
@@ -506,7 +506,7 @@ services:
     env_file: .env.production
     build:
       context: .
-      dockerfile: packages/admin-dashboard/docker/Dockerfile.bun
+      dockerfile: apps/admin-dashboard/docker/Dockerfile.bun
       target: runner
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}

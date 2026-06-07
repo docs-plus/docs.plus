@@ -119,24 +119,24 @@ jobs:
         uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: |
-            packages/extension-hyperlink/dist
-            packages/extension-hypermultimedia/dist
-            packages/extension-indent/dist
-            packages/extension-inline-code/dist
-            packages/extension-placeholder/dist
+            extensions/extension-hyperlink/dist
+            extensions/extension-hypermultimedia/dist
+            extensions/extension-indent/dist
+            extensions/extension-inline-code/dist
+            extensions/extension-placeholder/dist
           key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
             'packages/floating-popover/package.json',
             'packages/floating-popover/src/**',
-            'packages/extension-hyperlink/package.json',
-            'packages/extension-hypermultimedia/package.json',
-            'packages/extension-indent/package.json',
-            'packages/extension-inline-code/package.json',
-            'packages/extension-placeholder/package.json',
-            'packages/extension-hyperlink/src/**',
-            'packages/extension-hypermultimedia/src/**',
-            'packages/extension-indent/src/**',
-            'packages/extension-inline-code/src/**',
-            'packages/extension-placeholder/src/**') }}
+            'extensions/extension-hyperlink/package.json',
+            'extensions/extension-hypermultimedia/package.json',
+            'extensions/extension-indent/package.json',
+            'extensions/extension-inline-code/package.json',
+            'extensions/extension-placeholder/package.json',
+            'extensions/extension-hyperlink/src/**',
+            'extensions/extension-hypermultimedia/src/**',
+            'extensions/extension-indent/src/**',
+            'extensions/extension-inline-code/src/**',
+            'extensions/extension-placeholder/src/**') }}
           restore-keys: ext-${{ runner.os }}-
 
       - name: 🔧 Build Extensions (required for types)
@@ -252,24 +252,24 @@ jobs:
         uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: |
-            packages/extension-hyperlink/dist
-            packages/extension-hypermultimedia/dist
-            packages/extension-indent/dist
-            packages/extension-inline-code/dist
-            packages/extension-placeholder/dist
+            extensions/extension-hyperlink/dist
+            extensions/extension-hypermultimedia/dist
+            extensions/extension-indent/dist
+            extensions/extension-inline-code/dist
+            extensions/extension-placeholder/dist
           key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
             'packages/floating-popover/package.json',
             'packages/floating-popover/src/**',
-            'packages/extension-hyperlink/package.json',
-            'packages/extension-hypermultimedia/package.json',
-            'packages/extension-indent/package.json',
-            'packages/extension-inline-code/package.json',
-            'packages/extension-placeholder/package.json',
-            'packages/extension-hyperlink/src/**',
-            'packages/extension-hypermultimedia/src/**',
-            'packages/extension-indent/src/**',
-            'packages/extension-inline-code/src/**',
-            'packages/extension-placeholder/src/**') }}
+            'extensions/extension-hyperlink/package.json',
+            'extensions/extension-hypermultimedia/package.json',
+            'extensions/extension-indent/package.json',
+            'extensions/extension-inline-code/package.json',
+            'extensions/extension-placeholder/package.json',
+            'extensions/extension-hyperlink/src/**',
+            'extensions/extension-hypermultimedia/src/**',
+            'extensions/extension-indent/src/**',
+            'extensions/extension-inline-code/src/**',
+            'extensions/extension-placeholder/src/**') }}
           restore-keys: ext-${{ runner.os }}-
 
       - name: 🔧 Build TipTap Extensions
@@ -445,12 +445,12 @@ jobs:
             echo "::error::packages/email-templates missing. Build context must be repo root (context: .). Check checkout includes the workspace."
             exit 1
           fi
-          if ! grep -q 'email-templates' packages/hocuspocus.server/docker/Dockerfile.bun; then
-            echo "::error::packages/hocuspocus.server/docker/Dockerfile.bun must COPY packages/email-templates."
+          if ! grep -q 'email-templates' apps/hocuspocus.server/docker/Dockerfile.bun; then
+            echo "::error::apps/hocuspocus.server/docker/Dockerfile.bun must COPY packages/email-templates."
             exit 1
           fi
-          if ! grep -q 'email-templates' packages/webapp/docker/Dockerfile.bun; then
-            echo "::error::packages/webapp/docker/Dockerfile.bun must COPY packages/email-templates."
+          if ! grep -q 'email-templates' apps/webapp/docker/Dockerfile.bun; then
+            echo "::error::apps/webapp/docker/Dockerfile.bun must COPY packages/email-templates."
             exit 1
           fi
           echo "✅ Build context OK (repo root, email-templates present)"

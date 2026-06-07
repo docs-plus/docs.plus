@@ -74,7 +74,7 @@ The script orchestrates the five-package OTP rhythm and batches the post-publish
 
 The script halts with a clear error message if any of these fail:
 
-1. **Lockstep:** every `packages/extension-*/package.json` has the same `version` (the target version).
+1. **Lockstep:** every `extensions/extension-*/package.json` has the same `version` (the target version).
 2. **CHANGELOG entry:** each package's `CHANGELOG.md` contains a `## [<target-version>]` section.
 3. **Build freshness:** each package's `dist/` exists and `mtime` is newer than its `src/`. (Or: the script runs `bun run build` per package as part of preflight.)
 4. **Per-package preflight:** each package's `prepublishOnly` script (delegated to `@docs.plus/release-tooling`'s `release-preflight` bin) passes — asserts `bun/*` user-agent, no `catalog:` leaks in built bundles, dist artifacts derived from the consumer's `exports` map all present.
@@ -184,7 +184,7 @@ A GitHub Action enforces the lockstep invariant in Phase 2.
 
 **Location:** `.github/workflows/lockstep-guard.yml`.
 
-**Trigger:** any PR that touches `packages/extension-*/package.json`.
+**Trigger:** any PR that touches `extensions/extension-*/package.json`.
 
 **Check:** parse the `version` field of all five publishable extensions. If they are not all identical, the PR fails with a clear message:
 

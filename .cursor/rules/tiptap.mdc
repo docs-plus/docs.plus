@@ -1,6 +1,6 @@
 ---
 description: Tiptap and ProseMirror reference workflow for docs.plus editor work
-globs: packages/webapp/src/components/TipTap/**,packages/webapp/src/components/chatroom/**,packages/extension-*/**,packages/hocuspocus.server/src/**
+globs: apps/webapp/src/components/TipTap/**,apps/webapp/src/components/chatroom/**,extensions/extension-*/**,apps/hocuspocus.server/src/**
 alwaysApply: false
 ---
 

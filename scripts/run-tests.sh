@@ -38,10 +38,10 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-WEBAPP_DIR="$ROOT_DIR/packages/webapp"
-EXTENSION_INDENT_DIR="$ROOT_DIR/packages/extension-indent"
-EXTENSION_HYPERLINK_DIR="$ROOT_DIR/packages/extension-hyperlink"
-EXTENSION_HYPERMULTIMEDIA_DIR="$ROOT_DIR/packages/extension-hypermultimedia"
+WEBAPP_DIR="$ROOT_DIR/apps/webapp"
+EXTENSION_INDENT_DIR="$ROOT_DIR/extensions/extension-indent"
+EXTENSION_HYPERLINK_DIR="$ROOT_DIR/extensions/extension-hyperlink"
+EXTENSION_HYPERMULTIMEDIA_DIR="$ROOT_DIR/extensions/extension-hypermultimedia"
 REPORT_DIR="$ROOT_DIR/Notes"
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
 REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"

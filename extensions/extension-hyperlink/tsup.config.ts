@@ -1,0 +1,14 @@
+import { copyFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { defineConfig } from 'tsup'
+
+import { defineTiptapExtensionConfig } from '../../tsup.base'
+
+export default defineConfig(
+  defineTiptapExtensionConfig({
+    external: ['@tiptap/core', '@tiptap/pm'],
+    async onSuccess() {
+      copyFileSync(resolve('src/styles.css'), resolve('dist/styles.css'))
+    }
+  })
+)

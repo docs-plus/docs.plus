@@ -89,12 +89,12 @@ echo -e "${GREEN}🔄 Root (devDependencies + catalog)${NC}"
 }
 
 PACKAGES=()
-for d in packages/*/; do
+for d in apps/*/ extensions/*/ packages/*/; do
   [ -f "${d}package.json" ] && PACKAGES+=("${d%/}")
 done
 PACKAGE_COUNT=${#PACKAGES[@]}
 
-echo -e "\n${GREEN}📦 Workspaces (${PACKAGE_COUNT} under packages/)${NC}\n"
+echo -e "\n${GREEN}📦 Workspaces (${PACKAGE_COUNT} under apps/ + extensions/ + packages/)${NC}\n"
 
 CURRENT=0
 for PACKAGE_DIR in "${PACKAGES[@]}"; do

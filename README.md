@@ -68,11 +68,11 @@ docs.plus is a free, real-time collaboration tool built on open-source technolog
 
 **Monorepo Structure:**
 
-- 🌐 `packages/webapp` - Next.js frontend with TipTap editor
-- 🖥️ `packages/admin-dashboard` - Admin panel for platform management
-- ⚡ `packages/hocuspocus.server` - REST API, WebSocket server, and background workers
+- 🌐 `apps/webapp` - Next.js frontend with TipTap editor
+- 🖥️ `apps/admin-dashboard` - Admin panel for platform management
+- ⚡ `apps/hocuspocus.server` - REST API, WebSocket server, and background workers
 - 🗄️ `packages/supabase` - Database migrations and Supabase configuration
-- 🔌 `packages/extension-*` - TipTap extensions (hyperlink, multimedia, indent, inline-code)
+- 🔌 `extensions/extension-*` - TipTap extensions (hyperlink, multimedia, indent, inline-code)
 - 📦 `packages/eslint-config` - Shared ESLint configurations
 
 **Tech Stack:**

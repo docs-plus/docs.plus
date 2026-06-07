@@ -51,7 +51,7 @@ echo ""
 # ============================================
 # 2. Build Admin Dashboard (only if changed)
 # ============================================
-if echo "$CHANGED_FILES" | grep -q "packages/admin-dashboard/"; then
+if echo "$CHANGED_FILES" | grep -q "apps/admin-dashboard/"; then
     echo "📦 Building admin-dashboard..."
     # Use bun workspace filter with build:ci script (same as CI)
     if NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
@@ -79,7 +79,7 @@ echo ""
 # ============================================
 # 3. Build Webapp (only if changed)
 # ============================================
-if echo "$CHANGED_FILES" | grep -q "packages/webapp/"; then
+if echo "$CHANGED_FILES" | grep -q "apps/webapp/"; then
     echo "📦 Building webapp..."
     # Use bun workspace filter with build:ci script (same as CI)
     if NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \

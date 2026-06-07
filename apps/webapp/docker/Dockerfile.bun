@@ -1,0 +1,229 @@
+# syntax=docker/dockerfile:1.4
+# =============================================================================
+# Multi-stage Dockerfile for Next.js webapp in monorepo
+# =============================================================================
+# Industry-standard build with:
+#   - BuildKit cache mounts for fast dependency installs
+#   - Proper layer ordering for maximum cache hits
+#   - Minimal production image
+#
+# Build context should be monorepo root (../../)
+# =============================================================================
+
+# ============================================================================
+# Stage 1: Base - Common setup
+# ============================================================================
+# Use latest Bun 1.x (floating tag); same tag across all Dockerfiles for cohesion
+FROM oven/bun:1-slim AS base
+
+# Install system dependencies (Debian slim; build tools for potential native deps)
+RUN rm -rf /var/lib/apt/lists/* && \
+  apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  python3 \
+  make \
+  g++ \
+  nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ============================================================================
+# Stage 2: Dependencies - Install all workspace dependencies
+# ============================================================================
+FROM base AS deps
+
+# Copy root package files (workspace config)
+COPY package.json bun.lock* ./
+# Shared library config at the monorepo root (single source of truth):
+#   - tsconfig.base.json: per-extension tsconfig.json does `extends: "../../tsconfig.base.json"`
+#   - tsup.base.ts:       per-extension tsup.config.ts does `from '../../tsup.base'`
+# Both are required by the extension builds in the build-extensions stage.
+COPY tsconfig.base.json tsup.base.ts ./
+COPY packages/eslint-config ./packages/eslint-config
+COPY packages/release-tooling/package.json ./packages/release-tooling/
+
+# Copy ALL workspace package.json files (required for bun lockfile resolution)
+COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
+COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hypermultimedia/
+COPY extensions/extension-indent/package.json ./extensions/extension-indent/
+COPY extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
+COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY apps/webapp/package.json ./apps/webapp/
+COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
+COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
+COPY packages/supabase/package.json ./packages/supabase/
+COPY packages/email-templates ./packages/email-templates
+# floating-popover is bundled into hyperlink/hypermultimedia dist (not external), so its
+# source must be present and built before those extensions build.
+COPY packages/floating-popover ./packages/floating-popover
+# Copy extension source so workspace deps (e.g. @tiptap/core for DTS build) are installed and resolvable
+COPY extensions/extension-hyperlink ./extensions/extension-hyperlink
+COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
+COPY extensions/extension-indent ./extensions/extension-indent
+COPY extensions/extension-inline-code ./extensions/extension-inline-code
+COPY extensions/extension-placeholder ./extensions/extension-placeholder
+
+# Install all dependencies (Docker layer cache handles caching naturally)
+# Skip Cypress binary download to save time and network
+ENV CYPRESS_INSTALL_BINARY=0
+RUN bun install --frozen-lockfile
+
+# ============================================================================
+# Stage 3: Build Extensions - Build extension packages first
+# ============================================================================
+# We run a fresh bun install here (not copy node_modules from deps) because Bun's
+# node_modules uses symlinks into a virtual store; copying to another stage breaks
+# resolution so the extension DTS build cannot find @tiptap/core, @tiptap/pm, etc.
+# ============================================================================
+FROM base AS build-extensions
+
+WORKDIR /app
+
+# Copy workspace layout from deps (no node_modules)
+COPY --from=deps /app/package.json /app/bun.lock* ./
+COPY --from=deps /app/tsconfig.base.json /app/tsup.base.ts ./
+COPY --from=deps /app/packages ./packages
+# apps/* package.json — their workspace members must exist or `bun install --frozen-lockfile` fails
+COPY --from=deps /app/apps ./apps
+
+# Overwrite extension source with context (in case deps had stale copy)
+COPY extensions/extension-hyperlink ./extensions/extension-hyperlink
+COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
+COPY extensions/extension-indent ./extensions/extension-indent
+COPY extensions/extension-inline-code ./extensions/extension-inline-code
+COPY extensions/extension-placeholder ./extensions/extension-placeholder
+
+ENV CYPRESS_INSTALL_BINARY=0
+RUN bun install --frozen-lockfile
+
+# Build floating-popover first — hyperlink/hypermultimedia bundle its dist.
+RUN cd packages/floating-popover && bun run build
+# Build extension packages (required by webapp)
+RUN cd extensions/extension-hyperlink && bun run build
+RUN cd extensions/extension-hypermultimedia && bun run build
+RUN cd extensions/extension-indent && bun run build
+RUN cd extensions/extension-inline-code && bun run build
+RUN cd extensions/extension-placeholder && bun run build
+
+# ============================================================================
+# Stage 4: Build Webapp - Build Next.js application
+# ============================================================================
+FROM base AS builder
+
+WORKDIR /app
+
+# Accept build args
+ARG BUILD_ID
+ARG GIT_HASH
+ARG NODE_ENV=production
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SUPABASE_WS_URL
+ARG NEXT_PUBLIC_PROVIDER_URL
+ARG NEXT_PUBLIC_RESTAPI_URL
+ARG NEXT_PUBLIC_SSE_URL
+ARG NEXT_PUBLIC_GA_ID
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ARG NEXT_PUBLIC_VIRTUOSO_LICENSE
+
+ENV NEXT_TELEMETRY_DISABLED=1 \
+  BUILD_ID=${BUILD_ID} \
+  GIT_HASH=${GIT_HASH} \
+  NODE_ENV=${NODE_ENV} \
+  NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+  NEXT_PUBLIC_SUPABASE_WS_URL=${NEXT_PUBLIC_SUPABASE_WS_URL} \
+  NEXT_PUBLIC_PROVIDER_URL=${NEXT_PUBLIC_PROVIDER_URL} \
+  NEXT_PUBLIC_RESTAPI_URL=${NEXT_PUBLIC_RESTAPI_URL} \
+  NEXT_PUBLIC_SSE_URL=${NEXT_PUBLIC_SSE_URL} \
+  NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID} \
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID} \
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY} \
+  NEXT_PUBLIC_VIRTUOSO_LICENSE=${NEXT_PUBLIC_VIRTUOSO_LICENSE}
+
+# Copy workspace layout from build-extensions (built extensions + full packages). Do NOT copy
+# node_modules from deps: Bun's node_modules uses symlinks into a virtual store; copying breaks
+# resolution so next.config.js cannot require('next-pwa/cache'), etc.
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/bun.lock* ./
+COPY --from=build-extensions /app/packages ./packages
+# Built extensions (webapp resolves @docs.plus/extension-* to their dist) + apps/* manifests for --frozen-lockfile
+COPY --from=build-extensions /app/extensions ./extensions
+COPY --from=deps /app/apps ./apps
+
+# Overwrite with context so we have latest webapp and shared config
+COPY apps/webapp ./apps/webapp
+COPY packages/eslint-config ./packages/eslint-config
+COPY .prettierrc.json ./
+COPY tsconfig.json ./
+
+ENV CYPRESS_INSTALL_BINARY=0
+RUN bun install --frozen-lockfile
+
+# Build Next.js app (bunx resolves next from root node_modules; "next build" is build:ci)
+WORKDIR /app/apps/webapp
+RUN bunx next build
+
+# ============================================================================
+# Stage 5: Runner - Production runtime
+# ============================================================================
+FROM base AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+  NEXT_TELEMETRY_DISABLED=1 \
+  PORT=3000 \
+  HOSTNAME="0.0.0.0"
+
+# Create non-root user (Debian slim: groupadd/useradd)
+RUN groupadd -r -g 1001 nodejs && \
+  useradd -r -u 1001 -g nodejs nextjs
+
+# Copy standalone build output to root (Next.js standalone expects to run from its own root)
+# Standalone already includes server.js, node_modules, and minimal dependencies
+# The standalone structure preserves monorepo paths: apps/webapp/server.js
+COPY --from=builder --chown=nextjs:nodejs /app/apps/webapp/.next/standalone ./
+
+# Copy static files and public directory (standalone doesn't include these automatically)
+# When server.js does process.chdir(__dirname), it changes to apps/webapp/
+# So static files must be at apps/webapp/.next/static (relative to where server.js runs)
+# Reference: https://github.com/HMarzban/nextjs-docker-production
+COPY --from=builder --chown=nextjs:nodejs /app/apps/webapp/.next/static ./apps/webapp/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/webapp/public ./apps/webapp/public
+
+# Clean up unnecessary files and fix any nested static directories created by postbuild
+RUN rm -rf ./apps/webapp/.next/cache && \
+  rm -rf ./apps/webapp/.next/static/static && \
+  find ./apps/webapp -name "*.test.*" -type f -delete && \
+  find ./apps/webapp -name "*.spec.*" -type f -delete
+
+# Copy built extension packages (needed at runtime for workspace resolution)
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hyperlink/dist ./extensions/extension-hyperlink/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hypermultimedia/dist ./extensions/extension-hypermultimedia/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-indent/dist ./extensions/extension-indent/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-inline-code/dist ./extensions/extension-inline-code/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-placeholder/dist ./extensions/extension-placeholder/dist
+
+# Copy package.json files for workspace resolution (from build-extensions for consistency)
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-hypermultimedia/package.json ./extensions/extension-hypermultimedia/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-indent/package.json ./extensions/extension-indent/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+
+USER nextjs
+
+EXPOSE 3000
+
+# Simple healthcheck - less overhead than fetch
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD bun -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+# Next.js standalone preserves monorepo structure, so server.js is at apps/webapp/server.js
+# After extracting standalone to root, the path is correct
+CMD ["bun", "apps/webapp/server.js"]

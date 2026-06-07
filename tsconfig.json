@@ -19,9 +19,24 @@
     "sourceMap": true,
     "baseUrl": "./",
     "paths": {
-      "@docs.plus/*": ["packages/*/dist", "packages/*/src"]
+      "@docs.plus/*": [
+        "packages/*/dist",
+        "packages/*/src",
+        "apps/*/dist",
+        "apps/*/src",
+        "extensions/*/dist",
+        "extensions/*/src"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "packages/**/*.ts", "packages/**/*.tsx"],
-  "exclude": ["node_modules", "packages/webapp"]
+  "include": [
+    "next-env.d.ts",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "extensions/**/*.ts",
+    "extensions/**/*.tsx"
+  ],
+  "exclude": ["node_modules", "apps/webapp"]
 }

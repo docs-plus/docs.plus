@@ -62,7 +62,7 @@
         "webpack": "^5.107.1",
       },
     },
-    "packages/admin-dashboard": {
+    "apps/admin-dashboard": {
       "name": "@docs.plus/admin-dashboard",
       "version": "1.0.0",
       "dependencies": {
@@ -96,164 +96,7 @@
         "typescript": "catalog:",
       },
     },
-    "packages/email-templates": {
-      "name": "@docs.plus/email-templates",
-      "version": "1.0.0",
-      "dependencies": {
-        "eta": "^3.5.0",
-      },
-      "devDependencies": {
-        "bun-types": "catalog:",
-      },
-    },
-    "packages/eslint-config": {
-      "name": "@docs.plus/eslint-config",
-      "version": "1.1.0",
-      "dependencies": {
-        "@eslint/js": "catalog:",
-        "@typescript-eslint/eslint-plugin": "catalog:",
-        "@typescript-eslint/parser": "catalog:",
-        "eslint-config-prettier": "catalog:",
-        "eslint-plugin-react": "catalog:",
-        "eslint-plugin-react-hooks": "catalog:",
-        "eslint-plugin-simple-import-sort": "catalog:",
-        "globals": "catalog:",
-      },
-      "peerDependencies": {
-        "eslint": "catalog:",
-      },
-    },
-    "packages/extension-hyperlink": {
-      "name": "@docs.plus/extension-hyperlink",
-      "version": "2.0.0",
-      "dependencies": {
-        "@floating-ui/dom": "^1.7.6",
-        "linkifyjs": "^4.3.3",
-      },
-      "devDependencies": {
-        "@docs.plus/floating-popover": "workspace:*",
-        "@docs.plus/release-tooling": "workspace:*",
-        "@eslint/js": "catalog:",
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-        "@tiptap/starter-kit": "catalog:",
-        "@types/node": "catalog:",
-        "@typescript-eslint/eslint-plugin": "catalog:",
-        "@typescript-eslint/parser": "catalog:",
-        "bun-types": "catalog:",
-        "cypress": "catalog:",
-        "cypress-real-events": "catalog:",
-        "eslint": "catalog:",
-        "globals": "catalog:",
-        "start-server-and-test": "catalog:",
-        "tsup": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-      },
-    },
-    "packages/extension-hypermultimedia": {
-      "name": "@docs.plus/extension-hypermultimedia",
-      "version": "2.0.0",
-      "dependencies": {
-        "@floating-ui/dom": "^1.7.6",
-      },
-      "devDependencies": {
-        "@docs.plus/extension-hyperlink": "workspace:*",
-        "@docs.plus/floating-popover": "workspace:*",
-        "@docs.plus/release-tooling": "workspace:*",
-        "@eslint/js": "catalog:",
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-        "@tiptap/starter-kit": "catalog:",
-        "@types/minimatch": "catalog:",
-        "@typescript-eslint/eslint-plugin": "catalog:",
-        "@typescript-eslint/parser": "catalog:",
-        "bun-types": "catalog:",
-        "cypress": "catalog:",
-        "cypress-real-events": "catalog:",
-        "eslint": "catalog:",
-        "globals": "catalog:",
-        "start-server-and-test": "catalog:",
-        "tsup": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-      },
-    },
-    "packages/extension-indent": {
-      "name": "@docs.plus/extension-indent",
-      "version": "0.2.0",
-      "devDependencies": {
-        "@docs.plus/release-tooling": "workspace:*",
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-        "@tiptap/starter-kit": "catalog:",
-        "eslint": "catalog:",
-        "tsup": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-      },
-    },
-    "packages/extension-inline-code": {
-      "name": "@docs.plus/extension-inline-code",
-      "version": "0.1.1",
-      "devDependencies": {
-        "@docs.plus/release-tooling": "workspace:*",
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-        "@types/minimatch": "catalog:",
-        "eslint": "catalog:",
-        "tsup": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-      },
-    },
-    "packages/extension-placeholder": {
-      "name": "@docs.plus/extension-placeholder",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@docs.plus/release-tooling": "workspace:*",
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-        "eslint": "catalog:",
-        "tsup": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@tiptap/core": "catalog:",
-        "@tiptap/pm": "catalog:",
-      },
-    },
-    "packages/floating-popover": {
-      "name": "@docs.plus/floating-popover",
-      "version": "0.0.0",
-      "dependencies": {
-        "@floating-ui/dom": "^1.7.6",
-      },
-      "devDependencies": {
-        "@eslint/js": "catalog:",
-        "@types/node": "catalog:",
-        "@typescript-eslint/eslint-plugin": "catalog:",
-        "@typescript-eslint/parser": "catalog:",
-        "bun-types": "catalog:",
-        "eslint": "catalog:",
-        "globals": "catalog:",
-        "tsup": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/hocuspocus.server": {
+    "apps/hocuspocus.server": {
       "name": "@docs.plus/hocuspocus",
       "version": "2.0.0-beta.103",
       "dependencies": {
@@ -318,26 +161,7 @@
         "prisma": "^6.19.3",
       },
     },
-    "packages/release-tooling": {
-      "name": "@docs.plus/release-tooling",
-      "version": "0.1.0",
-      "bin": {
-        "release-prepack": "./scripts/prepack.ts",
-        "release-preflight": "./scripts/preflight.ts",
-      },
-      "devDependencies": {
-        "bun-types": "catalog:",
-      },
-    },
-    "packages/supabase": {
-      "name": "@docs.plus/supabase_back",
-      "version": "0.1.0",
-      "devDependencies": {
-        "dotenv-cli": "catalog:",
-        "supabase": "catalog:",
-      },
-    },
-    "packages/webapp": {
+    "apps/webapp": {
       "name": "@docs.plus/webapp",
       "version": "2.0.0-beta.103",
       "dependencies": {
@@ -459,6 +283,182 @@
         "prettier": "catalog:",
         "prettier-plugin-tailwindcss": "catalog:",
         "sharp": "^0.34.5",
+      },
+    },
+    "extensions/extension-hyperlink": {
+      "name": "@docs.plus/extension-hyperlink",
+      "version": "2.0.0",
+      "dependencies": {
+        "@floating-ui/dom": "^1.7.6",
+        "linkifyjs": "^4.3.3",
+      },
+      "devDependencies": {
+        "@docs.plus/floating-popover": "workspace:*",
+        "@docs.plus/release-tooling": "workspace:*",
+        "@eslint/js": "catalog:",
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+        "@tiptap/starter-kit": "catalog:",
+        "@types/node": "catalog:",
+        "@typescript-eslint/eslint-plugin": "catalog:",
+        "@typescript-eslint/parser": "catalog:",
+        "bun-types": "catalog:",
+        "cypress": "catalog:",
+        "cypress-real-events": "catalog:",
+        "eslint": "catalog:",
+        "globals": "catalog:",
+        "start-server-and-test": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+      },
+    },
+    "extensions/extension-hypermultimedia": {
+      "name": "@docs.plus/extension-hypermultimedia",
+      "version": "2.0.0",
+      "dependencies": {
+        "@floating-ui/dom": "^1.7.6",
+      },
+      "devDependencies": {
+        "@docs.plus/extension-hyperlink": "workspace:*",
+        "@docs.plus/floating-popover": "workspace:*",
+        "@docs.plus/release-tooling": "workspace:*",
+        "@eslint/js": "catalog:",
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+        "@tiptap/starter-kit": "catalog:",
+        "@types/minimatch": "catalog:",
+        "@typescript-eslint/eslint-plugin": "catalog:",
+        "@typescript-eslint/parser": "catalog:",
+        "bun-types": "catalog:",
+        "cypress": "catalog:",
+        "cypress-real-events": "catalog:",
+        "eslint": "catalog:",
+        "globals": "catalog:",
+        "start-server-and-test": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+      },
+    },
+    "extensions/extension-indent": {
+      "name": "@docs.plus/extension-indent",
+      "version": "0.2.0",
+      "devDependencies": {
+        "@docs.plus/release-tooling": "workspace:*",
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+        "@tiptap/starter-kit": "catalog:",
+        "eslint": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+      },
+    },
+    "extensions/extension-inline-code": {
+      "name": "@docs.plus/extension-inline-code",
+      "version": "0.1.1",
+      "devDependencies": {
+        "@docs.plus/release-tooling": "workspace:*",
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+        "@types/minimatch": "catalog:",
+        "eslint": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+      },
+    },
+    "extensions/extension-placeholder": {
+      "name": "@docs.plus/extension-placeholder",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@docs.plus/release-tooling": "workspace:*",
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+        "eslint": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "@tiptap/core": "catalog:",
+        "@tiptap/pm": "catalog:",
+      },
+    },
+    "packages/email-templates": {
+      "name": "@docs.plus/email-templates",
+      "version": "1.0.0",
+      "dependencies": {
+        "eta": "^3.5.0",
+      },
+      "devDependencies": {
+        "bun-types": "catalog:",
+      },
+    },
+    "packages/eslint-config": {
+      "name": "@docs.plus/eslint-config",
+      "version": "1.1.0",
+      "dependencies": {
+        "@eslint/js": "catalog:",
+        "@typescript-eslint/eslint-plugin": "catalog:",
+        "@typescript-eslint/parser": "catalog:",
+        "eslint-config-prettier": "catalog:",
+        "eslint-plugin-react": "catalog:",
+        "eslint-plugin-react-hooks": "catalog:",
+        "eslint-plugin-simple-import-sort": "catalog:",
+        "globals": "catalog:",
+      },
+      "peerDependencies": {
+        "eslint": "catalog:",
+      },
+    },
+    "packages/floating-popover": {
+      "name": "@docs.plus/floating-popover",
+      "version": "0.0.0",
+      "dependencies": {
+        "@floating-ui/dom": "^1.7.6",
+      },
+      "devDependencies": {
+        "@eslint/js": "catalog:",
+        "@types/node": "catalog:",
+        "@typescript-eslint/eslint-plugin": "catalog:",
+        "@typescript-eslint/parser": "catalog:",
+        "bun-types": "catalog:",
+        "eslint": "catalog:",
+        "globals": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/release-tooling": {
+      "name": "@docs.plus/release-tooling",
+      "version": "0.1.0",
+      "bin": {
+        "release-prepack": "./scripts/prepack.ts",
+        "release-preflight": "./scripts/preflight.ts",
+      },
+      "devDependencies": {
+        "bun-types": "catalog:",
+      },
+    },
+    "packages/supabase": {
+      "name": "@docs.plus/supabase_back",
+      "version": "0.1.0",
+      "devDependencies": {
+        "dotenv-cli": "catalog:",
+        "supabase": "catalog:",
       },
     },
   },
@@ -903,31 +903,31 @@
 
     "@dnd-kit/utilities": ["@dnd-kit/utilities@3.2.2", "", { "dependencies": { "tslib": "^2.0.0" }, "peerDependencies": { "react": ">=16.8.0" } }, "sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg=="],
 
-    "@docs.plus/admin-dashboard": ["@docs.plus/admin-dashboard@workspace:packages/admin-dashboard"],
+    "@docs.plus/admin-dashboard": ["@docs.plus/admin-dashboard@workspace:apps/admin-dashboard"],
 
     "@docs.plus/email-templates": ["@docs.plus/email-templates@workspace:packages/email-templates"],
 
     "@docs.plus/eslint-config": ["@docs.plus/eslint-config@workspace:packages/eslint-config"],
 
-    "@docs.plus/extension-hyperlink": ["@docs.plus/extension-hyperlink@workspace:packages/extension-hyperlink"],
+    "@docs.plus/extension-hyperlink": ["@docs.plus/extension-hyperlink@workspace:extensions/extension-hyperlink"],
 
-    "@docs.plus/extension-hypermultimedia": ["@docs.plus/extension-hypermultimedia@workspace:packages/extension-hypermultimedia"],
+    "@docs.plus/extension-hypermultimedia": ["@docs.plus/extension-hypermultimedia@workspace:extensions/extension-hypermultimedia"],
 
-    "@docs.plus/extension-indent": ["@docs.plus/extension-indent@workspace:packages/extension-indent"],
+    "@docs.plus/extension-indent": ["@docs.plus/extension-indent@workspace:extensions/extension-indent"],
 
-    "@docs.plus/extension-inline-code": ["@docs.plus/extension-inline-code@workspace:packages/extension-inline-code"],
+    "@docs.plus/extension-inline-code": ["@docs.plus/extension-inline-code@workspace:extensions/extension-inline-code"],
 
-    "@docs.plus/extension-placeholder": ["@docs.plus/extension-placeholder@workspace:packages/extension-placeholder"],
+    "@docs.plus/extension-placeholder": ["@docs.plus/extension-placeholder@workspace:extensions/extension-placeholder"],
 
     "@docs.plus/floating-popover": ["@docs.plus/floating-popover@workspace:packages/floating-popover"],
 
-    "@docs.plus/hocuspocus": ["@docs.plus/hocuspocus@workspace:packages/hocuspocus.server"],
+    "@docs.plus/hocuspocus": ["@docs.plus/hocuspocus@workspace:apps/hocuspocus.server"],
 
     "@docs.plus/release-tooling": ["@docs.plus/release-tooling@workspace:packages/release-tooling"],
 
     "@docs.plus/supabase_back": ["@docs.plus/supabase_back@workspace:packages/supabase"],
 
-    "@docs.plus/webapp": ["@docs.plus/webapp@workspace:packages/webapp"],
+    "@docs.plus/webapp": ["@docs.plus/webapp@workspace:apps/webapp"],
 
     "@emnapi/core": ["@emnapi/core@1.8.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.1.0", "tslib": "^2.4.0" } }, "sha512-AvT9QFpxK0Zd8J0jopedNm+w/2fIzvtPKPjqyw9jwvBaReTTqPBk9Hixaz7KbjimP+QNz605/XnjFcDAL2pqBg=="],
 

@@ -1,0 +1,102 @@
+# syntax=docker/dockerfile:1.4
+# =============================================================================
+# Admin Dashboard - Next.js Standalone Dockerfile
+# =============================================================================
+# Build context: monorepo root (.). Bun catalog: deps resolve from root package.json;
+# the lockfile is repo-root bun.lock. Workspace package.json stubs match hocuspocus.docker.
+# =============================================================================
+
+FROM oven/bun:1-slim AS deps
+
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package.json bun.lock* bunfig.toml ./
+COPY packages/email-templates ./packages/email-templates
+COPY packages/eslint-config ./packages/eslint-config
+COPY packages/release-tooling/package.json ./packages/release-tooling/
+# extensions declare @docs.plus/floating-popover: workspace:*, so its manifest must resolve for --frozen-lockfile
+COPY packages/floating-popover/package.json ./packages/floating-popover/
+COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
+COPY apps/webapp/package.json ./apps/webapp/
+COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
+COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
+COPY extensions/extension-hypermultimedia/package.json ./extensions/extension-hypermultimedia/
+COPY extensions/extension-indent/package.json ./extensions/extension-indent/
+COPY extensions/extension-inline-code/package.json ./extensions/extension-inline-code/
+COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY packages/supabase/package.json ./packages/supabase/
+
+RUN bun install --frozen-lockfile --ignore-scripts
+
+# -----------------------------------------------------------------------------
+# Build
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-slim AS builder
+
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+
+COPY --from=deps /app/package.json ./
+COPY --from=deps /app/bun.lock* ./
+COPY --from=deps /app/bunfig.toml ./
+COPY --from=deps /app/packages ./packages
+# apps/* + extensions/* package.json — all workspace members must exist for --frozen-lockfile
+COPY --from=deps /app/apps ./apps
+COPY --from=deps /app/extensions ./extensions
+COPY apps/admin-dashboard ./apps/admin-dashboard
+
+RUN bun install --frozen-lockfile --ignore-scripts
+
+WORKDIR /app/apps/admin-dashboard
+RUN bun run build:ci
+
+# -----------------------------------------------------------------------------
+# Runner (Production)
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-slim AS runner
+
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3100 \
+    HOSTNAME="0.0.0.0"
+
+RUN groupadd -r -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-dashboard/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-dashboard/.next/static ./apps/admin-dashboard/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin-dashboard/public ./apps/admin-dashboard/public
+
+USER nextjs
+
+EXPOSE 3100
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD bun -e "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+CMD ["bun", "apps/admin-dashboard/server.js"]

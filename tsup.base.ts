@@ -2,7 +2,7 @@
  * Shared tsup config factory for the `@docs.plus/extension-*` Tiptap
  * extension packages.
  *
- * Each `packages/extension-*` package builds the same shape (ESM + CJS, dts,
+ * Each `extensions/extension-*` package builds the same shape (ESM + CJS, dts,
  * Tiptap as peer/external, prod-only sourcemaps/minify). This factory captures
  * that shape so individual packages only declare what's actually different
  * (e.g. extension-hyperlink also copies `styles.css` into dist).

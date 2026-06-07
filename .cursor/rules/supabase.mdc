@@ -1,5 +1,5 @@
 ---
-globs: **/*.sql,packages/supabase/**,packages/webapp/src/types/supabase.ts
+globs: **/*.sql,packages/supabase/**,apps/webapp/src/types/supabase.ts
 alwaysApply: false
 ---
 
@@ -9,7 +9,7 @@ Focused rules for Supabase SQL, migrations, generated files, and security in doc
 
 ## Project Guardrails
 
-- **Never edit `packages/webapp/src/types/supabase.ts`.** It is generated CLI output. After relevant DB work, the developer runs `bun run --filter @docs.plus/supabase_back types` from the repo root with local Supabase and root `.env.local`.
+- **Never edit `apps/webapp/src/types/supabase.ts`.** It is generated CLI output. After relevant DB work, the developer runs `bun run --filter @docs.plus/supabase_back types` from the repo root with local Supabase and root `.env.local`.
 - **Never edit `packages/supabase/seed.sql`.** Schema, RPC, and policy changes belong in `packages/supabase/migrations/` and `packages/supabase/scripts/`.
 - Keep Supabase architecture aligned with `AGENTS.md`: browser singleton, server/API clients, generated types, and migration workflow live there as project policy.
 - Do not expose Supabase `service_role` or secret keys to public/browser code. `NEXT_PUBLIC_*` values are browser-visible.

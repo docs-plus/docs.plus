@@ -1,4 +1,4 @@
-// packages/extension-hyperlink/src/floating-popover/createPopover.types.test-d.ts
+// extensions/extension-hyperlink/src/floating-popover/createPopover.types.test-d.ts
 //
 // Type-only fence: `PopoverOptions` is a discriminated union, so
 // omitting both `referenceElement` and `coordinates` must be a compile

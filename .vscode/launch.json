@@ -10,7 +10,7 @@
       "request": "launch",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev:local"],
-      "cwd": "${workspaceFolder}/packages/webapp",
+      "cwd": "${workspaceFolder}/apps/webapp",
       "skipFiles": ["<node_internals>/**"],
       "serverReadyAction": {
         "pattern": "started server on .+, url: (https?://.+)",
@@ -23,7 +23,7 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/packages/webapp"
+      "webRoot": "${workspaceFolder}/apps/webapp"
     },
 
     // ============================================
@@ -35,7 +35,7 @@
       "request": "launch",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev:local"],
-      "cwd": "${workspaceFolder}/packages/admin-dashboard",
+      "cwd": "${workspaceFolder}/apps/admin-dashboard",
       "skipFiles": ["<node_internals>/**"],
       "serverReadyAction": {
         "pattern": "started server on .+, url: (https?://.+)",
@@ -53,7 +53,7 @@
       "request": "launch",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["--env-file", "../../.env.local", "--watch", "src/index.ts"],
-      "cwd": "${workspaceFolder}/packages/hocuspocus.server",
+      "cwd": "${workspaceFolder}/apps/hocuspocus.server",
       "env": {
         "NODE_ENV": "development"
       },
@@ -65,7 +65,7 @@
       "request": "launch",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["--env-file", "../../.env.local", "--watch", "src/hocuspocus.server.ts"],
-      "cwd": "${workspaceFolder}/packages/hocuspocus.server",
+      "cwd": "${workspaceFolder}/apps/hocuspocus.server",
       "env": {
         "NODE_ENV": "development"
       },
@@ -77,7 +77,7 @@
       "request": "launch",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["--env-file", "../../.env.local", "--watch", "src/hocuspocus.worker.ts"],
-      "cwd": "${workspaceFolder}/packages/hocuspocus.server",
+      "cwd": "${workspaceFolder}/apps/hocuspocus.server",
       "env": {
         "NODE_ENV": "development"
       },

@@ -7,7 +7,7 @@
  * on first use, then cached. Subsequent renders are plain function calls.
  *
  * Supabase auth templates (magic-link.html, change-email-address.html) use
- * Go template syntax and live in packages/hocuspocus.server/templates/ —
+ * Go template syntax and live in apps/hocuspocus.server/templates/ —
  * they are NOT managed by this engine.
  *
  * @example

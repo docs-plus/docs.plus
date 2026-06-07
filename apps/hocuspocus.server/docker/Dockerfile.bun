@@ -1,0 +1,78 @@
+# =============================================================================
+# Hocuspocus Backend (REST, WebSocket, Worker) — minimal image
+# Build context: monorepo root (.). Copies only what this backend needs.
+# =============================================================================
+
+FROM oven/bun:1-slim AS base
+WORKDIR /app
+
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
+
+RUN rm -rf /var/lib/apt/lists/* && \
+  apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates openssl && rm -rf /var/lib/apt/lists/*
+
+# Backend closure: root + email-templates + hocuspocus.server. Stub package.json for
+# other workspaces so lockfile resolution succeeds without copying their source.
+COPY package.json bun.lock* bunfig.toml ./
+# Shared library config at the monorepo root (single source of truth):
+#   - tsconfig.base.json: per-extension tsconfig.json does `extends: "../../tsconfig.base.json"`
+#   - tsup.base.ts:       per-extension tsup.config.ts does `from '../../tsup.base'`
+# Both are needed by the extension build steps below.
+COPY tsconfig.base.json tsup.base.ts ./
+COPY packages/email-templates ./packages/email-templates
+# floating-popover is bundled into hypermultimedia's dist (not external) — needs source + build before line below.
+COPY packages/floating-popover ./packages/floating-popover
+COPY apps/hocuspocus.server ./apps/hocuspocus.server
+COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/release-tooling/package.json ./packages/release-tooling/
+COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
+# Full source: migration-extensions imports these; package "main" points at dist/ (not in repo).
+COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia/
+COPY extensions/extension-indent/package.json ./extensions/extension-indent/
+COPY extensions/extension-inline-code ./extensions/extension-inline-code/
+COPY extensions/extension-placeholder/package.json ./extensions/extension-placeholder/
+COPY packages/supabase/package.json ./packages/supabase/
+COPY apps/webapp/package.json ./apps/webapp/
+
+# Dev install + build dist/, then prune — production-only install cannot run tsup.
+RUN bun install --frozen-lockfile --ignore-scripts
+RUN bun run --filter @docs.plus/floating-popover build \
+  && bun run --filter @docs.plus/extension-hypermultimedia build \
+  && bun run --filter @docs.plus/extension-inline-code build
+RUN bun install --frozen-lockfile --production --ignore-scripts
+
+# Production runs its own install + generate; no need to generate in base.
+# -----------------------------------------------------------------------------
+# Production: same layout, fresh install in stage (no node_modules copy)
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-slim AS production
+WORKDIR /app
+
+RUN rm -rf /var/lib/apt/lists/* && \
+  apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates openssl && rm -rf /var/lib/apt/lists/*
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+COPY --from=base /app/package.json /app/bun.lock* /app/bunfig.toml ./
+COPY --from=base /app/packages ./packages
+# hocus source + all workspace members (apps/* + built extensions/*) for --frozen-lockfile + prisma generate
+COPY --from=base /app/apps ./apps
+COPY --from=base /app/extensions ./extensions
+
+RUN bun install --frozen-lockfile --production --ignore-scripts
+RUN cd apps/hocuspocus.server && bunx prisma@6.19.0 generate
+
+COPY --from=base /app/apps/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# appuser must own /app so runtime can create ./temp/hypermultimedia/... (storage.local.ts uses mkdir recursive)
+RUN chown -R appuser:appuser /app
+
+USER appuser
+EXPOSE 4000 4001 4002
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD bun --version || exit 1
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["bun", "src/index.ts"]

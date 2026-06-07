@@ -238,7 +238,7 @@ bun run test:e2e          # E2E only (4 parallel workers by default)
 Run unit tests with Jest:
 
 ```bash
-cd packages/webapp
+cd apps/webapp
 bun run test
 ```
 

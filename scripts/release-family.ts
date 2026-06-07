@@ -166,11 +166,13 @@ function prompt(question: string): Promise<string> {
 // ---------------------------------------------------------------------------
 
 function loadPackage(shortName: PackageDir): PackageInfo {
-  const packagePath = join(REPO_ROOT, 'packages', shortName)
-  const packageJsonPath = join(packagePath, 'package.json')
-  if (!existsSync(packageJsonPath)) {
-    die(`Package not found: ${packageJsonPath}`)
+  const packagePath = ['extensions', 'packages', 'apps']
+    .map((root) => join(REPO_ROOT, root, shortName))
+    .find((candidate) => existsSync(join(candidate, 'package.json')))
+  if (!packagePath) {
+    die(`Package not found under extensions/, packages/, or apps/: ${shortName}`)
   }
+  const packageJsonPath = join(packagePath, 'package.json')
   const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
     name?: string
     version?: string

@@ -6,7 +6,7 @@
 # Dependencies
 node_modules/
 **/node_modules/
-packages/**/node_modules/
+**/node_modules/
 
 # Build outputs
 .next/
@@ -15,8 +15,8 @@ dist/
 build/
 **/dist/
 **/build/
-packages/**/dist/
-packages/**/build/
+**/dist/
+**/build/
 *.tsbuildinfo
 
 # Logs
@@ -53,7 +53,7 @@ temp/
 tmp/
 **/temp/
 **/tmp/
-packages/hocuspocus.server/temp/
+apps/hocuspocus.server/temp/
 
 # Volumes and data
 volumes/
@@ -65,13 +65,13 @@ uploads/
 **/uploads/
 
 # Cypress
-packages/webapp/cypress/videos/
-packages/webapp/cypress/screenshots/
-packages/webapp/cypress/downloads/
+apps/webapp/cypress/videos/
+apps/webapp/cypress/screenshots/
+apps/webapp/cypress/downloads/
 
 # Package files
 *.tgz
-packages/**/*.tgz
+**/*.tgz
 
 # =============================================================================
 # Explicitly ALLOW .env files (negate any potential matches)
