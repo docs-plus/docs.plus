@@ -1,3 +1,11 @@
 {
-  "explorer.excludeGitIgnore": false
+  "explorer.excludeGitIgnore": false,
+  "git.autoRepositoryDetection": "openEditors",
+  "git.ignoredRepositories": [
+    "/Users/macbook/.cursor/plugins/cache/cursor-public/gitlab/e89ebfc384db30e3d06c840853ad67d22f5f9c94",
+    "/Users/macbook/.cursor/plugins/cache/cursor-public/notion-workspace/cf1324609edba6d617164f1dec138aeb43f26735",
+    "/Users/macbook/.cursor/plugins/cache/cursor-public/parallel/db86c809e2634744f8d968967449b984a71e2e04",
+    "/Users/macbook/.cursor/plugins/cache/cursor-public/shadcn/5927f6de8064b152482d1f1ba52e59a51f5d9123",
+    "/Users/macbook/.cursor/plugins/cache/cursor-public/superpowers/b7a8f76985f1e93e75dd2f2a3b424dc731bd9d37"
+  ]
 }
