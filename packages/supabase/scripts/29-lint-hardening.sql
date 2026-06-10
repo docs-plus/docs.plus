@@ -218,6 +218,9 @@ DECLARE
         'join_workspace', 'update_user_online_at',
         -- Push subscriptions (per-user)
         'register_push_subscription', 'unregister_push_subscription',
+        -- Admin-dashboard browser RPCs — bodies self-gate on is_admin;
+        -- remote already grants these (20260213163344 + parity migration)
+        'admin_get_failed_push_subs', 'admin_get_recent_push_activity',
         -- Policy primitive — used inside admin_users RLS, must remain
         -- callable in policy expressions for authenticated callers
         'is_admin'
@@ -243,17 +246,13 @@ $$;
 
 
 -- =====================================================================
--- 7. GRANT EXECUTE TO anon (+ authenticated) — analytics + read whitelist
+-- 7. GRANT EXECUTE TO anon — analytics read whitelist
 -- =====================================================================
--- These RPCs power anonymous document-view tracking AND anonymous read
--- access to PUBLIC chat. `get_channel_aggregate_data` gates internally
--- on `type = 'PUBLIC' OR is_channel_member(...)`, so the anon caller
--- can only fetch PUBLIC-channel rows.
-
-GRANT EXECUTE ON FUNCTION public.enqueue_document_view(text, text, uuid, boolean, text)
-    TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.update_view_duration(uuid, integer)
-    TO anon, authenticated;
+-- `get_channel_aggregate_data` gates internally on
+-- `type = 'PUBLIC' OR is_channel_member(...)`, so the anon caller can
+-- only fetch PUBLIC-channel rows. Document-view tracking is NOT granted
+-- here: enqueue_document_view / update_view_duration run server-side via
+-- service_role (09-document-views), never from the browser.
 
 DO $$
 DECLARE
@@ -345,7 +344,7 @@ COMMIT;
 --   SELECT table_name FROM information_schema.role_table_grants
 --   WHERE grantee='anon' AND table_schema='public' AND privilege_type='SELECT';
 --
--- (d) anon EXECUTE on SECURITY DEFINER fns (expect 2: enqueue_document_view, update_view_duration)
+-- (d) anon EXECUTE on SECURITY DEFINER fns (expect 0)
 --   SELECT p.proname FROM pg_proc p
 --   JOIN pg_namespace n ON n.oid=p.pronamespace
 --   WHERE n.nspname='public' AND p.prosecdef = true
