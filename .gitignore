@@ -179,3 +179,23 @@ DOCS_SUMMARY.md
 /docs/
 
 docs/skills-output/
+
+# cursor-team-kit skills (symlinked into .cursor/skills for Cursor + Claude Code; machine-local)
+/.cursor/skills/check-compiler-errors
+/.cursor/skills/control-cli
+/.cursor/skills/control-ui
+/.cursor/skills/deslop
+/.cursor/skills/fix-ci
+/.cursor/skills/fix-merge-conflicts
+/.cursor/skills/get-pr-comments
+/.cursor/skills/loop-on-ci
+/.cursor/skills/make-pr-easy-to-review
+/.cursor/skills/new-branch-and-pr
+/.cursor/skills/pr-review-canvas
+/.cursor/skills/review-and-ship
+/.cursor/skills/run-smoke-tests
+/.cursor/skills/thermo-nuclear-code-quality-review
+/.cursor/skills/verify-this
+/.cursor/skills/weekly-review
+/.cursor/skills/what-did-i-get-done
+/.cursor/skills/workflow-from-chats
