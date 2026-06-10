@@ -1,18 +1,19 @@
 import { API_URL } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type {
-  ActivityHeatmapPoint,
   AuditFailedSubscription,
-  CommunicationStats,
+  Channel,
   DashboardDocumentStats,
   DauTrendPoint,
+  DeletionImpact,
   DisableResult,
   DLQContents,
   Document,
   DocumentStats,
-  DocumentViewStats,
   EmailBounce,
   EmailFailureSummary,
+  EmailGatewayHealth,
+  EmailStats,
   GhostAccountsResponse,
   GhostBulkDeleteResult,
   GhostCleanupResult,
@@ -20,24 +21,27 @@ import type {
   GhostDeletionImpact,
   GhostSummary,
   NotificationHealth,
-  NotificationReach,
+  NotificationStats,
   PaginatedResponse,
   PushFailureSummary,
+  PushGatewayHealth,
+  PushPipelineStats,
+  PushStats,
+  PushSubscriptionAnalytics,
   RetentionMetrics,
   StaleDocument,
   StaleDocumentPreview,
   StaleDocumentsSummary,
-  TopActiveDocument,
+  SupabaseStats,
+  TableSize,
   TopViewedDocument,
+  User,
   UserLifecycleSegments,
+  UserNotificationSubs,
   ViewsSummary,
   ViewsTrendPoint
 } from '@/types'
 
-/**
- * Get the current session's access token
- * Throws if not authenticated
- */
 async function getAccessToken(): Promise<string> {
   const {
     data: { session }
@@ -51,9 +55,12 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Generic fetch wrapper with error handling and authentication
+ * Generic fetch wrapper with error handling and authentication.
+ * System-wide aggregates and the user/channel directory must route through the
+ * admin-gated service_role API: the browser's anon-key client is RLS-scoped
+ * (`email`, `push_subscriptions`, `email_queue` are revoked from `authenticated`).
  */
-async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const accessToken = await getAccessToken()
 
   const response = await fetch(`${API_URL}${endpoint}`, {
@@ -68,7 +75,6 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }))
 
-    // Handle authentication errors
     if (response.status === 401) {
       throw new Error('Session expired. Please log in again.')
     }
@@ -81,46 +87,64 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
   return response.json()
 }
 
-/**
- * Fetch dashboard statistics from hocuspocus API
- */
 export async function fetchDashboardStats(): Promise<DashboardDocumentStats> {
   return fetchApi('/api/admin/stats')
 }
 
-/**
- * Fetch document-specific statistics
- */
 export async function fetchDocumentStats(): Promise<DocumentStats> {
   return fetchApi('/api/admin/documents/stats')
 }
 
-/**
- * Fetch document counts per user (userId -> count)
- */
 export async function fetchUserDocumentCounts(): Promise<Record<string, number>> {
   return fetchApi('/api/admin/users/document-counts')
 }
 
-/**
- * Fetch all admin user IDs (for badge rendering in Users table)
- */
 export async function fetchAdminUserIds(): Promise<Array<{ user_id: string; created_at: string }>> {
   return fetchApi('/api/admin/users/admins')
 }
 
-/**
- * Toggle admin role for a user (grant or revoke)
- */
 export async function toggleAdminRole(
   userId: string
 ): Promise<{ success: boolean; is_admin: boolean }> {
   return fetchApi(`/api/admin/users/${userId}/toggle-admin`, { method: 'POST' })
 }
 
-/**
- * Fetch paginated documents list with optional sorting
- */
+export async function fetchUsers(
+  page: number,
+  search: string,
+  sortBy?: string,
+  sortDir?: 'asc' | 'desc'
+) {
+  const params = new URLSearchParams({ page: String(page) })
+  if (search) params.set('search', search)
+  if (sortBy) params.set('sortBy', sortBy)
+  if (sortDir) params.set('sortDir', sortDir)
+  return fetchApi<{ data: User[]; total: number; totalPages: number }>(
+    `/api/admin/users?${params.toString()}`
+  )
+}
+
+export async function fetchUserNotificationSubscriptions(): Promise<
+  Record<string, UserNotificationSubs>
+> {
+  return fetchApi('/api/admin/users/notification-subs')
+}
+
+export async function fetchChannels(
+  page: number,
+  sortBy?: string,
+  sortDir?: 'asc' | 'desc',
+  search?: string
+) {
+  const params = new URLSearchParams({ page: String(page) })
+  if (sortBy) params.set('sortBy', sortBy)
+  if (sortDir) params.set('sortDir', sortDir)
+  if (search) params.set('search', search)
+  return fetchApi<{ data: Channel[]; total: number; totalPages: number }>(
+    `/api/admin/channels?${params.toString()}`
+  )
+}
+
 export async function fetchDocuments(
   page: number,
   limit = 20,
@@ -138,9 +162,6 @@ export async function fetchDocuments(
   return fetchApi(`/api/admin/documents?${params.toString()}`)
 }
 
-/**
- * Update document flags
- */
 export async function updateDocumentFlags(
   id: string,
   flags: { isPrivate?: boolean; readOnly?: boolean }
@@ -151,34 +172,10 @@ export async function updateDocumentFlags(
   })
 }
 
-/**
- * Get deletion impact - checks what will be deleted with owner and channel info
- */
-export interface DeletionImpact {
-  document: {
-    id: number
-    slug: string
-    title: string | null
-    versionCount: number
-    createdAt: string
-  }
-  owner: {
-    username: string | null
-    email: string | null
-  } | null
-  workspace: {
-    id: string
-    channelCount: number
-  } | null
-}
-
 export async function getDocumentDeletionImpact(id: string): Promise<DeletionImpact> {
   return fetchApi(`/api/admin/documents/${id}/deletion-impact`)
 }
 
-/**
- * Delete a document (requires confirmation by typing slug)
- */
 export async function deleteDocument(
   id: string,
   confirmSlug: string
@@ -193,9 +190,6 @@ export async function deleteDocument(
   })
 }
 
-/**
- * Check REST API health
- */
 export async function checkApiHealth(): Promise<{ status: string; latency: number }> {
   const start = Date.now()
   try {
@@ -211,20 +205,10 @@ export async function checkApiHealth(): Promise<{ status: string; latency: numbe
   }
 }
 
-// =============================================================================
-// Document View Analytics API
-// =============================================================================
-
-/**
- * Fetch document views summary (overall stats)
- */
 export async function fetchViewsSummary(): Promise<ViewsSummary> {
   return fetchApi('/api/admin/stats/views')
 }
 
-/**
- * Fetch top viewed documents
- */
 export async function fetchTopViewedDocuments(limit = 10, days = 7): Promise<TopViewedDocument[]> {
   const params = new URLSearchParams({
     limit: String(limit),
@@ -233,25 +217,12 @@ export async function fetchTopViewedDocuments(limit = 10, days = 7): Promise<Top
   return fetchApi(`/api/admin/stats/views/top?${params.toString()}`)
 }
 
-/**
- * Fetch view trends for charts
- */
 export async function fetchViewsTrend(days = 30, slug?: string): Promise<ViewsTrendPoint[]> {
   const params = new URLSearchParams({ days: String(days) })
   if (slug) params.set('slug', slug)
   return fetchApi(`/api/admin/stats/views/trend?${params.toString()}`)
 }
 
-/**
- * Fetch single document view stats
- */
-export async function fetchDocumentViewStats(slug: string): Promise<DocumentViewStats> {
-  return fetchApi(`/api/admin/documents/${slug}/views`)
-}
-
-/**
- * Fetch batch document trends for sparklines
- */
 export async function fetchBatchDocumentTrends(
   slugs: string[],
   days = 7
@@ -264,76 +235,118 @@ export async function fetchBatchDocumentTrends(
   return fetchApi(`/api/admin/stats/views/batch-trends?${params.toString()}`)
 }
 
-// =============================================================================
-// User Retention Analytics API (Phase 8)
-// =============================================================================
-
-/**
- * Fetch retention metrics (DAU/WAU/MAU)
- */
 export async function fetchRetentionMetrics(): Promise<RetentionMetrics> {
   return fetchApi('/api/admin/stats/retention')
 }
 
-/**
- * Fetch user lifecycle segments
- */
 export async function fetchUserLifecycleSegments(): Promise<UserLifecycleSegments> {
   return fetchApi('/api/admin/stats/user-lifecycle')
 }
 
-/**
- * Fetch DAU trend over time
- */
 export async function fetchDauTrend(days = 30): Promise<DauTrendPoint[]> {
   return fetchApi(`/api/admin/stats/dau-trend?days=${days}`)
 }
 
-/**
- * Fetch activity by hour (for heatmap)
- */
-export async function fetchActivityHeatmap(days = 7): Promise<ActivityHeatmapPoint[]> {
-  return fetchApi(`/api/admin/stats/activity-heatmap?days=${days}`)
+export async function fetchNotificationStats(): Promise<NotificationStats> {
+  return fetchApi('/api/admin/stats/notifications')
+}
+
+export async function fetchPushStats(): Promise<PushStats> {
+  return fetchApi('/api/admin/stats/push')
+}
+
+export async function fetchEmailStats(): Promise<EmailStats> {
+  return fetchApi('/api/admin/stats/email')
+}
+
+export async function fetchSupabaseStats(): Promise<SupabaseStats> {
+  return fetchApi('/api/admin/stats/platform')
+}
+
+export async function fetchTableSizes(): Promise<TableSize[]> {
+  return fetchApi('/api/admin/system/table-sizes')
+}
+
+export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
+  return fetchApi('/api/admin/stats/push/pipeline')
+}
+
+interface PushSubscriptionRow {
+  platform: string
+  updated_at: string
+  created_at: string
+  is_active: boolean
+  failed_count: number
+  last_error: string | null
 }
 
 /**
- * Fetch top active documents (by messages)
+ * Fetch comprehensive push subscription analytics. Aggregates the fleet-wide
+ * rows supplied by the service_role API; errors surface to React Query (no
+ * silent all-zero state).
  */
-export async function fetchTopActiveDocuments(limit = 5, days = 7): Promise<TopActiveDocument[]> {
-  return fetchApi(`/api/admin/stats/top-active-documents?limit=${limit}&days=${days}`)
+export async function fetchPushSubscriptionAnalytics(): Promise<PushSubscriptionAnalytics> {
+  const allSubs = await fetchApi<PushSubscriptionRow[]>('/api/admin/push/subscriptions')
+
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const activeSubs = allSubs.filter((s) => s.is_active)
+
+  const platforms = { web: 0, ios: 0, android: 0, desktop: 0, total: activeSubs.length }
+  activeSubs.forEach((s) => {
+    const p = s.platform as keyof typeof platforms
+    if (p in platforms) platforms[p]++
+  })
+
+  // Subscription health (based on updated_at)
+  let fresh = 0,
+    ok = 0,
+    stale = 0,
+    totalAgeDays = 0
+  activeSubs.forEach((s) => {
+    const updatedAt = new Date(s.updated_at)
+    const ageDays = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
+    totalAgeDays += ageDays
+    if (ageDays < 7) fresh++
+    else if (ageDays <= 30) ok++
+    else stale++
+  })
+  const avgAgeDays = activeSubs.length > 0 ? Math.round(totalAgeDays / activeSubs.length) : 0
+
+  const newThisWeek = allSubs.filter((s) => s.is_active && new Date(s.created_at) >= weekAgo).length
+  const churnedThisWeek = allSubs.filter(
+    (s) => !s.is_active && new Date(s.updated_at) >= weekAgo
+  ).length
+
+  const errors: Record<string, number> = {}
+  let totalErrors = 0
+  allSubs
+    .filter((s) => s.failed_count > 0 && s.last_error)
+    .forEach((s) => {
+      totalErrors++
+      const errorType = categorizeError(s.last_error || '')
+      errors[errorType] = (errors[errorType] || 0) + 1
+    })
+
+  return {
+    platforms,
+    health: { fresh, ok, stale, avgAgeDays },
+    lifecycle: { newThisWeek, churnedThisWeek, total: allSubs.length },
+    errors: { total: totalErrors, byType: errors }
+  }
 }
 
-/**
- * Fetch communication stats
- */
-export async function fetchCommunicationStats(days = 7): Promise<CommunicationStats> {
-  return fetchApi(`/api/admin/stats/communication?days=${days}`)
+function categorizeError(errorMsg: string): string {
+  const lower = errorMsg.toLowerCase()
+  if (lower.includes('expired') || lower.includes('410')) return 'EXPIRED'
+  if (lower.includes('denied') || lower.includes('permission')) return 'PERMISSION_DENIED'
+  if (lower.includes('not found') || lower.includes('404')) return 'NOT_FOUND'
+  if (lower.includes('unauthorized') || lower.includes('401')) return 'UNAUTHORIZED'
+  if (lower.includes('timeout') || lower.includes('timed out')) return 'TIMEOUT'
+  if (lower.includes('network') || lower.includes('connection')) return 'NETWORK_ERROR'
+  return 'OTHER'
 }
 
-/**
- * Fetch notification reach
- */
-export async function fetchNotificationReach(): Promise<NotificationReach> {
-  return fetchApi('/api/admin/stats/notification-reach')
-}
-
-// =============================================================================
-// Push Gateway Health API
-// =============================================================================
-
-export interface PushGatewayHealth {
-  status: 'healthy' | 'degraded' | 'down'
-  latency: number
-  vapidConfigured: boolean
-  queueConnected: boolean
-  pendingJobs?: number
-  failedJobs?: number
-  error?: string
-}
-
-/**
- * Check push gateway health (hocuspocus.server /health/push)
- */
 export async function checkPushGatewayHealth(): Promise<PushGatewayHealth> {
   const start = Date.now()
   try {
@@ -370,19 +383,6 @@ export async function checkPushGatewayHealth(): Promise<PushGatewayHealth> {
       error: err instanceof Error ? err.message : 'Unknown error'
     }
   }
-}
-
-/**
- * Check email gateway health (hocuspocus.server /api/email/health)
- */
-export interface EmailGatewayHealth {
-  status: 'healthy' | 'degraded' | 'down'
-  latency: number
-  provider: string | null
-  queueConnected: boolean
-  pendingJobs?: number
-  failedJobs?: number
-  error?: string
 }
 
 export async function checkEmailGatewayHealth(): Promise<EmailGatewayHealth> {
@@ -423,20 +423,10 @@ export async function checkEmailGatewayHealth(): Promise<EmailGatewayHealth> {
   }
 }
 
-// =============================================================================
-// Stale Documents Audit API (Phase 13)
-// =============================================================================
-
-/**
- * Fetch stale documents summary statistics
- */
 export async function fetchStaleDocumentsSummary(): Promise<StaleDocumentsSummary> {
   return fetchApi('/api/admin/documents/stale/summary')
 }
 
-/**
- * Fetch paginated stale documents list with filters
- */
 export async function fetchStaleDocuments(
   page: number,
   limit = 20,
@@ -464,16 +454,10 @@ export async function fetchStaleDocuments(
   return fetchApi(`/api/admin/documents/stale?${params.toString()}`)
 }
 
-/**
- * Get document content preview for stale document audit
- */
 export async function fetchDocumentPreview(slug: string): Promise<StaleDocumentPreview> {
   return fetchApi(`/api/admin/documents/${slug}/preview`)
 }
 
-/**
- * Bulk delete stale documents
- */
 export async function bulkDeleteStaleDocuments(
   slugs: string[],
   dryRun = false
@@ -491,34 +475,18 @@ export async function bulkDeleteStaleDocuments(
   })
 }
 
-// =============================================================================
-// Failed Notifications Audit API (Phase 17)
-// =============================================================================
-
-/**
- * Fetch combined notification health (push + email delivery rates)
- */
 export async function fetchNotificationHealth(): Promise<NotificationHealth> {
   return fetchApi('/api/admin/audit/notifications/health')
 }
 
-/**
- * Fetch push failure breakdown by error category + platform
- */
 export async function fetchPushFailureSummary(): Promise<PushFailureSummary[]> {
   return fetchApi('/api/admin/audit/notifications/push-failures')
 }
 
-/**
- * Fetch email failure + bounce breakdown
- */
 export async function fetchEmailFailureSummary(): Promise<EmailFailureSummary[]> {
   return fetchApi('/api/admin/audit/notifications/email-failures')
 }
 
-/**
- * Fetch detailed failed push subscriptions with user info
- */
 export async function fetchAuditFailedSubscriptions(
   minFailures = 1,
   limit = 100
@@ -530,9 +498,6 @@ export async function fetchAuditFailedSubscriptions(
   return fetchApi(`/api/admin/audit/notifications/failed-subscriptions?${params.toString()}`)
 }
 
-/**
- * Fetch email bounces with user info
- */
 export async function fetchEmailBounces(options?: {
   bounceType?: string
   days?: number
@@ -545,9 +510,6 @@ export async function fetchEmailBounces(options?: {
   return fetchApi(`/api/admin/audit/notifications/email-bounces?${params.toString()}`)
 }
 
-/**
- * Bulk disable failed push subscriptions
- */
 export async function disableFailedSubscriptions(
   minFailures: number,
   errorPattern?: string,
@@ -559,20 +521,10 @@ export async function disableFailedSubscriptions(
   })
 }
 
-/**
- * Fetch BullMQ Dead Letter Queue contents (push + email)
- */
 export async function fetchDLQContents(limit = 20): Promise<DLQContents> {
   return fetchApi(`/api/admin/audit/notifications/dlq?limit=${limit}`)
 }
 
-// =============================================================================
-// Ghost Accounts Audit (Phase 15)
-// =============================================================================
-
-/**
- * Fetch ghost accounts list with classification
- */
 export async function fetchGhostAccounts(options?: {
   minAgeDays?: number
   ghostType?: string
@@ -587,32 +539,20 @@ export async function fetchGhostAccounts(options?: {
   return fetchApi(`/api/admin/audit/ghost-accounts?${params.toString()}`)
 }
 
-/**
- * Fetch ghost accounts summary stats
- */
 export async function fetchGhostSummary(): Promise<GhostSummary> {
   return fetchApi('/api/admin/audit/ghost-accounts/summary')
 }
 
-/**
- * Fetch deletion impact for a specific user
- */
 export async function fetchGhostDeletionImpact(userId: string): Promise<GhostDeletionImpact> {
   return fetchApi(`/api/admin/audit/ghost-accounts/${userId}/impact`)
 }
 
-/**
- * Smart-delete a single ghost account
- */
 export async function deleteGhostAccount(userId: string): Promise<GhostDeleteResult> {
   return fetchApi(`/api/admin/audit/ghost-accounts/${userId}`, {
     method: 'DELETE'
   })
 }
 
-/**
- * Bulk smart-delete ghost accounts
- */
 export async function bulkDeleteGhostAccounts(userIds: string[]): Promise<GhostBulkDeleteResult> {
   return fetchApi('/api/admin/audit/ghost-accounts/bulk-delete', {
     method: 'POST',
@@ -620,9 +560,6 @@ export async function bulkDeleteGhostAccounts(userIds: string[]): Promise<GhostB
   })
 }
 
-/**
- * Resend confirmation email for unconfirmed ghost
- */
 export async function resendGhostConfirmation(email: string): Promise<{ success: boolean }> {
   return fetchApi('/api/admin/audit/ghost-accounts/resend-confirmation', {
     method: 'POST',
@@ -630,9 +567,6 @@ export async function resendGhostConfirmation(email: string): Promise<{ success:
   })
 }
 
-/**
- * Bulk cleanup stale anonymous sessions
- */
 export async function cleanupAnonymousSessions(minAgeDays = 90): Promise<GhostCleanupResult> {
   return fetchApi('/api/admin/audit/ghost-accounts/cleanup-anonymous', {
     method: 'POST',

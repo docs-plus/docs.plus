@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import { useCallback, useMemo } from 'react'
 
-export type SortDirection = 'asc' | 'desc'
+import type { SortDirection } from '@/types'
 
 interface TableParams {
   page: number

@@ -12,8 +12,7 @@ import {
   LuTriangleAlert
 } from 'react-icons/lu'
 
-import { fetchPushSubscriptionAnalytics } from '@/services/supabase'
-import type { PushSubscriptionAnalytics } from '@/types'
+import { fetchPushSubscriptionAnalytics } from '@/services/api'
 
 // Progress bar component for platform/health breakdown
 function ProgressBar({
@@ -86,7 +85,7 @@ export function PushSubscriptionStats() {
     staleTime: 60000 // 1 minute
   })
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return (
       <div className="space-y-4">
         <div className="skeleton h-8 w-48" />
@@ -99,7 +98,7 @@ export function PushSubscriptionStats() {
     )
   }
 
-  const analytics = data as PushSubscriptionAnalytics
+  const analytics = data
 
   return (
     <div className="space-y-6">

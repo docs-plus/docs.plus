@@ -13,7 +13,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
     "@tanstack/react-query": "catalog:",
     "clsx": "catalog:",

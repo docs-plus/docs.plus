@@ -8,8 +8,8 @@ import {
   LuUser
 } from 'react-icons/lu'
 
-import { type DeletionImpact, getDocumentDeletionImpact } from '@/services/api'
-import type { Document } from '@/types'
+import { getDocumentDeletionImpact } from '@/services/api'
+import type { DeletionImpact, Document } from '@/types'
 import { formatDate } from '@/utils/format'
 
 interface DeleteModalProps {

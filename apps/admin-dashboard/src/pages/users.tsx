@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LuCircle, LuFileText, LuRadio, LuShieldCheck, LuShieldOff } from 'react-icons/lu'
 
@@ -11,11 +11,16 @@ import { DataTable } from '@/components/tables/DataTable'
 import { Avatar } from '@/components/ui/Avatar'
 import { NotificationBadges } from '@/components/ui/NotificationBadges'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { useAdminAuth } from '@/hooks/useAdminAuth'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useTableParams } from '@/hooks/useTableParams'
-import { fetchAdminUserIds, fetchUserDocumentCounts, toggleAdminRole } from '@/services/api'
-import { fetchUserNotificationSubscriptions, fetchUsers } from '@/services/supabase'
+import { supabase } from '@/lib/supabase'
+import {
+  fetchAdminUserIds,
+  fetchUserDocumentCounts,
+  fetchUserNotificationSubscriptions,
+  fetchUsers,
+  toggleAdminRole
+} from '@/services/api'
 import type { User } from '@/types'
 import { exportToCSV } from '@/utils/export'
 import { formatDate, formatDateTime } from '@/utils/format'
@@ -36,7 +41,13 @@ type UserWithExtras = User & {
 
 export default function UsersPage() {
   const queryClient = useQueryClient()
-  const { user: currentUser } = useAdminAuth()
+
+  // AuthGuard already gates this page; only the signed-in admin's id is needed
+  // here, so read it from the cached session instead of re-running useAdminAuth.
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null))
+  }, [])
 
   // URL-synced table state
   const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
@@ -98,14 +109,24 @@ export default function UsersPage() {
     })
   }, [data?.data, docCounts, notifSubs, adminIdSet])
 
-  // Real-time subscription to users table
+  // Real-time subscription to users table. Webapp presence/status writes fire
+  // often, so debounce the refetch to collapse bursts into one query against
+  // the shared DB instead of one per event.
+  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleRealtimeChange = useCallback(() => {
-    refetch()
+    if (refetchTimer.current) clearTimeout(refetchTimer.current)
+    refetchTimer.current = setTimeout(() => refetch(), 1500)
   }, [refetch])
+  useEffect(
+    () => () => {
+      if (refetchTimer.current) clearTimeout(refetchTimer.current)
+    },
+    []
+  )
 
   useRealtimeSubscription({
     table: 'users',
-    onchange: handleRealtimeChange
+    onChange: handleRealtimeChange
   })
 
   const handleExport = () => {
@@ -131,7 +152,7 @@ export default function UsersPage() {
 
   const handleToggleAdmin = useCallback(
     (user: UserWithExtras) => {
-      const isSelf = user.id === currentUser?.id
+      const isSelf = user.id === currentUserId
       if (isSelf) {
         toast.error('Cannot change your own admin status')
         return
@@ -163,7 +184,7 @@ export default function UsersPage() {
         { duration: 10000 }
       )
     },
-    [currentUser?.id, toggleAdminMutation]
+    [currentUserId, toggleAdminMutation]
   )
 
   const columns = [
@@ -231,20 +252,17 @@ export default function UsersPage() {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (user: UserWithExtras) => (
-        <div className="flex items-center gap-2">
-          <LuCircle
-            className={`h-3 w-3 fill-current ${
-              user.status === 'ONLINE'
-                ? 'text-success'
-                : user.status === 'AWAY'
-                  ? 'text-warning'
-                  : 'text-base-content/30'
-            }`}
-          />
-          <span className="text-sm capitalize">{user.status?.toLowerCase()}</span>
-        </div>
-      )
+      render: (user: UserWithExtras) => {
+        let statusColor = 'text-base-content/30'
+        if (user.status === 'ONLINE') statusColor = 'text-success'
+        else if (user.status === 'AWAY') statusColor = 'text-warning'
+        return (
+          <div className="flex items-center gap-2">
+            <LuCircle className={`h-3 w-3 fill-current ${statusColor}`} />
+            <span className="text-sm capitalize">{user.status?.toLowerCase()}</span>
+          </div>
+        )
+      }
     },
     {
       key: 'created_at',
@@ -268,13 +286,11 @@ export default function UsersPage() {
       key: 'actions',
       header: '',
       render: (user: UserWithExtras) => {
-        const isSelf = user.id === currentUser?.id
+        const isSelf = user.id === currentUserId
+        let tooltip = user.is_admin ? 'Revoke admin' : 'Make admin'
+        if (isSelf) tooltip = 'Cannot change own role'
         return (
-          <div
-            className="tooltip tooltip-left"
-            data-tip={
-              isSelf ? 'Cannot change own role' : user.is_admin ? 'Revoke admin' : 'Make admin'
-            }>
+          <div className="tooltip tooltip-left" data-tip={tooltip}>
             <button
               type="button"
               className={`btn btn-ghost btn-sm btn-square ${user.is_admin ? 'text-primary' : 'text-base-content/30 hover:text-primary'}`}
@@ -328,6 +344,7 @@ export default function UsersPage() {
             <DataTable
               columns={columns}
               data={usersWithExtras}
+              rowKey={(user) => user.id}
               loading={isLoading}
               pagination={{
                 page,

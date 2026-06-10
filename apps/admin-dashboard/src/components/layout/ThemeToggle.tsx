@@ -3,7 +3,8 @@ import { LuMoon, LuSun } from 'react-icons/lu'
 import { useUIStore } from '@/stores/uiStore'
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useUIStore()
+  const theme = useUIStore((state) => state.theme)
+  const toggleTheme = useUIStore((state) => state.toggleTheme)
   const isDark = theme === 'docsplus-dark'
 
   return (

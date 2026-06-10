@@ -2,11 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { useCallback } from 'react'
-
-// Disable static generation - pages require auth which needs client-side router
-export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} }
-}
 import toast from 'react-hot-toast'
 import { LuFileText, LuHash, LuRadio } from 'react-icons/lu'
 
@@ -16,10 +11,15 @@ import { DataTable } from '@/components/tables/DataTable'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useTableParams } from '@/hooks/useTableParams'
-import { fetchChannels } from '@/services/supabase'
+import { fetchChannels } from '@/services/api'
 import type { Channel } from '@/types'
 import { exportToCSV } from '@/utils/export'
 import { formatDate, formatDateTime } from '@/utils/format'
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} }
+}
 
 export default function ChannelsPage() {
   // URL-synced table state
@@ -40,7 +40,7 @@ export default function ChannelsPage() {
 
   useRealtimeSubscription({
     table: 'channels',
-    onchange: handleRealtimeChange
+    onChange: handleRealtimeChange
   })
 
   const handleExport = () => {
@@ -154,6 +154,7 @@ export default function ChannelsPage() {
             <DataTable
               columns={columns}
               data={data?.data || []}
+              rowKey={(channel) => channel.id}
               loading={isLoading}
               pagination={{
                 page,

@@ -1,6 +1,8 @@
 import { Component, type ReactNode } from 'react'
 import { LuCircleAlert, LuRefreshCw } from 'react-icons/lu'
 
+import { logError } from '@/utils/logger'
+
 interface Props {
   children: ReactNode
   fallbackHeight?: number
@@ -22,7 +24,7 @@ export class ChartErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Chart error:', error, errorInfo)
+    logError('Chart error:', { error, errorInfo })
   }
 
   handleRetry = () => {

@@ -382,6 +382,7 @@ export default function DocumentsPage() {
             <DataTable
               columns={columns}
               data={data?.data || []}
+              rowKey={(doc) => doc.id}
               loading={isLoading}
               pagination={{
                 page,

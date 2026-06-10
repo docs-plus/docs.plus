@@ -156,13 +156,12 @@ export default function StaleDocumentsPage() {
     bulkDeleteMutation.mutate(slugs)
   }, [selectedItems, bulkDeleteMutation])
 
-  const handleExport = () => {
-    const data = staleData?.data || []
-    if (!data.length) {
+  const handleExport = (rows: StaleDocument[]) => {
+    if (!rows.length) {
       toast.error('No data to export')
       return
     }
-    exportToCSV(data, `stale-documents-${new Date().toISOString().split('T')[0]}`, [
+    exportToCSV(rows, `stale-documents-${new Date().toISOString().split('T')[0]}`, [
       { key: 'slug', header: 'Slug' },
       { key: 'title', header: 'Title' },
       { key: 'stale_reason', header: 'Status' },
@@ -310,7 +309,7 @@ export default function StaleDocumentsPage() {
           subtitle="Find and cleanup empty, abandoned, or barely-used documents"
           onRefresh={() => refetch()}
           refreshing={isRefetching}
-          onExport={handleExport}
+          onExport={() => handleExport(staleData?.data || [])}
         />
 
         <div className="space-y-6 p-6">
@@ -393,7 +392,9 @@ export default function StaleDocumentsPage() {
                   <LuTrash2 className="h-4 w-4" />
                   Delete Selected
                 </button>
-                <button className="btn btn-ghost btn-sm gap-1" onClick={handleExport}>
+                <button
+                  className="btn btn-ghost btn-sm gap-1"
+                  onClick={() => handleExport(selectedItems)}>
                   <LuDownload className="h-4 w-4" />
                   Export Selected
                 </button>
@@ -480,6 +481,7 @@ export default function StaleDocumentsPage() {
             <DataTable
               columns={columns}
               data={staleData?.data || []}
+              rowKey={(doc) => doc.slug}
               loading={isLoading}
               pagination={{
                 page,
