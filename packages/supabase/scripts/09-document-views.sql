@@ -331,8 +331,11 @@ Fast (~1ms), no contention.
 p_is_anonymous: true if user is using Supabase Anonymous Auth.
 Returns view_id for duration updates.';
 
+-- Server-side only: Hocuspocus enqueues views with the service_role key.
+-- anon/authenticated are excluded so a browser/bot can't call this directly
+-- and inflate view counts. Hardening sweep (29 §7) keeps them revoked.
 grant execute on function public.enqueue_document_view(text, text, uuid, boolean, text)
-    to authenticated, anon, service_role;
+    to service_role;
 
 
 -- -----------------------------------------------------------------------------
@@ -476,7 +479,7 @@ comment on function public.update_view_duration(uuid, integer) is
 'Updates duration for a view by view_id. Called by Hocuspocus on disconnect.';
 
 grant execute on function public.update_view_duration(uuid, integer)
-    to authenticated, anon, service_role;
+    to service_role;
 
 
 -- -----------------------------------------------------------------------------

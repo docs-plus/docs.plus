@@ -3633,8 +3633,11 @@ Fast (~1ms), no contention.
 p_is_anonymous: true if user is using Supabase Anonymous Auth.
 Returns view_id for duration updates.';
 
+-- Server-side only: Hocuspocus enqueues views with the service_role key.
+-- anon/authenticated are excluded so a browser/bot can't call this directly
+-- and inflate view counts. Hardening sweep (29 §7) keeps them revoked.
 grant execute on function public.enqueue_document_view(text, text, uuid, boolean, text)
-    to authenticated, anon, service_role;
+    to service_role;
 
 
 -- -----------------------------------------------------------------------------
@@ -3778,7 +3781,7 @@ comment on function public.update_view_duration(uuid, integer) is
 'Updates duration for a view by view_id. Called by Hocuspocus on disconnect.';
 
 grant execute on function public.update_view_duration(uuid, integer)
-    to authenticated, anon, service_role;
+    to service_role;
 
 
 -- -----------------------------------------------------------------------------
@@ -7963,7 +7966,7 @@ create index idx_users_username on public.users (username);
 -- idx_messages_channel_id is covered by the composite (channel_id, created_at desc) below.
 create index idx_messages_user_id on public.messages (user_id);
 -- idx_messages_type serves m.type = 'notification' filters in get_channel_aggregate_data
--- and pin/forward RPCs (10-functions.sql); keep despite low cardinality.
+-- and pin RPCs (10-functions.sql); keep despite low cardinality.
 create index idx_messages_type on public.messages (type);
 
 -- Composite Index on public.messages
@@ -8007,7 +8010,7 @@ create index idx_messages_channel_id_created_at_active
 create index idx_workspace_members_member_id on public.workspace_members (member_id);
 
 -- FK indexes on message-edit / soft-delete / reply hot triggers. Without
--- these every edit, soft-delete, or forward does a seq scan on messages /
+-- these every edit or soft-delete does a seq scan on messages /
 -- notifications inside an AFTER trigger on the synchronous send path.
 create index if not exists idx_messages_reply_to_message_id
   on public.messages (reply_to_message_id)
@@ -9831,6 +9834,9 @@ DECLARE
         'join_workspace', 'update_user_online_at',
         -- Push subscriptions (per-user)
         'register_push_subscription', 'unregister_push_subscription',
+        -- Admin-dashboard browser RPCs — bodies self-gate on is_admin;
+        -- remote already grants these (20260213163344 + parity migration)
+        'admin_get_failed_push_subs', 'admin_get_recent_push_activity',
         -- Policy primitive — used inside admin_users RLS, must remain
         -- callable in policy expressions for authenticated callers
         'is_admin'
@@ -9856,17 +9862,13 @@ $$;
 
 
 -- =====================================================================
--- 7. GRANT EXECUTE TO anon (+ authenticated) — analytics + read whitelist
+-- 7. GRANT EXECUTE TO anon — analytics read whitelist
 -- =====================================================================
--- These RPCs power anonymous document-view tracking AND anonymous read
--- access to PUBLIC chat. `get_channel_aggregate_data` gates internally
--- on `type = 'PUBLIC' OR is_channel_member(...)`, so the anon caller
--- can only fetch PUBLIC-channel rows.
-
-GRANT EXECUTE ON FUNCTION public.enqueue_document_view(text, text, uuid, boolean, text)
-    TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.update_view_duration(uuid, integer)
-    TO anon, authenticated;
+-- `get_channel_aggregate_data` gates internally on
+-- `type = 'PUBLIC' OR is_channel_member(...)`, so the anon caller can
+-- only fetch PUBLIC-channel rows. Document-view tracking is NOT granted
+-- here: enqueue_document_view / update_view_duration run server-side via
+-- service_role (09-document-views), never from the browser.
 
 DO $$
 DECLARE
@@ -9958,7 +9960,7 @@ COMMIT;
 --   SELECT table_name FROM information_schema.role_table_grants
 --   WHERE grantee='anon' AND table_schema='public' AND privilege_type='SELECT';
 --
--- (d) anon EXECUTE on SECURITY DEFINER fns (expect 2: enqueue_document_view, update_view_duration)
+-- (d) anon EXECUTE on SECURITY DEFINER fns (expect 0)
 --   SELECT p.proname FROM pg_proc p
 --   JOIN pg_namespace n ON n.oid=p.pronamespace
 --   WHERE n.nspname='public' AND p.prosecdef = true
