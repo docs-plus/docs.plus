@@ -164,6 +164,8 @@ const Editor = ({
     CodeBlockLowlight.configure({
       lowlight
     }),
+    // InlineCode (priority 101) wins backtick input + Mod-e over StarterKit's
+    // `code` mark; `code` stays enabled so existing collab docs keep their marks.
     InlineCode,
     Superscript,
     Subscript,

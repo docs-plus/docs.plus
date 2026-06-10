@@ -1,40 +1,26 @@
 import { Mark, markInputRule, markPasteRule, mergeAttributes } from '@tiptap/core'
-import { TextSelection } from '@tiptap/pm/state'
+import { Selection } from '@tiptap/pm/state'
 
 export interface InlineCodeOptions {
   HTMLAttributes: Record<string, any>
 }
 
 /**
- * Regular expressions to match inline code blocks enclosed in backticks.
- * It matches:
- *   - An opening backtick, followed by
- *   - Any text that doesn't include a backtick (captured for marking), followed by
- *   - A closing backtick.
- * This ensures that any text between backticks is formatted as code,
- * regardless of the surrounding characters (exception being another backtick).
+ * Backtick-delimited inline code (`` `code` ``). `inputRegex` is end-anchored and
+ * non-global: a global flag drifts the input-rule plugin's `lastIndex` and throws
+ * "Position out of range". `pasteRegex` keeps the global flag to scan a paste.
  */
-export const inputRegex = /(^|[^`])`([^`]+)`(?!`)/g
-
-/**
- * Matches inline code while pasting.
- */
+export const inputRegex = /(^|[^`])`([^`]+)`(?!`)$/
 export const pasteRegex = /(^|[^`])`([^`]+)`(?!`)/g
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     inlineCode: {
-      /**
-       * Set an inline code mark
-       */
+      /** Apply the inline-code mark (collapsed caret → stored mark, no inserted char). */
       setInlineCode: () => ReturnType
-      /**
-       * Toggle an inline code mark
-       */
+      /** Toggle the inline-code mark. */
       toggleInlineCode: () => ReturnType
-      /**
-       * Unset an inline code mark
-       */
+      /** Remove the inline-code mark. */
       unsetInlineCode: () => ReturnType
     }
   }
@@ -42,6 +28,17 @@ declare module '@tiptap/core' {
 
 export const InlineCode = Mark.create<InlineCodeOptions>({
   name: 'inlineCode',
+
+  // Outrank StarterKit's `code` mark (priority 100) so backtick input + Mod-e
+  // produce inlineCode when a host leaves StarterKit's `code` enabled (README).
+  priority: 101,
+
+  // Upstream `@tiptap/extension-code` parity: code text never stacks other marks.
+  excludes: '_',
+
+  // `@tiptap/core` suppresses other extensions' input rules inside code-marked
+  // text only via this spec flag (Typography/bold rules must not rewrite code).
+  code: true,
 
   addOptions() {
     return {
@@ -53,10 +50,8 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
     return [
       {
         tag: 'code',
-        getAttrs: (node) => {
-          // Only match inline code, not code blocks
-          return (node as HTMLElement).parentElement?.tagName !== 'PRE' ? {} : false
-        }
+        // CodeBlock owns `<pre><code>`; only a bare `<code>` is inline code.
+        getAttrs: (node) => ((node as HTMLElement).parentElement?.tagName !== 'PRE' ? {} : false)
       }
     ]
   },
@@ -65,158 +60,55 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
     return ['code', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
 
+  // Entry rides ProseMirror stored marks: on a collapsed caret these seed the
+  // mark for the next char without inserting a zero-width space into the doc.
   addCommands() {
     return {
       setInlineCode:
         () =>
-        ({ state, dispatch, tr }) => {
-          const { selection } = state
-          const { from, to, empty } = selection
-
-          if (dispatch) {
-            if (empty) {
-              // No selection - insert zero-width space with inline code mark
-              const text = '\u200B' // zero-width space
-              tr.insertText(text, from)
-              tr.addMark(from, from + text.length, this.type.create())
-              tr.setSelection(TextSelection.create(tr.doc, from + text.length))
-            } else {
-              // Has selection - wrap it
-              tr.addMark(from, to, this.type.create())
-            }
-          }
-
-          return true
-        },
-
-      unsetInlineCode:
-        () =>
-        ({ state, dispatch, tr }) => {
-          const { selection } = state
-          const { from, to } = selection
-
-          if (dispatch) {
-            tr.removeMark(from, to, this.type)
-          }
-
-          return true
-        },
-
+        ({ commands }) =>
+          commands.setMark(this.name),
       toggleInlineCode:
         () =>
-        ({ state, dispatch, tr, editor }) => {
-          const { selection } = state
-          const { from, to, empty } = selection
-
-          if (dispatch) {
-            const isActive = editor.isActive('inlineCode')
-
-            if (isActive) {
-              // Remove inline code mark
-              tr.removeMark(from, to, this.type)
-            } else {
-              if (empty) {
-                // No selection - insert zero-width space with inline code mark
-                const text = '\u200B' // zero-width space
-                tr.insertText(text, from)
-                tr.addMark(from, from + text.length, this.type.create())
-                tr.setSelection(TextSelection.create(tr.doc, from + text.length))
-              } else {
-                // Has selection - wrap it
-                tr.addMark(from, to, this.type.create())
-              }
-            }
-          }
-
-          return true
-        }
+        ({ commands }) =>
+          commands.toggleMark(this.name),
+      unsetInlineCode:
+        () =>
+        ({ commands }) =>
+          commands.unsetMark(this.name)
     }
   },
 
   addKeyboardShortcuts() {
     return {
-      'Mod-Shift-c': () => this.editor.commands.toggleInlineCode(),
       'Mod-e': () => this.editor.commands.toggleInlineCode(),
       ArrowRight: ({ editor }) => {
-        const { state, view } = editor
-        const { selection } = state
+        const { selection, doc, storedMarks } = editor.state
+        if (!selection.empty) return false
         const { $from } = selection
-
-        // Check if we're at the end of an inline code mark
-        if (selection.empty && $from.marks().some((mark: any) => mark.type === this.type)) {
-          const pos = $from.pos
-          const nextPos = pos + 1
-
-          // Check if we're at the end of the document
-          if (nextPos >= state.doc.content.size) {
-            // Insert a space after the code tag and move cursor there
-            const tr = state.tr
-            tr.insertText(' ', pos)
-            tr.removeMark(pos, pos + 1, this.type)
-            tr.setSelection(TextSelection.create(tr.doc, pos + 1))
-            view.dispatch(tr)
-            return true
-          }
-
-          // Check if the next position doesn't have the inline code mark
-          const $nextPos = state.doc.resolve(nextPos)
-          if (!$nextPos.marks().some((mark: any) => mark.type === this.type)) {
-            editor.commands.setTextSelection(nextPos)
-            return true
-          }
+        // At the very end of the document the default arrow can't move out of an
+        // inclusive code mark — clear the stored mark so the next char is plain.
+        // No space is inserted (core's `exitable` handler would insert one).
+        // `Selection.atEnd` also covers a last textblock nested in blockquote/list.
+        if (
+          $from.pos !== Selection.atEnd(doc).from ||
+          !this.type.isInSet(storedMarks ?? $from.marks())
+        ) {
+          return false
         }
-
-        return false
-      },
-      ArrowLeft: ({ editor }) => {
-        const { state, view } = editor
-        const { selection } = state
-        const { $from } = selection
-
-        // Check if we're at the start of an inline code mark
-        if (selection.empty && $from.marks().some((mark: any) => mark.type === this.type)) {
-          const pos = $from.pos
-          const prevPos = pos - 1
-
-          // Check if we're at the beginning of the document or inline code
-          if (prevPos <= 0) {
-            // Insert a space at current position and remove code mark from it
-            const tr = state.tr
-            tr.insertText(' ', pos)
-            tr.removeMark(pos, pos + 1, this.type)
-            tr.setSelection(TextSelection.create(tr.doc, pos))
-            view.dispatch(tr)
-            return true
-          }
-
-          // Check if the previous position doesn't have the inline code mark
-          const $prevPos = state.doc.resolve(prevPos)
-          if (!$prevPos.marks().some((mark: any) => mark.type === this.type)) {
-            editor.commands.setTextSelection(prevPos)
-            return true
-          }
-        }
-
-        return false
+        return editor.commands.command(({ tr, dispatch }) => {
+          if (dispatch) dispatch(tr.removeStoredMark(this.type))
+          return true
+        })
       }
     }
   },
 
   addInputRules() {
-    return [
-      markInputRule({
-        find: inputRegex,
-        type: this.type
-      })
-    ]
+    return [markInputRule({ find: inputRegex, type: this.type })]
   },
 
   addPasteRules() {
-    return [
-      markPasteRule({
-        find: pasteRegex,
-        type: this.type
-      })
-    ]
+    return [markPasteRule({ find: pasteRegex, type: this.type })]
   }
 })
