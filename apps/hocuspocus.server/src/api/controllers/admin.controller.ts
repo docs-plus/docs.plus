@@ -14,6 +14,7 @@ import { getSupabaseClient, supabaseRest } from '../utils/supabase'
 // Re-export split controllers (barrel pattern — router import stays unchanged)
 export * from './admin-analytics.controller'
 export * from './admin-audit.controller'
+export * from './admin-stats.controller'
 
 // =============================================================================
 // Dashboard & Document Statistics
