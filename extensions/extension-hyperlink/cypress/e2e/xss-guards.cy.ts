@@ -28,13 +28,49 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
     })
   })
 
+  describe('control characters embedded in the scheme', () => {
+    // `&#9;` / `&#10;` decode to TAB / LF inside the attribute value;
+    // browsers strip ASCII controls when resolving URLs, so without the
+    // control-stripped `isSafeHref` check these navigate as `javascript:`.
+    const SMUGGLED = [
+      { label: 'TAB (&#9;)', anchor: '<a href="java&#9;script:alert(1)">x</a>' },
+      { label: 'LF (&#10;)', anchor: '<a href="java&#10;script:alert(1)">x</a>' }
+    ]
+
+    SMUGGLED.forEach(({ label, anchor }) => {
+      it(`strips an anchor whose scheme embeds ${label} and never serializes script:`, () => {
+        cy.setEditorContent(`<p>before ${anchor} after</p>`)
+        cy.get('#editor a').should('not.exist')
+        cy.getEditor().then((editor) => {
+          expect(editor.getHTML()).not.to.include('script:')
+        })
+      })
+    })
+  })
+
   describe('markdown input rule', () => {
+    // `cy.type()` bypasses the `beforeinput` pipeline, so input rules never
+    // fire and `not.exist` would pass vacuously — `cy.realType()` is required.
     DANGEROUS.forEach((href) => {
       it(`rejects [text](${href}) typed inline`, () => {
         cy.setEditorContent('<p></p>')
-        cy.get('.ProseMirror').click().type(`[click me](${href}) `)
+        cy.getEditor().then((editor) => {
+          editor.commands.focus()
+        })
+        cy.realType(`[click me](${href}) `)
         cy.get('#editor a').should('not.exist')
       })
+    })
+
+    // Positive control: proves the rule does fire under realType, so the
+    // rejections above exercise the href gate rather than a silent no-op.
+    it('linkifies [text](https://example.com) typed inline', () => {
+      cy.setEditorContent('<p></p>')
+      cy.getEditor().then((editor) => {
+        editor.commands.focus()
+      })
+      cy.realType('[click me](https://example.com) ')
+      cy.get('#editor a').should('have.attr', 'href', 'https://example.com')
     })
   })
 

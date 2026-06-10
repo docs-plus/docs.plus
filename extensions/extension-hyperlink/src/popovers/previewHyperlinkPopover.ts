@@ -5,33 +5,37 @@ import { openEditHyperlink } from '../openers/openEditHyperlink'
 import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil } from '../utils'
 import { logger } from '../utils/logger'
 
+// Icon-only action button: explicit `type` (the popover lives outside any
+// form, but defaults are surprising) plus matching title/aria-label.
+const iconButton = (className: string, label: string, icon: string): HTMLButtonElement => {
+  const button = createHTMLElement('button', {
+    type: 'button',
+    className,
+    innerHTML: icon,
+    title: label
+  })
+  button.setAttribute('aria-label', label)
+  return button
+}
+
 export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions): HTMLElement {
   const { link, editor } = options
-  // Read href from the validated mark attribute. The DOM `link.href`
-  // property silently resolves relative hrefs against `document.baseURI`
-  // (turning a stored `google.com` into `http://<origin>/google.com`),
-  // and `getAttribute('href')` returns the raw stored value — both can
-  // serve a `javascript:` href that escaped validation. `attrs.href`
-  // is the only path that's been through the safety gate.
+  // `attrs.href` is the only gate-validated source — DOM `link.href`
+  // resolves relative hrefs against `document.baseURI` (origin leak) and
+  // `getAttribute` returns whatever raw value escaped validation.
   const href = options.attrs.href ?? ''
-  // Mirror `renderHTML`'s defense-in-depth posture on the popover surface
-  // too. The click handler short-circuits via `isSafeHref`, but a middle-
-  // click on the rendered anchor would bypass it and trigger native
-  // navigation. Blank the rendered `href` for unsafe schemes so the
-  // browser cannot follow it under any input modality, while keeping
-  // `innerText` honest so the user sees what was stored.
+  // Blank unsafe schemes on render (mirrors `renderHTML`): a middle-click
+  // on the rendered anchor would bypass the JS click guard otherwise.
+  // `innerText` stays honest so the user sees what was stored.
   const safeHref = isSafeHref(href) ? href : ''
-  // Honor the user's composed `isAllowedUri` policy on the JS-driven
-  // navigation path. Falls back to `isSafeHref` when the popover is
-  // mounted outside the click-handler plugin (e.g. directly from a
-  // BYO factory). Right-click still works natively because we never
-  // intercept it.
+  // Composed `isAllowedUri` policy for JS-driven navigation; falls back to
+  // `isSafeHref` when mounted outside the click-handler plugin (BYO factory).
   const isOpenable = options.isAllowedUri ?? isSafeHref
 
   const root = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
-  const removeButton = createHTMLElement('button', { className: 'remove', innerHTML: LinkOff() })
-  const copyButton = createHTMLElement('button', { className: 'copy', innerHTML: Copy() })
-  const editButton = createHTMLElement('button', { className: 'edit', innerHTML: Pencil() })
+  const removeButton = iconButton('remove', 'Remove link', LinkOff())
+  const copyButton = iconButton('copy', 'Copy link', Copy())
+  const editButton = iconButton('edit', 'Edit link', Pencil())
 
   // `noopener noreferrer` matches the Hyperlink default `HTMLAttributes`
   // and is the belt to the click-handler's braces — if JS ever fails to
@@ -57,11 +61,10 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
   })
 
   editButton.addEventListener('click', () => {
-    // Route through the canonical opener so the slot resolution + stash
-    // wiring stays in one place. The default Back behaviour
-    // (`buildPreviewOptionsFromAnchor` → `openPreviewHyperlink`) is
-    // exactly what `onBack` would have re-run, so no override is needed.
-    openEditHyperlink(editor, {
+    // Route through the canonical opener so slot resolution stays in one
+    // place. The prebuilt edit popover's Back closes over these options
+    // and re-opens the preview itself, so no `onBack` override is needed.
+    openEditHyperlink({
       editor,
       link,
       nodePos: options.nodePos,

@@ -118,3 +118,6 @@ describe('Navigation guards — middle-click (auxclick)', () => {
     cy.get('@windowOpen').should('not.have.been.called')
   })
 })
+
+// Module scope: keeps top-level consts out of the shared-global TS project.
+export {}

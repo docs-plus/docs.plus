@@ -44,18 +44,17 @@
   --hl-font:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --hl-font-size: 14px;
-  --hl-z-index: 9999;
   --hl-transition: 120ms ease-in-out;
 }
 
 /* -------------------------------------------------------------------------
    Floating popover shell (shared by all three popovers — preview / edit / create)
+   Positioning (fixed + top/left + z-index 9999) is inline from createPopover;
+   override stacking via `createPopover({ zIndex })`.
+   extension-hypermultimedia's media-toolbar.css carries a lockstep copy of
+   this shell — mirror edits there.
    ------------------------------------------------------------------------- */
 .floating-popover {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: var(--hl-z-index);
   opacity: 0;
   transform: scale(0.96);
   transition:
@@ -267,6 +266,14 @@
 .hyperlink-create-popover button[type='submit']:disabled {
   color: var(--hl-muted);
   cursor: not-allowed;
+}
+
+/* Keyboard-focus ring for popover buttons (inputs get theirs via :focus-within). */
+.hyperlink-create-popover button:focus-visible,
+.hyperlink-preview-popover button:focus-visible,
+.hyperlink-edit-popover button:focus-visible {
+  outline: 2px solid var(--hl-accent);
+  outline-offset: 1px;
 }
 
 /* -------------------------------------------------------------------------

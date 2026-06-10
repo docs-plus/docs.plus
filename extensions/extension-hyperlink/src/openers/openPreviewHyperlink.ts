@@ -1,9 +1,8 @@
-import type { Editor } from '@tiptap/core'
-
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
 import previewHyperlinkPopover from '../popovers/previewHyperlinkPopover'
 import { getHyperlinkOptions } from './getHyperlinkOptions'
+import { setActivePopoverOwner } from './popoverOwnership'
 
 /**
  * Open the preview popover anchored to a hyperlink. Returns `false` when
@@ -12,7 +11,8 @@ import { getHyperlinkOptions } from './getHyperlinkOptions'
  * hosts must never trigger `.focus()` (iOS Safari scrolls contenteditable
  * into view).
  */
-export function openPreviewHyperlink(editor: Editor, opts: PreviewHyperlinkOptions): boolean {
+export function openPreviewHyperlink(opts: PreviewHyperlinkOptions): boolean {
+  const { editor } = opts
   const { popovers } = getHyperlinkOptions(editor, 'openPreviewHyperlink')
   const factory = popovers.previewHyperlink ?? previewHyperlinkPopover
   const content = factory(opts)
@@ -28,6 +28,7 @@ export function openPreviewHyperlink(editor: Editor, opts: PreviewHyperlinkOptio
     element: popover.element,
     referenceElement: opts.link
   })
+  setActivePopoverOwner(editor, popover)
   popover.show()
   return true
 }

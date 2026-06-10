@@ -5,6 +5,7 @@ import { createPopover, getDefaultController } from '../floating-popover'
 import type { CreateHyperlinkOptions, HyperlinkAttributes } from '../hyperlink'
 import createHyperlinkPopover from '../popovers/createHyperlinkPopover'
 import { getHyperlinkOptions } from './getHyperlinkOptions'
+import { setActivePopoverOwner } from './popoverOwnership'
 
 const INPUT_FOCUS_DELAY_MS = 100
 const OFFSCREEN_COORD_PX = -9999
@@ -15,7 +16,7 @@ const OFFSCREEN_COORD_PX = -9999
  */
 export function openCreateHyperlink(
   editor: Editor,
-  attributes: Partial<HyperlinkAttributes>
+  attributes: Partial<HyperlinkAttributes> = {}
 ): boolean {
   const options = getHyperlinkOptions(editor, 'openCreateHyperlink')
   const factory = options.popovers.createHyperlink ?? createHyperlinkPopover
@@ -32,24 +33,29 @@ export function openCreateHyperlink(
 
   const { from, to } = editor.state.selection
 
+  // Deferred input focus, owned by the popover lifecycle: `onShow` arms it and
+  // `onHide` (fired on every teardown path — outside-click, Escape, editor
+  // destroy) clears it, so it can never fire `focus()` on a detached node.
+  let focusTimer: ReturnType<typeof setTimeout> | null = null
+
   // `popover` is forward-referenced inside the coords callback so the
   // stale-anchor guard below can call `popover.hide()` once the
   // controller has handed it back to us.
   const popover = createPopover({
     coordinates: {
       getBoundingClientRect: () => {
-        // Remote collab ops (Yjs) can shrink the doc out from under us
-        // and make `from`/`to` out-of-range — `coordsAtPos` throws.
-        // Anchor is gone, so dismiss. `hide()` is microtask-deferred
-        // because we're inside `computePosition`; the off-screen rect
-        // bridges the gap so the popover doesn't flash before teardown.
+        // Remote collab ops (Yjs) can shrink the doc and make `from`/`to`
+        // out-of-range — `coordsAtPos` throws, so dismiss (microtask-deferred;
+        // the off-screen rect bridges the gap until teardown).
         try {
           const start = editor.view.coordsAtPos(from)
           const end = editor.view.coordsAtPos(to)
+          // Wrapped multi-line selections can put `end` left of `start`;
+          // clamp so the virtual rect never has negative width.
           return {
-            x: start.left,
+            x: Math.min(start.left, end.left),
             y: start.top,
-            width: end.left - start.left,
+            width: Math.abs(end.left - start.left),
             height: end.bottom - start.top
           }
         } catch {
@@ -61,16 +67,24 @@ export function openCreateHyperlink(
     },
     content,
     placement: 'bottom',
-    showArrow: true
+    showArrow: true,
+    onShow: () => {
+      const input = content.querySelector('input')
+      if (input) focusTimer = setTimeout(() => input.focus(), INPUT_FOCUS_DELAY_MS)
+    },
+    onHide: () => {
+      if (focusTimer != null) {
+        clearTimeout(focusTimer)
+        focusTimer = null
+      }
+    }
   })
 
   getDefaultController().adopt(popover, 'create', {
     element: popover.element,
     referenceElement: null
   })
+  setActivePopoverOwner(editor, popover)
   popover.show()
-
-  const input = content.querySelector('input')
-  if (input) setTimeout(() => input.focus(), INPUT_FOCUS_DELAY_MS)
   return true
 }

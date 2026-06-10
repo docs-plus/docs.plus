@@ -193,3 +193,6 @@ describe('BYO popover factories — README public contract', () => {
     })
   })
 })
+
+// Module scope: keeps top-level consts out of the shared-global TS project.
+export {}

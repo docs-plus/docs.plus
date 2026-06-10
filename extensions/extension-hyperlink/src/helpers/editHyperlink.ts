@@ -63,7 +63,8 @@ export const editHyperlinkCommand =
 
     if (!dispatch) return true
 
-    const text = newText || tr.doc.textBetween(range.from, range.to)
+    const currentText = tr.doc.textBetween(range.from, range.to)
+    const text = newText || currentText
 
     let href: string = currentMark.attrs.href
     if (newURL) {
@@ -79,6 +80,18 @@ export const editHyperlinkCommand =
       ...(title !== undefined && { title }),
       ...(image !== undefined && { image })
     })
-    tr.replaceWith(range.from, range.to, tr.doc.type.schema.text(text, [newMark]))
+
+    // Unchanged text: swap only the hyperlink mark in place so co-located
+    // marks (bold/italic/code) survive the edit untouched.
+    if (text === currentText) {
+      tr.removeMark(range.from, range.to, markType)
+      tr.addMark(range.from, range.to, newMark)
+      return true
+    }
+
+    // Text changed: the range is rebuilt, so carry the first text node's
+    // non-hyperlink marks onto the replacement.
+    const carried = tr.doc.nodeAt(range.from)?.marks.filter((mark) => mark.type !== markType) ?? []
+    tr.replaceWith(range.from, range.to, tr.doc.type.schema.text(text, [...carried, newMark]))
     return true
   }

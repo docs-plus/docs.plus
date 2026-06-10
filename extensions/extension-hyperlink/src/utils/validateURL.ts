@@ -18,7 +18,11 @@ export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
  */
 export const isSafeHref = (href: string | null | undefined): href is string => {
   if (typeof href !== 'string' || href.length === 0) return false
-  return !DANGEROUS_SCHEME_RE.test(href)
+  // Test a control-stripped copy: `new URL()` discards ASCII tab/LF/CR and
+  // C0 controls, so `java\tscript:` navigates as `javascript:` — embedded
+  // controls must not smuggle a dangerous scheme past the regex.
+  // eslint-disable-next-line no-control-regex -- matching C0 controls is the point
+  return !DANGEROUS_SCHEME_RE.test(href.replace(/[\u0000-\u0020]+/g, ''))
 }
 
 /** Web schemes whose host must look like a real domain (TLD / localhost / IP). */
@@ -88,7 +92,7 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
   // Defense-in-depth security floor: dangerous schemes must NEVER pass
   // shape validation, regardless of how linkifyjs evolves or which
   // custom protocols a host has registered. The write-boundary command
-  // (`buildHrefGate`) re-checks `isSafeHref`, but pinning it here keeps
+  // (`composeGate`) re-checks `isSafeHref`, but pinning it here keeps
   // popover UX in lockstep with the security policy — a future scheme
   // added to `DANGEROUS_SCHEME_RE` will be rejected by the create form
   // immediately, not silently passed through to a downstream gate.
@@ -115,8 +119,7 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
 
     // linkifyjs waves through anything scheme-shaped — require a plausible
     // host for web schemes so typos like `https://googlecom` are rejected.
-    const scheme = getURLScheme(validURL.href)
-    if (scheme && STANDARD_WEB_SCHEMES.has(scheme)) {
+    if (isStandardWebScheme(validURL.href)) {
       return hasPlausibleHost(validURL.href)
     }
     return true
@@ -134,4 +137,10 @@ export const getURLScheme = (url: string): string | null => {
   if (colonIndex === -1) return null
 
   return url.substring(0, colonIndex).toLowerCase()
+}
+
+/** Single http/https/ftp/ftps predicate — keeps `validateURL` and `url-decisions` on one policy. Module-internal. */
+export const isStandardWebScheme = (url: string): boolean => {
+  const scheme = getURLScheme(url)
+  return scheme !== null && STANDARD_WEB_SCHEMES.has(scheme)
 }

@@ -14,8 +14,9 @@ import { registerCustomProtocol } from 'linkifyjs'
 import { buildHyperlinkCommands } from './commands'
 import { HYPERLINK_MARK_NAME } from './constants'
 import { createInteractions, createLinkContext, type LinkContext } from './interactions'
+import { closeOwnedPopover } from './openers/popoverOwnership'
 import { isSafeHref } from './url-decisions'
-import { DEFAULT_PROTOCOL } from './utils/normalizeHref'
+import { DEFAULT_PROTOCOL, normalizeHref } from './utils/normalizeHref'
 
 // Re-export keeps the v2.0.0 import paths for downstream consumers.
 export type {
@@ -141,10 +142,14 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   // mark name; the `[text](href)` escaping mirrors marked.js link tokens.
   markdownTokenName: 'link',
 
-  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) =>
-    helpers.applyMark(HYPERLINK_MARK_NAME, helpers.parseInline(token.tokens ?? []), {
-      href: token.href || ''
-    }),
+  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) => {
+    // Markdown import is a write boundary like any other: normalize for
+    // canonical parity, then blank unsafe schemes (mirrors parseHTML).
+    const href = normalizeHref(token.href || '')
+    return helpers.applyMark(HYPERLINK_MARK_NAME, helpers.parseInline(token.tokens ?? []), {
+      href: isSafeHref(href) ? href : ''
+    })
+  },
 
   renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
     const content = helpers.renderChildren(node).replace(/\]/g, '\\]')
@@ -166,7 +171,13 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
     })
   },
 
-  // No `onDestroy` linkifyjs.reset() — it clears the global registry and breaks coexisting editors.
+  // No linkifyjs.reset() here — it clears the global registry and breaks
+  // coexisting editors. Close only this editor's open popover so its
+  // body-appended host + document listeners + floating-ui observers don't
+  // outlive the editor.
+  onDestroy() {
+    closeOwnedPopover(this.editor)
+  },
 
   inclusive() {
     return this.options.autolink

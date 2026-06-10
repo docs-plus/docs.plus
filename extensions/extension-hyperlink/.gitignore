@@ -3,6 +3,9 @@ dist
 *.log
 .DS_Store
 
+# Local docs (HISTORY archive, regenerated README hero PNGs)
+docs/
+
 # Cypress artifacts
 cypress/screenshots
 cypress/videos

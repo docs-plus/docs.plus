@@ -3,5 +3,5 @@ export {
   type BuildPreviewOptionsFromAnchorArgs
 } from './buildPreviewOptionsFromAnchor'
 export { openCreateHyperlink } from './openCreateHyperlink'
-export { consumeStashedEditOptions, openEditHyperlink } from './openEditHyperlink'
+export { openEditHyperlink } from './openEditHyperlink'
 export { openPreviewHyperlink } from './openPreviewHyperlink'

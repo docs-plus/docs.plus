@@ -11,7 +11,12 @@ import {
   normalizeLinkifyHref
 } from '../utils/normalizeHref'
 import { getSpecialUrlInfo, type SpecialUrlInfo } from '../utils/specialUrls'
-import { DANGEROUS_SCHEME_RE, isSafeHref, validateURL } from '../utils/validateURL'
+import {
+  DANGEROUS_SCHEME_RE,
+  isSafeHref,
+  isStandardWebScheme,
+  validateURL
+} from '../utils/validateURL'
 
 // Re-exported for ergonomic single-import consumption.
 export { DANGEROUS_SCHEME_RE, isSafeHref, normalizeHref, validateURL }
@@ -123,8 +128,6 @@ export function composeGate<P = unknown>(
 
 // ===== Implementation =====
 
-const STANDARD_WEB_SCHEME_RE = /^(https?|ftps?):/i
-
 // `special` is hoisted by the caller so `getSpecialUrlInfo` runs once per write.
 const classifyMatch = (
   match: LinkifyMatchLike,
@@ -133,14 +136,14 @@ const classifyMatch = (
 ): WriteResultType => {
   if (match.type === 'email') return 'email'
   if (match.type === 'phone') return 'phone'
-  if (special && !STANDARD_WEB_SCHEME_RE.test(href)) return 'special'
+  if (special && !isStandardWebScheme(href)) return 'special'
   return 'url'
 }
 
 const classifyHref = (href: string, special: SpecialUrlInfo | null): WriteResultType => {
   if (/^mailto:/i.test(href)) return 'email'
   if (/^(tel|telprompt|sms|facetime|facetime-audio):/i.test(href)) return 'phone'
-  if (special && !STANDARD_WEB_SCHEME_RE.test(href)) return 'special'
+  if (special && !isStandardWebScheme(href)) return 'special'
   return 'url'
 }
 

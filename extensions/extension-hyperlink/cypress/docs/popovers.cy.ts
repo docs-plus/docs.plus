@@ -56,3 +56,7 @@ describe('README screenshot gallery', { testIsolation: false }, () => {
     cy.screenshot('preview-dark', SHOT_OPTS)
   })
 })
+
+// Module scope: keeps DOC_WITH_LINK from colliding with preview-edit.cy.ts
+// under Cypress's shared TS project.
+export {}

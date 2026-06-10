@@ -8,7 +8,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ---
 
-## [2.0.0] — 2026-04-21
+## [2.0.0] — 2026-06-10
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface — the option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
 
@@ -23,12 +23,12 @@ A complete migration guide from `1.5.2` is at the end of this entry, including a
 - **50+ special URL scheme catalog** (`whatsapp://`, `tg://`, `vscode://`, `slack://`, `zoom://`, `figma://`, `spotify:`, and friends) exposed as a brand-neutral `SpecialUrlType` union plus a `getSpecialUrlInfo(href)` classifier. Consumers map types to their own icon set — the extension ships zero icon catalog.
 - **Defense-in-depth XSS + navigation guards** — `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` are rejected at every entry point: `parseHTML`, input rule, paste handler, paste rule, click handler, middle-click (`auxclick`), and popover open. `renderHTML` re-validates on serialization and blanks tampered hrefs. Every `window.open` call re-checks the gate and passes `'noopener,noreferrer'`, eliminating tabnabbing end-to-end. The regex `DANGEROUS_SCHEME_RE` and the predicate `isSafeHref` are exported so BYO popovers apply the same check.
 - **Default stylesheet ships separately** (`import '@docs.plus/extension-hyperlink/styles.css'`) and is fully themeable via `--hl-*` CSS custom properties with `light-dark()` support. Fully-custom UIs pay zero CSS cost.
-- **Bun-native unit suite + clean-room Cypress E2E** — 317 unit tests (`bun test src`, ~95 ms) plus 132 E2E tests across 10 specs that exercise the **built `dist/` loaded via the published `exports` map** — exactly what an npm consumer installs.
+- **Bun-native unit suite + clean-room Cypress E2E** — 315 unit tests (`bun test src`, ~95 ms) plus 150 E2E tests across 14 specs that exercise the **built `dist/` loaded via the published `exports` map** — exactly what an npm consumer installs.
 - **`@tiptap/extension-link` canon parity** — `setHyperlink` is a pure command (writes the mark only); the side-effecting popover lives behind a dedicated `openCreateHyperlinkPopover` command so chains stay transactional. New `toggleHyperlink` plus migration aliases `setLink` / `unsetLink` / `toggleLink`. Options `defaultProtocol`, `isAllowedUri`, `shouldAutoLink`, `enableClickSelection`, `exitable` mirror the upstream Link-extension surface so existing policies port over without rewrites. `shouldAutoLink` is honored by the autolink plugin, paste handler, AND paste rule — full policy parity across every autolink entry point.
 
-### Breaking Changes (from `1.5.2`)
+### Breaking
 
-Grouped by migration friction. The mechanical renames at the top have a [one-shot script](#one-shot-rename-script) below; the semantic changes require code review.
+All relative to `1.5.2`, grouped by migration friction. The mechanical renames have a [one-shot script](#one-shot-rename-script) below; the semantic changes require code review.
 
 **Popover API redesign — requires code review.**
 
@@ -44,19 +44,19 @@ Grouped by migration friction. The mechanical renames at the top have a [one-sho
 
 **Migration map (v2).**
 
-| Old (v1)                                  | New (v2)                                                           |
-| ----------------------------------------- | ------------------------------------------------------------------ |
-| `createFloatingToolbar(opts)`             | `createPopover(opts)` — same shape minus `surface`                 |
-| `hideCurrentToolbar()`                    | `getDefaultController().close()`                                   |
-| `updateCurrentToolbarPosition(ref?)`      | `getDefaultController().reposition(ref?)`                          |
-| `FloatingToolbarOptions` / `…Instance`    | `PopoverOptions` / `Popover`                                       |
-| `HyperlinkUIController`                   | `PopoverController`                                                |
-| `SurfaceKind`                             | `PopoverKind`                                                      |
-| `EditHyperlinkPopoverOptions` / `…Modal…` | `EditHyperlinkOptions`                                             |
-| `editHyperlinkPopover({ … onBack })`      | `openEditHyperlink(editor, { … })` — Back routes through the stash |
-| `state.surface`                           | `state.popoverKind` (+ new `element`, `referenceElement` fields)   |
+| Old (v1)                                  | New (v2)                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| `createFloatingToolbar(opts)`             | `createPopover(opts)` — same shape minus `surface`                    |
+| `hideCurrentToolbar()`                    | `getDefaultController().close()`                                      |
+| `updateCurrentToolbarPosition(ref?)`      | `getDefaultController().reposition(ref?)`                             |
+| `FloatingToolbarOptions` / `…Instance`    | `PopoverOptions` / `Popover`                                          |
+| `HyperlinkUIController`                   | `PopoverController`                                                   |
+| `SurfaceKind`                             | `PopoverKind`                                                         |
+| `EditHyperlinkPopoverOptions` / `…Modal…` | `EditHyperlinkOptions`                                                |
+| `editHyperlinkPopover({ … onBack })`      | `openEditHyperlink({ editor, … })` — Back re-opens preview by default |
+| `state.surface`                           | `state.popoverKind` (+ new `element`, `referenceElement` fields)      |
 
-The only known external consumer (`packages/webapp`) is migrated in this same release; no separate `[2.0.1]` follow-up is needed.
+The only known external consumer (`apps/webapp`) is migrated in this same release; no separate `[2.0.1]` follow-up is needed.
 
 **Renames — mechanical.**
 
@@ -110,9 +110,9 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 
 **Openers (Layer 1 — the 90% case).**
 
-- `openCreateHyperlink(editor, opts?)` — opens the create popover anchored to the current selection. Reads `popovers.createHyperlink`, falls back to the prebuilt factory.
-- `openEditHyperlink(editor, opts)` — opens the edit popover anchored to a hyperlink. Stashes options on the controller so the prebuilt edit popover's Back button re-opens the preview without consumer wiring.
-- `openPreviewHyperlink(editor, opts)` — opens the preview popover anchored to a hyperlink. Used internally by the click handler; also callable from outer toolbars.
+- `openCreateHyperlink(editor, attributes?)` — opens the create popover anchored to the current selection; the pre-fill `attributes` are optional and default to `{}`. Reads `popovers.createHyperlink`, falls back to the prebuilt factory.
+- `openEditHyperlink(opts)` — opens the edit popover anchored to a hyperlink (`opts.editor` carries the editor). The prebuilt edit popover's Back button re-opens the preview from its own options — no consumer wiring needed.
+- `openPreviewHyperlink(opts)` — opens the preview popover anchored to a hyperlink. Used internally by the click handler; also callable from outer toolbars.
 - `buildPreviewOptionsFromAnchor({ editor, link, validate?, markName? })` — returns a fully-formed `PreviewHyperlinkOptions` derived from a live `<a>` DOM node. Centralizes the `posAtDOM → mark.attrs` lookup (with a defensible fallback when the mark cannot be located) so BYO `editHyperlink` factories and the prebuilt edit popover's Back button share the same code path.
 
 **Controller + primitive (Layer 2 — the 10% case).**
@@ -139,7 +139,7 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 
 **Popover module.**
 
-- `src/floating-popover/` module (`controller.ts` + `createPopover.ts` + barrel) — replaces the v1 `helpers/floatingToolbar.ts` + `ui-controller/` split. Functional, ~270 LOC, no class hierarchy.
+- Popover engine extracted to `@docs.plus/floating-popover` — a private workspace package **bundled into `dist`** (never externalized; npm consumers resolve no workspace dependency). `src/floating-popover/index.ts` re-exports it so internal import paths stay stable, and each consuming extension bundles its own controller instance — no cross-package singleton. Replaces the v1 `helpers/floatingToolbar.ts` + `ui-controller/` split: functional, no class hierarchy.
 - `updateReference()` on every popover — reposition after async updates (e.g. metadata fetch) without tearing the popover down. Re-subscribes `autoUpdate` to the new reference's overflow ancestors so scroll listeners stay live across reference swaps.
 - `hide` middleware from `@floating-ui/dom` — popover auto-hides when the reference scrolls out of view.
 - Virtual references support a live `getBoundingClientRect` callback (recomputed on every mount/scroll/resize) plus an optional `contextElement` that anchors `autoUpdate`'s overflow-ancestor walk. The create popover uses this to position from captured ProseMirror `from`/`to` positions without snapshotting viewport coords at open time.
@@ -170,8 +170,12 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 **Default stylesheet.**
 
 - `@docs.plus/extension-hyperlink/styles.css` — small, framework-agnostic, opt-in. The extension's JavaScript never imports it; fully-custom UIs pay zero CSS cost.
-- Every visual token (colors, radii, shadow, font, transitions, z-index) exposed as `--hl-*` custom properties. Colors use `light-dark()` so the popover tracks the nearest ancestor's `color-scheme`, falling back to `prefers-color-scheme` when none is set.
+- Every visual token (colors, radii, shadow, font, transitions) exposed as `--hl-*` custom properties. Colors use `light-dark()` so the popover tracks the nearest ancestor's `color-scheme`, falling back to `prefers-color-scheme` when none is set. Positioning never lives in the stylesheet — popovers are `position: fixed` with an inline `z-index` (`9999` by default; override via `createPopover({ zIndex })`).
 - `package.json`'s `sideEffects` is `["**/*.css"]` so bundlers preserve the stylesheet import while still tree-shaking JS. `./styles.css` and `./package.json` are advertised as public subpaths in the `exports` map.
+
+**Prebuilt popover accessibility.**
+
+- Preview-popover icon buttons ship `type="button"`, an `aria-label`, and a `title`; every popover button gets a `:focus-visible` ring.
 
 **Write-boundary behaviors.**
 
@@ -182,14 +186,14 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 
 **Test harness.**
 
-- Bun-native unit suite at `src/utils/__tests__/` — 317 tests across `normalizeHref`, `phone`, `specialUrls`, `validateURL`, `findLinks`, `isSafeHref`, `DANGEROUS_SCHEME_RE`. Runs via `bun test src` (~95 ms). New scripts: `bun run test:unit`, `bun run test:unit:watch`.
-- Clean-room Cypress specs in `cypress/e2e/` (10 specs, 132 tests): `create`, `preview-edit`, `autolink`, `special-schemes`, `xss-guards`, `nav-guards`, `canon-options`, `styling`, `custom-popover`, `scroll-stickiness`. Exercise the built `dist/` loaded via the published `exports` map — i.e. the install-time surface. Run with `bun run test:e2e`. `xss-guards` covers the wider scheme regex plus `renderHTML` re-validation (tampered marks injected via raw transaction); `nav-guards` covers middle-click navigation safety; `autolink` pins the `code`-mark skip and the `shouldAutoLink` veto across all three autolink surfaces; `canon-options` pins `enableClickSelection` and `exitable`.
-- Bun-native playground at `test/playground/server.ts` (~15 LOC): `Bun.serve({ routes: { '/': index } })` with an HTML import bundles the playground's TypeScript + CSS on demand. No bundler config, no dedupe knobs, one less dev dependency than the previous Vite setup.
-- Root `test` script composes all three: unit → build → e2e.
+- Bun-native unit suite at `src/utils/__tests__/` — 315 tests across `normalizeHref`, `phone`, `specialUrls`, `validateURL`, `findLinks`, `isSafeHref`, `DANGEROUS_SCHEME_RE`. Runs via `bun test src` (~95 ms). New scripts: `bun run test:unit`, `bun run test:unit:watch`.
+- Clean-room Cypress specs in `cypress/e2e/` (14 specs, 150 tests) exercise the built `dist/` loaded via the published `exports` map — the install-time surface. Coverage spans create, preview-edit, autolink, full-document paste, undo/redo, node contexts, destroy lifecycle, special schemes, XSS guards, navigation guards, canon options, styling, custom popovers, and scroll-stickiness; the spec-by-spec matrix lives in `cypress/e2e/README.md`. Run with `bun run test:e2e`.
+- Clean-room playground served by the shared `@docs.plus/playground` workspace harness (the `docs-playground` page-shell server plus a browser `setupPlayground` helper); this package commits only `test/playground/main.ts`. No bundler config, no Vite.
+- Root `test` script composes all three: build (via `pretest`) → unit → e2e.
 
 ### Changed
 
-- **Floating-popover internals rewritten.** 800-LOC singleton class (`FloatingToolbarManager`) replaced with a lean functional module under `src/floating-popover/`. Strategy switched from `position: absolute` to `strategy: 'fixed'` for body-appended elements, eliminating scroll lag under transformed ancestors.
+- **Floating-popover internals rewritten.** 800-LOC singleton class (`FloatingToolbarManager`) replaced with the lean functional engine now in the bundled `@docs.plus/floating-popover`. Strategy switched from `position: absolute` to `strategy: 'fixed'` for body-appended elements, eliminating scroll lag under transformed ancestors.
 - **`createHyperlinkPopover` simplified** — no longer manages its own positioning. Returns DOM content only; positioning lives in the floating-popover module via `createPopover`.
 - **Popover scroll-stickiness** — the edit popover uses the live `<a>` DOM node as `referenceElement` (the browser recomputes its rect on every call). The create popover passes a closure that recomputes coords from captured ProseMirror `from`/`to` positions on every reposition, instead of the v1-era snapshot-at-open approach that caused the popover to drift while the page scrolled.
 - **`editHyperlink` command** is a composable Tiptap command (`editHyperlinkCommand`) that reads positions + marks off `tr.doc` inside the caller's single transaction. The previous helper dispatched its own nested `editor.chain()…run()` and collided with the outer `.extendMarkRange(...).editHyperlink(...).run()` in the popover ("mismatched transaction" error).
@@ -225,6 +229,8 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 - Unhandled rejection from `view.coordsAtPos()` on doc mutation. A remote collab op (Yjs / Hocuspocus) shrinking the doc while the create popover was open made the captured `from`/`to` positions out-of-range, and the next `autoUpdate`-triggered reposition threw inside `computePosition` as an uncaught promise rejection. Now caught; the popover dismisses itself on the next microtask. The anchor is gone — there's nothing for the form to attach to. Hiding via `referenceHidden` was the first instinct, but it leaves a phantom popover with `autoUpdate` still firing and focus trapped inside the invisible form; full dismissal is the honest behavior.
 - Stale `autoUpdate` subscription after `updateReference()`. The subscription stayed bound to the _previous_ reference's overflow ancestors, so a new reference in a different scroll container stopped following scroll. Now torn down and re-bound on every reference swap.
 - `updatePosition` async race — checks `visible` after `await computePosition()` to avoid writing to a detached toolbar element if `hide()` ran mid-computation.
+- Destroying an editor closes only the popover that editor opened. Ownership tracks the popover instance — registered on open, cleared on normal close — so tearing down one editor never closes a sibling editor's popover or a manually adopted one. Pinned by `destroy-lifecycle.cy.ts`.
+- The create popover's selection anchor no longer computes a negative-width rect on wrapped multi-line selections.
 
 **Popover + command correctness.**
 
@@ -232,8 +238,10 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 - `editHyperlink` helper rewritten to use the ProseMirror model (`getMarkRange`) instead of fragile DOM traversal (`domAtPos` → `closest('a')`).
 - Missing `.run()` — the edit popover now correctly executes the `editHyperlink` command chain.
 - Click handler `attrs` mismatch — `showPopover` now reads mark attributes from the **clicked link's document position** (`view.posAtDOM`) instead of from the current selection (`getAttributes`). Previously, clicking a link when the cursor was on a different link returned the wrong `attrs` to the popover.
-- Edit-popover back button — replaced the fragile `setTimeout(() => link.click(), 1)` with controller-managed back navigation. `openEditHyperlink` stashes the caller's options on the controller; the prebuilt edit popover's Back button calls `openPreviewHyperlink` with the stashed options. No more simulated DOM clicks, and consumer factories no longer need to wire an `onBack` prop themselves.
+- Edit-popover back button — replaced the fragile `setTimeout(() => link.click(), 1)` with direct back navigation: the prebuilt edit popover's Back button re-opens the preview from the options it already holds (`onBack` overrides it). No more simulated DOM clicks, and consumer factories no longer need to wire an `onBack` prop themselves.
 - Silent error swallowing — the `editHyperlink` helper logs a `console.warn` on `catch` instead of returning `false` without signal.
+- `editHyperlink` preserves co-located marks (bold / italic / code): URL-only edits swap the hyperlink mark in place; text edits carry the surrounding marks onto the rebuilt range.
+- Escape in the edit popover restores editor focus, matching the create popover.
 
 **Platform + environment.**
 
@@ -249,6 +257,8 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 - **Middle-click (`auxclick`) navigation safety.** Without it, middle-click bypasses the capture-phase primary-click guard and the browser opens `javascript:` / `data:` / `file:` / `blob:` anchors in a new tab, fully circumventing the posture above. The new handler runs `isSafeHref` + `isAllowedUri`, then opens with `'noopener,noreferrer'`. Right-click (`button === 2`) is left untouched so the native context menu still works.
 - **`window.open` safety harness on every read-side path.** Preview popover "Open" button, `clickHandler` read-only fallback, and the new `auxclick` handler all re-check `isSafeHref(href)`, run the composed `isAllowedUri` policy (mirroring the write side), and pass `SAFE_WINDOW_FEATURES` (`'noopener,noreferrer'`) so the new tab cannot reach back into `window.opener` or leak a Referer header. Tabnabbing surface eliminated end-to-end.
 - **`isAllowedUri` threaded through the preview popover.** `PreviewHyperlinkOptions` carries an optional `isAllowedUri` field, defaulted from the click-handler plugin to the composed gate; the prebuilt preview popover's "Open" button consults it before `window.open`. Closes the last asymmetry where a tightened policy was honored on click + middle-click but not on the popover's anchor button. BYO popovers should call the same gate for parity.
+- **Control characters can't smuggle a scheme past the gate.** Browsers strip embedded ASCII tab / LF / CR and C0 controls when resolving a URL, so `java\tscript:alert(1)` navigates as `javascript:`. `isSafeHref` tests a control-stripped copy of the href, closing the bypass at every boundary that uses the gate.
+- **Markdown-imported hrefs are gated.** `parseMarkdown` routes incoming link hrefs through the same `normalizeHref` + `isSafeHref` pipeline as every other write boundary; an unsafe scheme lands as an empty `href`.
 
 ### Removed
 
@@ -262,7 +272,7 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 - `SurfaceKind` — use `PopoverKind`.
 - `EditHyperlinkPopoverOptions`, `EditHyperlinkModalOptions` — use `EditHyperlinkOptions`.
 - `surface` field on the floating-popover primitive options — kind tagging moved to `controller.adopt(popover, kind, metadata)`.
-- `helpers/floatingToolbar.ts` and `ui-controller/` — both modules deleted; logic lives in `floating-popover/`.
+- `helpers/floatingToolbar.ts` and `ui-controller/` — both modules deleted; logic lives in the bundled `@docs.plus/floating-popover` engine.
 
 **Other.**
 
@@ -275,24 +285,25 @@ The only known external consumer (`packages/webapp`) is migrated in this same re
 
 ### Documentation
 
-- README quick-start for the prebuilt popovers, plus two runnable vanilla-JS DOM examples (under `<details>`) showing how to build a custom `previewHyperlink` / `createHyperlink` from scratch — wired to the current `PreviewHyperlinkOptions` / `CreateHyperlinkOptions` shapes.
+- README quick-start for the prebuilt popovers, plus three runnable vanilla-JS DOM examples (under `<details>`) showing how to build a custom `previewHyperlink` / `createHyperlink` / `editHyperlink` from scratch — wired to the current `PreviewHyperlinkOptions` / `CreateHyperlinkOptions` / `EditHyperlinkOptions` shapes.
 - README badge row reorganized: docs.plus product badge (auto-switching dark / light variant), npm version, monthly downloads, MIT license, and a Discord community badge.
-- Community section added above License with a Discord invite for questions and help.
-- Badge SVGs moved to their canonical home at `packages/webapp/public/badges/` (also served from `https://docs.plus/badges/...`); the README's `<picture>` source URLs updated to match.
+- Badge SVGs moved to their canonical home at `apps/webapp/public/badges/` (also served from `https://docs.plus/badges/...`); the README's `<picture>` source URLs updated to match.
 - README accuracy pass — `HTMLAttributes` no longer documents `target` / `image` (those keys are stripped on render); the BYO `setHyperlink` example uses `editor.chain().setHyperlink({ href }).run()` instead of `setMark`; the URL-handling section names `normalizeHref` (the actual export) instead of `normalizeLinkifyHref` (internal); the Security section reflects the widened blocklist, the `renderHTML` re-validation, and the `'noopener,noreferrer'` features arg.
 - README rewritten for the v2 popover API — the "Popovers" intro now describes the two-layer surface (factory slots, openers, primitive); a new "Openers" section documents `openCreateHyperlink` / `openEditHyperlink` / `openPreviewHyperlink`; the "Floating-popover primitive" and "UI controller" sections document `createPopover`, `PopoverOptions`, `Popover`, `getDefaultController`, `PopoverController`, and the richer `ControllerState` (with `popoverKind`, `element`, `referenceElement`); the "Class names" table renames every `.floating-toolbar*` row to `.floating-popover*`; the "TypeScript" section lists the v2 exports and drops the v1 ones.
-- README restructured for junior-developer onboarding. The Popovers intro is now task-framed (use prebuilt / open from outside / replace) instead of percentage-tiered; the Openers section moved up next to the option shapes so consumers see the canonical entry points before BYO; a new `## Advanced` umbrella heading walls off the BYO factories, the `createPopover` primitive, and the `PopoverController` — sections you only read when replacing a prebuilt or building a non-link-anchored popover. A `Common recipes` block under Commands shows the four tasks every consumer hits in the first hour. The standalone "Wiring the edit popover's Back button" section was deleted; its contract lives in the BYO `editHyperlink` example as a brief comment. The `validate` description in the Options table was corrected (it gates every write boundary, not just autolinks); a new `validate` vs `isAllowedUri` subsection explains the signature-only difference. The `1.x → 2.0` migration callout demoted from an `[!IMPORTANT]` block at the top to a one-line link inside Install.
-- `CONTRIBUTING.md` added at the package root. The `## Testing` section (run commands, playground query-string flags, the 10-spec Cypress matrix) moved out of the README and into the contributor doc; the README links to it from a single-paragraph `## Contributing` section.
+- README restructured for junior-developer onboarding. The Popovers intro is now task-framed (use prebuilt / open from outside / replace) instead of percentage-tiered; the Openers section moved up next to the option shapes so consumers see the canonical entry points before BYO; a new `## Advanced` umbrella heading walls off the BYO factories, the `createPopover` primitive, and the `PopoverController` — sections you only read when replacing a prebuilt or building a non-link-anchored popover. The standalone "Wiring the edit popover's Back button" section was deleted; its contract lives in the BYO `editHyperlink` example as a brief comment. The `validate` description in the Options table was corrected (it gates every write boundary, not just autolinks); a new `validate` vs `isAllowedUri` subsection explains the signature-only difference. The `1.x → 2.0` migration callout demoted from an `[!IMPORTANT]` block at the top to a one-line link inside Install.
+- `CONTRIBUTING.md` added at the package root. The test docs (run commands, playground query-string flags, the 14-spec Cypress matrix) moved out of the README and into the contributor doc; the README links to it from a single-paragraph `## Contributing` section.
+- Documented the controller `subscribe` contract (no initial fire), `nodePos` and the forwarded `isAllowedUri` gate on the popover option shapes, the DOM-helper exports (`copyToClipboard`, `createHTMLElement`, the icon factories), and the mark's built-in markdown hooks. The BYO preview example gates `attrs.href` through `isSafeHref` before rendering a navigable anchor.
 
 ### Internal
 
-- **Bundle size**: ESM `dist/index.js` 28.40 KB, CJS 29.23 KB, DTS 12.69 KB. Public surface grew (canon options + commands, `SpecialUrlType` 43-member literal union, `auxclick` handler, widened blocklist, navigation-safety helpers); JSDoc trim kept the DTS lean despite that growth — intentional trade-off for compile-time typo-protection.
+- **Bundle size**: ESM `dist/index.js` 31.4 KB, CJS 32.3 KB, DTS 17.7 KB — with the popover engine bundled in. Public surface grew (canon options + commands, `SpecialUrlType` 44-member literal union, `auxclick` handler, widened blocklist, navigation-safety helpers); JSDoc trim kept the DTS lean despite that growth — intentional trade-off for compile-time typo-protection.
 - **`HyperlinkAttributes<Extra>` is generic.** The default — `HyperlinkAttributes` — is fully back-compatible with `1.x` (built-in keys plus an open-ended `Record<string, unknown>` index signature). Consumers that store additional typed mark attributes can now express that without losing the index signature: `HyperlinkAttributes<{ ariaLabel: string; campaign?: string }>`.
 - **`LinkContext` cached per editor.** The dependency bag (URL Decisions pipeline + composed `isAllowedUri` gate + canon options) is built once on extension `onCreate` and stored via `addStorage`, so `addCommands` / `addInputRules` / `addPasteRules` / `addProseMirrorPlugins` share a single allocation instead of re-building the pipeline on every hook.
 - **Three command-family files collapsed into `commands/families.ts`.** The previous `canonical.ts` / `edit.ts` / `ui.ts` split was one tight module pretending to be three; consolidating reduces import noise and keeps related families discoverable side-by-side.
 - **`buildPreviewOptionsFromAnchor` extracted as a shared opener helper.** The prebuilt edit popover's Back button and BYO `editHyperlink` factories now share a single code path for recovering `PreviewHyperlinkOptions` from a live anchor, eliminating the duplicate `posAtDOM → mark.attrs` lookup that previously lived inline in two places.
 - **Edit popover surfaces gate rejections inline.** When `editHyperlink({ newURL })` returns `false` (URL fails the composed XSS / `isAllowedUri` gate), the prebuilt edit popover now keeps the form open and shows an error against the href input instead of silently closing.
-- **Pre-`2.0` history archived to [`docs/HISTORY.md`](./docs/HISTORY.md).** Keeps the active changelog proportional while preserving the `1.x` notes and the internal milestone log for anyone tracing a commit hash back to a documented release phase.
+- Dead `.floating-popover` positioning declarations and the unused `--hl-z-index` token dropped from `styles.css` pre-release — positioning is inline (see the stylesheet notes under Added), so neither ever shipped.
+- **Pre-`2.0` history trimmed out of the active changelog.** The `1.x` notes and the internal milestone log were archived to `docs/HISTORY.md`, since removed from the tracked tree — recover it from git history if you need it. Everything user-facing is rolled up into this entry.
 - **`logger` helper** at `src/utils/logger.ts` standardizes `[extension-hyperlink]`-prefixed `console.warn` / `console.error` calls. `tsup` strips `console.log` / `console.debug` in production builds but preserves `warn` / `error` (see Changed) — the typed wrapper makes the policy explicit and gives library users a single string to grep when triaging issues. All in-package call sites (`editHyperlink`, `copyToClipboard`, `createHyperlinkPopover`, `previewHyperlinkPopover`, `validateURL`) migrated.
 - **Public popover types reach the barrel.** `EditHyperlinkOptions` (the consolidated v2 name) is re-exported from `src/popovers/index.ts`, so `import { EditHyperlinkOptions } from '@docs.plus/extension-hyperlink'` resolves — previously the v1 `EditHyperlinkModalOptions` symbol was referenced in the README but unreachable from the package root.
 - **Playground accepts policy flags via query string** (`?shouldAutoLink=block`, `?clickSelection=on`, `?exitable=on`) so the dedicated specs (`canon-options`, `autolink`'s `shouldAutoLink` veto block) exercise opt-in behaviors without forking the playground bootstrap.
@@ -375,8 +386,8 @@ rg -l "autoHyperlink|hyperlinkOnPaste|editHyperLinkText|editHyperLinkHref|preven
 +  getDefaultController,
 +} from '@docs.plus/extension-hyperlink'
 +openCreateHyperlink(editor)                          // ← Mod-k equivalent
-+openEditHyperlink(editor, { editor, link, validate })
-+openPreviewHyperlink(editor, { editor, link, attrs, validate })
++openEditHyperlink({ editor, link, validate })
++openPreviewHyperlink({ editor, link, attrs, validate })
 +getDefaultController().close()
 +getDefaultController().reposition(myAnchor)
 
@@ -462,4 +473,4 @@ Open an issue at <https://github.com/docs-plus/docs.plus/issues> with the labels
 
 ## Pre-`2.0` history
 
-The full `1.x` release notes plus the internal milestones between `1.5.2` and `2.0.0` (monorepo migration, build rewrite, popover + XSS overhaul, contract tightening, the unpublished `4.3.0` pre-release) live in [`docs/HISTORY.md`](./docs/HISTORY.md). Everything user-facing from that stretch is rolled up into the [2.0.0](#200--2026-04-21) entry above.
+The full `1.x` release notes plus the internal milestones between `1.5.2` and `2.0.0` (monorepo migration, build rewrite, popover + XSS overhaul, contract tightening, the unpublished `4.3.0` pre-release) were archived to `docs/HISTORY.md`, since removed from the tracked tree — recover it from git history if you need it. Everything user-facing from that stretch is rolled up into the [2.0.0](#200--2026-06-10) entry above.

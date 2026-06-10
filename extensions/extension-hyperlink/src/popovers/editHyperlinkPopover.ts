@@ -2,7 +2,6 @@ import { HYPERLINK_MARK_NAME } from '../constants'
 import { getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
-import { consumeStashedEditOptions } from '../openers/openEditHyperlink'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import { createHTMLElement, validateURL } from '../utils'
 import { Link, Title } from '../utils/icons'
@@ -70,29 +69,31 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
   linkTextInput.addEventListener('input', () => hideError(textWrapper, textError))
   hrefInput.addEventListener('input', () => hideError(hrefWrapper, hrefError))
 
-  // Back button — re-opens the preview popover via the stash that
-  // `openEditHyperlink` set on entry. `onBack` is an opt-in escape
-  // hatch; when neither path applies (e.g. host adopted the edit
-  // popover by hand), just close.
+  // Mirror the create popover: Escape dismisses AND hands focus back to
+  // the editor (the shell's own Escape handler only hides the popover).
+  form.addEventListener('keydown', (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      getDefaultController().close()
+      editor.commands.focus()
+    }
+  })
+
+  // Back button — re-opens the preview popover for this popover's own
+  // options. `onBack` is an opt-in escape hatch (e.g. mobile sheet).
   backButton.addEventListener('click', () => {
     if (options.onBack) {
       options.onBack()
       return
     }
-    const stashed = consumeStashedEditOptions()
-    if (!stashed) {
-      getDefaultController().close()
-      return
-    }
     openPreviewHyperlink(
-      stashed.editor,
       buildPreviewOptionsFromAnchor({
-        editor: stashed.editor,
-        link: stashed.opts.link,
-        validate: stashed.opts.validate,
-        isAllowedUri: stashed.opts.isAllowedUri,
-        nodePos: stashed.opts.nodePos,
-        markName: stashed.opts.markName
+        editor,
+        link,
+        validate,
+        isAllowedUri: options.isAllowedUri,
+        nodePos: options.nodePos,
+        markName: options.markName
       })
     )
   })

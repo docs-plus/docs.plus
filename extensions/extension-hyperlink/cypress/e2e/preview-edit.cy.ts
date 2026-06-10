@@ -121,6 +121,62 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
     })
   })
 
+  describe('multi-link flows', () => {
+    it('Back shows the preview of the link whose edit was opened last (stash integrity)', () => {
+      cy.setEditorContent(
+        '<p><a href="https://alpha.example">Alpha</a> and <a href="https://beta.example">Beta</a>.</p>'
+      )
+      // Enter A's edit, then click link B mid-edit — the click replaces the
+      // edit popover with B's preview, which must also replace the stash.
+      cy.get('#editor a').eq(0).click()
+      cy.get(`${PREVIEW} .edit`).click()
+      cy.get(EDIT).should('be.visible')
+      cy.get('#editor a').eq(1).click()
+      cy.get(PREVIEW).should('be.visible')
+      cy.get(`${PREVIEW} .edit`).click()
+      cy.get(EDIT).should('be.visible')
+      cy.get(BACK).click()
+      cy.get(PREVIEW).find('a').invoke('attr', 'href').should('eq', 'https://beta.example')
+    })
+
+    it('editing the second of two byte-identical links leaves the first unchanged', () => {
+      cy.setEditorContent(
+        '<p><a href="https://example.com">same</a> and <a href="https://example.com">same</a>.</p>'
+      )
+      cy.get('#editor a').eq(1).click()
+      cy.get(`${PREVIEW} .edit`).click()
+      cy.get(TEXT_INPUT).clear().type('changed')
+      cy.get(URL_INPUT).clear().type('https://changed.example')
+      cy.get(APPLY).click()
+      cy.get(EDIT).should('not.exist')
+      cy.get('#editor a').should('have.length', 2)
+      cy.get('#editor a')
+        .eq(0)
+        .should('have.attr', 'href', 'https://example.com')
+        .and('contain.text', 'same')
+      cy.get('#editor a')
+        .eq(1)
+        .should('have.attr', 'href', 'https://changed.example')
+        .and('contain.text', 'changed')
+    })
+  })
+
+  describe('co-located marks', () => {
+    it('preserves bold inside the link when only the URL changes', () => {
+      // Pins the in-place mark swap in editHyperlink: an unchanged text
+      // field must not rebuild the text node and drop sibling marks.
+      cy.setEditorContent('<p><a href="https://x.com"><strong>bold</strong></a></p>')
+      cy.get('#editor a').click()
+      cy.get(`${PREVIEW} .edit`).click()
+      cy.get(EDIT).should('be.visible')
+      cy.get(URL_INPUT).clear().type('https://changed.example')
+      cy.get(APPLY).click()
+      cy.get(EDIT).should('not.exist')
+      cy.get('#editor a strong').should('exist')
+      cy.get('#editor a').should('have.attr', 'href', 'https://changed.example')
+    })
+  })
+
   describe('DOM contract', () => {
     it('preview popover uses documented class names', () => {
       cy.get('#editor a').click()
@@ -144,3 +200,7 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
     })
   })
 })
+
+// Module scope: keeps top-level consts (PREVIEW/EDIT/DOC_WITH_LINK/…) from
+// colliding with sibling specs under Cypress's shared TS project.
+export {}

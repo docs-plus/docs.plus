@@ -1,67 +1,19 @@
-import type { Editor } from '@tiptap/core'
-
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import editHyperlinkPopover from '../popovers/editHyperlinkPopover'
 import { getHyperlinkOptions } from './getHyperlinkOptions'
 import { findLiveEquivalentAnchor } from './liveAnchor'
+import { setActivePopoverOwner } from './popoverOwnership'
 
 const OFFSCREEN_COORD_PX = -9999
 
-// Stash for the prebuilt edit popover's Back button, cleared only when leaving
-// an *established* edit. `createPopover` self-adopts as transient `'unknown'`
-// before the opener tags `'edit'`; an unguarded clear on that notification
-// wipes the just-written stash and Back closes instead of returning to preview.
-let stashed: { editor: Editor; opts: EditHyperlinkOptions } | null = null
-let unsubscribe: (() => void) | null = null
-let wasEdit = false
-
-// Lazily subscribe only while an edit popover is live, and tear the
-// subscription down once the controller idles — previously the module-level
-// subscription was created on first edit and never released (it outlived the
-// popover and survived `resetDefaultController()`).
-function ensureSubscription(): void {
-  if (unsubscribe) return
-  unsubscribe = getDefaultController().subscribe((state) => {
-    if (state.kind === 'mounted' && state.popoverKind === 'edit') {
-      wasEdit = true
-      return
-    }
-    if (wasEdit) {
-      stashed = null
-      wasEdit = false
-    }
-    if (state.kind === 'idle') {
-      unsubscribe?.()
-      unsubscribe = null
-    }
-  })
-}
-
-/** Internal — read and clear the stashed options. Used by the prebuilt edit popover's Back button. */
-export function consumeStashedEditOptions(): {
-  editor: Editor
-  opts: EditHyperlinkOptions
-} | null {
-  const value = stashed
-  stashed = null
-  return value
-}
-
-/** Test-only — drops the controller subscription so `resetDefaultController()` truly resets. */
-export function _resetEditOpenerSubscription(): void {
-  unsubscribe?.()
-  unsubscribe = null
-  stashed = null
-  wasEdit = false
-}
-
 /**
- * Open the edit popover anchored to a hyperlink. Stashes `opts` so the
- * prebuilt Back button can re-open the preview without consumer wiring.
+ * Open the edit popover anchored to a hyperlink. The prebuilt popover's
+ * Back button closes over `opts`, so no extra wiring is needed to
+ * return to the preview.
  */
-export function openEditHyperlink(editor: Editor, opts: EditHyperlinkOptions): void {
-  ensureSubscription()
+export function openEditHyperlink(opts: EditHyperlinkOptions): void {
+  const { editor } = opts
   const { popovers } = getHyperlinkOptions(editor, 'openEditHyperlink')
   const factory = popovers.editHyperlink ?? editHyperlinkPopover
   const content = factory(opts)
@@ -94,9 +46,6 @@ export function openEditHyperlink(editor: Editor, opts: EditHyperlinkOptions): v
     element: popover.element,
     referenceElement: null
   })
-  // Stash after the `'edit'` adopt so the transient `'unknown'` notification
-  // never sees a populated stash to clear (the `wasEdit` guard is redundant
-  // insurance for that ordering).
-  stashed = { editor, opts }
+  setActivePopoverOwner(editor, popover)
   popover.show()
 }

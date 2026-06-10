@@ -14,7 +14,7 @@ import { openPreviewHyperlink } from '../openPreviewHyperlink'
 
 function fakeEditor(
   previewHyperlink: ((opts: PreviewHyperlinkOptions) => HTMLElement | null) | null
-): Parameters<typeof openPreviewHyperlink>[0] {
+): PreviewHyperlinkOptions['editor'] {
   return {
     extensionManager: {
       extensions: [{ name: HYPERLINK_MARK_NAME, options: { popovers: { previewHyperlink } } }]
@@ -22,17 +22,19 @@ function fakeEditor(
   } as never
 }
 
-const dummyOpts: PreviewHyperlinkOptions = {
-  editor: {} as never,
-  link: {} as never,
-  nodePos: 0,
-  attrs: {
-    href: 'https://example.com',
-    target: null,
-    rel: null,
-    class: null,
-    title: null,
-    image: null
+function makeOpts(editor: PreviewHyperlinkOptions['editor']): PreviewHyperlinkOptions {
+  return {
+    editor,
+    link: {} as never,
+    nodePos: 0,
+    attrs: {
+      href: 'https://example.com',
+      target: null,
+      rel: null,
+      class: null,
+      title: null,
+      image: null
+    }
   }
 }
 
@@ -40,23 +42,21 @@ describe('openPreviewHyperlink', () => {
   it('invokes the configured slot factory with the supplied opts', () => {
     resetDefaultController()
     const factory = mock<(o: PreviewHyperlinkOptions) => HTMLElement | null>(() => null)
-    openPreviewHyperlink(fakeEditor(factory), dummyOpts)
+    const opts = makeOpts(fakeEditor(factory))
+    openPreviewHyperlink(opts)
     expect(factory).toHaveBeenCalledTimes(1)
-    expect(factory.mock.calls[0][0]).toBe(dummyOpts)
+    expect(factory.mock.calls[0][0]).toBe(opts)
   })
 
   it('stays idle when the slot factory returns null (host opt-out)', () => {
     resetDefaultController()
-    openPreviewHyperlink(
-      fakeEditor(() => null),
-      dummyOpts
-    )
+    openPreviewHyperlink(makeOpts(fakeEditor(() => null)))
     expect(getDefaultController().getState()).toEqual({ kind: 'idle' })
   })
 
   it('throws a clear error when the Hyperlink extension is not registered', () => {
     resetDefaultController()
     const editor = { extensionManager: { extensions: [] } } as never
-    expect(() => openPreviewHyperlink(editor, dummyOpts)).toThrow(/Hyperlink extension/)
+    expect(() => openPreviewHyperlink(makeOpts(editor))).toThrow(/Hyperlink extension/)
   })
 })

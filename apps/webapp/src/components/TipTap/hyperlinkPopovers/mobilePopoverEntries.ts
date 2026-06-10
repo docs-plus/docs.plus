@@ -9,14 +9,13 @@ import { useSheetStore } from '@stores'
 import { applyCreate } from './commands/applyCreate'
 import { applyEdit } from './commands/applyEdit'
 
-/** Caller `onBack` wins; otherwise rebuild the preview popover from the live `<a>` and hand back. Mirrors the prebuilt edit popover's Back without touching the package's private stash. */
+/** Caller `onBack` wins; otherwise rebuild the preview popover from the live `<a>` and hand back. Mirrors the prebuilt edit popover's Back. */
 const handleEditBack = (opts: EditHyperlinkOptions): void => {
   if (opts.onBack) {
     opts.onBack()
     return
   }
   openPreviewHyperlink(
-    opts.editor,
     buildPreviewOptionsFromAnchor({
       editor: opts.editor,
       link: opts.link,

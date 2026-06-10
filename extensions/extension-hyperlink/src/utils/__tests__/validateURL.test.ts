@@ -162,9 +162,15 @@ describe('validateURL', () => {
       'blob:https://evil.example/abc',
       'BLOB:https://evil.example/abc',
       ' javascript:alert(1)',
-      '\tdata:text/html,evil'
+      '\tdata:text/html,evil',
+      // Embedded ASCII controls: `new URL()` strips them, so the scheme
+      // must be gated on a control-stripped copy of the href.
+      'java\tscript:alert(1)',
+      'java\nscript:alert(1)',
+      '\u0001javascript:alert(1)',
+      'javascript\t:alert(1)'
     ]) {
-      it(`rejects ${url}`, () => {
+      it(`rejects ${JSON.stringify(url)}`, () => {
         expect(validateURL(url)).toBe(false)
       })
     }

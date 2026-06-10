@@ -3,6 +3,7 @@
 // (mousedown swallow, click-to-popover, middle-click new-tab,
 // touchend-to-popover).
 
+import { getMarkRange } from '@tiptap/core'
 import type { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
@@ -12,33 +13,6 @@ import { getDefaultController } from '../floating-popover'
 import type { HyperlinkAttributes } from '../hyperlink'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import type { LinkContext } from './types'
-
-/** Walk outward from `pos` to recover `[from, to)` of the hyperlink mark — used by `enableClickSelection`. */
-function getHyperlinkRangeAtPos(
-  view: EditorView,
-  pos: number,
-  type: MarkType
-): { from: number; to: number } | null {
-  const { doc } = view.state
-  const $pos = doc.resolve(pos)
-  const node = $pos.nodeAfter ?? $pos.nodeBefore
-  const mark = node?.marks.find((m) => m.type === type)
-  if (!mark) return null
-
-  let from = pos
-  let to = pos
-  while (from > 0) {
-    const prev = doc.nodeAt(from - 1)
-    if (!prev || !prev.marks.some((m) => m.eq(mark))) break
-    from -= 1
-  }
-  while (to < doc.content.size) {
-    const next = doc.nodeAt(to)
-    if (!next || !next.marks.some((m) => m.eq(mark))) break
-    to += 1
-  }
-  return { from, to }
-}
 
 function findLinkFromEvent(
   event: MouseEvent | TouchEvent,
@@ -101,13 +75,10 @@ function openHyperlinkToolbar(
     return true
   }
 
-  // Single slot-factory invocation routed through the canonical opener.
-  // The opener re-resolves the slot, builds the content, adopts under
-  // `'preview'`, and returns `false` if the host opted out (`null`
-  // return from the slot). Caret placement is gated on a successful
-  // mount because focusing the editor on opt-out scrolls the
-  // contenteditable into view on iOS Safari.
-  const mounted = openPreviewHyperlink(ctx.editor, {
+  // Route through the canonical opener (slot resolution + `'preview'` adopt).
+  // Caret placement is gated on a successful mount: focusing the editor on
+  // host opt-out scrolls the contenteditable into view on iOS Safari.
+  const mounted = openPreviewHyperlink({
     editor: ctx.editor,
     link,
     nodePos,
@@ -124,7 +95,7 @@ function openHyperlinkToolbar(
     // `enableClickSelection` expands caret-into-link to the full mark range; read-only
     // editors bypass this (mutating selection there would surprise selection-driven UIs).
     if (ctx.options.enableClickSelection && view.editable && from === to) {
-      const range = getHyperlinkRangeAtPos(view, clickPos, ctx.type)
+      const range = getMarkRange(view.state.doc.resolve(clickPos), ctx.type)
       if (range) {
         ctx.editor.chain().focus(clickPos).setTextSelection(range).run()
       } else {

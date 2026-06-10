@@ -25,7 +25,6 @@ const handleEditBack = (opts: EditHyperlinkOptions): void => {
     return
   }
   openPreviewHyperlink(
-    opts.editor,
     buildPreviewOptionsFromAnchor({
       editor: opts.editor,
       link: opts.link,

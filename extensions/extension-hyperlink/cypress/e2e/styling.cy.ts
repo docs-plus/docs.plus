@@ -24,7 +24,6 @@ const DOCUMENTED_CSS_VARS = [
   '--hl-shadow',
   '--hl-font',
   '--hl-font-size',
-  '--hl-z-index',
   '--hl-transition'
 ]
 
@@ -190,3 +189,6 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
     })
   })
 })
+
+// Module scope: keeps top-level consts out of the shared-global TS project.
+export {}

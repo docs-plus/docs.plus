@@ -191,3 +191,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     })
   })
 })
+
+// Module scope: keeps top-level selector consts (POPOVER/INPUT/…) from
+// colliding with special-schemes.cy.ts under Cypress's shared TS project.
+export {}

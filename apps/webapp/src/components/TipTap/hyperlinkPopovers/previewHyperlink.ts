@@ -93,8 +93,8 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
 /**
  * Build the desktop popover and wire its detachment observer. The
  * extension mounts the returned element through the controller; the
- * back-from-edit re-open is handled by `openEditHyperlink`'s stash, so
- * no explicit `onBack` re-show wiring is needed at this layer.
+ * prebuilt edit popover's Back closes over its own options and re-opens
+ * the preview, so no explicit `onBack` re-show wiring is needed here.
  */
 const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLElement => {
   const { link, editor, nodePos, attrs } = options
@@ -157,7 +157,7 @@ const buildDesktopPopover = (
   })
 
   editButton.addEventListener('click', () => {
-    openEditHyperlink(editor, { editor, link, validate, isAllowedUri, nodePos })
+    openEditHyperlink({ editor, link, validate, isAllowedUri, nodePos })
   })
 
   removeButton.addEventListener('click', () => {

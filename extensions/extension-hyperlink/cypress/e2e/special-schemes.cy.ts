@@ -134,3 +134,7 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
     })
   })
 })
+
+// Module scope: keeps top-level consts (POPOVER/typeThroughAutolink/…) from
+// colliding with create.cy.ts and autolink.cy.ts under the shared TS project.
+export {}

@@ -28,8 +28,8 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 
 ## Safety And Normalization
 
-- `isSafeHref` + `buildHrefGate` are the single XSS gate. `parseHTML` uses `getAttrs` + `isSafeHref(href)`; `clickHandler.ts` and the preview popover `window.open` fallback also call `isSafeHref`.
-- `buildHrefGate(options)` composes `isSafeHref` with user `isAllowedUri(href, { defaultValidate, defaultProtocol })`.
+- `isSafeHref` + `composeGate` are the single XSS gate. `parseHTML` uses `getAttrs` + `isSafeHref(href)`; `clickHandler.ts` and the preview popover `window.open` fallback also call `isSafeHref`.
+- `composeGate(options)` composes `isSafeHref` with user `isAllowedUri(href, { defaultValidate, protocols, defaultProtocol })`.
 - All write boundaries use the composed gate: `setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover submit, `parseHTML`.
 - `DANGEROUS_SCHEME_RE` stays internal to `validateURL.ts`. Call sites import `isSafeHref`, not the regex.
 - Every path that stores a hyperlink mark routes through `normalizeHref(raw)` or `normalizeLinkifyHref(match)`:
@@ -78,24 +78,24 @@ Moving selection across the link makes the floating toolbar think the user navig
 - Module-internal helpers (`getURLScheme`, `isBarePhone`, `normalizeLinkifyHref`, `Link`, `Title`) are reachable from siblings but not through the package barrel.
 - Internal constants live in `src/constants.ts` (`HYPERLINK_MARK_NAME`, `PREVENT_AUTOLINK_META`). Do not export them publicly.
 - `src/utils/findLinks.ts` contains pure linkify-result filtering with Bun tests in `utils/__tests__/findLinks.test.ts`.
-- v2.0.0 symbol renames (do not reintroduce the old names): `getUrlScheme → getURLScheme`, `isValidSpecialScheme → isRecognizedSpecialScheme`, `showPopover → openHyperlinkToolbar`, `TRAILING_PUNCT_RE → TRAILING_PUNCTUATION_RE`, `stripTrailingPunct → stripTrailingPunctuation`, `hrefTitle → hrefAnchor`, local `preventAutolink → shouldSkipAutolink`. `EditHyperlinkModalOptions` is a deprecated alias for `EditHyperlinkPopoverOptions`, dropped in 3.x.
+- v2.0.0 symbol renames (do not reintroduce the old names): `getUrlScheme → getURLScheme`, `isValidSpecialScheme → isRecognizedSpecialScheme`, `showPopover → openHyperlinkToolbar`, `TRAILING_PUNCT_RE → TRAILING_PUNCTUATION_RE`, `stripTrailingPunct → stripTrailingPunctuation`, `hrefTitle → hrefAnchor`, `buildHrefGate → composeGate`, local `preventAutolink → shouldSkipAutolink`. `EditHyperlinkModalOptions` is a deprecated alias for `EditHyperlinkPopoverOptions`, dropped in 3.x.
 
-## Floating Toolbar
+## Floating Popover
 
-- Toolbar is `position: fixed`. Virtual references must recompute live viewport coords on every call; never snapshot at popover open. Frozen rects make `computePosition` keep writing the same `top`/`left` while the anchor scrolls away.
-- DOM-anchored popovers pass `referenceElement: <a>` directly. Selection-anchored popovers pass a closure that calls `view.coordsAtPos(from)` on every invocation.
-- Edit popover anchors to the live `<a>`, not a `linkCoords` snapshot. Create popover passes a recomputing closure over captured ProseMirror `from`/`to`.
-- `floatingToolbar.ts` has a module-level singleton `currentToolbar`; creating a toolbar destroys the previous one.
-- Public exports are only `hideCurrentToolbar`, `updateCurrentToolbarPosition`, `FloatingToolbarInstance`, `FloatingToolbarOptions`. Keep `createFloatingToolbar` and `DEFAULT_OFFSET` module-private.
-- Regression coverage: `cypress/e2e/scroll-stickiness.cy.ts`. The singleton contract is pinned by `cypress/e2e/custom-popover.cy.ts`.
+- The engine is `@docs.plus/floating-popover`, a private workspace package bundled into `dist` (never externalized; see root AGENTS.md §Shared Library Config). `src/floating-popover/index.ts` is a shim re-export that keeps internal `../floating-popover` import paths stable. Each consuming extension bundles its own controller instance — no cross-package singleton.
+- Layered public API: Layer 1 — named openers `openPreviewHyperlink` / `openEditHyperlink` / `openCreateHyperlink` (slot resolution, prebuilt fallback, `null` opt-out). Layer 2 — `getDefaultController()` with `adopt` / `close` / `reposition` / `getState` / `subscribe`; `subscribe` does NOT fire with the current state on attach. Primitive — `createPopover` (self-adopts as `'unknown'`; openers re-adopt under `'preview' | 'edit' | 'create'`). Adopt destroys the previous owner — one popover at a time.
+- Popovers are `position: fixed` with inline `z-index` (override via `createPopover({ zIndex })`; `styles.css` carries no positioning). Virtual references must recompute live viewport coords on every call; never snapshot at popover open. Edit popover anchors to the live `<a>` via `findLiveEquivalentAnchor`; create popover passes a recomputing closure over captured ProseMirror `from`/`to`.
+- Ownership: openers call `setActivePopoverOwner(editor, popover)` after adopt; the mark's `onDestroy` calls `closeOwnedPopover(editor)`, which closes only when the controller's mounted element is the owned instance's element, and ownership clears as soon as the controller stops holding that popover. Destroying an editor must never close a sibling's or a manually adopted popover.
+- Regression coverage: `cypress/e2e/scroll-stickiness.cy.ts` (live anchoring), `custom-popover.cy.ts` (controller contract), `destroy-lifecycle.cy.ts` (ownership).
 
 ## Clean-Room Harness
 
-- Release-gate harness lives at `test/playground/`. Uses `Bun.serve` with HTML import, vanilla Tiptap, and StarterKit; no Vite. Bun 1.2+ bundles the HTML's `<script>` and `<link>` tags on demand.
+- Release-gate harness: `test/playground/main.ts` (editor fixture) + shared `@docs.plus/playground` (`docs-playground` serves the page shell; `setupPlayground` wires title/tokens/theme). Vanilla Tiptap + StarterKit; no Vite.
 - Playground loads built `dist/` + `styles.css` via the published exports map, **not** monorepo source.
 - Cypress specs cover create, preview-edit, autolink, xss-guards, styling, custom-popover, scroll-stickiness, and special-schemes. `_debug.cy.ts` is scratch and excluded from release counts.
-- Run with `bun run test`. `pretest` builds, `start-server-and-test` boots the Bun playground on `127.0.0.1:5173`, Cypress runs, then teardown. Append `?popover=custom` to use custom popover factories in custom-popover tests.
+- Run with `bun run test`. `pretest` builds, `start-server-and-test` boots `docs-playground` on `127.0.0.1:5173`, Cypress runs, then teardown. Manual dev: `bun run playground` (`bun --hot docs-playground`). Append `?popover=custom` for custom popover factories in custom-popover tests.
 - Support file is single-file `cypress/support/e2e.ts`. Do not split it; Cypress 15 JIT skipped split imports.
+- `cypress/tsconfig.json` extends `@docs.plus/playground/cypress/tsconfig.json` with `include: ["./**/*.ts"]` so tsc does not inherit the package `rootDir: src`.
 - Every `cypress/e2e/*.cy.ts` file must end with `export {}` to avoid top-level constant collisions under project-level type-checking.
 - Tests use `window._editor` + `window._hyperlink`. Use structural checks instead of `instanceof RegExp` because Cypress iframe realm breaks cross-realm `instanceof`.
 - Unit tests use Bun native runner: `bun test src`.
