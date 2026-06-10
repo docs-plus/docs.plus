@@ -1,0 +1,35 @@
+{
+  "name": "@docs.plus/playground",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internal dev/test-only clean-room playground harness for the @docs.plus/extension-* Cypress suites: the `docs-playground` server (page shell + theme) plus the browser `setupPlayground` helper. Consumers commit only their `main.ts` fixture. Never published, never imported by any src/.",
+  "type": "module",
+  "bin": {
+    "docs-playground": "./src/launch.ts"
+  },
+  "exports": {
+    "./setup": "./src/setup.ts",
+    "./tsconfig.json": "./tsconfig.json",
+    "./cypress/tsconfig.json": "./cypress/tsconfig.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "cypress"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "bun-types": "catalog:",
+    "eslint": "catalog:",
+    "globals": "catalog:",
+    "typescript": "catalog:"
+  }
+}

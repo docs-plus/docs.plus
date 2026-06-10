@@ -18,6 +18,9 @@ COPY package.json bun.lock* bunfig.toml ./
 COPY packages/email-templates ./packages/email-templates
 COPY packages/eslint-config ./packages/eslint-config
 COPY packages/release-tooling/package.json ./packages/release-tooling/
+# Dev/test-only playground harness (workspace:* devDep of the extensions);
+# manifest must resolve for --frozen-lockfile, never shipped in any runtime stage.
+COPY packages/playground/package.json ./packages/playground/
 # extensions declare @docs.plus/floating-popover: workspace:*, so its manifest must resolve for --frozen-lockfile
 COPY packages/floating-popover/package.json ./packages/floating-popover/
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/

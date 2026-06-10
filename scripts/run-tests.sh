@@ -3,10 +3,12 @@
 # Editor Test Suite Runner
 # Runs unit tests (Jest) + per-package clean-room suites, plus webapp E2E
 # (Cypress), saving results to a report file. The unit block runs:
-#   1. @docs.plus/extension-indent (Jest)
+#   1. @docs.plus/extension-indent (Jest + clean-room Cypress against dist/)
 #   2. @docs.plus/extension-hyperlink (clean-room Cypress against dist/)
 #   3. @docs.plus/extension-hypermultimedia (clean-room Cypress against dist/)
-#   4. @docs.plus/webapp (Jest)
+#   4. @docs.plus/extension-inline-code (clean-room Cypress against dist/)
+#   5. @docs.plus/extension-placeholder (clean-room Cypress against dist/)
+#   6. @docs.plus/webapp (Jest)
 #
 # Usage:
 #   bun run test                      # unit + E2E, report saved to Notes/
@@ -42,6 +44,8 @@ WEBAPP_DIR="$ROOT_DIR/apps/webapp"
 EXTENSION_INDENT_DIR="$ROOT_DIR/extensions/extension-indent"
 EXTENSION_HYPERLINK_DIR="$ROOT_DIR/extensions/extension-hyperlink"
 EXTENSION_HYPERMULTIMEDIA_DIR="$ROOT_DIR/extensions/extension-hypermultimedia"
+EXTENSION_INLINE_CODE_DIR="$ROOT_DIR/extensions/extension-inline-code"
+EXTENSION_PLACEHOLDER_DIR="$ROOT_DIR/extensions/extension-placeholder"
 REPORT_DIR="$ROOT_DIR/Notes"
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
 REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"
@@ -121,8 +125,8 @@ if $RUN_UNIT; then
   UNIT_EXIT=0
 
   cd "$EXTENSION_INDENT_DIR"
-  echo -e "${DIM}  → @docs.plus/extension-indent (Jest)${NC}"
-  if ! bun run test --verbose 2>&1 | tee -a "$REPORT"; then
+  echo -e "${DIM}  → @docs.plus/extension-indent (Jest + clean-room Cypress)${NC}"
+  if ! bun run test 2>&1 | tee -a "$REPORT"; then
     UNIT_EXIT=1
     echo ""
     echo -e "${RED}@docs.plus/extension-indent unit tests failed.${NC}"
@@ -130,7 +134,7 @@ if $RUN_UNIT; then
   echo ""
 
   # Clean-room E2E for @docs.plus/extension-hyperlink: boots its own
-  # Bun.serve playground (no Vite, no bundler config) against the built
+  # docs-playground clean-room harness against the built
   # dist/ and runs a self-contained Cypress suite. Runs in the unit block
   # because it's a per-package release gate, not part of the webapp's
   # shared-server E2E fleet.
@@ -149,6 +153,24 @@ if $RUN_UNIT; then
     UNIT_EXIT=1
     echo ""
     echo -e "${RED}@docs.plus/extension-hypermultimedia clean-room E2E failed.${NC}"
+  fi
+  echo ""
+
+  cd "$EXTENSION_INLINE_CODE_DIR"
+  echo -e "${DIM}  → @docs.plus/extension-inline-code (clean-room Cypress)${NC}"
+  if ! bun run test 2>&1 | tee -a "$REPORT"; then
+    UNIT_EXIT=1
+    echo ""
+    echo -e "${RED}@docs.plus/extension-inline-code clean-room E2E failed.${NC}"
+  fi
+  echo ""
+
+  cd "$EXTENSION_PLACEHOLDER_DIR"
+  echo -e "${DIM}  → @docs.plus/extension-placeholder (clean-room Cypress)${NC}"
+  if ! bun run test 2>&1 | tee -a "$REPORT"; then
+    UNIT_EXIT=1
+    echo ""
+    echo -e "${RED}@docs.plus/extension-placeholder clean-room E2E failed.${NC}"
   fi
   echo ""
 

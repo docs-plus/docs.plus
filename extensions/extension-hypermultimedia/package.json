@@ -1,7 +1,7 @@
 {
   "name": "@docs.plus/extension-hypermultimedia",
   "version": "2.0.0",
-  "description": "Insert embeded multimedia components for docs.plus",
+  "description": "Tiptap extension for embedded multimedia: images, audio, video, YouTube, Vimeo, SoundCloud, Loom, and X — with resize, captions, and a media toolbar",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,6 +16,7 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
   "author": "Hossein Marzban",
@@ -38,7 +39,8 @@
     "dev": "bunx tsup --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "playground": "bun --hot ./test/playground/server.ts",
+    "typecheck": "tsc --noEmit",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5174",
     "pretest": "bun run build",
     "test": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:run",
     "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:run",
@@ -59,7 +61,7 @@
   "keywords": [
     "tiptap",
     "tiptap extension",
-    "insert Media",
+    "embed",
     "multimedia",
     "floating-ui",
     "image",
@@ -83,6 +85,7 @@
   "devDependencies": {
     "@docs.plus/extension-hyperlink": "workspace:*",
     "@docs.plus/floating-popover": "workspace:*",
+    "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@tiptap/core": "catalog:",
     "@tiptap/pm": "catalog:",

@@ -28,6 +28,9 @@ COPY apps/hocuspocus.server ./apps/hocuspocus.server
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/release-tooling/package.json ./packages/release-tooling/
+# Dev/test-only playground harness (workspace:* devDep of the extensions);
+# manifest must resolve for --frozen-lockfile, never shipped in any runtime stage.
+COPY packages/playground/package.json ./packages/playground/
 COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
 # Full source: migration-extensions imports these; package "main" points at dist/ (not in repo).
 COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia/

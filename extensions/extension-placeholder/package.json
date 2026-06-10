@@ -1,7 +1,7 @@
 {
   "name": "@docs.plus/extension-placeholder",
-  "version": "0.1.0",
-  "description": "A performance-optimized TipTap placeholder extension using O(1) cursor-based decoration",
+  "version": "2.0.0",
+  "description": "A performance-optimized Tiptap placeholder extension using O(1) cursor-based decoration",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,6 +18,9 @@
     },
     "./package.json": "./package.json"
   },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
@@ -33,8 +36,16 @@
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5177",
+    "pretest": "bun run build",
+    "test": "bunx start-server-and-test playground http://127.0.0.1:5177 cypress:run",
+    "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5177 cypress:run",
+    "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5177 cypress:open",
+    "cypress:run": "bunx cypress run",
+    "cypress:open": "bunx cypress open",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
     "prepack": "release-prepack",
     "prepublishOnly": "release-preflight"
   },
@@ -58,11 +69,16 @@
     "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
+    "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@tiptap/core": "catalog:",
     "@tiptap/pm": "catalog:",
-    "typescript": "catalog:",
+    "@tiptap/starter-kit": "catalog:",
+    "cypress": "catalog:",
+    "cypress-real-events": "catalog:",
+    "eslint": "catalog:",
+    "start-server-and-test": "catalog:",
     "tsup": "catalog:",
-    "eslint": "catalog:"
+    "typescript": "catalog:"
   }
 }

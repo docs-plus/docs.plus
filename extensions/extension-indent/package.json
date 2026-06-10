@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-indent",
-  "version": "0.2.0",
+  "version": "2.0.0",
   "description": "A Tiptap extension for managing text indentation in documents",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -21,6 +21,9 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-indent#readme",
   "bugs": {
     "url": "https://github.com/docs-plus/docs.plus/issues"
@@ -33,9 +36,17 @@
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
-    "test": "jest --config jest.config.cjs",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5175",
+    "test:unit": "jest --config jest.config.cjs",
+    "pretest": "bun run build",
+    "test": "bun run test:unit && bunx start-server-and-test playground http://127.0.0.1:5175 cypress:run",
+    "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5175 cypress:run",
+    "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5175 cypress:open",
+    "cypress:run": "bunx cypress run",
+    "cypress:open": "bunx cypress open",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
     "prepack": "release-prepack",
     "prepublishOnly": "release-preflight"
   },
@@ -62,11 +73,15 @@
     "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
+    "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@tiptap/core": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
+    "cypress": "catalog:",
+    "cypress-real-events": "catalog:",
     "eslint": "catalog:",
+    "start-server-and-test": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:"
   }

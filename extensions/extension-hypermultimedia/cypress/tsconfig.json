@@ -1,0 +1,4 @@
+{
+  "extends": "@docs.plus/playground/cypress/tsconfig.json",
+  "include": ["./**/*.ts"]
+}

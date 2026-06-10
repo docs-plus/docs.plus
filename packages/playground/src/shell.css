@@ -1,0 +1,157 @@
+/* Shared playground shell: page card, header, theme toggle, footer, #editor.
+   Per-extension tokens (--hl-* / --hm-*) are injected by setupPlayground(). */
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+/* Background lives on <html> so it fills the viewport — <body> shrinks to its
+   content and would otherwise leak white below the card. */
+html {
+  background: #f9fafb;
+  color: #111827;
+  min-height: 100%;
+}
+
+html[data-theme='dark'] {
+  background: #0b1220;
+  color: #f3f4f6;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+main {
+  width: 100%;
+  max-width: 720px;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+html[data-theme='dark'] main {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+html[data-theme='dark'] h1 {
+  color: #9ca3af;
+}
+
+.theme-toggle {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  background: transparent;
+  color: inherit;
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1;
+  min-width: 4rem;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: #f3f4f6;
+}
+
+html[data-theme='dark'] .theme-toggle {
+  border-color: #374151;
+}
+
+html[data-theme='dark'] .theme-toggle:hover {
+  background: #374151;
+}
+
+#editor {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  min-height: 200px;
+  padding: 1rem;
+}
+
+html[data-theme='dark'] #editor {
+  border-color: #374151;
+}
+
+#editor:focus-within {
+  border-color: #2563eb;
+  outline: none;
+}
+
+html[data-theme='dark'] #editor:focus-within {
+  border-color: #60a5fa;
+}
+
+#editor .ProseMirror {
+  outline: none;
+  min-height: 180px;
+}
+
+#editor .ProseMirror p {
+  margin: 0.5em 0;
+}
+
+.footer {
+  width: 100%;
+  max-width: 720px;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+html[data-theme='dark'] .footer {
+  color: #9ca3af;
+}
+
+.footer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+html[data-theme='dark'] .footer a:hover {
+  color: #60a5fa;
+}

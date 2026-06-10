@@ -37,9 +37,10 @@
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "playground": "bun --hot ./test/playground/server.ts",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5173",
     "test:unit": "bun test src",
     "test:unit:watch": "bun test --watch src",
     "pretest": "bun run build",
@@ -82,6 +83,7 @@
   },
   "devDependencies": {
     "@docs.plus/floating-popover": "workspace:*",
+    "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@eslint/js": "catalog:",
     "@tiptap/core": "catalog:",

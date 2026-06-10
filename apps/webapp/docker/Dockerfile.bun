@@ -42,6 +42,9 @@ COPY package.json bun.lock* ./
 COPY tsconfig.base.json tsup.base.ts ./
 COPY packages/eslint-config ./packages/eslint-config
 COPY packages/release-tooling/package.json ./packages/release-tooling/
+# Dev/test-only playground harness (workspace:* devDep of the extensions);
+# manifest must resolve for --frozen-lockfile, never shipped in any runtime stage.
+COPY packages/playground/package.json ./packages/playground/
 
 # Copy ALL workspace package.json files (required for bun lockfile resolution)
 COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
