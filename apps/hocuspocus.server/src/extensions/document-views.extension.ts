@@ -1,22 +1,11 @@
 /**
- * Document Views Extension for Hocuspocus (v2 - pgmq + Anonymous Auth)
- *
- * Tracks document views using Hocuspocus connection lifecycle.
- * Zero frontend changes required - views recorded automatically.
- *
- * Features:
- *   - pgmq queue for high concurrency (no contention)
- *   - Anonymous user support (Supabase Anonymous Auth)
- *   - Duration tracking via view_id
- *
- * Flow:
- *   1. onConnect: Enqueue view to pgmq (returns view_id)
- *   2. pg_cron worker processes queue every 10 seconds
- *   3. onDisconnect: Update duration by view_id
+ * Records a document view per Hocuspocus connection and enqueues it to pgmq
+ * (pg_cron drains the queue); view duration is patched on disconnect by id.
  */
 
-import type { Extension, onConnectPayload, onDisconnectPayload } from '@hocuspocus/server'
+import type { connectedPayload, Extension, onDisconnectPayload } from '@hocuspocus/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { isbot } from 'isbot'
 
 import { logger } from '../lib/logger'
 
@@ -44,9 +33,6 @@ const getClient = (): SupabaseClient | null => {
   return supabase
 }
 
-/**
- * Enqueue view to pgmq (fast, ~1ms, no contention)
- */
 const enqueueView = async (
   ctx: ViewContext,
   userId?: string,
@@ -76,9 +62,6 @@ const enqueueView = async (
   }
 }
 
-/**
- * Update duration by view_id
- */
 const updateDuration = async (viewId: string, durationMs: number): Promise<void> => {
   const client = getClient()
   if (!client || !viewId) return
@@ -98,13 +81,16 @@ const normalizeDevice = (d?: string): 'desktop' | 'mobile' | 'tablet' => {
   return v === 'mobile' || v === 'tablet' ? v : 'desktop'
 }
 
-/**
- * Document Views Extension (v2 - pgmq + Anonymous Auth)
- */
 export class DocumentViewsExtension implements Extension {
-  async onConnect({ documentName, context, socketId }: onConnectPayload) {
+  // `connected` runs after onAuthenticate, so context.user is populated;
+  // onConnect runs pre-auth and would record every view as a guest.
+  async connected({ context, requestHeaders, documentName, socketId }: connectedPayload) {
+    // Crawlers/AI bots that render the page open this socket like a browser.
+    // The user-agent is the standard signal to keep them out of analytics.
+    const userAgent = requestHeaders['user-agent']
+    if (!userAgent || isbot(userAgent)) return
+
     const userId = context?.user?.sub || null
-    // Check if user is anonymous (Supabase Anonymous Auth)
     const isAnonymous = context?.user?.is_anonymous || false
     const sessionId = userId || `hp_${socketId}_${Date.now()}`
 
@@ -117,7 +103,7 @@ export class DocumentViewsExtension implements Extension {
 
     context.viewContext = viewContext
 
-    // Enqueue view (fast, returns view_id for duration update)
+    // Fire-and-forget so the analytics write never sits in the connection path.
     enqueueView(viewContext, userId, isAnonymous).then((viewId) => {
       if (viewId) viewContext.viewId = viewId
     })
@@ -127,7 +113,8 @@ export class DocumentViewsExtension implements Extension {
     const ctx = context?.viewContext as ViewContext | undefined
     if (!ctx?.viewId) return
 
-    updateDuration(ctx.viewId, Date.now() - ctx.connectedAt)
+    // Fire-and-forget so teardown never blocks on the duration write.
+    void updateDuration(ctx.viewId, Date.now() - ctx.connectedAt)
   }
 }
 

@@ -65,6 +65,7 @@
     "bullmq": "^5.77.2",
     "hono": "^4.12.22",
     "ioredis": "^5.10.1",
+    "isbot": "^5.1.42",
     "jsonwebtoken": "^9.0.3",
     "metascraper": "^5.50.3",
     "metascraper-author": "^5.50.1",
