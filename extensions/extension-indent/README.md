@@ -1,29 +1,28 @@
 # @docs.plus/extension-indent
 
-Tiptap extension that adds **line-prefix** indent and outdent: each step inserts or removes a configured string (`indentChars`, default two spaces) at line starts when the caret (or each line of a multi-line selection) sits in an allowed **textblock + parent** context (see `allowedIndentContexts` below).
+<a href="https://docs.plus"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/apps/webapp/public/badges/badge-docsplus-dark.svg"><img alt="docs.plus" height="20" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/apps/webapp/public/badges/badge-docsplus.svg"></picture></a>
+[![Version](https://img.shields.io/npm/v/@docs.plus/extension-indent.svg?label=version)](https://www.npmjs.com/package/@docs.plus/extension-indent)
+[![Downloads](https://img.shields.io/npm/dm/@docs.plus/extension-indent.svg)](https://npmcharts.com/compare/@docs.plus/extension-indent)
+[![License](https://img.shields.io/npm/l/@docs.plus/extension-indent.svg)](https://www.npmjs.com/package/@docs.plus/extension-indent)
+[![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 
-By default, only **`paragraph`** under **`doc`** or **`blockquote`** is allowed. Any other textblock (e.g. `heading`, `codeBlock`) is excluded until you add an explicit rule. **Tab / Shift-Tab** still run first through list and table behavior when those extensions are present (see [Keyboard](#keyboard) below).
+Tiptap extension for character-based indentation: Tab inserts `indentChars` (default two spaces) at the caret or at the start of each selected line, and Shift-Tab removes it.
 
-## Requirements
+Tab already belongs to lists (sink/lift), tables (cell navigation), and the browser (focus). This extension resolves the key in one predictable order — list, table, then literal indent — and runs literal indent only in contexts you allowlist via [`allowedIndentContexts`](#allowedindentcontexts): paragraphs under `doc` or `blockquote` by default, with headings, code blocks, and every other textblock excluded until you add a rule.
 
-Peer dependencies (your app should already include them):
+## Install
 
-- `@tiptap/core` ^3.20.4
-- `@tiptap/pm` ^3.20.4
-
-Optional: `@tiptap/extension-table` for cell navigation on Tab; list extensions (`listItem` / `taskItem`) for sink/lift before literal indent.
-
-## Installation
-
-In this monorepo, from the root:
-
-```bash
-bun install
+```sh
+npm install @docs.plus/extension-indent
+# or
+bun add @docs.plus/extension-indent
 ```
 
-Published installs use the same package name; align TipTap versions with the peer range above.
+Requires `@tiptap/core` and `@tiptap/pm` — see `peerDependencies`.
 
-## Usage
+Optional: `@tiptap/extension-table` enables cell navigation on Tab; list extensions (`listItem` / `taskItem`) enable sink/lift before literal indent.
+
+## Quickstart
 
 ```ts
 import { Editor } from '@tiptap/core'
@@ -35,15 +34,41 @@ new Editor({
 })
 ```
 
-`Indent.configure({})` merges with extension defaults (see [Options](#options)).
+`Indent.configure({})` merges with the defaults in [Options](#options).
 
-### `allowedIndentContexts`
+## Options
 
-Literal `indent()` / `outdent()` only run when the innermost textblock at the caret/line and its **immediate parent** match one of the rules. Each rule is `{ textblock: string, parent: string }` (TipTap / ProseMirror `NodeType.name`).
+| Option                  | Type                           | Default                                | Description                                                                                        |
+| ----------------------- | ------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `indentChars`           | `string`                       | `'  '` (two spaces)                    | Inserted or removed per step (often `'\t'`).                                                       |
+| `enabled`               | `boolean`                      | `true`                                 | Disable behavior without removing the extension.                                                   |
+| `allowedIndentContexts` | `Array<{ textblock, parent }>` | `paragraph` under `doc` / `blockquote` | Full allowlist for literal indent/outdent — see [`allowedIndentContexts`](#allowedindentcontexts). |
 
-The list is a **full** allowlist: TipTap merges `configure({ … })` into defaults — if you pass `allowedIndentContexts`, it **replaces** the default array; list every `(textblock, parent)` pair you need.
+## Commands
 
-| You want                                       | Add / use rules like                                                                               |
+```ts
+editor.commands.indent()
+editor.commands.outdent()
+```
+
+Both respect `enabled` and the same `allowedIndentContexts` rules as the keyboard path.
+
+## Keyboard shortcuts
+
+| Shortcut    | Action                                                                                                    |
+| ----------- | --------------------------------------------------------------------------------------------------------- |
+| `Tab`       | `sinkListItem` (`listItem` / `taskItem`) → `goToNextCell` (when a table extension is loaded) → `indent()` |
+| `Shift-Tab` | `liftListItem` → `goToPreviousCell` → `outdent()`                                                         |
+
+The extension registers at priority `25`, below the Tiptap default of `100`, so other extensions' own Tab handlers win first. When none of the three steps applies, the handler returns `false` and the keypress falls through to other extensions and the browser default — Tab focus navigation keeps working.
+
+## `allowedIndentContexts`
+
+Literal `indent()` / `outdent()` run only when the innermost textblock at the caret (or at each line of a selection) and its **immediate parent** match one of the rules. Each rule is `{ textblock: string, parent: string }` (Tiptap / ProseMirror `NodeType.name`).
+
+The list is a full allowlist, not a merge: passing `allowedIndentContexts` to `configure()` replaces the default array, so list every pair you need.
+
+| You want                                       | Rules                                                                                              |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Body + blockquote paragraphs (package default) | `{ textblock: 'paragraph', parent: 'doc' }` and `{ textblock: 'paragraph', parent: 'blockquote' }` |
 | Body paragraphs only                           | Only `paragraph` + `doc`                                                                           |
@@ -52,68 +77,38 @@ The list is a **full** allowlist: TipTap merges `configure({ … })` into defaul
 | Table cell paragraphs                          | `{ textblock: 'paragraph', parent: 'tableCell' }` (if your schema uses it)                         |
 | Headings                                       | e.g. `{ textblock: 'heading', parent: 'doc' }` — type name is lowercase `heading`, not HTML `H1`   |
 
-Pass **`[]`** to turn off **literal** indent/outdent everywhere (Tab can still sink/lift lists or move table cells).
+Pass `[]` to turn off literal indent/outdent everywhere — Tab still sinks lists and moves table cells.
 
-**Migration:** older releases used `allowedParentTypes` (parent names for **`paragraph`** only). Replace each parent `p` with `{ textblock: 'paragraph', parent: p }`. If you used `allowedNodeTypes`, same migration.
+### Migrating from 0.1.x
 
-### Options
-
-| Option                  | Type                           | Default                       | Description                                                            |
-| ----------------------- | ------------------------------ | ----------------------------- | ---------------------------------------------------------------------- |
-| `indentChars`           | `string`                       | `'  '`                        | Inserted or removed per step (often `'\t'` or two spaces).             |
-| `enabled`               | `boolean`                      | `true`                        | Disable behavior without removing the extension.                       |
-| `allowedIndentContexts` | `Array<{ textblock, parent }>` | body + blockquote `paragraph` | Full allowlist of textblock + parent pairs for literal indent/outdent. |
-
-### Keyboard
-
-| Key           | Order of handling                                                                                     |
-| ------------- | ----------------------------------------------------------------------------------------------------- |
-| **Tab**       | `sinkListItem` (`listItem` / `taskItem`) → `goToNextCell` (if table extension is loaded) → `indent()` |
-| **Shift-Tab** | `liftListItem` → `goToPreviousCell` → `outdent()`                                                     |
-
-The extension registers with **priority `25`** so delegated commands run first when applicable.
-
-### Commands
+`allowedNodeTypes` (a flat list of type names matched against the node at the caret, where an empty list allowed every context) is gone. Map each name to one pair per parent you need:
 
 ```ts
-editor.commands.indent()
-editor.commands.outdent()
+// 0.1.x
+Indent.configure({ allowedNodeTypes: ['paragraph'] })
+// 2.x
+Indent.configure({
+  allowedIndentContexts: [{ textblock: 'paragraph', parent: 'doc' }]
+})
 ```
 
-These respect `enabled` and the same `allowedIndentContexts` rules as the keyboard path.
+`[]` now disables literal indent instead of allowing it everywhere.
 
-### Multiline selections
+## Multiline selections
 
-Selected ranges are split into **visual lines** using `doc.textBetween(from, to, '\n')` (a single newline between blocks). **Every** line must match `allowedIndentContexts`; otherwise the command returns `false` and the document is unchanged.
+Selected ranges split into visual lines using `doc.textBetween(from, to, '\n')`. Every line must match `allowedIndentContexts`; otherwise the command returns `false` and the document is unchanged. Lines indent and outdent at their starts, even when the selection begins or ends mid-line — select-all included.
 
-### Empty selection: outdent
+## Outdent at the caret
 
-**Outdent** can remove:
+With an empty selection, `outdent()` removes:
 
-- leading `indentChars` at the **start of the current line**, or
-- a trailing prefix of `indentChars` **immediately before the caret** (e.g. undo a tab just inserted without moving to column 0).
+- the line's leading `indentChars` when the caret sits at the start of an indented line, or
+- one `indentChars` immediately before the caret elsewhere — undoes a just-inserted tab without moving to column 0.
 
-## Testing
+## Contributing
 
-From `extensions/extension-indent`:
-
-```bash
-bun run test
-```
-
-Jest + jsdom; config in `jest.config.cjs` (Jest stack from the monorepo root per workspace rules). Fixtures typically use `StarterKit` like a real app.
-
-End-to-end coverage lives in `apps/webapp/cypress/e2e/editor/indent/` against the production editor stack.
-
-## Development
-
-```bash
-bun install
-bun run build
-bun run dev
-bun run lint
-```
+Bug reports and PRs welcome. Setup, test commands, and the playground harness live in [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/CONTRIBUTING.md).
 
 ## License
 
-MIT
+MIT — see [LICENSE](https://github.com/docs-plus/docs.plus/blob/main/LICENSE).

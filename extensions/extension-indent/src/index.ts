@@ -1,1 +1,1 @@
-export { Indent, type IndentContext, type IndentContextRule, type IndentOptions } from './indent'
+export { Indent, type IndentContextRule, type IndentOptions } from './indent'

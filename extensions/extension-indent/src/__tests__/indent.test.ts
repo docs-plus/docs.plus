@@ -2,7 +2,13 @@
  * @jest-environment jsdom
  */
 import { afterEach, describe, expect, it } from '@jest/globals'
-import { Editor, type JSONContent } from '@tiptap/core'
+import {
+  type CommandProps,
+  Editor,
+  Extension,
+  type JSONContent,
+  type RawCommands
+} from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { docPosAtChunkOffset, Indent, indentContextAtPos, lineTextsWithOffsets } from '../indent'
 
@@ -342,6 +348,57 @@ describe('@docs.plus/extension-indent', () => {
       { name: 'paragraph', text: '  P' }
     ])
     expect(editor.commands.outdent()).toBe(false)
+  })
+
+  /** Real keydown through the view's keymap pipeline, like a browser Tab press. */
+  function pressTab(editor: Editor, shiftKey = false): boolean {
+    const event = new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', shiftKey })
+    return editor.view.someProp('handleKeyDown', (f) => f(editor.view, event)) ?? false
+  }
+
+  /** Table-style fake: records can()-probe vs dispatched runs of its cell-nav commands. */
+  function createCellNavEditor(runs: string[]): Editor {
+    const record =
+      (name: string) =>
+      () =>
+      ({ dispatch }: CommandProps) => {
+        runs.push(`${name}:${dispatch ? 'real' : 'dry'}`)
+        return true
+      }
+    const FakeCellNav = Extension.create({
+      name: 'fakeCellNav',
+      addCommands() {
+        return {
+          goToNextCell: record('next'),
+          goToPreviousCell: record('prev')
+        } as unknown as Partial<RawCommands>
+      }
+    })
+    return track(
+      new Editor({
+        extensions: [StarterKit, FakeCellNav, Indent],
+        content: '<p>A</p>',
+        element: document.createElement('div')
+      })
+    )
+  }
+
+  it('delegates Tab to goToNextCell via editor.can() instead of inserting indent chars', () => {
+    const runs: string[] = []
+    const editor = createCellNavEditor(runs)
+    editor.commands.setTextSelection(1)
+    expect(pressTab(editor)).toBe(true)
+    expect(runs).toEqual(['next:dry', 'next:real'])
+    expect(editor.getText()).toBe('A')
+  })
+
+  it('delegates Shift-Tab to goToPreviousCell via editor.can() before literal outdent', () => {
+    const runs: string[] = []
+    const editor = createCellNavEditor(runs)
+    editor.commands.setTextSelection(1)
+    expect(pressTab(editor, true)).toBe(true)
+    expect(runs).toEqual(['prev:dry', 'prev:real'])
+    expect(editor.getText()).toBe('A')
   })
 
   it('indent prefixes each line across paragraphs (multiline uses \\n block separator)', () => {

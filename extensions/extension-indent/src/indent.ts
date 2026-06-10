@@ -27,12 +27,9 @@ export function lineTextsWithOffsets(chunk: string): Array<{ offset: number; tex
 }
 
 /**
- * Map a character offset in `chunk` (`doc.textBetween(from, to, blockSeparator)`) to the document
- * position where that character begins.
- *
- * Implemented with forward integer positions and repeated `textBetween(from, p)` (not incremental
- * `textBetween(p-1, p)` slices — those do not compose to the same cumulative lengths across arbitrary
- * block boundaries in all cases). Worst-case cost grows with selection span; normal selections are fine.
+ * Map a character offset in `doc.textBetween(from, to, blockSeparator)` output to the document
+ * position where that character begins. Binary search over the monotonic `textBetween(from, p).length`;
+ * each probe re-measures from `from` because per-position slices don't compose across blocks.
  * @internal exported for unit tests
  */
 export function docPosAtChunkOffset(
@@ -43,16 +40,20 @@ export function docPosAtChunkOffset(
   blockSeparator: string = MULTILINE_BLOCK_SEP
 ): number {
   if (chunkOffset <= 0) return from
-  for (let p = from; p <= to; p++) {
-    if (doc.textBetween(from, p, blockSeparator).length >= chunkOffset) return p
+  let lo = from
+  let hi = to
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (doc.textBetween(from, mid, blockSeparator).length >= chunkOffset) hi = mid
+    else lo = mid + 1
   }
-  return to
+  return lo
 }
 
 /** Table commands come from @tiptap/extension-table when present — not declared on core Editor types. */
 function tryGoToNextCell(editor: Editor): boolean {
   const commands = editor.commands as { goToNextCell?: () => boolean }
-  const can = editor.can as { goToNextCell?: () => boolean }
+  const can = editor.can() as { goToNextCell?: () => boolean }
   if (can.goToNextCell?.()) {
     return commands.goToNextCell?.() ?? false
   }
@@ -61,7 +62,7 @@ function tryGoToNextCell(editor: Editor): boolean {
 
 function tryGoToPreviousCell(editor: Editor): boolean {
   const commands = editor.commands as { goToPreviousCell?: () => boolean }
-  const can = editor.can as { goToPreviousCell?: () => boolean }
+  const can = editor.can() as { goToPreviousCell?: () => boolean }
   if (can.goToPreviousCell?.()) {
     return commands.goToPreviousCell?.() ?? false
   }
@@ -144,14 +145,11 @@ export interface IndentOptions {
   enabled: boolean
 
   /**
-   * Full allowlist of **`(textblock, parent)`** contexts where literal indent/outdent runs. Each rule is
-   * one pair: innermost textblock `type.name` at the caret/line and its immediate parent block’s
-   * `type.name`. There are no implicit defaults merged into a partial list — configure every context
-   * you need. Pass **`[]`** to disable literal indent everywhere (Tab can still sink/lift lists or move
-   * table cells).
+   * Full `(textblock, parent)` type-name allowlist for literal indent/outdent — `configure()` replaces
+   * the whole list (no merge). `[]` disables literal indent; Tab still sinks lists and moves table cells.
    * @default `paragraph` under `doc`, and `paragraph` under `blockquote`
    */
-  allowedIndentContexts?: IndentContextRule[]
+  allowedIndentContexts: IndentContextRule[]
 }
 
 declare module '@tiptap/core' {
@@ -171,43 +169,75 @@ declare module '@tiptap/core' {
 
 function contextMatchesAllowedIndent(
   ctx: IndentContext | null,
-  rules: IndentContextRule[] | undefined
+  rules: IndentContextRule[]
 ): boolean {
-  const list = rules ?? []
-  if (!ctx || list.length === 0) return false
-  return list.some((r) => r.textblock === ctx.textblockName && r.parent === ctx.parentName)
+  if (!ctx || rules.length === 0) return false
+  return rules.some((r) => r.textblock === ctx.textblockName && r.parent === ctx.parentName)
 }
 
 function isIndentContextAllowed(
   state: EditorState,
   pos: number,
-  rules: IndentContextRule[] | undefined
+  rules: IndentContextRule[]
 ): boolean {
   const ctx = indentContextAtPos(state.doc, pos)
   return contextMatchesAllowedIndent(ctx, rules)
 }
 
-function isCaretContextAllowed(
-  state: EditorState,
-  rules: IndentContextRule[] | undefined
-): boolean {
+function isCaretContextAllowed(state: EditorState, rules: IndentContextRule[]): boolean {
   return isIndentContextAllowed(state, state.selection.from, rules)
 }
 
+/** A selected visual line: its full text from line start and resolved document start position. */
+type IndentLine = { text: string; pos: number }
+
 /**
- * One `textBetween` + parse; returns `false` if any line starts in a disallowed context.
+ * Selections can begin mid-line or on a block boundary (`AllSelection` is `from` 0 at depth 0);
+ * walk to the innermost textblock and return its content start so multiline ops always target
+ * the line start. Returns `null` when no textblock exists at or after `pos`.
+ */
+function clampToTextblockStart(doc: Node, pos: number): number | null {
+  let p = pos
+  for (;;) {
+    const $p = doc.resolve(p)
+    for (let d = $p.depth; d > 0; d--) {
+      if ($p.node(d).isTextblock) return $p.start(d)
+    }
+    const node = doc.nodeAt(p)
+    if (!node) return null
+    p += node.isLeaf ? node.nodeSize : 1
+  }
+}
+
+/** Outdent deletes by position, not by measured chars: hop zero-width leaves (e.g. hardBreak). */
+function skipZeroWidthLeaves(doc: Node, pos: number): number {
+  let p = pos
+  for (let node = doc.nodeAt(p); node && node.isLeaf && !node.isText; node = doc.nodeAt(p)) {
+    p += node.nodeSize
+  }
+  return p
+}
+
+/**
+ * One `textBetween` + parse; resolves each line's document position once (reused by the dispatch
+ * loops). Line 1 is clamped to its textblock start (the selection may begin mid-line) and each
+ * line's text is re-measured to its block end so leading-indent checks see the full line even
+ * when the selection truncates it. Returns `false` if any line starts in a disallowed context.
  */
 function multilineLinesIfAllowed(
   state: EditorState,
   from: number,
   to: number,
-  rules: IndentContextRule[] | undefined
-): false | Array<{ offset: number; text: string }> {
+  rules: IndentContextRule[]
+): false | IndentLine[] {
   const chunk = state.doc.textBetween(from, to, MULTILINE_BLOCK_SEP)
-  const lines = lineTextsWithOffsets(chunk)
-  for (const { offset } of lines) {
-    const lineStart = docPosAtChunkOffset(state.doc, from, to, offset, MULTILINE_BLOCK_SEP)
-    if (!isIndentContextAllowed(state, lineStart, rules)) return false
+  const lines: IndentLine[] = []
+  for (const { offset } of lineTextsWithOffsets(chunk)) {
+    const rawPos = docPosAtChunkOffset(state.doc, from, to, offset, MULTILINE_BLOCK_SEP)
+    const pos = lines.length === 0 ? clampToTextblockStart(state.doc, rawPos) : rawPos
+    if (pos === null || !isIndentContextAllowed(state, pos, rules)) return false
+    const $pos = state.doc.resolve(pos)
+    lines.push({ text: state.doc.textBetween(pos, $pos.end()), pos })
   }
   return lines
 }
@@ -254,16 +284,7 @@ export const Indent = Extension.create<IndentOptions>({
           const lines = linesOrFalse
 
           if (dispatch) {
-            const positions = lines.map(({ offset }) =>
-              docPosAtChunkOffset(
-                state.doc,
-                selection.from,
-                selection.to,
-                offset,
-                MULTILINE_BLOCK_SEP
-              )
-            )
-            positions.sort((a, b) => b - a)
+            const positions = lines.map(({ pos }) => pos).sort((a, b) => b - a)
             for (const p of positions) {
               tr.insertText(indentChars, p, p)
             }
@@ -288,17 +309,22 @@ export const Indent = Extension.create<IndentOptions>({
             if (!$cursor) return false
 
             const cursorPos = $cursor.pos
-            const lineStart = state.doc.resolve(cursorPos).start()
+            const lineStart = $cursor.start()
             const textBeforeCursor = state.doc.textBetween(lineStart, cursorPos)
             const isAtLineStart = cursorPos === lineStart
 
+            // Deletes count positions while the checks count chars; the window equality
+            // refuses to delete zero-width leaves (e.g. hardBreak) in place of indent chars.
             const removeTrailing =
               textBeforeCursor.length >= indentChars.length &&
-              textBeforeCursor.endsWith(indentChars)
+              state.doc.textBetween(cursorPos - indentChars.length, cursorPos) === indentChars
+            // At line start there is no text before the cursor, so look forward at
+            // the line's own leading indent (else Shift-Tab at line start is a no-op).
+            const lineLeading = isAtLineStart ? state.doc.textBetween(lineStart, $cursor.end()) : ''
             const removeLeading =
               isAtLineStart &&
-              textBeforeCursor.length >= indentChars.length &&
-              textBeforeCursor.startsWith(indentChars)
+              lineLeading.startsWith(indentChars) &&
+              state.doc.textBetween(lineStart, lineStart + indentChars.length) === indentChars
 
             if (!removeTrailing && !removeLeading) {
               return false
@@ -320,27 +346,16 @@ export const Indent = Extension.create<IndentOptions>({
           if (linesOrFalse === false) return false
           const lines = linesOrFalse
 
-          const canOutdentAnyLine = lines.some(({ text }) => text.startsWith(indentChars))
-          if (!canOutdentAnyLine) {
+          const toDelete = lines
+            .filter(({ text }) => text.startsWith(indentChars))
+            .map(({ pos }) => skipZeroWidthLeaves(state.doc, pos))
+            .filter((p) => state.doc.textBetween(p, p + indentChars.length) === indentChars)
+          if (toDelete.length === 0) {
             return false
           }
 
           if (dispatch) {
-            const toDelete: number[] = []
-            for (const { offset, text } of lines) {
-              if (!text.startsWith(indentChars)) continue
-              toDelete.push(
-                docPosAtChunkOffset(
-                  state.doc,
-                  selection.from,
-                  selection.to,
-                  offset,
-                  MULTILINE_BLOCK_SEP
-                )
-              )
-            }
-            toDelete.sort((a, b) => b - a)
-            for (const p of toDelete) {
+            for (const p of toDelete.sort((a, b) => b - a)) {
               tr.delete(p, p + indentChars.length)
             }
             dispatch(tr)
