@@ -27,13 +27,8 @@ export interface PlaceholderOptions {
 const PLACEHOLDER_KEY = new PluginKey('placeholder')
 
 /**
- * Build a decoration set containing at most ONE placeholder decoration
- * at the cursor's parent node, plus empty-class decorations on ancestor
- * wrappers (list items, blockquotes, etc.). Cost: O(depth) via $anchor walk.
- *
- * TipTap's built-in Placeholder uses doc.descendants() — O(N) on every
- * transaction. This uses state.init/apply with cursor-only checks — O(1)
- * for the common typing case.
+ * At most one placeholder decoration at the cursor's empty parent, plus
+ * empty-class decorations on empty ancestor wrappers. Cost: O(depth).
  */
 function buildFromCursor(
   state: EditorState,
@@ -47,7 +42,7 @@ function buildFromCursor(
   if (node.isLeaf || !isNodeEmpty(node)) return DecorationSet.empty
 
   const pos = $anchor.before($anchor.depth)
-  const parentName = $anchor.depth >= 2 ? $anchor.node($anchor.depth - 1).type.name : 'doc'
+  const parentName = $anchor.node($anchor.depth - 1).type.name
   const placeholderText =
     typeof options.placeholder === 'function'
       ? options.placeholder({ editor, node, pos, hasAnchor: true, parentName, doc: state.doc })
@@ -84,15 +79,10 @@ function buildFromCursor(
 }
 
 /**
- * Performance-optimized Placeholder extension.
- *
- * Drop-in replacement for @tiptap/extensions Placeholder.
- * Always shows placeholder only at the current cursor node and propagates
- * empty-class to ancestor wrappers (inherently showOnlyCurrent + includeChildren).
- *
- * Per-keystroke cost:
- *   Built-in: O(N) doc.descendants traversal + DecorationSet.create
- *   This:     O(1) emptiness check on cursor's parent node
+ * Drop-in replacement for the built-in Placeholder with O(1) cursor-based
+ * state init/apply instead of the built-in's O(N) doc.descendants scan.
+ * Decorates the empty node at the cursor plus empty ancestor wrappers —
+ * inherently showOnlyCurrent + includeChildren.
  */
 export const Placeholder = Extension.create<PlaceholderOptions>({
   name: 'placeholder',
@@ -116,25 +106,25 @@ export const Placeholder = Extension.create<PlaceholderOptions>({
 
         state: {
           init(_: unknown, state: EditorState): DecorationSet {
-            const active = editor.isEditable || !options.showOnlyWhenEditable
-            if (!active) return DecorationSet.empty
             return buildFromCursor(state, editor, options)
           },
 
           apply(
-            _tr: Transaction,
+            tr: Transaction,
             old: DecorationSet,
             _oldState: EditorState,
             newState: EditorState
           ): DecorationSet {
-            const active = editor.isEditable || !options.showOnlyWhenEditable
-            if (!active) return DecorationSet.empty
+            // Decorations derive solely from doc + selection, so meta-only
+            // transactions (collab pings, plugin meta) cannot change them.
+            if (!tr.docChanged && !tr.selectionSet) return old
 
             const cursorNode = newState.selection.$anchor.parent
 
             // Fast path: cursor is in a non-empty node (the common typing case).
+            // Returning the singleton keeps identity when old was already empty.
             if (!cursorNode.isLeaf && !isNodeEmpty(cursorNode)) {
-              return old.find().length > 0 ? DecorationSet.empty : old
+              return DecorationSet.empty
             }
 
             return buildFromCursor(newState, editor, options)
@@ -142,8 +132,12 @@ export const Placeholder = Extension.create<PlaceholderOptions>({
         },
 
         props: {
-          decorations(state: EditorState): DecorationSet {
-            return this.getState(state) as DecorationSet
+          // Gate editability here, not in apply: setEditable() refreshes props via
+          // view.updateState without dispatching a transaction, so the placeholder
+          // toggles immediately when the editor flips to/from read-only.
+          decorations(state: EditorState): DecorationSet | null {
+            if (options.showOnlyWhenEditable && !editor.isEditable) return null
+            return this.getState(state) ?? null
           }
         }
       })
