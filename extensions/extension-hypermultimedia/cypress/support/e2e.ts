@@ -9,6 +9,8 @@
 import type * as HyperMultimediaModule from '@docs.plus/extension-hypermultimedia'
 import type { Editor } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
+// Type-only: pulls in StarterKit's command augmentations (undo/redo) for specs.
+import type {} from '@tiptap/starter-kit'
 
 import 'cypress-real-events'
 
@@ -36,8 +38,6 @@ declare global {
       pastePlainText(text: string): Chainable<void>
       /** Paste a PNG file like a screenshot (fires editorFileUpload in the extension). */
       pasteImageFile(): Chainable<void>
-      /** Native PM click with pointerType (required by image handleDOMEvents). */
-      nativeClickAt(selector: string): Chainable<void>
       insertSizedImage(width: number, height: number): Chainable<void>
       prepareImageForResize(width: number, height: number): Chainable<void>
       activateImageGripper(): Chainable<void>
@@ -157,22 +157,6 @@ Cypress.Commands.add('pasteImageFile', () => {
   })
 })
 
-Cypress.Commands.add('nativeClickAt', (selector: string) => {
-  cy.get(selector).then(($el) => {
-    const el = $el[0]
-    const rect = el.getBoundingClientRect()
-    el.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
-        pointerType: 'mouse'
-      })
-    )
-  })
-})
-
 Cypress.Commands.add('insertSizedImage', (width: number, height: number) => {
   cy.getEditor().then((editor) => {
     editor.commands.setImage({
@@ -235,7 +219,8 @@ Cypress.Commands.add('nodeAttr', (typeName: string, attr: string) => {
       if (value !== null) return
       if (node.type.name === typeName) value = node.attrs[attr] ?? null
     })
-    return value
+    // cy.wrap keeps the yielded subject `string | null` (a bare null return passes the editor through).
+    return cy.wrap<string | null>(value)
   })
 })
 

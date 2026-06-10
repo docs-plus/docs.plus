@@ -1,21 +1,14 @@
-import { mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
+import { Node, nodeInputRule } from '@tiptap/core'
 
+import { captionAttribute } from '../../caption'
+import { AUDIO_LAYOUT_FALLBACK } from '../../loading'
+import { layoutAttrDefaults } from '../../utils/embedKit'
 import {
-  captionAttribute,
-  type CaptionHandle,
-  createCaptionElement,
-  readCaption
-} from '../../caption'
-import { wrapMediaWithLoadingShell } from '../../loading'
-import { embedAttrsEqual } from '../../utils/embedKit'
-import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
-import {
-  applyStyles,
-  createStyleString,
-  generateShortId,
-  omitNullishAndFalse,
-  type StyleLayoutOptions
-} from '../../utils/utils'
+  createHtmlMediaNodeView,
+  type HtmlMediaNodeConfig,
+  renderHtmlMediaHTML
+} from '../../utils/htmlMediaNode'
+import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import { inputRegex } from './helper'
 
 interface NodeOptions {
@@ -56,6 +49,13 @@ const AUDIO_REMOUNT_ATTR_KEYS = [
   'preload',
   'volume'
 ] as const
+
+const AUDIO_MEDIA_CONFIG: HtmlMediaNodeConfig = {
+  tag: 'audio',
+  elementAttrKeys: AUDIO_REMOUNT_ATTR_KEYS,
+  layoutFallback: AUDIO_LAYOUT_FALLBACK,
+  isAlreadyReady: (media) => media.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+}
 
 export const Audio = Node.create<AudioOptions>({
   name: 'audio',
@@ -104,26 +104,13 @@ export const Audio = Node.create<AudioOptions>({
         default: false
       },
       preload: {
-        default: 'metadata' // Can be 'none', 'metadata', or 'auto'
+        default: 'metadata'
       },
       volume: {
         default: 1.0
       },
-      margin: {
-        default: this.options.margin
-      },
-      clear: {
-        default: this.options.clear
-      },
-      float: {
-        default: this.options.float
-      },
-      display: {
-        default: this.options.display
-      },
-      justifyContent: {
-        default: this.options.justifyContent
-      },
+      ...layoutAttrDefaults(this.options),
+      // Audio options omit dims; persist explicit nulls, not `undefined` defaults.
       width: {
         default: null
       },
@@ -135,93 +122,10 @@ export const Audio = Node.create<AudioOptions>({
   },
 
   addNodeView() {
-    const editor = this.editor
-
-    return ({ node, HTMLAttributes, getPos }) => {
-      const dom = document.createElement('div')
-      const content = document.createElement('div')
-      const audioTag = document.createElement('audio')
-
-      dom.classList.add('hypermultimedia--audio__content')
-
-      const styles = {
-        display: node.attrs.display,
-        height: parseInt(node.attrs.height),
-        width: parseInt(node.attrs.width),
-        float: node.attrs.float,
-        clear: node.attrs.clear,
-        margin: node.attrs.margin,
-        justifyContent: node.attrs.justifyContent
-      }
-
-      applyStyles(dom, styles)
-
-      const htmlAttributes = omitNullishAndFalse({
-        src: node.attrs.src ?? HTMLAttributes.src,
-        controls: node.attrs.controls,
-        autoplay: node.attrs.autoplay,
-        loop: node.attrs.loop,
-        muted: node.attrs.muted,
-        preload: node.attrs.preload,
-        volume: node.attrs.volume
-      })
-
-      const attributes = mergeAttributes(htmlAttributes, {
-        'data-node-name': this.name
-      })
-
-      Object.entries(attributes).forEach(
-        ([key, value]) => value && audioTag.setAttribute(key, value)
-      )
-
-      content.append(audioTag)
-
-      const shellWidth = parseInt(String(node.attrs.width), 10) || 450
-      const shellHeight = parseInt(String(node.attrs.height), 10) || 120
-
-      const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
-        editor,
-        { kind: 'audio', width: shellWidth, height: shellHeight },
-        content,
-        {
-          bindLoad: {
-            element: audioTag,
-            isAlreadyReady: () => audioTag.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-          }
-        }
-      )
-
-      dom.append(loadingHost)
-
-      const caption: CaptionHandle = createCaptionElement({
-        editor,
-        getPos,
-        initial: readCaption(node)
-      })
-      dom.append(caption.el)
-
-      return {
-        dom,
-        contentDOM: content,
-        // Caption is a nested contenteditable the node view owns; keep PM out of its events.
-        stopEvent: (event: Event) => caption.el.contains(event.target as globalThis.Node | null),
-        destroy: () => {
-          controller.destroy()
-          caption.destroy()
-        },
-        ignoreMutation: (mutation) => ignoreNodeViewSubtreeMutation(mutation, dom),
-        update: (updatedNode) => {
-          if (updatedNode.type.name !== this.name) return false
-
-          if (!embedAttrsEqual(updatedNode.attrs, node.attrs, AUDIO_REMOUNT_ATTR_KEYS)) {
-            return false
-          }
-
-          caption.sync(readCaption(updatedNode))
-          return true
-        }
-      }
-    }
+    return createHtmlMediaNodeView(AUDIO_MEDIA_CONFIG, () => ({
+      name: this.name,
+      editor: this.editor
+    }))
   },
 
   parseHTML() {
@@ -233,33 +137,7 @@ export const Audio = Node.create<AudioOptions>({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const style = createStyleString(this.options, {
-      height: parseInt(HTMLAttributes.height),
-      width: parseInt(HTMLAttributes.width),
-      float: HTMLAttributes.float,
-      clear: HTMLAttributes.clear,
-      margin: HTMLAttributes.margin
-    })
-
-    const htmlAttributes = omitNullishAndFalse({
-      src: node.attrs.src ?? HTMLAttributes.src,
-      controls: node.attrs.controls,
-      autoplay: node.attrs.autoplay,
-      loop: node.attrs.loop,
-      muted: node.attrs.muted,
-      preload: node.attrs.preload,
-      volume: node.attrs.volume
-    })
-
-    return [
-      'div',
-      { 'data-audio': '', class: 'hypermultimedia--audio__content', style },
-      [
-        'audio',
-        mergeAttributes(htmlAttributes, { class: 'hypermultimedia--audio__content', style }),
-        0
-      ]
-    ]
+    return renderHtmlMediaHTML(AUDIO_MEDIA_CONFIG, this.options, { node, HTMLAttributes })
   },
 
   addInputRules() {
@@ -281,9 +159,7 @@ export const Audio = Node.create<AudioOptions>({
       setAudio:
         (options) =>
         ({ commands }) => {
-          if (!options.src) {
-            throw new Error('Audio source is required')
-          }
+          if (!options.src) return false
 
           return commands.insertContent({
             type: this.name,

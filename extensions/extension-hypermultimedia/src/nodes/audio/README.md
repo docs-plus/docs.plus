@@ -1,22 +1,20 @@
 # Audio
 
-Use this extension to render `<audio>` HTML tags. Block Or Inline level node.
+Renders `<audio>` elements as a block or inline node.
 
-> **Restrictions:** This extension does only the rendering of audios. It doesn’t upload audios to your server, that’s a whole different story.
+> **Restrictions:** renders audio only — uploading files to your server is the host's job.
 
-## Installation
+## Install
 
 ```bash
 bun add @docs.plus/extension-hypermultimedia
 ```
 
-Then, import the extension into your editor:
-
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Audio
+  Audio: true
 })
 ```
 
@@ -28,7 +26,7 @@ HyperMultimediaKit.configure({
 
 ### inline
 
-Controls if the node should be handled inline or as a block.
+Renders the node inline instead of as a block.
 
 - Target: `Node`
 - Default: `false`
@@ -58,7 +56,7 @@ HyperMultimediaKit.configure({
 
 ### autoplay
 
-Automatically start playing the audio as soon as it can do so without stopping.
+Starts playback as soon as the audio can play through without stopping.
 
 - Target: `Node`
 - Default: `false`
@@ -73,7 +71,7 @@ HyperMultimediaKit.configure({
 
 ### loop
 
-Automatically start playing the audio again after it is finished.
+Restarts playback when the audio ends.
 
 - Target: `Node`
 - Default: `false`
@@ -88,7 +86,7 @@ HyperMultimediaKit.configure({
 
 ### preload
 
-Specifies if and how the author thinks the audio should be loaded when the page loads.
+Hints whether and how the audio should load when the page loads.
 
 - Target: `Node`
 - Default: `false`
@@ -103,7 +101,7 @@ HyperMultimediaKit.configure({
 
 ### volume
 
-Specifies the volume of the audio.
+Sets the playback volume.
 
 - Target: `Node`
 - Default: `1`
@@ -118,7 +116,7 @@ HyperMultimediaKit.configure({
 
 ### muted
 
-Mute the audio.
+Mutes the audio.
 
 - Target: `Node`
 - Default: `false`
@@ -133,7 +131,7 @@ HyperMultimediaKit.configure({
 
 ### HTMLAttributes
 
-Custom HTML attributes that should be added to the rendered HTML tag.
+Custom HTML attributes added to the rendered tag.
 
 - Target: `Node`
 - Default: `{}`
@@ -148,23 +146,6 @@ HyperMultimediaKit.configure({
 })
 ```
 
-### modal
-
-A modal that apear when you click on audio.
-
-- Target: `Node`
-- Default: `true`
-
-```js
-import { hypermultimedia, audioModal } from '@docs.plus/extension-hypermultimedia'
-
-HyperMultimediaKit.configure({
-  Audio: {
-    modal: audioModal
-  }
-})
-```
-
 ## Caption
 
 Add a caption from the toolbar; the text is stored in the node `caption` attribute
@@ -174,9 +155,9 @@ Audio also exposes a Download action.
 
 ## Commands
 
-### setAudio()
+### setAudio(options)
 
-Makes the current node an audio.
+Inserts an audio node. Returns `false` when `src` is missing.
 
 ```js
 editor.commands.setAudio({
@@ -188,14 +169,6 @@ editor.commands.setAudio({
   width: 200,
   height: 160
 })
-```
-
-## Markdown syntax
-
-```md
-![audio](src width height)
-
-![audio](https://example.com/foobar.mp3)
 ```
 
 ### Options
@@ -211,6 +184,14 @@ editor.commands.setAudio({
 | margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
 | justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
+## Markdown syntax
+
+```md
+![audio](src width height)
+
+![audio](https://example.com/foobar.mp3)
+```
+
 ## Source code
 
-[packages/extension-hyperMultimedia/audio](./audio.ts)
+[`audio.ts`](./audio.ts)

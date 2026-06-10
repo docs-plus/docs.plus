@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import { TextSelection } from '@tiptap/pm/state'
 
 import { closeMediaToolbar, openMediaToolbar } from '../toolbar/mount'
 import {
@@ -190,6 +191,8 @@ export function hideMediaResizeControls(editor: Editor): void {
 export function syncControlsToDoc(editor: Editor): void {
   const state = getControlsState(editor)
   if (state.mediaResizing) return
+  // Idle chrome ⇒ nothing to tear down; skip the document-wide orphan scan on every transaction.
+  if (!state.activeTarget && !state.listenersAttached) return
   if (state.activeTarget && !state.activeTarget.isConnected) {
     hideMediaResizeControls(editor)
     return
@@ -224,7 +227,8 @@ function handlePointerOutside(editor: Editor, event: PointerEvent): void {
   hideMediaResizeControls(editor)
 }
 
-function resolveMediaNodePos(
+/** DOM → doc position with a node-type guard; also re-resolves stale drag-end positions. */
+export function resolveMediaNodePos(
   view: Editor['view'],
   target: HTMLElement,
   nodeType: string
@@ -304,6 +308,9 @@ export function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): bool
   if (!getControlsState(editor).activeTarget) return false
   if (isFormControlInMediaUI(document.activeElement)) return false
   if (isEditingMediaCaption(document.activeElement)) return false
+  // A focused caret in text must keep editing text — hover chrome only owns the
+  // key when the node is selected or focus is outside the editor.
+  if (editor.view.hasFocus() && editor.state.selection instanceof TextSelection) return false
   if (!deleteActiveMediaNode(editor)) return false
 
   event.preventDefault()

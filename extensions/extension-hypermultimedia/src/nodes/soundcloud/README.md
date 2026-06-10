@@ -2,7 +2,7 @@
 
 Embeds SoundCloud tracks and playlists via the official HTML5 widget (`w.soundcloud.com/player`).
 
-## Installation
+## Install
 
 ```bash
 bun add @docs.plus/extension-hypermultimedia

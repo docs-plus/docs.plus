@@ -1,31 +1,55 @@
-# Change Log
+# Changelog
 
-All notable changes to this project are documented here. Entries from 2.0.0
-onward follow [Keep a Changelog](https://keepachangelog.com); earlier entries
-use the historical Conventional Commits format.
+All notable changes to `@docs.plus/extension-hypermultimedia` are documented
+here. Entries from 2.0.0 onward follow
+[Keep a Changelog](https://keepachangelog.com); earlier entries use the
+historical Conventional Commits format.
 
-## [Unreleased]
+## [2.0.0] — 2026-06-10
 
-The media toolbar is rebuilt around a declarative action registry and moves into
-the node's top-right corner; every media node gains an editable caption.
+First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
+favor of Floating UI positioning, node type names are normalized to camelCase,
+the Twitter node is rebranded to X, a Loom node is added, the media toolbar is
+rebuilt around a declarative action registry in the node's top-right corner, and
+every media node gains an editable caption.
 
-### Changed
+### Highlights
 
-- **Breaking:** the toolbar moved from a `bottom-start` floating popover (placement
-  buttons + margin select) to an in-chrome top-right overlay driven by a declarative
-  action registry. Common actions render inline; copy, delete, and node extras (X
-  size/theme) moved behind a `…` overflow menu.
-- **Breaking:** the toolbar stylesheet is renamed `media-toolbar-popover.css` →
-  `media-toolbar.css`. Update imports, including the webapp `globals.scss` `@import`.
-- Toolbar icons are unified on the Google Material Symbols (outlined) set, matching
-  `@docs.plus/extension-hyperlink`. Alignment now uses Google-Docs-style glyphs:
-  align-left (inline), align-center (center), image-left (float left), image-right
-  (float right).
-- Action `id`s are kebab-cased and matched to their labels: `alignment` → `align`,
-  `viewOriginal` → `view-original`, `copyNode` → `copy` (`caption`, `download`,
-  `delete`, `x-options` unchanged). Hosts targeting `data-action-id` must update.
-- Alignment option labels follow the wrap vocabulary: `Inline` → `Left`,
-  `Float left/right` → `Wrap left/right` (`Center` unchanged).
+- **Floating UI engine.** Media toolbars and popovers render through
+  `@docs.plus/floating-popover` (`@floating-ui/dom`) — tippy.js is gone.
+- **Top-right media toolbar.** A declarative action registry drives an in-chrome
+  overlay: common actions inline, the rest behind a `…` overflow menu; hosts swap
+  the whole surface via the `mediaToolbar` factory slot (e.g. a mobile bottom-sheet).
+- **Editable captions** on every media node, stored in the `caption` attribute.
+- **camelCase node names** and an **X (formerly Twitter)** node following x.com
+  conventions.
+- **Loom** embeds (`loom.com/share` + `/embed`).
+- **One configuration entry** — markdown image support lives on the node, so a
+  single `HyperMultimediaKit.configure({ Image, … })` covers everything.
+
+### Breaking
+
+- Node type names are camelCase: `Image→image`, `Video→video`, `Audio→audio`,
+  `Youtube→youtube`, `Vimeo→vimeo`, `SoundCloud→soundcloud`, `Twitter→x`. Stored
+  documents need the migration below.
+- `Twitter`/`setTwitter`/`TwitterOptions` → `X`/`setX`/`XOptions`.
+- The media toolbar moved from a floating popover (placement buttons + margin
+  select) to an in-chrome top-right overlay driven by a declarative action
+  registry. Common actions render inline; copy, delete, and node extras (X
+  size/theme) live behind a `…` overflow menu; alignment options follow the wrap
+  vocabulary (Left, Center, Wrap left, Wrap right).
+- Removed the tippy modal API: `createFloatingToolbar`, `hideCurrentToolbar`, the
+  `*Modal` exports (`imageModal`/`youtubeModal`/`twitterModal` + aliases), and
+  the `modal` node option.
+- `tippy.js` removed as a dependency. Floating positioning comes from
+  `@docs.plus/floating-popover`, a private workspace package bundled into `dist`
+  at build time — nothing extra to install; `@floating-ui/dom` is the package's
+  only runtime dependency.
+- Removed the dead `ImageNodeOptions.toolbar` option and `ImageToolbarFunction`
+  type (superseded by the kit-level `mediaToolbar`/`mediaActions`), the dead
+  `transform` image attribute, and the unused exported image helper types
+  (`ImageUrlValidator`, `ImageExtension`, `ImageUrlProtocol`, `ImageFloat`,
+  `ImageClear`, `ImageDisplay`).
 
 ### Added
 
@@ -33,84 +57,74 @@ the node's top-right corner; every media node gains an editable caption.
   attribute is the source of truth and persists via collaboration, JSON, and
   same-editor copy/paste; standalone-HTML `<figure>/<figcaption>` round-trip is
   `image`-only by design.
-- Base actions: View original, Download (image/video/audio), Copy, Delete.
+- Built-in **loading shell** for images, video/audio, iframe embeds, and X
+  (`loadingShell` kit option; `dist/media-loading-shell.css`).
+- Base toolbar actions: View original, Download (image/video/audio), Copy, Delete.
 - `mediaActions` and `isUploadedMedia` kit options; exported `MediaAction` types,
   `resolveMediaActions`, and the action handlers (`viewOriginalMedia`,
   `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`,
   `isDownloadable`). `BASE_ACTIONS`/`NODE_ACTIONS` stay internal.
+- Host-agnostic `mediaToolbar` kit option + exported `createMediaToolbar`.
+- `Loom` node + kit option.
+- `isMediaUrl(url)` export for host paste-precedence
+  (`Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })`).
+- Shared `utils/media-placement.ts` for desktop toolbar and mobile sheet
+  placement/margin presets (`getMediaPlacementAttrs`, `getCurrentMediaPlacement`).
+- `./styles.css` export — `dist/styles.css` bundles `resize-gripper.css`,
+  `media-loading-shell.css`, and `media-toolbar.css`. Import it in one line
+  (`import '@docs.plus/extension-hypermultimedia/styles.css'`) to load the shipped
+  styles, matching `@docs.plus/extension-hyperlink`. The three individual files
+  stay in `dist` for hosts that import them separately.
+- Dark mode in the shipped stylesheet — `--hm-*` tokens use `light-dark()` and
+  follow the nearest ancestor's `color-scheme`.
+- `styles.css` ships the `.floating-popover` shell rules (fade/scale/arrow) so
+  toolbar popovers animate standalone.
+- `prefers-reduced-motion: reduce` disables the loading shimmer/spinner animation.
+- Escape cancels a resize drag (snaps back, commits nothing).
+
+### Changed
+
+- Toolbar icons are unified on the Google Material Symbols (outlined) set,
+  matching `@docs.plus/extension-hyperlink`; alignment uses Google-Docs-style
+  glyphs (align-left, align-center, image-left, image-right).
+- `closeMediaToolbar()`'s document-wide fallback only removes toolbars carrying
+  `data-node-type`.
 
 ### Fixed
 
-- Backspace/Delete while editing a caption now edits the caption text instead of
-  deleting the whole media node. The document-level delete-on-hover handler bails
-  when focus is inside the `figcaption`.
+- `getHTML()` and clipboard copy no longer throw once a `video`/`audio` node
+  exists (leaf-node content hole removed; bogus `contentDOM` dropped).
+- Resize drags commit to the node actually under the gripper — the drag-end
+  position is re-resolved from the DOM (keyId-first, type-guarded); listeners and
+  pointer capture release even if the commit throws; `updateNodeDimensions`
+  refuses non-media positions.
+- Gripper-resized `audio` no longer snaps back visually (`syncAudioNodeLayout`
+  mirrors committed `width`/`height`).
+- The document-level delete-on-hover handler yields to real editing: Backspace/
+  Delete with a focused text caret edits text (bails on `TextSelection`), and
+  while editing a caption it edits the caption text instead of deleting the
+  whole media node.
 - Caption text is trimmed on commit, matching the mobile sheet; a whitespace-only
   caption clears to `null`.
 - A visible caption no longer overflows onto the paragraph below the media. The
   node-view wrapper drops its redundant fixed `height` (the loading shell and media
   surface still carry the pixel size), so it grows to contain the caption.
-
-### Removed
-
-- `utils/media-toolbar.ts` internals and `nodes/x/xToolbar.ts`, folded into the
-  action registry.
-
-### Internal
-
-- `Logger` still preserves `console.warn`/`console.error` under the shared tsup
-  pure policy.
-
-## [2.0.0] — 2026-06-01
-
-First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
-favor of `@docs.plus/floating-popover`, node type names are normalized to
-camelCase, the Twitter node is rebranded to X, and a Loom node is added.
-
-### Highlights
-
-- **Floating UI engine.** Every media toolbar now renders through the shared
-  `@docs.plus/floating-popover` (`@floating-ui/dom`) — tippy.js is gone.
-- **camelCase node names** and an **X (formerly Twitter)** node following x.com
-  conventions.
-- **Loom** embeds (`loom.com/share` + `/embed`).
-- **One configuration entry** — markdown image support lives on the node, so a
-  single `HyperMultimediaKit.configure({ Image, … })` is all a host needs.
-- **Host-agnostic toolbar** — desktop floating toolbar or a mobile bottom-sheet
-  via the `mediaToolbar` factory slot.
-
-### Breaking Changes
-
-- Node type names are camelCase: `Image→image`, `Video→video`, `Audio→audio`,
-  `Youtube→youtube`, `Vimeo→vimeo`, `SoundCloud→soundcloud`, `Twitter→x`. Stored
-  documents need the migration below.
-- `Twitter`/`setTwitter`/`TwitterOptions` → `X`/`setX`/`XOptions`.
-- Removed the tippy modal API: `createFloatingToolbar`, `hideCurrentToolbar`, the
-  `*Modal` exports (`imageModal`/`youtubeModal`/`twitterModal` + aliases), and
-  the `modal` node option.
-- `tippy.js` removed as a dependency; `@docs.plus/floating-popover` is a runtime
-  peer resolved by the host (externalized in the tsup build; not bundled into
-  `dist/`).
-
-### Added
-
-- Built-in **loading shell** for images, video/audio, iframe embeds, and X (`loadingShell` kit option; `dist/media-loading-shell.css`).
-- `Loom` node + kit option.
-- `isMediaUrl(url)` export for host paste-precedence
-  (`Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })`).
-- Host-agnostic `mediaToolbar` kit option + exported `createMediaToolbar`.
-- Shared `utils/media-placement.ts` for desktop toolbar and mobile sheet
-  placement/margin presets (`getMediaPlacementAttrs`, `getCurrentMediaPlacement`).
-- Clean-room Cypress E2E suite + Bun playground.
-
-### Fixed
-
+- YouTube `ccLanguage` maps to the official `cc_lang_pref` param; YouTube URL
+  detection uses exact host matching.
+- Pasted plain-text `data:image/...` URLs respect `allowBase64: false`.
+- Invalid or hostile `blockquote.twitter-tweet` hrefs no longer create a broken
+  X node; the X parse rule outranks StarterKit's blockquote rule.
+- `setVideo`/`setAudio` return `false` on missing `src` (documented contract).
+- Static-HTML export prefers committed `width`/`height` over kit defaults.
+- The image markdown input rule requires the leading `!` (plain links no longer
+  convert) and drops the global flag.
 - Loading shell `destroy()` detaches media `load`/`error` listeners; `markReady`/`markError` detach too. Error state keeps the overlay visible (ready-only hides it). `bindLoad: { element }` replaces paired `bindElement`/`isAlreadyReady`.
 - X embed: `mountXEmbed` reports failure; `loadXScript` times out and aborts when the node view is destroyed.
 - X loading shell tracks widget layout (`ResizeObserver`) and switches to fluid height after render so tall posts are not clipped.
 - Media toolbar hover bridge: deferred hide + expanded popover hit area so the pointer can reach the portaled toolbar without dismissal.
-- Resize gripper uses `setPointerCapture` so drags stay attached over iframes, outside the editor, and at constraint limits; ends on blur/Escape/`pointercancel`.
+- Resize gripper uses `setPointerCapture` so drags stay attached over iframes, outside the editor, and at constraint limits; drags also end on blur and `pointercancel`.
 - Loading shell dimensions stay in sync with gripper resize on iframe embeds and video; ready shells use a transparent background so gray placeholder does not show through.
-- Iframe embed resize writes pixel `style` width/height on the `<iframe>` (not only HTML attrs) so the player fills the gripper; Cypress asserts rendered iframe height matches the node attr.
+- Iframe embed resize writes pixel `style` width/height on the `<iframe>` (not only HTML attrs) so the player fills the gripper.
 - Image node view uses subtree `ignoreMutation` (not ignore-all).
 - Image insertion no longer appends a phantom empty image node (`priority: 1100`
   had made image ProseMirror's default-fill block).
@@ -124,10 +138,16 @@ camelCase, the Twitter node is rebranded to X, and a Loom node is added.
 
 - `tippy.js`; `utils/floating-toolbar.ts`, `utils/tippyHelper.ts`; dead rotation
   code.
+- `utils/media-toolbar.ts` internals and `nodes/x/xToolbar.ts`, folded into the
+  action registry.
 
 ### Internal
 
-- `Logger` preserves `console.warn`/`console.error` under the shared tsup factory.
+- `Logger` (`src/utils/logger.ts`) is error-only: `console.error` survives the
+  shared tsup pure policy; the unused `warn`/`debug` levels were dropped.
+- Clean-room Cypress E2E suite + Bun playground. The playground harness lives in
+  the shared `@docs.plus/playground` package; `test/playground/` holds only
+  `main.ts`. No change to the published package.
 
 ### Migrating from 1.x to 2.0
 

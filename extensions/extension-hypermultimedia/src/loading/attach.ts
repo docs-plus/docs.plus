@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core'
 
+import { getKitStorage } from '../kitStorage'
 import { createDefaultMediaLoadingShell } from './defaultShell'
 import { syncElementPixelSize } from './syncLayout'
 import type {
@@ -10,18 +11,12 @@ import type {
   MediaLoadingShellWrapOptions
 } from './types'
 
-export const HYPER_MULTIMEDIA_KIT_EXTENSION_NAME = 'HyperMultimediaKit'
-
 const MEDIA_READY_EVENTS = ['load', 'loadeddata', 'canplay'] as const
 
 const NOOP_CONTROLLER: MediaLoadingController = {
   markReady: () => {},
   markError: () => {},
   destroy: () => {}
-}
-
-interface KitLoadingStorage {
-  loadingShell?: MediaLoadingShellOption
 }
 
 function resolveFactory(
@@ -44,11 +39,6 @@ function createPlainMediaHost(content: HTMLElement): {
 
 function stampLoadingOverlay(overlay: HTMLElement): void {
   overlay.classList.add('hm-loading-shell', 'hm-loading-shell__overlay')
-}
-
-export function getKitLoadingShellOption(editor: Editor): MediaLoadingShellOption | undefined {
-  const storage = editor.storage as Record<string, KitLoadingStorage | undefined>
-  return storage[HYPER_MULTIMEDIA_KIT_EXTENSION_NAME]?.loadingShell
 }
 
 function bindMediaElementLoad(
@@ -92,7 +82,7 @@ export function wrapMediaWithLoadingShell(
   content: HTMLElement,
   options?: MediaLoadingShellWrapOptions
 ): { dom: HTMLElement; controller: MediaLoadingController } {
-  const factory = resolveFactory(getKitLoadingShellOption(editor))
+  const factory = resolveFactory(getKitStorage(editor).loadingShell)
   if (!factory) return createPlainMediaHost(content)
 
   const host = document.createElement('div')

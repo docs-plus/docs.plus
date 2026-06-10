@@ -1,28 +1,28 @@
 # X
 
-This extension render embedded X tweets in your editor.
+Renders embedded X (formerly Twitter) posts via the official oEmbed endpoint and `widgets.js`.
 
-## Installation
+## Install
 
 ```bash
 bun add @docs.plus/extension-hypermultimedia
 ```
 
-Then, import the extension into your editor:
-
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  X
+  X: true
 })
 ```
 
 ## Settings
 
+Kit options set the defaults; each inserted node stores its own attributes (`theme`, `lang`, `maxwidth`, `hide_media`, `hide_thread`) which win over the kit defaults.
+
 ### inline
 
-Controls if the node should be handled inline or as a block.
+Renders the node inline instead of as a block.
 
 - Target: `Node`
 - Default: `false`
@@ -37,7 +37,7 @@ HyperMultimediaKit.configure({
 
 ### addPasteHandler
 
-Enable the auto-embedding of tweets by pasting X URLs directly into the editor.
+Converts pasted X status URLs into embeds.
 
 - Target: `Node`
 - Default: `true`
@@ -52,7 +52,7 @@ HyperMultimediaKit.configure({
 
 ### theme
 
-Define the theme of the embedded tweet, either light or dark.
+Sets the embed theme, `light` or `dark`; also switchable per node from the media toolbar.
 
 - Target: `URLSearchParams`
 - Default: `light`
@@ -67,7 +67,7 @@ HyperMultimediaKit.configure({
 
 ### dnt
 
-Enable the data tracking parameter.
+Controls the data-tracking opt-out parameter (sent as `dnt=1` by default).
 
 - Target: `URLSearchParams`
 - Default: `true`
@@ -82,7 +82,7 @@ HyperMultimediaKit.configure({
 
 ### lang
 
-Specify the language of the embedded tweet, e.g., `'en'` for English.
+Sets the embed language (ISO 639-1), e.g. `'en'`.
 
 - Target: `URLSearchParams`
 - Default: `'en'`
@@ -95,129 +95,39 @@ HyperMultimediaKit.configure({
 })
 ```
 
-### width
+### hide_media
 
-Define the width of the embedded tweet.
-
-- Target: `URLSearchParams`
-- Default: `450`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    width: 550
-  }
-})
-```
-
-### height
-
-Define the height of the embedded tweet.
+Hides photos, videos, and link previews inside the embedded post.
 
 - Target: `URLSearchParams`
-- Default: `120`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    height: 600
-  }
-})
-```
-
-### limit
-
-Define the maximum number of tweets to display.
-
-- Target: `URLSearchParams`
-- Default: `20`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    limit: 10
-  }
-})
-```
-
-### maxwidth
-
-Define the maximum width of the embedded tweet.
-
-- Target: `URLSearchParams`
-- Default: `550`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    maxwidth: 600
-  }
-})
-```
-
-### maxheight
-
-Define the maximum height of the embedded tweet.
-
-- Target: `URLSearchParams`
-- Default: `600`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    maxheight: 650
-  }
-})
-```
-
-### chrome
-
-Define the chrome of the embedded tweet.
-
-- Target: `URLSearchParams`
-- Default: `noheader nofooter noborders noscrollbar transparent`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    chrome: 'noheader nofooter noborders noscrollbar transparent'
-  }
-})
-```
-
-### aria_polite
-
-Define the ARIA live region politeness value for tweets added to a timeline.
-
-- Target: `URLSearchParams`
-- Default: `polite`
-
-```js
-HyperMultimediaKit.configure({
-  X: {
-    aria_polite: 'assertive'
-  }
-})
-```
-
-### modal
-
-A modal box that appears when you <u>**click on the tweet**</u>. A default modal box is provided which you can utilize or replace with your custom modal.
-
-- Target: `Node`
 - Default: `false`
 
 ```js
-import { hypermultimedia, twitterModal } from '@docs.plus/extension-hypermultimedia'
-
 HyperMultimediaKit.configure({
   X: {
-    modal: twitterModal // default modal
+    hide_media: true
   }
 })
 ```
 
-> To implement your own modal box, examine the default modal box and replicate the same methods. You can refer to the [source code](../../modals/twitter.ts) for more details.
+### hide_thread
+
+Hides the parent post a reply belongs to.
+
+- Target: `URLSearchParams`
+- Default: `false`
+
+```js
+HyperMultimediaKit.configure({
+  X: {
+    hide_thread: true
+  }
+})
+```
+
+## Sizing
+
+X embeds size through the oEmbed `maxwidth` attribute, not the resize gripper. The media toolbar exposes three presets — Compact (280), Standard (400, default), Wide (550) — and `setX({ maxwidth })` accepts any of those values per insert.
 
 ## Caption
 
@@ -227,23 +137,20 @@ caption is editor and attribute only (HTML `<figure>` round-trip is `image`-only
 
 ## Commands
 
-### setX()
+### setX(options)
 
-Embed a X tweet into the current node.
+Embeds an X post. Returns `false` for anything that is not a status URL.
 
 ```js
 editor.commands.setX({
-  src: 'https://twitter.com/username/status/1234567890'
+  src: 'https://x.com/username/status/1234567890'
 })
 
 editor.commands.setX({
-  src: 'https://twitter.com/username/status/1234567890',
+  src: 'https://twitter.com/username/status/1234567890', // twitter.com URLs normalize to x.com
   theme: 'dark',
-  width: '550px',
-  height: '600px',
-  float: 'unset',
-  clear: 'none',
-  display: 'block',
+  maxwidth: 550,
+  hide_thread: true,
   margin: '0.2in'
 })
 ```
@@ -252,7 +159,12 @@ editor.commands.setX({
 
 | Option         | Description                                                              | Default | Optional |
 | -------------- | ------------------------------------------------------------------------ | ------- | -------- |
-| src            | The URL of the youtube, (Iframe Source Attribute)                        | `null`  |          |
+| src            | The status URL (x.com or twitter.com)                                    | `null`  |          |
+| theme          | `'light'` or `'dark'`                                                    | `light` | ✅       |
+| lang           | Post language (ISO 639-1)                                                | `'en'`  | ✅       |
+| maxwidth       | oEmbed max width: `280`, `400`, or `550`                                 | `400`   | ✅       |
+| hide_media     | Hide photos/videos/link previews                                         | `false` | ✅       |
+| hide_thread    | Hide the parent post of a reply                                          | `false` | ✅       |
 | float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
 | clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
 | display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
@@ -261,4 +173,4 @@ editor.commands.setX({
 
 ## Source code
 
-[packages/extension-hyperMultimedia/twitter](./twitter.ts)
+[`x.ts`](./x.ts)

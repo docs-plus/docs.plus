@@ -3,7 +3,10 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 import { isImageUrl } from './helper'
 
-export const HyperImagePastePlugin = (editor: Editor, options: { nodeName: string }): Plugin => {
+export const HyperImagePastePlugin = (
+  editor: Editor,
+  options: { nodeName: string; allowBase64: boolean }
+): Plugin => {
   return new Plugin({
     key: new PluginKey('ImagePasteHandler'),
     props: {
@@ -43,6 +46,9 @@ export const HyperImagePastePlugin = (editor: Editor, options: { nodeName: strin
 
             if (textNode?.type.name === 'text' && textNode.text) {
               const text = textNode.text.trim()
+
+              // Mirror parseHTML's allowBase64 gate: pasted data: URLs are rejected too.
+              if (!options.allowBase64 && text.startsWith('data:')) return false
 
               if (isImageUrl(text)) {
                 event.preventDefault()

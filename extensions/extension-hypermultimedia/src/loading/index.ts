@@ -1,10 +1,7 @@
-export {
-  getKitLoadingShellOption,
-  HYPER_MULTIMEDIA_KIT_EXTENSION_NAME,
-  wrapMediaWithLoadingShell
-} from './attach'
+export { wrapMediaWithLoadingShell } from './attach'
 export { createDefaultMediaLoadingShell } from './defaultShell'
 export {
+  AUDIO_LAYOUT_FALLBACK,
   EMBED_LAYOUT_ATTR_KEYS,
   IMAGE_LAYOUT_FALLBACK,
   layoutAttrsChanged,
@@ -12,9 +9,10 @@ export {
   syncElementPixelSize,
   syncIframeNodeLayout,
   syncImageNodeLayout,
+  syncMediaNodeLayout,
+  type SyncMediaNodeLayoutOptions,
   syncResizableMediaLayout,
-  type SyncResizableMediaLayoutOptions,
-  syncVideoNodeLayout
+  type SyncResizableMediaLayoutOptions
 } from './syncLayout'
 export type {
   MediaLoadingBindLoadOptions,

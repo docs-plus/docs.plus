@@ -101,19 +101,22 @@ export function updateNodeDimensions(
   const { state, dispatch } = editor.view
   const { tr } = state
 
+  // A stale position must never throw (nodeAt RangeErrors past doc end) or resize a
+  // foreign node — resizable media nodes are the ones carrying keyId + width attrs.
+  if (nodePos < 0 || nodePos > state.doc.content.size) return
   const nodeAtPos = state.doc.nodeAt(nodePos)
-  if (nodeAtPos) {
-    const clamped = clampDimensionsToConstraints(width, height, resolveResizeConstraints(editor))
-    tr.setNodeMarkup(nodePos, null, {
-      ...nodeAtPos.attrs,
-      width: clamped.width,
-      height: clamped.height
-    })
+  if (!nodeAtPos || !('keyId' in nodeAtPos.attrs) || !('width' in nodeAtPos.attrs)) return
 
-    tr.setMeta('resizeMedia', true)
-    tr.setMeta('addToHistory', true)
-    dispatch(tr)
-  }
+  const clamped = clampDimensionsToConstraints(width, height, resolveResizeConstraints(editor))
+  tr.setNodeMarkup(nodePos, null, {
+    ...nodeAtPos.attrs,
+    width: clamped.width,
+    height: clamped.height
+  })
+
+  tr.setMeta('resizeMedia', true)
+  tr.setMeta('addToHistory', true)
+  dispatch(tr)
 }
 
 /** Style pixels are the source of truth: the gripper may be detached/`display:none` post-rebuild. */

@@ -1,4 +1,11 @@
 /* Media resize: 1px selection border + eight square handles (Google Docs pattern). */
+
+/* Tokens follow the ancestor `color-scheme` via light-dark(); see media-toolbar.css. */
+:root {
+  --hm-resize-border: light-dark(#1a73e8, #60a5fa);
+  --hm-resize-handle-bg: light-dark(#fff, #1f2937);
+}
+
 .hypermultimedia__resize-gripper {
   position: absolute;
   margin: 0;

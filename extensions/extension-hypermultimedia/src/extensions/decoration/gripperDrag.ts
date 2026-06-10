@@ -1,8 +1,13 @@
 import { getDefaultController } from '@docs.plus/floating-popover'
 import { Editor } from '@tiptap/core'
 
-import { restoreControlsAfterResize, setMediaResizing } from '../../utils/media-resize-controls'
-import { Corner, MediaGripperInfo, ResizeConstraints, ResizeState } from './types'
+import {
+  resolveMediaNodePos,
+  restoreControlsAfterResize,
+  setMediaResizing
+} from '../../utils/media-resize-controls'
+import { getMediaNodeType, resolveMediaFromGripper } from '../../utils/media-target'
+import { Corner, ResizeConstraints, ResizeState } from './types'
 import {
   calculateAspectRatioDimensions,
   clampDimensionsToConstraints,
@@ -13,6 +18,16 @@ import {
   setupKeyboardListeners,
   updateNodeDimensions
 } from './utils'
+
+// One in-flight drag per editor. The gripper plugin's `view().destroy()` calls
+// `abortActiveGripperDrag` so an editor torn down mid-drag drops the window/
+// document listeners and pointer capture instead of leaking them. WeakMap keys
+// are GC-safe, so a destroyed editor needs no explicit removal.
+const activeDragByEditor = new WeakMap<Editor, () => void>()
+
+export function abortActiveGripperDrag(editor: Editor): void {
+  activeDragByEditor.get(editor)?.()
+}
 
 export interface GripperBox {
   width: number
@@ -69,7 +84,6 @@ export interface GripperDragConfig {
   clamp: HTMLElement
   gripper: HTMLElement
   editor: Editor
-  mediaInfo: MediaGripperInfo
   computeBox: ComputeGripperBox
 }
 
@@ -79,9 +93,22 @@ export function setGripperDragging(gripper: HTMLElement, dragging: boolean): voi
   document.documentElement.classList.toggle('hypermultimedia--resize-dragging', dragging)
 }
 
+/**
+ * Keyed-widget DOM reuse keeps this gripper (and its decoration-time positions)
+ * alive across edits above the node, so the doc position must be re-resolved
+ * from the DOM at drag end — never trusted from `MediaGripperInfo.from`.
+ */
+function resolveDragTargetPos(editor: Editor, gripper: HTMLElement): number | null {
+  const media = resolveMediaFromGripper(gripper, editor.view.dom)
+  if (!media) return null
+  const nodeType = getMediaNodeType(media)
+  if (!nodeType) return null
+  return resolveMediaNodePos(editor.view, media, nodeType)
+}
+
 /** Wire one clamp's pointer drag onto the shared resize lifecycle; `computeBox` owns the per-handle math. */
 export function attachGripperDrag(config: GripperDragConfig): void {
-  const { clamp, gripper, editor, mediaInfo, computeBox } = config
+  const { clamp, gripper, editor, computeBox } = config
 
   function handleStart(event: Event) {
     if (!(event instanceof PointerEvent)) return
@@ -167,14 +194,34 @@ export function attachGripperDrag(config: GripperDragConfig): void {
 
       const { width, height } = readGripperDimensions(gripper)
       resetGripperPosition(gripper, state.initialLeft, state.initialTop)
+      const nodePos = resolveDragTargetPos(editor, gripper)
 
-      if (mediaInfo.from !== undefined) {
-        updateNodeDimensions(editor, mediaInfo.from, width, height)
+      try {
+        if (nodePos !== null) {
+          updateNodeDimensions(editor, nodePos, width, height)
+        }
+      } finally {
+        // Listeners and pointer capture must release even when the commit throws.
+        teardown()
+        setGripperDragging(gripper, false)
+        activeDragByEditor.delete(editor)
+        restoreControlsAfterResize(editor, gripper, nodePos ?? undefined)
       }
+    }
+
+    // Escape drops the preview without committing: restore the gripper box, then re-arm hover chrome.
+    function cancel() {
+      if (ended) return
+      ended = true
+
+      gripper.style.width = `${state.initialWidth}px`
+      gripper.style.height = `${state.initialHeight}px`
+      resetGripperPosition(gripper, state.initialLeft, state.initialTop)
 
       teardown()
       setGripperDragging(gripper, false)
-      restoreControlsAfterResize(editor, gripper, mediaInfo.from)
+      activeDragByEditor.delete(editor)
+      restoreControlsAfterResize(editor, gripper)
     }
 
     function onWindowBlur() {
@@ -182,23 +229,23 @@ export function attachGripperDrag(config: GripperDragConfig): void {
     }
 
     function onKeyDown(ev: KeyboardEvent) {
-      if (ev.key === 'Escape') finish()
+      if (ev.key === 'Escape') cancel()
     }
 
     type ListenerBinding = [EventTarget, string, EventListener]
 
     // Window pointer + mouse fallbacks keep drag alive across iframe overlays and Cypress.
     const bindings: ListenerBinding[] = [
-      [clamp, 'pointermove', onPointerMove],
+      [clamp, 'pointermove', onPointerMove as EventListener],
       [clamp, 'pointerup', finish],
       [clamp, 'pointercancel', finish],
-      [window, 'pointermove', onPointerMove],
+      [window, 'pointermove', onPointerMove as EventListener],
       [window, 'pointerup', finish],
       [window, 'pointercancel', finish],
-      [window, 'mousemove', onMouseMove],
+      [window, 'mousemove', onMouseMove as EventListener],
       [window, 'mouseup', finish],
       [window, 'blur', onWindowBlur],
-      [document, 'keydown', onKeyDown]
+      [document, 'keydown', onKeyDown as EventListener]
     ]
 
     function setDragListeners(active: boolean): void {
@@ -217,7 +264,20 @@ export function attachGripperDrag(config: GripperDragConfig): void {
       }
     }
 
+    // Editor destroyed mid-drag: release listeners + visual state without
+    // touching the now-dead view (finish() dispatches a transaction and would
+    // throw). A later stray pointerup hits the `ended` guard and no-ops.
+    function abort() {
+      if (ended) return
+      ended = true
+      teardown()
+      setGripperDragging(gripper, false)
+      setMediaResizing(editor, false)
+      activeDragByEditor.delete(editor)
+    }
+
     setDragListeners(true)
+    activeDragByEditor.set(editor, abort)
   }
 
   clamp.addEventListener('pointerdown', handleStart)

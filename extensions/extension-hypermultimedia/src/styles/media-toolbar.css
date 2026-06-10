@@ -1,13 +1,19 @@
+/*
+ * Theme tokens use `light-dark()` so the chrome follows the nearest ancestor's
+ * `color-scheme` — a host toggling `color-scheme: light | dark` on <html> flips
+ * it automatically; with the default `normal` it falls back to the OS
+ * `prefers-color-scheme`. Same approach as extension-hyperlink's styles.css.
+ */
 :root {
-  --hm-toolbar-bg: #ffffff;
-  --hm-toolbar-fg: #374151;
-  --hm-toolbar-border: rgba(0, 0, 0, 0.08);
-  --hm-toolbar-hover: #f3f4f6;
-  --hm-toolbar-active: #e5edff;
-  --hm-toolbar-active-fg: #1d4ed8;
-  --hm-toolbar-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  --hm-caption-fg: #6b7280;
-  --hm-caption-placeholder: #9ca3af;
+  --hm-toolbar-bg: light-dark(#ffffff, #1f2937);
+  --hm-toolbar-fg: light-dark(#374151, #e5e7eb);
+  --hm-toolbar-border: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+  --hm-toolbar-hover: light-dark(#f3f4f6, #374151);
+  --hm-toolbar-active: light-dark(#e5edff, #1e3a8a);
+  --hm-toolbar-active-fg: light-dark(#1d4ed8, #bfdbfe);
+  --hm-toolbar-shadow: 0 4px 12px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.5));
+  --hm-caption-fg: light-dark(#6b7280, #9ca3af);
+  --hm-caption-placeholder: light-dark(#9ca3af, #6b7280);
 }
 
 [class*='hypermultimedia--'][class*='__content'] {
@@ -127,4 +133,49 @@
   margin: 0;
   display: inline-block;
   max-width: 100%;
+}
+
+/* Floating-popover shell (overflow/submenu) — kept in lockstep with extension-hyperlink styles.css. */
+.floating-popover {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity 120ms ease-in-out,
+    transform 120ms ease-in-out;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform, opacity;
+}
+
+.floating-popover.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.floating-popover-arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--hm-toolbar-bg);
+  transform: rotate(45deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-popover-arrow-top,
+.floating-popover-arrow-left {
+  border-right: 1px solid var(--hm-toolbar-border);
+  border-bottom: 1px solid var(--hm-toolbar-border);
+}
+
+.floating-popover-arrow-bottom,
+.floating-popover-arrow-right {
+  border-top: 1px solid var(--hm-toolbar-border);
+  border-left: 1px solid var(--hm-toolbar-border);
+}
+
+.floating-popover-content {
+  position: relative;
+  z-index: 2;
 }

@@ -1,25 +1,4 @@
-export interface StyleAttributes {
-  display?: string
-  height?: number | string
-  width?: number | string
-  float?: string
-  clear?: string
-  margin?: string
-  justifyContent?: string
-}
-
-export const clearChildNodes = (node: HTMLElement): void => {
-  while (node.firstChild) node.removeChild(node.firstChild)
-}
-
-export const createElement = (tag: string, className = '', innerHTML = ''): HTMLElement => {
-  const elem = document.createElement(tag)
-  if (className) elem.classList.add(className)
-  if (innerHTML) elem.innerHTML = innerHTML
-  return elem
-}
-
-export const applyStyles = (dom: HTMLElement, styles: StyleAttributes): void => {
+export const applyStyles = (dom: HTMLElement, styles: StyleLayoutOptions): void => {
   const style = dom.style as unknown as Record<string, string>
   for (const [key, value] of Object.entries(styles)) {
     if (value !== undefined && value !== null) {
@@ -69,20 +48,23 @@ export const createEmbedWrapperStyle = (
   })
 }
 
-/** Builds a layout style string from node options merged with HTML attributes. */
+/** Finite-pixel value or null — guards parseInt(NaN/undefined) leaking "NaNpx". */
+const pixelValue = (value: number | string | null | undefined): string | null => {
+  const parsed = parseInt(String(value), 10)
+  return Number.isFinite(parsed) ? `${parsed}px` : null
+}
+
+/**
+ * Builds a layout style string from HTML attributes, falling back to node options.
+ * Attrs come first: a committed per-node width/height must beat the kit default.
+ */
 export const createStyleString = (
   options: StyleLayoutOptions,
   HTMLAttributes: StyleLayoutOptions
 ): string => {
   const styles: Record<string, string | null> = {
-    height:
-      options.height || HTMLAttributes.height
-        ? `${options.height || parseInt(HTMLAttributes.height as string, 10)}px`
-        : null,
-    width:
-      options.width || HTMLAttributes.width
-        ? `${options.width || parseInt(HTMLAttributes.width as string, 10)}px`
-        : null,
+    height: pixelValue(HTMLAttributes.height) ?? pixelValue(options.height),
+    width: pixelValue(HTMLAttributes.width) ?? pixelValue(options.width),
     float: HTMLAttributes.float || null,
     clear: HTMLAttributes.clear || null,
     margin: HTMLAttributes.margin || null

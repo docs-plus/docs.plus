@@ -1,22 +1,20 @@
 # Video
 
-Use this extension to render `<video>` HTML tags. Block Or Inline level node.
+Renders `<video>` elements as a block or inline node.
 
-> **Restrictions:** This extension does only the rendering of videos. It doesn’t upload videos to your server, that’s a whole different story.
+> **Restrictions:** renders video only — uploading files to your server is the host's job.
 
-## Installation
+## Install
 
 ```bash
 bun add @docs.plus/extension-hypermultimedia
 ```
 
-Then, import the extension into your editor:
-
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Video
+  Video: true
 })
 ```
 
@@ -28,7 +26,7 @@ HyperMultimediaKit.configure({
 
 ### inline
 
-Controls if the node should be handled inline or as a block.
+Renders the node inline instead of as a block.
 
 - Target: `Node`
 - Default: `false`
@@ -58,7 +56,7 @@ HyperMultimediaKit.configure({
 
 ### autoplay
 
-Automatically start playing the video as soon as it can do so without stopping.
+Starts playback as soon as the video can play through without stopping.
 
 - Target: `Node`
 - Default: `false`
@@ -73,7 +71,7 @@ HyperMultimediaKit.configure({
 
 ### loop
 
-Automatically seek back to the start upon reaching the end of the video.
+Seeks back to the start when the video ends.
 
 - Target: `Node`
 - Default: `false`
@@ -88,7 +86,7 @@ HyperMultimediaKit.configure({
 
 ### muted
 
-Mute the video.
+Mutes the video.
 
 - Target: `Node`
 - Default: `false`
@@ -103,7 +101,7 @@ HyperMultimediaKit.configure({
 
 ### poster
 
-A URL indicating a poster frame to show until the user plays or seeks.
+URL of a poster frame shown until the user plays or seeks.
 
 - Target: `Node`
 - Default: `null`
@@ -133,7 +131,7 @@ HyperMultimediaKit.configure({
 
 ### HTMLAttributes
 
-Custom HTML attributes that should be added to the rendered HTML tag.
+Custom HTML attributes added to the rendered tag.
 
 - Target: `Node`
 - Default: `{}`
@@ -148,42 +146,20 @@ HyperMultimediaKit.configure({
 })
 ```
 
-### modal
-
-A modal box that appears when you **mouseover on the video**. A default modal box is provided which you can utilize or replace with your custom modal.
-
-- Target: `Node`
-- Default: `false`
-
-```js
-import { hypermultimedia, videoModal } from '@docs.plus/extension-hypermultimedia'
-
-HyperMultimediaKit.configure({
-  Video: {
-    modal: videoModal // default modal
-  }
-})
-```
-
 ### resizeGripper
 
-a resize gripper that apear when you mouseover on video.
+Opt the node out of the hover resize gripper (eight drag handles).
 
-- target: `Node`
-- default: `true`
+- Target: `Kit`
+- Default: `true`
 
 ```js
-import { hypermultimedia, videoModal } from '@docs.plus/extension-hypermultimedia'
-
 HyperMultimediaKit.configure({
   Video: {
-    modal: videoModal,
     resizeGripper: false
   }
 })
 ```
-
-> To implement your own modal box, examine the default modal box and replicate the same methods. You can refer to the [source code](../../modals/youtube.ts) for more details.
 
 ## Caption
 
@@ -194,9 +170,9 @@ Video also exposes a Download action.
 
 ## Commands
 
-### setVideo
+### setVideo(options)
 
-Makes the current node a video.
+Inserts a video node. Returns `false` when `src` is missing.
 
 ```js
 editor.commands.setVideo({
@@ -208,14 +184,6 @@ editor.commands.setVideo({
   width: 640,
   height: 480
 })
-```
-
-## Markdown syntax
-
-```md
-![video](src title width height)
-
-![video](https://example.com/foobar.mp4)
 ```
 
 ### Options
@@ -231,6 +199,14 @@ editor.commands.setVideo({
 | margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
 | justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
+## Markdown syntax
+
+```md
+![video](src title width height)
+
+![video](https://example.com/foobar.mp4)
+```
+
 ## Source code
 
-[packages/extension-hyperMultimedia/video](./video.ts)
+[`video.ts`](./video.ts)

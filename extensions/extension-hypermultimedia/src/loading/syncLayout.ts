@@ -5,6 +5,7 @@ export { EMBED_LAYOUT_ATTR_KEYS }
 
 const DEFAULT_LAYOUT_FALLBACK = { width: 640, height: 480 } as const
 export const IMAGE_LAYOUT_FALLBACK = { width: 320, height: 240 } as const
+export const AUDIO_LAYOUT_FALLBACK = { width: 450, height: 120 } as const
 
 export function syncElementPixelSize(el: HTMLElement, width: number, height: number): void {
   el.style.width = `${width}px`
@@ -78,7 +79,7 @@ function syncImagePixelSize(img: HTMLImageElement, width: number, height: number
   img.style.aspectRatio = `${width} / ${height}`
 }
 
-interface SyncMediaNodeLayoutOptions {
+export interface SyncMediaNodeLayoutOptions {
   wrapper: HTMLElement
   attrs: Record<string, unknown>
   loadingHost: HTMLElement
@@ -89,7 +90,8 @@ interface SyncMediaNodeLayoutOptions {
   syncSurface: (el: HTMLElement, width: number, height: number) => void
 }
 
-function syncMediaNodeLayout(options: SyncMediaNodeLayoutOptions): void {
+/** Mirror committed attrs onto wrapper, loading shell, and the rendered media surface. */
+export function syncMediaNodeLayout(options: SyncMediaNodeLayoutOptions): void {
   const dims =
     options.dims ??
     parseLayoutDimensions(options.attrs, options.fallback ?? DEFAULT_LAYOUT_FALLBACK)
@@ -141,22 +143,5 @@ export function syncIframeNodeLayout(options: {
     surface: options.iframe,
     dims: options.dims,
     syncSurface: (el, w, h) => syncIframePixelSize(el as HTMLIFrameElement, w, h)
-  })
-}
-
-export function syncVideoNodeLayout(options: {
-  wrapper: HTMLElement
-  attrs: Record<string, unknown>
-  loadingHost: HTMLElement
-  video: HTMLVideoElement
-  dims?: { width: number; height: number }
-}): void {
-  syncMediaNodeLayout({
-    wrapper: options.wrapper,
-    attrs: options.attrs,
-    loadingHost: options.loadingHost,
-    surface: options.video,
-    dims: options.dims,
-    syncSurface: syncElementPixelSize
   })
 }

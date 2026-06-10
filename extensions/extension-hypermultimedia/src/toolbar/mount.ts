@@ -1,7 +1,7 @@
+import { getKitStorage } from '../kitStorage'
 import { createMediaToolbar } from './createMediaToolbar'
 import { closeToolbarPopover } from './menu'
 import type { MediaToolbarFactory, MediaToolbarOptions } from './types'
-import { getKitStorage } from './types'
 
 function existingToolbar(wrapper: HTMLElement): HTMLElement | null {
   return wrapper.querySelector<HTMLElement>(':scope > .media-toolbar')
@@ -30,7 +30,10 @@ export function openMediaToolbar(
 export function closeMediaToolbar(wrapper?: HTMLElement | null): void {
   closeToolbarPopover()
   const root = wrapper ?? document
-  root.querySelectorAll<HTMLElement>('.media-toolbar').forEach((el) => {
+  // The document-wide fallback filters on [data-node-type] so host-page elements that
+  // merely share the `.media-toolbar` class are never touched.
+  const selector = wrapper ? '.media-toolbar' : '.media-toolbar[data-node-type]'
+  root.querySelectorAll<HTMLElement>(selector).forEach((el) => {
     el.closest('.hm-has-toolbar')?.classList.remove('hm-has-toolbar')
     el.remove()
   })

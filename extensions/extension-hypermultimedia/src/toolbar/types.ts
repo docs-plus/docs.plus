@@ -1,7 +1,5 @@
 import type { Editor } from '@tiptap/core'
 
-import type { MediaLoadingShellOption } from '../loading'
-
 export type MediaActionPlacement = 'inline' | 'menu'
 
 /** Everything an action needs to read state and mutate the node. Built per open. */
@@ -53,20 +51,3 @@ export interface MediaToolbarOptions {
 
 /** Return an element for the desktop overlay, or `null` so the host renders its own surface. */
 export type MediaToolbarFactory = (options: MediaToolbarOptions) => HTMLElement | null
-
-/** Single source of truth for the kit's storage shape — read via `getKitStorage`. */
-export interface HyperMultimediaKitStorage {
-  mediaToolbar?: MediaToolbarFactory
-  /** Matches the real stored value (`boolean | factory`), not a bare boolean. */
-  loadingShell?: MediaLoadingShellOption
-  mediaActions?: MediaActionsResolver
-  isUploadedMedia?: (ctx: MediaActionContext) => boolean
-}
-
-/** Typed accessor that replaces the ad-hoc `editor.storage as Record<...>` casts. */
-export function getKitStorage(editor: Editor): HyperMultimediaKitStorage {
-  return (
-    (editor.storage as Record<string, HyperMultimediaKitStorage | undefined>).HyperMultimediaKit ??
-    {}
-  )
-}

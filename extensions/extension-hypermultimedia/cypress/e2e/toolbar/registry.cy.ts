@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import type { MediaActionsResolver } from '@docs.plus/extension-hypermultimedia'
+
 describe('media toolbar action registry', () => {
   beforeEach(() => cy.visitPlayground())
 
@@ -24,11 +26,14 @@ describe('media toolbar action registry', () => {
   it('honours a host mediaActions override', () => {
     cy.window().then((win) => {
       // Playground exposes a setter to swap kit storage for this test.
-      win._editor.storage.HyperMultimediaKit.mediaActions = (defaults) =>
+      const storage = win._editor.storage as unknown as {
+        HyperMultimediaKit: { mediaActions?: MediaActionsResolver }
+      }
+      storage.HyperMultimediaKit.mediaActions = (defaults) =>
         defaults.filter((a) => a.id !== 'delete')
       const ids = win._hypermultimedia.resolveMediaActions(win._editor, 'image').map((a) => a.id)
       expect(ids).to.not.include('delete')
-      win._editor.storage.HyperMultimediaKit.mediaActions = undefined
+      storage.HyperMultimediaKit.mediaActions = undefined
     })
   })
 })

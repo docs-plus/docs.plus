@@ -2,7 +2,7 @@
 
 Embeds YouTube watch, embed, Shorts, and `youtu.be` URLs as iframe players. Paste a link or call `setYoutubeVideo`.
 
-## Installation
+## Install
 
 ```bash
 bun add @docs.plus/extension-hypermultimedia
@@ -25,7 +25,7 @@ Configure defaults on `HyperMultimediaKit.configure({ Youtube: { … } })`. Each
 
 Override player behavior per insert with `setYoutubeVideo({ … })`. Pasting a watch URL with `?t=`, `?start=`, or `#t=` sets the node `start` attribute (seconds).
 
-Embed query names follow [YouTube’s IFrame Player API](https://developers.google.com/youtube/player_parameters). This extension maps camelCase kit/attr names to those query keys (for example `ccLanguage` → `cc_lang`, `disableKBcontrols` → `disablekb`).
+Embed query names follow [YouTube’s IFrame Player API](https://developers.google.com/youtube/player_parameters). This extension maps camelCase kit/attr names to those query keys (for example `ccLanguage` → `cc_lang_pref`, `disableKBcontrols` → `disablekb`).
 
 When `loop` is `1` and `playlist` is omitted, the builder sets `playlist` to the current video ID so single-video loop works.
 
@@ -70,7 +70,7 @@ HyperMultimediaKit.configure({
 | `autoplay`          | `autoplay`       | `0`     | `0` or `1`                                                      |
 | `controls`          | `controls`       | `1`     | `0` or `1`                                                      |
 | `nocookie`          | (embed host)     | `false` | Uses `youtube-nocookie.com` when `true`                         |
-| `ccLanguage`        | `cc_lang`        | —       | ISO 639-1, e.g. `es`                                            |
+| `ccLanguage`        | `cc_lang_pref`   | —       | ISO 639-1, e.g. `es`                                            |
 | `ccLoadPolicy`      | `cc_load_policy` | —       | `1` shows captions by default                                   |
 | `color`             | `color`          | —       | `red` or `white` (progress bar)                                 |
 | `disableKBcontrols` | `disablekb`      | `0`     | `1` disables keyboard controls                                  |

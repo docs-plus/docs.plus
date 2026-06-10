@@ -61,7 +61,7 @@ export const createMediaResizeGripper = (
   gripper.append(...clamps.sides, ...Object.values(clamps.corners))
 
   clamps.sides.forEach((clamp) => {
-    attachGripperDrag({ clamp, gripper, editor, mediaInfo, computeBox: computeSideBox })
+    attachGripperDrag({ clamp, gripper, editor, computeBox: computeSideBox })
   })
 
   Object.entries(clamps.corners).forEach(([corner, clamp]) => {
@@ -69,7 +69,6 @@ export const createMediaResizeGripper = (
       clamp,
       gripper,
       editor,
-      mediaInfo,
       computeBox: computeCornerBox(corner as Corner)
     })
   })

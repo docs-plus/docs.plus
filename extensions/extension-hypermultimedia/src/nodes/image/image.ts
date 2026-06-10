@@ -45,7 +45,6 @@ export const Image = Node.create<ImageOptions>({
   addOptions() {
     return {
       allowBase64: false,
-      toolbar: undefined,
       margin: 'auto',
       clear: 'none',
       float: null,
@@ -81,9 +80,6 @@ export const Image = Node.create<ImageOptions>({
       },
       display: {
         default: this.options.display
-      },
-      transform: {
-        default: 'rotate(0deg)'
       },
       width: {
         default: this.options.width,
@@ -230,6 +226,11 @@ export const Image = Node.create<ImageOptions>({
 
   addProseMirrorPlugins() {
     const editor = this.editor as Editor
-    return [HyperImagePastePlugin(editor, { nodeName: this.name })]
+    return [
+      HyperImagePastePlugin(editor, {
+        nodeName: this.name,
+        allowBase64: this.options.allowBase64
+      })
+    ]
   }
 })

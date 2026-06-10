@@ -1,4 +1,16 @@
 /* Reserved-size loading shell (Notion/Slack-style) — theme via CSS variables. */
+
+/* Tokens follow the ancestor `color-scheme` via light-dark(); see media-toolbar.css. */
+:root {
+  --hm-loading-bg: light-dark(#f3f4f6, #111827);
+  --hm-loading-shimmer: light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.08));
+  --hm-loading-provider: light-dark(#374151, #e5e7eb);
+  --hm-loading-message: light-dark(#6b7280, #9ca3af);
+  --hm-loading-error: light-dark(#b91c1c, #f87171);
+  --hm-loading-spinner-track: light-dark(#e5e7eb, #374151);
+  --hm-loading-spinner-active: light-dark(#2563eb, #60a5fa);
+}
+
 .hm-media-host {
   position: relative;
   box-sizing: border-box;
@@ -145,4 +157,11 @@
 .hm-media-slot img {
   display: block;
   max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-loading-shell__shimmer,
+  .hm-loading-shell__spinner {
+    animation: none;
+  }
 }

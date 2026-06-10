@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core'
 
 import { MediaResizeControls } from './extensions/mediaResizeControls'
 import { MediaResizeGripper } from './extensions/resizeGripper'
+import { HYPER_MULTIMEDIA_KIT_EXTENSION_NAME } from './kitStorage'
 import type { MediaLoadingShellOption } from './loading'
 import { Audio, AudioOptions } from './nodes/audio/audio'
 import { Image } from './nodes/image/image'
@@ -51,7 +52,7 @@ type MediaExtension =
   | typeof X
 
 export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
-  name: 'HyperMultimediaKit',
+  name: HYPER_MULTIMEDIA_KIT_EXTENSION_NAME,
 
   // Expose the host-agnostic toolbar factory on per-editor storage so
   // `openMediaToolbar` (called from every node-view) can resolve it without

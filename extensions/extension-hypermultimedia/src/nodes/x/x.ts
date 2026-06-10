@@ -6,8 +6,13 @@ import {
   createCaptionElement,
   readCaption
 } from '../../caption'
-import { wrapMediaWithLoadingShell } from '../../loading'
-import { EMBED_CHROME_DEFAULTS, embedAttrsEqual, type EmbedNodeOptions } from '../../utils/embedKit'
+import { layoutAttrsChanged, wrapMediaWithLoadingShell } from '../../loading'
+import {
+  defaultsFromOptions,
+  EMBED_CHROME_DEFAULTS,
+  embedAttrsEqual,
+  type EmbedNodeOptions
+} from '../../utils/embedKit'
 import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
 import { applyStyles, generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
@@ -19,6 +24,12 @@ import {
 import { mountXEmbed, normalizeXUrl, watchXEmbedHeight, X_URL_REGEX_GLOBAL } from './helper'
 
 const EMBED_ATTR_KEYS = ['src', 'maxwidth', 'theme', 'lang', 'hide_media', 'hide_thread'] as const
+
+/** oEmbed params seeded from kit options; per-node attrs override them. */
+const X_OEMBED_ATTR_KEYS = ['theme', 'lang', 'hide_media', 'hide_thread', 'dnt'] as const
+
+/** Wrapper placement attrs; update() re-applies layout in place when they change. */
+const X_CHROME_ATTR_KEYS = ['display', 'float', 'clear', 'margin', 'justifyContent'] as const
 
 export interface XOptions extends StyleLayoutOptions, EmbedNodeOptions, XOEmbedKitOptions {}
 
@@ -34,6 +45,9 @@ export type AddXOptions = {
 export const X = Node.create<XOptions>({
   name: 'x',
   draggable: true,
+  // Above StarterKit's default (100) so `blockquote.twitter-tweet` parses as an X
+  // embed before the generic blockquote rule claims it.
+  priority: 101,
 
   addOptions() {
     return {
@@ -65,39 +79,11 @@ export const X = Node.create<XOptions>({
       maxwidth: {
         default: X_EMBED_DEFAULT_MAXWIDTH
       },
-      theme: {
-        default: this.options.theme
-      },
-      lang: {
-        default: this.options.lang
-      },
-      hide_media: {
-        default: this.options.hide_media
-      },
-      hide_thread: {
-        default: this.options.hide_thread
-      },
       align: {
         default: null
       },
-      dnt: {
-        default: this.options.dnt
-      },
-      margin: {
-        default: this.options.margin
-      },
-      clear: {
-        default: this.options.clear
-      },
-      float: {
-        default: this.options.float
-      },
-      display: {
-        default: this.options.display
-      },
-      justifyContent: {
-        default: this.options.justifyContent
-      },
+      ...defaultsFromOptions(this.options, X_OEMBED_ATTR_KEYS),
+      ...defaultsFromOptions(this.options, X_CHROME_ATTR_KEYS),
       caption: captionAttribute()
     }
   },
@@ -111,7 +97,9 @@ export const X = Node.create<XOptions>({
 
           const href = (node as HTMLElement).querySelector('a')?.getAttribute('href') ?? ''
           const src = normalizeXUrl(href)
-          return src ? { src } : { src: null }
+          // Reject invalid/hostile hrefs outright — a `src: null` node would later
+          // throw in renderHTML on the null text child.
+          return src ? { src } : false
         }
       }
     ]
@@ -206,13 +194,7 @@ export const X = Node.create<XOptions>({
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
 
-          if (
-            updatedNode.attrs.display !== attrsSnapshot.display ||
-            updatedNode.attrs.float !== attrsSnapshot.float ||
-            updatedNode.attrs.clear !== attrsSnapshot.clear ||
-            updatedNode.attrs.margin !== attrsSnapshot.margin ||
-            updatedNode.attrs.justifyContent !== attrsSnapshot.justifyContent
-          ) {
+          if (layoutAttrsChanged(updatedNode.attrs, attrsSnapshot, X_CHROME_ATTR_KEYS)) {
             applyLayout(updatedNode.attrs)
           }
 
@@ -236,18 +218,10 @@ export const X = Node.create<XOptions>({
           const src = normalizeXUrl(options.src)
           if (!src) return false
 
+          // Omitted attrs fall back to schema defaults via ProseMirror computeAttrs.
           return commands.insertContent({
             type: this.name,
-            attrs: {
-              ...options,
-              src,
-              maxwidth: options.maxwidth ?? X_EMBED_DEFAULT_MAXWIDTH,
-              theme: options.theme ?? this.options.theme,
-              lang: options.lang ?? this.options.lang,
-              hide_media: options.hide_media ?? this.options.hide_media,
-              hide_thread: options.hide_thread ?? this.options.hide_thread,
-              keyId: generateShortId()
-            }
+            attrs: { ...options, src, keyId: generateShortId() }
           })
         }
     }
@@ -263,14 +237,8 @@ export const X = Node.create<XOptions>({
         getAttributes: (match) => {
           const src = normalizeXUrl(match.input ?? match[0])
           if (!src) return false
-          return {
-            src,
-            maxwidth: X_EMBED_DEFAULT_MAXWIDTH,
-            theme: this.options.theme,
-            lang: this.options.lang,
-            hide_media: this.options.hide_media,
-            hide_thread: this.options.hide_thread
-          }
+          // Schema defaults (maxwidth, theme, …) fill in via ProseMirror computeAttrs.
+          return { src }
         }
       })
     ]

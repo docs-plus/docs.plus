@@ -21,7 +21,7 @@ HyperMultimediaKit.configure({
 
 ## Kit options vs node attributes
 
-Kit defaults apply to every insert; per-node attrs override when building the embed URL. Only valid Loom URLs are stored — hostile `src` values are rejected at parse time and render as an empty iframe.
+Kit defaults apply to every insert; per-node attrs override when building the embed URL. URL validation lives under [Security](#security).
 
 ## Layout
 

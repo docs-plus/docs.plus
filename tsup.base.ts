@@ -53,9 +53,10 @@
  *
  *   - Overriding `dts` → drops `resolve: true`.
  *
- * Today only `extension-hyperlink` uses an override (`onSuccess`, which the
- * base doesn't define) so the shallow spread is safe. Add a deep-merge layer
- * the day a second caller actually needs it — not before.
+ * Today `extension-hyperlink` and `extension-hypermultimedia` pass overrides
+ * (`onSuccess` CSS concat, plus an explicit `external` pin that re-lists the
+ * base externals so `@docs.plus/floating-popover` stays bundled — AGENTS §163).
+ * Add a deep-merge layer the day a caller actually needs it — not before.
  */
 
 import type { Options } from 'tsup'

@@ -1,22 +1,4 @@
-// Production logger kept (not stripped) so sanitize/render failures stay
-// visible in the field. `console.warn`/`console.error` survive the tsup
-// `pure` policy by design (the kit relies on them).
-export class Logger {
-  private static isDebugMode = false
-
-  static debug(message: string, data?: unknown): void {
-    // eslint-disable-next-line no-console -- intentional debug logger, gated behind isDebugMode
-    if (this.isDebugMode) console.debug(`[HyperMultimedia] ${message}`, data)
-  }
-
-  static warn(message: string, data?: unknown): void {
-    console.warn(`[HyperMultimedia] ${message}`, data)
-  }
-
-  static error(message: string, error?: unknown): void {
-    console.error(`[HyperMultimedia] ${message}`, error)
-  }
-}
+import { Logger } from './logger'
 
 // Tag/attribute allowlist sanitizer for untrusted embed HTML (X (formerly Twitter) oEmbed
 // before `innerHTML`). Disallowed tags collapse to a text-only span; on any
@@ -78,8 +60,8 @@ export class HTMLSanitizer {
           child.removeAttribute(attr.name)
           return
         }
-        // Allowed-by-name url attrs still need a scheme gate.
-        if ((name === 'href' || name === 'src') && !this.isSafeUrl(attr.value)) {
+        // `href` is the only allowlisted url attr; it still needs a scheme gate.
+        if (name === 'href' && !this.isSafeUrl(attr.value)) {
           child.removeAttribute(attr.name)
         }
       })

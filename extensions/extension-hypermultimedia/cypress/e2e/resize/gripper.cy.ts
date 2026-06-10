@@ -282,15 +282,15 @@ describe('resize gripper', () => {
       cy.get('#editor .media-toolbar').should('not.exist')
     })
 
-    it('deletes the hovered media node when Delete is pressed', () => {
+    it('deletes the hovered media node when Delete is pressed with focus outside the editor', () => {
       cy.getEditor().then((editor) => {
         editor.commands.setYoutubeVideo({ src: YOUTUBE_SRC })
       })
       cy.nodeCount('youtube').should('eq', 1)
       cy.hoverMediaControls('#editor .hypermultimedia--youtube__content')
       cy.get('#editor .hypermultimedia__resize-gripper--active').should('exist')
-      cy.get('#editor .ProseMirror').focus()
-      cy.get('#editor .ProseMirror').realPress('Delete')
+      // Focus stays outside the editor: a focused text caret keeps Delete for text editing.
+      cy.get('body').realPress('Delete')
       cy.nodeCount('youtube').should('eq', 0)
       cy.get('#editor .hypermultimedia__resize-gripper--active').should('not.exist')
       cy.get('#editor .media-toolbar').should('not.exist')

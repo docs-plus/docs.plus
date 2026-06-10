@@ -57,7 +57,7 @@ type YoutubeEmbedParamKey = keyof Pick<
 /** Internal option keys → query names documented by YouTube. */
 const YOUTUBE_QUERY_PARAM: Record<YoutubeEmbedParamKey, string> = {
   autoplay: 'autoplay',
-  ccLanguage: 'cc_lang',
+  ccLanguage: 'cc_lang_pref',
   ccLoadPolicy: 'cc_load_policy',
   color: 'color',
   controls: 'controls',
@@ -113,7 +113,8 @@ export const parseYoutubeVideoId = (url: string): string | null => {
       return id ?? null
     }
 
-    if (host.includes('youtube.com') || host === 'music.youtube.com') {
+    // Exact-host match only: `includes` would accept youtube.com.evil.example.
+    if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
       if (parsed.pathname.startsWith('/embed/')) {
         return parsed.pathname.split('/')[2] ?? null
       }

@@ -1,27 +1,26 @@
 describe('X parseHTML href gate (S2)', () => {
   beforeEach(() => {
-    cy.visitPlayground()
+    // StarterKit's blockquote is disabled via fixture param so X's
+    // `blockquote.twitter-tweet` parse rule is the one that runs.
+    cy.visitPlayground('blockquote=off')
   })
 
-  // StarterKit blockquote claims `blockquote.twitter-tweet` in the clean-room harness;
-  // S2 is covered indirectly via setX + oEmbed sanitization (x-oembed-s3).
-  it.skip('drops javascript: href from blockquote.twitter-tweet on setContent', () => {
+  it('parses a valid status blockquote into an x node with a normalized src', () => {
+    cy.setEditorContent(
+      '<blockquote class="twitter-tweet"><a href="https://x.com/docsdotplus/status/1234567890">tweet</a></blockquote>'
+    )
+    cy.nodeCount('x').should('eq', 1)
+    cy.nodeAttr('x', 'src').should('eq', 'https://x.com/docsdotplus/status/1234567890')
+  })
+
+  it('drops javascript: href from blockquote.twitter-tweet on setContent', () => {
     cy.setEditorContent(
       '<blockquote class="twitter-tweet"><a href="javascript:alert(1)">tweet</a></blockquote>'
     )
-    cy.nodeCount('x').should('eq', 1)
-    cy.getEditor().then((editor) => {
-      let src: string | null = null
-      editor.state.doc.descendants((node) => {
-        if (node.type.name === 'x') src = node.attrs.src
-      })
-      expect(src).to.be.null
-    })
-    cy.get('#editor blockquote.twitter-tweet a').should(
-      'not.have.attr',
-      'href',
-      'javascript:alert(1)'
-    )
+    // Hostile href ⇒ getAttrs returns false ⇒ no junk x node, no executable href in the DOM.
+    cy.nodeCount('x').should('eq', 0)
+    cy.get('#editor blockquote.twitter-tweet a').should('not.exist')
+    cy.get('#editor a[href^="javascript:"]').should('not.exist')
   })
 })
 

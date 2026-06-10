@@ -1,8 +1,8 @@
 import type { Editor } from '@tiptap/core'
 
+import { getKitStorage } from '../kitStorage'
 import { BASE_ACTIONS, NODE_ACTIONS } from './actions'
 import type { MediaActionList } from './types'
-import { getKitStorage } from './types'
 
 /** kit defaults (sorted by `order`) → host `mediaActions` override (whose array order is final). */
 export function resolveMediaActions(editor: Editor, nodeType: string): MediaActionList {

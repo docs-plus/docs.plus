@@ -14,7 +14,10 @@ describe('invalid URL command guards', () => {
   cases.forEach(({ cmd, args }) => {
     it(`rejects ${cmd} for invalid src`, () => {
       cy.getEditor().then((editor) => {
-        const commands = editor.commands as Record<string, (opts: { src: string }) => boolean>
+        const commands = editor.commands as unknown as Record<
+          string,
+          (opts: { src: string }) => boolean
+        >
         expect(commands[cmd](args)).to.be.false
       })
       cy.get('#editor iframe, #editor blockquote.twitter-tweet').should('not.exist')

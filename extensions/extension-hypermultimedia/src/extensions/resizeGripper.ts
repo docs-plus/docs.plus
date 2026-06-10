@@ -3,6 +3,7 @@ import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 import { buildOptimizedDecorations } from './decoration'
+import { abortActiveGripperDrag } from './decoration/gripperDrag'
 import {
   BuildDecorationsFunction,
   createDecorationPluginProps,
@@ -35,7 +36,10 @@ export const MediaResizeGripper = Extension.create<MediaResizeGripperOptions>({
       new Plugin({
         key: new PluginKey('MediaResizeGripper'),
         state: createDecorationPluginState(buildDecorations, acceptedNodes),
-        props: createDecorationPluginProps()
+        props: createDecorationPluginProps(),
+        // Editor torn down mid-drag would otherwise leak the drag's window/
+        // document listeners + pointer capture; abort releases them.
+        view: () => ({ destroy: () => abortActiveGripperDrag(editor) })
       })
     ]
   }

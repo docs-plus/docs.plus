@@ -1,25 +1,13 @@
-import { mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
+import { Node, nodeInputRule } from '@tiptap/core'
 
+import { captionAttribute } from '../../caption'
+import { layoutAttrDefaults, resolveEmbedLayoutDimensions } from '../../utils/embedKit'
 import {
-  captionAttribute,
-  type CaptionHandle,
-  createCaptionElement,
-  readCaption
-} from '../../caption'
-import {
-  layoutAttrsChanged,
-  parseLayoutDimensions,
-  syncVideoNodeLayout,
-  wrapMediaWithLoadingShell
-} from '../../loading'
-import { embedAttrsEqual, resolveEmbedLayoutDimensions } from '../../utils/embedKit'
-import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
-import {
-  createStyleString,
-  generateShortId,
-  omitNullishAndFalse,
-  type StyleLayoutOptions
-} from '../../utils/utils'
+  createHtmlMediaNodeView,
+  type HtmlMediaNodeConfig,
+  renderHtmlMediaHTML
+} from '../../utils/htmlMediaNode'
+import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import { inputRegex } from './helper'
 
 interface NodeOptions {
@@ -60,6 +48,12 @@ const VIDEO_REMOUNT_ATTR_KEYS = [
   'preload',
   'poster'
 ] as const
+
+const VIDEO_MEDIA_CONFIG: HtmlMediaNodeConfig = {
+  tag: 'video',
+  elementAttrKeys: VIDEO_REMOUNT_ATTR_KEYS,
+  isAlreadyReady: (media) => media.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+}
 
 export const Video = Node.create<VideoOptions>({
   name: 'video',
@@ -115,127 +109,16 @@ export const Video = Node.create<VideoOptions>({
       preload: {
         default: 'metadata'
       },
-      margin: {
-        default: this.options.margin
-      },
-      clear: {
-        default: this.options.clear
-      },
-      float: {
-        default: this.options.float
-      },
-      display: {
-        default: this.options.display
-      },
-      justifyContent: {
-        default: this.options.justifyContent
-      },
-      width: {
-        default: this.options.width
-      },
-      height: {
-        default: this.options.height
-      },
+      ...layoutAttrDefaults(this.options),
       caption: captionAttribute()
     }
   },
 
   addNodeView() {
-    const editor = this.editor
-
-    return ({ node, HTMLAttributes, getPos }) => {
-      let attrsSnapshot = node.attrs
-      const dom = document.createElement('div')
-      const content = document.createElement('div')
-      const videoTag = document.createElement('video') as HTMLVideoElement
-
-      dom.classList.add('hypermultimedia--video__content')
-      if (node.attrs.keyId) {
-        dom.setAttribute('data-key-id', String(node.attrs.keyId))
-      }
-
-      const dims = parseLayoutDimensions(node.attrs)
-
-      const htmlAttributes = omitNullishAndFalse({
-        src: node.attrs.src ?? HTMLAttributes.src,
-        controls: node.attrs.controls,
-        autoplay: node.attrs.autoplay,
-        loop: node.attrs.loop,
-        muted: node.attrs.muted,
-        preload: node.attrs.preload,
-        poster: node.attrs.poster
-      })
-
-      Object.entries(mergeAttributes(htmlAttributes, { 'data-node-name': this.name })).forEach(
-        ([key, value]) => {
-          if (value !== undefined && value !== null && value !== false) {
-            videoTag.setAttribute(key, String(value))
-          }
-        }
-      )
-
-      content.append(videoTag)
-
-      const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
-        editor,
-        { kind: 'video', width: dims.width, height: dims.height },
-        content,
-        {
-          bindLoad: {
-            element: videoTag,
-            isAlreadyReady: () => videoTag.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-          }
-        }
-      )
-
-      dom.append(loadingHost)
-      syncVideoNodeLayout({
-        wrapper: dom,
-        attrs: node.attrs,
-        loadingHost,
-        video: videoTag,
-        dims
-      })
-
-      const caption: CaptionHandle = createCaptionElement({
-        editor,
-        getPos,
-        initial: readCaption(node)
-      })
-      dom.append(caption.el)
-
-      return {
-        dom,
-        contentDOM: content,
-        // Caption is a nested contenteditable the node view owns; keep PM out of its events.
-        stopEvent: (event: Event) => caption.el.contains(event.target as globalThis.Node | null),
-        destroy: () => {
-          controller.destroy()
-          caption.destroy()
-        },
-        ignoreMutation: (mutation) => ignoreNodeViewSubtreeMutation(mutation, dom),
-        update: (updatedNode) => {
-          if (updatedNode.type.name !== this.name) return false
-
-          if (layoutAttrsChanged(updatedNode.attrs, attrsSnapshot)) {
-            syncVideoNodeLayout({
-              wrapper: dom,
-              attrs: updatedNode.attrs,
-              loadingHost,
-              video: videoTag
-            })
-          }
-
-          if (!embedAttrsEqual(updatedNode.attrs, attrsSnapshot, VIDEO_REMOUNT_ATTR_KEYS)) {
-            return false
-          }
-
-          caption.sync(readCaption(updatedNode))
-          attrsSnapshot = updatedNode.attrs
-          return true
-        }
-      }
-    }
+    return createHtmlMediaNodeView(VIDEO_MEDIA_CONFIG, () => ({
+      name: this.name,
+      editor: this.editor
+    }))
   },
 
   parseHTML() {
@@ -247,33 +130,7 @@ export const Video = Node.create<VideoOptions>({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const style = createStyleString(this.options, {
-      height: parseInt(HTMLAttributes.height),
-      width: parseInt(HTMLAttributes.width),
-      float: HTMLAttributes.float,
-      clear: HTMLAttributes.clear,
-      margin: HTMLAttributes.margin
-    })
-
-    const htmlAttributes = omitNullishAndFalse({
-      src: node.attrs.src ?? HTMLAttributes.src,
-      controls: node.attrs.controls,
-      autoplay: node.attrs.autoplay,
-      loop: node.attrs.loop,
-      muted: node.attrs.muted,
-      preload: node.attrs.preload,
-      poster: node.attrs.poster
-    })
-
-    return [
-      'div',
-      { 'data-video': '', class: 'hypermultimedia--video__content', style },
-      [
-        'video',
-        mergeAttributes(htmlAttributes, { class: 'hypermultimedia--video__content', style }),
-        0
-      ]
-    ]
+    return renderHtmlMediaHTML(VIDEO_MEDIA_CONFIG, this.options, { node, HTMLAttributes })
   },
 
   addInputRules() {
@@ -295,9 +152,7 @@ export const Video = Node.create<VideoOptions>({
       setVideo:
         (options) =>
         ({ commands }) => {
-          if (!options.src) {
-            throw new Error('Video source is required')
-          }
+          if (!options.src) return false
 
           const { width, height, ...rest } = options
           const layout = resolveEmbedLayoutDimensions(this.editor, { width, height }, this.options)

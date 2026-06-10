@@ -11,6 +11,7 @@ import {
 import {
   EMBED_LAYOUT_ATTR_KEYS,
   embedAttrsEqual,
+  type FullscreenIframeKitOptions,
   resolveFullscreenIframeAttributes
 } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
@@ -50,9 +51,9 @@ type FullscreenIframeEmbedConfigInput<TOptions extends IframeEmbedNodeOptions> =
   | 'loadingProvider'
 >
 
-export function defineFullscreenIframeEmbedConfig<TOptions extends IframeEmbedNodeOptions>(
-  config: FullscreenIframeEmbedConfigInput<TOptions>
-): IframeEmbedConfig<TOptions> {
+export function defineFullscreenIframeEmbedConfig<
+  TOptions extends IframeEmbedNodeOptions & FullscreenIframeKitOptions
+>(config: FullscreenIframeEmbedConfigInput<TOptions>): IframeEmbedConfig<TOptions> {
   return {
     ...config,
     resolveIframeAttributes: (attrs, options, width, height) =>

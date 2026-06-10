@@ -2,7 +2,7 @@
 
 Embeds Vimeo watch and player URLs as iframe players. Paste a link or call `setVimeo`.
 
-## Installation
+## Install
 
 ```bash
 bun add @docs.plus/extension-hypermultimedia

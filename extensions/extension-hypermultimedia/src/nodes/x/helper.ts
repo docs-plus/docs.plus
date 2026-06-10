@@ -179,7 +179,8 @@ export const loadXScript = (signal?: AbortSignal): Promise<Twttr> => {
 
     if (existingScript) {
       pollId = setInterval(() => {
-        if (window.twttr) finish(() => resolve(window.twttr))
+        const twttr = window.twttr
+        if (twttr) finish(() => resolve(twttr))
       }, X_SCRIPT_POLL_MS)
       return
     }
@@ -193,13 +194,16 @@ export const loadXScript = (signal?: AbortSignal): Promise<Twttr> => {
   })
 }
 
-export const fetchOEmbedHtml = async (params: Record<string, string | number>): Promise<string> => {
+export const fetchOEmbedHtml = async (
+  params: Record<string, string | number>,
+  signal?: AbortSignal
+): Promise<string> => {
   const urlParams = new URLSearchParams(
     Object.entries(params).map(([key, value]) => [key, String(value)])
   )
   const urlWithParams = `https://publish.twitter.com/oembed?${urlParams.toString()}`
 
-  const response = await fetch(urlWithParams)
+  const response = await fetch(urlWithParams, { signal })
 
   if (!response.ok) {
     throw new Error('Failed to fetch oEmbed HTML')
@@ -218,7 +222,7 @@ export async function mountXEmbed(
   if (signal?.aborted) return false
 
   try {
-    const html = await fetchOEmbedHtml(params)
+    const html = await fetchOEmbedHtml(params, signal)
     if (signal?.aborted) return false
     wrapper.innerHTML = HTMLSanitizer.sanitize(html)
   } catch {

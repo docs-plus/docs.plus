@@ -20,7 +20,8 @@ function isGripper(el: Element | null): el is HTMLElement {
 }
 
 function isMediaWrapper(el: Element | null): el is HTMLElement {
-  if (!(el instanceof HTMLElement) || isGripper(el)) return false
+  // Inline the gripper class check: isGripper's type predicate would narrow `el` to never.
+  if (!(el instanceof HTMLElement) || el.classList.contains(GRIPPER_CLASS)) return false
   if (el.classList.contains('hypermultimedia--image__content')) return true
   if (el.hasAttribute('data-key-id')) return true
   return CONTENT_CLASS.test(el.className)

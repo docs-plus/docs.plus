@@ -1,8 +1,8 @@
 import { DOMSerializer } from '@tiptap/pm/model'
 
+import { getKitStorage } from '../kitStorage'
 import { isDownloadableMedia, mediaKind } from '../utils/media-target'
 import type { MediaActionContext } from './types'
-import { getKitStorage } from './types'
 
 /** Downloadable local-asset kinds (image/audio/video); see `media-target.mediaKind`. */
 export function isDownloadable(nodeType: string): boolean {

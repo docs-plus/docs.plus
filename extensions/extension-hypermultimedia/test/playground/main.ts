@@ -1,23 +1,32 @@
 /** Cypress clean-room: shipped dist + window._editor / window._hypermultimedia. */
 
+import '@docs.plus/extension-hypermultimedia/styles.css'
+
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import * as HyperMultimediaModule from '@docs.plus/extension-hypermultimedia'
+import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 
 const { HyperMultimediaKit, isMediaUrl } = HyperMultimediaModule
 
-const element = document.querySelector<HTMLElement>('#editor')
-if (!element) throw new Error('#editor mount point missing')
+// No token map: the shipped styles.css themes itself via light-dark() and the
+// shell's `color-scheme` toggle.
+const element = setupPlayground({
+  title: '@docs.plus/extension-hypermultimedia — clean-room playground',
+  github: 'extension-hypermultimedia'
+})
 
-const loadingShellParam = new URLSearchParams(window.location.search).get('loadingShell')
-const loadingShell = loadingShellParam === 'false' ? false : true
-const uploadedParam = new URLSearchParams(window.location.search).get('uploaded') === 'true'
+const params = new URLSearchParams(window.location.search)
+const loadingShell = params.get('loadingShell') !== 'false'
+const uploadedParam = params.get('uploaded') === 'true'
+// `?blockquote=off` lets X's `blockquote.twitter-tweet` parse rule win in specs.
+const blockquoteOff = params.get('blockquote') === 'off'
 
 const editor = new Editor({
   element,
   extensions: [
-    StarterKit.configure({ link: false }),
+    StarterKit.configure({ link: false, ...(blockquoteOff ? { blockquote: false } : {}) }),
     Hyperlink.configure({
       autolink: true,
       linkOnPaste: false,

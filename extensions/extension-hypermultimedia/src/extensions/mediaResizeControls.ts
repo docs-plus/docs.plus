@@ -9,7 +9,7 @@ import {
   syncControlsToDoc
 } from '../utils/media-resize-controls'
 import { hasFinePointer } from '../utils/media-target'
-import { shouldHideResizeGripper, targetNodeCountChanged } from './decorationHelpers'
+import { shouldHideResizeGripper, transactionAffectsTrackedNodes } from './decorationHelpers'
 
 export interface MediaResizeControlsOptions {
   /** Media node types whose add/remove should tear down hover chrome (includes X). */
@@ -38,7 +38,7 @@ export const MediaResizeControls = Extension.create<MediaResizeControlsOptions>(
         }),
         appendTransaction(transactions) {
           const shouldHide = transactions.some(
-            (tr) => shouldHideResizeGripper(tr) || targetNodeCountChanged(tr, trackedNodes)
+            (tr) => shouldHideResizeGripper(tr) || transactionAffectsTrackedNodes(tr, trackedNodes)
           )
           if (shouldHide) hideMediaResizeControls(editor)
           return null
