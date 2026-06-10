@@ -17,7 +17,10 @@ export function ViewsSummaryCards({ data, loading }: ViewsSummaryCardsProps) {
       bg: 'bg-primary/10'
     },
     {
-      label: 'Unique Visitors',
+      // Summed per-document distinct users, so a cross-document reader counts
+      // more than once — labelled "Engaged Readers" to match that math, not
+      // "Unique Visitors" (which implies a true global distinct count).
+      label: 'Engaged Readers',
       value: data?.unique_visitors ?? 0,
       icon: LuUsers,
       color: 'text-secondary',

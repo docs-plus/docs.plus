@@ -229,9 +229,11 @@ export default function OverviewPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {/* DAU Trend Chart */}
               <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
+                {/* online_at is a single last-seen timestamp, so this is a
+                    last-seen-by-day distribution, not a true DAU time series. */}
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <LuActivity className="text-primary h-5 w-5" />
-                  Daily Active Users Trend
+                  Users by Last-Seen Day
                 </h3>
                 <ChartErrorBoundary fallbackHeight={280}>
                   <DauTrendChart data={dauTrend || []} loading={dauTrendLoading} height={280} />
