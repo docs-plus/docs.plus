@@ -6,6 +6,13 @@
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-hypermultimedia.svg)](https://www.npmjs.com/package/@docs.plus/extension-hypermultimedia)
 [![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/preview-dark.png">
+    <img alt="Embedded image with hover toolbar and resize gripper in the editor" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/preview-light.png">
+  </picture>
+</p>
+
 Tiptap extension for embedding media in the editor: images, audio, video, and provider embeds (YouTube, Vimeo, SoundCloud, X, Loom).
 
 One kit call configures all eight nodes. Each media node gets a hover toolbar in its top-right corner, drag-to-resize, an editable caption, and a loading shell; toolbar popovers position through [`@docs.plus/floating-popover`](https://github.com/docs-plus/docs.plus/tree/main/packages/floating-popover) (Floating UI, bundled into `dist`) — no tippy.js.
@@ -13,12 +20,14 @@ One kit call configures all eight nodes. Each media node gets a hover toolbar in
 ## Install
 
 ```sh
-npm install @docs.plus/extension-hypermultimedia
-# or
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 
-Requires `@tiptap/core` and `@tiptap/pm` — see `peerDependencies`.
+Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+
+Co-install [`@docs.plus/extension-hyperlink`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink) when both marks and media share one editor — see [Paste precedence](#paste-precedence).
 
 ## Quickstart
 
@@ -74,13 +83,14 @@ Every command also accepts layout options: `width`, `height`, `margin`, `float`,
 
 ## Styling
 
-Import the single shipped stylesheet — it bundles the resize gripper, loading shell, and media toolbar CSS:
+Import the single shipped stylesheet — it bundles the resize gripper, loading shell,
+media toolbar, and node-specific X/Loom embed chrome:
 
 ```ts
 import '@docs.plus/extension-hypermultimedia/styles.css'
 ```
 
-Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the chrome follows the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and the toolbar, loading shell, and gripper flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. Override any token to retheme:
+Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the media UI follows the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and the toolbar, loading shell, gripper, and X/Loom embed surfaces flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. Override any token to retheme:
 
 | Token                         | Description                                |
 | ----------------------------- | ------------------------------------------ |
@@ -124,6 +134,106 @@ The shimmer and spinner animations are disabled under `prefers-reduced-motion: r
 | `soundcloud` | SoundCloud audio     | [soundcloud](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/soundcloud) |
 | `x`          | X (formerly Twitter) | [x](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/x)                   |
 | `loom`       | Loom recordings      | [loom](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/loom)             |
+
+### Gallery
+
+Each node type in the kit — local asset files (image, video, audio) and public provider embeds. Pairs follow your system light/dark preference. Gallery captures center each node (`margin: 0 auto`), wait for the loading shell to clear, hover for toolbar + gripper (X: toolbar only), then screenshot at a consistent width (480px embeds, 332px image). X embeds use a per-node `theme` (`light` / `dark`) so the tweet card matches the playground; set it on insert or from the toolbar Post options menu.
+
+<details>
+<summary><strong>Image</strong> — local file</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/image-dark.png">
+    <img alt="Image node with resize gripper and caption area" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/image-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Video</strong> — local file</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/video-dark.png">
+    <img alt="Video node with native controls" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/video-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Audio</strong> — local file</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/audio-dark.png">
+    <img alt="Audio node with native controls" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/audio-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>YouTube</strong></summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/youtube-dark.png">
+    <img alt="YouTube embed with loading shell cleared" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/youtube-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Vimeo</strong></summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/vimeo-dark.png">
+    <img alt="Vimeo embed player" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/vimeo-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>SoundCloud</strong></summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/soundcloud-dark.png">
+    <img alt="SoundCloud embed widget" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/soundcloud-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Loom</strong></summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/loom-dark.png">
+    <img alt="Loom embed player" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/loom-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>X</strong> — post embed (per-node light/dark theme)</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/x-dark.png">
+    <img alt="X post blockquote embed" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/x-light.png">
+  </picture>
+</p>
+
+</details>
 
 ## Embeds
 
@@ -222,7 +332,7 @@ Without a listener, pasted image files are dropped silently. Pasted image **URLs
 
 ## Loading shell
 
-Remote images, iframe embeds, and X oEmbed show a reserved-size shimmer shell until the asset is ready. Nothing is persisted except the real media node; the shell is node-view chrome only. The shell styles ship in `styles.css` and theme via the `--hm-loading-*` tokens above.
+Remote images, iframe embeds, and X oEmbed show a reserved-size shimmer shell until the asset is ready. Nothing is persisted except the real media node; the shell is node-view UI only. The shell styles ship in `styles.css` and theme via the `--hm-loading-*` tokens above.
 
 Customize or disable on the kit:
 
@@ -240,11 +350,27 @@ Advanced: `createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`, and typ
 
 ## Migrating from 1.x
 
-2.0.0 renames node types to camelCase and rebrands Twitter to X. See the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md) for the full breaking-change list, and the [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) to migrate stored documents.
+2.0.0 renames node types to camelCase and rebrands Twitter to X. See the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md) for the full breaking-change list.
+
+**docs.plus / Hocuspocus:** `bun run --filter @docs.plus/hocuspocus.server migrate:media-node-names` (preview with `:dry`).
+
+**External adopters:** rewrite stored JSON/Yjs node `type` strings (`Image`→`image`, `Twitter`→`x`, …). The [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) lists every mapping even if you do not run the CLI.
+
+## Security
+
+Embed URL parsing rejects invalid hosts before insert (`guards/invalid-urls` in the clean-room suite). X and Loom paste paths have dedicated security specs (`cypress/e2e/security/`). Hosts should still treat pasted URLs as untrusted input — validate storage and CSP for iframe `src` the same way you would for user-authored links.
+
+## TypeScript
+
+Definitions ship in `dist/`. Main exports: `HyperMultimediaKit`, per-node extensions (`Image`, `Youtube`, `X`, …), insert commands (`setImage`, `setX`, …), `isMediaUrl`, loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar types (`MediaToolbarContext`, `MediaAction`), and kit options types. Per-node embed options live under each node's module — see [Nodes](#nodes).
+
+## Family
+
+Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 
-Bug reports and PRs welcome. Repo setup and conventions live in the root [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/CONTRIBUTING.md).
+Bug reports and PRs welcome. Setup, test commands, and the playground harness live in [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CONTRIBUTING.md).
 
 ## License
 

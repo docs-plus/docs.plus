@@ -29,7 +29,7 @@ declare global {
     interface Chainable {
       visitPlayground(search?: string): Chainable<void>
       expectMediaLoadingPending(providerLabel?: string, scope?: string): Chainable<void>
-      expectMediaLoadingReady(scope?: string): Chainable<void>
+      expectMediaLoadingReady(scope?: string, timeout?: number): Chainable<void>
       expectMediaLoadingError(message?: string, scope?: string): Chainable<void>
       getEditor(): Chainable<Editor>
       /** Count nodes of a given type name in the current doc. */
@@ -92,8 +92,8 @@ Cypress.Commands.add('expectMediaLoadingPending', (providerLabel?: string, scope
   }
 })
 
-Cypress.Commands.add('expectMediaLoadingReady', (scope = '#editor') => {
-  loadingHost(scope, 'ready', 20000).should('exist')
+Cypress.Commands.add('expectMediaLoadingReady', (scope = '#editor', timeout = 20000) => {
+  loadingHost(scope, 'ready', timeout).should('exist')
   expectNoPendingLoadingHost(scope)
 })
 

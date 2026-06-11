@@ -71,9 +71,10 @@ every media node gains an editable caption.
 - Shared `utils/media-placement.ts` for desktop toolbar and mobile sheet
   placement/margin presets (`getMediaPlacementAttrs`, `getCurrentMediaPlacement`).
 - `./styles.css` export — `dist/styles.css` bundles `resize-gripper.css`,
-  `media-loading-shell.css`, and `media-toolbar.css`. Import it in one line
+  `media-loading-shell.css`, `media-node-x.css`, `media-node-loom.css`, and
+  `media-toolbar.css`. Import it in one line
   (`import '@docs.plus/extension-hypermultimedia/styles.css'`) to load the shipped
-  styles, matching `@docs.plus/extension-hyperlink`. The three individual files
+  styles, matching `@docs.plus/extension-hyperlink`. The five individual files
   stay in `dist` for hosts that import them separately.
 - Dark mode in the shipped stylesheet — `--hm-*` tokens use `light-dark()` and
   follow the nearest ancestor's `color-scheme`.
@@ -81,6 +82,7 @@ every media node gains an editable caption.
   toolbar popovers animate standalone.
 - `prefers-reduced-motion: reduce` disables the loading shimmer/spinner animation.
 - Escape cancels a resize drag (snaps back, commits nothing).
+- README **Gallery** — nine node types in light/dark (`assets/*-{light,dark}.png`); regenerate with `bun run docs:screenshots`.
 
 ### Changed
 
@@ -89,6 +91,7 @@ every media node gains an editable caption.
   glyphs (align-left, align-center, image-left, image-right).
 - `closeMediaToolbar()`'s document-wide fallback only removes toolbars carrying
   `data-node-type`.
+- Loom embed defaults include `scrolling: 'no'` to avoid iframe scrollbars at fixed heights.
 
 ### Fixed
 
@@ -121,6 +124,7 @@ every media node gains an editable caption.
 - Loading shell `destroy()` detaches media `load`/`error` listeners; `markReady`/`markError` detach too. Error state keeps the overlay visible (ready-only hides it). `bindLoad: { element }` replaces paired `bindElement`/`isAlreadyReady`.
 - X embed: `mountXEmbed` reports failure; `loadXScript` times out and aborts when the node view is destroyed.
 - X loading shell tracks widget layout (`ResizeObserver`) and switches to fluid height after render so tall posts are not clipped.
+- X post embeds: wrapper width follows `maxwidth`; `data-x-theme` backgrounds and corner clip remove light/dark corner bleed after `widgets.js` paint.
 - Media toolbar hover bridge: deferred hide + expanded popover hit area so the pointer can reach the portaled toolbar without dismissal.
 - Resize gripper uses `setPointerCapture` so drags stay attached over iframes, outside the editor, and at constraint limits; drags also end on blur and `pointercancel`.
 - Loading shell dimensions stay in sync with gripper resize on iframe embeds and video; ready shells use a transparent background so gray placeholder does not show through.
@@ -152,14 +156,16 @@ every media node gains an editable caption.
 ### Migrating from 1.x to 2.0
 
 - Config keys are unchanged except `Twitter` → `X`; update `setTwitter` → `setX`.
-- **Stored documents**: run `bun run --filter @docs.plus/hocuspocus.server
-migrate:media-node-names` (fail-closed; preview with `:dry`) to rewrite legacy
-  PascalCase node types. The Hocuspocus on-load shim (`ENABLE_SCHEMA_MIGRATION`)
-  covers stragglers; the webapp bumps its IndexedDB cache key so clients re-sync.
-- Replace removed `createFloatingToolbar`/`*Modal` usage with the built-in
-  toolbar or the `mediaToolbar` factory.
+- **Stored documents (docs.plus / Hocuspocus)**: run `bun run --filter @docs.plus/hocuspocus.server migrate:media-node-names` (fail-closed; preview with `:dry`) to rewrite legacy PascalCase node types. The on-load shim (`ENABLE_SCHEMA_MIGRATION`) covers stragglers.
+- **Stored documents (external adopters)**: rewrite node `type` strings in JSON or Yjs exports — `Image`→`image`, `Video`→`video`, `Audio`→`audio`, `Youtube`→`youtube`, `Vimeo`→`vimeo`, `SoundCloud`→`soundcloud`, `Twitter`→`x`. Attr keys are unchanged except command renames (`setTwitter`→`setX`). See the [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) for the full mapping even if you do not run the CLI.
+- Replace removed `createFloatingToolbar`/`*Modal` usage with the built-in toolbar or the `mediaToolbar` factory.
+- **Recommended pairing with `@docs.plus/extension-hyperlink`** when both ship in one editor — configure `shouldAutoLink: (url) => !isMediaUrl(url)` so media URLs become nodes, not links.
 
-## [1.3.1](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.3.0...v1.3.1) (2024-01-14)
+## Pre-2.0 release history
+
+The `1.x` changelog below lived on the pre-monorepo `HMarzban/extension-hypermultimedia` repository. Public versions from that era are superseded by this `2.0.0` entry. Recover the full text from git history (`extensions/extension-hypermultimedia/CHANGELOG.md` before this archive) if you need per-patch notes.
+
+## [1.3.1] (2024-01-14) — archived
 
 ### Bug Fixes
 

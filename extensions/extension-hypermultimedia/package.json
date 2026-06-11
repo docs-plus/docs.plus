@@ -22,6 +22,9 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=24.11.0"
+  },
   "sideEffects": [
     "**/*.css"
   ],
@@ -40,15 +43,16 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5174",
+    "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5174 --readme-media-dir ./assets/readme-media",
+    "docs:screenshots": "bun run --filter @docs.plus/extension-hyperlink build && bun run build && bunx start-server-and-test playground http://127.0.0.1:5174 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
     "pretest": "bun run build",
     "test": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:run",
     "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:run",
     "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:open",
     "cypress:run": "bunx cypress run",
     "cypress:open": "bunx cypress open",
-    "prepack": "release-prepack",
-    "prepublishOnly": "release-preflight"
+    "prepack": "bunx release-prepack",
+    "prepublishOnly": "bunx release-preflight"
   },
   "files": [
     "dist",

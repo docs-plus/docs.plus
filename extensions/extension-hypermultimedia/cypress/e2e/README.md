@@ -29,3 +29,5 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 | Globals     | `window/is-media-url.cy.ts`                                                                                                                                 |
 
 Run: `bun run test` from this package (`pretest` build → playground → Cypress).
+
+README hero screenshots: see [CONTRIBUTING.md](../../CONTRIBUTING.md).
