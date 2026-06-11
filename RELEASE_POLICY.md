@@ -122,7 +122,7 @@ When a package has no behavioral changes since its previous release but ships in
 Aligned to docs.plus <version> family release. No behavioral changes since <prev-version>.
 ```
 
-The script generates this verbatim during preflight check #2 (CHANGELOG entry) for any package missing an entry where the git diff `<prev-tag>..HEAD -- packages/<pkg>/src/` is empty. The maintainer commits the auto-generated entries before re-running the script.
+The script generates this verbatim during preflight check #2 (CHANGELOG entry) for any package missing an entry where the git diff `<prev-tag>..HEAD -- extensions/<pkg>/src/` is empty. The maintainer commits the auto-generated entries before re-running the script.
 
 ## CHANGELOG Style Guide
 
@@ -137,7 +137,9 @@ Set by the `extension-hyperlink@2.0.0` rewrite. Applies to every publishable ext
 
 ### Highlights (mandatory for major/minor; optional for patch)
 
-### Breaking Changes (presence implies a Migration section)
+### Breaking / Breaking Changes (presence implies a Migration section)
+
+Published entries use the shorthand `### Breaking` (same meaning as `Breaking Changes`). New entries may use either heading; do not rename shipped headings for style-only churn.
 
 ### Added
 
@@ -178,6 +180,8 @@ Set by the `extension-hyperlink@2.0.0` rewrite. Applies to every publishable ext
 
 **Why this changes later.** The moment a third party starts consuming any extension at scale, the policy shifts to a time-based or hybrid gate — third parties cannot wait on webapp's release schedule. This document gets updated then.
 
+**Discord announcements.** Each package release triggers one embed via `discord-release.yml`. A same-day five-package cutover produces five embeds in sequence — intentional (per-package install hints). No umbrella family release is planned.
+
 ## CI Guard
 
 A GitHub Action enforces the lockstep invariant in Phase 2.
@@ -211,7 +215,7 @@ Before any extension ships its first `2.0.0` (and joins the eventual lockstep fa
 - [ ] `sideEffects: ['**/*.css']` (not bare `false`) if the package ships any CSS
 - [ ] `homepage`, `bugs`, and discovery-oriented `keywords` populated in `package.json`
 - [ ] `[2.0.0]` `CHANGELOG.md` entry following the [style guide](#changelog-style-guide)
-- [ ] Bun-native unit tests (`bun test src`) passing — distinct from the Jest stack used by `extension-indent` and webapp
+- [ ] Release-gate tests passing — hyperlink: `bun test src` + Cypress; indent: Jest + Cypress; hypermultimedia / inline-code / placeholder: clean-room Cypress against `dist/`
 - [ ] `bun pm pack` dry-run produces a clean tarball
 
 The `extension-hyperlink` package is the reference shape — when wiring a new extension, copy from there. **Never copy the `prepack` / `preflight` script bodies into per-package `scripts/` directories**; the canonical implementation lives in `@docs.plus/release-tooling` and is consumed via the bin commands above. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts`.
