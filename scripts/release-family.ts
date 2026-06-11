@@ -16,21 +16,16 @@
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline'
 
+import {
+  PUBLISHABLE_EXTENSION_DIRS,
+  type PublishableExtensionDir
+} from './publishable-extensions.ts'
+
 const REPO_ROOT = resolve(import.meta.dir, '..')
-
-const PUBLISHABLE_PACKAGES = [
-  'extension-hyperlink',
-  'extension-hypermultimedia',
-  'extension-indent',
-  'extension-inline-code',
-  'extension-placeholder'
-] as const
-
-type PackageDir = (typeof PUBLISHABLE_PACKAGES)[number]
 
 interface CliArgs {
   dryRun: boolean
@@ -40,7 +35,7 @@ interface CliArgs {
 }
 
 interface PackageInfo {
-  shortName: PackageDir
+  shortName: PublishableExtensionDir
   fullName: string
   version: string
   packagePath: string
@@ -165,7 +160,7 @@ function prompt(question: string): Promise<string> {
 // Package discovery
 // ---------------------------------------------------------------------------
 
-function loadPackage(shortName: PackageDir): PackageInfo {
+function loadPackage(shortName: PublishableExtensionDir): PackageInfo {
   const packagePath = ['extensions', 'packages', 'apps']
     .map((root) => join(REPO_ROOT, root, shortName))
     .find((candidate) => existsSync(join(candidate, 'package.json')))
@@ -184,7 +179,7 @@ function loadPackage(shortName: PackageDir): PackageInfo {
 }
 
 function loadAllPackages(): PackageInfo[] {
-  return PUBLISHABLE_PACKAGES.map(loadPackage)
+  return PUBLISHABLE_EXTENSION_DIRS.map(loadPackage)
 }
 
 function npmVersionExists(fullName: string, version: string): boolean {
@@ -388,7 +383,8 @@ function findNoopPackages(packages: PackageInfo[], targetVersion: string): Packa
     const prevTag = `${pkg.fullName}@${prevVersion}`
     const tagExists = tryRun('git', ['tag', '-l', prevTag])
     if (!tagExists) continue
-    const diff = tryRun('git', ['diff', `${prevTag}..HEAD`, '--', `packages/${pkg.shortName}/src/`])
+    const srcPath = `${relative(REPO_ROOT, pkg.packagePath)}/src/`
+    const diff = tryRun('git', ['diff', `${prevTag}..HEAD`, '--', srcPath])
     if (!diff) noops.push(pkg)
   }
   return noops

@@ -2,20 +2,16 @@
 # =============================================================================
 # Editor Test Suite Runner
 # Runs unit tests (Jest) + per-package clean-room suites, plus webapp E2E
-# (Cypress), saving results to a report file. The unit block runs:
-#   1. @docs.plus/extension-indent (Jest + clean-room Cypress against dist/)
-#   2. @docs.plus/extension-hyperlink (clean-room Cypress against dist/)
-#   3. @docs.plus/extension-hypermultimedia (clean-room Cypress against dist/)
-#   4. @docs.plus/extension-inline-code (clean-room Cypress against dist/)
-#   5. @docs.plus/extension-placeholder (clean-room Cypress against dist/)
-#   6. @docs.plus/webapp (Jest)
+# (Cypress), saving results to a report file. Extension order and gates come
+# from scripts/publishable-extensions.ts; webapp Jest follows when --unit/all.
 #
 # Usage:
 #   bun run test                      # unit + E2E, report saved to Notes/
 #   bun run test:unit                 # unit only, report saved to Notes/
 #   bun run test:e2e                  # E2E only, report saved to Notes/
 #   sh scripts/run-tests.sh           # same as `bun run test`
-#   sh scripts/run-tests.sh --unit    # unit only
+#   sh scripts/run-tests.sh --unit         # unit only
+#   sh scripts/run-tests.sh --extensions   # extension release gates only (CI; set EXTENSION_DIST_READY=1 after build-extensions)
 #   sh scripts/run-tests.sh --e2e     # E2E only
 #
 #   CYPRESS_PARALLEL=N bun run test:e2e   # control E2E worker count
@@ -41,34 +37,60 @@ NC='\033[0m'
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WEBAPP_DIR="$ROOT_DIR/apps/webapp"
-EXTENSION_INDENT_DIR="$ROOT_DIR/extensions/extension-indent"
-EXTENSION_HYPERLINK_DIR="$ROOT_DIR/extensions/extension-hyperlink"
-EXTENSION_HYPERMULTIMEDIA_DIR="$ROOT_DIR/extensions/extension-hypermultimedia"
-EXTENSION_INLINE_CODE_DIR="$ROOT_DIR/extensions/extension-inline-code"
-EXTENSION_PLACEHOLDER_DIR="$ROOT_DIR/extensions/extension-placeholder"
 REPORT_DIR="$ROOT_DIR/Notes"
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
 REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"
 BASE_URL="${BASE_URL:-http://localhost:3001}"
 CYPRESS_PARALLEL="${CYPRESS_PARALLEL:-4}"
 
-RUN_UNIT=false
+RUN_EXTENSION_GATES=false
+RUN_WEBAPP_UNIT=false
 RUN_E2E=false
-UNIT_EXIT=0
+EXTENSION_GATES_EXIT=0
 E2E_EXIT=0
+
+# Set by CI after scripts/build-extensions.sh — skips per-package pretest rebuilds.
+EXTENSION_DIST_READY="${EXTENSION_DIST_READY:-0}"
 
 # ─── Parse arguments ─────────────────────────────────────────────────────────
 
 case "${1:-all}" in
-  --unit)  RUN_UNIT=true ;;
+  --unit)  RUN_EXTENSION_GATES=true; RUN_WEBAPP_UNIT=true ;;
+  --extensions) RUN_EXTENSION_GATES=true ;;
   --e2e)   RUN_E2E=true ;;
-  all|"")  RUN_UNIT=true; RUN_E2E=true ;;
+  all|"")  RUN_EXTENSION_GATES=true; RUN_WEBAPP_UNIT=true; RUN_E2E=true ;;
   *)
     echo -e "${RED}Unknown option: $1${NC}"
-    echo "Usage: $0 [--unit | --e2e | all]"
+    echo "Usage: $0 [--unit | --extensions | --e2e | all]"
     exit 1
     ;;
 esac
+
+record_extension_gate() {
+  local label="$1"
+  local dir="$2"
+  local has_unit="$3"
+
+  cd "$dir"
+  echo -e "${DIM}  → ${label}${NC}"
+
+  if ! {
+    if [ "$EXTENSION_DIST_READY" = "1" ]; then
+      if [ "$has_unit" = "1" ]; then
+        bun run test:unit && bun run test:e2e
+      else
+        bun run test:e2e
+      fi
+    else
+      bun run test
+    fi
+  } 2>&1 | tee -a "$REPORT"; then
+    EXTENSION_GATES_EXIT=1
+    echo ""
+    echo -e "${RED}${label} release gate failed.${NC}"
+  fi
+  echo ""
+}
 
 # ─── Preflight checks ────────────────────────────────────────────────────────
 
@@ -108,94 +130,50 @@ echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "  Report: ${BLUE}${REPORT}${NC}"
 echo ""
 
-# ─── Unit tests (Jest) ───────────────────────────────────────────────────────
+# ─── Extension release gates + webapp Jest ───────────────────────────────────
 
-if $RUN_UNIT; then
-  echo -e "${BOLD}[1/2] Running unit tests (Jest)...${NC}"
+if $RUN_EXTENSION_GATES; then
+  if $RUN_WEBAPP_UNIT; then
+    echo -e "${BOLD}[1/2] Running extension release gates + webapp Jest...${NC}"
+  else
+    echo -e "${BOLD}Running extension release gates...${NC}"
+  fi
   echo ""
 
   {
     echo "============================================================================="
-    echo " UNIT TESTS (Jest)"
+    echo " EXTENSION RELEASE GATES"
     echo " Started: $(date)"
+    echo " EXTENSION_DIST_READY=${EXTENSION_DIST_READY}"
     echo "============================================================================="
     echo ""
   } >> "$REPORT"
 
-  UNIT_EXIT=0
+  EXTENSION_GATES_EXIT=0
 
-  cd "$EXTENSION_INDENT_DIR"
-  echo -e "${DIM}  → @docs.plus/extension-indent (Jest + clean-room Cypress)${NC}"
-  if ! bun run test 2>&1 | tee -a "$REPORT"; then
-    UNIT_EXIT=1
-    echo ""
-    echo -e "${RED}@docs.plus/extension-indent unit tests failed.${NC}"
-  fi
-  echo ""
+  while IFS=$'\t' read -r ext_rel has_unit label; do
+    record_extension_gate "$label" "$ROOT_DIR/$ext_rel" "$has_unit"
+  done < <(bun "$ROOT_DIR/scripts/publishable-extensions.ts" --gates)
 
-  # Clean-room E2E for @docs.plus/extension-hyperlink: boots its own
-  # docs-playground clean-room harness against the built
-  # dist/ and runs a self-contained Cypress suite. Runs in the unit block
-  # because it's a per-package release gate, not part of the webapp's
-  # shared-server E2E fleet.
-  cd "$EXTENSION_HYPERLINK_DIR"
-  echo -e "${DIM}  → @docs.plus/extension-hyperlink (clean-room Cypress)${NC}"
-  if ! bun run test 2>&1 | tee -a "$REPORT"; then
-    UNIT_EXIT=1
-    echo ""
-    echo -e "${RED}@docs.plus/extension-hyperlink clean-room E2E failed.${NC}"
-  fi
-  echo ""
+  if $RUN_WEBAPP_UNIT; then
+    cd "$WEBAPP_DIR"
+    echo -e "${DIM}  → @docs.plus/webapp (Jest)${NC}"
 
-  cd "$EXTENSION_HYPERMULTIMEDIA_DIR"
-  echo -e "${DIM}  → @docs.plus/extension-hypermultimedia (clean-room Cypress)${NC}"
-  if ! bun run test 2>&1 | tee -a "$REPORT"; then
-    UNIT_EXIT=1
-    echo ""
-    echo -e "${RED}@docs.plus/extension-hypermultimedia clean-room E2E failed.${NC}"
-  fi
-  echo ""
-
-  cd "$EXTENSION_INLINE_CODE_DIR"
-  echo -e "${DIM}  → @docs.plus/extension-inline-code (clean-room Cypress)${NC}"
-  if ! bun run test 2>&1 | tee -a "$REPORT"; then
-    UNIT_EXIT=1
-    echo ""
-    echo -e "${RED}@docs.plus/extension-inline-code clean-room E2E failed.${NC}"
-  fi
-  echo ""
-
-  cd "$EXTENSION_PLACEHOLDER_DIR"
-  echo -e "${DIM}  → @docs.plus/extension-placeholder (clean-room Cypress)${NC}"
-  if ! bun run test 2>&1 | tee -a "$REPORT"; then
-    UNIT_EXIT=1
-    echo ""
-    echo -e "${RED}@docs.plus/extension-placeholder clean-room E2E failed.${NC}"
-  fi
-  echo ""
-
-  cd "$WEBAPP_DIR"
-  echo -e "${DIM}  → @docs.plus/webapp (Jest)${NC}"
-
-  if bun run test --verbose 2>&1 | tee -a "$REPORT"; then
-    if [ "$UNIT_EXIT" -eq 0 ]; then
-      echo ""
-      echo -e "${GREEN}Unit tests passed.${NC}"
+    if bun run test --verbose 2>&1 | tee -a "$REPORT"; then
+      [ "$EXTENSION_GATES_EXIT" -eq 0 ] && echo -e "\n${GREEN}Extension gates and webapp Jest passed.${NC}"
+    else
+      EXTENSION_GATES_EXIT=1
+      echo -e "\n${RED}@docs.plus/webapp unit tests failed.${NC}"
     fi
-  else
-    UNIT_EXIT=1
-    echo ""
-    echo -e "${RED}@docs.plus/webapp unit tests failed.${NC}"
+  elif [ "$EXTENSION_GATES_EXIT" -eq 0 ]; then
+    echo -e "\n${GREEN}Extension release gates passed.${NC}"
   fi
 
-  if [ "$UNIT_EXIT" -ne 0 ]; then
-    echo ""
-    echo -e "${RED}One or more unit test suites failed.${NC}"
-  fi
+  [ "$EXTENSION_GATES_EXIT" -ne 0 ] && echo -e "\n${RED}One or more extension release gates failed.${NC}"
 
   {
     echo ""
-    echo "Unit tests finished: $(date)"
+    echo "Extension gates finished: $(date)"
     echo ""
   } >> "$REPORT"
 
@@ -261,7 +239,7 @@ fmt_duration() {
 
 if $RUN_E2E; then
   STEP="[2/2]"
-  $RUN_UNIT || STEP="[1/1]"
+  $RUN_EXTENSION_GATES || STEP="[1/1]"
 
   E2E_START_EPOCH=$(date +%s)
 
@@ -609,13 +587,18 @@ echo ""
 echo -e "${BOLD} Final Verdict${NC}"
 echo ""
 
-if $RUN_UNIT; then
-  if [ $UNIT_EXIT -eq 0 ]; then
-    echo -e "  Unit tests:  ${GREEN}PASSED${NC}"
-    echo "  Unit tests:  PASSED" >> "$REPORT"
+if $RUN_EXTENSION_GATES; then
+  if [ $EXTENSION_GATES_EXIT -eq 0 ]; then
+    if $RUN_WEBAPP_UNIT; then
+      echo -e "  Extension gates + webapp Jest:  ${GREEN}PASSED${NC}"
+      echo "  Extension gates + webapp Jest:  PASSED" >> "$REPORT"
+    else
+      echo -e "  Extension gates:  ${GREEN}PASSED${NC}"
+      echo "  Extension gates:  PASSED" >> "$REPORT"
+    fi
   else
-    echo -e "  Unit tests:  ${RED}FAILED${NC}"
-    echo "  Unit tests:  FAILED (exit code: $UNIT_EXIT)" >> "$REPORT"
+    echo -e "  Extension gates:  ${RED}FAILED${NC}"
+    echo "  Extension gates:  FAILED (exit code: $EXTENSION_GATES_EXIT)" >> "$REPORT"
     OVERALL_EXIT=1
   fi
 fi

@@ -83,13 +83,7 @@ jobs:
         uses: ./.github/actions/setup-bun
 
       - name: 🔧 Build Extensions (required for types)
-        run: |
-          bun run --filter @docs.plus/floating-popover build
-          bun run --filter @docs.plus/extension-hyperlink build
-          bun run --filter @docs.plus/extension-hypermultimedia build
-          bun run --filter @docs.plus/extension-indent build
-          bun run --filter @docs.plus/extension-inline-code build
-          bun run --filter @docs.plus/extension-placeholder build
+        uses: ./.github/actions/build-extensions
 
       - name: 📝 Type Check All
         run: bun run typecheck
@@ -124,6 +118,29 @@ jobs:
           fi
           echo "✅ Security check complete"
 
+  extension-tests:
+    name: 🧪 Extension Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔧 Build extensions (release gate)
+        uses: ./.github/actions/build-extensions
+
+      - name: 🧪 Clean-room extension suites
+        env:
+          EXTENSION_DIST_READY: '1'
+        run: bash scripts/run-tests.sh --extensions
+
+      - name: ✈️ Publish preflight (all five)
+        run: bash scripts/extension-preflight.sh
+
   # ============================================================================
   # STAGE 2: BUILD VERIFICATION
   # ============================================================================
@@ -131,12 +148,13 @@ jobs:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, typecheck, security]
+    needs: [lint, typecheck, security, extension-tests]
     if: |
       always() &&
       (needs.lint.result == 'success' || inputs.skip_quality_gates == true) &&
       (needs.typecheck.result == 'success' || inputs.skip_quality_gates == true) &&
-      (needs.security.result == 'success' || needs.security.result == 'skipped' || inputs.skip_quality_gates == true)
+      (needs.security.result == 'success' || needs.security.result == 'skipped' || inputs.skip_quality_gates == true) &&
+      (needs.extension-tests.result == 'success' || inputs.skip_quality_gates == true)
 
     steps:
       - name: 📦 Checkout
@@ -146,13 +164,7 @@ jobs:
         uses: ./.github/actions/setup-bun
 
       - name: 🔧 Build TipTap Extensions
-        run: |
-          bun run --filter @docs.plus/floating-popover build
-          bun run --filter @docs.plus/extension-hyperlink build
-          bun run --filter @docs.plus/extension-hypermultimedia build
-          bun run --filter @docs.plus/extension-indent build
-          bun run --filter @docs.plus/extension-inline-code build
-          bun run --filter @docs.plus/extension-placeholder build
+        uses: ./.github/actions/build-extensions
 
       - name: 🏗️ Build Webapp
         run: bun run --filter @docs.plus/webapp build:ci

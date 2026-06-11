@@ -1,0 +1,29 @@
+# Package list: scripts/publishable-extensions.ts → scripts/build-extensions.sh
+name: 'Build Extension Dist'
+description: 'Restore extension dist cache; build on cache miss'
+
+outputs:
+  cache-hit:
+    description: 'Whether the extension dist cache was restored'
+    value: ${{ steps.cache-ext.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 📦 Restore extension build cache
+      id: cache-ext
+      uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+      with:
+        path: extensions/*/dist
+        key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
+          'packages/floating-popover/package.json',
+          'packages/floating-popover/src/**',
+          'extensions/*/package.json',
+          'extensions/*/src/**',
+          'scripts/publishable-extensions.ts') }}
+        restore-keys: ext-${{ runner.os }}-
+
+    - name: 🔧 Build extensions
+      if: steps.cache-ext.outputs.cache-hit != 'true'
+      shell: bash
+      run: bash scripts/build-extensions.sh

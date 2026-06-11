@@ -114,40 +114,8 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
-      - name: 📦 Restore extension build cache
-        id: cache-ext
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
-        with:
-          path: |
-            extensions/extension-hyperlink/dist
-            extensions/extension-hypermultimedia/dist
-            extensions/extension-indent/dist
-            extensions/extension-inline-code/dist
-            extensions/extension-placeholder/dist
-          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
-            'packages/floating-popover/package.json',
-            'packages/floating-popover/src/**',
-            'extensions/extension-hyperlink/package.json',
-            'extensions/extension-hypermultimedia/package.json',
-            'extensions/extension-indent/package.json',
-            'extensions/extension-inline-code/package.json',
-            'extensions/extension-placeholder/package.json',
-            'extensions/extension-hyperlink/src/**',
-            'extensions/extension-hypermultimedia/src/**',
-            'extensions/extension-indent/src/**',
-            'extensions/extension-inline-code/src/**',
-            'extensions/extension-placeholder/src/**') }}
-          restore-keys: ext-${{ runner.os }}-
-
       - name: 🔧 Build Extensions (required for types)
-        if: steps.cache-ext.outputs.cache-hit != 'true'
-        run: |
-          bun run --filter @docs.plus/floating-popover build
-          bun run --filter @docs.plus/extension-hyperlink build
-          bun run --filter @docs.plus/extension-hypermultimedia build
-          bun run --filter @docs.plus/extension-indent build
-          bun run --filter @docs.plus/extension-inline-code build
-          bun run --filter @docs.plus/extension-placeholder build
+        uses: ./.github/actions/build-extensions
 
       - name: 📝 Type Check All
         run: bun run typecheck
@@ -218,6 +186,32 @@ jobs:
             audit-results.json
           retention-days: 30
 
+  extension-tests:
+    name: 🧪 Extension Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: github.event_name != 'schedule'
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔧 Build extensions (release gate)
+        uses: ./.github/actions/build-extensions
+
+      - name: 🧪 Clean-room extension suites
+        env:
+          EXTENSION_DIST_READY: '1'
+        run: bash scripts/run-tests.sh --extensions
+
+      - name: ✈️ Publish preflight (all five)
+        run: bash scripts/extension-preflight.sh
+
   # ===========================================================================
   # STAGE 2 — BUILD VERIFICATION (smoke test, no artifacts produced)
   # ===========================================================================
@@ -230,13 +224,14 @@ jobs:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    needs: [lint, typecheck, security]
+    needs: [lint, typecheck, security, extension-tests]
     if: |
       always() &&
       github.event_name != 'schedule' &&
       (needs.lint.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.typecheck.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
-      (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
+      (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
+      (needs.extension-tests.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
     permissions:
       contents: read
 
@@ -247,40 +242,8 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
-      - name: 📦 Restore extension build cache
-        id: cache-ext
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
-        with:
-          path: |
-            extensions/extension-hyperlink/dist
-            extensions/extension-hypermultimedia/dist
-            extensions/extension-indent/dist
-            extensions/extension-inline-code/dist
-            extensions/extension-placeholder/dist
-          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
-            'packages/floating-popover/package.json',
-            'packages/floating-popover/src/**',
-            'extensions/extension-hyperlink/package.json',
-            'extensions/extension-hypermultimedia/package.json',
-            'extensions/extension-indent/package.json',
-            'extensions/extension-inline-code/package.json',
-            'extensions/extension-placeholder/package.json',
-            'extensions/extension-hyperlink/src/**',
-            'extensions/extension-hypermultimedia/src/**',
-            'extensions/extension-indent/src/**',
-            'extensions/extension-inline-code/src/**',
-            'extensions/extension-placeholder/src/**') }}
-          restore-keys: ext-${{ runner.os }}-
-
       - name: 🔧 Build TipTap Extensions
-        if: steps.cache-ext.outputs.cache-hit != 'true'
-        run: |
-          bun run --filter @docs.plus/floating-popover build
-          bun run --filter @docs.plus/extension-hyperlink build
-          bun run --filter @docs.plus/extension-hypermultimedia build
-          bun run --filter @docs.plus/extension-indent build
-          bun run --filter @docs.plus/extension-inline-code build
-          bun run --filter @docs.plus/extension-placeholder build
+        uses: ./.github/actions/build-extensions
 
       - name: 🏗️ Build Webapp
         run: bun run --filter @docs.plus/webapp build:ci
