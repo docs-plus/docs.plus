@@ -21,9 +21,9 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
-  "sideEffects": [
-    "**/*.css"
-  ],
+  "engines": {
+    "node": ">=24.11.0"
+  },
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-indent#readme",
   "bugs": {
     "url": "https://github.com/docs-plus/docs.plus/issues"
@@ -37,6 +37,7 @@
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
     "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5175",
+    "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5175 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
     "test:unit": "jest --config jest.config.cjs",
     "pretest": "bun run build",
     "test": "bun run test:unit && bunx start-server-and-test playground http://127.0.0.1:5175 cypress:run",
@@ -47,8 +48,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "prepack": "release-prepack",
-    "prepublishOnly": "release-preflight"
+    "prepack": "bunx release-prepack",
+    "prepublishOnly": "bunx release-preflight"
   },
   "files": [
     "dist",

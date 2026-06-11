@@ -26,6 +26,10 @@ A complete migration guide from `1.5.2` is at the end of this entry, including a
 - **Bun-native unit suite + clean-room Cypress E2E** — 315 unit tests (`bun test src`, ~95 ms) plus 150 E2E tests across 14 specs that exercise the **built `dist/` loaded via the published `exports` map** — exactly what an npm consumer installs.
 - **`@tiptap/extension-link` canon parity** — `setHyperlink` is a pure command (writes the mark only); the side-effecting popover lives behind a dedicated `openCreateHyperlinkPopover` command so chains stay transactional. New `toggleHyperlink` plus migration aliases `setLink` / `unsetLink` / `toggleLink`. Options `defaultProtocol`, `isAllowedUri`, `shouldAutoLink`, `enableClickSelection`, `exitable` mirror the upstream Link-extension surface so existing policies port over without rewrites. `shouldAutoLink` is honored by the autolink plugin, paste handler, AND paste rule — full policy parity across every autolink entry point.
 
+### Security
+
+- **Mispublish disclosure.** `extension-hyperlink@4.3.0` was mistakenly published to npm under the wrong semver line. It was unpublished within npm's 72-hour window (or deprecated if that window had closed). Do not install `4.3.0` — use `2.0.0` from `@next` during the alpha v2 soak, then `@latest` after promotion. This entry is the authoritative disclosure; the archived pre-2.0 history footnote below is not a substitute.
+
 ### Breaking
 
 All relative to `1.5.2`, grouped by migration friction. The mechanical renames have a [one-shot script](#one-shot-rename-script) below; the semantic changes require code review.

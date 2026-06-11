@@ -18,3 +18,5 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 | `backspace-restore.cy.ts`    | Real typing and Backspace (`beforeinput` pipeline) round-trip the placeholder                     |
 
 Run: `bun run test` from this package (`pretest` build → playground → Cypress).
+
+README hero screenshots: see [CONTRIBUTING.md](../../CONTRIBUTING.md).

@@ -15,7 +15,10 @@ bun run test:unit       # Jest matrix only
 bun run test:e2e        # Cypress headless against the current dist/ (run build first)
 bun run test:e2e:watch  # same, but opens the Cypress runner
 bun run playground      # playground only, http://127.0.0.1:5175
+bun run docs:screenshots # regenerate README hero PNGs in assets/
 ```
+
+`docs:screenshots` overwrites tracked `assets/preview-*.png`.
 
 The playground accepts one query-string flag:
 

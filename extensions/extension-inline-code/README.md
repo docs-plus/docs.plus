@@ -6,19 +6,28 @@
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-inline-code.svg)](https://www.npmjs.com/package/@docs.plus/extension-inline-code)
 [![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-inline-code/assets/preview-dark.png">
+    <img alt="Inline code mark rendered as a monospace span inside a paragraph" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-inline-code/assets/preview-light.png">
+  </picture>
+</p>
+
 Tiptap mark for inline code (`` `code` ``).
 
-It mirrors Tiptap's built-in `Code` mark — backtick input and paste rules, `<code>` rendering, `Mod-e` — and keeps code-mode entry and exit out of the document: a collapsed caret enters through a ProseMirror stored mark, never a placeholder character, and `ArrowRight` at the document end exits without inserting a space. Powers inline code in the [docs.plus](https://docs.plus) editor.
+It mirrors Tiptap's built-in `Code` mark — backtick input and paste rules, `<code>` rendering, `Mod-e` — and keeps code-mode entry and exit out of the document: a collapsed caret enters through a ProseMirror stored mark, never a placeholder character, and `ArrowRight` at the document end exits without inserting a space.
 
 ## Install
 
 ```sh
-npm install @docs.plus/extension-inline-code
-# or
+bun add @docs.plus/extension-inline-code@next
+# stable, after promotion:
 bun add @docs.plus/extension-inline-code
 ```
 
-Requires `@tiptap/core` and `@tiptap/pm` — see `peerDependencies`.
+Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+
+The `0.x` line was monorepo-internal and never published. Upgrading from `@tiptap/extension-code`? See [Migrating](#migrating-from-tiptapextension-code) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/CHANGELOG.md#migrating-from-tiptapextension-code-and-unpublished-0x).
 
 ## Quickstart
 
@@ -74,9 +83,23 @@ On a collapsed caret these seed a stored mark, so the next character you type is
 - `code: true` on the mark spec suppresses other extensions' input rules (typography, bold) inside code spans.
 - `Mod-e` is the only shortcut — `Mod-Shift-c` was removed in 2.0.0.
 
+## Migrating from `@tiptap/extension-code`
+
+1. `StarterKit.configure({ code: false })`.
+2. Replace `toggleCode` / `setCode` with `toggleInlineCode` / `setInlineCode`.
+3. Drop `Mod-Shift-c` from docs — only `Mod-e` remains.
+
+## TypeScript
+
+Exports: `InlineCode` (default), `InlineCodeOptions`. Commands: `setInlineCode`, `toggleInlineCode`, `unsetInlineCode`.
+
+## Family
+
+Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+
 ## Contributing
 
-Bug reports and PRs welcome. Repo setup and conventions live in the root [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/CONTRIBUTING.md).
+Bug reports and PRs welcome. Setup, test commands, and the playground harness live in [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/CONTRIBUTING.md).
 
 ## License
 

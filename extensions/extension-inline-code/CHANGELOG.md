@@ -13,6 +13,18 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 - Removed the `Mod-Shift-c` shortcut — it collided with Chromium DevTools' inspect-element. Use `Mod-e`.
 - The mark now sets `excludes: '_'`: applying inline code removes other marks from the selection, matching `@tiptap/extension-code`.
 
+### Migrating from `@tiptap/extension-code` and unpublished 0.x
+
+The `0.x` line below was internal to the docs.plus monorepo and never shipped to npm. If you use Tiptap's built-in `Code` mark today:
+
+1. `bun remove @tiptap/extension-code` (or drop it from StarterKit — see step 3).
+2. `bun add @docs.plus/extension-inline-code@next` (`@next` during soak — see README).
+3. `StarterKit.configure({ code: false })` — InlineCode owns the `<code>` tag and `Mod-e` at priority 101.
+4. Replace `editor.commands.toggleCode()` with `toggleInlineCode()` (or keep `Mod-e` — same binding).
+5. Drop `Mod-Shift-c` if you documented it; only `Mod-e` remains.
+
+Visually identical `<code>` output; `isActive('code')` becomes `isActive('inlineCode')`.
+
 ### Changed
 
 - Entering inline code from a collapsed caret now uses a ProseMirror stored mark instead of inserting a zero-width space. No placeholder character enters the document.

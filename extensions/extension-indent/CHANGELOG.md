@@ -8,7 +8,10 @@ First npm release since `0.1.1`. The major aligns the package with the docs.plus
 
 ### Highlights
 
-- Tab / Shift-Tab resolve list sink/lift and table-cell navigation before literal indent — in `0.1.1`, Tab always inserted `indentChars`.
+- **Tab / Shift-Tab precedence** — list sink/lift and table-cell navigation run before literal indent; `0.1.1` always inserted `indentChars` on Tab.
+- **`allowedIndentContexts` allowlist** — literal indent applies only in explicit `{ textblock, parent }` pairs (default: `paragraph` under `doc` or `blockquote`).
+- **Multiline-safe position math** — select-all and mid-word selections clamp to textblock boundaries; outdent no longer eats hard breaks.
+- **Jest matrix + clean-room Cypress** — `allowedIndentContexts` behavior table in Jest; real keypresses against built `dist/` on port 5175.
 
 ### Breaking
 

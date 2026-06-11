@@ -1,5 +1,8 @@
 node_modules
 dist
+
+# Local docs only; anchor so cypress/docs/*.cy.ts stays tracked
+/docs/
 .DS_Store
 *.log
 

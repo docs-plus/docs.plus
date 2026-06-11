@@ -11,10 +11,10 @@ bun run test:unit:watch  # unit in watch mode
 bun run test:e2e         # Cypress headless against the current dist/ (run build first)
 bun run test:e2e:watch   # same, but opens the Cypress runner
 bun run playground       # playground only, http://127.0.0.1:5173
-bun run docs:screenshots # regenerate README hero PNGs in docs/screenshots/
+bun run docs:screenshots # regenerate README hero PNGs in assets/
 ```
 
-`docs:screenshots` regenerates into the gitignored `docs/screenshots/`; when refreshing the README hero, copy the new PNGs into `assets/` — the tracked source the README hotlinks.
+`docs:screenshots` overwrites tracked `assets/preview-*.png` (README hotlinks).
 
 The playground accepts query-string flags so the dedicated specs can exercise opt-in behaviors without forking the bootstrap:
 
@@ -25,7 +25,7 @@ The playground accepts query-string flags so the dedicated specs can exercise op
 | `?clickSelection=on`    | Set `enableClickSelection: true` (click-to-select-mark-range).                  |
 | `?exitable=on`          | Set `exitable: true` (ArrowRight at the right edge clears the storedMark).      |
 
-Spec scope — 14 files, 150 tests — lives in [cypress/e2e/README.md](./cypress/e2e/README.md).
+Spec scope — 14 files, 150 tests — lives in [cypress/e2e/README.md](./cypress/e2e/README.md). README gallery (`cypress/docs/popovers.cy.ts`) captures create, preview, and edit popovers (light + dark) into `assets/`.
 
 ## Development
 

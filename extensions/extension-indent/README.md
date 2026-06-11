@@ -6,6 +6,13 @@
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-indent.svg)](https://www.npmjs.com/package/@docs.plus/extension-indent)
 [![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-indent/assets/preview-dark.png">
+    <img alt="Paragraph with two-space Tab indent at the start of the line" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-indent/assets/preview-light.png">
+  </picture>
+</p>
+
 Tiptap extension for character-based indentation: Tab inserts `indentChars` (default two spaces) at the caret or at the start of each selected line, and Shift-Tab removes it.
 
 Tab already belongs to lists (sink/lift), tables (cell navigation), and the browser (focus). This extension resolves the key in one predictable order — list, table, then literal indent — and runs literal indent only in contexts you allowlist via [`allowedIndentContexts`](#allowedindentcontexts): paragraphs under `doc` or `blockquote` by default, with headings, code blocks, and every other textblock excluded until you add a rule.
@@ -13,12 +20,12 @@ Tab already belongs to lists (sink/lift), tables (cell navigation), and the brow
 ## Install
 
 ```sh
-npm install @docs.plus/extension-indent
-# or
+bun add @docs.plus/extension-indent@next
+# stable, after promotion:
 bun add @docs.plus/extension-indent
 ```
 
-Requires `@tiptap/core` and `@tiptap/pm` — see `peerDependencies`.
+Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
 
 Optional: `@tiptap/extension-table` enables cell navigation on Tab; list extensions (`listItem` / `taskItem`) enable sink/lift before literal indent.
 
@@ -104,6 +111,14 @@ With an empty selection, `outdent()` removes:
 
 - the line's leading `indentChars` when the caret sits at the start of an indented line, or
 - one `indentChars` immediately before the caret elsewhere — undoes a just-inserted tab without moving to column 0.
+
+## TypeScript
+
+Exports: `Indent` (default), `IndentOptions`, `IndentContextRule`. Configure with `Indent.configure({ indentChars, allowedIndentContexts })`.
+
+## Family
+
+Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 

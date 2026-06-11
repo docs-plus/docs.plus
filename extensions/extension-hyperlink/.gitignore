@@ -3,8 +3,8 @@ dist
 *.log
 .DS_Store
 
-# Local docs (HISTORY archive, regenerated README hero PNGs)
-docs/
+# Local docs (e.g. HISTORY archive); anchor so cypress/docs/*.cy.ts stays tracked
+/docs/
 
 # Cypress artifacts
 cypress/screenshots

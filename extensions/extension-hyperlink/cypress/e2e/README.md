@@ -21,6 +21,6 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 | `scroll-stickiness.cy.ts` | Popovers track their anchor on scroll (live virtual references)                                                       |
 | `styling.cy.ts`           | `styles.css` ships via the exports map: `--hl-*` tokens, class contract, `light-dark()` theming                       |
 
-`_debug.cy.ts` (when present) is scratch space and excluded from release counts. `cypress/docs/popovers.cy.ts` regenerates README screenshots and runs only via `bun run docs:screenshots`.
+`_debug.cy.ts` (when present) is scratch space and excluded from release counts. README hero screenshots: see [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 Run: `bun run test` from this package (`pretest` build → unit suite → playground → Cypress). E2E only: `bun run test:e2e` (build first).

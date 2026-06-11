@@ -9,7 +9,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-dark.png">
-    <img alt="Hyperlink preview popover anchored to a link, with copy / edit / remove actions" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-light.png">
+    <img alt="Preview popover on a link — copy, edit, and remove actions" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-light.png">
   </picture>
 </p>
 
@@ -20,19 +20,19 @@ Beyond the mark itself, it covers the link behavior hosts usually hand-roll: aut
 ## Install
 
 ```sh
-npm install @docs.plus/extension-hyperlink
-# or
+bun add @docs.plus/extension-hyperlink@next
+# stable, after promotion:
 bun add @docs.plus/extension-hyperlink
 ```
 
-Requires `@tiptap/core` and `@tiptap/pm` — see `peerDependencies`.
+Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
 
 Upgrading from `1.x`? Option names, command names, and CSS class names all changed — see the [`1.x` → `2.0` migration guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md#migrating-from-1x-to-20).
 
 ## Quickstart
 
 ```ts
-import { useEditor } from '@tiptap/react'
+import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import {
   Hyperlink,
@@ -42,7 +42,7 @@ import {
 } from '@docs.plus/extension-hyperlink'
 import '@docs.plus/extension-hyperlink/styles.css'
 
-const editor = useEditor({
+const editor = new Editor({
   extensions: [
     StarterKit.configure({ link: false }),
     Hyperlink.configure({
@@ -204,6 +204,46 @@ Stable class names you can target:
 | `.error-message`             | Validation error text (shown with `.show`).          |
 
 ## Popovers
+
+### Gallery
+
+Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config). Each pair follows your system light/dark preference.
+
+<details>
+<summary><strong>Create</strong> — Mod+K with text selected</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/create-dark.png">
+    <img alt="Create-link popover with URL field and Add button" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/create-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Preview</strong> — click a link</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-dark.png">
+    <img alt="Preview popover on a link — copy, edit, and remove actions" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
+<summary><strong>Edit</strong> — preview → Edit</summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/edit-dark.png">
+    <img alt="Edit-link popover with URL and text fields and Update button" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/edit-light.png">
+  </picture>
+</p>
+
+</details>
 
 Three ways in, pick what you need:
 
@@ -560,6 +600,10 @@ Definitions are bundled. Full public surface:
 - **URL utilities** — `normalizeHref`, `getSpecialUrlInfo`, `validateURL`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, `SAFE_WINDOW_FEATURES`; types `SpecialUrlInfo`, `SpecialUrlType`, `LinkifyMatchLike`.
 - **DOM helpers** — `copyToClipboard(text, callback?)`, `createHTMLElement(tag, props?)`, and the SVG icon factories `Copy`, `LinkOff`, `Pencil` the prebuilt preview popover renders — reuse them in BYO popovers for visual parity.
 - **Linkify re-export** — `registerCustomProtocol` (passes through to [linkifyjs](https://linkify.js.org)).
+
+## Family
+
+Sibling packages, `@next` install policy, and recommended pairings (e.g. with hypermultimedia): [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 

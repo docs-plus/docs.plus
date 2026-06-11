@@ -15,3 +15,5 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 | `starterkit-collision.cy.ts` | Priority 101 wins backtick input and pasted `<code>` over StarterKit's `code`                                                                            |
 
 Run: `bun run test` from this package (`pretest` build → playground → Cypress).
+
+README hero screenshots: see [CONTRIBUTING.md](../../CONTRIBUTING.md).

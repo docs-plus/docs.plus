@@ -6,6 +6,13 @@
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-placeholder.svg)](https://www.npmjs.com/package/@docs.plus/extension-placeholder)
 [![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-placeholder/assets/preview-dark.png">
+    <img alt="Empty editor showing placeholder hint text in the first paragraph" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-placeholder/assets/preview-light.png">
+  </picture>
+</p>
+
 Tiptap placeholder extension that shows hint text in empty nodes.
 
 Tiptap's built-in Placeholder rescans the whole document (`doc.descendants`) on every transaction. This one decorates only the empty node at the cursor plus its empty ancestor wrappers — O(depth), not O(document) — and drops in for the built-in, with a few [deliberate differences](#differences-from-the-built-in-placeholder).
@@ -13,12 +20,12 @@ Tiptap's built-in Placeholder rescans the whole document (`doc.descendants`) on 
 ## Install
 
 ```sh
-npm install @docs.plus/extension-placeholder
-# or
+bun add @docs.plus/extension-placeholder@next
+# stable, after promotion:
 bun add @docs.plus/extension-placeholder
 ```
 
-Requires `@tiptap/core` and `@tiptap/pm` — see `peerDependencies`.
+Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
 
 ## Quickstart
 
@@ -75,9 +82,28 @@ The `::before` hint is invisible to screen readers — label the editable elemen
 - Empty ancestor wrappers also receive the empty class.
 - `hasAnchor` is always `true`.
 
+## Migrating from `@tiptap/extension-placeholder`
+
+| Built-in option    | This package                               |
+| ------------------ | ------------------------------------------ |
+| `showOnlyCurrent`  | Always current-node-only (no option)       |
+| `includeChildren`  | Empty ancestors always get the empty class |
+| `dataAttribute`    | Always `data-placeholder`                  |
+| Full-document scan | O(depth) at cursor only                    |
+
+Drop the built-in extension and add this one with the same `placeholder` string or function.
+
+## TypeScript
+
+Exports: `Placeholder` (default), `PlaceholderOptions`, `PlaceholderRenderProps` (function-form `placeholder` callback).
+
+## Family
+
+Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+
 ## Contributing
 
-Bug reports and PRs welcome. Repo setup and conventions live in the root [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/CONTRIBUTING.md).
+Bug reports and PRs welcome. Setup, test commands, and the playground harness live in [CONTRIBUTING.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/CONTRIBUTING.md).
 
 ## License
 

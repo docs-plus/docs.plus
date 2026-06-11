@@ -15,3 +15,5 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 Keymaps fire from synthetic `keydown` triggers (`cy.pressKey`); indents are created with real Tab presses because `setContent` HTML parsing collapses literal leading spaces.
 
 Run: `bun run test` from this package (`pretest` build → Jest units → playground → Cypress). E2E only: `bun run test:e2e` (build first).
+
+README hero screenshots: see [CONTRIBUTING.md](../../CONTRIBUTING.md).
