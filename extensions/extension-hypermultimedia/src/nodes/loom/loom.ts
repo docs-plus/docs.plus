@@ -8,17 +8,14 @@ import {
   layoutAttrDefaults,
   resolveEmbedLayoutDimensions
 } from '../../utils/embedKit'
-import {
-  createIframeEmbedNodeView,
-  defineFullscreenIframeEmbedConfig,
-  renderIframeEmbedHTML
-} from '../../utils/iframeEmbedNode'
+import { createIframeEmbedNodeView, renderIframeEmbedHTML } from '../../utils/iframeEmbedNode'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildLoomEmbedUrl,
   LOOM_EMBED_ATTR_KEYS,
   LOOM_EMBED_KIT_DEFAULTS,
-  type LoomEmbedKitOptions
+  type LoomEmbedKitOptions,
+  resolveLoomIframeAttributes
 } from './embedOptions'
 import { getLoomEmbedUrl, isValidLoomUrl, LOOM_REGEX_GLOBAL } from './helper'
 
@@ -29,14 +26,16 @@ export type SetLoomOptions = {
 } & StyleLayoutOptions &
   Partial<LoomEmbedKitOptions>
 
-const LOOM_IFRAME_CONFIG = defineFullscreenIframeEmbedConfig<LoomOptions>({
+const LOOM_IFRAME_CONFIG = {
   wrapperClass: 'hypermultimedia--loom__content',
   dataVideoAttr: 'data-loom-video',
   renderWrapperClass: 'loom-video',
   embedAttrKeys: LOOM_EMBED_ATTR_KEYS,
   loadingProvider: 'Loom',
-  buildEmbedUrl: (src, attrs, options) => buildLoomEmbedUrl(src, attrs, options, getLoomEmbedUrl)
-})
+  buildEmbedUrl: (src: string, attrs: Record<string, unknown>, options: LoomOptions) =>
+    buildLoomEmbedUrl(src, attrs, options, getLoomEmbedUrl),
+  resolveIframeAttributes: resolveLoomIframeAttributes
+} satisfies Parameters<typeof createIframeEmbedNodeView<LoomOptions>>[0]
 
 export const Loom = Node.create<LoomOptions>({
   name: 'loom',

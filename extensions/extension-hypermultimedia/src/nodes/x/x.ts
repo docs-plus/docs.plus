@@ -132,13 +132,17 @@ export const X = Node.create<XOptions>({
       const shellHeight = Math.min(420, Math.round(shellWidth * 0.72))
 
       const applyLayout = (attrs: typeof node.attrs) => {
+        const width = Number(attrs.maxwidth ?? X_EMBED_DEFAULT_MAXWIDTH)
         applyStyles(layoutRoot, {
           display: attrs.display,
+          width,
           float: attrs.float,
           clear: attrs.clear,
           margin: attrs.margin,
           justifyContent: attrs.justifyContent
         })
+        layoutRoot.style.maxWidth = '100%'
+        layoutRoot.dataset.xTheme = (attrs.theme as XEmbedTheme | undefined) ?? kitOptions.theme
       }
 
       applyLayout(node.attrs)
@@ -152,24 +156,28 @@ export const X = Node.create<XOptions>({
       layoutRoot.append(loadingHost)
 
       const mountAbort = new AbortController()
-      let stopHeightSync = watchXEmbedHeight(embedTarget, (height) => {
+      let disposeHeightSync = watchXEmbedHeight(embedTarget, (height) => {
         loadingHost.style.height = `${Math.max(shellHeight, height)}px`
       })
+      const endHeightSync = () => {
+        disposeHeightSync()
+        disposeHeightSync = () => {}
+      }
 
       void mountXEmbed(embedTarget, buildXOEmbedParams(node.attrs, kitOptions), mountAbort.signal)
         .then((ok) => {
-          stopHeightSync()
-          stopHeightSync = () => {}
+          endHeightSync()
           if (!ok) {
             controller.markError()
             return
           }
           loadingHost.classList.add('hm-media-host--fluid')
+          loadingHost.style.width = '100%'
           loadingHost.style.height = 'auto'
           controller.markReady()
         })
         .catch(() => {
-          stopHeightSync()
+          endHeightSync()
           controller.markError()
         })
 
@@ -185,7 +193,7 @@ export const X = Node.create<XOptions>({
         // Caption is a nested contenteditable the node view owns; keep PM out of its events.
         stopEvent: (event: Event) => caption.el.contains(event.target as globalThis.Node | null),
         destroy: () => {
-          stopHeightSync()
+          endHeightSync()
           mountAbort.abort()
           controller.destroy()
           caption.destroy()

@@ -1,6 +1,8 @@
-import { FULLSCREEN_IFRAME_DOM_ATTR_KEYS, resolveEmbedOption } from '../../utils/embedKit'
-
-/** Loom embed iframe query params. */
+import {
+  FULLSCREEN_IFRAME_DOM_ATTR_KEYS,
+  resolveEmbedOption,
+  resolveFullscreenIframeAttributes
+} from '../../utils/embedKit'
 
 export interface LoomEmbedKitOptions {
   autoplay: 0 | 1
@@ -12,6 +14,7 @@ export interface LoomEmbedKitOptions {
   allow: string
   frameborder: number
   allowfullscreen: boolean
+  scrolling: string
 }
 
 type LoomEmbedParamKey = keyof Pick<
@@ -28,6 +31,8 @@ const LOOM_QUERY_PARAM: Record<LoomEmbedParamKey, string> = {
   hideEmbedTopBar: 'hideEmbedTopBar'
 }
 
+const LOOM_EMBED_PARAM_KEYS = Object.keys(LOOM_QUERY_PARAM) as LoomEmbedParamKey[]
+
 export const LOOM_EMBED_KIT_DEFAULTS: LoomEmbedKitOptions = {
   autoplay: 0,
   muted: 0,
@@ -37,13 +42,16 @@ export const LOOM_EMBED_KIT_DEFAULTS: LoomEmbedKitOptions = {
   hideEmbedTopBar: false,
   allow: 'fullscreen; picture-in-picture',
   frameborder: 0,
-  allowfullscreen: true
+  allowfullscreen: true,
+  scrolling: 'no'
 }
+
+export const LOOM_IFRAME_DOM_ATTR_KEYS = ['scrolling', ...FULLSCREEN_IFRAME_DOM_ATTR_KEYS] as const
 
 export const LOOM_EMBED_ATTR_KEYS = [
   'src',
-  ...(Object.keys(LOOM_QUERY_PARAM) as LoomEmbedParamKey[]),
-  ...FULLSCREEN_IFRAME_DOM_ATTR_KEYS
+  ...LOOM_EMBED_PARAM_KEYS,
+  ...LOOM_IFRAME_DOM_ATTR_KEYS
 ] as const
 
 export const buildLoomEmbedUrl = (
@@ -57,17 +65,24 @@ export const buildLoomEmbedUrl = (
 
   const embedUrl = new URL(base)
 
-  ;(Object.keys(LOOM_QUERY_PARAM) as LoomEmbedParamKey[]).forEach((optionKey) => {
+  for (const optionKey of LOOM_EMBED_PARAM_KEYS) {
     const value = resolveEmbedOption(attrs, options, optionKey)
-    if (value === undefined || value === null) return
+    if (value === undefined || value === null) continue
 
-    if (optionKey === 'autoplay' || optionKey === 'muted') {
-      embedUrl.searchParams.set(LOOM_QUERY_PARAM[optionKey], String(value))
-      return
-    }
-
-    embedUrl.searchParams.set(LOOM_QUERY_PARAM[optionKey], value ? 'true' : 'false')
-  })
+    const formatted =
+      optionKey === 'autoplay' || optionKey === 'muted' ? String(value) : value ? 'true' : 'false'
+    embedUrl.searchParams.set(LOOM_QUERY_PARAM[optionKey], formatted)
+  }
 
   return embedUrl.toString()
 }
+
+export const resolveLoomIframeAttributes = (
+  attrs: Record<string, unknown>,
+  options: LoomEmbedKitOptions,
+  width: number,
+  height: number
+): Record<string, string | number | boolean> => ({
+  ...resolveFullscreenIframeAttributes(attrs, options, width, height),
+  scrolling: String(resolveEmbedOption(attrs, options, 'scrolling') ?? options.scrolling)
+})

@@ -4,10 +4,15 @@ import { defineConfig } from 'tsup'
 
 import { defineTiptapExtensionConfig } from '../../tsup.base'
 
-// Webapp imports these individually via globals.scss; keep them in dist and also
-// concatenate a single ./styles.css export so npm consumers and the clean-room
-// playground load the shipped artifact the way extension-hyperlink does.
-const STYLE_FILES = ['resize-gripper.css', 'media-loading-shell.css', 'media-toolbar.css']
+// Per-file copies for webapp globals.scss; bundled styles.css for npm + playground.
+// Keep file list in sync with apps/webapp/src/styles/globals.scss (hypermultimedia @import block).
+const STYLE_FILES = [
+  'resize-gripper.css',
+  'media-loading-shell.css',
+  'media-node-x.css',
+  'media-node-loom.css',
+  'media-toolbar.css'
+]
 
 export default defineConfig(
   defineTiptapExtensionConfig({

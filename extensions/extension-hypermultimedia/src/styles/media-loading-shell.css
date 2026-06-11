@@ -1,6 +1,4 @@
-/* Reserved-size loading shell (Notion/Slack-style) — theme via CSS variables. */
-
-/* Tokens follow the ancestor `color-scheme` via light-dark(); see media-toolbar.css. */
+/* Loading shell tokens follow ancestor color-scheme via light-dark(). */
 :root {
   --hm-loading-bg: light-dark(#f3f4f6, #111827);
   --hm-loading-shimmer: light-dark(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.08));
@@ -24,19 +22,6 @@
   background: transparent;
 }
 
-/* X / Twitter: widgets.js height is unknown until render; grow shell, then flow with content. */
-.hm-media-host--fluid {
-  overflow: visible;
-}
-
-.hm-media-host--fluid[data-hm-loading='ready'] {
-  height: auto !important;
-}
-
-.hm-media-host--fluid .hm-media-slot {
-  height: auto;
-}
-
 .hm-media-slot {
   width: 100%;
   height: 100%;
@@ -56,6 +41,10 @@
 
 .hm-media-host[data-hm-loading='ready'] .hm-media-slot {
   opacity: 1;
+}
+
+.hm-media-host[data-hm-loading='ready'] iframe {
+  background: transparent;
 }
 
 .hm-media-host[data-hm-loading='error'] .hm-media-slot {

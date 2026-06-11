@@ -49,6 +49,7 @@ Kit defaults apply to every insert; per-node attrs override when building the em
 | `frameborder`     | `0`                              |
 | `allow`           | `fullscreen; picture-in-picture` |
 | `allowfullscreen` | `true`                           |
+| `scrolling`       | `no`                             |
 
 ## Paste
 

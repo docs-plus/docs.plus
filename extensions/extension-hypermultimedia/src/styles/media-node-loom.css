@@ -1,0 +1,8 @@
+.hypermultimedia--loom__content .hm-media-slot {
+  overflow: hidden;
+}
+
+.hypermultimedia--loom__content iframe {
+  display: block;
+  border: 0;
+}

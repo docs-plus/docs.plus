@@ -1,0 +1,28 @@
+.hm-media-host--fluid {
+  overflow: visible;
+}
+
+.hm-media-host--fluid[data-hm-loading='ready'] {
+  height: auto !important;
+}
+
+.hypermultimedia--x__content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.hypermultimedia--x__content[data-x-theme='dark'] {
+  background: rgb(21, 32, 43);
+}
+
+.hypermultimedia--x__content[data-x-theme='light'] {
+  background: #fff;
+}
+
+.hypermultimedia--x__content .hm-media-host[data-hm-loading='ready'] iframe {
+  border-radius: inherit;
+}
+
+.hm-media-host--fluid .hm-media-slot {
+  height: auto;
+}
