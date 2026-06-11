@@ -11,8 +11,11 @@ function flag(name: string): string | undefined {
 
 const entry = flag('entry')
 const port = Number(flag('port'))
+const readmeMediaDir = flag('readme-media-dir')
 if (!entry || !Number.isInteger(port)) {
-  throw new Error('usage: docs-playground --entry <main.ts> --port <number>')
+  throw new Error(
+    'usage: docs-playground --entry <main.ts> --port <number> [--readme-media-dir <dir>]'
+  )
 }
 
 const shellCss = readFileSync(join(import.meta.dir, 'shell.css'), 'utf8')
@@ -63,10 +66,27 @@ symlinkSync(resolve(entry), join(dir, 'main.ts'))
 writeFileSync(join(dir, 'index.html'), html)
 
 const index = await import(join(dir, 'index.html'))
+const readmeMediaRoot = readmeMediaDir ? resolve(readmeMediaDir) : null
+
+function serveReadmeMedia(req: Request): Response {
+  const rel = decodeURIComponent(new URL(req.url).pathname.slice('/readme-media/'.length))
+  if (!rel || rel.includes('..')) {
+    return new Response('Forbidden', { status: 403 })
+  }
+  const filePath = join(readmeMediaRoot!, rel)
+  if (!filePath.startsWith(readmeMediaRoot!)) {
+    return new Response('Forbidden', { status: 403 })
+  }
+  return new Response(Bun.file(filePath))
+}
+
 const server = Bun.serve({
   port,
   hostname: '127.0.0.1',
-  routes: { '/': index.default },
+  routes: {
+    '/': index.default,
+    ...(readmeMediaRoot ? { '/readme-media/*': serveReadmeMedia } : {})
+  },
   development: true
 })
 

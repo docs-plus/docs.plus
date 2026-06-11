@@ -2,7 +2,7 @@
   "name": "@docs.plus/playground",
   "version": "0.0.0",
   "private": true,
-  "description": "Internal dev/test-only clean-room playground harness for the @docs.plus/extension-* Cypress suites: the `docs-playground` server (page shell + theme) plus the browser `setupPlayground` helper. Consumers commit only their `main.ts` fixture. Never published, never imported by any src/.",
+  "description": "Internal clean-room Cypress harness for @docs.plus/extension-* (docs-playground + setupPlayground). Never published.",
   "type": "module",
   "bin": {
     "docs-playground": "./src/launch.ts"
@@ -10,6 +10,8 @@
   "exports": {
     "./setup": "./src/setup.ts",
     "./tsconfig.json": "./tsconfig.json",
+    "./cypress/flattenReadmeScreenshots": "./cypress/flattenReadmeScreenshots.ts",
+    "./cypress/readmeGallery": "./cypress/readmeGallery.ts",
     "./cypress/tsconfig.json": "./cypress/tsconfig.json",
     "./package.json": "./package.json"
   },
