@@ -8,7 +8,10 @@
 
 .hypermultimedia__resize-gripper {
   position: absolute;
-  margin: 0;
+  /* Overlay widget: never inherit the host editor's content-flow margins
+     (e.g. `.ProseMirror > *` block spacing) — they shift it off the media box
+     and desync offsetTop↔style.top, breaking drag. Must win the host cascade. */
+  margin: 0 !important;
   display: none;
   pointer-events: none;
   box-sizing: border-box;

@@ -101,16 +101,36 @@ export function setMediaResizing(editor: Editor, active: boolean): void {
   getControlsState(editor).mediaResizing = active
 }
 
+/** The pixel-sized loading-shell host, not the wrapper-with-caption, is the visible media box. */
+function resolveMediaBox(target: HTMLElement): HTMLElement {
+  const host = target.querySelector('.hm-media-host')
+  return host instanceof HTMLElement ? host : target
+}
+
+/**
+ * Overlay the visible media box. Both rects come from `getBoundingClientRect`, then
+ * convert into the gripper's own `offsetParent` frame (its border via clientLeft/Top)
+ * so drag math, which reads/writes `offset*`, stays in the same coordinate space.
+ */
 export function positionResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
-  gripper.style.width = `${target.clientWidth}px`
-  gripper.style.height = `${target.clientHeight}px`
-  gripper.style.left = `${target.offsetLeft}px`
-  gripper.style.top = `${target.offsetTop}px`
+  const parent = gripper.offsetParent as HTMLElement | null
+  const parentRect = parent?.getBoundingClientRect()
+  const box = resolveMediaBox(target).getBoundingClientRect()
+
+  const originLeft = (parentRect?.left ?? 0) + (parent?.clientLeft ?? 0)
+  const originTop = (parentRect?.top ?? 0) + (parent?.clientTop ?? 0)
+
+  gripper.style.width = `${box.width}px`
+  gripper.style.height = `${box.height}px`
+  gripper.style.left = `${box.left - originLeft}px`
+  gripper.style.top = `${box.top - originTop}px`
 }
 
 export function activateResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
-  positionResizeGripper(gripper, target)
+  // `--active` flips display:none→block first: a hidden gripper has a null offsetParent
+  // and zero-size rects, so positionResizeGripper must run while it is laid out.
   gripper.classList.add('hypermultimedia__resize-gripper--active')
+  positionResizeGripper(gripper, target)
 }
 
 export function deactivateResizeGripper(gripper: HTMLElement): void {
