@@ -13,6 +13,10 @@ export {
   type MediaLoadingShellWrapOptions,
   wrapMediaWithLoadingShell
 } from './loading'
+export { isImageUrl } from './nodes/image/helper'
+export { isValidLoomUrl } from './nodes/loom/helper'
+export { isValidSoundCloudUrl } from './nodes/soundcloud/helper'
+export { isValidVimeoUrl } from './nodes/vimeo/helper'
 export {
   buildXOEmbedParams,
   resolveXEmbedSizeId,
@@ -22,6 +26,8 @@ export {
   type XEmbedSizeId,
   type XEmbedTheme
 } from './nodes/x/embedOptions'
+export { isValidXUrl } from './nodes/x/helper'
+export { isValidYoutubeUrl, parseYoutubeVideoId } from './nodes/youtube/helper'
 export {
   attachTooltip,
   canViewOriginal,
@@ -49,6 +55,7 @@ export {
   resolveMediaActions,
   viewOriginalMedia
 } from './toolbar'
+export { detectMediaType, type MediaNodeType } from './utils/detectMediaType'
 export {
   fitDimensionsToBounds,
   fitLayoutToEditorColumn,
@@ -64,6 +71,7 @@ export {
   type MediaPlacementId
 } from './utils/media-placement'
 export { resolveMediaNodePos } from './utils/media-resize-controls'
+export { isAudioUrl, isVideoUrl } from './utils/mediaUrl'
 
 import { HyperMultimediaKit } from './hyperMultimediaKit'
 

@@ -11,12 +11,12 @@ import { isValidYoutubeUrl } from '../nodes/youtube/helper'
  * URLs become nodes, not links: `Hyperlink.configure({ shouldAutoLink: (url)
  * => !isMediaUrl(url) })`. Resolves the paste precedence between the two.
  */
+// Deliberately excludes raw video/audio URLs (unlike detectMediaType) so pasted
+// `.mp4`/`.mp3` links stay links, not nodes.
 export const isMediaUrl = (url: string): boolean =>
-  Boolean(
-    isImageUrl(url) ||
-    isValidYoutubeUrl(url) ||
-    isValidVimeoUrl(url) ||
-    isValidSoundCloudUrl(url) ||
-    isValidLoomUrl(url) ||
-    isValidXUrl(url)
-  )
+  isImageUrl(url) ||
+  isValidYoutubeUrl(url) ||
+  isValidVimeoUrl(url) ||
+  isValidSoundCloudUrl(url) ||
+  isValidLoomUrl(url) ||
+  isValidXUrl(url)
