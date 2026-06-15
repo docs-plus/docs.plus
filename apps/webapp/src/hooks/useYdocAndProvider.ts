@@ -60,7 +60,6 @@ const useYdocAndProvider = ({
       document: ydocRef.current,
       token: JSON.stringify({ accessToken: accessToken || '', slug: slug, deviceType }),
       onSynced: (data) => {
-        console.info('++onSynced', data)
         isSyncedRef.current = true
 
         // Initial sync complete - document loaded from server (already saved)
@@ -100,14 +99,17 @@ const useYdocAndProvider = ({
         }
       },
       onDestroy: () => {
-        console.info('destroy provider')
         setWorkspaceSetting('providerStatus', 'saved')
         setWorkspaceEditorSetting('loading', true)
         setWorkspaceEditorSetting('providerSyncing', true)
         setWorkspaceEditorSetting('applyingFilters', false)
         setWorkspaceSetting('hocuspocusProvider', null)
         setWorkspaceEditorSetting('presentUsers', [])
-      }
+      },
+      // StrictMode's dev double-mount auto-opens this socket then closes it mid-
+      // handshake ("closed before established"). Defer connect() (below) so cleanup
+      // cancels it first; autoConnect flows to the managed socket (not in its type).
+      ...{ autoConnect: false }
     })
 
     // Unconditional + idempotent: the store value here is either null (fresh
@@ -115,7 +117,12 @@ const useYdocAndProvider = ({
     // stale across doc switches and strands the page on the skeleton.
     setWorkspaceSetting('hocuspocusProvider', providerRef.current)
 
+    // Connect on the next tick (see autoConnect above): the throwaway StrictMode
+    // mount clears this before any socket opens; the surviving mount connects.
+    const connectTimer = setTimeout(() => providerRef.current?.connect(), 0)
+
     return () => {
+      clearTimeout(connectTimer)
       providerRef.current?.destroy()
       // Without these, the next documentId's effect would see a truthy ref to a
       // destroyed provider and skip recreation, and its watchdog would see the
