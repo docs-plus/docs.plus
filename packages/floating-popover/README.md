@@ -8,9 +8,10 @@ Internal monorepo package — `private`, never published to npm. The consuming e
 
 ## Public surface
 
-- `createPopover(options)` — build a positioned popover (`{ referenceElement }` or virtual `{ coordinates }`). Emits the `.floating-popover*` class contract; ships no CSS of its own.
+- `createPopover(options)` — build a positioned popover (`{ referenceElement }` or virtual `{ coordinates }`). Emits the `.floating-popover*` class contract; ships no CSS of its own. The shell is role-neutral — ARIA has no popover role, so consumers pass `role` (`toolbar`, `dialog`, …) to give the surface its content's role.
 - `createPopoverController()` / `getDefaultController()` / `setDefaultController()` / `resetDefaultController()` — the singleton lifecycle owner. `adopt` takes ownership of a built popover (destroying the previous owner), `close` hides and idles, `reposition` re-anchors, `subscribe` observes `idle ↔ mounted` transitions.
 - `DEFAULT_OFFSET` and the supporting types (`Popover`, `PopoverOptions`, `PopoverController`, `ControllerState`, `PopoverKind`, `VirtualCoordinates`, `AdoptMetadata`, `ManagedPopover`).
+- `PopoverKind` is an open string union: consumers namespace their own kinds (e.g. `media-…`); the `'preview' | 'edit' | 'create'` literals exist for autocomplete only.
 
 ## Styling
 

@@ -86,6 +86,7 @@
   },
   "devDependencies": {
     "@docs.plus/floating-popover": "workspace:*",
+    "@docs.plus/floating-tooltip": "workspace:*",
     "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@eslint/js": "catalog:",

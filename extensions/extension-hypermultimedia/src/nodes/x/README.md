@@ -5,6 +5,8 @@ Renders embedded X (formerly Twitter) posts via the official oEmbed endpoint and
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 

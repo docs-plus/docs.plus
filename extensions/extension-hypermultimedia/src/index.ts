@@ -23,11 +23,15 @@ export {
   type XEmbedTheme
 } from './nodes/x/embedOptions'
 export {
+  attachTooltip,
   canViewOriginal,
   closeMediaToolbar,
+  closeToolbarPopover,
   copyMediaNode,
   createMediaToolbar,
+  createReplaceUrlPopover,
   downloadMedia,
+  hideTooltip,
   isDownloadable,
   type MediaAction,
   type MediaActionContext,
@@ -37,7 +41,11 @@ export {
   type MediaToolbarFactory,
   type MediaToolbarOptions,
   openMediaToolbar,
+  openReplaceUrlPopover,
+  openToolbarPopover,
   removeMediaNode,
+  type ReplaceUrlPopoverFactory,
+  type ReplaceUrlPopoverOptions,
   resolveMediaActions,
   viewOriginalMedia
 } from './toolbar'
@@ -55,6 +63,7 @@ export {
   MEDIA_PLACEMENT_OPTIONS,
   type MediaPlacementId
 } from './utils/media-placement'
+export { resolveMediaNodePos } from './utils/media-resize-controls'
 
 import { HyperMultimediaKit } from './hyperMultimediaKit'
 

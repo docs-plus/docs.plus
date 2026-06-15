@@ -7,6 +7,8 @@ Renders `<video>` elements as a block or inline node.
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 

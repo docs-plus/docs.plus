@@ -5,6 +5,8 @@ Embeds Loom recordings. `share` and `embed` URLs normalize to `loom.com/embed/<i
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 

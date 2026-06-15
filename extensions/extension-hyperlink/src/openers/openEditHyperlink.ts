@@ -1,3 +1,5 @@
+import { hideTooltip } from '@docs.plus/floating-tooltip'
+
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import editHyperlinkPopover from '../popovers/editHyperlinkPopover'
@@ -40,7 +42,12 @@ export function openEditHyperlink(opts: EditHyperlinkOptions): void {
     },
     content,
     placement: 'bottom',
-    showArrow: true
+    showArrow: true,
+    role: 'dialog',
+    ariaLabel: 'Edit link',
+    // No prebuilt icon buttons here, but BYO content can attach tooltips —
+    // the orphan guard is a property of the surface, not of its content.
+    onHide: hideTooltip
   })
   getDefaultController().adopt(popover, 'edit', {
     element: popover.element,

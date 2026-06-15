@@ -34,6 +34,7 @@ Co-install [`@docs.plus/extension-hyperlink`](https://github.com/docs-plus/docs.
 One `HyperMultimediaKit.configure` call adds every node; pass an options object to configure one, or `false` to disable it.
 
 ```ts
+import { Editor } from '@tiptap/core'
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 import '@docs.plus/extension-hypermultimedia/styles.css'
 
@@ -54,13 +55,14 @@ Markdown image import/export lives on the `image` node — no separate extension
 
 Kit-level options on `HyperMultimediaKit.configure({ … })`:
 
-| Option                                                                   | Default          | Description                                                                                                                                   |
-| ------------------------------------------------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Image`, `Audio`, `Video`, `Youtube`, `Vimeo`, `SoundCloud`, `Loom`, `X` | enabled          | Per-node options object, `true`, or `false` to disable. Every node except `X` also accepts `resizeGripper: false`.                            |
-| `mediaToolbar`                                                           | built-in toolbar | Toolbar factory — return your own element, or `null` to render a host surface. See [Customizing actions](#customizing-actions).               |
-| `mediaActions`                                                           | built-in actions | Rewrites the resolved toolbar action list per node. See [Customizing actions](#customizing-actions).                                          |
-| `isUploadedMedia`                                                        | `undefined`      | Marks image/video/audio nodes as host uploads so View original stays hidden for them. See [Customizing actions](#customizing-actions).        |
-| `loadingShell`                                                           | `true`           | Loading overlay: `true` for the built-in shell, `false` for none, or a factory replacing the overlay UI. See [Loading shell](#loading-shell). |
+| Option                                                                   | Default          | Description                                                                                                                                        |
+| ------------------------------------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Image`, `Audio`, `Video`, `Youtube`, `Vimeo`, `SoundCloud`, `Loom`, `X` | enabled          | Per-node options object, `true`, or `false` to disable. Every node except `X` also accepts `resizeGripper: false`.                                 |
+| `mediaToolbar`                                                           | built-in toolbar | Toolbar factory — return your own element, or `null` to render a host surface. See [Build your own toolbar](#build-your-own-toolbar).              |
+| `mediaActions`                                                           | built-in actions | Rewrites the resolved toolbar action list per node. See [Customizing actions](#customizing-actions).                                               |
+| `replaceUrlPopover`                                                      | built-in editor  | Replace URL dialog content factory — return your own element, or `null` to render a host surface. See [Customizing actions](#customizing-actions). |
+| `isUploadedMedia`                                                        | `undefined`      | Marks image/video/audio nodes as host uploads so View original stays hidden for them. See [Customizing actions](#customizing-actions).             |
+| `loadingShell`                                                           | `true`           | Loading overlay: `true` for the built-in shell, `false` for none, or a factory replacing the overlay UI. See [Loading shell](#loading-shell).      |
 
 Per-node options (player params, paste handlers, layout) are documented per node — see [Nodes](#nodes).
 
@@ -84,7 +86,7 @@ Every command also accepts layout options: `width`, `height`, `margin`, `float`,
 ## Styling
 
 Import the single shipped stylesheet — it bundles the resize gripper, loading shell,
-media toolbar, and node-specific X/Loom embed chrome:
+media toolbar, and node-specific X/Loom embed styles:
 
 ```ts
 import '@docs.plus/extension-hypermultimedia/styles.css'
@@ -245,21 +247,34 @@ Provider embeds resolve options in two layers: kit defaults (`HyperMultimediaKit
 
 ## Media toolbar
 
-Hover a media node (desktop) or tap it (touch) and a toolbar appears at the node's top-right corner. Common actions sit inline; the rest live behind a `…` overflow menu.
+Hover a media node (desktop) or tap it (touch) and a toolbar appears at the node's top-right corner. Common actions sit inline; the rest live behind a `…` overflow menu. Icon-only buttons show a floating tooltip on hover or focus, shipped from [`@docs.plus/floating-tooltip`](https://github.com/docs-plus/docs.plus/tree/main/packages/floating-tooltip) and bundled into `dist` like the popover engine.
 
 | Action                     | Placement | Nodes                                                                   |
 | -------------------------- | --------- | ----------------------------------------------------------------------- |
-| Caption                    | inline    | all                                                                     |
 | Alignment                  | inline    | all                                                                     |
+| Margin                     | inline    | all — wrap placements only                                              |
+| Caption                    | inline    | all                                                                     |
 | View original              | inline    | any node with an external `src` (hidden for uploaded image/video/audio) |
 | Download                   | inline    | image, video, audio                                                     |
+| Replace URL                | overflow  | any node with a `src`                                                   |
 | Copy                       | overflow  | all                                                                     |
 | Delete                     | overflow  | all                                                                     |
 | Post options (size, theme) | overflow  | x                                                                       |
 
+Alignment places the node Left, Center, Right, Wrap left, or Wrap right. The wrap
+placements add a margin button beside Align — it shows the current gap and opens
+the presets (0"–1", 1/2" default) in a popover — separated from the remaining
+actions by a divider.
+
+Replace URL, in the `…` overflow menu, opens a URL editor in a dialog popover
+anchored to the node — below it, flipping above when space runs out. Confirming swaps the node's `src` in
+place — same node, caption, size, and placement — and validates against the
+node's own provider, so a YouTube node only accepts another YouTube URL; it
+never morphs the node type.
+
 ### Customizing actions
 
-Two kit hooks, in order of reach.
+Three kit hooks, in order of reach.
 
 `mediaActions` rewrites the resolved action list per node — add, hide, or reorder:
 
@@ -269,22 +284,28 @@ HyperMultimediaKit.configure({
     if (nodeType !== 'image') return defaults
     return [
       ...defaults.filter((action) => action.id !== 'download'), // hide one
-      { id: 'alt', label: () => 'Edit alt text', placement: 'menu', run: (ctx) => editAltText(ctx) } // add one
+      {
+        id: 'alt',
+        label: () => 'Edit alt text',
+        placement: 'overflow',
+        run: (ctx) => editAltText(ctx)
+      } // add one
     ]
   }
 })
 ```
 
-A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'menu', isVisible?(ctx), isActive?(ctx), run(ctx), renderSubmenu?(ctx) }`; `label` and `icon` are functions of the action context. The returned array order is final; the built-in `order` field only seeds the defaults.
+A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run(ctx), renderSubmenu?(ctx), dividerAfter? }`; `label` and `icon` are functions of the action context, and `dividerAfter` renders a separator after the action (the margin button uses it). The returned array order is final; the built-in `order` field only seeds the defaults.
 
-`mediaToolbar` replaces the toolbar element outright — return an element, or `null` to let the host render its own surface (the webapp returns `null` on mobile and renders a bottom-sheet):
+`replaceUrlPopover` swaps the Replace URL dialog's content. The factory receives
+`ReplaceUrlPopoverOptions` — `{ editor, nodeType, nodePos, src, validate, apply, close }`,
+where `validate` returns an error message or `null` and `apply` commits the
+normalized URL and closes — and returns the element to mount, or `null` to render
+a host surface instead (the webapp opens a bottom-sheet on mobile). The built-in
+content (`createReplaceUrlPopover`) and the action's open path
+(`openReplaceUrlPopover`) are exported for reuse.
 
-```ts
-HyperMultimediaKit.configure({
-  mediaToolbar: (ctx) => buildCustomToolbar(ctx)
-  // mediaToolbar: () => null, // opt out
-})
-```
+`mediaToolbar` replaces the toolbar element outright — see [Build your own toolbar](#build-your-own-toolbar).
 
 `isUploadedMedia` marks which image/video/audio nodes are host uploads, so View original stays hidden for them (it always shows for provider embeds):
 
@@ -294,7 +315,69 @@ HyperMultimediaKit.configure({
 })
 ```
 
-`createMediaToolbar`, `resolveMediaActions`, the `MediaAction` types, and the action handlers (`viewOriginalMedia`, `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`, `isDownloadable`) are exported for hosts that build their own surface.
+### Build your own toolbar
+
+The `mediaToolbar` factory owns the whole surface. It receives `MediaToolbarOptions` — `{ target, editor, nodeType, nodePos }` — and returns the element to mount, or `null` to render a host surface elsewhere (the webapp returns `null` on mobile and opens a bottom-sheet).
+
+The mounted element is stamped `data-hm-toolbar`, so reuse on re-hover and removal on dismissal are handled for you — no class required. Positioning inside the media wrapper is yours; add the `.media-toolbar` class to adopt the built-in top-right skin.
+
+Two rules for action handlers:
+
+- **Re-resolve the position.** `nodePos` is a snapshot at open; edits above the node shift it. Call `resolveMediaNodePos(editor.view, target, nodeType)` at action time.
+- **Use the popover helpers** for anchored menus: `openToolbarPopover(anchor, body, kind)` opens one popover at a time with outside-click and Escape dismissal built in; `closeToolbarPopover()` closes it.
+
+`attachTooltip(myButton, 'Do thing')` gives a custom button the built-in hover/focus tooltip, re-exported from the bundled `@docs.plus/floating-tooltip`; it returns a detach function for surfaces that re-render in place.
+
+```ts
+import {
+  closeToolbarPopover,
+  removeMediaNode,
+  resolveMediaNodePos
+} from '@docs.plus/extension-hypermultimedia'
+
+HyperMultimediaKit.configure({
+  mediaToolbar: ({ target, editor, nodeType }) => {
+    const bar = document.createElement('div')
+    bar.className = 'media-toolbar' // optional: built-in top-right skin
+
+    const remove = document.createElement('button')
+    remove.className = 'media-toolbar__button'
+    remove.textContent = 'Remove'
+    remove.onclick = () => {
+      const nodePos = resolveMediaNodePos(editor.view, target, nodeType)
+      const node = nodePos === null ? null : editor.state.doc.nodeAt(nodePos)
+      if (!node) return
+      removeMediaNode({
+        editor,
+        nodeType,
+        nodePos,
+        attrs: node.attrs,
+        wrapper: target,
+        close: closeToolbarPopover
+      })
+    }
+
+    bar.append(remove)
+    return bar
+  }
+})
+```
+
+`createMediaToolbar`, `resolveMediaActions`, the `MediaAction` types, the action handlers (`viewOriginalMedia`, `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`, `isDownloadable`), and the tooltip helpers (`attachTooltip`, `hideTooltip`) are exported so a custom surface can reuse the built-in behavior.
+
+Adopting the skin? These class names are the stable styling contract:
+
+| Class                     | Element                                               |
+| ------------------------- | ----------------------------------------------------- |
+| `.media-toolbar`          | Toolbar root (built-in top-right skin).               |
+| `.media-toolbar__button`  | Inline action button (`--active` when toggled).       |
+| `.media-toolbar__more`    | The `…` overflow trigger.                             |
+| `.media-toolbar__menu`    | Overflow menu body (rows: `__menu-item`, `--active`). |
+| `.media-toolbar__submenu` | Submenu body (rows: `__submenu-item`, `--active`).    |
+| `.media-toolbar__input`   | URL field in the Replace URL dialog.                  |
+| `.media-toolbar__error`   | Validation message under the URL field.               |
+| `.media-toolbar__divider` | Separator grouping inline actions.                    |
+| `.floating-tooltip`       | Shared hover/focus tooltip bubble on icon buttons.    |
 
 ### Caption
 
@@ -362,7 +445,7 @@ Embed URL parsing rejects invalid hosts before insert (`guards/invalid-urls` in 
 
 ## TypeScript
 
-Definitions ship in `dist/`. Main exports: `HyperMultimediaKit`, per-node extensions (`Image`, `Youtube`, `X`, …), insert commands (`setImage`, `setX`, …), `isMediaUrl`, loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar types (`MediaToolbarContext`, `MediaAction`), and kit options types. Per-node embed options live under each node's module — see [Nodes](#nodes).
+Definitions ship in `dist/`. Main exports: `HyperMultimediaKit`, per-node extensions (`Image`, `Youtube`, `X`, …), insert commands (`setImage`, `setX`, …), `isMediaUrl`, loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. Per-node embed options live under each node's module — see [Nodes](#nodes).
 
 ## Family
 

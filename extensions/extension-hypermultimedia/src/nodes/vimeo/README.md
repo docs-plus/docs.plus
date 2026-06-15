@@ -5,6 +5,8 @@ Embeds Vimeo watch and player URLs as iframe players. Paste a link or call `setV
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -49,7 +51,7 @@ Query names follow [Vimeo embed options](https://developer.vimeo.com/player/sdk/
 | --------------- | ------------- | ------- | -------------------------------------------------- |
 | `autopause`     | `autopause`   | `true`  | Pause when another Vimeo player on the page starts |
 | `autoplay`      | `autoplay`    | `false` |                                                    |
-| `background`    | `background`  | `false` | Chromeless loop mode                               |
+| `background`    | `background`  | `false` | Controls-free loop mode                            |
 | `byline`        | `byline`      | `true`  | `true`, `false`, or `site-default`                 |
 | `color`         | `color`       | —       | Hex accent (with or without `#`)                   |
 | `controls`      | `controls`    | `true`  |                                                    |
@@ -63,7 +65,7 @@ Query names follow [Vimeo embed options](https://developer.vimeo.com/player/sdk/
 | `quality`       | `quality`     | `auto`  | `240p` … `4k`, `auto`                              |
 | `speed`         | `speed`       | `false` | Playback-speed menu                                |
 | `texttrack`     | `texttrack`   | —       | Caption track code, e.g. `en`                      |
-| `title`         | `title`       | `true`  | Video title chrome                                 |
+| `title`         | `title`       | `true`  | Video title overlay                                |
 | `transparent`   | `transparent` | `true`  |                                                    |
 | `endTime`       | `end_time`    | —       | Segmented playback end (seconds)                   |
 | `start`         | `start_time`  | `0`     | Start offset (seconds; node attr)                  |

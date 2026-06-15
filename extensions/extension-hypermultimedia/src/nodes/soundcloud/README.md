@@ -5,6 +5,8 @@ Embeds SoundCloud tracks and playlists via the official HTML5 widget (`w.soundcl
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 

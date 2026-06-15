@@ -106,7 +106,9 @@ export function isInteractiveEmbed(nodeType: string | null): boolean {
 }
 
 export function isInsideMediaControlsUI(el: HTMLElement | null): boolean {
-  return !!el?.closest('.media-toolbar, .floating-popover, .hypermultimedia__resize-gripper')
+  // `[data-hm-toolbar]` is the structural lifecycle marker (mount.ts stamps it
+  // on built-in and custom bars alike), so custom factories are covered too.
+  return !!el?.closest('[data-hm-toolbar], .floating-popover, .hypermultimedia__resize-gripper')
 }
 
 // Cache the query: hover/out/click fire on every element boundary, so a fresh

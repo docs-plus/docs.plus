@@ -1,3 +1,4 @@
+import { hideTooltip } from '@docs.plus/floating-tooltip'
 import type { Editor } from '@tiptap/core'
 
 import { HYPERLINK_MARK_NAME } from '../constants'
@@ -68,6 +69,8 @@ export function openCreateHyperlink(
     content,
     placement: 'bottom',
     showArrow: true,
+    role: 'dialog',
+    ariaLabel: 'Add link',
     onShow: () => {
       const input = content.querySelector('input')
       if (input) focusTimer = setTimeout(() => input.focus(), INPUT_FOCUS_DELAY_MS)
@@ -77,6 +80,8 @@ export function openCreateHyperlink(
         clearTimeout(focusTimer)
         focusTimer = null
       }
+      // BYO content can attach tooltips; the surface must not strand one.
+      hideTooltip()
     }
   })
 

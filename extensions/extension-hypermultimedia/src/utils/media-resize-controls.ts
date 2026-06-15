@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core'
-import { TextSelection } from '@tiptap/pm/state'
+import { TextSelection, type Transaction } from '@tiptap/pm/state'
 
+import { updateToolbarContextNodePos } from '../toolbar/contextRegistry'
 import { closeMediaToolbar, openMediaToolbar } from '../toolbar/mount'
 import {
   findGripperForMedia,
@@ -45,7 +46,10 @@ function createControlsState(editor: Editor): MediaControlsState {
     pointerY: 0,
     pointerMoveAttached: false,
     onPointerOutside: (event) => handlePointerOutside(editor, event),
-    onDocumentKeyDown: (event) => handleMediaDeleteKey(editor, event),
+    onDocumentKeyDown: (event) => {
+      handleMediaDeleteKey(editor, event)
+      handleToolbarEscape(editor, event)
+    },
     onWindowResize: () => hideMediaResizeControls(editor),
     onPointerMove: (event) => {
       const state = getControlsState(editor)
@@ -142,6 +146,11 @@ function isPointerOverActiveChrome(editor: Editor): boolean {
   const state = getControlsState(editor)
   if (!state.activeTarget) return false
 
+  // Keyboard use parks the pointer anywhere: typing in the Replace dialog or
+  // arrowing through menus must not die to the pointer-based 250ms hide.
+  const focused = document.activeElement
+  if (focused instanceof HTMLElement && isInsideMediaControlsUI(focused)) return true
+
   const hit = document.elementFromPoint(state.pointerX, state.pointerY)
   if (!(hit instanceof HTMLElement)) return false
   if (isInsideMediaControlsUI(hit)) return true
@@ -187,6 +196,36 @@ export function hideMediaResizeControls(editor: Editor): void {
   purgeOrphanedResizeChrome(editor.view.dom)
 }
 
+/** Keeps Delete-key and toolbar actions aimed at the node when edits above shift its position. */
+export function remapActiveNodePos(editor: Editor, transactions: readonly Transaction[]): void {
+  const state = getControlsState(editor)
+  if (state.activeNodePos === null || state.mediaResizing) return
+
+  let pos = state.activeNodePos
+  for (const tr of transactions) {
+    if (!tr.docChanged) continue
+    const mapped = tr.mapping.mapResult(pos)
+    if (mapped.deleted) {
+      hideMediaResizeControls(editor)
+      return
+    }
+    pos = mapped.pos
+  }
+  if (pos === state.activeNodePos) return
+
+  state.activeNodePos = pos
+  if (state.activeTarget) updateToolbarContextNodePos(state.activeTarget, pos)
+}
+
+/** Runs post-DOM-update: edits above reflow the node, but the gripper's inline box is a snapshot. */
+function repositionActiveGripper(editor: Editor, state: MediaControlsState): void {
+  if (!state.activeTarget) return
+  const gripper = findGripperForMedia(state.activeTarget, editor.view.dom)
+  if (gripper?.classList.contains('hypermultimedia__resize-gripper--active')) {
+    positionResizeGripper(gripper, state.activeTarget)
+  }
+}
+
 /** Tear down when the node behind the active controls has left the document (delete, cut, remote edit). */
 export function syncControlsToDoc(editor: Editor): void {
   const state = getControlsState(editor)
@@ -197,6 +236,7 @@ export function syncControlsToDoc(editor: Editor): void {
     hideMediaResizeControls(editor)
     return
   }
+  repositionActiveGripper(editor, state)
   purgeOrphanedResizeChrome(editor.view.dom)
 }
 
@@ -313,6 +353,19 @@ export function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): bool
   if (editor.view.hasFocus() && editor.state.selection instanceof TextSelection) return false
   if (!deleteActiveMediaNode(editor)) return false
 
+  event.preventDefault()
+  return true
+}
+
+/** Escape with focus in the toolbar dismisses it and refocuses the editor. Skips when focus sits in a floating popover — its own bubble-phase Escape closes just the popover. */
+function handleToolbarEscape(editor: Editor, event: KeyboardEvent): boolean {
+  if (event.key !== 'Escape' || !getControlsState(editor).activeTarget) return false
+  const focused = document.activeElement
+  if (!(focused instanceof HTMLElement) || focused.closest('.floating-popover')) return false
+  if (!focused.closest('[data-hm-toolbar]')) return false
+
+  hideMediaResizeControls(editor)
+  editor.commands.focus()
   event.preventDefault()
   return true
 }

@@ -1,0 +1,51 @@
+{
+  "name": "@docs.plus/floating-tooltip",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internal monorepo util: framework-agnostic hover/focus tooltip primitive over @floating-ui/dom. Bundled into the @docs.plus/extension-* packages that consume it — never published standalone.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "author": "Hossein Marzban",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docs-plus/docs.plus",
+    "directory": "packages/floating-tooltip"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production bunx tsup",
+    "dev": "bunx tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.7.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "bun-types": "catalog:",
+    "eslint": "catalog:",
+    "globals": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,3 +1,5 @@
+import { attachTooltip } from '@docs.plus/floating-tooltip'
+
 import { SAFE_WINDOW_FEATURES } from '../constants'
 import { getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
@@ -6,15 +8,16 @@ import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil }
 import { logger } from '../utils/logger'
 
 // Icon-only action button: explicit `type` (the popover lives outside any
-// form, but defaults are surprising) plus matching title/aria-label.
+// form, but defaults are surprising). The floating tooltip replaces the
+// native `title` — keeping both would show two labels at once.
 const iconButton = (className: string, label: string, icon: string): HTMLButtonElement => {
   const button = createHTMLElement('button', {
     type: 'button',
     className,
-    innerHTML: icon,
-    title: label
+    innerHTML: icon
   })
   button.setAttribute('aria-label', label)
+  attachTooltip(button, label)
   return button
 }
 

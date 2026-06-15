@@ -57,9 +57,10 @@ COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY apps/hocuspocus.server/package.json ./apps/hocuspocus.server/
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/email-templates ./packages/email-templates
-# floating-popover is bundled into hyperlink/hypermultimedia dist (not external), so its
-# source must be present and built before those extensions build.
+# floating-popover/floating-tooltip are bundled into hyperlink/hypermultimedia dist (not
+# external), so their source must be present and built before those extensions build.
 COPY packages/floating-popover ./packages/floating-popover
+COPY packages/floating-tooltip ./packages/floating-tooltip
 # Copy extension source so workspace deps (e.g. @tiptap/core for DTS build) are installed and resolvable
 COPY extensions/extension-hyperlink ./extensions/extension-hyperlink
 COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia
@@ -100,8 +101,9 @@ COPY extensions/extension-placeholder ./extensions/extension-placeholder
 ENV CYPRESS_INSTALL_BINARY=0
 RUN bun install --frozen-lockfile
 
-# Build floating-popover first — hyperlink/hypermultimedia bundle its dist.
+# Build floating-popover + floating-tooltip first — hyperlink/hypermultimedia bundle their dist.
 RUN cd packages/floating-popover && bun run build
+RUN cd packages/floating-tooltip && bun run build
 # Build extension packages (required by webapp)
 RUN cd extensions/extension-hyperlink && bun run build
 RUN cd extensions/extension-hypermultimedia && bun run build

@@ -45,12 +45,12 @@ function isNavigable(href: string | null | undefined, ctx: LinkContext): href is
   return ctx.urls.forRead(href).navigable
 }
 
-// Open the floating toolbar (preview popover or fallback `window.open`)
-// for the just-clicked link. Three branches:
+// Open the preview popover (or fallback `window.open`) for the
+// just-clicked link. Three branches:
 //   1. No popover + read-only editor → gated `window.open(href)`.
 //   2. Popover slot returns `null` → host opted out (mobile bottom sheet).
 //   3. Popover slot returns content → mount, then place caret.
-function openHyperlinkToolbar(
+function openPreviewPopoverFromClick(
   view: EditorView,
   link: HTMLAnchorElement,
   ctx: LinkContext,
@@ -175,7 +175,7 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
           event.preventDefault()
           const { clientX, clientY } = event.changedTouches[0]
           const pos = view.posAtCoords({ left: clientX, top: clientY })
-          return openHyperlinkToolbar(view, link, ctx, pos?.pos)
+          return openPreviewPopoverFromClick(view, link, ctx, pos?.pos)
         },
 
         click: (view: EditorView, event: MouseEvent) => {
@@ -186,7 +186,7 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
 
           event.preventDefault()
           const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })
-          return openHyperlinkToolbar(view, link, ctx, pos?.pos)
+          return openPreviewPopoverFromClick(view, link, ctx, pos?.pos)
         }
       }
     }

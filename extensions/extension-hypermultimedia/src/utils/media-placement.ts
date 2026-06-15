@@ -9,11 +9,12 @@ export const MEDIA_MARGIN_OPTIONS = [
   { value: '1in', label: '1"' }
 ] as const
 
-export type MediaPlacementId = 'inline' | 'center' | 'float-left' | 'float-right'
+export type MediaPlacementId = 'inline' | 'center' | 'right' | 'float-left' | 'float-right'
 
 export const MEDIA_PLACEMENT_OPTIONS: ReadonlyArray<{ id: MediaPlacementId; label: string }> = [
   { id: 'inline', label: 'Left' },
   { id: 'center', label: 'Center' },
+  { id: 'right', label: 'Right' },
   { id: 'float-left', label: 'Wrap left' },
   { id: 'float-right', label: 'Wrap right' }
 ]
@@ -27,6 +28,8 @@ export function getMediaPlacementAttrs(
       return { display: 'block', float: 'none', clear: 'none', margin: '0' }
     case 'center':
       return { display: 'block', float: 'none', clear: 'none', margin: 'auto' }
+    case 'right':
+      return { display: 'block', float: 'none', clear: 'none', margin: '0 0 0 auto' }
     case 'float-left':
       return { display: 'block', float: 'left', clear: 'none', margin }
     case 'float-right':
@@ -38,5 +41,6 @@ export function getCurrentMediaPlacement(attrs: Record<string, unknown>): MediaP
   if (attrs.float === 'left') return 'float-left'
   if (attrs.float === 'right') return 'float-right'
   if (attrs.display === 'block' && attrs.margin === 'auto') return 'center'
+  if (attrs.display === 'block' && attrs.margin === '0 0 0 auto') return 'right'
   return 'inline'
 }

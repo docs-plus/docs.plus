@@ -30,6 +30,14 @@ bun add @docs.plus/extension-hyperlink
 - **Inline code + StarterKit:** `StarterKit.configure({ code: false })`.
 - **Placeholder:** no bundled CSS — add `[data-placeholder]::before` (see package README).
 
+## Vocabulary
+
+Two axes, never one word for both jobs:
+
+- **Popover** — the positioning container: anchored, floating, light-dismiss. Owned by the shared `floating-popover` engine; shells are role-less by default (ARIA has no popover role — the surface carries its content's role).
+- **Toolbar / form / menu** — the content inside a surface, named by what it is and carrying the matching ARIA role: hypermultimedia's media toolbar is a persistent in-node action bar (`role="toolbar"`); hyperlink's preview is a toolbar _in_ a popover; its create/edit are forms (`role="dialog"`) _in_ popovers.
+- **Composed names** follow the industry shape (CKEditor "balloon toolbar", Fluent `MenuPopover`): `openToolbarPopover` opens a popover anchored to the media toolbar.
+
 ## Release policy
 
 [RELEASE_POLICY.md](../RELEASE_POLICY.md) — versioning, lockstep Phase 2, soak/promotion, CHANGELOG style.

@@ -12,6 +12,7 @@ import { Video, VideoOptions } from './nodes/video/video'
 import { Vimeo, VimeoOptions } from './nodes/vimeo/vimeo'
 import { X, XOptions } from './nodes/x/x'
 import { Youtube, YoutubeOptions } from './nodes/youtube/youtube'
+import type { ReplaceUrlPopoverFactory } from './toolbar/replaceUrl'
 import type { MediaActionContext, MediaActionsResolver, MediaToolbarFactory } from './toolbar/types'
 import type { ImageOptions } from './types'
 
@@ -37,6 +38,12 @@ export interface HyperMultimediaKitOptions {
   loadingShell?: MediaLoadingShellOption
   /** Customize/extend/reorder the built-in toolbar actions per node. */
   mediaActions?: MediaActionsResolver
+  /**
+   * Replace-URL popover slot. Return the popover content for the node-anchored
+   * dialog, or `null` to opt out so the host renders its own surface (mobile
+   * sheet). Omit to use the built-in URL editor.
+   */
+  replaceUrlPopover?: ReplaceUrlPopoverFactory
   /** Return true for host-uploaded assets so "View original" is hidden (image/video/audio). */
   isUploadedMedia?: (ctx: MediaActionContext) => boolean
 }
@@ -63,6 +70,7 @@ export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
       mediaToolbar: this.options.mediaToolbar,
       loadingShell: this.options.loadingShell ?? true,
       mediaActions: this.options.mediaActions,
+      replaceUrlPopover: this.options.replaceUrlPopover,
       isUploadedMedia: this.options.isUploadedMedia
     }
   },
