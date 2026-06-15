@@ -23,7 +23,7 @@ Single source of truth. Two tiers: **Forbidden** (absolute, no escape) and **Gat
 2. **Edit generated files** — bootstrap-detected exclusion list, sibling `.d.ts` for `.ts` source, lockfiles, `CHANGELOG.md`.
 3. **Edit test fixtures, snapshots, or recorded HTTP responses.**
 4. **Reformat for style** — defer to the workspace's formatter/linter via Chain 0.
-5. **Refactor algorithms** — defer to a detected architecture skill (e.g. [`improve-codebase-architecture`](../improve-codebase-architecture/SKILL.md)); else surface as INFO. Naming/structure cleanup is fine; replacing a sort or rewriting a loop's logic is not.
+5. **Refactor algorithms** — defer to a detected architecture skill (e.g. [`improve-codebase-architecture`](../../../.agents/skills/improve-codebase-architecture/SKILL.md)); else surface as INFO. Naming/structure cleanup is fine; replacing a sort or rewriting a loop's logic is not.
 6. **Add net-new dependencies, frameworks, or build tools** (Boring Technology). Bumping or removing an _existing_ dep is gated, not forbidden.
 7. **Commit** — defer to the detected commit-skill, or stop and let the user commit.
 8. **Create branches or worktrees** — work happens in the current branch only.
@@ -102,7 +102,7 @@ Before scope discovery, detect the workspace toolchain and conventions. Cache th
    - If a gate has no resolvable command → mark that gate `skipped` and proceed.
 3. **Monorepo layout** — read `package.json` `"workspaces"` or `pnpm-workspace.yaml` to identify package roots (commonly `packages/*`, `apps/*`, `libs/*`). Single-package repos skip per-package scoping in Chain 0.
 4. **Agent-instructions doc** — search in this priority order; first hit wins: `AGENTS.md` → `CLAUDE.md` → `.cursor/rules/*.mdc` (read all) → `.github/copilot-instructions.md` → top-of-`README.md`. Treat its durable rules as workspace facts in conflict resolution.
-5. **Adjacent skills** — list skills under `.cursor/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note any skill whose name matches `*commit*` (for Phase D handoff) and any architecture/refactor skill (e.g. [`improve-codebase-architecture`](../improve-codebase-architecture/SKILL.md), to which algorithm changes are deferred).
+5. **Adjacent skills** — list skills under `.cursor/skills/`, `.agents/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note any skill whose name matches `*commit*` (for Phase D handoff) and any architecture/refactor skill (e.g. [`improve-codebase-architecture`](../../../.agents/skills/improve-codebase-architecture/SKILL.md), to which algorithm changes are deferred).
 6. **Generated/excluded paths** — start with the universal list (`node_modules/`, `dist/`, `build/`, `out/`, `.next/`, `.nuxt/`, `coverage/`, `.turbo/`, `.cache/`, `__snapshots__/`, `*.lock`, `*.lockb`) and append any path the workspace's `.gitignore` flags as build/state output. Also exclude any path the agent-instructions doc lists as off-limits (e.g. notes folders, hook state files).
 7. **Skills-output dir** — choose `docs/skills-output/` if `docs/` exists, else `.skills-output/` at repo root. Ensure it's in `.gitignore`; add the entry if missing.
 
