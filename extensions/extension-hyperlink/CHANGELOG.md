@@ -8,6 +8,24 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- Popovers now play their exit transition. `hide()` defers DOM removal until the
+  fade completes (transitionend with a timed fallback), so closing the preview /
+  create / edit popovers fades out instead of vanishing. Re-opening during an
+  in-flight exit is safe.
+- The scale animation blooms from the anchored side: the engine sets
+  `transform-origin` from the resolved placement instead of scaling from center.
+- Shell motion now follows the docs.plus motion language — 120ms `ease-out`
+  enter, 80ms `ease-in` exit (previously a symmetric 120ms `ease-in-out`).
+
+### Added
+
+- `prefers-reduced-motion` support in the bundled stylesheet: popovers appear
+  and disappear instantly when the OS requests reduced motion.
+
 ## [2.0.0] — 2026-06-10
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface — the option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
