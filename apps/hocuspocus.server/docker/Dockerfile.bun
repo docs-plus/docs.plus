@@ -22,8 +22,9 @@ COPY package.json bun.lock* bunfig.toml ./
 # Both are needed by the extension build steps below.
 COPY tsconfig.base.json tsup.base.ts ./
 COPY packages/email-templates ./packages/email-templates
-# floating-popover is bundled into hypermultimedia's dist (not external) — needs source + build before line below.
+# floating-popover/floating-tooltip are bundled into hypermultimedia's dist (not external) — need source + build before line below.
 COPY packages/floating-popover ./packages/floating-popover
+COPY packages/floating-tooltip ./packages/floating-tooltip
 COPY apps/hocuspocus.server ./apps/hocuspocus.server
 COPY apps/admin-dashboard/package.json ./apps/admin-dashboard/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
@@ -43,6 +44,7 @@ COPY apps/webapp/package.json ./apps/webapp/
 # Dev install + build dist/, then prune — production-only install cannot run tsup.
 RUN bun install --frozen-lockfile --ignore-scripts
 RUN bun run --filter @docs.plus/floating-popover build \
+  && bun run --filter @docs.plus/floating-tooltip build \
   && bun run --filter @docs.plus/extension-hypermultimedia build \
   && bun run --filter @docs.plus/extension-inline-code build
 RUN bun install --frozen-lockfile --production --ignore-scripts

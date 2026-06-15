@@ -18,6 +18,8 @@ runs:
         key: ext-${{ runner.os }}-${{ hashFiles('bun.lock',
           'packages/floating-popover/package.json',
           'packages/floating-popover/src/**',
+          'packages/floating-tooltip/package.json',
+          'packages/floating-tooltip/src/**',
           'extensions/*/package.json',
           'extensions/*/src/**',
           'scripts/publishable-extensions.ts') }}
