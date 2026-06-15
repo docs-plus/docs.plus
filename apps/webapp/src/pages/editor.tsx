@@ -119,6 +119,12 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
 
 // Add getServerSideProps
 export const getServerSideProps: GetServerSideProps<EditorPageProps> = async ({ query }) => {
+  // Dev/E2E-only playground — it exposes window._editor/_store escape hatches, so
+  // it must never be routable in production.
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_E2E !== 'true') {
+    return { notFound: true }
+  }
+
   return {
     props: {
       localPersistence: query.localPersistence === 'true',
