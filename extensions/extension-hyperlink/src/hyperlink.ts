@@ -130,6 +130,17 @@ export interface HyperlinkStorage {
   context: LinkContext | null
 }
 
+// linkifyjs has one process-global scheme registry that warns once it auto-inits
+// (first find/test). Coexisting editors share it, so register each scheme once —
+// a second editor re-registering post-init is what logs the warning. No reset().
+const registeredLinkifyProtocols = new Set<string>()
+
+function registerProtocolOnce(scheme: string, optionalSlashes?: boolean): void {
+  if (registeredLinkifyProtocols.has(scheme)) return
+  registeredLinkifyProtocols.add(scheme)
+  registerCustomProtocol(scheme, optionalSlashes)
+}
+
 export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   name: HYPERLINK_MARK_NAME,
 
@@ -164,9 +175,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   onCreate() {
     this.options.protocols.forEach((protocol) => {
       if (typeof protocol === 'string') {
-        registerCustomProtocol(protocol)
+        registerProtocolOnce(protocol)
       } else {
-        registerCustomProtocol(protocol.scheme, protocol.optionalSlashes)
+        registerProtocolOnce(protocol.scheme, protocol.optionalSlashes)
       }
     })
   },

@@ -26,6 +26,16 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 - `prefers-reduced-motion` support in the bundled stylesheet: popovers appear
   and disappear instantly when the OS requests reduced motion.
 
+### Fixed
+
+- Mounting more than one editor that uses the extension on the same page no
+  longer logs `linkifyjs: already initialized - will not register custom scheme`.
+  Custom `protocols` register in each editor's `onCreate`, but linkifyjs keeps one
+  process-global scheme registry that locks on first use, so a second editor
+  registered after that lock and only logged the warning. Each scheme now
+  registers once; later editors reuse it silently. Autolinking of configured
+  schemes (e.g. `ftp`, `mailto`) is unchanged.
+
 ## [2.0.0] — 2026-06-12
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface — the option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
