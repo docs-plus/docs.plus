@@ -34,7 +34,7 @@ export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMess
     return (
       <div
         ref={ref}
-        className={`clone-card pointer-events-auto transition-all duration-200 ease-out select-none ${className || ''}`}
+        className={`clone-card pointer-events-auto transition-[opacity,transform] duration-200 ease-out select-none ${className || ''}`}
         style={{
           position: 'fixed',
           left: leftPosition,
@@ -43,7 +43,7 @@ export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMess
           height: boundsHeight,
           zIndex: 60,
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.9)'
+          transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)'
         }}
         onClick={(e) => e.stopPropagation()}
         dangerouslySetInnerHTML={{ __html: sanitizedHtml }}

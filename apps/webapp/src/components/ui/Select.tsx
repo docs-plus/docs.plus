@@ -16,6 +16,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { useSelectExclusion } from './hooks/useSelectExclusion'
 import { ScrollArea } from './ScrollArea'
+import { useOverlayTransition } from './useOverlayTransition'
 
 // --- Types ---
 
@@ -162,6 +163,8 @@ const Select = ({
     onOpenChange: setIsOpen,
     placement: 'bottom-start',
     whileElementsMounted: autoUpdate,
+    // left/top positioning — the overlay transition animates `transform: scale()`.
+    transform: false,
     middleware: [
       offset(4),
       flip({ fallbackAxisSideDirection: 'start', padding: 8 }),
@@ -177,6 +180,9 @@ const Select = ({
       })
     ]
   })
+
+  // Overlay tier: 120ms scale-in from the anchor, 80ms fade-out, PRM-gated.
+  const { isMounted, styles: transitionStyles } = useOverlayTransition(context)
 
   const click = useClick(context, { enabled: !disabled })
   const dismiss = useDismiss(context, { outsidePress: true, outsidePressEvent: 'mousedown' })
@@ -326,11 +332,11 @@ const Select = ({
 
   // --- Dropdown panel ---
 
-  const dropdown = isOpen && (
+  const dropdown = isMounted && (
     <FloatingPortal>
       <div
         ref={refs.setFloating}
-        style={floatingStyles}
+        style={{ ...floatingStyles, ...transitionStyles }}
         className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-lg"
         onKeyDown={handleKeyDown}
         role="listbox"

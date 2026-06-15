@@ -3,7 +3,7 @@ import { LuBookmark } from 'react-icons/lu'
 export const EmptyBookmarkState = ({ show }: { show: boolean }) => {
   if (!show) return null
   return (
-    <div className="flex flex-col items-center justify-center space-y-3 py-8">
+    <div className="flex flex-col items-center justify-center space-y-3 py-8 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       <div className="bg-base-200 flex size-12 items-center justify-center rounded-full">
         <LuBookmark size={24} className="text-base-content/40" />
       </div>

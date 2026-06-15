@@ -60,7 +60,9 @@ const ToolbarMobile = () => {
   }
 
   return (
-    <div className="tiptap-toolbar-mobile relative" onTouchEnd={stayFocused}>
+    <div
+      className="tiptap-toolbar-mobile relative motion-safe:animate-[doc-content-in_180ms_ease-out_both]"
+      onTouchEnd={stayFocused}>
       <FormatSelection isVisible={isFormatSelectionVisible} editor={editor} />
       <div className="tiptap-toolbar-mobile__main bg-base-100 relative z-10 flex h-14 items-center justify-around gap-1">
         <HeadingSelection editor={editor} />

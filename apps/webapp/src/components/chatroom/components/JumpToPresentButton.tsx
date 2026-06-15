@@ -35,7 +35,7 @@ export const JumpToPresentButton = ({
       variant={subdued ? 'neutral' : 'primary'}
       shape="circle"
       className={twMerge(
-        'absolute right-2 bottom-3 z-40 transition-all duration-300',
+        'absolute right-2 bottom-3 z-40 motion-safe:animate-[doc-region-in_200ms_ease-out_both]',
         subdued && 'bg-base-300 border-base-300/80 border'
       )}
       data-key="jump-to-present"

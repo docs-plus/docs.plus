@@ -1,0 +1,60 @@
+// docs.plus motion v1 — tokens + shared keyframes. Entry/overlay animations apply
+// via Tailwind `motion-safe:animate-[…]` utilities; JS mirrors live in
+// utils/motion.ts (lockstep — update both together).
+:root {
+  --motion-overlay-in: 120ms;
+  --motion-overlay-out: 80ms;
+  --motion-panel: 200ms;
+  --motion-region: 220ms;
+  --motion-flash-hold: 1500ms;
+  --motion-ease-enter: ease-out;
+  --motion-ease-exit: ease-in;
+}
+
+@keyframes doc-region-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// Opacity-only — for the ProseMirror host (transforms break fixed descendants and
+// caret math) and the mobile sticky header (visualViewport machinery).
+@keyframes doc-content-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// Telegram-style own-send: the optimistic bubble rises from the composer.
+// Transform-only — opacity is owned by the pending dim, and layout-neutral
+// transforms keep Virtuoso's height measurement untouched.
+@keyframes msg-send-in {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+// The skeleton pill's 1.5s delay is functional (anti-flash on fast loads), not
+// decorative — under reduced motion keep the delayed reveal but drop the translate.
+// Safe to redefine globally: every other doc-region-in consumer is motion-safe:-gated.
+@media (prefers-reduced-motion: reduce) {
+  @keyframes doc-region-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

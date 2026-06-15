@@ -62,8 +62,16 @@ const DefaultMessageBody = ({
 }) => {
   // Mirrors the desktop render-prop block from v1 DesktopEditor without
   // its hover-menu chrome; consumer call-sites just self-close MessageCard.
+  // Dim-while-pending so the pending→sent/failed flip crossfades instead of popping.
+  // `pending` exists only on own optimistic rows, so the send rise never plays on
+  // history, pagination, or others' arrivals; a retry re-adding it replays (wanted).
   return (
-    <div className="relative flex w-full items-start gap-2">
+    <div
+      className={`relative flex w-full items-start gap-2 transition-opacity duration-[120ms] ease-out ${
+        status === 'pending'
+          ? 'opacity-70 motion-safe:animate-[msg-send-in_200ms_ease-out_both]'
+          : 'opacity-100'
+      }`}>
       {!compact && (
         <div className="relative flex flex-col items-center space-y-2">
           <MessageHeader.UserAvatar />

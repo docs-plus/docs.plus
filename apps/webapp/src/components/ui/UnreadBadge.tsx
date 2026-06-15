@@ -51,7 +51,8 @@ const UnreadBadge = ({
   return (
     <span
       className={twMerge(
-        'badge inline-flex items-center justify-center rounded-full leading-none font-semibold',
+        // Mount-scoped entry: count <= 0 unmounts, so it replays on each 0→N transition.
+        'badge animate-badge-entry inline-flex items-center justify-center rounded-full leading-none font-semibold',
         sizeClasses[size],
         variantClasses[variant],
         className

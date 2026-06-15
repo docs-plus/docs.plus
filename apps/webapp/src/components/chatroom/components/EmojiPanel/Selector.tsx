@@ -27,13 +27,19 @@ export const EmojiSelector = () => {
   useCloseOnResize()
 
   if (variant === 'desktop') {
+    // Visibility swap is delayed on hide so the 80ms exit fade stays visible;
+    // motion-safe keeps both flips instant under reduced motion.
     return createPortal(
       <div
+        className={
+          desktopOpen
+            ? 'visible opacity-100 motion-safe:[transition:opacity_120ms_ease-out]'
+            : 'invisible opacity-0 motion-safe:[transition:opacity_80ms_ease-in,visibility_0s_80ms]'
+        }
         style={{
           position: 'fixed',
           top: `${desktopTop || 0}px`,
           left: `${desktopLeft || 0}px`,
-          visibility: desktopOpen ? 'visible' : 'hidden',
           zIndex: 999
         }}>
         <Picker emojiSelectHandler={emojiSelectHandler} />

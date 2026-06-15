@@ -16,13 +16,13 @@ const NotificationSkeletonItem = () => (
     <div className="min-w-0 flex-1">
       {/* Name and icon row */}
       <div className="flex items-center gap-2">
-        <div className="skeleton h-3 w-3 rounded" />
+        <div className="skeleton size-3 rounded" />
         <div className="skeleton h-4 w-28 rounded" />
       </div>
 
       {/* Message preview skeleton */}
       <div className="mt-2">
-        <div className="skeleton h-8 w-full rounded-lg" />
+        <div className="skeleton rounded-field h-8 w-full" />
       </div>
 
       {/* Footer row */}

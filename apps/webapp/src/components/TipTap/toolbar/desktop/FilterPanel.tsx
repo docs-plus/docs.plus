@@ -204,7 +204,7 @@ const FilterPanel = ({ totalHeading = 0, className = '', onClose }: FilterPanelP
 
         {/* Advanced Options (collapsible) */}
         {isSectionOpen && (
-          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
             <div className="rounded-box border-base-300 bg-base-200 border px-4">
               <ToggleSection
                 name="Filter Algorithm"

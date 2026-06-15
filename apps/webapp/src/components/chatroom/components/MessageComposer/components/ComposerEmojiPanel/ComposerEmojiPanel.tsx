@@ -1,5 +1,6 @@
 import { EmojiPanel } from '@components/chatroom/components/EmojiPanel'
 import { useChatStore } from '@stores'
+import { PANEL_TWEEN } from '@utils/motion'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -11,8 +12,6 @@ const HANDLE_HEIGHT_PX = 20
 
 const DRAG_THRESHOLD_SNAP_PX = 30
 const DRAG_THRESHOLD_CLOSE_PX = 80
-
-const TRANSITION = { type: 'tween', duration: 0.22, ease: 'easeOut' } as const
 
 // rAF-throttled and gated by `enabled` because iOS Safari fires `resize`
 // heavily during keyboard show/hide and address-bar collapse while the
@@ -93,7 +92,7 @@ export const ComposerEmojiPanel = () => {
           initial={{ height: 0 }}
           animate={{ height: targetHeight }}
           exit={{ height: 0 }}
-          transition={TRANSITION}
+          transition={PANEL_TWEEN}
           style={{ overflow: 'hidden' }}>
           {/* Fixed inner content keeps emoji-mart's grid stable across the
               outer height tween; only the clipped portion changes per frame. */}

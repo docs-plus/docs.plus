@@ -55,27 +55,31 @@ export function TabbedPanelBody<TTab extends string, TItem>({
         scrollbarSize="thin"
         hideScrollbar
         preserveWidth={false}>
-        {isLoading && items.length === 0 && loadingSkeleton}
-        {emptyState}
-        {items.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {items.map((item) => (
-              <Fragment key={getItemKey(item)}>{renderItem(item)}</Fragment>
-            ))}
+        {/* key remounts per tab so the fade plays once per switch, in step with
+            the tab bar's 200ms pill slide; pagination appends never replay. */}
+        <div key={activeTab} className="motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
+          {isLoading && items.length === 0 && loadingSkeleton}
+          {emptyState}
+          {items.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {items.map((item) => (
+                <Fragment key={getItemKey(item)}>{renderItem(item)}</Fragment>
+              ))}
 
-            {hasMore && (
-              <div ref={sentinelRef} className="flex justify-center py-3">
-                {isLoadingMore && (
-                  <div className="loading loading-spinner loading-sm text-primary" />
-                )}
-              </div>
-            )}
+              {hasMore && (
+                <div ref={sentinelRef} className="flex justify-center py-3">
+                  {isLoadingMore && (
+                    <div className="loading loading-spinner loading-sm text-primary" />
+                  )}
+                </div>
+              )}
 
-            {!hasMore && items.length > 0 && (
-              <p className="text-base-content/40 py-3 text-center text-xs">{endMessage}</p>
-            )}
-          </div>
-        )}
+              {!hasMore && items.length > 0 && (
+                <p className="text-base-content/40 py-3 text-center text-xs">{endMessage}</p>
+              )}
+            </div>
+          )}
+        </div>
       </ScrollArea>
     </>
   )

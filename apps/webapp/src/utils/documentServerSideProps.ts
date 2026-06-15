@@ -1,60 +1,20 @@
-import { getChannelsByWorkspaceAndUserids, upsertWorkspace } from '@api'
 import { fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'
+import { isReservedSlug } from '@utils/reservedSlugs'
 import { createClient } from '@utils/supabase/server-props'
 import { type GetServerSidePropsContext } from 'next'
 
 import { getDeviceInfo } from './getDeviceInfo'
 
-export async function handleUserSessionForServerProp(
-  docMetadata: any,
-  session: any,
-  supabase: any
-) {
-  if (!session?.user) return null
-  const [upsertResult, channelsResult] = await Promise.allSettled([
-    upsertWorkspace({
-      id: docMetadata.documentId,
-      name: docMetadata.title,
-      description: docMetadata.description,
-      slug: docMetadata.slug,
-      created_by: session.user.id
-    }),
-    getChannelsByWorkspaceAndUserids(docMetadata.documentId, session.user.id, supabase)
-  ])
-
-  if (upsertResult.status === 'rejected') {
-    throw new Error('Failed to upsert workspace', { cause: upsertResult.reason })
-  }
-
-  if (channelsResult.status === 'rejected') {
-    throw new Error('Failed to get channels', { cause: channelsResult.reason })
-  }
-
-  let channels = channelsResult.value as any
-
-  channels =
-    channels?.data
-      .filter((x: any) => x.workspace?.type)
-      .map((x: any) => ({ ...x, ...x.workspace })) || []
-
-  return channels
-}
+const AUTH_TIMEOUT_MS = 5000
 
 export const documentServerSideProps = async (context: GetServerSidePropsContext) => {
   const { query } = context
   const documentSlug = query.slugs?.at(0)
 
-  // Skip Next.js internal paths (_next, api, etc.) and system paths (.well-known, etc.)
-  // These should be handled by Next.js itself or return 404
-  // This prevents unnecessary API calls and errors for system requests
-  if (
-    documentSlug === '_next' ||
-    documentSlug === 'api' ||
-    documentSlug === '.well-known' ||
-    documentSlug?.startsWith('_') ||
-    documentSlug?.startsWith('.well-known')
-  ) {
+  // Reserved names resolve to a concrete app route or a Next.js system path —
+  // never a document. Defensive: concrete routes shadow this catch-all anyway.
+  if (isReservedSlug(documentSlug)) {
     return {
       notFound: true
     }
@@ -65,14 +25,13 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
   const supabase = createClient(context)
 
   try {
-    // Verify user authentication (server-validated)
-    // Add timeout wrapper to prevent hanging (5s timeout)
+    // Verify user authentication (server-validated); on timeout degrade to public access
     let user = null
     let userError = null
     try {
       const authPromise = supabase.auth.getUser()
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Auth timeout')), 5000)
+        setTimeout(() => reject(new Error('Auth timeout')), AUTH_TIMEOUT_MS)
       )
       const result = (await Promise.race([authPromise, timeoutPromise])) as any
       user = result?.data?.user || null
@@ -86,10 +45,9 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     let session = null
     if (user && !userError) {
       try {
-        // User is authenticated, safe to get session (5s timeout)
         const sessionPromise = supabase.auth.getSession()
         const sessionTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session timeout')), 5000)
+          setTimeout(() => reject(new Error('Session timeout')), AUTH_TIMEOUT_MS)
         )
         const sessionResult = (await Promise.race([sessionPromise, sessionTimeout])) as any
         session = sessionResult?.data?.session || null
@@ -100,16 +58,17 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     }
 
     const docMetadata = await fetchDocument(documentSlug, session)
-    const channels = await handleUserSessionForServerProp(docMetadata, session, supabase)
 
+    // Workspace upsert + channel hydration are client-side concerns
+    // (useMapDocumentAndWorkspace); shipping only the access token keeps the
+    // refresh token out of __NEXT_DATA__.
     return {
       props: {
-        channels: channels || null,
         docMetadata,
         isMobile,
         deviceType,
         os,
-        session
+        accessToken: session?.access_token ?? null
       }
     }
   } catch (error: unknown) {

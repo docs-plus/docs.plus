@@ -63,6 +63,9 @@ const useResizeContainer = () => {
 
       e.preventDefault()
       setIsResizing(true)
+      // Suspend the editor's margin-bottom transition for the whole drag — the
+      // per-frame mirror must follow the pointer 1:1 (useAdjustEditorSizeForChatRoom).
+      window.dispatchEvent(new CustomEvent('chat-panel-resize-start'))
 
       const startY = e.clientY
       const startHeight = containerRef.current.clientHeight
@@ -95,6 +98,7 @@ const useResizeContainer = () => {
 
       const stopDrag = () => {
         setIsResizing(false)
+        window.dispatchEvent(new CustomEvent('chat-panel-resize-end'))
         // Single store commit at the end of drag — drives localStorage
         // persistence, useEffect mirrors, and the one Virtuoso re-measure.
         setOrUpdateChatPanelHeight(lastHeight)

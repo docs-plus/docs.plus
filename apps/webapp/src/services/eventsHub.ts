@@ -1,6 +1,7 @@
 import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
 import { TOC_CLASSES } from '@components/toc/tocClasses'
 import { SheetType, useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
+import { ensureEmojiData } from '@utils/ensureEmojiData'
 import { formatCappedCount } from '@utils/formatCappedCount'
 import { scrollToHeading } from '@utils/index'
 import { NextRouter } from 'next/router'
@@ -92,6 +93,7 @@ export const eventsHub = (router: NextRouter) => {
   console.info('eventsHub initialized')
 
   PubSub.subscribe(CHAT_COMMENT, (msg, data: TChatCommentData) => {
+    ensureEmojiData(true)
     const { content, html, headingId } = data
     const { workspaceId } = useStore.getState().settings
     const { headingId: openedHeadingId } = useChatStore.getState().chatRoom
@@ -126,6 +128,7 @@ export const eventsHub = (router: NextRouter) => {
   })
 
   PubSub.subscribe(CHAT_OPEN, (msg, data: TOpenChatData) => {
+    ensureEmojiData(true)
     const {
       headingId,
       scroll2Heading = false,

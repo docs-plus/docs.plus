@@ -3,10 +3,14 @@ import React from 'react'
 const TableOfContentsLoader: React.FC<React.HTMLProps<HTMLDivElement>> = (props) => {
   return (
     <div {...props}>
-      {/* Title */}
-      <div className="skeleton ml-4 h-5 w-32 rounded" />
+      {/* Mirrors TocHeader's title row so the loader's first lines land where the
+         real rows do */}
+      <div className="mb-6 flex items-center justify-between pr-2 pl-4">
+        <div className="skeleton h-5 w-32 rounded" />
+        <div className="skeleton size-6 rounded" />
+      </div>
 
-      <div className="mt-8 space-y-4">
+      <div className="space-y-4">
         {/* Section 1 */}
         <div className="skeleton ml-4 h-4 w-[70%] rounded" />
         <div className="space-y-2 pl-10">

@@ -1,224 +1,127 @@
-import { ScrollArea } from '@components/ui/ScrollArea'
-import { useStore } from '@stores'
+import {
+  readPersistedTocWidth,
+  TOC_DEFAULT_WIDTH
+} from '@components/pages/document/hooks/useTocResize'
+import EditorContentSkeleton from '@components/skeleton/EditorContentSkeleton'
+import TableOfContentsLoader from '@components/skeleton/TableOfContentsLoader'
+import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
+import { useEffect, useState } from 'react'
 
-// Skeleton line component for consistent styling
-const SkeletonLine = ({
-  width = 'w-full',
-  height = 'h-4'
-}: {
-  width?: string
-  height?: string
-}) => <div className={`skeleton rounded ${width} ${height}`} />
+// SSR renders the 320px default; the post-hydration settle to the user's persisted
+// width is an accepted sub-100ms shift during the chunk-load phase.
+const usePersistedTocWidth = () => {
+  const [tocWidth, setTocWidth] = useState(TOC_DEFAULT_WIDTH)
 
-// Skeleton for heading with subtext
-const HeadingSkeleton = () => (
-  <div className="mb-6">
-    <SkeletonLine width="w-3/5" height="h-7" />
-    <div className="mt-3 flex gap-4">
-      <SkeletonLine width="w-16" height="h-4" />
-      <SkeletonLine width="w-24" height="h-4" />
-    </div>
-  </div>
-)
+  useEffect(() => {
+    setTocWidth(readPersistedTocWidth())
+  }, [])
 
-// Skeleton for paragraph content
-const ParagraphSkeleton = ({ lines = 5 }: { lines?: number }) => (
-  <div className="mb-6 space-y-3 pl-4">
-    {Array.from({ length: lines }).map((_, i) => (
-      <SkeletonLine key={i} width={i === lines - 1 ? 'w-3/5' : i % 2 === 0 ? 'w-full' : 'w-4/5'} />
-    ))}
-  </div>
-)
-
-// Skeleton for content with image
-const ContentWithImageSkeleton = () => (
-  <div className="mb-6 pl-4">
-    <div className="flex gap-4">
-      <div className="skeleton size-32 shrink-0 rounded-lg" />
-      <div className="flex-1 space-y-3">
-        <SkeletonLine width="w-4/5" />
-        <SkeletonLine width="w-3/5" />
-        <SkeletonLine width="w-4/5" />
-        <SkeletonLine width="w-2/5" />
-      </div>
-    </div>
-  </div>
-)
-
-// Table of contents skeleton - extended for large screens
-const TableOfContentsSkeleton = () => (
-  <div className="space-y-4 p-4">
-    <SkeletonLine width="w-32" height="h-5" />
-    <div className="mt-6 space-y-3">
-      {/* Section 1 */}
-      <SkeletonLine width="w-4/5" />
-      <div className="space-y-2 pl-4">
-        <SkeletonLine width="w-3/4" height="h-3" />
-        <SkeletonLine width="w-3/4" height="h-3" />
-        <SkeletonLine width="w-2/3" height="h-3" />
-      </div>
-      {/* Section 2 */}
-      <SkeletonLine width="w-4/5" />
-      <div className="space-y-2 pl-4">
-        <SkeletonLine width="w-3/4" height="h-3" />
-        <SkeletonLine width="w-2/3" height="h-3" />
-      </div>
-      {/* Section 3 */}
-      <SkeletonLine width="w-3/4" />
-      <div className="space-y-2 pl-4">
-        <SkeletonLine width="w-2/3" height="h-3" />
-        <SkeletonLine width="w-3/4" height="h-3" />
-        <SkeletonLine width="w-1/2" height="h-3" />
-      </div>
-      {/* Section 4 */}
-      <SkeletonLine width="w-4/5" />
-      <div className="space-y-2 pl-4">
-        <SkeletonLine width="w-2/3" height="h-3" />
-        <SkeletonLine width="w-3/4" height="h-3" />
-      </div>
-      {/* Section 5 */}
-      <SkeletonLine width="w-3/5" />
-      <div className="space-y-2 pl-4">
-        <SkeletonLine width="w-3/4" height="h-3" />
-        <SkeletonLine width="w-2/3" height="h-3" />
-        <SkeletonLine width="w-1/2" height="h-3" />
-      </div>
-    </div>
-  </div>
-)
-
-// Toolbar skeleton
-const ToolbarSkeleton = () => (
-  <div className="border-base-300 bg-base-100 flex items-center gap-2 border-b px-4 py-2">
-    <SkeletonLine width="w-24" height="h-6" />
-    <div className="bg-base-300 mx-2 h-5 w-px" />
-    <div className="flex gap-1">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="skeleton size-7 rounded" />
-      ))}
-    </div>
-    <div className="bg-base-300 mx-2 h-5 w-px" />
-    <div className="flex gap-1">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="skeleton size-7 rounded" />
-      ))}
-    </div>
-    <div className="ml-auto flex gap-1">
-      {[1, 2].map((i) => (
-        <div key={i} className="skeleton size-7 rounded" />
-      ))}
-    </div>
-  </div>
-)
-
-// Header skeleton
-const HeaderSkeleton = ({ isMobile }: { isMobile: boolean }) => (
-  <div className="border-base-300 bg-base-100 flex items-center justify-between border-b px-4 py-3">
-    <div className="flex items-center gap-3">
-      {!isMobile && <div className="skeleton size-8 rounded" />}
-      <SkeletonLine width="w-32" height="h-5" />
-    </div>
-    <div className="flex items-center gap-2">
-      {!isMobile && <SkeletonLine width="w-20" height="h-8" />}
-      <div className="skeleton size-9 rounded-full" />
-    </div>
-  </div>
-)
-
-// Document content skeleton - fills viewport on large screens
-const DocumentSkeleton = () => (
-  <div className="mx-auto max-w-3xl px-4 py-6">
-    {/* Section 1 */}
-    <HeadingSkeleton />
-    <ParagraphSkeleton lines={4} />
-
-    {/* Section 2 with image */}
-    <HeadingSkeleton />
-    <ParagraphSkeleton lines={3} />
-    <ContentWithImageSkeleton />
-    <ParagraphSkeleton lines={3} />
-
-    {/* Section 3 */}
-    <HeadingSkeleton />
-    <ParagraphSkeleton lines={5} />
-
-    {/* Section 4 - additional content for large screens */}
-    <HeadingSkeleton />
-    <ParagraphSkeleton lines={4} />
-
-    {/* Section 5 - more content for tall viewports */}
-    <HeadingSkeleton />
-    <ParagraphSkeleton lines={3} />
-    <ContentWithImageSkeleton />
-    <ParagraphSkeleton lines={4} />
-  </div>
-)
-
-// Loading status toast - simple and clean
-const LoadingToast = ({
-  loading,
-  providerSyncing,
-  loadingPage
-}: {
-  loading: boolean
-  providerSyncing: boolean
-  loadingPage: boolean
-}) => {
-  const getMessage = () => {
-    // "Loading workspace" is accurate for both auth states: authed users
-    // run `upsertWorkspace` + `fetchChannels`, anon viewers just run the
-    // channel fetch. The old label ("Fetching profile data") was wrong
-    // for anon — anon viewers never fetch a profile.
-    if (loading) return 'Loading workspace'
-    if (providerSyncing) return 'Syncing document'
-    if (loadingPage) return 'Loading components'
-    return 'Loading'
-  }
-
-  return (
-    <div className="bg-neutral text-neutral-content fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full px-4 py-2 text-sm shadow-lg">
-      <span className="loading loading-spinner loading-sm" />
-      <span>{getMessage()}...</span>
-    </div>
-  )
+  return tocWidth
 }
 
+// CSS animation-delay (fill-mode both) keeps the pill invisible for 1.5s from first
+// SSR paint — JS timers can't run until hydration, which IS the slow window. The
+// delay is functional (anti-flash), so no motion-safe: gate; _entry.scss strips the
+// translate under prefers-reduced-motion instead.
+const StatusPill = () => (
+  <div
+    role="status"
+    className="bg-neutral text-neutral-content fixed bottom-4 left-4 z-50 flex animate-[doc-region-in_200ms_ease-out_1500ms_both] items-center gap-2 rounded-full px-4 py-2 text-sm shadow-lg">
+    <span className="loading loading-spinner loading-sm" />
+    <span>Opening document…</span>
+  </div>
+)
+
+// Carries the real ancestor classes (`pad` → `editor` → `editorWrapper`) so the
+// `_blocks.scss` sheet rules paint the bones EXACTLY as in-layout — cohesion by
+// cascade, not by a hand-mirrored utility copy that can drift. Header rows are
+// h-14 (56px) with the anon/authed control sizes; bones className matches
+// DesktopEditor's EditorContent call verbatim.
+const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: boolean }) => (
+  <div className="pad tiptap flex min-h-0 w-full flex-1 flex-col">
+    <header className="border-base-300 bg-base-100 flex h-14 min-h-12 w-full items-center border-b px-3 py-2">
+      <div className="flex flex-1 items-center gap-2">
+        <div className="skeleton size-[34px] rounded" />
+        <div className="skeleton h-5 w-40 rounded" />
+        <div className="skeleton h-5 w-14 rounded" />
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="skeleton rounded-field h-10 w-20" />
+        {isAuthed ? (
+          <>
+            <div className="skeleton size-10 rounded-full" />
+            <div className="skeleton size-10 rounded-full" />
+            <div className="skeleton size-12 rounded-full" />
+          </>
+        ) : (
+          <div className="skeleton rounded-field h-10 w-20" />
+        )}
+      </div>
+    </header>
+
+    <ToolbarSkeleton />
+
+    <div className="editor bg-base-200 flex min-h-0 w-full flex-1 flex-row-reverse justify-around">
+      <div
+        className="editorWrapper scrollbar-custom scrollbar-thin flex h-full items-start justify-center overflow-y-auto px-3 py-4 sm:px-6 sm:py-6"
+        style={{ width: `calc(100% - ${tocWidth}px)`, maxWidth: '100%' }}>
+        <EditorContentSkeleton className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
+      </div>
+      <aside className="bg-base-200 h-full shrink-0" style={{ width: tocWidth }}>
+        <div className="p-4">
+          <TableOfContentsLoader className="mt-2" />
+        </div>
+      </aside>
+    </div>
+  </div>
+)
+
+// Geometry mirrors MobilePadTitle's sticky header (56px — size-10 controls) and
+// the m_mobile `.editor.editorWrapper` padding (12px 0 20px 16px).
+const MobileSkeleton = () => (
+  <>
+    <header className="bg-base-100 w-full shrink-0">
+      <div className="border-base-300 flex h-14 min-h-12 w-full flex-col justify-center border-b px-2 py-2">
+        <div className="flex w-full items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
+            <div className="skeleton size-9 rounded" />
+            <div className="skeleton ml-1 h-6 w-40 rounded" />
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="skeleton size-10 rounded-full" />
+            <div className="skeleton size-10 rounded-full" />
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div className="min-h-0 flex-1 overflow-hidden pt-3 pr-4 pb-5 pl-4">
+      <EditorContentSkeleton />
+    </div>
+
+    <div className="skeleton fixed right-6 bottom-8 z-20 size-16 rounded-full" />
+  </>
+)
+
 export const SlugPageLoader = ({
-  loading = false,
-  providerSyncing = false,
-  loadingPage = false
+  isMobile = false,
+  isAuthed = false
 }: {
-  loading?: boolean
-  providerSyncing?: boolean
-  loadingPage?: boolean
+  isMobile?: boolean
+  isAuthed?: boolean
 }) => {
-  const isMobile = useStore((state) => state.settings.editor.isMobile) ?? false
+  const tocWidth = usePersistedTocWidth()
 
   return (
-    <div className="bg-base-200 flex h-full min-h-screen flex-col">
-      {/* Header */}
-      <HeaderSkeleton isMobile={isMobile} />
-
-      {/* Toolbar - desktop only */}
-      {!isMobile && <ToolbarSkeleton />}
-
-      {/* Main content area */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Table of Contents - desktop only */}
-        {!isMobile && (
-          <aside className="border-base-300 bg-base-100 hidden w-64 shrink-0 border-r md:block">
-            <TableOfContentsSkeleton />
-          </aside>
+    <div className="bg-base-200 flex h-dvh w-full flex-col overflow-hidden">
+      <div aria-hidden="true" className="flex h-full min-h-0 flex-1 flex-col">
+        {isMobile ? (
+          <MobileSkeleton />
+        ) : (
+          <DesktopSkeleton tocWidth={tocWidth} isAuthed={isAuthed} />
         )}
-
-        {/* Document content */}
-        <ScrollArea className="bg-base-100 min-h-0 flex-1">
-          <DocumentSkeleton />
-        </ScrollArea>
       </div>
-
-      {/* Loading toast */}
-      <LoadingToast loading={loading} providerSyncing={providerSyncing} loadingPage={loadingPage} />
+      <StatusPill />
     </div>
   )
 }

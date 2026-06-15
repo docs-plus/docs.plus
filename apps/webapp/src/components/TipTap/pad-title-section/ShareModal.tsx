@@ -132,17 +132,21 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
           <button
             onClick={() => copy(href)}
             className={`btn btn-sm gap-1.5 px-4 font-medium ${copied ? 'btn-success' : 'btn-primary'}`}>
-            {copied ? (
-              <>
-                <Icons.check size={16} />
-                Copied
-              </>
-            ) : (
-              <>
-                <Icons.copy size={14} />
-                Copy
-              </>
-            )}
+            <span
+              key={copied ? 'copied' : 'copy'}
+              className="flex items-center gap-1.5 motion-safe:animate-[doc-region-in_120ms_ease-out_both]">
+              {copied ? (
+                <>
+                  <Icons.check size={16} />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Icons.copy size={14} />
+                  Copy
+                </>
+              )}
+            </span>
           </button>
         </div>
       </div>
@@ -161,7 +165,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
             key={key}
             onClick={() => handleShare(key)}
             title={label}
-            className={`flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-xl p-3 transition-all ${color} ${hoverBg} hover:text-white`}>
+            className={`flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-xl p-3 transition-colors ${color} ${hoverBg} hover:text-white`}>
             <Icon size={24} />
             <span className="text-xs font-medium">{label}</span>
           </button>

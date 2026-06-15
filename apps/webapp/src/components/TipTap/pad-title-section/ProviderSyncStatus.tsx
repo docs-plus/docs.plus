@@ -4,6 +4,7 @@ import { useStore } from '@stores'
 
 const ProviderSyncStatus = () => {
   const providerStatus = useStore((state) => state.settings.providerStatus)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
 
   const statusConfig = {
     saving: {
@@ -42,6 +43,18 @@ const ProviderSyncStatus = () => {
       tooltip: 'Connection error. Your changes are saved locally.',
       className: 'text-error'
     }
+  }
+
+  // First-sync window (S1–S2): the shell is real but the document hasn't arrived yet.
+  if (providerSyncing && providerStatus !== 'error' && providerStatus !== 'offline') {
+    return (
+      <Tooltip title="Loading the latest version of this document…" placement="bottom">
+        <div className="text-base-content/50 hover:bg-base-200 flex cursor-default items-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-colors">
+          <Icons.sync className="animate-spin" size={18} />
+          <span>Connecting</span>
+        </div>
+      </Tooltip>
+    )
   }
 
   const config = statusConfig[providerStatus]

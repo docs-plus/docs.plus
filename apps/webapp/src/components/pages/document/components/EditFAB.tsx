@@ -39,7 +39,7 @@ const EditFAB = () => {
       }}
       variant="primary"
       shape="circle"
-      className="edit-fab fixed right-6 bottom-8 z-20 size-16"
+      className="edit-fab fixed right-6 bottom-8 z-20 size-16 motion-safe:animate-[doc-content-in_180ms_ease-out_both]"
       startIcon={<Icons.pencil size={28} />}
     />
   )

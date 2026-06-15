@@ -31,7 +31,7 @@ type Props = {
 
 export const MessageLongPressMenu = ({ children, message }: Props) => {
   // Initialize hooks in correct order
-  const { isLongPressMenuVisible, isMenuEnterAnimationActive, showMenu, hideMenu } =
+  const { isLongPressMenuVisible, isMenuEnterAnimationActive, menuOverlayRef, showMenu, hideMenu } =
     useMenuVisibility()
 
   const {
@@ -115,6 +115,7 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
   // Trigger completion when menu animation becomes active
   useEffect(() => {
     if (isMenuEnterAnimationActive) setLongPressCompleted(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMenuEnterAnimationActive])
 
   const handleEmojiReaction = (nativeEmoji: string) => {
@@ -143,7 +144,8 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
           isLongPressMenuVisible &&
           createPortal(
             <div
-              className="fixed inset-0 z-50 overflow-auto transition-all duration-200 ease-out"
+              ref={menuOverlayRef}
+              className="fixed inset-0 z-50 overflow-auto transition-opacity duration-200 ease-out"
               style={{
                 backdropFilter: 'blur(6px)',
                 backgroundColor: 'color-mix(in oklch, var(--color-base-content) 20%, transparent)',

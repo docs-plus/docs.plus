@@ -9,6 +9,7 @@ import TypingText from '@components/ui/TypingText'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
+import { isReservedSlug } from '@utils/reservedSlugs'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { ChangeEvent, KeyboardEvent, useState } from 'react'
@@ -64,6 +65,12 @@ const HomePage = ({ hostname }: HomePageProps) => {
       sanitizedSlug = sanitizedSlug.padEnd(3, 'x')
     } else if (sanitizedSlug.length > 30) {
       sanitizedSlug = sanitizedSlug.substring(0, 30)
+    }
+
+    // A reserved word would resolve to an app route (e.g. /editor), not a
+    // document — re-roll to a random name instead of stranding the user there.
+    if (isReservedSlug(sanitizedSlug)) {
+      sanitizedSlug = (Math.random() + 1).toString(36).substring(2)
     }
 
     router.push(`/${sanitizedSlug}`)
@@ -133,7 +140,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 sm:py-12">
           <div className="w-full max-w-2xl">
             {/* Hero Section */}
-            <div className="mb-6 text-center sm:mb-10">
+            <div className="mb-6 text-center motion-safe:animate-[doc-region-in_220ms_ease-out_both] sm:mb-10">
               <h1 className="text-base-content mb-2 text-3xl font-bold sm:mb-3 sm:text-5xl md:text-6xl">
                 Get everyone on the same page
               </h1>
@@ -173,7 +180,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
             </div>
 
             {/* Action Card */}
-            <div className="rounded-box bg-base-100 p-5 shadow-xl sm:p-8">
+            <div className="rounded-box bg-base-100 p-5 shadow-xl motion-safe:animate-[doc-region-in_220ms_ease-out_60ms_both] sm:p-8">
               {/* Quick Create */}
               <Button
                 variant="primary"
@@ -225,7 +232,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
             </div>
 
             {/* Info Links */}
-            <div className="text-base-content/50 mt-8 space-y-1 text-center text-xs sm:mt-12 sm:space-y-2 sm:text-sm">
+            <div className="text-base-content/50 mt-8 space-y-1 text-center text-xs motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both] sm:mt-12 sm:space-y-2 sm:text-sm">
               <p>
                 A{' '}
                 <a
@@ -259,7 +266,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
         </main>
 
         {/* Footer */}
-        <footer className="text-base-content/60 flex shrink-0 items-center justify-center gap-3 px-4 py-4 text-sm sm:gap-6 sm:py-8">
+        <footer className="text-base-content/60 flex shrink-0 items-center justify-center gap-3 px-4 py-4 text-sm motion-safe:animate-[doc-region-in_200ms_ease-out_160ms_both] sm:gap-6 sm:py-8">
           {/* GitHub group */}
           <div className="flex items-center gap-3">
             <a

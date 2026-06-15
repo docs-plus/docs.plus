@@ -30,6 +30,8 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { useOverlayTransition } from './useOverlayTransition'
+
 // Global state for managing multiple HoverMenus
 class HoverMenuManager {
   private currentOpenMenu: string | null = null
@@ -219,6 +221,8 @@ function useHoverMenu({
       setOpen(newOpen)
     },
     whileElementsMounted: autoUpdate,
+    // left/top positioning — the overlay transition animates `transform: scale()`.
+    transform: false,
     middleware: [
       offset(offsetValue),
       flip({
@@ -376,8 +380,9 @@ interface HoverMenuContentProps {
 
 const HoverMenuContent: FC<HoverMenuContentProps> = ({ children, portalId, menuClassName }) => {
   const context = useHoverMenuContext()
+  const { isMounted, styles: transitionStyles } = useOverlayTransition(context.context)
 
-  if (!context.open) return null
+  if (!isMounted) return null
 
   return (
     <FloatingPortal id={portalId}>
@@ -385,6 +390,7 @@ const HoverMenuContent: FC<HoverMenuContentProps> = ({ children, portalId, menuC
         ref={context.refs.setFloating}
         style={{
           ...context.floatingStyles,
+          ...transitionStyles,
           position: 'fixed',
           maxWidth: '100%'
         }}
@@ -430,6 +436,8 @@ function useFloatingDropdown() {
     open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
+    // left/top positioning — the overlay transition animates `transform: scale()`.
+    transform: false,
     middleware: [
       offset(4),
       flip({
@@ -441,6 +449,7 @@ function useFloatingDropdown() {
   })
 
   const context = data.context
+  const { isMounted, styles: transitionStyles } = useOverlayTransition(context)
 
   const click = useClick(context)
   const dismiss = useDismiss(context)
@@ -452,10 +461,12 @@ function useFloatingDropdown() {
     () => ({
       open,
       setOpen,
+      isMounted,
+      transitionStyles,
       ...interactions,
       ...data
     }),
-    [open, setOpen, interactions, data]
+    [open, setOpen, isMounted, transitionStyles, interactions, data]
   )
 }
 
@@ -533,12 +544,13 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
       </Tooltip>
 
       {/* Dropdown Content */}
-      {dropdown.open && (
+      {dropdown.isMounted && (
         <FloatingPortal>
           <div
             ref={dropdown.refs.setFloating}
             style={{
               ...dropdown.floatingStyles,
+              ...dropdown.transitionStyles,
               position: 'fixed',
               maxWidth: '100%',
               maxHeight: '100%',

@@ -183,6 +183,7 @@ const TitleEditContent = () => {
     setValue(metadata?.title || '')
     const timer = setTimeout(() => inputRef.current?.select(), 120)
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSave = () => {
@@ -297,8 +298,11 @@ const MobilePadTitle = () => {
         <div className="border-base-300 flex min-h-12 w-full flex-col border-b px-2 py-2">
           {/* Main row */}
           <div className="flex w-full items-center justify-between gap-2">
-            {/* Left section */}
-            <div className="flex min-w-0 flex-1 items-center gap-1">
+            {/* Left section — keyed so the read↔edit control swap crossfades (opacity
+                only: sticky header rides the visualViewport machinery) */}
+            <div
+              key={isEditable ? 'edit' : 'read'}
+              className="flex min-w-0 flex-1 items-center gap-1 motion-safe:animate-[doc-content-in_120ms_ease-out_both]">
               <EditableToggle isEditable={isEditable} />
 
               {isEditable ? (

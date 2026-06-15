@@ -4,10 +4,23 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * Design System Panel Constraints
  * @see Notes/Design_System_Global_v2.md
  */
-const TOC_MIN_WIDTH = 240 // Minimum width for TOC in pixels
-const TOC_MAX_WIDTH = 420 // Maximum width for TOC in pixels
-const TOC_DEFAULT_WIDTH = 320 // Default width if nothing in local storage
-const LOCAL_STORAGE_KEY = 'docsy:toc-width'
+export const TOC_MIN_WIDTH = 240
+export const TOC_MAX_WIDTH = 420
+export const TOC_DEFAULT_WIDTH = 320
+export const TOC_WIDTH_STORAGE_KEY = 'docsy:toc-width'
+
+// Shared with SlugPageLoader so the skeleton's TOC column matches the user's width.
+export const readPersistedTocWidth = (): number => {
+  try {
+    const parsed = parseInt(localStorage.getItem(TOC_WIDTH_STORAGE_KEY) ?? '', 10)
+    if (!isNaN(parsed)) {
+      return Math.min(TOC_MAX_WIDTH, Math.max(TOC_MIN_WIDTH, parsed))
+    }
+  } catch {
+    // localStorage unavailable — fall through to the default
+  }
+  return TOC_DEFAULT_WIDTH
+}
 
 /**
  * Hook for managing TOC panel resize functionality.
@@ -29,24 +42,13 @@ export const useTocResize = () => {
 
   // Load persisted width on mount
   useEffect(() => {
-    try {
-      const storedWidth = localStorage.getItem(LOCAL_STORAGE_KEY)
-      if (storedWidth) {
-        const parsed = parseInt(storedWidth, 10)
-        if (!isNaN(parsed)) {
-          // Clamp to valid range
-          setTocWidth(Math.min(TOC_MAX_WIDTH, Math.max(TOC_MIN_WIDTH, parsed)))
-        }
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
+    setTocWidth(readPersistedTocWidth())
   }, [])
 
   // Persist width changes
   useEffect(() => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, String(tocWidth))
+      localStorage.setItem(TOC_WIDTH_STORAGE_KEY, String(tocWidth))
     } catch {
       // Ignore localStorage errors
     }

@@ -8,6 +8,7 @@ import {
 } from '@floating-ui/dom'
 import type { Editor } from '@tiptap/core'
 import { ReactRenderer } from '@tiptap/react'
+import { MOTION_OVERLAY_IN_MS, prefersReducedMotion } from '@utils/motion'
 
 import { dismissComposerOverlaysBeforeMention } from './dismissComposerOverlays'
 import MentionList, { type MentionListRef } from './MentionList'
@@ -72,6 +73,9 @@ export default {
         popup = document.createElement('div')
         popup.className = POPUP_CLASS
         popup.style.position = 'absolute'
+        // computePosition is async — mount transparent so the popup can't flash
+        // unpositioned at the body origin before the first placement resolves.
+        popup.style.opacity = '0'
         popup.appendChild(component.element)
         document.body.appendChild(popup)
         setMentionPopupOpen(true)
@@ -115,6 +119,13 @@ export default {
             top: `${y}px`,
             visibility: middlewareData.hide?.referenceHidden === true ? 'hidden' : 'visible'
           })
+          if (popup.style.opacity === '0') {
+            if (!prefersReducedMotion()) {
+              popup.style.transition = `opacity ${MOTION_OVERLAY_IN_MS}ms ease-out`
+              void popup.offsetWidth // commit the transparent frame so the fade runs
+            }
+            popup.style.opacity = '1'
+          }
           syncMentionPickerActive()
         })
       },

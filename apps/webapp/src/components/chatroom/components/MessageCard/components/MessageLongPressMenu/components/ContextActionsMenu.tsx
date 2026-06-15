@@ -21,7 +21,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
         ref={ref}
         className={twMerge(
           contextMenuPanelClassName,
-          'min-w-[12rem] transition-all duration-200 ease-out',
+          'min-w-[12rem] transition-[opacity,transform] duration-200 ease-out',
           className
         )}
         style={{
@@ -30,7 +30,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
           top: position.y,
           transform: isVisible
             ? 'translateX(-50%) translateY(0) scale(1)'
-            : 'translateX(-50%) translateY(20px) scale(0.9)',
+            : 'translateX(-50%) translateY(8px) scale(0.96)',
           opacity: isVisible ? 1 : 0
         }}
         onClick={(e) => e.stopPropagation()}>

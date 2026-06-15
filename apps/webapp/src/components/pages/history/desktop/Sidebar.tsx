@@ -94,7 +94,7 @@ const Sidebar = ({ className }: { className?: string }) => {
   if (historyList.length === 0) {
     return (
       <div className={shellClass}>
-        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden motion-safe:animate-[doc-content-in_200ms_ease-out_both]">
           <header className="border-base-300 bg-base-200 sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b px-4 py-3">
             <div className="min-w-0 flex-1">
               <h2 className="text-base-content text-base font-semibold sm:text-lg">
@@ -135,7 +135,7 @@ const Sidebar = ({ className }: { className?: string }) => {
 
   return (
     <div className={shellClass}>
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden motion-safe:animate-[doc-content-in_200ms_ease-out_both]">
         <header className="border-base-300 bg-base-200 sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b px-4 py-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-base-content text-base font-semibold sm:text-lg">

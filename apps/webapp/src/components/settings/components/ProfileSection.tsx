@@ -124,14 +124,14 @@ const ProfileSection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       {/* Profile Picture */}
       <SettingsCard>
         <div className="flex items-center gap-5">
           <div className="relative">
             <Button
               onClick={handleAvatarClick}
-              className="group border-base-300 hover:border-primary rounded-box relative size-24 overflow-hidden border-2 p-0 transition-all hover:shadow-md"
+              className="group border-base-300 hover:border-primary rounded-box relative size-24 overflow-hidden border-2 p-0 transition-[border-color,box-shadow] hover:shadow-md"
               disabled={uploading}
               aria-label="Upload profile picture">
               <Avatar

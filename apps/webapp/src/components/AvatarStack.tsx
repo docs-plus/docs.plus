@@ -111,6 +111,7 @@ export function AvatarStack({
     <div className={twMerge('avatar-group !overflow-visible', spacingClass, className)}>
       {visibleUsers.map((user, idx) => (
         <Avatar
+          // Keyed by user id so reorders keep DOM nodes; entry animation plays only on join.
           key={user.id ?? `avatar-${idx}`}
           id={user.id}
           src={user.avatar_url ?? undefined}
@@ -119,7 +120,7 @@ export function AvatarStack({
           status={showStatus ? (user.status ?? undefined) : undefined}
           clickable={clickable}
           size={size}
-          className="ring-base-300 bg-base-100 ring-1"
+          className="ring-base-300 bg-base-100 animate-badge-entry ring-1"
           tooltip={user.display_name || 'Anonymous'}
           tooltipPosition={tooltipPosition}
         />

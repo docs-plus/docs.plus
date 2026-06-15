@@ -54,7 +54,7 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: ChipProps) => {
   return (
     <div
       className={twMerge(
-        `bg-base-100 m-1 flex cursor-pointer items-center justify-center rounded-md border px-2 py-1 font-medium`,
+        `bg-base-100 m-1 flex cursor-pointer items-center justify-center rounded-md border px-2 py-1 font-medium motion-safe:animate-[doc-region-in_180ms_ease-out_both]`,
         colorMap[type]
       )}
       onMouseEnter={onMouseEnter}
@@ -112,9 +112,9 @@ const FilterBar = ({
         `group flex items-center align-middle ${typedSortedSlugs.length && isMobile && 'mt-2'}`,
         className
       )}>
-      {typedSortedSlugs.map((slug, index: number) => (
+      {typedSortedSlugs.map((slug) => (
         <Chip
-          key={index}
+          key={slug.text}
           text={slug.text}
           type={slug.existsInParent ? slug.type : 'neutral'}
           onMouseLeave={removeHeadingHighlight}
@@ -126,7 +126,7 @@ const FilterBar = ({
         <Button
           variant="ghost"
           size="xs"
-          className="ml-3 text-xs font-medium opacity-0 transition-all group-hover:opacity-100"
+          className="ml-3 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100"
           onClick={resetFilterHandler}
           startIcon={<Icons.filterX size={14} />}>
           Reset

@@ -26,6 +26,8 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { useOverlayTransition } from './useOverlayTransition'
+
 /** Shared shell for TOC + chatroom right-click menus — Tailwind flex column, not daisyUI `menu`. */
 export const contextMenuPanelClassName =
   'flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-xl border p-1.5 shadow-xl outline-none'
@@ -156,6 +158,8 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     const { refs, floatingStyles, context } = useFloating({
       open: isOpen,
       onOpenChange: setIsOpen,
+      // left/top positioning — the overlay transition animates `transform: scale()`.
+      transform: false,
       middleware: [
         offset({ mainAxis: 5, alignmentAxis: 4 }),
         flip({
@@ -167,6 +171,9 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       strategy: 'fixed',
       whileElementsMounted: autoUpdate
     })
+
+    // Menu tier: 120ms scale-in from the cursor side, instant dismissal.
+    const { isMounted, styles: transitionStyles } = useOverlayTransition(context, { closeMs: 0 })
 
     // Set position reference when mousePosition is provided externally
     useEffect(() => {
@@ -312,7 +319,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     // This check is moved after all hooks to comply with Rules of Hooks
     if (!parentRef?.current && externalIsOpen === undefined) return null
 
-    if (!isOpen) return null
+    if (!isMounted) return null
 
     return (
       <ContextMenuContext.Provider value={{ setIsOpen, isOpen, mouseEvent }}>
@@ -322,7 +329,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
               <ul
                 className={className}
                 ref={refs.setFloating || ref}
-                style={floatingStyles}
+                style={{ ...floatingStyles, ...transitionStyles }}
                 {...getFloatingProps()}>
                 {Children.map(children, (child, index) => {
                   if (isValidElement<ContextMenuChildProps>(child)) {

@@ -509,23 +509,19 @@ html:not(.m_mobile) {
   animation: avatar-typing 0.8s ease-in-out infinite;
 }
 
-/* ============================================
-   Unread Badge Animations
-   ============================================ */
+/* Decorative infinite loops stop under reduced motion; .loading spinners stay (status). */
+@media (prefers-reduced-motion: reduce) {
+  .avatar-typing,
+  .border-ping-glow {
+    animation: none;
+  }
+}
 
-/* Entry animation - scale + fade in */
-/* ============================================
-   Unread Badge Animations - CSS Only
-   ============================================ */
-
-/* Entry animation - scale in */
+/* Badge/presence entry — motion v1 overlay family (no overshoot) */
 @keyframes badge-entry {
   0% {
-    transform: scale(0);
+    transform: scale(0.5);
     opacity: 0;
-  }
-  60% {
-    transform: scale(1.2);
   }
   100% {
     transform: scale(1);
@@ -533,40 +529,12 @@ html:not(.m_mobile) {
   }
 }
 
-/* Count UP - new number slides from bottom */
-@keyframes badge-count-up {
-  0% {
-    transform: translateY(100%);
-    opacity: 0;
+@media (prefers-reduced-motion: no-preference) {
+  .animate-badge-entry {
+    /* backwards, not forwards: a stuck end-transform would clobber co-existing
+       translate utilities (e.g. PanelTabBar's -translate-y-px). */
+    animation: badge-entry 200ms ease-out backwards;
   }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Count DOWN - new number slides from top */
-@keyframes badge-count-down {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-badge-entry {
-  animation: badge-entry 0.3s ease-out forwards;
-}
-
-.animate-badge-count-up {
-  animation: badge-count-up 0.25s ease-out forwards;
-}
-
-.animate-badge-count-down {
-  animation: badge-count-down 0.25s ease-out forwards;
 }
 
 /* Deep-link / reply-jump highlight — duration matches MESSAGE_HIGHLIGHT_MS */
@@ -598,32 +566,6 @@ html:not(.m_mobile) {
   touch-action: manipulation;
   overscroll-behavior: contain;
 }
-.msg_long_press_backdrop {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in oklch, var(--color-base-content) 20%, transparent);
-  backdrop-filter: blur(6px);
-  z-index: 40;
-}
-.msg_long_press_overlay {
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  /* QuickReactionMenu / ContextActionsMenu still ship their legacy
-     position:fixed|absolute + translateX(-50%) styles from the v1 manual-
-     positioning era. Until Deploy 2 rewrites those menus, neutralize here so
-     they flow inside the Floating-UI overlay instead of fixing to (0,0). */
-  > * {
-    position: static !important;
-    left: auto !important;
-    top: auto !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
-}
-
 .overflow-anchor-auto {
   overflow-anchor: auto;
 }

@@ -73,7 +73,10 @@ export const StickyDayHeader = () => {
 
   if (!date) return null
   return (
-    <div className={`transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+    <div
+      className={`transition-opacity duration-200 ease-out ${
+        visible ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}>
       <FeedSeparator variant="day" date={date} floating className="bg-base-100/90 pt-2" />
     </div>
   )

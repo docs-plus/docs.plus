@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '@utils/motion'
 import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -70,6 +71,13 @@ const TypingText = ({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isWaiting, setIsWaiting] = useState(false)
 
+  // Post-hydration read (SSR-safe): under reduced motion the loop never runs and
+  // the first text renders statically.
+  const [reducedMotion, setReducedMotion] = useState(false)
+  useEffect(() => {
+    setReducedMotion(prefersReducedMotion())
+  }, [])
+
   const currentItem = texts[textIndex]
   const isObject = typeof currentItem === 'object'
   const currentText = isObject ? currentItem.text : currentItem || ''
@@ -128,10 +136,14 @@ const TypingText = ({
   ])
 
   useEffect(() => {
+    if (reducedMotion) {
+      setDisplayText(currentText)
+      return
+    }
     const speed = isDeleting ? deletingSpeed : typingSpeed
     const timer = setTimeout(type, speed)
     return () => clearTimeout(timer)
-  }, [type, isDeleting, typingSpeed, deletingSpeed])
+  }, [type, isDeleting, typingSpeed, deletingSpeed, reducedMotion, currentText])
 
   // Find the longest text to reserve space
   const longestText = texts.reduce<string>((longest, item) => {
@@ -162,10 +174,10 @@ const TypingText = ({
         {/* Actual text + cursor overlaid, positioned at start */}
         <span className="absolute inset-0 flex items-center">
           <span>{displayText}</span>
-          {showCursor && (
+          {showCursor && !reducedMotion && (
             <span
               className={twMerge(
-                'ml-0.5 inline-block w-[2px] animate-pulse bg-current',
+                'ml-0.5 inline-block w-[2px] bg-current motion-safe:animate-pulse',
                 cursorClassName
               )}
               style={{ height: '1.1em' }}

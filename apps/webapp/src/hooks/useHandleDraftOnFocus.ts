@@ -10,9 +10,11 @@ interface UseHandleDraftOnFocusProps {
 
 const useHandleDraftOnFocus = ({ editor, provider }: UseHandleDraftOnFocusProps): void => {
   const documentId = useStore((state) => state.settings.metadata?.documentId)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
 
   useEffect(() => {
-    if (!editor || !provider) return
+    // Pre-sync the ymetadata map is empty — a one-shot `isDraft` read would miss the flag forever.
+    if (!editor || !provider || providerSyncing) return
 
     const meta = provider.configuration.document.getMap('metadata')
     if (!meta.get('isDraft')) return
@@ -27,7 +29,7 @@ const useHandleDraftOnFocus = ({ editor, provider }: UseHandleDraftOnFocusProps)
     return () => {
       editor.off('focus', handleFocus)
     }
-  }, [editor, provider, documentId])
+  }, [editor, provider, documentId, providerSyncing])
 }
 
 export default useHandleDraftOnFocus

@@ -26,7 +26,7 @@ function TabCountBadge({ count, isActive }: { count: number; isActive: boolean }
     <span
       aria-hidden
       className={twMerge(
-        'badge badge-xs badge-error text-error-content absolute -top-2.5 left-full ml-0.5 min-h-4 min-w-4 -translate-y-px rounded-full border-0 px-1 text-[10px] leading-none font-semibold tabular-nums shadow-sm ring-2',
+        'badge badge-xs badge-error text-error-content animate-badge-entry absolute -top-2.5 left-full ml-0.5 min-h-4 min-w-4 -translate-y-px rounded-full border-0 px-1 text-[10px] leading-none font-semibold tabular-nums shadow-sm ring-2',
         isActive ? 'ring-base-100' : 'ring-base-300'
       )}>
       {formatCappedCount(count)}

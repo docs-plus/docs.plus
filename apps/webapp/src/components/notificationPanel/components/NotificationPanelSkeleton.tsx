@@ -8,11 +8,11 @@ const NotificationItemSkeleton = () => (
     <div className="skeleton size-9 shrink-0 rounded-full" />
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2">
-        <div className="skeleton h-3 w-3 rounded" />
+        <div className="skeleton size-3 rounded" />
         <div className="skeleton h-4 w-28 rounded" />
       </div>
       <div className="mt-2">
-        <div className="skeleton h-8 w-full rounded-lg" />
+        <div className="skeleton rounded-field h-8 w-full" />
       </div>
       <div className="mt-2 flex items-center gap-2">
         <div className="skeleton h-3 w-16 rounded" />
@@ -31,15 +31,15 @@ export const NotificationPanelSkeleton = () => {
         <div className="skeleton h-6 w-28 rounded" />
         <div className="flex items-center gap-2">
           <div className="skeleton h-7 w-24 rounded" />
-          <div className="skeleton h-7 w-7 rounded" />
+          <div className="skeleton size-7 rounded" />
         </div>
       </div>
 
       {/* Tabs skeleton */}
       <div className="border-base-300 flex gap-2 border-b px-4 py-2">
-        <div className="skeleton h-8 w-20 rounded-lg" />
-        <div className="skeleton h-8 w-24 rounded-lg" />
-        <div className="skeleton h-8 w-16 rounded-lg" />
+        <div className="skeleton rounded-field h-8 w-20" />
+        <div className="skeleton rounded-field h-8 w-24" />
+        <div className="skeleton rounded-field h-8 w-16" />
       </div>
 
       {/* Content skeleton */}

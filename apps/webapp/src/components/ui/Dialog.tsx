@@ -6,8 +6,10 @@ import {
   useFloating,
   useInteractions,
   useMergeRefs,
-  useRole
+  useRole,
+  useTransitionStyles
 } from '@floating-ui/react'
+import { MOTION_DIALOG_IN_MS, MOTION_DIALOG_OUT_MS, prefersReducedMotion } from '@utils/motion'
 import * as React from 'react'
 import { useId } from 'react'
 
@@ -95,11 +97,27 @@ export const ModalContent = function ModalContent({
     '5xl': 'w-full max-w-5xl', // 1024px
     full: 'w-full max-w-[calc(100vw-2rem)] h-full max-h-[calc(100vh-2rem)]'
   }
-  const { open, refs, context, getFloatingProps } = useModalContext()
+  const { refs, context, getFloatingProps } = useModalContext()
   const ref = useMergeRefs([refs.setFloating]) as React.Ref<HTMLDivElement>
   const id = useId()
 
-  if (!open) return null
+  // Dialog tier: backdrop 150ms fade, card 180ms ease-out scale from center,
+  // exits 150ms. JS-gated for reduced motion (inline styles beat CSS PRM rules).
+  const reduced = prefersReducedMotion()
+  const { isMounted, styles: backdropStyles } = useTransitionStyles(context, {
+    duration: reduced ? 0 : { open: MOTION_DIALOG_OUT_MS, close: MOTION_DIALOG_OUT_MS },
+    initial: { opacity: 0 },
+    common: { transitionTimingFunction: 'ease-out' },
+    close: { opacity: 0, transitionTimingFunction: 'ease-in' }
+  })
+  const { styles: cardStyles } = useTransitionStyles(context, {
+    duration: reduced ? 0 : { open: MOTION_DIALOG_IN_MS, close: MOTION_DIALOG_OUT_MS },
+    initial: { opacity: 0, transform: 'scale(0.96)' },
+    common: { transitionTimingFunction: 'ease-out' },
+    close: { opacity: 0, transitionTimingFunction: 'ease-in' }
+  })
+
+  if (!isMounted) return null
 
   // Extract only the props we need to pass to getFloatingProps (excluding ref/children)
   const { ref: _ref, ...safeProps } = restProps as { ref?: unknown; [key: string]: unknown }
@@ -108,6 +126,7 @@ export const ModalContent = function ModalContent({
     <FloatingPortal>
       <FloatingOverlay
         className="bg-base-content/40 fixed inset-0 z-50 backdrop-blur-sm"
+        style={backdropStyles}
         lockScroll>
         <div
           className={`fixed inset-0 flex justify-center p-4 ${
@@ -118,7 +137,8 @@ export const ModalContent = function ModalContent({
           <FloatingFocusManager context={context}>
             <div
               ref={ref}
-              className={`animate-in fade-in-0 zoom-in-95 outline-none ${sizeClasses[size]} rounded-box border-base-300 bg-base-100 flex max-h-[90vh] flex-col overflow-hidden border shadow-xl duration-200 ${className}`}
+              style={cardStyles}
+              className={`outline-none ${sizeClasses[size]} rounded-box border-base-300 bg-base-100 flex max-h-[90vh] flex-col overflow-hidden border shadow-xl ${className}`}
               aria-labelledby={id}
               aria-describedby={id}
               id={id}

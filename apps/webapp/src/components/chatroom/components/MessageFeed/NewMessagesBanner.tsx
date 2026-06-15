@@ -27,7 +27,7 @@ export const NewMessagesBanner = ({ count, sinceIso, onMarkAsRead }: NewMessages
 
   return (
     <div
-      className="border-base-300/80 bg-primary text-primary-content relative z-30 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2 text-sm"
+      className="border-base-300/80 bg-primary text-primary-content relative z-30 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2 text-sm motion-safe:animate-[doc-region-in_200ms_ease-out_both]"
       role="status"
       aria-live="polite">
       <span className="min-w-0 truncate font-medium">{formatBannerLabel(count, sinceIso)}</span>

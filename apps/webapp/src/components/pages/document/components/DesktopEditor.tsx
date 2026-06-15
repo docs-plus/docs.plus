@@ -24,6 +24,8 @@ const DesktopEditor = () => {
 
   return (
     <>
+      {/* No entry animation: at S1 this still shows ToolbarSkeleton — identical pixels
+          to the page skeleton's strip; fading it would blank and re-show the same bones. */}
       <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
         <EditorToolbar />
       </div>

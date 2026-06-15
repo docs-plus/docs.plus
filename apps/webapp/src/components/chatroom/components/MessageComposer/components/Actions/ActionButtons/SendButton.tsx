@@ -16,6 +16,7 @@ export const SendButton = ({ className, size = 18, onPointerDown, ...props }: Pr
       {...props}
       className={twMerge(
         'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+        'motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out motion-safe:active:scale-90',
         !canSend && 'text-base-content/35',
         className
       )}
@@ -29,7 +30,10 @@ export const SendButton = ({ className, size = 18, onPointerDown, ...props }: Pr
       aria-label="Send message">
       <Icons.send
         size={size}
-        className={twMerge('pointer-events-none shrink-0 stroke-[1.75]', canSend && 'text-primary')}
+        className={twMerge(
+          'pointer-events-none shrink-0 stroke-[1.75] transition-colors duration-[120ms]',
+          canSend && 'text-primary'
+        )}
       />
     </Button>
   )

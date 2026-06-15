@@ -1,5 +1,6 @@
 import Config from '@config'
 import { HocuspocusProvider } from '@hocuspocus/provider'
+import { useStore } from '@stores'
 import { Editor } from '@tiptap/react'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -13,9 +14,11 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
   const {
     query: { slugs }
   } = useRouter()
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
 
   useEffect(() => {
-    if (!editor || !provider) return
+    // Pre-sync the ymetadata map is empty — a one-shot read here would miss the flag forever.
+    if (!editor || !provider || providerSyncing) return
 
     const initializeDocument = () => {
       const ymetadata = provider.configuration.document.getMap('metadata')
@@ -30,7 +33,7 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
     }
 
     initializeDocument()
-  }, [editor, provider, slugs])
+  }, [editor, provider, slugs, providerSyncing])
 }
 
 export default useInitializeNewDocument

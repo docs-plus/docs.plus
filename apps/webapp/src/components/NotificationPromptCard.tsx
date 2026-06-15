@@ -9,10 +9,12 @@
  */
 import { showPWAInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
+import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
-import { useCallback, useEffect, useState } from 'react'
+import { MOTION_PANEL_MS } from '@utils/motion'
+import { useCallback, useEffect } from 'react'
 import { LuBell, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
@@ -41,8 +43,7 @@ interface NotificationPromptCardProps {
 }
 
 export function NotificationPromptCard({ className }: NotificationPromptCardProps) {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
+  const { mounted, shown, show, hide: hideCard, nodeRef } = useEntryExitTransition()
   const profile = useAuthStore((state) => state.profile)
   const { subscribe } = usePushNotifications()
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
@@ -61,21 +62,23 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
   }, [platform, isPWAInstalled, iosSupportsWebPush])
 
   // Hide with animation
-  const hide = useCallback((permanent = false) => {
-    setIsAnimating(false)
-    setTimeout(() => {
-      setIsVisible(false)
+  const hide = useCallback(
+    (permanent = false) => {
+      // Persist before the exit transition so a re-show can't race the write.
       if (permanent) {
         localStorage.setItem(STORAGE_KEY, 'permanent')
       }
-    }, 300)
-  }, [])
+      hideCard()
+    },
+    [hideCard]
+  )
 
   // Handle "Enable" click
   const handleEnable = async () => {
     hide()
 
-    await new Promise((r) => setTimeout(r, 300))
+    // Let the card finish exiting before the browser permission prompt appears.
+    await new Promise((r) => setTimeout(r, MOTION_PANEL_MS))
 
     const result = await subscribe()
 
@@ -138,28 +141,26 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
 
         // Increment count and show
         localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
-        setTimeout(() => {
-          setIsVisible(true)
-          requestAnimationFrame(() => setIsAnimating(true))
-        }, 2000)
+        setTimeout(show, 2000)
       }
     }
     window.addEventListener(SHOW_PROMPT_EVENT, handler)
     return () => window.removeEventListener(SHOW_PROMPT_EVENT, handler)
-  }, [profile, subscribe, shouldShow])
+  }, [profile, subscribe, shouldShow, show])
 
-  if (!isVisible) return null
+  if (!mounted) return null
 
   return (
     <div
+      ref={nodeRef}
       className={twMerge(
         // Position: top-left, below header
         'fixed top-6 left-6 z-50',
         // Size: wider for better readability
         'w-96 max-w-[calc(100vw-2rem)]',
         // Animation
-        'transform transition-all duration-300 ease-out',
-        isAnimating ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0',
+        'transition-[opacity,transform] duration-200 ease-out',
+        shown ? 'translate-x-0 opacity-100' : '-translate-x-2 opacity-0',
         className
       )}>
       <div
@@ -187,7 +188,7 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
           </div>
           <button
             onClick={handleClose}
-            className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-all hover:opacity-100"
+            className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
             aria-label="Dismiss permanently">
             <LuX size={16} />
           </button>
@@ -202,7 +203,7 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         <div className="flex items-center justify-end gap-3 pt-1">
           <button
             onClick={handleLater}
-            className="hover:bg-base-content/10 rounded-selector cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-all hover:opacity-100">
+            className="hover:bg-base-content/10 rounded-selector cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-[opacity,background-color] hover:opacity-100">
             Later
           </button>
           <button

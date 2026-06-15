@@ -46,7 +46,7 @@ const PadTitle = () => {
   return (
     <>
       {/* Header bar; `border-b` is the sole line under the title row (toolbar uses `border-b` only, no `border-t` — see EditorToolbar). */}
-      <header className="border-base-300 bg-base-100 relative z-30 flex min-h-12 w-full items-center border-b px-3 py-2">
+      <header className="border-base-300 bg-base-100 relative z-30 flex min-h-12 w-full items-center border-b px-3 py-2 motion-safe:animate-[doc-region-in_220ms_ease-out_both]">
         {/* Left section: Logo + Document info */}
         <div className="flex flex-1 items-center gap-2">
           {/* Logo */}

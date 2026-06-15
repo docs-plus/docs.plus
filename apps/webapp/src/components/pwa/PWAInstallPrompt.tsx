@@ -23,6 +23,7 @@
  * (e.g., from NotificationPromptCard when iOS user needs PWA for push)
  * ─────────────────────────────────────────────────────────────
  */
+import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { useAuthStore } from '@stores'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -153,8 +154,7 @@ interface PWAInstallPromptProps {
 }
 
 export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
+  const { mounted, shown, show: showCard, hide: hideCard, nodeRef } = useEntryExitTransition()
   const [showIOSSteps, setShowIOSSteps] = useState(false)
   const profile = useAuthStore((state) => state.profile)
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
@@ -189,23 +189,25 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
     localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
 
-    setIsVisible(true)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setIsAnimating(true))
-    })
-  }, [isEligible])
+    showCard()
+  }, [isEligible, showCard])
 
   // ── Hide animation ──
-  const hide = useCallback((permanent = false) => {
-    setIsAnimating(false)
-    setTimeout(() => {
-      setIsVisible(false)
-      setShowIOSSteps(false)
+  const hide = useCallback(
+    (permanent = false) => {
+      // Persist before the exit transition so a re-show can't race the write.
       if (permanent) {
         localStorage.setItem(DISMISSED_KEY, 'permanent')
       }
-    }, 300)
-  }, [])
+      hideCard()
+    },
+    [hideCard]
+  )
+
+  // Reset the iOS panel only after the card has fully exited.
+  useEffect(() => {
+    if (!mounted) setShowIOSSteps(false)
+  }, [mounted])
 
   // ── Install button handler ──
   const handleInstall = async () => {
@@ -278,13 +280,14 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
 
   // ── Auto-hide if installed while prompt is showing ──
   useEffect(() => {
-    if (isInstalled && isVisible) hide(true)
-  }, [isInstalled, isVisible, hide])
+    if (isInstalled && mounted) hide(true)
+  }, [isInstalled, mounted, hide])
 
-  if (!isVisible) return null
+  if (!mounted) return null
 
   return (
     <div
+      ref={nodeRef}
       role="dialog"
       aria-labelledby="pwa-install-title"
       aria-describedby="pwa-install-desc"
@@ -292,8 +295,8 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
         // Position: bottom-center, safe area aware
         'fixed right-4 bottom-6 left-4 z-50 mx-auto max-w-md',
         // Slide-up animation
-        'transform transition-all duration-300 ease-out',
-        isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+        'transition-[opacity,transform] duration-200 ease-out',
+        shown ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
         className
       )}>
       <div
@@ -324,7 +327,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
               </div>
               <button
                 onClick={handleClose}
-                className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-all hover:opacity-100"
+                className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
                 aria-label="Dismiss install prompt permanently">
                 <LuX size={16} />
               </button>
@@ -348,7 +351,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
             <div className="flex items-center justify-end gap-3 pt-1">
               <button
                 onClick={handleLater}
-                className="hover:bg-base-content/10 rounded-selector cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-all hover:opacity-100">
+                className="hover:bg-base-content/10 rounded-selector cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-[opacity,background-color] hover:opacity-100">
                 Maybe Later
               </button>
               <button
@@ -382,7 +385,7 @@ function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () 
         </div>
         <button
           onClick={onClose}
-          className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-all hover:opacity-100"
+          className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
           aria-label="Dismiss">
           <LuX size={16} />
         </button>

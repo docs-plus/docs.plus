@@ -45,7 +45,7 @@ const QUICK_REACTIONS: EmojiReaction[] = [
 
 /** Shared tap animation for reaction buttons. */
 const TAP_ANIMATION = {
-  scale: 0.9,
+  scale: 0.96,
   backgroundColor: 'color-mix(in oklch, var(--color-base-content) 15%, transparent)',
   transition: { duration: 0.1 }
 }
@@ -80,14 +80,14 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
         ref={ref}
         role="toolbar"
         aria-label="Quick reactions"
-        className={`bg-base-100 overflow-hidden rounded-3xl shadow-lg transition-all duration-200 ease-out ${className ?? ''}`}
+        className={`bg-base-100 overflow-hidden rounded-3xl shadow-lg transition-[opacity,transform] duration-200 ease-out ${className ?? ''}`}
         style={{
           position: 'fixed',
           left: position.x,
           top: position.y,
           transform: isVisible
             ? 'translateX(-50%) translateY(0) scale(1)'
-            : 'translateX(-50%) translateY(20px) scale(0.9)',
+            : 'translateX(-50%) translateY(8px) scale(0.96)',
           opacity: isVisible ? 1 : 0,
           maxWidth: '380px',
           width: '88%',

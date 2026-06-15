@@ -30,12 +30,41 @@ const APP_NAME = 'docs.plus'
 const THEME_COLOR_LIGHT = '#fafbfc' // base-100 light
 const THEME_COLOR_DARK = '#0b1220' // base-100 dark
 
+// Every document page opens connections to these on boot (anon sign-in, doc
+// metadata, collab WS) — warming them shaves the first-RTT handshakes.
+const PRECONNECT_ORIGINS = (() => {
+  const origins = new Set<string>()
+  for (const url of [process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_RESTAPI_URL]) {
+    try {
+      if (url) origins.add(new URL(url).origin)
+    } catch {
+      // malformed env value — skip
+    }
+  }
+  return [...origins]
+})()
+
+const WS_DNS_PREFETCH_HREF = (() => {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_PROVIDER_URL ?? '')
+    return `${url.protocol === 'wss:' ? 'https:' : 'http:'}//${url.host}`
+  } catch {
+    return null
+  }
+})()
+
 export default function Document() {
   return (
     <Html lang="en" data-theme="docsplus">
       <Head>
         {/* Character encoding - must be first */}
         <meta charSet="utf-8" />
+
+        {/* ── Connection warm-up ────────────────────────────── */}
+        {PRECONNECT_ORIGINS.map((origin) => (
+          <link key={origin} rel="preconnect" href={origin} crossOrigin="anonymous" />
+        ))}
+        {WS_DNS_PREFETCH_HREF && <link rel="dns-prefetch" href={WS_DNS_PREFETCH_HREF} />}
 
         {/* ── PWA Core ──────────────────────────────────────── */}
         <link rel="manifest" href="/manifest.json" />

@@ -8,6 +8,7 @@ import { PWAInstallPrompt } from '@components/pwa'
 import { FloatingTree } from '@floating-ui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { VirtuosoMessageListLicense } from '@virtuoso.dev/message-list'
+import { MotionConfig } from 'motion/react'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useState } from 'react'
@@ -44,19 +45,23 @@ export default function MyApp({ Component, pageProps }: any) {
 
   return (
     <div id="root">
-      <Header />
-      <GoogleAnalytics />
-      <NotificationPromptCard />
-      <PWAInstallPrompt />
-      <AppProviders isMobileInitial={isMobileInitial} />
-      <VirtuosoMessageListLicense licenseKey={process.env.NEXT_PUBLIC_VIRTUOSO_LICENSE ?? ''}>
-        <FloatingTree>
-          <QueryClientProvider client={queryClient}>
-            <Component {...pageProps} />
-          </QueryClientProvider>
-        </FloatingTree>
-      </VirtuosoMessageListLicense>
-      <Toaster />
+      {/* reducedMotion="user" gates every motion/react surface (composer panels,
+          link dialogs, long-press menus) — inline styles ignore CSS PRM rules. */}
+      <MotionConfig reducedMotion="user">
+        <Header />
+        <GoogleAnalytics />
+        <NotificationPromptCard />
+        <PWAInstallPrompt />
+        <AppProviders isMobileInitial={isMobileInitial} />
+        <VirtuosoMessageListLicense licenseKey={process.env.NEXT_PUBLIC_VIRTUOSO_LICENSE ?? ''}>
+          <FloatingTree>
+            <QueryClientProvider client={queryClient}>
+              <Component {...pageProps} />
+            </QueryClientProvider>
+          </FloatingTree>
+        </VirtuosoMessageListLicense>
+        <Toaster />
+      </MotionConfig>
     </div>
   )
 }

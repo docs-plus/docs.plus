@@ -15,6 +15,8 @@ import {
 } from '@floating-ui/react'
 import { cloneElement, isValidElement, ReactNode, useRef, useState } from 'react'
 
+import { useOverlayTransition } from './useOverlayTransition'
+
 /** Touch-only devices have no hover — tooltips are irrelevant */
 const canHover = typeof window !== 'undefined' ? window.matchMedia('(hover: hover)').matches : true
 
@@ -89,6 +91,13 @@ export function Tooltip({
 
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role])
 
+  // Tooltip tier: 100ms opacity-only fade-in, instant dismissal, never scale.
+  const { isMounted, styles: transitionStyles } = useOverlayTransition(context, {
+    scale: false,
+    openMs: 100,
+    closeMs: 0
+  })
+
   // React 19: ref is a regular prop in element.props — read from both locations
   const childRef = isValidElement(children)
     ? ((children as any).props?.ref ?? (children as any).ref ?? null)
@@ -134,11 +143,11 @@ export function Tooltip({
   return (
     <>
       {trigger}
-      {isOpen && (
+      {isMounted && (
         <FloatingPortal>
           <div
             ref={refs.setFloating}
-            style={floatingStyles}
+            style={{ ...floatingStyles, ...transitionStyles }}
             className={`bg-neutral text-neutral-content z-50 rounded px-2 py-1 font-mono text-xs ${className}`}
             {...getFloatingProps()}>
             {title}

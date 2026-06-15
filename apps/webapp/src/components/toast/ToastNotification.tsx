@@ -73,8 +73,8 @@ export const ToastNotification = (
           // Shadow for depth
           'shadow-xl',
           // Animation
-          'transition-all duration-300 ease-out',
-          t.visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+          'transition-[opacity,transform] duration-200 ease-out',
+          t.visible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
           // Custom classes
           opts.className
         )}

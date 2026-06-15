@@ -3,8 +3,9 @@ import { motion } from 'motion/react'
 import { type ReactNode, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
+// 0.18/0.15s in lockstep with MOTION_DIALOG_IN_MS/MOTION_DIALOG_OUT_MS in @utils/motion.
 const BACKDROP_TRANSITION = { duration: 0.15, ease: 'easeOut' } as const
-const CARD_TRANSITION = { duration: 0.18, ease: [0.16, 1, 0.3, 1] } as const
+const CARD_TRANSITION = { duration: 0.18, ease: 'easeOut' } as const
 
 type Props = {
   children: ReactNode
@@ -97,9 +98,9 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
           aria-modal="true"
           aria-labelledby={titleId}
           className="bg-base-100 text-base-content border-base-300 pointer-events-auto relative w-full max-w-sm shrink-0 rounded-lg border p-4"
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+          exit={{ opacity: 0, scale: 0.96 }}
           transition={CARD_TRANSITION}>
           {children}
         </motion.div>

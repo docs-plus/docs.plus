@@ -16,10 +16,7 @@ interface UseMapDocumentAndWorkspaceResult {
   error: Error | null
 }
 
-const useMapDocumentAndWorkspace = (
-  docMetadata: DocMetadata,
-  initialChannels?: Channel[]
-): UseMapDocumentAndWorkspaceResult => {
+const useMapDocumentAndWorkspace = (docMetadata: DocMetadata): UseMapDocumentAndWorkspaceResult => {
   const [isWorkspaceUpserted, setIsWorkspaceUpserted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -32,11 +29,10 @@ const useMapDocumentAndWorkspace = (
     setIsWorkspaceUpserted(false)
   }, [docMetadata.documentId, profile?.id])
 
-  // Handle initial channels
+  // bulkSetChannels only merges — this is the sole clearing path on doc switch.
   useEffect(() => {
-    if (!initialChannels) return
-    clearAndInitialChannels(initialChannels)
-  }, [clearAndInitialChannels, initialChannels])
+    clearAndInitialChannels([])
+  }, [docMetadata.documentId, clearAndInitialChannels])
 
   const fetchChannels = async (
     documentId: string,

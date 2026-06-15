@@ -1,6 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import * as Y from 'yjs'
 
 /**
@@ -16,131 +16,135 @@ import * as Y from 'yjs'
 
 type DeviceType = 'desktop' | 'mobile' | 'tablet'
 
+const FIRST_SYNC_TIMEOUT_MS = 15_000
+
 interface UseYdocAndProviderProps {
+  documentId: string
+  slug: string
   accessToken: string
   deviceType?: DeviceType
 }
 
-const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndProviderProps) => {
-  const documentId = useStore((state) => state.settings.metadata?.documentId)
-  const slug = useStore((state) => state.settings.metadata?.slug)
-
-  const [destroyed, setDestroyed] = useState(false)
+const useYdocAndProvider = ({
+  documentId,
+  slug,
+  accessToken,
+  deviceType = 'desktop'
+}: UseYdocAndProviderProps): void => {
   const ydocRef = useRef(new Y.Doc())
-  const providerRef = useRef<any>(null)
+  const ydocDocumentIdRef = useRef<string | null>(null)
+  const providerRef = useRef<HocuspocusProvider | null>(null)
   const isSyncedRef = useRef(false)
   const syncedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
-  const providerStatus = useStore((state) => state.settings.providerStatus)
 
   useEffect(() => {
-    if (!documentId) return
+    const providerUrl = process.env.NEXT_PUBLIC_PROVIDER_URL
+    if (!providerUrl) {
+      console.error('NEXT_PUBLIC_PROVIDER_URL not set')
+      throw new Error('NEXT_PUBLIC_PROVIDER_URL not set')
+    }
 
-    const createProvider = () => {
-      if (typeof window !== 'undefined') {
-        const providerUrl = process.env.NEXT_PUBLIC_PROVIDER_URL
-        if (!providerUrl) {
-          console.error('NEXT_PUBLIC_PROVIDER_URL not set')
-          throw new Error('NEXT_PUBLIC_PROVIDER_URL not set')
+    // Doc switch: the previous Y.Doc still holds the old document's content and
+    // metadata (incl. needsInitialization=false) and would merge it into the new
+    // room on sync — the new provider must wrap a clean doc.
+    if (ydocDocumentIdRef.current && ydocDocumentIdRef.current !== documentId) {
+      ydocRef.current = new Y.Doc()
+    }
+    ydocDocumentIdRef.current = documentId
+
+    providerRef.current = new HocuspocusProvider({
+      url: providerUrl,
+      name: documentId,
+      document: ydocRef.current,
+      token: JSON.stringify({ accessToken: accessToken || '', slug: slug, deviceType }),
+      onSynced: (data) => {
+        console.info('++onSynced', data)
+        isSyncedRef.current = true
+
+        // Initial sync complete - document loaded from server (already saved)
+        setWorkspaceSetting('providerStatus', 'saved')
+
+        if (data?.state) setWorkspaceEditorSetting('providerSyncing', false)
+
+        // in case of renew provider, set the provider to the store
+        // (live store read — the effect closure can hold a stale value across doc switches)
+        if (data?.state && !useStore.getState().settings.hocuspocusProvider) {
+          setWorkspaceSetting('hocuspocusProvider', providerRef.current)
         }
-        providerRef.current = new HocuspocusProvider({
-          url: providerUrl,
-          name: documentId,
-          document: ydocRef.current,
-          token: JSON.stringify({ accessToken: accessToken || '', slug: slug, deviceType }),
-          // onStatus: (data) => {
-          //   console.log('onStatus', data)
-          // },
-          onSynced: (data) => {
-            console.info('++onSynced', data)
-            isSyncedRef.current = true
+      },
+      onDisconnect: (data) => {
+        isSyncedRef.current = false
 
-            // Initial sync complete - document loaded from server (already saved)
+        // Check if browser is offline
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          setWorkspaceSetting('providerStatus', 'offline')
+        } else if (data.event?.code && data.event.code !== 1000) {
+          // Non-normal closure, show error
+          setWorkspaceSetting('providerStatus', 'error')
+        }
+      },
+      onStateless: ({ payload }) => {
+        try {
+          const data = JSON.parse(payload)
+
+          // Listen for save confirmations from server (real DB persistence)
+          // This is the ONLY place where we set "saved" - Single Source of Truth
+          if (data.msg === 'document:saved' && data.documentId === documentId) {
+            console.info('📝 Document saved to DB:', data)
             setWorkspaceSetting('providerStatus', 'saved')
-
-            if (data?.state) setWorkspaceEditorSetting('providerSyncing', false)
-
-            // in case of renew provider, set the provider to the store
-            if (data?.state && !hocuspocusProvider && providerRef.current) {
-              setWorkspaceSetting('hocuspocusProvider', providerRef.current)
-            }
-          },
-
-          // documentUpdateHandler: (update) => {
-          // console.log('documentUpdateHandler', update)
-          // },
-          onDisconnect: (data) => {
-            isSyncedRef.current = false
-
-            // Check if browser is offline
-            if (typeof navigator !== 'undefined' && !navigator.onLine) {
-              setWorkspaceSetting('providerStatus', 'offline')
-            } else if (data.event?.code && data.event.code !== 1000) {
-              // Non-normal closure, show error
-              setWorkspaceSetting('providerStatus', 'error')
-            }
-          },
-          onMessage: (_data) => {
-            // console.log('onMessage', data)
-          },
-          onAwarenessUpdate: () => {
-            // console.log('onAwarenessUpdate')
-          },
-          onStateless: ({ payload }) => {
-            try {
-              const data = JSON.parse(payload)
-
-              // Listen for save confirmations from server (real DB persistence)
-              // This is the ONLY place where we set "saved" - Single Source of Truth
-              if (data.msg === 'document:saved' && data.documentId === documentId) {
-                console.info('📝 Document saved to DB:', data)
-                setWorkspaceSetting('providerStatus', 'saved')
-              }
-            } catch {
-              // Ignore malformed payloads
-            }
-          },
-          onOutgoingMessage: ({ message: _message }) => {
-            // console.log('onOutgoingMessage', { message })
-          },
-          onClose: ({ event: _event }) => {
-            // console.log('onClose', { event })
-          },
-          onDestroy: () => {
-            console.info('destroy provider')
-            setDestroyed(true)
-            setWorkspaceSetting('providerStatus', 'saved')
-            setWorkspaceEditorSetting('loading', true)
-            setWorkspaceEditorSetting('providerSyncing', true)
-            setWorkspaceEditorSetting('applyingFilters', false)
-            setWorkspaceSetting('hocuspocusProvider', null)
-            setWorkspaceEditorSetting('presentUsers', [])
-            // setWorkspaceEditorSetting('filterResult', [])
           }
-        })
+        } catch {
+          // Ignore malformed payloads
+        }
+      },
+      onDestroy: () => {
+        console.info('destroy provider')
+        setWorkspaceSetting('providerStatus', 'saved')
+        setWorkspaceEditorSetting('loading', true)
+        setWorkspaceEditorSetting('providerSyncing', true)
+        setWorkspaceEditorSetting('applyingFilters', false)
+        setWorkspaceSetting('hocuspocusProvider', null)
+        setWorkspaceEditorSetting('presentUsers', [])
       }
-    }
+    })
 
-    if (!providerRef.current || destroyed) {
-      createProvider()
-      if (!hocuspocusProvider && providerRef.current) {
-        setWorkspaceSetting('hocuspocusProvider', providerRef.current)
-      }
-    }
+    // Unconditional + idempotent: the store value here is either null (fresh
+    // mount / post-destroy) or this same provider; a closure-guarded set goes
+    // stale across doc switches and strands the page on the skeleton.
+    setWorkspaceSetting('hocuspocusProvider', providerRef.current)
 
     return () => {
       providerRef.current?.destroy()
+      // Without these, the next documentId's effect would see a truthy ref to a
+      // destroyed provider and skip recreation, and its watchdog would see the
+      // old doc's synced=true.
+      providerRef.current = null
+      isSyncedRef.current = false
     }
+    // slug/accessToken/deviceType are connection metadata — only a documentId
+    // change warrants a provider rebuild.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId])
+
+  // First-sync watchdog per document: a created-but-never-syncing provider would
+  // otherwise leave the shell on bones forever. Keep an accurate 'offline' as is.
+  useEffect(() => {
+    const deadline = setTimeout(() => {
+      const { providerStatus: current } = useStore.getState().settings
+      if (!isSyncedRef.current && current !== 'offline') {
+        setWorkspaceSetting('providerStatus', 'error')
+      }
+    }, FIRST_SYNC_TIMEOUT_MS)
+    return () => clearTimeout(deadline)
+  }, [documentId, setWorkspaceSetting])
 
   // Track Y.Doc updates for sync state (local changes only)
   useEffect(() => {
     const ydoc = ydocRef.current
-    if (!ydoc) return
 
-    const handleUpdate = (_update: Uint8Array, origin: any) => {
+    const handleUpdate = (_update: Uint8Array, origin: unknown) => {
       // Only track local updates, ignore remote updates from provider
       if (origin === providerRef.current) return
 
@@ -161,8 +165,10 @@ const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndP
       // This gives user feedback that changes are on the server (in memory)
       // "saved" will come from server when DB write completes (after 10s debounce)
       syncedTimeoutRef.current = setTimeout(() => {
-        // Only transition if we're still in "saving" state
-        if (providerStatus === 'saving') {
+        // Live read — a closure-captured status here is stale by the time the
+        // timer fires and would cancel its own transition.
+        const { providerStatus: current } = useStore.getState().settings
+        if (current === 'saving') {
           setWorkspaceSetting('providerStatus', 'synced')
         }
       }, 300)
@@ -176,7 +182,8 @@ const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndP
         clearTimeout(syncedTimeoutRef.current)
       }
     }
-  }, [setWorkspaceSetting, providerStatus])
+    // documentId re-attaches the listener to the fresh Y.Doc after a doc switch.
+  }, [setWorkspaceSetting, documentId])
 
   // Track browser online/offline state
   useEffect(() => {
@@ -206,31 +213,17 @@ const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndP
       }
     }
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', handleOnline)
-      window.addEventListener('offline', handleOffline)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
 
-      return () => {
-        window.removeEventListener('online', handleOnline)
-        window.removeEventListener('offline', handleOffline)
-        if (onlineTimeout) {
-          clearTimeout(onlineTimeout)
-        }
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+      if (onlineTimeout) {
+        clearTimeout(onlineTimeout)
       }
     }
   }, [setWorkspaceSetting])
-
-  // NOTE: This is not working yet, I need reconsider for offline mode
-  // Store the Y document in the browser
-  // const indexDbProvider = new IndexeddbPersistence(
-  //   documentId,
-  //   colabProvider.document
-  // )
-
-  // indexDbProvider.on('synced', () => {
-  //   console.log(`content loaded from indexdb, pad name: ${documentId}`)
-  // })
-  return { ydoc: ydocRef.current, provider: providerRef.current }
 }
 
 export default useYdocAndProvider

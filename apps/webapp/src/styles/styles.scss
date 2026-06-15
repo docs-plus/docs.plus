@@ -5,6 +5,7 @@
 @use './daisyui';
 @use './mobile';
 @use './chat-editor';
+@use './entry';
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;
@@ -354,6 +355,13 @@ $pad-toolbar-height: 38px;
     flex: 1;
     min-width: 80px;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-favicon,
+    .skeleton-bar {
+      animation: none;
+    }
+  }
 }
 
 .dropdown-menu {
@@ -511,16 +519,17 @@ $pad-toolbar-height: 38px;
   }
 }
 
-// Floating Popover Styles
+// Floating Popover Styles — overlay tier: enter 120ms ease-out, exit 80ms ease-in
+// (kept in lockstep with the published extension skins; see _entry.scss tokens)
 .floating-popover {
   position: absolute;
   top: 0;
   left: 0;
   opacity: 0;
-  transform: scale(0.8) translateZ(0);
+  transform: scale(0.96) translateZ(0);
   transition:
-    opacity var(--animation-duration, 100ms) cubic-bezier(0.4, 0, 0.2, 1),
-    transform var(--animation-duration, 100ms) cubic-bezier(0.4, 0, 0.2, 1);
+    opacity var(--motion-overlay-out) var(--motion-ease-exit),
+    transform var(--motion-overlay-out) var(--motion-ease-exit);
   pointer-events: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -531,6 +540,13 @@ $pad-toolbar-height: 38px;
     opacity: 1;
     transform: scale(1) translateZ(0);
     pointer-events: auto;
+    transition:
+      opacity var(--motion-overlay-in) var(--motion-ease-enter),
+      transform var(--motion-overlay-in) var(--motion-ease-enter);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 
   &-arrow {

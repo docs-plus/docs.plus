@@ -1,6 +1,5 @@
 import HeadSeo from '@components/HeadSeo'
 import DocumentLayouts from '@components/pages/document/layouts/DocumentLayouts'
-import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
@@ -9,44 +8,47 @@ import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { GoogleOneTapLayout } from '@layouts'
 import { useStore } from '@stores'
+import { ensureEmojiData } from '@utils/ensureEmojiData'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 type DocumentPageProps = {
   docMetadata: any
   isMobile: boolean
   deviceType?: 'desktop' | 'mobile' | 'tablet'
-  channels: any
-  accessToken: string
+  accessToken?: string | null
 }
 
 const DocumentPage = ({
   docMetadata,
   isMobile,
   deviceType = 'desktop',
-  channels,
   accessToken
 }: DocumentPageProps) => {
   const router = useRouter()
   const slugs = (router.query.slugs as string[]) || []
-  const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
-  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const { loading: channelsLoading } = useMapDocumentAndWorkspace(docMetadata)
+
+  // The page's single gate: set synchronously at provider creation (no network wait),
+  // nulled on destroy (doc switch). Channel, join, and sync state must never re-gate
+  // this tree — once the layout mounts, the editor is never unmounted for the same doc.
+  const provider = useStore((state) => state.settings.hocuspocusProvider)
 
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
-  const { provider } = useYdocAndProvider({ accessToken, deviceType })
-  const { joinWorkspaceLoading } = useJoinWorkspace({
+  useYdocAndProvider({
     documentId: docMetadata.documentId,
-    loading
+    slug: docMetadata.slug,
+    accessToken: accessToken ?? '',
+    deviceType
   })
+  useJoinWorkspace({ documentId: docMetadata.documentId, channelsLoading })
 
-  if (loading || providerSyncing || joinWorkspaceLoading) {
-    return (
-      <>
-        <HeadSeo />
-        <SlugPageLoader loading={loading} providerSyncing={providerSyncing} />
-      </>
-    )
-  }
+  useEffect(() => {
+    ensureEmojiData()
+  }, [])
+
+  if (!provider) return <HeadSeo />
 
   return (
     <GoogleOneTapLayout>

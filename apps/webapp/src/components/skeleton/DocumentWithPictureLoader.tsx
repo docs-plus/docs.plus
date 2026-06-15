@@ -26,7 +26,7 @@ const DocumentWithPictureLoader: React.FC<React.HTMLProps<HTMLDivElement> & TPro
 
         {/* Image with text */}
         <div className="flex gap-4 py-2">
-          <div className="skeleton bg-neutral/30 size-32 shrink-0 rounded-lg" />
+          <div className="skeleton bg-neutral/30 rounded-box size-32 shrink-0" />
           <div className="flex-1 space-y-3">
             <div className="skeleton bg-neutral/20 h-4 w-[78%] rounded" />
             <div className="skeleton bg-neutral/20 h-4 w-[58%] rounded" />

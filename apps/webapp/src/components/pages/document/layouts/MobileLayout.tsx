@@ -36,7 +36,8 @@ const MobileLayout = () => {
     <>
       <div className={`mobileLayoutRoot tiptap flex w-full flex-col ${deviceClass}`}>
         <div className="mobileLayoutMain flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="mobilePadTitleShell bg-base-100 sticky top-0 z-20 w-full shrink-0">
+          {/* Opacity only — no transforms next to the sticky/visualViewport machinery. */}
+          <div className="mobilePadTitleShell bg-base-100 sticky top-0 z-20 w-full shrink-0 motion-safe:animate-[doc-content-in_220ms_ease-out_both]">
             <MobilePadTitle />
           </div>
           <MobileLeftSidePanel />

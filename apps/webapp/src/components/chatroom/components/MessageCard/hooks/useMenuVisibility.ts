@@ -1,29 +1,17 @@
-import { useCallback, useState } from 'react'
+import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 
 /**
- * Manages menu visibility and animation states for long press menu
+ * Long-press-menu adapter over the shared transition hook: mounting and the
+ * enter flag are split across frames so the enter transition actually paints.
  */
 export const useMenuVisibility = () => {
-  const [isLongPressMenuVisible, setIsLongPressMenuVisible] = useState(false)
-  const [isMenuEnterAnimationActive, setIsMenuEnterAnimationActive] = useState(false)
-
-  const showMenu = useCallback(() => {
-    setIsLongPressMenuVisible(true)
-    setIsMenuEnterAnimationActive(true)
-  }, [])
-
-  const hideMenu = useCallback(() => {
-    setIsMenuEnterAnimationActive(false)
-    // Delay hiding to allow exit animation
-    setTimeout(() => {
-      setIsLongPressMenuVisible(false)
-    }, 200) // Match animation duration
-  }, [])
+  const { mounted, shown, show, hide, nodeRef } = useEntryExitTransition<HTMLDivElement>()
 
   return {
-    isLongPressMenuVisible,
-    isMenuEnterAnimationActive,
-    showMenu,
-    hideMenu
+    isLongPressMenuVisible: mounted,
+    isMenuEnterAnimationActive: shown,
+    menuOverlayRef: nodeRef,
+    showMenu: show,
+    hideMenu: hide
   }
 }

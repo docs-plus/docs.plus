@@ -1,19 +1,27 @@
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
-import data from '@emoji-mart/data'
+import { useStore } from '@stores'
 import { documentServerSideProps } from '@utils/documentServerSideProps'
-import { init } from 'emoji-mart'
 import { type GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import React from 'react'
 
-// Initialize emoji-mart
-init({ data })
+// Chunk-load failure (e.g. stale hashes after a deploy) would otherwise leave the
+// SSR skeleton up forever — every in-app recovery path lives inside the failed chunk.
+const ChunkLoadError = () => (
+  <div className="bg-base-100 fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 text-center">
+    <p className="text-base-content font-medium">Couldn&apos;t load the editor</p>
+    <p className="text-base-content/60 text-sm">A new version may have been deployed.</p>
+    <button className="btn btn-primary btn-sm mt-2" onClick={() => window.location.reload()}>
+      Reload
+    </button>
+  </div>
+)
 
 const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPage'), {
   ssr: false,
-  loading: () => <SlugPageLoader loadingPage={true} />
+  loading: ({ error }) => (error ? <ChunkLoadError /> : null)
 })
 
 /**
@@ -24,8 +32,13 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
 const DEFAULT_OG_IMAGE = `${SITE_URL}/icons/android-chrome-512x512.png`
 
-const Document = ({ docMetadata, isMobile, deviceType, channels, session }: any) => {
+const Document = ({ docMetadata, isMobile, deviceType, accessToken }: any) => {
   useAddDeviceTypeHtmlClass(isMobile)
+
+  // Zustand's initial state has no provider, so the skeleton is part of the SSR HTML
+  // and survives the dynamic-chunk load without a remount; it unmounts exactly when
+  // the real layout mounts (provider created) and returns on doc switch (provider destroyed).
+  const hasProvider = useStore((state) => Boolean(state.settings.hocuspocusProvider))
 
   // Build SSR-safe OG metadata from server-fetched docMetadata
   const ogTitle = docMetadata?.title || 'docs.plus'
@@ -62,12 +75,13 @@ const Document = ({ docMetadata, isMobile, deviceType, channels, session }: any)
         <meta name="twitter:image" content={ogImage} />
       </Head>
 
+      {!hasProvider && <SlugPageLoader isMobile={isMobile} isAuthed={Boolean(accessToken)} />}
+
       <DocumentPage
         docMetadata={docMetadata}
         isMobile={isMobile}
         deviceType={deviceType || (isMobile ? 'mobile' : 'desktop')}
-        channels={channels}
-        accessToken={session?.access_token}
+        accessToken={accessToken}
       />
     </>
   )

@@ -159,7 +159,7 @@ const DocumentsSection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       <SettingsCard>
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">

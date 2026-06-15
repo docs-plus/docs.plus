@@ -15,6 +15,8 @@ import {
 } from '@floating-ui/react'
 import * as React from 'react'
 
+import { useOverlayTransition } from './useOverlayTransition'
+
 interface PopoverOptions {
   initialOpen?: boolean
   placement?: Placement
@@ -44,6 +46,8 @@ export function usePopover({
     open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
+    // left/top positioning — the overlay transition animates `transform: scale()`.
+    transform: false,
     middleware: [
       offset(offsetSize),
       flip({
@@ -180,15 +184,16 @@ export const PopoverContent = React.forwardRef<HTMLDivElement, React.HTMLProps<H
   function PopoverContent({ style, ...props }, propRef) {
     const { context: floatingContext, ...context } = usePopoverContext()
     const ref = useMergeRefs([context.refs.setFloating, propRef]) as React.Ref<HTMLDivElement>
+    const { isMounted, styles: transitionStyles } = useOverlayTransition(floatingContext)
 
-    if (!floatingContext.open) return null
+    if (!isMounted) return null
 
     return (
       <FloatingPortal>
         <FloatingFocusManager context={floatingContext} modal={context.modal}>
           <div
             ref={ref}
-            style={{ ...context.floatingStyles, ...style }}
+            style={{ ...context.floatingStyles, ...transitionStyles, ...style }}
             aria-labelledby={context.labelId}
             aria-describedby={context.descriptionId}
             {...context.getFloatingProps(props)}>

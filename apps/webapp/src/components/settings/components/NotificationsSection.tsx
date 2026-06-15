@@ -427,7 +427,7 @@ const NotificationsSection = () => {
   const isPushEnabled = isSubscribed && !isPushBlocked
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       {/* Push Notifications */}
       <SettingsCard>
         <div className="mb-3 flex items-center gap-2">

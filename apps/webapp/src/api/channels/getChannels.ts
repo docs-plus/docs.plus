@@ -106,45 +106,6 @@ export const getChannelsWithMessageCounts = async (
     .throwOnError()
 }
 
-export const getChannelsByWorkspaceAndUserids = async (
-  workspaceId: string,
-  userId: string,
-  supabase: any
-): Promise<PostgrestResponse<any>> => {
-  // Query channel_members and join channels
-  // Use simpler syntax - Supabase auto-detects foreign keys
-  // Alias channels as 'workspace' to match expected response structure
-  const result = await supabase
-    .from('channel_members')
-    .select(
-      `
-      *,
-      workspace:channels(*)
-    `
-    )
-    .eq('member_id', userId)
-
-  if (result.error) {
-    // Log full error details for debugging
-    console.error('[getChannelsByWorkspaceAndUserids error]:', {
-      error: result.error,
-      message: result.error.message,
-      details: result.error.details,
-      hint: result.error.hint,
-      code: result.error.code
-    })
-    throw result.error
-  }
-
-  // Filter by workspace_id in memory since PostgREST doesn't support nested filtering well
-  const filtered = {
-    ...result,
-    data: (result.data || []).filter((item: any) => item.workspace?.workspace_id === workspaceId)
-  }
-
-  return filtered as PostgrestResponse<any>
-}
-
 export const getChannelById = async (channelId: string): Promise<PostgrestResponse<any>> => {
   return supabaseClient
     .from('channels')

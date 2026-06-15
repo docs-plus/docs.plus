@@ -85,7 +85,7 @@ const AppearanceSection = () => {
   const setPreference = useThemeStore((s) => s.setPreference)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuPalette size={20} className="text-primary" />
