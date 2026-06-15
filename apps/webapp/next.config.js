@@ -255,6 +255,12 @@ module.exports = withPWA({
         "'self'",
         '*.cloudflare.com',
         'accounts.google.com',
+        // Hypermultimedia iframe embeds (extension-hypermultimedia node views)
+        'www.youtube.com',
+        'www.youtube-nocookie.com',
+        'player.vimeo.com',
+        'w.soundcloud.com',
+        'www.loom.com',
         ...localUrls,
         ...envUrls,
         ...devUrls

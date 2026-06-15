@@ -67,6 +67,9 @@ function writeIframeAttributes(
   iframeAttrs: Record<string, string | number | boolean>
 ): void {
   iframe.setAttribute('src', embedUrl)
+  // Document Referrer-Policy is same-origin (no Referer cross-origin), which makes
+  // YouTube/Vimeo reject the embed; element-level policy still sends the origin.
+  iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
 
   for (const [key, value] of Object.entries(iframeAttrs)) {
     if (key === 'allowfullscreen') {
@@ -221,6 +224,9 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     [
       'iframe',
       mergeAttributes(options.HTMLAttributes, HTMLAttributes, {
+        // Match the live node-view: element-level policy overrides the document's
+        // same-origin Referrer-Policy so YouTube/Vimeo accept the serialized embed.
+        referrerpolicy: 'strict-origin-when-cross-origin',
         src: embedUrl,
         ...restIframeAttrs,
         ...(allowfullscreen ? { allowfullscreen: '' } : {})
