@@ -7,6 +7,31 @@ historical Conventional Commits format.
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-06-15
+
+### Added
+
+- URL detection API. `detectMediaType(url)` returns the media node a URL should
+  render (`'image' | 'video' | 'audio' | 'youtube' | 'vimeo' | 'soundcloud' |
+  'loom' | 'x'`) or `null` for non-media, testing specific providers and images
+  before the generic video/audio file-extension matchers. The new
+  `isVideoUrl` / `isAudioUrl` matchers, the existing per-node validators
+  (`isImageUrl`, `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`,
+  `isValidLoomUrl`, `isValidXUrl`), `parseYoutubeVideoId` (for building static
+  thumbnail URLs), and the `MediaNodeType` union are now exported from the
+  package root. `isMediaUrl`, the paste-autoconvert predicate, is unchanged — it
+  still excludes raw video/audio URLs so pasted `.mp4`/`.mp3` links stay links.
+
+  ```bash
+  bun add @docs.plus/extension-hypermultimedia@next
+  # stable, after promotion:
+  bun add @docs.plus/extension-hypermultimedia
+  ```
+
+- `prefers-reduced-motion` support in the bundled stylesheet: the media toolbar
+  and its popovers appear and disappear instantly when the OS requests reduced
+  motion.
+
 ### Changed
 
 - The media toolbar's fade-in and fade-out now actually play: enter rides a
@@ -17,11 +42,20 @@ historical Conventional Commits format.
   placement). Shell motion follows the docs.plus motion language — 120ms
   `ease-out` enter, 80ms `ease-in` exit.
 
-### Added
+### Fixed
 
-- `prefers-reduced-motion` support in the bundled stylesheet: the media toolbar
-  and its popovers appear and disappear instantly when the OS requests reduced
-  motion.
+- Iframe embeds (YouTube, Vimeo, SoundCloud, Loom) now set
+  `referrerpolicy="strict-origin-when-cross-origin"` on the player iframe. Under
+  a host page whose `Referrer-Policy` strips the cross-origin `Referer`, the
+  provider could not verify the embedding domain and rendered a "player
+  configuration error" instead of the video; the element-level policy sends the
+  origin without relaxing the page's global header.
+- The resize gripper now overlays the visible media box exactly. The overlay
+  widget was inheriting the host editor's content-flow margin (e.g.
+  `.ProseMirror > *` block spacing), which shifted it off the media box and
+  desynced its drag coordinates; it now forces `margin: 0` and measures the
+  loading-shell host via `getBoundingClientRect`, so the selection box hugs the
+  player and excludes the caption.
 
 ## [2.0.0] — 2026-06-12
 
