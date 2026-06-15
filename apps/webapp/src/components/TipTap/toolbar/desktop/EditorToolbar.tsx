@@ -2,7 +2,6 @@ import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/Book
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
 import { Modal, ModalContent } from '@components/ui/Dialog'
-import Loading from '@components/ui/Loading'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
 import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
 import { Icons } from '@icons'
@@ -12,6 +11,7 @@ import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 
+import MediaInsertPanelSkeleton from '../../mediaPopovers/MediaInsertPanelSkeleton'
 import { clearFormatting } from '../clearFormatting'
 import ToolbarButton from '../ToolbarButton'
 import ToolbarDivider from '../ToolbarDivider'
@@ -22,8 +22,8 @@ import StyleSelect from './StyleSelect'
 
 /* ── Lazy-loaded panels ── */
 
-const MediaInsertPanel = dynamic(() => import('./MediaInsertPanel'), {
-  loading: () => <Loading />
+const MediaInsertPanel = dynamic(() => import('../../mediaPopovers/MediaInsertPanel'), {
+  loading: () => <MediaInsertPanelSkeleton />
 })
 
 const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
@@ -153,7 +153,7 @@ const EditorToolbar = () => {
               </ToolbarButton>
             </div>
           </PopoverTrigger>
-          <PopoverContent className="rounded-box border-base-300 bg-base-100 border p-4 shadow-lg">
+          <PopoverContent className={PANEL_CLASS}>
             <MediaInsertPanel />
           </PopoverContent>
         </Popover>

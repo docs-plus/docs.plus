@@ -1,8 +1,9 @@
 import { Icons } from '@icons'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
-import { useStore } from '@stores'
+import { useSheetStore, useStore } from '@stores'
 import React, { useEffect, useState } from 'react'
 
+import { dismissSoftKeyboard } from '../../hyperlinkPopovers/previewHyperlink'
 import ToolbarButton from '../ToolbarButton'
 import FormatSelection from './FormatSelection'
 import HeadingSelection from './HeadingSelection'
@@ -84,10 +85,8 @@ const ToolbarMobile = () => {
           onTouchEnd={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            const chain = editor.chain().focus() as unknown as {
-              addImage: () => { run: () => boolean }
-            }
-            chain.addImage().run()
+            dismissSoftKeyboard(editor)
+            useSheetStore.getState().openSheet('mediaInsert', { editor })
           }}>
           <Icons.image size={24} />
         </ToolbarButton>

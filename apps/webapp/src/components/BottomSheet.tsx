@@ -18,6 +18,7 @@ import ChatContainerMobile from './pages/document/components/chat/ChatContainerM
 import LinkEditorSheet from './TipTap/hyperlinkPopovers/LinkEditorSheet'
 import LinkPreviewSheet from './TipTap/hyperlinkPopovers/LinkPreviewSheet'
 import MediaControlsSheet from './TipTap/mediaPopovers/MediaControlsSheet'
+import MediaInsertSheet from './TipTap/mediaPopovers/MediaInsertSheet'
 
 // ---------------------------------------------------------------------------
 // Sheet content registry – maps a sheet type to its rendered content.
@@ -37,7 +38,8 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   documentSettings: () => <DocumentSettingsSheet />,
   linkPreview: (data) => <LinkPreviewSheet data={data} />,
   linkEditor: (data) => <LinkEditorSheet data={data} />,
-  mediaControls: (data) => <MediaControlsSheet data={data} />
+  mediaControls: (data) => <MediaControlsSheet data={data} />,
+  mediaInsert: (data) => <MediaInsertSheet data={data} />
 }
 
 // ---------------------------------------------------------------------------
@@ -84,6 +86,10 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   },
   mediaControls: {
     id: 'media_controls_sheet',
+    detent: 'content'
+  },
+  mediaInsert: {
+    id: 'media_insert_sheet',
     detent: 'content'
   }
 }

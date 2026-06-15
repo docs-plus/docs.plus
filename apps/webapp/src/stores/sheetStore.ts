@@ -16,6 +16,7 @@ export type SheetType =
   | 'linkPreview'
   | 'linkEditor'
   | 'mediaControls'
+  | 'mediaInsert'
   | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
 
@@ -67,6 +68,10 @@ export interface SheetDataMap {
     editor: Editor
     keyId: string
     nodeType: string
+  }
+  /** Mobile media-insert sheet, opened from the toolbar image button. */
+  mediaInsert: {
+    editor: Editor
   }
 }
 
