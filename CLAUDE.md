@@ -35,16 +35,28 @@ Reference material that auto-attaches in Cursor. In Claude Code, open the releva
 
 - [scripts-naming-convention.md](.cursor/docs/scripts-naming-convention.md) — timeless source of truth that `scripts-naming.mdc` points at.
 
-## Skills — `.cursor/skills/`
+## Skills — project-local
 
-These are Cursor-format skills (`SKILL.md` per folder). They are not auto-loaded by Claude Code, but the patterns inside them are how this repo expects work to be done. Open the `SKILL.md` when its trigger matches.
+### `.cursor/skills/` — docs.plus-specific
+
+Open the `SKILL.md` when its trigger matches.
 
 - [code-janitor](.cursor/skills/code-janitor/SKILL.md) — autonomous cleanup pipeline (Simplification → Abstraction → Readability → Documentation → Production-Readiness). Use for "clean up", "polish", "tidy", "production ready".
 - [commit-review](.cursor/skills/commit-review/SKILL.md) — group changes and draft Conventional Commit messages. Use for "review changes", "write commits".
 - [tech-writer](.cursor/skills/tech-writer/SKILL.md) — senior-tech-writer voice for **all** prose: README, CHANGELOG, reports, post-mortems, PR descriptions, JSDoc prose. Other skills delegate prose work here.
-- [improve-codebase-architecture](.cursor/skills/improve-codebase-architecture/SKILL.md) — surface refactor opportunities, deepen shallow modules, propose RFCs.
 - [tiptap](.cursor/skills/tiptap/SKILL.md) — Tiptap integration helper (extensions, collaboration, comments, AI, document conversion).
-- [grill-me](.cursor/skills/grill-me/SKILL.md) — adversarial design-review interview. Use for "stress-test this plan", "grill me".
+
+### `.agents/skills/` — [mattpocock/skills](https://github.com/mattpocock/skills)
+
+Installed via `bunx skills@latest add mattpocock/skills`; lockfile: `skills-lock.json`. Run [setup-matt-pocock-skills](.agents/skills/setup-matt-pocock-skills/SKILL.md) once to wire issue tracker, triage labels, and domain docs.
+
+Engineering highlights:
+
+- [improve-codebase-architecture](.agents/skills/improve-codebase-architecture/SKILL.md) — deepen shallow modules, propose refactor RFCs.
+- [diagnose](.agents/skills/diagnose/SKILL.md) — reproduce → minimise → hypothesise → instrument → fix.
+- [tdd](.agents/skills/tdd/SKILL.md) — red-green-refactor test-first development.
+- [grill-me](.agents/skills/grill-me/SKILL.md) / [grill-with-docs](.agents/skills/grill-with-docs/SKILL.md) — align on plans before building.
+- [triage](.agents/skills/triage/SKILL.md), [to-issues](.agents/skills/to-issues/SKILL.md), [to-prd](.agents/skills/to-prd/SKILL.md) — issue workflow.
 
 Skills never create branches or worktrees and never commit — they operate in the current directory and branch.
 
