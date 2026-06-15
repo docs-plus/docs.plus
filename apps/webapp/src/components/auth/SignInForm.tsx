@@ -115,7 +115,12 @@ const SignInForm = ({
     const { error } = await supabaseClient.auth.signInWithOtp({
       email: magicLinkEmail,
       options: {
-        emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
+        // Preserve the full return context (deep-link / open_heading_chat params)
+        // exactly like the OAuth path — magic-link users must land back where they were.
+        emailRedirectTo:
+          process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT +
+          redirectPathname +
+          window.location.search
       }
     })
 
@@ -197,7 +202,7 @@ const SignInForm = ({
 
       {/* Email sent confirmation */}
       {emailSent && (
-        <div className="bg-base-200 flex flex-col items-center justify-center rounded-xl p-6 text-center sm:p-8">
+        <div className="bg-base-200 flex flex-col items-center justify-center rounded-xl p-6 text-center motion-safe:animate-[doc-region-in_200ms_ease-out_both] sm:p-8">
           <div className="bg-primary/10 mb-4 flex size-16 items-center justify-center rounded-full">
             <LuMail size={28} className="text-primary" />
           </div>

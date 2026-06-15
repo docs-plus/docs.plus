@@ -52,6 +52,7 @@ export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boole
   const isSameDoc = newUrl.pathname.startsWith(`/${slugs[0]}`)
   const newUrlSlugs = newUrl.pathname.split('/').slice(1)
   const chatroomId = newUrl.searchParams.get('chatroom')
+  const msgId = newUrl.searchParams.get('msg_id')
   const act = newUrl.searchParams.get('act')
   const messageId = newUrl.searchParams.get('m_id')
   const channelId = newUrl.searchParams.get('c_id')
@@ -74,7 +75,11 @@ export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boole
     }
 
     if (chatroomId) {
-      PubSub.publish(CHAT_OPEN, { headingId: chatroomId, scroll2Heading: true })
+      PubSub.publish(CHAT_OPEN, {
+        headingId: chatroomId,
+        scroll2Heading: true,
+        fetchMsgsFromId: msgId || undefined
+      })
       return
     }
 

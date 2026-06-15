@@ -18,11 +18,12 @@ export const useCopyMessageLinkHandler = () => {
     const channelId = message.channel_id || workspaceId
     const messageId = message.id
 
+    // Canonical chat deep-link dialect (?chatroom=&msg_id=) on a clean doc URL —
+    // the cold-load opener and in-doc <a> handler both resolve this shape.
     const url = new URL(window.location.origin)
     url.pathname = `/${documentSlug}`
-    url.searchParams.set('act', 'ch')
-    url.searchParams.set('c_id', channelId)
-    url.searchParams.set('m_id', messageId)
+    url.searchParams.set('chatroom', channelId)
+    url.searchParams.set('msg_id', messageId)
 
     return url.toString()
   }, [])

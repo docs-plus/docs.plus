@@ -4,7 +4,6 @@ import { useStore } from '@stores'
 import { useEditor } from '@tiptap/react'
 import { useEffect } from 'react'
 
-import useApplyOpenChatAndFocusOnMessage from './useApplyOpenChatAndFocusOnMessage'
 import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
 import useEditorEditableState from './useEditorEditableState'
 import useEditorReadOnly from './useEditorReadOnly'
@@ -19,6 +18,9 @@ const useEditorAndProvider = ({ provider }: { provider: any }) => {
   // destroy ProseMirror, which feels like freezes/glitches. Visibility is handled in EditorContent.
   const editor = useEditor(editorConfig({ provider, spellcheck: false }), [provider])
 
+  // This tree mounts BEFORE first sync. Any hook here that reads the Ydoc/ymetadata
+  // once (not event-driven) must guard on `settings.editor.providerSyncing`.
+
   // Set initial content if the document is new
   useInitializeNewDocument({ editor, provider })
   useNewDocumentTip({ provider })
@@ -30,14 +32,12 @@ const useEditorAndProvider = ({ provider }: { provider: any }) => {
   useEditorReadOnly()
   useApplyFilters()
 
-  // a custom hook to apply open chatroom and focus on a message
-  useApplyOpenChatAndFocusOnMessage()
-
   // set the editor instance to the store and loading state
   useEffect(() => {
     if (!editor) return
     setWorkspaceEditorSetting('instance', editor)
     setWorkspaceEditorSetting('loading', false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
   return { editor, provider }
