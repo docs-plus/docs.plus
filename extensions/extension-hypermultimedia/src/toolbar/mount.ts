@@ -3,8 +3,11 @@ import { createMediaToolbar } from './createMediaToolbar'
 import { closeToolbarPopover } from './menu'
 import type { MediaToolbarFactory, MediaToolbarOptions } from './types'
 
+// Covers the 80ms exit fade; toolbars mid-exit are excluded from reuse.
+const CLOSE_REMOVE_DELAY_MS = 100
+
 function existingToolbar(wrapper: HTMLElement): HTMLElement | null {
-  return wrapper.querySelector<HTMLElement>(':scope > .media-toolbar')
+  return wrapper.querySelector<HTMLElement>(':scope > .media-toolbar:not([data-hm-closing])')
 }
 
 /** Mount the toolbar inside the media wrapper (absolute top-right). `null` ⇒ host surface. */
@@ -21,8 +24,15 @@ export function openMediaToolbar(
   const content = resolved(options)
   if (!content) return null
 
-  options.target.classList.add('hm-has-toolbar')
+  // Append first, then flag in the next frame — flagging before first paint
+  // skips the enter fade entirely. The isConnected guard keeps a close() that
+  // raced in between from being re-flagged.
   options.target.append(content)
+  requestAnimationFrame(() => {
+    if (content.isConnected && !content.dataset.hmClosing) {
+      options.target.classList.add('hm-has-toolbar')
+    }
+  })
   return content
 }
 
@@ -35,6 +45,9 @@ export function closeMediaToolbar(wrapper?: HTMLElement | null): void {
   const selector = wrapper ? '.media-toolbar' : '.media-toolbar[data-node-type]'
   root.querySelectorAll<HTMLElement>(selector).forEach((el) => {
     el.closest('.hm-has-toolbar')?.classList.remove('hm-has-toolbar')
-    el.remove()
+    // Deferred removal lets the exit fade play; the marker keeps a reopen from
+    // reusing a toolbar that is already on its way out.
+    el.dataset.hmClosing = 'true'
+    setTimeout(() => el.remove(), CLOSE_REMOVE_DELAY_MS)
   })
 }

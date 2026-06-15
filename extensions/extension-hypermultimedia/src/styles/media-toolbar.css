@@ -34,10 +34,17 @@
   background: var(--hm-toolbar-bg);
   box-shadow: var(--hm-toolbar-shadow);
   opacity: 0;
-  transition: opacity 120ms ease;
+  transition: opacity 80ms ease-in;
 }
-.hm-has-toolbar > .media-toolbar {
+.hm-has-toolbar > .media-toolbar:not([data-hm-closing]) {
   opacity: 1;
+  transition: opacity 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-toolbar {
+    transition: none;
+  }
 }
 
 .media-toolbar__button {
@@ -139,9 +146,10 @@
 .floating-popover {
   opacity: 0;
   transform: scale(0.96);
+  /* exit: 80ms ease-in fade (plays when .visible is removed; engine defers removal) */
   transition:
-    opacity 120ms ease-in-out,
-    transform 120ms ease-in-out;
+    opacity 80ms ease-in,
+    transform 80ms ease-in;
   pointer-events: none;
   -webkit-tap-highlight-color: transparent;
   will-change: transform, opacity;
@@ -151,6 +159,16 @@
   opacity: 1;
   transform: scale(1);
   pointer-events: auto;
+  /* enter: 120ms ease-out scale from the anchored side (engine sets transform-origin) */
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-popover {
+    transition: none;
+  }
 }
 
 .floating-popover-arrow {

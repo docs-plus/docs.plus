@@ -5,6 +5,25 @@ here. Entries from 2.0.0 onward follow
 [Keep a Changelog](https://keepachangelog.com); earlier entries use the
 historical Conventional Commits format.
 
+## [Unreleased]
+
+### Changed
+
+- The media toolbar's fade-in and fade-out now actually play: the toolbar is
+  appended before the visibility flag flips (next frame), and removal is
+  deferred past the exit fade. Previously both transitions were skipped by
+  lifecycle ordering.
+- Overflow/submenu popovers play their exit transition and scale from the
+  anchored side (`transform-origin` set by the popover engine from the resolved
+  placement). Shell motion follows the docs.plus motion language — 120ms
+  `ease-out` enter, 80ms `ease-in` exit.
+
+### Added
+
+- `prefers-reduced-motion` support in the bundled stylesheet: the media toolbar
+  and its popovers appear and disappear instantly when the OS requests reduced
+  motion.
+
 ## [2.0.0] — 2026-06-10
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
