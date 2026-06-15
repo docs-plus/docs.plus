@@ -24,6 +24,13 @@ type PopoverShellOptions = {
   showArrow?: boolean
   className?: string
   zIndex?: number
+  /**
+   * ARIA has no popover role — the shell carries its content's role
+   * (`toolbar`, `dialog`, …) and stays role-less when omitted.
+   */
+  role?: string
+  /** Same ARIA axis as `role` — shell-level so BYO content inherits the accessible name. */
+  ariaLabel?: string
   onShow?: () => void
   onHide?: () => void
 }
@@ -92,6 +99,8 @@ export function createPopover(options: PopoverOptions): Popover {
     showArrow = false,
     className = '',
     zIndex = DEFAULT_Z_INDEX,
+    role,
+    ariaLabel,
     onShow,
     onHide
   } = options
@@ -109,7 +118,8 @@ export function createPopover(options: PopoverOptions): Popover {
 
   const root = document.createElement('div')
   root.className = `floating-popover ${className}`.trim()
-  root.setAttribute('role', 'toolbar')
+  if (role) root.setAttribute('role', role)
+  if (ariaLabel) root.setAttribute('aria-label', ariaLabel)
   root.setAttribute('tabindex', '-1')
   root.style.zIndex = String(zIndex)
   root.style.position = 'fixed'

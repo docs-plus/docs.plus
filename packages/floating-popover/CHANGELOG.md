@@ -8,11 +8,15 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 ---
 
-## [2.0.0] — Unreleased
+## [2.0.0] — 2026-06-12
 
 ### Added
 
 - Initial release. The single-popover lifecycle engine (`createPopoverController`, `getDefaultController`, `createPopover`, `DEFAULT_OFFSET`) hoisted verbatim from `@docs.plus/extension-hyperlink@2.0.0` so multiple Tiptap extensions can share one floating surface at a time.
+
+### Changed
+
+- The popover shell no longer hardcodes `role="toolbar"`. ARIA has no popover role, so the surface must carry its content's role — pass the new optional `PopoverOptions.role` (`toolbar`, `dialog`, …); when omitted, the shell renders without a `role` attribute.
 
 ### Fixed
 
