@@ -44,7 +44,8 @@
   --hl-font:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --hl-font-size: 14px;
-  --hl-transition: 120ms ease-in-out;
+  /* Deceleration-only: popover hide removes the node, so this curve only ever plays entrances. */
+  --hl-transition: 120ms ease-out;
 }
 
 /* -------------------------------------------------------------------------
@@ -104,6 +105,37 @@
 .floating-popover-content {
   position: relative;
   z-index: 2;
+}
+
+/* -------------------------------------------------------------------------
+   Floating tooltip (icon buttons in the prebuilt popovers)
+   Behavior ships in the bundled @docs.plus/floating-tooltip; this skin is
+   the consumer's, lockstep with extension-hypermultimedia's media-toolbar.css.
+   Both extensions style this one global class, so the block uses identical
+   literals, never per-package tokens: with both bundles loaded, cascade
+   order would pick one package's tokens for every bubble.
+   ------------------------------------------------------------------------- */
+.floating-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: max-content;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: light-dark(#374151, #e5e7eb);
+  color: light-dark(#ffffff, #1f2937);
+  font-size: 11px;
+  box-shadow: 0 4px 12px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
+}
+
+.floating-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* -------------------------------------------------------------------------
@@ -346,4 +378,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Matches extension-hypermultimedia's reduced-motion guard for the shared surfaces. */
+@media (prefers-reduced-motion: reduce) {
+  .floating-popover,
+  .floating-tooltip {
+    transition: none;
+  }
 }

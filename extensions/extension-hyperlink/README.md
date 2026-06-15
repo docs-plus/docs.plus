@@ -195,6 +195,7 @@ Stable class names you can target:
 | `.floating-popover`          | Popover container (adds `.visible` after mount).     |
 | `.floating-popover-arrow`    | Arrow pointing at the reference element.             |
 | `.floating-popover-content`  | Content wrapper inside the popover.                  |
+| `.floating-tooltip`          | Tooltip on popover icon buttons (adds `.visible`).   |
 | `.hyperlink-create-popover`  | Create-link popover root.                            |
 | `.hyperlink-preview-popover` | Preview popover root.                                |
 | `.hyperlink-edit-popover`    | Edit popover root.                                   |
@@ -202,6 +203,8 @@ Stable class names you can target:
 | `.buttons-wrapper`           | Button group container.                              |
 | `.search-icon`               | Leading icon inside an input group.                  |
 | `.error-message`             | Validation error text (shown with `.show`).          |
+
+Tooltips on the prebuilt popovers' icon buttons are shipped by the bundled `@docs.plus/floating-tooltip` — one body-appended bubble per bundle, shown on hover and keyboard focus, skinned in `styles.css` by a fixed literal block kept lockstep with extension-hypermultimedia.
 
 ## Popovers
 
@@ -311,7 +314,7 @@ For replacing a prebuilt popover, building a popover that isn't anchored to a hy
 
 ### Bring your own popover
 
-Three minimal factories matching the option shapes above, runnable as written.
+Three minimal factories matching the option shapes above, runnable as written. A factory supplies content only — the popover shell keeps its per-surface ARIA semantics (`role="toolbar"` for preview; `role="dialog"` named "Add link" / "Edit link" for create and edit), so BYO popovers stay accessible without extra wiring.
 
 <details>
 <summary><b>Custom <code>previewHyperlink</code></b></summary>
@@ -479,18 +482,19 @@ Hyperlink.configure({ popovers: { editHyperlink } })
 
 `PopoverOptions` is a discriminated union — exactly one of `referenceElement` or `coordinates` is required, enforced at compile time.
 
-| Field              | Type                                         | Default                | Description                                                                                             |
-| ------------------ | -------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------- |
-| `referenceElement` | `HTMLElement`                                | —                      | Element-anchor variant. Mutually exclusive with `coordinates`.                                          |
-| `coordinates`      | `{ getBoundingClientRect, contextElement? }` | —                      | Virtual-anchor variant (e.g. selection-anchored). `getBoundingClientRect` MUST recompute on every call. |
-| `content`          | `HTMLElement`                                | —                      | Popover content node.                                                                                   |
-| `placement?`       | `Placement`                                  | `'bottom-start'`       | Floating-UI placement. Auto-flips to fit the viewport.                                                  |
-| `offset?`          | `number`                                     | `DEFAULT_OFFSET` (`8`) | Distance in px between the anchor and the popover.                                                      |
-| `showArrow?`       | `boolean`                                    | `false`                | Render an arrow pointing at the anchor.                                                                 |
-| `className?`       | `string`                                     | `''`                   | Extra class on the popover root (in addition to `.floating-popover`).                                   |
-| `zIndex?`          | `number`                                     | `9999`                 | Stacking context for the popover.                                                                       |
-| `onShow?`          | `() => void`                                 | —                      | Fires after the popover's first paint and `.visible` class is applied.                                  |
-| `onHide?`          | `() => void`                                 | —                      | Fires when the popover is dismissed (outside click, programmatic `hide()`, or controller replacement).  |
+| Field              | Type                                         | Default                | Description                                                                                                 |
+| ------------------ | -------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `referenceElement` | `HTMLElement`                                | —                      | Element-anchor variant. Mutually exclusive with `coordinates`.                                              |
+| `coordinates`      | `{ getBoundingClientRect, contextElement? }` | —                      | Virtual-anchor variant (e.g. selection-anchored). `getBoundingClientRect` MUST recompute on every call.     |
+| `content`          | `HTMLElement`                                | —                      | Popover content node.                                                                                       |
+| `placement?`       | `Placement`                                  | `'bottom-start'`       | Floating-UI placement. Auto-flips to fit the viewport.                                                      |
+| `offset?`          | `number`                                     | `DEFAULT_OFFSET` (`8`) | Distance in px between the anchor and the popover.                                                          |
+| `showArrow?`       | `boolean`                                    | `false`                | Render an arrow pointing at the anchor.                                                                     |
+| `className?`       | `string`                                     | `''`                   | Extra class on the popover root (in addition to `.floating-popover`).                                       |
+| `zIndex?`          | `number`                                     | `9999`                 | Stacking context for the popover.                                                                           |
+| `role?`            | `string`                                     | —                      | ARIA role on the popover root. ARIA has no popover role — pass the content's role (`toolbar`, `dialog`, …). |
+| `onShow?`          | `() => void`                                 | —                      | Fires after the popover's first paint and `.visible` class is applied.                                      |
+| `onHide?`          | `() => void`                                 | —                      | Fires when the popover is dismissed (outside click, programmatic `hide()`, or controller replacement).      |
 
 Returns a `Popover`:
 
@@ -596,6 +600,7 @@ Definitions are bundled. Full public surface:
 - **Openers** — `openPreviewHyperlink`, `openEditHyperlink`, `openCreateHyperlink`, `buildPreviewOptionsFromAnchor`. See [Openers](#openers).
 - **Popover factories** — `previewHyperlinkPopover`, `createHyperlinkPopover`, `editHyperlinkPopover`. Option types `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkOptions` are documented under [Popover-factory option shapes](#popover-factory-option-shapes).
 - **Floating-popover primitive** — `createPopover`, `DEFAULT_OFFSET`, types `Popover` / `PopoverOptions`. See [Floating-popover primitive](#floating-popover-primitive).
+- **Tooltip primitive** — `attachTooltip(target, label)` / `hideTooltip()`, re-exported from the bundled `@docs.plus/floating-tooltip`. The same hover/focus tooltip the prebuilt popovers put on their icon buttons — attach it to BYO popover buttons for parity.
 - **UI controller** — `getDefaultController()`, types `PopoverController` / `PopoverKind` / `ControllerState` / `AdoptMetadata` / `VirtualCoordinates`. See [UI controller](#ui-controller).
 - **URL utilities** — `normalizeHref`, `getSpecialUrlInfo`, `validateURL`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, `SAFE_WINDOW_FEATURES`; types `SpecialUrlInfo`, `SpecialUrlType`, `LinkifyMatchLike`.
 - **DOM helpers** — `copyToClipboard(text, callback?)`, `createHTMLElement(tag, props?)`, and the SVG icon factories `Copy`, `LinkOff`, `Pencil` the prebuilt preview popover renders — reuse them in BYO popovers for visual parity.

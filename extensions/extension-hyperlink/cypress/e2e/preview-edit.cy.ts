@@ -198,6 +198,38 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
         cy.get('.buttons-wrapper .apply-button').should('exist')
       })
     })
+
+    it('shows a floating tooltip on icon-button hover instead of a native title', () => {
+      cy.get('#editor a').click()
+      // `have.attr` re-subjects the chain to the attr value, so keep the
+      // assertion and the hover as separate queries.
+      cy.get(`${PREVIEW} .copy`).should('not.have.attr', 'title')
+      cy.get(`${PREVIEW} .copy`).realHover()
+      // Cypress retry rides out the 400ms show delay. Assert css opacity,
+      // not `be.visible` — the hidden bubble is opacity-0, which Cypress
+      // still counts as visible.
+      cy.get('.floating-tooltip').should('have.css', 'opacity', '1').and('have.text', 'Copy link')
+      cy.get(`${PREVIEW} .copy`).trigger('mouseleave')
+      cy.get('.floating-tooltip').should('have.css', 'opacity', '0')
+    })
+
+    it('popover shells carry per-surface roles and accessible names', () => {
+      // Pins the a11y contract: the shell takes its content's role —
+      // the preview is a row of actions, create/edit are named dialogs.
+      cy.get('#editor a').click()
+      cy.get('.floating-popover').should('have.attr', 'role', 'toolbar')
+      cy.get(`${PREVIEW} .edit`).click()
+      cy.get('.floating-popover')
+        .should('have.attr', 'role', 'dialog')
+        .and('have.attr', 'aria-label', 'Edit link')
+      cy.get(TEXT_INPUT).type('{esc}')
+      cy.get(EDIT).should('not.exist')
+      cy.selectText('info')
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get('.floating-popover')
+        .should('have.attr', 'role', 'dialog')
+        .and('have.attr', 'aria-label', 'Add link')
+    })
   })
 })
 

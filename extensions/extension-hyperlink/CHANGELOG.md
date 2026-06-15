@@ -8,7 +8,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ---
 
-## [2.0.0] — 2026-06-10
+## [2.0.0] — 2026-06-12
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface — the option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
 
@@ -111,6 +111,10 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 - **Neither `PreviewHyperlinkOptions` nor `EditHyperlinkOptions` carry `linkCoords` or `view`.** The prebuilt preview / edit popovers derive their reference from the live `<a>` DOM node passed as `link`; the snapshotted rect was never read (the floating-popover primitive recomputes a live rect on every reposition, which is what makes scroll-stickiness work). The `view` field is reachable via `editor.view` for the rare BYO factory that needs it. BYO factory authors that need viewport coords for a custom anchor should pass them via `popover.options.coordinates` to `createPopover`.
 
 ### Added
+
+- **Tooltips on the prebuilt popovers' icon buttons.** The preview popover's Copy / Edit / Remove buttons show a floating tooltip on hover and keyboard focus — a shared bubble from the bundled `@docs.plus/floating-tooltip` — in place of the native `title` attribute so the label never doubles up. The skin is the `.floating-tooltip` block in `styles.css` (fixed `light-dark()` literals kept lockstep with extension-hypermultimedia, since both packages style the one global class), and every opener hides the bubble when its popover closes so an outside-click dismissal cannot strand a visible tooltip. `attachTooltip` / `hideTooltip` are re-exported from the package barrel for BYO popovers that want the same labels.
+- **Per-surface ARIA roles on popover shells.** The preview popover mounts as `role="toolbar"` (a row of link actions); the create and edit popovers mount as `role="dialog"` with accessible names (`aria-label="Add link"` / `aria-label="Edit link"`). The roles ride the floating-popover engine's optional `role` option and live on the shell, so BYO factories inherit the same semantics.
+- **Micro-motion.** Popover entrances decelerate (`--hl-transition` is `ease-out`; dismissal removes the node, so the curve only ever plays entrances), tooltips rise 2px toward rest, and a `prefers-reduced-motion: reduce` guard zeroes both.
 
 **Openers (Layer 1 — the 90% case).**
 
