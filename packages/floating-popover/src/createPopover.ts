@@ -45,6 +45,16 @@ const DEFAULT_Z_INDEX = 9999
 const SHIFT_PADDING = 8
 const ARROW_STATIC_OFFSET = '-5px'
 const OUTSIDE_CLICK_DEFER_MS = 50
+// Covers the skins' 80ms exit; transitionend never fires under display:none or
+// prefers-reduced-motion `transition: none`, so removal cannot rely on it alone.
+const EXIT_FALLBACK_MS = 150
+
+const ORIGIN_BY_SIDE: Record<string, string> = {
+  top: 'bottom',
+  bottom: 'top',
+  left: 'right',
+  right: 'left'
+}
 
 function createVirtualReference(coords: VirtualCoordinates): VirtualElement {
   return {
@@ -159,10 +169,14 @@ export function createPopover(options: PopoverOptions): Popover {
     Object.assign(root.style, { left: `${x}px`, top: `${y}px` })
     root.style.visibility = middlewareData.hide?.referenceHidden ? 'hidden' : 'visible'
 
+    const side = actual.split('-')[0]
+    // Scale blooms from the anchored side instead of center.
+    root.style.transformOrigin = ORIGIN_BY_SIDE[side] ?? 'center'
+
     if (arrowEl && middlewareData.arrow) {
       const { x: ax, y: ay } = middlewareData.arrow
-      const side = actual.split('-')[0]
-      const staticSide = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' }[side]!
+      // Arrow pins to the side opposite the placement — the same mapping.
+      const staticSide = ORIGIN_BY_SIDE[side]!
       arrowEl.className = `floating-popover-arrow floating-popover-arrow-${side}`
       Object.assign(arrowEl.style, {
         left: ax != null ? `${ax}px` : '',
@@ -175,24 +189,50 @@ export function createPopover(options: PopoverOptions): Popover {
   }
 
   let unregister: (() => void) | null = null
+  let removalTimer: ReturnType<typeof setTimeout> | null = null
+  let onExitEnd: ((e: TransitionEvent) => void) | null = null
+
+  const cancelPendingRemoval = (): void => {
+    if (removalTimer) {
+      clearTimeout(removalTimer)
+      removalTimer = null
+    }
+    if (onExitEnd) {
+      root.removeEventListener('transitionend', onExitEnd)
+      onExitEnd = null
+    }
+  }
+
+  const finishHide = (): void => {
+    cancelPendingRemoval()
+    root.remove()
+  }
 
   const hide = (): void => {
     if (!visible) return
     visible = false
     autoUpdateCleanup?.()
     autoUpdateCleanup = null
-    root.classList.remove('visible')
-    root.remove()
     clearNavListeners()
     cleanups.forEach((fn) => fn())
     cleanups.length = 0
     unregister?.()
     unregister = null
+    // Removing .visible plays the skin's exit transition; the DOM node leaves on
+    // transitionend, with the fallback timer as the guarantee.
+    root.classList.remove('visible')
+    onExitEnd = (e) => {
+      if (e.target === root) finishHide()
+    }
+    root.addEventListener('transitionend', onExitEnd)
+    removalTimer = setTimeout(finishHide, EXIT_FALLBACK_MS)
     onHide?.()
   }
 
   const show = (): void => {
     if (visible) return
+    // Re-show during an in-flight exit must not race the deferred removal.
+    cancelPendingRemoval()
     document.body.appendChild(root)
     visible = true
     autoUpdateCleanup = autoUpdate(reference, root, updatePosition)
@@ -228,6 +268,8 @@ export function createPopover(options: PopoverOptions): Popover {
 
   const destroy = (): void => {
     hide()
+    // Teardown is immediate — destroy callers replace or unmount the surface.
+    finishHide()
   }
 
   const popover: Popover = {
