@@ -1,3 +1,4 @@
+import { registerToolbarContext } from './contextRegistry'
 import { closeToolbarPopover } from './menu'
 import { resolveMediaActions } from './registry'
 import { renderMediaToolbar } from './renderToolbar'
@@ -17,5 +18,7 @@ export const createMediaToolbar: MediaToolbarFactory = ({ target, editor, nodeTy
     close: closeToolbarPopover
   }
 
-  return renderMediaToolbar(ctx, resolveMediaActions(editor, nodeType))
+  const bar = renderMediaToolbar(ctx, resolveMediaActions(editor, nodeType))
+  registerToolbarContext(bar, ctx)
+  return bar
 }

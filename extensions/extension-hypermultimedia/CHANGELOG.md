@@ -5,7 +5,7 @@ here. Entries from 2.0.0 onward follow
 [Keep a Changelog](https://keepachangelog.com); earlier entries use the
 historical Conventional Commits format.
 
-## [2.0.0] — 2026-06-10
+## [2.0.0] — 2026-06-12
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
 favor of Floating UI positioning, node type names are normalized to camelCase,
@@ -17,9 +17,10 @@ every media node gains an editable caption.
 
 - **Floating UI engine.** Media toolbars and popovers render through
   `@docs.plus/floating-popover` (`@floating-ui/dom`) — tippy.js is gone.
-- **Top-right media toolbar.** A declarative action registry drives an in-chrome
-  overlay: common actions inline, the rest behind a `…` overflow menu; hosts swap
-  the whole surface via the `mediaToolbar` factory slot (e.g. a mobile bottom-sheet).
+- **Top-right media toolbar.** A declarative action registry drives an overlay
+  inside the node: common actions inline, the rest behind a `…` overflow menu;
+  hosts swap the whole surface via the `mediaToolbar` factory slot (e.g. a
+  mobile bottom-sheet).
 - **Editable captions** on every media node, stored in the `caption` attribute.
 - **camelCase node names** and an **X (formerly Twitter)** node following x.com
   conventions.
@@ -34,10 +35,10 @@ every media node gains an editable caption.
   documents need the migration below.
 - `Twitter`/`setTwitter`/`TwitterOptions` → `X`/`setX`/`XOptions`.
 - The media toolbar moved from a floating popover (placement buttons + margin
-  select) to an in-chrome top-right overlay driven by a declarative action
-  registry. Common actions render inline; copy, delete, and node extras (X
-  size/theme) live behind a `…` overflow menu; alignment options follow the wrap
-  vocabulary (Left, Center, Wrap left, Wrap right).
+  select) to a top-right overlay inside the node, driven by a declarative
+  action registry. Common actions render inline; Replace URL, copy, delete, and
+  node extras (X size/theme) live behind a `…` overflow menu; alignment options
+  follow the wrap vocabulary (Left, Center, Right, Wrap left, Wrap right).
 - Removed the tippy modal API: `createFloatingToolbar`, `hideCurrentToolbar`, the
   `*Modal` exports (`imageModal`/`youtubeModal`/`twitterModal` + aliases), and
   the `modal` node option.
@@ -59,12 +60,60 @@ every media node gains an editable caption.
   `image`-only by design.
 - Built-in **loading shell** for images, video/audio, iframe embeds, and X
   (`loadingShell` kit option; `dist/media-loading-shell.css`).
-- Base toolbar actions: View original, Download (image/video/audio), Copy, Delete.
+- Base toolbar actions — inline: Align, wrap-margin presets, Caption,
+  View original (↗ arrow-outward), Download (image/video/audio); overflow `…`:
+  Replace URL, Copy, Delete.
+- `right` placement — block-aligns a node to the right edge without text wrap
+  (Align offers Left, Center, Right, Wrap left, Wrap right) and round-trips
+  through `getMediaPlacementAttrs` / `getCurrentMediaPlacement` as
+  `margin: 0 0 0 auto`.
+- Margin control for wrap placements: choosing Wrap left/right adds a button
+  beside Align showing the current gap; it opens the presets (0"–1", default
+  1/2") in a floating-popover submenu, with a divider grouping the alignment
+  section. Adds the optional `MediaAction.dividerAfter` flag.
+- Replace URL — a URL-editor dialog popover anchored to the media node (below
+  it, flipping above when space runs out) swaps the node's `src` in place,
+  preserving the node identity (`keyId`), caption, size, and placement instead
+  of delete-and-reinsert. Replacement is same-type only: each provider node
+  validates with its own canonical URL guard (a YouTube node accepts only
+  YouTube URLs, an X node normalizes to the canonical status URL), while
+  image/video/audio accept any non-empty URL, mirroring their insert commands.
+  The dialog content is a factory slot: the `replaceUrlPopover` kit option
+  returns custom content or `null` to render a host surface instead, and
+  `createReplaceUrlPopover` / `openReplaceUrlPopover` (plus their option types)
+  are exported for reuse.
+- `openToolbarPopover` / `closeToolbarPopover` exports — the positioned-popover
+  building blocks the built-in toolbar uses, available to custom `mediaToolbar`
+  surfaces. One popover at a time; outside-click and Escape dismissal built in.
+- `resolveMediaNodePos` export — resolves a media wrapper element to its
+  current document position, so custom toolbar actions re-resolve at action
+  time instead of trusting the open-time snapshot.
+- Hover controls track the node through collaborative edits: the toolbar,
+  resize gripper, and Delete-key targeting follow position shifts from content
+  inserted above the node.
+- Toolbar accessibility: the bar carries `aria-label="Media toolbar"`, toggle
+  actions and submenu items expose `aria-pressed`, Escape with focus inside the
+  toolbar dismisses it and refocuses the editor, and overflow/submenu popover
+  shells are intentionally role-neutral.
+- Icon-only toolbar buttons show a floating tooltip on hover and focus (shared
+  `role="tooltip"` bubble, 400ms delay, hidden on click so it never lingers
+  over an opening menu) in place of the native `title`. The tooltip ships from
+  the shared `@docs.plus/floating-tooltip` package — bundled into `dist` like
+  the popover engine — with `attachTooltip` / `hideTooltip` re-exported for
+  custom `mediaToolbar` surfaces, and `.floating-tooltip` joins the
+  styling-contract classes.
+- Micro-motion: the toolbar eases in (120ms, 2px settle), hover states fade,
+  tooltips rise toward rest, and popover entrances decelerate — all
+  compositor-only (`transform`/`opacity`/color) and fully zeroed under
+  `prefers-reduced-motion: reduce`.
 - `mediaActions` and `isUploadedMedia` kit options; exported `MediaAction` types,
   `resolveMediaActions`, and the action handlers (`viewOriginalMedia`,
   `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`,
   `isDownloadable`). `BASE_ACTIONS`/`NODE_ACTIONS` stay internal.
 - Host-agnostic `mediaToolbar` kit option + exported `createMediaToolbar`.
+  Custom elements are stamped with a structural `data-hm-toolbar` lifecycle
+  marker — reuse, dismissal, and context refresh are handled for you, no
+  built-in skin class required.
 - `Loom` node + kit option.
 - `isMediaUrl(url)` export for host paste-precedence
   (`Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })`).

@@ -7,6 +7,8 @@ Block or inline image node with hover resize grippers, the shared media toolbar,
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -89,7 +91,7 @@ Hover the image (desktop) or tap it (touch) to activate the gripper: four side h
 
 ## Toolbar
 
-The shared media toolbar (caption, alignment, view original, download, copy, delete) mounts in the image's top-right corner. Customize it with the kit-level `mediaActions` / `mediaToolbar` hooks — see the [package README](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia#media-toolbar).
+The shared media toolbar mounts in the image's top-right corner — inline: alignment, wrap margin, caption, view original, download; overflow `…`: Replace URL, copy, delete. Customize it with the kit-level `mediaActions` / `mediaToolbar` hooks — see the [package README](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia#media-toolbar).
 
 ## Caption
 

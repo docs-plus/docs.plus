@@ -34,10 +34,17 @@
   background: var(--hm-toolbar-bg);
   box-shadow: var(--hm-toolbar-shadow);
   opacity: 0;
-  transition: opacity 120ms ease;
 }
 .hm-has-toolbar > .media-toolbar {
   opacity: 1;
+  /* Keyframe, not transition: the class lands before DOM insertion, so a transition never fires. */
+  animation: hm-toolbar-in 120ms ease-out;
+}
+@keyframes hm-toolbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
 }
 
 .media-toolbar__button {
@@ -52,6 +59,7 @@
   background: transparent;
   color: var(--hm-toolbar-fg);
   cursor: pointer;
+  transition: background-color 120ms ease;
 }
 .media-toolbar__button svg,
 .media-toolbar__menu-item svg,
@@ -67,11 +75,24 @@
   color: var(--hm-toolbar-active-fg);
 }
 
+.media-toolbar__button--text {
+  width: auto;
+  min-width: 28px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+.media-toolbar__divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--hm-toolbar-border);
+}
+
 .media-toolbar__menu,
 .media-toolbar__submenu {
   display: flex;
   flex-direction: column;
-  min-width: 180px;
+  min-width: 160px;
   padding: 4px;
   border: 1px solid var(--hm-toolbar-border);
   border-radius: 8px;
@@ -84,14 +105,17 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 5px 8px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--hm-toolbar-fg);
   font: inherit;
+  /* Match the bar's compact scale — `font: inherit` alone resolves to the page's editor size. */
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
+  transition: background-color 120ms ease;
 }
 .media-toolbar__menu-item:hover,
 .media-toolbar__submenu-item:hover {
@@ -110,6 +134,30 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--hm-caption-fg);
+}
+
+.media-toolbar__input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--hm-toolbar-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--hm-toolbar-fg);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+.media-toolbar__input:focus {
+  border-color: var(--hm-toolbar-active-fg);
+}
+.media-toolbar__error {
+  margin: 2px 8px 4px;
+  font-size: 12px;
+  color: var(--hm-loading-error);
 }
 
 .hm-caption {
@@ -139,9 +187,10 @@
 .floating-popover {
   opacity: 0;
   transform: scale(0.96);
+  /* Entrance-only in practice (hide removes the node), so deceleration is the right curve. */
   transition:
-    opacity 120ms ease-in-out,
-    transform 120ms ease-in-out;
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
   pointer-events: none;
   -webkit-tap-highlight-color: transparent;
   will-change: transform, opacity;
@@ -178,4 +227,46 @@
 .floating-popover-content {
   position: relative;
   z-index: 2;
+}
+
+/* Floating-tooltip skin (icon-button labels) — lockstep with extension-hyperlink styles.css.
+   Both extensions style this one global class, so the block uses identical literals, never
+   per-package tokens: with both bundles loaded, cascade order would pick one package's
+   tokens for every bubble. */
+.floating-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: max-content;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: light-dark(#374151, #e5e7eb);
+  color: light-dark(#ffffff, #1f2937);
+  font-size: 11px;
+  box-shadow: 0 4px 12px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
+}
+
+.floating-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Matches the media-loading-shell.css precedent: zero movement, keep instant states. */
+@media (prefers-reduced-motion: reduce) {
+  .hm-has-toolbar > .media-toolbar {
+    animation: none;
+  }
+  .media-toolbar__button,
+  .media-toolbar__menu-item,
+  .media-toolbar__submenu-item,
+  .media-toolbar__input,
+  .floating-popover,
+  .floating-tooltip {
+    transition: none;
+  }
 }

@@ -1,4 +1,5 @@
 import { createPopover, DEFAULT_OFFSET, getDefaultController } from '@docs.plus/floating-popover'
+import { attachTooltip } from '@docs.plus/floating-tooltip'
 
 import type { MediaAction, MediaActionContext } from './types'
 
@@ -11,14 +12,18 @@ export function actionButton(
   btn.type = 'button'
   btn.dataset.actionId = action.id
   const active = action.isActive?.(ctx) ?? false
+  // Only toggle-semantics actions (those declaring isActive) announce a pressed state.
+  if (action.isActive) btn.setAttribute('aria-pressed', active ? 'true' : 'false')
   const iconMarkup = action.icon?.(ctx) ?? null
   const label = action.label(ctx)
 
   if (variant === 'inline') {
     btn.className = 'media-toolbar__button' + (active ? ' media-toolbar__button--active' : '')
     btn.innerHTML = iconMarkup ?? `<span>${label}</span>`
-    btn.title = label
+    if (!iconMarkup) btn.classList.add('media-toolbar__button--text')
     btn.setAttribute('aria-label', label)
+    // Icon-only buttons get the floating tooltip; text labels self-describe.
+    if (iconMarkup) attachTooltip(btn, label)
   } else {
     btn.className = 'media-toolbar__menu-item' + (active ? ' media-toolbar__menu-item--active' : '')
     btn.innerHTML = `${iconMarkup ?? ''}<span>${label}</span>`
@@ -26,7 +31,7 @@ export function actionButton(
   return btn
 }
 
-/** Open a submenu/overflow popover anchored to `anchor`; reuses the shared controller. */
+/** Open `body` in a popover anchored to `anchor`; `kind` names it on the shared controller. One popover at a time; outside-click and Escape dismissal are built in. The shell stays role-neutral by doctrine — ARIA `menu` semantics would be wrong without menuitem keyboard support. */
 export function openToolbarPopover(anchor: HTMLElement, body: HTMLElement, kind: string): void {
   const popover = createPopover({
     referenceElement: anchor,
@@ -41,6 +46,7 @@ export function openToolbarPopover(anchor: HTMLElement, body: HTMLElement, kind:
   popover.show()
 }
 
+/** Close the popover opened by `openToolbarPopover`, if any. */
 export function closeToolbarPopover(): void {
   getDefaultController().close()
 }

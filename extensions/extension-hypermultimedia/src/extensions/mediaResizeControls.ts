@@ -6,6 +6,7 @@ import {
   handleMediaHover,
   handleMediaUnhover,
   hideMediaResizeControls,
+  remapActiveNodePos,
   syncControlsToDoc
 } from '../utils/media-resize-controls'
 import { hasFinePointer } from '../utils/media-target'
@@ -40,7 +41,11 @@ export const MediaResizeControls = Extension.create<MediaResizeControlsOptions>(
           const shouldHide = transactions.some(
             (tr) => shouldHideResizeGripper(tr) || transactionAffectsTrackedNodes(tr, trackedNodes)
           )
-          if (shouldHide) hideMediaResizeControls(editor)
+          if (shouldHide) {
+            hideMediaResizeControls(editor)
+          } else {
+            remapActiveNodePos(editor, transactions)
+          }
           return null
         },
         props: {

@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/core'
 
-export type MediaActionPlacement = 'inline' | 'menu'
+export type MediaActionPlacement = 'inline' | 'overflow'
 
 /** Everything an action needs to read state and mutate the node. Built per open. */
 export interface MediaActionContext {
@@ -26,8 +26,10 @@ export interface MediaAction {
   isActive?: (ctx: MediaActionContext) => boolean
   /** Direct click handler. Mutually exclusive with `renderSubmenu`. */
   run?: (ctx: MediaActionContext) => void
-  /** Builds a submenu body (alignment options, X size/theme). Inline → popover; menu → expanded row. */
+  /** Builds a submenu body (alignment, margin presets, X size/theme). Inline → popover; overflow → expanded row. */
   renderSubmenu?: (ctx: MediaActionContext) => HTMLElement
+  /** Inline only: render a separator after this action to group it apart from the rest of the bar. */
+  dividerAfter?: boolean
   /** Ascending sort within a placement group. Default 100. */
   order?: number
 }
@@ -45,7 +47,7 @@ export interface MediaToolbarOptions {
   target: HTMLElement
   editor: Editor
   nodeType: string
-  /** Resolved by the controls layer (`resolveMediaNodePos`) — do not re-derive. */
+  /** Snapshot at toolbar-open. The built-in bar's context is refreshed as content shifts; custom factories must re-resolve at action time (e.g. `resolveMediaNodePos`). */
   nodePos: number
 }
 

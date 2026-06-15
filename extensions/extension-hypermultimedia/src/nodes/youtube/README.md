@@ -5,6 +5,8 @@ Embeds YouTube watch, embed, Shorts, and `youtu.be` URLs as iframe players. Past
 ## Install
 
 ```bash
+bun add @docs.plus/extension-hypermultimedia@next
+# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -76,7 +78,7 @@ HyperMultimediaKit.configure({
 | `disableKBcontrols` | `disablekb`      | `0`     | `1` disables keyboard controls                                  |
 | `enableIFrameApi`   | `enablejsapi`    | `0`     | Requires `origin` when `1`                                      |
 | `endTime`           | `end`            | —       | Stop time in seconds                                            |
-| `fs`                | `fs`             | `1`     | `0` hides the fullscreen button in the player chrome            |
+| `fs`                | `fs`             | `1`     | `0` hides the fullscreen button in the player UI                |
 | `interfaceLanguage` | `hl`             | —       | Player UI language, ISO 639-1                                   |
 | `ivLoadPolicy`      | `iv_load_policy` | `1`     | `1` show annotations; `3` hide                                  |
 | `loop`              | `loop`           | `0`     | `1` loops; auto-sets `playlist` to video id                     |
