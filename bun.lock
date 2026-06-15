@@ -66,7 +66,6 @@
       "name": "@docs.plus/admin-dashboard",
       "version": "1.0.0",
       "dependencies": {
-        "@supabase/ssr": "catalog:",
         "@supabase/supabase-js": "catalog:",
         "@tanstack/react-query": "catalog:",
         "clsx": "catalog:",
@@ -128,6 +127,7 @@
         "bullmq": "^5.77.2",
         "hono": "^4.12.22",
         "ioredis": "^5.10.1",
+        "isbot": "^5.1.42",
         "jsonwebtoken": "^9.0.3",
         "metascraper": "^5.50.3",
         "metascraper-author": "^5.50.1",
@@ -2834,6 +2834,8 @@
     "is-windows": ["is-windows@1.0.2", "", {}, "sha512-eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA=="],
 
     "isarray": ["isarray@2.0.5", "", {}, "sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw=="],
+
+    "isbot": ["isbot@5.1.42", "", {}, "sha512-/SXsVh7KpPRISrD4ffrGSxnTLlUBzEQUfWIusaJPrpJ93FW1P0YEZri5vAUkFsA0m2HRUhQRQadk2wJ+EeKowQ=="],
 
     "isexe": ["isexe@2.0.0", "", {}, "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="],
 

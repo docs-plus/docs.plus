@@ -44,9 +44,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-// =============================================================================
 // Shared UI Helpers
-// =============================================================================
 
 /** Platform badge with consistent color coding */
 function PlatformBadge({ platform }: { platform: string }) {
@@ -71,9 +69,7 @@ function CategoryBadge({ category }: { category: string }) {
   return <span className={`badge badge-sm ${badgeClass}`}>{category}</span>
 }
 
-// =============================================================================
 // Push Failure Breakdown
-// =============================================================================
 
 function PushFailureBreakdown({
   data,
@@ -161,9 +157,7 @@ function PushFailureBreakdown({
   )
 }
 
-// =============================================================================
 // Email Failure Breakdown
-// =============================================================================
 
 function EmailFailureBreakdown({
   data,
@@ -227,9 +221,7 @@ function EmailFailureBreakdown({
   )
 }
 
-// =============================================================================
 // Failed Subscriptions Table (with bulk select)
-// =============================================================================
 
 function FailedSubscriptionsTable({
   data,
@@ -347,9 +339,7 @@ function FailedSubscriptionsTable({
   )
 }
 
-// =============================================================================
 // Email Bounces Table
-// =============================================================================
 
 function EmailBouncesTable({
   data,
@@ -409,9 +399,7 @@ function EmailBouncesTable({
   )
 }
 
-// =============================================================================
 // DLQ Viewer
-// =============================================================================
 
 function DLQViewer() {
   const { data, isLoading } = useQuery({
@@ -512,9 +500,7 @@ function DLQViewer() {
   )
 }
 
-// =============================================================================
 // Bulk Cleanup Actions
-// =============================================================================
 
 function BulkCleanupActions({
   health,
@@ -560,14 +546,12 @@ function BulkCleanupActions({
   )
 }
 
-// =============================================================================
 // Main Page
-// =============================================================================
 
 export default function NotificationAuditPage() {
   const queryClient = useQueryClient()
 
-  // ── Data queries ──────────────────────────────────────────────────────────
+  // Data queries
   const {
     data: health,
     isLoading: healthLoading,
@@ -614,7 +598,7 @@ export default function NotificationAuditPage() {
     queryFn: () => fetchEmailBounces({ days: 30, limit: 100 })
   })
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
+  // Mutations
   const disableMutation = useMutation({
     mutationFn: ({
       minFailures,
@@ -635,7 +619,7 @@ export default function NotificationAuditPage() {
     }
   })
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // Handlers
   const refreshAll = useCallback(() => {
     refetchHealth()
     refetchPushFailures()
@@ -711,7 +695,7 @@ export default function NotificationAuditPage() {
     )
   }, [failedSubs])
 
-  // ── Derived data ──────────────────────────────────────────────────────────
+  // Derived data
   const pushDeliveryRate = health?.push.delivery_rate ?? 100
   const emailDeliveryRate = health?.email.delivery_rate ?? 100
   const failedSubsCount = health?.push.failed_subscriptions ?? 0

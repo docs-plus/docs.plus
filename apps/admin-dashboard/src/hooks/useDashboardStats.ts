@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchDashboardStats } from '@/services/api'
-import { fetchSupabaseStats } from '@/services/supabase'
+import { fetchDashboardStats, fetchSupabaseStats } from '@/services/api'
 
 export function useDashboardStats() {
   const documentStatsQuery = useQuery({

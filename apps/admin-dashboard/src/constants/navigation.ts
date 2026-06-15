@@ -16,15 +16,7 @@ export interface NavItem {
   icon: IconType
 }
 
-export interface NavSection {
-  title?: string
-  items: NavItem[]
-}
-
-/**
- * Navigation items for admin dashboard sidebar
- * Single source of truth - used by Sidebar and MobileMenu
- */
+// Single source of truth — used by Sidebar and MobileMenu.
 export const navItems: NavItem[] = [
   { href: '/', label: 'Overview', icon: LuLayoutDashboard },
   { href: '/users', label: 'Users', icon: LuUsers },
@@ -34,9 +26,7 @@ export const navItems: NavItem[] = [
   { href: '/system', label: 'System', icon: LuActivity }
 ]
 
-/**
- * Audit section items — grouped separately in sidebar
- */
+// Grouped separately in the sidebar.
 export const auditItems: NavItem[] = [
   { href: '/audit/notifications', label: 'Notification Audit', icon: LuShieldAlert },
   { href: '/audit/ghost-accounts', label: 'Ghost Accounts', icon: LuGhost }

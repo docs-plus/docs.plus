@@ -7,12 +7,7 @@ import {
   LuChevronRight
 } from 'react-icons/lu'
 
-export type SortDirection = 'asc' | 'desc'
-
-export interface SortConfig {
-  key: string
-  direction: SortDirection
-}
+import type { SortDirection } from '@/types'
 
 interface Column<T> {
   key: keyof T | string
@@ -38,6 +33,9 @@ interface DataTableProps<T> {
     sortDirection: SortDirection
     onSort: (key: string) => void
   }
+  // Required stable row identity — index keys let realtime reorders attach
+  // row state (e.g. Avatar fallbacks) to the wrong record.
+  rowKey: (item: T) => string
   emptyMessage?: string
 }
 
@@ -47,6 +45,7 @@ export function DataTable<T extends object>({
   loading,
   pagination,
   sorting,
+  rowKey,
   emptyMessage = 'No data available'
 }: DataTableProps<T>) {
   const renderSortIcon = (colKey: string) => {
@@ -117,8 +116,8 @@ export function DataTable<T extends object>({
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => (
-              <tr key={index} className="hover">
+            {data.map((item) => (
+              <tr key={rowKey(item)} className="hover">
                 {columns.map((col) => (
                   <td key={String(col.key)} className={col.className}>
                     {col.render ? col.render(item) : String(item[col.key as keyof T] ?? '-')}

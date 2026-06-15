@@ -2,7 +2,7 @@ import '@/styles/globals.scss'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AppProps } from 'next/app'
-import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Toaster } from 'react-hot-toast'
 
 const queryClient = new QueryClient({
@@ -14,37 +14,22 @@ const queryClient = new QueryClient({
   }
 })
 
-// Lazy load AuthGuard only on client
-function ClientAuthGuard({ children }: { children: React.ReactNode }) {
-  const [AuthGuard, setAuthGuard] = useState<React.ComponentType<{
-    children: React.ReactNode
-  }> | null>(null)
-
-  useEffect(() => {
-    // Import AuthGuard only on client side
-    import('@/components/auth/AuthGuard').then((mod) => {
-      setAuthGuard(() => mod.default)
-    })
-  }, [])
-
-  // Show loading while AuthGuard is being loaded
-  if (!AuthGuard) {
-    return (
-      <div className="bg-base-200 flex min-h-screen items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary" />
-      </div>
-    )
-  }
-
-  return <AuthGuard>{children}</AuthGuard>
-}
+// Auth needs the client-side router, so the guard never renders on the server.
+const AuthGuard = dynamic(() => import('@/components/auth/AuthGuard'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-base-200 flex min-h-screen items-center justify-center">
+      <span className="loading loading-spinner loading-lg text-primary" />
+    </div>
+  )
+})
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ClientAuthGuard>
+      <AuthGuard>
         <Component {...pageProps} />
-      </ClientAuthGuard>
+      </AuthGuard>
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   )

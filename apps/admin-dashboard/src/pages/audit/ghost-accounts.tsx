@@ -36,9 +36,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-// =============================================================================
 // Ghost Type Labels & Colors
-// =============================================================================
 
 const GHOST_TYPE_CONFIG: Record<GhostType, { label: string; badge: string; description: string }> =
   {
@@ -99,9 +97,7 @@ function ProviderBadge({ provider }: { provider: string }) {
   return <span className={`badge badge-sm ${config[provider] || 'badge-ghost'}`}>{provider}</span>
 }
 
-// =============================================================================
 // Ghost Accounts Table
-// =============================================================================
 
 function GhostAccountsTable({
   ghosts,
@@ -224,9 +220,7 @@ function GhostAccountsTable({
   )
 }
 
-// =============================================================================
 // Anonymous Sessions Panel
-// =============================================================================
 
 function AnonymousSessionsPanel({
   summary,
@@ -293,9 +287,7 @@ function AnonymousSessionsPanel({
   )
 }
 
-// =============================================================================
 // Main Page
-// =============================================================================
 
 export default function GhostAccountsAuditPage() {
   const queryClient = useQueryClient()
@@ -329,7 +321,15 @@ export default function GhostAccountsAuditPage() {
     staleTime: 60_000
   })
 
-  const ghosts = ghostsData?.ghosts ?? []
+  const ghosts = useMemo(() => ghostsData?.ghosts ?? [], [ghostsData?.ghosts])
+
+  // Anonymous sessions are managed on their own tab; the ghost table, bulk
+  // selection, and export must all operate on the same visible set or
+  // "Select All" + Delete would destroy anonymous accounts never shown.
+  const visibleGhosts = useMemo(
+    () => ghosts.filter((g) => !g.ghost_type.includes('anonymous')),
+    [ghosts]
+  )
 
   // Bulk selection
   const {
@@ -341,7 +341,7 @@ export default function GhostAccountsAuditPage() {
     toggleItem,
     toggleAll,
     clearSelection
-  } = useBulkSelection(ghosts)
+  } = useBulkSelection(visibleGhosts)
 
   // Mutations
   const deleteMutation = useMutation({
@@ -495,9 +495,9 @@ export default function GhostAccountsAuditPage() {
   }, [refetchSummary, refetchGhosts])
 
   const handleExport = useCallback(() => {
-    if (ghosts.length === 0) return
+    if (visibleGhosts.length === 0) return
     exportToCSV(
-      ghosts.map((g) => ({
+      visibleGhosts.map((g) => ({
         id: g.id,
         email: g.email ?? '',
         provider: g.provider,
@@ -509,7 +509,7 @@ export default function GhostAccountsAuditPage() {
       })),
       'ghost-accounts-audit'
     )
-  }, [ghosts])
+  }, [visibleGhosts])
 
   // Non-anonymous ghost types for the filter dropdown
   const ghostTypeOptions = useMemo(
@@ -536,7 +536,7 @@ export default function GhostAccountsAuditPage() {
         subtitle="Identify incomplete signups, stale anonymous sessions, and orphaned accounts"
       />
 
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         {/* Breadcrumb */}
         <div className="breadcrumbs text-sm">
           <ul>
@@ -659,7 +659,7 @@ export default function GhostAccountsAuditPage() {
             {/* Table */}
             <div className="bg-base-100 rounded-box border-base-300 border">
               <GhostAccountsTable
-                ghosts={ghosts.filter((g) => !g.ghost_type.includes('anonymous'))}
+                ghosts={visibleGhosts}
                 isSelected={isSelected}
                 isAllSelected={isAllSelected}
                 isPartialSelected={isPartialSelected}

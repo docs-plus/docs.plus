@@ -63,24 +63,9 @@ export interface AvatarProps {
 }
 
 /**
- * Avatar component for the admin dashboard
- *
- * Uses the same URL construction strategy as the main webapp with proper fallback chain:
- * 1. If userId + avatarUpdatedAt → try storage bucket URL
- * 2. If storage fails OR no avatarUpdatedAt → try src (avatar_url)
- * 3. If all images fail → show initial letter with consistent color
- *
- * @example
- * ```tsx
- * // From user with avatar_updated_at (will try storage first, then fall back to src)
- * <Avatar userId={user.id} avatarUpdatedAt={user.avatar_updated_at} src={user.avatar_url} name={user.username} />
- *
- * // From pre-constructed URL only
- * <Avatar src={avatarUrl} name="John Doe" />
- *
- * // Just initials
- * <Avatar name="John Doe" size="lg" />
- * ```
+ * Resolves an avatar through a storage → src → initial-letter fallback chain:
+ * a custom upload (userId + avatarUpdatedAt) builds the storage bucket URL, else
+ * `src` (the OAuth avatar_url), else a colored initial. Mirrors the webapp.
  */
 export function Avatar({
   userId,

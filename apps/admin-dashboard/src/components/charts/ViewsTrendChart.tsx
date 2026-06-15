@@ -91,8 +91,8 @@ export function ViewsTrendChart({ data, loading, height = 300 }: ViewsTrendChart
         />
         <Area
           type="monotone"
-          dataKey="unique_sessions"
-          name="Unique Sessions"
+          dataKey="unique_visitors"
+          name="Unique Visitors"
           stroke="oklch(var(--s))"
           fillOpacity={1}
           fill="url(#colorUnique)"

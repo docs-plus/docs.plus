@@ -30,6 +30,18 @@ admin.use('*', adminAuthMiddleware)
 // Get dashboard statistics
 admin.get('/stats', adminController.getDashboardStats)
 
+// Platform stats + directory (service_role; system-wide, RLS-bypassing)
+admin.get('/stats/platform', adminController.getPlatformStats)
+admin.get('/stats/notifications', adminController.getNotificationStatsAdmin)
+admin.get('/stats/email', adminController.getEmailStatsAdmin)
+admin.get('/stats/push', adminController.getPushStatsAdmin)
+admin.get('/stats/push/pipeline', adminController.getPushPipelineAdmin)
+admin.get('/push/subscriptions', adminController.getPushSubscriptionsRaw)
+admin.get('/system/table-sizes', adminController.getTableSizes)
+admin.get('/users', adminController.listUsers)
+admin.get('/users/notification-subs', adminController.getUserNotificationSubs)
+admin.get('/channels', adminController.listChannels)
+
 // Get document counts per user (for Users page)
 admin.get('/users/document-counts', adminController.getUserDocumentCounts)
 

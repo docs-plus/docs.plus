@@ -46,6 +46,24 @@ export interface DocumentStats {
   recentActivity?: number
 }
 
+export interface DeletionImpact {
+  document: {
+    id: number
+    slug: string
+    title: string | null
+    versionCount: number
+    createdAt: string
+  }
+  owner: {
+    username: string | null
+    email: string | null
+  } | null
+  workspace: {
+    id: string
+    channelCount: number
+  } | null
+}
+
 // Channel types
 export interface Channel {
   id: string
@@ -58,11 +76,6 @@ export interface Channel {
   // Document info (from workspace)
   document_slug: string | null
   document_name: string | null
-}
-
-export interface ChannelStats {
-  total: number
-  byType: Record<string, number>
 }
 
 // Notification types
@@ -84,6 +97,13 @@ export interface EmailStats {
   failed: number
 }
 
+export interface UserNotificationSubs {
+  web: boolean
+  ios: boolean
+  android: boolean
+  email: boolean
+}
+
 // System types
 export interface ServiceStatus {
   name: string
@@ -97,7 +117,29 @@ export interface TableSize {
   rows: number
 }
 
+export interface PushGatewayHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latency: number
+  vapidConfigured: boolean
+  queueConnected: boolean
+  pendingJobs?: number
+  failedJobs?: number
+  error?: string
+}
+
+export interface EmailGatewayHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latency: number
+  provider: string | null
+  queueConnected: boolean
+  pendingJobs?: number
+  failedJobs?: number
+  error?: string
+}
+
 // API Response types
+export type SortDirection = 'asc' | 'desc'
+
 export interface PaginatedResponse<T> {
   data: T[]
   pagination: {
@@ -134,9 +176,7 @@ export interface SupabaseStats {
   }
 }
 
-// =============================================================================
 // Document View Analytics Types
-// =============================================================================
 
 export interface ViewsSummary {
   total_views: number
@@ -168,41 +208,14 @@ export interface TopViewedDocument {
   bounce_rate?: number
 }
 
+// Matches get_document_views_trend's returned columns exactly.
 export interface ViewsTrendPoint {
   view_date: string
   views: number
-  unique_sessions: number
-  unique_users: number
-  avg_duration_ms: number
-  bounce_count: number
+  unique_visitors: number
 }
 
-export interface DocumentViewStats {
-  document_slug: string
-  total_views: number
-  unique_users: number
-  views_today: number
-  views_7d: number
-  views_30d: number
-  avg_duration_ms: number
-  bounce_rate: number
-  first_viewed_at: string | null
-  last_viewed_at: string | null
-  devices: {
-    desktop: number
-    mobile: number
-    tablet: number
-  }
-  user_types: {
-    authenticated: number
-    anonymous: number
-    guest: number
-  }
-}
-
-// =============================================================================
 // User Retention Analytics Types (Phase 8)
-// =============================================================================
 
 export interface RetentionMetrics {
   dau: number
@@ -235,52 +248,7 @@ export interface DauTrendPoint {
   active_users: number
 }
 
-export interface ActivityHeatmapPoint {
-  hour_of_day: number
-  day_of_week: number
-  message_count: number
-}
-
-export interface TopActiveDocument {
-  workspace_id: string
-  document_slug: string
-  title: string
-  message_count: number
-  unique_users: number
-}
-
-export interface CommunicationStats {
-  total_messages: number
-  thread_messages: number
-  messages_with_reactions: number
-  unique_senders: number
-  thread_rate: number
-  reaction_rate: number
-}
-
-export interface NotificationReach {
-  total_users: number
-  push_enabled: number
-  email_enabled: number
-  push_reach_pct: number
-  email_reach_pct: number
-  notification_read_rate: number
-}
-
-// =============================================================================
 // Push Notification Debugging Types
-// =============================================================================
-
-export interface PushGatewayHealth {
-  status: 'healthy' | 'degraded' | 'down'
-  latency: number
-  vapidConfigured: boolean
-  queueConnected: boolean
-  pendingJobs?: number
-  error?: string
-}
-
-// PgNetResponse removed - pgmq architecture doesn't use pg_net
 
 export interface PushSubscriptionDetail {
   id: string
@@ -313,27 +281,7 @@ export interface PushPipelineStats {
   lastPushError: string | null
 }
 
-export interface RecentPushAttempt {
-  id: string
-  notification_id: string
-  notification_type: string
-  receiver_username: string | null
-  created_at: string
-  queue_status: string | null
-  push_sent: boolean
-  error?: string | null
-}
-
-export interface PushDebugStats {
-  gateway: PushGatewayHealth
-  pipeline: PushPipelineStats
-  failedSubscriptions: PushSubscriptionDetail[]
-  recentAttempts: RecentPushAttempt[]
-}
-
-// =============================================================================
-// Push Subscription Analytics Types (v6.3.0)
-// =============================================================================
+// Push Subscription Analytics Types
 
 export interface PushSubscriptionAnalytics {
   // Platform breakdown
@@ -364,16 +312,7 @@ export interface PushSubscriptionAnalytics {
   }
 }
 
-export interface PlatformTrendPoint {
-  date: string
-  web: number
-  ios: number
-  android: number
-}
-
-// =============================================================================
 // Stale Documents Audit Types (Phase 13)
-// =============================================================================
 
 export type StaleSeverity = 'critical' | 'high' | 'medium' | 'low'
 
@@ -412,9 +351,7 @@ export interface StaleDocumentsSummary {
   recoverable_bytes: number
 }
 
-// =============================================================================
 // Failed Notifications Audit Types (Phase 17)
-// =============================================================================
 
 export interface NotificationHealth {
   push: {
@@ -499,9 +436,7 @@ export interface DisableResult {
   subscription_ids: string[]
 }
 
-// =============================================================================
 // Ghost Accounts Audit (Phase 15)
-// =============================================================================
 
 export type GhostType =
   | 'unconfirmed_magic_link'
@@ -576,9 +511,7 @@ export interface GhostCleanupResult {
   remaining: number
 }
 
-// =============================================================================
 // Stale Documents (Phase 13)
-// =============================================================================
 
 export interface StaleDocumentPreview {
   slug: string

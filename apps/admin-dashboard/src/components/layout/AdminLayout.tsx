@@ -12,7 +12,7 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
-  const { theme } = useUIStore()
+  const theme = useUIStore((state) => state.theme)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Apply theme to document

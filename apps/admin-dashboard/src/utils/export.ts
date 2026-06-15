@@ -1,6 +1,10 @@
-/**
- * Export data to CSV and trigger download
- */
+// Spreadsheet apps execute a cell whose text starts with = + - @ (or a
+// leading tab/CR) as a formula. User-controlled fields (username, last_error…)
+// reach an admin's Excel/Sheets on export, so neutralize the leading char.
+function neutralizeCsvFormula(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+}
+
 export function exportToCSV<T extends object>(
   data: T[],
   filename: string,
@@ -8,7 +12,6 @@ export function exportToCSV<T extends object>(
 ): void {
   if (data.length === 0) return
 
-  // Determine columns from first item if not provided
   const cols =
     columns ||
     Object.keys(data[0]).map((key) => ({
@@ -16,26 +19,22 @@ export function exportToCSV<T extends object>(
       header: key
     }))
 
-  // Build CSV header
   const header = cols.map((col) => `"${col.header}"`).join(',')
 
-  // Build CSV rows
   const rows = data.map((item) =>
     cols
       .map((col) => {
         const value = (item as Record<string, unknown>)[col.key as string]
         if (value === null || value === undefined) return '""'
-        if (typeof value === 'string') return `"${value.replace(/"/g, '""')}"`
+        if (typeof value === 'string') return `"${neutralizeCsvFormula(value).replace(/"/g, '""')}"`
         if (value instanceof Date) return `"${value.toISOString()}"`
         return `"${String(value)}"`
       })
       .join(',')
   )
 
-  // Combine header and rows
   const csv = [header, ...rows].join('\n')
 
-  // Create blob and download
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -46,11 +45,4 @@ export function exportToCSV<T extends object>(
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
-}
-
-/**
- * Format a date for CSV export
- */
-export function formatDateForExport(date: string | Date): string {
-  return new Date(date).toISOString().split('T')[0]
 }

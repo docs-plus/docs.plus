@@ -1,12 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
-import { useCallback, useState } from 'react'
-
-// Disable static generation - pages require auth which needs client-side router
-export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} }
-}
+import { useState } from 'react'
 import {
   LuBell,
   LuBellOff,
@@ -32,22 +27,22 @@ import { PushSubscriptionStats } from '@/components/charts/PushSubscriptionStats
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
-import { useMultiTableSubscription } from '@/hooks/useRealtimeSubscription'
 import {
   checkEmailGatewayHealth,
   checkPushGatewayHealth,
-  type PushGatewayHealth
-} from '@/services/api'
-import {
   fetchEmailStats,
-  fetchFailedPushSubscriptions,
   fetchNotificationStats,
   fetchPushPipelineStats,
-  fetchPushStats,
-  fetchRecentPushActivity
-} from '@/services/supabase'
-import type { PushPipelineStats, PushSubscriptionDetail } from '@/types'
+  fetchPushStats
+} from '@/services/api'
+import { fetchFailedPushSubscriptions, fetchRecentPushActivity } from '@/services/supabase'
+import type { PushGatewayHealth, PushPipelineStats, PushSubscriptionDetail } from '@/types'
 import { formatRelative } from '@/utils/format'
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} }
+}
 
 // Status indicator component
 function StatusBadge({
@@ -364,28 +359,6 @@ export default function NotificationsPage() {
     queryKey: ['admin', 'push', 'recent-activity'],
     queryFn: () => fetchRecentPushActivity(10)
   })
-
-  // Real-time subscription to notification-related tables
-  const handleRealtimeChange = useCallback(() => {
-    refetch()
-    refetchPush()
-    refetchEmail()
-    refetchPipeline()
-    refetchFailedSubs()
-    refetchRecentActivity()
-  }, [
-    refetch,
-    refetchPush,
-    refetchEmail,
-    refetchPipeline,
-    refetchFailedSubs,
-    refetchRecentActivity
-  ])
-
-  useMultiTableSubscription(
-    ['notifications', 'push_subscriptions', 'email_queue'],
-    handleRealtimeChange
-  )
 
   const loading = notifLoading || pushLoading || emailLoading
   const debugLoading =

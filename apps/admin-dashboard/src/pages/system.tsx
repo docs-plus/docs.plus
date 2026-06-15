@@ -1,11 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
-
-// Disable static generation - pages require auth which needs client-side router
-export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} }
-}
 import {
   LuActivity,
   LuCircleAlert,
@@ -18,10 +13,15 @@ import {
 import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
-import { checkApiHealth } from '@/services/api'
-import { checkDatabaseHealth, fetchTableSizes } from '@/services/supabase'
+import { checkApiHealth, fetchTableSizes } from '@/services/api'
+import { checkDatabaseHealth } from '@/services/supabase'
 import type { ServiceStatus } from '@/types'
 import { formatTime } from '@/utils/format'
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} }
+}
 
 async function checkAllServices(): Promise<ServiceStatus[]> {
   const [apiHealth, dbHealth] = await Promise.all([checkApiHealth(), checkDatabaseHealth()])

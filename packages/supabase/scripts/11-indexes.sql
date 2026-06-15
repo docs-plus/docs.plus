@@ -15,6 +15,8 @@ create index idx_messages_user_id on public.messages (user_id);
 -- idx_messages_type serves m.type = 'notification' filters in get_channel_aggregate_data
 -- and pin RPCs (10-functions.sql); keep despite low cardinality.
 create index idx_messages_type on public.messages (type);
+-- Plain created_at index for message analytics RPCs that filter on created_at only.
+create index if not exists idx_messages_created_at on public.messages (created_at);
 
 -- Composite Index on public.messages
 create index idx_messages_channel_id_created_at on public.messages (channel_id, created_at desc);

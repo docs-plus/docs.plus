@@ -46,7 +46,8 @@ begin
         count(*) filter (where online_at >= now() - interval '60 days' and online_at < now() - interval '30 days'),
         count(*)
     into v_dau, v_wau, v_mau, v_dau_prev, v_wau_prev, v_mau_prev, v_total_users
-    from public.users;
+    from public.users
+    where deleted_at is null;
 
     return jsonb_build_object(
         'dau', v_dau,
@@ -105,7 +106,8 @@ begin
         ),
         count(*)
     into v_new, v_active, v_at_risk, v_churned, v_total
-    from public.users;
+    from public.users
+    where deleted_at is null;
 
     return jsonb_build_object(
         'new', v_new,
@@ -205,7 +207,7 @@ comment on function public.get_activity_by_hour(integer) is
 -- -----------------------------------------------------------------------------
 create or replace function public.get_top_active_documents(p_limit integer default 5, p_days integer default 7)
 returns table (
-    workspace_id uuid,
+    workspace_id text,
     document_slug text,
     message_count bigint,
     unique_users bigint
@@ -331,18 +333,22 @@ declare
     v_email_enabled integer;
     v_notification_read_rate numeric;
 begin
-    select count(*) into v_total_users from public.users;
+    select count(*) into v_total_users from public.users where deleted_at is null;
 
     -- Users with active push subscriptions
     select count(distinct user_id) into v_push_enabled
     from public.push_subscriptions
-    where user_id is not null;
+    where user_id is not null
+      and is_active = true;
 
     -- Users with email notifications enabled (check profile_data.notification_preferences)
     select count(*) into v_email_enabled
     from public.users
-    where (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
-       or profile_data->'notification_preferences'->>'email_enabled' is null; -- Default is enabled
+    where deleted_at is null
+      and (
+        (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
+        or profile_data->'notification_preferences'->>'email_enabled' is null -- Default is enabled
+      );
 
     -- Notification read rate
     select
