@@ -2,9 +2,8 @@ import { useJoinChannel } from '@components/chatroom/hooks/useJoinChannel'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useChatStore } from '@stores'
-import { TChannelSettings } from '@types'
 import { supabaseClient } from '@utils/supabase'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useChatroomContext } from '../../../ChatroomContext'
 import { ChannelComposerSurface } from './ChannelComposerSurface'
@@ -14,10 +13,8 @@ export default function JoinBroadcastChannel() {
   const { join, loading: joinLoading, user } = useJoinChannel(channelId)
 
   const [mute, setMute] = useState(false)
-  const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings | null>(
-    () => channels.get(channelId) ?? null,
-    [channels, channelId]
+  const channelSettings = useChatStore(
+    (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
   const { isUserChannelMember } = channelSettings || {}
   const channelMemberInfo = useChatStore((state) => state.channelMembers.get(channelId))

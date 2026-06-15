@@ -6,9 +6,8 @@ import {
   useContextMenuContext
 } from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
-import { TChannelSettings } from '@types'
 import { TMsgRow } from '@types'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MessageMenuReadStatus } from '../MessageCard/components/common/MessageMenuReadStatus'
@@ -50,7 +49,6 @@ const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
 export const ChatListContextMenu = ({ children, className }: Props) => {
   const { channelId, variant, listRef } = useChatroomContext()
   const profile = useAuthStore((state) => state.profile)
-  const channels = useChatStore((state) => state.workspaceSettings.channels)
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const [contextMenuState, setContextMenuState] = useState<{
     message: TMsgRow | null
@@ -60,9 +58,8 @@ export const ChatListContextMenu = ({ children, className }: Props) => {
     messageCardElement: null
   })
 
-  const channelSettings = useMemo<TChannelSettings | null>(
-    () => channels.get(channelId) ?? null,
-    [channels, channelId]
+  const channelSettings = useChatStore(
+    (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
 
   const handleBeforeShow = useCallback(
