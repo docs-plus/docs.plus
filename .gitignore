@@ -199,3 +199,7 @@ docs/skills-output/
 /.cursor/skills/weekly-review
 /.cursor/skills/what-did-i-get-done
 /.cursor/skills/workflow-from-chats
+
+# mattpocock skills mirrored into .cursor/skills (canonical copies in .agents/skills; machine-local)
+/.cursor/skills/grill-me
+/.cursor/skills/improve-codebase-architecture
