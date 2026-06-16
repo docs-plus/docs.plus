@@ -28,20 +28,6 @@ export class BadRequestError extends AppError {
   }
 }
 
-// 401 Unauthorized
-export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized', details?: any) {
-    super(message, 401, 'UNAUTHORIZED', details)
-  }
-}
-
-// 403 Forbidden
-export class ForbiddenError extends AppError {
-  constructor(message: string = 'Forbidden', details?: any) {
-    super(message, 403, 'FORBIDDEN', details)
-  }
-}
-
 // 404 Not Found
 export class NotFoundError extends AppError {
   constructor(resource: string = 'Resource', details?: any) {
@@ -70,20 +56,6 @@ export class UnsupportedMediaTypeError extends AppError {
   }
 }
 
-// 422 Unprocessable Entity
-export class UnprocessableEntityError extends AppError {
-  constructor(message: string, details?: any) {
-    super(message, 422, 'UNPROCESSABLE_ENTITY', details)
-  }
-}
-
-// 429 Too Many Requests
-export class RateLimitError extends AppError {
-  constructor(message: string = 'Too many requests', details?: any) {
-    super(message, 429, 'RATE_LIMIT_EXCEEDED', details)
-  }
-}
-
 // 500 Internal Server Error
 export class InternalServerError extends AppError {
   constructor(message: string = 'Internal server error', details?: any) {
@@ -91,24 +63,10 @@ export class InternalServerError extends AppError {
   }
 }
 
-// 503 Service Unavailable
-export class ServiceUnavailableError extends AppError {
-  constructor(message: string = 'Service temporarily unavailable', details?: any) {
-    super(message, 503, 'SERVICE_UNAVAILABLE', details)
-  }
-}
-
 // Database-specific errors
 export class DatabaseError extends AppError {
   constructor(message: string, details?: any) {
     super(message, 500, 'DATABASE_ERROR', details)
-  }
-}
-
-// Storage-specific errors
-export class StorageError extends AppError {
-  constructor(message: string, statusCode: number = 500, details?: any) {
-    super(message, statusCode, 'STORAGE_ERROR', details)
   }
 }
 
@@ -155,13 +113,6 @@ export const handlePrismaError = (error: any): AppError => {
   }
 
   return new DatabaseError(error.message || 'Unknown database error')
-}
-
-/**
- * Check if error is an operational error (safe to send to client)
- */
-export const isOperationalError = (error: Error): boolean => {
-  return error instanceof AppError
 }
 
 /**

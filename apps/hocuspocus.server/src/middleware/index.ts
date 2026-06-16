@@ -86,19 +86,6 @@ export const rateLimiter = (options: {
   }
 }
 
-// File upload size limit middleware
-export const uploadSizeLimit = (maxSize: number) => {
-  return async (c: Context, next: Next) => {
-    const contentLength = c.req.header('content-length')
-
-    if (contentLength && parseInt(contentLength, 10) > maxSize) {
-      return c.json({ error: `File size exceeds maximum allowed size of ${maxSize} bytes` }, 413)
-    }
-
-    return next()
-  }
-}
-
 /**
  * Logs all HTTP requests with:
  * - Request details (method, path, headers, query)

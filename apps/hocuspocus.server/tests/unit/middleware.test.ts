@@ -1,65 +1,12 @@
 import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test'
 import { Hono } from 'hono'
-import { uploadSizeLimit, pinoLogger, setupMiddleware } from '../../src/middleware'
+import { pinoLogger, setupMiddleware } from '../../src/middleware'
 
 describe('Middleware - Complete Coverage', () => {
   let app: Hono
 
   beforeEach(() => {
     app = new Hono()
-  })
-
-  describe('uploadSizeLimit()', () => {
-    test('should reject requests exceeding max size', async () => {
-      const maxSize = 1000 // 1KB
-      app.use('*', uploadSizeLimit(maxSize))
-      app.post('/upload', (c) => c.json({ success: true }))
-
-      const response = await app.request('http://localhost/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Length': '2000' // 2KB - exceeds limit
-        },
-        body: 'test data'
-      })
-
-      const data = await response.json()
-
-      expect(response.status).toBe(413)
-      expect(data).toHaveProperty('error')
-      expect(data.error).toBe(`File size exceeds maximum allowed size of ${maxSize} bytes`)
-    })
-
-    test('should allow requests within size limit', async () => {
-      const maxSize = 5000 // 5KB
-      app.use('*', uploadSizeLimit(maxSize))
-      app.post('/upload', (c) => c.json({ success: true }))
-
-      const response = await app.request('http://localhost/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Length': '1000' // 1KB - within limit
-        },
-        body: 'test data'
-      })
-
-      expect(response.status).toBe(200)
-      const data = await response.json()
-      expect(data.success).toBe(true)
-    })
-
-    test('should allow requests without Content-Length header', async () => {
-      const maxSize = 1000
-      app.use('*', uploadSizeLimit(maxSize))
-      app.post('/upload', (c) => c.json({ success: true }))
-
-      const response = await app.request('http://localhost/upload', {
-        method: 'POST',
-        body: 'test data'
-      })
-
-      expect(response.status).toBe(200)
-    })
   })
 
   describe('pinoLogger() error handling', () => {

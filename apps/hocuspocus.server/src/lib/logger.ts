@@ -111,11 +111,6 @@ export const documentsControllerLogger = logger.child(
   { level: envLevel(process.env.DOCUMENTS_CONTROLLER_LOG_LEVEL, baseLevel) }
 )
 
-export const healthControllerLogger = logger.child(
-  { module: 'health-controller' },
-  { level: envLevel(process.env.HEALTH_CONTROLLER_LOG_LEVEL, baseLevel) }
-)
-
 // Services
 export const documentsServiceLogger = logger.child(
   { module: 'documents-service' },
@@ -125,11 +120,6 @@ export const documentsServiceLogger = logger.child(
 export const mediaServiceLogger = logger.child(
   { module: 'media-service' },
   { level: envLevel(process.env.MEDIA_SERVICE_LOG_LEVEL, baseLevel) }
-)
-
-export const healthServiceLogger = logger.child(
-  { module: 'health-service' },
-  { level: envLevel(process.env.HEALTH_SERVICE_LOG_LEVEL, baseLevel) }
 )
 
 // Storage

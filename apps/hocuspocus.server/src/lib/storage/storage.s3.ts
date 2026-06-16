@@ -97,28 +97,3 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
     return c.json({ error: 'Error retrieving file from storage' }, 500)
   }
 }
-
-/**
- * Get presigned URL for direct client-side uploads/downloads
- * - Synchronous operation (no network request needed)
- * - Allows clients to upload/download directly to/from S3
- * - Reduces server load and improves performance
- */
-export const getSignedUploadUrl = (
-  documentId: string,
-  fileName: string,
-  expiresIn: number = 3600
-): string => {
-  const key = generateS3Key(documentId, fileName)
-
-  // Get lazy reference to S3 file
-  const s3File = s3Client.file(key)
-
-  // Presign is synchronous - no network request needed!
-  const url = s3File.presign({
-    acl: 'public-read',
-    expiresIn
-  })
-
-  return url
-}
