@@ -1,6 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
 
-import { getPoolStats } from '../../lib/prisma'
 import { getRedisStats } from '../../lib/redis'
 import { getAnonClient } from '../../lib/supabase'
 import type { HealthCheckResult, OverallHealthResult, RedisClient } from '../../types'
@@ -9,19 +8,9 @@ export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthC
   try {
     await prisma.$queryRaw`SELECT 1`
 
-    const poolStats = getPoolStats()
-
     return {
       status: 'healthy',
-      lastCheck: new Date(),
-      metadata: {
-        pool: {
-          total: poolStats.total,
-          idle: poolStats.idle,
-          waiting: poolStats.waiting,
-          active: poolStats.total - poolStats.idle
-        }
-      }
+      lastCheck: new Date()
     }
   } catch (error) {
     return {
@@ -77,7 +66,7 @@ export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
   }
 
   try {
-    const { error } = await supabase.from('profiles').select('id').limit(1)
+    const { error } = await supabase.from('users').select('id').limit(1)
 
     if (error && !error.message.includes('permission')) {
       throw error

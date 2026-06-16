@@ -99,19 +99,6 @@ dbLogger.info(
   'Database connection pool initialized'
 )
 
-/**
- * Pool stats — uses Prisma's $queryRaw since we don't hold
- * a direct pool reference anymore.
- */
-export const getPoolStats = () => ({
-  total: poolMax,
-  idle: 0,
-  waiting: 0,
-  active: 0,
-  max: poolMax,
-  utilization: 0
-})
-
 export const checkDatabaseHealth = async (): Promise<boolean> => {
   try {
     await prisma.$queryRaw`SELECT 1`
