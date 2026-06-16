@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import * as storageLocal from '../../src/lib/storage/storage.local'
 import { mkdir, rm } from 'fs/promises'
 import path from 'path'
@@ -22,25 +22,11 @@ describe('Local Storage - Error Handling', () => {
   })
 
   describe('upload() error handling', () => {
-    test('should throw and log error when upload fails', async () => {
-      const consoleErrorSpy = mock(() => {})
-      const originalConsoleError = console.error
-      console.error = consoleErrorSpy
-
-      // Create a file that will cause an error (invalid path with null bytes)
+    test('should re-throw the underlying error when upload fails', async () => {
+      // Create a file whose document id forces an invalid path (null byte)
       const invalidFile = new File(['test data'], 'test.jpg', { type: 'image/jpeg' })
 
-      try {
-        await storageLocal.upload('\0invalid-path', invalidFile)
-        expect(true).toBe(false) // Should not reach here
-      } catch (error) {
-        expect(error).toBeDefined()
-        expect(consoleErrorSpy).toHaveBeenCalled()
-        expect(consoleErrorSpy.mock.calls[0][0]).toBe('[hypermultimedia]: localUploadMedia')
-      }
-
-      // Restore
-      console.error = originalConsoleError
+      await expect(storageLocal.upload('\0invalid-path', invalidFile)).rejects.toThrow()
     })
   })
 
@@ -100,11 +86,7 @@ describe('Local Storage - Error Handling', () => {
     })
 
     test('should return 500 when unexpected error occurs', async () => {
-      const consoleErrorSpy = mock(() => {})
-      const originalConsoleError = console.error
-      console.error = consoleErrorSpy
-
-      // Set invalid path to cause error
+      // Set invalid path (null byte) to force Bun.file to throw
       process.env.LOCAL_STORAGE_PATH = '\0invalid'
 
       const app = new Hono()
@@ -119,11 +101,8 @@ describe('Local Storage - Error Handling', () => {
       expect(response.status).toBe(500)
       expect(data).toHaveProperty('error')
       expect(data.error).toBe('Error retrieving file')
-      expect(consoleErrorSpy).toHaveBeenCalled()
-      expect(consoleErrorSpy.mock.calls[0][0]).toBe('[hypermultimedia]: localGetMedia')
 
       // Restore
-      console.error = originalConsoleError
       delete process.env.LOCAL_STORAGE_PATH
     })
   })

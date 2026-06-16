@@ -16,10 +16,8 @@ export const upload = async (documentId: string, file: File): Promise<StorageUpl
     const filePath = path.join(dirPath, fileName)
     const fileType = extractFileType(file.type)
 
-    // Create directory if it doesn't exist
     await mkdir(dirPath, { recursive: true })
 
-    // Use Bun's native write for better performance
     const buffer = await file.arrayBuffer()
     await Bun.write(filePath, buffer)
 
@@ -42,12 +40,17 @@ export const upload = async (documentId: string, file: File): Promise<StorageUpl
 
 export const get = async (documentId: string, mediaId: string, c: Context) => {
   try {
-    const filePath = path.join(
+    const storageRoot = path.resolve(
       process.cwd(),
-      `${process.env.LOCAL_STORAGE_PATH}/${documentId}/${mediaId}`
+      process.env.LOCAL_STORAGE_PATH || `./temp/${PLUGIN_NAME}`
     )
+    const filePath = path.resolve(storageRoot, documentId, mediaId)
 
-    // Use Bun.file for efficient file handling
+    // Containment guard: never serve a path that resolves outside the storage root.
+    if (filePath !== storageRoot && !filePath.startsWith(storageRoot + path.sep)) {
+      return c.json({ error: 'Invalid media path' }, 400)
+    }
+
     const file = Bun.file(filePath)
     const exists = await file.exists()
 
