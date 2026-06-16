@@ -276,6 +276,35 @@ emailRouter.get('/preview/:type', async (c) => {
   return c.json({ error: `Unknown template type: ${type}. Use "notification" or "digest".` }, 400)
 })
 
+interface UnsubscribeResult {
+  success: boolean
+  user_id?: string
+  action?: string
+  message?: string
+  email?: string
+  error?: string
+}
+
+type UnsubscribeOutcome =
+  | { status: 'ok'; result: UnsubscribeResult }
+  | { status: 'unconfigured' }
+  | { status: 'failed' }
+
+// Run the process_unsubscribe RPC via the service-role client (mirrors /bounce).
+// Separates an unconfigured client from an RPC failure so each route renders its
+// own message; never throws.
+async function processUnsubscribe(token: string): Promise<UnsubscribeOutcome> {
+  const supabase = getServiceRoleClient()
+  if (!supabase) return { status: 'unconfigured' }
+
+  const { data, error } = await supabase.rpc('process_unsubscribe', { p_token: token })
+  if (error) {
+    emailLogger.error({ err: error }, 'process_unsubscribe RPC failed')
+    return { status: 'failed' }
+  }
+  return { status: 'ok', result: data as UnsubscribeResult }
+}
+
 /**
  * GET /api/email/unsubscribe
  *
@@ -298,10 +327,9 @@ emailRouter.get('/unsubscribe', async (c) => {
   }
 
   try {
-    const supabaseUrl = process.env.SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const outcome = await processUnsubscribe(token)
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (outcome.status === 'unconfigured') {
       emailLogger.error('Supabase credentials not configured for unsubscribe')
       return c.html(
         renderUnsubscribePage({
@@ -313,18 +341,7 @@ emailRouter.get('/unsubscribe', async (c) => {
       )
     }
 
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/process_unsubscribe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`
-      },
-      body: JSON.stringify({ p_token: token })
-    })
-
-    if (!response.ok) {
-      emailLogger.error({ status: response.status }, 'Supabase RPC failed')
+    if (outcome.status === 'failed') {
       return c.html(
         renderUnsubscribePage({
           success: false,
@@ -335,14 +352,7 @@ emailRouter.get('/unsubscribe', async (c) => {
       )
     }
 
-    const result = (await response.json()) as {
-      success: boolean
-      user_id?: string
-      action?: string
-      action_description?: string
-      message?: string
-      email?: string
-    }
+    const result = outcome.result
 
     if (result.success) {
       emailLogger.info(
@@ -400,33 +410,16 @@ emailRouter.post(
     const { token } = c.req.valid('query')
 
     try {
-      const supabaseUrl = process.env.SUPABASE_URL
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      const outcome = await processUnsubscribe(token)
 
-      if (!supabaseUrl || !serviceRoleKey) {
+      if (outcome.status === 'unconfigured') {
         return c.json({ error: 'Service not configured' }, 500)
       }
-
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/process_unsubscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`
-        },
-        body: JSON.stringify({ p_token: token })
-      })
-
-      if (!response.ok) {
+      if (outcome.status === 'failed') {
         return c.json({ error: 'Failed to process unsubscribe' }, 500)
       }
 
-      const result = (await response.json()) as {
-        success: boolean
-        user_id?: string
-        action?: string
-        error?: string
-      }
+      const result = outcome.result
 
       if (result.success) {
         emailLogger.info(
