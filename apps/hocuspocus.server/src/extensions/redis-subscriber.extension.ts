@@ -6,6 +6,8 @@ import type { RedisClient, SaveConfirmation } from '../types'
 
 export class RedisSubscriberExtension implements Extension {
   private subscriber: RedisClient | null = null
+  private pmessageHandler: ((pattern: string, channel: string, message: string) => void) | null =
+    null
 
   async onConfigure({ instance }: any) {
     // Get dedicated Redis client for subscriptions (ioredis)
@@ -31,8 +33,8 @@ export class RedisSubscriberExtension implements Extension {
         }
       })
 
-      // Handle pattern messages
-      this.subscriber.on('pmessage', (pattern: string, channel: string, message: string) => {
+      // Handle pattern messages — stored so onDestroy can detach the listener.
+      this.pmessageHandler = (pattern: string, channel: string, message: string) => {
         try {
           // Extract documentId from channel name: doc:abc123:saved -> abc123
           const documentId = channel.split(':')[1]
@@ -57,7 +59,8 @@ export class RedisSubscriberExtension implements Extension {
         } catch (err) {
           redisLogger.error({ err, channel }, 'Error processing save confirmation')
         }
-      })
+      }
+      this.subscriber.on('pmessage', this.pmessageHandler)
     } catch (err) {
       redisLogger.error({ err }, 'Failed to subscribe to document channels')
     }
@@ -67,6 +70,7 @@ export class RedisSubscriberExtension implements Extension {
     if (this.subscriber) {
       try {
         await this.subscriber.punsubscribe('doc:*:saved')
+        if (this.pmessageHandler) this.subscriber.off('pmessage', this.pmessageHandler)
         redisLogger.info('🔌 Unsubscribed from Redis channels')
       } catch (err) {
         redisLogger.error({ err }, 'Error unsubscribing from Redis channels')
