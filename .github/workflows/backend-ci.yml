@@ -1,0 +1,79 @@
+name: Backend CI
+
+# Reusable backend quality gates (no-infra unit/integration + real-infra E2E),
+# called by both the stage and prod pipelines so the jobs live in one place.
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: 🧪 Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      # migration-extensions.ts imports built extension dist; build the two it
+      # needs so the src/lib migration suite resolves their type declarations.
+      - name: 🔧 Build Migration Extensions
+        run: |
+          bun run --filter @docs.plus/extension-hypermultimedia build
+          bun run --filter @docs.plus/extension-inline-code build
+
+      # No-infra gate: every backend suite is mock-based (createMockPrisma/Redis),
+      # so unit + lib + link-metadata + integration all run without Postgres/Redis.
+      - name: 🧪 Run Backend Tests
+        working-directory: apps/hocuspocus.server
+        run: bun test tests/unit src/lib/__tests__ src/modules/link-metadata/__tests__/unit tests/integration
+
+  backend-e2e:
+    name: 🧪 Backend E2E (real Postgres + Redis)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hocuspocus_e2e_test
+          POSTGRES_USER: docsplus
+          POSTGRES_PASSWORD: e2e_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://docsplus:e2e_password@localhost:5432/hocuspocus_e2e_test
+      REDIS_HOST: localhost
+      REDIS_PORT: '6379'
+      REDIS_DB: '15'
+      SUPABASE_URL: http://127.0.0.1:9
+      SUPABASE_ANON_KEY: dummy
+      NODE_ENV: development
+      LOG_LEVEL: silent
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🗄️ Apply migrations to the E2E database
+        working-directory: apps/hocuspocus.server
+        run: bunx prisma migrate deploy --schema ./prisma/schema.prisma
+
+      - name: 🧪 Run real-infra E2E (service CRUD + store pipeline)
+        working-directory: apps/hocuspocus.server
+        run: bun run test:e2e

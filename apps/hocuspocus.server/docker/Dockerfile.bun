@@ -59,7 +59,8 @@ WORKDIR /app
 RUN rm -rf /var/lib/apt/lists/* && \
   apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates openssl && rm -rf /var/lib/apt/lists/*
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# -m gives appuser a writable HOME so its bunx cache (below) persists in the image.
+RUN groupadd -r appuser && useradd -r -m -g appuser appuser
 
 COPY --from=base /app/package.json /app/bun.lock* /app/bunfig.toml ./
 COPY --from=base /app/packages ./packages
@@ -68,7 +69,7 @@ COPY --from=base /app/apps ./apps
 COPY --from=base /app/extensions ./extensions
 
 RUN bun install --frozen-lockfile --production --ignore-scripts
-RUN cd apps/hocuspocus.server && bunx prisma@6.19.0 generate
+RUN cd apps/hocuspocus.server && bunx prisma@6.19.3 generate
 
 COPY --from=base /app/apps/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
@@ -77,7 +78,12 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN chown -R appuser:appuser /app
 
 USER appuser
+# Warm the Prisma CLI into appuser's bunx cache so the entrypoint migrate runs
+# offline (prisma is a devDep, pruned by --production, else downloaded per boot).
+RUN cd /app/apps/hocuspocus.server && bunx prisma@6.19.3 --version
 EXPOSE 4000 4001 4002
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD bun --version || exit 1
+# Probe the app's /health endpoint (replaces the old no-op `bun --version`).
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD bun -e "fetch('http://127.0.0.1:'+(process.env.APP_PORT||'4000')+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["bun", "src/index.ts"]
