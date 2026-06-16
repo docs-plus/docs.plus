@@ -48,7 +48,7 @@ export const batchTrendsQuerySchema = z.object({
 })
 
 // =============================================================================
-// Stale Documents Audit Schemas (Phase 13)
+// Stale Documents Audit Schemas
 // =============================================================================
 
 export const staleDocumentsQuerySchema = z.object({
@@ -71,7 +71,7 @@ export const bulkDeleteSchema = z.object({
 })
 
 // =============================================================================
-// Failed Notifications Audit Schemas (Phase 17)
+// Failed Notifications Audit Schemas
 // =============================================================================
 
 export const auditFailedSubsQuerySchema = z.object({
@@ -92,7 +92,7 @@ export const disableFailedSubsSchema = z.object({
 })
 
 // =============================================================================
-// Ghost Accounts Audit Schemas (Phase 15)
+// Ghost Accounts Audit Schemas
 // =============================================================================
 
 export const ghostAccountsQuerySchema = z.object({
