@@ -38,19 +38,14 @@ export async function getDashboardStats(prisma: PrismaClient) {
 }
 
 export async function getDocumentStats(prisma: PrismaClient) {
-  const [total, privateCount, readOnlyCount, totalVersions] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const [total, privateCount, readOnlyCount, totalVersions, recentActivity] = await Promise.all([
     prisma.documentMetadata.count(),
     prisma.documentMetadata.count({ where: { isPrivate: true } }),
     prisma.documentMetadata.count({ where: { readOnly: true } }),
-    prisma.documents.count()
+    prisma.documents.count(),
+    prisma.documentMetadata.count({ where: { createdAt: { gte: sevenDaysAgo } } })
   ])
-
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const recentDocs = await prisma.documentMetadata.groupBy({
-    by: ['createdAt'],
-    where: { createdAt: { gte: sevenDaysAgo } },
-    _count: true
-  })
 
   return {
     total,
@@ -58,7 +53,7 @@ export async function getDocumentStats(prisma: PrismaClient) {
     readOnly: readOnlyCount,
     totalVersions,
     avgVersionsPerDoc: total > 0 ? Math.round(totalVersions / total) : 0,
-    recentActivity: recentDocs.length
+    recentActivity
   }
 }
 
