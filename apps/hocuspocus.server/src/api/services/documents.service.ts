@@ -1,30 +1,16 @@
 import { PrismaClient } from '@prisma/client'
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
 import { handlePrismaError, ValidationError } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
+import { getServiceRoleClient } from '../../lib/supabase'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
-
-// Service-role client — bypasses RLS so the server can read full user
-// rows (the `anon` column GRANT excludes `email` and silently 42501s a
-// `select('email')`, which was the symptom showing every owner as
-// "Unknown" in Settings → Documents).
-let supabaseService: SupabaseClient | null = null
-const getSupabase = (): SupabaseClient | null => {
-  if (supabaseService) return supabaseService
-  const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return null
-  supabaseService = createClient(url, key, { auth: { persistSession: false } })
-  return supabaseService
-}
 
 const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
 
 export const getOwnerProfile = async (userId: string) => {
-  const supabase = getSupabase()
+  const supabase = getServiceRoleClient()
   if (!supabase) return null
   const { data, error } = await supabase
     .from('users')
@@ -40,7 +26,7 @@ export const getOwnerProfile = async (userId: string) => {
 
 export const getOwnerProfiles = async (userIds: string[]) => {
   if (userIds.length === 0) return []
-  const supabase = getSupabase()
+  const supabase = getServiceRoleClient()
   if (!supabase) return []
   const { data, error } = await supabase
     .from('users')
@@ -250,7 +236,8 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
 export const updateDocument = async (
   prisma: PrismaClient,
   documentId: string,
-  params: UpdateDocumentParams
+  params: UpdateDocumentParams,
+  requesterId?: string
 ) => {
   const { title, description, keywords, readOnly } = params
 
@@ -259,11 +246,30 @@ export const updateDocument = async (
   }
 
   try {
+    // Title/description/keywords are collaborative and open. readOnly is a
+    // privileged lock: only the owner (or any authed caller on an ownerless doc)
+    // may change it; unauthorized readOnly changes are ignored so collaborative
+    // edits still succeed.
+    const existing = await prisma.documentMetadata.findUnique({
+      where: { documentId },
+      select: { ownerId: true, readOnly: true }
+    })
+
     const updateData: any = {}
     if (description !== undefined) updateData.description = description
     if (title !== undefined) updateData.title = title
     if (keywords !== undefined) updateData.keywords = keywords.join(',')
-    if (readOnly !== undefined) updateData.readOnly = readOnly
+
+    const readOnlyChanged = readOnly !== undefined && (!existing || readOnly !== existing.readOnly)
+    const isOwner = !!requesterId && (!existing?.ownerId || existing.ownerId === requesterId)
+    if (readOnlyChanged && isOwner) {
+      updateData.readOnly = readOnly
+    } else if (readOnlyChanged) {
+      documentsServiceLogger.warn(
+        { documentId, requesterId },
+        'Ignored unauthorized readOnly change'
+      )
+    }
 
     const upsertedDoc = await prisma.documentMetadata.upsert({
       where: { documentId },
@@ -274,6 +280,7 @@ export const updateDocument = async (
         title: title || documentId,
         description: description || '',
         keywords: keywords ? keywords.join(',') : '',
+        ownerId: requesterId || null,
         ...updateData
       }
     })

@@ -74,13 +74,16 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
 export const createDocument = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   const body = getValidJson<CreateDocumentInput>(c)
+  const user = c.get('user')
 
   try {
     const doc = await documentsService.createDocument(prisma, {
       slug: body.slug,
       title: body.title,
       description: body.description,
-      keywords: body.keywords
+      keywords: body.keywords,
+      userId: user?.sub,
+      email: user?.email
     })
 
     return c.json({ success: true, data: doc })
@@ -94,9 +97,10 @@ export const updateDocument = async (c: AppContext): Promise<Response> => {
   const docId = c.req.param('docId')
   if (docId === undefined) return c.json({ error: 'Missing document id' }, 400)
   const body = getValidJson<UpdateDocumentMetadataInput>(c)
+  const requesterId = c.get('userId')
 
   try {
-    const doc = await documentsService.updateDocument(prisma, docId, body)
+    const doc = await documentsService.updateDocument(prisma, docId, body, requesterId)
     return c.json({ success: true, data: doc })
   } catch (error) {
     return handleError(c, error, { docId })

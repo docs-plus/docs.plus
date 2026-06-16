@@ -1,13 +1,16 @@
+import './config/env' // validate env first (fail-fast at boot)
+
 import type { Connection } from '@hocuspocus/server'
 import { Server } from '@hocuspocus/server'
 
 import HocuspocusConfig from './config/hocuspocus.config'
+import { verifySupabaseToken } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { logger } from './lib/logger'
 import { shutdownDatabase } from './lib/prisma'
+import { closeQueues } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
 import type { HistoryPayload } from './types/document.types'
-import { verifyJWT } from './utils'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
@@ -107,41 +110,48 @@ const serverConfig = {
   extensions: [...baseConfig.extensions, statelessExtension],
 
   async onAuthenticate({ token, documentName }: any) {
+    // Room names are `${isPrivate ? 'private' : 'public'}.${documentId}` (webapp
+    // useDocumentMetadata), so privacy is encoded in the room id. Resolve the user
+    // first, then deny anonymous access to private rooms at one choke point.
+    const isPrivateRoom = typeof documentName === 'string' && documentName.startsWith('private.')
+    const isProd = process.env.NODE_ENV === 'production'
+
+    let user: Awaited<ReturnType<typeof verifySupabaseToken>> = null
+    let slug = ''
+    let deviceType = 'desktop'
+
     if (!token) {
-      wsLogger.debug({ documentName }, 'No token provided - allowing anonymous access')
-      return { user: null, slug: '', documentId: documentName, deviceType: 'desktop' }
+      wsLogger.debug({ documentName }, 'No token provided - anonymous')
+    } else {
+      try {
+        const tokenData = JSON.parse(token)
+        slug = tokenData.slug || ''
+        deviceType = tokenData.deviceType || 'desktop'
+
+        if (tokenData.accessToken) {
+          user = await verifySupabaseToken(tokenData.accessToken)
+          if (user) {
+            wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
+          } else if (isProd) {
+            throw new Error('Invalid authentication token')
+          } else {
+            wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
+          }
+        }
+      } catch (error) {
+        wsLogger.error({ err: error, documentName }, 'Auth error')
+        if (isProd) throw new Error('Authentication failed', { cause: error })
+        user = null
+        slug = ''
+        deviceType = 'desktop'
+      }
     }
 
-    try {
-      const tokenData = JSON.parse(token)
-      const deviceType = tokenData.deviceType || 'desktop'
-
-      if (tokenData.accessToken) {
-        const user = await verifyJWT(tokenData.accessToken)
-
-        if (user) {
-          wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
-          return { user, slug: tokenData.slug || '', documentId: documentName, deviceType }
-        }
-
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Invalid authentication token')
-        }
-
-        wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
-        return { user: null, slug: tokenData.slug || '', documentId: documentName, deviceType }
-      }
-
-      return { user: null, slug: tokenData.slug || '', documentId: documentName, deviceType }
-    } catch (error) {
-      wsLogger.error({ err: error, documentName }, 'Auth error')
-
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('Authentication failed', { cause: error })
-      }
-
-      return { user: null, slug: '', documentId: documentName, deviceType: 'desktop' }
+    if (isPrivateRoom && !user) {
+      throw new Error('Authentication required for private document')
     }
+
+    return { user, slug, documentId: documentName, deviceType }
   }
 }
 
@@ -163,6 +173,7 @@ const shutdown = async () => {
     await server.destroy()
     wsLogger.info('WebSocket server stopped')
 
+    await closeQueues()
     await shutdownDatabase()
     await disconnectRedis()
 
@@ -176,3 +187,11 @@ const shutdown = async () => {
 
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
+
+process.on('unhandledRejection', (reason) => {
+  wsLogger.error({ err: reason }, 'Unhandled promise rejection')
+})
+process.on('uncaughtException', (err) => {
+  wsLogger.error({ err }, 'Uncaught exception — shutting down')
+  void shutdown()
+})
