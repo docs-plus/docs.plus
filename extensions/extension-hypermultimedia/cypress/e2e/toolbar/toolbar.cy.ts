@@ -150,18 +150,12 @@ describe('media toolbar overlay', () => {
     cy.get('#editor .hypermultimedia--youtube__content').trigger('mouseover', { force: true })
     cy.get('#editor .media-toolbar .media-toolbar__more').click()
     cy.get('.floating-popover .media-toolbar__menu [data-action-id="replace"]').click()
-    cy.get('.floating-popover .media-toolbar__input')
-      .clear()
-      .type('https://vimeo.com/123456789')
+    cy.get('.floating-popover .media-toolbar__input').clear().type('https://vimeo.com/123456789')
     cy.get('.floating-popover .media-toolbar__submenu-item').contains('Replace').click()
     cy.get('.media-toolbar__error')
       .should('be.visible')
       .and('have.text', 'Enter a valid YouTube URL')
-    cy.get('.floating-popover .media-toolbar__input').should(
-      'have.attr',
-      'aria-invalid',
-      'true'
-    )
+    cy.get('.floating-popover .media-toolbar__input').should('have.attr', 'aria-invalid', 'true')
     cy.nodeAttr('youtube', 'src').should('eq', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')
   })
 })

@@ -101,7 +101,12 @@ type KeyModifiers = Partial<{ metaKey: boolean; ctrlKey: boolean; shiftKey: bool
 // Backspace undoInputRule, Mod-e shortcuts). Letter keys need a keyCode: on
 // mac Chrome w3c-keyname ignores `key` while a modifier is down.
 Cypress.Commands.add('pressKey', (key: string, modifiers: KeyModifiers = {}) => {
-  const keyCodes: Record<string, number> = { ArrowRight: 39, ArrowLeft: 37, Enter: 13, Backspace: 8 }
+  const keyCodes: Record<string, number> = {
+    ArrowRight: 39,
+    ArrowLeft: 37,
+    Enter: 13,
+    Backspace: 8
+  }
   const keyCode = keyCodes[key] ?? (key.length === 1 ? key.toUpperCase().charCodeAt(0) : undefined)
   cy.get('#editor [contenteditable="true"]').trigger('keydown', {
     key,

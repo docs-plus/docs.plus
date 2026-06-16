@@ -195,11 +195,9 @@ describe('Documents API', () => {
     })
 
     test('should reject with an invalid token', async () => {
-      const response = await testServer.post(
-        '/api/documents',
-        validDocument,
-        { Authorization: 'Bearer invalid-token' }
-      )
+      const response = await testServer.post('/api/documents', validDocument, {
+        Authorization: 'Bearer invalid-token'
+      })
       const data = await response.json()
 
       expect(response.status).toBe(401)

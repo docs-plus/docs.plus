@@ -10,8 +10,7 @@ export function flattenReadmeScreenshots(
 ): void {
   on('after:screenshot', (details) => {
     const spec = details.specName
-    const matches =
-      spec != null && (spec === specBasename || basename(spec) === specBasename)
+    const matches = spec != null && (spec === specBasename || basename(spec) === specBasename)
     if (!matches || details.testFailure) return
 
     const target = resolve(config.projectRoot, 'assets', basename(details.path))
