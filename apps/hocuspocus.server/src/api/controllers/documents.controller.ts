@@ -123,6 +123,7 @@ export const getMedia = async (c: AppContext): Promise<Response> => {
 export const uploadMedia = async (c: AppContext): Promise<Response> => {
   const documentId = c.req.param('documentId')
   if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
+  const userId = c.get('userId')
 
   try {
     const formData = await c.req.formData()
@@ -135,6 +136,6 @@ export const uploadMedia = async (c: AppContext): Promise<Response> => {
     const result = await mediaService.uploadMedia(documentId, mediaFile)
     return c.json(result, 201)
   } catch (error) {
-    return handleError(c, error, { documentId })
+    return handleError(c, error, { documentId, userId })
   }
 }

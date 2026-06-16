@@ -2,6 +2,7 @@ import * as toast from '@components/toast'
 import { fitDimensionsToBounds, getEditorContentWidth } from '@docs.plus/extension-hypermultimedia'
 import type { Editor } from '@tiptap/core'
 import { type ProseMirrorNode, TIPTAP_NODES } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 export interface ImageDimensions {
   width: number
@@ -151,12 +152,21 @@ export const uploadMediaFile = async (
   const formData = new FormData()
   formData.append('mediaFile', file, file.name)
 
+  // Upload is an authenticated write; send the Supabase token via the `token`
+  // header the REST API reads (same convention as fetchDocument).
+  const {
+    data: { session }
+  } = await supabaseClient.auth.getSession()
+  const headers: Record<string, string> = {}
+  if (session?.access_token) headers.token = session.access_token
+
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${docMetadata.documentId}`,
       {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers
       }
     )
 
