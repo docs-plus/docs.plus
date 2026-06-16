@@ -10,33 +10,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
-### Changed
-
-- Popovers now play their exit transition. `hide()` defers DOM removal until the
-  fade completes (transitionend with a timed fallback), so closing the preview /
-  create / edit popovers fades out instead of vanishing. Re-opening during an
-  in-flight exit is safe.
-- The scale animation blooms from the anchored side: the engine sets
-  `transform-origin` from the resolved placement instead of scaling from center.
-- Shell motion now follows the docs.plus motion language — 120ms `ease-out`
-  enter, 80ms `ease-in` exit (previously a symmetric 120ms `ease-in-out`).
-
-### Added
-
-- `prefers-reduced-motion` support in the bundled stylesheet: popovers appear
-  and disappear instantly when the OS requests reduced motion.
-
-### Fixed
-
-- Mounting more than one editor that uses the extension on the same page no
-  longer logs `linkifyjs: already initialized - will not register custom scheme`.
-  Custom `protocols` register in each editor's `onCreate`, but linkifyjs keeps one
-  process-global scheme registry that locks on first use, so a second editor
-  registered after that lock and only logged the warning. Each scheme now
-  registers once; later editors reuse it silently. Autolinking of configured
-  schemes (e.g. `ftp`, `mailto`) is unchanged.
-
-## [2.0.0] — 2026-06-12
+## [2.0.0] — 2026-06-16
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface — the option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
 
@@ -142,7 +116,7 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 - **Tooltips on the prebuilt popovers' icon buttons.** The preview popover's Copy / Edit / Remove buttons show a floating tooltip on hover and keyboard focus — a shared bubble from the bundled `@docs.plus/floating-tooltip` — in place of the native `title` attribute so the label never doubles up. The skin is the `.floating-tooltip` block in `styles.css` (fixed `light-dark()` literals kept lockstep with extension-hypermultimedia, since both packages style the one global class), and every opener hides the bubble when its popover closes so an outside-click dismissal cannot strand a visible tooltip. `attachTooltip` / `hideTooltip` are re-exported from the package barrel for BYO popovers that want the same labels.
 - **Per-surface ARIA roles on popover shells.** The preview popover mounts as `role="toolbar"` (a row of link actions); the create and edit popovers mount as `role="dialog"` with accessible names (`aria-label="Add link"` / `aria-label="Edit link"`). The roles ride the floating-popover engine's optional `role` option and live on the shell, so BYO factories inherit the same semantics.
-- **Micro-motion.** Popover entrances decelerate (`--hl-transition` is `ease-out`; dismissal removes the node, so the curve only ever plays entrances), tooltips rise 2px toward rest, and a `prefers-reduced-motion: reduce` guard zeroes both.
+- **Micro-motion.** Popover entrances decelerate and exits play their fade before the node is removed — `hide()` defers DOM removal until the transition ends (with a timed fallback), and the scale blooms from the anchored side via a placement-derived `transform-origin`. Motion follows the docs.plus language: 120ms `ease-out` enter, 80ms `ease-in` exit. Tooltips rise 2px toward rest, and a `prefers-reduced-motion: reduce` guard zeroes all of it.
 
 **Openers (Layer 1 — the 90% case).**
 
@@ -282,6 +256,7 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 **Platform + environment.**
 
 - `linkifyjs` global `reset()` call removed from `onDestroy`. The previous behavior cleared the global linkify protocol registry and broke other editors on the same page. Registered protocols are now additive for the page lifetime.
+- Mounting more than one editor that uses the extension on the same page no longer logs `linkifyjs: already initialized - will not register custom scheme`. Custom `protocols` register in each editor's `onCreate`, but linkifyjs keeps one process-global scheme registry that locks on first use, so a second editor registered after that lock only logged the warning. Each scheme now registers once; later editors reuse it silently. Autolinking of configured schemes (e.g. `ftp`, `mailto`) is unchanged.
 - Stale `view` capture — the click handler passes `view` directly from `handleDOMEvents` instead of capturing it at plugin creation time.
 - `autoUpdate` subscription + listener leaks — proper cleanup on `hide()` and `destroy()`.
 

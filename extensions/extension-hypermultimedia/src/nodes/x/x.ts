@@ -1,4 +1,4 @@
-import { Node, nodePasteRule } from '@tiptap/core'
+import { mergeAttributes, Node, nodePasteRule } from '@tiptap/core'
 
 import {
   captionAttribute,
@@ -105,15 +105,14 @@ export const X = Node.create<XOptions>({
     ]
   },
 
-  renderHTML({ HTMLAttributes }) {
-    const url = HTMLAttributes.src
+  renderHTML({ node, HTMLAttributes }) {
+    const url = HTMLAttributes.src ?? node.attrs.src
 
+    // Serialize the standard twitter-tweet markup only; the per-node oEmbed and layout
+    // attrs are runtime nodeView concerns and would be invalid attributes on <blockquote>.
     return [
       'blockquote',
-      {
-        class: 'twitter-tweet',
-        ...HTMLAttributes
-      },
+      mergeAttributes(this.options.HTMLAttributes, { class: 'twitter-tweet' }),
       ['a', { href: url }, url]
     ]
   },
