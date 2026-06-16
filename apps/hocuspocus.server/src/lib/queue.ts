@@ -7,7 +7,7 @@ import { toBullMQConnection } from '../types/redis.types'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { queueLogger } from './logger'
 import { prisma } from './prisma'
-import { createRedisConnection, getRedisPublisher } from './redis'
+import { bullmqConnectionOptions, createRedisConnection, getRedisPublisher } from './redis'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
@@ -67,16 +67,6 @@ async function upsertDocumentMetadata(
   }
   // Fallback: should not reach here but just in case
   throw new Error(`Failed to create unique slug after ${maxRetries} attempts`)
-}
-
-// BullMQ connection options (shared base config)
-const bullmqConnectionOptions = {
-  maxRetriesPerRequest: null, // BullMQ requirement - allows unlimited retries
-  enableReadyCheck: true,
-  enableOfflineQueue: true,
-  commandTimeout: config.redis.commandTimeout,
-  connectTimeout: config.redis.connectTimeout,
-  keepAlive: config.redis.keepAlive
 }
 
 // Queue connection (non-blocking operations)

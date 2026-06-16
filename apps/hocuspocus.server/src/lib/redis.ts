@@ -4,6 +4,16 @@ import { config } from '../config/env'
 import type { RedisClient } from '../types'
 import { redisLogger } from './logger'
 
+// Shared BullMQ connection options (identical across the queue/email/push producers).
+export const bullmqConnectionOptions = {
+  maxRetriesPerRequest: null, // BullMQ requirement — allows unlimited retries
+  enableReadyCheck: true,
+  enableOfflineQueue: true,
+  commandTimeout: config.redis.commandTimeout,
+  connectTimeout: config.redis.connectTimeout,
+  keepAlive: config.redis.keepAlive
+}
+
 const globalForRedis = globalThis as unknown as {
   redis: RedisClient | null
   redisSubscriber: RedisClient | null

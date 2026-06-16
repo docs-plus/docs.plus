@@ -17,20 +17,10 @@ import type { PushDLQData, PushJobData } from '../../types/push.types'
 import { toBullMQConnection } from '../../types/redis.types'
 import { pushLogger } from '../logger'
 import { prisma } from '../prisma'
-import { createRedisConnection } from '../redis'
+import { bullmqConnectionOptions, createRedisConnection } from '../redis'
 import { sendPushNotification } from './sender'
 
 export const PUSH_QUEUE_NAME = 'push-notifications'
-
-// BullMQ connection options (must set maxRetriesPerRequest: null)
-const bullmqConnectionOptions = {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: true,
-  enableOfflineQueue: true,
-  commandTimeout: config.redis.commandTimeout,
-  connectTimeout: config.redis.connectTimeout,
-  keepAlive: config.redis.keepAlive
-}
 
 // Queue connection (for adding jobs - used by rest-api)
 const redisClient = createRedisConnection(bullmqConnectionOptions)

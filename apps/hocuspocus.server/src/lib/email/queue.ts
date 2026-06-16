@@ -12,18 +12,8 @@ import type { EmailDLQData, EmailJobData, EmailResult } from '../../types/email.
 import { toBullMQConnection } from '../../types/redis.types'
 import { emailLogger } from '../logger'
 import { prisma } from '../prisma'
-import { createRedisConnection } from '../redis'
+import { bullmqConnectionOptions, createRedisConnection } from '../redis'
 import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
-
-// BullMQ connection options
-const bullmqConnectionOptions = {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: true,
-  enableOfflineQueue: true,
-  commandTimeout: config.redis.commandTimeout,
-  connectTimeout: config.redis.connectTimeout,
-  keepAlive: config.redis.keepAlive
-}
 
 // Queue connection
 const redisClient = createRedisConnection(bullmqConnectionOptions)
