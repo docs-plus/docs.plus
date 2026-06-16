@@ -10,6 +10,7 @@ import { getAnonClient } from './supabase'
 export interface SupabaseUser {
   sub: string
   email?: string
+  is_anonymous?: boolean
   user_metadata?: {
     full_name?: string
     name?: string
@@ -52,6 +53,7 @@ export const verifySupabaseToken = async (token: string): Promise<SupabaseUser |
     const result: SupabaseUser = {
       sub: user.id,
       email: user.email,
+      is_anonymous: user.is_anonymous,
       user_metadata: user.user_metadata as SupabaseUser['user_metadata']
     }
 
@@ -67,16 +69,12 @@ export const verifySupabaseToken = async (token: string): Promise<SupabaseUser |
 }
 
 /**
- * Verify service-role authorization for internal gateway endpoints (email/push).
- * Accepts only a constant-time exact match of the configured service-role key.
- * Fails closed in production when the key is unset; dev allows for local convenience.
+ * Service-role gate for internal email/push endpoints. Constant-time key match;
+ * fails closed when the key is unset so a misconfigured env can't open the relay.
  */
 export function verifyServiceRole(authHeader: string | undefined): boolean {
   const serviceRoleKey = config.supabase.serviceRoleKey
-
-  if (!serviceRoleKey) {
-    return config.app.env !== 'production'
-  }
+  if (!serviceRoleKey) return false
 
   if (!authHeader) return false
 
