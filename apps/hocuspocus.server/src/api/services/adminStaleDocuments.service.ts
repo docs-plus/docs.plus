@@ -197,9 +197,15 @@ export interface ScoredStaleDoc extends Omit<CandidateRow, 'version_count'> {
 
 /** Score every candidate against Supabase view stats (cross-DB join in memory). */
 async function scoreCandidates(rows: CandidateRow[]): Promise<ScoredStaleDoc[]> {
-  const viewStatsMap = await fetchViewStatsMap(rows.map((d) => d.slug))
+  // document_view_stats.document_slug stores lower(trim(documentId)); key on the
+  // lowercased documentId, not the human slug, or every join returns zero rows.
+  const viewStatsMap = await fetchViewStatsMap(rows.map((d) => d.document_id.toLowerCase()))
   return rows.map((doc) => {
-    const views = viewStatsMap.get(doc.slug) || { views_7d: 0, views_30d: 0, last_viewed_at: null }
+    const views = viewStatsMap.get(doc.document_id.toLowerCase()) || {
+      views_7d: 0,
+      views_30d: 0,
+      last_viewed_at: null
+    }
     const { score, reason } = computeStaleScore(
       views.views_7d,
       views.views_30d,
@@ -553,7 +559,7 @@ export async function getDocumentPreview(
   if (!doc) return null
 
   const latestVersion = await prisma.documents.findFirst({
-    where: { documentId: slug },
+    where: { documentId: doc.documentId },
     orderBy: { id: 'desc' },
     select: { data: true }
   })
