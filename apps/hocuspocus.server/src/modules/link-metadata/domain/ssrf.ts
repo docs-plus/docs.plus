@@ -93,6 +93,8 @@ export const safeFetch = async (url: string, init: RequestInit): Promise<Respons
 
     const location = response.headers.get('location')
     if (!location) return response
+    // Drain the redirect response so its socket frees before the next hop.
+    await response.body?.cancel().catch(() => {})
     current = new URL(location, current).toString()
   }
   throw new Error('SSRF: too many redirects')
