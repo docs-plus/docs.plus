@@ -292,3 +292,8 @@ export const createDocumentWorker = () => {
 
   return worker
 }
+
+// Close the producer queues on shutdown so their Redis connections don't leak.
+export const closeQueues = async () => {
+  await Promise.all([StoreDocumentQueue.close(), DeadLetterQueue.close()])
+}
