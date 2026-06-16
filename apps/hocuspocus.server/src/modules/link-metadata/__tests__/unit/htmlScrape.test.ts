@@ -32,7 +32,7 @@ describe('runHtmlScrape', () => {
     const init = fetchSpy.mock.calls[0]![1] as RequestInit
     const headers = new Headers(init.headers)
     expect(headers.get('accept-language')).toBe('fr-FR')
-    expect(headers.get('user-agent')).toContain('DocsPlusBot')
+    expect(headers.get('user-agent')).toContain('DocsplusBot')
     expect(headers.get('user-agent')).toContain('facebookexternalhit')
   })
 
