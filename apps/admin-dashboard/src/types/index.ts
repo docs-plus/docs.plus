@@ -312,9 +312,7 @@ export interface PushSubscriptionAnalytics {
   }
 }
 
-// Stale Documents Audit Types (Phase 13)
-
-export type StaleSeverity = 'critical' | 'high' | 'medium' | 'low'
+// Stale Documents Audit Types
 
 export interface DocumentStructure {
   headings: number
