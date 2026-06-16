@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
-import healthRouter from '../../src/api/health'
+import healthRouter from '../../src/api/routers/health.router'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
 
 describe('Health Check API', () => {

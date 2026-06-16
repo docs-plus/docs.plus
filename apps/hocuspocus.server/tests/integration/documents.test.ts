@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { Hono } from 'hono'
-import documentsRouter from '../../src/api/documents'
+import documentsRouter from '../../src/api/routers/documents.router'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
 import {
   validDocument,

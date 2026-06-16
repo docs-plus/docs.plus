@@ -1,11 +1,11 @@
 import { Hono } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
-import adminRouter from './api/admin'
-import documentsRouter from './api/documents'
 import emailRouter from './api/email'
-import healthRouter from './api/health'
-import hypermultimediaRouter from './api/hypermultimedia'
+import adminRouter from './api/routers/admin.router'
+import documentsRouter from './api/routers/documents.router'
+import healthRouter from './api/routers/health.router'
+import hypermultimediaRouter from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
