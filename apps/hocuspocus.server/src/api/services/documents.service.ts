@@ -255,7 +255,12 @@ export const updateDocument = async (
       select: { ownerId: true, readOnly: true }
     })
 
-    const updateData: any = {}
+    const updateData: {
+      description?: string
+      title?: string
+      keywords?: string
+      readOnly?: boolean
+    } = {}
     if (description !== undefined) updateData.description = description
     if (title !== undefined) updateData.title = title
     if (keywords !== undefined) updateData.keywords = keywords.join(',')
