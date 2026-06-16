@@ -22,8 +22,6 @@ import {
 export { DANGEROUS_SCHEME_RE, isSafeHref, normalizeHref, validateURL }
 export type { LinkifyMatchLike, SpecialUrlInfo }
 
-// ===== Public types =====
-
 /** Discriminated input to {@link URLDecisions.forWrite}. */
 export type WriteInput =
   // `text` runs full extraction (returns 0..N).
@@ -88,8 +86,6 @@ export interface URLDecisions {
   detect(text: string): boolean
 }
 
-// ===== Gate composition =====
-
 /** Context passed to a user-supplied `isAllowedUri` policy hook. Mirrors `@tiptap/extension-link`. */
 export type IsAllowedUriContext<P = unknown> = {
   defaultValidate: (uri: string) => boolean
@@ -125,8 +121,6 @@ export function composeGate<P = unknown>(
     })
   }
 }
-
-// ===== Implementation =====
 
 // `special` is hoisted by the caller so `getSpecialUrlInfo` runs once per write.
 const classifyMatch = (
