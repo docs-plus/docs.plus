@@ -22,6 +22,7 @@ import {
   toggleAdminRole
 } from '@/services/api'
 import type { User } from '@/types'
+import { confirmToast } from '@/utils/confirmToast'
 import { exportToCSV } from '@/utils/export'
 import { formatDate, formatDateTime } from '@/utils/format'
 
@@ -159,30 +160,16 @@ export default function UsersPage() {
       }
 
       const action = user.is_admin ? 'revoke admin from' : 'grant admin to'
-      toast(
-        (t) => (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">{user.is_admin ? 'Revoke' : 'Grant'} admin role?</p>
-            <p className="text-xs opacity-70">
-              This will {action} <strong>{user.username || user.email}</strong>.
-            </p>
-            <div className="flex gap-2">
-              <button
-                className={`btn btn-xs ${user.is_admin ? 'btn-warning' : 'btn-primary'}`}
-                onClick={() => {
-                  toggleAdminMutation.mutate(user.id)
-                  toast.dismiss(t.id)
-                }}>
-                Confirm
-              </button>
-              <button className="btn btn-ghost btn-xs" onClick={() => toast.dismiss(t.id)}>
-                Cancel
-              </button>
-            </div>
-          </div>
+      confirmToast({
+        title: `${user.is_admin ? 'Revoke' : 'Grant'} admin role?`,
+        body: (
+          <>
+            This will {action} <strong>{user.username || user.email}</strong>.
+          </>
         ),
-        { duration: 10000 }
-      )
+        confirmClass: user.is_admin ? 'btn-warning' : 'btn-primary',
+        onConfirm: () => toggleAdminMutation.mutate(user.id)
+      })
     },
     [currentUserId, toggleAdminMutation]
   )

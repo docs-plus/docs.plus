@@ -36,6 +36,7 @@ import type {
   NotificationHealth,
   PushFailureSummary
 } from '@/types'
+import { confirmToast } from '@/utils/confirmToast'
 import { exportToCSV } from '@/utils/export'
 import { formatRelative } from '@/utils/format'
 
@@ -61,11 +62,9 @@ function PlatformBadge({ platform }: { platform: string }) {
 function CategoryBadge({ category }: { category: string }) {
   const severeCategories = ['EXPIRED', 'NOT_FOUND', 'HARD', 'PERMANENT_FAILURE']
   const warningCategories = ['UNAUTHORIZED', 'TIMEOUT', 'SOFT', 'RATE_LIMITED']
-  const badgeClass = severeCategories.includes(category)
-    ? 'badge-error'
-    : warningCategories.includes(category)
-      ? 'badge-warning'
-      : 'badge-ghost'
+  let badgeClass = 'badge-ghost'
+  if (severeCategories.includes(category)) badgeClass = 'badge-error'
+  else if (warningCategories.includes(category)) badgeClass = 'badge-warning'
   return <span className={`badge badge-sm ${badgeClass}`}>{category}</span>
 }
 
@@ -634,28 +633,11 @@ export default function NotificationAuditPage() {
       label: string,
       payload: { minFailures: number; errorPattern: string; subscriptionIds?: string[] }
     ) => {
-      toast(
-        (t) => (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">{label}</p>
-            <p className="text-xs opacity-70">This will deactivate matching push subscriptions.</p>
-            <div className="flex gap-2">
-              <button
-                className="btn btn-error btn-xs"
-                onClick={() => {
-                  disableMutation.mutate(payload)
-                  toast.dismiss(t.id)
-                }}>
-                Confirm
-              </button>
-              <button className="btn btn-ghost btn-xs" onClick={() => toast.dismiss(t.id)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ),
-        { duration: 10000 }
-      )
+      confirmToast({
+        title: label,
+        body: 'This will deactivate matching push subscriptions.',
+        onConfirm: () => disableMutation.mutate(payload)
+      })
     },
     [disableMutation]
   )
@@ -745,7 +727,7 @@ export default function NotificationAuditPage() {
             </div>
           )}
 
-          {/* ── Health Cards ───────────────────────────────────────────────── */}
+          {/* Health Cards */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <StatCard
               title="Push Delivery Rate"
@@ -781,7 +763,7 @@ export default function NotificationAuditPage() {
             />
           </div>
 
-          {/* ── Push Failures ──────────────────────────────────────────────── */}
+          {/* Push Failures */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Push Failures by Category</h2>
@@ -794,13 +776,13 @@ export default function NotificationAuditPage() {
             <PushFailureBreakdown data={pushFailures} isLoading={pushFailuresLoading} />
           </div>
 
-          {/* ── Email Failures ─────────────────────────────────────────────── */}
+          {/* Email Failures */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h2 className="mb-4 text-lg font-semibold">Email Failures</h2>
             <EmailFailureBreakdown data={emailFailures} isLoading={emailFailuresLoading} />
           </div>
 
-          {/* ── Failed Subscriptions Table ─────────────────────────────────── */}
+          {/* Failed Subscriptions Table */}
           <CollapsibleSection
             title={`Failed Push Subscriptions (${failedSubs?.length ?? 0})`}
             defaultOpen>
@@ -811,14 +793,14 @@ export default function NotificationAuditPage() {
             />
           </CollapsibleSection>
 
-          {/* ── Email Bounces Table ────────────────────────────────────────── */}
+          {/* Email Bounces Table */}
           <CollapsibleSection
             title={`Email Bounces (${emailBounces?.length ?? 0})`}
             defaultOpen={false}>
             <EmailBouncesTable data={emailBounces} isLoading={emailBouncesLoading} />
           </CollapsibleSection>
 
-          {/* ── DLQ Viewer ─────────────────────────────────────────────────── */}
+          {/* DLQ Viewer */}
           <CollapsibleSection title="Dead Letter Queues" defaultOpen={false}>
             <DLQViewer />
           </CollapsibleSection>

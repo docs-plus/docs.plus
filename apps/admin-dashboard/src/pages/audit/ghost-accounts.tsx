@@ -29,6 +29,7 @@ import {
   resendGhostConfirmation
 } from '@/services/api'
 import type { GhostAccount, GhostSummary, GhostType } from '@/types'
+import { confirmToast } from '@/utils/confirmToast'
 import { exportToCSV } from '@/utils/export'
 
 // Disable static generation — pages require auth which needs client-side router
@@ -395,60 +396,22 @@ export default function GhostAccountsAuditPage() {
   // Handlers
   const handleDelete = useCallback(
     (userId: string) => {
-      toast(
-        (t) => (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Delete this account?</p>
-            <p className="text-xs opacity-70">
-              Will auto-choose hard or soft delete based on message history.
-            </p>
-            <div className="flex gap-2">
-              <button
-                className="btn btn-error btn-xs"
-                onClick={() => {
-                  deleteMutation.mutate(userId)
-                  toast.dismiss(t.id)
-                }}>
-                Confirm
-              </button>
-              <button className="btn btn-ghost btn-xs" onClick={() => toast.dismiss(t.id)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ),
-        { duration: 10000 }
-      )
+      confirmToast({
+        title: 'Delete this account?',
+        body: 'Will auto-choose hard or soft delete based on message history.',
+        onConfirm: () => deleteMutation.mutate(userId)
+      })
     },
     [deleteMutation]
   )
 
   const handleBulkDelete = useCallback(() => {
     const ids = Array.from(selectedIds)
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Delete {ids.length} account(s)?</p>
-          <p className="text-xs opacity-70">
-            Each account will be hard or soft deleted based on FK dependencies.
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="btn btn-error btn-xs"
-              onClick={() => {
-                bulkDeleteMutation.mutate(ids)
-                toast.dismiss(t.id)
-              }}>
-              Confirm
-            </button>
-            <button className="btn btn-ghost btn-xs" onClick={() => toast.dismiss(t.id)}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 10000 }
-    )
+    confirmToast({
+      title: `Delete ${ids.length} account(s)?`,
+      body: 'Each account will be hard or soft deleted based on FK dependencies.',
+      onConfirm: () => bulkDeleteMutation.mutate(ids)
+    })
   }, [selectedIds, bulkDeleteMutation])
 
   const handleResend = useCallback(
@@ -460,30 +423,11 @@ export default function GhostAccountsAuditPage() {
 
   const handleCleanup = useCallback(
     (days: number) => {
-      toast(
-        (t) => (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Cleanup anonymous sessions?</p>
-            <p className="text-xs opacity-70">
-              This will permanently delete anonymous auth records older than {days} days.
-            </p>
-            <div className="flex gap-2">
-              <button
-                className="btn btn-error btn-xs"
-                onClick={() => {
-                  cleanupMutation.mutate(days)
-                  toast.dismiss(t.id)
-                }}>
-                Confirm
-              </button>
-              <button className="btn btn-ghost btn-xs" onClick={() => toast.dismiss(t.id)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ),
-        { duration: 10000 }
-      )
+      confirmToast({
+        title: 'Cleanup anonymous sessions?',
+        body: `This will permanently delete anonymous auth records older than ${days} days.`,
+        onConfirm: () => cleanupMutation.mutate(days)
+      })
     },
     [cleanupMutation]
   )
