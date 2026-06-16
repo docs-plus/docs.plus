@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabaseClient } from '@utils/supabase'
 
 interface UpdateDocMetadataParams {
   title?: string
@@ -34,11 +35,17 @@ const useUpdateDocMetadata = () => {
       if (description) body.description = description
       if (keywords) body.keywords = keywords
 
+      // Send the Supabase token so the backend can owner-gate the readOnly lock
+      // (same `token` header convention as fetchDocument/uploadMediaFile).
+      const {
+        data: { session }
+      } = await supabaseClient.auth.getSession()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) headers.token = session.access_token
+
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify(body)
       })
 
