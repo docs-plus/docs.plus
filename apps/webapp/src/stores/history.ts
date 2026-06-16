@@ -4,12 +4,15 @@ import { immer } from 'zustand/middleware/immer'
 interface IHistoryStore {
   historyList: HistoryItem[]
   activeHistory: HistoryItem | null
+  /** `history.list` latestSnapshot — hydrate head when watch fails. */
+  latestSnapshot: HistoryItem | null
   loadingHistory: boolean
   editor: Editor | null
   /** Last `history.watch` version we asked for — ignore older `history.watch` payloads (race). */
   pendingWatchVersion: number | null
   setHistoryList: (historyList: HistoryItem[]) => void
   setActiveHistory: (activeHistory: HistoryItem | null) => void
+  setLatestSnapshot: (item: HistoryItem | null) => void
   setLoadingHistory: (loadingHistory: boolean) => void
   setEditor: (editor: Editor | null) => void
   setPendingWatchVersion: (version: number | null) => void
@@ -18,6 +21,7 @@ interface IHistoryStore {
 const history = immer<IHistoryStore>((set) => ({
   historyList: [],
   activeHistory: null,
+  latestSnapshot: null,
   loadingHistory: true,
   editor: null,
   pendingWatchVersion: null,
@@ -33,6 +37,12 @@ const history = immer<IHistoryStore>((set) => ({
     })
   },
 
+  setLatestSnapshot: (latestSnapshot: HistoryItem | null) => {
+    set((state) => {
+      state.latestSnapshot = latestSnapshot
+    })
+  },
+
   setLoadingHistory: (loadingHistory: boolean) => {
     set((state) => {
       state.loadingHistory = loadingHistory
@@ -41,7 +51,8 @@ const history = immer<IHistoryStore>((set) => ({
 
   setEditor: (editor: Editor | null) => {
     set((state) => {
-      state.editor = editor as any
+      // immer Draft rejects TipTap Editor's readonly schema graph.
+      state.editor = editor as typeof state.editor
     })
   },
 

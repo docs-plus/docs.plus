@@ -1,4 +1,5 @@
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
+import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
 function readHistoryHashState() {
@@ -19,13 +20,22 @@ export const useHashRouter = (): HashRouterState => {
   const [state, setState] = useState<HashRouterState>(readHistoryHashState)
 
   useEffect(() => {
-    const checkHash = () => {
+    const sync = () => {
       setState(readHistoryHashState())
     }
 
-    checkHash()
-    window.addEventListener('hashchange', checkHash)
-    return () => window.removeEventListener('hashchange', checkHash)
+    sync()
+    window.addEventListener('hashchange', sync)
+    window.addEventListener('popstate', sync)
+    Router.events.on('hashChangeComplete', sync)
+    Router.events.on('routeChangeComplete', sync)
+
+    return () => {
+      window.removeEventListener('hashchange', sync)
+      window.removeEventListener('popstate', sync)
+      Router.events.off('hashChangeComplete', sync)
+      Router.events.off('routeChangeComplete', sync)
+    }
   }, [])
 
   return state

@@ -31,6 +31,15 @@ export const useModal = () => {
   return context
 }
 
+/** Drawer children only — throws when `ModalContext` is missing (no silent `undefined`). */
+export function useModalDrawerClose(): () => void {
+  const context = useContext(ModalContext)
+  if (!context) {
+    throw new Error('useModalDrawerClose must be used within ModalDrawer')
+  }
+  return context.close
+}
+
 export const ModalDrawer = forwardRef<unknown, ModalDrawerProps>(
   (
     {

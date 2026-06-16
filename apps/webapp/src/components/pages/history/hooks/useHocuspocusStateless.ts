@@ -1,6 +1,7 @@
 import { useStore } from '@stores'
-import { useEffect, useLayoutEffect } from 'react'
+import { useLayoutEffect } from 'react'
 
+import { resetHistorySessionForMount } from '../clearHistorySession'
 import { useDocumentHistory } from './useDocumentHistory'
 import { useHistoryEditorApplyWhenReady } from './useHistoryEditorApplyWhenReady'
 import { useStatelessMessage } from './useStatelessMessage'
@@ -8,22 +9,25 @@ import { useStatelessMessage } from './useStatelessMessage'
 export const useHocuspocusStateless = () => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const documentId = useStore((state) => state.settings.metadata?.documentId)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const providerStatus = useStore((state) => state.settings.providerStatus)
+  const setLoadingHistory = useStore((state) => state.setLoadingHistory)
   const { handleStatelessMessage } = useStatelessMessage()
   const { fetchHistory } = useDocumentHistory()
 
   useHistoryEditorApplyWhenReady()
 
-  /** Zustand history slice survives leaving `#history`; clear before paint so the sidebar never flashes the prior session. */
   useLayoutEffect(() => {
-    const { setActiveHistory, setPendingWatchVersion, setHistoryList, setLoadingHistory } =
-      useStore.getState()
-    setActiveHistory(null)
-    setPendingWatchVersion(null)
-    setHistoryList([])
-    setLoadingHistory(true)
+    resetHistorySessionForMount()
   }, [hocuspocusProvider, documentId])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!providerSyncing) return
+    if (providerStatus !== 'error' && providerStatus !== 'offline') return
+    setLoadingHistory(false)
+  }, [providerSyncing, providerStatus, setLoadingHistory])
+
+  useLayoutEffect(() => {
     if (!hocuspocusProvider) return
     hocuspocusProvider.on('stateless', handleStatelessMessage)
     fetchHistory()

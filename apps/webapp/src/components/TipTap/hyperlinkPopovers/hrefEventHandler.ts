@@ -1,4 +1,7 @@
-import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
+import {
+  parseHistoryHash,
+  pushAppUrlThenNotifyHashChange
+} from '@components/pages/history/historyShareUrl'
 import {
   getDefaultController,
   isSafeHref,
@@ -6,7 +9,6 @@ import {
 } from '@docs.plus/extension-hyperlink'
 import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
 import { scrollToHeading } from '@utils/index'
-import Router from 'next/router'
 import PubSub from 'pubsub-js'
 
 // The webapp ships its own preview popover (`previewHyperlink` factory
@@ -62,8 +64,7 @@ export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boole
     // only; the layout reacts to the hash change and mounts the history view.
     if (parseHistoryHash(newUrl.hash).isHistory) {
       getDefaultController().close()
-      const target = `${newUrl.pathname}${newUrl.search}${newUrl.hash}`
-      void Router.push(target, undefined, { shallow: true })
+      pushAppUrlThenNotifyHashChange(`${newUrl.pathname}${newUrl.search}${newUrl.hash}`)
       return
     }
 

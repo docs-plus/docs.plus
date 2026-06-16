@@ -75,7 +75,8 @@
   }
 
   .history_editor {
-    .toolbar,
+    header,
+    .tiptap__toolbar,
     .sidebar {
       display: none;
     }

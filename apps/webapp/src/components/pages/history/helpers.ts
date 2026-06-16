@@ -2,20 +2,9 @@ import { ProsemirrorTransformer } from '@hocuspocus/transformer'
 import { HistoryItem } from '@types'
 import * as Y from 'yjs'
 
-// Session = group of versions saved within SESSION_GAP_MS of each other
-const SESSION_GAP_MS = 2 * 60 * 1000 // 2 minutes
+import type { GroupedByDay, VersionSession } from './types'
 
-export interface VersionSession {
-  id: string
-  versions: HistoryItem[]
-  startTime: Date
-  endTime: Date
-  isLatest: boolean
-}
-
-interface GroupedByDay {
-  [date: string]: VersionSession[]
-}
+const SESSION_GAP_MS = 2 * 60 * 1000
 
 export const getContentFromYdocObject = (content: string) => {
   const ydoc = new Y.Doc()
@@ -35,9 +24,6 @@ export const tryGetProsemirrorFromHistoryYdoc = (content: string | undefined): u
   }
 }
 
-/**
- * Format relative time (e.g., "2 min ago", "1 hour ago", "Yesterday")
- */
 export const formatRelativeTime = (date: Date | string): string => {
   const now = new Date()
   const then = new Date(date)
@@ -58,9 +44,6 @@ export const formatRelativeTime = (date: Date | string): string => {
   })
 }
 
-/**
- * Format time for display (e.g., "9:28 PM")
- */
 export const formatTime = (date: Date | string): string => {
   return new Date(date).toLocaleTimeString(navigator.language, {
     hour: 'numeric',
@@ -69,9 +52,6 @@ export const formatTime = (date: Date | string): string => {
   })
 }
 
-/**
- * Format date header (e.g., "Today", "Yesterday", "Mon, Jan 5")
- */
 export const formatDateHeader = (date: Date | string): string => {
   const d = new Date(date)
   const now = new Date()
@@ -90,13 +70,9 @@ export const formatDateHeader = (date: Date | string): string => {
   })
 }
 
-/**
- * Group versions into sessions (versions saved within 2 min of each other)
- */
 export const groupVersionsIntoSessions = (versions: HistoryItem[]): VersionSession[] => {
   if (versions.length === 0) return []
 
-  // Sort by createdAt descending (newest first)
   const sorted = [...versions].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
@@ -108,17 +84,14 @@ export const groupVersionsIntoSessions = (versions: HistoryItem[]): VersionSessi
     const current = new Date(sorted[i].createdAt).getTime()
     const prev = new Date(sorted[i - 1].createdAt).getTime()
 
-    // If gap is less than SESSION_GAP_MS, add to current session
     if (prev - current <= SESSION_GAP_MS) {
       currentSession.push(sorted[i])
     } else {
-      // Start new session
       sessions.push(createSession(currentSession, sessions.length === 0))
       currentSession = [sorted[i]]
     }
   }
 
-  // Don't forget the last session
   if (currentSession.length > 0) {
     sessions.push(createSession(currentSession, sessions.length === 0))
   }
@@ -137,9 +110,6 @@ const createSession = (versions: HistoryItem[], isLatest: boolean): VersionSessi
   }
 }
 
-/**
- * Group sessions by day
- */
 export const groupSessionsByDay = (history: HistoryItem[]): GroupedByDay => {
   const sessions = groupVersionsIntoSessions(history)
 
@@ -154,16 +124,10 @@ export const groupSessionsByDay = (history: HistoryItem[]): GroupedByDay => {
   }, {} as GroupedByDay)
 }
 
-/**
- * Check if a day contains the active version
- */
 export const dayContainsVersion = (sessions: VersionSession[], version: number): boolean => {
   return sessions.some((session) => session.versions.some((v) => v.version === version))
 }
 
-/**
- * Check if a session contains the active version
- */
 export const sessionContainsVersion = (session: VersionSession, version: number): boolean => {
   return session.versions.some((v) => v.version === version)
 }

@@ -11,9 +11,6 @@ type Props = {
   variant: 'desktop' | 'mobile'
 }
 
-/**
- * Shared restore + timestamp block for history toolbars (desktop row vs mobile compact).
- */
 export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, variant }: Props) {
   if (!versionInfo) return null
 
@@ -60,10 +57,11 @@ export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, vari
   }
 
   return (
-    <div className="flex min-w-0 items-center justify-end gap-3">
+    <div className="flex min-w-0 items-center justify-end gap-2">
       {showRestore && (
         <Button
           variant="primary"
+          size="sm"
           className="font-normal"
           onClick={onRequestRestore}
           aria-label="Restore this version"
@@ -72,9 +70,9 @@ export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, vari
           Restore this version
         </Button>
       )}
-      <div className="text-sm whitespace-nowrap">
-        <span className="font-medium">{date}</span>
-        <span className="text-base-content/60 ml-2">{time}</span>
+      <div className="text-base-content/60 text-sm whitespace-nowrap">
+        <span className="text-base-content font-medium">{date}</span>
+        <span className="ml-2">{time}</span>
       </div>
     </div>
   )

@@ -2,6 +2,8 @@ import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
+const PAD_HEADING_SELECTOR = '.pad.tiptap:not(.history_editor) .ProseMirror [data-toc-id]'
+
 const useApplyFilters = () => {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
@@ -12,16 +14,18 @@ const useApplyFilters = () => {
   const [isDocumentReady, setIsDocumentReady] = useState(false)
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>
     const checkDocumentReady = () => {
-      const headings = document.querySelectorAll('.ProseMirror [data-toc-id]')
+      const headings = document.querySelectorAll(PAD_HEADING_SELECTOR)
       if (headings.length > 0) {
         setIsDocumentReady(true)
       } else {
-        setTimeout(checkDocumentReady, 200)
+        timeoutId = setTimeout(checkDocumentReady, 200)
       }
     }
 
     checkDocumentReady()
+    return () => clearTimeout(timeoutId)
   }, [])
 
   useEffect(() => {
@@ -52,11 +56,13 @@ const useApplyFilters = () => {
       existsInParent: true
     }))
 
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       setWorkspaceEditorSetting('filterResult', { sortedSlugs, selectedNodes: [] })
       setWorkspaceEditorSetting('applyingFilters', false)
     }, 300)
-  }, [loading, isDocumentReady, slugs, editor])
+
+    return () => clearTimeout(timeoutId)
+  }, [loading, isDocumentReady, slugs, editor, setWorkspaceEditorSetting])
 }
 
 export default useApplyFilters

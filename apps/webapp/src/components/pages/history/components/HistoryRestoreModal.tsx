@@ -8,7 +8,6 @@ type Props = {
   onConfirm: () => void
 }
 
-/** Confirm before replacing live editor content with a history snapshot. */
 export function HistoryRestoreModal({ open, onOpenChange, version, onConfirm }: Props) {
   return (
     <Modal open={open} onOpenChange={onOpenChange}>

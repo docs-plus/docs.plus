@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 
 export type HistoryToolbarVersion = HistoryItem & { isLatestVersion: boolean }
 
-/** Enriched row for the active version (toolbar, restore affordance). */
+/** Enriched active version for toolbar restore affordance. */
 export const useGetVersionInfo = () => {
   const activeHistory = useStore((state) => state.activeHistory)
   const historyList = useStore((state) => state.historyList)

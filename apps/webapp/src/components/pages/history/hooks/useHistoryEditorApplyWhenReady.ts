@@ -1,16 +1,11 @@
-import * as toast from '@components/toast'
 import { useStore } from '@stores'
-import { logger } from '@utils/logger'
 import { useEffect } from 'react'
 
-import { applyHistoryItemToEditor, HISTORY_DECODE_FAILED_MESSAGE } from '../applyHistoryToEditor'
+import { applyHistoryItemToEditor, resolveHistoryApplyResult } from '../applyHistoryToEditor'
 
 /**
- * Server data can arrive before `history` store `editor` is set (one frame / slow mount).
- * Keep `loadingHistory` true until we successfully apply `activeHistory` into the TipTap instance.
- *
- * While `pendingWatchVersion` is set (user picked another version / initial watch), `activeHistory`
- * is still the previous row — do not apply it or we would clear loading before the new snapshot arrives.
+ * Server data can beat `history` store `editor`; keep loading until apply succeeds.
+ * Skip while `pendingWatchVersion` is set — `activeHistory` is still the prior row.
  */
 export function useHistoryEditorApplyWhenReady() {
   const editor = useStore((s) => s.editor)
@@ -24,15 +19,9 @@ export function useHistoryEditorApplyWhenReady() {
     if (pendingWatchVersion != null) return
     if (!activeHistory?.data) return
 
-    const result = applyHistoryItemToEditor(editor, activeHistory)
-    if (result === 'applied') {
-      setLoadingHistory(false)
-      return
-    }
-    if (result === 'decode_failed') {
-      logger.error('History: decode_failed when applying activeHistory (editor became ready)')
-      toast.Error(HISTORY_DECODE_FAILED_MESSAGE)
-      setLoadingHistory(false)
-    }
+    resolveHistoryApplyResult(applyHistoryItemToEditor(editor, activeHistory), {
+      logMessage: 'History: decode_failed when applying activeHistory (editor became ready)',
+      setLoadingHistory
+    })
   }, [editor, activeHistory, loadingHistory, pendingWatchVersion, setLoadingHistory])
 }

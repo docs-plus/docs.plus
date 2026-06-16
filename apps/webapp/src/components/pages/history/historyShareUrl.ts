@@ -44,10 +44,8 @@ export function buildHistoryShareUrl(version: number): string {
   return `${origin}${pathname}${search}#${HISTORY_ROUTE}?${VERSION_QUERY}=${version}`
 }
 
-/** `history.replaceState` does not fire `hashchange`; hooks like `useHashRouter` need a synthetic event. */
-function replaceStateThenNotifyHashChange(url: string): void {
-  const oldURL = window.location.href
-  window.history.replaceState(null, '', url)
+/** `history.pushState` / `replaceState` do not fire `hashchange`; hooks like `useHashRouter` need a synthetic event. */
+function notifyHashChange(oldURL: string): void {
   const newURL = window.location.href
   if (oldURL === newURL) return
   try {
@@ -57,13 +55,25 @@ function replaceStateThenNotifyHashChange(url: string): void {
   }
 }
 
+function updateAppUrl(method: 'push' | 'replace', url: string): void {
+  const oldURL = window.location.href
+  if (method === 'push') window.history.pushState(null, '', url)
+  else window.history.replaceState(null, '', url)
+  notifyHashChange(oldURL)
+}
+
+/** In-app navigation that must wake hash listeners (e.g. editor link → `#history`). */
+export function pushAppUrlThenNotifyHashChange(pathWithSearchAndHash: string): void {
+  updateAppUrl('push', pathWithSearchAndHash)
+}
+
 export function replaceHistoryHashVersion(version: number | null): void {
   const { pathname, search } = window.location
   const url =
     version == null
       ? `${pathname}${search}`
       : `${pathname}${search}#${HISTORY_ROUTE}?${VERSION_QUERY}=${version}`
-  replaceStateThenNotifyHashChange(url)
+  updateAppUrl('replace', url)
 }
 
 /** Clear `#history…` and return to the editor URL (pathname + search only). */
@@ -77,7 +87,19 @@ export function normalizeToPlainHistoryHash(): void {
   if (!p.isHistory) return
   if (p.version == null && !p.versionQueryInvalid) return
   const { pathname, search } = window.location
-  replaceStateThenNotifyHashChange(`${pathname}${search}#${HISTORY_ROUTE}`)
+  updateAppUrl('replace', `${pathname}${search}#${HISTORY_ROUTE}`)
+}
+
+export function pickHistoryListItem(
+  list: HistoryItem[],
+  version: number | null
+): HistoryItem | null {
+  if (!list.length) return null
+  if (version != null) {
+    const match = list.find((item) => item.version === version)
+    if (match) return match
+  }
+  return list[0] ?? null
 }
 
 export function resolveHistoryListTargetVersion(

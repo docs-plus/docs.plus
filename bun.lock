@@ -242,6 +242,7 @@
         "react-icons": "^5.6.0",
         "react-modal-sheet": "^5.6.0",
         "react-tag-input-component": "^2.0.2",
+        "react-virtuoso": "^4.18.7",
         "short-unique-id": "^5.3.2",
         "slugify": "^1.6.9",
         "tailwind-merge": "catalog:",
@@ -3552,6 +3553,8 @@
     "react-tag-input-component": ["react-tag-input-component@2.0.2", "", { "peerDependencies": { "react": "^16 || ^17 || ^18", "react-dom": "^16 || ^17 || ^18" } }, "sha512-dydI9luVwwv9vrjE5u1TTnkcOVkOVL6mhFti8r6hLi78V2F2EKWQOLptURz79UYbDHLSk6tnbvGl8FE+sMpADg=="],
 
     "react-use-measure": ["react-use-measure@2.1.7", "", { "peerDependencies": { "react": ">=16.13", "react-dom": ">=16.13" }, "optionalPeers": ["react-dom"] }, "sha512-KrvcAo13I/60HpwGO5jpW7E9DfusKyLPLvuHlUyP5zqnmAPhNc6qTRjUQrdTADl0lpPpDVU2/Gg51UlOGHXbdg=="],
+
+    "react-virtuoso": ["react-virtuoso@4.18.7", "", { "peerDependencies": { "react": ">=16 || >=17 || >= 18 || >= 19", "react-dom": ">=16 || >=17 || >= 18 || >=19" } }, "sha512-xNF5zDGEEIMB7cKwcen/pLig0YDf6OnfFrVgKFa7sHPf9fRem0CaLshyObbBcP88jzn0enavL39EgplgdyT21g=="],
 
     "read-package-up": ["read-package-up@11.0.0", "", { "dependencies": { "find-up-simple": "^1.0.0", "read-pkg": "^9.0.0", "type-fest": "^4.6.0" } }, "sha512-MbgfoNPANMdb4oRBNg5eqLbB2t2r+o5Ua1pNt8BqGp4I0FJZhuVSOj3PaBPni4azWuSzEdNn2evevzVmEk1ohQ=="],
 

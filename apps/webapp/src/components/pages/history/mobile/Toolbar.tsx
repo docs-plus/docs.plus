@@ -1,5 +1,5 @@
 import { clearHistoryHash } from '@components/pages/history/historyShareUrl'
-import Button from '@components/ui/Button'
+import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 
@@ -14,33 +14,30 @@ const Toolbar = () => {
   const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore } = useVersionRestore()
 
   return (
-    <div className="docTitle bg-base-100 sticky top-0 left-0 z-10 h-auto w-full">
-      <div className="border-base-300 bg-base-100 relative z-10 flex min-h-12 w-full flex-col items-center border-b p-2">
-        <div className="flex w-full flex-row items-center justify-between gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
+    <header className="bg-base-100 sticky top-0 left-0 z-30 w-full shrink-0">
+      <div className="border-base-300 flex min-h-12 w-full flex-col border-b px-2 py-2">
+        <div className="flex w-full items-center justify-between gap-2">
+          <ToolbarButton
             onClick={() => clearHistoryHash()}
             aria-label="Back to Editor"
-            startIcon={Icons.back}
-            iconSize={22}
             tooltip="Back to the Editor"
-            tooltipPlacement="right"
-          />
-          <div className="divider divider-horizontal m-0 h-10 p-0" />
+            tooltipPlacement="right">
+            <Icons.back size={24} />
+          </ToolbarButton>
 
-          <HistoryToolbarVersionBlock
-            variant="mobile"
-            versionInfo={versionInfo}
-            onRequestRestore={requestRestore}
-          />
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1 px-1">
+            <HistoryToolbarVersionBlock
+              variant="mobile"
+              versionInfo={versionInfo}
+              onRequestRestore={requestRestore}
+            />
+          </div>
 
-          <div className="divider divider-horizontal m-0 h-10 p-0" />
           <label
             htmlFor="mobile_history_panel"
             aria-label="Open version history"
-            className="btn btn-ghost drawer-button shrink-0 px-2">
-            <Icons.menu size={30} />
+            className="btn btn-ghost btn-square drawer-button min-h-11 min-w-11 shrink-0">
+            <Icons.menu size={24} />
           </label>
         </div>
       </div>
@@ -51,7 +48,7 @@ const Toolbar = () => {
         version={activeHistory?.version}
         onConfirm={confirmRestore}
       />
-    </div>
+    </header>
   )
 }
 

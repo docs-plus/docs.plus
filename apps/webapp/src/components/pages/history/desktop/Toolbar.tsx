@@ -4,7 +4,6 @@ import {
   copyVersionLinkTitle
 } from '@components/pages/history/historyShareUrl'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
-import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 
@@ -13,49 +12,51 @@ import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionB
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
+const ICON_SIZE = 16
+
 const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
   const historyList = useStore((state) => state.historyList)
   const versionInfo = useGetVersionInfo()
   const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore } = useVersionRestore()
+  const copyLinkLabel = versionInfo ? copyVersionLinkTitle(versionInfo.version) : null
 
   return (
-    <div className="toolbar bg-base-100 border-base-300 flex flex-col border-b">
-      <div className="flex items-center gap-2 px-6 py-3">
-        <Button
-          shape="square"
+    <>
+      <header className="border-base-300 bg-base-100 flex min-h-12 shrink-0 items-center border-b px-3 py-2">
+        <ToolbarButton
           onClick={() => clearHistoryHash()}
           aria-label="Back to Editor"
-          startIcon={Icons.back}
           tooltip="Back to the Editor"
-          tooltipPlacement="right"
-        />
-        <div className="flex min-w-0 flex-1 justify-end">
+          tooltipPlacement="right">
+          <Icons.back size={ICON_SIZE} />
+        </ToolbarButton>
+        <div className="ml-auto flex min-w-0 items-center justify-end">
           <HistoryToolbarVersionBlock
             variant="desktop"
             versionInfo={versionInfo}
             onRequestRestore={requestRestore}
           />
         </div>
-      </div>
+      </header>
 
-      <div className="border-base-300 flex flex-row items-center justify-between gap-1 border-t px-6">
+      <div className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5">
         <div className="flex items-center gap-0.5">
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)" aria-label="Print">
-            <Icons.print size={16} />
+            <Icons.print size={ICON_SIZE} />
           </ToolbarButton>
-          {versionInfo && (
+          {versionInfo && copyLinkLabel && (
             <ToolbarButton
               onClick={() => void copyHistoryVersionLinkToClipboard(versionInfo.version)}
-              tooltip={copyVersionLinkTitle(versionInfo.version)}
-              aria-label={copyVersionLinkTitle(versionInfo.version)}>
-              <Icons.link size={16} />
+              tooltip={copyLinkLabel}
+              aria-label={copyLinkLabel}>
+              <Icons.link size={ICON_SIZE} />
             </ToolbarButton>
           )}
         </div>
 
         {activeHistory && (
-          <div className="text-base-content/60 text-sm">
+          <div className="text-base-content/60 shrink-0 text-sm">
             {`Version ${activeHistory.version} of ${historyList.length}`}
           </div>
         )}
@@ -67,7 +68,7 @@ const Toolbar = () => {
         version={activeHistory?.version}
         onConfirm={confirmRestore}
       />
-    </div>
+    </>
   )
 }
 

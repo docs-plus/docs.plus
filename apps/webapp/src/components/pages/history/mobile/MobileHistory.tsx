@@ -1,40 +1,39 @@
-import editorConfig from '@components/TipTap/TipTap'
-import { ModalDrawer } from '@components/ui/ModalDrawer'
+import { ModalDrawer, useModalDrawerClose } from '@components/ui/ModalDrawer'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
-import { useStore } from '@stores'
-import { useEditor } from '@tiptap/react'
-import { useEffect } from 'react'
 
-import Sidebar from '../desktop/Sidebar'
-import { useHocuspocusStateless } from '../hooks/useHocuspocusStateless'
-import EditorContent from './EditorContent'
+import { HistoryEditorContent } from '../HistoryEditorContent'
+import HistorySidebar from '../HistorySidebar'
+import { useHistoryEditor } from '../hooks/useHistoryEditor'
 import Toolbar from './Toolbar'
 
-const MobileLeftSidePanel = () => {
+function MobileHistorySidebar() {
+  const close = useModalDrawerClose()
   return (
-    <ModalDrawer modalId="mobile_history_panel" position="right">
-      <Sidebar className="bg-base-200 h-full w-full max-w-none border-l-0" />
-    </ModalDrawer>
+    <div className="bg-base-100 z-30 flex h-dvh max-h-dvh w-full max-w-[85%] min-w-[85%] flex-col overflow-hidden">
+      <HistorySidebar
+        className="bg-base-200 h-full w-full max-w-none border-l-0"
+        onClose={close}
+        variant="mobile"
+      />
+    </div>
   )
 }
 
+const MobileLeftSidePanel = () => (
+  <ModalDrawer modalId="mobile_history_panel" position="right">
+    <MobileHistorySidebar />
+  </ModalDrawer>
+)
+
 const MobileHistory = () => {
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
-  const editor = useEditor(editorConfig({ editable: false }), [hocuspocusProvider])
-  const setEditor = useStore((state) => state.setEditor)
-
-  useEffect(() => {
-    if (editor) setEditor(editor)
-  }, [editor])
-
-  useHocuspocusStateless()
+  useHistoryEditor()
   useVisualViewportCssSyncOnFocus(true)
 
   return (
     <div className="mobileLayoutRoot pad tiptap history_editor border-base-300 flex min-h-0 w-full flex-col overflow-hidden border-solid">
       <Toolbar />
       <div className="min-h-0 flex-1 overflow-hidden">
-        <EditorContent />
+        <HistoryEditorContent variant="mobile" />
       </div>
       <MobileLeftSidePanel />
     </div>
