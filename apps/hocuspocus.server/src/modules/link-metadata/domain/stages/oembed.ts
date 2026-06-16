@@ -1,3 +1,4 @@
+import { safeFetch } from '../ssrf'
 import { STAGE_TIMEOUT_MS, type StageResult } from '../types'
 
 interface ProviderEntry {
@@ -103,7 +104,7 @@ export const runOembed = async (canonicalUrl: string): Promise<StageResult> => {
   const timer = setTimeout(() => controller.abort(), STAGE_TIMEOUT_MS.oembed)
 
   try {
-    const response = await fetch(provider.endpoint(canonicalUrl), {
+    const response = await safeFetch(provider.endpoint(canonicalUrl), {
       signal: controller.signal,
       headers: { Accept: 'application/json' }
     })

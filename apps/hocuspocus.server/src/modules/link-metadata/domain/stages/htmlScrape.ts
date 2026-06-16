@@ -1,3 +1,4 @@
+import { safeFetch } from '../ssrf'
 import { BOT_USER_AGENT, type Scraper, STAGE_TIMEOUT_MS, type StageResult } from '../types'
 
 const USER_AGENT = `Mozilla/5.0 (compatible; ${BOT_USER_AGENT}; +https://docs.plus) facebookexternalhit/1.1`
@@ -26,9 +27,9 @@ const isHtml = (contentType: string | null): boolean => {
 
 const filenameFromUrl = (url: string): string => {
   try {
-    const path = new URL(url).pathname
-    const last = path.split('/').filter(Boolean).pop()
-    return last || new URL(url).hostname
+    const parsed = new URL(url)
+    const last = parsed.pathname.split('/').filter(Boolean).pop()
+    return last || parsed.hostname
   } catch {
     return url
   }
@@ -100,10 +101,8 @@ const readCappedBody = async (
  *     instead of trusting Content-Length, which is client-controlled)
  *   - relative OG image / favicon paths after redirects (uses response.url)
  *
- * SSRF NOTE: post-redirect targets are NOT re-validated against the
- * SSRF guard. We rely on the egress-firewalled Docker network — see
- * `../ssrf.ts` for the threat model. If this module ever moves to a
- * host with unrestricted egress, re-validate `response.url` here.
+ * Redirects are followed via `safeFetch`, which re-runs the SSRF host
+ * check on every hop so a public URL can't bounce to an internal host.
  */
 export const runHtmlScrape = async (
   canonicalUrl: string,
@@ -114,9 +113,8 @@ export const runHtmlScrape = async (
   const timer = setTimeout(() => controller.abort(), STAGE_TIMEOUT_MS.html)
 
   try {
-    const response = await fetch(canonicalUrl, {
+    const response = await safeFetch(canonicalUrl, {
       signal: controller.signal,
-      redirect: 'follow',
       headers: {
         'User-Agent': USER_AGENT,
         Accept: 'text/html, application/xhtml+xml',

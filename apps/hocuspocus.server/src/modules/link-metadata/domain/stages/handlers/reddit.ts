@@ -1,3 +1,4 @@
+import { safeFetch } from '../../ssrf'
 import { BOT_USER_AGENT, type StageResult } from '../../types'
 
 export const matchesReddit = (host: string, path: string): boolean =>
@@ -29,7 +30,7 @@ export const runReddit = async (
   } catch {
     return null
   }
-  const response = await fetch(jsonUrl, {
+  const response = await safeFetch(jsonUrl, {
     signal,
     headers: { Accept: 'application/json', 'User-Agent': BOT_USER_AGENT }
   })

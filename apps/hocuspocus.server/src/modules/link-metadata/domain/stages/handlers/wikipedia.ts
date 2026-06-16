@@ -1,3 +1,4 @@
+import { safeFetch } from '../../ssrf'
 import { type StageResult } from '../../types'
 
 const WIKI_HOST = /^([a-z-]+)\.wikipedia\.org$/
@@ -26,10 +27,13 @@ export const runWikipedia = async (
   slug: string,
   signal: AbortSignal
 ): Promise<StageResult> => {
-  const response = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${slug}`, {
-    signal,
-    headers: { Accept: 'application/json' }
-  })
+  const response = await safeFetch(
+    `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${slug}`,
+    {
+      signal,
+      headers: { Accept: 'application/json' }
+    }
+  )
   if (!response.ok) return null
   const data = (await response.json()) as SummaryJson
 

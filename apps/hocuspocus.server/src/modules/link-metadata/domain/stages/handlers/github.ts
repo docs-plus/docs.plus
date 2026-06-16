@@ -1,3 +1,4 @@
+import { safeFetch } from '../../ssrf'
 import { type StageResult } from '../../types'
 
 const REPO_PATH = /^\/([^/]+)\/([^/]+)\/?$/
@@ -26,7 +27,7 @@ export const runGithub = async (
   repo: string,
   signal: AbortSignal
 ): Promise<StageResult> => {
-  const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+  const response = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
     signal,
     headers: { Accept: 'application/vnd.github+json' }
   })
