@@ -18,7 +18,8 @@ import {
   findDropTarget,
   flattenTocItems,
   getDescendantCount,
-  getDescendantIds
+  getDescendantIds,
+  getItemElement
 } from '../dnd'
 
 // =============================================================================
@@ -62,9 +63,6 @@ const initialState: DragState = {
   dropTarget: initialDropTarget,
   sourceRect: null
 }
-
-const getItemElement = (id: string) =>
-  document.querySelector(`li.toc__item[data-id="${id}"] > a`) as HTMLElement | null
 
 // =============================================================================
 // HEADING HELPERS (FLAT SCHEMA)

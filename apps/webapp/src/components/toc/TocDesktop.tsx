@@ -8,8 +8,10 @@ import { twMerge } from 'tailwind-merge'
 
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
+import { TOC_CLASSES } from './tocClasses'
 import { TocContextMenu } from './TocContextMenu'
 import { TocItemDesktop } from './TocItemDesktop'
+import { TocLevelPicker } from './TocLevelPicker'
 import { buildNestedToc } from './utils'
 
 interface TocDesktopProps {
@@ -17,9 +19,11 @@ interface TocDesktopProps {
 }
 
 function removeContextMenuActiveClass() {
-  document.querySelectorAll('.toc__item a.context-menu-active').forEach((item) => {
-    item.classList.remove('context-menu-active')
-  })
+  document
+    .querySelectorAll(`.toc__item .${TOC_CLASSES.row}.context-menu-active`)
+    .forEach((item) => {
+      item.classList.remove('context-menu-active')
+    })
 }
 
 export function TocDesktop({ className = '' }: TocDesktopProps) {
@@ -58,7 +62,9 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
     const isOpen = !tocItem.classList.contains('closed')
 
     setContextMenuState({ headingId: tocId, isOpen })
-    tocItem.querySelector(`a[data-id="${tocId}"]`)?.classList.add('context-menu-active')
+    tocItem
+      .querySelector(`.${TOC_CLASSES.row}[data-id="${tocId}"]`)
+      ?.classList.add('context-menu-active')
 
     return tocItem
   }, [])
@@ -110,22 +116,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
         <DragOverlay dropAnimation={null} style={{ zIndex: 10000 }}>
           {activeItem && (
             <div className="toc-drag-wrapper">
-              {/* Level picker */}
-              <div className="toc-drag-levels">
-                {Array.from({ length: 7 }, (_, i) => i + 1)
-                  .filter(
-                    (level) =>
-                      level >= Math.max(1, originalLevel - 3) &&
-                      level <= Math.min(10, originalLevel + 3)
-                  )
-                  .map((level) => (
-                    <span
-                      key={level}
-                      className={`toc-drag-level ${level === projectedLevel ? 'active' : ''} ${level === originalLevel ? 'original' : ''}`}>
-                      H{level}
-                    </span>
-                  ))}
-              </div>
+              <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />
 
               {/* Drag card - matches source element size */}
               <div

@@ -49,7 +49,7 @@
     .toc__chat-trigger,
     .toc-drag-handle,
     .avatar-group,
-    .toc__item--focused > a::before {
+    .toc__item--focused > .toc__row::before {
       opacity: 0 !important;
     }
 
@@ -57,7 +57,7 @@
       display: block;
     }
 
-    .toc__item > a {
+    .toc__item > .toc__row {
       pointer-events: none;
 
       &:hover,
@@ -86,7 +86,7 @@
   }
 
   // Link base
-  > a {
+  > .toc__row {
     display: flex;
     align-items: center;
     position: relative;
@@ -111,7 +111,7 @@
   }
 
   // Level 1 heading
-  &--1 > a {
+  &--1 > .toc__row {
     font-size: 1rem;
     font-weight: 600;
     color: var(--color-base-content);
@@ -119,7 +119,7 @@
 
   // Focus sight — ::before keeps a square rail inside the link (no box-shadow); `border-radius: 0`
   // on the row avoids Tailwind `rounded` clipping the bar into curves.
-  &.toc__item--focused > a {
+  &.toc__item--focused > .toc__row {
     border-radius: 0;
 
     &::before {
@@ -152,7 +152,7 @@
   }
 
   // Active chat (class from TocItemDesktop) — --color-docsy follows theme via globals.scss :root
-  > a.active .toc__chat-icon--active {
+  > .toc__row.active .toc__chat-icon--active {
     fill: none;
     color: var(--color-docsy);
     stroke: currentColor;
@@ -165,7 +165,7 @@
   }
 
   // Ghosted state (during drag)
-  &.is-ghosted > a {
+  &.is-ghosted > .toc__row {
     background-color: var(--color-base-200) !important;
     border: 2px dashed var(--color-base-300);
     border-radius: 6px;
@@ -180,7 +180,7 @@
     }
   }
 
-  &.is-dragging > a {
+  &.is-dragging > .toc__row {
     background-color: var(--color-base-200) !important;
     border-color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   }
@@ -246,47 +246,65 @@
       color 0.2s ease-in-out;
   }
 
-  &:hover > a .toc__chat-icon {
+  &:hover > .toc__row .toc__chat-icon {
     opacity: 1;
   }
 }
 
 // ======================
-// Drag Handle
+// Drag Handle (hover-only — same reveal pattern as .toc__chat-icon)
 // ======================
 .toc-drag-handle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  margin: 0;
   opacity: 0;
+  pointer-events: none;
   cursor: grab;
-  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-  height: 100%;
-  background-color: var(--color-base-200);
-  border-radius: 4px 0 0 4px;
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-field, 0.25rem);
   z-index: 2;
-  margin-left: 1px;
   -webkit-user-drag: element;
-  pointer-events: auto;
+  touch-action: none;
   transition:
-    opacity 0.2s ease-in-out,
-    color 0.2s ease-in-out,
-    background-color 0.2s ease-in-out;
+    opacity var(--motion-overlay-out, 80ms) ease-in,
+    color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out;
+
+  > svg {
+    fill: none;
+    stroke: currentColor;
+  }
 
   &:hover {
-    color: var(--color-docsy);
-    background-color: var(--color-base-200);
+    color: var(--color-primary);
+    background-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
   }
 
   &:active {
     cursor: grabbing;
     color: var(--color-docsy);
   }
+
+  &:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+    outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+    outline-offset: 1px;
+  }
 }
 
-.toc__item > a:hover > .toc-drag-handle,
-.toc-drag-handle:hover {
+.toc__item:hover > .toc__row .toc-drag-handle {
   opacity: 1;
+  pointer-events: auto;
 }
 
 // ======================
@@ -294,8 +312,8 @@
 // ======================
 .toc__level-picker {
   position: absolute;
-  left: -16px;
-  top: -28px; // Position above the TOC item (matches drag overlay position)
+  left: 0;
+  bottom: calc(100% + 4px);
   // Below TocHeader (z-30) when overlapping; header now sits outside the list scroll area
   z-index: 20;
 }
@@ -513,13 +531,13 @@
   }
 
   // Mobile row uses a larger hit target than desktop’s 24px trigger
-  .toc__item > a > button.toc__chat-trigger {
+  .toc__item > .toc__row > button.toc__chat-trigger {
     width: 2rem;
     height: 2rem;
   }
 
   .toc__item {
-    > a {
+    > .toc__row {
       line-height: 2 !important;
     }
 

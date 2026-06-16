@@ -6,7 +6,7 @@ import { DEFAULT_SNAP_CONFIG, INDICATOR_Y_HYSTERESIS, TARGET_HYSTERESIS } from '
 
 /** Get TOC item element by ID */
 export const getItemElement = (id: string) =>
-  document.querySelector(`li.toc__item[data-id="${id}"] > a`) as HTMLElement | null
+  document.querySelector(`li.toc__item[data-id="${id}"] > .toc__row`) as HTMLElement | null
 
 /**
  * Flatten nested TOC items into a flat array with depth info

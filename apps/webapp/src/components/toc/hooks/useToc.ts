@@ -2,9 +2,11 @@ import { headingFoldPluginKey } from '@components/TipTap/extensions/heading-fold
 import { useStore } from '@stores'
 import type { Transaction } from '@tiptap/pm/state'
 import type { TocItem } from '@types'
-import { TIPTAP_NODES, TRANSACTION_META } from '@types'
+import { TIPTAP_NODES } from '@types'
 import throttle from 'lodash/throttle'
 import { useCallback, useEffect, useRef, useState } from 'react'
+
+import { transactionRequiresTocRebuild } from '../utils/headingTransaction'
 
 type HeadingFoldSlice = ReturnType<typeof headingFoldPluginKey.getState>
 
@@ -31,52 +33,6 @@ function foldSnapshotsEqual(a: FoldSnapshot, b: FoldSnapshot): boolean {
     if (b.animating.get(k) !== v) return false
   }
   return true
-}
-
-function isHeadingRelatedChange(transaction: Transaction): boolean {
-  if (transaction.getMeta(headingFoldPluginKey)) return false
-
-  if (
-    transaction.getMeta(TRANSACTION_META.RENDER_TOC) ||
-    transaction.getMeta(TRANSACTION_META.PASTE) ||
-    transaction.getMeta(TRANSACTION_META.NEW_HEADING_CREATED) ||
-    transaction.getMeta(TRANSACTION_META.HEADING_DELETED) ||
-    transaction.getMeta(TRANSACTION_META.HEADING_TEXT_CHANGED)
-  ) {
-    return true
-  }
-
-  if (!transaction.docChanged) return false
-
-  let affectsHeadings = false
-  transaction.steps.forEach((step) => {
-    const stepMap = step.getMap()
-    stepMap.forEach((oldStart, oldEnd, newStart, newEnd) => {
-      const clampedOldEnd = Math.min(oldEnd, transaction.before.content.size)
-      const clampedOldStart = Math.min(oldStart, clampedOldEnd)
-      const clampedNewEnd = Math.min(newEnd, transaction.doc.content.size)
-      const clampedNewStart = Math.min(newStart, clampedNewEnd)
-
-      if (clampedOldStart < clampedOldEnd) {
-        transaction.before.nodesBetween(clampedOldStart, clampedOldEnd, (node) => {
-          if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
-            affectsHeadings = true
-            return false
-          }
-        })
-      }
-      if (!affectsHeadings && clampedNewStart < clampedNewEnd) {
-        transaction.doc.nodesBetween(clampedNewStart, clampedNewEnd, (node) => {
-          if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
-            affectsHeadings = true
-            return false
-          }
-        })
-      }
-    })
-  })
-
-  return affectsHeadings
 }
 
 export function useToc() {
@@ -164,7 +120,7 @@ export function useToc() {
         return
       }
 
-      if (!isHeadingRelatedChange(transaction)) return
+      if (!transactionRequiresTocRebuild(transaction)) return
       throttledHeadingRebuild()
     }
 

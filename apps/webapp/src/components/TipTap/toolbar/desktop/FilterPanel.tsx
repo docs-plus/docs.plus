@@ -56,8 +56,8 @@ const applySearchThroughHeading = (searchInput: string, router: NextRouter): voi
 
 const highlightTocHeadings = (headings: Element[]): void => {
   const headingIds = headings.map((h) => h.getAttribute('data-toc-id'))
-  const tocItems = document.querySelectorAll('.tiptap__toc .toc__item a')
-  tocItems.forEach((el) => {
+  const tocRows = document.querySelectorAll('.tiptap__toc .toc__item .toc__row')
+  tocRows.forEach((el) => {
     if (headingIds.includes(el.getAttribute('data-id'))) {
       el.classList.add('bg-warning/20')
       el.classList.remove('text-base-content')

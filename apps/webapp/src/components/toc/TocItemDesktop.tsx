@@ -11,6 +11,7 @@ import { twMerge } from 'tailwind-merge'
 import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
+import { TocLevelPicker } from './TocLevelPicker'
 import { type NestedTocNode, scrollToHeading, tocTrailingRailPx } from './utils'
 
 interface TocItemDesktopProps {
@@ -49,12 +50,10 @@ export function TocItemDesktop({
   const hasPresentUsers = presentUsers.length > 0
   const trailingRailPx = tocTrailingRailPx(presentUsers.length, unreadCount)
 
-  // Drag state
   const isDragging = sortable.isDragging
   const isDescendantOfDragged = activeId ? collapsedIds.has(item.id) : false
   const isGhosted = isDragging || isDescendantOfDragged
 
-  // Hover state for level picker
   const [isHoveringHandle, setIsHoveringHandle] = useState(false)
 
   const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
@@ -65,7 +64,7 @@ export function TocItemDesktop({
       if (!editor) return
 
       setActiveHeading(item.id)
-      setFocusedHeadingWithLock(item.id) // Lock focus during smooth scroll
+      setFocusedHeadingWithLock(item.id)
       scrollToHeading(editor, item.id, { openChatRoom: true })
     },
     [editor, item.id, setActiveHeading, setFocusedHeadingWithLock]
@@ -101,49 +100,35 @@ export function TocItemDesktop({
     hasPresentUsers && 'has-present-users'
   )
 
-  const aClassName = twMerge(
-    'group relative flex items-center gap-1 overflow-hidden rounded has-drag-handle whitespace-pre-line hyphens-auto',
+  const rowClassName = twMerge(
+    TOC_CLASSES.row,
+    'group relative flex items-center gap-1 overflow-hidden rounded whitespace-pre-line hyphens-auto',
     isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`
   )
 
   return (
     <li ref={sortable.setNodeRef} className={liClassName} data-id={item.id}>
-      <a className={aClassName} onClick={handleClick} href={`?${item.id}`} data-id={item.id}>
-        {/* Level badge - visible during drag */}
+      <div className={rowClassName} data-id={item.id}>
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
 
-        {/* Drag handle */}
-        <Button
-          variant="ghost"
-          size="xs"
-          shape="square"
-          className="toc-drag-handle absolute -left-4 size-5 min-w-5 !p-0"
-          {...sortable.attributes}
-          {...sortable.listeners}
-          onMouseEnter={() => setIsHoveringHandle(true)}
-          onMouseLeave={() => setIsHoveringHandle(false)}
-          startIcon={<Icons.gripVertical size={18} />}
-        />
+        <span className="relative flex shrink-0 items-center self-stretch">
+          <Tooltip title="Drag to reorder" placement="top">
+            <button
+              type="button"
+              className="toc-drag-handle"
+              aria-label="Drag to reorder"
+              {...sortable.attributes}
+              {...sortable.listeners}
+              onMouseEnter={() => setIsHoveringHandle(true)}
+              onMouseLeave={() => setIsHoveringHandle(false)}
+              onClick={(e) => e.preventDefault()}>
+              <Icons.gripVertical size={16} aria-hidden className="stroke-[1.75]" />
+            </button>
+          </Tooltip>
 
-        {/* Level picker on hover */}
-        {isHoveringHandle && !isDragging && (
-          <div className={`toc-drag-levels ${TOC_CLASSES.levelPicker}`}>
-            {Array.from({ length: 6 }, (_, i) => i + 1)
-              .filter(
-                (level) =>
-                  level >= Math.max(1, item.level - 3) && level <= Math.min(6, item.level + 3)
-              )
-              .map((level) => (
-                <span
-                  key={level}
-                  className={`toc-drag-level ${level === item.level ? 'active' : ''} ${level === item.level ? 'original' : ''}`}>
-                  H{level}
-                </span>
-              ))}
-          </div>
-        )}
+          {isHoveringHandle && !isDragging && <TocLevelPicker level={item.level} mode="preview" />}
+        </span>
 
-        {/* Fold/Unfold button - only show if has children */}
         {hasChildren && (
           <Button
             variant="ghost"
@@ -160,10 +145,16 @@ export function TocItemDesktop({
           />
         )}
 
-        {/* Heading text */}
-        <span className="toc__link min-w-0 flex-1 hyphens-auto whitespace-pre-line">
-          {item.textContent}
-        </span>
+        <a
+          className={twMerge(
+            TOC_CLASSES.rowLink,
+            'min-w-0 flex-1 hyphens-auto whitespace-pre-line text-inherit no-underline'
+          )}
+          onClick={handleClick}
+          href={`?${item.id}`}
+          data-id={item.id}>
+          <span className="toc__link">{item.textContent}</span>
+        </a>
 
         <div className="relative ml-auto h-8 shrink-0" style={{ width: trailingRailPx }}>
           <Tooltip title="Chat Room" placement="left">
@@ -197,9 +188,8 @@ export function TocItemDesktop({
             </div>
           )}
         </div>
-      </a>
+      </div>
 
-      {/* Nested children */}
       {hasChildren && (
         <ul className={TOC_CLASSES.children}>
           {nestedNodes.map(({ item: childItem, nodes: grandNodes }) => (
