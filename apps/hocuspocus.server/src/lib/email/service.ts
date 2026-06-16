@@ -17,6 +17,7 @@ import type {
   GenericEmailRequest,
   NotificationEmailRequest
 } from '../../types/email.types'
+import { NotificationGatewayBase } from '../gateway'
 import { emailLogger } from '../logger'
 import { getProviderStatus, isAnyProviderConfigured, verifyProvider } from './providers'
 import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
@@ -25,62 +26,29 @@ import { sendEmailViaProvider } from './sender'
 /**
  * Email Gateway Service
  */
-export class EmailGatewayService {
-  private worker: ReturnType<typeof createEmailWorker> = null
-  private initialized = false
-  private workerMode = false
-
-  /**
-   * Initialize the email gateway
-   * @param enableWorker - If true, creates a BullMQ worker to process jobs.
-   *                       Set to true ONLY in hocuspocus-worker, NOT in rest-api.
-   */
-  async initialize(enableWorker = false): Promise<void> {
-    if (this.initialized) return
-
-    this.workerMode = enableWorker
-    emailLogger.info({ workerMode: enableWorker }, 'Initializing Email Gateway...')
-
-    const status = getProviderStatus()
-    if (status.active) {
-      emailLogger.info(
-        { provider: status.active, configured: status.configured },
-        'Email provider detected'
-      )
-      const verified = await verifyProvider()
-      if (!verified) {
-        emailLogger.warn({ provider: status.active }, 'Email provider verification failed')
-      }
-    } else {
-      emailLogger.warn('No email provider configured - gateway in dry-run mode')
-    }
-
-    // Only create worker in worker mode (hocuspocus-worker container)
-    if (enableWorker) {
-      this.worker = createEmailWorker()
-      if (!this.worker) {
-        emailLogger.error('Failed to create email worker - Redis may not be configured')
-      }
-    }
-
-    this.initialized = true
-    emailLogger.info(
-      {
-        provider: status.active,
-        worker_enabled: this.worker !== null,
-        mode: enableWorker ? 'worker' : 'queue-only'
+export class EmailGatewayService extends NotificationGatewayBase {
+  constructor() {
+    super({
+      label: 'Email',
+      logger: emailLogger,
+      configure: async () => {
+        const status = getProviderStatus()
+        if (status.active) {
+          emailLogger.info(
+            { provider: status.active, configured: status.configured },
+            'Email provider detected'
+          )
+          const verified = await verifyProvider()
+          if (!verified) {
+            emailLogger.warn({ provider: status.active }, 'Email provider verification failed')
+          }
+        } else {
+          emailLogger.warn('No email provider configured - gateway in dry-run mode')
+        }
       },
-      'Email Gateway initialized'
-    )
-  }
-
-  async shutdown(): Promise<void> {
-    if (this.worker) {
-      await this.worker.close()
-      emailLogger.info('Email worker stopped')
-    }
-    await closeEmailQueue()
-    emailLogger.info('Email Gateway shutdown complete')
+      createWorker: createEmailWorker,
+      closeQueue: closeEmailQueue
+    })
   }
 
   async sendNotificationEmail(request: NotificationEmailRequest): Promise<EmailResult> {

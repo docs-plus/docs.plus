@@ -88,14 +88,17 @@ pushDeadLetterQueue?.on('error', (err: Error) => {
 let pushWorker: Worker<PushJobData> | null = null
 
 /**
- * Queue a push notification for async processing
+ * Queue a push notification for async processing. Pass a stable `jobId` (from a
+ * pgmq business id) so a pgmq redelivery re-adds the same BullMQ job instead of a
+ * duplicate; the worker's idempotencyKey (`push:${job.id}`) keys on that same id.
  */
-export async function queuePush(data: PushJobData): Promise<string | null> {
+export async function queuePush(data: PushJobData, jobId?: string): Promise<string | null> {
   if (!pushQueue) return null
 
   try {
     const job = await pushQueue.add('send-push', data, {
-      priority: 1 // High priority for push notifications
+      priority: 1, // High priority for push notifications
+      ...(jobId ? { jobId } : {})
     })
     pushLogger.debug({ jobId: job.id }, 'Push notification queued')
     return job.id || null
@@ -130,9 +133,7 @@ export function createPushWorker(): Worker<PushJobData> | null {
       pushLogger.debug({ jobId: job.id, type: job.data.type }, 'Processing push job')
 
       try {
-        // ============================================================
-        // IDEMPOTENCY CHECK: Prevent duplicate sends on retry
-        // ============================================================
+        // Idempotency check: prevent duplicate sends on retry
         const existingSend = await prisma.pushSentLog.findUnique({
           where: { idempotencyKey }
         })
@@ -149,15 +150,10 @@ export function createPushWorker(): Worker<PushJobData> | null {
           }
         }
 
-        // ============================================================
-        // SEND PUSH NOTIFICATION
-        // ============================================================
         if (job.data.type === 'notification') {
           const result = await sendPushNotification(job.data.payload)
 
-          // ============================================================
-          // RECORD SUCCESSFUL SEND (before returning)
-          // ============================================================
+          // Record the successful send before returning so a retry dedupes
           if (result.success) {
             const userId = job.data.payload.user_id || 'unknown'
 

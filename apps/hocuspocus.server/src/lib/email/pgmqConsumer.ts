@@ -6,17 +6,13 @@
  * ARCHITECTURE:
  *   Supabase email_queue → pg_cron → pgmq queue → This Consumer → BullMQ → SMTP
  *
- * WHY pgmq INSTEAD OF pg_net?
- *   ✅ Never lose messages (queue persists even if backend is down)
- *   ✅ No exposed HTTP endpoint (security improvement)
- *   ✅ Auto-retry built into queue semantics
- *   ✅ Same pattern as push notifications (consistency)
- *   ✅ $0 cost at any scale
+ * Poll/ack/metrics/lifecycle live in the shared createPgmqConsumer; this module
+ * owns only the email-specific message mapping, status updates, and RPC names.
  *
  * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { config } from '../../config/env'
 import type {
@@ -28,37 +24,33 @@ import type {
   NotificationType
 } from '../../types/email.types'
 import { emailLogger } from '../logger'
+import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { queueEmail } from './queue'
 
-// Consumer configuration
 const POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
 const BATCH_SIZE = 50 // Process up to 50 messages per poll
 const VISIBILITY_TIMEOUT = 60 // Seconds before message becomes visible again
 
-interface EmailQueueMessage {
-  msg_id: number
-  payload: {
-    // Individual notification fields
-    queue_id?: string
-    to?: string
-    recipient_name?: string
-    recipient_id?: string
-    sender_name?: string
-    sender_id?: string
-    sender_avatar_url?: string | null
-    notification_type?: string
-    message_preview?: string
-    channel_id?: string | null
-    document_slug?: string | null
-    enqueued_at: string
-    // Digest-specific fields (set by compile_digest_emails)
-    type?: 'digest'
-    recipient_email?: string
-    frequency?: string
-    queue_ids?: string[]
-    notifications?: DigestRawNotification[]
-  }
+interface EmailQueuePayload {
+  // Individual notification fields
+  queue_id?: string
+  to?: string
+  recipient_name?: string
+  recipient_id?: string
+  sender_name?: string
+  sender_id?: string
+  sender_avatar_url?: string | null
+  notification_type?: string
+  message_preview?: string
+  channel_id?: string | null
+  document_slug?: string | null
   enqueued_at: string
+  // Digest-specific fields (set by compile_digest_emails)
+  type?: 'digest'
+  recipient_email?: string
+  frequency?: string
+  queue_ids?: string[]
+  notifications?: DigestRawNotification[]
 }
 
 /** Raw notification data from SQL compile_digest_emails */
@@ -75,102 +67,15 @@ interface DigestRawNotification {
   created_at: string
 }
 
-// Singleton Supabase client
-let supabase: SupabaseClient | null = null
-let pollInterval: ReturnType<typeof setInterval> | null = null
-let isProcessing = false
-let isShuttingDown = false
-
-// Metrics
-let metrics = {
-  messagesProcessed: 0,
-  messagesFailed: 0,
-  lastPollAt: null as Date | null,
-  lastMessageAt: null as Date | null,
-  consecutiveEmptyPolls: 0
-}
-
-/**
- * Initialize Supabase client for queue operations
- */
-function getClient(): SupabaseClient | null {
-  if (supabase) return supabase
-
-  const url = config.supabase.url
-  const key = config.supabase.serviceRoleKey
-
-  if (!url || !key) {
-    emailLogger.warn('Supabase not configured - pgmq consumer will not start')
-    return null
-  }
-
-  supabase = createClient(url, key, {
-    auth: { persistSession: false }
-  })
-
-  return supabase
-}
-
-/**
- * Read messages from the pgmq queue
- */
-async function readQueue(): Promise<EmailQueueMessage[]> {
-  const client = getClient()
-  if (!client) return []
-
-  try {
-    const { data, error } = await client.rpc('consume_email_queue', {
-      p_batch_size: BATCH_SIZE,
-      p_visibility_timeout: VISIBILITY_TIMEOUT
-    })
-
-    if (error) {
-      emailLogger.error({ error }, 'Failed to read email queue')
-      return []
-    }
-
-    return (data || []) as EmailQueueMessage[]
-  } catch (err) {
-    emailLogger.error({ err }, 'Error reading email queue')
-    return []
-  }
-}
-
-/**
- * Acknowledge a processed message (removes from queue)
- */
-async function ackMessage(msgId: number): Promise<boolean> {
-  const client = getClient()
-  if (!client) return false
-
-  try {
-    const { error } = await client.rpc('ack_email_message', {
-      p_msg_id: msgId
-    })
-
-    if (error) {
-      emailLogger.error({ error, msgId }, 'Failed to ack email message')
-      return false
-    }
-
-    return true
-  } catch (err) {
-    emailLogger.error({ err, msgId }, 'Error acking email message')
-    return false
-  }
-}
-
 /**
  * Update email status in Supabase (after processing)
  */
 async function updateEmailStatus(
+  client: SupabaseClient,
   queueId: string,
   status: 'sent' | 'failed',
   errorMessage?: string
 ): Promise<void> {
-  const client = getClient()
-  if (!client) return
-
   try {
     await client.rpc('update_email_status', {
       p_queue_id: queueId,
@@ -249,16 +154,20 @@ function buildDigestDocuments(
 }
 
 /**
- * Process a compiled digest message from pgmq
+ * Process a compiled digest message from pgmq.
+ * No single business id exists, so the BullMQ jobId is hashed from the recipient,
+ * frequency, and the set of queue ids the digest covers.
  */
 async function processDigestMessage(
+  client: SupabaseClient,
   msgId: number,
-  payload: EmailQueueMessage['payload']
+  payload: EmailQueuePayload
 ): Promise<boolean> {
-  const appUrl = process.env.APP_URL || 'https://docs.plus'
+  const appUrl = config.email.appUrl
 
   try {
     const documents = buildDigestDocuments(payload.notifications || [], appUrl)
+    const queueIds = payload.queue_ids || []
 
     const digestPayload: DigestEmailRequest = {
       to: payload.recipient_email!,
@@ -270,27 +179,28 @@ async function processDigestMessage(
       period_end: new Date().toISOString()
     }
 
-    const jobId = await queueEmail({
-      type: 'digest',
-      payload: digestPayload,
-      created_at: new Date().toISOString()
-    })
+    const idempotencyJobId = deterministicJobId(
+      'digest',
+      payload.recipient_id,
+      payload.frequency,
+      [...queueIds].sort().join(',')
+    )
+
+    const jobId = await queueEmail(
+      { type: 'digest', payload: digestPayload, created_at: new Date().toISOString() },
+      idempotencyJobId
+    )
 
     if (!jobId) {
       emailLogger.warn({ msgId }, 'Failed to queue digest email job')
       return false
     }
 
-    const acked = await ackMessage(msgId)
-    if (!acked) {
-      emailLogger.warn({ msgId }, 'Failed to ack digest message - may be reprocessed')
-    }
-
-    // Update all queue items as sent (BullMQ will handle actual delivery)
-    const queueIds = payload.queue_ids || []
-    for (const queueId of queueIds) {
-      await updateEmailStatus(queueId, 'sent')
-    }
+    // Per-row updates are independent single-row UPSERTs keyed on distinct
+    // queue_ids, so settle them in parallel. Accepted-loss: digests mark 'sent'
+    // at enqueue (not post-delivery like notifications) because the BullMQ job
+    // payload carries no queue_ids, so a permanently-failed digest stays 'sent'.
+    await Promise.all(queueIds.map((queueId) => updateEmailStatus(client, queueId, 'sent')))
 
     emailLogger.info(
       {
@@ -301,37 +211,30 @@ async function processDigestMessage(
       },
       'Digest email queued from pgmq'
     )
-
-    metrics.messagesProcessed++
-    metrics.lastMessageAt = new Date()
     return true
   } catch (err) {
     emailLogger.error({ err, msgId }, 'Error processing digest queue message')
-    metrics.messagesFailed++
 
-    // Mark all queue items as failed
-    const queueIds = payload.queue_ids || []
-    for (const queueId of queueIds) {
-      await updateEmailStatus(queueId, 'failed', String(err))
-    }
-
+    // Independent single-row updates; settle the failure marks in parallel.
+    await Promise.all(
+      (payload.queue_ids || []).map((queueId) =>
+        updateEmailStatus(client, queueId, 'failed', String(err))
+      )
+    )
     return false
   }
 }
 
 /**
- * Process a single queue message (notification or digest)
+ * Process a single notification message from pgmq.
+ * queue_id (the email_queue row id) is the stable BullMQ jobId.
  */
-async function processMessage(message: EmailQueueMessage): Promise<boolean> {
-  const { msg_id, payload } = message
-
-  // Route digest messages to dedicated handler
-  if (payload.type === 'digest') {
-    return processDigestMessage(msg_id, payload)
-  }
-
+async function processNotificationMessage(
+  client: SupabaseClient,
+  msgId: number,
+  payload: EmailQueuePayload
+): Promise<boolean> {
   try {
-    // Build email payload for BullMQ worker
     const emailPayload: NotificationEmailRequest = {
       queue_id: payload.queue_id!,
       to: payload.to!,
@@ -346,155 +249,60 @@ async function processMessage(message: EmailQueueMessage): Promise<boolean> {
       document_slug: payload.document_slug || undefined
     }
 
-    // Queue to BullMQ for actual email sending
-    const jobId = await queueEmail({
-      type: 'notification',
-      payload: emailPayload,
-      created_at: new Date().toISOString()
-    })
+    const jobId = await queueEmail(
+      { type: 'notification', payload: emailPayload, created_at: new Date().toISOString() },
+      payload.queue_id ? `email-${payload.queue_id}` : undefined
+    )
 
     if (!jobId) {
-      emailLogger.warn({ msgId: msg_id }, 'Failed to queue email job - queue may be unavailable')
+      emailLogger.warn({ msgId }, 'Failed to queue email job - queue may be unavailable')
       return false
     }
 
-    // Message processed successfully - acknowledge it
-    const acked = await ackMessage(msg_id)
-    if (!acked) {
-      emailLogger.warn({ msgId: msg_id }, 'Failed to ack message - may be reprocessed')
-    }
-
     emailLogger.debug(
-      { msgId: msg_id, jobId, to: payload.to, type: payload.notification_type },
+      { msgId, jobId, to: payload.to, type: payload.notification_type },
       'Email notification queued from pgmq'
     )
-
-    metrics.messagesProcessed++
-    metrics.lastMessageAt = new Date()
-
     return true
   } catch (err) {
-    emailLogger.error({ err, msgId: msg_id }, 'Error processing email queue message')
-    metrics.messagesFailed++
+    emailLogger.error({ err, msgId }, 'Error processing email queue message')
 
-    // Update status as failed in Supabase
     if (payload.queue_id) {
-      await updateEmailStatus(payload.queue_id, 'failed', String(err))
+      await updateEmailStatus(client, payload.queue_id, 'failed', String(err))
     }
-
     return false
   }
 }
 
-/**
- * Poll the queue and process messages
- */
-async function pollQueue(): Promise<void> {
-  if (isProcessing || isShuttingDown) return
-
-  isProcessing = true
-  metrics.lastPollAt = new Date()
-
-  try {
-    const messages = await readQueue()
-
-    if (messages.length === 0) {
-      metrics.consecutiveEmptyPolls++
-      isProcessing = false
-      return
-    }
-
-    metrics.consecutiveEmptyPolls = 0
-
-    emailLogger.debug({ count: messages.length }, 'Processing email queue batch')
-
-    // Process messages in parallel (with concurrency limit)
-    const results = await Promise.allSettled(messages.map((m) => processMessage(m)))
-
-    const succeeded = results.filter((r) => r.status === 'fulfilled' && r.value).length
-    const failed = results.length - succeeded
-
-    if (failed > 0) {
-      emailLogger.warn({ succeeded, failed }, 'Some email queue messages failed')
-    }
-  } catch (err) {
-    emailLogger.error({ err }, 'Error in email queue poll cycle')
-  } finally {
-    isProcessing = false
+const consumer = createPgmqConsumer<EmailQueuePayload>({
+  label: 'email',
+  logger: emailLogger,
+  readRpc: 'consume_email_queue',
+  ackRpc: 'ack_email_message',
+  pollIntervalMs: POLL_INTERVAL_MS,
+  batchSize: BATCH_SIZE,
+  visibilityTimeout: VISIBILITY_TIMEOUT,
+  processMessage: async (payload, msgId, ctx) => {
+    const client = ctx.getClient()
+    if (!client) return false
+    return payload.type === 'digest'
+      ? processDigestMessage(client, msgId, payload)
+      : processNotificationMessage(client, msgId, payload)
   }
-}
+})
 
 /**
- * Start the pgmq consumer
- *
+ * Start the pgmq consumer.
  * IMPORTANT: Call this only from hocuspocus-worker, NOT from rest-api.
  */
 export function startEmailQueueConsumer(): boolean {
-  if (pollInterval) {
-    emailLogger.warn('Email queue consumer already running')
-    return false
-  }
-
-  const client = getClient()
-  if (!client) {
-    emailLogger.error('Cannot start email queue consumer - Supabase not configured')
-    return false
-  }
-
-  emailLogger.info(
-    {
-      pollInterval: POLL_INTERVAL_MS,
-      batchSize: BATCH_SIZE,
-      visibilityTimeout: VISIBILITY_TIMEOUT
-    },
-    'Starting email queue consumer (pgmq architecture)'
-  )
-
-  // Initial poll
-  pollQueue()
-
-  // Start polling
-  pollInterval = setInterval(pollQueue, POLL_INTERVAL_MS)
-
-  return true
+  return consumer.start()
 }
 
-/**
- * Stop the pgmq consumer gracefully
- */
-export async function stopEmailQueueConsumer(): Promise<void> {
-  isShuttingDown = true
-
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-
-  // Wait for current processing to complete
-  let waitCount = 0
-  while (isProcessing && waitCount < 10) {
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    waitCount++
-  }
-
-  emailLogger.info(
-    {
-      messagesProcessed: metrics.messagesProcessed,
-      messagesFailed: metrics.messagesFailed
-    },
-    'Email queue consumer stopped'
-  )
+export function stopEmailQueueConsumer(): Promise<void> {
+  return consumer.stop()
 }
 
-/**
- * Get consumer health metrics
- */
-export function getEmailQueueConsumerHealth(): {
-  running: boolean
-  metrics: typeof metrics
-} {
-  return {
-    running: pollInterval !== null && !isShuttingDown,
-    metrics: { ...metrics }
-  }
+export function getEmailQueueConsumerHealth() {
+  return consumer.getHealth()
 }

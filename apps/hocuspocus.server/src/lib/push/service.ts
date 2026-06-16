@@ -16,6 +16,7 @@ import type {
   PushNotificationRequest,
   PushSendResult
 } from '../../types/push.types'
+import { NotificationGatewayBase } from '../gateway'
 import { pushLogger } from '../logger'
 import { closePushQueue, createPushWorker, getPushQueueHealth, queuePush } from './queue'
 import { configureVapid, isVapidConfigured, sendPushNotification } from './sender'
@@ -23,55 +24,20 @@ import { configureVapid, isVapidConfigured, sendPushNotification } from './sende
 /**
  * Push Gateway Service
  */
-export class PushGatewayService {
-  private worker: ReturnType<typeof createPushWorker> = null
-  private initialized = false
-  private workerMode = false
-
-  /**
-   * Initialize the push gateway
-   * @param enableWorker - If true, creates a BullMQ worker to process jobs.
-   *                       Set to true ONLY in hocuspocus-worker, NOT in rest-api.
-   */
-  async initialize(enableWorker = false): Promise<void> {
-    if (this.initialized) return
-
-    this.workerMode = enableWorker
-    pushLogger.info({ workerMode: enableWorker }, 'Initializing Push Gateway...')
-
-    // Configure VAPID (needed for both queueing and sending)
-    const vapidOk = configureVapid()
-    if (!vapidOk) {
-      pushLogger.warn('Push Gateway running without VAPID - notifications will fail')
-    }
-
-    // Only create worker in worker mode (hocuspocus-worker container)
-    if (enableWorker) {
-      this.worker = createPushWorker()
-      if (!this.worker) {
-        pushLogger.error('Failed to create push worker - Redis may not be configured')
-      }
-    }
-
-    this.initialized = true
-
-    pushLogger.info(
-      {
-        vapid_configured: vapidOk,
-        worker_enabled: this.worker !== null,
-        mode: enableWorker ? 'worker' : 'queue-only'
+export class PushGatewayService extends NotificationGatewayBase {
+  constructor() {
+    super({
+      label: 'Push',
+      logger: pushLogger,
+      configure: () => {
+        // VAPID is needed for both queueing and sending
+        if (!configureVapid()) {
+          pushLogger.warn('Push Gateway running without VAPID - notifications will fail')
+        }
       },
-      'Push Gateway initialized'
-    )
-  }
-
-  async shutdown(): Promise<void> {
-    if (this.worker) {
-      await this.worker.close()
-      pushLogger.info('Push worker stopped')
-    }
-    await closePushQueue()
-    pushLogger.info('Push Gateway shutdown complete')
+      createWorker: createPushWorker,
+      closeQueue: closePushQueue
+    })
   }
 
   /**

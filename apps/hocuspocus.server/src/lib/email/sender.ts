@@ -13,7 +13,6 @@ import {
   renderNotificationEmail,
   type UnsubscribeLinks
 } from '@docs.plus/email-templates'
-import { createClient } from '@supabase/supabase-js'
 
 import type {
   DigestEmailRequest,
@@ -24,6 +23,7 @@ import type {
   NotificationEmailRequest
 } from '../../types/email.types'
 import { emailLogger } from '../logger'
+import { getServiceRoleClient } from '../supabase'
 import { sendEmail } from './providers'
 import { buildDigestEmailText, buildNotificationEmailText } from './templates'
 
@@ -31,15 +31,10 @@ import { buildDigestEmailText, buildNotificationEmailText } from './templates'
  * Fetch unsubscribe links from Supabase for a user
  */
 async function getUnsubscribeLinks(userId: string): Promise<UnsubscribeLinks | undefined> {
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !serviceKey) {
-    return undefined
-  }
+  const supabase = getServiceRoleClient()
+  if (!supabase) return undefined
 
   try {
-    const supabase = createClient(url, serviceKey)
     const appUrl = process.env.APP_URL || 'https://docs.plus'
 
     const { data, error } = await supabase.rpc('get_email_footer_links', {
@@ -82,15 +77,18 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         userId = payload.recipient_id
         subject = getEmailSubject(payload.notification_type, payload.sender_name)
 
-        const actionUrl = payload.action_url
-          ? payload.action_url.startsWith('http')
+        let actionUrl: string
+        if (payload.action_url) {
+          actionUrl = payload.action_url.startsWith('http')
             ? payload.action_url
             : `${appUrl}${payload.action_url}`
-          : payload.channel_id
-            ? `${appUrl}?chatroom=${payload.channel_id}`
-            : payload.document_slug
-              ? `${appUrl}/${payload.document_slug}`
-              : appUrl
+        } else if (payload.channel_id) {
+          actionUrl = `${appUrl}?chatroom=${payload.channel_id}`
+        } else if (payload.document_slug) {
+          actionUrl = `${appUrl}/${payload.document_slug}`
+        } else {
+          actionUrl = appUrl
+        }
 
         // Fetch unsubscribe links for this user
         const unsubscribeLinks = userId ? await getUnsubscribeLinks(userId) : undefined
@@ -206,15 +204,13 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
  * Update email status in Supabase email_queue table
  */
 export async function updateSupabaseEmailStatus(callback: EmailStatusCallback): Promise<void> {
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) {
+  const supabase = getServiceRoleClient()
+  if (!supabase) {
     emailLogger.debug('Supabase not configured - skipping status callback')
     return
   }
 
   try {
-    const supabase = createClient(url, serviceKey)
     const updateData: Record<string, any> = { status: callback.status }
     if (callback.sent_at) updateData.sent_at = callback.sent_at
     if (callback.error_message) updateData.error_message = callback.error_message

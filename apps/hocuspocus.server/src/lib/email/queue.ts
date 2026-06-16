@@ -103,9 +103,7 @@ export function createEmailWorker() {
       emailLogger.info({ jobId: job.id, type: data.type }, 'Processing email job')
 
       try {
-        // ============================================================
-        // IDEMPOTENCY CHECK: Prevent duplicate sends on retry
-        // ============================================================
+        // Idempotency check: prevent duplicate sends on retry
         const existingSend = await prisma.emailSentLog.findUnique({
           where: { idempotencyKey }
         })
@@ -122,14 +120,9 @@ export function createEmailWorker() {
           }
         }
 
-        // ============================================================
-        // SEND EMAIL
-        // ============================================================
         const result = await sendEmailViaProvider(data)
 
-        // ============================================================
-        // RECORD SUCCESSFUL SEND (before returning)
-        // ============================================================
+        // Record the successful send before returning so a retry dedupes
         if (result.success) {
           // Get recipient (all email types have 'to')
           const recipient = Array.isArray(data.payload.to)
@@ -240,9 +233,11 @@ export function createEmailWorker() {
 }
 
 /**
- * Add email job to queue
+ * Add email job to queue. Pass a stable `jobId` (from a pgmq business id) so a
+ * pgmq redelivery re-adds the same BullMQ job instead of a duplicate; the
+ * worker's idempotencyKey (`email:${job.id}`) then keys on that same id.
  */
-export async function queueEmail(data: EmailJobData): Promise<string | null> {
+export async function queueEmail(data: EmailJobData, jobId?: string): Promise<string | null> {
   if (!EmailQueue) {
     emailLogger.warn('Email queue not available - sending synchronously')
     // Fallback to synchronous sending
@@ -251,7 +246,8 @@ export async function queueEmail(data: EmailJobData): Promise<string | null> {
   }
 
   const job = await EmailQueue.add('send-email', data, {
-    priority: data.type === 'notification' ? 1 : 2 // Notifications have higher priority
+    priority: data.type === 'notification' ? 1 : 2, // Notifications have higher priority
+    ...(jobId ? { jobId } : {})
   })
 
   emailLogger.debug({ jobId: job.id, type: data.type }, 'Email queued')

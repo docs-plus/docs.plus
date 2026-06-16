@@ -4,7 +4,6 @@
  * Handles sending web push notifications via VAPID.
  */
 
-import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
 import { config } from '../../config/env'
@@ -14,6 +13,7 @@ import type {
   PushSubscription
 } from '../../types/push.types'
 import { pushLogger } from '../logger'
+import { getServiceRoleClient } from '../supabase'
 
 // Configure web-push with VAPID credentials
 let vapidConfigured = false
@@ -41,18 +41,73 @@ export function isVapidConfigured(): boolean {
   return vapidConfigured
 }
 
-/**
- * Get Supabase client for database operations
- */
+/** Service-role client for subscription reads/updates; throws if unconfigured. */
 function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceRoleKey) {
+  const supabase = getServiceRoleClient()
+  if (!supabase) {
     throw new Error('Supabase credentials not configured')
   }
+  return supabase
+}
 
-  return createClient(supabaseUrl, serviceRoleKey)
+type SupabaseLike = ReturnType<typeof getSupabaseClient>
+
+/**
+ * Flush per-subscription state after a send batch. Success/invalid rows share
+ * identical values so each is one `.in()` UPDATE; failures differ per row and
+ * are grouped by their (failed_count, last_error) pair to keep the query count low.
+ */
+async function flushSubscriptionUpdates(
+  supabase: SupabaseLike,
+  successIds: string[],
+  invalidIds: string[],
+  failures: { id: string; failed_count: number; last_error: string }[]
+): Promise<void> {
+  const writes: PromiseLike<unknown>[] = []
+
+  if (successIds.length > 0) {
+    writes.push(
+      supabase
+        .from('push_subscriptions')
+        .update({ last_used_at: new Date().toISOString(), failed_count: 0, last_error: null })
+        .in('id', successIds)
+    )
+  }
+
+  if (invalidIds.length > 0) {
+    writes.push(
+      supabase
+        .from('push_subscriptions')
+        .update({ is_active: false, last_error: 'Subscription expired or invalid' })
+        .in('id', invalidIds)
+    )
+  }
+
+  const failureGroups = new Map<
+    string,
+    { ids: string[]; failed_count: number; last_error: string }
+  >()
+  for (const f of failures) {
+    const key = `${f.failed_count}|${f.last_error}`
+    const group = failureGroups.get(key)
+    if (group) group.ids.push(f.id)
+    else
+      failureGroups.set(key, {
+        ids: [f.id],
+        failed_count: f.failed_count,
+        last_error: f.last_error
+      })
+  }
+  for (const group of failureGroups.values()) {
+    writes.push(
+      supabase
+        .from('push_subscriptions')
+        .update({ failed_count: group.failed_count, last_error: group.last_error })
+        .in('id', group.ids)
+    )
+  }
+
+  await Promise.allSettled(writes)
 }
 
 /**
@@ -100,7 +155,12 @@ export async function sendPushNotification(
     channel_id: request.channel_id
   })
 
-  // Send to all subscriptions
+  // Send to all subscriptions, bucketing the outcome so the per-row state writes
+  // can be flushed as batched queries below instead of one UPDATE per send (N+1).
+  const successIds: string[] = []
+  const invalidIds: string[] = []
+  const failures: { id: string; failed_count: number; last_error: string }[] = []
+
   const results = await Promise.allSettled(
     subscriptions.map(async (sub: PushSubscription) => {
       try {
@@ -112,46 +172,29 @@ export async function sendPushNotification(
           pushPayload
         )
 
-        // Update last_used_at and reset failed_count
-        await supabase
-          .from('push_subscriptions')
-          .update({
-            last_used_at: new Date().toISOString(),
-            failed_count: 0,
-            last_error: null
-          })
-          .eq('id', sub.id)
-
+        successIds.push(sub.id)
         pushLogger.debug({ subscription_id: sub.id }, 'Push sent successfully')
         return { success: true, id: sub.id }
       } catch (err: unknown) {
         const error = err as { statusCode?: number; message?: string }
         pushLogger.warn({ subscription_id: sub.id, statusCode: error.statusCode }, 'Push failed')
 
-        // Handle expired/invalid subscriptions
         if (error.statusCode === 404 || error.statusCode === 410) {
-          await supabase
-            .from('push_subscriptions')
-            .update({
-              is_active: false,
-              last_error: 'Subscription expired or invalid'
-            })
-            .eq('id', sub.id)
+          invalidIds.push(sub.id)
         } else {
-          // Increment failed count
-          await supabase
-            .from('push_subscriptions')
-            .update({
-              failed_count: (sub.failed_count || 0) + 1,
-              last_error: error.message || 'Unknown error'
-            })
-            .eq('id', sub.id)
+          failures.push({
+            id: sub.id,
+            failed_count: (sub.failed_count || 0) + 1,
+            last_error: error.message || 'Unknown error'
+          })
         }
 
         return { success: false, id: sub.id, error: error.message }
       }
     })
   )
+
+  await flushSubscriptionUpdates(supabase, successIds, invalidIds, failures)
 
   const successful = results.filter(
     (r) => r.status === 'fulfilled' && (r.value as { success: boolean }).success
