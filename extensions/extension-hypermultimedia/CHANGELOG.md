@@ -10,6 +10,12 @@ historical Conventional Commits format. The project adheres to
 
 ## [2.0.0] — 2026-06-16
 
+### Fixed
+
+- Re-hovering a media node within the toolbar exit window no longer mounts a
+  second toolbar — `openMediaToolbar` purges `[data-hm-closing]` siblings before
+  append.
+
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
 favor of Floating UI positioning, node type names are normalized to camelCase,
 the Twitter node is rebranded to X, a Loom node is added, the media toolbar is

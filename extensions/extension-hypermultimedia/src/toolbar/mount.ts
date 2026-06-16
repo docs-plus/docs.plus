@@ -5,11 +5,21 @@ import { createMediaToolbar } from './createMediaToolbar'
 import { closeToolbarPopover } from './menu'
 import type { MediaToolbarFactory, MediaToolbarOptions } from './types'
 
-// Covers the 80ms exit fade; toolbars mid-exit are excluded from reuse.
+// 80ms CSS opacity fade plus a short buffer before DOM removal; closing bars are not reused.
 const CLOSE_REMOVE_DELAY_MS = 100
 
 function existingToolbar(wrapper: HTMLElement): HTMLElement | null {
-  return wrapper.querySelector<HTMLElement>(':scope > [data-hm-toolbar]:not([data-hm-closing])')
+  const live = wrapper.querySelector<HTMLElement>(
+    ':scope > [data-hm-toolbar]:not([data-hm-closing])'
+  )
+  if (live) return live
+
+  // Re-hover before removal fires can stack a second bar; purge closing siblings first.
+  wrapper
+    .querySelectorAll(':scope > [data-hm-toolbar][data-hm-closing]')
+    .forEach((el) => el.remove())
+  wrapper.classList.remove('hm-has-toolbar')
+  return null
 }
 
 /** Mount the toolbar inside the media wrapper (absolute top-right). `null` ⇒ host surface. */
@@ -43,8 +53,7 @@ export function closeMediaToolbar(wrapper?: HTMLElement | null): void {
   const root = wrapper ?? document
   root.querySelectorAll<HTMLElement>('[data-hm-toolbar]').forEach((el) => {
     el.closest('.hm-has-toolbar')?.classList.remove('hm-has-toolbar')
-    // Deferred removal lets the exit fade play; the marker keeps a reopen from
-    // reusing a toolbar that is already on its way out.
+    // Deferred removal lets the 80ms exit fade play. Reopen sync-purges via existingToolbar().
     el.dataset.hmClosing = 'true'
     setTimeout(() => el.remove(), CLOSE_REMOVE_DELAY_MS)
   })
