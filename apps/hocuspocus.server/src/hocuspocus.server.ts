@@ -7,7 +7,7 @@ import HocuspocusConfig from './config/hocuspocus.config'
 import { verifySupabaseToken } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { logger } from './lib/logger'
-import { shutdownDatabase } from './lib/prisma'
+import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
 import type { HistoryPayload } from './types/document.types'
@@ -110,10 +110,8 @@ const serverConfig = {
   extensions: [...baseConfig.extensions, statelessExtension],
 
   async onAuthenticate({ token, documentName }: any) {
-    // Room names are `${isPrivate ? 'private' : 'public'}.${documentId}` (webapp
-    // useDocumentMetadata), so privacy is encoded in the room id. Resolve the user
-    // first, then deny anonymous access to private rooms at one choke point.
-    const isPrivateRoom = typeof documentName === 'string' && documentName.startsWith('private.')
+    // The room id is the bare documentId. Resolve the user first, then deny
+    // anonymous access to admin-set private documents at one choke point.
     const isProd = process.env.NODE_ENV === 'production'
 
     let user: Awaited<ReturnType<typeof verifySupabaseToken>> = null
@@ -147,7 +145,21 @@ const serverConfig = {
       }
     }
 
-    if (isPrivateRoom && !user) {
+    // Privacy is read authoritatively from the DB (never trust the client). A DB
+    // lookup failure fails open so a blip can't sever all collaboration; private
+    // docs are admin-set and rare. is_anonymous sessions count as anonymous here.
+    let isPrivate = false
+    try {
+      const meta = await prisma.documentMetadata.findUnique({
+        where: { documentId: documentName },
+        select: { isPrivate: true }
+      })
+      isPrivate = meta?.isPrivate === true
+    } catch (error) {
+      wsLogger.warn({ err: error, documentName }, 'Private-doc lookup failed; allowing connection')
+    }
+
+    if (isPrivate && (!user || user.is_anonymous)) {
       throw new Error('Authentication required for private document')
     }
 
