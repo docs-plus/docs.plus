@@ -5,6 +5,7 @@ import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
 
+import { config } from '../config/env'
 import { httpLogger } from '../lib/logger'
 import { getRedisClient } from '../lib/redis'
 
@@ -37,24 +38,19 @@ export const rateLimiter = (options: {
   })
 
   return async (c: Context, next: Next) => {
-    // Get client identifier (IP + User-Agent for better uniqueness)
-    const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
-    const userAgent = c.req.header('user-agent') || 'unknown'
+    const forwardedFor = c.req.header('x-forwarded-for')
+    const realIp = c.req.header('x-real-ip')
 
-    // Skip rate limiting for internal Docker network requests (from webapp containers)
-    // Internal requests come from Docker network IPs (172.x.x.x, 10.x.x.x) or have internal headers
-    const isInternalRequest =
-      c.req.header('x-internal-request') === 'true' ||
-      (ip &&
-        (ip.startsWith('172.') || // Docker default network range
-          ip.startsWith('10.') || // Private network range
-          ip === '127.0.0.1' ||
-          ip === '::1'))
-
-    if (isInternalRequest) {
+    // Genuine internal/direct traffic carries no proxy-forwarding headers — Traefik
+    // always sets them for external requests, so this signal can't be spoofed from
+    // the edge. Never trust a client-supplied x-internal-request / private-range IP.
+    if (!forwardedFor && !realIp) {
       return next()
     }
 
+    // x-real-ip is set by Traefik to the true client; fall back to the first XFF hop.
+    const ip = realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
+    const userAgent = c.req.header('user-agent') || 'unknown'
     const key = `${ip}:${userAgent}`
 
     try {
@@ -144,7 +140,12 @@ export const pinoLogger = () => {
     const duration = Date.now() - start
     const status = c.res.status
 
-    const logLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
+    let logLevel: 'error' | 'warn' | 'info' = 'info'
+    if (status >= 500) {
+      logLevel = 'error'
+    } else if (status >= 400) {
+      logLevel = 'warn'
+    }
 
     httpLogger[logLevel]({
       msg: 'Request completed',
@@ -165,17 +166,16 @@ export const setupMiddleware = (app: Hono) => {
     .map((origin) => origin.trim())
     .filter(Boolean)
 
-  // In development, allow all origins. In production, use ALLOWED_ORIGINS
+  // Development allows any origin. Production restricts to ALLOWED_ORIGINS (falling
+  // back to APP_URL); never pair a wildcard origin with credentials.
   const isDevelopment = process.env.NODE_ENV === 'development'
+  const prodOrigins =
+    allowedOrigins.length > 0 ? allowedOrigins : [process.env.APP_URL || 'https://docs.plus']
 
   app.use(
     '*',
     cors({
-      origin: isDevelopment
-        ? (origin) => origin || '*' // Allow any origin in development
-        : allowedOrigins.length > 0
-          ? allowedOrigins
-          : '*',
+      origin: isDevelopment ? (origin) => origin || '*' : prodOrigins,
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'token', 'X-Requested-With'],
@@ -202,10 +202,14 @@ export const setupMiddleware = (app: Hono) => {
   // Production-ready Pino logger
   app.use('*', pinoLogger())
 
-  // Rate limiting (global) - Skip OPTIONS and health check requests
-  const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '100', 10)
+  // Rate limiting (global) - Skip OPTIONS and health check requests.
+  // Build the limiter ONCE (not per request) so the RateLimiterRedis instance is reused.
+  const globalRateLimiter = rateLimiter({
+    points: config.security.rateLimitMax, // Number of requests allowed
+    duration: 15 * 60, // 15 minutes in seconds
+    keyPrefix: 'global'
+  })
   app.use('*', async (c, next) => {
-    // Skip rate limiting for OPTIONS preflight requests
     if (c.req.method === 'OPTIONS') {
       return next()
     }
@@ -216,10 +220,6 @@ export const setupMiddleware = (app: Hono) => {
       return next()
     }
 
-    return rateLimiter({
-      points: rateLimitMax, // Number of requests allowed
-      duration: 15 * 60, // 15 minutes in seconds
-      keyPrefix: 'global'
-    })(c, next)
+    return globalRateLimiter(c, next)
   })
 }
