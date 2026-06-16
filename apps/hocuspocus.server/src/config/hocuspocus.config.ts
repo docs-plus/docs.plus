@@ -245,31 +245,18 @@ export default () => {
       return new Promise<void>((resolve, reject) => {
         const { request, response } = data
 
-        if (request.url === '/health') {
-          const health = healthCheck.getHealth()
-          response.writeHead(200, { 'Content-Type': 'application/json' })
-          response.end(JSON.stringify(health))
-          return reject()
+        const healthRoutes: Record<string, () => unknown> = {
+          '/health': () => healthCheck.getHealth(),
+          '/health/websocket': () => healthCheck.status.websocket,
+          '/health/database': () => healthCheck.getDatabaseStatus(),
+          '/health/redis': () => healthCheck.getRedisStatus()
         }
 
-        if (request.url === '/health/websocket') {
-          const wsHealth = healthCheck.status.websocket
+        const buildPayload = healthRoutes[request.url]
+        if (buildPayload) {
           response.writeHead(200, { 'Content-Type': 'application/json' })
-          response.end(JSON.stringify(wsHealth))
-          return reject()
-        }
-
-        if (request.url === '/health/database') {
-          const dbHealth = healthCheck.getDatabaseStatus()
-          response.writeHead(200, { 'Content-Type': 'application/json' })
-          response.end(JSON.stringify(dbHealth))
-          return reject()
-        }
-
-        if (request.url === '/health/redis') {
-          const redisHealth = healthCheck.getRedisStatus()
-          response.writeHead(200, { 'Content-Type': 'application/json' })
-          response.end(JSON.stringify(redisHealth))
+          response.end(JSON.stringify(buildPayload()))
+          // reject() short-circuits Hocuspocus's default request handling.
           return reject()
         }
 

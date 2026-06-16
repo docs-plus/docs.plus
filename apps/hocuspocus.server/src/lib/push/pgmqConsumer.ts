@@ -80,7 +80,7 @@ const consumer = createPgmqConsumer<PushQueuePayload>({
   pollIntervalMs: POLL_INTERVAL_MS,
   batchSize: BATCH_SIZE,
   visibilityTimeout: VISIBILITY_TIMEOUT,
-  processMessage: (payload, msgId) => processPushMessage(payload, msgId)
+  processMessage: processPushMessage
 })
 
 /**

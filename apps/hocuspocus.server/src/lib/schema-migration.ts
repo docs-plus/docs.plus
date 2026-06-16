@@ -217,10 +217,7 @@ function stripNodeDeep(n: PMNode): PMNode {
   if (LEGACY_STRIP_BLOCK_PARENTS.has(n.type)) {
     return { ...n, content: stripBlockSegment(n.content) }
   }
-  if (n.type === 'paragraph' || n.type === 'heading') {
-    return { ...n, content: stripInlineSegment(n.content) }
-  }
-  if (n.type === 'codeBlock') {
+  if (n.type === 'paragraph' || n.type === 'heading' || n.type === 'codeBlock') {
     return { ...n, content: stripInlineSegment(n.content) }
   }
   return { ...n, content: stripBlockSegment(n.content) }
