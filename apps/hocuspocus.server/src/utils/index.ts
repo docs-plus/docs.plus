@@ -1,4 +1,4 @@
-export const checkEnvBolean = (value: string | undefined): boolean => {
+export const checkEnvBoolean = (value: string | undefined): boolean => {
   if (!value) return false
   return value.toLowerCase() === 'true' || value === '1'
 }
@@ -11,5 +11,3 @@ export const generateRandomId = (length = 19): string => {
   }
   return result
 }
-
-export { verifySupabaseToken as verifyJWT } from './jwt'

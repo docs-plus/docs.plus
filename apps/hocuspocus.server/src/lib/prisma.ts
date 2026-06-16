@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 
+import { config } from '../config/env'
 import { dbLogger } from './logger'
 
 const globalForPrisma = globalThis as unknown as {
@@ -16,7 +17,7 @@ const globalForPrisma = globalThis as unknown as {
  */
 
 const getDatabaseUrl = (): string => {
-  const url = process.env.DATABASE_URL
+  const url = config.database.url
   if (!url) {
     throw new Error('DATABASE_URL environment variable is required')
   }
@@ -30,21 +31,18 @@ const getDatabaseUrl = (): string => {
   }
 }
 
-const poolMax = parseInt(process.env.DB_POOL_SIZE || process.env.DB_CONNECTION_LIMIT || '5', 10)
+const poolMax = config.dbPool.size
 
 const poolConfig = {
   connectionString: getDatabaseUrl(),
   max: poolMax,
-  idleTimeoutMillis: parseInt(
-    process.env.DB_IDLE_TIMEOUT || (process.env.NODE_ENV === 'development' ? '300000' : '30000'),
-    10
-  ),
-  connectionTimeoutMillis: parseInt(process.env.DB_CONNECT_TIMEOUT || '10000', 10),
+  idleTimeoutMillis: config.dbPool.idleTimeout,
+  connectionTimeoutMillis: config.dbPool.connectTimeout,
   keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
-  statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
-  query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10),
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+  statement_timeout: config.dbPool.statementTimeout,
+  query_timeout: config.dbPool.queryTimeout,
+  ssl: config.app.env === 'production' ? { rejectUnauthorized: false } : undefined
 }
 
 const adapter = new PrismaPg(poolConfig, {
@@ -65,7 +63,7 @@ export const prisma =
   new PrismaClient({
     adapter,
     log:
-      process.env.NODE_ENV === 'development'
+      config.app.env === 'development'
         ? [
             { level: 'query', emit: 'event' },
             { level: 'error', emit: 'event' },
@@ -74,7 +72,7 @@ export const prisma =
         : [{ level: 'error', emit: 'event' }]
   })
 
-if (process.env.NODE_ENV === 'development') {
+if (config.app.env === 'development') {
   prisma.$on('query' as never, (e: any) => {
     dbLogger.debug({ duration: `${e.duration}ms`, query: e.query }, 'Database query')
   })
@@ -88,7 +86,7 @@ prisma.$on('warn' as never, (e: any) => {
   dbLogger.warn(e, 'Database warning')
 })
 
-if (process.env.NODE_ENV !== 'production') {
+if (config.app.env !== 'production') {
   globalForPrisma.prisma = prisma
 }
 

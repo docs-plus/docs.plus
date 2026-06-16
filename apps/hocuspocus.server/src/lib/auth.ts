@@ -1,0 +1,92 @@
+import { timingSafeEqual } from 'node:crypto'
+
+import { config } from '../config/env'
+import { jwtLogger } from './logger'
+import { getAnonClient } from './supabase'
+
+/**
+ * Supabase user data from token verification
+ */
+export interface SupabaseUser {
+  sub: string
+  email?: string
+  user_metadata?: {
+    full_name?: string
+    name?: string
+    avatar_url?: string
+  }
+}
+
+// Short-TTL cache: verifying a Supabase JWT is a network round-trip, and WS
+// reconnect storms re-verify the same token repeatedly. 60s of staleness on a
+// revoked token is an accepted trade for not hammering Supabase Auth.
+const TOKEN_CACHE_TTL_MS = 60_000
+const MAX_TOKEN_CACHE = 1000
+const tokenCache = new Map<string, { user: SupabaseUser; expiresAt: number }>()
+
+/**
+ * Verify a Supabase access token (cached for a short window).
+ */
+export const verifySupabaseToken = async (token: string): Promise<SupabaseUser | null> => {
+  const now = Date.now()
+  const cached = tokenCache.get(token)
+  if (cached && cached.expiresAt > now) return cached.user
+
+  const supabase = getAnonClient()
+  if (!supabase) {
+    jwtLogger.error('Supabase anon client not configured')
+    return null
+  }
+
+  try {
+    const {
+      data: { user },
+      error
+    } = await supabase.auth.getUser(token)
+
+    if (error || !user) {
+      jwtLogger.warn({ error }, 'Token verification failed')
+      return null
+    }
+
+    const result: SupabaseUser = {
+      sub: user.id,
+      email: user.email,
+      user_metadata: user.user_metadata as SupabaseUser['user_metadata']
+    }
+
+    if (tokenCache.size >= MAX_TOKEN_CACHE) tokenCache.clear()
+    tokenCache.set(token, { user: result, expiresAt: now + TOKEN_CACHE_TTL_MS })
+
+    jwtLogger.debug({ userId: user.id }, 'Token verified')
+    return result
+  } catch (error) {
+    jwtLogger.error({ err: error }, 'Error verifying token')
+    return null
+  }
+}
+
+/**
+ * Verify service-role authorization for internal gateway endpoints (email/push).
+ * Accepts only a constant-time exact match of the configured service-role key.
+ * Fails closed in production when the key is unset; dev allows for local convenience.
+ */
+export function verifyServiceRole(authHeader: string | undefined): boolean {
+  const serviceRoleKey = config.supabase.serviceRoleKey
+
+  if (!serviceRoleKey) {
+    return config.app.env !== 'production'
+  }
+
+  if (!authHeader) return false
+
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
+  return constantTimeEqual(token, serviceRoleKey)
+}
+
+function constantTimeEqual(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a)
+  const bBuf = Buffer.from(b)
+  if (aBuf.length !== bBuf.length) return false
+  return timingSafeEqual(aBuf, bBuf)
+}

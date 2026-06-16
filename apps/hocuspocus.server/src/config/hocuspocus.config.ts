@@ -4,7 +4,8 @@ import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
-import { checkEnvBolean, generateRandomId } from '../utils'
+import { checkEnvBoolean, generateRandomId } from '../utils'
+import { config } from './env'
 import { StoreDocumentQueue } from '../lib/queue'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
@@ -19,9 +20,7 @@ import {
 } from '../lib/schema-migration'
 import { migrationExtensions } from '../lib/migration-extensions'
 
-export { Database }
-
-const getServerName = () => `${process.env.APP_NAME}_${generateRandomId(4)}`
+const getServerName = () => `${config.app.name}_${generateRandomId(4)}`
 
 const generateDefaultState = () => {
   const ydoc = new Y.Doc()
@@ -36,36 +35,37 @@ const healthCheck = new HealthCheck()
 const configureExtensions = () => {
   const extensions: any[] = []
 
-  if (checkEnvBolean(process.env.HOCUSPOCUS_THROTTLE)) {
+  if (config.hocuspocus.throttle.enabled) {
     extensions.push(
       new Throttle({
-        throttle: parseInt(process.env.HOCUSPOCUS_THROTTLE_ATTEMPTS || '10', 10),
-        banTime: parseInt(process.env.HOCUSPOCUS_THROTTLE_BANTIME || '60000', 10)
+        throttle: config.hocuspocus.throttle.attempts,
+        banTime: config.hocuspocus.throttle.banTime
       })
     )
   }
 
-  if (checkEnvBolean(process.env.HOCUSPOCUS_LOGGER)) {
+  if (config.hocuspocus.logger.enabled) {
+    const log = config.hocuspocus.logger
     extensions.push(
       new Logger({
-        onLoadDocument: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_LOAD_DOCUMENT),
-        onChange: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CHANGE),
-        onConnect: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CONNECT),
-        onDisconnect: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_DISCONNECT),
-        onUpgrade: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_UPGRADE),
-        onRequest: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_REQUEST),
-        onDestroy: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_DESTROY),
-        onConfigure: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CONFIGURE)
+        onLoadDocument: log.onLoadDocument,
+        onChange: log.onChange,
+        onConnect: log.onConnect,
+        onDisconnect: log.onDisconnect,
+        onUpgrade: log.onUpgrade,
+        onRequest: log.onRequest,
+        onDestroy: log.onDestroy,
+        onConfigure: log.onConfigure
       })
     )
   }
 
-  if (process.env.NODE_ENV === 'production' && checkEnvBolean(process.env.REDIS)) {
+  if (config.app.env === 'production' && config.redis.enabled) {
     // Note: @hocuspocus/extension-redis creates its own Redis connection
     // We configure it with the same settings as our centralized Redis
     const redisOptions: any = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10)
+      host: config.redis.host || 'localhost',
+      port: config.redis.port
     }
 
     if (process.env.REDIS_PASSWORD) {
@@ -91,7 +91,7 @@ const configureExtensions = () => {
 
           // On-load migration: convert old nested schema to flat on first open.
           // Controlled by ENABLE_SCHEMA_MIGRATION env var — remove after all docs migrated.
-          if (doc?.data && checkEnvBolean(process.env.ENABLE_SCHEMA_MIGRATION)) {
+          if (doc?.data && checkEnvBoolean(process.env.ENABLE_SCHEMA_MIGRATION)) {
             try {
               const ydoc = new Y.Doc()
               const buffer = rawState instanceof Buffer ? new Uint8Array(rawState) : rawState
@@ -213,12 +213,12 @@ const configureExtensions = () => {
   extensions.push(healthCheck)
 
   // Add Redis subscriber for save confirmations (requires Redis)
-  if (checkEnvBolean(process.env.REDIS)) {
+  if (config.redis.enabled) {
     extensions.push(new RedisSubscriberExtension())
   }
 
   // Add document view tracking (requires Supabase)
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (config.supabase.url && config.supabase.serviceRoleKey) {
     extensions.push(new DocumentViewsExtension())
     dbLogger.info('Document view tracking enabled')
   }
@@ -227,15 +227,18 @@ const configureExtensions = () => {
 }
 
 export default () => {
+  // Build extensions ONCE. Re-invoking configureExtensions() (the old onListen did)
+  // opens a second set of Redis/DB connections that are never closed — a leak.
+  const extensions = configureExtensions()
   return {
     name: getServerName(),
-    port: parseInt(process.env.HOCUSPOCUS_PORT || '4001', 10),
-    extensions: configureExtensions(),
+    port: config.hocuspocus.port,
+    extensions,
     debounce: 10_000, // 10 seconds - wait for user to stop typing
     maxDebounce: 60_000, // 60 seconds - force save even if user keeps typing (prevents data loss)
 
     async onListen(data: any) {
-      healthCheck.onConfigure({ ...data, extensions: configureExtensions() })
+      healthCheck.onConfigure({ ...data, extensions })
     },
 
     onRequest(data: any) {

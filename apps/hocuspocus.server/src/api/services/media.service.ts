@@ -10,7 +10,7 @@ import { mediaServiceLogger } from '../../lib/logger'
 import { extractFileType } from '../../lib/storage/fileType'
 import * as localStorage from '../../lib/storage/storage.local'
 import * as S3Storage from '../../lib/storage/storage.s3'
-import { checkEnvBolean } from '../../utils'
+import { checkEnvBoolean } from '../../utils'
 
 // Allowed file types (MIME types)
 const ALLOWED_MIME_TYPES = [
@@ -33,7 +33,7 @@ const ALLOWED_MIME_TYPES = [
 const MAX_FILE_SIZE = parseInt(process.env.DO_STORAGE_MAX_FILE_SIZE || '52428800', 10)
 
 export const getMedia = async (documentId: string, mediaId: string, c: Context) => {
-  if (checkEnvBolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
+  if (checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
     return localStorage.get(documentId, mediaId, c)
   }
 
@@ -42,12 +42,10 @@ export const getMedia = async (documentId: string, mediaId: string, c: Context) 
 
 export const uploadMedia = async (documentId: string, mediaFile: File) => {
   try {
-    // Validate file exists
     if (!mediaFile) {
       throw new InternalServerError('No file provided')
     }
 
-    // Validate file size
     if (mediaFile.size > MAX_FILE_SIZE) {
       mediaServiceLogger.warn(
         { documentId, fileSize: mediaFile.size, maxSize: MAX_FILE_SIZE },
@@ -58,7 +56,6 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       )
     }
 
-    // Validate file type
     if (!ALLOWED_MIME_TYPES.includes(mediaFile.type)) {
       mediaServiceLogger.warn({ documentId, mimeType: mediaFile.type }, 'Unsupported file type')
       throw new UnsupportedMediaTypeError(
@@ -66,9 +63,8 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       )
     }
 
-    const canPersist2Local = checkEnvBolean(process.env.PERSIST_TO_LOCAL_STORAGE) || false
+    const canPersist2Local = checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)
 
-    // Local storage
     if (canPersist2Local) {
       mediaServiceLogger.debug(
         { documentId, fileName: mediaFile.name },
@@ -82,7 +78,6 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       return result
     }
 
-    // S3 storage
     if (!process.env.DO_STORAGE_ENDPOINT) {
       mediaServiceLogger.error('No storage configured')
       throw new InternalServerError('Storage service not configured')
@@ -113,12 +108,10 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       fileAddress: Key
     }
   } catch (error) {
-    // Re-throw application errors
     if (error instanceof PayloadTooLargeError || error instanceof UnsupportedMediaTypeError) {
       throw error
     }
 
-    // Log and wrap unknown errors
     mediaServiceLogger.error({ err: error, documentId }, 'Error uploading media')
     throw new InternalServerError('Failed to upload file')
   }

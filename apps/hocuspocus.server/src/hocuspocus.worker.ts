@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 
+import { config } from './config/env'
 import {
   emailGateway,
   getEmailQueueConsumerHealth,
@@ -7,20 +8,17 @@ import {
   stopEmailQueueConsumer
 } from './lib/email'
 import { workerLogger } from './lib/logger'
-import { prisma, shutdownDatabase } from './lib/prisma'
+import { checkDatabaseHealth, prisma, shutdownDatabase } from './lib/prisma'
 import {
   getPushQueueConsumerHealth,
   pushGateway,
   startPushQueueConsumer,
   stopPushQueueConsumer
 } from './lib/push'
-import { createDocumentWorker } from './lib/queue'
-import { disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
+import { closeQueues, createDocumentWorker } from './lib/queue'
+import { checkRedisHealth, disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
 
-// =============================================================================
-// Cleanup expired idempotency logs (runs every hour)
-// =============================================================================
-const CLEANUP_INTERVAL_MS = parseInt(process.env.IDEMPOTENCY_CLEANUP_INTERVAL_MS || '3600000', 10) // 1 hour
+const CLEANUP_INTERVAL_MS = config.worker.idempotencyCleanupIntervalMs // 1 hour default
 
 async function cleanupExpiredLogs() {
   try {
@@ -43,7 +41,7 @@ async function cleanupExpiredLogs() {
 // Schedule cleanup interval
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
-const WORKER_HEALTH_PORT = parseInt(process.env.WORKER_HEALTH_PORT || '4002', 10)
+const WORKER_HEALTH_PORT = config.worker.healthPort
 
 // Validate Redis is available
 const redis = getRedisClient()
@@ -68,10 +66,10 @@ const documentWorker = createDocumentWorker()
 
 workerLogger.info({
   msg: '🔧 BullMQ document worker started',
-  concurrency: process.env.BULLMQ_CONCURRENCY || '5',
+  concurrency: config.bullmq.concurrency,
   rateLimit: {
-    max: process.env.BULLMQ_RATE_LIMIT_MAX || '300',
-    duration: process.env.BULLMQ_RATE_LIMIT_DURATION || '1000'
+    max: config.bullmq.rateLimitMax,
+    duration: config.bullmq.rateLimitDuration
   }
 })
 
@@ -117,11 +115,15 @@ healthApp.get('/health', async (c) => {
   const pushConsumerHealth = getPushQueueConsumerHealth()
   const emailConsumerHealth = getEmailQueueConsumerHealth()
 
+  const [dbHealthy, redisHealthy] = await Promise.all([checkDatabaseHealth(), checkRedisHealth()])
+
   const allHealthy =
     docWorkerRunning &&
     !docWorkerPaused &&
     pushConsumerHealth.running &&
-    emailConsumerHealth.running
+    emailConsumerHealth.running &&
+    dbHealthy &&
+    redisHealthy
 
   return c.json({
     status: allHealthy ? 'healthy' : 'unhealthy',
@@ -158,8 +160,8 @@ healthApp.get('/health', async (c) => {
       }
     },
     services: {
-      redis: redis ? 'connected' : 'disconnected',
-      database: 'connected'
+      redis: redisHealthy ? 'connected' : 'disconnected',
+      database: dbHealthy ? 'connected' : 'disconnected'
     }
   })
 })
@@ -188,9 +190,9 @@ workerLogger.info({
 })
 
 // Circuit breaker config (configurable via env for production tuning)
-const ERROR_THRESHOLD = parseInt(process.env.WORKER_ERROR_THRESHOLD || '10', 10)
-const ERROR_WINDOW_MS = parseInt(process.env.WORKER_ERROR_WINDOW_MS || '60000', 10)
-const SHUTDOWN_TIMEOUT_MS = parseInt(process.env.WORKER_SHUTDOWN_TIMEOUT_MS || '120000', 10)
+const ERROR_THRESHOLD = config.worker.errorThreshold
+const ERROR_WINDOW_MS = config.worker.errorWindowMs
+const SHUTDOWN_TIMEOUT_MS = config.worker.shutdownTimeoutMs
 
 // Track error counts for circuit breaker pattern
 let errorCount = 0
@@ -231,6 +233,7 @@ const shutdown = async () => {
 
     const shutdownPromise = Promise.all([
       documentWorker.close(),
+      closeQueues(),
       emailGateway.shutdown(),
       pushGateway.shutdown(),
       stopPushQueueConsumer(),

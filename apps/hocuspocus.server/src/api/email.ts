@@ -22,18 +22,18 @@ import {
   renderUnsubscribePage
 } from '@docs.plus/email-templates'
 import { zValidator } from '@hono/zod-validator'
-import { createClient } from '@supabase/supabase-js'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
+import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
+import { getServiceRoleClient } from '../lib/supabase'
 import {
   emailBounceSchema,
   sendDigestEmailSchema,
   sendGenericEmailSchema
 } from '../schemas/email.schema'
-import { verifyServiceRole } from './utils/serviceRole'
 
 const emailRouter = new Hono()
 
@@ -51,7 +51,6 @@ emailRouter.post('/send-generic', zValidator('json', sendGenericEmailSchema), as
   try {
     const payload = c.req.valid('json')
 
-    // Transform to GenericEmailRequest (to must be array)
     const result = await emailGateway.sendGenericEmail({
       to: [payload.to],
       subject: payload.subject,
@@ -86,7 +85,6 @@ emailRouter.post('/send-digest', zValidator('json', sendDigestEmailSchema), asyn
   try {
     const payload = c.req.valid('json')
 
-    // Transform to DigestEmailRequest
     const result = await emailGateway.sendDigestEmail({
       to: payload.to,
       recipient_name: payload.user_name || 'User',
@@ -140,10 +138,6 @@ emailRouter.get('/status', (c) => {
   })
 })
 
-// =============================================================================
-// BOUNCE WEBHOOK
-// =============================================================================
-
 /**
  * POST /api/email/bounce
  *
@@ -159,14 +153,10 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema), async (c) => 
   try {
     const { email, bounce_type, provider, reason } = c.req.valid('json')
 
-    const supabaseUrl = process.env.SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
+    const supabase = getServiceRoleClient()
+    if (!supabase) {
       return c.json({ error: 'Supabase not configured' }, 500)
     }
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     const { data, error } = await supabase.rpc('record_email_bounce', {
       p_email: email,
@@ -192,10 +182,6 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema), async (c) => 
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
-
-// =============================================================================
-// TEMPLATE PREVIEW (development/testing)
-// =============================================================================
 
 /**
  * GET /api/email/preview/:type
@@ -290,10 +276,6 @@ emailRouter.get('/preview/:type', async (c) => {
   return c.json({ error: `Unknown template type: ${type}. Use "notification" or "digest".` }, 400)
 })
 
-// =============================================================================
-// UNSUBSCRIBE ENDPOINTS
-// =============================================================================
-
 /**
  * GET /api/email/unsubscribe
  *
@@ -316,7 +298,6 @@ emailRouter.get('/unsubscribe', async (c) => {
   }
 
   try {
-    // Call Supabase to process the unsubscribe
     const supabaseUrl = process.env.SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -332,7 +313,6 @@ emailRouter.get('/unsubscribe', async (c) => {
       )
     }
 
-    // Call the process_unsubscribe function via Supabase RPC
     const response = await fetch(`${supabaseUrl}/rest/v1/rpc/process_unsubscribe`, {
       method: 'POST',
       headers: {

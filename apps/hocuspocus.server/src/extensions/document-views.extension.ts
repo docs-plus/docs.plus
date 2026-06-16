@@ -4,10 +4,10 @@
  */
 
 import type { connectedPayload, Extension, onDisconnectPayload } from '@hocuspocus/server'
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { isbot } from 'isbot'
 
 import { logger } from '../lib/logger'
+import { getServiceRoleClient } from '../lib/supabase'
 
 const viewLogger = logger.child({ service: 'document-views' })
 
@@ -19,26 +19,12 @@ interface ViewContext {
   deviceType: 'desktop' | 'mobile' | 'tablet'
 }
 
-// Singleton Supabase client
-let supabase: SupabaseClient | null = null
-
-const getClient = (): SupabaseClient | null => {
-  if (supabase) return supabase
-
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) return null
-
-  supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
-  return supabase
-}
-
 const enqueueView = async (
   ctx: ViewContext,
   userId?: string,
   isAnonymous?: boolean
 ): Promise<string | null> => {
-  const client = getClient()
+  const client = getServiceRoleClient()
   if (!client) return null
 
   try {
@@ -63,7 +49,7 @@ const enqueueView = async (
 }
 
 const updateDuration = async (viewId: string, durationMs: number): Promise<void> => {
-  const client = getClient()
+  const client = getServiceRoleClient()
   if (!client || !viewId) return
 
   try {

@@ -1,15 +1,14 @@
 import type { PrismaClient } from '@prisma/client'
-import { createClient } from '@supabase/supabase-js'
 
 import { getPoolStats } from '../../lib/prisma'
-import { checkRedisHealth as redisHealthCheck, getRedisStats } from '../../lib/redis'
+import { getRedisStats } from '../../lib/redis'
+import { getAnonClient } from '../../lib/supabase'
 import type { HealthCheckResult, OverallHealthResult, RedisClient } from '../../types'
 
 export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthCheckResult> => {
   try {
     await prisma.$queryRaw`SELECT 1`
 
-    // Get connection pool statistics
     const poolStats = getPoolStats()
 
     return {
@@ -42,11 +41,13 @@ export const checkRedisHealth = async (redis: RedisClient | null): Promise<Healt
   }
 
   try {
-    const healthy = await redisHealthCheck()
+    // Probe the injected client (the request-scoped singleton in prod) so the
+    // result reflects the connection actually handed to this request.
+    const pong = await redis.ping()
     const stats = getRedisStats()
 
     return {
-      status: healthy ? 'healthy' : 'unhealthy',
+      status: pong === 'PONG' ? 'healthy' : 'unhealthy',
       lastCheck: new Date(),
       metadata: stats
         ? {
@@ -67,7 +68,8 @@ export const checkRedisHealth = async (redis: RedisClient | null): Promise<Healt
 }
 
 export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  const supabase = getAnonClient()
+  if (!supabase) {
     return {
       status: 'disabled',
       lastCheck: new Date()
@@ -75,9 +77,6 @@ export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
   }
 
   try {
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
-
-    // Simple query to check connection
     const { error } = await supabase.from('profiles').select('id').limit(1)
 
     if (error && !error.message.includes('permission')) {

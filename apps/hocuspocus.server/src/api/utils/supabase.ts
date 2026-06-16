@@ -1,32 +1,16 @@
-/**
- * Shared Supabase Utilities for Admin Controllers
- *
- * Centralizes service-role client creation and PostgREST fetch helper.
- * Eliminates repeated `process.env` reads and auth header boilerplate.
- */
-
-import { createClient } from '@supabase/supabase-js'
-
 import { config } from '../../config/env'
+import { getServiceRoleClient } from '../../lib/supabase'
+
+/** Service-role Supabase client (bypasses RLS); memoized. Null if not configured. */
+export const getSupabaseClient = getServiceRoleClient
+
+// Cap outbound PostgREST calls so a hung Supabase response can't pin a request.
+const SUPABASE_FETCH_TIMEOUT_MS = 10_000
 
 /**
- * Supabase client with service_role key (bypasses RLS).
- * Returns null if service role key is not configured.
- */
-export const getSupabaseClient = () => {
-  const url = config.supabase.url
-  const key = config.supabase.serviceRoleKey
-  if (!url || !key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
-}
-
-/**
- * Convenience wrapper for Supabase PostgREST calls.
- * Adds apikey + Authorization headers automatically.
- * Returns null if Supabase service role key is not configured.
- *
- * @param path - PostgREST path (e.g. 'users?id=eq.123&select=id,email')
- * @param init - Standard fetch RequestInit (extra headers are merged, not replaced)
+ * PostgREST fetch with apikey + Authorization headers merged in (extra headers
+ * win on conflict). Null when the service-role key is not configured.
+ * @param path e.g. 'users?id=eq.123&select=id,email'
  */
 export async function supabaseRest(path: string, init?: RequestInit): Promise<Response | null> {
   const url = config.supabase.url
@@ -35,6 +19,7 @@ export async function supabaseRest(path: string, init?: RequestInit): Promise<Re
 
   return fetch(`${url}/rest/v1/${path}`, {
     ...init,
+    signal: init?.signal ?? AbortSignal.timeout(SUPABASE_FETCH_TIMEOUT_MS),
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,

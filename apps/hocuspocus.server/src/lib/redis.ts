@@ -1,5 +1,6 @@
 import Redis, { type RedisOptions } from 'ioredis'
 
+import { config } from '../config/env'
 import type { RedisClient } from '../types'
 import { redisLogger } from './logger'
 
@@ -31,18 +32,19 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
   return {
     host,
     port,
+    db: config.redis.db, // logical DB (0 default; lets tests isolate)
 
-    // Connection settings
+    // Connection settings (validated config is the single source of truth)
     lazyConnect: false, // Connect immediately on creation
-    connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '20000', 10),
-    keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10),
+    connectTimeout: config.redis.connectTimeout,
+    keepAlive: config.redis.keepAlive,
 
     // Retry strategy with exponential backoff
     // In production: retry forever with capped delay (Redis may restart)
     // In development: stop after maxRetries to fail fast
     retryStrategy: (times: number) => {
-      const isProduction = process.env.NODE_ENV === 'production'
-      const maxRetries = parseInt(process.env.REDIS_MAX_RETRIES || '10', 10)
+      const isProduction = config.app.env === 'production'
+      const maxRetries = config.redis.maxRetries
 
       // Development: fail fast after max retries
       if (!isProduction && times > maxRetries) {
@@ -70,14 +72,14 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
     autoPipeliningIgnoredCommands: ['ping'],
 
     // Command timeout (increased for dev to avoid false timeouts during hot reload)
-    commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '30000', 10),
+    commandTimeout: config.redis.commandTimeout,
 
     // Offline queue (queue commands when disconnected)
     // Enable in both dev and prod to prevent command timeout errors during reconnection
     enableOfflineQueue: true,
 
     // TLS for production (if needed)
-    tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+    tls: config.redis.tls ? {} : undefined,
 
     // Reconnect on error - include all connection-related errors
     reconnectOnError: (err: Error) => {
@@ -302,8 +304,7 @@ export const createRedisConnection = (options: Partial<RedisOptions> = {}): Redi
     return null
   }
 
-  const commandTimeout =
-    options.commandTimeout ?? parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10)
+  const commandTimeout = options.commandTimeout ?? config.commandTimeout
 
   return new Redis({
     ...config,
@@ -327,8 +328,7 @@ export const createQueueRedisConnection = (
   }
 
   // BullMQ needs higher timeout for long-running operations
-  const commandTimeout =
-    options.commandTimeout ?? parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10)
+  const commandTimeout = options.commandTimeout ?? config.commandTimeout
 
   return new Redis({
     ...config,

@@ -1,3 +1,7 @@
+import { logger } from '../lib/logger'
+
+const healthLogger = logger.child({ extension: 'health' })
+
 // Health check extension for Hocuspocus
 export class HealthCheck {
   server: any
@@ -34,12 +38,12 @@ export class HealthCheck {
 
   onConfigure(data: any) {
     if (!data) {
-      console.warn('HealthCheck: onConfigure received no data')
+      healthLogger.warn('onConfigure received no data')
       return
     }
 
     if (!data.instance) {
-      console.warn('HealthCheck: onConfigure received data but no instance:', data)
+      healthLogger.warn({ data }, 'onConfigure received data but no instance')
       return
     }
 
@@ -47,9 +51,9 @@ export class HealthCheck {
     this.extensions = data.extensions
 
     if (!this.server) {
-      console.error('HealthCheck: Failed to set server instance after assignment')
+      healthLogger.error('Failed to set server instance after assignment')
     } else {
-      console.debug('HealthCheck: Server instance successfully configured')
+      healthLogger.debug('Server instance successfully configured')
     }
   }
 
@@ -67,7 +71,7 @@ export class HealthCheck {
 
   getDatabaseStatus() {
     if (!this.server) {
-      console.warn('HealthCheck: Server instance is null in getDatabaseStatus')
+      healthLogger.warn('Server instance is null in getDatabaseStatus')
       return {
         status: 'unhealthy',
         lastCheck: new Date(),
@@ -76,7 +80,7 @@ export class HealthCheck {
     }
 
     if (!this.extensions) {
-      console.warn('HealthCheck: Server instance has no extensions')
+      healthLogger.warn('Server instance has no extensions')
       return {
         status: 'unhealthy',
         lastCheck: new Date(),
@@ -85,8 +89,15 @@ export class HealthCheck {
     }
 
     const dbExtension = this.extensions.find((ext) => ext.constructor.name === 'Database')
+    if (!dbExtension) {
+      return { status: 'unhealthy', lastCheck: new Date(), error: 'Database extension not found' }
+    }
+
+    // Presence-based: this extension only sees the Database extension object, not a
+    // live connection, so report 'configured' (wired — NOT a liveness claim, which
+    // would mask a DB outage). Real DB liveness is the worker + REST /health probes.
     return {
-      status: dbExtension ? 'healthy' : 'unhealthy',
+      status: 'configured',
       lastCheck: new Date()
     }
   }
@@ -105,8 +116,11 @@ export class HealthCheck {
       return { status: 'disabled' }
     }
 
+    // Presence-based: the @hocuspocus/extension-redis instance exposes no reliable
+    // sync connection flag, so report 'configured' (present — NOT a liveness claim,
+    // which would mask an outage). Real liveness is the worker /health probe.
     return {
-      status: (redisExtension as any).connected ? 'healthy' : 'unhealthy',
+      status: 'configured',
       lastCheck: new Date()
     }
   }

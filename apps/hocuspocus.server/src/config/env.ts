@@ -49,6 +49,7 @@ export const config = {
     enabled: env.REDIS,
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
+    db: env.REDIS_DB,
     tls: env.REDIS_TLS,
     connectTimeout: env.REDIS_CONNECT_TIMEOUT,
     commandTimeout: env.REDIS_COMMAND_TIMEOUT,
@@ -141,7 +142,8 @@ export const config = {
     errorThreshold: env.WORKER_ERROR_THRESHOLD,
     errorWindowMs: env.WORKER_ERROR_WINDOW_MS,
     shutdownTimeoutMs: env.WORKER_SHUTDOWN_TIMEOUT_MS,
-    idempotencyCleanupIntervalMs: env.IDEMPOTENCY_CLEANUP_INTERVAL_MS
+    idempotencyCleanupIntervalMs: env.IDEMPOTENCY_CLEANUP_INTERVAL_MS,
+    healthPort: env.WORKER_HEALTH_PORT
   },
 
   // Logging

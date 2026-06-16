@@ -1,42 +1,42 @@
 import { describe, test, expect } from 'bun:test'
-import { checkEnvBolean, generateRandomId } from '../../src/utils'
+import { checkEnvBoolean, generateRandomId } from '../../src/utils'
 
 describe('Utils', () => {
-  describe('checkEnvBolean', () => {
+  describe('checkEnvBoolean', () => {
     test('should return true for "true" string', () => {
-      expect(checkEnvBolean('true')).toBe(true)
+      expect(checkEnvBoolean('true')).toBe(true)
     })
 
     test('should return true for "1" string', () => {
-      expect(checkEnvBolean('1')).toBe(true)
+      expect(checkEnvBoolean('1')).toBe(true)
     })
 
     test('should return false for "false" string', () => {
-      expect(checkEnvBolean('false')).toBe(false)
+      expect(checkEnvBoolean('false')).toBe(false)
     })
 
     test('should return false for "0" string', () => {
-      expect(checkEnvBolean('0')).toBe(false)
+      expect(checkEnvBoolean('0')).toBe(false)
     })
 
     test('should return false for undefined', () => {
-      expect(checkEnvBolean(undefined)).toBe(false)
+      expect(checkEnvBoolean(undefined)).toBe(false)
     })
 
     test('should return false for empty string', () => {
-      expect(checkEnvBolean('')).toBe(false)
+      expect(checkEnvBoolean('')).toBe(false)
     })
 
     test('should be case insensitive', () => {
-      expect(checkEnvBolean('TRUE')).toBe(true)
-      expect(checkEnvBolean('True')).toBe(true)
-      expect(checkEnvBolean('FALSE')).toBe(false)
+      expect(checkEnvBoolean('TRUE')).toBe(true)
+      expect(checkEnvBoolean('True')).toBe(true)
+      expect(checkEnvBoolean('FALSE')).toBe(false)
     })
 
     test('should return false for random strings', () => {
-      expect(checkEnvBolean('yes')).toBe(false)
-      expect(checkEnvBolean('no')).toBe(false)
-      expect(checkEnvBolean('random')).toBe(false)
+      expect(checkEnvBoolean('yes')).toBe(false)
+      expect(checkEnvBoolean('no')).toBe(false)
+      expect(checkEnvBoolean('random')).toBe(false)
     })
   })
 

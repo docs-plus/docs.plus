@@ -59,6 +59,7 @@ export const envSchema = z.object({
   REDIS: booleanString,
   REDIS_HOST: z.string().optional().default('localhost'),
   REDIS_PORT: numericString('6379'),
+  REDIS_DB: numericString('0'),
   REDIS_TLS: booleanString,
   REDIS_CONNECT_TIMEOUT: numericString('30000'),
   REDIS_COMMAND_TIMEOUT: numericString('60000'),

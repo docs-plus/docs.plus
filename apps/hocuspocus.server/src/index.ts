@@ -1,26 +1,20 @@
 import { Hono } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import adminRouter from './api/admin'
 import documentsRouter from './api/documents'
 import emailRouter from './api/email'
 import healthRouter from './api/health'
 import hypermultimediaRouter from './api/hypermultimedia'
+import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { emailGateway } from './lib/email'
+import { AppError, getErrorResponse } from './lib/errors'
 import { logger, restApiLogger } from './lib/logger'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
 import { setupMiddleware } from './middleware'
 import * as linkMetadata from './modules/link-metadata'
-import { checkEnvBolean } from './utils'
-
-const {
-  APP_PORT = '4000',
-  NODE_ENV,
-  HOCUSPOCUS_LOGGER,
-  HOCUSPOCUS_THROTTLE,
-  DATABASE_URL
-} = process.env
 
 // Create Hono app
 const app = new Hono()
@@ -54,6 +48,16 @@ const linkMetadataModule = linkMetadata.init({
 })
 app.route('/api/metadata', linkMetadataModule.router)
 
+// Single error contract: map AppError → status, redact unknown errors, one envelope.
+app.notFound((c) =>
+  c.json({ success: false, error: { message: 'Not found', code: 'NOT_FOUND' } }, 404)
+)
+app.onError((err, c) => {
+  restApiLogger.error({ err, method: c.req.method, path: c.req.path }, 'Unhandled request error')
+  const status = (err instanceof AppError ? err.statusCode : 500) as ContentfulStatusCode
+  return c.json(getErrorResponse(err instanceof Error ? err : new Error(String(err))), status)
+})
+
 // Initialize gateways (queue-only mode - workers run in hocuspocus-worker)
 // This allows rest-api to scale to multiple replicas without duplicate workers
 emailGateway.initialize(false).catch((err) => {
@@ -67,7 +71,7 @@ pushGateway.initialize(false).catch((err) => {
 // Start server
 const server = Bun.serve({
   fetch: app.fetch,
-  port: parseInt(APP_PORT, 10),
+  port: config.app.port,
   hostname: '0.0.0.0'
 })
 
@@ -75,12 +79,12 @@ const server = Bun.serve({
 restApiLogger.info({
   msg: '🚀 REST API Server started successfully',
   port: server.port,
-  environment: NODE_ENV,
+  environment: config.app.env,
   url: `http://localhost:${server.port}`,
   config: {
-    hocuspocus_logger: checkEnvBolean(HOCUSPOCUS_LOGGER),
-    hocuspocus_throttle: checkEnvBolean(HOCUSPOCUS_THROTTLE),
-    database: DATABASE_URL ? 'configured' : 'not set',
+    hocuspocus_logger: config.hocuspocus.logger.enabled,
+    hocuspocus_throttle: config.hocuspocus.throttle.enabled,
+    database: config.database.url ? 'configured' : 'not set',
     redis: getRedisClient() ? 'connected' : 'disabled'
   }
 })
@@ -109,5 +113,13 @@ const shutdown = async () => {
 
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
+
+process.on('unhandledRejection', (reason) => {
+  restApiLogger.error({ err: reason }, 'Unhandled promise rejection')
+})
+process.on('uncaughtException', (err) => {
+  restApiLogger.error({ err }, 'Uncaught exception — shutting down')
+  void shutdown()
+})
 
 export default app
