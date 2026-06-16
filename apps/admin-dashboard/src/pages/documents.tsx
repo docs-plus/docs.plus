@@ -3,11 +3,6 @@ import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
-
-// Disable static generation - pages require auth which needs client-side router
-export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} }
-}
 import toast from 'react-hot-toast'
 import {
   LuChartBar,
@@ -39,6 +34,11 @@ import {
 import type { Document } from '@/types'
 import { exportToCSV } from '@/utils/export'
 import { formatDate, formatDateTime } from '@/utils/format'
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} }
+}
 
 export default function DocumentsPage() {
   // URL-synced table state
@@ -271,8 +271,8 @@ export default function DocumentsPage() {
           data={trends?.[doc.docId] || []}
           width={60}
           height={20}
-          strokeColor="oklch(var(--p))"
-          fillColor="oklch(var(--p))"
+          strokeColor="var(--color-primary)"
+          fillColor="var(--color-primary)"
         />
       )
     },
