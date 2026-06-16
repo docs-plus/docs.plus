@@ -1,316 +1,301 @@
-# docs.plus Backend API Documentation
+# docs.plus Backend API
 
-> **Base URL:** `http://localhost:4000`
-> **Version:** 2.0.0-beta
-> **Last Updated:** January 2026
+> **Base URL (dev):** `http://localhost:4000`
+> **Package:** `@docs.plus/hocuspocus`
 
----
+The REST API runs from `src/index.ts` on a Hono app. This document covers the HTTP surface only. For the three-process architecture and environment variables, see [Readme.md](./Readme.md) and [ENV.md](./ENV.md). For the WebSocket protocol, see [WebSocket API](#websocket-api).
 
-## Table of Contents
+## Contents
 
-1. [Overview](#overview)
-2. [Authentication](#authentication)
-3. [Health Endpoints](#health-endpoints)
-4. [Documents API](#documents-api)
-5. [Media API](#media-api)
-6. [Email API](#email-api)
-7. [Push Notifications](#push-notifications)
-8. [Admin API](#admin-api)
-9. [Error Handling](#error-handling)
-
----
-
-## Overview
-
-The docs.plus backend consists of three services:
-
-| Service       | Port | Purpose                                   |
-| ------------- | ---- | ----------------------------------------- |
-| **REST API**  | 4000 | HTTP endpoints for CRUD operations        |
-| **WebSocket** | 4001 | Real-time collaboration (Hocuspocus/Y.js) |
-| **Worker**    | 4002 | Background jobs (BullMQ)                  |
-
-### Tech Stack
-
-- **Framework:** Hono (fast, lightweight)
-- **Validation:** Zod schemas
-- **Database:** PostgreSQL via Prisma
-- **Queue:** BullMQ + Redis
-- **Auth:** JWT + Supabase
-
----
+1. [Authentication](#authentication)
+2. [Response envelope](#response-envelope)
+3. [Health](#health)
+4. [Documents](#documents)
+5. [Media](#media)
+6. [Link metadata](#link-metadata)
+7. [Email](#email)
+8. [Admin](#admin)
+9. [Push notifications](#push-notifications)
+10. [Rate limiting](#rate-limiting)
+11. [WebSocket API](#websocket-api)
 
 ## Authentication
 
-Most endpoints require authentication via JWT token in the Authorization header:
+Three schemes apply, by route group:
 
-```http
-Authorization: Bearer <jwt_token>
-```
+| Scheme                                | Used by                                                                                                                      | Header                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| None                                  | `/`, `/health/*`, `/api/documents/*`, `/api/plugins/hypermultimedia/*`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe` | —                                                   |
+| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`                                                       | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
+| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                               | `Authorization: Bearer <jwt>`                       |
 
-### Service Role (Internal)
+Service-role checks use a constant-time compare (`src/api/utils/serviceRole.ts`). When `SUPABASE_SERVICE_ROLE_KEY` is unset, they fail closed in production and pass in non-production. Admin routes verify the JWT with Supabase, then require a matching row in `admin_users` (`src/api/middleware/adminAuth.ts`); failures return `401` (no/invalid token) or `403` (not an admin).
 
-Internal endpoints (email, push) require the Supabase service role key:
+The document CRUD endpoints take an optional `userId`/`ownerId` for filtering and ownership. They do not enforce a JWT.
 
-```http
-Authorization: Bearer <supabase_service_role_key>
-```
+## Response envelope
 
----
-
-## Health Endpoints
-
-Check service health and dependencies.
-
-### GET /health
-
-Overall health check for all dependencies (database, Redis, Supabase).
-
-**Response:**
+The canonical error shape is defined by `getErrorResponse` in `src/lib/errors.ts`:
 
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2026-01-30T12:00:00.000Z",
+  "success": false,
+  "error": { "message": "Human-readable message", "code": "ERROR_CODE" }
+}
+```
+
+`error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`, `STORAGE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set.
+
+The documents controller emits this envelope on error and `{ "success": true, "data": ... }` on success.
+
+> **Known inconsistency — not yet wired globally.** Several handlers return ad-hoc shapes instead of the canonical envelope. Wiring `getErrorResponse` everywhere is a separate task. Until then expect these variants:
+>
+> - `{ "error": "..." }` — email handlers, admin middleware, media-upload guards, rate-limit middleware (which also returns `retryAfter`).
+> - `{ "success": false, "code": "...", "message": "..." }` (note `code`/`message` at top level, not nested) — `/api/metadata`; its `code` is `INVALID_URL` or `BLOCKED_URL`.
+> - Email `send-*` and `bounce` success bodies are `{ "success": true, ... }` with their own fields, not the `data` wrapper.
+
+## Health
+
+Health routes are exempt from rate limiting. Each returns `200` when healthy and `503` otherwise. Source: `src/api/routers/health.router.ts`, `src/api/services/health.service.ts`.
+
+### GET /health
+
+Aggregate check across database, Redis, and Supabase. Returns `degraded` (`503`) only when a critical service (database, or Redis when enabled) is unhealthy; Supabase may be down without failing the overall check.
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-06-15T12:00:00.000Z",
   "services": {
-    "database": { "status": "healthy", "latency": 5 },
-    "redis": { "status": "healthy", "latency": 2 },
-    "supabase": { "status": "healthy", "latency": 15 }
+    "database": { "status": "healthy", "lastCheck": "...", "metadata": { "pool": {} } },
+    "redis": { "status": "healthy", "lastCheck": "...", "metadata": {} },
+    "supabase": { "status": "healthy", "lastCheck": "..." }
   }
 }
 ```
 
+Per-service `status` is one of `healthy`, `unhealthy`, or `disabled` (Redis/Supabase when not configured).
+
 ### GET /health/database
 
-Database connection health.
+Database connectivity (`SELECT 1`) plus pool metadata.
 
 ### GET /health/redis
 
-Redis connection health.
+Redis `PING`. `disabled` when Redis is not configured.
 
 ### GET /health/supabase
 
-Supabase connection health.
+Supabase reachability. `disabled` when `SUPABASE_URL`/`SUPABASE_ANON_KEY` are unset.
 
----
+### GET /health/push
 
-## Documents API
+Push gateway status. `200` when VAPID is configured and the queue is connected.
 
-Base path: `/api/documents`
+## Documents
+
+Base path `/api/documents` (`src/api/routers/documents.router.ts`). Success responses use `{ "success": true, "data": ... }`.
 
 ### GET /api/documents
 
-List documents with optional search.
+List or search documents. With any of `title`/`keywords`/`description`, runs a full-text search; otherwise lists all rows. Owner profiles (snake_case, mirroring `public.users`) are joined in.
 
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `search` | string | Search term for document title/content |
-| `limit` | number | Max results (default: 20) |
-| `offset` | number | Pagination offset |
-| `userId` | string | Filter by owner |
-
-**Response:**
+| Param         | Type   | Default | Description             |
+| ------------- | ------ | ------- | ----------------------- |
+| `title`       | string | —       | Search term (tokenized) |
+| `keywords`    | string | —       | Search term (tokenized) |
+| `description` | string | —       | Search term (tokenized) |
+| `ownerId`     | uuid   | —       | Filter by owner         |
+| `limit`       | string | `10`    | Page size (1–100)       |
+| `offset`      | string | `0`     | Pagination offset (≥ 0) |
 
 ```json
 {
-  "documents": [
-    {
-      "id": "uuid",
-      "slug": "my-document",
-      "title": "My Document",
-      "isPrivate": false,
-      "createdAt": "2026-01-30T12:00:00.000Z",
-      "updatedAt": "2026-01-30T12:00:00.000Z"
-    }
-  ],
-  "total": 100
+  "success": true,
+  "data": {
+    "docs": [
+      /* ... */
+    ],
+    "total": 100
+  }
 }
 ```
 
 ### GET /api/documents/:docName
 
-Get a single document by slug.
+Fetch one document by slug. When no row matches, returns a synthesized draft (`createDraftDocument`) rather than `404`.
 
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `userId` | string | User ID for access control |
-
-**Response:**
-
-```json
-{
-  "id": "uuid",
-  "slug": "my-document",
-  "title": "My Document",
-  "content": "...",
-  "isPrivate": false,
-  "ownerId": "user-uuid",
-  "createdAt": "2026-01-30T12:00:00.000Z"
-}
-```
+| Param    | Type           | Description                           |
+| -------- | -------------- | ------------------------------------- |
+| `userId` | string (query) | Optional; accepted for access context |
 
 ### POST /api/documents
 
-Create a new document.
-
-**Request Body:**
+Create a document.
 
 ```json
-{
-  "title": "My New Document",
-  "slug": "my-new-document",
-  "isPrivate": false,
-  "workspaceId": "workspace-uuid"
-}
+{ "title": "My Document", "slug": "my-document", "description": "", "keywords": [] }
 ```
 
-**Response:** `201 Created`
-
-```json
-{
-  "id": "uuid",
-  "slug": "my-new-document",
-  "title": "My New Document"
-}
-```
+`title` and `slug` are required; `description` defaults to `""`, `keywords` to `[]`. The slug is normalized via `slugify`; a 19-char `documentId` is generated.
 
 ### PUT /api/documents/:docId
 
-Update document metadata.
+Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`).
 
-**Request Body:**
+## Media
 
-```json
-{
-  "title": "Updated Title",
-  "isPrivate": true
-}
-```
-
-**Response:** `200 OK`
-
----
-
-## Media API
-
-Base path: `/api/plugins/hypermultimedia`
-
-Handles media uploads for the TipTap editor.
+Base path `/api/plugins/hypermultimedia` (`src/api/routers/hypermultimedia.router.ts`). Backs the editor's hypermultimedia extension. Storage targets local disk when `PERSIST_TO_LOCAL_STORAGE=true`, otherwise S3-compatible (DigitalOcean Spaces).
 
 ### POST /api/plugins/hypermultimedia/:documentId
 
-Upload a media file to a document.
+Upload one media file. Body is `multipart/form-data` with field name **`mediaFile`** (not `file`).
 
-**Request:** `multipart/form-data`
-| Field | Type | Description |
-|-------|------|-------------|
-| `file` | File | The media file to upload |
+Allowed MIME types: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`, `video/mp4`, `video/webm`, `video/ogg`, `audio/mpeg`, `audio/ogg`, `audio/wav`, `application/pdf`. Max size is `DO_STORAGE_MAX_FILE_SIZE` (the service falls back to 50 MB if that env var is unset; see [ENV.md](./ENV.md) for the schema default).
 
-**Response:**
-
-```json
-{
-  "id": "media-uuid",
-  "url": "https://storage.example.com/media/...",
-  "mimeType": "image/png",
-  "size": 12345
-}
-```
+Returns `201`. Shape depends on the backend (`type: "s3"` or local), including `fileType`, `fileName`, and `fileAddress`. Oversized files return `413` (`PAYLOAD_TOO_LARGE`); disallowed types return `415` (`UNSUPPORTED_MEDIA_TYPE`).
 
 ### GET /api/plugins/hypermultimedia/:documentId/:mediaId
 
-Retrieve a media file.
+Stream a media file with its `Content-Type`.
 
-**Response:** Binary file with appropriate `Content-Type` header.
+## Link metadata
 
----
+Base path `/api/metadata` (self-contained module at `src/modules/link-metadata`). Unfurls a URL through a cache → oEmbed → special-handler → HTML-scrape pipeline with SSRF protection.
 
-## Email API
+### GET /api/metadata?url=<http(s) url>
 
-Base path: `/api/email`
+`url` is required, must be http(s), and ≤ 2048 chars. Honors `Accept-Language`.
 
-> **Architecture Change:** Email notifications now use **pgmq Consumer** architecture.
-> The `/api/email/send` HTTP endpoint has been removed.
+Success (`200`) returns the `MetadataResponse` contract from `src/modules/link-metadata/domain/types.ts` — `success: true`, `url`, `requested_url`, `title`, optional `description`/`image`/`author`/`publisher`/`oembed`/etc., plus `cached` and `fetched_at`. Responses set `Cache-Control` (positive cache for hits, short negative cache for fallbacks) and `Vary: Accept-Language`.
 
-Email notifications are triggered directly from Supabase via database triggers:
+Errors (`400`) use this module's own shape — top-level `code` and `message`, not the nested envelope:
 
-1. Notification created → `email_queue` table populated
-2. `pg_cron` moves due emails to pgmq queue
-3. `hocuspocus-worker` polls queue and processes via BullMQ
-4. SMTP provider sends email
+```json
+{ "success": false, "code": "INVALID_URL", "message": "..." }
+```
 
-**See:** `docs/PUSH_NOTIFICATION_PGMQ.md` for architecture details (same pattern).
+`code` is `INVALID_URL` or `BLOCKED_URL` (SSRF guard).
+
+## Email
+
+Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → SMTP. **The `/api/email/send` endpoint was removed.** The endpoints below are internal triggers and webhooks; all except `unsubscribe` require the service-role key.
 
 ### POST /api/email/send-generic
 
-Send a generic email (internal use).
-
-**Request Body:**
-
-```json
-{
-  "to": "user@example.com",
-  "subject": "Email Subject",
-  "html": "<html>...</html>"
-}
-```
+Send one email directly. Body: `to`, `subject`, `html`, optional `text`, `replyTo` (validated by `sendGenericEmailSchema`). Returns `{ "success": true, "message_id": "..." }`.
 
 ### POST /api/email/send-digest
 
-Send daily/weekly digest emails.
+Send a daily/weekly digest. Body: `to`, `frequency`, `documents[]`, optional `user_name` (`sendDigestEmailSchema`).
 
-**Request Body:**
+### POST /api/email/bounce
 
-```json
-{
-  "to": "user@example.com",
-  "frequency": "daily",
-  "documents": [
-    { "title": "Doc 1", "updates": 5 },
-    { "title": "Doc 2", "updates": 3 }
-  ]
-}
-```
+Record a provider bounce event. Body: `email`, `bounce_type`, optional `provider`, `reason`. Hard bounces auto-suppress the user; returns `{ "success": true, "bounce_id": ..., "auto_suppressed": <bool> }`.
 
 ### GET /api/email/health
 
-Get email gateway health status.
+Email gateway health (no auth).
 
 ### GET /api/email/status
 
-Check if email service is operational.
+`{ "operational": <bool>, "timestamp": "..." }` (no auth).
 
-### GET /api/email/unsubscribe?token=xxx
+### GET /api/email/preview/:type
 
-Process one-click unsubscribe from email links. Returns HTML page.
+Render a template (`notification` or `digest`) with sample data, as HTML. Service-role only.
 
-### POST /api/email/unsubscribe?token=xxx
+### GET /api/email/unsubscribe?token=...
 
-RFC 8058 List-Unsubscribe-Post handler for email clients.
+One-click unsubscribe from an email link. No auth (the token is the credential). Verifies the token via the `process_unsubscribe` Supabase RPC and returns an HTML confirmation page.
 
----
+### POST /api/email/unsubscribe?token=...
 
-## Push Notifications
+RFC 8058 `List-Unsubscribe-Post` handler for mail clients. Returns JSON (`{ "success": true }` or an `{ "error": ... }` body).
 
-> **Architecture Change:** Push notifications now use **pgmq Consumer** architecture.
-> The `/api/push` HTTP endpoint has been removed.
+## Admin
 
-Push notifications are triggered directly from Supabase via database triggers:
+Base path `/api/admin` (`src/api/routers/admin.router.ts`). Every route requires a valid Supabase JWT for a user present in `admin_users`. Endpoints below are grouped as in the router.
 
-1. Notification created → Trigger enqueues to `pgmq` queue
-2. `hocuspocus-worker` polls queue and processes via BullMQ
-3. Web Push API sends to user devices
+**Dashboard & users**
 
-**See:** `docs/PUSH_NOTIFICATION_PGMQ.md` for full architecture details.
+| Method | Path                      | Purpose                  |
+| ------ | ------------------------- | ------------------------ |
+| GET    | `/stats`                  | Dashboard overview stats |
+| GET    | `/users/document-counts`  | Document count per user  |
+| GET    | `/users/admins`           | All admin user IDs       |
+| POST   | `/users/:id/toggle-admin` | Grant or revoke admin    |
 
-### Client-Side Subscription
+**Documents**
 
-Use the Supabase RPC functions to manage push subscriptions:
+| Method | Path                             | Purpose                                 |
+| ------ | -------------------------------- | --------------------------------------- |
+| GET    | `/documents`                     | List documents (paginated)              |
+| GET    | `/documents/stats`               | Document statistics                     |
+| PATCH  | `/documents/:id`                 | Update document flags                   |
+| GET    | `/documents/:id/deletion-impact` | Preview deletion cascade                |
+| DELETE | `/documents/:id`                 | Delete (requires `confirmSlug` in body) |
+| GET    | `/documents/:slug/views`         | View stats for one document             |
+| GET    | `/documents/:slug/preview`       | Content preview                         |
+
+**View analytics**
+
+| Method | Path                        | Purpose                       |
+| ------ | --------------------------- | ----------------------------- |
+| GET    | `/stats/views`              | Overall view summary          |
+| GET    | `/stats/views/top`          | Top viewed documents          |
+| GET    | `/stats/views/trend`        | View trend series             |
+| GET    | `/stats/views/batch-trends` | Per-document sparkline trends |
+
+**Retention & activity**
+
+| Method | Path                          | Purpose                      |
+| ------ | ----------------------------- | ---------------------------- |
+| GET    | `/stats/retention`            | DAU/WAU/MAU                  |
+| GET    | `/stats/user-lifecycle`       | Lifecycle segments           |
+| GET    | `/stats/dau-trend`            | Daily active users trend     |
+| GET    | `/stats/activity-heatmap`     | Activity by hour             |
+| GET    | `/stats/top-active-documents` | Most active by message count |
+| GET    | `/stats/communication`        | Communication stats          |
+| GET    | `/stats/notification-reach`   | Notification delivery stats  |
+
+**Stale documents audit**
+
+| Method | Path                           | Purpose              |
+| ------ | ------------------------------ | -------------------- |
+| GET    | `/documents/stale/summary`     | Stale summary        |
+| GET    | `/documents/stale`             | List stale documents |
+| POST   | `/documents/stale/bulk-delete` | Bulk delete stale    |
+
+**Notification audit**
+
+| Method | Path                                        | Purpose                        |
+| ------ | ------------------------------------------- | ------------------------------ |
+| GET    | `/audit/notifications/health`               | Combined health score          |
+| GET    | `/audit/notifications/push-failures`        | Push failure breakdown         |
+| GET    | `/audit/notifications/email-failures`       | Email failure/bounce breakdown |
+| GET    | `/audit/notifications/failed-subscriptions` | Failed push subscriptions      |
+| GET    | `/audit/notifications/email-bounces`        | Bounce list                    |
+| POST   | `/audit/notifications/disable-failed`       | Disable dead subscriptions     |
+| GET    | `/audit/notifications/dlq`                  | BullMQ dead-letter contents    |
+
+**Ghost accounts audit**
+
+| Method | Path                                        | Purpose                   |
+| ------ | ------------------------------------------- | ------------------------- |
+| GET    | `/audit/ghost-accounts`                     | List ghost accounts       |
+| GET    | `/audit/ghost-accounts/summary`             | Category summary          |
+| GET    | `/audit/ghost-accounts/:id/impact`          | FK dependency check       |
+| DELETE | `/audit/ghost-accounts/:id`                 | Smart-delete one          |
+| POST   | `/audit/ghost-accounts/bulk-delete`         | Bulk delete (max 50)      |
+| POST   | `/audit/ghost-accounts/resend-confirmation` | Resend magic link         |
+| POST   | `/audit/ghost-accounts/cleanup-anonymous`   | Clean stale anon sessions |
+
+## Push notifications
+
+There is **no HTTP push endpoint** — `/api/push` was removed. Push delivery runs through pgmq the same way email does: a Supabase trigger enqueues to pgmq, the worker polls it and delivers via BullMQ and the Web Push API. Devices register through Supabase RPCs:
 
 ```javascript
-// Register device
 await supabase.rpc('register_push_subscription', {
   p_device_id: 'unique-device-id',
   p_device_name: 'Chrome on MacBook',
@@ -318,170 +303,22 @@ await supabase.rpc('register_push_subscription', {
   p_push_credentials: { endpoint: '...', keys: { p256dh: '...', auth: '...' } }
 })
 
-// Unregister
-await supabase.rpc('unregister_push_subscription', {
-  p_device_id: 'unique-device-id'
-})
+await supabase.rpc('unregister_push_subscription', { p_device_id: 'unique-device-id' })
 ```
 
----
+`GET /health/push` reports gateway status.
 
-## Admin API
+## Rate limiting
 
-Base path: `/api/admin`
+A global limiter (`src/middleware/index.ts`) applies to every non-`OPTIONS` request except `/health` and `/health/*`. It is keyed on client IP + User-Agent and backed by Redis; **when Redis is unavailable, rate limiting is disabled** (requests pass). Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip the limiter.
 
-**Note:** Requires admin authentication (user must be in `admin_users` table).
+The single limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. There is no separate per-role tier in the REST middleware.
 
-### Dashboard
-
-#### GET /api/admin/stats
-
-Get dashboard overview statistics.
-
-**Response:**
-
-```json
-{
-  "users": { "total": 1000, "active": 500, "new_today": 10 },
-  "documents": { "total": 5000, "public": 3000, "private": 2000 },
-  "messages": { "total": 50000, "today": 500 }
-}
-```
-
-### Documents Management
-
-#### GET /api/admin/documents
-
-List all documents with pagination.
-
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `page` | number | Page number (default: 1) |
-| `limit` | number | Items per page (default: 20) |
-| `search` | string | Search term |
-| `sort` | string | Sort field |
-
-#### GET /api/admin/documents/stats
-
-Get document statistics.
-
-#### PATCH /api/admin/documents/:id
-
-Update document flags (featured, archived, etc.).
-
-#### GET /api/admin/documents/:id/deletion-impact
-
-Preview what will be deleted if document is removed.
-
-#### DELETE /api/admin/documents/:id
-
-Delete a document (requires `confirmSlug` in body).
-
-### User Management
-
-#### GET /api/admin/users/document-counts
-
-Get document count per user for the Users page.
-
-### Analytics
-
-#### GET /api/admin/stats/views
-
-Get overall view statistics summary.
-
-#### GET /api/admin/stats/views/top
-
-Get top viewed documents.
-
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `limit` | number | Number of results (default: 10) |
-| `period` | string | Time period: `day`, `week`, `month` |
-
-#### GET /api/admin/stats/views/trend
-
-Get view trends for charts.
-
-#### GET /api/admin/documents/:slug/views
-
-Get view stats for a specific document.
-
-### Retention Analytics
-
-#### GET /api/admin/stats/retention
-
-Get DAU/WAU/MAU retention metrics.
-
-#### GET /api/admin/stats/user-lifecycle
-
-Get user lifecycle segments (new, returning, dormant, churned).
-
-#### GET /api/admin/stats/dau-trend
-
-Get daily active users trend.
-
-#### GET /api/admin/stats/activity-heatmap
-
-Get activity by hour for heatmap visualization.
-
-#### GET /api/admin/stats/top-active-documents
-
-Get most active documents by message count.
-
-#### GET /api/admin/stats/communication
-
-Get communication statistics.
-
-#### GET /api/admin/stats/notification-reach
-
-Get notification delivery statistics.
-
----
-
-## Error Handling
-
-All errors follow a consistent format:
-
-```json
-{
-  "error": "Error message",
-  "code": "ERROR_CODE",
-  "details": {}
-}
-```
-
-### HTTP Status Codes
-
-| Code  | Description                    |
-| ----- | ------------------------------ |
-| `200` | Success                        |
-| `201` | Created                        |
-| `400` | Bad Request (validation error) |
-| `401` | Unauthorized                   |
-| `403` | Forbidden                      |
-| `404` | Not Found                      |
-| `429` | Rate Limited                   |
-| `500` | Internal Server Error          |
-
-### Common Error Codes
-
-| Code                | Description                 |
-| ------------------- | --------------------------- |
-| `VALIDATION_ERROR`  | Request body/params invalid |
-| `AUTH_REQUIRED`     | Missing or invalid token    |
-| `PERMISSION_DENIED` | User lacks access           |
-| `NOT_FOUND`         | Resource doesn't exist      |
-| `RATE_LIMITED`      | Too many requests           |
-
----
+Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). On `429`, the body is `{ "error": "...", "retryAfter": <seconds> }` and a `Retry-After` header is set.
 
 ## WebSocket API
 
-The WebSocket server (port 4001) uses the Hocuspocus protocol for real-time collaboration.
-
-### Connection
+The collaboration server (`src/hocuspocus.server.ts`, default port `4001`) speaks the Hocuspocus protocol over Y.js. Connections authenticate with a JWT.
 
 ```javascript
 import { HocuspocusProvider } from '@hocuspocus/provider'
@@ -493,32 +330,4 @@ const provider = new HocuspocusProvider({
 })
 ```
 
-### Events
-
-| Event              | Description               |
-| ------------------ | ------------------------- |
-| `synced`           | Initial sync complete     |
-| `status`           | Connection status changed |
-| `awareness-update` | User presence changed     |
-
-See [Hocuspocus Documentation](https://tiptap.dev/hocuspocus/introduction) for full protocol details.
-
----
-
-## Rate Limiting
-
-API endpoints are rate limited:
-
-| Endpoint Type | Limit       |
-| ------------- | ----------- |
-| Public        | 100 req/min |
-| Authenticated | 300 req/min |
-| Admin         | 600 req/min |
-
-Rate limit headers are included in responses:
-
-```http
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1706619600
-```
+The document `name` is the room id and the Prisma document key; the server never trusts a client-supplied `documentId`. See the [Hocuspocus documentation](https://tiptap.dev/hocuspocus/introduction) for the wire protocol.

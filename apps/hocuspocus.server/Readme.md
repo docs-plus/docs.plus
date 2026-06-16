@@ -1,122 +1,102 @@
 # @docs.plus/hocuspocus
 
-Backend services for docs.plus — REST API, WebSocket server, and background workers.
+Backend for docs.plus: a REST API, a real-time collaboration server, and a background worker. Built on Bun, Hono, Prisma, ioredis, and BullMQ.
 
-## Services
+## Processes
 
-| Service       | Port | Entry Point                | Purpose                              |
-| ------------- | ---- | -------------------------- | ------------------------------------ |
-| **REST API**  | 4000 | `src/index.ts`             | HTTP endpoints (Hono)                |
-| **WebSocket** | 4001 | `src/hocuspocus.server.ts` | Real-time collaboration (Hocuspocus) |
-| **Worker**    | 4002 | `src/hocuspocus.worker.ts` | Background jobs (BullMQ)             |
+The package ships three independent entry points. Each is its own process and scales separately.
 
-## Tech Stack
+| Process   | Default port    | Entry                      | Role                                                                          |
+| --------- | --------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| REST API  | `4000`          | `src/index.ts`             | Hono HTTP app: documents, media, link metadata, email triggers, admin, health |
+| WebSocket | `4001`          | `src/hocuspocus.server.ts` | Hocuspocus/Y.js collaboration; JWT-authenticated rooms                        |
+| Worker    | `4002` (health) | `src/hocuspocus.worker.ts` | Consumes pgmq and runs BullMQ jobs (email, push); idempotency-log cleanup     |
 
-- **Framework:** Hono (REST), Hocuspocus (WebSocket)
-- **Database:** PostgreSQL via Prisma
-- **Queue:** BullMQ + Redis
+The REST API initializes the email and push gateways in queue-only mode, so it can run as multiple replicas without spawning duplicate workers — the worker process owns job execution. Email and push notifications flow Supabase → pgmq → worker → BullMQ → SMTP / Web Push; there are no `/api/email/send` or `/api/push` HTTP endpoints.
+
+Ports are configurable via `APP_PORT`, `HOCUSPOCUS_PORT`, and `WORKER_HEALTH_PORT` (see [ENV.md](./ENV.md)).
+
+## Tech stack
+
+- **Runtime:** Bun (Node ≥ 24.11.0, Bun ≥ 1.3.7)
+- **HTTP:** Hono (REST), Hocuspocus (WebSocket)
+- **Database:** PostgreSQL via Prisma (pg adapter)
+- **Cache / queue:** Redis via ioredis; pgmq (Postgres queue) feeding BullMQ
 - **Validation:** Zod
 - **Logging:** Pino
 
 ## Development
 
-```bash
-# From monorepo root
-make dev-backend        # Start all backend services
+Use Bun only — never npm, yarn, pnpm, or npx.
 
-# Individual services
-bun --filter @docs.plus/hocuspocus dev:rest      # REST API only
-bun --filter @docs.plus/hocuspocus dev:ws        # WebSocket only
-bun --filter @docs.plus/hocuspocus dev:worker    # Worker only
+```bash
+# All three processes (from monorepo root)
+make dev-backend
+
+# Or individually, via workspace filters
+bun run --filter @docs.plus/hocuspocus dev:rest     # REST API
+bun run --filter @docs.plus/hocuspocus dev:ws       # WebSocket
+bun run --filter @docs.plus/hocuspocus dev:worker   # Worker
 ```
+
+The `dev:*` scripts load `../../.env.local`. For Docker-based runs (`make up-dev` / `make up-prod`), config comes from the root `.env.development` / `.env.production`. See [ENV.md](./ENV.md).
 
 ## Scripts
 
-| Script            | Description                |
-| ----------------- | -------------------------- |
-| `dev:rest`        | Start REST API in dev mode |
-| `dev:ws`          | Start WebSocket server     |
-| `dev:worker`      | Start background worker    |
-| `start:rest`      | Production REST API        |
-| `start:ws`        | Production WebSocket       |
-| `start:worker`    | Production Worker          |
-| `build`           | Build all services         |
-| `lint`            | Run ESLint                 |
-| `test`            | Run tests                  |
-| `prisma:generate` | Generate Prisma client     |
-| `prisma:migrate`  | Run database migrations    |
+| Script                                     | Description                                          |
+| ------------------------------------------ | ---------------------------------------------------- |
+| `dev:rest` / `dev:ws` / `dev:worker`       | Watch-mode dev for each process                      |
+| `start:rest` / `start:ws` / `start:worker` | Production start for each process                    |
+| `build`                                    | Bundle all three entries to `dist/` (`--target=bun`) |
+| `lint` / `lint:fix`                        | ESLint                                               |
+| `typecheck`                                | `tsc --noEmit`                                       |
+| `test` / `test:watch` / `test:coverage`    | Bun test runner                                      |
+| `prisma:generate`                          | Generate the Prisma client                           |
+| `prisma:migrate`                           | Run a dev migration                                  |
+| `migrate:nested-to-flat`                   | One-off document migration (`:dry` for a dry run)    |
 
-## Project Structure
+## Structure
 
 ```
 src/
-├── api/                    # REST API layer
-│   ├── controllers/        # Request handlers
-│   ├── routers/            # Route definitions
-│   ├── middleware/         # Auth, validation
-│   ├── services/           # Business logic
-│   └── utils/              # API utilities
-├── config/                 # Environment & Hocuspocus config
+├── index.ts                # REST API entry (Hono)
+├── hocuspocus.server.ts    # WebSocket entry (Hocuspocus)
+├── hocuspocus.worker.ts    # Worker entry (pgmq + BullMQ)
+├── api/                    # REST layer: routers, controllers, services, middleware, utils
+├── modules/                # Self-contained bounded modules (e.g. link-metadata)
+├── config/                 # env.schema.ts, hocuspocus.config
 ├── extensions/             # Hocuspocus extensions
-├── lib/                    # Shared libraries
-│   ├── email/              # Email gateway & providers
-│   ├── push/               # Push notification gateway
-│   ├── storage/            # File storage (local/S3)
-│   ├── prisma.ts           # Database client
-│   ├── redis.ts            # Redis client
-│   ├── queue.ts            # BullMQ setup
-│   └── logger.ts           # Pino logger
-├── middleware/             # Global middleware
-├── schemas/                # Zod validation schemas
-├── types/                  # TypeScript types
-├── utils/                  # Shared utilities
-├── index.ts                # REST API entry
-├── hocuspocus.server.ts    # WebSocket entry
-└── hocuspocus.worker.ts    # Worker entry
+├── lib/                    # email, push, storage, prisma, redis, queue, logger, errors
+├── middleware/             # Global HTTP middleware (CORS, security, rate limit, logging)
+├── schemas/                # Zod request schemas
+├── types/                  # Shared types
+└── utils/                  # Shared utilities
 ```
 
-## API Documentation
+## Module pattern
 
-See [API.md](./API.md) for full REST API documentation.
+`src/modules/link-metadata` is the canonical bounded-module template — a modular monolith that can be lifted into a standalone service mechanically. Its rules:
 
-## Environment Variables
+- **One public surface.** `index.ts` exports only `init` and the wire types. Outside files import nothing else.
+- **DI at the seam.** `init({ redis, logger })` builds its own adapters in a closure; it never calls `getRedisClient()` or reads env directly.
+- **Framework-free domain.** `domain/` imports zero infra SDKs (no Hono, ioredis, metascraper). Adapters live in `infra/`; domain↔infra contracts are tiny inline port types in `domain/types.ts`.
+- **Stable wire contract.** Request (`http/schema.ts`) and response (`domain/types.ts`) are published; additive changes only within v1.
+- **No shared mutable state**, no top-level side effects, and tests ride inside `__tests__/`.
 
-Key variables (see `.env.example` in root):
+The host wires it in `src/index.ts`:
 
-```bash
-# Server
-APP_PORT=4000
-NODE_ENV=development
-
-# Database
-DATABASE_URL=postgresql://...
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Supabase
-SUPABASE_URL=http://localhost:54321
-SUPABASE_SERVICE_ROLE_KEY=...
-
-# Email (optional)
-EMAIL_PROVIDER=smtp
-SMTP_HOST=...
-SMTP_PORT=587
-
-# Push (optional)
-VAPID_PUBLIC_KEY=...
-VAPID_PRIVATE_KEY=...
+```ts
+const linkMetadataModule = linkMetadata.init({
+  redis: getRedisClient(),
+  logger: logger.child({ module: 'link-metadata' })
+})
+app.route('/api/metadata', linkMetadataModule.router)
 ```
 
-## Testing
+See `src/modules/link-metadata/README.md` for the full boundary rules and extraction plan.
 
-```bash
-bun run test              # Run all tests
-bun run test:watch        # Watch mode
-bun run test:coverage     # With coverage
-```
+## Documentation
 
----
-
-See [root README](../../README.md) for full setup instructions.
+- [API.md](./API.md) — REST endpoints, auth, and response shapes
+- [ENV.md](./ENV.md) — environment variables (authoritative source: `src/config/env.schema.ts`)
+- [root README](../../README.md) — monorepo setup
