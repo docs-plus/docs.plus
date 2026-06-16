@@ -69,6 +69,9 @@ const index = await import(join(dir, 'index.html'))
 const readmeMediaRoot = readmeMediaDir ? resolve(readmeMediaDir) : null
 
 function serveReadmeMedia(req: Request): Response {
+  if (!readmeMediaRoot) {
+    return new Response('Not Found', { status: 404 })
+  }
   const rel = decodeURIComponent(new URL(req.url).pathname.slice('/readme-media/'.length))
   if (!rel || rel.includes('..')) {
     return new Response('Forbidden', { status: 403 })
@@ -85,7 +88,7 @@ const server = Bun.serve({
   hostname: '127.0.0.1',
   routes: {
     '/': index.default,
-    ...(readmeMediaRoot ? { '/readme-media/*': serveReadmeMedia } : {})
+    '/readme-media/*': serveReadmeMedia
   },
   development: true
 })
