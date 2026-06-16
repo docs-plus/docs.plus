@@ -9,6 +9,9 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": []
+    "types": [],
+    // TS6's dts toolchain injects a `baseUrl` it flags as TS5101 (baseUrl is removed in TS7).
+    // Acknowledge the deprecation so the extension `.d.ts` builds emit; drop once baseUrl is gone repo-wide.
+    "ignoreDeprecations": "5.0"
   }
 }
