@@ -118,7 +118,7 @@ describe('Hypermultimedia API (Direct Route)', () => {
       expect(response.status).toBe(400)
       const data = await response.json()
       expect(data).toHaveProperty('error')
-      expect(data.error).toBe('No files were uploaded')
+      expect(data.error).toBe('No valid file was uploaded')
     })
 
     test('should return error when no storage configured', async () => {

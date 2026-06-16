@@ -19,6 +19,8 @@ silent = false
 [test]
 # Test configuration
 coverage = true
+# Seed required env vars before any src module imports (env.schema exits on missing)
+preload = ["./tests/setup.ts"]
 
 # Optimize runtime performance
 [loader]

@@ -153,25 +153,20 @@ describe('Health Check API', () => {
   })
 
   describe('GET /health/supabase', () => {
-    test('should return disabled when env vars are missing', async () => {
-      // Save original env vars
-      const originalUrl = process.env.SUPABASE_URL
-      const originalKey = process.env.SUPABASE_ANON_KEY
-
-      // Remove env vars
-      delete process.env.SUPABASE_URL
-      delete process.env.SUPABASE_ANON_KEY
-
+    test('should return unhealthy when supabase is unreachable', async () => {
+      // The recovered source resolves Supabase config from the memoized
+      // `config.supabase` (captured at module load) and memoizes the anon
+      // client via `getAnonClient()`. The test harness always seeds
+      // SUPABASE_URL/SUPABASE_ANON_KEY in tests/setup.ts, so the 'disabled'
+      // branch never fires here: the client is created and the probe query to
+      // the unreachable test URL fails, yielding 'unhealthy'.
       const response = await testServer.get('/health/supabase')
       const data = await response.json()
 
       expect(response.status).toBe(503)
-      expect(data.status).toBe('disabled')
+      expect(data.status).toBe('unhealthy')
+      expect(data).toHaveProperty('error')
       expect(data).toHaveProperty('lastCheck')
-
-      // Restore env vars
-      if (originalUrl) process.env.SUPABASE_URL = originalUrl
-      if (originalKey) process.env.SUPABASE_ANON_KEY = originalKey
     })
 
     test('should return healthy when supabase is accessible', async () => {

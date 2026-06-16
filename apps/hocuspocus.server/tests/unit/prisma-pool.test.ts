@@ -5,12 +5,14 @@
 import { describe, test, expect } from 'bun:test'
 
 describe('Prisma Connection Pool Configuration', () => {
-  test('should export pool and prisma client', () => {
+  test('should export prisma client and pool helpers', () => {
     // Dynamic import to avoid initialization errors
     const poolModule = require('../../src/lib/prisma')
 
+    // The PrismaPg adapter now owns the pg Pool internally, so the module
+    // no longer exports a `pool` directly — stats flow through getPoolStats.
     expect(poolModule.prisma).toBeDefined()
-    expect(poolModule.pool).toBeDefined()
+    expect(poolModule.pool).toBeUndefined()
     expect(poolModule.getPoolStats).toBeDefined()
     expect(poolModule.checkDatabaseHealth).toBeDefined()
   })
@@ -24,21 +26,27 @@ describe('Prisma Connection Pool Configuration', () => {
     expect(stats).toHaveProperty('total')
     expect(stats).toHaveProperty('idle')
     expect(stats).toHaveProperty('waiting')
+    expect(stats).toHaveProperty('active')
+    expect(stats).toHaveProperty('max')
+    expect(stats).toHaveProperty('utilization')
 
     expect(typeof stats.total).toBe('number')
     expect(typeof stats.idle).toBe('number')
     expect(typeof stats.waiting).toBe('number')
+    expect(typeof stats.active).toBe('number')
+    expect(typeof stats.max).toBe('number')
+    expect(typeof stats.utilization).toBe('number')
   })
 
-  test('should configure pool with environment variables or defaults', () => {
-    // Pool config is created at module load time
-    // We can verify the pool exists and has expected properties
-    const { pool } = require('../../src/lib/prisma')
+  test('should report pool capacity derived from configuration', () => {
+    // The adapter owns the pool, so capacity is surfaced via getPoolStats
+    // rather than a direct pool reference. total/max reflect the configured size.
+    const { getPoolStats } = require('../../src/lib/prisma')
 
-    expect(pool).toBeDefined()
-    expect(pool.totalCount).toBeDefined()
-    expect(pool.idleCount).toBeDefined()
-    expect(pool.waitingCount).toBeDefined()
+    const stats = getPoolStats()
+
+    expect(stats.max).toBeGreaterThan(0)
+    expect(stats.total).toBe(stats.max)
   })
 
   test('pool stats should show initial idle connections', () => {
