@@ -2,7 +2,7 @@
 
 All notable changes to `@docs.plus/extension-indent` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] — 2026-06-10
+## [2.0.0] — 2026-06-16
 
 First npm release since `0.1.1`. The major aligns the package with the docs.plus extension-family `2.x` line; the `0.2.0` milestone below never shipped, so everything since `0.1.1` lands here.
 

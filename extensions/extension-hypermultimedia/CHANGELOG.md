@@ -3,61 +3,12 @@
 All notable changes to `@docs.plus/extension-hypermultimedia` are documented
 here. Entries from 2.0.0 onward follow
 [Keep a Changelog](https://keepachangelog.com); earlier entries use the
-historical Conventional Commits format.
+historical Conventional Commits format. The project adheres to
+[Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [2.1.0] — 2026-06-15
-
-### Added
-
-- URL detection API. `detectMediaType(url)` returns the media node a URL should
-  render (`'image' | 'video' | 'audio' | 'youtube' | 'vimeo' | 'soundcloud' |
-  'loom' | 'x'`) or `null` for non-media, testing specific providers and images
-  before the generic video/audio file-extension matchers. The new
-  `isVideoUrl` / `isAudioUrl` matchers, the existing per-node validators
-  (`isImageUrl`, `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`,
-  `isValidLoomUrl`, `isValidXUrl`), `parseYoutubeVideoId` (for building static
-  thumbnail URLs), and the `MediaNodeType` union are now exported from the
-  package root. `isMediaUrl`, the paste-autoconvert predicate, is unchanged — it
-  still excludes raw video/audio URLs so pasted `.mp4`/`.mp3` links stay links.
-
-  ```bash
-  bun add @docs.plus/extension-hypermultimedia@next
-  # stable, after promotion:
-  bun add @docs.plus/extension-hypermultimedia
-  ```
-
-- `prefers-reduced-motion` support in the bundled stylesheet: the media toolbar
-  and its popovers appear and disappear instantly when the OS requests reduced
-  motion.
-
-### Changed
-
-- The media toolbar's fade-in and fade-out now actually play: enter rides a
-  keyframe that fires on mount, and removal is deferred past the exit fade.
-  Previously both transitions were skipped by lifecycle ordering.
-- Overflow/submenu popovers play their exit transition and scale from the
-  anchored side (`transform-origin` set by the popover engine from the resolved
-  placement). Shell motion follows the docs.plus motion language — 120ms
-  `ease-out` enter, 80ms `ease-in` exit.
-
-### Fixed
-
-- Iframe embeds (YouTube, Vimeo, SoundCloud, Loom) now set
-  `referrerpolicy="strict-origin-when-cross-origin"` on the player iframe. Under
-  a host page whose `Referrer-Policy` strips the cross-origin `Referer`, the
-  provider could not verify the embedding domain and rendered a "player
-  configuration error" instead of the video; the element-level policy sends the
-  origin without relaxing the page's global header.
-- The resize gripper now overlays the visible media box exactly. The overlay
-  widget was inheriting the host editor's content-flow margin (e.g.
-  `.ProseMirror > *` block spacing), which shifted it off the media box and
-  desynced its drag coordinates; it now forces `margin: 0` and measures the
-  loading-shell host via `getBoundingClientRect`, so the selection box hugs the
-  player and excludes the caption.
-
-## [2.0.0] — 2026-06-12
+## [2.0.0] — 2026-06-16
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
 favor of Floating UI positioning, node type names are normalized to camelCase,
@@ -106,6 +57,16 @@ every media node gains an editable caption.
 
 ### Added
 
+- URL detection API. `detectMediaType(url)` returns the media node a URL should
+  render (`'image' | 'video' | 'audio' | 'youtube' | 'vimeo' | 'soundcloud' |
+'loom' | 'x'`) or `null` for non-media, testing specific providers and images
+  before the generic video/audio file-extension matchers. The new `isVideoUrl` /
+  `isAudioUrl` matchers, the existing per-node validators (`isImageUrl`,
+  `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`,
+  `isValidLoomUrl`, `isValidXUrl`), `parseYoutubeVideoId`, and the `MediaNodeType`
+  union are exported from the package root. `isMediaUrl`, the paste-autoconvert
+  predicate, is unchanged — it still excludes raw video/audio URLs so pasted
+  `.mp4`/`.mp3` links stay links.
 - `caption` attribute and an editable `<figcaption>` on every media node. The
   attribute is the source of truth and persists via collaboration, JSON, and
   same-editor copy/paste; standalone-HTML `<figure>/<figcaption>` round-trip is
@@ -154,8 +115,11 @@ every media node gains an editable caption.
   the popover engine — with `attachTooltip` / `hideTooltip` re-exported for
   custom `mediaToolbar` surfaces, and `.floating-tooltip` joins the
   styling-contract classes.
-- Micro-motion: the toolbar eases in (120ms, 2px settle), hover states fade,
-  tooltips rise toward rest, and popover entrances decelerate — all
+- Micro-motion: the media toolbar fades in on mount and fades out before removal
+  (the exit is deferred past the fade), hover states fade, tooltips rise toward
+  rest, and overflow/submenu popovers play both transitions and scale from the
+  anchored side via a placement-derived `transform-origin`. Motion follows the
+  docs.plus language — 120ms `ease-out` enter, 80ms `ease-in` exit — all
   compositor-only (`transform`/`opacity`/color) and fully zeroed under
   `prefers-reduced-motion: reduce`.
 - `mediaActions` and `isUploadedMedia` kit options; exported `MediaAction` types,
@@ -238,6 +202,17 @@ every media node gains an editable caption.
 - X (Twitter) oEmbed HTML is sanitized before `innerHTML`; the embed anchor reads
   the correct `src`.
 - Resize gripper no longer leaks `document` keyboard listeners across rebuilds.
+- Iframe embeds (YouTube, Vimeo, SoundCloud, Loom) set
+  `referrerpolicy="strict-origin-when-cross-origin"` on the player iframe. Under a
+  host page whose `Referrer-Policy` strips the cross-origin `Referer`, the provider
+  could not verify the embedding domain and rendered a "player configuration error"
+  instead of the video; the element-level policy sends the origin without relaxing
+  the page's global header.
+- Resize gripper overlays the visible media box exactly. The overlay widget was
+  inheriting the host editor's content-flow margin, which shifted it off the media
+  box and desynced its drag coordinates; it now forces `margin: 0` and measures the
+  loading-shell host via `getBoundingClientRect`, so the selection box hugs the
+  player and excludes the caption.
 
 ### Removed
 

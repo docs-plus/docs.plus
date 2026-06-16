@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-hypermultimedia",
-  "version": "2.1.0",
+  "version": "2.0.0",
   "description": "Tiptap extension for embedded multimedia: images, audio, video, YouTube, Vimeo, SoundCloud, Loom, and X — with resize, captions, and a media toolbar",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
