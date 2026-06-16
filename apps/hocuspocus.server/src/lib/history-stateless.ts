@@ -45,21 +45,20 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
 
   switch (type) {
     case 'history.list': {
-      const versions = await prisma.documents.findMany({
-        where: { documentId },
-        orderBy: { createdAt: 'desc' },
-        select: { version: true, commitMessage: true, createdAt: true }
-      })
-
-      if (versions.length === 0) {
-        return { versions: [], latestSnapshot: null } satisfies HistoryListResult
-      }
-
-      const latestVersion = versions[0].version
-      const full = await prisma.documents.findFirst({
-        where: { documentId, version: latestVersion },
-        select: { data: true, version: true, commitMessage: true, createdAt: true }
-      })
+      // Latest is the newest row, so query 2 no longer depends on query 1's
+      // version: both filter only by documentId and batch into one round-trip.
+      const [versions, full] = await prisma.$transaction([
+        prisma.documents.findMany({
+          where: { documentId },
+          orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
+          select: { version: true, commitMessage: true, createdAt: true }
+        }),
+        prisma.documents.findFirst({
+          where: { documentId },
+          orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
+          select: { data: true, version: true, commitMessage: true, createdAt: true }
+        })
+      ])
 
       return {
         versions,
