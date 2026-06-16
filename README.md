@@ -72,7 +72,7 @@ docs.plus is a free, real-time collaboration tool built on open-source technolog
 - 🖥️ `apps/admin-dashboard` - Admin panel for platform management
 - ⚡ `apps/hocuspocus.server` - REST API, WebSocket server, and background workers
 - 🗄️ `packages/supabase` - Database migrations and Supabase configuration
-- 🔌 `extensions/extension-*` - TipTap extensions (hyperlink, multimedia, indent, inline-code)
+- 🔌 `extensions/extension-*` - Five publishable TipTap extensions (hyperlink, hypermultimedia, indent, inline-code, placeholder) under the `@docs.plus` npm scope — see [extensions/README.md](extensions/README.md)
 - 📦 `packages/eslint-config` - Shared ESLint configurations
 
 **Tech Stack:**
