@@ -1586,6 +1586,7 @@ export type Database = {
         | "giphy"
         | "file"
         | "notification"
+        | "comment"
       notification_category:
         | "mention"
         | "message"
@@ -1782,6 +1783,7 @@ export const Constants = {
         "giphy",
         "file",
         "notification",
+        "comment",
       ],
       notification_category: [
         "mention",

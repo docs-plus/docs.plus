@@ -30,7 +30,7 @@ create type public.user_status as enum ('ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'IN
 -- 'image' is a message with an image attachment,
 -- 'video' is a message with a video attachment,
 -- 'audio' is a message with an audio attachment.
-create type public.message_type as enum ('text', 'image', 'video', 'audio', 'link', 'giphy', 'file', 'notification');
+create type public.message_type as enum ('text', 'image', 'video', 'audio', 'link', 'giphy', 'file', 'notification', 'comment');
 
 
 -- NOTE: The following types are not currently used in the schema.
