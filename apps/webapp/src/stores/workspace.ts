@@ -5,17 +5,12 @@ type EditorSettings = {
   instance?: Editor
   providerSyncing: boolean
   loading: boolean
-  applyingFilters?: boolean
   selectionPos?: number
   filterResult: {
     sortedSlugs: Array<{
       type: 'parent' | 'child'
       text: string
       existsInParent: boolean
-    }>
-    selectedNodes: Array<{
-      filterBy?: string
-      rootPath: Set<string>
     }>
   }
   isMobile?: boolean
@@ -54,9 +49,8 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       instance: undefined,
       providerSyncing: true,
       loading: true,
-      applyingFilters: false,
       selectionPos: 0,
-      filterResult: { sortedSlugs: [], selectedNodes: [] },
+      filterResult: { sortedSlugs: [] },
       presentUsers: [],
       isEditable: false
     },

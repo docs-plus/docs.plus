@@ -71,7 +71,7 @@ export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boole
     // More than one slug past the doc name means a filter (e.g. /doc/slug1/slug2).
     if (newUrlSlugs.length > 1) {
       getDefaultController().close()
-      PubSub.publish(APPLY_FILTER, { slugs: newUrlSlugs.slice(1), href })
+      PubSub.publish(APPLY_FILTER, { href })
       return
     }
 

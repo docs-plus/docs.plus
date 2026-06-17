@@ -39,7 +39,6 @@ const TocModal = () => {
   const user = useAuthStore((state) => state.profile)
   const { openFilters, openBookmarks, openDocumentSettings } = useBottomSheet()
   const loading = useStore((state) => state.settings.editor.loading)
-  const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
 
@@ -51,7 +50,7 @@ const TocModal = () => {
     [closeModal]
   )
 
-  if (loading || !editor || applyingFilters || providerSyncing) {
+  if (loading || !editor || providerSyncing) {
     return null
   }
 

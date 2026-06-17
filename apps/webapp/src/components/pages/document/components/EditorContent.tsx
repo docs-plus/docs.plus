@@ -13,12 +13,10 @@ const EditorContent = ({ className }: { className?: string }) => {
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const providerStatus = useStore((state) => state.settings.providerStatus)
-  const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
   const editorElement = useRef<HTMLDivElement>(null)
   const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
 
-  // Entry fade plays once; the class must come off afterwards or the
-  // applyingFilters display toggle (hidden→block) restarts it.
+  // Entry fade plays once on mount; the flag keeps it from replaying on re-render.
   const [entryFadeDone, setEntryFadeDone] = useState(false)
 
   // Clipboard/file uploads dispatched by the image extension's paste plugin.
@@ -45,25 +43,22 @@ const EditorContent = ({ className }: { className?: string }) => {
   }
 
   return (
-    <>
-      <EditorContentSkeleton className={applyingFilters ? 'block' : 'hidden'} />
-      <TiptapEditor
-        inputMode={'text'}
-        enterKeyHint={'enter'}
-        autoFocus={isKeyboardOpen}
-        ref={editorElement}
-        className={twMerge(
-          `tiptap__editor docy_editor relative w-full ${!applyingFilters ? 'block' : 'hidden'}`,
-          !entryFadeDone && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
-          className
-        )}
-        editor={editor}
-        onTouchEnd={handleDoubleTap}
-        onAnimationEnd={(e) => {
-          if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
-        }}
-      />
-    </>
+    <TiptapEditor
+      inputMode={'text'}
+      enterKeyHint={'enter'}
+      autoFocus={isKeyboardOpen}
+      ref={editorElement}
+      className={twMerge(
+        'tiptap__editor docy_editor relative w-full',
+        !entryFadeDone && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
+        className
+      )}
+      editor={editor}
+      onTouchEnd={handleDoubleTap}
+      onAnimationEnd={(e) => {
+        if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
+      }}
+    />
   )
 }
 

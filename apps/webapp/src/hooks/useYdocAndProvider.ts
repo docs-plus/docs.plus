@@ -102,7 +102,6 @@ const useYdocAndProvider = ({
         setWorkspaceSetting('providerStatus', 'saved')
         setWorkspaceEditorSetting('loading', true)
         setWorkspaceEditorSetting('providerSyncing', true)
-        setWorkspaceEditorSetting('applyingFilters', false)
         setWorkspaceSetting('hocuspocusProvider', null)
         setWorkspaceEditorSetting('presentUsers', [])
       },

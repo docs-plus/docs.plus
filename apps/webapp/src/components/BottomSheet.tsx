@@ -1,7 +1,7 @@
 import { useComposerEmojiPanelStore } from '@components/chatroom/components/MessageComposer/stores/composerEmojiPanelStore'
 import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
 import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
-import FilterModal from '@components/pages/document/components/FilterModal'
+import FilterSheet from '@components/pages/document/components/FilterSheet'
 import {
   type SheetData,
   type SheetDataMap,
@@ -33,7 +33,7 @@ type SheetRenderer<K extends Exclude<SheetType, null>> = (data: SheetDataMap[K])
 const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   chatroom: () => <ChatContainerMobile />,
   notifications: () => <NotificationModal />,
-  filters: () => <FilterModal />,
+  filters: () => <FilterSheet />,
   bookmarks: () => <BookmarkSheet />,
   documentSettings: () => <DocumentSettingsSheet />,
   linkPreview: (data) => <LinkPreviewSheet data={data} />,

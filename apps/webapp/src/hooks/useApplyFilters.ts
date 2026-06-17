@@ -7,6 +7,7 @@ const PAD_HEADING_SELECTOR = '.pad.tiptap:not(.history_editor) .ProseMirror [dat
 const useApplyFilters = () => {
   const router = useRouter()
   const { slugs } = router.query as { slugs: string[] }
+  const mode: 'or' | 'and' = router.query.mode === 'and' ? 'and' : 'or'
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const loading = useStore((state) => state.settings.editor.loading)
   const editor = useStore((state) => state.settings.editor.instance)
@@ -34,8 +35,7 @@ const useApplyFilters = () => {
 
     if (slugs.length === 1) {
       editor.commands.clearFilter()
-      setWorkspaceEditorSetting('filterResult', { sortedSlugs: [], selectedNodes: [] })
-      setWorkspaceEditorSetting('applyingFilters', false)
+      setWorkspaceEditorSetting('filterResult', { sortedSlugs: [] })
       return
     }
 
@@ -43,12 +43,10 @@ const useApplyFilters = () => {
 
     if (filterSlugs.length === 0) {
       editor.commands.clearFilter()
-      setWorkspaceEditorSetting('applyingFilters', false)
       return
     }
 
-    setWorkspaceEditorSetting('applyingFilters', true)
-    editor.commands.applyFilter(filterSlugs, 'or')
+    editor.commands.applyFilter(filterSlugs, mode)
 
     const sortedSlugs = filterSlugs.map((slug) => ({
       type: 'parent' as const,
@@ -56,13 +54,8 @@ const useApplyFilters = () => {
       existsInParent: true
     }))
 
-    const timeoutId = setTimeout(() => {
-      setWorkspaceEditorSetting('filterResult', { sortedSlugs, selectedNodes: [] })
-      setWorkspaceEditorSetting('applyingFilters', false)
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
-  }, [loading, isDocumentReady, slugs, editor, setWorkspaceEditorSetting])
+    setWorkspaceEditorSetting('filterResult', { sortedSlugs })
+  }, [loading, isDocumentReady, slugs, mode, editor, setWorkspaceEditorSetting])
 }
 
 export default useApplyFilters

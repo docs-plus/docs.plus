@@ -48,6 +48,8 @@ import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
+import { getMediaActionsResolver } from './mediaPopovers/mediaComment'
+import { createLucideToolbarIcons } from './mediaPopovers/mediaToolbarLucide'
 import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { buildBreadcrumbPlaceholder } from './placeholders'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
@@ -188,7 +190,9 @@ const Editor = ({
     HyperMultimediaKit.configure({
       Image: { inline: true, allowBase64: true },
       // Host-agnostic toolbar: desktop floating toolbar, mobile bottom-sheet.
-      mediaToolbar: getMediaToolbarFactory(!!isMobile)
+      mediaToolbar: getMediaToolbarFactory(!!isMobile),
+      mediaToolbarIcons: createLucideToolbarIcons(),
+      mediaActions: getMediaActionsResolver()
     }),
     MediaUploadPlaceholder,
     MarkdownPaste,

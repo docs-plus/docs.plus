@@ -10,6 +10,9 @@ type PanelSurfaceShellProps = {
   popoverHeader: ReactNode
   fillHeight?: boolean
   headerActions?: ReactNode
+  footer?: ReactNode
+  /** Popover only: set false to drop the bordered header bar (header supplies its own padding). */
+  popoverHeaderBordered?: boolean
   onClose?: () => void
   bodyClassName?: string
   className?: string
@@ -23,6 +26,8 @@ export function PanelSurfaceShell({
   popoverHeader,
   fillHeight = false,
   headerActions,
+  footer,
+  popoverHeaderBordered = true,
   onClose,
   bodyClassName,
   className
@@ -33,6 +38,7 @@ export function PanelSurfaceShell({
         title={title}
         fillHeight={fillHeight}
         headerActions={headerActions}
+        footer={footer}
         onClose={onClose}
         bodyClassName={bodyClassName}>
         {children}
@@ -42,8 +48,14 @@ export function PanelSurfaceShell({
 
   return (
     <div className={twMerge('bg-base-100 flex min-h-0 w-full flex-col overflow-hidden', className)}>
-      <div className="border-base-300 shrink-0 border-b px-4 py-3">{popoverHeader}</div>
+      <div
+        className={
+          popoverHeaderBordered ? 'border-base-300 shrink-0 border-b px-4 py-3' : 'shrink-0'
+        }>
+        {popoverHeader}
+      </div>
       {children}
+      {footer ? <div className="border-base-300 shrink-0 border-t">{footer}</div> : null}
     </div>
   )
 }

@@ -55,6 +55,9 @@ const EditorToolbar = () => {
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
+  const hasActiveFilters = useStore(
+    (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
+  )
   const user = useAuthStore((state) => state.profile)
   const [isDocumentsOpen, setDocumentsOpen] = useState(false)
 
@@ -323,8 +326,18 @@ const EditorToolbar = () => {
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
               <div>
-                <ToolbarButton tooltip="Filter Document">
+                <ToolbarButton
+                  tooltip={hasActiveFilters ? 'Filter Document (active)' : 'Filter Document'}
+                  aria-label="Filter Document"
+                  className="relative">
                   <Icons.filter size={ICON_SIZE} />
+                  {hasActiveFilters && (
+                    <span
+                      data-testid="filter-active-indicator"
+                      className="bg-error ring-base-100 absolute top-0.5 right-0.5 size-1.5 rounded-full ring-2"
+                      aria-hidden
+                    />
+                  )}
                 </ToolbarButton>
               </div>
             </PopoverTrigger>

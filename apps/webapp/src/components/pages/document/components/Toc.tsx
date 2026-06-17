@@ -7,15 +7,13 @@ import { twMerge } from 'tailwind-merge'
 
 const TOC = ({ className = '' }: { className?: string }) => {
   const loading = useStore((state) => state.settings.editor.loading)
-  const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
 
-  // Entry fade plays once — the loader branch remounts the real branch on every
-  // filter apply and would replay it otherwise.
+  // Entry fade plays once on mount; the flag keeps it from replaying on re-render.
   const [entryFadeDone, setEntryFadeDone] = useState(false)
 
-  if (loading || !editor || applyingFilters || providerSyncing) {
+  if (loading || !editor || providerSyncing) {
     return (
       <div className="p-4">
         <TableOfContentsLoader className="mt-2" />

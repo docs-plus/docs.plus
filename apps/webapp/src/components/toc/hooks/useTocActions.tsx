@@ -57,7 +57,6 @@ function DeleteSectionDialog({ headingId }: { headingId: string }) {
 export function useTocActions() {
   const router = useRouter()
   const openDialog = useStore((state) => state.openDialog)
-  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const editor = useStore((state) => state.settings.editor.instance)
 
   const openChatroom = useCallback(
@@ -98,8 +97,6 @@ export function useTocActions() {
       const headingText = (headingElement.innerText || headingElement.textContent || '').trim()
       if (!headingText) return
 
-      setWorkspaceEditorSetting('applyingFilters', false)
-
       const url = new URL(window.location.href)
       url.searchParams.forEach((_, key) => {
         url.searchParams.delete(key)
@@ -110,9 +107,8 @@ export function useTocActions() {
       url.searchParams.set('id', headingId)
 
       router.push(url.toString(), undefined, { shallow: true })
-      setWorkspaceEditorSetting('applyingFilters', true)
     },
-    [editor, router, setWorkspaceEditorSetting]
+    [editor, router]
   )
 
   const deleteSection = useCallback(

@@ -100,13 +100,17 @@ function computeOwnRange(
   return { from: headingPos, to: offset }
 }
 
-export function matchSections(doc: PMNode, query: string): SectionMatch[] {
+export function matchSections(
+  doc: PMNode,
+  query: string,
+  sections?: SectionInfo[]
+): SectionMatch[] {
   if (!query.trim()) return []
 
-  const sections = findAllSections(doc)
+  const allSections = sections ?? findAllSections(doc)
   const results: SectionMatch[] = []
 
-  for (const section of sections) {
+  for (const section of allSections) {
     const range = computeOwnRange(doc, section.pos, section.childIndex)
     const matches = searchTextInRange(doc, range.from, range.to, query)
 
@@ -155,8 +159,13 @@ function getDescendantIds(sections: SectionInfo[], matchedIds: Set<string>): Set
   return descendants
 }
 
-export function filterSections(doc: PMNode, slugs: string[], mode: 'or' | 'and'): FilterResult {
-  const sections = findAllSections(doc)
+export function filterSections(
+  doc: PMNode,
+  slugs: string[],
+  mode: 'or' | 'and',
+  precomputed?: { sections: SectionInfo[]; perQueryMatches: Map<string, SectionMatch[]> }
+): FilterResult {
+  const sections = precomputed?.sections ?? findAllSections(doc)
   const totalSections = sections.length
 
   if (slugs.length === 0) {
@@ -169,7 +178,8 @@ export function filterSections(doc: PMNode, slugs: string[], mode: 'or' | 'and')
   const perSlugSectionIds: Map<string, Set<string>> = new Map()
 
   for (const slug of slugs) {
-    const sectionMatches = matchSections(doc, slug)
+    const sectionMatches =
+      precomputed?.perQueryMatches.get(slug) ?? matchSections(doc, slug, sections)
     perSlugSectionIds.set(slug, new Set(sectionMatches.map((sm) => sm.section.id)))
   }
 
