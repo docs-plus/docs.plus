@@ -1,42 +1,34 @@
-import { Icons } from '@icons'
-import type { TSendCommentArgs } from '@types'
+import { CommentAnchorPreview } from '@components/chatroom/components/CommentAnchorPreview'
+import { getCommentAnchorLabel, parseCommentAnchor } from '@services/commentAnchor'
 import { getMetadataProperty } from '@utils/metadata'
 import { scrollToHeading } from '@utils/scrollToHeading'
-import { useCallback } from 'react'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { ReferenceJumpButton } from './ReferenceJumpButton'
 
-type CommentMetadata = Pick<TSendCommentArgs['comment'], 'content' | 'html' | 'heading_id'>
-
 export const CommentReference = () => {
   const { message } = useMessageCardContext()
 
-  const comment = getMetadataProperty<CommentMetadata>(message.metadata, 'comment')
-  const commentContent = comment?.content || ''
-  // New sends store heading_id; legacy rows only have channel_id (= heading id in eventsHub).
-  const headingId = comment?.heading_id ?? message.channel_id
+  const rawComment = getMetadataProperty(message.metadata, 'comment')
+  if (message.type !== 'comment' && !rawComment) return null
 
-  const onJump = useCallback(() => {
-    scrollToHeading(headingId)
-  }, [headingId])
-
-  if (!commentContent) return null
+  const anchor = parseCommentAnchor(rawComment)
+  if (!anchor) return null
 
   return (
     <ReferenceJumpButton
-      dataKey={`comment-ref-${headingId}`}
-      ariaLabel="Jump to commented heading"
+      kind="comment"
+      dataKey={`comment-ref-${anchor.heading_id}`}
+      ariaLabel="Jump to commented section in document"
       widthClass="w-full"
-      onJump={onJump}>
-      <div className="flex items-center">
-        <div className="mr-2">
-          <Icons.comment size={18} />
-        </div>
-        <p className="m-0 text-sm" dir="auto">
-          {commentContent}
-        </p>
-      </div>
+      onJump={() => scrollToHeading(anchor.heading_id)}
+      header={
+        <>
+          <span className="text-base-content/40 font-normal">·</span>
+          <span className="text-base-content font-normal">{getCommentAnchorLabel(anchor)}</span>
+        </>
+      }>
+      <CommentAnchorPreview anchor={anchor} variant="feed" showTypeLabel={false} />
     </ReferenceJumpButton>
   )
 }

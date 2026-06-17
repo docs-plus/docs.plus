@@ -1,5 +1,6 @@
 import { AddCommentSVG, ChatLeftSVG } from '@icons'
-import { CHAT_COMMENT, CHAT_OPEN } from '@services/eventsHub'
+import { buildTextCommentAnchor, publishDocumentComment } from '@services/commentAnchor'
+import { CHAT_OPEN } from '@services/eventsHub'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import { type Editor, type ProseMirrorNode, TIPTAP_NODES } from '@types'
@@ -77,11 +78,12 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
     const { selection } = editor.state
     if (selection.empty) return
 
-    PubSub.publish(CHAT_COMMENT, {
-      content: editor.state.doc.textBetween(selection.from, selection.to, '\n'),
-      html: '',
-      headingId
-    })
+    publishDocumentComment(
+      buildTextCommentAnchor(
+        headingId,
+        editor.state.doc.textBetween(selection.from, selection.to, '\n')
+      )
+    )
 
     editor.commands.setTextSelection(selection.to)
   })

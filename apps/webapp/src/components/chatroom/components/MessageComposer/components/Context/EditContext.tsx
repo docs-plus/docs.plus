@@ -16,8 +16,7 @@ const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
     onDismiss?.()
   }
 
-  if (!editMessageMemory) return null
-  if (editMessageMemory.channel_id !== channelId) return null
+  if (!editMessageMemory || editMessageMemory.channel_id !== channelId) return null
 
   const author =
     editMessageMemory.user_details?.fullname?.trim() ||
@@ -26,12 +25,13 @@ const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
 
   return (
     <MessageContextBar
+      kind="edit"
       icon={<Icons.edit size={16} />}
       onDismiss={handleClose}
       dismissLabel="Cancel edit">
-      <span className="text-primary font-semibold antialiased">
+      <span className="text-warning text-xs font-semibold antialiased">
         Edit message
-        {author ? <span className="ml-1 font-normal">{author}</span> : null}
+        {author ? <span className="text-base-content ml-1 font-normal">{author}</span> : null}
       </span>
       <span className="text-base-content/80 text-sm break-words wrap-anywhere whitespace-pre-wrap">
         {editMessageMemory.content}

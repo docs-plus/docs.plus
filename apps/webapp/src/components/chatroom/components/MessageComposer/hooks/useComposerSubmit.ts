@@ -120,19 +120,14 @@ export const useComposerSubmit = ({
         return
       }
 
-      const usesOptimisticFeed =
-        htmlChunks.length === 0 && !editMessageMemory && !commentMessageMemory
+      const clearsComposerBeforeSend = htmlChunks.length === 0 && !editMessageMemory
       const replyToId = editMessageMemory?.id ?? replyMessageMemory?.id ?? null
 
       const dispatchContent = async (content: string, html: string) => {
         if (editMessageMemory) {
           await updateMsg(content, html, editMessageMemory.id!)
         } else if (commentMessageMemory) {
-          await sendComment(content, channelId, user.id!, html, {
-            content: commentMessageMemory.content,
-            html: commentMessageMemory.html,
-            heading_id: commentMessageMemory.channel_id
-          })
+          await sendComment(content, channelId, user.id!, html, commentMessageMemory.anchor)
         } else {
           await contextSend({
             content,
@@ -142,7 +137,7 @@ export const useComposerSubmit = ({
         }
       }
 
-      if (usesOptimisticFeed) cleanupAfterSubmit()
+      if (clearsComposerBeforeSend) cleanupAfterSubmit()
 
       try {
         if (htmlChunks.length === 0) {
@@ -159,7 +154,7 @@ export const useComposerSubmit = ({
         return
       }
 
-      if (!usesOptimisticFeed) cleanupAfterSubmit()
+      if (!clearsComposerBeforeSend) cleanupAfterSubmit()
       showNotificationPrompt()
     },
     [

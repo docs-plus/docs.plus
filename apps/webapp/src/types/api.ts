@@ -1,3 +1,4 @@
+import type { CommentAnchorV1 } from './comment'
 import { Profile } from './domain'
 import type { MessageStatus } from './message'
 import { Database } from './supabase'
@@ -51,11 +52,7 @@ export type TSendCommentArgs = {
   channel_id: TMsgRow['channel_id']
   user_id: TMsgRow['user_id']
   html: TMsgRow['html']
-  comment: {
-    content: string
-    html: string
-    heading_id: string
-  }
+  comment: CommentAnchorV1
 }
 
 export type TUpdateMsgArgs = {

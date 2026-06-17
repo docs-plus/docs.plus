@@ -1,10 +1,11 @@
+import type { CommentAnchorV1 } from './comment'
+import type { Profile } from './domain'
+
 export type CommentMessageMemory = {
-  content: string
-  html: string
-  text: string
+  anchor: CommentAnchorV1
   channel_id: string
-  workspace_id: string
-  user: any
+  workspace_id: string | undefined
+  user: Profile | null
 }
 
 /** Reply/edit composer context — subset of message row fields the UI needs. */

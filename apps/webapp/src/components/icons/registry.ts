@@ -67,6 +67,7 @@ import {
   LuPhone,
   LuPin,
   LuPinOff,
+  LuPlay,
   LuPlus,
   LuPrinter,
   LuRedo2,
@@ -185,6 +186,7 @@ export const Icons = {
   chatroom: LuMessageSquareText,
   phone: LuPhone,
   video: LuVideo,
+  play: LuPlay,
 
   // ── Media / Lifestyle ────────────────────────────────────
   calendar: LuCalendar,

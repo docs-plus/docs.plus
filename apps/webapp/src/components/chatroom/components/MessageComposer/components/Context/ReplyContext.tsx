@@ -16,8 +16,7 @@ const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
     onDismiss?.()
   }
 
-  if (!replyMessageMemory) return null
-  if (replyMessageMemory.channel_id !== channelId) return null
+  if (!replyMessageMemory || replyMessageMemory.channel_id !== channelId) return null
 
   const replyToUser =
     replyMessageMemory.user_details?.fullname?.trim() ||
@@ -26,12 +25,13 @@ const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
 
   return (
     <MessageContextBar
+      kind="reply"
       icon={<Icons.reply size={16} />}
       onDismiss={handleClose}
       dismissLabel="Dismiss reply">
-      <span className="text-primary font-semibold antialiased">
-        Reply to
-        <span className="ml-1 font-normal">{replyToUser}</span>
+      <span className="text-info text-xs font-semibold antialiased">
+        Reply
+        <span className="text-base-content ml-1 font-normal">to {replyToUser}</span>
       </span>
       <span className="text-base-content/80 break-words wrap-anywhere whitespace-pre-wrap">
         {replyMessageMemory.content}

@@ -1,30 +1,25 @@
 import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
 import { TOC_CLASSES } from '@components/toc/tocClasses'
-import { SheetType, useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
+import { SheetType, useChatStore, useSheetStore } from '@stores'
 import { ensureEmojiData } from '@utils/ensureEmojiData'
 import { formatCappedCount } from '@utils/formatCappedCount'
-import { scrollToHeading } from '@utils/index'
 import { NextRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 
-import { retryWithBackoff } from '../utils/retryWithBackoff'
+import { CHAT_COMMENT, type TChatCommentData } from './chatEvents'
+import { openCommentComposer, openHeadingChatBrowse } from './openHeadingChatroom'
+
+export { CHAT_COMMENT, type TChatCommentData } from './chatEvents'
 
 const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
 const tocChatTriggerSelector = `.${TOC_CLASSES.chatTrigger}`
 
-export const CHAT_COMMENT = Symbol('chat.comment')
 export const CHAT_OPEN = Symbol('chat.open')
 export const CHAT_CLOSE = Symbol('chat.close')
 export const APPLY_FILTER = Symbol('apply.filter')
 export const REMOVE_FILTER = Symbol('remove.filter')
 export const RESET_FILTER = Symbol('reset.filter')
 export const UNREAD_SYNC = Symbol('unread.sync')
-
-type TChatCommentData = {
-  content: string
-  html: string
-  headingId: string
-}
 
 type TOpenChatData = {
   headingId: string
@@ -38,9 +33,8 @@ type TOpenChatData = {
 }
 
 type TApplyFilterData = {
-  slugs?: string[]
-  href?: string
-} & ({ slugs: string[] } | { href: string })
+  href: string
+}
 
 type TRemoveFilterData = {
   slug: string
@@ -50,43 +44,8 @@ type TCloseChatData = {
   headingId: string
 }
 
-type TResetFilterData = {
-  callback: () => void
-  applyFilters: boolean
-}
-
 type TUnreadSyncData = {
   channels: Map<string, { unread_message_count?: number }>
-}
-
-/**
- * Exit document edit mode before a mobile chat sheet seats, releasing the
- * iOS soft keyboard on the way out.
- *
- * Tiptap `setEditable(false)` synchronously runs `view.updateState(...)`,
- * which flips `contenteditable` on the editor DOM in the same tick — so
- * the attribute write is NOT load-bearing. What iOS Safari actually needs
- * is the focused element to *lose focus*: with `contenteditable=false` but
- * focus still on the host, the keyboard stays up. That's why the final
- * `view.dom.blur()` is the critical line here.
- *
- * Simpler than `previewHyperlink.dismissSoftKeyboard`: that helper must
- * collapse the selection and defer the blur one tick to win a race against
- * ProseMirror's same-tick selection management on link taps. Here the
- * callers already gate the `openSheet` call with a 200 ms `setTimeout`,
- * and `setEditable(false)` prevents ProseMirror from re-asserting focus,
- * so a synchronous blur is enough.
- *
- * No-op when the keyboard is already down.
- */
-const exitDocEditModeForSheet = (): void => {
-  const { isKeyboardOpen, settings, setWorkspaceEditorSetting } = useStore.getState()
-  if (!isKeyboardOpen) return
-  const editor = settings.editor.instance
-  if (!editor) return
-  setWorkspaceEditorSetting('isEditable', false)
-  editor.setEditable(false)
-  editor.view.dom.blur()
 }
 
 export const eventsHub = (router: NextRouter) => {
@@ -94,37 +53,7 @@ export const eventsHub = (router: NextRouter) => {
 
   PubSub.subscribe(CHAT_COMMENT, (msg, data: TChatCommentData) => {
     ensureEmojiData(true)
-    const { content, html, headingId } = data
-    const { workspaceId } = useStore.getState().settings
-    const { headingId: openedHeadingId } = useChatStore.getState().chatRoom
-    const user = useAuthStore.getState().profile
-
-    const setCommentMessageMemory = useChatStore.getState().setCommentMessageMemory
-    const setChatRoom = useChatStore.getState().setChatRoom
-    const destroyChatRoom = useChatStore.getState().destroyChatRoom
-    const switchChatRoom = useChatStore.getState().switchChatRoom
-
-    switchChatRoom(headingId)
-
-    setCommentMessageMemory(headingId, {
-      content,
-      html,
-      channel_id: headingId,
-      workspace_id: workspaceId,
-      user
-    })
-
-    if (headingId === openedHeadingId) return destroyChatRoom()
-
-    exitDocEditModeForSheet()
-
-    setTimeout(() => {
-      if (workspaceId) {
-        setChatRoom(headingId, workspaceId, [], user)
-        useChatStore.getState().openChatRoom()
-        useSheetStore.getState().openSheet('chatroom', { headingId })
-      }
-    }, 200)
+    openCommentComposer(data.anchor)
   })
 
   PubSub.subscribe(CHAT_OPEN, (msg, data: TOpenChatData) => {
@@ -142,83 +71,18 @@ export const eventsHub = (router: NextRouter) => {
 
     if (!headingId) return
 
-    const { workspaceId } = useStore.getState().settings
-    const user = useAuthStore.getState().profile
     const { headingId: openedHeadingId } = useChatStore.getState().chatRoom
-
-    const setChatRoom = useChatStore.getState().setChatRoom
     const destroyChatRoom = useChatStore.getState().destroyChatRoom
-    const switchChatRoom = useChatStore.getState().switchChatRoom
 
     if (openedHeadingId === headingId && toggleRoom) return destroyChatRoom()
 
-    switchChatRoom(headingId)
-
-    setTimeout(() => {
-      // TODO: change naming => open chatroom
-      if (workspaceId) {
-        setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
-        useChatStore.getState().openChatRoom()
-        useSheetStore.getState().openSheet('chatroom', { headingId })
-      }
-
-      if (scroll2Heading) scrollToHeading(headingId)
-    }, 200)
-
-    exitDocEditModeForSheet()
-
-    if (insertContent) {
-      retryWithBackoff(
-        () => {
-          const { editorInstance } = useChatStore.getState().chatRoom
-          const { sheetState, isSheetOpen } = useSheetStore.getState()
-
-          // Return false to retry, true when condition is met
-          if (sheetState === 'open' && editorInstance && insertContent && isSheetOpen('chatroom')) {
-            editorInstance.chain().focus().insertContent(insertContent).run()
-            return true
-          } else if (isSheetOpen('chatroom') && editorInstance) {
-            // make sure we insert the content in the editor
-            // if the sheetState goes wrong, change the sheetState to open
-            useSheetStore.getState().setSheetState('open')
-            return false // This will trigger a retry
-          }
-
-          return false // This will trigger a retry
-        },
-        {
-          maxAttempts: 6,
-          initialDelayMs: 600,
-          maxDelayMs: 1000,
-          onRetry: (attempt, error) => {
-            console.info(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
-          }
-        }
-      ).then((_result) => {
-        // do nothing
-      })
-    }
-
-    if (focusEditor) {
-      retryWithBackoff(
-        () => {
-          const { editorInstance } = useChatStore.getState().chatRoom
-          if (editorInstance && focusEditor) {
-            editorInstance.commands.focus()
-            return true
-          }
-          return false
-        },
-        {
-          maxAttempts: 6,
-          initialDelayMs: 600,
-          maxDelayMs: 1000,
-          onRetry: (attempt, error) => {
-            console.info(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
-          }
-        }
-      )
-    }
+    openHeadingChatBrowse({
+      headingId,
+      scroll2Heading,
+      fetchMsgsFromId,
+      focusEditor,
+      insertContent
+    })
 
     if (switchSheet) {
       useSheetStore.getState().switchSheet(switchSheet)
@@ -243,24 +107,21 @@ export const eventsHub = (router: NextRouter) => {
   })
 
   PubSub.subscribe(APPLY_FILTER, (msg, data: TApplyFilterData) => {
-    const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
-    const { slugs, href } = data
-
-    // if (!href || !slugs) {
-    //   console.error('[EventsHub]: apply filter: invalid data', data)
-    //   return
-    // }
+    const { href } = data
 
     const url = new URL(href || router.asPath, window.location.origin)
-    if (!href && slugs) url.pathname = `${url.pathname}/${encodeURIComponent(slugs.join('/'))}`
 
+    // Preserve the user's sticky filter mode when the clicked link omits it.
+    if (!url.searchParams.has('mode')) {
+      const mode = new URL(router.asPath, window.location.origin).searchParams.get('mode')
+      if (mode) url.searchParams.set('mode', mode)
+    }
+
+    // Instant in-place fold — no full-doc skeleton; useApplyFilters reacts to the route.
     router.push(url.toString(), undefined, { shallow: true })
-
-    setWorkspaceEditorSetting('applyingFilters', true)
   })
 
   PubSub.subscribe(REMOVE_FILTER, (msg, data: TRemoveFilterData) => {
-    const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
     const { slug } = data
 
     const url = new URL(location.href)
@@ -277,23 +138,16 @@ export const eventsHub = (router: NextRouter) => {
     url.pathname = `/${docSlug}${updatedFilters.length ? '/' + updatedFilters.join('/') : ''}`
 
     router.push(url.toString(), undefined, { shallow: true })
-    setWorkspaceEditorSetting('applyingFilters', true)
   })
 
-  PubSub.subscribe(RESET_FILTER, (msg, data: TResetFilterData) => {
-    const { callback, applyFilters = true } = data
-    const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
+  PubSub.subscribe(RESET_FILTER, () => {
     const url = new URL(router.asPath, window.location.origin)
     const slugs = url.pathname.split('/').slice(1)
 
-    // Preserve the search parameters
+    // Preserve the search parameters; reset is an instant in-place unfold.
     const newUrl = `/${slugs.at(0)}${url.search}`
 
     router.push(newUrl, undefined, { shallow: true })
-    setTimeout(() => {
-      setWorkspaceEditorSetting('applyingFilters', applyFilters)
-      if (callback) callback()
-    }, 500)
   })
 
   /**

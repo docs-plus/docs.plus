@@ -40,6 +40,7 @@ lowlight.register('json', json)
 // @ts-expect-error highlight.js language modules ship loose types
 lowlight.register('bash', bash)
 
+import { useChatStore } from '@stores'
 import { isOnlyEmoji } from '@utils/emojis'
 
 import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handleTypingIndicator'
@@ -147,7 +148,13 @@ export const useTiptapEditor = ({
           suggestion
         }),
         Placeholder.configure({
-          placeholder: 'Write a message...',
+          placeholder: () => {
+            const { channelId } = draftCtxRef.current
+            const memory = useChatStore
+              .getState()
+              .workspaceSettings.channels.get(channelId)?.commentMessageMemory
+            return memory ? 'Add a comment…' : 'Write a message...'
+          },
           showOnlyWhenEditable: false
         }),
         Hyperlink.configure({

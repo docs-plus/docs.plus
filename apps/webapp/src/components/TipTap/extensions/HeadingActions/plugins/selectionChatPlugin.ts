@@ -1,11 +1,9 @@
 import { AddCommentSVG } from '@icons'
-import { CHAT_COMMENT } from '@services/eventsHub'
+import { buildTextCommentAnchorFromEditor, publishDocumentComment } from '@services/commentAnchor'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { type Editor, type EditorView, type Selection, TIPTAP_NODES } from '@types'
 import { logger } from '@utils/logger'
-import PubSub from 'pubsub-js'
 
-import { getTocId } from '../../shared/get-toc-id'
 import { HEADING_ACTIONS_CLASSES } from '../types'
 
 const BUTTON_HALF_SIZE = 22 // half of size-11 (2.75rem) for vertical centering
@@ -91,36 +89,14 @@ const showSelectionChatButton = (editor: Editor, view: EditorView, selection: Se
 }
 
 const openChatComment = (editor: Editor): void => {
-  const { selection } = editor.state
-  if (selection.empty) return
-
-  // In flat doc, walk up top-level children to find the nearest heading before selection
-  const { doc } = editor.state
-  const selPos = selection.from
-  let headingId: string | null = null
-  let offset = 0
-
-  for (let i = 0; i < doc.content.childCount; i++) {
-    const child = doc.content.child(i)
-    if (child.type.name === TIPTAP_NODES.HEADING_TYPE) {
-      headingId = getTocId(child.attrs) ?? null
-    }
-    offset += child.nodeSize
-    if (offset > selPos) break
-  }
-
-  if (!headingId) {
+  const anchor = buildTextCommentAnchorFromEditor(editor)
+  if (!anchor) {
     logger.error('[selectionChat]: No headingId found')
     return
   }
 
-  PubSub.publish(CHAT_COMMENT, {
-    content: editor.state.doc.textBetween(selection.from, selection.to, '\n'),
-    html: '',
-    headingId
-  })
-
-  editor.commands.setTextSelection(selection.to)
+  publishDocumentComment(anchor)
+  editor.commands.setTextSelection(editor.state.selection.to)
 }
 
 const hideSelectionChatButton = (): void => {

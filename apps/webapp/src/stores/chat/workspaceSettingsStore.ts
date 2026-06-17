@@ -1,4 +1,4 @@
-import { TChannelSettings } from '@types'
+import { CommentMessageMemory, TChannelSettings } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
 type WorkspaceSettings = {
@@ -13,7 +13,7 @@ export interface IWorkspaceSettingsStore {
   workspaceSettings: WorkspaceSettings
   setWorkspaceChannelSetting: (channelId: string, key: keyof TChannelSettings, value: any) => void
   setWorkspaceSetting: (key: keyof WorkspaceSettings, value: any) => void
-  setCommentMessageMemory: (channelId: string, message: any) => void
+  setCommentMessageMemory: (channelId: string, message: CommentMessageMemory | null) => void
   setReplyMessageMemory: (channelId: string, message: any) => void
   setEditMessageMemory: (channelId: string, message: any) => void
   setTypingIndicator: (channelId: string, user: any) => void

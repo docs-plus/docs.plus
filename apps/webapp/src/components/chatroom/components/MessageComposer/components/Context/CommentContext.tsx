@@ -1,4 +1,6 @@
+import { CommentAnchorPreview } from '@components/chatroom/components/CommentAnchorPreview'
 import { Icons } from '@icons'
+import { getCommentAnchorLabel } from '@services/commentAnchor'
 
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
@@ -13,17 +15,23 @@ const CommentContext = ({ onDismiss }: { onDismiss?: () => void }) => {
     onDismiss?.()
   }
 
-  if (!commentMessageMemory) return null
-  if (commentMessageMemory.channel_id !== channelId) return null
+  if (!commentMessageMemory || commentMessageMemory.channel_id !== channelId) return null
+
+  const { anchor } = commentMessageMemory
 
   return (
     <MessageContextBar
+      kind="comment"
       icon={<Icons.comment size={16} />}
       onDismiss={handleClose}
       dismissLabel="Dismiss comment">
-      <span className="text-base-content/80 text-sm break-words wrap-anywhere whitespace-pre-wrap">
-        {commentMessageMemory.content}
+      <span className="text-secondary text-xs font-semibold antialiased">
+        Document comment
+        <span className="text-base-content ml-1 font-normal">
+          · {getCommentAnchorLabel(anchor)}
+        </span>
       </span>
+      <CommentAnchorPreview anchor={anchor} variant="composer" />
     </MessageContextBar>
   )
 }

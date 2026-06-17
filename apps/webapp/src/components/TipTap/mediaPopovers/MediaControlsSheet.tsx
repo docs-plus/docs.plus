@@ -24,6 +24,7 @@ import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
 import { useEffect, useState } from 'react'
 
 import { findMediaNodePosByKeyId } from './findMediaNodePosByKeyId'
+import { publishMediaComment } from './mediaComment'
 
 function setMediaAttrs(
   editor: Editor,
@@ -111,6 +112,13 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
 
   const viewCtx = buildActionContext(editor, keyId, nodeType, closeSheet)
   const showViewOriginal = viewCtx != null && canViewOriginal(viewCtx)
+  const showComment = editor.isEditable
+
+  const runComment = () =>
+    runAction((ctx) => {
+      closeSheet()
+      publishMediaComment(ctx.editor, ctx.nodePos, ctx.nodeType, ctx.attrs)
+    })
 
   return (
     <SheetLayout
@@ -171,6 +179,12 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
             onBlur={(e) => apply({ caption: e.target.value.trim() || null })}
           />
         </div>
+
+        {showComment && (
+          <button type="button" className="btn btn-sm btn-primary w-full" onClick={runComment}>
+            Comment in chat
+          </button>
+        )}
 
         <div className="grid grid-cols-2 gap-2">
           {showViewOriginal && (
