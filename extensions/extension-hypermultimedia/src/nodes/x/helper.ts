@@ -201,7 +201,7 @@ export const fetchOEmbedHtml = async (
   const urlParams = new URLSearchParams(
     Object.entries(params).map(([key, value]) => [key, String(value)])
   )
-  const urlWithParams = `https://publish.twitter.com/oembed?${urlParams.toString()}`
+  const urlWithParams = `https://publish.x.com/oembed?${urlParams.toString()}`
 
   const response = await fetch(urlWithParams, { signal })
 

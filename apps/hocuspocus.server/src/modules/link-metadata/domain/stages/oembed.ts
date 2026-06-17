@@ -24,7 +24,7 @@ const PROVIDERS: ProviderEntry[] = [
   },
   {
     match: (h) => /(^|\.)twitter\.com$|(^|\.)x\.com$/.test(h),
-    endpoint: (u) => `https://publish.twitter.com/oembed?format=json&url=${encodeURIComponent(u)}`
+    endpoint: (u) => `https://publish.x.com/oembed?format=json&url=${encodeURIComponent(u)}`
   },
   {
     match: (h) => /(^|\.)open\.spotify\.com$|(^|\.)spotify\.com$/.test(h),

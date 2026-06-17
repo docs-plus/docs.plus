@@ -210,6 +210,10 @@ module.exports = withPWA({
         ]
       : []
 
+    const xScriptHosts = ['platform.twitter.com', 'platform.x.com']
+    const xSyndicationHosts = ['syndication.twitter.com', 'syndication.x.com']
+    const xConnectHosts = ['publish.twitter.com', 'publish.x.com', ...xSyndicationHosts]
+
     // Each directive gets exactly what it needs - no bloat
     const cspSources = {
       script: [
@@ -220,6 +224,8 @@ module.exports = withPWA({
         '*.google-analytics.com',
         'accounts.google.com', // Google One Tap Auth
         '*.cloudflare.com',
+        // Hypermultimedia X embed (widgets.js)
+        ...xScriptHosts,
         ...localUrls,
         ...envUrls,
         ...devUrls
@@ -244,6 +250,8 @@ module.exports = withPWA({
         '*.cloudflare.com',
         'api.github.com',
         '*.githubusercontent.com',
+        // Hypermultimedia X oEmbed + widgets.js follow-up requests
+        ...xConnectHosts,
         ...localUrls,
         ...envUrls,
         ...devUrls
@@ -261,6 +269,9 @@ module.exports = withPWA({
         'player.vimeo.com',
         'w.soundcloud.com',
         'www.loom.com',
+        // Hypermultimedia X embed iframes (widgets.js)
+        ...xScriptHosts,
+        ...xSyndicationHosts,
         ...localUrls,
         ...envUrls,
         ...devUrls
