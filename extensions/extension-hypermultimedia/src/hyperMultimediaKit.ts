@@ -13,6 +13,7 @@ import { Vimeo, VimeoOptions } from './nodes/vimeo/vimeo'
 import { X, XOptions } from './nodes/x/x'
 import { Youtube, YoutubeOptions } from './nodes/youtube/youtube'
 import type { ReplaceUrlPopoverFactory } from './toolbar/replaceUrl'
+import type { MediaToolbarIconsResolver } from './toolbar/resolveIcon'
 import type { MediaActionContext, MediaActionsResolver, MediaToolbarFactory } from './toolbar/types'
 import type { ImageOptions } from './types'
 
@@ -38,6 +39,11 @@ export interface HyperMultimediaKitOptions {
   loadingShell?: MediaLoadingShellOption
   /** Customize/extend/reorder the built-in toolbar actions per node. */
   mediaActions?: MediaActionsResolver
+  /**
+   * Swap toolbar/menu SVG markup by icon key (`caption`, `more`, `align:center`,
+   * custom action ids) without replacing toolbar factories or submenus.
+   */
+  mediaToolbarIcons?: MediaToolbarIconsResolver
   /**
    * Replace-URL popover slot. Return the popover content for the node-anchored
    * dialog, or `null` to opt out so the host renders its own surface (mobile
@@ -70,6 +76,7 @@ export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
       mediaToolbar: this.options.mediaToolbar,
       loadingShell: this.options.loadingShell ?? true,
       mediaActions: this.options.mediaActions,
+      mediaToolbarIcons: this.options.mediaToolbarIcons,
       replaceUrlPopover: this.options.replaceUrlPopover,
       isUploadedMedia: this.options.isUploadedMedia
     }

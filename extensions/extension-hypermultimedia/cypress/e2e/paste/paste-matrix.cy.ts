@@ -36,7 +36,7 @@ describe('paste-to-node matrix', () => {
   cases.forEach(({ label, url, node }) => {
     it(`pastes ${label} URL into a ${node} node without a hyperlink`, () => {
       if (node === 'x') {
-        cy.intercept('GET', 'https://publish.twitter.com/oembed*', {
+        cy.intercept('GET', 'https://publish.x.com/oembed*', {
           statusCode: 200,
           body: { html: '<blockquote class="twitter-tweet"><p>stub</p></blockquote>' }
         })

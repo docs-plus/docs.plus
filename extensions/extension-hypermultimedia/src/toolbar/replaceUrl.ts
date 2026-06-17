@@ -7,8 +7,8 @@ import { isValidSoundCloudUrl } from '../nodes/soundcloud/helper'
 import { isValidVimeoUrl } from '../nodes/vimeo/helper'
 import { normalizeXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
-import * as Icons from '../utils/icons'
 import { applyNodeAttributes } from '../utils/media-node-attrs'
+import { type MediaToolbarIconScope, resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaActionContext } from './types'
 
 const validatedUrl =
@@ -16,11 +16,7 @@ const validatedUrl =
   (url: string): string | null =>
     isValid(url) ? url : null
 
-/**
- * Same-type replacement only: each provider's canonical validator gates its own
- * node, so a foreign URL is rejected rather than morphing the node type. Assets
- * (image/video/audio) have no entry and accept any non-empty src.
- */
+/** Same-type replacement only — assets (image/video/audio) accept any non-empty src. */
 const REPLACE_URL_GUARDS: Record<
   string,
   { label: string; resolve: (url: string) => string | null }
@@ -90,7 +86,12 @@ export const createReplaceUrlPopover: ReplaceUrlPopoverFactory = (options) => {
   const confirm = document.createElement('button')
   confirm.type = 'button'
   confirm.className = 'media-toolbar__submenu-item'
-  confirm.innerHTML = `${Icons.Replace({ size: 18 })}<span>Replace</span>`
+  const iconScope: MediaToolbarIconScope = {
+    editor: options.editor,
+    nodeType: options.nodeType
+  }
+  const icon = resolveMediaToolbarIcon(iconScope, 'replace') ?? ''
+  confirm.innerHTML = `${icon}<span>Replace</span>`
   confirm.onclick = submit
 
   body.append(input, confirm, error)

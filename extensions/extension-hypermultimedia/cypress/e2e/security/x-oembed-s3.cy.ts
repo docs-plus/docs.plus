@@ -1,6 +1,6 @@
 describe('X oEmbed sanitization (S3/S4)', () => {
   beforeEach(() => {
-    cy.intercept('GET', 'https://publish.twitter.com/oembed*', {
+    cy.intercept('GET', 'https://publish.x.com/oembed*', {
       statusCode: 200,
       body: {
         html: [

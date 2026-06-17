@@ -214,7 +214,7 @@ const GALLERY_SCENES: GalleryScene[] = [
     settleMs: README_GALLERY_X_WIDGETS_SETTLE_MS,
     withGripper: false,
     beforeScene: () => {
-      cy.intercept('GET', 'https://publish.twitter.com/oembed*').as('xOembedReadme')
+      cy.intercept('GET', 'https://publish.x.com/oembed*').as('xOembedReadme')
     },
     setup: (editor, theme) => {
       editor.commands.setX({ src: README_X, ...readmeGalleryXLayout(theme) })

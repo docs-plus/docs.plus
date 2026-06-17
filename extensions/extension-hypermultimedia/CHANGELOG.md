@@ -8,6 +8,29 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- **`mediaToolbarIcons` kit slot.** Hosts swap toolbar, overflow, alignment
+  submenu, and replace-URL icons by key (`caption`, `more`, `align:center`,
+  custom action ids) without replacing toolbar factories or reimplementing
+  submenus. The inline align button reuses the `align:<placement>` icons, so a
+  host supplies one icon per placement and never a dynamic resolver.
+- **`composeMediaActions` builder + `layoutMediaActions` sugar.** Rearrange
+  toolbar bricks by id — `add` / `move` / `replace` / `remove` /
+  `setPlacement` / `order` — or declare the inline and overflow rows by id,
+  instead of hand-splicing the `mediaActions` array. Both compose over the
+  existing `mediaActions` slot.
+
+### Changed
+
+- Built-in toolbar icons resolve from a single Material map in `resolveMediaToolbarIcon`
+  (host `mediaToolbarIcons` override first). `MediaAction.icon` is optional — omit it
+  on custom bricks and supply keys via `mediaToolbarIcons` instead.
+- The toolbar action list is now ordered purely by array position. The internal
+  numeric `order` field on `MediaAction` is removed; author bricks in display
+  order and arrange with the builder (X's "Post options" now anchors after
+  Replace URL via a per-node recipe rather than `order: 45`).
+
 ## [2.0.0] — 2026-06-16
 
 ### Fixed

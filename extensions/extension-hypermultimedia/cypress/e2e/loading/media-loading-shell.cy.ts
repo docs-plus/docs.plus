@@ -61,7 +61,7 @@ describe('media loading shell', () => {
   })
 
   it('shows an X shell on paste, then clears it after oEmbed resolves', () => {
-    cy.intercept('GET', 'https://publish.twitter.com/oembed*', {
+    cy.intercept('GET', 'https://publish.x.com/oembed*', {
       statusCode: 200,
       body: { html: '<blockquote class="twitter-tweet"><p>stub</p></blockquote>' }
     }).as('xOembed')

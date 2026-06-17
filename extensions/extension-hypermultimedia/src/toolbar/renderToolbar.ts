@@ -1,14 +1,21 @@
 import { attachTooltip } from '@docs.plus/floating-tooltip'
 
-import * as Icons from '../utils/icons'
-import { actionButton, buildOverflowMenu, openToolbarPopover } from './menu'
+import { getKitStorage } from '../kitStorage'
+import { actionButton, bindToolbarTooltips, buildOverflowMenu, openToolbarPopover } from './menu'
+import { resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaAction, MediaActionContext } from './types'
 
-/** Build the in-place toolbar element from a resolved, sorted action list. */
+/** Build the in-place toolbar element from a resolved action list. */
 export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction[]): HTMLElement {
-  const visible = actions.filter((a) => a.isVisible?.(ctx) ?? true)
-  const inline = visible.filter((a) => a.placement === 'inline')
-  const overflow = visible.filter((a) => a.placement === 'overflow')
+  const kitIcons = getKitStorage(ctx.editor).mediaToolbarIcons
+  const tooltipDetaches: (() => void)[] = []
+  const inline: MediaAction[] = []
+  const overflow: MediaAction[] = []
+  for (const action of actions) {
+    if (!(action.isVisible?.(ctx) ?? true)) continue
+    if (action.placement === 'inline') inline.push(action)
+    else overflow.push(action)
+  }
 
   const bar = document.createElement('div')
   bar.className = 'media-toolbar'
@@ -17,7 +24,7 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
   bar.setAttribute('aria-label', 'Media toolbar')
 
   for (const action of inline) {
-    const btn = actionButton(action, ctx, 'inline')
+    const btn = actionButton(action, ctx, 'inline', kitIcons, tooltipDetaches)
     if (action.renderSubmenu) {
       btn.onclick = () => openToolbarPopover(btn, action.renderSubmenu!(ctx), `media-${action.id}`)
     } else {
@@ -38,11 +45,13 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
     more.type = 'button'
     more.className = 'media-toolbar__button media-toolbar__more'
     more.setAttribute('aria-label', 'More actions')
-    more.innerHTML = Icons.More({ size: 18 })
-    attachTooltip(more, 'More actions')
-    more.onclick = () => openToolbarPopover(more, buildOverflowMenu(ctx, overflow), 'media-menu')
+    more.innerHTML = resolveMediaToolbarIcon(ctx, 'more', kitIcons) ?? ''
+    tooltipDetaches.push(attachTooltip(more, 'More actions'))
+    more.onclick = () =>
+      openToolbarPopover(more, buildOverflowMenu(ctx, overflow, kitIcons), 'media-menu')
     bar.append(more)
   }
 
+  bindToolbarTooltips(bar, tooltipDetaches)
   return bar
 }

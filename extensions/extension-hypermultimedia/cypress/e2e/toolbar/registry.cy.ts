@@ -26,8 +26,19 @@ describe('media toolbar action registry', () => {
       const actions = resolveMediaActions(win._editor, 'image')
       const ids = actions.map((a) => a.id)
       expect(ids).to.include.members(['caption', 'align', 'view-original', 'copy', 'delete'])
-      // ordering is ascending by `order`
+      // inline bricks precede overflow bricks by array position (no numeric `order`)
       expect(ids.indexOf('caption')).to.be.lessThan(ids.indexOf('delete'))
+    })
+  })
+
+  it('composeMediaActions reorders bricks by id', () => {
+    cy.window().then((win) => {
+      const { composeMediaActions, resolveMediaActions } = win._hypermultimedia
+      const ids = composeMediaActions(resolveMediaActions(win._editor, 'image'))
+        .move('caption', { before: 'align' })
+        .result()
+        .map((a) => a.id)
+      expect(ids.indexOf('caption')).to.be.lessThan(ids.indexOf('align'))
     })
   })
 

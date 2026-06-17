@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/core'
 
 import type { MediaLoadingShellOption } from './loading/types'
 import type { ReplaceUrlPopoverFactory } from './toolbar/replaceUrl'
+import type { MediaToolbarIconsResolver } from './toolbar/resolveIcon'
 import type { MediaActionContext, MediaActionsResolver, MediaToolbarFactory } from './toolbar/types'
 
 export const HYPER_MULTIMEDIA_KIT_EXTENSION_NAME = 'HyperMultimediaKit'
@@ -12,6 +13,8 @@ export interface HyperMultimediaKitStorage {
   /** Matches the real stored value (`boolean | factory`), not a bare boolean. */
   loadingShell?: MediaLoadingShellOption
   mediaActions?: MediaActionsResolver
+  /** Swap toolbar/menu SVG markup by icon key without replacing toolbar factories. */
+  mediaToolbarIcons?: MediaToolbarIconsResolver
   replaceUrlPopover?: ReplaceUrlPopoverFactory
   isUploadedMedia?: (ctx: MediaActionContext) => boolean
 }

@@ -2,11 +2,43 @@ import { hideTooltip } from '@docs.plus/floating-tooltip'
 
 import { getKitStorage } from '../kitStorage'
 import { createMediaToolbar } from './createMediaToolbar'
-import { closeToolbarPopover } from './menu'
+import { closeToolbarPopover, releaseToolbarTooltips } from './menu'
 import type { MediaToolbarFactory, MediaToolbarOptions } from './types'
 
 // 80ms CSS opacity fade plus a short buffer before DOM removal; closing bars are not reused.
 const CLOSE_REMOVE_DELAY_MS = 100
+
+const pendingRemoval = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>()
+
+function cancelToolbarRemoval(el: HTMLElement): void {
+  const timer = pendingRemoval.get(el)
+  if (timer == null) return
+  clearTimeout(timer)
+  pendingRemoval.delete(el)
+  delete el.dataset.hmClosing
+}
+
+function teardownToolbar(el: HTMLElement): void {
+  cancelToolbarRemoval(el)
+  releaseToolbarTooltips(el)
+}
+
+function removeToolbarElement(el: HTMLElement): void {
+  teardownToolbar(el)
+  el.remove()
+}
+
+function scheduleToolbarRemoval(el: HTMLElement): void {
+  teardownToolbar(el)
+  el.dataset.hmClosing = 'true'
+  pendingRemoval.set(
+    el,
+    setTimeout(() => {
+      pendingRemoval.delete(el)
+      el.remove()
+    }, CLOSE_REMOVE_DELAY_MS)
+  )
+}
 
 function existingToolbar(wrapper: HTMLElement): HTMLElement | null {
   const live = wrapper.querySelector<HTMLElement>(
@@ -17,7 +49,7 @@ function existingToolbar(wrapper: HTMLElement): HTMLElement | null {
   // Re-hover before removal fires can stack a second bar; purge closing siblings first.
   wrapper
     .querySelectorAll(':scope > [data-hm-toolbar][data-hm-closing]')
-    .forEach((el) => el.remove())
+    .forEach((el) => removeToolbarElement(el as HTMLElement))
   wrapper.classList.remove('hm-has-toolbar')
   return null
 }
@@ -53,8 +85,6 @@ export function closeMediaToolbar(wrapper?: HTMLElement | null): void {
   const root = wrapper ?? document
   root.querySelectorAll<HTMLElement>('[data-hm-toolbar]').forEach((el) => {
     el.closest('.hm-has-toolbar')?.classList.remove('hm-has-toolbar')
-    // Deferred removal lets the 80ms exit fade play. Reopen sync-purges via existingToolbar().
-    el.dataset.hmClosing = 'true'
-    setTimeout(() => el.remove(), CLOSE_REMOVE_DELAY_MS)
+    scheduleToolbarRemoval(el)
   })
 }

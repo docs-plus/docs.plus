@@ -18,7 +18,7 @@ export interface MediaActionContext {
 export interface MediaAction {
   id: string
   label: (ctx: MediaActionContext) => string
-  /** Inline SVG markup; return `null` to render a text button using `label`. */
+  /** Optional one-off SVG override; omit on custom bricks and use `mediaToolbarIcons` by `id`. */
   icon?: (ctx: MediaActionContext) => string | null
   placement: MediaActionPlacement
   /** Hidden entirely when this returns false. Default: shown. */
@@ -30,8 +30,6 @@ export interface MediaAction {
   renderSubmenu?: (ctx: MediaActionContext) => HTMLElement
   /** Inline only: render a separator after this action to group it apart from the rest of the bar. */
   dividerAfter?: boolean
-  /** Ascending sort within a placement group. Default 100. */
-  order?: number
 }
 
 export type MediaActionList = MediaAction[]

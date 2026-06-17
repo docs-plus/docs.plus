@@ -1,12 +1,26 @@
 import { createPopover, DEFAULT_OFFSET, getDefaultController } from '@docs.plus/floating-popover'
 import { attachTooltip } from '@docs.plus/floating-tooltip'
 
+import { type MediaToolbarIconsResolver, resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaAction, MediaActionContext } from './types'
+
+const toolbarTooltipDetaches = new WeakMap<HTMLElement, (() => void)[]>()
+
+export function bindToolbarTooltips(bar: HTMLElement, detaches: (() => void)[]): void {
+  toolbarTooltipDetaches.set(bar, detaches)
+}
+
+export function releaseToolbarTooltips(bar: HTMLElement): void {
+  toolbarTooltipDetaches.get(bar)?.forEach((detach) => detach())
+  toolbarTooltipDetaches.delete(bar)
+}
 
 export function actionButton(
   action: MediaAction,
   ctx: MediaActionContext,
-  variant: 'inline' | 'row'
+  variant: 'inline' | 'row',
+  icons?: MediaToolbarIconsResolver | null,
+  tooltipDetaches?: (() => void)[]
 ): HTMLButtonElement {
   const btn = document.createElement('button')
   btn.type = 'button'
@@ -14,7 +28,7 @@ export function actionButton(
   const active = action.isActive?.(ctx) ?? false
   // Only toggle-semantics actions (those declaring isActive) announce a pressed state.
   if (action.isActive) btn.setAttribute('aria-pressed', active ? 'true' : 'false')
-  const iconMarkup = action.icon?.(ctx) ?? null
+  const iconMarkup = action.icon?.(ctx) ?? resolveMediaToolbarIcon(ctx, action.id, icons) ?? null
   const label = action.label(ctx)
 
   if (variant === 'inline') {
@@ -23,7 +37,10 @@ export function actionButton(
     if (!iconMarkup) btn.classList.add('media-toolbar__button--text')
     btn.setAttribute('aria-label', label)
     // Icon-only buttons get the floating tooltip; text labels self-describe.
-    if (iconMarkup) attachTooltip(btn, label)
+    if (iconMarkup) {
+      const detach = attachTooltip(btn, label)
+      tooltipDetaches?.push(detach)
+    }
   } else {
     btn.className = 'media-toolbar__menu-item' + (active ? ' media-toolbar__menu-item--active' : '')
     btn.innerHTML = `${iconMarkup ?? ''}<span>${label}</span>`
@@ -31,7 +48,7 @@ export function actionButton(
   return btn
 }
 
-/** Open `body` in a popover anchored to `anchor`; `kind` names it on the shared controller. One popover at a time; outside-click and Escape dismissal are built in. The shell stays role-neutral by doctrine — ARIA `menu` semantics would be wrong without menuitem keyboard support. */
+/** Anchored popover on the shared controller; one open at a time. */
 export function openToolbarPopover(anchor: HTMLElement, body: HTMLElement, kind: string): void {
   const popover = createPopover({
     referenceElement: anchor,
@@ -54,7 +71,8 @@ export function closeToolbarPopover(): void {
 /** Vertical overflow menu: action rows + inline-expanded submenu sections. */
 export function buildOverflowMenu(
   ctx: MediaActionContext,
-  menuActions: MediaAction[]
+  menuActions: MediaAction[],
+  icons?: MediaToolbarIconsResolver | null
 ): HTMLElement {
   const menu = document.createElement('div')
   menu.className = 'media-toolbar__menu'
@@ -69,7 +87,7 @@ export function buildOverflowMenu(
       menu.append(section)
       continue
     }
-    const row = actionButton(action, ctx, 'row')
+    const row = actionButton(action, ctx, 'row', icons)
     row.onclick = () => action.run?.(ctx)
     menu.append(row)
   }

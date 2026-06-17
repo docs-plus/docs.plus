@@ -4,15 +4,14 @@ import {
   X_EMBED_THEME_OPTIONS,
   type XEmbedTheme
 } from '../nodes/x/embedOptions'
-import * as Icons from '../utils/icons'
 import { applyNodeAttributes } from '../utils/media-node-attrs'
 import {
   getCurrentMediaPlacement,
   getMediaPlacementAttrs,
   MEDIA_MARGIN_OPTIONS,
-  MEDIA_PLACEMENT_OPTIONS,
-  type MediaPlacementId
+  MEDIA_PLACEMENT_OPTIONS
 } from '../utils/media-placement'
+import type { MediaActionsBuilder } from './compose'
 import {
   canViewOriginal,
   copyMediaNode,
@@ -23,15 +22,8 @@ import {
   viewOriginalMedia
 } from './handlers'
 import { openReplaceUrlPopover } from './replaceUrl'
-import type { MediaActionContext, MediaActionList } from './types'
-
-const ALIGN_ICON: Record<MediaPlacementId, keyof typeof Icons> = {
-  inline: 'AlignLeft',
-  center: 'AlignCenter',
-  right: 'AlignRight',
-  'float-left': 'ImageLeft',
-  'float-right': 'ImageRight'
-}
+import { resolveMediaToolbarIcon } from './resolveIcon'
+import type { MediaAction, MediaActionContext, MediaActionList } from './types'
 
 const DEFAULT_WRAP_MARGIN = '0.5in'
 
@@ -63,7 +55,7 @@ function renderAlignmentSubmenu(ctx: MediaActionContext): HTMLElement {
   const margin = isPresetMargin(rawMargin) ? rawMargin : DEFAULT_WRAP_MARGIN
   for (const { id, label } of MEDIA_PLACEMENT_OPTIONS) {
     const btn = submenuItem(current === id)
-    btn.innerHTML = `${Icons[ALIGN_ICON[id]]({ size: 18 })}<span>${label}</span>`
+    btn.innerHTML = `${resolveMediaToolbarIcon(ctx, `align:${id}`) ?? ''}<span>${label}</span>`
     btn.onclick = () => {
       applyNodeAttributes(ctx.editor, ctx.nodePos, getMediaPlacementAttrs(id, margin))
       ctx.close()
@@ -146,86 +138,74 @@ function renderXOptionsSubmenu(ctx: MediaActionContext): HTMLElement {
   return list
 }
 
+/** Authored in display order — array position is the source of truth (no numeric `order`). */
 export const BASE_ACTIONS: MediaActionList = [
-  {
-    id: 'caption',
-    label: () => 'Caption',
-    icon: () => Icons.Caption({ size: 18 }),
-    placement: 'inline',
-    order: 20,
-    run: focusCaption
-  },
   {
     id: 'align',
     label: () => 'Align',
-    icon: (ctx) => Icons[ALIGN_ICON[getCurrentMediaPlacement(ctx.attrs)]]({ size: 18 }),
     placement: 'inline',
-    order: 10,
     renderSubmenu: renderAlignmentSubmenu
   },
   {
     id: 'margin',
     label: marginLabel,
     placement: 'inline',
-    order: 15,
     isVisible: (ctx) => isWrapPlacement(ctx.attrs),
     renderSubmenu: renderMarginSubmenu,
     dividerAfter: true
   },
   {
+    id: 'caption',
+    label: () => 'Caption',
+    placement: 'inline',
+    run: focusCaption
+  },
+  {
     id: 'view-original',
     label: () => 'View original',
-    icon: () => Icons.ExternalLink({ size: 18 }),
     placement: 'inline',
-    order: 30,
     isVisible: canViewOriginal,
     run: viewOriginalMedia
   },
   {
     id: 'download',
     label: () => 'Download',
-    icon: () => Icons.Download({ size: 18 }),
     placement: 'inline',
-    order: 40,
     isVisible: (ctx) => isDownloadable(ctx.nodeType) && Boolean(ctx.attrs.src),
     run: (ctx) => void downloadMedia(ctx)
   },
   {
     id: 'replace',
     label: () => 'Replace URL',
-    icon: () => Icons.Replace({ size: 18 }),
     placement: 'overflow',
-    order: 44,
     isVisible: (ctx) => Boolean(ctx.attrs.src),
     run: openReplaceUrlPopover
   },
   {
     id: 'copy',
     label: () => 'Copy',
-    icon: () => Icons.Copy({ size: 18 }),
     placement: 'overflow',
-    order: 50,
     run: (ctx) => void copyMediaNode(ctx)
   },
   {
     id: 'delete',
     label: () => 'Delete',
-    icon: () => Icons.Trash({ size: 18 }),
     placement: 'overflow',
-    order: 60,
     run: removeMediaNode
   }
 ]
 
-/** Per-node extras merged after the base set. */
-export const NODE_ACTIONS: Record<string, MediaActionList> = {
-  x: [
-    {
-      id: 'x-options',
-      label: () => 'Post options',
-      placement: 'overflow',
-      order: 45,
-      renderSubmenu: renderXOptionsSubmenu
-    }
-  ]
+const X_OPTIONS_ACTION: MediaAction = {
+  id: 'x-options',
+  label: () => 'Post options',
+  placement: 'overflow',
+  renderSubmenu: renderXOptionsSubmenu
+}
+
+/** Per-node recipes snap extra bricks onto the base set via the builder (replaces the old `order` interleave). */
+export const NODE_ACTION_RECIPES: Record<
+  string,
+  (builder: MediaActionsBuilder) => MediaActionsBuilder
+> = {
+  x: (builder) => builder.add(X_OPTIONS_ACTION, { after: 'replace' })
 }

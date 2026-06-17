@@ -1,3 +1,10 @@
+export {
+  composeMediaActions,
+  layoutMediaActions,
+  type MediaActionAnchor,
+  type MediaActionsBuilder,
+  type MediaToolbarLayout
+} from './compose'
 export { createMediaToolbar } from './createMediaToolbar'
 export {
   canViewOriginal,
@@ -16,6 +23,12 @@ export {
   type ReplaceUrlPopoverFactory,
   type ReplaceUrlPopoverOptions
 } from './replaceUrl'
+export {
+  type MediaToolbarIconContext,
+  type MediaToolbarIconKey,
+  type MediaToolbarIconScope,
+  type MediaToolbarIconsResolver
+} from './resolveIcon'
 export type {
   MediaAction,
   MediaActionContext,

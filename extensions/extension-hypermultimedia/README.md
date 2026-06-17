@@ -276,26 +276,51 @@ never morphs the node type.
 
 Three kit hooks, in order of reach.
 
-`mediaActions` rewrites the resolved action list per node — add, hide, or reorder:
+`mediaActions` rewrites the resolved action list per node. Each button is a brick with a stable `id`; `placement` picks the row (inline bar vs `…` overflow), and array order is final within each row. `composeMediaActions` is an immutable lego-style builder so you rearrange by id instead of splicing arrays:
 
 ```ts
+import { composeMediaActions } from '@docs.plus/extension-hypermultimedia'
+
 HyperMultimediaKit.configure({
-  mediaActions: (defaults, { nodeType }) => {
-    if (nodeType !== 'image') return defaults
-    return [
-      ...defaults.filter((action) => action.id !== 'download'), // hide one
-      {
-        id: 'alt',
-        label: () => 'Edit alt text',
-        placement: 'overflow',
-        run: (ctx) => editAltText(ctx)
-      } // add one
-    ]
-  }
+  mediaActions: (defaults, { nodeType }) =>
+    composeMediaActions(defaults)
+      .add(
+        { id: 'alt', label: () => 'Edit alt text', placement: 'overflow', run: editAltText },
+        { after: 'replace' }
+      )
+      .move('caption', { after: 'align' })
+      .toOverflow('download')
+      .remove('copy')
+      .result()
 })
 ```
 
-A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run(ctx), renderSubmenu?(ctx), dividerAfter? }`; `label` and `icon` are functions of the action context, and `dividerAfter` renders a separator after the action (the margin button uses it). The returned array order is final; the built-in `order` field only seeds the defaults.
+Builder verbs: `add(action, { before | after })` (inserts, or moves if the id exists), `move`, `replace`, `remove`, `setPlacement` / `toInline` / `toOverflow`, `order(ids)`, `has`, `result`.
+
+For pure rearrangement, `layoutMediaActions` is declarative sugar — list ids per row; unlisted known actions keep their placement and append after:
+
+```ts
+import { layoutMediaActions } from '@docs.plus/extension-hypermultimedia'
+
+HyperMultimediaKit.configure({
+  mediaActions: layoutMediaActions({
+    inline: ['align', 'caption'],
+    overflow: ['replace', 'copy', 'delete']
+  })
+})
+```
+
+A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run(ctx), renderSubmenu?(ctx), dividerAfter? }`; built-in bricks omit `icon` — Material defaults resolve by `id` (and `align:<placement>` for alignment). Custom bricks omit `icon` too and supply SVG via `mediaToolbarIcons`, or set `icon` for a one-off override. `dividerAfter` renders a separator after the action (the margin button uses it).
+
+`mediaToolbarIcons` swaps SVG markup without touching toolbar layout. Keys:
+
+| Key                                                                                    | Slot                                    |
+| -------------------------------------------------------------------------------------- | --------------------------------------- |
+| `caption`, `view-original`, `download`, `replace`, `copy`, `delete`, `more`            | Built-in toolbar / overflow             |
+| `align:inline`, `align:center`, `align:right`, `align:float-left`, `align:float-right` | Inline align button + alignment submenu |
+| Custom action `id` (e.g. `comment`)                                                    | Bricks added via `mediaActions`         |
+
+Return `null`/`undefined` to keep the built-in Material icon; return markup to override.
 
 `replaceUrlPopover` swaps the Replace URL dialog's content. The factory receives
 `ReplaceUrlPopoverOptions` — `{ editor, nodeType, nodePos, src, validate, apply, close }`,

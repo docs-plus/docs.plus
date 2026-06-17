@@ -1,7 +1,7 @@
 describe('X embed toolbar', () => {
   beforeEach(() => {
     cy.visitPlayground()
-    cy.intercept('GET', 'https://publish.twitter.com/oembed*', {
+    cy.intercept('GET', 'https://publish.x.com/oembed*', {
       statusCode: 200,
       body: {
         html: '<blockquote class="twitter-tweet"><p>stub tweet</p></blockquote>'
