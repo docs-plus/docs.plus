@@ -4,6 +4,8 @@ import type { Editor } from '@tiptap/core'
 import { type ProseMirrorNode, TIPTAP_NODES } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
+import { MEDIA_MAX_UPLOAD_BYTES, mediaUploadLimitExceededMessage } from './mediaUploadLimits'
+
 export interface ImageDimensions {
   width: number
   height: number
@@ -42,6 +44,23 @@ const DEFAULT_DIMENSIONS = {
 
 const generateUploadId = (): string =>
   `upload_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+
+interface UploadErrorBody {
+  error?: { message?: string }
+}
+
+const parseUploadErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const data = (await response.json()) as UploadErrorBody
+    if (data.error?.message) return data.error.message
+  } catch {
+    // Non-JSON body (proxy errors, etc.)
+  }
+
+  if (response.status === 413) return mediaUploadLimitExceededMessage()
+
+  return 'Upload failed'
+}
 
 const getFileType = (file: File): keyof typeof FILE_TYPE_MAP => {
   if (file.type.startsWith('image/')) return 'image'
@@ -130,6 +149,12 @@ export const uploadMediaFile = async (
   docMetadata: DocumentMetadata
 ): Promise<void> => {
   if (!editor) return
+
+  if (file.size > MEDIA_MAX_UPLOAD_BYTES) {
+    toast.Error(mediaUploadLimitExceededMessage())
+    return
+  }
+
   const uploadId = generateUploadId()
   const fileType = getFileType(file)
 
@@ -170,7 +195,7 @@ export const uploadMediaFile = async (
       }
     )
 
-    if (!response.ok) throw new Error('Upload failed')
+    if (!response.ok) throw new Error(await parseUploadErrorMessage(response))
 
     const result = (await response.json()) as UploadedMediaResponse
     const mediaURL = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${result.fileAddress}`

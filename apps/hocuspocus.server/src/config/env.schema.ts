@@ -111,7 +111,7 @@ export const envSchema = z.object({
   DO_STORAGE_BUCKET: z.string().optional().default(''),
   DO_STORAGE_ACCESS_KEY_ID: z.string().optional().default(''),
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
-  DO_STORAGE_MAX_FILE_SIZE: numericString('4194304'),
+  DO_STORAGE_MAX_FILE_SIZE: numericString('10485760'),
 
   // -------------------------------------------------------------------------
   // Email (SMTP)

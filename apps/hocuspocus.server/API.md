@@ -151,7 +151,7 @@ Base path `/api/plugins/hypermultimedia` (`src/api/routers/hypermultimedia.route
 
 Upload one media file. Body is `multipart/form-data` with field name **`mediaFile`** (not `file`).
 
-Allowed MIME types: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`, `video/mp4`, `video/webm`, `video/ogg`, `audio/mpeg`, `audio/ogg`, `audio/wav`, `application/pdf`. Max size is `DO_STORAGE_MAX_FILE_SIZE` (the service falls back to 50 MB if that env var is unset; see [ENV.md](./ENV.md) for the schema default).
+Allowed MIME types: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`, `video/mp4`, `video/webm`, `video/ogg`, `audio/mpeg`, `audio/ogg`, `audio/wav`, `application/pdf`. Max size is `DO_STORAGE_MAX_FILE_SIZE` (default 10 MB; see [ENV.md](./ENV.md)).
 
 Returns `201`. Shape depends on the backend (`type: "s3"` or local), including `fileType`, `fileName`, and `fileAddress`. Oversized files return `413` (`PAYLOAD_TOO_LARGE`); disallowed types return `415` (`UNSUPPORTED_MEDIA_TYPE`).
 
@@ -205,11 +205,11 @@ Email gateway health (no auth).
 
 Render a template (`notification` or `digest`) with sample data, as HTML. Service-role only.
 
-### GET /api/email/unsubscribe?token=...
+### GET /api/email/unsubscribe?token=
 
 One-click unsubscribe from an email link. No auth (the token is the credential). Verifies the token via the `process_unsubscribe` Supabase RPC and returns an HTML confirmation page.
 
-### POST /api/email/unsubscribe?token=...
+### POST /api/email/unsubscribe?token=
 
 RFC 8058 `List-Unsubscribe-Post` handler for mail clients. Returns JSON (`{ "success": true }` or an `{ "error": ... }` body).
 

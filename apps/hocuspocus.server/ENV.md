@@ -73,16 +73,16 @@ The pool fallbacks only apply when a variable is absent from `process.env`. Once
 
 ## Storage
 
-| Variable                       | Type    | Default          | Notes                                                                                                                                                         |
-| ------------------------------ | ------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PERSIST_TO_LOCAL_STORAGE`     | boolean | `false`          | `true` uses local disk; otherwise S3-compatible                                                                                                               |
-| `LOCAL_STORAGE_PATH`           | string  | `./temp`         |                                                                                                                                                               |
-| `DO_STORAGE_ENDPOINT`          | string  | `''`             | S3-compatible endpoint (DigitalOcean Spaces)                                                                                                                  |
-| `DO_STORAGE_REGION`            | string  | `us-east-1`      |                                                                                                                                                               |
-| `DO_STORAGE_BUCKET`            | string  | `''`             |                                                                                                                                                               |
-| `DO_STORAGE_ACCESS_KEY_ID`     | string  | `''`             |                                                                                                                                                               |
-| `DO_STORAGE_SECRET_ACCESS_KEY` | string  | `''`             |                                                                                                                                                               |
-| `DO_STORAGE_MAX_FILE_SIZE`     | number  | `4194304` (4 MB) | ⚠️ The media service falls back to `52428800` (50 MB) only when this var is unset at runtime; the schema default (4 MB) is what's effective after validation. |
+| Variable                       | Type    | Default            | Notes                                                                             |
+| ------------------------------ | ------- | ------------------ | --------------------------------------------------------------------------------- |
+| `PERSIST_TO_LOCAL_STORAGE`     | boolean | `false`            | `true` uses local disk; otherwise S3-compatible                                   |
+| `LOCAL_STORAGE_PATH`           | string  | `./temp`           |                                                                                   |
+| `DO_STORAGE_ENDPOINT`          | string  | `''`               | S3-compatible endpoint (DigitalOcean Spaces)                                      |
+| `DO_STORAGE_REGION`            | string  | `us-east-1`        |                                                                                   |
+| `DO_STORAGE_BUCKET`            | string  | `''`               |                                                                                   |
+| `DO_STORAGE_ACCESS_KEY_ID`     | string  | `''`               |                                                                                   |
+| `DO_STORAGE_SECRET_ACCESS_KEY` | string  | `''`               |                                                                                   |
+| `DO_STORAGE_MAX_FILE_SIZE`     | number  | `10485760` (10 MB) | Max upload size for hypermultimedia (`/api/plugins/hypermultimedia/:documentId`). |
 
 ## Email (SMTP)
 

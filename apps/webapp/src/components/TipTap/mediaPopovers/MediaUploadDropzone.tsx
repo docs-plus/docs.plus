@@ -1,7 +1,12 @@
 import { useId, useState } from 'react'
 import { MdCloudUpload } from 'react-icons/md'
 
-const MAX_FILE_BYTES = 4 * 1024 * 1024
+import {
+  formatMediaMaxUploadSize,
+  MEDIA_MAX_UPLOAD_BYTES,
+  mediaUploadLimitExceededMessage
+} from './mediaUploadLimits'
+
 const ACCEPTED_PREFIXES = ['image/', 'video/', 'audio/']
 
 export interface MediaUploadDropzoneProps {
@@ -11,7 +16,7 @@ export interface MediaUploadDropzoneProps {
 const isAcceptedMedia = (file: File): boolean =>
   ACCEPTED_PREFIXES.some((prefix) => file.type.startsWith(prefix))
 
-/** File dropzone with hover / invalid-file states (4MB; image, video, audio). */
+/** File dropzone with hover / invalid-file states (image, video, audio). */
 const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
   const inputId = useId()
   const [isDragOver, setIsDragOver] = useState(false)
@@ -23,8 +28,8 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
       setInvalid('Only image, video, or audio files are supported.')
       return
     }
-    if (file.size > MAX_FILE_BYTES) {
-      setInvalid('File is larger than 4MB.')
+    if (file.size > MEDIA_MAX_UPLOAD_BYTES) {
+      setInvalid(mediaUploadLimitExceededMessage())
       return
     }
     setInvalid(null)
@@ -64,7 +69,7 @@ const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
           <span className="font-semibold">Click to upload</span> or drag and drop
         </p>
         <p className={`text-xs ${invalid ? 'text-error' : 'text-base-content/50'}`}>
-          {invalid ?? 'Image, video, or audio (max 4MB)'}
+          {invalid ?? `Image, video, or audio (max ${formatMediaMaxUploadSize()})`}
         </p>
         <input
           id={inputId}

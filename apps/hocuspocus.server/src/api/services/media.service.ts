@@ -1,6 +1,7 @@
 import type { Context } from 'hono'
 import mime from 'mime'
 
+import { config } from '../../config/env'
 import {
   InternalServerError,
   PayloadTooLargeError,
@@ -29,9 +30,6 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf'
 ]
 
-// Max file size: 50MB
-const MAX_FILE_SIZE = parseInt(process.env.DO_STORAGE_MAX_FILE_SIZE || '52428800', 10)
-
 export const getMedia = async (documentId: string, mediaId: string, c: Context) => {
   if (checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
     return localStorage.get(documentId, mediaId, c)
@@ -46,13 +44,15 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       throw new InternalServerError('No file provided')
     }
 
-    if (mediaFile.size > MAX_FILE_SIZE) {
+    const maxFileSize = config.storage.s3.maxFileSize
+
+    if (mediaFile.size > maxFileSize) {
       mediaServiceLogger.warn(
-        { documentId, fileSize: mediaFile.size, maxSize: MAX_FILE_SIZE },
+        { documentId, fileSize: mediaFile.size, maxSize: maxFileSize },
         'File too large'
       )
       throw new PayloadTooLargeError(
-        `File size ${(mediaFile.size / 1024 / 1024).toFixed(2)}MB exceeds maximum ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(2)}MB`
+        `File size ${(mediaFile.size / 1024 / 1024).toFixed(2)}MB exceeds maximum ${(maxFileSize / 1024 / 1024).toFixed(2)}MB`
       )
     }
 
