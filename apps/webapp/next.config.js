@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 
-const runtimeCaching = require('next-pwa/cache')
+const runtimeCaching = require('./config/pwa/workbox-runtime-caching')
+const {
+  X_SCRIPT_HOSTS,
+  X_SYNDICATION_HOSTS,
+  X_CONNECT_HOSTS,
+  IFRAME_EMBED_HOSTS,
+  GA_CONNECT_HOSTS
+} = require('./config/security/third-party-hosts')
 const isProduction = process.env.NODE_ENV === 'production'
 const isCoverageInstrumentation =
   process.env.COVERAGE === 'true' || process.env.CYPRESS_COVERAGE === 'true'
@@ -210,9 +217,7 @@ module.exports = withPWA({
         ]
       : []
 
-    const xScriptHosts = ['platform.twitter.com', 'platform.x.com']
-    const xSyndicationHosts = ['syndication.twitter.com', 'syndication.x.com']
-    const xConnectHosts = ['publish.twitter.com', 'publish.x.com', ...xSyndicationHosts]
+    // Host lists: config/security/third-party-hosts.js (shared with config/pwa/workbox-runtime-caching.js).
 
     // Each directive gets exactly what it needs - no bloat
     const cspSources = {
@@ -225,7 +230,7 @@ module.exports = withPWA({
         'accounts.google.com', // Google One Tap Auth
         '*.cloudflare.com',
         // Hypermultimedia X embed (widgets.js)
-        ...xScriptHosts,
+        ...X_SCRIPT_HOSTS,
         ...localUrls,
         ...envUrls,
         ...devUrls
@@ -244,6 +249,7 @@ module.exports = withPWA({
         '*.supabase.co',
         'wss://*.supabase.co',
         '*.google-analytics.com',
+        ...GA_CONNECT_HOSTS,
         '*.googletagmanager.com',
         'accounts.google.com',
         '*.googleusercontent.com',
@@ -251,7 +257,7 @@ module.exports = withPWA({
         'api.github.com',
         '*.githubusercontent.com',
         // Hypermultimedia X oEmbed + widgets.js follow-up requests
-        ...xConnectHosts,
+        ...X_CONNECT_HOSTS,
         ...localUrls,
         ...envUrls,
         ...devUrls
@@ -264,14 +270,10 @@ module.exports = withPWA({
         '*.cloudflare.com',
         'accounts.google.com',
         // Hypermultimedia iframe embeds (extension-hypermultimedia node views)
-        'www.youtube.com',
-        'www.youtube-nocookie.com',
-        'player.vimeo.com',
-        'w.soundcloud.com',
-        'www.loom.com',
+        ...IFRAME_EMBED_HOSTS,
         // Hypermultimedia X embed iframes (widgets.js)
-        ...xScriptHosts,
-        ...xSyndicationHosts,
+        ...X_SCRIPT_HOSTS,
+        ...X_SYNDICATION_HOSTS,
         ...localUrls,
         ...envUrls,
         ...devUrls
