@@ -1,0 +1,23 @@
+# Paths that affect extension dist output or clean-room release gates.
+# Keep in sync with build-extensions cache hashFiles (.github/actions/build-extensions).
+# Test-only paths (playground, run-tests.sh, setup-cypress) trigger extension-tests
+# but do not need a cache bust — dist bytes are unchanged.
+extensions:
+  - 'extensions/**'
+  - 'packages/floating-popover/**'
+  - 'packages/floating-tooltip/**'
+  - 'packages/playground/**'
+  - 'packages/release-tooling/**'
+  - 'tsup.base.ts'
+  - 'tsconfig.base.json'
+  - 'scripts/run-tests.sh'
+  - 'scripts/build-extensions.sh'
+  - 'scripts/extension-preflight.sh'
+  - 'scripts/publishable-extensions.ts'
+  - '.github/actions/setup-bun/**'
+  - '.github/actions/build-extensions/**'
+  - '.github/actions/setup-cypress/**'
+  - '.github/filters/extensions.yaml'
+  - '.github/workflows/prod.docs.plus.yml'
+  - 'bun.lock'
+  - 'package.json'

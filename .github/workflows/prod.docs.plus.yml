@@ -10,8 +10,10 @@
 #
 # Triggers:
 #   - push to main: full pipeline. Deploy gated by commit-message convention
-#     `(build): front`, `(build): back`, or `(build): front back` parsed by a
-#     real regex in the `deploy-gate` job (see A1 in CI/CD Roadmap v1.12).
+#     `(build): front`, `(build): back`, or `(build): front back` parsed by
+#     `.github/scripts/evaluate-deploy-trigger.sh prod` in `deploy-gate`.
+#     Uptime Kuma deploy uses `(build): uptime-kuma` via the same script's
+#     `uptime-kuma` mode in `uptime-kuma-gate`.
 #   - pull_request to main: quality gates + build verification only.
 #   - schedule (Sunday 00:00 UTC): security audit only.
 #   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`.
@@ -103,30 +105,7 @@ jobs:
         id: filter
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         with:
-          # Anything that can change an extension's built dist or its
-          # clean-room gate. Shared build config (tsup/tsconfig), the bundled
-          # floating-* packages, the playground harness, the release/preflight
-          # tooling, the orchestration scripts, the composite actions the job
-          # uses, the lockfile, and this workflow itself all count.
-          filters: |
-            extensions:
-              - 'extensions/**'
-              - 'packages/floating-popover/**'
-              - 'packages/floating-tooltip/**'
-              - 'packages/playground/**'
-              - 'packages/release-tooling/**'
-              - 'tsup.base.ts'
-              - 'tsconfig.base.json'
-              - 'scripts/run-tests.sh'
-              - 'scripts/build-extensions.sh'
-              - 'scripts/extension-preflight.sh'
-              - 'scripts/publishable-extensions.ts'
-              - '.github/actions/setup-bun/**'
-              - '.github/actions/build-extensions/**'
-              - '.github/actions/setup-cypress/**'
-              - '.github/workflows/prod.docs.plus.yml'
-              - 'bun.lock'
-              - 'package.json'
+          filters: .github/filters/extensions.yaml
 
   # ===========================================================================
   # STAGE 1 — QUALITY GATES (parallel, fast feedback)
@@ -246,7 +225,8 @@ jobs:
     needs: [changes]
     # Run only when extension-affecting paths changed. workflow_dispatch always
     # runs the suite (manual runs have no reliable diff base). When this job is
-    # skipped, the build gate below treats a 'skipped' result as a pass.
+    # skipped because nothing extension-related changed, the build gate below
+    # accepts that skip only if the changes job succeeded.
     if: |
       github.event_name != 'schedule' &&
       (needs.changes.outputs.extensions == 'true' || github.event_name == 'workflow_dispatch')
@@ -286,14 +266,17 @@ jobs:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    needs: [lint, typecheck, security, extension-tests]
+    needs: [changes, lint, typecheck, security, extension-tests]
     if: |
       always() &&
       github.event_name != 'schedule' &&
+      needs.changes.result == 'success' &&
       (needs.lint.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.typecheck.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
-      (needs.extension-tests.result == 'success' || needs.extension-tests.result == 'skipped' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
+      (needs.extension-tests.result == 'success' ||
+        (needs.extension-tests.result == 'skipped' && needs.changes.outputs.extensions != 'true') ||
+        (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
     permissions:
       contents: read
 
@@ -347,19 +330,19 @@ jobs:
       reason: ${{ steps.gate.outputs.reason }}
 
     steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: 🚦 Evaluate trigger
         id: gate
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF: ${{ github.ref }}
           FORCE_DEPLOY: ${{ inputs.force_deploy }}
-          # Use the head_commit body verbatim. Avoid `git log` because the
-          # runner's checkout depth might not include it.
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
 
-          # workflow_dispatch + force_deploy=true → unconditional deploy
           if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${FORCE_DEPLOY}" = "true" ]; then
             echo "deploy=true" >> "$GITHUB_OUTPUT"
             echo "reason=workflow_dispatch+force_deploy" >> "$GITHUB_OUTPUT"
@@ -367,7 +350,6 @@ jobs:
             exit 0
           fi
 
-          # push + main only beyond this point
           if [ "${EVENT_NAME}" != "push" ] || [ "${REF}" != "refs/heads/main" ]; then
             echo "deploy=false" >> "$GITHUB_OUTPUT"
             echo "reason=non-main push" >> "$GITHUB_OUTPUT"
@@ -375,18 +357,10 @@ jobs:
             exit 0
           fi
 
-          # Strict regex per AGENTS.md convention. Anchored to a line and
-          # accepts an optional Conventional-Commits-style scope after build,
-          # e.g. `(build): front`, `(build): back`, `(build): front back`.
-          # Matches in the SUBJECT or any body line via -E (extended regex).
-          if printf '%s' "${COMMIT_MSG}" | grep -Eq '(^|[[:space:]])\(build\):[[:space:]]+(front([[:space:]]+back)?|back([[:space:]]+front)?)([[:space:]]|$)'; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "reason=(build): trigger matched" >> "$GITHUB_OUTPUT"
+          if bash .github/scripts/evaluate-deploy-trigger.sh prod; then
             echo "✅ Deploying: matched (build): front|back convention"
           else
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "reason=no (build): trigger" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ Skipping deploy: commit subject does not match '(build): front|back|front back'"
+            echo "ℹ️ Skipping deploy: commit does not match '(build): front|back|front back'"
             echo "ℹ️ Subject line was:"
             printf '%s\n' "${COMMIT_MSG}" | head -1
           fi
@@ -786,15 +760,41 @@ jobs:
   # ===========================================================================
   # UPTIME KUMA (optional monitoring service)
   # ===========================================================================
+  # ===========================================================================
+  # UPTIME KUMA (optional monitoring service)
+  # ===========================================================================
+  uptime-kuma-gate:
+    name: 🚦 Uptime Kuma Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: 🚦 Evaluate trigger
+        id: gate
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          if bash .github/scripts/evaluate-deploy-trigger.sh uptime-kuma; then
+            echo "✅ Uptime Kuma: matched (build): uptime-kuma convention"
+          else
+            echo "ℹ️ Skipping Uptime Kuma: commit does not match '(build): uptime-kuma'"
+          fi
+
   deploy-uptime-kuma:
     name: 🔔 Deploy Uptime Kuma
     runs-on: prod.docs.plus
     timeout-minutes: 10
-    if: |
-      github.ref == 'refs/heads/main' &&
-      github.event_name == 'push' &&
-      contains(github.event.head_commit.message, 'build') &&
-      contains(github.event.head_commit.message, 'uptime-kuma')
+    needs: [uptime-kuma-gate]
+    if: needs.uptime-kuma-gate.outputs.deploy == 'true'
     permissions:
       contents: read
 
