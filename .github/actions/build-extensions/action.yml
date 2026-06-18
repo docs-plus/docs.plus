@@ -14,24 +14,26 @@ runs:
       id: cache-ext
       uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
       with:
-        # The floating-* dist trees ship the .d.ts/JS that the extensions
-        # re-export as `@docs.plus/floating-*`; without them in the cache, a
-        # cache HIT skips the build and typecheck/unit tests can't resolve the
-        # modules. Key prefix bumped to ext-v2 to discard pre-fix caches that
-        # only stored extensions/*/dist.
+        # Dist-affecting inputs — keep hashFiles in sync with the dist subset
+        # documented in .github/filters/extensions.yaml (tsup/tsconfig, floating
+        # src, extension src, build orchestration). Key prefix ext-v3 busts caches
+        # that predate tsup/tsconfig/build-script hashing.
         path: |
           extensions/*/dist
           packages/floating-popover/dist
           packages/floating-tooltip/dist
-        key: ext-v2-${{ runner.os }}-${{ hashFiles('bun.lock',
+        key: ext-v3-${{ runner.os }}-${{ hashFiles('bun.lock',
+          'tsup.base.ts',
+          'tsconfig.base.json',
+          'scripts/build-extensions.sh',
+          'scripts/publishable-extensions.ts',
           'packages/floating-popover/package.json',
           'packages/floating-popover/src/**',
           'packages/floating-tooltip/package.json',
           'packages/floating-tooltip/src/**',
           'extensions/*/package.json',
-          'extensions/*/src/**',
-          'scripts/publishable-extensions.ts') }}
-        restore-keys: ext-v2-${{ runner.os }}-
+          'extensions/*/src/**') }}
+        restore-keys: ext-v3-${{ runner.os }}-
 
     - name: 🔧 Build extensions
       if: steps.cache-ext.outputs.cache-hit != 'true'

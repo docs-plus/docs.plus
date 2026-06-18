@@ -19,6 +19,12 @@ FAILED=0
 # ============================================
 EXTENSIONS="extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code extension-placeholder"
 NEEDS_BUILD=""
+NEEDS_FULL_BUILD=""
+
+# Shared dist inputs (mirror .github/filters/extensions.yaml dist subset)
+if echo "$CHANGED_FILES" | grep -qE '^(packages/floating-popover/|packages/floating-tooltip/|tsup\.base\.ts|tsconfig\.base\.json|scripts/build-extensions\.sh|scripts/publishable-extensions\.ts|bun\.lock)'; then
+    NEEDS_FULL_BUILD=1
+fi
 
 for ext in $EXTENSIONS; do
     if echo "$CHANGED_FILES" | grep -q "extensions/${ext}/"; then
@@ -26,7 +32,15 @@ for ext in $EXTENSIONS; do
     fi
 done
 
-if [ -n "$NEEDS_BUILD" ]; then
+if [ -n "$NEEDS_FULL_BUILD" ]; then
+    echo "📦 Shared extension build inputs changed; running full extension build..."
+    if bash scripts/build-extensions.sh >/dev/null 2>&1; then
+        echo "  ✅ all extensions (floating + publishable)"
+    else
+        echo "  ❌ extension build failed"
+        FAILED=1
+    fi
+elif [ -n "$NEEDS_BUILD" ]; then
     echo "📦 Building changed TipTap extensions..."
     for ext in $NEEDS_BUILD; do
         if bun run --filter "@docs.plus/${ext}" build >/dev/null 2>&1; then
