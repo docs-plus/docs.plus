@@ -204,6 +204,9 @@ jobs:
       - name: 🔧 Build extensions (release gate)
         uses: ./.github/actions/build-extensions
 
+      - name: 🌲 Setup Cypress binary
+        uses: ./.github/actions/setup-cypress
+
       - name: 🧪 Clean-room extension suites
         env:
           EXTENSION_DIST_READY: '1'
