@@ -44,7 +44,7 @@ declare global {
       hoverMediaControls(selector: string): Chainable<void>
       /** Drag an active gripper handle (`right`, `left`, `bottom`, `bottom-right`, …). */
       dragResizeClamp(edge: string, deltaX: number, deltaY?: number): Chainable<void>
-      /** Assert inline style + layout box match expected rendered size (not attrs alone). */
+      /** Assert rendered layout box matches expected size (not attrs alone). */
       expectRenderedMediaSize(
         selector: string,
         axis: 'width' | 'height',
@@ -198,12 +198,7 @@ Cypress.Commands.add('dragResizeClamp', (edge: string, deltaX: number, deltaY = 
 Cypress.Commands.add(
   'expectRenderedMediaSize',
   (selector: string, axis: 'width' | 'height', expected: number, tolerancePx = 2) => {
-    const styleProp = axis
     cy.get(selector).should(($el) => {
-      const inline = parseFloat($el[0].style[styleProp])
-      if (Number.isFinite(inline)) {
-        expect(inline, `${selector} style.${styleProp}`).to.eq(expected)
-      }
       expect(
         $el[0].getBoundingClientRect()[axis],
         `${selector} getBoundingClientRect().${axis}`

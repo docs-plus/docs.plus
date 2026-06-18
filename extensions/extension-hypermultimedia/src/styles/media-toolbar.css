@@ -18,6 +18,9 @@
 
 [class*='hypermultimedia--'][class*='__content'] {
   position: relative;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .media-toolbar {

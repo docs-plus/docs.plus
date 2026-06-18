@@ -5,7 +5,6 @@ import { type CaptionHandle, createCaptionElement, readCaption } from '../captio
 import {
   layoutAttrsChanged,
   parseLayoutDimensions,
-  syncElementPixelSize,
   syncMediaNodeLayout,
   wrapMediaWithLoadingShell
 } from '../loading'
@@ -87,8 +86,7 @@ export function createHtmlMediaNodeView(
       loadingHost,
       surface: media,
       dims,
-      fallback: config.layoutFallback,
-      syncSurface: syncElementPixelSize
+      fallback: config.layoutFallback
     })
 
     const caption: CaptionHandle = createCaptionElement({
@@ -117,8 +115,7 @@ export function createHtmlMediaNodeView(
             attrs: updatedNode.attrs,
             loadingHost,
             surface: media,
-            fallback: config.layoutFallback,
-            syncSurface: syncElementPixelSize
+            fallback: config.layoutFallback
           })
         }
 

@@ -37,6 +37,10 @@ historical Conventional Commits format. The project adheres to
   when ProseMirror still held a `NodeSelection` on the node (click-to-lock, then
   toolbar Caption). Focus now collapses that selection before input reaches the
   editor.
+- Media blocks no longer overflow the editor column on narrow viewports. Wrappers
+  and loading shells cap at `max-width: 100%` while preserving committed
+  width/height attrs via `aspect-ratio` (live editor; static HTML export still
+  emits fixed pixel dimensions).
 
 ## [2.0.0] — 2026-06-16
 

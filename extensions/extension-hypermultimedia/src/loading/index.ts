@@ -6,7 +6,6 @@ export {
   IMAGE_LAYOUT_FALLBACK,
   layoutAttrsChanged,
   parseLayoutDimensions,
-  syncElementPixelSize,
   syncIframeNodeLayout,
   syncImageNodeLayout,
   syncMediaNodeLayout,

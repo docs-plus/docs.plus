@@ -2,7 +2,7 @@ import type { Editor } from '@tiptap/core'
 
 import { getKitStorage } from '../kitStorage'
 import { createDefaultMediaLoadingShell } from './defaultShell'
-import { syncElementPixelSize } from './syncLayout'
+import { syncResponsiveMediaHost } from './syncLayout'
 import type {
   MediaLoadingController,
   MediaLoadingShellContext,
@@ -88,7 +88,7 @@ export function wrapMediaWithLoadingShell(
   const host = document.createElement('div')
   host.className = 'hm-media-host'
   host.dataset.hmLoading = 'pending'
-  syncElementPixelSize(host, context.width, context.height)
+  syncResponsiveMediaHost(host, context.width, context.height)
 
   const overlay = factory(context)
   stampLoadingOverlay(overlay)

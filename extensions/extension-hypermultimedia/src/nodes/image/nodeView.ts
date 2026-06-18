@@ -44,9 +44,6 @@ export function createImageNodeView(options: ImageOptions, editor: Editor) {
       if (value !== undefined && value !== null) img.setAttribute(key, String(value))
     })
 
-    img.style.maxWidth = '100%'
-    img.style.height = 'auto'
-
     const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
       editor,
       { kind: 'image', width: dims.width, height: dims.height },

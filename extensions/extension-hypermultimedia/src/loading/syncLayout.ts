@@ -7,9 +7,28 @@ const DEFAULT_LAYOUT_FALLBACK = { width: 640, height: 480 } as const
 export const IMAGE_LAYOUT_FALLBACK = { width: 320, height: 240 } as const
 export const AUDIO_LAYOUT_FALLBACK = { width: 450, height: 120 } as const
 
-export function syncElementPixelSize(el: HTMLElement, width: number, height: number): void {
-  el.style.width = `${width}px`
-  el.style.height = `${height}px`
+/** Loading shell: fill the wrapper up to committed attrs; shrink with the column. */
+export function syncResponsiveMediaHost(el: HTMLElement, width: number, height: number): void {
+  el.style.width = '100%'
+  el.style.maxWidth = `${width}px`
+  el.style.height = 'auto'
+  if (width > 0 && height > 0) {
+    el.style.aspectRatio = `${width} / ${height}`
+  } else {
+    el.style.removeProperty('aspect-ratio')
+  }
+}
+
+/** Media surface inside `.hm-media-slot` — host carries aspect-ratio. */
+export function syncMediaSurfaceFill(el: HTMLElement, width: number, height: number): void {
+  el.style.width = '100%'
+  el.style.height = '100%'
+  el.style.removeProperty('max-width')
+  el.style.removeProperty('aspect-ratio')
+  if (el instanceof HTMLIFrameElement) {
+    el.setAttribute('width', String(width))
+    el.setAttribute('height', String(height))
+  }
 }
 
 export function parseLayoutDimensions(
@@ -61,22 +80,11 @@ export interface SyncResizableMediaLayoutOptions {
 
 /** Mirror committed layout attrs onto the loading shell and rendered media surfaces. */
 export function syncResizableMediaLayout(options: SyncResizableMediaLayoutOptions): void {
-  const { width, height, loadingHost, surfaces, syncSurface = syncElementPixelSize } = options
-  syncElementPixelSize(loadingHost, width, height)
+  const { width, height, loadingHost, surfaces, syncSurface = syncMediaSurfaceFill } = options
+  syncResponsiveMediaHost(loadingHost, width, height)
   for (const surface of surfaces) {
     syncSurface(surface, width, height)
   }
-}
-
-function syncIframePixelSize(iframe: HTMLIFrameElement, width: number, height: number): void {
-  iframe.setAttribute('width', String(width))
-  iframe.setAttribute('height', String(height))
-  syncElementPixelSize(iframe, width, height)
-}
-
-function syncImagePixelSize(img: HTMLImageElement, width: number, height: number): void {
-  img.style.width = `${width}px`
-  img.style.aspectRatio = `${width} / ${height}`
 }
 
 export interface SyncMediaNodeLayoutOptions {
@@ -87,7 +95,7 @@ export interface SyncMediaNodeLayoutOptions {
   dims?: { width: number; height: number }
   fallback?: { width: number; height: number }
   justifyContent?: string
-  syncSurface: (el: HTMLElement, width: number, height: number) => void
+  syncSurface?: (el: HTMLElement, width: number, height: number) => void
 }
 
 /** Mirror committed attrs onto wrapper, loading shell, and the rendered media surface. */
@@ -124,8 +132,7 @@ export function syncImageNodeLayout(options: {
     surface: options.img,
     dims: options.dims,
     fallback: IMAGE_LAYOUT_FALLBACK,
-    justifyContent: 'start',
-    syncSurface: (el, w, h) => syncImagePixelSize(el as HTMLImageElement, w, h)
+    justifyContent: 'start'
   })
 }
 
@@ -141,7 +148,6 @@ export function syncIframeNodeLayout(options: {
     attrs: options.attrs,
     loadingHost: options.loadingHost,
     surface: options.iframe,
-    dims: options.dims,
-    syncSurface: (el, w, h) => syncIframePixelSize(el as HTMLIFrameElement, w, h)
+    dims: options.dims
   })
 }
