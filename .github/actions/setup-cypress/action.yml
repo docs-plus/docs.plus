@@ -4,6 +4,15 @@
 # Cypress ships as an npm wrapper; the Linux runner binary lives in
 # ~/.cache/Cypress. setup-bun caches node_modules only, so extension E2E
 # needs this step before `bunx cypress run`.
+#
+# CRITICAL: the install MUST run from inside an extension workspace, not the
+# repo root. `bunx cypress` resolves the locally installed version only when one
+# is on the path; the repo root has no `cypress` dep, so bunx fetches
+# cypress@latest (e.g. 15.17.0), installs that binary, and even rewrites
+# bun.lock — while the suites run the catalog-pinned version (15.15.0) and
+# report its binary as missing. From an extension dir bunx resolves the pinned
+# version and installs the matching binary. Verified: `bunx cypress --version`
+# is 15.17.0 at root vs 15.15.0 from extensions/extension-hyperlink.
 # ============================================================================
 
 name: 'Setup Cypress Binary'
@@ -23,6 +32,7 @@ runs:
 
     - name: 🌲 Install Cypress binary
       shell: bash
+      working-directory: extensions/extension-hyperlink
       run: |
         if [ "${{ steps.cypress-cache.outputs.cache-hit }}" = "true" ]; then
           echo "✅ Cypress cache HIT"
@@ -30,3 +40,4 @@ runs:
           echo "📦 Downloading Cypress binary…"
         fi
         bunx cypress install
+        bunx cypress verify
