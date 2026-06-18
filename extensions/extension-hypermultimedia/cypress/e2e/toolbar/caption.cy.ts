@@ -21,6 +21,14 @@ describe('media caption — authoring', () => {
     cy.nodeAttr('image', 'caption').should('eq', 'Sunset over the bay')
   })
 
+  it('first typed key after click-to-lock + caption toolbar keeps the image node', () => {
+    cy.get('#editor img').click()
+    openImageCaption()
+    cy.get(IMAGE_CAPTION).type('a')
+    cy.nodeCount('image').should('eq', 1)
+    cy.get(IMAGE_CAPTION).should('have.text', 'a')
+  })
+
   it('commits and returns focus to the editor on Enter', () => {
     openImageCaption()
     cy.get(IMAGE_CAPTION).type('Enter commits{enter}')

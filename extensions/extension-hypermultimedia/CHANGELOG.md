@@ -31,6 +31,13 @@ historical Conventional Commits format. The project adheres to
   order and arrange with the builder (X's "Post options" now anchors after
   Replace URL via a per-node recipe rather than `order: 45`).
 
+### Fixed
+
+- Caption editing no longer deletes the media node on the first typed character
+  when ProseMirror still held a `NodeSelection` on the node (click-to-lock, then
+  toolbar Caption). Focus now collapses that selection before input reaches the
+  editor.
+
 ## [2.0.0] — 2026-06-16
 
 ### Fixed

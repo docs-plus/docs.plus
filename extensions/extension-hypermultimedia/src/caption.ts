@@ -1,11 +1,28 @@
 import type { Editor } from '@tiptap/core'
 import type { DOMOutputSpec, Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
 import { setMediaCaption } from './utils/media-node-attrs'
 
 /** Single reader for the nullable `caption` attr so node views don't repeat the cast. */
 export function readCaption(node: ProseMirrorNode): string | null {
   return (node.attrs.caption as string | null) ?? null
+}
+
+/** NodeSelection can outlive caption DOM focus; collapse it before typing replaces the node. */
+function releaseMediaNodeSelectionForCaption(
+  editor: Editor,
+  getPos: () => number | undefined
+): void {
+  const pos = getPos()
+  if (pos == null || !editor.isEditable) return
+
+  const { state } = editor
+  const { selection } = state
+  if (!(selection instanceof NodeSelection) || selection.from !== pos) return
+
+  const after = state.doc.resolve(Math.min(pos + selection.node.nodeSize, state.doc.content.size))
+  editor.view.dispatch(state.tr.setSelection(TextSelection.near(after, -1)))
 }
 
 export interface CaptionHandle {
@@ -42,6 +59,7 @@ export function createCaptionElement({ editor, getPos, initial }: CaptionParams)
       return
     }
     el.classList.remove('hm-caption--empty')
+    releaseMediaNodeSelectionForCaption(editor, getPos)
   }
   const onBlur = () => {
     commit()
@@ -65,6 +83,7 @@ export function createCaptionElement({ editor, getPos, initial }: CaptionParams)
   el.addEventListener('focus', onFocus)
   el.addEventListener('blur', onBlur)
   el.addEventListener('keydown', onKeyDown)
+  el.addEventListener('beforeinput', stop)
   el.addEventListener('mousedown', stop)
   el.addEventListener('paste', stop)
 
@@ -81,6 +100,7 @@ export function createCaptionElement({ editor, getPos, initial }: CaptionParams)
       el.removeEventListener('focus', onFocus)
       el.removeEventListener('blur', onBlur)
       el.removeEventListener('keydown', onKeyDown)
+      el.removeEventListener('beforeinput', stop)
       el.removeEventListener('mousedown', stop)
       el.removeEventListener('paste', stop)
     }
