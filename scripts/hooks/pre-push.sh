@@ -17,11 +17,11 @@ FAILED=0
 # ============================================
 # 1. Build TipTap Extensions (only if changed)
 # ============================================
-EXTENSIONS="extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code"
+EXTENSIONS="extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code extension-placeholder"
 NEEDS_BUILD=""
 
 for ext in $EXTENSIONS; do
-    if echo "$CHANGED_FILES" | grep -q "packages/${ext}/"; then
+    if echo "$CHANGED_FILES" | grep -q "extensions/${ext}/"; then
         NEEDS_BUILD="$NEEDS_BUILD $ext"
     fi
 done
