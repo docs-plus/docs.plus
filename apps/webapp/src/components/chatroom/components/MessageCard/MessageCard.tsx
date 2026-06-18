@@ -1,4 +1,4 @@
-import { useMessageHighlight } from '@components/chatroom/hooks/useMessageHighlight'
+import { useIsMessageHighlighted } from '@components/chatroom/hooks/useMessageHighlight'
 import { TGroupedMsgRow } from '@types'
 import { memo } from 'react'
 
@@ -25,9 +25,8 @@ type Props = {
 }
 
 // Memoized so realtime UPDATEs flipping list context identity don't
-// cascade across every virtualized row. Highlight subscription is
-// internal so we include the per-card flash test in the equality
-// comparator implicitly via highlightedId selection inside the body.
+// cascade across every virtualized row. Highlight uses per-id
+// useSyncExternalStore so only the flashed card re-renders.
 const MessageCardComponent = ({
   children,
   index,
@@ -38,8 +37,7 @@ const MessageCardComponent = ({
   status,
   onRetry
 }: Props) => {
-  const { highlightedId } = useMessageHighlight()
-  const isFlash = highlightedId === message.id
+  const isFlash = useIsMessageHighlighted(message.id)
   return (
     <MessageCardProvider
       message={message}

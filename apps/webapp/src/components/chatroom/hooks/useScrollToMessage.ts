@@ -3,7 +3,7 @@ import { fetchMessageWindow } from '@components/chatroom/utils/fetchMessageWindo
 import {
   MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS,
   MESSAGE_FLASH_AFTER_SMOOTH_SCROLL_MS,
-  scrollFlashGate
+  scheduleMessageFlash
 } from '@components/chatroom/utils/messageJumpTiming'
 import {
   applyWindowSeqRefs,
@@ -25,7 +25,7 @@ export const useScrollToMessage = (
       const existingIdx = findMessageItemIndex(items, messageId)
       if (existingIdx >= 0) {
         listRef.current?.scrollToItem({ index: existingIdx, align: 'center', behavior: 'smooth' })
-        scrollFlashGate.runAfter(MESSAGE_FLASH_AFTER_SMOOTH_SCROLL_MS, () => flash(messageId))
+        scheduleMessageFlash(flash, messageId, MESSAGE_FLASH_AFTER_SMOOTH_SCROLL_MS)
         return
       }
 
@@ -48,7 +48,7 @@ export const useScrollToMessage = (
             : { index: 'LAST', align: 'end', behavior: 'instant' },
         purgeItemSizes: true
       })
-      scrollFlashGate.runAfter(MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS, () => flash(messageId))
+      scheduleMessageFlash(flash, messageId, MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS)
     },
     [channelId, listRef, windowRefs, flash]
   )

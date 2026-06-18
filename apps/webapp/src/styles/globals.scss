@@ -467,7 +467,7 @@ html:not(.m_mobile) {
   display: none;
 }
 
-/* Highlight glow — used by chat message highlight (useMessageHighlight) */
+/* Highlight glow — jump flash via flashMessage / useIsMessageHighlighted */
 .border-ping-glow {
   position: relative;
   border-width: 2px;
@@ -537,19 +537,97 @@ html:not(.m_mobile) {
   }
 }
 
-/* Deep-link / reply-jump highlight — duration matches MESSAGE_HIGHLIGHT_MS */
-.msg_card.msg_card--flash {
-  animation: msg-card-flash 1.5s ease-out;
-}
+/* Deep-link / reply-jump highlight — duration matches MESSAGE_HIGHLIGHT_MS / --motion-flash-hold */
+$msg-flash-peak-1: 14%;
+$msg-flash-trough-1: 28%;
+$msg-flash-rest-1: 38%;
+$msg-flash-peak-2: 52%;
+$msg-flash-trough-2: 66%;
+$msg-flash-rest-2: 78%;
 
 @keyframes msg-card-flash {
   0%,
-  20% {
-    background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
-  }
-
   100% {
     background-color: transparent;
+  }
+
+  /* pulse 1 */
+  #{$msg-flash-peak-1} {
+    background-color: color-mix(in oklch, var(--color-primary) 24%, transparent);
+  }
+
+  #{$msg-flash-trough-1} {
+    background-color: color-mix(in oklch, var(--color-primary) 4%, transparent);
+  }
+
+  #{$msg-flash-rest-1} {
+    background-color: transparent;
+  }
+
+  /* pulse 2 — slightly softer */
+  #{$msg-flash-peak-2} {
+    background-color: color-mix(in oklch, var(--color-primary) 20%, transparent);
+  }
+
+  #{$msg-flash-trough-2} {
+    background-color: color-mix(in oklch, var(--color-primary) 4%, transparent);
+  }
+
+  #{$msg-flash-rest-2} {
+    background-color: transparent;
+  }
+}
+
+@keyframes msg-card-flash-accent {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  #{$msg-flash-peak-1} {
+    opacity: 1;
+  }
+
+  #{$msg-flash-trough-1} {
+    opacity: 0.35;
+  }
+
+  #{$msg-flash-rest-1} {
+    opacity: 0;
+  }
+
+  #{$msg-flash-peak-2} {
+    opacity: 0.92;
+  }
+
+  #{$msg-flash-trough-2} {
+    opacity: 0.3;
+  }
+
+  #{$msg-flash-rest-2} {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg_card.msg_card--flash {
+    background-color: color-mix(in oklch, var(--color-primary) 16%, transparent);
+
+    &::before {
+      background-color: var(--color-primary);
+      opacity: 0.85;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .msg_card.msg_card--flash {
+    animation: msg-card-flash var(--motion-flash-hold) var(--motion-ease-enter);
+
+    &::before {
+      background-color: var(--color-primary);
+      animation: msg-card-flash-accent var(--motion-flash-hold) var(--motion-ease-enter);
+    }
   }
 }
 

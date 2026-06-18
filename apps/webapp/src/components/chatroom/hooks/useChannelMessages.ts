@@ -21,6 +21,9 @@ export type ChannelMessagesArgs = {
   /** Fires once after the initial replace measures so the read cursor can
    *  catch the bottom-most visible message before any user scroll. */
   onInitialVisible?: (index: number) => void
+  /** Fires once when Virtuoso finishes measuring after the initial replace —
+   *  for jump UX (flash) separate from read-cursor seeding. */
+  onListScrollSettled?: () => void
 }
 
 const PAGE_LIMIT = 40
@@ -30,7 +33,8 @@ export const useChannelMessages = ({
   listRef,
   anchorKind,
   anchorValue,
-  onInitialVisible
+  onInitialVisible,
+  onListScrollSettled
 }: ChannelMessagesArgs) => {
   const [loading, setLoading] = useState(true)
   const [hasMoreOlder, setHasMoreOlder] = useState(true)
@@ -118,7 +122,7 @@ export const useChannelMessages = ({
           // it doesn't fire from a `data.replace`. Read the post-measure
           // location off the imperative handle on the next frame to seed
           // the cursor with the bottom-most fully-visible row.
-          if (onInitialVisible) {
+          if (onInitialVisible || onListScrollSettled) {
             // Virtuoso measures items asynchronously after `data.replace`;
             // the first rAF can fire with `scrollHeight === visibleListHeight`
             // and a stale `lastVisibleItemIndex === 0` pointing at the day
@@ -136,8 +140,9 @@ export const useChannelMessages = ({
                 return
               }
               if (loc && typeof loc.lastVisibleItemIndex === 'number') {
-                onInitialVisible(loc.lastVisibleItemIndex)
+                onInitialVisible?.(loc.lastVisibleItemIndex)
               }
+              onListScrollSettled?.()
             }
             requestAnimationFrame(tryInitialFire)
           }
@@ -147,7 +152,7 @@ export const useChannelMessages = ({
     return () => {
       cancelled = true
     }
-  }, [channelId, anchorKind, anchorValue, listRef, onInitialVisible])
+  }, [channelId, anchorKind, anchorValue, listRef, onInitialVisible, onListScrollSettled])
 
   const loadOlder = useCallback(async () => {
     if (loadingOlderRef.current || !hasMoreOlder || oldestSeqRef.current == null) return

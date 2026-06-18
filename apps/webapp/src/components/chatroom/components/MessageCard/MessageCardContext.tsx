@@ -5,9 +5,8 @@ import { isOnlyEmoji } from '@utils/index'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-// Stamped onto the message-card DOM node so consumers walking up from a
-// click target (e.g. ChatListContextMenu) can read message identity
-// without an HTML data-attribute round-trip.
+// Stamped on the card DOM: `cardRef.msgId` for imperative walks; `data-msg-id`
+// for flash polling scoped to `.message-feed` (avoids long-press portal clones).
 export interface MessageCardDesktopElement extends HTMLDivElement {
   msgId?: string
   createdAt?: string | null
@@ -98,6 +97,7 @@ export const MessageCardProvider: React.FC<{
           className
         )}
         data-mode={mode}
+        data-msg-id={message.id}
         data-msg-date={(message.created_at ?? '').slice(0, 10) || undefined}
         onDoubleClick={isHighlighted ? undefined : handleDoubleClick}
         ref={cardRef}>

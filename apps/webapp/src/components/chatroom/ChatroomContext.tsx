@@ -16,14 +16,18 @@ import { useChannelMessages } from './hooks/useChannelMessages'
 import { useChannelMetadata } from './hooks/useChannelMetadata'
 import { type BufferedArrival, useChannelRealtime } from './hooks/useChannelRealtime'
 import { useJumpTo } from './hooks/useJumpTo'
-import { useMessageHighlight } from './hooks/useMessageHighlight'
+import { flashMessage } from './hooks/useMessageHighlight'
 import { useReadCursor } from './hooks/useReadCursor'
 import { useScrollToMessage } from './hooks/useScrollToMessage'
 import { useSendMessage } from './hooks/useSendMessage'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
-import { MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS, scrollFlashGate } from './utils/messageJumpTiming'
+import {
+  MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS,
+  scheduleMessageFlash,
+  scrollFlashGate
+} from './utils/messageJumpTiming'
 import type { AnchorKind } from './utils/messageWindow'
 import { findMessageItemIndex } from './utils/messageWindow'
 import { openComposerSignIn } from './utils/openComposerSignIn'
@@ -72,7 +76,13 @@ export const ChatroomProvider: React.FC<{
   const { error: metadataError, isChannelDataLoaded } = useChannelMetadata(channelId)
   const advanceRef = useRef<(idx: number) => void>(() => {})
   const lastOptimisticSeqRef = useRef<number>(0)
-  const onInitialVisible = useCallback((idx: number) => advanceRef.current(idx), [])
+  const onInitialVisible = useCallback((idx: number) => {
+    advanceRef.current(idx)
+  }, [])
+  const onListScrollSettled = useCallback(() => {
+    if (!deepLinkMessageId) return
+    scheduleMessageFlash(flashMessage, deepLinkMessageId, MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS)
+  }, [deepLinkMessageId])
   const {
     oldestSeqRef,
     newestSeqRef,
@@ -88,7 +98,8 @@ export const ChatroomProvider: React.FC<{
     listRef,
     anchorKind,
     anchorValue: deepLinkMessageId,
-    onInitialVisible
+    onInitialVisible,
+    onListScrollSettled
   })
 
   const handleBufferedArrival = useCallback((delta: BufferedArrival) => {
@@ -116,15 +127,10 @@ export const ChatroomProvider: React.FC<{
     }),
     [oldestSeqRef, newestSeqRef, dataIncludesTailRef, setHasMoreOlder]
   )
-  const { flash } = useMessageHighlight()
-  const scrollToMessage = useScrollToMessage(channelId, listRef, windowSeqRefs, flash)
+  const scrollToMessage = useScrollToMessage(channelId, listRef, windowSeqRefs, flashMessage)
   const jumpTo = useJumpTo(channelId, listRef, windowSeqRefs)
 
-  useEffect(() => {
-    if (!deepLinkMessageId) return
-    scrollFlashGate.runAfter(MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS, () => flash(deepLinkMessageId))
-    return () => scrollFlashGate.invalidate()
-  }, [deepLinkMessageId, flash])
+  useEffect(() => () => scrollFlashGate.invalidate(), [channelId, deepLinkMessageId])
 
   useEffect(() => {
     return () => {
@@ -240,9 +246,7 @@ export const ChatroomProvider: React.FC<{
     [advance, channelId]
   )
   // Stable bridge: `useChannelMessages.onInitialVisible` is the rAF-polled
-  // post-replace seed and must not re-trigger the fetch effect when
-  // `advance` / `onLastVisibleIndexChange` rotate. Mutating the ref in an
-  // effect (not during render) keeps it React-rules-compliant.
+  // post-replace read-cursor seed; `onListScrollSettled` handles jump flash.
   useEffect(() => {
     advanceRef.current = onLastVisibleIndexChange
   }, [onLastVisibleIndexChange])
