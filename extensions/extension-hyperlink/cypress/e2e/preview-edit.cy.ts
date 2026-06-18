@@ -225,7 +225,7 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
       cy.get(TEXT_INPUT).type('{esc}')
       cy.get(EDIT).should('not.exist')
       cy.selectText('info')
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get('.floating-popover')
         .should('have.attr', 'role', 'dialog')
         .and('have.attr', 'aria-label', 'Add link')

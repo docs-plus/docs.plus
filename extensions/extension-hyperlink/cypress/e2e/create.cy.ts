@@ -15,31 +15,31 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
 
   describe('trigger + lifecycle', () => {
     it('opens on Mod+K', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(POPOVER).should('be.visible')
       cy.get(INPUT).should('be.focused')
     })
 
     it('starts with Apply disabled', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(SUBMIT).should('be.disabled')
     })
 
     it('enables Apply once the input has a value', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('https://example.com')
       cy.get(SUBMIT).should('not.be.disabled')
     })
 
     it('dismisses on Escape without creating a link', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('https://example.com').type('{esc}')
       cy.get(POPOVER).should('not.exist')
       cy.get('#editor a').should('not.exist')
     })
 
     it('dismisses on outside click without creating a link', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('https://example.com')
       cy.get('body').click('topLeft')
       cy.get(POPOVER).should('not.exist')
@@ -49,7 +49,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
 
   describe('submit + validation', () => {
     it('creates a link on submit with a valid URL', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('https://example.com{enter}')
       cy.get(POPOVER).should('not.exist')
       cy.editorFirstLinkHref().should('eq', 'https://example.com')
@@ -60,25 +60,25 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       // relative reference that the browser resolves against the host
       // page's origin (`http://<origin>/google.com`). The create popover
       // normalizes on the way in. See `src/utils/normalizeHref.ts`.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('example.com{enter}')
       cy.editorFirstLinkHref().should('eq', 'https://example.com')
     })
 
     it('preserves the scheme the user typed (mailto)', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('mailto:hi@example.com{enter}')
       cy.editorFirstLinkHref().should('eq', 'mailto:hi@example.com')
     })
 
     it('does not double-prefix when the user already typed http:// or https://', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('http://example.com{enter}')
       cy.editorFirstLinkHref().should('eq', 'http://example.com')
     })
 
     it('rejects obviously invalid URLs with a visible error', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('not a url{enter}')
       cy.get(POPOVER).should('be.visible') // stays open
       cy.get(WRAPPER).should('have.class', 'error')
@@ -90,7 +90,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       // linkifyjs's own validator accepts any `scheme://host` shape, so
       // `https://googlecom` (missing dot) slips through unless we gate on
       // a plausible host. See `hasPlausibleHost` in validateURL.ts.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('https://googlecom{enter}')
       cy.get(POPOVER).should('be.visible')
       cy.get(WRAPPER).should('have.class', 'error')
@@ -98,7 +98,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     })
 
     it('accepts localhost with a port (dev host)', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('http://localhost:3000{enter}')
       cy.editorFirstLinkHref().should('eq', 'http://localhost:3000')
     })
@@ -108,19 +108,19 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       // `^[a-z][...]+:` regex and was returned unchanged — the
       // browser then resolved `localhost:` as a scheme name and the
       // link broke. The fix detects host:port shape and re-prefixes.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('localhost:3000{enter}')
       cy.editorFirstLinkHref().should('eq', 'https://localhost:3000')
     })
 
     it('upgrades bare host:port to https:// for any host (mydomain.com:8080)', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('mydomain.com:8080{enter}')
       cy.editorFirstLinkHref().should('eq', 'https://mydomain.com:8080')
     })
 
     it('accepts IPv4 literals', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('http://127.0.0.1{enter}')
       cy.editorFirstLinkHref().should('contain', '127.0.0.1')
     })
@@ -129,13 +129,13 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       // Strict E.164: starts with `+`, 8–15 digits. The href is
       // canonicalized (digits-only after the `+`) per RFC 3966 even
       // when the user typed formatting.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('+4733378901{enter}')
       cy.editorFirstLinkHref().should('eq', 'tel:+4733378901')
     })
 
     it('strips formatting from formatted phones (+1 (555) 123-4567 → tel:+15551234567)', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('+1 (555) 123-4567{enter}')
       cy.editorFirstLinkHref().should('eq', 'tel:+15551234567')
     })
@@ -144,7 +144,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       // A writing surface must NOT silently turn `5551234567` into a
       // `tel:` link — too many false positives in prose. Only E.164
       // (`+CCNSN`) is recognized.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('5551234567{enter}')
       cy.get(POPOVER).should('be.visible')
       cy.get(WRAPPER).should('have.class', 'error')
@@ -157,13 +157,13 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       // valid URL whose `user@` is HTTP basic-auth credentials, not
       // the address the user intended. Now matches what the autolink
       // path emits when the same email is typed mid-paragraph.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('hi@example.com{enter}')
       cy.editorFirstLinkHref().should('eq', 'mailto:hi@example.com')
     })
 
     it('clears the error state once the user types again', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('not a url{enter}')
       cy.get(WRAPPER).should('have.class', 'error')
       cy.get(INPUT).clear().type('h')
@@ -174,7 +174,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
 
   describe('DOM contract', () => {
     it('renders the documented class names', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(POPOVER).within(() => {
         cy.get('.inputs-wrapper').should('exist')
         cy.get('.inputs-wrapper .search-icon').should('exist')
@@ -185,7 +185,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     })
 
     it('is hosted inside the floating toolbar shell', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get('.floating-popover').should('have.class', 'visible')
       cy.get(`.floating-popover .floating-popover-content ${POPOVER}`).should('exist')
     })

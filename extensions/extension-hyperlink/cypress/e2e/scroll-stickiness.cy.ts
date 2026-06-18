@@ -128,7 +128,7 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')
-    cy.get('body').realPress(['Meta', 'K'])
+    cy.pressModK()
     cy.get(CREATE).should('be.visible')
 
     cy.window().then((win) => {
@@ -159,7 +159,7 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')
-    cy.get('body').realPress(['Meta', 'K'])
+    cy.pressModK()
     cy.get(CREATE).should('be.visible')
     expectPopoverFollowsAnchor(FLOATING, '#editor p:contains("select-this-target-word")')
   })

@@ -44,7 +44,7 @@ describe('node contexts — codeBlock, heading, listItem, Enter split', () => {
   it('Mod-k create flow inside a list item keeps the list structure', () => {
     cy.setEditorContent('<ul><li><p>alpha target omega</p></li></ul>')
     cy.selectText('target')
-    cy.get('body').realPress(['Meta', 'K'])
+    cy.pressModK()
     cy.get('.hyperlink-create-popover input[name="hyperlink-url"]').type(
       'https://example.com{enter}'
     )

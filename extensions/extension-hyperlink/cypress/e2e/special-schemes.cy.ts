@@ -100,7 +100,7 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
     ]
     for (const { label, url } of cases) {
       it(`stores ${label} as-is (no https:// prefix, no normalization)`, () => {
-        cy.get('body').realPress(['Meta', 'K'])
+        cy.pressModK()
         cy.get(INPUT).type(`${url}{enter}`)
         cy.get(POPOVER).should('not.exist')
         cy.editorFirstLinkHref().should('eq', url)
@@ -118,7 +118,7 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
       // Defense-in-depth: only the catalog in `specialUrls.ts` should
       // wave non-web schemes through. Anything else must trip the
       // `inputs-wrapper.error` branch and not create an `<a>`.
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('foo://bar{enter}')
       cy.get(POPOVER).should('be.visible')
       cy.get(WRAPPER).should('have.class', 'error')
@@ -126,7 +126,7 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
     })
 
     it('rejects javascript: (XSS vector)', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(INPUT).type('javascript:alert(1){enter}')
       cy.get(POPOVER).should('be.visible')
       cy.get(WRAPPER).should('have.class', 'error')

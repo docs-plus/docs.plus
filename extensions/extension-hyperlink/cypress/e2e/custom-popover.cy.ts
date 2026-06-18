@@ -27,7 +27,7 @@ describe('BYO popover factories — README public contract', () => {
     })
 
     it('receives the documented CreateHyperlinkOptions shape on Mod+K', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(BYO_CREATE).should('be.visible')
 
       cy.window().its('_byo.createCalls').should('have.length', 1)
@@ -62,12 +62,12 @@ describe('BYO popover factories — README public contract', () => {
     })
 
     it('mounts the returned element inside the floating toolbar', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get('.floating-popover-content').find(BYO_CREATE).should('exist')
     })
 
     it('getDefaultController().close() invoked from the custom DOM closes the popover', () => {
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(BYO_CREATE).should('be.visible')
       cy.get(BYO_CLOSE).click()
       cy.get(BYO_CREATE).should('not.exist')
@@ -78,7 +78,7 @@ describe('BYO popover factories — README public contract', () => {
       // Escape is bound to the toolbar root, so it only fires when focus is
       // inside — consumers focus their own content (the prebuilt popover
       // auto-focuses its input for the same reason).
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(BYO_CLOSE).focus().realPress('Escape')
       cy.get(BYO_CREATE).should('not.exist')
     })
@@ -141,7 +141,7 @@ describe('BYO popover factories — README public contract', () => {
       // This pins the second half of that sentence.
       cy.setEditorContent('<p>Select this word.</p>')
       cy.selectText('word')
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get('.floating-popover.visible').should('exist')
 
       cy.get('.floating-popover').then(($tb) => {

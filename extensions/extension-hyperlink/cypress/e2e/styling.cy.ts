@@ -91,7 +91,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
       })
       cy.setEditorContent('<p>Select this word</p>')
       cy.selectText('word')
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get('.hyperlink-create-popover input').focus()
       cy.get('.hyperlink-create-popover .inputs-wrapper')
         .should('have.css', 'border-color')
@@ -107,7 +107,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
     it('create popover DOM uses only classes that exist in the stylesheet', () => {
       cy.setEditorContent('<p>Select this word</p>')
       cy.selectText('word')
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get('.hyperlink-create-popover').should('be.visible')
 
       const required = [

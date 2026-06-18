@@ -29,7 +29,7 @@ describe('README screenshot gallery', { testIsolation: false }, () => {
       setPlaygroundTheme(theme)
       cy.setEditorContent('<p>Link to docs.plus in this sentence.</p>')
       cy.selectText('docs.plus')
-      cy.get('body').realPress(['Meta', 'K'])
+      cy.pressModK()
       cy.get(CREATE).should('be.visible')
       cy.get(CREATE_INPUT).type('https://docs.plus')
       cy.wait(TRANSITION_SETTLE_MS)

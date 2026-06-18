@@ -46,9 +46,18 @@ declare global {
       selectText(text: string): Chainable<void>
       setEditorContent(html: string): Chainable<void>
       editorFirstLinkHref(): Chainable<string>
+      pressModK(): Chainable<void>
     }
   }
 }
+
+// `Mod-k` opens the create popover. Mod resolves to Meta on mac and Ctrl
+// elsewhere, so the Linux CI runner needs Ctrl+K — a hard-coded Meta+K never
+// fires the keymap there. Mirrors the inline-code suite's platform pick.
+Cypress.Commands.add('pressModK', () => {
+  const mod = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
+  cy.get('body').realPress([mod, 'K'])
+})
 
 Cypress.Commands.add('visitPlayground', (options: VisitPlaygroundOptions = {}) => {
   cy.visit(options.popover === 'custom' ? '/?popover=custom' : '/')
