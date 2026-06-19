@@ -61,7 +61,14 @@ describe('resize gripper', () => {
         '#editor .hypermultimedia__resize-gripper--active .media-resize-clamp--right'
       ).realMouseDown({ position: 'center' })
       cy.get('#editor .hypermultimedia__resize-gripper--dragging').should('exist')
-      cy.get('#editor .hypermultimedia--youtube__content iframe').should('exist').and('be.visible')
+      // Loading shell keeps the slot at opacity:0 until embed load — assert the iframe
+      // stays mounted and un-hidden, not Cypress "visible" (covered by gripper overlay).
+      cy.get('#editor .hypermultimedia--youtube__content iframe').should(($iframe) => {
+        const el = $iframe[0]
+        expect(el.isConnected).to.eq(true)
+        expect(getComputedStyle(el).display).not.to.eq('none')
+        expect(getComputedStyle(el).visibility).not.to.eq('hidden')
+      })
       cy.get('body').realMouseUp()
       cy.get('#editor .hypermultimedia__resize-gripper--dragging').should('not.exist')
     })
