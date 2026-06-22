@@ -26,6 +26,7 @@ const PREVIEW = '.hyperlink-preview-popover'
 const CREATE = '.hyperlink-create-popover'
 const EDIT = '.hyperlink-edit-popover'
 const FLOATING = '.floating-popover'
+const FLOATING_VISIBLE = '.floating-popover.visible'
 
 // Tall enough that the playground's centered card overflows the 800px
 // viewport and the document scrolls. 80 paragraphs ≈ 2400px of doc
@@ -42,9 +43,18 @@ const SCROLL_PX = 200
 // taking the `before` measurement, so the deltas reflect just the
 // test's own scrollBy and not the popover's own startup choreography.
 const SETTLE_MS = 200
-// One animation frame for autoUpdate's scroll listener + one tick for
-// floating-ui's async computePosition Promise to resolve.
-const REPOSITION_WAIT_MS = 100
+// autoUpdate scroll listener + floating-ui computePosition; headless Linux CI
+// needs more than one rAF tick.
+const REPOSITION_WAIT_MS = 200
+
+/** selectText scrolls the caret to the viewport bottom; pin upper so flip() stays stable. */
+const pinSelectionNearViewportTop = (offsetPx = 120) => {
+  cy.window().then((win) => {
+    const { from } = win._editor.state.selection
+    const top = win._editor.view.coordsAtPos(from).top
+    win.scrollBy(0, top - offsetPx)
+  })
+}
 
 /**
  * Assert that the popover's top edge moves by exactly the same delta
@@ -96,8 +106,8 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
     // documents the baseline that the create / edit fixes match.
     cy.setEditorContent(buildLongDoc('<a href="https://example.com">click me</a>'))
     cy.get('#editor a').scrollIntoView().click()
-    cy.get(PREVIEW).should('be.visible')
-    expectPopoverFollowsAnchor(FLOATING, '#editor a')
+    cy.getVisibleFloatingPopover().find(PREVIEW).should('be.visible')
+    expectPopoverFollowsAnchor(FLOATING_VISIBLE, '#editor a')
   })
 
   it('edit popover follows the link when the page scrolls (regression: cached linkCoords)', () => {
@@ -107,8 +117,8 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
     cy.setEditorContent(buildLongDoc('<a href="https://example.com">click me</a>'))
     cy.get('#editor a').scrollIntoView().click()
     cy.get(`${PREVIEW} button.edit`).click()
-    cy.get(EDIT).should('be.visible')
-    expectPopoverFollowsAnchor(FLOATING, '#editor a')
+    cy.getVisibleFloatingPopover().find(EDIT).should('be.visible')
+    expectPopoverFollowsAnchor(FLOATING_VISIBLE, '#editor a')
   })
 
   it('create popover dismisses itself when a doc mutation invalidates the captured selection range', () => {
@@ -129,7 +139,7 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')
     cy.pressModK()
-    cy.get(CREATE).should('be.visible')
+    cy.getVisibleFloatingPopover().find(CREATE).should('be.visible')
 
     cy.window().then((win) => {
       win._editor.commands.setContent('<p>replaced</p>')
@@ -149,19 +159,18 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
     // text scrolled away. Selection has no DOM node, so we proxy on
     // the `<p>` containing it — same scroll delta as the selection.
     //
-    // Pre-positioning the anchor near the TOP of the viewport
-    // (`scrollIntoView` defaults to block: 'start') guarantees there's
-    // ~600px of headroom below for the popover, so floating-ui's
-    // `flip()` middleware doesn't swap placement during the scroll
-    // and dampen the apparent delta. ProseMirror's selectText alone
-    // uses `scrollPosIntoView` which only scrolls the minimum amount —
-    // anchor lands at the viewport BOTTOM, which trips flip.
+    // pinSelectionNearViewportTop after selectText keeps headroom below the
+    // selection so flip() does not swap placement mid-scroll (which breaks
+    // the equal-Δtop assertion). selectText alone lands at viewport bottom.
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')
+    pinSelectionNearViewportTop()
+    // eslint-disable-next-line cypress/no-unnecessary-waiting
+    cy.wait(SETTLE_MS)
     cy.pressModK()
-    cy.get(CREATE).should('be.visible')
-    expectPopoverFollowsAnchor(FLOATING, '#editor p:contains("select-this-target-word")')
+    cy.getVisibleFloatingPopover().find(CREATE).should('be.visible')
+    expectPopoverFollowsAnchor(FLOATING_VISIBLE, '#editor p:contains("select-this-target-word")')
   })
 })
 
