@@ -26,6 +26,19 @@ describe('media loading shell', () => {
     cy.get(`${YOUTUBE_SCOPE} .hm-loading-shell__overlay`).should('not.be.visible')
   })
 
+  // Regression: the loading overlay must not be an ARIA live-region inside the editor.
+  // Focus-trap libraries (@floating-ui/react markOthers, aria-hidden) collect
+  // [aria-live],[role=status], walk up through .ProseMirror, and stamp `inert` across
+  // the doc — ProseMirror then recreates the node views, reloading the embed.
+  it('does not host an aria-live / role=status region inside the editor', () => {
+    cy.getEditor().then((editor) => {
+      editor.commands.setYoutubeVideo({ src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' })
+    })
+    cy.expectMediaLoadingPending('YouTube', YOUTUBE_SCOPE)
+    cy.get('#editor [role="status"]').should('not.exist')
+    cy.get('#editor [aria-live]').should('not.exist')
+  })
+
   it('shows an error shell when the image fails to load', () => {
     cy.intercept('GET', BROKEN_IMAGE, { statusCode: 404, body: '' }).as('brokenImage')
 

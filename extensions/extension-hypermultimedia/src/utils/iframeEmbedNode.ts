@@ -152,7 +152,10 @@ export function createIframeEmbedNodeView<TOptions extends IframeEmbedNodeOption
 
     return {
       dom,
-      contentDOM: content,
+      // Leaf/atom node: no `contentDOM`. Exposing one made PM treat the iframe
+      // host as an editable content hole and re-parse it on every async mutation
+      // (iframe load, X widgets.js), recreating the node view on each DOMObserver
+      // flush (e.g. a popover stealing focus) — reloading the embed.
       // The caption is a nested contenteditable the node view owns; PM must not
       // process its input/key/selection events or it deletes the selected node.
       stopEvent: (event: Event) => caption.el.contains(event.target as Node | null),

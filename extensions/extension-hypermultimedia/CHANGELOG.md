@@ -33,6 +33,12 @@ historical Conventional Commits format. The project adheres to
 
 ### Fixed
 
+- Media embeds (YouTube, Vimeo, SoundCloud, Loom, X) no longer reload when a
+  focus-trap opens elsewhere in the editor — a Floating UI popover, a dialog. The
+  loading shell is no longer an `aria-live` / `role="status"` region: such a region
+  inside the editor makes focus-trap libraries stamp `inert` across the document,
+  which ProseMirror reconciles by recreating the iframe node views. Iframe embeds
+  are now leaf node views with no `contentDOM`, matching the other media nodes.
 - Caption editing no longer deletes the media node on the first typed character
   when ProseMirror still held a `NodeSelection` on the node (click-to-lock, then
   toolbar Caption). Focus now collapses that selection before input reaches the
