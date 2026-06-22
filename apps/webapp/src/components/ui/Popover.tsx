@@ -94,6 +94,15 @@ type ContextType =
 
 const PopoverContext = React.createContext<ContextType>(null)
 
+/**
+ * Elements a host keeps INSIDE the focus trap, so `FloatingFocusManager.markOthers()`
+ * doesn't stamp `data-floating-ui-inert` on them. The pad editor region supplies its
+ * ProseMirror root — that inert storm would otherwise make ProseMirror's DOMObserver
+ * reconcile a wide range and recreate media node views (the embeds reload).
+ */
+const PopoverInsideElementsContext = React.createContext<(() => Element[]) | null>(null)
+export const PopoverInsideElementsProvider = PopoverInsideElementsContext.Provider
+
 export const usePopoverContext = () => {
   const context = React.useContext(PopoverContext)
 
@@ -185,12 +194,16 @@ export const PopoverContent = React.forwardRef<HTMLDivElement, React.HTMLProps<H
     const { context: floatingContext, ...context } = usePopoverContext()
     const ref = useMergeRefs([context.refs.setFloating, propRef]) as React.Ref<HTMLDivElement>
     const { isMounted, styles: transitionStyles } = useOverlayTransition(floatingContext)
+    const getInsideElements = React.useContext(PopoverInsideElementsContext)
 
     if (!isMounted) return null
 
     return (
       <FloatingPortal>
-        <FloatingFocusManager context={floatingContext} modal={context.modal}>
+        <FloatingFocusManager
+          context={floatingContext}
+          modal={context.modal}
+          getInsideElements={getInsideElements ?? undefined}>
           <div
             ref={ref}
             style={{ ...context.floatingStyles, ...transitionStyles, ...style }}
