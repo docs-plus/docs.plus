@@ -12,8 +12,20 @@
 
 const BYO_CREATE = '.byo-create-popover'
 const BYO_PREVIEW = '.byo-preview-popover'
+const BYO_CREATE_IN_CONTENT = `.floating-popover-content ${BYO_CREATE}`
+const BYO_PREVIEW_IN_CONTENT = `.floating-popover-content ${BYO_PREVIEW}`
 const BYO_CLOSE = `${BYO_CREATE} .byo-close`
 const BYO_REMOVE = `${BYO_PREVIEW} .byo-remove`
+
+/** Shell stays opacity:0 until `.visible`; assert inside the opened shell. */
+function expectByoVisible(selector: string) {
+  cy.getVisibleFloatingPopover().find(selector).should('be.visible')
+}
+
+function openByoCreateViaModK() {
+  cy.pressModK()
+  expectByoVisible(BYO_CREATE)
+}
 
 describe('BYO popover factories — README public contract', () => {
   beforeEach(() => {
@@ -27,8 +39,7 @@ describe('BYO popover factories — README public contract', () => {
     })
 
     it('receives the documented CreateHyperlinkOptions shape on Mod+K', () => {
-      cy.pressModK()
-      cy.get(BYO_CREATE).should('be.visible')
+      openByoCreateViaModK()
 
       cy.window().its('_byo.createCalls').should('have.length', 1)
       cy.window().then((win) => {
@@ -52,7 +63,7 @@ describe('BYO popover factories — README public contract', () => {
       cy.window().then((win) => {
         win._editor.commands.openCreateHyperlinkPopover({ href: 'https://forwarded.example' })
       })
-      cy.get(BYO_CREATE).should('be.visible')
+      expectByoVisible(BYO_CREATE)
       cy.window().its('_byo.createCalls').should('have.length', 1)
       cy.window().then((win) => {
         expect(win._byo!.createCalls[0].attributes).to.deep.equal({
@@ -63,12 +74,11 @@ describe('BYO popover factories — README public contract', () => {
 
     it('mounts the returned element inside the floating toolbar', () => {
       cy.pressModK()
-      cy.get('.floating-popover-content').find(BYO_CREATE).should('exist')
+      expectByoVisible(BYO_CREATE_IN_CONTENT)
     })
 
     it('getDefaultController().close() invoked from the custom DOM closes the popover', () => {
-      cy.pressModK()
-      cy.get(BYO_CREATE).should('be.visible')
+      openByoCreateViaModK()
       cy.get(BYO_CLOSE).click()
       cy.get(BYO_CREATE).should('not.exist')
       cy.get('.floating-popover').should('not.exist')
@@ -78,7 +88,7 @@ describe('BYO popover factories — README public contract', () => {
       // Escape is bound to the toolbar root, so it only fires when focus is
       // inside — consumers focus their own content (the prebuilt popover
       // auto-focuses its input for the same reason).
-      cy.pressModK()
+      openByoCreateViaModK()
       cy.get(BYO_CLOSE).focus().realPress('Escape')
       cy.get(BYO_CREATE).should('not.exist')
     })
@@ -91,7 +101,7 @@ describe('BYO popover factories — README public contract', () => {
 
     it('receives the documented PreviewHyperlinkOptions shape on link click', () => {
       cy.get('#editor a').click()
-      cy.get(BYO_PREVIEW).should('be.visible')
+      expectByoVisible(BYO_PREVIEW)
 
       cy.window().its('_byo.previewCalls').should('have.length', 1)
       cy.window().then((win) => {
@@ -108,11 +118,12 @@ describe('BYO popover factories — README public contract', () => {
 
     it('mounts the returned element inside the floating toolbar on click', () => {
       cy.get('#editor a').click()
-      cy.get('.floating-popover-content').find(BYO_PREVIEW).should('exist')
+      expectByoVisible(BYO_PREVIEW_IN_CONTENT)
     })
 
     it('Remove button closes the toolbar and unsets the link mark on the editor', () => {
       cy.get('#editor a').click()
+      expectByoVisible(BYO_PREVIEW)
       cy.get(BYO_REMOVE).click()
 
       // `getDefaultController().close()` from the factory tears down the whole popover.
@@ -141,8 +152,7 @@ describe('BYO popover factories — README public contract', () => {
       // This pins the second half of that sentence.
       cy.setEditorContent('<p>Select this word.</p>')
       cy.selectText('word')
-      cy.pressModK()
-      cy.get('.floating-popover.visible').should('exist')
+      openByoCreateViaModK()
 
       cy.get('.floating-popover').then(($tb) => {
         const before = $tb[0].getBoundingClientRect()

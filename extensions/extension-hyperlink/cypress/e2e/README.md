@@ -24,3 +24,8 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 `_debug.cy.ts` (when present) is scratch space and excluded from release counts. README hero screenshots: see [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 Run: `bun run test` from this package (`pretest` build → unit suite → playground → Cypress). E2E only: `bun run test:e2e` (build first).
+
+## Harness conventions
+
+- **`pressModK`** — focuses `#editor [contenteditable="true"]` then sends platform Mod+K (Ctrl on Linux CI). Use `focus()`, not `click()`, when a prior `selectText()` range must survive the shortcut.
+- **Floating popover enter animation** — `.floating-popover` stays `opacity: 0` until `.visible` (next rAF in `@docs.plus/floating-popover`). Wait on the opened shell via `cy.getVisibleFloatingPopover()` (support/e2e.ts) before asserting popover content; BYO specs use `expectByoVisible()` (custom-popover.cy.ts).

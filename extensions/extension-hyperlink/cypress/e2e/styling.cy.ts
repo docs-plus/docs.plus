@@ -108,7 +108,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
       cy.setEditorContent('<p>Select this word</p>')
       cy.selectText('word')
       cy.pressModK()
-      cy.get('.hyperlink-create-popover').should('be.visible')
+      cy.getVisibleFloatingPopover().find('.hyperlink-create-popover').should('be.visible')
 
       const required = [
         '.hyperlink-create-popover',
@@ -127,7 +127,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
     it('preview popover DOM uses only classes that exist in the stylesheet', () => {
       cy.setEditorContent('<p><a href="https://example.com">Example</a></p>')
       cy.get('#editor a').click()
-      cy.get('.hyperlink-preview-popover').should('be.visible')
+      cy.getVisibleFloatingPopover().find('.hyperlink-preview-popover').should('be.visible')
 
       cy.get('.hyperlink-preview-popover .copy').should('exist')
       cy.get('.hyperlink-preview-popover .edit').should('exist')
@@ -142,7 +142,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
       cy.setEditorContent('<p><a href="https://example.com">Example</a></p>')
       cy.get('#editor a').click()
       cy.get('.hyperlink-preview-popover .edit').click()
-      cy.get('.hyperlink-edit-popover').should('be.visible')
+      cy.getVisibleFloatingPopover().find('.hyperlink-edit-popover').should('be.visible')
 
       const required = [
         '.hyperlink-edit-popover',

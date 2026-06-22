@@ -47,16 +47,22 @@ declare global {
       setEditorContent(html: string): Chainable<void>
       editorFirstLinkHref(): Chainable<string>
       pressModK(): Chainable<void>
+      getVisibleFloatingPopover(): Chainable<JQuery<HTMLElement>>
     }
   }
 }
 
-// `Mod-k` opens the create popover. Mod resolves to Meta on mac and Ctrl
-// elsewhere, so the Linux CI runner needs Ctrl+K — a hard-coded Meta+K never
-// fires the keymap there. Mirrors the inline-code suite's platform pick.
+// Mod resolves to Meta on mac and Ctrl on Linux CI. Focus the editor host
+// (not body) so realPress hits the keymap; use focus(), not click(), so a
+// prior selectText range survives the shortcut.
 Cypress.Commands.add('pressModK', () => {
   const mod = Cypress.platform === 'darwin' ? 'Meta' : 'Control'
-  cy.get('body').realPress([mod, 'K'])
+  cy.get('#editor [contenteditable="true"]').focus().realPress([mod, 'K'])
+})
+
+// Shell is opacity:0 until `.visible` (styles.css + createPopover rAF).
+Cypress.Commands.add('getVisibleFloatingPopover', () => {
+  return cy.get('.floating-popover.visible', { timeout: 10000 })
 })
 
 Cypress.Commands.add('visitPlayground', (options: VisitPlaygroundOptions = {}) => {
