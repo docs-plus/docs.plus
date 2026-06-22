@@ -156,6 +156,11 @@ export const eventsHub = (router: NextRouter) => {
    * by a ProseMirror plugin and can't trivially host a React subtree, so they
    * stay on the data-attribute + CSS-`::before` path.
    *
+   * INVARIANT: these buttons live inside a `Decoration.widget`, so ProseMirror's
+   * DOMObserver ignores these per-tick `dataset`/`style` writes (WidgetViewDesc
+   * ignores attribute mutations). They MUST stay widget-decoration DOM — promoting
+   * them to a schema node / NodeView content child would re-parse the editor every tick.
+   *
    * Everything else (TOC, header, chatroom, notification bell) uses the React
    * <UnreadBadge> component directly. Do not set data-unread-count on those
    * surfaces — the TOC clear-step below exists for legacy cleanup.
