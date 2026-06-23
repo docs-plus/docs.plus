@@ -29,7 +29,6 @@ export const ReplyReference = () => {
       kind="reply"
       dataKey={`reply-ref-${replyToId}`}
       ariaLabel={userReplyTo ? `Jump to message from ${userReplyTo}` : 'Jump to replied message'}
-      widthClass="w-[98%]"
       onJump={() => void scrollToMessage(replyToId)}
       header={
         <>

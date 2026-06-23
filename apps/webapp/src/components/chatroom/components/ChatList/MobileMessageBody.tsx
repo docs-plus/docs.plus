@@ -1,5 +1,6 @@
 import { MessageCard } from '@components/chatroom/components/MessageCard/MessageCard'
 import type { TGroupedMsgRow } from '@types'
+import { twMerge } from 'tailwind-merge'
 
 import type { MessageStatus } from '../../../../types/message'
 
@@ -26,15 +27,21 @@ export const MobileMessageBody = ({ index, message, compact, status, onRetry }: 
         compact={compact}
         status={status}
         onRetry={onRetry}>
-        {message.isGroupStart && !message.isOwner && (
+        {!message.isOwner && (
           <div className="chat-image avatar">
-            <MessageCard.Header.UserAvatar />
+            {message.isGroupStart ? (
+              <MessageCard.Header.UserAvatar />
+            ) : (
+              <span className="block size-10" aria-hidden />
+            )}
           </div>
         )}
         <div
-          className={`chat-bubble px-2.5 ${
-            message.isOwner ? 'bg-primary/20 before:hidden' : ''
-          } ${!message.isGroupStart ? 'ml-9 before:hidden' : ''}`}>
+          className={twMerge(
+            'chat-bubble px-2.5',
+            message.isOwner && 'bg-primary/20 before:hidden',
+            !message.isGroupStart && 'before:hidden'
+          )}>
           <MessageCard.Header.BookmarkIndicator />
           <MessageCard.Header className="chat-header">
             {!message.isOwner && message.isGroupStart && <MessageCard.Header.Username />}
