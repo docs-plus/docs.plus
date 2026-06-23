@@ -1,25 +1,49 @@
 import CloseButton from '@components/ui/CloseButton'
+import {
+  commentReferenceContextBarShell,
+  type CommentReferenceTheme
+} from '@utils/commentReferenceTheme'
 import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export type ContextBarKind = 'reply' | 'comment' | 'edit'
 
-const kindShell: Record<ContextBarKind, { bar: string; icon: string }> = {
+const STATIC_SHELL: Record<Exclude<ContextBarKind, 'comment'>, { bar: string; icon: string }> = {
   reply: { bar: 'border-l-[3px] border-l-info bg-base-200/40', icon: 'text-info' },
-  comment: { bar: 'border-l-[3px] border-l-secondary bg-secondary/10', icon: 'text-secondary' },
   edit: { bar: 'border-l-[3px] border-l-warning', icon: 'text-warning' }
 }
 
-type Props = {
-  kind: ContextBarKind
+type MessageContextBarBase = {
   icon: ReactNode
   onDismiss: () => void
   dismissLabel: string
   children: ReactNode
 }
 
-export function MessageContextBar({ kind, icon, onDismiss, dismissLabel, children }: Props) {
-  const shell = kindShell[kind]
+export type MessageContextBarProps =
+  | (MessageContextBarBase & { kind: 'reply' | 'edit' })
+  | (MessageContextBarBase & { kind: 'comment'; commentTheme: CommentReferenceTheme })
+
+function resolveShell(props: MessageContextBarProps): { bar: string; icon: string } {
+  switch (props.kind) {
+    case 'comment':
+      return {
+        bar: commentReferenceContextBarShell(props.commentTheme),
+        icon: props.commentTheme.emphasis
+      }
+    case 'reply':
+    case 'edit':
+      return STATIC_SHELL[props.kind]
+    default: {
+      const _exhaustive: never = props
+      return _exhaustive
+    }
+  }
+}
+
+export function MessageContextBar(props: MessageContextBarProps) {
+  const { icon, onDismiss, dismissLabel, children } = props
+  const shell = resolveShell(props)
 
   return (
     <div

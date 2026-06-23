@@ -1,6 +1,16 @@
 import type { MediaNodeType } from '@docs.plus/extension-hypermultimedia'
 import type { CommentPreview } from '@types'
 
+import { mediaCommentMeta } from './commentReferenceTheme'
+
+export type { CommentReferenceTheme } from './commentReferenceTheme'
+export {
+  commentReferenceContextBarShell,
+  commentReferenceJumpShell,
+  commentReferenceTheme,
+  mediaCommentLabel
+} from './commentReferenceTheme'
+
 export type StaticMediaPreview =
   | { kind: 'img'; src: string; badge?: boolean }
   | { kind: 'video' | 'audio'; src: string }
@@ -9,17 +19,6 @@ export type CommentPreviewMediaHint = {
   label?: string
   preview?: (url: string) => StaticMediaPreview | null
   unfurl?: boolean
-}
-
-export const MEDIA_COMMENT_LABELS: Partial<Record<MediaNodeType, string>> = {
-  image: 'Picture',
-  video: 'Video',
-  audio: 'Audio',
-  youtube: 'YouTube',
-  vimeo: 'Vimeo',
-  soundcloud: 'SoundCloud',
-  loom: 'Loom',
-  x: 'X'
 }
 
 export function parseCommentPreview(raw: unknown): CommentPreview | null {
@@ -69,10 +68,5 @@ export function buildCommentPreviewFromUrl(
 
   if (nodeType === 'x') return { kind: 'label', text: 'Post on X' }
 
-  return { kind: 'label', text: hint?.label ?? MEDIA_COMMENT_LABELS[nodeType] ?? 'Media' }
-}
-
-export function mediaCommentLabel(nodeType: MediaNodeType, preview: CommentPreview): string {
-  if (preview.kind === 'label') return preview.text
-  return MEDIA_COMMENT_LABELS[nodeType] ?? 'Media'
+  return { kind: 'label', text: hint?.label ?? mediaCommentMeta(nodeType).label }
 }

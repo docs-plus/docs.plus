@@ -1,6 +1,8 @@
 import { CommentAnchorPreview } from '@components/chatroom/components/CommentAnchorPreview'
 import { Icons } from '@icons'
 import { getCommentAnchorLabel } from '@services/commentAnchor'
+import { commentReferenceTheme } from '@utils/commentReferenceTheme'
+import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
@@ -18,20 +20,21 @@ const CommentContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   if (!commentMessageMemory || commentMessageMemory.channel_id !== channelId) return null
 
   const { anchor } = commentMessageMemory
+  const theme = commentReferenceTheme(anchor)
+  const typeLabel = getCommentAnchorLabel(anchor)
 
   return (
     <MessageContextBar
       kind="comment"
+      commentTheme={theme}
       icon={<Icons.comment size={16} />}
       onDismiss={handleClose}
       dismissLabel="Dismiss comment">
-      <span className="text-secondary text-xs font-semibold antialiased">
+      <span className={twMerge('text-xs font-semibold antialiased', theme.emphasis)}>
         Document comment
-        <span className="text-base-content ml-1 font-normal">
-          · {getCommentAnchorLabel(anchor)}
-        </span>
+        <span className="ml-1 font-normal">· {typeLabel}</span>
       </span>
-      <CommentAnchorPreview anchor={anchor} variant="composer" />
+      <CommentAnchorPreview anchor={anchor} theme={theme} variant="composer" />
     </MessageContextBar>
   )
 }
