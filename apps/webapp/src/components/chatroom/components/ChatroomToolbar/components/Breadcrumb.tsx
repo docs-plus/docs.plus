@@ -99,18 +99,21 @@ export const Breadcrumb = ({ className }: Props) => {
 
     updateChatRoom('headingPath', headingAddress)
     setHeadingPath(headingAddress)
-  }, [headingId, editor, providerSyncing, loading])
+  }, [headingId, editor, providerSyncing, loading, workspaceId, query, updateChatRoom])
 
-  const openChatContainerHandler = useCallback((e: any, heading: any) => {
-    if (variant === 'mobile') return
-    e.preventDefault()
-    window.history.pushState({}, '', heading.url)
+  const openChatContainerHandler = useCallback(
+    (e: any, heading: any) => {
+      if (variant === 'mobile') return
+      e.preventDefault()
+      window.history.pushState({}, '', heading.url)
 
-    PubSub.publish(CHAT_OPEN, {
-      headingId: heading.id,
-      scroll2Heading: true
-    })
-  }, [])
+      PubSub.publish(CHAT_OPEN, {
+        headingId: heading.id,
+        scroll2Heading: true
+      })
+    },
+    [variant]
+  )
 
   const scroll2Heading = (e: any, heading: any) => {
     e.preventDefault()

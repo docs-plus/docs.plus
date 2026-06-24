@@ -84,7 +84,7 @@ const BreadcrumbMobile = () => {
 
     updateChatRoom('headingPath', headingAddress)
     setHeadingPath(headingAddress)
-  }, [headingId, editor, providerSyncing, loading])
+  }, [headingId, editor, providerSyncing, loading, workspaceId, query, updateChatRoom])
 
   if (workspaceId === headingId) {
     return (

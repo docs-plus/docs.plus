@@ -37,14 +37,14 @@ export const useInitialSteps = (isMobileInitial: boolean) => {
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [isMobileInitial])
+  }, [isMobileInitial, setWorkspaceEditorSetting, setWorkspaceSetting])
 
   useEffect(() => {
     if (!isClient) return
 
     const deviceDetect = new MobileDetect(window.navigator.userAgent)
     setWorkspaceSetting('deviceDetect', deviceDetect)
-  }, [isClient])
+  }, [isClient, setWorkspaceSetting])
 
   return null
 }

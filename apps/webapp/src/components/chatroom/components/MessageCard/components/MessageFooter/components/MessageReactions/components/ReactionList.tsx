@@ -23,7 +23,7 @@ const ReactionList = ({ className }: Props) => {
         removeReaction(message, emoji).catch(console.error)
       }
     },
-    [message, isUserReaction, message.reactions]
+    [message, isUserReaction]
   )
 
   const reactionEntries = useMemo(

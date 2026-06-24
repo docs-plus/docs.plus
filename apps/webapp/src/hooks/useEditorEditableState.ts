@@ -14,7 +14,7 @@ const useEditorEditableState = () => {
     if (metadata?.ownerId === user?.id) return editor.setEditable(true)
     // make sure the owner can always edit the document
     editor.setEditable(!metadata?.readOnly)
-  }, [editor, metadata])
+  }, [editor, metadata, user?.id])
 }
 
 export default useEditorEditableState

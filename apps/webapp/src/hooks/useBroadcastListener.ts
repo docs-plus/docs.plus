@@ -57,5 +57,12 @@ export const useBroadcastListener = () => {
     return () => {
       registered.current = false
     }
-  }, [broadcaster])
+  }, [
+    broadcaster,
+    addChannelPinnedMessage,
+    removeChannelPinnedMessage,
+    setTypingIndicator,
+    removeTypingIndicator,
+    updateUserStatus
+  ])
 }

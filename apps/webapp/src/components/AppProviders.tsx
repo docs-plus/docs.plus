@@ -98,7 +98,7 @@ export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
       window.visualViewport?.removeEventListener('resize', handleViewportResize)
       window.visualViewport?.removeEventListener('scroll', handleViewportScroll)
     }
-  }, [router.isReady])
+  }, [router, router.isReady])
 
   return null // This is a side-effect-only component
 }

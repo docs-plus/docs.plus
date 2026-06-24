@@ -11,7 +11,7 @@ export const useCloseOnResize = () => {
     if (isOpen) {
       closeEmojiPicker()
     }
-  }, [isOpen])
+  }, [isOpen, closeEmojiPicker])
 
   useEffect(() => {
     if (!isOpen) return

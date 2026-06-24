@@ -77,7 +77,14 @@ export const useInfiniteNotifications = (): UseInfiniteNotificationsResult => {
     }
 
     fetchInitialReadNotifications()
-  }, [notificationActiveTab, user?.id, workspaceId])
+  }, [
+    notificationActiveTab,
+    user?.id,
+    workspaceId,
+    notifications,
+    setLoadingNotification,
+    updateNotifications
+  ])
 
   // Fetch notifications for a specific page
   const fetchNotifications = useCallback(

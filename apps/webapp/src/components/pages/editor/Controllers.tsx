@@ -7,7 +7,7 @@
  * */
 
 import { Editor } from '@tiptap/react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useClipboardListener } from './hooks/useClipboardListener'
 import { useClipboardShortcuts } from './hooks/useClipboardShortcuts'
@@ -41,7 +41,7 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
   const { selectHierarchical, selectElement } = useHierarchicalSelection(editor)
 
   // Copy selected content
-  const copySelectedContent = () => {
+  const copySelectedContent = useCallback(() => {
     if (!editor) return
 
     editor.commands.focus()
@@ -55,10 +55,10 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
     }
 
     console.info('[Controllers] Copy operation triggered')
-  }
+  }, [editor])
 
   // Paste from clipboard
-  const pasteFromClipboard = () => {
+  const pasteFromClipboard = useCallback(() => {
     if (!editor) return
 
     editor.commands.focus()
@@ -72,14 +72,17 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
     }
 
     console.info('[Controllers] Paste operation triggered')
-  }
+  }, [editor])
 
   // Select hierarchically and then copy
-  const selectAndCopy = (level: SelectionLevel) => {
-    if (!editor) return
-    selectHierarchical(level)
-    setTimeout(() => copySelectedContent(), 10)
-  }
+  const selectAndCopy = useCallback(
+    (level: SelectionLevel) => {
+      if (!editor) return
+      selectHierarchical(level)
+      setTimeout(() => copySelectedContent(), 10)
+    },
+    [editor, selectHierarchical, copySelectedContent]
+  )
 
   // Expose selection methods globally
   useEffect(() => {
@@ -100,7 +103,7 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
       // @ts-ignore
       delete window._editorSelectElement
     }
-  }, [editor, selectHierarchical, selectElement])
+  }, [editor, selectHierarchical, selectElement, selectAndCopy])
 
   const buttonClasses =
     debug || isTestEnv

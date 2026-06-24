@@ -61,7 +61,7 @@ const useProviderAwareness = () => {
         provider.off('awarenessUpdate', awarenessUpdateHandler)
       }
     }
-  }, [provider, user])
+  }, [provider, setWorkspaceEditorSetting])
 }
 
 export default useProviderAwareness

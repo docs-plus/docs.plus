@@ -39,7 +39,16 @@ export const useNotificationSummary = () => {
     } finally {
       setLoadingNotification(false)
     }
-  }, [user, workspaceId, summaryRequest])
+  }, [
+    user,
+    workspaceId,
+    summaryRequest,
+    setNotificationSummary,
+    setNotifications,
+    setNotificationTab,
+    setNotificationPage,
+    setLoadingNotification
+  ])
 
   // Initial fetch on mount
   useEffect(() => {
@@ -47,7 +56,7 @@ export const useNotificationSummary = () => {
     setLoadingNotification(true)
     clearNotifications()
     fetchNotificationSummary()
-  }, [user, workspaceId])
+  }, [user, workspaceId, clearNotifications, fetchNotificationSummary, setLoadingNotification])
 
   // Listen for notification state changes (from push clicks, etc.)
   useEffect(() => {
