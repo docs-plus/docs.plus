@@ -26,6 +26,7 @@ export default [
       '**/*.config.ts',
       '**/*.config.mjs',
       'eslint.config.js',
+      'eslint.config.mjs',
       '**/next-env.d.ts',
       '**/public/**',
       '**/cypress/**',

@@ -3,12 +3,13 @@
 echo "🔍 Pre-push checks starting..."
 echo ""
 
-# Get changed files compared to origin/main (or HEAD~1 if on main)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+# Get changed files for selective builds — full unpushed range, not only the tip commit.
+CHANGED_FILES=""
+if git rev-parse origin/main >/dev/null 2>&1; then
+    CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || echo "")
+fi
+if [ -z "$CHANGED_FILES" ]; then
     CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null || echo "")
-else
-    CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || echo "")
 fi
 
 # Track overall status
