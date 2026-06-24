@@ -144,6 +144,21 @@ jobs:
       - name: ✈️ Publish preflight (all five)
         run: bash scripts/extension-preflight.sh
 
+  webapp-unit-tests:
+    name: 🧪 Webapp Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🧪 Jest (webapp)
+        run: bun run --filter @docs.plus/webapp test
+
   # ============================================================================
   # STAGE 2: BUILD VERIFICATION
   # ============================================================================
@@ -151,13 +166,14 @@ jobs:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [lint, typecheck, security, extension-tests]
+    needs: [lint, typecheck, security, extension-tests, webapp-unit-tests]
     if: |
       always() &&
       (needs.lint.result == 'success' || inputs.skip_quality_gates == true) &&
       (needs.typecheck.result == 'success' || inputs.skip_quality_gates == true) &&
       (needs.security.result == 'success' || needs.security.result == 'skipped' || inputs.skip_quality_gates == true) &&
-      (needs.extension-tests.result == 'success' || inputs.skip_quality_gates == true)
+      (needs.extension-tests.result == 'success' || inputs.skip_quality_gates == true) &&
+      (needs.webapp-unit-tests.result == 'success' || inputs.skip_quality_gates == true)
 
     steps:
       - name: 📦 Checkout
