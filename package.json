@@ -7,6 +7,9 @@
     "extensions/*",
     "packages/*"
   ],
+  "overrides": {
+    "@metascraper/helpers": "5.50.6"
+  },
   "prettier": "./.prettierrc.json",
   "scripts": {
     "prepare": "husky",
