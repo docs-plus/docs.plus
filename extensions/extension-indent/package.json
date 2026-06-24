@@ -45,8 +45,6 @@
     "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5175 cypress:open",
     "cypress:run": "bunx cypress run",
     "cypress:open": "bunx cypress open",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "prepack": "bunx release-prepack",
     "prepublishOnly": "bunx release-preflight"

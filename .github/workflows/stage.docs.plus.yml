@@ -53,22 +53,7 @@ env:
 # ============================================================================
 jobs:
   lint:
-    name: 🔍 Lint & Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🥟 Setup Environment
-        uses: ./.github/actions/setup-bun
-
-      - name: 🔍 Lint, format & styles
-        run: |
-          bun run lint
-          bun run format
-          bun run lint:styles
+    uses: ./.github/workflows/quality-lint.yml
 
   typecheck:
     name: 📝 Type Check

@@ -121,7 +121,7 @@ echo ""
 # 4. Root quality gate for ALL pushes
 # ============================================
 REMOTE_NAME="$1"
-echo "🧪 Running mandatory root quality gate for push to ${REMOTE_NAME:-unknown}: bun run check"
+echo "🧪 Running mandatory root quality gate for push to ${REMOTE_NAME:-unknown}: bun run check:push"
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$REPO_ROOT" ]; then
@@ -129,10 +129,10 @@ if [ -z "$REPO_ROOT" ]; then
     exit 1
 fi
 
-if (cd "$REPO_ROOT" && bun run check); then
-    echo "  ✅ bun run check passed"
+if (cd "$REPO_ROOT" && bun run check:push); then
+    echo "  ✅ bun run check:push passed"
 else
-    echo "  ❌ bun run check failed"
+    echo "  ❌ bun run check:push failed"
     echo ""
     echo "❌ Root quality checks failed. Push aborted."
     exit 1

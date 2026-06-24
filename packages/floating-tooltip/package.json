@@ -30,9 +30,7 @@
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.6"

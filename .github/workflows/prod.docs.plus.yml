@@ -111,25 +111,8 @@ jobs:
   # STAGE 1 — QUALITY GATES (parallel, fast feedback)
   # ===========================================================================
   lint:
-    name: 🔍 Lint & Format
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
     if: github.event_name != 'schedule'
-    permissions:
-      contents: read
-
-    steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: 🥟 Setup Environment
-        uses: ./.github/actions/setup-bun
-
-      - name: 🔍 Lint, format & styles
-        run: |
-          bun run lint
-          bun run format
-          bun run lint:styles
+    uses: ./.github/workflows/quality-lint.yml
 
   typecheck:
     name: 📝 Type Check

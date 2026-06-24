@@ -41,8 +41,6 @@
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5173",
     "test:unit": "bun test src",
     "test:unit:watch": "bun test --watch src",

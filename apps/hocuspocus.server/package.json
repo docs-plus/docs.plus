@@ -12,8 +12,6 @@
     "start:ws": "NODE_ENV=production bun src/hocuspocus.server.ts",
     "start:worker": "NODE_ENV=production bun src/hocuspocus.worker.ts",
     "build": "bun build src/index.ts src/hocuspocus.server.ts src/hocuspocus.worker.ts --outdir=dist --target=bun",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
     "typecheck": "tsc --noEmit",
     "test": "bun test tests/unit src/lib/__tests__ src/modules/link-metadata/__tests__/unit tests/integration",
     "test:watch": "bun test --watch",

@@ -12,8 +12,6 @@
     "start": "dotenv -e ../../.env.local -- node .next/standalone/apps/webapp/server.js",
     "start:prod": "PORT=3001 bun .next/standalone/apps/webapp/server.js",
     "start:stage": "PORT=3000 bun .next/standalone/apps/webapp/server.js",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "test": "TZ=UTC jest --passWithNoTests",
     "test:coverage": "TZ=UTC jest --coverage --passWithNoTests",

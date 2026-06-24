@@ -21,8 +21,6 @@
     "cypress"
   ],
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

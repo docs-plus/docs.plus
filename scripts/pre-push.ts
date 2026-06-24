@@ -5,15 +5,15 @@
  *
  *   bun run pre-push
  *
- * Lint runs with --max-warnings=0 via bun run check.
+ * Skips Prettier --check: pre-commit lint-staged already formats staged files.
+ * CI still runs full `bun run check` (includes format).
  */
 
 import { $ } from 'bun'
 
 const rootDir = process.cwd()
 
-console.log('🔍 Running check (lint + lint:styles + format + typecheck)...\n')
-console.log('Note: lint enforces --max-warnings=0 repo-wide.\n')
+console.log('🔍 Running check:push (lint + lint:styles + typecheck)...\n')
 
-const result = await $`bun run check`.cwd(rootDir)
+const result = await $`bun run check:push`.cwd(rootDir)
 process.exit(result.exitCode ?? 0)

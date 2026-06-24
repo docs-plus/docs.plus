@@ -31,8 +31,6 @@
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "test:unit": "bun test src",
     "test:unit:watch": "bun test --watch src"
   },
