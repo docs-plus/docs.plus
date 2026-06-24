@@ -6,9 +6,7 @@ Renders `<video>` elements as a block or inline node.
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -203,10 +201,11 @@ editor.commands.setVideo({
 
 ## Markdown syntax
 
-```md
-![video](src title width height)
+With `@tiptap/markdown` loaded:
 
+```md
 ![video](https://example.com/foobar.mp4)
+![video](https://example.com/foobar.mp4 width=640 height=480)
 ```
 
 ## Source code

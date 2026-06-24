@@ -21,6 +21,7 @@ describe('chatroom send and retry', () => {
     cy.get('[data-testid="composer-submit"]').click()
     cy.wait('@failedSend')
     cy.get('[data-status="failed"]').should('be.visible')
+    cy.get('[data-testid="composer-input"]').should('contain.text', 'this will fail')
   })
 
   it('treats 23505 duplicate-key as success', () => {

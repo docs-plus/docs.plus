@@ -20,8 +20,6 @@ Beyond the mark itself, it covers the link behavior hosts usually hand-roll: aut
 ## Install
 
 ```sh
-bun add @docs.plus/extension-hyperlink@next
-# stable, after promotion:
 bun add @docs.plus/extension-hyperlink
 ```
 
@@ -608,7 +606,7 @@ Definitions are bundled. Full public surface:
 
 ## Family
 
-Sibling packages, `@next` install policy, and recommended pairings (e.g. with hypermultimedia): [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+Sibling packages and recommended pairings (e.g. with hypermultimedia): [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 

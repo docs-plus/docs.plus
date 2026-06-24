@@ -4,9 +4,7 @@ Embeds YouTube watch, embed, Shorts, and `youtu.be` URLs as iframe players. Past
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -156,6 +154,16 @@ editor.commands.setYoutubeVideo({
 Layout options: `width`, `height`, `margin`, `float`, `clear`, `display`, `justifyContent`.
 
 Any player row from the table above can be passed on the command to override kit defaults for that node only.
+
+## Markdown syntax
+
+With `@tiptap/markdown` loaded:
+
+```md
+![youtube](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+```
+
+Use the literal alt `youtube` so the token routes to this node instead of a plain image or hyperlink.
 
 ## Source code
 

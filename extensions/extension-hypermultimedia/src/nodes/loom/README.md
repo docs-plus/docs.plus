@@ -4,9 +4,7 @@ Embeds Loom recordings. `share` and `embed` URLs normalize to `loom.com/embed/<i
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -78,6 +76,14 @@ Layout options plus embed params can be passed on the command.
 ## Security
 
 Only valid Loom URLs enter the document. Non-Loom `src` values render an empty iframe `src`.
+
+## Markdown syntax
+
+With `@tiptap/markdown` loaded:
+
+```md
+![loom](https://www.loom.com/share/abcdef1234567890)
+```
 
 ## Source code
 

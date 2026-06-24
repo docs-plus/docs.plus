@@ -91,6 +91,7 @@
     "@docs.plus/release-tooling": "workspace:*",
     "@eslint/js": "catalog:",
     "@tiptap/core": "catalog:",
+    "@tiptap/markdown": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
     "@types/node": "catalog:",

@@ -6,9 +6,7 @@ Block or inline image node with hover resize grippers, the shared media toolbar,
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 

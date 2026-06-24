@@ -127,7 +127,7 @@ describe('Markdown Export', () => {
 
       cy.get(EDITOR_SEL).realType('Check ')
       cy.window().then((win) => {
-        const editor = win._editor?.instance
+        const editor = win._editor
         if (!editor) throw new Error('editor not found')
         editor.commands.insertContent({
           type: 'text',

@@ -10,15 +10,13 @@ Five publishable Tiptap extensions for the [docs.plus](https://docs.plus) alpha 
 | [`extension-inline-code`](./extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)            | —              | 5176            |
 | [`extension-placeholder`](./extension-placeholder/)         | O(1) cursor-based empty-node placeholder              | BYO CSS        | 5177            |
 
-## Install (Phase 1 — alpha soak)
-
-During cutover, new majors publish to npm **`@next`**, not `@latest`:
+## Install
 
 ```sh
-bun add @docs.plus/extension-hyperlink@next
-# stable, after promotion:
 bun add @docs.plus/extension-hyperlink
 ```
+
+Use the matching package name from the table above (`extension-hypermultimedia`, `extension-indent`, and so on).
 
 **Peer dependencies (all five):** `@tiptap/core` and `@tiptap/pm` **^3.22.3**.
 

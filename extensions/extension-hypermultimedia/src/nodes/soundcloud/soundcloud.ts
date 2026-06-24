@@ -1,6 +1,7 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
 import { captionAttribute } from '../../caption'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
   type EmbedNodeOptions,
@@ -44,6 +45,8 @@ const SOUNDCLOUD_IFRAME_CONFIG: IframeEmbedConfig<SoundCloudOptions> = {
 export const SoundCloud = Node.create<SoundCloudOptions>({
   name: 'soundcloud',
   draggable: true,
+
+  ...createTypedMediaMarkdownHooks('soundcloud'),
 
   addOptions() {
     return {

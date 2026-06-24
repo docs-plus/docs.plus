@@ -4,9 +4,7 @@ Embeds SoundCloud tracks and playlists via the official HTML5 widget (`w.soundcl
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -86,6 +84,14 @@ editor.commands.setSoundCloud({
 ```
 
 Layout options plus any widget row above can be passed on the command.
+
+## Markdown syntax
+
+With `@tiptap/markdown` loaded:
+
+```md
+![soundcloud](https://soundcloud.com/artist/track)
+```
 
 ## Source code
 

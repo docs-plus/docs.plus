@@ -15,6 +15,7 @@ import {
   readCaption,
   wrapRenderWithCaption
 } from '../../caption'
+import { isTypedMediaMarkdownAlt } from '../../markdown/typedMediaMarkdown'
 import type { ImageOptions } from '../../types'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
 import { generateShortId } from '../../utils/utils'
@@ -31,10 +32,16 @@ export const Image = Node.create<ImageOptions>({
   // Hooks are inert unless the host also loads @tiptap/markdown.
   markdownTokenName: 'image',
 
-  parseMarkdown: (token: MarkdownToken, _helpers: MarkdownParseHelpers) => ({
-    type: 'image',
-    attrs: { src: token.href || '', alt: token.text || '' }
-  }),
+  parseMarkdown: (token: MarkdownToken, _helpers: MarkdownParseHelpers) => {
+    const alt = token.text || ''
+    if (isTypedMediaMarkdownAlt(alt)) {
+      return { type: alt, attrs: { src: token.href || '' } }
+    }
+    return {
+      type: 'image',
+      attrs: { src: token.href || '', alt }
+    }
+  },
 
   renderMarkdown: (node: JSONContent, _helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
     const alt = (node.attrs?.alt || '').replace(/\]/g, '\\]')

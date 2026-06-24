@@ -20,8 +20,6 @@ It mirrors Tiptap's built-in `Code` mark — backtick input and paste rules, `<c
 ## Install
 
 ```sh
-bun add @docs.plus/extension-inline-code@next
-# stable, after promotion:
 bun add @docs.plus/extension-inline-code
 ```
 
@@ -95,7 +93,7 @@ Exports: `InlineCode` (default), `InlineCodeOptions`. Commands: `setInlineCode`,
 
 ## Family
 
-Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 

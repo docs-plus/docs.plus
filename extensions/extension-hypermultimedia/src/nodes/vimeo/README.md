@@ -4,9 +4,7 @@ Embeds Vimeo watch and player URLs as iframe players. Paste a link or call `setV
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -96,6 +94,14 @@ editor.commands.setVimeo({
 ```
 
 Layout options: `width`, `height`, `margin`, `float`, `clear`, `display`, `justifyContent`. Any player row above can override kit defaults for that node.
+
+## Markdown syntax
+
+With `@tiptap/markdown` loaded:
+
+```md
+![vimeo](https://vimeo.com/123456789)
+```
 
 ## Source code
 

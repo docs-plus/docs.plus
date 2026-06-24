@@ -4,13 +4,14 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 
 ## Release gate (five pillars)
 
-| Pillar             | Spec                                  | What it proves                                                                                                                 |
-| ------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Paste**          | `paste/paste-matrix.cy.ts`            | Media URL → node (not link); clipboard **image file** → blob `image` node via `editorFileUpload`; generic URLs autolink        |
-| **Toolbar UI**     | `toolbar/toolbar.cy.ts`               | Hover/click opens one toolbar; placement + margin write attrs                                                                  |
-| **Resize gripper** | `resize/gripper.cy.ts`                | Decoration on image/embed nodes; 8-handle activation; side/corner drag → attrs; min-size floor; click-outside dismiss          |
-| **Loading shell**  | `loading/media-loading-shell.cy.ts`   | Reserved-size shimmer on insert/paste; provider label; pending → ready; `loadingShell=false` opt-out via `?loadingShell=false` |
-| **Serialization**  | `serialization/serialize-media.cy.ts` | `getHTML()` never throws with video/audio nodes; setContent round-trip; toolbar Copy serializes cleanly                        |
+| Pillar             | Spec                                  | What it proves                                                                                                                                        |
+| ------------------ | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Paste**          | `paste/paste-matrix.cy.ts`            | Media URL → node (not link); clipboard **image file** → blob `image` node via `editorFileUpload`; generic URLs autolink                               |
+| **Toolbar UI**     | `toolbar/toolbar.cy.ts`               | Hover/click opens one toolbar; placement + margin write attrs                                                                                         |
+| **Resize gripper** | `resize/gripper.cy.ts`                | Decoration on image/embed nodes; 8-handle activation; side/corner drag → attrs; min-size floor; click-outside dismiss                                 |
+| **Loading shell**  | `loading/media-loading-shell.cy.ts`   | Reserved-size shimmer on insert/paste; provider label; pending → ready; `loadingShell=false` opt-out via `?loadingShell=false`                        |
+| **Serialization**  | `serialization/serialize-media.cy.ts` | `getHTML()` never throws with video/audio nodes; setContent round-trip; toolbar Copy serializes cleanly                                               |
+| **Markdown**       | `markdown/markdown-round-trip.cy.ts`  | `@tiptap/markdown` full round-trip for all eight nodes via `![type](url)`; command export parity; caption/dimension edge cases; hyperlink coexistence |
 
 ## Supporting specs
 

@@ -13,6 +13,9 @@ import type { Editor } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
 
 import 'cypress-real-events'
+import { registerPlaygroundMarkdownCommands } from '@docs.plus/playground/cypress/markdownCommands'
+
+registerPlaygroundMarkdownCommands()
 
 interface VisitPlaygroundOptions {
   popover?: 'custom'
@@ -36,6 +39,8 @@ declare global {
     _editor: Editor
     _hyperlink: typeof HyperlinkModule
     _byo?: PlaygroundByoState
+    _getMarkdown?: () => string
+    _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
 
   // eslint-disable-next-line @typescript-eslint/no-namespace

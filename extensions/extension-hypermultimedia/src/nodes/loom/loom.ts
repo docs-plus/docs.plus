@@ -1,6 +1,7 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
 import { captionAttribute } from '../../caption'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
   type EmbedNodeOptions,
@@ -40,6 +41,8 @@ const LOOM_IFRAME_CONFIG = {
 export const Loom = Node.create<LoomOptions>({
   name: 'loom',
   draggable: true,
+
+  ...createTypedMediaMarkdownHooks('loom'),
 
   addOptions() {
     return {

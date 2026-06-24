@@ -1,6 +1,7 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
 import { captionAttribute } from '../../caption'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
   type EmbedNodeOptions,
@@ -47,6 +48,8 @@ const YOUTUBE_IFRAME_CONFIG = defineFullscreenIframeEmbedConfig<YoutubeOptions>(
 export const Youtube = Node.create<YoutubeOptions>({
   name: 'youtube',
   draggable: true,
+
+  ...createTypedMediaMarkdownHooks('youtube'),
 
   addOptions() {
     return {

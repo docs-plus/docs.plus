@@ -7,6 +7,7 @@ import {
   readCaption
 } from '../../caption'
 import { layoutAttrsChanged, wrapMediaWithLoadingShell } from '../../loading'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   defaultsFromOptions,
   EMBED_CHROME_DEFAULTS,
@@ -48,6 +49,8 @@ export const X = Node.create<XOptions>({
   // Above StarterKit's default (100) so `blockquote.twitter-tweet` parses as an X
   // embed before the generic blockquote rule claims it.
   priority: 101,
+
+  ...createTypedMediaMarkdownHooks('x'),
 
   addOptions() {
     return {

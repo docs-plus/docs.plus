@@ -25,3 +25,8 @@ E2E tests for the `@tiptap/markdown` integration.
   - Links and images: full URL round-trip
   - Highlight: `==text==` round-trip
   - `_parseMarkdown` API: JSONContent structure validation
+
+- **markdown-media.cy.js** — `@docs.plus/extension-hypermultimedia` on the full pad stack
+  - `setMarkdown` / `getMarkdown` round-trip for `![youtube](url)`, `![audio](url width height)`
+  - Paste heuristic: heading + typed embed vs GFM image vs `[label](youtube-url)` link
+  - Plain URL paste: bare YouTube watch URL becomes embed via extension paste rules (not markdown)

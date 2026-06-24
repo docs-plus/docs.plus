@@ -5,6 +5,7 @@ import '@docs.plus/extension-hyperlink/styles.css'
 import * as HyperlinkModule from '@docs.plus/extension-hyperlink'
 import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor } from '@tiptap/core'
+import { Markdown } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
 
 const { Hyperlink, createHyperlinkPopover, previewHyperlinkPopover, getDefaultController } =
@@ -113,6 +114,7 @@ const editor = new Editor({
   element,
   extensions: [
     StarterKit.configure({ link: false }),
+    Markdown.configure(),
     Hyperlink.configure({
       autolink: true,
       openOnClick: true,
@@ -133,9 +135,13 @@ declare global {
     _editor: Editor
     _hyperlink: typeof HyperlinkModule
     _byo?: ByoState
+    _getMarkdown?: () => string
+    _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
 }
 
 window._editor = editor
 window._hyperlink = HyperlinkModule
+window._getMarkdown = () => editor.getMarkdown()
+window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
 if (useCustomPopovers) window._byo = byoState

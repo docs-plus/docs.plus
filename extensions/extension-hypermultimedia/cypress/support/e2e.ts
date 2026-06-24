@@ -13,6 +13,9 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import type {} from '@tiptap/starter-kit'
 
 import 'cypress-real-events'
+import { registerPlaygroundMarkdownCommands } from '@docs.plus/playground/cypress/markdownCommands'
+
+registerPlaygroundMarkdownCommands()
 
 const SCROLL_PX = 200
 const REPOSITION_WAIT_MS = 100
@@ -22,6 +25,8 @@ declare global {
   interface Window {
     _editor: Editor
     _hypermultimedia: typeof HyperMultimediaModule
+    _getMarkdown?: () => string
+    _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
 
   // eslint-disable-next-line @typescript-eslint/no-namespace

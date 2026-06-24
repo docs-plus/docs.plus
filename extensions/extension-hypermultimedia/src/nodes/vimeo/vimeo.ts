@@ -1,6 +1,7 @@
 import { Node, nodePasteRule } from '@tiptap/core'
 
 import { captionAttribute } from '../../caption'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
   type EmbedNodeOptions,
@@ -44,6 +45,8 @@ const VIMEO_IFRAME_CONFIG = defineFullscreenIframeEmbedConfig<VimeoOptions>({
 export const Vimeo = Node.create<VimeoOptions>({
   name: 'vimeo',
   draggable: true,
+
+  ...createTypedMediaMarkdownHooks('vimeo'),
 
   addOptions() {
     return {

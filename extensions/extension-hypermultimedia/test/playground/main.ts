@@ -6,6 +6,7 @@ import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import * as HyperMultimediaModule from '@docs.plus/extension-hypermultimedia'
 import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor } from '@tiptap/core'
+import { Markdown } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
 
 const { HyperMultimediaKit, isMediaUrl } = HyperMultimediaModule
@@ -27,6 +28,7 @@ const editor = new Editor({
   element,
   extensions: [
     StarterKit.configure({ link: false, ...(blockquoteOff ? { blockquote: false } : {}) }),
+    Markdown.configure(),
     Hyperlink.configure({
       autolink: true,
       linkOnPaste: false,
@@ -53,11 +55,15 @@ declare global {
   interface Window {
     _editor: Editor
     _hypermultimedia: typeof HyperMultimediaModule
+    _getMarkdown?: () => string
+    _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
 }
 
 window._editor = editor
 window._hypermultimedia = HyperMultimediaModule
+window._getMarkdown = () => editor.getMarkdown()
+window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
 
 // Hosts handle `editorFileUpload`; playground inserts via blob URL (no backend).
 document.addEventListener('editorFileUpload', (event) => {

@@ -4,9 +4,7 @@ Renders embedded X (formerly Twitter) posts via the official oEmbed endpoint and
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -172,6 +170,14 @@ editor.commands.setX({
 | display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
 | margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
 | justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
+
+## Markdown syntax
+
+With `@tiptap/markdown` loaded:
+
+```md
+![x](https://x.com/user/status/123)
+```
 
 ## Source code
 

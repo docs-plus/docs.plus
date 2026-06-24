@@ -20,8 +20,6 @@ Tab already belongs to lists (sink/lift), tables (cell navigation), and the brow
 ## Install
 
 ```sh
-bun add @docs.plus/extension-indent@next
-# stable, after promotion:
 bun add @docs.plus/extension-indent
 ```
 
@@ -118,7 +116,7 @@ Exports: `Indent` (default), `IndentOptions`, `IndentContextRule`. Configure wit
 
 ## Family
 
-Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 

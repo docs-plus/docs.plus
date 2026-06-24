@@ -1,0 +1,107 @@
+import type {
+  JSONContent,
+  MarkdownLexerConfiguration,
+  MarkdownParseHelpers,
+  MarkdownRendererHelpers,
+  MarkdownToken,
+  RenderContext
+} from '@tiptap/core'
+
+import type { MediaNodeType } from '../utils/detectMediaType'
+
+/** Reserved `![alt]` literals routed to non-image media nodes. */
+export const TYPED_MEDIA_MARKDOWN_ALTS = [
+  'audio',
+  'video',
+  'youtube',
+  'vimeo',
+  'soundcloud',
+  'loom',
+  'x'
+] as const
+
+export type TypedMediaMarkdownAlt = (typeof TYPED_MEDIA_MARKDOWN_ALTS)[number]
+
+export function isTypedMediaMarkdownAlt(alt: string): alt is TypedMediaMarkdownAlt {
+  return (TYPED_MEDIA_MARKDOWN_ALTS as readonly string[]).includes(alt)
+}
+
+type TypedMediaMarkdownOptions = {
+  withDimensions?: boolean
+}
+
+type TypedMediaMarkdownHooks = {
+  markdownTokenName: string
+  markdownTokenizer: {
+    name: string
+    level: 'inline'
+    start: (src: string) => number
+    tokenize: (
+      src: string,
+      tokens: MarkdownToken[],
+      lexer: MarkdownLexerConfiguration
+    ) => MarkdownToken | undefined
+  }
+  parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) => JSONContent
+  renderMarkdown: (
+    node: JSONContent,
+    helpers: MarkdownRendererHelpers,
+    ctx: RenderContext
+  ) => string
+}
+
+/** `![{nodeName}](src)` import/export hooks shared by every non-image media node. */
+export function createTypedMediaMarkdownHooks(
+  nodeName: MediaNodeType,
+  options: TypedMediaMarkdownOptions = {}
+): TypedMediaMarkdownHooks {
+  const tokenName = `hm_${nodeName}`
+  const dimPattern = options.withDimensions
+    ? String.raw`(?:\s+width=(\d+))?(?:\s+height=(\d+))?`
+    : ''
+  const pattern = new RegExp(String.raw`^!\[${nodeName}\]\((\S+)${dimPattern}\)`)
+
+  return {
+    markdownTokenName: tokenName,
+
+    markdownTokenizer: {
+      name: tokenName,
+      level: 'inline' as const,
+      start: (src: string) => src.indexOf(`![${nodeName}]`),
+      tokenize: (src: string, _tokens: MarkdownToken[], _lexer: MarkdownLexerConfiguration) => {
+        const match = pattern.exec(src)
+        if (!match) return undefined
+
+        return {
+          type: tokenName,
+          raw: match[0],
+          href: match[1],
+          ...(options.withDimensions && { width: match[2], height: match[3] })
+        }
+      }
+    },
+
+    parseMarkdown: (token: MarkdownToken, _helpers: MarkdownParseHelpers) => {
+      const attrs: Record<string, unknown> = { src: token.href || '' }
+      if (options.withDimensions) {
+        if (token.width) attrs.width = Number(token.width)
+        if (token.height) attrs.height = Number(token.height)
+      }
+      return { type: nodeName, attrs }
+    },
+
+    renderMarkdown: (node: JSONContent, _helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
+      const src = (node.attrs?.src || '').replace(/\)/g, '%29')
+      if (!options.withDimensions) {
+        return `![${nodeName}](${src})`
+      }
+
+      const width = node.attrs?.width
+      const height = node.attrs?.height
+      let out = `![${nodeName}](${src}`
+      if (width != null && width !== '') out += ` width=${width}`
+      if (height != null && height !== '') out += ` height=${height}`
+      return `${out})`
+    }
+  }
+}

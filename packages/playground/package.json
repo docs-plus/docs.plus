@@ -12,6 +12,7 @@
     "./tsconfig.json": "./tsconfig.json",
     "./cypress/flattenReadmeScreenshots": "./cypress/flattenReadmeScreenshots.ts",
     "./cypress/readmeGallery": "./cypress/readmeGallery.ts",
+    "./cypress/markdownCommands": "./cypress/markdownCommands.ts",
     "./cypress/tsconfig.json": "./cypress/tsconfig.json",
     "./package.json": "./package.json"
   },

@@ -1,6 +1,7 @@
 import { Node, nodeInputRule } from '@tiptap/core'
 
 import { captionAttribute } from '../../caption'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import { layoutAttrDefaults, resolveEmbedLayoutDimensions } from '../../utils/embedKit'
 import {
   createHtmlMediaNodeView,
@@ -58,6 +59,8 @@ const VIDEO_MEDIA_CONFIG: HtmlMediaNodeConfig = {
 export const Video = Node.create<VideoOptions>({
   name: 'video',
   draggable: true,
+
+  ...createTypedMediaMarkdownHooks('video', { withDimensions: true }),
 
   addOptions() {
     return {

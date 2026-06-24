@@ -6,9 +6,7 @@ Renders `<audio>` elements as a block or inline node.
 
 ## Install
 
-```bash
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
+```sh
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -188,10 +186,11 @@ editor.commands.setAudio({
 
 ## Markdown syntax
 
-```md
-![audio](src width height)
+With `@tiptap/markdown` loaded:
 
+```md
 ![audio](https://example.com/foobar.mp3)
+![audio](https://example.com/foobar.mp3 width=640 height=80)
 ```
 
 ## Source code

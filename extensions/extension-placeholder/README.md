@@ -20,8 +20,6 @@ Tiptap's built-in Placeholder rescans the whole document (`doc.descendants`) on 
 ## Install
 
 ```sh
-bun add @docs.plus/extension-placeholder@next
-# stable, after promotion:
 bun add @docs.plus/extension-placeholder
 ```
 
@@ -99,7 +97,7 @@ Exports: `Placeholder` (default), `PlaceholderOptions`, `PlaceholderRenderProps`
 
 ## Family
 
-Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 

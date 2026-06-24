@@ -2,6 +2,7 @@ import { Node, nodeInputRule } from '@tiptap/core'
 
 import { captionAttribute } from '../../caption'
 import { AUDIO_LAYOUT_FALLBACK } from '../../loading'
+import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import { layoutAttrDefaults } from '../../utils/embedKit'
 import {
   createHtmlMediaNodeView,
@@ -60,6 +61,8 @@ const AUDIO_MEDIA_CONFIG: HtmlMediaNodeConfig = {
 export const Audio = Node.create<AudioOptions>({
   name: 'audio',
   draggable: true,
+
+  ...createTypedMediaMarkdownHooks('audio', { withDimensions: true }),
 
   addOptions() {
     return {

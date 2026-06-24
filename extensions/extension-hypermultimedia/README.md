@@ -20,8 +20,6 @@ One kit call configures all eight nodes. Each media node gets a hover toolbar in
 ## Install
 
 ```sh
-bun add @docs.plus/extension-hypermultimedia@next
-# stable, after promotion:
 bun add @docs.plus/extension-hypermultimedia
 ```
 
@@ -49,7 +47,24 @@ new Editor({
 })
 ```
 
-Markdown image import/export lives on the `image` node — no separate extension. With a Markdown extension loaded, `![alt](src)` round-trips.
+## Markdown import/export
+
+With `@tiptap/markdown` loaded, every media node round-trips through typed `![alt](src)` syntax. Use the node name as the alt literal for non-image media:
+
+| Node         | Import / export syntax                                      |
+| ------------ | ----------------------------------------------------------- |
+| `image`      | `![alt text](src)` — caption is not exported                |
+| `audio`      | `![audio](src)` — optional `width=N height=N` after the URL |
+| `video`      | `![video](src)` — optional `width=N height=N`               |
+| `youtube`    | `![youtube](src)`                                           |
+| `vimeo`      | `![vimeo](src)`                                             |
+| `soundcloud` | `![soundcloud](src)`                                        |
+| `loom`       | `![loom](src)`                                              |
+| `x`          | `![x](src)`                                                 |
+
+Reserved alts (`audio`, `video`, `youtube`, …) route to the matching node even when a GFM image token would otherwise create an `image` node. Provider URLs in `[label](url)` link syntax stay hyperlinks; only the typed `![…](url)` form creates embed nodes. Pasting a bare media URL uses extension paste handlers (embed node); a bare URL line in a `.md` file does not become an embed unless you use typed `![…](url)` syntax or paste the URL directly.
+
+Per-node markdown details: [Nodes](#nodes) → each node's README.
 
 ## Options
 
@@ -126,16 +141,16 @@ The shimmer and spinner animations are disabled under `prefers-reduced-motion: r
 
 ## Nodes
 
-| Node         | Embeds               | Docs                                                                                                                     |
-| ------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `image`      | images (+ markdown)  | [image](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/image)           |
-| `audio`      | audio files          | [audio](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/audio)           |
-| `video`      | video files          | [video](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/video)           |
-| `youtube`    | YouTube videos       | [youtube](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/youtube)       |
-| `vimeo`      | Vimeo videos         | [vimeo](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/vimeo)           |
-| `soundcloud` | SoundCloud audio     | [soundcloud](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/soundcloud) |
-| `x`          | X (formerly Twitter) | [x](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/x)                   |
-| `loom`       | Loom recordings      | [loom](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/loom)             |
+| Node         | Embeds                        | Docs                                                                                                                     |
+| ------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `image`      | images (+ markdown)           | [image](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/image)           |
+| `audio`      | audio files (+ markdown)      | [audio](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/audio)           |
+| `video`      | video files (+ markdown)      | [video](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/video)           |
+| `youtube`    | YouTube videos (+ markdown)   | [youtube](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/youtube)       |
+| `vimeo`      | Vimeo videos (+ markdown)     | [vimeo](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/vimeo)           |
+| `soundcloud` | SoundCloud audio (+ markdown) | [soundcloud](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/soundcloud) |
+| `x`          | X / Twitter (+ markdown)      | [x](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/x)                   |
+| `loom`       | Loom recordings (+ markdown)  | [loom](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/loom)             |
 
 ### Gallery
 
@@ -474,7 +489,7 @@ Definitions ship in `dist/`. Main exports: `HyperMultimediaKit`, per-node extens
 
 ## Family
 
-Sibling packages and `@next` install policy: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
 
 ## Contributing
 
