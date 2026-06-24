@@ -129,6 +129,40 @@ export const ghostCleanupAnonymousSchema = z.object({
 })
 
 // =============================================================================
+// Media Storage Audit
+// =============================================================================
+
+export const workspaceMediaStorageStatSchema = z.object({
+  workspace_id: z.string(),
+  slug: z.string().nullable(),
+  name: z.string().nullable(),
+  total_bytes: z.number(),
+  object_count: z.number(),
+  quota_bytes: z.number(),
+  usage_percent: z.number()
+})
+
+export const workspaceMediaStorageSummarySchema = z.object({
+  total_bytes: z.number(),
+  total_objects: z.number(),
+  workspace_count: z.number(),
+  over_quota_count: z.number(),
+  quota_bytes: z.number()
+})
+
+export const mediaStorageQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).optional().default('1'),
+  limit: z.string().regex(/^\d+$/).optional().default('20'),
+  search: z.string().max(200).optional().default(''),
+  sortBy: z
+    .enum(['name', 'slug', 'object_count', 'total_bytes', 'quota_bytes', 'usage_percent'])
+    .optional()
+    .default('total_bytes'),
+  sortDir: z.enum(['asc', 'desc']).optional().default('desc'),
+  scope: z.enum(['page', 'all']).optional().default('page')
+})
+
+// =============================================================================
 // Export Types
 // =============================================================================
 
@@ -145,3 +179,6 @@ export type GhostDeleteInput = z.infer<typeof ghostDeleteSchema>
 export type GhostBulkDeleteInput = z.infer<typeof ghostBulkDeleteSchema>
 export type GhostResendInput = z.infer<typeof ghostResendSchema>
 export type GhostCleanupAnonymousInput = z.infer<typeof ghostCleanupAnonymousSchema>
+export type WorkspaceMediaStorageStat = z.infer<typeof workspaceMediaStorageStatSchema>
+export type WorkspaceMediaStorageSummary = z.infer<typeof workspaceMediaStorageSummarySchema>
+export type MediaStorageQuery = z.infer<typeof mediaStorageQuerySchema>

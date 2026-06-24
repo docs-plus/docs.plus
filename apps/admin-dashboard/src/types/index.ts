@@ -117,6 +117,38 @@ export interface TableSize {
   rows: number
 }
 
+export interface WorkspaceMediaStorageStat {
+  workspace_id: string
+  slug: string | null
+  name: string | null
+  total_bytes: number
+  object_count: number
+  quota_bytes: number
+  usage_percent: number
+}
+
+export interface WorkspaceMediaStorageSummary {
+  total_bytes: number
+  total_objects: number
+  workspace_count: number
+  over_quota_count: number
+  quota_bytes: number
+}
+
+export type MediaStorageSortBy =
+  | 'name'
+  | 'slug'
+  | 'object_count'
+  | 'total_bytes'
+  | 'quota_bytes'
+  | 'usage_percent'
+
+export interface MediaStorageListResponse {
+  summary: WorkspaceMediaStorageSummary
+  data: WorkspaceMediaStorageStat[]
+  pagination: PaginatedResponse<WorkspaceMediaStorageStat>['pagination']
+}
+
 export interface PushGatewayHealth {
   status: 'healthy' | 'degraded' | 'down'
   latency: number

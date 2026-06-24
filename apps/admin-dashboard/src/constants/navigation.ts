@@ -4,6 +4,7 @@ import {
   LuBell,
   LuFileText,
   LuGhost,
+  LuHardDrive,
   LuLayoutDashboard,
   LuMessageSquare,
   LuShieldAlert,
@@ -23,6 +24,7 @@ export const navItems: NavItem[] = [
   { href: '/documents', label: 'Documents', icon: LuFileText },
   { href: '/channels', label: 'Channels', icon: LuMessageSquare },
   { href: '/notifications', label: 'Notifications', icon: LuBell },
+  { href: '/storage', label: 'Media Storage', icon: LuHardDrive },
   { href: '/system', label: 'System', icon: LuActivity }
 ]
 

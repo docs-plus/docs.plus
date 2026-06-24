@@ -20,6 +20,8 @@ import type {
   GhostDeleteResult,
   GhostDeletionImpact,
   GhostSummary,
+  MediaStorageListResponse,
+  MediaStorageSortBy,
   NotificationHealth,
   NotificationStats,
   PaginatedResponse,
@@ -39,7 +41,8 @@ import type {
   UserLifecycleSegments,
   UserNotificationSubs,
   ViewsSummary,
-  ViewsTrendPoint
+  ViewsTrendPoint,
+  WorkspaceMediaStorageSummary
 } from '@/types'
 
 async function getAccessToken(): Promise<string> {
@@ -265,6 +268,51 @@ export async function fetchSupabaseStats(): Promise<SupabaseStats> {
 
 export async function fetchTableSizes(): Promise<TableSize[]> {
   return fetchApi('/api/admin/system/table-sizes')
+}
+
+export async function fetchMediaStorageSummary(): Promise<WorkspaceMediaStorageSummary> {
+  return fetchApi('/api/admin/audit/media-storage/summary')
+}
+
+function mediaStorageListParams(options?: {
+  page?: number
+  limit?: number
+  search?: string
+  sortBy?: MediaStorageSortBy
+  sortDir?: 'asc' | 'desc'
+  scope?: 'page' | 'all'
+}): URLSearchParams {
+  const params = new URLSearchParams({
+    page: String(options?.page ?? 1),
+    limit: String(options?.limit ?? 20),
+    scope: options?.scope ?? 'page'
+  })
+  if (options?.search) params.set('search', options.search)
+  if (options?.sortBy) params.set('sortBy', options.sortBy)
+  if (options?.sortDir) params.set('sortDir', options.sortDir)
+  return params
+}
+
+export async function fetchMediaStorageList(
+  page: number,
+  limit = 20,
+  options?: {
+    search?: string
+    sortBy?: MediaStorageSortBy
+    sortDir?: 'asc' | 'desc'
+  }
+): Promise<MediaStorageListResponse> {
+  const params = mediaStorageListParams({ page, limit, ...options, scope: 'page' })
+  return fetchApi(`/api/admin/audit/media-storage?${params.toString()}`)
+}
+
+export async function fetchMediaStorageExport(options?: {
+  search?: string
+  sortBy?: MediaStorageSortBy
+  sortDir?: 'asc' | 'desc'
+}): Promise<MediaStorageListResponse> {
+  const params = mediaStorageListParams({ ...options, scope: 'all', limit: 1, page: 1 })
+  return fetchApi(`/api/admin/audit/media-storage?${params.toString()}`)
 }
 
 export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {

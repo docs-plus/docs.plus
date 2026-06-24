@@ -11,9 +11,11 @@ import { Queue } from 'bullmq'
 
 import { adminLogger } from '../../lib/logger'
 import { createRedisConnection } from '../../lib/redis'
+import { mediaStorageQuerySchema } from '../../schemas/admin.schema'
 import type { AppContext } from '../../types/hono.types'
 import { toBullMQConnection } from '../../types/redis.types'
 import * as ghost from '../services/adminGhostAccounts.service'
+import * as mediaStorage from '../services/adminMediaStorage.service'
 import * as notificationFailures from '../services/adminNotificationFailures.service'
 import * as stale from '../services/adminStaleDocuments.service'
 import { getSupabaseClient } from '../utils/supabase'
@@ -90,6 +92,50 @@ export async function bulkDeleteStaleDocuments(c: AppContext) {
     adminLogger.error({ err: error }, 'Failed to bulk delete documents')
     return c.json({ error: 'Failed to delete documents' }, 500)
   }
+}
+
+// =============================================================================
+// Media Storage Audit
+// =============================================================================
+
+export async function getMediaStorageSummary(c: AppContext) {
+  const supabase = getSupabaseClient()
+  if (!supabase) return c.json({ error: 'Supabase not configured' }, 500)
+
+  const result = await mediaStorage.getMediaStorageSummary(supabase)
+  if (result.status === 'error') {
+    adminLogger.error({ err: result.message }, 'Failed to get media storage summary')
+    return c.json({ error: 'Failed to fetch media storage summary' }, 500)
+  }
+
+  return c.json(result.data)
+}
+
+export async function listMediaStorage(c: AppContext) {
+  const supabase = getSupabaseClient()
+  if (!supabase) return c.json({ error: 'Supabase not configured' }, 500)
+
+  const query = mediaStorageQuerySchema.parse({
+    page: c.req.query('page'),
+    limit: c.req.query('limit'),
+    search: c.req.query('search'),
+    sortBy: c.req.query('sortBy'),
+    sortDir: c.req.query('sortDir'),
+    scope: c.req.query('scope')
+  })
+  const result = await mediaStorage.listMediaStorage(supabase, query)
+
+  if (result.status === 'error') {
+    adminLogger.error({ err: result.message }, 'Failed to list media storage')
+    const status = result.message.includes('Export exceeds') ? 400 : 500
+    return c.json({ error: result.message }, status)
+  }
+
+  return c.json({
+    summary: result.summary,
+    data: result.data,
+    pagination: result.pagination
+  })
 }
 
 // =============================================================================

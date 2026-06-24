@@ -14,6 +14,7 @@ import {
   ghostCleanupAnonymousSchema,
   ghostResendSchema,
   listDocumentsQuerySchema,
+  mediaStorageQuerySchema,
   paginationQuerySchema,
   staleDocumentsQuerySchema,
   trendQuerySchema,
@@ -168,6 +169,18 @@ admin.post(
   '/documents/stale/bulk-delete',
   zValidator('json', bulkDeleteSchema),
   adminController.bulkDeleteStaleDocuments
+)
+
+// =============================================================================
+// Media Storage Audit
+// =============================================================================
+
+admin.get('/audit/media-storage/summary', adminController.getMediaStorageSummary)
+
+admin.get(
+  '/audit/media-storage',
+  zValidator('query', mediaStorageQuerySchema),
+  adminController.listMediaStorage
 )
 
 // =============================================================================
