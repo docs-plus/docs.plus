@@ -13,21 +13,50 @@ import * as localStorage from '../../lib/storage/storage.local'
 import * as S3Storage from '../../lib/storage/storage.s3'
 import { checkEnvBoolean } from '../../utils'
 
-// Allowed file types (MIME types)
+// Allowed upload MIME types. MUST stay a superset of the chat media allowlist
+// (apps/webapp .../chatMediaMime.ts CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase
+// scripts/12-buckets.sql) so "copy chat media to document" can re-host any chat
+// attachment here — including voice notes (audio/webm), heic/bmp images, mov/mkv
+// video, and office docs / archives (inserted as download links).
 const ALLOWED_MIME_TYPES = [
+  // images
   'image/jpeg',
   'image/jpg',
   'image/png',
   'image/gif',
   'image/webp',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
   'image/svg+xml',
+  // video
   'video/mp4',
   'video/webm',
+  'video/quicktime',
   'video/ogg',
+  'video/x-matroska',
+  // audio
   'audio/mpeg',
-  'audio/ogg',
+  'audio/webm',
   'audio/wav',
-  'application/pdf'
+  'audio/ogg',
+  'audio/mp4',
+  'audio/aac',
+  'audio/flac',
+  'audio/opus',
+  // documents + archives
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'text/markdown',
+  'application/json',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/zip'
 ]
 
 export const getMedia = async (documentId: string, mediaId: string, c: Context) => {
@@ -59,7 +88,7 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
     if (!ALLOWED_MIME_TYPES.includes(mediaFile.type)) {
       mediaServiceLogger.warn({ documentId, mimeType: mediaFile.type }, 'Unsupported file type')
       throw new UnsupportedMediaTypeError(
-        `File type ${mediaFile.type} is not allowed. Allowed types: images, videos, audio, PDF`
+        `File type ${mediaFile.type} is not allowed. Allowed types: images, video, audio, documents, archives`
       )
     }
 
