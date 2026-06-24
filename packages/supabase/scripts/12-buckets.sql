@@ -108,30 +108,93 @@ create policy "User can delete own channel avatar" on storage.objects
 
 -- Media Files Bucket Configuration
 -- Purpose: Store various media files related to messages.
--- Max File Size: 2MB (2,097,152 bytes).
--- Allowed MIME Types: All file types.
+-- Max File Size: 10MB (10,485,760 bytes).
+-- Allowed MIME Types: explicit allowlist (keep in sync with apps/webapp chatMediaMime.ts).
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
-    ('media', 'media', true, 2097152, '{"*/*"}')
-on conflict (id) do nothing;
+    ('media', 'media', false, 10485760, array[
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/heic', 'image/heif',
+      'video/mp4', 'video/webm', 'video/quicktime', 'video/ogg', 'video/x-matroska',
+      'audio/mpeg', 'audio/webm', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/flac', 'audio/opus',
+      'application/pdf',
+      'text/plain', 'text/csv', 'text/markdown',
+      'application/json',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/zip'
+    ]::text[])
+on conflict (id) do update set
+    file_size_limit = excluded.file_size_limit,
+    public = excluded.public,
+    allowed_mime_types = excluded.allowed_mime_types;
 
--- Policies for Media Files Bucket.
--- SELECT scoped to the uploader (owner_id) matches the UPDATE/DELETE
--- policies below. Public URLs are still served by storage's HTTP
--- handler; the SELECT exists for the upload INSERT-then-readback.
+-- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
-create policy "Media files are publicly accessible" on storage.objects
+drop policy if exists "User can upload media files" on storage.objects;
+drop policy if exists "User can update own media files" on storage.objects;
+drop policy if exists "User can delete own media files" on storage.objects;
+drop policy if exists "Authed can read public channel chat media" on storage.objects;
+drop policy if exists "Channel members can read chat media" on storage.objects;
+drop policy if exists "Anon can read public channel chat media" on storage.objects;
+drop policy if exists "User can upload own channel chat media" on storage.objects;
+drop policy if exists "User can update own chat media" on storage.objects;
+drop policy if exists "User can delete own chat media" on storage.objects;
+
+create policy "Channel members can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and (select auth.uid())::text = owner_id
+        and exists (
+            select 1
+              from public.channel_members cm
+             where cm.channel_id = (storage.foldername(name))[2]
+               and cm.member_id = (select auth.uid())
+        )
     );
-drop policy if exists "User can upload media files" on storage.objects;
-create policy "User can upload media files" on storage.objects
-    for insert to authenticated with check (bucket_id = 'media');
-drop policy if exists "User can update own media files" on storage.objects;
-create policy "User can update own media files" on storage.objects
-    for update to authenticated using ((select auth.uid())::text = owner_id and bucket_id = 'media');
-drop policy if exists "User can delete own media files" on storage.objects;
-create policy "User can delete own media files" on storage.objects
-    for delete to authenticated using ((select auth.uid())::text = owner_id and bucket_id = 'media');
+
+create policy "Authed can read public channel chat media" on storage.objects
+    for select to authenticated using (
+        bucket_id = 'media'
+        and exists (
+            select 1
+              from public.channels c
+             where c.id = (storage.foldername(name))[2]
+               and c.type = 'PUBLIC'
+        )
+    );
+
+create policy "Anon can read public channel chat media" on storage.objects
+    for select to anon using (
+        bucket_id = 'media'
+        and exists (
+            select 1
+              from public.channels c
+             where c.id = (storage.foldername(name))[2]
+               and c.type = 'PUBLIC'
+        )
+    );
+
+create policy "User can upload own channel chat media" on storage.objects
+    for insert to authenticated with check (
+        bucket_id = 'media'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+        and exists (
+            select 1
+              from public.channel_members cm
+             where cm.channel_id = (storage.foldername(name))[2]
+               and cm.member_id = (select auth.uid())
+        )
+    );
+
+create policy "User can update own chat media" on storage.objects
+    for update to authenticated using (
+        bucket_id = 'media'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );
+
+create policy "User can delete own chat media" on storage.objects
+    for delete to authenticated using (
+        bucket_id = 'media'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );

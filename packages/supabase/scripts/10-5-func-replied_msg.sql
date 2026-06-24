@@ -7,17 +7,24 @@ CREATE OR REPLACE FUNCTION set_replied_message_preview()
 RETURNS TRIGGER AS $$
 DECLARE
     original_message_content TEXT;
+    original_medias JSONB;
+    original_type public.message_type;
     truncated_content TEXT;
 BEGIN
     -- Only proceed if this message is a reply
     IF NEW.reply_to_message_id IS NOT NULL THEN
         -- Retrieve the content of the original message, only if not deleted
-        SELECT content INTO original_message_content FROM public.messages
-        WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
+        SELECT content, medias, type
+          INTO original_message_content, original_medias, original_type
+          FROM public.messages
+         WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
 
         IF FOUND THEN
-            -- Truncate and set the replied_message_preview
-            truncated_content := truncate_content(original_message_content);
+            truncated_content := message_content_preview(
+                original_message_content,
+                original_medias,
+                original_type
+            );
             NEW.replied_message_preview := truncated_content;
         ELSE
             -- Original message does not exist or has been deleted
@@ -106,7 +113,7 @@ CREATE OR REPLACE FUNCTION update_channel_preview_on_new_message() RETURNS TRIGG
 DECLARE
     truncated_content TEXT;
 BEGIN
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
         UPDATE public.channels

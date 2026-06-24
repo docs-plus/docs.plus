@@ -26,6 +26,17 @@ select cron.schedule(
     $$ select internal.cleanup_push_subscriptions(); $$
 );
 
+-- Reclaims orphaned chat media: bucket objects with no live messages.medias
+-- reference, older than 24h. Function body lives in 10-3-func-message.sql.
+select cron.unschedule('cleanup-orphan-chat-media')
+from cron.job where jobname = 'cleanup-orphan-chat-media';
+
+select cron.schedule(
+    'cleanup-orphan-chat-media',
+    '30 3 * * *',
+    $$ select internal.cleanup_orphan_chat_media(interval '24 hours'); $$
+);
+
 -- Commented out: Delete read notifications
 -- This job would delete all notifications that have been read by users.
 -- Uncomment if you want to periodically clean up read notifications from the database.

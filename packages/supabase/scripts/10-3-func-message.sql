@@ -55,7 +55,7 @@ BEGIN
         IF OLD.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
             UPDATE public.channels
             SET last_message_preview = (
-                    SELECT truncate_content(m.content)
+                    SELECT message_content_preview(m.content, m.medias, m.type)
                     FROM public.messages m
                     WHERE m.channel_id = OLD.channel_id
                       AND m.deleted_at IS NULL
@@ -90,6 +90,7 @@ BEGIN
         -- NULL transition so subscribers prune locally. Payload is id +
         -- channel only; no content leak.
         IF OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL THEN
+            PERFORM internal.delete_chat_media_paths(OLD.medias);
             PERFORM realtime.send(
                 jsonb_build_object('id', NEW.id, 'channel_id', NEW.channel_id),
                 'message:deleted',
@@ -126,7 +127,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT;
 BEGIN
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- Update unread notification preview
     UPDATE public.notifications
@@ -152,9 +153,13 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION update_message_preview_on_edit() IS 'Updates message previews in various tables when a message is edited.';
 
 CREATE TRIGGER update_message_previews
-AFTER UPDATE OF content ON public.messages
+AFTER UPDATE OF content, medias, type ON public.messages
 FOR EACH ROW
-WHEN (OLD.content IS DISTINCT FROM NEW.content)
+WHEN (
+    OLD.content IS DISTINCT FROM NEW.content
+    OR OLD.medias IS DISTINCT FROM NEW.medias
+    OR OLD.type IS DISTINCT FROM NEW.type
+)
 EXECUTE FUNCTION update_message_preview_on_edit();
 
 COMMENT ON TRIGGER update_message_previews ON public.messages IS 'Updates message previews throughout the system when message content changes.';
@@ -168,9 +173,9 @@ COMMENT ON TRIGGER update_message_previews ON public.messages IS 'Updates messag
  */
 CREATE OR REPLACE FUNCTION update_message_edited_at() RETURNS TRIGGER AS $$
 BEGIN
-    -- Check if the content or html column has been updated
-    IF OLD.content IS DISTINCT FROM NEW.content OR OLD.html IS DISTINCT FROM NEW.html THEN
-        -- Update the edited_at timestamp
+    IF OLD.content IS DISTINCT FROM NEW.content
+        OR OLD.html IS DISTINCT FROM NEW.html
+        OR OLD.medias IS DISTINCT FROM NEW.medias THEN
         NEW.edited_at := NOW();
     END IF;
 
@@ -181,7 +186,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION update_message_edited_at() IS 'Sets the edited_at timestamp when a message is edited.';
 
 CREATE TRIGGER set_message_edited_at
-BEFORE UPDATE OF content, html ON public.messages
+BEFORE UPDATE OF content, html, medias ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION update_message_edited_at();
 
@@ -323,3 +328,184 @@ $$;
 
 grant execute on function public.remove_reaction(uuid, text) to authenticated;
 revoke execute on function public.remove_reaction(uuid, text) from anon, public;
+
+create or replace function internal.normalize_chat_media_path(p_raw text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+    select case
+        when p_raw like 'http%' then
+            regexp_replace(p_raw, '^.+/storage/v1/object/(sign/)?public/media/', '')
+        else p_raw
+    end;
+$$;
+
+comment on function internal.normalize_chat_media_path(text) is
+'Strips signed/public storage URL prefixes to a bucket object path.';
+
+create or replace function internal.delete_chat_media_paths(p_medias jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    elem jsonb;
+    media_path text;
+begin
+    if p_medias is null or jsonb_typeof(p_medias) <> 'array' then
+        return;
+    end if;
+
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction for the GC below.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    for elem in select value from jsonb_array_elements(p_medias) as t(value)
+    loop
+        media_path := internal.normalize_chat_media_path(
+            coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+        );
+        if media_path is null or media_path = '' then
+            continue;
+        end if;
+
+        delete from storage.objects
+        where bucket_id = 'media'
+          and name = media_path;
+    end loop;
+end;
+$$;
+
+comment on function internal.delete_chat_media_paths(jsonb) is
+'Deletes chat media storage objects referenced by a messages.medias array.';
+
+revoke all on function internal.delete_chat_media_paths(jsonb) from public;
+grant execute on function internal.delete_chat_media_paths(jsonb) to service_role;
+
+create or replace function internal.cleanup_orphan_chat_media(p_older_than interval default interval '24 hours')
+returns integer
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    deleted_count integer := 0;
+begin
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction for the GC below.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    with orphan_objects as (
+        select o.name
+        from storage.objects o
+        where o.bucket_id = 'media'
+          and o.created_at < now() - p_older_than
+          and not exists (
+              select 1
+                from public.messages m
+                cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+               where m.deleted_at is null
+                 and internal.normalize_chat_media_path(
+                       coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+                     ) = o.name
+          )
+    )
+    delete from storage.objects o
+    using orphan_objects orphan
+    where o.bucket_id = 'media'
+      and o.name = orphan.name;
+
+    get diagnostics deleted_count = row_count;
+    return deleted_count;
+end;
+$$;
+
+comment on function internal.cleanup_orphan_chat_media(interval) is
+'Removes chat media bucket objects older than p_older_than with no live message reference.';
+
+revoke all on function internal.cleanup_orphan_chat_media(interval) from public;
+grant execute on function internal.cleanup_orphan_chat_media(interval) to service_role;
+
+create or replace function validate_message_medias()
+returns trigger as $$
+declare
+    elem jsonb;
+    media_path text;
+    expected_prefix text;
+    file_ext text;
+    blocked_exts text[] := array['exe','bat','cmd','com','msi','dll','scr','vbs','js','sh','app','dmg','jar','apk','svg'];
+    allowed_exts text[] := array[
+        'jpg','jpeg','png','gif','webp','bmp','heic','heif',
+        'mp4','webm','mov','m4v','mkv','ogv',
+        'mp3','wav','ogg','m4a','aac','flac','opus',
+        'pdf','txt','csv','md','markdown','json',
+        'doc','docx','xls','xlsx','ppt','pptx','zip'
+    ];
+begin
+    if new.medias is null then
+        return new;
+    end if;
+
+    if jsonb_typeof(new.medias) <> 'array' then
+        raise exception 'medias must be a JSON array';
+    end if;
+
+    if jsonb_array_length(new.medias) > 10 then
+        raise exception 'too many media attachments (max 10)';
+    end if;
+
+    expected_prefix := new.user_id::text || '/' || new.channel_id || '/';
+
+    for elem in select value from jsonb_array_elements(new.medias) as t(value)
+    loop
+        media_path := internal.normalize_chat_media_path(
+            coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+        );
+        if media_path is null or media_path = '' then
+            raise exception 'media item requires path or url';
+        end if;
+
+        if media_path not like expected_prefix || '%' then
+            raise exception 'invalid media path for message channel';
+        end if;
+
+        file_ext := lower(regexp_replace(media_path, '^.*\.([^.]+)$', '\1'));
+        if file_ext = media_path then
+            file_ext := '';
+        end if;
+
+        if file_ext = '' or not (file_ext = any (allowed_exts)) then
+            raise exception 'media file type is not allowed';
+        end if;
+
+        if file_ext = any (blocked_exts) then
+            raise exception 'media file type is not allowed';
+        end if;
+
+        if not exists (
+            select 1
+              from storage.objects o
+             where o.bucket_id = 'media'
+               and o.name = media_path
+        ) then
+            raise exception 'media object not found in storage';
+        end if;
+    end loop;
+
+    return new;
+end;
+$$ language plpgsql;
+
+comment on function validate_message_medias() is
+'Ensures messages.medias paths belong to the sender/channel, pass allowlist, exist in storage, and cap at 10.';
+
+drop trigger if exists validate_message_medias on public.messages;
+create trigger validate_message_medias
+before insert or update of medias on public.messages
+for each row
+execute function validate_message_medias();
+
+alter function public.validate_message_medias() set search_path = public, storage;

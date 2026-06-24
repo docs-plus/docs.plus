@@ -124,7 +124,7 @@ begin
         mb.marked_at as bookmark_marked_at,
         mb.metadata as bookmark_metadata,
         m.id as message_id,
-        m.content as message_content,
+        message_content_preview(m.content, m.medias, m.type) as message_content,
         m.html as message_html,
         m.created_at as message_created_at,
         m.user_id as message_user_id,

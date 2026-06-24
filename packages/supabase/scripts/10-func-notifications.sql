@@ -36,7 +36,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) For each mentioned username, attempt to create a notification.
     --    Anchored regex prevents `@al` from matching `alice`/`alpha`.
@@ -138,10 +138,7 @@ BEGIN
     END IF;
 
     -- Truncate content for preview
-    truncated_content := CASE
-        WHEN length(NEW.content) > 100 THEN substring(NEW.content, 1, 100) || '...'
-        ELSE NEW.content
-    END;
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- Create the reply notification
     INSERT INTO public.notifications (
@@ -208,7 +205,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) Check for an actual @everyone token (not a substring inside
     --    something like `@everyone_team`).
@@ -289,7 +286,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
     INSERT INTO public.notifications (
