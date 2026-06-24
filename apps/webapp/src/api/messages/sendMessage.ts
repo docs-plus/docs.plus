@@ -13,6 +13,8 @@ export interface SendMessageArgs {
   user_id: TMsgRow['user_id']
   html: TMsgRow['html']
   reply_to_message_id?: TMsgRow['reply_to_message_id']
+  medias?: TMsgRow['medias']
+  type?: TMsgRow['type']
 }
 
 export const sendMessage = async (args: SendMessageArgs) =>
@@ -24,7 +26,9 @@ export const sendMessage = async (args: SendMessageArgs) =>
       channel_id: args.channel_id,
       user_id: args.user_id,
       html: args.html,
-      reply_to_message_id: args.reply_to_message_id ?? null
+      reply_to_message_id: args.reply_to_message_id ?? null,
+      ...(Array.isArray(args.medias) && args.medias.length > 0 ? { medias: args.medias } : {}),
+      ...(args.type != null ? { type: args.type } : {})
     })
     .select()
     .returns<TMsgRow[]>()

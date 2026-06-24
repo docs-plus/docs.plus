@@ -21,6 +21,11 @@ type Props = { variant: keyof ChatroomVariant }
 
 type FormatButtonProps = { size: number; className?: string }
 
+const TOOLBAR_BTN = 'btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0'
+
+// Media actions (attach / GIF / voice) live only in the always-visible composer
+// input row (ComposerBar); the formatting toolbar is text-formatting only so the
+// controls aren't duplicated when the toolbar is expanded.
 const FORMAT_GROUPS: ComponentType<FormatButtonProps>[][] = [
   [BoldButton, ItalicButton, StrikethroughButton],
   [HyperlinkButton, BulletListButton, OrderedListButton],
@@ -39,11 +44,7 @@ function FormatButtonGroups() {
           {groupIndex > 0 && <ToolbarDivider className="mx-1 h-5 w-px shrink-0 self-center" />}
           <div className="flex items-center gap-0.5">
             {group.map((Button, index) => (
-              <Button
-                key={formatButtonKey(Button, index)}
-                size={18}
-                className="btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0"
-              />
+              <Button key={formatButtonKey(Button, index)} size={18} className={TOOLBAR_BTN} />
             ))}
           </div>
         </Fragment>
@@ -63,11 +64,7 @@ export function FormattingToolbar({ variant }: Props) {
       {variant === 'mobile' ? (
         <div className="hide-scrollbar flex flex-1 snap-x snap-mandatory items-center gap-1 overflow-x-auto">
           {FORMAT_GROUPS.flat().map((Button, index) => (
-            <Button
-              key={formatButtonKey(Button, index)}
-              size={18}
-              className="btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0"
-            />
+            <Button key={formatButtonKey(Button, index)} size={18} className={TOOLBAR_BTN} />
           ))}
         </div>
       ) : (

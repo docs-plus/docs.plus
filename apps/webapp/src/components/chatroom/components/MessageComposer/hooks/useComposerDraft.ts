@@ -43,7 +43,9 @@ export const useComposerDraft = ({
     getComposerState(workspaceId, channelId)
       .then((draft: ComposerState | null) => {
         if (cancelled) return
-        const hasDraft = Boolean(draft?.text?.trim() || draft?.html?.trim())
+        const hasDraft = Boolean(
+          draft?.text?.trim() || draft?.html?.trim() || (draft?.attachments?.length ?? 0) > 0
+        )
         if (!hasDraft) return
         if (draft?.html) {
           if (isMobile) editor.commands.setContent(draft.html)

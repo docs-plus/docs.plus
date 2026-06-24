@@ -1,5 +1,6 @@
 export * from './Breadcrumb'
 export * from './CloseButton'
+export * from './MediaFilterToggle'
 export * from './NotificationToggle'
 export * from './ParticipantsList'
 export * from './ShareButton'

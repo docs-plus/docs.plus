@@ -22,6 +22,7 @@ export const SendButton = ({ className, size = 18, onPointerDown, ...props }: Pr
       )}
       disabled={!canSend}
       type="submit"
+      data-testid="composer-submit"
       onPress={submitMessage}
       onPointerDown={(e) => {
         if (isMobile) e.preventDefault()

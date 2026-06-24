@@ -120,11 +120,7 @@ const Editor = ({
       nested: true
     }),
 
-    Markdown.configure({
-      markedOptions: {
-        tokenizer: { html: () => undefined }
-      } as Record<string, unknown>
-    }),
+    Markdown,
 
     TitleDocument,
 

@@ -2,6 +2,7 @@ import {
   readFormattingToolbarExpanded,
   writeFormattingToolbarExpanded
 } from '@components/chatroom/components/MessageComposer/helpers/composerToolbarSession'
+import { composerSendGate } from '@components/chatroom/utils/composerSendGate'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
 import type { TChannelSettings } from '@types'
@@ -12,6 +13,7 @@ import { twMerge } from 'tailwind-merge'
 import { useChatroomContext } from '../../ChatroomContext'
 import {
   Actions,
+  AttachButton,
   EmojiButton,
   MentionButton,
   SendButton,
@@ -36,7 +38,13 @@ import {
   StrikethroughButton,
   Toolbar
 } from './components/Toolbar'
+import {
+  type ComposerAttachmentActions,
+  ComposerAttachmentActionsContext
+} from './context/ComposerAttachmentActionsContext'
 import { MessageComposerContext } from './context/MessageComposerContext'
+import { useComposerAttachmentLifecycle } from './hooks/useComposerAttachmentLifecycle'
+import { useComposerAttachments } from './hooks/useComposerAttachments'
 import { useComposerDraft } from './hooks/useComposerDraft'
 import { useComposerSubmit } from './hooks/useComposerSubmit'
 import { useTiptapEditor } from './hooks/useTiptapEditor'
@@ -65,11 +73,13 @@ const MessageComposer = ({
 
   const {
     editor,
+    html,
     text,
     isEmojiOnly,
     setIsEmojiOnly,
     cancelPendingEditorDraftCapture,
-    setDraftHydrated
+    setDraftHydrated,
+    draftHydrated
   } = useTiptapEditor({
     onSubmit: () => submitRef.current?.(),
     workspaceId,
@@ -85,6 +95,46 @@ const MessageComposer = ({
   ) as TChannelSettings | null
 
   const { replyMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
+
+  const {
+    attachments,
+    addFiles,
+    removeAttachment,
+    retryAttachment,
+    clearAttachments,
+    loadExistingAttachments,
+    flushRemovedPersistedStorage,
+    cancelEditAttachments,
+    hasUploadErrors,
+    isUploading,
+    readyAttachmentCount,
+    getReadyAttachments,
+    toggleAttachmentSpoiler
+  } = useComposerAttachments({
+    workspaceId,
+    channelId,
+    userId: user?.id
+  })
+
+  useComposerAttachmentLifecycle({
+    workspaceId,
+    channelId,
+    userId: user?.id,
+    editor,
+    editorRef,
+    attachments,
+    addFiles,
+    clearAttachments,
+    loadExistingAttachments,
+    cancelEditAttachments,
+    text,
+    html,
+    draftHydrated,
+    replyMessageMemory,
+    editMessageMemory,
+    commentMessageMemory,
+    isMobile
+  })
 
   useComposerDraft({
     editor,
@@ -116,7 +166,12 @@ const MessageComposer = ({
     setEditMsgMemory,
     setCommentMsgMemory,
     cancelPendingEditorDraftCapture,
-    keepKeyboardAfterSubmit: isMobile
+    keepKeyboardAfterSubmit: isMobile,
+    getReadyAttachments,
+    clearAttachments,
+    flushRemovedPersistedStorage,
+    isUploadingAttachments: isUploading,
+    hasUploadErrors
   })
 
   useEffect(() => {
@@ -124,13 +179,6 @@ const MessageComposer = ({
       void submitMessage()
     }
   }, [submitMessage])
-
-  useEffect(() => {
-    const host = editorRef.current?.querySelector('.ProseMirror')
-    if (!(host instanceof HTMLElement)) return
-    host.setAttribute('inputmode', 'text')
-    host.setAttribute('enterkeyhint', isMobile ? 'enter' : 'send')
-  }, [editor, isMobile])
 
   useEffect(() => {
     if (!isMobile || !editor) return
@@ -180,7 +228,24 @@ const MessageComposer = ({
   // Keeps the context value identity stable across keystrokes that don't
   // transition empty <-> non-empty, killing the typing-cadence rerender cascade
   // through the composer subtree.
-  const canSend = text.trim().length > 0
+  const canSend = composerSendGate({
+    text,
+    readyAttachmentCount,
+    editMessageMemory,
+    isUploading,
+    hasUploadErrors
+  })
+
+  const attachmentActions = useMemo<ComposerAttachmentActions>(
+    () => ({
+      addFiles,
+      removeAttachment,
+      retryAttachment,
+      clearAttachments,
+      toggleAttachmentSpoiler
+    }),
+    [addFiles, removeAttachment, retryAttachment, clearAttachments, toggleAttachmentSpoiler]
+  )
 
   const contextValue = useMemo(
     () => ({
@@ -217,9 +282,11 @@ const MessageComposer = ({
   )
 
   return (
-    <MessageComposerContext.Provider value={contextValue}>
-      <div className={twMerge('flex flex-col', className)}>{children}</div>
-    </MessageComposerContext.Provider>
+    <ComposerAttachmentActionsContext.Provider value={attachmentActions}>
+      <MessageComposerContext.Provider value={contextValue}>
+        <div className={twMerge('flex flex-col', className)}>{children}</div>
+      </MessageComposerContext.Provider>
+    </ComposerAttachmentActionsContext.Provider>
   )
 }
 
@@ -241,6 +308,7 @@ MessageComposer.ReplyContext = ReplyContext
 MessageComposer.EditContext = EditContext
 MessageComposer.CommentContext = CommentContext
 MessageComposer.Actions = Actions
+MessageComposer.AttachButton = AttachButton
 MessageComposer.EmojiButton = EmojiButton
 MessageComposer.MentionButton = MentionButton
 MessageComposer.SendButton = SendButton

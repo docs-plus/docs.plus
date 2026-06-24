@@ -6,6 +6,7 @@ import {
   CopyLinkAction,
   CopyToDocAction,
   DeleteAction,
+  DownloadAction,
   EditAction,
   EmojiReactionButton,
   GroupAuth,
@@ -45,6 +46,7 @@ MessageActions.CopyLink = CopyLinkAction
 
 // MoreActionsDropdown
 MessageActions.CopyToDoc = CopyToDocAction
+MessageActions.Download = DownloadAction
 MessageActions.Delete = DeleteAction
 MessageActions.Edit = EditAction
 MessageActions.ReadStatus = ReadStatusDisplay

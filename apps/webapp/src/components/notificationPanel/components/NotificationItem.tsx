@@ -9,6 +9,7 @@ import PubSub from 'pubsub-js'
 import { LuLink, LuTriangleAlert } from 'react-icons/lu'
 
 import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
+import { NotificationAttachmentHint } from './NotificationAttachmentHint'
 import NotificationIcon from './NotificationIcon'
 
 const isSystemNotification = (notification: any): boolean =>
@@ -100,9 +101,12 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
                 {isSystem ? 'System' : notification.sender?.display_name}
               </span>
             </p>
-            <p className="bg-base-200 text-base-content/70 line-clamp-2 w-full rounded-lg px-2 py-1 text-sm">
-              {notification.message_preview}
-            </p>
+            <div className="flex w-full min-w-0 items-start gap-2">
+              <NotificationAttachmentHint preview={notification.message_preview} />
+              <p className="bg-base-200 text-base-content/70 line-clamp-2 min-w-0 flex-1 rounded-lg px-2 py-1 text-sm">
+                {notification.message_preview}
+              </p>
+            </div>
           </div>
           {!isSystem && (
             <Button

@@ -1,6 +1,14 @@
 import { fetchChannelInitialData } from '@api'
 import type { ChatItem, MessageItem, MessageRow } from '@components/chatroom/types/chat-items'
 import { isMessage } from '@components/chatroom/types/chat-items'
+import {
+  type ChannelFeedMode,
+  feedCatchupRpc,
+  isMediaOnlyFeedMode,
+  messageHasMedia,
+  messageItemVisibleInFeed,
+  shouldIncludeMessageInFeed
+} from '@components/chatroom/utils/channelFeedProjection'
 import { useChatStore } from '@stores'
 import { supabaseClient } from '@utils/supabase'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
@@ -35,6 +43,7 @@ export type ChannelRealtimeArgs = {
   currentUserId: string | null
   currentUsername: string | null
   onBufferedArrival: (delta: BufferedArrival) => void
+  feedMode?: ChannelFeedMode
 }
 
 export const useChannelRealtime = ({
@@ -44,8 +53,11 @@ export const useChannelRealtime = ({
   dataIncludesTailRef,
   currentUserId,
   currentUsername,
-  onBufferedArrival
+  onBufferedArrival,
+  feedMode = 'all'
 }: ChannelRealtimeArgs) => {
+  const feedModeRef = useRef(feedMode)
+  feedModeRef.current = feedMode
   const arrivalBufferRef = useRef<Map<string, MessageItem>>(new Map())
   const updateBufferRef = useRef<Map<string, MessageItem>>(new Map())
   const deleteBufferRef = useRef<Set<string>>(new Set())
@@ -107,6 +119,10 @@ export const useChannelRealtime = ({
       detachedBufferRef.current = []
 
       for (const item of updates) {
+        if (!messageItemVisibleInFeed(item, feedModeRef.current)) {
+          listRef.current?.data.findAndDelete((i: ChatItem) => isMessage(i) && i.id === item.id)
+          continue
+        }
         listRef.current?.data.map((i) => {
           if (isMessage(i) && i.id === item.id) {
             return { ...item, row: mergeRowPreservingComputedColumns(item.row, i.row) }
@@ -118,7 +134,10 @@ export const useChannelRealtime = ({
         listRef.current?.data.findAndDelete((i: ChatItem) => isMessage(i) && i.id === id)
       }
 
-      const sorted = arrivals.slice().sort((a, b) => (a.seq ?? Infinity) - (b.seq ?? Infinity))
+      const sorted = arrivals
+        .slice()
+        .sort((a, b) => (a.seq ?? Infinity) - (b.seq ?? Infinity))
+        .filter((item) => messageItemVisibleInFeed(item, feedModeRef.current))
 
       if (dataIncludesTailRef.current) {
         for (const item of sorted) {
@@ -244,13 +263,15 @@ export const useChannelRealtime = ({
       let sinceLocal = newestSeqRef.current
       for (let page = 0; page < MAX_PAGES; page++) {
         if (!mountedRef.current) return
-        const { data, error } = await supabaseClient.rpc('fetch_messages_since', {
+        const catchupRpc = feedCatchupRpc(feedModeRef.current)
+        const { data, error } = await supabaseClient.rpc(catchupRpc, {
           p_channel_id: channelId,
           p_since_seq: sinceLocal,
           p_limit: CATCHUP_PAGE
         })
         if (error || !data || !Array.isArray(data) || data.length === 0) return
         for (const row of data) {
+          if (!shouldIncludeMessageInFeed(row, feedModeRef.current)) continue
           const item: MessageItem = {
             kind: 'message',
             id: row.id,
@@ -288,6 +309,7 @@ export const useChannelRealtime = ({
         },
         (payload: any) => {
           const row = payload.new
+          if (!shouldIncludeMessageInFeed(row, feedModeRef.current)) return
           const item: MessageItem = {
             kind: 'message',
             id: row.id,
@@ -317,7 +339,9 @@ export const useChannelRealtime = ({
         (payload: any) => {
           const row = payload.new
           if (row.deleted_at) deleteBufferRef.current.add(row.id)
-          else
+          else if (!messageHasMedia(row) && isMediaOnlyFeedMode(feedModeRef.current)) {
+            deleteBufferRef.current.add(row.id)
+          } else
             updateBufferRef.current.set(row.id, {
               kind: 'message',
               id: row.id,

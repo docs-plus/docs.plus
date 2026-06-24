@@ -60,6 +60,7 @@ import {
   LuMessageSquarePlus,
   LuMessageSquareText,
   LuMessagesSquare,
+  LuMic,
   LuMinus,
   LuMusic,
   LuPencil,
@@ -191,6 +192,7 @@ export const Icons = {
   // ── Media / Lifestyle ────────────────────────────────────
   calendar: LuCalendar,
   mapPin: LuMapPin,
+  mic: LuMic,
   music: LuMusic,
   tv: LuTv,
 

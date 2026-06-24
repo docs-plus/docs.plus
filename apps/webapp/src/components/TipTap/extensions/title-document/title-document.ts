@@ -1,3 +1,4 @@
+import type { JSONContent, MarkdownRendererHelpers } from '@tiptap/core'
 import { Node } from '@tiptap/core'
 import { Fragment, Slice } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -20,6 +21,11 @@ export const TitleDocument = Node.create({
   name: 'doc',
   topNode: true,
   content: 'heading block*',
+
+  renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers) => {
+    if (!node.content?.length) return ''
+    return helpers.renderChildren(node.content, '\n\n')
+  },
 
   addProseMirrorPlugins() {
     return [

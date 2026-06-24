@@ -1,20 +1,35 @@
 import { archiveBookmark, markBookmarkAsRead, toggleMessageBookmark } from '@api'
+import { useMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
+import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
-import { type TBookmarkWithMessage } from '@types'
+import { type MessageMediaItem, type TBookmarkWithMessage } from '@types'
 import { formatTimeAgo } from '@utils/formatTime'
 import { buildBookmarkHref } from '@utils/link-helpers'
+import { GENERIC_ATTACHMENT_LABEL, messagePreviewText } from '@utils/messagePreview'
 import PubSub from 'pubsub-js'
 
 import { usePopoverState } from '../../ui/Popover'
 
 type BookmarkUrlSource = Pick<TBookmarkWithMessage, 'message_id' | 'message_channel_id'>
 
-export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
+function BookmarkMediaThumb({ media }: { media: MessageMediaItem }) {
+  const url = useMediaDisplayUrl(media)
+  if (!url) return null
+  return (
+    <img
+      src={url}
+      alt=""
+      className="border-base-300 size-10 shrink-0 rounded-md border object-cover"
+    />
+  )
+}
+
+export const BookmarkItem = ({ bookmark }: { bookmark: TBookmarkWithMessage }) => {
   const { bookmarkActiveTab, removeBookmark, updateBookmarkStatus, moveBookmarkBetweenTabs } =
     useChatStore((state) => state)
   const { headingId } = useChatStore((state) => state.chatRoom)
@@ -125,6 +140,10 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
     }
   }
 
+  const medias = parseMessageMedias(bookmark.message_medias)
+  const previewText = messagePreviewText(bookmark.message_content, medias, bookmark.message_type)
+  const thumbMedia = medias.find((media) => media.type === 'image') ?? null
+
   return (
     <div
       className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 my-2 flex w-full items-start gap-3 border p-3 transition-colors"
@@ -162,9 +181,12 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
               />
             </div>
           </div>
-          <p className="bg-base-200 text-base-content/70 w-full truncate rounded-lg p-2.5 text-sm">
-            {bookmark.message_content}
-          </p>
+          <div className="flex w-full items-center gap-2">
+            {thumbMedia ? <BookmarkMediaThumb media={thumbMedia} /> : null}
+            <p className="bg-base-200 text-base-content/70 min-w-0 flex-1 truncate rounded-lg p-2.5 text-sm">
+              {previewText || GENERIC_ATTACHMENT_LABEL}
+            </p>
+          </div>
         </div>
 
         <div className="mt-2 flex items-center gap-2">

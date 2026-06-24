@@ -23,6 +23,7 @@ import { useSendMessage } from './hooks/useSendMessage'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
+import type { ChannelFeedMode } from './utils/channelFeedProjection'
 import {
   MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS,
   scheduleMessageFlash,
@@ -58,8 +59,8 @@ export const ChatroomProvider: React.FC<{
   const [hasMention, setHasMention] = useState(false)
 
   const profile = useAuthStore((s) => s.profile)
-  const currentUserId = (profile as any)?.id ?? null
-  const currentUsername = (profile as any)?.username ?? null
+  const currentUserId = profile?.id ?? null
+  const currentUsername = profile?.username ?? null
 
   // Persisted unread for this channel, updated by the channel_members
   // realtime subscription in useCatchUserPresences and by SQL trigger +
@@ -83,6 +84,7 @@ export const ChatroomProvider: React.FC<{
     if (!deepLinkMessageId) return
     scheduleMessageFlash(flashMessage, deepLinkMessageId, MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS)
   }, [deepLinkMessageId])
+  const [feedMode, setFeedMode] = useState<ChannelFeedMode>('all')
   const {
     oldestSeqRef,
     newestSeqRef,
@@ -99,7 +101,8 @@ export const ChatroomProvider: React.FC<{
     anchorKind,
     anchorValue: deepLinkMessageId,
     onInitialVisible,
-    onListScrollSettled
+    onListScrollSettled,
+    feedMode
   })
 
   const handleBufferedArrival = useCallback((delta: BufferedArrival) => {
@@ -114,7 +117,8 @@ export const ChatroomProvider: React.FC<{
     dataIncludesTailRef,
     currentUserId,
     currentUsername,
-    onBufferedArrival: handleBufferedArrival
+    onBufferedArrival: handleBufferedArrival,
+    feedMode
   })
 
   const { advance } = useReadCursor(channelId)
@@ -131,6 +135,10 @@ export const ChatroomProvider: React.FC<{
   const jumpTo = useJumpTo(channelId, listRef, windowSeqRefs)
 
   useEffect(() => () => scrollFlashGate.invalidate(), [channelId, deepLinkMessageId])
+
+  useEffect(() => {
+    setFeedMode('all')
+  }, [channelId])
 
   useEffect(() => {
     return () => {
@@ -172,7 +180,8 @@ export const ChatroomProvider: React.FC<{
     listRef,
     dataIncludesTailRef,
     snapToPresent,
-    onAuthRequired
+    onAuthRequired,
+    feedMode
   })
 
   // AtBottomTracker fires `true` when the user is parked at the live
@@ -289,11 +298,10 @@ export const ChatroomProvider: React.FC<{
     }
   }, [newestSeqRef, snapToPresent])
 
-  const errorMsg = metadataError
-    ? metadataError instanceof Error
-      ? metadataError.message
-      : String(metadataError)
-    : null
+  let errorMsg: string | null = null
+  if (metadataError) {
+    errorMsg = metadataError instanceof Error ? metadataError.message : String(metadataError)
+  }
 
   // v1 `initLoadMessages` mapped to "data still loading"; v2 reads the
   // single metadata-loaded flag plus dataIncludesTailRef readiness.
@@ -326,7 +334,9 @@ export const ChatroomProvider: React.FC<{
       loadingOlder,
       loadNewer,
       loadingNewer,
-      currentUserId
+      currentUserId,
+      feedMode,
+      setFeedMode
     }),
     [
       channelId,
@@ -353,7 +363,8 @@ export const ChatroomProvider: React.FC<{
       loadingOlder,
       loadNewer,
       loadingNewer,
-      currentUserId
+      currentUserId,
+      feedMode
     ]
   )
 

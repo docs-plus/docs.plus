@@ -101,6 +101,12 @@ function isInsideCodeBlock(view: EditorView): boolean {
   return false
 }
 
+function selectionSpansDocument(view: EditorView): boolean {
+  const { from, to } = view.state.selection
+  const size = view.state.doc.content.size
+  return from <= 1 && to >= Math.max(0, size - 1)
+}
+
 export function createMarkdownPastePlugin(editor: Editor): Plugin {
   return new Plugin({
     key: new PluginKey('markdownPasteHandler'),
@@ -124,7 +130,17 @@ export function createMarkdownPastePlugin(editor: Editor): Plugin {
             editor.commands.insertContent({ type: 'text', text })
             return true
           }
-          editor.commands.insertContent(sanitizeJsonContent(json))
+
+          const sanitized = sanitizeJsonContent(json)
+          const fullDoc = selectionSpansDocument(view)
+
+          if (sanitized.type === 'doc' && sanitized.content && fullDoc) {
+            editor.commands.setContent(sanitized)
+          } else if (sanitized.type === 'doc' && sanitized.content) {
+            editor.commands.insertContent(sanitized.content)
+          } else {
+            editor.commands.insertContent(sanitized)
+          }
         } catch (error) {
           logger.warn('markdown-paste: parse/insert failed, falling back to plain text', { error })
           editor.commands.insertContent({ type: 'text', text })

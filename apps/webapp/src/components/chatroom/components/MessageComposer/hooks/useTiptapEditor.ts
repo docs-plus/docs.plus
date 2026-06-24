@@ -1,5 +1,5 @@
 import { getHyperlinkPopoverConfigAtInvoke } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
-import { syncComposerDraft } from '@db/messageComposerDB'
+import { getComposerState, syncComposerDraft } from '@db/messageComposerDB'
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
@@ -102,6 +102,11 @@ export const useTiptapEditor = ({
   const [isEmojiOnly, setIsEmojiOnly] = useState(false)
   const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftHydratedRef = useRef(false)
+  const [draftHydrated, setDraftHydratedState] = useState(false)
+  const setDraftHydrated = useCallback((hydrated: boolean) => {
+    draftHydratedRef.current = hydrated
+    setDraftHydratedState(hydrated)
+  }, [])
 
   const submitOnEnterRef = useRef(submitOnEnter)
   submitOnEnterRef.current = submitOnEnter
@@ -113,10 +118,6 @@ export const useTiptapEditor = ({
   useEffect(() => {
     draftCtxRef.current = { workspaceId, channelId }
   }, [workspaceId, channelId])
-
-  const setDraftHydrated = useCallback((hydrated: boolean) => {
-    draftHydratedRef.current = hydrated
-  }, [])
 
   const editor: Editor | null = useEditor(
     {
@@ -184,7 +185,13 @@ export const useTiptapEditor = ({
 
           const ctx = draftCtxRef.current
           if (draftHydratedRef.current && ctx.workspaceId && ctx.channelId) {
-            syncComposerDraft(ctx.workspaceId, ctx.channelId, { text, html })
+            void getComposerState(ctx.workspaceId, ctx.channelId).then((existing) => {
+              syncComposerDraft(ctx.workspaceId!, ctx.channelId!, {
+                text,
+                html,
+                attachments: existing?.attachments
+              })
+            })
           }
         }, UPDATE_DEBOUNCE_MS)
       },
@@ -274,6 +281,7 @@ export const useTiptapEditor = ({
     isEmojiOnly,
     setIsEmojiOnly,
     cancelPendingEditorDraftCapture,
-    setDraftHydrated
+    setDraftHydrated,
+    draftHydrated
   }
 }

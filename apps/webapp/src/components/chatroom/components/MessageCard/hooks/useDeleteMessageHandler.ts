@@ -7,8 +7,11 @@ export const useDeleteMessageHandler = () => {
   const deleteMessageHandler = useCallback(async (message: TMsgRow) => {
     if (!message) return
     const { error } = await deleteMessage(message.channel_id, message.id)
-    if (error) toast.Error('Message not deleted')
-    else toast.Success('Message deleted')
+    if (error) {
+      toast.Error('Message not deleted')
+      return
+    }
+    toast.Success('Message deleted')
   }, [])
 
   return { deleteMessageHandler }

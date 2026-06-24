@@ -6,7 +6,8 @@ const {
   X_SYNDICATION_HOSTS,
   X_CONNECT_HOSTS,
   IFRAME_EMBED_HOSTS,
-  GA_CONNECT_HOSTS
+  GA_CONNECT_HOSTS,
+  GIPHY_CONNECT_HOSTS
 } = require('./config/security/third-party-hosts')
 const isProduction = process.env.NODE_ENV === 'production'
 const isCoverageInstrumentation =
@@ -258,6 +259,7 @@ module.exports = withPWA({
         '*.githubusercontent.com',
         // Hypermultimedia X oEmbed + widgets.js follow-up requests
         ...X_CONNECT_HOSTS,
+        ...GIPHY_CONNECT_HOSTS,
         ...localUrls,
         ...envUrls,
         ...devUrls

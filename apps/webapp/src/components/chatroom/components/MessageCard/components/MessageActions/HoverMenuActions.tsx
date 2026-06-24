@@ -13,6 +13,7 @@ export const HoverMenuActions = () => {
       <HoverMenuDropdown
         tooltip="More Actions"
         trigger={<Icons.moreVertical size={18} className="text-base-content/60" />}>
+        <MessageCard.Actions.Download />
         <MessageCard.Actions.CopyToDoc />
         <MessageCard.Actions.CopyLink />
         <MessageCard.Actions.GroupAuth

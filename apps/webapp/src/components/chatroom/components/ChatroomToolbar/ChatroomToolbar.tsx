@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import {
   Breadcrumb,
   CloseButton,
+  MediaFilterToggle,
   NotificationToggle,
   ParticipantsList,
   ShareButton
@@ -41,3 +42,4 @@ ChatroomToolbar.ParticipantsList = ParticipantsList
 ChatroomToolbar.ShareButton = ShareButton
 ChatroomToolbar.NotificationToggle = NotificationToggle
 ChatroomToolbar.CloseButton = CloseButton
+ChatroomToolbar.MediaFilterToggle = MediaFilterToggle

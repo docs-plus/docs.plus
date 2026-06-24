@@ -1,4 +1,7 @@
+export * from './AttachButton'
 export * from './EmojiButton'
+export * from './GifPickerButton'
 export * from './MentionButton'
 export * from './SendButton'
 export * from './ToggleToolbarButton'
+export * from './VoiceNoteButton'

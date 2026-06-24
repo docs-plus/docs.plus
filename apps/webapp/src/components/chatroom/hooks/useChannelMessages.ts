@@ -1,6 +1,13 @@
 import type { ChatItem, MessageRow } from '@components/chatroom/types/chat-items'
 import { isDay, isMessage } from '@components/chatroom/types/chat-items'
 import {
+  type ChannelFeedMode,
+  feedCatchupRpc,
+  feedUsesTailAnchor,
+  feedWindowRpcBody,
+  isMediaOnlyFeedMode
+} from '@components/chatroom/utils/channelFeedProjection'
+import {
   type AnchorKind,
   buildItemsFromWindow,
   findMessageItemIndex,
@@ -18,6 +25,7 @@ export type ChannelMessagesArgs = {
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>
   anchorKind: AnchorKind
   anchorValue?: string | null
+  feedMode?: ChannelFeedMode
   /** Fires once after the initial replace measures so the read cursor can
    *  catch the bottom-most visible message before any user scroll. */
   onInitialVisible?: (index: number) => void
@@ -33,6 +41,7 @@ export const useChannelMessages = ({
   listRef,
   anchorKind,
   anchorValue,
+  feedMode = 'all',
   onInitialVisible,
   onListScrollSettled
 }: ChannelMessagesArgs) => {
@@ -47,124 +56,144 @@ export const useChannelMessages = ({
   const loadingOlderRef = useRef(false)
   const loadingNewerRef = useRef(false)
 
+  const mediaOnly = isMediaOnlyFeedMode(feedMode)
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    supabaseClient
-      .rpc('fetch_message_window', {
-        p_channel_id: channelId,
-        p_anchor_kind: anchorKind,
-        p_anchor_value: anchorValue ?? undefined,
-        p_before_limit: PAGE_LIMIT,
-        p_after_limit: PAGE_LIMIT
-      })
-      .then(({ data, error }) => {
+
+    const { rpc: windowRpc, body: windowBody } = feedWindowRpcBody(feedMode, {
+      kind: 'initial',
+      channelId,
+      anchorKind,
+      anchorValue,
+      pageLimit: PAGE_LIMIT
+    })
+
+    supabaseClient.rpc(windowRpc, windowBody).then(({ data, error }) => {
+      if (cancelled) return
+      if (error) {
+        console.warn(
+          mediaOnly
+            ? '[chatroom] fetch_media_message_window error:'
+            : '[chatroom] fetch_message_window error:',
+          error
+        )
+      }
+      if (error || !data) {
+        setLoading(false)
+        return
+      }
+      const win = parseWindow(data)
+      const buildAnchor = feedUsesTailAnchor(feedMode) ? 'tail' : anchorKind
+      const items = buildItemsFromWindow(win, channelId, buildAnchor)
+      const seqs = items
+        .filter(isMessage)
+        .map((m) => m.seq)
+        .filter((s): s is number => s != null)
+      oldestSeqRef.current = seqs.length ? Math.min(...seqs) : null
+      newestSeqRef.current = seqs.length ? Math.max(...seqs) : null
+      setHasMoreOlder(Boolean(win.has_more_before))
+      dataIncludesTailRef.current = mediaOnly ? true : !win.has_more_after
+      // Virtuoso mounts in a later commit than the Provider's effect;
+      // when the RPC resolves before that mount lands, listRef.current
+      // is still null and `data.replace` silently no-ops via the `?.`.
+      // Poll via rAF until the imperative handle attaches, then apply.
+      const apply = () => {
         if (cancelled) return
-        if (error) {
-          console.warn('[chatroom] fetch_message_window error:', error)
-        }
-        if (error || !data) {
-          setLoading(false)
+        const list = listRef.current
+        if (!list?.data) {
+          requestAnimationFrame(apply)
           return
         }
-        const win = parseWindow(data)
-        const items = buildItemsFromWindow(win, channelId, anchorKind)
-        const seqs = items
-          .filter(isMessage)
-          .map((m) => m.seq)
-          .filter((s): s is number => s != null)
-        oldestSeqRef.current = seqs.length ? Math.min(...seqs) : null
-        newestSeqRef.current = seqs.length ? Math.max(...seqs) : null
-        setHasMoreOlder(Boolean(win.has_more_before))
-        dataIncludesTailRef.current = !win.has_more_after
-        // Virtuoso mounts in a later commit than the Provider's effect;
-        // when the RPC resolves before that mount lands, listRef.current
-        // is still null and `data.replace` silently no-ops via the `?.`.
-        // Poll via rAF until the imperative handle attaches, then apply.
-        const apply = () => {
-          if (cancelled) return
-          const list = listRef.current
-          if (!list?.data) {
-            requestAnimationFrame(apply)
-            return
-          }
-          const initialLocation = resolveInitialLocation(win, anchorKind, channelId, items)
-          list.data.replace(items, { initialLocation, purgeItemSizes: true })
-          setLoading(false)
-          // Virtuoso's `align: 'end'` for `LAST` at `data.replace` time
-          // computes against items-only coords and ignores the StickyHeader
-          // slot height — initial scroll lands ~1 row short of the true
-          // tail. Re-issue scrollToItem once measurements settle; by then
-          // Virtuoso's math includes the header offset and lands flush.
-          // Gated by referential identity on tailLocation so anchored
-          // scrolls (first_unread sentinel, message_id deep-link) aren't
-          // hijacked to the tail.
-          if (initialLocation === tailLocation) {
-            let tailAttempt = 0
-            const settleTail = () => {
-              if (cancelled) return
-              const loc = listRef.current?.getScrollLocation?.()
-              const measured = loc && loc.scrollHeight > loc.visibleListHeight + 1
-              if (!measured && tailAttempt < 20) {
-                tailAttempt++
-                requestAnimationFrame(settleTail)
-                return
-              }
-              listRef.current?.scrollToItem({
-                index: 'LAST',
-                align: 'end',
-                behavior: 'instant'
-              })
+        const initialLocation = mediaOnly
+          ? tailLocation
+          : resolveInitialLocation(win, anchorKind, channelId, items)
+        list.data.replace(items, { initialLocation, purgeItemSizes: true })
+        setLoading(false)
+        // Virtuoso's `align: 'end'` for `LAST` at `data.replace` time
+        // computes against items-only coords and ignores the StickyHeader
+        // slot height — initial scroll lands ~1 row short of the true
+        // tail. Re-issue scrollToItem once measurements settle; by then
+        // Virtuoso's math includes the header offset and lands flush.
+        // Gated by referential identity on tailLocation so anchored
+        // scrolls (first_unread sentinel, message_id deep-link) aren't
+        // hijacked to the tail.
+        if (initialLocation === tailLocation) {
+          let tailAttempt = 0
+          const settleTail = () => {
+            if (cancelled) return
+            const loc = listRef.current?.getScrollLocation?.()
+            const measured = loc && loc.scrollHeight > loc.visibleListHeight + 1
+            if (!measured && tailAttempt < 20) {
+              tailAttempt++
+              requestAnimationFrame(settleTail)
+              return
             }
-            requestAnimationFrame(settleTail)
+            listRef.current?.scrollToItem({
+              index: 'LAST',
+              align: 'end',
+              behavior: 'instant'
+            })
           }
-          // `onScroll` is the read-cursor signal once the user moves, but
-          // it doesn't fire from a `data.replace`. Read the post-measure
-          // location off the imperative handle on the next frame to seed
-          // the cursor with the bottom-most fully-visible row.
-          if (onInitialVisible || onListScrollSettled) {
-            // Virtuoso measures items asynchronously after `data.replace`;
-            // the first rAF can fire with `scrollHeight === visibleListHeight`
-            // and a stale `lastVisibleItemIndex === 0` pointing at the day
-            // sentinel. Poll a handful of frames until the scroller has
-            // measured, then fire once with the settled index. Bounded so
-            // we never spin on a permanently-empty list.
-            let attempt = 0
-            const tryInitialFire = () => {
-              if (cancelled) return
-              const loc = listRef.current?.getScrollLocation?.()
-              const measured = loc && loc.scrollHeight > loc.visibleListHeight + 1
-              if (!measured && attempt < 20) {
-                attempt++
-                requestAnimationFrame(tryInitialFire)
-                return
-              }
-              if (loc && typeof loc.lastVisibleItemIndex === 'number') {
-                onInitialVisible?.(loc.lastVisibleItemIndex)
-              }
-              onListScrollSettled?.()
-            }
-            requestAnimationFrame(tryInitialFire)
-          }
+          requestAnimationFrame(settleTail)
         }
-        apply()
-      })
+        // `onScroll` is the read-cursor signal once the user moves, but
+        // it doesn't fire from a `data.replace`. Read the post-measure
+        // location off the imperative handle on the next frame to seed
+        // the cursor with the bottom-most fully-visible row.
+        if (onInitialVisible || onListScrollSettled) {
+          // Virtuoso measures items asynchronously after `data.replace`;
+          // the first rAF can fire with `scrollHeight === visibleListHeight`
+          // and a stale `lastVisibleItemIndex === 0` pointing at the day
+          // sentinel. Poll a handful of frames until the scroller has
+          // measured, then fire once with the settled index. Bounded so
+          // we never spin on a permanently-empty list.
+          let attempt = 0
+          const tryInitialFire = () => {
+            if (cancelled) return
+            const loc = listRef.current?.getScrollLocation?.()
+            const measured = loc && loc.scrollHeight > loc.visibleListHeight + 1
+            if (!measured && attempt < 20) {
+              attempt++
+              requestAnimationFrame(tryInitialFire)
+              return
+            }
+            if (loc && typeof loc.lastVisibleItemIndex === 'number') {
+              onInitialVisible?.(loc.lastVisibleItemIndex)
+            }
+            onListScrollSettled?.()
+          }
+          requestAnimationFrame(tryInitialFire)
+        }
+      }
+      apply()
+    })
     return () => {
       cancelled = true
     }
-  }, [channelId, anchorKind, anchorValue, listRef, onInitialVisible, onListScrollSettled])
+  }, [
+    channelId,
+    anchorKind,
+    anchorValue,
+    listRef,
+    feedMode,
+    mediaOnly,
+    onInitialVisible,
+    onListScrollSettled
+  ])
 
   const loadOlder = useCallback(async () => {
     if (loadingOlderRef.current || !hasMoreOlder || oldestSeqRef.current == null) return
     loadingOlderRef.current = true
     setLoadingOlder(true)
-    const { data, error } = await supabaseClient.rpc('fetch_message_window', {
-      p_channel_id: channelId,
-      p_anchor_kind: 'before_seq',
-      p_anchor_value: String(oldestSeqRef.current),
-      p_before_limit: PAGE_LIMIT,
-      p_after_limit: 0
+    const { rpc: windowRpc, body: windowBody } = feedWindowRpcBody(feedMode, {
+      kind: 'older',
+      channelId,
+      beforeSeq: oldestSeqRef.current,
+      pageLimit: PAGE_LIMIT
     })
+    const { data, error } = await supabaseClient.rpc(windowRpc, windowBody)
     loadingOlderRef.current = false
     setLoadingOlder(false)
     if (error || !data) return
@@ -192,7 +221,7 @@ export const useChannelMessages = ({
     const seqs = olderMessageItems.map((m) => m.seq).filter((s): s is number => s != null)
     oldestSeqRef.current = seqs.length ? Math.min(...seqs) : oldestSeqRef.current
     setHasMoreOlder(Boolean(win.has_more_before))
-  }, [channelId, hasMoreOlder, listRef])
+  }, [channelId, hasMoreOlder, listRef, feedMode])
 
   // Scroll-down pagination: fetches messages with seq > newest loaded.
   // Only fires when the loaded window does NOT include the tail — once
@@ -201,12 +230,14 @@ export const useChannelMessages = ({
   // is the tail signal: flip dataIncludesTailRef so the trigger disarms
   // and realtime arrivals start appending directly.
   const loadNewer = useCallback(async () => {
+    if (mediaOnly) return
     if (loadingNewerRef.current) return
     if (dataIncludesTailRef.current) return
     if (newestSeqRef.current == null) return
     loadingNewerRef.current = true
     setLoadingNewer(true)
-    const { data, error } = await supabaseClient.rpc('fetch_messages_since', {
+    const catchupRpc = feedCatchupRpc(feedMode)
+    const { data, error } = await supabaseClient.rpc(catchupRpc, {
       p_channel_id: channelId,
       p_since_seq: newestSeqRef.current,
       p_limit: PAGE_LIMIT
@@ -261,7 +292,7 @@ export const useChannelMessages = ({
       ? Math.max(newestSeqRef.current ?? 0, ...seqs)
       : newestSeqRef.current
     if (rows.length < PAGE_LIMIT) dataIncludesTailRef.current = true
-  }, [channelId, listRef])
+  }, [channelId, listRef, feedMode, mediaOnly])
 
   return {
     loading,

@@ -12,6 +12,7 @@ export const Input = ({ className }: { className?: string }) => {
       tabIndex={1}>
       <EditorContent
         id="chatroom-editor"
+        data-testid="composer-input"
         tabIndex={2}
         ref={editorRef}
         className={twMerge(

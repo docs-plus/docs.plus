@@ -1,8 +1,9 @@
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 
 import type { JumpTarget } from '../hooks/useJumpTo'
-import type { SendDraft } from '../hooks/useSendMessage'
+import type { ChannelFeedMode } from '../utils/channelFeedProjection'
 import type { ChatItem } from './chat-items'
+import type { SendDraft, SendResult } from './send.types'
 
 export interface ChatroomVariant {
   mobile: 'mobile'
@@ -35,7 +36,7 @@ export interface ChatroomContextValue {
   initLoadMessages: boolean
   // v2 wiring exposed for MessageFeed shim + composer:
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>
-  send: (draft: SendDraft) => Promise<void>
+  send: (draft: SendDraft) => Promise<SendResult>
   retry: (clientId: string) => Promise<void>
   scrollToMessage: (messageId: string) => Promise<void>
   jumpTo: (target: JumpTarget) => Promise<void>
@@ -57,4 +58,7 @@ export interface ChatroomContextValue {
   loadNewer: () => Promise<void> | void
   loadingNewer: boolean
   currentUserId: string | null
+  /** `'media-only'` lists only messages with attachments. */
+  feedMode: ChannelFeedMode
+  setFeedMode: (mode: ChannelFeedMode) => void
 }

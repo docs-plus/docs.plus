@@ -1,5 +1,7 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { isMessage } from '@components/chatroom/types/chat-items'
+import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
+import { deleteChatMediaFromStorage } from '@components/chatroom/utils/uploadChatMedia'
 import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../MessageCardContext'
@@ -21,6 +23,10 @@ export const MessageFailedRow = ({ className }: { className?: string }) => {
   }
 
   const onDelete = () => {
+    const medias = parseMessageMedias(message.medias)
+    if (medias.length) {
+      void Promise.all(medias.map((item) => deleteChatMediaFromStorage(item)))
+    }
     listRef.current?.data.findAndDelete((i) => isMessage(i) && i.id === message.id)
   }
 

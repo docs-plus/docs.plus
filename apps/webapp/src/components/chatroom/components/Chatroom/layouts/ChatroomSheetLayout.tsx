@@ -1,3 +1,4 @@
+import { MediaFilterToggle } from '@components/chatroom/components/ChatroomToolbar/components/MediaFilterToggle'
 import { NotificationToggle } from '@components/chatroom/components/ChatroomToolbar/components/NotificationToggle'
 import { ShareButton } from '@components/chatroom/components/ChatroomToolbar/components/ShareButton'
 import Button from '@components/ui/Button'
@@ -23,6 +24,7 @@ const ChatRoomHeader = () => {
     <div className="bg-base-100 border-base-300 flex w-full items-center gap-2 border-b px-3 py-2">
       <BreadcrumbMobile />
       <div className="ml-auto flex shrink-0 items-center gap-1">
+        <MediaFilterToggle className="btn-sm" />
         <div className="bg-base-200 rounded-selector flex items-center">
           <ShareButton size="sm" />
           <NotificationToggle size="sm" />

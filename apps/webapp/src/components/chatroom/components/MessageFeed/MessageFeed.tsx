@@ -56,7 +56,8 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
           className={twMerge(
             'message-feed scrollbar-custom scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-hidden',
             className
-          )}>
+          )}
+          data-key="chatroom-feed">
           {showNewMessagesBanner && (
             <NewMessagesBanner
               count={backlog}

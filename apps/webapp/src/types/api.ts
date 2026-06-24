@@ -1,6 +1,6 @@
 import type { CommentAnchorV1 } from './comment'
 import { Profile } from './domain'
-import type { MessageStatus } from './message'
+import type { MessageMediaItem, MessageStatus } from './message'
 import { Database } from './supabase'
 
 export type TMsgRow = Omit<Database['public']['Tables']['messages']['Row'], 'metadata'> & {
@@ -85,6 +85,7 @@ export type TBookmarkWithMessage = {
   message_user_id: string
   message_channel_id: string
   message_type: string
+  message_medias: MessageMediaItem[] | null
   user_details: TUserDetails
   channel_name: string
   channel_slug: string

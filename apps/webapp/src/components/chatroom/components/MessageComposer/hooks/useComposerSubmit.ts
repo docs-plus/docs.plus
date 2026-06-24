@@ -1,14 +1,19 @@
 import { sendCommentMessage, updateMessage } from '@api'
-import type { SendDraft } from '@components/chatroom/hooks/useSendMessage'
+import type { SendDraft, SendResult } from '@components/chatroom/types/send.types'
+import { composerSendGate } from '@components/chatroom/utils/composerSendGate'
 import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignIn'
+import {
+  dispatchOutboundChunk,
+  ensureOutboundStorageReady,
+  prepareOutboundContent
+} from '@components/chatroom/utils/outboundMessagePipeline'
 import { showNotificationPrompt } from '@components/NotificationPromptCard'
 import * as toast from '@components/toast'
 import { discardComposerDraft } from '@db/messageComposerDB'
 import { useApi } from '@hooks/useApi'
 import type { Editor } from '@tiptap/react'
-import type { CommentMessageMemory, ComposerMessageMemory } from '@types'
-import { chunkHtmlContent } from '@utils/chunkHtmlContent'
-import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
+import type { CommentMessageMemory, ComposerMessageMemory, MessageMediaItem } from '@types'
+import { sanitizeChunk } from '@utils/sanitizeContent'
 import { useCallback } from 'react'
 
 import { useComposerEmojiPanelStore } from '../stores/composerEmojiPanelStore'
@@ -19,7 +24,12 @@ export type ComposerSubmitArgs = {
   workspaceId?: string
   user: { id?: string } | null
   editor: Editor | null
-  contextSend: (draft: SendDraft) => Promise<void>
+  contextSend: (draft: SendDraft) => Promise<SendResult>
+  getReadyAttachments: () => MessageMediaItem[]
+  clearAttachments: (options?: { deleteStorage?: boolean }) => void
+  flushRemovedPersistedStorage: () => void
+  isUploadingAttachments?: boolean
+  hasUploadErrors?: boolean
   replyMessageMemory: ComposerMessageMemory | null | undefined
   editMessageMemory: ComposerMessageMemory | null | undefined
   commentMessageMemory: CommentMessageMemory | null | undefined
@@ -36,6 +46,11 @@ export const useComposerSubmit = ({
   user,
   editor,
   contextSend,
+  getReadyAttachments,
+  clearAttachments,
+  flushRemovedPersistedStorage,
+  isUploadingAttachments = false,
+  hasUploadErrors = false,
   replyMessageMemory,
   editMessageMemory,
   commentMessageMemory,
@@ -48,11 +63,23 @@ export const useComposerSubmit = ({
   const { request: updateMsg } = useApi(updateMessage, null, false)
   const { request: sendComment } = useApi(sendCommentMessage, null, false)
 
-  // editor.getText() is authoritative — strips marks/whitespace already.
   const isSubmittable = useCallback(() => {
     if (!user || !editor) return false
-    return editor.getText().trim() !== ''
-  }, [user, editor])
+    return composerSendGate({
+      text: editor.getText(),
+      readyAttachmentCount: getReadyAttachments().length,
+      editMessageMemory,
+      isUploading: isUploadingAttachments,
+      hasUploadErrors
+    })
+  }, [
+    user,
+    editor,
+    isUploadingAttachments,
+    hasUploadErrors,
+    getReadyAttachments,
+    editMessageMemory
+  ])
 
   const cleanupAfterSubmit = useCallback(() => {
     if (replyMessageMemory) setReplyMsgMemory(channelId, null)
@@ -62,8 +89,6 @@ export const useComposerSubmit = ({
     cancelPendingEditorDraftCapture()
     if (workspaceId && channelId) void discardComposerDraft(workspaceId, channelId)
 
-    // Panel-open ⇒ editor was intentionally blurred to show the picker;
-    // refocusing would reopen the iOS keyboard and yank the panel away.
     const panelOpen = useComposerEmojiPanelStore.getState().isOpen
     const linkDialogOpen = isComposerLinkDialogOpen()
     const shouldRefocus =
@@ -98,55 +123,48 @@ export const useComposerSubmit = ({
       }
       if (!isSubmittable() || !editor) return
 
-      let sanitizedHtml: string
-      let sanitizedText: string
-      let htmlChunks: string[]
-      let textChunks: string[]
+      const readyMedias = getReadyAttachments()
+      const replyToId = editMessageMemory?.id ?? replyMessageMemory?.id ?? null
+      const prepared = prepareOutboundContent(
+        editor,
+        readyMedias,
+        editMessageMemory,
+        commentMessageMemory,
+        replyToId
+      )
 
-      try {
-        const html = editor.getHTML()
-        const text = editor.getText()
-        const sanitized = sanitizeMessageContent(html, text)
-        if (!sanitized.sanitizedHtml || !sanitized.sanitizedText) {
-          throw new Error('Invalid content detected')
-        }
-        sanitizedHtml = sanitized.sanitizedHtml
-        sanitizedText = sanitized.sanitizedText
-        const chunks = chunkHtmlContent(sanitizedHtml, 3000)
-        htmlChunks = chunks.htmlChunks
-        textChunks = chunks.textChunks
-      } catch (error: unknown) {
-        toast.Error(error instanceof Error ? error.message : 'Invalid content')
+      if (!prepared.ok) {
+        toast.Error(prepared.error)
         return
       }
 
-      const clearsComposerBeforeSend = htmlChunks.length === 0 && !editMessageMemory
-      const replyToId = editMessageMemory?.id ?? replyMessageMemory?.id ?? null
-
-      const dispatchContent = async (content: string, html: string) => {
-        if (editMessageMemory) {
-          await updateMsg(content, html, editMessageMemory.id!)
-        } else if (commentMessageMemory) {
-          await sendComment(content, channelId, user.id!, html, commentMessageMemory.anchor)
-        } else {
-          await contextSend({
-            content,
-            html,
-            reply_to_message_id: replyToId
-          })
-        }
+      const storageReady = await ensureOutboundStorageReady(prepared)
+      if (!storageReady) {
+        toast.Error('Attachments are still uploading. Wait a moment and try again.')
+        return
       }
 
-      if (clearsComposerBeforeSend) cleanupAfterSubmit()
+      const dispatchChunk = async (content: string, html: string, chunkIndex: number) => {
+        await dispatchOutboundChunk(prepared, content, html, chunkIndex, {
+          channelId,
+          userId: user.id!,
+          contextSend,
+          updateMsg,
+          sendComment,
+          flushRemovedPersistedStorage
+        })
+      }
+
+      if (prepared.shouldClearComposerEarly) cleanupAfterSubmit()
 
       try {
-        if (htmlChunks.length === 0) {
-          await dispatchContent(sanitizedText, sanitizedHtml)
+        if (prepared.htmlChunks.length === 0) {
+          await dispatchChunk(prepared.sanitizedText, prepared.sanitizedHtml, 0)
         } else {
-          for (const [index, htmlChunk] of htmlChunks.entries()) {
-            const textChunk = textChunks[index]
+          for (const [index, htmlChunk] of prepared.htmlChunks.entries()) {
+            const textChunk = prepared.textChunks[index] ?? ''
             const { sanitizedHtmlChunk, sanitizedTextChunk } = sanitizeChunk(htmlChunk, textChunk)
-            await dispatchContent(sanitizedTextChunk, sanitizedHtmlChunk)
+            await dispatchChunk(sanitizedTextChunk, sanitizedHtmlChunk, index)
           }
         }
       } catch (error: unknown) {
@@ -154,7 +172,8 @@ export const useComposerSubmit = ({
         return
       }
 
-      if (!clearsComposerBeforeSend) cleanupAfterSubmit()
+      if (prepared.hasAttachments) clearAttachments({ deleteStorage: false })
+      if (!prepared.shouldClearComposerEarly) cleanupAfterSubmit()
       showNotificationPrompt()
     },
     [
@@ -162,6 +181,9 @@ export const useComposerSubmit = ({
       channelId,
       editor,
       isSubmittable,
+      getReadyAttachments,
+      clearAttachments,
+      flushRemovedPersistedStorage,
       cleanupAfterSubmit,
       editMessageMemory,
       commentMessageMemory,

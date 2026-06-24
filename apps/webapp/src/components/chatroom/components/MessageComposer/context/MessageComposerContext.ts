@@ -13,7 +13,7 @@ export interface MessageComposerContextType {
   showFormattingToolbar: boolean
   toggleToolbar: () => void
   submitMessage: (e?: { preventDefault?: () => void }) => Promise<void>
-  /** Reactive send affordance: true when editor has non-whitespace content. */
+  /** Reactive send affordance: true when editor has non-whitespace content or ready attachments. */
   canSend: boolean
   isMobile: boolean
   editorRef: React.RefObject<HTMLDivElement | null>

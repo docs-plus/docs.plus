@@ -4,10 +4,12 @@ import { calculateEmojiPickerPosition } from '@components/chatroom/components/Me
 import { useBookmarkMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useBookmarkMessageHandler'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
 import { useCopyMessageToDocHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageToDocHandler'
+import { useDownloadMessageMediaHandler } from '@components/chatroom/components/MessageCard/hooks/useDownloadMessageMediaHandler'
 import { useEditMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useEditMessageHandler'
 import { usePinMessageHandler } from '@components/chatroom/components/MessageCard/hooks/usePinMessageHandler'
 import { useReplyInMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInMessageHandler'
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
+import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
 import type { ContextMenuRowVariant } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
 import { useAuthStore, useChatStore } from '@stores'
@@ -44,9 +46,11 @@ export const useMessageActionMenuItems = (
   const { editMessageHandler } = useEditMessageHandler()
   const { pinMessageHandler } = usePinMessageHandler()
   const { copyMessageLinkHandler, copied: linkCopied } = useCopyMessageLinkHandler()
+  const { downloadMessageMediaHandler } = useDownloadMessageMediaHandler()
 
   const isOwner = message.user_id === profile?.id
   const isPinned = hasMetadataProperty(message.metadata, 'pinned')
+  const attachmentCount = parseMessageMedias(message.medias).length
 
   const items = useMemo(() => {
     const list: MessageActionMenuItem[] = [
@@ -80,9 +84,11 @@ export const useMessageActionMenuItems = (
     }
 
     list.push({
-      title: linkCopied ? 'Copied!' : 'Copy Link',
+      title: linkCopied ? 'Copied!' : attachmentCount > 0 ? 'Share message link' : 'Copy Link',
       icon: linkCopied ? (
         <Icons.check size={iconSize} className="text-success" />
+      ) : attachmentCount > 0 ? (
+        <Icons.share size={iconSize} />
       ) : (
         <Icons.link size={iconSize} />
       ),
@@ -90,6 +96,15 @@ export const useMessageActionMenuItems = (
       display: true,
       className: linkCopied ? 'text-success' : undefined
     })
+
+    if (attachmentCount > 0) {
+      list.push({
+        title: attachmentCount > 1 ? `Download all (${attachmentCount})` : 'Download',
+        icon: <Icons.download size={iconSize} />,
+        onClickFn: () => downloadMessageMediaHandler(message),
+        display: true
+      })
+    }
 
     list.push(
       {
@@ -145,9 +160,11 @@ export const useMessageActionMenuItems = (
 
     return list
   }, [
+    attachmentCount,
     bookmarkMessageHandler,
     copyMessageLinkHandler,
     copyMessageToDocHandler,
+    downloadMessageMediaHandler,
     editMessageHandler,
     iconSize,
     includeReaction,

@@ -1213,6 +1213,14 @@ export type Database = {
         }
         Returns: Json
       }
+      fetch_media_message_window: {
+        Args: { p_before_seq?: number; p_channel_id: string; p_limit?: number }
+        Returns: Json
+      }
+      fetch_media_messages_since: {
+        Args: { p_channel_id: string; p_limit?: number; p_since_seq: number }
+        Returns: Json
+      }
       fetch_mentioned_users: {
         Args: { _username: string; _workspace_id: string }
         Returns: {
@@ -1249,6 +1257,14 @@ export type Database = {
           day_of_week: number
           hour_of_day: number
           message_count: number
+        }[]
+      }
+      get_all_workspace_media_storage_stats: {
+        Args: never
+        Returns: {
+          object_count: number
+          total_bytes: number
+          workspace_id: string
         }[]
       }
       get_bookmark_count: {
@@ -1484,6 +1500,10 @@ export type Database = {
         }[]
       }
       get_user_lifecycle_segments: { Args: never; Returns: Json }
+      get_workspace_media_storage_stats: {
+        Args: { p_workspace_id: string }
+        Returns: Json
+      }
       get_workspace_notifications: {
         Args: {
           p_is_read?: boolean
@@ -1499,6 +1519,14 @@ export type Database = {
       mark_bookmark_as_read: {
         Args: { p_bookmark_id: number; p_mark_as_read?: boolean }
         Returns: boolean
+      }
+      message_content_preview: {
+        Args: {
+          p_content: string
+          p_medias: Json
+          p_type?: Database["public"]["Enums"]["message_type"]
+        }
+        Returns: string
       }
       message_counter_batch_worker: { Args: never; Returns: undefined }
       notifications_summary: { Args: { _workspace_id?: string }; Returns: Json }

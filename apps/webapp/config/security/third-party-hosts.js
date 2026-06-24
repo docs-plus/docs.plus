@@ -17,6 +17,9 @@ const IFRAME_EMBED_HOSTS = [
 /** GA4 collect endpoints beyond `*.google-analytics.com` wildcards in CSP. */
 const GA_CONNECT_HOSTS = ['analytics.google.com']
 
+/** Giphy search API + CDN fetches for composer GIF picker. */
+const GIPHY_CONNECT_HOSTS = ['api.giphy.com', 'media.giphy.com', 'i.giphy.com']
+
 /**
  * Hostname suffixes excluded from Workbox runtime routes (derived from embed + analytics hosts).
  * Subdomain match: `www.googletagmanager.com` matches suffix `googletagmanager.com`.
@@ -33,7 +36,8 @@ const SW_BYPASS_HOST_SUFFIXES = [
   'googlevideo.com',
   'ytimg.com',
   'vimeo.com',
-  'loom.com'
+  'loom.com',
+  'giphy.com'
 ]
 
 function shouldBypassServiceWorker(url) {
@@ -50,6 +54,7 @@ module.exports = {
   X_CONNECT_HOSTS,
   IFRAME_EMBED_HOSTS,
   GA_CONNECT_HOSTS,
+  GIPHY_CONNECT_HOSTS,
   SW_BYPASS_HOST_SUFFIXES,
   shouldBypassServiceWorker
 }

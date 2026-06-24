@@ -2,7 +2,7 @@ import { CommentAnchorPreview } from '@components/chatroom/components/CommentAnc
 import { getCommentAnchorLabel, parseCommentAnchor } from '@services/commentAnchor'
 import { commentReferenceTheme } from '@utils/commentReferenceTheme'
 import { getMetadataProperty } from '@utils/metadata'
-import { scrollToHeading } from '@utils/scrollToHeading'
+import { scrollToCommentAnchor } from '@utils/scrollToCommentAnchor'
 import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
@@ -25,8 +25,8 @@ export const CommentReference = () => {
       kind="comment"
       commentTheme={theme}
       dataKey={`comment-ref-${anchor.heading_id}`}
-      ariaLabel="Jump to commented section in document"
-      onJump={() => scrollToHeading(anchor.heading_id)}
+      ariaLabel="Jump to commented content in document"
+      onJump={() => scrollToCommentAnchor(anchor)}
       header={
         <>
           <span className="text-base-content/40 font-normal">·</span>

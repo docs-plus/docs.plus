@@ -6,7 +6,8 @@ export type ComposerState = {
   html?: string
   attachments?: Array<{
     id: string
-    name: string
+    path: string
+    name?: string
     size?: number
     type?: string
     dataUrl?: string
@@ -246,14 +247,16 @@ export function cancelComposerDraftWrites(workspaceId: string, roomId: string): 
   debouncedWriters.get(k(workspaceId, roomId))?.cancel()
 }
 
-/** Non-empty text debounces to IDB; empty text clears storage immediately. */
+/** Non-empty text or attachments debounces to IDB; empty clears storage immediately. */
 export function syncComposerDraft(
   workspaceId: string,
   roomId: string,
   state: ComposerState,
   delayMs = 500
 ): void {
-  if (!state.text.trim()) {
+  const hasText = Boolean(state.text.trim())
+  const hasAttachments = Boolean(state.attachments?.length)
+  if (!hasText && !hasAttachments) {
     cancelComposerDraftWrites(workspaceId, roomId)
     void clearComposerState(workspaceId, roomId)
     return

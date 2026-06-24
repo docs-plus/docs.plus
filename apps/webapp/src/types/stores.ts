@@ -1,5 +1,6 @@
 import type { CommentAnchorV1 } from './comment'
 import type { Profile } from './domain'
+import type { MessageMediaItem } from './message'
 
 export type CommentMessageMemory = {
   anchor: CommentAnchorV1
@@ -14,6 +15,8 @@ export type ComposerMessageMemory = {
   channel_id?: string
   content?: string
   html?: string | null
+  medias?: MessageMediaItem[] | null
+  type?: string | null
   user_details?: { fullname?: string; username?: string }
 }
 

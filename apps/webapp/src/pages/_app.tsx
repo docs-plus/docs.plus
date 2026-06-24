@@ -2,6 +2,7 @@ import '../styles/globals.scss'
 import '../styles/styles.scss'
 import '@config'
 
+import { ChatMediaGallery } from '@components/chatroom/components/ChatMediaGallery'
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import NotificationPromptCard from '@components/NotificationPromptCard'
 import { PWAInstallPrompt } from '@components/pwa'
@@ -53,6 +54,7 @@ export default function MyApp({ Component, pageProps }: any) {
         <NotificationPromptCard />
         <PWAInstallPrompt />
         <AppProviders isMobileInitial={isMobileInitial} />
+        <ChatMediaGallery />
         <VirtuosoMessageListLicense licenseKey={process.env.NEXT_PUBLIC_VIRTUOSO_LICENSE ?? ''}>
           <FloatingTree>
             <QueryClientProvider client={queryClient}>
