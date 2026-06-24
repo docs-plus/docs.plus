@@ -9,71 +9,23 @@
 
 docs.plus is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
 
-## 🏗️ Architecture
+## 🔌 TipTap extensions
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   ┌──────────────────┐    ┌──────────────────┐    ┌────────────────────┐   │
-│   │     Webapp       │    │  Admin Dashboard │    │  TipTap Extensions │   │
-│   │    (Next.js)     │    │    (Next.js)     │    │  hyperlink, media  │   │
-│   │    Port 3000     │    │    Port 3100     │    │   indent, code     │   │
-│   └────────┬─────────┘    └────────┬─────────┘    └────────────────────┘   │
-│            │                       │                                         │
-└────────────┼───────────────────────┼─────────────────────────────────────────┘
-             │ HTTP/WS               │ HTTP
-             ▼                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                             BACKEND LAYER                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐     │
-│   │    REST API      │    │    WebSocket     │    │     Worker       │     │
-│   │     (Hono)       │    │   (Hocuspocus)   │    │    (BullMQ)      │     │
-│   │    Port 4000     │    │    Port 4001     │    │    Port 4002     │     │
-│   │                  │    │                  │    │                  │     │
-│   │  • Auth          │    │  • Real-time     │    │  • Doc storage   │     │
-│   │  • Documents     │    │    collaboration │    │  • Email queue   │     │
-│   │  • Workspaces    │    │  • Y.js sync     │    │  • Push notifs   │     │
-│   └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘     │
-│            │                       │                       │                │
-└────────────┼───────────────────────┼───────────────────────┼────────────────┘
-             │                       │                       │
-             ▼                       ▼                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              DATA LAYER                                      │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│   ┌───────────────────────────────┐    ┌───────────────────────────────┐   │
-│   │         PostgreSQL            │    │            Redis              │   │
-│   │         (Supabase)            │    │                               │   │
-│   │         Port 5432             │    │         Port 6379             │   │
-│   │                               │    │                               │   │
-│   │  • Users & Auth               │    │  • Job queues (BullMQ)        │   │
-│   │  • Documents & Workspaces     │    │  • Pub/Sub (WS sync)          │   │
-│   │  • Realtime subscriptions     │    │  • Session cache              │   │
-│   │  • Row Level Security         │    │  • Rate limiting              │   │
-│   └───────────────────────────────┘    └───────────────────────────────┘   │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. Each ships on npm under `@docs.plus`:
 
-                           ┌─────────────────┐
-                           │ Supabase Studio │
-                           │  Port 54323     │
-                           │  (Dev only)     │
-                           └─────────────────┘
+```sh
+bun add @docs.plus/extension-hyperlink
 ```
 
-**Monorepo Structure:**
+| Package                                                              | Description                                                            |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`extension-hyperlink`](extensions/extension-hyperlink/)             | Hyperlink mark, autolink, popovers, URL safety                         |
+| [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Images, audio, video, and embeds (YouTube, Vimeo, SoundCloud, Loom, X) |
+| [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with context allowlist                  |
+| [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                             |
+| [`extension-placeholder`](extensions/extension-placeholder/)         | O(1) cursor-based empty-node placeholder                               |
 
-- 🌐 `apps/webapp` - Next.js frontend with TipTap editor
-- 🖥️ `apps/admin-dashboard` - Admin panel for platform management
-- ⚡ `apps/hocuspocus.server` - REST API, WebSocket server, and background workers
-- 🗄️ `packages/supabase` - Database migrations and Supabase configuration
-- 🔌 `extensions/extension-*` - Five publishable TipTap extensions (hyperlink, hypermultimedia, indent, inline-code, placeholder) under the `@docs.plus` npm scope — see [extensions/README.md](extensions/README.md)
-- 📦 `packages/eslint-config` - Shared ESLint configurations
+Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
 
 **Tech Stack:**
 
@@ -448,11 +400,14 @@ Run `make help` for the complete Make surface; `bun run` (no args) for all root 
 
 ```
 docs.plus/
-├── packages/
+├── apps/
 │   ├── webapp/              # 🌐 Next.js frontend
 │   ├── hocuspocus.server/   # ⚡ REST API, WebSocket, Workers
-│   ├── supabase/            # 🗄️ Database migrations
-│   └── extension-*/         # 🔌 TipTap extensions
+│   └── admin-dashboard/     # 🖥️ Admin panel
+├── extensions/
+│   └── extension-*/         # 🔌 Five publishable @docs.plus TipTap packages
+├── packages/
+│   └── supabase/            # 🗄️ Database migrations
 ├── docker-compose.dev.yml   # 🐳 Development orchestration
 ├── docker-compose.prod.yml  # 🚀 Production orchestration
 ├── Makefile                 # 🛠️ Build & deployment commands
