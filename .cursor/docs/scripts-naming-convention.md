@@ -170,7 +170,8 @@ Five deliberate corner cases. The first three depart from the bare-canonical rul
 
 ### Aggregates
 
-- `check` = `lint && lint:styles && format && typecheck`. Report-only gate used by `pre-push` and the PR template.
+- `check` = `lint && lint:styles && format && typecheck`. Full report gate for CI and PR template.
+- `check:push` = `lint && lint:styles && typecheck`. Pre-push gate (Prettier already runs on staged files via `lint-staged`).
 - `check:fix` = `lint:fix && lint:styles:fix && format:fix`.
 
 ### Tests

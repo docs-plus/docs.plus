@@ -61,9 +61,11 @@ export default libraryConfig
 
 ## Lint policy (repo root)
 
-- `bun run lint` runs `eslint . --max-warnings=0` — warnings fail CI and pre-push (`bun run check`).
-- Pre-commit `lint-staged` also uses `--max-warnings=0` on staged files only.
-- Fix hook dependency warnings in source; do not relax the global gate.
+- `bun run lint` — `eslint . --max-warnings=0` (cascades into every package shim).
+- `bun run check` — CI gate: lint + styles + `prettier --check` + typecheck.
+- `bun run check:push` — pre-push gate: lint + styles + typecheck (no full-repo Prettier; commit hook already writes staged files).
+- Pre-commit `lint-staged` uses `--max-warnings=0` on staged files only.
+- Per-package `lint` scripts are intentionally omitted; run from repo root.
 
 ## Current Usage
 

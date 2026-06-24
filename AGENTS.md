@@ -150,7 +150,7 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
 - React plugins load only in `next.js`, never in library or backend configs.
 - `packages/eslint-config` uses only `eslint-config-prettier`; its flat config does not load `eslint-plugin-prettier`.
 - **Flat-config shim naming:** root / webapp / admin-dashboard use `eslint.config.mjs` (packages without `"type": "module"`). `hocuspocus.server` and `extension-*` use `eslint.config.js` (they declare `"type": "module"`). See `packages/eslint-config/README.md`.
-- **Lint gate:** root `bun run lint` is `eslint . --max-warnings=0`; `bun run check` (pre-push step 4) includes it. Pre-commit `lint-staged` also enforces zero warnings on staged files only.
+- **Lint gate:** root `bun run lint` is `eslint . --max-warnings=0`. `bun run check` (CI) includes it plus format; pre-push runs `check:push` (lint + styles + typecheck, no full-repo Prettier). Pre-commit `lint-staged` formats staged files and enforces zero ESLint warnings on those files.
 - **Pre-push selective builds:** `scripts/hooks/pre-push.sh` diffs `origin/main...HEAD` (full unpushed range), not only `HEAD~1`, so empty deploy commits do not skip extension/app `build:ci` when prior commits touched those paths.
 
 ### Shared Library Config

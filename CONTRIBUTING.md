@@ -180,7 +180,7 @@ We use **Husky** to enforce local quality gates before code reaches remote branc
 - Active hooks:
   - `pre-commit`: runs `bun run lint-staged` (staged-file lint/format checks)
   - `commit-msg`: validates commit message format
-  - `pre-push`: runs selective build checks and always runs `bun run check` for **every push** (lint + format + styles + types)
+  - `pre-push`: runs selective build checks and always runs `bun run check:push` (lint + styles + types; Prettier on staged files at commit)
   - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
 
 You can trigger hooks manually:
@@ -211,7 +211,8 @@ Full naming convention: [.cursor/docs/scripts-naming-convention.md](./.cursor/do
 
 | Command                   | Use case                                                    |
 | ------------------------- | ----------------------------------------------------------- |
-| `bun run check`           | Report all: lint + lint:styles + format + typecheck         |
+| `bun run check`           | CI / full report: lint + lint:styles + format + typecheck   |
+| `bun run check:push`      | Pre-push gate: lint + lint:styles + typecheck (no format)   |
 | `bun run check:fix`       | Auto-fix all: ESLint + Stylelint + Prettier (in that order) |
 | `bun run lint`            | ESLint report                                               |
 | `bun run lint:fix`        | ESLint --fix                                                |
@@ -306,13 +307,13 @@ Aim for good test coverage, especially for:
    git rebase main
    ```
 
-3. **Run checks** (lint + format + types):
+3. **Run checks** before opening a PR:
 
    ```bash
    bun run check
    ```
 
-   This is also enforced automatically by `pre-push` for every `git push`.
+   Pre-push runs `bun run check:push` (lint + styles + types; no full-repo Prettier). CI runs full `check` including `prettier --check`.
 
    Or individually:
 

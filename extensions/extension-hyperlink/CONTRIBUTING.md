@@ -33,8 +33,9 @@ Spec scope — 14 files, 150 tests — lives in [cypress/e2e/README.md](./cypres
 bun install      # from the repo root
 bun run build    # tsup → dist/ (ESM + CJS + d.ts)
 bun run dev      # tsup --watch
-bun run lint     # eslint
 bun run typecheck
 ```
+
+ESLint: from repo root, `bun run lint` (cascades into this package).
 
 The suite also runs from the repo root via `bun run test`, alongside the other extension and webapp suites.
