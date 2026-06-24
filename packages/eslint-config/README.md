@@ -2,27 +2,42 @@
 
 Shared ESLint configurations for the docs.plus monorepo.
 
-**ESLint 9 Flat Config** format.
+**ESLint 9 flat config** format.
 
 ## Quick Start
 
-Every package needs an `eslint.config.js`. Use **relative paths** for reliable resolution.
+Every package needs a flat-config shim at its package root. Use **relative paths** for reliable resolution.
 
-### CommonJS Packages
+| Package kind                       | Shim file           | Why                                                                                                  |
+| ---------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Root, webapp, admin-dashboard      | `eslint.config.mjs` | No `"type": "module"` in `package.json` — `.mjs` avoids Node `MODULE_TYPELESS_PACKAGE_JSON` warnings |
+| `hocuspocus.server`, `extension-*` | `eslint.config.js`  | Package has `"type": "module"`                                                                       |
+
+### Next.js apps (webapp, admin-dashboard)
 
 ```js
-// apps/webapp/eslint.config.js
-module.exports = require('../eslint-config/next.js')
+// apps/webapp/eslint.config.mjs
+import nextConfig from '../../packages/eslint-config/next.js'
+
+export default [{ ignores: ['src/types/supabase.ts'] }, ...nextConfig]
 ```
 
-### ESM Packages (`"type": "module"`)
+### ESM backend (`"type": "module"`)
 
 ```js
 // apps/hocuspocus.server/eslint.config.js
-import { createRequire } from 'node:module'
-const require = createRequire(import.meta.url)
+import baseConfig from '../../packages/eslint-config/index.js'
 
-export default require('../eslint-config/index.js')
+export default baseConfig
+```
+
+### Published extensions (`library.js`)
+
+```js
+// extensions/extension-hyperlink/eslint.config.js
+import libraryConfig from '../../packages/eslint-config/library.js'
+
+export default libraryConfig
 ```
 
 ## Available Configs
@@ -44,41 +59,34 @@ export default require('../eslint-config/index.js')
 | Console warnings | -    | ✅ (warn) | ✅ (warn) |
 | Strict types     | -    | -         | ✅        |
 
+## Lint policy (repo root)
+
+- `bun run lint` runs `eslint . --max-warnings=0` — warnings fail CI and pre-push (`bun run check`).
+- Pre-commit `lint-staged` also uses `--max-warnings=0` on staged files only.
+- Fix hook dependency warnings in source; do not relax the global gate.
+
 ## Current Usage
 
-| Package           | Config       |
-| ----------------- | ------------ |
-| root              | `index.js`   |
-| webapp            | `next.js`    |
-| admin-dashboard   | `next.js`    |
-| hocuspocus.server | `index.js`   |
-| extension-\*      | `library.js` |
+| Package           | Shim                | Config       |
+| ----------------- | ------------------- | ------------ |
+| root              | `eslint.config.mjs` | `index.js`   |
+| webapp            | `eslint.config.mjs` | `next.js`    |
+| admin-dashboard   | `eslint.config.mjs` | `next.js`    |
+| hocuspocus.server | `eslint.config.js`  | `index.js`   |
+| extension-\*      | `eslint.config.js`  | `library.js` |
 
 ## Custom Overrides
 
 ```js
-// Spread the config and add overrides
-module.exports = [
-  ...require('../eslint-config/next.js'),
+import nextConfig from '../../packages/eslint-config/next.js'
+
+export default [
+  ...nextConfig,
   {
     files: ['**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'error'
     }
-  }
-]
-```
-
-## Adding Tailwind Plugin
-
-```js
-const tailwindcss = require('eslint-plugin-tailwindcss')
-
-module.exports = [
-  ...require('../eslint-config/next.js'),
-  {
-    plugins: { tailwindcss },
-    rules: tailwindcss.configs.recommended.rules
   }
 ]
 ```

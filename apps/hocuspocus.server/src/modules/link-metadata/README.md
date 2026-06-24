@@ -12,7 +12,7 @@ Self-contained link-unfurling service. Designed as a modular monolith so it can 
 6. **No shared mutable state.** No module-level singletons or top-level side effects. Adapters are constructed inside `init()` and held in closure.
 7. **Tests live inside the module.** `__tests__/` rides with the folder during extraction.
 
-ESLint enforces parts of rules 1 and 4 via `no-restricted-imports` in `apps/hocuspocus.server/eslint.config.js`.
+ESLint enforces parts of rules 1 and 4 via `no-restricted-imports` in `apps/hocuspocus.server/eslint.config.js` (ESM package — `"type": "module"`).
 
 ## Future extraction (not v1 work)
 

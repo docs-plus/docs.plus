@@ -1262,8 +1262,12 @@ export type Database = {
       get_all_workspace_media_storage_stats: {
         Args: never
         Returns: {
+          name: string
           object_count: number
+          quota_bytes: number
+          slug: string
           total_bytes: number
+          usage_percent: number
           workspace_id: string
         }[]
       }
@@ -1504,6 +1508,7 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: Json
       }
+      get_workspace_media_storage_summary: { Args: never; Returns: Json }
       get_workspace_notifications: {
         Args: {
           p_is_read?: boolean

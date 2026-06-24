@@ -117,7 +117,7 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
   3. `@docs.plus/extension-hypermultimedia` — clean-room Cypress against built `dist/`.
   4. `@docs.plus/extension-inline-code` — clean-room Cypress against built `dist/`.
   5. `@docs.plus/extension-placeholder` — clean-room Cypress against built `dist/`.
-  6. `@docs.plus/webapp` Jest (`jest --passWithNoTests`, so an empty or temporarily absent suite does not fail CI/local runs).
+  6. `@docs.plus/webapp` Jest (`jest --passWithNoTests`, so an empty or temporarily absent suite does not fail CI/local runs). **CI:** `stage.docs.plus.yml` and `prod.docs.plus.yml` run `bun run --filter @docs.plus/webapp test` in the quality-gate stage.
 - Clean-room ports are unique per extension: hyperlink 5173, hypermultimedia 5174, indent 5175, inline-code 5176, placeholder 5177.
 - Jest wiring:
   - `@docs.plus/webapp` keeps `next/jest` in `jest.config.js`.
@@ -149,6 +149,9 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
 - Consumers use 2-line ESM imports. Do not add `createRequire` bridges.
 - React plugins load only in `next.js`, never in library or backend configs.
 - `packages/eslint-config` uses only `eslint-config-prettier`; its flat config does not load `eslint-plugin-prettier`.
+- **Flat-config shim naming:** root / webapp / admin-dashboard use `eslint.config.mjs` (packages without `"type": "module"`). `hocuspocus.server` and `extension-*` use `eslint.config.js` (they declare `"type": "module"`). See `packages/eslint-config/README.md`.
+- **Lint gate:** root `bun run lint` is `eslint . --max-warnings=0`; `bun run check` (pre-push step 4) includes it. Pre-commit `lint-staged` also enforces zero warnings on staged files only.
+- **Pre-push selective builds:** `scripts/hooks/pre-push.sh` diffs `origin/main...HEAD` (full unpushed range), not only `HEAD~1`, so empty deploy commits do not skip extension/app `build:ci` when prior commits touched those paths.
 
 ### Shared Library Config
 
@@ -168,7 +171,7 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
   - `prepack` copies the root `LICENSE` before `bun publish` or `bun pm pack`.
   - Symlinks fail because Bun pack drops them. Hard links fail because git stores independent copies.
 - **Shared release scaffolding lives in `@docs.plus/release-tooling`** — an internal workspace package exposing `release-prepack` and `release-preflight` as `bin` commands. The scripts are data-driven: they derive the consumer's package name and dist-artifact list from its own `package.json` (`name` + `exports` map), so there is no per-consumer parameterization. Same DRY principle as `@docs.plus/eslint-config`, `tsconfig.base.json`, and `tsup.base.ts` — cross-package scaffolding is hoisted, never copied. Publishable libraries wire `prepack` / `prepublishOnly` to these bins per the Type 4 contract in the naming convention doc.
-- Do not centralize package-specific files: `README.md`, `CHANGELOG.md`, package source, 3-line `eslint.config.js` shims, or `package.json` fields.
+- Do not centralize package-specific files: `README.md`, `CHANGELOG.md`, package source, 3-line `eslint.config.mjs` / `eslint.config.js` shims, or `package.json` fields.
 
 ### Docker
 
