@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: evaluate-deploy-trigger.sh <prod|uptime-kuma>" >&2
+  echo "usage: evaluate-deploy-trigger.sh <prod|uptime-kuma|observability>" >&2
   exit 2
 }
 
@@ -39,6 +39,14 @@ case "${MODE}" in
       emit true '(build): uptime-kuma trigger matched'
     else
       emit false 'no (build): uptime-kuma trigger'
+      exit 1
+    fi
+    ;;
+  observability)
+    if printf '%s' "${COMMIT_MSG}" | grep -Eq '(^|[[:space:]])\(build\):[[:space:]]+observability([[:space:]]|$)'; then
+      emit true '(build): observability trigger matched'
+    else
+      emit false 'no (build): observability trigger'
       exit 1
     fi
     ;;

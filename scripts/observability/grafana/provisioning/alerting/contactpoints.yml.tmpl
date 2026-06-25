@@ -1,0 +1,15 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: telegram-ops
+    receivers:
+      - uid: telegram-ops
+        type: telegram
+        settings:
+          # Rendered by envsubst at deploy time (see observability.docs.plus.yml).
+          # Quoted so a numeric chat id (e.g. -1001234567890) stays a JSON string —
+          # Grafana's native ${VAR} expansion mistypes numerics and fails provisioning.
+          bottoken: '${TELEGRAM_BOT_TOKEN}'
+          chatid: '${TELEGRAM_CHAT_ID}'
+          message: |
+            {{ template "default.message" . }}

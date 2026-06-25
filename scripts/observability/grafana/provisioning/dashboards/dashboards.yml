@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: docsplus
+    orgId: 1
+    folder: docs.plus
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

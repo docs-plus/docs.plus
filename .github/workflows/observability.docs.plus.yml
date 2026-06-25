@@ -1,0 +1,148 @@
+# Server-only observability stack deploy. Decoupled from the app's blue-green
+# release: no quality-gate dependency and outside the app deploy concurrency
+# group — deliberate (the self-hosted runner serializes jobs). See docs/observability.md.
+name: CI/CD Observability
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to run on the stack'
+        required: true
+        default: setup
+        type: choice
+        options: [setup, update, restart, down]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+env:
+  COMPOSE_FILE: docker-compose.observability.yml
+  ENV_SOURCE: /opt/projects/prod.docs.plus/.env.observability
+  ENV_FILE: .env.observability
+
+jobs:
+  gate:
+    name: 🚦 Observability Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: 🚦 Evaluate trigger
+        id: gate
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          if bash .github/scripts/evaluate-deploy-trigger.sh observability; then
+            echo "✅ matched (build): observability"
+          else
+            echo "ℹ️ no (build): observability trigger"
+          fi
+
+  deploy:
+    name: 🔭 Deploy Observability
+    runs-on: prod.docs.plus
+    timeout-minutes: 15
+    needs: [gate]
+    if: |
+      always() &&
+      ((github.event_name == 'push' && needs.gate.outputs.deploy == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.action != 'down'))
+    # No `environment: production` — it would inherit the production environment's
+    # required-reviewer protection and gate every monitoring deploy on manual approval.
+    permissions:
+      contents: read
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: 🔐 Prepare environment
+        run: |
+          cp "${ENV_SOURCE}" "${ENV_FILE}"
+          for k in GRAFANA_ADMIN_PASSWORD GLITCHTIP_SECRET_KEY GLITCHTIP_POSTGRES_PASSWORD TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID DATABASE_URL; do
+            if ! grep -q "^${k}=" "${ENV_FILE}"; then
+              echo "::error::${k} missing from ${ENV_SOURCE}"; exit 1
+            fi
+          done
+          echo "✅ Environment ready"
+
+      - name: 📨 Render Telegram contact point
+        # Grafana's native ${VAR} expansion in alerting provisioning mistypes a numeric
+        # chat id (-100…) into a JSON number and fails to load; envsubst renders a literal
+        # quoted string instead. Only the two Telegram vars are substituted so the Go
+        # message template and the LogQL/PromQL `$` in rules.yml are left intact.
+        run: |
+          set -a; . "./${ENV_FILE}"; set +a
+          envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID}' \
+            < scripts/observability/grafana/provisioning/alerting/contactpoints.yml.tmpl \
+            > scripts/observability/grafana/provisioning/alerting/contactpoints.yml
+
+      - name: 💾 Disk guard
+        run: |
+          AVAIL_GB=$(( $(df --output=avail / | tail -1) / 1024 / 1024 ))
+          echo "📊 ${AVAIL_GB} GB free on /"
+          if [ "${AVAIL_GB}" -lt 10 ]; then
+            echo "::error::Less than 10 GB free on /. Aborting."; df -h /; exit 1
+          fi
+
+      - name: 🔧 Ensure network
+        run: docker network create docsplus-network 2>/dev/null || true
+
+      - name: 🚀 Deploy stack
+        run: |
+          ACTION="${{ github.event_name == 'workflow_dispatch' && inputs.action || 'setup' }}"
+          case "${ACTION}" in
+            restart)
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart ;;
+            *)
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --remove-orphans ;;
+          esac
+
+      - name: 🩺 Verify
+        run: |
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" ps
+          # Grafana ships wget; a single probe after a short settle is fine.
+          sleep 10
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T grafana \
+            wget -qO- http://localhost:3000/api/health | grep -q ok && echo "✅ grafana healthy"
+          # GlitchTip cold-boots + migrates and ships no wget/curl (only python3) — poll up to ~90s.
+          ok=0
+          for _i in $(seq 1 18); do
+            if docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" exec -T glitchtip-web \
+                 python3 -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen("http://localhost:8080/_health/").status==200 else 1)' 2>/dev/null; then
+              ok=1; echo "✅ glitchtip healthy"; break
+            fi
+            sleep 5
+          done
+          [ "${ok}" = 1 ] || { echo "::error::glitchtip-web not healthy after ~90s"; exit 1; }
+
+  teardown:
+    name: 🧹 Down
+    runs-on: prod.docs.plus
+    timeout-minutes: 10
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'down'
+    permissions:
+      contents: read
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: 🔐 Prepare environment
+        run: cp "${ENV_SOURCE}" "${ENV_FILE}"
+      - name: 🧹 Down (keep volumes)
+        run: docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" down

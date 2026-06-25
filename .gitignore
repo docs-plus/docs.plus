@@ -75,6 +75,7 @@ typings/
 .env.test
 .env.local
 .env*.local
+/.env.observability
 
 # Package-level .env files (keep .env.example files)
 **/.env
@@ -187,3 +188,6 @@ docs/skills-output/
 !/.cursor/skills/commit-review/
 !/.cursor/skills/tech-writer/
 !/.cursor/skills/tiptap/
+
+# Rendered at deploy by envsubst from contactpoints.yml.tmpl — holds the real Telegram bot token
+scripts/observability/grafana/provisioning/alerting/contactpoints.yml

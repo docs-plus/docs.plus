@@ -425,3 +425,17 @@ status-prod:
 
 logs-traefik:
 	@docker logs traefik -f --tail 100
+
+# --- Observability (server-only; run on the prod droplet) ---
+OBS_COMPOSE = docker-compose.observability.yml
+OBS_ENV = /opt/projects/prod.docs.plus/.env.observability
+
+.PHONY: observability-up observability-down observability-logs observability-pull
+observability-up:
+	docker compose -f $(OBS_COMPOSE) --env-file $(OBS_ENV) up -d --remove-orphans
+observability-down:
+	docker compose -f $(OBS_COMPOSE) --env-file $(OBS_ENV) down
+observability-logs:
+	docker compose -f $(OBS_COMPOSE) --env-file $(OBS_ENV) logs -f --tail=200
+observability-pull:
+	docker compose -f $(OBS_COMPOSE) --env-file $(OBS_ENV) pull
