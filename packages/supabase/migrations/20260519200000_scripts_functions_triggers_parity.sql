@@ -2327,7 +2327,7 @@ begin
         mb.marked_at as bookmark_marked_at,
         mb.metadata as bookmark_metadata,
         m.id as message_id,
-        m.content as message_content,
+        message_content_preview(m.content, m.medias, m.type) as message_content,
         m.html as message_html,
         m.created_at as message_created_at,
         m.user_id as message_user_id,
@@ -2877,11 +2877,62 @@ $$ language plpgsql;
 comment on function truncate_content(text, int) is
 'Utility function to truncate text content to a specified length with ellipsis, used for preview text generation.';
 
+/**
+ * Preview label for a message row — prefers text, then attachment metadata.
+ */
+create or replace function message_content_preview(
+    p_content text,
+    p_medias jsonb,
+    p_type public.message_type default 'text'
+) returns text as $$
+declare
+    media_count int;
+    first_name text;
+    first_type text;
+begin
+    if coalesce(trim(p_content), '') <> '' then
+        return truncate_content(p_content);
+    end if;
+
+    if p_medias is null or jsonb_typeof(p_medias) <> 'array' then
+        return truncate_content('');
+    end if;
+
+    media_count := jsonb_array_length(p_medias);
+    if media_count = 0 then
+        return truncate_content('');
+    end if;
+
+    first_name := p_medias->0->>'name';
+    first_type := coalesce(p_medias->0->>'type', p_type::text);
+
+    if media_count > 1 then
+        return truncate_content(media_count || ' attachments');
+    end if;
+
+    if first_type = 'file' and coalesce(first_name, '') <> '' then
+        return truncate_content(first_name);
+    end if;
+
+    return truncate_content(case first_type
+        when 'image' then 'Photo'
+        when 'video' then 'Video'
+        when 'audio' then 'Audio'
+        when 'file' then 'File'
+        else 'Attachment'
+    end);
+end;
+$$ language plpgsql;
+
+comment on function message_content_preview(text, jsonb, public.message_type) is
+'Generates sidebar/reply/notification preview text from message content or attachment metadata.';
+
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.truncate_content(input_content text, max_length integer) SET search_path = public;
+ALTER FUNCTION public.message_content_preview(text, jsonb, public.message_type) SET search_path = public;
 -- <<< end 10-0-func-helpers.sql
 
 -- >>> begin 10-1-func-users.sql
@@ -3531,7 +3582,7 @@ BEGIN
         IF OLD.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
             UPDATE public.channels
             SET last_message_preview = (
-                    SELECT truncate_content(m.content)
+                    SELECT message_content_preview(m.content, m.medias, m.type)
                     FROM public.messages m
                     WHERE m.channel_id = OLD.channel_id
                       AND m.deleted_at IS NULL
@@ -3566,6 +3617,7 @@ BEGIN
         -- NULL transition so subscribers prune locally. Payload is id +
         -- channel only; no content leak.
         IF OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL THEN
+            PERFORM internal.delete_chat_media_paths(OLD.medias);
             PERFORM realtime.send(
                 jsonb_build_object('id', NEW.id, 'channel_id', NEW.channel_id),
                 'message:deleted',
@@ -3603,7 +3655,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT;
 BEGIN
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- Update unread notification preview
     UPDATE public.notifications
@@ -3630,9 +3682,13 @@ COMMENT ON FUNCTION update_message_preview_on_edit() IS 'Updates message preview
 
 DROP TRIGGER IF EXISTS update_message_previews ON public.messages;
 CREATE TRIGGER update_message_previews
-AFTER UPDATE OF content ON public.messages
+AFTER UPDATE OF content, medias, type ON public.messages
 FOR EACH ROW
-WHEN (OLD.content IS DISTINCT FROM NEW.content)
+WHEN (
+    OLD.content IS DISTINCT FROM NEW.content
+    OR OLD.medias IS DISTINCT FROM NEW.medias
+    OR OLD.type IS DISTINCT FROM NEW.type
+)
 EXECUTE FUNCTION update_message_preview_on_edit();
 
 COMMENT ON TRIGGER update_message_previews ON public.messages IS 'Updates message previews throughout the system when message content changes.';
@@ -3646,9 +3702,9 @@ COMMENT ON TRIGGER update_message_previews ON public.messages IS 'Updates messag
  */
 CREATE OR REPLACE FUNCTION update_message_edited_at() RETURNS TRIGGER AS $$
 BEGIN
-    -- Check if the content or html column has been updated
-    IF OLD.content IS DISTINCT FROM NEW.content OR OLD.html IS DISTINCT FROM NEW.html THEN
-        -- Update the edited_at timestamp
+    IF OLD.content IS DISTINCT FROM NEW.content
+        OR OLD.html IS DISTINCT FROM NEW.html
+        OR OLD.medias IS DISTINCT FROM NEW.medias THEN
         NEW.edited_at := NOW();
     END IF;
 
@@ -3660,7 +3716,7 @@ COMMENT ON FUNCTION update_message_edited_at() IS 'Sets the edited_at timestamp 
 
 DROP TRIGGER IF EXISTS set_message_edited_at ON public.messages;
 CREATE TRIGGER set_message_edited_at
-BEFORE UPDATE OF content, html ON public.messages
+BEFORE UPDATE OF content, html, medias ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION update_message_edited_at();
 
@@ -3802,6 +3858,187 @@ $$;
 
 grant execute on function public.remove_reaction(uuid, text) to authenticated;
 revoke execute on function public.remove_reaction(uuid, text) from anon, public;
+
+create or replace function internal.normalize_chat_media_path(p_raw text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+    select case
+        when p_raw like 'http%' then
+            regexp_replace(p_raw, '^.+/storage/v1/object/(sign/)?public/media/', '')
+        else p_raw
+    end;
+$$;
+
+comment on function internal.normalize_chat_media_path(text) is
+'Strips signed/public storage URL prefixes to a bucket object path.';
+
+create or replace function internal.delete_chat_media_paths(p_medias jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    elem jsonb;
+    media_path text;
+begin
+    if p_medias is null or jsonb_typeof(p_medias) <> 'array' then
+        return;
+    end if;
+
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction for the GC below.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    for elem in select value from jsonb_array_elements(p_medias) as t(value)
+    loop
+        media_path := internal.normalize_chat_media_path(
+            coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+        );
+        if media_path is null or media_path = '' then
+            continue;
+        end if;
+
+        delete from storage.objects
+        where bucket_id = 'media'
+          and name = media_path;
+    end loop;
+end;
+$$;
+
+comment on function internal.delete_chat_media_paths(jsonb) is
+'Deletes chat media storage objects referenced by a messages.medias array.';
+
+revoke all on function internal.delete_chat_media_paths(jsonb) from public;
+grant execute on function internal.delete_chat_media_paths(jsonb) to service_role;
+
+create or replace function internal.cleanup_orphan_chat_media(p_older_than interval default interval '24 hours')
+returns integer
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    deleted_count integer := 0;
+begin
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction for the GC below.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    with orphan_objects as (
+        select o.name
+        from storage.objects o
+        where o.bucket_id = 'media'
+          and o.created_at < now() - p_older_than
+          and not exists (
+              select 1
+                from public.messages m
+                cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+               where m.deleted_at is null
+                 and internal.normalize_chat_media_path(
+                       coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+                     ) = o.name
+          )
+    )
+    delete from storage.objects o
+    using orphan_objects orphan
+    where o.bucket_id = 'media'
+      and o.name = orphan.name;
+
+    get diagnostics deleted_count = row_count;
+    return deleted_count;
+end;
+$$;
+
+comment on function internal.cleanup_orphan_chat_media(interval) is
+'Removes chat media bucket objects older than p_older_than with no live message reference.';
+
+revoke all on function internal.cleanup_orphan_chat_media(interval) from public;
+grant execute on function internal.cleanup_orphan_chat_media(interval) to service_role;
+
+create or replace function validate_message_medias()
+returns trigger as $$
+declare
+    elem jsonb;
+    media_path text;
+    expected_prefix text;
+    file_ext text;
+    blocked_exts text[] := array['exe','bat','cmd','com','msi','dll','scr','vbs','js','sh','app','dmg','jar','apk','svg'];
+    allowed_exts text[] := array[
+        'jpg','jpeg','png','gif','webp','bmp','heic','heif',
+        'mp4','webm','mov','m4v','mkv','ogv',
+        'mp3','wav','ogg','m4a','aac','flac','opus',
+        'pdf','txt','csv','md','markdown','json',
+        'doc','docx','xls','xlsx','ppt','pptx','zip'
+    ];
+begin
+    if new.medias is null then
+        return new;
+    end if;
+
+    if jsonb_typeof(new.medias) <> 'array' then
+        raise exception 'medias must be a JSON array';
+    end if;
+
+    if jsonb_array_length(new.medias) > 10 then
+        raise exception 'too many media attachments (max 10)';
+    end if;
+
+    expected_prefix := new.user_id::text || '/' || new.channel_id || '/';
+
+    for elem in select value from jsonb_array_elements(new.medias) as t(value)
+    loop
+        media_path := internal.normalize_chat_media_path(
+            coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+        );
+        if media_path is null or media_path = '' then
+            raise exception 'media item requires path or url';
+        end if;
+
+        if media_path not like expected_prefix || '%' then
+            raise exception 'invalid media path for message channel';
+        end if;
+
+        file_ext := lower(regexp_replace(media_path, '^.*\.([^.]+)$', '\1'));
+        if file_ext = media_path then
+            file_ext := '';
+        end if;
+
+        if file_ext = '' or not (file_ext = any (allowed_exts)) then
+            raise exception 'media file type is not allowed';
+        end if;
+
+        if file_ext = any (blocked_exts) then
+            raise exception 'media file type is not allowed';
+        end if;
+
+        if not exists (
+            select 1
+              from storage.objects o
+             where o.bucket_id = 'media'
+               and o.name = media_path
+        ) then
+            raise exception 'media object not found in storage';
+        end if;
+    end loop;
+
+    return new;
+end;
+$$ language plpgsql;
+
+comment on function validate_message_medias() is
+'Ensures messages.medias paths belong to the sender/channel, pass allowlist, exist in storage, and cap at 10.';
+
+drop trigger if exists validate_message_medias on public.messages;
+create trigger validate_message_medias
+before insert or update of medias on public.messages
+for each row
+execute function validate_message_medias();
+
+alter function public.validate_message_medias() set search_path = public, storage;
 -- <<< end 10-3-func-message.sql
 
 -- >>> begin 10-5-func-replied_msg.sql
@@ -3814,17 +4051,24 @@ CREATE OR REPLACE FUNCTION set_replied_message_preview()
 RETURNS TRIGGER AS $$
 DECLARE
     original_message_content TEXT;
+    original_medias JSONB;
+    original_type public.message_type;
     truncated_content TEXT;
 BEGIN
     -- Only proceed if this message is a reply
     IF NEW.reply_to_message_id IS NOT NULL THEN
         -- Retrieve the content of the original message, only if not deleted
-        SELECT content INTO original_message_content FROM public.messages
-        WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
+        SELECT content, medias, type
+          INTO original_message_content, original_medias, original_type
+          FROM public.messages
+         WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
 
         IF FOUND THEN
-            -- Truncate and set the replied_message_preview
-            truncated_content := truncate_content(original_message_content);
+            truncated_content := message_content_preview(
+                original_message_content,
+                original_medias,
+                original_type
+            );
             NEW.replied_message_preview := truncated_content;
         ELSE
             -- Original message does not exist or has been deleted
@@ -3913,7 +4157,7 @@ CREATE OR REPLACE FUNCTION update_channel_preview_on_new_message() RETURNS TRIGG
 DECLARE
     truncated_content TEXT;
 BEGIN
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
         UPDATE public.channels
@@ -4309,7 +4553,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) For each mentioned username, attempt to create a notification.
     --    Anchored regex prevents `@al` from matching `alice`/`alpha`.
@@ -4412,10 +4656,7 @@ BEGIN
     END IF;
 
     -- Truncate content for preview
-    truncated_content := CASE
-        WHEN length(NEW.content) > 100 THEN substring(NEW.content, 1, 100) || '...'
-        ELSE NEW.content
-    END;
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- Create the reply notification
     INSERT INTO public.notifications (
@@ -4482,7 +4723,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) Check for an actual @everyone token (not a substring inside
     --    something like `@everyone_team`).
@@ -4563,7 +4804,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
     INSERT INTO public.notifications (
@@ -6227,7 +6468,8 @@ begin
         count(*) filter (where online_at >= now() - interval '60 days' and online_at < now() - interval '30 days'),
         count(*)
     into v_dau, v_wau, v_mau, v_dau_prev, v_wau_prev, v_mau_prev, v_total_users
-    from public.users;
+    from public.users
+    where deleted_at is null;
 
     return jsonb_build_object(
         'dau', v_dau,
@@ -6286,7 +6528,8 @@ begin
         ),
         count(*)
     into v_new, v_active, v_at_risk, v_churned, v_total
-    from public.users;
+    from public.users
+    where deleted_at is null;
 
     return jsonb_build_object(
         'new', v_new,
@@ -6386,7 +6629,7 @@ comment on function public.get_activity_by_hour(integer) is
 -- -----------------------------------------------------------------------------
 create or replace function public.get_top_active_documents(p_limit integer default 5, p_days integer default 7)
 returns table (
-    workspace_id uuid,
+    workspace_id text,
     document_slug text,
     message_count bigint,
     unique_users bigint
@@ -6512,18 +6755,22 @@ declare
     v_email_enabled integer;
     v_notification_read_rate numeric;
 begin
-    select count(*) into v_total_users from public.users;
+    select count(*) into v_total_users from public.users where deleted_at is null;
 
     -- Users with active push subscriptions
     select count(distinct user_id) into v_push_enabled
     from public.push_subscriptions
-    where user_id is not null;
+    where user_id is not null
+      and is_active = true;
 
     -- Users with email notifications enabled (check profile_data.notification_preferences)
     select count(*) into v_email_enabled
     from public.users
-    where (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
-       or profile_data->'notification_preferences'->>'email_enabled' is null; -- Default is enabled
+    where deleted_at is null
+      and (
+        (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
+        or profile_data->'notification_preferences'->>'email_enabled' is null -- Default is enabled
+      );
 
     -- Notification read rate
     select
