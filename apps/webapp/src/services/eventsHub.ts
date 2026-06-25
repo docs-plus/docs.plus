@@ -2,6 +2,7 @@ import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingAc
 import { TOC_CLASSES } from '@components/toc/tocClasses'
 import { SheetType, useChatStore, useSheetStore } from '@stores'
 import { ensureEmojiData } from '@utils/ensureEmojiData'
+import { removeFilterSegment, resetFilterPath, shallowPathFromAsPath } from '@utils/filterRoute'
 import { formatCappedCount } from '@utils/formatCappedCount'
 import { NextRouter } from 'next/router'
 import PubSub from 'pubsub-js'
@@ -118,36 +119,19 @@ export const eventsHub = (router: NextRouter) => {
     }
 
     // Instant in-place fold — no full-doc skeleton; useApplyFilters reacts to the route.
-    router.push(url.toString(), undefined, { shallow: true })
+    void router.push(shallowPathFromAsPath(url.toString()), undefined, { shallow: true })
   })
 
   PubSub.subscribe(REMOVE_FILTER, (msg, data: TRemoveFilterData) => {
-    const { slug } = data
-
-    const url = new URL(location.href)
-    const segments = url.pathname.split('/').filter(Boolean)
-    if (!segments.length) return
-
-    const [docSlug, ...filterSlugs] = segments
-
-    // Case-insensitive comparison to handle URL encoding and case differences
-    const updatedFilters = filterSlugs.filter(
-      (segment) => slug && decodeURIComponent(segment).toLowerCase() !== slug.toLowerCase()
-    )
-
-    url.pathname = `/${docSlug}${updatedFilters.length ? '/' + updatedFilters.join('/') : ''}`
-
-    router.push(url.toString(), undefined, { shallow: true })
+    const href = removeFilterSegment(router.asPath, data.slug)
+    if (!href) return
+    void router.push(href, undefined, { shallow: true })
   })
 
   PubSub.subscribe(RESET_FILTER, () => {
-    const url = new URL(router.asPath, window.location.origin)
-    const slugs = url.pathname.split('/').slice(1)
-
-    // Preserve the search parameters; reset is an instant in-place unfold.
-    const newUrl = `/${slugs.at(0)}${url.search}`
-
-    router.push(newUrl, undefined, { shallow: true })
+    const href = resetFilterPath(router.asPath)
+    if (!href) return
+    void router.push(href, undefined, { shallow: true })
   })
 
   /**

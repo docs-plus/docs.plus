@@ -41,6 +41,9 @@ const TocModal = () => {
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
+  const hasActiveFilters = useStore(
+    (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
+  )
 
   const openSheetFromToc = useCallback(
     (open: () => void) => {
@@ -92,11 +95,20 @@ const TocModal = () => {
 
         <footer className="border-base-300 bg-base-100 shrink-0 border-t px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
           <div className="bg-base-200 rounded-box flex w-full items-center justify-evenly gap-1 p-0">
-            <TocModalIconButton
-              aria-label="Open filters"
-              onClick={() => openSheetFromToc(openFilters)}
-              startIcon={Icons.filter}
-            />
+            <div className="relative">
+              <TocModalIconButton
+                aria-label="Open filters"
+                onClick={() => openSheetFromToc(openFilters)}
+                startIcon={Icons.filter}
+              />
+              {hasActiveFilters && (
+                <span
+                  data-testid="filter-active-indicator-mobile"
+                  className="bg-error ring-base-200 absolute top-1 right-1 size-1.5 rounded-full ring-2"
+                  aria-hidden
+                />
+              )}
+            </div>
             <TocModalIconButton
               aria-label="Document settings"
               onClick={() => openSheetFromToc(openDocumentSettings)}

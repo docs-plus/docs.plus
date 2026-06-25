@@ -1,61 +1,51 @@
 import { useStore } from '@stores'
+import { normalizeSlugQuery } from '@utils/filterRoute'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-
-const PAD_HEADING_SELECTOR = '.pad.tiptap:not(.history_editor) .ProseMirror [data-toc-id]'
+import { useEffect, useMemo } from 'react'
 
 const useApplyFilters = () => {
   const router = useRouter()
-  const { slugs } = router.query as { slugs: string[] }
+  const slugSegments = useMemo(
+    () => normalizeSlugQuery(router.query.slugs as string | string[] | undefined),
+    [router.query.slugs]
+  )
   const mode: 'or' | 'and' = router.query.mode === 'and' ? 'and' : 'or'
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const loading = useStore((state) => state.settings.editor.loading)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
 
-  const [isDocumentReady, setIsDocumentReady] = useState(false)
-
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>
-    const checkDocumentReady = () => {
-      const headings = document.querySelectorAll(PAD_HEADING_SELECTOR)
-      if (headings.length > 0) {
-        setIsDocumentReady(true)
-      } else {
-        timeoutId = setTimeout(checkDocumentReady, 200)
-      }
-    }
+    if (!router.isReady || !editor || loading || providerSyncing) return
 
-    checkDocumentReady()
-    return () => clearTimeout(timeoutId)
-  }, [])
+    const filterSlugs =
+      slugSegments.length > 1
+        ? slugSegments.slice(1).map((segment) => decodeURIComponent(segment).toLowerCase())
+        : []
 
-  useEffect(() => {
-    if (!isDocumentReady || !editor || loading) return
-    if (!slugs) return
-
-    if (slugs.length === 1) {
+    if (filterSlugs.length === 0) {
       editor.commands.clearFilter()
       setWorkspaceEditorSetting('filterResult', { sortedSlugs: [] })
       return
     }
 
-    const filterSlugs = slugs.slice(1).map((s) => s.toLowerCase())
-
-    if (filterSlugs.length === 0) {
-      editor.commands.clearFilter()
-      return
-    }
-
     editor.commands.applyFilter(filterSlugs, mode)
-
-    const sortedSlugs = filterSlugs.map((slug) => ({
-      type: 'parent' as const,
-      text: slug,
-      existsInParent: true
-    }))
-
-    setWorkspaceEditorSetting('filterResult', { sortedSlugs })
-  }, [loading, isDocumentReady, slugs, mode, editor, setWorkspaceEditorSetting])
+    setWorkspaceEditorSetting('filterResult', {
+      sortedSlugs: filterSlugs.map((text) => ({
+        type: 'parent' as const,
+        text,
+        existsInParent: true
+      }))
+    })
+  }, [
+    router.isReady,
+    loading,
+    providerSyncing,
+    slugSegments,
+    mode,
+    editor,
+    setWorkspaceEditorSetting
+  ])
 }
 
 export default useApplyFilters

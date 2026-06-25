@@ -327,7 +327,7 @@ const MobilePadTitle = () => {
 
           {/* Filter bar row */}
           <div className="w-full">
-            <FilterBar />
+            <FilterBar displayRestButton />
           </div>
         </div>
       </header>

@@ -26,11 +26,13 @@ describe('Document filter (mobile sheet)', () => {
 
     // Counter is driven by real headings, not the old dead `.title` selector.
     cy.get('#filterSearchBox').type('apple')
-    cy.get('[data-testid="filter-match-count"]').should('contain', '1')
+    cy.get('[data-testid="filter-match-count"]').should('contain', 'section')
 
     cy.get('[data-testid="filter-sheet-apply"]').click({ force: true })
     cy.location('pathname').should('include', 'apple')
     cy.get('.heading-fold-hidden', { timeout: 8000 }).should('exist')
+    cy.get('[data-testid="filter-sheet-apply"]').should('not.exist')
+    cy.get('[aria-label="Remove filter: apple"]').should('exist')
     cy.window().its('__noReload').should('eq', true) // SPA push, no full reload
   })
 })
