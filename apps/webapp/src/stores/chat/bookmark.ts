@@ -1,4 +1,4 @@
-import { type TBookmarkTab } from '@types'
+import { type TBookmarkTab, type TBookmarkWithMessage } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
 type TBookmarkTabData = {
@@ -14,39 +14,9 @@ type TBookmarkStats = {
   read: number
 }
 
-type TUserDetails = {
-  id: string
-  username: string
-  fullname: string
-  avatar_url: string | null
-  avatar_updated_at: string | null
-}
-
-type TBookmark = {
-  bookmark_id: number
-  bookmark_created_at: string
-  bookmark_updated_at: string
-  bookmark_archived_at: string | null
-  bookmark_marked_at: string | null
-  bookmark_metadata: Record<string, any>
-  message_id: string
-  message_content: string
-  message_html: string
-  message_created_at: string
-  message_user_id: string
-  message_channel_id: string
-  message_type: string
-  user_details: TUserDetails
-  channel_name: string
-  channel_slug: string
-  workspace_id: string
-  workspace_name: string
-  workspace_slug: string
-}
-
 type BookmarkDraft = {
   bookmarkTabs: TBookmarkTabData[]
-  bookmarks: Map<TBookmarkTab, TBookmark[]>
+  bookmarks: Map<TBookmarkTab, TBookmarkWithMessage[]>
 }
 
 function adjustBookmarkTabCount(
@@ -76,7 +46,7 @@ function relocateBookmark(
   bookmarkId: number,
   fromTab: TBookmarkTab,
   toTab: TBookmarkTab,
-  patch?: Partial<TBookmark>
+  patch?: Partial<TBookmarkWithMessage>
 ) {
   const fromList = state.bookmarks.get(fromTab) || []
   const bookmark = fromList.find((b) => b.bookmark_id === bookmarkId)
@@ -99,17 +69,17 @@ interface IBookmarkStore {
   bookmarkSummary: TBookmarkStats
   bookmarkTabs: TBookmarkTabData[]
   loadingBookmarks: boolean
-  bookmarks: Map<TBookmarkTab, TBookmark[]>
+  bookmarks: Map<TBookmarkTab, TBookmarkWithMessage[]>
   bookmarkActiveTab: TBookmarkTab
   bookmarkPage: number
   setBookmarkSummary: (summary: TBookmarkStats) => void
-  setBookmarks: (tab: TBookmarkTab, bookmarks: TBookmark[]) => void
+  setBookmarks: (tab: TBookmarkTab, bookmarks: TBookmarkWithMessage[]) => void
   setBookmarkTab: (tab: TBookmarkTab, count?: number) => void
   setLoadingBookmarks: (loading: boolean) => void
   setBookmarkActiveTab: (tab: TBookmarkTab) => void
   setBookmarkPage: (page: number) => void
   clearBookmarks: () => void
-  updateBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmark[]) => void
+  updateBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmarkWithMessage[]) => void
   commitBookmarkRemoved: (bookmarkId: number) => void
   commitBookmarkMarkedRead: (bookmarkId: number) => void
   commitBookmarkArchived: (bookmarkId: number, fromTab: TBookmarkTab) => void
@@ -124,7 +94,7 @@ const bookmark = immer<IBookmarkStore>((set) => ({
     unread: 0,
     read: 0
   },
-  bookmarks: new Map<TBookmarkTab, TBookmark[]>(),
+  bookmarks: new Map<TBookmarkTab, TBookmarkWithMessage[]>(),
   bookmarkTabs: [
     { label: 'in progress', count: 0 },
     { label: 'archive', count: 0 },
@@ -155,13 +125,13 @@ const bookmark = immer<IBookmarkStore>((set) => ({
     })
   },
 
-  setBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmark[]) => {
+  setBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmarkWithMessage[]) => {
     set((state) => {
       state.bookmarks.set(tab, newBookmarks)
     })
   },
 
-  updateBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmark[]) => {
+  updateBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmarkWithMessage[]) => {
     set((state) => {
       const existingBookmarks = state.bookmarks.get(tab) || []
       state.bookmarks.set(tab, [...existingBookmarks, ...newBookmarks])

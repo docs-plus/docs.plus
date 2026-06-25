@@ -30,7 +30,6 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
     updateBookmarks
   } = useChatStore((state) => state)
   const { request: statsRequest } = useApi(getBookmarkStats, null, false)
-  const { request: listRequest } = useApi(getUserBookmarks, null, false)
 
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -46,7 +45,7 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
 
     const loadTab = (tab: TBookmarkTab) => {
       const { archived, markedAsRead } = bookmarkTabFetchParams(tab)
-      return listRequest({
+      return getUserBookmarks({
         workspaceId,
         archived,
         markedAsRead,
@@ -78,9 +77,9 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
           setBookmarkTab('read', summaryData.read || 0)
         }
 
-        setBookmarks('in progress', inProgressResult.data || [])
-        setBookmarks('archive', archivedResult.data || [])
-        setBookmarks('read', readResult.data || [])
+        setBookmarks('in progress', inProgressResult.data ?? [])
+        setBookmarks('archive', archivedResult.data ?? [])
+        setBookmarks('read', readResult.data ?? [])
         setBookmarkPage(1)
       } catch (error) {
         console.error('Error fetching bookmark feed:', error)
@@ -118,7 +117,7 @@ export function useBookmarkPanelFeed(): UseBookmarkPanelFeedResult {
           offset
         })
         if (error) throw error
-        return data || []
+        return data ?? []
       } catch (error) {
         console.error('Error fetching bookmarks:', error)
         return []

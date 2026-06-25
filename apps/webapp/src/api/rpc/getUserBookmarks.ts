@@ -16,7 +16,7 @@ export const getUserBookmarks = async ({
   markedAsRead = null,
   limit = 50,
   offset = 0
-}: TGetUserBookmarks): Promise<PostgrestResponse<TBookmarkWithMessage[]>> => {
+}: TGetUserBookmarks): Promise<PostgrestResponse<TBookmarkWithMessage>> => {
   return supabaseClient.rpc('get_user_bookmarks', {
     p_workspace_id: workspaceId || null,
     p_archived: archived,
