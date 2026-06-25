@@ -129,16 +129,16 @@
         "ioredis": "^5.11.1",
         "isbot": "^5.1.43",
         "jsonwebtoken": "^9.0.3",
-        "metascraper": "^5.50.6",
-        "metascraper-author": "^5.50.6",
-        "metascraper-date": "^5.50.6",
-        "metascraper-description": "^5.50.6",
-        "metascraper-image": "^5.50.6",
-        "metascraper-lang": "^5.50.6",
-        "metascraper-logo": "^5.50.6",
-        "metascraper-publisher": "^5.50.6",
-        "metascraper-title": "^5.50.6",
-        "metascraper-url": "^5.50.6",
+        "metascraper": "5.50.6",
+        "metascraper-author": "5.50.6",
+        "metascraper-date": "5.50.6",
+        "metascraper-description": "5.50.6",
+        "metascraper-image": "5.50.6",
+        "metascraper-lang": "5.50.6",
+        "metascraper-logo": "5.50.6",
+        "metascraper-publisher": "5.50.6",
+        "metascraper-title": "5.50.6",
+        "metascraper-url": "5.50.6",
         "mime": "^4.1.0",
         "nodemailer": "^8.0.11",
         "pg": "^8.21.0",
@@ -520,6 +520,16 @@
   },
   "overrides": {
     "@metascraper/helpers": "5.50.6",
+    "metascraper": "5.50.6",
+    "metascraper-author": "5.50.6",
+    "metascraper-date": "5.50.6",
+    "metascraper-description": "5.50.6",
+    "metascraper-image": "5.50.6",
+    "metascraper-lang": "5.50.6",
+    "metascraper-logo": "5.50.6",
+    "metascraper-publisher": "5.50.6",
+    "metascraper-title": "5.50.6",
+    "metascraper-url": "5.50.6",
   },
   "catalog": {
     "@eslint/js": "^9.39.4",
@@ -3100,25 +3110,25 @@
 
     "merge2": ["merge2@1.4.1", "", {}, "sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg=="],
 
-    "metascraper": ["metascraper@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1", "cheerio": "~1.2.0", "debug-logfmt": "~1.4.12", "whoops": "~5.1.2" } }, "sha512-7ZmGn0EBv0oNxwaaUuxeUge/GkpCfuuuMV6/0aXgfU4WQ60yJj+/u13A2tqSe0otQq640YkEXua90uKsAwlWdA=="],
+    "metascraper": ["metascraper@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6", "cheerio": "~1.2.0", "debug-logfmt": "~1.4.12", "whoops": "~5.1.2" } }, "sha512-CAsa4/sDtDiDZHDY6x6JlCmCTFlerDoTc5B+gMvVP3WeispCmuTv7XzTdbMaFmoUjVfwFErqh1hSX1RCvgda5A=="],
 
-    "metascraper-author": ["metascraper-author@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-wXhGsUQ4HDQoYeEYyLqAd1OzfMH+EdpN0lR3bQNF09JdvCwD8gacVEIyMogO1SQ0DjvecvIEL3wJgVFlMI6q0Q=="],
+    "metascraper-author": ["metascraper-author@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-JmW9Tmv9mHbH+Bv29uvSx1n5kh2oA3kO+pN+UTKoYaVCedsrp/romAcpbwUtJ2mnxgF0NM0g2Ifmj8uwx88SGg=="],
 
-    "metascraper-date": ["metascraper-date@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-7bTvkivAYkhyZJ5v7BwxEc6v2Gn2We91OxBK7gEtl9zwnMYx5WO4xLp7zMhp4nR5k/daeMOL5XhvPVZgI121WQ=="],
+    "metascraper-date": ["metascraper-date@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-A4qZRLFkMYaZx3XETEG4Lku/plk5L/Q9+hX8L+FiLJs2sdcrsZj19JBr3I/iNX2i5VkLTB29WRnVy3/qQt6RGw=="],
 
-    "metascraper-description": ["metascraper-description@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-N7ki5J46p5b7fdw/+55i8kMnjQ1tJ2vHa/RTeJ9DidK46kUzReQV9S6r2J9fqZwUEGB6sMQjyX2SkXqmeOdhtQ=="],
+    "metascraper-description": ["metascraper-description@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-VNeFg7CTXkNde+RNmDtHVbsXr4ZfAPjknEfVkUM1TCDnuUMfzD2gwRqJPKhgjERcQsqL5rh6whHb57zAgdr88w=="],
 
-    "metascraper-image": ["metascraper-image@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-oRiCb6KB7VrfSMQCHcon70BkoJP2B53d0sEjTwFrsVwV4uSbZHtlTRyIZ00tXZ07wbYJeTst/PjUywCtbIMEfA=="],
+    "metascraper-image": ["metascraper-image@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-0if6U1/StyjPNrnEf/bjCVPvUuwQvOBu2/WYQmRC2cPPGclmZQEzp24AAgaKz32+ogSKqMm1gmdzRIW6gV5iVQ=="],
 
-    "metascraper-lang": ["metascraper-lang@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-hvx85qyt8L1EQKsKBcj47k02Aq9JuF92+zL8LCSLjxDTcbBtq90b+vVBSNw1Dv+v0ggvyr+Mke8UTRuQmJ0QcQ=="],
+    "metascraper-lang": ["metascraper-lang@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-kWaZvIrZSa9C29+QzwdmX++H9Rv9+xjxz0uki9qUSKPl4icFpzGYqve7tzrXGO5ZMvKZM+36RfnXOZtlAJuJKQ=="],
 
-    "metascraper-logo": ["metascraper-logo@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1", "lodash": "~4.18.0" } }, "sha512-Oy1T3lFbn+g+q77e6HLIek44feIYjPm8YPKB3+5vP18+vJK1vK0dncfvOJz4GRDykTyHHzepAuE3lvl45hUFOA=="],
+    "metascraper-logo": ["metascraper-logo@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6", "lodash": "~4.18.0" } }, "sha512-r2RgYvtvO8NUAkbVTvA5ZjAqt3XHoVEVRg93FsZLzkSCQFXoQTCxosq4FhljLebf3bnDHZOtoJzqsw8d9oPeag=="],
 
-    "metascraper-publisher": ["metascraper-publisher@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-WWoUr+b731k9HOXxokWEiTHGxyvKwCn1R73h7++6TNmHcPSJWfTtg7JuS/7FDNSbIbHW6Afpi43yBkhGm4y1Vg=="],
+    "metascraper-publisher": ["metascraper-publisher@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-acBz4sjfe7Jp+QtO6CU5V9YSlrXrFJPlQ3E4SrCebBOGMYgVtZVcq+Dm/NTSmExoVEBsw6iZRMtRYxWK8OXy9g=="],
 
-    "metascraper-title": ["metascraper-title@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-aXsjULWwxjJwL9JpQL5Ihx1QYGLb3ApuRLTk8DDzHvlSliQ9mpU7wRpZDmt9XJIOJ5RgNqTLobSd+7/BINOsow=="],
+    "metascraper-title": ["metascraper-title@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-RDw/gvRAQjr1ITEEvg3hTGa4ehxsiOay6lJXKJI9Bu4Clz6GyM8SexPqnwF0rZhwFahrLQVfR13GC65MbUvnbg=="],
 
-    "metascraper-url": ["metascraper-url@5.51.1", "", { "dependencies": { "@metascraper/helpers": "5.51.1" } }, "sha512-WmY1AdM4uRJu1l4XfC5A84JdfYGX7I0+NQQSNkHuib4x484Fzqvl6OehBPleP4qjdDl9k0I7uZ8ivY6kFzOABQ=="],
+    "metascraper-url": ["metascraper-url@5.50.6", "", { "dependencies": { "@metascraper/helpers": "5.50.6" } }, "sha512-SOPzvmhO4SRV7SzrEFhK+m6/8ZAqQeISaAudKr5qo1Mt4EZ7GJT7eWSqYECgPuXo7qGh6e60G5qomaEcIYpMKw=="],
 
     "micromatch": ["micromatch@4.0.8", "", { "dependencies": { "braces": "^3.0.3", "picomatch": "^2.3.1" } }, "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA=="],
 
