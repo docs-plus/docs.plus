@@ -79,6 +79,56 @@ type Props = {
   children: React.ReactNode
 } & Omit<React.HTMLProps<HTMLDivElement>, 'size'>
 
+export function ModalHeading({
+  children,
+  className = '',
+  id: idProp
+}: {
+  children: React.ReactNode
+  className?: string
+  id?: string
+}) {
+  const { setLabelId } = useModalContext()
+  const generatedId = useId()
+  const id = idProp ?? generatedId
+
+  React.useLayoutEffect(() => {
+    setLabelId(id)
+    return () => setLabelId(undefined)
+  }, [id, setLabelId])
+
+  return (
+    <h2 id={id} className={className}>
+      {children}
+    </h2>
+  )
+}
+
+export function ModalDescription({
+  children,
+  className = '',
+  id: idProp
+}: {
+  children: React.ReactNode
+  className?: string
+  id?: string
+}) {
+  const { setDescriptionId } = useModalContext()
+  const generatedId = useId()
+  const id = idProp ?? generatedId
+
+  React.useLayoutEffect(() => {
+    setDescriptionId(id)
+    return () => setDescriptionId(undefined)
+  }, [id, setDescriptionId])
+
+  return (
+    <p id={id} className={className}>
+      {children}
+    </p>
+  )
+}
+
 export const ModalContent = function ModalContent({
   size = 'md',
   align = 'center',
@@ -87,22 +137,19 @@ export const ModalContent = function ModalContent({
   ...restProps
 }: Props) {
   const sizeClasses: Record<typeof size, string> = {
-    sm: 'w-full max-w-sm', // 384px
-    md: 'w-full max-w-md', // 448px
-    lg: 'w-full max-w-lg', // 512px
-    xl: 'w-full max-w-xl', // 576px
-    '2xl': 'w-full max-w-2xl', // 672px
-    '3xl': 'w-full max-w-3xl', // 768px
-    '4xl': 'w-full max-w-4xl', // 896px
-    '5xl': 'w-full max-w-5xl', // 1024px
+    sm: 'w-full max-w-sm',
+    md: 'w-full max-w-md',
+    lg: 'w-full max-w-lg',
+    xl: 'w-full max-w-xl',
+    '2xl': 'w-full max-w-2xl',
+    '3xl': 'w-full max-w-3xl',
+    '4xl': 'w-full max-w-4xl',
+    '5xl': 'w-full max-w-5xl',
     full: 'w-full max-w-[calc(100vw-2rem)] h-full max-h-[calc(100vh-2rem)]'
   }
-  const { refs, context, getFloatingProps } = useModalContext()
+  const { refs, context, labelId, descriptionId, getFloatingProps } = useModalContext()
   const ref = useMergeRefs([refs.setFloating]) as React.Ref<HTMLDivElement>
-  const id = useId()
 
-  // Dialog tier: backdrop 150ms fade, card 180ms ease-out scale from center,
-  // exits 150ms. JS-gated for reduced motion (inline styles beat CSS PRM rules).
   const reduced = prefersReducedMotion()
   const { isMounted, styles: backdropStyles } = useTransitionStyles(context, {
     duration: reduced ? 0 : { open: MOTION_DIALOG_OUT_MS, close: MOTION_DIALOG_OUT_MS },
@@ -119,8 +166,22 @@ export const ModalContent = function ModalContent({
 
   if (!isMounted) return null
 
-  // Extract only the props we need to pass to getFloatingProps (excluding ref/children)
-  const { ref: _ref, ...safeProps } = restProps as { ref?: unknown; [key: string]: unknown }
+  const {
+    ref: _ref,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    ...safeProps
+  } = restProps as {
+    ref?: unknown
+    'aria-label'?: string
+    'aria-labelledby'?: string
+    'aria-describedby'?: string
+    [key: string]: unknown
+  }
+
+  const labelledBy = ariaLabelledBy ?? labelId
+  const describedBy = ariaDescribedBy ?? descriptionId
 
   return (
     <FloatingPortal>
@@ -139,9 +200,9 @@ export const ModalContent = function ModalContent({
               ref={ref}
               style={cardStyles}
               className={`outline-none ${sizeClasses[size]} rounded-box border-base-300 bg-base-100 flex max-h-[90vh] flex-col overflow-hidden border shadow-xl ${className}`}
-              aria-labelledby={id}
-              aria-describedby={id}
-              id={id}
+              aria-label={ariaLabel}
+              aria-labelledby={ariaLabel ? undefined : labelledBy}
+              aria-describedby={describedBy}
               {...getFloatingProps(safeProps)}>
               {children}
             </div>
