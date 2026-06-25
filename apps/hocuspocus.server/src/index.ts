@@ -1,3 +1,5 @@
+import './lib/instrument'
+
 import { Hono } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
@@ -9,6 +11,7 @@ import hypermultimediaRouter from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
+import { captureException } from './lib/instrument'
 import { logger, restApiLogger } from './lib/logger'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
@@ -54,6 +57,7 @@ app.notFound((c) =>
 )
 app.onError((err, c) => {
   restApiLogger.error({ err, method: c.req.method, path: c.req.path }, 'Unhandled request error')
+  captureException(err instanceof Error ? err : new Error(String(err)))
   const status = (err instanceof AppError ? err.statusCode : 500) as ContentfulStatusCode
   return c.json(getErrorResponse(err instanceof Error ? err : new Error(String(err))), status)
 })

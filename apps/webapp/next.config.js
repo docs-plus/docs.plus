@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 
+const { withSentryConfig } = require('@sentry/nextjs')
 const runtimeCaching = require('./config/pwa/workbox-runtime-caching')
 const {
   X_SCRIPT_HOSTS,
@@ -372,4 +373,10 @@ module.exports = withPWA({
       }
     ]
   }
+})
+
+module.exports = withSentryConfig(module.exports, {
+  silent: true,
+  disableLogger: true,
+  sourcemaps: { disable: true } // capture only; no sourcemap upload for now
 })

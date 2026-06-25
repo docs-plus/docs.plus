@@ -1,3 +1,5 @@
+import './lib/instrument'
+
 import { Hono } from 'hono'
 
 import { config } from './config/env'
@@ -7,6 +9,7 @@ import {
   startEmailQueueConsumer,
   stopEmailQueueConsumer
 } from './lib/email'
+import { captureException } from './lib/instrument'
 import { workerLogger } from './lib/logger'
 import { checkDatabaseHealth, prisma, shutdownDatabase } from './lib/prisma'
 import {
@@ -258,6 +261,7 @@ const shutdown = async () => {
     process.exit(0)
   } catch (err) {
     workerLogger.error({ err }, '❌ Error during shutdown')
+    captureException(err)
     process.exit(1)
   }
 }

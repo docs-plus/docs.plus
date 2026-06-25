@@ -1,3 +1,4 @@
+import './lib/instrument'
 import './config/env' // validate env first (fail-fast at boot)
 
 import type { Connection } from '@hocuspocus/server'
@@ -6,6 +7,7 @@ import { Server } from '@hocuspocus/server'
 import HocuspocusConfig from './config/hocuspocus.config'
 import { verifySupabaseToken } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
+import { captureException } from './lib/instrument'
 import { logger } from './lib/logger'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues } from './lib/queue'
@@ -95,6 +97,7 @@ const statelessExtension = {
         sendHistoryResponse(connection, type, response)
       } catch (error) {
         wsLogger.error({ err: error }, 'Error handling history event')
+        captureException(error)
         sendHistoryResponse(connection, type, null, 'history_failed')
       }
       return
@@ -138,6 +141,7 @@ const serverConfig = {
         }
       } catch (error) {
         wsLogger.error({ err: error, documentName }, 'Auth error')
+        captureException(error)
         if (isProd) throw new Error('Authentication failed', { cause: error })
         user = null
         slug = ''
@@ -193,6 +197,7 @@ const shutdown = async () => {
     process.exit(0)
   } catch (err) {
     wsLogger.error({ err }, '❌ Error during shutdown')
+    captureException(err)
     process.exit(1)
   }
 }

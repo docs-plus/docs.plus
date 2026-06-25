@@ -48,6 +48,7 @@
     "@hono/zod-validator": "^0.8.0",
     "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.19.3",
+    "@sentry/bun": "^10.61.0",
     "@supabase/supabase-js": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-document": "catalog:",

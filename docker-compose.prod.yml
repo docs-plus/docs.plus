@@ -182,6 +182,8 @@ services:
       DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-10485760}
       # VAPID public key (needed for API responses, not sending)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+      SENTRY_ROLE: rest-api
     networks:
       - docsplus-network
     depends_on:
@@ -274,6 +276,8 @@ services:
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
       DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-10485760}
+      GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+      SENTRY_ROLE: hocuspocus-server
     networks:
       - docsplus-network
     depends_on:
@@ -379,6 +383,8 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:support@docs.plus}
       # Worker resilience settings (shutdown timeout should be < stop_grace_period)
       WORKER_SHUTDOWN_TIMEOUT_MS: 120000
+      GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+      SENTRY_ROLE: hocuspocus-worker
     networks:
       - docsplus-network
     depends_on:
@@ -436,6 +442,7 @@ services:
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
         NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
         NEXT_PUBLIC_VIRTUOSO_LICENSE: ${NEXT_PUBLIC_VIRTUOSO_LICENSE}
+        NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
     restart: always # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -452,6 +459,7 @@ services:
       NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
       NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+      NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
       # Server-side API URL (internal Docker network)
       SERVER_RESTAPI_URL: http://rest-api:4000/api
     networks:
@@ -513,6 +521,7 @@ services:
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
+        NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
     restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -524,6 +533,7 @@ services:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
+      NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
     networks:
       - docsplus-network
     labels:
