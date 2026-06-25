@@ -108,7 +108,6 @@ export default function Document() {
         <meta name="format-detection" content="email=no" />
 
         {/* ── SEO ───────────────────────────────────────────── */}
-        <meta name="robots" content="noindex, nofollow" />
         <meta name="referrer" content="no-referrer" />
 
         {/*

@@ -1,11 +1,5 @@
 @use './prose-mirror-body' as proseMirrorBody;
 @import 'tailwindcss';
-/* @docs.plus/extension-hypermultimedia — keep in sync with STYLE_FILES in extensions/extension-hypermultimedia/tsup.config.ts */
-@import '../../../../extensions/extension-hypermultimedia/src/styles/resize-gripper.css';
-@import '../../../../extensions/extension-hypermultimedia/src/styles/media-loading-shell.css';
-@import '../../../../extensions/extension-hypermultimedia/src/styles/media-node-x.css';
-@import '../../../../extensions/extension-hypermultimedia/src/styles/media-node-loom.css';
-@import '../../../../extensions/extension-hypermultimedia/src/styles/media-toolbar.css';
 @plugin 'daisyui';
 
 /* Map Tailwind's dark: variant to DaisyUI's data-theme attribute.

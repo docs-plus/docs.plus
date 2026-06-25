@@ -1,0 +1,6 @@
+// App styles pipeline (after globals.scss): layout → UI components → theme → feature layers
+@use './blocks';
+@use './print';
+@use './components/shell-index';
+@use './daisyui';
+@use './entry';

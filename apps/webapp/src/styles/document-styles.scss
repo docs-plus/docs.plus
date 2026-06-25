@@ -1,11 +1,6 @@
-// App styles pipeline (after globals.scss): layout → UI components → theme → feature layers
-@use './blocks';
-@use './print';
-@use './components/index';
-@use './daisyui';
 @use './mobile';
 @use './chat-editor';
-@use './entry';
+@use './components/document-chrome';
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;

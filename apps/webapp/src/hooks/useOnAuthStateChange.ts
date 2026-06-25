@@ -1,60 +1,39 @@
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore } from '@stores'
+import type { User } from '@supabase/supabase-js'
+import type { Profile } from '@types'
+import { ensureAnonymousSession, resetAnonymousSessionGate } from '@utils/ensureAnonymousSession'
 import { supabaseClient } from '@utils/supabase'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 
-export const useOnAuthStateChange = () => {
+interface UseOnAuthStateChangeOptions {
+  deferAnonymousAuth: boolean
+}
+
+export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChangeOptions) => {
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
-  const anonymousSignInAttempted = useRef(false)
 
   const getUserProfile = useCallback(
-    async (user: any) => {
-      const { data, error } = (await getUserByIdRequest(user.id)) as any
+    async (user: User) => {
+      const { data, error } = await getUserByIdRequest(user.id)
       if (error) throw error
       if (!data) {
-        // Authenticated but no public.users row — usually a stale session
-        // surviving a local DB reset. Sign out so the next entry hits the
-        // signup flow's handle_new_user trigger cleanly.
         console.warn('No public.users row for authenticated user; signing out.')
         await supabaseClient.auth.signOut()
         return
       }
-      useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' })
+      useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' } as Profile)
       setLoading(false)
     },
     [getUserByIdRequest, setLoading]
   )
 
-  /**
-   * Sign in anonymously if no session exists.
-   * Anonymous users get a persistent user_id that can be linked to a real account later.
-   * @see https://supabase.com/docs/guides/auth/auth-anonymous
-   *
-   * The success path resolves the auth-loading state synchronously via
-   * `setSession(data.user, true)` (which sets `loading: false` in the store).
-   * Do NOT rely on the post-signin `SIGNED_IN` event — the
-   * `onAuthStateChange` handler below intentionally omits SIGNED_IN from
-   * its branches to avoid re-fetching the profile on every tab focus /
-   * token refresh in older Supabase versions, so the event has no
-   * listener and the loading state would stick forever.
-   */
-  const signInAnonymously = useCallback(async () => {
-    // Prevent multiple attempts
-    if (anonymousSignInAttempted.current) return
-    anonymousSignInAttempted.current = true
-
+  const bootstrapAnonymousSession = useCallback(async () => {
     try {
-      const { data, error } = await supabaseClient.auth.signInAnonymously()
-      if (error) {
-        console.warn('Anonymous sign-in failed:', error.message)
-        setLoading(false)
-        return
-      }
-      if (data?.user) {
-        useAuthStore.getState().setSession(data.user, true)
-      } else {
+      await ensureAnonymousSession()
+      if (!useAuthStore.getState().profile) {
         setLoading(false)
       }
     } catch (err) {
@@ -63,9 +42,7 @@ export const useOnAuthStateChange = () => {
     }
   }, [setLoading])
 
-  // Handle auth state changes
   useEffect(() => {
-    // Check navigator.onLine directly (window check is redundant but harmless)
     if (!navigator.onLine) {
       setLoading(false)
       return
@@ -73,7 +50,6 @@ export const useOnAuthStateChange = () => {
 
     setLoading(true)
     const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
-      // Callback runs on client, navigator.onLine check is sufficient
       if (!navigator.onLine) {
         setLoading(false)
         return
@@ -81,24 +57,24 @@ export const useOnAuthStateChange = () => {
 
       if (event === 'INITIAL_SESSION') {
         if (!session?.user) {
-          // No session - sign in anonymously for document view tracking
-          signInAnonymously()
+          if (deferAnonymousAuth) {
+            setLoading(false)
+            return
+          }
+          bootstrapAnonymousSession()
           return
         }
       }
       if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
-          // User is not logged in
           setLoading(false)
           return
         }
-        // Track if user is anonymous (from Supabase Anonymous Auth)
         const isAnonymous = session?.user?.is_anonymous || false
         useAuthStore.getState().setSession(session?.user || null, isAnonymous)
 
-        // Only fetch profile for non-anonymous users (anonymous users don't have profiles)
         if (session?.user && !isAnonymous) {
-          getUserProfile(session?.user)
+          getUserProfile(session.user)
         } else {
           setLoading(false)
         }
@@ -107,12 +83,10 @@ export const useOnAuthStateChange = () => {
         useAuthStore.getState().setSession(null, false)
         useAuthStore.getState().setProfile(null)
         setLoading(false)
-        // Reset flag so anonymous sign-in can happen again
-        anonymousSignInAttempted.current = false
+        resetAnonymousSessionGate()
       }
     })
 
-    // Unsubscribe when going offline
     const handleOffline = () => {
       data.subscription.unsubscribe()
     }
@@ -123,5 +97,5 @@ export const useOnAuthStateChange = () => {
       data.subscription.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [signInAnonymously, getUserProfile, setLoading])
+  }, [bootstrapAnonymousSession, deferAnonymousAuth, getUserProfile, setLoading])
 }

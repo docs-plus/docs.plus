@@ -7,7 +7,7 @@ const ONLINE = 'ONLINE'
 const OFFLINE = 'OFFLINE'
 const HEARTBEAT_INTERVAL = 60000 // 60 seconds - keeps online_at fresh for push suppression
 
-export const useHandleUserStatus = () => {
+export const useHandleUserStatus = (enabled = true) => {
   const user = useAuthStore ? useAuthStore((state) => state?.profile) : null
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -29,7 +29,6 @@ export const useHandleUserStatus = () => {
     [user]
   )
 
-  // Silent heartbeat - refreshes online_at without changing status
   const sendHeartbeat = useCallback(async () => {
     if (!user || document.visibilityState !== 'visible') return
     try {
@@ -39,13 +38,11 @@ export const useHandleUserStatus = () => {
     }
   }, [user])
 
-  // Debounced updateUserStatus function
   const debouncedUpdateUserStatus = useMemo(
     () => debounce(updateUserStatus, 3000),
     [updateUserStatus]
   )
 
-  // Handlers
   const handleOnline = useCallback(
     () => debouncedUpdateUserStatus(ONLINE),
     [debouncedUpdateUserStatus]
@@ -94,15 +91,14 @@ export const useHandleUserStatus = () => {
   }, [user])
 
   useEffect(() => {
-    // Set online on mount
+    if (!enabled) return
+
     handleOnline()
 
-    // Start heartbeat if tab is visible
     if (document.visibilityState === 'visible') {
       startHeartbeat()
     }
 
-    // Event listeners
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
     window.addEventListener('beforeunload', handleOffline)
@@ -119,6 +115,7 @@ export const useHandleUserStatus = () => {
       debouncedUpdateUserStatus.cancel()
     }
   }, [
+    enabled,
     handleOnline,
     handleOffline,
     handleUnload,

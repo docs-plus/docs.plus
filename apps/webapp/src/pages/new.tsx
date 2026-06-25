@@ -1,3 +1,4 @@
+import { randomDocumentSlug } from '@utils/sanitizeDocumentSlug'
 import { GetServerSidePropsContext } from 'next'
 
 /**
@@ -12,7 +13,7 @@ import { GetServerSidePropsContext } from 'next'
  * Uses 307 (Temporary Redirect) so each visit creates a NEW document.
  */
 export async function getServerSideProps(_context: GetServerSidePropsContext) {
-  const randomSlug = (Math.random() + 1).toString(36).substring(2)
+  const randomSlug = randomDocumentSlug()
 
   return {
     redirect: {

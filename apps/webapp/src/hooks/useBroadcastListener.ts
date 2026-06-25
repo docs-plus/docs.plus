@@ -17,7 +17,7 @@ type TTypeIndicator = {
   }
 }
 
-export const useBroadcastListener = () => {
+export const useBroadcastListener = (enabled = true) => {
   const broadcaster = useStore((state) => state.settings.broadcaster)
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)
@@ -29,7 +29,7 @@ export const useBroadcastListener = () => {
   const registered = useRef(false)
 
   useEffect(() => {
-    if (!broadcaster || registered.current) return
+    if (!enabled || !broadcaster || registered.current) return
     registered.current = true
 
     broadcaster
@@ -58,6 +58,7 @@ export const useBroadcastListener = () => {
       registered.current = false
     }
   }, [
+    enabled,
     broadcaster,
     addChannelPinnedMessage,
     removeChannelPinnedMessage,

@@ -4,9 +4,9 @@ import Head from 'next/head'
 /**
  * HeadSeo — Client-side dynamic meta tag updates.
  *
- * IMPORTANT: This component runs CLIENT-SIDE only (inside ssr:false DocumentPage).
- * Social crawlers (Slack, Discord, Twitter, Facebook, iMessage) will NEVER see these tags.
- * Server-rendered OG tags for crawlers are in [...slugs].tsx (via getServerSideProps).
+ * IMPORTANT: Client-side dynamic meta for SPA navigations after the initial SSR <Head>.
+ * Social crawlers do NOT execute JavaScript — per-page SSR <Head> in pages/*.tsx is the
+ * crawler source of truth (see [...slugs].tsx and index.tsx for landing).
  *
  * This component handles:
  * - Dynamic <title> updates as user navigates (client-side SPA navigation)

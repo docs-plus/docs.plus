@@ -4,20 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 
 const MOBILE_BREAKPOINT = 768
 
-export const useInitialSteps = (isMobileInitial: boolean) => {
+export const useInitialSteps = (isMobileInitial: boolean, enabled = true) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const [isClient, setIsClient] = useState(false)
   const wasMobileRef = useRef(isMobileInitial)
 
   useEffect(() => {
+    if (!enabled) return
+
     setIsClient(true)
 
-    // Set initial mobile state
     setWorkspaceEditorSetting('isMobile', isMobileInitial)
     wasMobileRef.current = isMobileInitial
 
-    // Handle resize - reload page when crossing mobile/desktop breakpoint
     const handleResize = () => {
       const isMobileNow = window.innerWidth <= MOBILE_BREAKPOINT
 
@@ -28,23 +28,17 @@ export const useInitialSteps = (isMobileInitial: boolean) => {
 
     window.addEventListener('resize', handleResize)
 
-    // Set environment variable dependent setting
-    setWorkspaceSetting(
-      'isAuthServiceAvailable',
-      Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    )
-
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [isMobileInitial, setWorkspaceEditorSetting, setWorkspaceSetting])
+  }, [enabled, isMobileInitial, setWorkspaceEditorSetting])
 
   useEffect(() => {
-    if (!isClient) return
+    if (!enabled || !isClient) return
 
     const deviceDetect = new MobileDetect(window.navigator.userAgent)
     setWorkspaceSetting('deviceDetect', deviceDetect)
-  }, [isClient, setWorkspaceSetting])
+  }, [enabled, isClient, setWorkspaceSetting])
 
   return null
 }

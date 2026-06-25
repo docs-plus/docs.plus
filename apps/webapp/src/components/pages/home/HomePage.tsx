@@ -1,31 +1,37 @@
-import HeadSeo from '@components/HeadSeo'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import Loading from '@components/ui/Loading'
-import TextInput from '@components/ui/TextInput'
-import TypingText from '@components/ui/TypingText'
-import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
-import { isReservedSlug } from '@utils/reservedSlugs'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/router'
-import { ChangeEvent, KeyboardEvent, useState } from 'react'
-import { FaDiscord } from 'react-icons/fa'
-import {
-  LuBuilding2,
-  LuCalendar,
-  LuGithub,
-  LuGlobe,
-  LuGraduationCap,
-  LuMessageCircle,
-  LuRocket,
-  LuUser,
-  LuUsers
-} from 'react-icons/lu'
-import slugify from 'slugify'
+import { useEffect, useState } from 'react'
+import { LuUser } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
+
+import { HomeActionCard } from './HomeActionCard'
+import { HomeCollapseRegion } from './HomeCollapseRegion'
+import { HomeFooter } from './HomeFooter'
+import { HomeHero } from './HomeHero'
+import { HOME_REGION_MOTION_EASE } from './homeMobileLayout'
+import { useHomeKeyboardCompact } from './hooks/useHomeKeyboardCompact'
+import { useNavigateToDocument } from './hooks/useNavigateToDocument'
+
+const HOME_FLEX_SPACER = 'motion-safe:transition-[flex-grow] max-sm:min-h-0 max-sm:shrink'
+
+function HomeFlexSpacer({ compact }: { compact: boolean }) {
+  return (
+    <div
+      className={twMerge(
+        HOME_FLEX_SPACER,
+        HOME_REGION_MOTION_EASE,
+        compact ? 'max-sm:flex-grow-0' : 'max-sm:flex-grow'
+      )}
+      aria-hidden
+    />
+  )
+}
 
 const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {
   loading: () => <Loading />
@@ -36,65 +42,39 @@ const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel')
 
 interface HomePageProps {
   hostname: string
+  isAuthServiceAvailable: boolean
 }
 
-const HomePage = ({ hostname }: HomePageProps) => {
-  const router = useRouter()
+const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
-  const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
-
-  const [documentName, setDocumentName] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [displayHostname, setDisplayHostname] = useState(hostname)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSignInOpen, setIsSignInOpen] = useState(false)
+  const { navigateToDocument, isLoading } = useNavigateToDocument()
+  const keyboardCompact = useHomeKeyboardCompact()
 
-  // Initialize keyboard tracking for iOS
-  useVirtualKeyboard()
+  useEffect(() => {
+    useStore.getState().setWorkspaceSetting('metadata', { documentId: undefined })
+  }, [])
 
-  const navigateToDocument = (name?: string) => {
-    setIsLoading(true)
-    let docSlug = name || documentName
-
-    if (!docSlug) {
-      docSlug = (Math.random() + 1).toString(36).substring(2)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.host) {
+      setDisplayHostname(window.location.host)
     }
-
-    let sanitizedSlug = slugify(docSlug, { lower: true, strict: true })
-
-    if (sanitizedSlug.length < 3) {
-      sanitizedSlug = sanitizedSlug.padEnd(3, 'x')
-    } else if (sanitizedSlug.length > 30) {
-      sanitizedSlug = sanitizedSlug.substring(0, 30)
-    }
-
-    // A reserved word would resolve to an app route (e.g. /editor), not a
-    // document — re-roll to a random name instead of stranding the user there.
-    if (isReservedSlug(sanitizedSlug)) {
-      sanitizedSlug = (Math.random() + 1).toString(36).substring(2)
-    }
-
-    router.push(`/${sanitizedSlug}`)
-  }
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && documentName) {
-      navigateToDocument()
-    }
-  }
-
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setDocumentName(e.target.value)
-  }
+  }, [])
 
   return (
     <>
-      <HeadSeo />
+      <a
+        href="#home-main"
+        className="btn btn-primary btn-sm sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50">
+        Skip to main content
+      </a>
 
       <div
-        className="bg-base-200 flex flex-col"
-        style={{ minHeight: 'var(--visual-viewport-height, 100dvh)' }}>
-        {/* Header */}
-        <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+        className="bg-base-200 flex flex-col overflow-hidden"
+        style={{ height: 'var(--visual-viewport-height, 100dvh)' }}>
+        <header className="flex shrink-0 items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
             <DocsPlusIcon size={28} className="sm:size-10" />
             <span className="text-base-content mt-1 text-lg font-bold sm:text-2xl">docs.plus</span>
@@ -109,6 +89,8 @@ const HomePage = ({ hostname }: HomePageProps) => {
                   size="lg"
                   className="border-0 p-0 transition-transform hover:scale-105"
                   onClick={() => setIsProfileOpen(true)}
+                  aria-label="Open profile settings"
+                  aria-haspopup="dialog"
                   tooltip="Profile"
                   tooltipPlacement="bottom">
                   <Avatar
@@ -124,7 +106,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
               ) : (
                 <Button
                   shape="circle"
-                  className="bg-primary/10 text-primary/50 hover:bg-primary/15 hover:text-primary/70 size-11 border-0 sm:size-12"
+                  className="btn-soft btn-primary size-11 border-0 sm:size-12"
                   onClick={() => setIsSignInOpen(true)}
                   aria-label="Sign in"
                   tooltip="Sign in"
@@ -136,182 +118,85 @@ const HomePage = ({ hostname }: HomePageProps) => {
           )}
         </header>
 
-        {/* Main Content */}
-        <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 sm:py-12">
-          <div className="w-full max-w-2xl">
-            {/* Hero Section */}
-            <div className="mb-6 text-center motion-safe:animate-[doc-region-in_220ms_ease-out_both] sm:mb-10">
-              <h1 className="text-base-content mb-2 text-3xl font-bold sm:mb-3 sm:text-5xl md:text-6xl">
-                Get everyone on the same page
-              </h1>
-              <p className="text-base-content/60 text-sm sm:text-lg">
-                <span className="hidden sm:inline">
-                  Free, open-source collaborative documents for
-                </span>
-                <span className="sm:hidden">Open-source docs for</span>{' '}
-                <TypingText
-                  texts={[
-                    { text: 'teams', icon: <LuUsers size={14} />, className: 'text-primary' },
-                    {
-                      text: 'communities',
-                      icon: <LuGlobe size={14} />,
-                      className: 'text-accent'
-                    },
-                    {
-                      text: 'classrooms',
-                      icon: <LuGraduationCap size={14} />,
-                      className: 'text-secondary'
-                    },
-                    { text: 'projects', icon: <LuRocket size={14} />, className: 'text-warning' },
-                    { text: 'meetups', icon: <LuCalendar size={14} />, className: 'text-error' },
-                    {
-                      text: 'organizations',
-                      icon: <LuBuilding2 size={14} />,
-                      className: 'text-info'
-                    }
-                  ]}
-                  className="font-semibold"
-                  minWidth="130px"
-                  typingSpeed={80}
-                  deletingSpeed={40}
-                  delayAfterTyping={2000}
-                />
-              </p>
-            </div>
-
-            {/* Action Card */}
-            <div className="rounded-box bg-base-100 p-5 shadow-xl motion-safe:animate-[doc-region-in_220ms_ease-out_60ms_both] sm:p-8">
-              {/* Quick Create */}
-              <Button
-                variant="primary"
-                shape="block"
-                size="lg"
-                className="mb-6 text-base font-bold sm:mb-8"
-                onClick={() => navigateToDocument()}
-                disabled={isLoading}
-                loading={isLoading}>
-                Create New Document
-              </Button>
-
-              {/* Divider */}
-              <div className="mb-6 flex items-center gap-3 sm:mb-8 sm:gap-4">
-                <div className="bg-base-300 h-px flex-1" />
-                <span className="text-base-content/40 text-xs sm:text-sm">or open existing</span>
-                <div className="bg-base-300 h-px flex-1" />
+        <main
+          id="home-main"
+          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-y-contain px-4 max-sm:py-2 sm:justify-center sm:py-12">
+          <HomeFlexSpacer compact={keyboardCompact} />
+          <div
+            id="home-action-block"
+            className={twMerge(
+              'w-full max-w-2xl shrink-0 motion-safe:transition-transform',
+              HOME_REGION_MOTION_EASE
+            )}>
+            <HomeHero compact={keyboardCompact} />
+            <HomeActionCard
+              hostname={displayHostname}
+              isLoading={isLoading}
+              onNavigate={navigateToDocument}
+              compact={keyboardCompact}
+            />
+            <HomeCollapseRegion
+              collapsed={keyboardCompact}
+              expandedMaxClass="max-sm:max-h-32"
+              className={twMerge(
+                'motion-safe:transition-[margin]',
+                HOME_REGION_MOTION_EASE,
+                keyboardCompact ? 'max-sm:mt-0' : 'mt-8 sm:mt-12'
+              )}>
+              <div className="text-base-content/50 space-y-1 text-center text-xs motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both] sm:space-y-2 sm:text-sm">
+                <p>
+                  A{' '}
+                  <a
+                    href="https://github.com/docs-plus"
+                    className="text-primary font-medium hover:underline">
+                    free & open source
+                  </a>{' '}
+                  project by{' '}
+                  <a
+                    href="https://newspeak.house"
+                    className="text-primary font-medium hover:underline">
+                    Newspeak House
+                  </a>
+                </p>
+                <p>
+                  Seed funded by{' '}
+                  <a
+                    href="https://www.grantfortheweb.org"
+                    className="text-primary font-medium hover:underline">
+                    Grant for Web
+                  </a>{' '}
+                  &{' '}
+                  <a
+                    href="https://www.nesta.org.uk"
+                    className="text-primary font-medium hover:underline">
+                    Nesta
+                  </a>
+                </p>
               </div>
-
-              {/* Document Name Input */}
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <TextInput
-                  wrapperClassName="flex-1"
-                  size="lg"
-                  label={`${hostname}/`}
-                  type="text"
-                  required
-                  pattern="[a-z0-9\-]*"
-                  minLength={3}
-                  maxLength={30}
-                  title="Only lowercase letters, numbers or dash"
-                  value={documentName}
-                  inputMode="text"
-                  enterKeyHint="go"
-                  placeholder="document-name"
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  containerClassName="w-full"
-                />
-                <Button
-                  variant="neutral"
-                  size="lg"
-                  className="w-full px-8 sm:h-auto sm:w-auto"
-                  onClick={() => navigateToDocument()}
-                  disabled={isLoading || !documentName}>
-                  Open
-                </Button>
-              </div>
-            </div>
-
-            {/* Info Links */}
-            <div className="text-base-content/50 mt-8 space-y-1 text-center text-xs motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both] sm:mt-12 sm:space-y-2 sm:text-sm">
-              <p>
-                A{' '}
-                <a
-                  href="https://github.com/docs-plus"
-                  className="text-primary font-medium hover:underline">
-                  free & open source
-                </a>{' '}
-                project by{' '}
-                <a
-                  href="https://newspeak.house"
-                  className="text-primary font-medium hover:underline">
-                  Newspeak House
-                </a>
-              </p>
-              <p>
-                Seed funded by{' '}
-                <a
-                  href="https://www.grantfortheweb.org"
-                  className="text-primary font-medium hover:underline">
-                  Grant for Web
-                </a>{' '}
-                &{' '}
-                <a
-                  href="https://www.nesta.org.uk"
-                  className="text-primary font-medium hover:underline">
-                  Nesta
-                </a>
-              </p>
-            </div>
+            </HomeCollapseRegion>
           </div>
+          <HomeFlexSpacer compact={keyboardCompact} />
         </main>
 
-        {/* Footer */}
-        <footer className="text-base-content/60 flex shrink-0 items-center justify-center gap-3 px-4 py-4 text-sm motion-safe:animate-[doc-region-in_200ms_ease-out_160ms_both] sm:gap-6 sm:py-8">
-          {/* GitHub group */}
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/docs-plus/docs.plus"
-              target="_blank"
-              className="bg-neutral text-neutral-content hover:bg-neutral/90 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-colors sm:text-sm">
-              <LuGithub size={16} />
-              <span>GitHub</span>
-            </a>
-            <a
-              href="https://github.com/docs-plus/docs.plus/discussions"
-              target="_blank"
-              className="border-base-300 text-base-content hover:bg-base-200 flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors sm:text-sm">
-              <LuMessageCircle size={16} />
-              <span>Discuss</span>
-            </a>
-          </div>
-
-          {/* Divider */}
-          <div className="bg-base-300 h-6 w-px" />
-
-          {/* Discord */}
-          <a
-            href="https://discord.com/invite/25JPG38J59"
-            target="_blank"
-            className="flex items-center gap-2 rounded-full bg-[#5865F2] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#4752C4] sm:text-sm">
-            <FaDiscord size={16} />
-            <span>Discord</span>
-          </a>
-        </footer>
+        <HomeCollapseRegion collapsed={keyboardCompact} expandedMaxClass="max-sm:max-h-24">
+          <HomeFooter />
+        </HomeCollapseRegion>
       </div>
 
-      {/* Profile Modal */}
       {user && (
         <Modal open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-          <ModalContent size="4xl" className="rounded-box overflow-hidden p-0">
+          <ModalContent
+            size="4xl"
+            aria-label="Profile settings"
+            className="rounded-box overflow-hidden p-0">
             <SettingsPanel onClose={() => setIsProfileOpen(false)} />
           </ModalContent>
         </Modal>
       )}
 
-      {/* Sign In Modal */}
       {isAuthServiceAvailable && !user && (
         <Modal open={isSignInOpen} onOpenChange={setIsSignInOpen}>
-          <ModalContent size="sm" className="overflow-hidden p-0">
+          <ModalContent size="sm" aria-label="Sign in" className="overflow-hidden p-0">
             <SignInForm variant="card" showHeader onClose={() => setIsSignInOpen(false)} />
           </ModalContent>
         </Modal>

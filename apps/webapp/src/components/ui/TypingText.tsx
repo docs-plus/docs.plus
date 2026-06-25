@@ -66,7 +66,12 @@ const TypingText = ({
   loop = true,
   minWidth
 }: TypingTextProps) => {
-  const [displayText, setDisplayText] = useState('')
+  const resolveText = (item: string | TypingTextItem) =>
+    typeof item === 'object' ? item.text : item
+
+  const staticFirstText = texts.length > 0 ? resolveText(texts[0]) : ''
+  const [mounted, setMounted] = useState(false)
+  const [displayText, setDisplayText] = useState(staticFirstText)
   const [textIndex, setTextIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isWaiting, setIsWaiting] = useState(false)
@@ -74,8 +79,13 @@ const TypingText = ({
   // Post-hydration read (SSR-safe): under reduced motion the loop never runs and
   // the first text renders statically.
   const [reducedMotion, setReducedMotion] = useState(false)
+
   useEffect(() => {
+    setMounted(true)
     setReducedMotion(prefersReducedMotion())
+    if (!prefersReducedMotion()) {
+      setDisplayText('')
+    }
   }, [])
 
   const currentItem = texts[textIndex]
@@ -136,14 +146,14 @@ const TypingText = ({
   ])
 
   useEffect(() => {
-    if (reducedMotion) {
-      setDisplayText(currentText)
+    if (!mounted || reducedMotion) {
+      if (reducedMotion) setDisplayText(currentText)
       return
     }
     const speed = isDeleting ? deletingSpeed : typingSpeed
     const timer = setTimeout(type, speed)
     return () => clearTimeout(timer)
-  }, [type, isDeleting, typingSpeed, deletingSpeed, reducedMotion, currentText])
+  }, [mounted, type, isDeleting, typingSpeed, deletingSpeed, reducedMotion, currentText])
 
   // Find the longest text to reserve space
   const longestText = texts.reduce<string>((longest, item) => {

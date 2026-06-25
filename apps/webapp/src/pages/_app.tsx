@@ -1,37 +1,47 @@
 import '../styles/globals.scss'
-import '../styles/styles.scss'
+import '../styles/shell.scss'
 import '@config'
 
-import { ChatMediaGallery } from '@components/chatroom/components/ChatMediaGallery'
+import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import GoogleAnalytics from '@components/GoogleAnalytics'
-import NotificationPromptCard from '@components/NotificationPromptCard'
-import { PWAInstallPrompt } from '@components/pwa'
-import { FloatingTree } from '@floating-ui/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { VirtuosoMessageListLicense } from '@virtuoso.dev/message-list'
+import { QueryClient } from '@tanstack/react-query'
+import { getRoutePolicy } from '@utils/routePolicy'
 import { MotionConfig } from 'motion/react'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useRouter } from 'next/router'
+import { type ComponentType, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 
-// Dynamically import router-dependent hooks (client-side only)
-// This prevents SSG errors on static pages like 404/500
 const AppProviders = dynamic(() => import('@components/AppProviders'), { ssr: false })
+const NotificationPromptCard = dynamic(() => import('@components/NotificationPromptCard'), {
+  ssr: false
+})
+const PWAInstallPrompt = dynamic(
+  () => import('@components/pwa').then((module) => module.PWAInstallPrompt),
+  { ssr: false }
+)
+
+function loadDocumentStyles() {
+  void import('../styles/document-styles.scss').then(
+    () => import('../styles/editor-extensions.scss')
+  )
+}
+
+function isDocumentAsPath(asPath: string): boolean {
+  const path = asPath.split(/[?#]/)[0] || '/'
+  if (path === '/' || path === '') return false
+  if (path.startsWith('/auth/')) return false
+  return true
+}
 
 const Header = () => {
   return (
     <Head>
-      {/* Viewport - must be in _app for proper hydration */}
-      <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-      />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-      {/* IE compatibility */}
       <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
-      {/* SEO keywords */}
       <meta
         name="keywords"
         content="docs.plus, real-time, collaborative, open-source, communities, knowledge sharing, document editor"
@@ -40,28 +50,51 @@ const Header = () => {
   )
 }
 
-export default function MyApp({ Component, pageProps }: any) {
+interface AppPageProps {
+  isMobile?: boolean
+  isAuthServiceAvailable?: boolean
+}
+
+export default function MyApp({
+  Component,
+  pageProps
+}: {
+  Component: ComponentType<AppPageProps>
+  pageProps: AppPageProps
+}) {
+  const router = useRouter()
   const [queryClient] = useState(() => new QueryClient())
   const isMobileInitial = pageProps.isMobile || false
+  const isAuthServiceAvailable = pageProps.isAuthServiceAvailable
+  const documentShell = getRoutePolicy(router.pathname).documentShell
+
+  useEffect(() => {
+    if (!documentShell) return
+    loadDocumentStyles()
+  }, [documentShell])
+
+  useEffect(() => {
+    const prefetchOnNavigate = (url: string) => {
+      if (isDocumentAsPath(url)) loadDocumentStyles()
+    }
+    router.events.on('routeChangeStart', prefetchOnNavigate)
+    return () => router.events.off('routeChangeStart', prefetchOnNavigate)
+  }, [router.events])
 
   return (
     <div id="root">
-      {/* reducedMotion="user" gates every motion/react surface (composer panels,
-          link dialogs, long-press menus) — inline styles ignore CSS PRM rules. */}
       <MotionConfig reducedMotion="user">
         <Header />
         <GoogleAnalytics />
         <NotificationPromptCard />
         <PWAInstallPrompt />
-        <AppProviders isMobileInitial={isMobileInitial} />
-        <ChatMediaGallery />
-        <VirtuosoMessageListLicense licenseKey={process.env.NEXT_PUBLIC_VIRTUOSO_LICENSE ?? ''}>
-          <FloatingTree>
-            <QueryClientProvider client={queryClient}>
-              <Component {...pageProps} />
-            </QueryClientProvider>
-          </FloatingTree>
-        </VirtuosoMessageListLicense>
+        <AppProviders
+          isMobileInitial={isMobileInitial}
+          isAuthServiceAvailable={isAuthServiceAvailable}
+        />
+        <AppQueryClientRoot queryClient={queryClient}>
+          <Component {...pageProps} />
+        </AppQueryClientRoot>
         <Toaster />
       </MotionConfig>
     </div>

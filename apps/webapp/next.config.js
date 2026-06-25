@@ -349,7 +349,24 @@ module.exports = withPWA({
         headers: [
           {
             key: 'Content-Type',
-            value: 'text/plain'
+            value: 'text/plain; charset=utf-8'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=86400, stale-while-revalidate=604800'
+          }
+        ]
+      },
+      {
+        source: '/sitemap.xml',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/xml; charset=utf-8'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=86400, stale-while-revalidate=604800'
           }
         ]
       }

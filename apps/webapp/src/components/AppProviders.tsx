@@ -1,8 +1,7 @@
 /**
  * Client-side App Providers
  * =========================
- * Contains router-dependent hooks that can't run during SSG.
- * This component is dynamically imported in _app.tsx.
+ * Router-dependent hooks that can't run during SSG.
  */
 
 import { performMaintenanceCleanup } from '@db/messageComposerDB'
@@ -12,28 +11,41 @@ import { useHandleUserStatus } from '@hooks/useHandleUserStatus'
 import { useInitialSteps } from '@hooks/useInitialSteps'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
+import { useVisualViewportCssSync } from '@hooks/useVisualViewportCssSync'
 import { eventsHub } from '@services/eventsHub'
-import { resolveTheme, useThemeStore } from '@stores'
-import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
+import { resolveTheme, useStore, useThemeStore } from '@stores'
+import { getRoutePolicy } from '@utils/routePolicy'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 
 interface AppProvidersProps {
   isMobileInitial: boolean
+  isAuthServiceAvailable?: boolean
 }
 
-export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
+export default function AppProviders({
+  isMobileInitial,
+  isAuthServiceAvailable
+}: AppProvidersProps) {
   const router = useRouter()
+  const policy = getRoutePolicy(router.pathname)
+  const { documentShell } = policy
   const { preference: themePreference, hydrated: themeHydrated } = useThemeStore()
 
-  useServiceWorker()
-  useOnAuthStateChange()
-  useCatchUserPresences()
-  useBroadcastListener()
-  useHandleUserStatus()
-  useInitialSteps(isMobileInitial)
+  useLayoutEffect(() => {
+    const available = isAuthServiceAvailable ?? Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    useStore.getState().setWorkspaceSetting('isAuthServiceAvailable', available)
+  }, [isAuthServiceAvailable])
 
-  // Apply theme on hydration (covers page reload / first visit)
+  useVisualViewportCssSync({ mode: policy.viewportMode })
+
+  useServiceWorker()
+  useOnAuthStateChange({ deferAnonymousAuth: policy.deferAnonymousAuth })
+  useCatchUserPresences(documentShell)
+  useBroadcastListener(documentShell)
+  useHandleUserStatus(documentShell)
+  useInitialSteps(isMobileInitial, documentShell)
+
   useEffect(() => {
     if (!themeHydrated) return
     const resolved = resolveTheme(themePreference)
@@ -41,64 +53,13 @@ export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
   }, [themeHydrated, themePreference])
 
   useEffect(() => {
-    if (!router.isReady) return
+    if (!router.isReady || !documentShell) return
     eventsHub(router)
 
-    // Run DB maintenance cleanup once per session
     performMaintenanceCleanup().catch(() => {
       // Silently fail - cleanup is best-effort
     })
+  }, [router, router.isReady, documentShell])
 
-    // iOS Safari keyboard viewport fix — always mirror visualViewport.height (no magnitude
-    // filter) so small post-animation resize steps are not dropped.
-    const doc = document.documentElement
-    let rafId: number | null = null
-
-    syncVisualViewportToCssVars(doc)
-
-    function scheduleVisualViewportSync() {
-      if (rafId) cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        syncVisualViewportToCssVars(doc)
-        rafId = null
-      })
-    }
-
-    function handleViewportResize() {
-      scheduleVisualViewportSync()
-    }
-
-    let scrollResetTimeout: ReturnType<typeof setTimeout> | null = null
-
-    function handleViewportScroll() {
-      scheduleVisualViewportSync()
-
-      const vv = window.visualViewport
-      if (!vv || vv.offsetTop === 0) return
-
-      if (scrollResetTimeout) clearTimeout(scrollResetTimeout)
-
-      scrollResetTimeout = setTimeout(() => {
-        const vv = window.visualViewport
-        if (!vv || vv.offsetTop <= 0) return
-        // Including mobile pad: a non-zero layout scrollY (often == offsetTop) breaks fixed
-        // shell + ProseMirror getBoundingClientRect (zeros / wrong caret) after keyboard cycles.
-        if (window.scrollY > 0) {
-          window.scrollTo(0, 0)
-        }
-      }, 100)
-    }
-
-    window.visualViewport?.addEventListener('resize', handleViewportResize)
-    window.visualViewport?.addEventListener('scroll', handleViewportScroll)
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId)
-      if (scrollResetTimeout) clearTimeout(scrollResetTimeout)
-      window.visualViewport?.removeEventListener('resize', handleViewportResize)
-      window.visualViewport?.removeEventListener('scroll', handleViewportScroll)
-    }
-  }, [router, router.isReady])
-
-  return null // This is a side-effect-only component
+  return null
 }

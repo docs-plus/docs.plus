@@ -59,6 +59,7 @@ const Document = ({ docMetadata, isMobile, deviceType, accessToken }: any) => {
       <Head>
         <title>{ogTitle}</title>
         <meta name="description" content={ogDescription} />
+        <meta name="robots" content="noindex, follow" />
 
         {/* Open Graph — server-rendered for social crawlers */}
         <meta property="og:title" content={ogTitle} />

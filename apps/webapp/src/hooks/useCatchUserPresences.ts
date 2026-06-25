@@ -4,7 +4,7 @@ import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef, useState } from 'react'
 
-export const useCatchUserPresences = () => {
+export const useCatchUserPresences = (enabled = true) => {
   const profile = useAuthStore((state) => state.profile)
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
@@ -21,12 +21,15 @@ export const useCatchUserPresences = () => {
   const [reconnectTick, setReconnectTick] = useState(0)
 
   useEffect(() => {
+    if (!enabled) return
+
     const handleOnline = () => setReconnectTick((tick) => tick + 1)
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
+    if (!enabled) return
     if (!workspaceId) return
 
     // Skip subscriptions if offline (prevents retry spam)
@@ -229,6 +232,7 @@ export const useCatchUserPresences = () => {
       window.removeEventListener('offline', handleOffline)
     }
   }, [
+    enabled,
     profile,
     workspaceId,
     reconnectTick,

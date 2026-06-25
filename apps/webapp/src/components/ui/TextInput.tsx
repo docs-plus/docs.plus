@@ -30,6 +30,8 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   endIcon?: IconType | ReactNode
   /** Size of icons (default based on input size) */
   iconSize?: number
+  /** Additional class for the label text (inside-label pattern) */
+  labelClassName?: string
   /** Helper text displayed below the input */
   helperText?: string
   /** Error state - shows error styling */
@@ -72,6 +74,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
     {
       label,
       labelPosition = 'inside',
+      labelClassName,
       size,
       color,
       ghost = false,
@@ -205,7 +208,9 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             containerClassName
           )}>
           {renderIcon(startIcon, resolvedIconSize)}
-          {label && <span className="label text-base-content/70">{label}</span>}
+          {label && (
+            <span className={twMerge('label text-base-content/70', labelClassName)}>{label}</span>
+          )}
           <input
             {...inputProps}
             placeholder={props.placeholder || ' '}
