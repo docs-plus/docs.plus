@@ -44,6 +44,57 @@ type TBookmark = {
   workspace_slug: string
 }
 
+type BookmarkDraft = {
+  bookmarkTabs: TBookmarkTabData[]
+  bookmarks: Map<TBookmarkTab, TBookmark[]>
+}
+
+function adjustBookmarkTabCount(
+  tabs: TBookmarkTabData[],
+  tab: TBookmarkTab,
+  delta: number
+): TBookmarkTabData[] {
+  return tabs.map((item) =>
+    item.label === tab ? { ...item, count: Math.max(0, (item.count ?? 0) + delta) } : item
+  )
+}
+
+function removeBookmarkFromLists(state: BookmarkDraft, bookmarkId: number) {
+  for (const [tab, bookmarkList] of state.bookmarks) {
+    if (!bookmarkList.some((b) => b.bookmark_id === bookmarkId)) continue
+
+    state.bookmarks.set(
+      tab,
+      bookmarkList.filter((b) => b.bookmark_id !== bookmarkId)
+    )
+    state.bookmarkTabs = adjustBookmarkTabCount(state.bookmarkTabs, tab, -1)
+  }
+}
+
+function relocateBookmark(
+  state: BookmarkDraft,
+  bookmarkId: number,
+  fromTab: TBookmarkTab,
+  toTab: TBookmarkTab,
+  patch?: Partial<TBookmark>
+) {
+  const fromList = state.bookmarks.get(fromTab) || []
+  const bookmark = fromList.find((b) => b.bookmark_id === bookmarkId)
+  if (!bookmark) return
+
+  const updated = patch ? { ...bookmark, ...patch } : bookmark
+  state.bookmarks.set(
+    fromTab,
+    fromList.filter((b) => b.bookmark_id !== bookmarkId)
+  )
+  state.bookmarks.set(toTab, [updated, ...(state.bookmarks.get(toTab) || [])])
+  state.bookmarkTabs = adjustBookmarkTabCount(
+    adjustBookmarkTabCount(state.bookmarkTabs, fromTab, -1),
+    toTab,
+    1
+  )
+}
+
 interface IBookmarkStore {
   bookmarkSummary: TBookmarkStats
   bookmarkTabs: TBookmarkTabData[]
@@ -59,9 +110,10 @@ interface IBookmarkStore {
   setBookmarkPage: (page: number) => void
   clearBookmarks: () => void
   updateBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmark[]) => void
-  removeBookmark: (bookmarkId: number) => void
-  updateBookmarkStatus: (bookmarkId: number, updates: Partial<TBookmark>) => void
-  moveBookmarkBetweenTabs: (bookmarkId: number, fromTab: TBookmarkTab, toTab: TBookmarkTab) => void
+  commitBookmarkRemoved: (bookmarkId: number) => void
+  commitBookmarkMarkedRead: (bookmarkId: number) => void
+  commitBookmarkArchived: (bookmarkId: number, fromTab: TBookmarkTab) => void
+  commitBookmarkRestored: (bookmarkId: number) => void
 }
 
 const bookmark = immer<IBookmarkStore>((set) => ({
@@ -142,61 +194,42 @@ const bookmark = immer<IBookmarkStore>((set) => ({
         ...item,
         count: 0
       }))
-      // Note: We intentionally don't reset bookmarkActiveTab to preserve user's tab selection
     })
   },
 
-  removeBookmark: (bookmarkId: number) => {
+  commitBookmarkRemoved: (bookmarkId: number) => {
     set((state) => {
-      // Remove bookmark from all tabs
-      for (const [tab, bookmarkList] of state.bookmarks) {
-        const filteredBookmarks = bookmarkList.filter((b) => b.bookmark_id !== bookmarkId)
-        state.bookmarks.set(tab, filteredBookmarks)
-      }
-
-      // Update tab counts
-      state.bookmarkTabs = state.bookmarkTabs.map((tab) => ({
-        ...tab,
-        count: (state.bookmarks.get(tab.label) || []).length
-      }))
+      removeBookmarkFromLists(state, bookmarkId)
     })
   },
 
-  updateBookmarkStatus: (bookmarkId: number, updates: Partial<TBookmark>) => {
+  commitBookmarkMarkedRead: (bookmarkId: number) => {
     set((state) => {
-      // Update bookmark in all tabs where it exists
-      for (const [tab, bookmarkList] of state.bookmarks) {
-        const updatedBookmarks = bookmarkList.map((bookmark) =>
-          bookmark.bookmark_id === bookmarkId ? { ...bookmark, ...updates } : bookmark
-        )
-        state.bookmarks.set(tab, updatedBookmarks)
-      }
+      const now = new Date().toISOString()
+      relocateBookmark(state, bookmarkId, 'in progress', 'read', {
+        bookmark_marked_at: now,
+        bookmark_updated_at: now
+      })
     })
   },
 
-  moveBookmarkBetweenTabs: (bookmarkId: number, fromTab: TBookmarkTab, toTab: TBookmarkTab) => {
+  commitBookmarkArchived: (bookmarkId: number, fromTab: TBookmarkTab) => {
     set((state) => {
-      const fromList = state.bookmarks.get(fromTab) || []
-      const toList = state.bookmarks.get(toTab) || []
+      const now = new Date().toISOString()
+      relocateBookmark(state, bookmarkId, fromTab, 'archive', {
+        bookmark_archived_at: now,
+        bookmark_updated_at: now
+      })
+    })
+  },
 
-      // Find the bookmark to move
-      const bookmarkToMove = fromList.find((b) => b.bookmark_id === bookmarkId)
-
-      if (bookmarkToMove) {
-        // Remove from source tab
-        const newFromList = fromList.filter((b) => b.bookmark_id !== bookmarkId)
-        state.bookmarks.set(fromTab, newFromList)
-
-        // Add to destination tab (at the beginning for newest first)
-        const newToList = [bookmarkToMove, ...toList]
-        state.bookmarks.set(toTab, newToList)
-
-        // Update tab counts
-        state.bookmarkTabs = state.bookmarkTabs.map((tab) => ({
-          ...tab,
-          count: (state.bookmarks.get(tab.label) || []).length
-        }))
-      }
+  commitBookmarkRestored: (bookmarkId: number) => {
+    set((state) => {
+      const now = new Date().toISOString()
+      relocateBookmark(state, bookmarkId, 'archive', 'in progress', {
+        bookmark_archived_at: null,
+        bookmark_updated_at: now
+      })
     })
   }
 }))

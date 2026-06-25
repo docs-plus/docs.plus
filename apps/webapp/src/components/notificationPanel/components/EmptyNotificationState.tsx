@@ -8,10 +8,8 @@ export const EmptyNotificationState = ({ show }: { show: boolean }) => {
         <LuInbox size={24} className="text-base-content/40" />
       </div>
       <div className="text-center">
-        <p className="text-base-content font-medium">Your inbox is empty!</p>
-        <p className="text-base-content/60 text-sm">
-          You're all caught up. New notifications will appear here.
-        </p>
+        <p className="text-base-content font-medium">You're all caught up</p>
+        <p className="text-base-content/60 text-sm">New notifications will appear here.</p>
       </div>
     </div>
   )

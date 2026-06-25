@@ -8,10 +8,8 @@ export const EmptyBookmarkState = ({ show }: { show: boolean }) => {
         <LuBookmark size={24} className="text-base-content/40" />
       </div>
       <div className="text-center">
-        <p className="text-base-content/60 font-medium">No bookmarks here!</p>
-        <p className="text-base-content/40 text-sm">
-          Bookmarked messages will appear in this section.
-        </p>
+        <p className="text-base-content font-medium">No bookmarks here</p>
+        <p className="text-base-content/60 text-sm">Saved messages will appear in this tab.</p>
       </div>
     </div>
   )

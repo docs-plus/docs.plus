@@ -1,4 +1,5 @@
 import { getUnreadNotificationCount } from '@api'
+import { wasClientRead } from '@components/notificationPanel/feed/readDedupe'
 import { useAuthStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
@@ -25,13 +26,16 @@ type NotificationBroadcastPayload = {
   }
 }
 
-/**
- * Realtime unread-notification counter on the per-user broadcast topic
- * `notifications:<auth.uid()>`. Topic is private — the SQL trigger sends
- * with `private := true` and the `notifications_topic_access` RLS policy
- * gates SELECT; the client constructor must pass `{ config: { private:
- * true } }` or subscribe() silently fails.
- */
+function matchesWorkspace(
+  filterId: string | null | undefined,
+  payloadWorkspaceId: string | null
+): boolean {
+  return !filterId || payloadWorkspaceId === filterId
+}
+
+/** Per-user `notifications:<uid>` broadcast counter. Requires `{ config: { private: true } }`
+ * on channel subscribe — matches SQL trigger + `notifications_topic_access` RLS;
+ * omit it and subscribe() silently fails. */
 export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps) => {
   const profile = useAuthStore((state) => state.profile)
   const unreadCount = useStore((state) => state.totalNotificationUnreadCount)
@@ -41,7 +45,6 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
   useEffect(() => {
     if (!profile?.id) return
 
-    // Fetch initial count on mount
     const fetchInitialCount = async () => {
       const count = await getUnreadNotificationCount({
         workspace_id: workspaceId || null
@@ -51,49 +54,40 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
 
     fetchInitialCount()
 
-    // Skip subscription if offline
     if (!navigator.onLine) return
 
-    // Subscribe to user-specific notification broadcast.
-    // `private: true` is required for the SQL trigger's private broadcast, RLS policy on realtime.messages.
     const topic = `notifications:${profile.id}`
 
     const channel = supabaseClient.channel(topic, {
       config: { private: true }
     })
 
-    // Handle INSERT - new notification
     channel.on('broadcast', { event: 'INSERT' }, (data: NotificationBroadcastPayload) => {
       const payload = data.payload
 
-      // Only increment if notification is for current workspace (or no workspace filter)
-      if (!workspaceId || payload.workspace_id === workspaceId) {
+      if (matchesWorkspace(workspaceId, payload.workspace_id)) {
         setUnreadCount(useStore.getState().totalNotificationUnreadCount + 1)
       }
     })
 
-    // Handle UPDATE - notification marked as read
     channel.on('broadcast', { event: 'UPDATE' }, (data: NotificationBroadcastPayload) => {
       const payload = data.payload
       const oldRecord = payload.old_record
       const newRecord = payload.record
 
-      // Only decrement if notification is for current workspace
-      if (!workspaceId || payload.workspace_id === workspaceId) {
-        // Notification marked as read (readed_at changed from null to non-null)
+      if (matchesWorkspace(workspaceId, payload.workspace_id)) {
         if (oldRecord && newRecord && !oldRecord.readed_at && newRecord.readed_at) {
+          if (wasClientRead(newRecord.id)) return
           setUnreadCount(Math.max(0, useStore.getState().totalNotificationUnreadCount - 1))
         }
       }
     })
 
-    // Handle DELETE - notification deleted
     channel.on('broadcast', { event: 'DELETE' }, (data: NotificationBroadcastPayload) => {
       const payload = data.payload
       const oldRecord = payload.old_record
 
-      // Only decrement if notification was for current workspace and was unread
-      if (!workspaceId || payload.workspace_id === workspaceId) {
+      if (matchesWorkspace(workspaceId, payload.workspace_id)) {
         if (oldRecord && !oldRecord.readed_at) {
           setUnreadCount(Math.max(0, useStore.getState().totalNotificationUnreadCount - 1))
         }
@@ -102,7 +96,6 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
 
     subscriptionRef.current = channel.subscribe()
 
-    // Cleanup on unmount
     return () => {
       subscriptionRef.current?.unsubscribe()
       subscriptionRef.current = null

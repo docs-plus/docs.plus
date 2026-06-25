@@ -24,6 +24,8 @@ interface INotificationStore {
   clearNotifications: () => void
   emptyNotifications: () => void
   updateNotifications: (tab: TTab, newNotifications: TNotification[]) => void
+  decrementNotificationCounts: (notification: TNotification) => void
+  removeNotificationById: (notificationId: string) => void
 }
 
 const notification = immer<INotificationStore>((set) => ({
@@ -73,16 +75,46 @@ const notification = immer<INotificationStore>((set) => ({
 
   setNotifications: (tab: TTab, newNotifications: TNotification[]) => {
     set((state) => {
-      // get the notification for tab
-      const notifications = state.notifications.get(tab) || []
-      // add the new notifications
-      state.notifications.set(tab, [...newNotifications, ...notifications])
+      state.notifications.set(tab, newNotifications)
     })
   },
 
   updateNotifications: (tab: TTab, newNotifications: TNotification[]) => {
     set((state) => {
       state.notifications.set(tab, newNotifications)
+    })
+  },
+
+  decrementNotificationCounts: (notification: TNotification) => {
+    set((state) => {
+      state.totalNotificationUnreadCount = Math.max(0, state.totalNotificationUnreadCount - 1)
+      state.notificationTabs = state.notificationTabs.map((item) => {
+        if (item.label === 'Unread' && item.count != null && item.count > 0) {
+          return { ...item, count: item.count - 1 }
+        }
+        if (
+          item.label === 'Mentions' &&
+          notification.type === 'mention' &&
+          item.count != null &&
+          item.count > 0
+        ) {
+          return { ...item, count: item.count - 1 }
+        }
+        return item
+      })
+    })
+  },
+
+  removeNotificationById: (notificationId: string) => {
+    set((state) => {
+      for (const tab of state.notifications.keys()) {
+        const list = state.notifications.get(tab)
+        if (!list?.some((item) => item.id === notificationId)) continue
+        state.notifications.set(
+          tab,
+          list.filter((item) => item.id !== notificationId)
+        )
+      }
     })
   },
 

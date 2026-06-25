@@ -1,35 +1,40 @@
 import { markNotificationAsRead } from '@api'
+import { trackClientRead } from '@components/notificationPanel/feed/readDedupe'
+import { useFeedItemExit } from '@hooks/useFeedItemExit'
 import { useStore } from '@stores'
+import { TNotification } from '@types'
+import { useCallback } from 'react'
 
-export const useMarkNotificationAsRead = () => {
-  const updateNotifications = useStore((state) => state.updateNotifications)
-  const setLoadingNotification = useStore((state) => state.setLoadingNotification)
-  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
-  const notifications = useStore((state) => state.notifications)
+export function useMarkNotificationAsRead() {
+  const decrementNotificationCounts = useStore((state) => state.decrementNotificationCounts)
+  const removeNotificationById = useStore((state) => state.removeNotificationById)
+  const { isExiting: isDismissing, runWithExit } = useFeedItemExit<string>()
 
-  const handleMarkAsRead = async (e: any, notificationId: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    e.nativeEvent?.stopImmediatePropagation?.()
-    setLoadingNotification(true)
+  const markAsRead = useCallback(
+    async (notification: TNotification) => {
+      const { id } = notification
 
-    try {
-      await markNotificationAsRead(notificationId)
-      const activeTabNotifications = notifications.get(notificationActiveTab)
-      if (!activeTabNotifications) return
-      const filteredNotifications = activeTabNotifications.filter(
-        (notif) => notif.id !== notificationId
-      )
+      if (
+        !runWithExit(
+          id,
+          () => removeNotificationById(id),
+          () => {
+            trackClientRead(id)
+            decrementNotificationCounts(notification)
+          }
+        )
+      ) {
+        return
+      }
 
-      updateNotifications(notificationActiveTab, filteredNotifications)
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-    } finally {
-      setTimeout(() => {
-        setLoadingNotification(false)
-      }, 2000)
-    }
-  }
+      try {
+        await markNotificationAsRead(id)
+      } catch (error) {
+        console.error('Error marking notification as read:', error)
+      }
+    },
+    [decrementNotificationCounts, removeNotificationById, runWithExit]
+  )
 
-  return { handleMarkAsRead }
+  return { markAsRead, isDismissing }
 }

@@ -1,14 +1,13 @@
+import { PanelPopoverHeader } from '@components/PanelPopoverHeader'
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { TabbedPanelBody } from '@components/TabbedPanelBody'
 import { useChatStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 
-import { BookmarkHeader } from '../components/BookmarkHeader'
 import { BookmarkItem } from '../components/BookmarkItem'
 import { BookmarkSkeleton } from '../components/BookmarkSkeleton'
 import { EmptyBookmarkState } from '../components/EmptyBookmarkState'
-import { useBookmarkSummary } from '../hooks/useBookmarkSummary'
-import { useInfiniteBookmarks } from '../hooks/useInfiniteBookmarks'
+import { useBookmarkPanelFeed } from '../feed/useBookmarkPanelFeed'
 
 interface BookmarkPanelProps {
   onClose?: () => void
@@ -19,10 +18,9 @@ export const BookmarkPanel = ({ onClose, variant = 'popover' }: BookmarkPanelPro
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
   const bookmarkTabs = useChatStore((state) => state.bookmarkTabs)
   const setBookmarkActiveTab = useChatStore((state) => state.setBookmarkActiveTab)
+  const isSheet = variant === 'sheet'
 
-  useBookmarkSummary()
-
-  const { bookmarks, isLoading, isLoadingMore, hasMore, sentinelRef } = useInfiniteBookmarks()
+  const { bookmarks, isLoading, isLoadingMore, hasMore, sentinelRef } = useBookmarkPanelFeed()
 
   return (
     <PanelSurfaceShell
@@ -30,7 +28,7 @@ export const BookmarkPanel = ({ onClose, variant = 'popover' }: BookmarkPanelPro
       title="Bookmarks"
       fillHeight
       bodyClassName="min-h-0 overflow-hidden"
-      popoverHeader={<BookmarkHeader onClose={onClose} showClose />}>
+      popoverHeader={<PanelPopoverHeader title="Bookmarks" onClose={onClose} showClose />}>
       <TabbedPanelBody
         variant={variant}
         tabs={bookmarkTabs}
@@ -43,8 +41,8 @@ export const BookmarkPanel = ({ onClose, variant = 'popover' }: BookmarkPanelPro
         isLoadingMore={isLoadingMore}
         hasMore={hasMore}
         sentinelRef={sentinelRef}
-        renderItem={(bookmark) => <BookmarkItem bookmark={bookmark} />}
-        loadingSkeleton={<BookmarkSkeleton count={4} />}
+        renderItem={(bookmark) => <BookmarkItem bookmark={bookmark} variant={variant} />}
+        loadingSkeleton={<BookmarkSkeleton count={isSheet ? 5 : 4} />}
         emptyState={<EmptyBookmarkState show={!isLoading && bookmarks.length === 0} />}
         endMessage="No more bookmarks"
       />

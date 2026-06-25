@@ -6,26 +6,25 @@ export const useMarkAllNotificationsAsRead = () => {
   const emptyNotifications = useStore((state) => state.emptyNotifications)
   const setLoadingNotification = useStore((state) => state.setLoadingNotification)
   const setNotificationTab = useStore((state) => state.setNotificationTab)
+  const setTotalNotificationUnreadCount = useStore((state) => state.setTotalNotificationUnreadCount)
   const user = useAuthStore((state) => state.profile)
 
   const handleMarkAllAsRead = async () => {
     if (!user) return
     setLoadingNotification(true)
     try {
-      const { data: _data, error } = await markAllNotificationsAsRead(user.id)
+      const { error } = await markAllNotificationsAsRead(user.id)
       if (error) {
         console.error('Error marking all notifications as read:', error)
         return
       }
 
-      // Clear all notifications from the state (this clears all tabs)
       emptyNotifications()
 
-      // Reset unread counts to 0
       setNotificationTab('Unread', 0)
       setNotificationTab('Mentions', 0)
+      setTotalNotificationUnreadCount(0)
 
-      // Switch to Read tab to show the newly read notifications
       setNotificationActiveTab('Read')
     } catch (error) {
       console.error('Error marking all notifications as read:', error)

@@ -5,6 +5,7 @@ import { supabaseClient } from '@utils/supabase'
 type TGetUserBookmarks = {
   workspaceId?: string
   archived?: boolean
+  markedAsRead?: boolean | null
   limit?: number
   offset?: number
 }
@@ -12,6 +13,7 @@ type TGetUserBookmarks = {
 export const getUserBookmarks = async ({
   workspaceId,
   archived = false,
+  markedAsRead = null,
   limit = 50,
   offset = 0
 }: TGetUserBookmarks): Promise<PostgrestResponse<TBookmarkWithMessage[]>> => {
@@ -19,6 +21,7 @@ export const getUserBookmarks = async ({
     p_workspace_id: workspaceId || null,
     p_archived: archived,
     p_limit: limit,
-    p_offset: offset
+    p_offset: offset,
+    p_marked_as_read: markedAsRead
   })
 }

@@ -1,9 +1,11 @@
+import { PanelFeedItem } from '@components/PanelFeedItem'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import { usePopoverState } from '@components/ui/Popover'
+import { useDismissPanel } from '@hooks/useDismissPanel'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
+import { type PanelSurfaceVariant, type TNotification } from '@types'
 import { formatTimeAgo } from '@utils/formatTime'
 import PubSub from 'pubsub-js'
 import { LuLink, LuTriangleAlert } from 'react-icons/lu'
@@ -12,26 +14,27 @@ import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
 import { NotificationAttachmentHint } from './NotificationAttachmentHint'
 import NotificationIcon from './NotificationIcon'
 
-const isSystemNotification = (notification: any): boolean =>
+const isSystemNotification = (notification: TNotification): boolean =>
   notification.type === 'system_alert' || !notification.sender?.id
 
-export const NotificationItem = ({ notification }: { notification: any }) => {
-  const { handleMarkAsRead } = useMarkNotificationAsRead()
+type NotificationItemProps = {
+  notification: TNotification
+  variant?: PanelSurfaceVariant
+}
+
+export const NotificationItem = ({ notification, variant = 'popover' }: NotificationItemProps) => {
+  const { markAsRead, isDismissing } = useMarkNotificationAsRead()
   const notificationActiveTab = useStore((state) => state.notificationActiveTab)
+  const exiting = isDismissing(notification.id)
 
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
-  const { close: closePopover } = usePopoverState()
+  const dismissPanel = useDismissPanel(variant)
 
-  const handleViewNotification = (_id: string, notification: any) => {
-    // System notifications: mark as read + close + guide user to settings
+  const handleViewNotification = (notification: TNotification) => {
     if (isSystemNotification(notification)) {
-      const noop = () => {}
-      handleMarkAsRead(
-        { preventDefault: noop, stopPropagation: noop, nativeEvent: {} },
-        notification.id
-      )
-      closePopover()
+      void markAsRead(notification)
+      dismissPanel()
       toast.Info('Check your email settings in Profile → Notifications')
       return
     }
@@ -48,16 +51,13 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
       scroll2Heading: true
     })
 
-    closePopover()
+    dismissPanel()
   }
 
-  const handleCopyUrl = (notification: any) => {
-    const messageId = notification.message_id
-    const channelId = notification.channel_id
-
+  const handleCopyUrl = (notification: TNotification) => {
     const newURL = new URL(location.href)
-    newURL.searchParams.set('msg_id', messageId)
-    newURL.searchParams.set('chatroom', channelId)
+    newURL.searchParams.set('msg_id', notification.message_id)
+    newURL.searchParams.set('chatroom', notification.channel_id)
 
     navigator.clipboard
       .writeText(newURL.toString())
@@ -73,10 +73,8 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
   const isSystem = isSystemNotification(notification)
 
   return (
-    <div
-      className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 flex w-full items-start gap-3 border p-3 transition-colors"
-      key={notification.id}>
-      <div className="size-9 flex-shrink-0">
+    <PanelFeedItem exiting={exiting}>
+      <div className="size-9 shrink-0">
         {isSystem ? (
           <div className="bg-warning/15 text-warning flex size-9 items-center justify-center rounded-full">
             <LuTriangleAlert size={18} />
@@ -127,23 +125,30 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
           </span>
           {notificationActiveTab !== 'Read' && (
             <Button
-              onClick={(e) => handleMarkAsRead(e, notification.id)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                void markAsRead(notification)
+              }}
               variant="ghost"
               size="xs"
-              className="text-primary hover:bg-primary/10">
+              className="text-primary hover:bg-primary/10"
+              disabled={exiting}
+              aria-busy={exiting}>
               Mark as read
             </Button>
           )}
           <Button
-            onClick={() => handleViewNotification(notification.message_id, notification)}
+            onClick={() => handleViewNotification(notification)}
             variant={isSystem ? 'warning' : 'primary'}
             btnStyle="soft"
             size="xs"
-            className="ml-auto">
+            className="ml-auto"
+            disabled={exiting}>
             {isSystem ? 'Review' : 'View'}
           </Button>
         </div>
       </div>
-    </div>
+    </PanelFeedItem>
   )
 }
