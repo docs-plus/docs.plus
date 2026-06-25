@@ -3,7 +3,11 @@
 
 -- Fans out one notification per channel member mentioned by @username.
 CREATE OR REPLACE FUNCTION create_mention_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     mentioned_user_id UUID;
     is_channel_muted BOOLEAN;
@@ -80,7 +84,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_mention_notifications() IS 'Creates notifications for users who are mentioned with @username in a message.';
 
@@ -96,7 +100,11 @@ COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates n
 -- Replies are high-signal: always notify the original author unless the
 -- channel is muted, regardless of notif_state.
 CREATE OR REPLACE FUNCTION create_reply_notification()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     original_message RECORD;
     truncated_content TEXT;
@@ -161,7 +169,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_reply_notification() IS
 'Creates notification for original message author when someone replies. Always notifies regardless of notif_state.';
@@ -179,7 +187,11 @@ COMMENT ON TRIGGER create_reply_notification ON public.messages IS
 
 -- Fans out @everyone to every non-sender channel member that hasn't muted.
 CREATE OR REPLACE FUNCTION create_everyone_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     channel_member_id UUID;
     is_channel_muted  BOOLEAN;
@@ -243,7 +255,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_everyone_notifications() IS 'Creates notifications for all channel members when @everyone is used in a message.';
 
@@ -261,7 +273,11 @@ COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates 
 -- Notifies offline, ALL-state, non-muted channel members for plain (no
 -- mention / no @everyone) messages. Trigger predicate filters the rest.
 CREATE OR REPLACE FUNCTION create_regular_message_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     is_channel_muted  BOOLEAN;
     truncated_content TEXT;
@@ -318,7 +334,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notifications for regular messages based on user notification preferences.';
 

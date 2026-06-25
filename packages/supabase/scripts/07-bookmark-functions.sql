@@ -74,11 +74,14 @@ comment on function public.toggle_message_bookmark is 'Toggles a bookmark for a 
 
 -- Function: get_user_bookmarks
 -- Description: Gets all bookmarked messages for the current user with message details
+drop function if exists public.get_user_bookmarks(varchar, boolean, int, int);
+
 create or replace function public.get_user_bookmarks(
     p_workspace_id varchar(36) default null,
     p_archived boolean default false,
     p_limit int default 50,
-    p_offset int default 0
+    p_offset int default 0,
+    p_marked_as_read boolean default null
 )
 returns table (
     bookmark_id bigint,
@@ -150,13 +153,18 @@ begin
             (p_archived = true and mb.archived_at is not null)
             or (p_archived = false and mb.archived_at is null)
         )
+        and (
+            p_marked_as_read is null
+            or (p_marked_as_read = true and mb.marked_at is not null)
+            or (p_marked_as_read = false and mb.marked_at is null)
+        )
     order by mb.created_at desc
     limit p_limit
     offset p_offset;
 end;
 $$;
 
-comment on function public.get_user_bookmarks is 'Retrieves bookmarked messages for the current user with full message and channel context. Can filter by workspace and archived status.';
+comment on function public.get_user_bookmarks is 'Bookmark panel lists: archive tab (p_archived true), in progress (false + marked false), read (false + marked true).';
 
 -- Function: archive_bookmark
 -- Description: Archives or unarchives a bookmark
@@ -303,12 +311,13 @@ begin
         raise exception 'User not authenticated';
     end if;
 
-    -- Get counts
+    -- Tab buckets mirror the bookmark panel: in progress (active + unmarked),
+    -- archive (archived_at set), read (active + marked_at set).
     select
         count(*)::int,
         count(case when mb.archived_at is not null then 1 end)::int,
-        count(case when mb.marked_at is null then 1 end)::int,
-        count(case when mb.marked_at is not null then 1 end)::int
+        count(case when mb.archived_at is null and mb.marked_at is null then 1 end)::int,
+        count(case when mb.archived_at is null and mb.marked_at is not null then 1 end)::int
     into v_total, v_archived, v_unread, v_read
     from message_bookmarks mb
     join messages m on mb.message_id = m.id
@@ -330,14 +339,14 @@ begin
 end;
 $$;
 
-comment on function public.get_bookmark_stats is 'Returns bookmark statistics for the current user including total, archived, active, read, and unread counts.';
+comment on function public.get_bookmark_stats is 'Bookmark panel tab counts: unread = in progress (non-archived, unmarked), archived, read = non-archived marked.';
 
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.toggle_message_bookmark(p_message_id uuid) SET search_path = public;
-ALTER FUNCTION public.get_user_bookmarks(p_workspace_id character varying, p_archived boolean, p_limit integer, p_offset integer) SET search_path = public;
+ALTER FUNCTION public.get_user_bookmarks(p_workspace_id character varying, p_archived boolean, p_limit integer, p_offset integer, p_marked_as_read boolean) SET search_path = public;
 ALTER FUNCTION public.archive_bookmark(p_bookmark_id bigint, p_archive boolean) SET search_path = public;
 ALTER FUNCTION public.mark_bookmark_as_read(p_bookmark_id bigint, p_mark_as_read boolean) SET search_path = public;
 ALTER FUNCTION public.get_bookmark_count(p_workspace_id character varying, p_archived boolean) SET search_path = public;
