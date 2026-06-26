@@ -21,11 +21,12 @@ jobs:
         uses: ./.github/actions/setup-bun
 
       # migration-extensions.ts imports built extension dist; build the two it
-      # needs so the src/lib migration suite resolves their type declarations.
+      # needs (plus their floating-popover/floating-tooltip deps, which the
+      # action builds first) so the src/lib migration suite resolves them.
       - name: 🔧 Build Migration Extensions
-        run: |
-          bun run --filter @docs.plus/extension-hypermultimedia build
-          bun run --filter @docs.plus/extension-inline-code build
+        uses: ./.github/actions/build-extensions
+        with:
+          extensions: extension-hypermultimedia extension-inline-code
 
       # No-infra gate: every backend suite is mock-based (createMockPrisma/Redis),
       # so unit + lib + link-metadata + integration all run without Postgres/Redis.
