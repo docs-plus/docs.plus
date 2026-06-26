@@ -343,6 +343,12 @@ jobs:
         uses: ./.github/actions/build-extensions
 
       - name: 🧪 Jest (webapp)
+        # Some webapp modules construct a Supabase client at import time (utils
+        # barrel → ensureAnonymousSession), which throws without these. Dummy
+        # fallbacks mirror the build job; tests never make real Supabase calls.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
         run: bun run --filter @docs.plus/webapp test
 
   # ===========================================================================
