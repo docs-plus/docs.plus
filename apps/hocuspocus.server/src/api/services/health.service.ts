@@ -66,7 +66,11 @@ export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
   }
 
   try {
-    const { error } = await supabase.from('users').select('id').limit(1)
+    const { error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1)
+      .abortSignal(AbortSignal.timeout(2000))
 
     if (error && !error.message.includes('permission')) {
       throw error

@@ -29,16 +29,26 @@ describe('Worker Server - Integration Tests', () => {
 
   describe('Worker startup validation', () => {
     test('should fail to start without Redis configuration', async () => {
-      const env = { ...process.env }
-      delete env.REDIS_HOST
-      delete env.REDIS_PORT
+      // Explicit allowlist — never spread process.env so ambient REDIS_HOST /
+      // REDIS_QUEUE_HOST / WORKER_HEALTH_PORT from CI infra cannot leak through.
+      const env: Record<string, string> = {
+        PATH: process.env.PATH ?? '',
+        HOME: process.env.HOME ?? '',
+        NODE_ENV: 'test',
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          'postgresql://postgres:postgres@localhost:5432/postgres',
+        SUPABASE_URL: process.env.SUPABASE_URL ?? 'http://localhost:54321',
+        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? 'test-anon-key'
+        // No REDIS_HOST → getRedisConfig() returns null → queue.ts throws at import.
+      }
 
       const proc = spawn({
         cmd: ['bun', 'src/hocuspocus.worker.ts'],
         env,
         stdout: 'pipe',
         stderr: 'pipe',
-        cwd: '/Users/macbook/workspace/docsy/apps/hocuspocus.server'
+        cwd: process.cwd()
       })
 
       // Recovered source throws at module import time in lib/queue.ts when no
@@ -73,7 +83,7 @@ describe('Worker Server - Integration Tests', () => {
         },
         stdout: 'pipe',
         stderr: 'pipe',
-        cwd: '/Users/macbook/workspace/docsy/apps/hocuspocus.server'
+        cwd: process.cwd()
       })
 
       // Wait for worker to start
@@ -206,7 +216,7 @@ describe('Worker Server - Integration Tests', () => {
         },
         stdout: 'pipe',
         stderr: 'pipe',
-        cwd: '/Users/macbook/workspace/docsy/apps/hocuspocus.server'
+        cwd: process.cwd()
       })
 
       // Wait for it to start

@@ -1,7 +1,16 @@
-import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
 import { Hono } from 'hono'
 import healthRouter from '../../src/api/routers/health.router'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
+
+// Mutable reference updated per-test so the mock factory always reads current value.
+let mockSupabaseClient: any = null
+
+// Intercept getAnonClient so Supabase tests never make real network calls.
+// Resolved absolute path matches what health.service.ts imports.
+mock.module('../../src/lib/supabase', () => ({
+  getAnonClient: () => mockSupabaseClient
+}))
 
 describe('Health Check API', () => {
   let testServer: TestServer
@@ -18,6 +27,9 @@ describe('Health Check API', () => {
     // Reset mocks before each test
     mockPrisma = createMockPrisma()
     mockRedis = createMockRedis()
+    // Default: no Supabase client → checkSupabaseHealth returns 'disabled' instantly.
+    // Supabase is non-critical so overall health is still 'ok' when prisma/redis are healthy.
+    mockSupabaseClient = null
 
     // Create new app instance with fresh mocks
     app = new Hono()
@@ -154,12 +166,21 @@ describe('Health Check API', () => {
 
   describe('GET /health/supabase', () => {
     test('should return unhealthy when supabase is unreachable', async () => {
-      // The recovered source resolves Supabase config from the memoized
-      // `config.supabase` (captured at module load) and memoizes the anon
-      // client via `getAnonClient()`. The test harness always seeds
-      // SUPABASE_URL/SUPABASE_ANON_KEY in tests/setup.ts, so the 'disabled'
-      // branch never fires here: the client is created and the probe query to
-      // the unreachable test URL fails, yielding 'unhealthy'.
+      // Mock a client whose probe query returns a non-permission network error.
+      mockSupabaseClient = {
+        from: () => ({
+          select: () => ({
+            limit: () => ({
+              abortSignal: () =>
+                Promise.resolve({
+                  data: null,
+                  error: { message: 'ECONNREFUSED: connection refused' }
+                })
+            })
+          })
+        })
+      }
+
       const response = await testServer.get('/health/supabase')
       const data = await response.json()
 
@@ -170,12 +191,15 @@ describe('Health Check API', () => {
     })
 
     test('should return healthy when supabase is accessible', async () => {
-      // Set env vars if not set
-      if (!process.env.SUPABASE_URL) {
-        process.env.SUPABASE_URL = 'https://test.supabase.co'
-      }
-      if (!process.env.SUPABASE_ANON_KEY) {
-        process.env.SUPABASE_ANON_KEY = 'test-key'
+      // Mock a client whose probe query succeeds with no error.
+      mockSupabaseClient = {
+        from: () => ({
+          select: () => ({
+            limit: () => ({
+              abortSignal: () => Promise.resolve({ data: [{ id: '1' }], error: null })
+            })
+          })
+        })
       }
 
       const response = await testServer.get('/health/supabase')
@@ -189,9 +213,16 @@ describe('Health Check API', () => {
     })
 
     test('should return unhealthy when supabase throws error', async () => {
-      // Set env vars
-      process.env.SUPABASE_URL = 'https://invalid-url.supabase.co'
-      process.env.SUPABASE_ANON_KEY = 'invalid-key'
+      // Mock a client whose probe query rejects (simulates unexpected failure).
+      mockSupabaseClient = {
+        from: () => ({
+          select: () => ({
+            limit: () => ({
+              abortSignal: () => Promise.reject(new Error('Supabase connection error'))
+            })
+          })
+        })
+      }
 
       const response = await testServer.get('/health/supabase')
       const data = await response.json()
