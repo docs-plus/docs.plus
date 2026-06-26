@@ -337,6 +337,11 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
+      # Webapp tests import built extension dist (e.g. @docs.plus/extension-hyperlink
+      # via useHyperlinkEditorForm); build them first or the suite fails to resolve.
+      - name: 🔧 Build Extensions (required for webapp imports)
+        uses: ./.github/actions/build-extensions
+
       - name: 🧪 Jest (webapp)
         run: bun run --filter @docs.plus/webapp test
 
