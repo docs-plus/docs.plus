@@ -413,50 +413,30 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
   # ===========================================================================
-  # STAGE 2.5 — DEPLOY GATE (reads triage output; no second parse)
+  # STAGE 3 — PRODUCTION DEPLOYMENT (deploy gate inlined — no cross-job output)
   # ===========================================================================
-  # `app_deploy` already encodes `app_pipeline && !no_deploy`, so
-  # `(build): back front no-deploy` → app_deploy=false → gate stays shut.
-  # ===========================================================================
-  deploy-gate:
-    name: 🚦 Deploy Gate
-    needs: [triage, build]
-    if: |
-      always() &&
-      needs.build.result == 'success' &&
-      ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
-       (github.event_name == 'workflow_dispatch' && inputs.force_deploy))
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    permissions: { contents: read }
-    outputs:
-      deploy: ${{ steps.gate.outputs.deploy }}
-    steps:
-      - id: gate
-        env:
-          DOMAINS: ${{ needs.triage.outputs.domains }}
-        run: |
-          echo "deploy=true" >> "$GITHUB_OUTPUT"
-          echo "✅ app deploy authorized (domains=${DOMAINS})"
-
-  # ===========================================================================
-  # STAGE 3 — PRODUCTION DEPLOYMENT
-  # ===========================================================================
-  # IMPORTANT: this job intentionally opts OUT of cancel-in-progress at the job
-  # level. Mid-deploy SIGTERM during `docker compose up --scale` can leave the
-  # cluster with a mix of old+new containers and corrupt blue-green state.
+  # The deploy decision lives directly on this job's `if`. `app_deploy` already
+  # encodes `app_pipeline && !no_deploy`, so `(build): back front no-deploy` →
+  # app_deploy=false → no deploy. `always()` lets the `if` evaluate even when an
+  # upstream is skipped; `needs.build.result == 'success'` is the real fail-fast
+  # gate. (Inlined from a former deploy-gate job whose constant output did not
+  # propagate reliably through `needs.deploy-gate.outputs` under `always()`.)
+  # IMPORTANT: opts OUT of cancel-in-progress — a mid-deploy SIGTERM during
+  # `docker compose up --scale` can corrupt blue-green state.
   # ===========================================================================
   deploy:
     name: 🚀 Deploy Production
     runs-on: prod.docs.plus
     timeout-minutes: 30
-    needs: [deploy-gate]
-    # Separate concurrency group with cancel-in-progress: false. If two pushes
-    # arrive close together, the second waits for the first to finish.
+    needs: [triage, build]
     concurrency:
       group: ${{ github.workflow }}-deploy
       cancel-in-progress: false
-    if: needs.deploy-gate.outputs.deploy == 'true'
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.force_deploy))
     environment:
       name: production
       url: https://docs.plus
