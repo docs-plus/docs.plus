@@ -1,23 +1,30 @@
-# Paths that affect extension dist output or clean-room release gates.
+# Shared inputs that affect ALL extensions — appended to every key via YAML anchor.
 # Keep in sync with build-extensions cache hashFiles (.github/actions/build-extensions).
 # Test-only paths (playground, run-tests.sh, setup-cypress) trigger extension-tests
 # but do not need a cache bust — dist bytes are unchanged.
-extensions:
-  - 'extensions/**'
-  - 'packages/floating-popover/**'
-  - 'packages/floating-tooltip/**'
-  - 'packages/playground/**'
-  - 'packages/release-tooling/**'
-  - 'tsup.base.ts'
-  - 'tsconfig.base.json'
-  - 'scripts/run-tests.sh'
-  - 'scripts/build-extensions.sh'
-  - 'scripts/extension-preflight.sh'
-  - 'scripts/publishable-extensions.ts'
-  - '.github/actions/setup-bun/**'
-  - '.github/actions/build-extensions/**'
-  - '.github/actions/setup-cypress/**'
-  - '.github/filters/extensions.yaml'
-  - '.github/workflows/prod.docs.plus.yml'
-  - 'bun.lock'
+_shared: &shared
   - 'package.json'
+  - 'bun.lock'
+  - 'tsconfig.base.json'
+  - '.github/actions/build-extensions/**'
+  - 'scripts/publishable-extensions.ts'
+  - 'scripts/build-extensions.sh'
+
+extension-indent:
+  - *shared
+  - 'extensions/extension-indent/**'
+extension-hyperlink:
+  - *shared
+  - 'extensions/extension-hyperlink/**'
+extension-hypermultimedia:
+  - *shared
+  - 'extensions/extension-hypermultimedia/**'
+extension-inline-code:
+  - *shared
+  - 'extensions/extension-inline-code/**'
+extension-placeholder:
+  - *shared
+  - 'extensions/extension-placeholder/**'
+any_extension:
+  - *shared
+  - 'extensions/**'

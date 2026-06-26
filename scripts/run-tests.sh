@@ -151,9 +151,15 @@ if $RUN_EXTENSION_GATES; then
 
   EXTENSION_GATES_EXIT=0
 
+  # Build --only args from EXT_ONLY (space-separated dir names; empty = all five).
+  ONLY_ARGS=()
+  if [ -n "${EXT_ONLY:-}" ]; then
+    for e in $EXT_ONLY; do ONLY_ARGS+=(--only "$e"); done
+  fi
+
   while IFS=$'\t' read -r ext_rel has_unit label; do
     record_extension_gate "$label" "$ROOT_DIR/$ext_rel" "$has_unit"
-  done < <(bun "$ROOT_DIR/scripts/publishable-extensions.ts" --gates)
+  done < <(bun "$ROOT_DIR/scripts/publishable-extensions.ts" "${ONLY_ARGS[@]}" --gates)
 
   if $RUN_WEBAPP_UNIT; then
     cd "$WEBAPP_DIR"

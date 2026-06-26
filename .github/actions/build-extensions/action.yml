@@ -2,6 +2,12 @@
 name: 'Build Extension Dist'
 description: 'Restore extension dist cache; build on cache miss'
 
+inputs:
+  extensions:
+    description: 'Space-separated extension dir names to build; empty = all five'
+    required: false
+    default: ''
+
 outputs:
   cache-hit:
     description: 'Whether the extension dist cache was restored'
@@ -38,4 +44,6 @@ runs:
     - name: 🔧 Build extensions
       if: steps.cache-ext.outputs.cache-hit != 'true'
       shell: bash
+      env:
+        EXT_ONLY: ${{ inputs.extensions }}
       run: bash scripts/build-extensions.sh
