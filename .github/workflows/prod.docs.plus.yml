@@ -9,11 +9,9 @@
 #   4. Deploy: docker compose build on the prod host → blue-green rollout
 #
 # Triggers:
-#   - push to main: full pipeline. Deploy gated by commit-message convention
-#     `(build): front`, `(build): back`, or `(build): front back` parsed by
-#     `.github/scripts/evaluate-deploy-trigger.sh prod` in `deploy-gate`.
-#     Uptime Kuma deploy uses `(build): uptime-kuma` via the same script's
-#     `uptime-kuma` mode in `uptime-kuma-gate`.
+#   - push to main: full pipeline. Deploy chain gated by triage outputs
+#     (`app_deploy`, `has_observability`, `has_uptime_kuma`). Ordered:
+#     app → observability → uptime-kuma (fail-fast).
 #   - pull_request to main: quality gates + build verification only.
 #   - schedule (Sunday 00:00 UTC): security audit only.
 #   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`.
@@ -50,6 +48,11 @@ on:
         required: false
         default: false
         type: boolean
+      dry_run_subject:
+        description: 'Simulated commit subject to observe trigger gating (no deploy on dispatch)'
+        required: false
+        default: ''
+        type: string
 
 # Two concurrency groups:
 #   - quality-gates can be cancelled freely (cheap to redo)
@@ -78,6 +81,37 @@ env:
 
 jobs:
   # ===========================================================================
+  # STAGE −1 — TRIAGE (runs parse-build-trigger.sh; exposes skip_app_ci output)
+  # ===========================================================================
+  # Skipped on `schedule` (weekly security scan has no commit message to parse).
+  # All app-CI entry jobs gate on `needs.triage.outputs.skip_app_ci != 'true'`,
+  # replacing the six per-job `startsWith(…, '(build): observability')` guards.
+  # ===========================================================================
+  triage:
+    name: 🧭 Triage build trigger
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: github.event_name != 'schedule'
+    permissions:
+      contents: read
+    outputs:
+      triggered: ${{ steps.t.outputs.triggered }}
+      domains: ${{ steps.t.outputs.domains }}
+      has_back: ${{ steps.t.outputs.has_back }}
+      has_front: ${{ steps.t.outputs.has_front }}
+      has_observability: ${{ steps.t.outputs.has_observability }}
+      has_uptime_kuma: ${{ steps.t.outputs.has_uptime_kuma }}
+      app_deploy: ${{ steps.t.outputs.app_deploy }}
+      skip_app_ci: ${{ steps.t.outputs.skip_app_ci }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: 🧭 Parse trigger
+        id: t
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message || inputs.dry_run_subject }}
+        run: bash .github/scripts/parse-build-trigger.sh
+
+  # ===========================================================================
   # STAGE 0 — CHANGE DETECTION (cheap; gates the expensive extension suite)
   # ===========================================================================
   # The clean-room extension suite (~14 min) is the pipeline's long pole and is
@@ -91,34 +125,68 @@ jobs:
     name: 🔎 Detect Changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.event_name != 'schedule'
+    needs: [triage]
+    # Skip on `(build): observability` infra-only commits (skip_app_ci=true from
+    # triage) or when there's no app CI to run (schedule runs security only).
+    if: |
+      github.event_name != 'schedule' &&
+      needs.triage.outputs.skip_app_ci != 'true'
     permissions:
       contents: read
     outputs:
-      extensions: ${{ steps.filter.outputs.extensions }}
+      changed_extensions: ${{ steps.assemble.outputs.list }}
 
     steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: 🔎 Filter extension-affecting paths
-        id: filter
+      - id: filter
         uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         with:
           filters: .github/filters/extensions.yaml
+
+      - id: assemble
+        env:
+          # Fallback (NEW.md §7.4): no reliable diff base -> treat all five as changed.
+          # Covers manual dispatch AND a first push / history rewrite (before == all-zeros SHA).
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event.before == '0000000000000000000000000000000000000000' }}
+          R_INDENT: ${{ steps.filter.outputs.extension-indent }}
+          R_HYPERLINK: ${{ steps.filter.outputs.extension-hyperlink }}
+          R_HMM: ${{ steps.filter.outputs.extension-hypermultimedia }}
+          R_INLINE: ${{ steps.filter.outputs.extension-inline-code }}
+          R_PLACEHOLDER: ${{ steps.filter.outputs.extension-placeholder }}
+        run: |
+          set -euo pipefail
+          all='["extension-indent","extension-hyperlink","extension-hypermultimedia","extension-inline-code","extension-placeholder"]'
+          if [ "${FORCE_ALL}" = "true" ]; then echo "list=${all}" >> "$GITHUB_OUTPUT"; exit 0; fi
+          sel=()
+          [ "${R_INDENT}" = "true" ] && sel+=('"extension-indent"')
+          [ "${R_HYPERLINK}" = "true" ] && sel+=('"extension-hyperlink"')
+          [ "${R_HMM}" = "true" ] && sel+=('"extension-hypermultimedia"')
+          [ "${R_INLINE}" = "true" ] && sel+=('"extension-inline-code"')
+          [ "${R_PLACEHOLDER}" = "true" ] && sel+=('"extension-placeholder"')
+          if [ "${#sel[@]}" -eq 0 ]; then echo "list=[]" >> "$GITHUB_OUTPUT"; else
+            IFS=,; echo "list=[${sel[*]}]" >> "$GITHUB_OUTPUT"; fi
 
   # ===========================================================================
   # STAGE 1 — QUALITY GATES (parallel, fast feedback)
   # ===========================================================================
   lint:
-    if: github.event_name != 'schedule'
+    needs: [triage]
+    # Skip on infra-only commits (skip_app_ci=true) or schedule.
+    if: |
+      github.event_name != 'schedule' &&
+      needs.triage.outputs.skip_app_ci != 'true'
     uses: ./.github/workflows/quality-lint.yml
 
   typecheck:
     name: 📝 Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: github.event_name != 'schedule'
+    needs: [triage]
+    # Skip on infra-only commits (skip_app_ci=true) or schedule.
+    if: |
+      github.event_name != 'schedule' &&
+      needs.triage.outputs.skip_app_ci != 'true'
     permissions:
       contents: read
 
@@ -139,6 +207,11 @@ jobs:
     name: 🔒 Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [triage]
+    # Keeps its schedule escape (weekly scan) even when triage is skipped.
+    if: |
+      always() &&
+      (github.event_name == 'schedule' || needs.triage.outputs.skip_app_ci != 'true')
     permissions:
       contents: read
 
@@ -201,47 +274,59 @@ jobs:
             audit-results.json
           retention-days: 30
 
+  back-validation:
+    name: 🔧 Backend Validation
+    needs: [triage]
+    if: needs.triage.outputs.has_back == 'true'
+    uses: ./.github/workflows/backend-ci.yml
+
   extension-tests:
-    name: 🧪 Extension Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: [changes]
-    # Run only when extension-affecting paths changed. workflow_dispatch always
-    # runs the suite (manual runs have no reliable diff base). When this job is
-    # skipped because nothing extension-related changed, the build gate below
-    # accepts that skip only if the changes job succeeded.
+    name: 🧪 Ext (${{ matrix.ext }})
+    needs: [triage, changes, back-validation]
+    # Run for a `front` trigger OR a normal app-CI commit; only changed extensions.
     if: |
-      github.event_name != 'schedule' &&
-      (needs.changes.outputs.extensions == 'true' || github.event_name == 'workflow_dispatch')
+      always() &&
+      needs.triage.outputs.skip_app_ci != 'true' &&
+      needs.back-validation.result != 'failure' &&
+      needs.changes.outputs.changed_extensions != '[]' &&
+      (needs.triage.outputs.has_front == 'true' || needs.triage.outputs.triggered != 'true' || github.event_name == 'pull_request')
+    strategy:
+      fail-fast: false
+      matrix:
+        # `|| '[]'` guards the runtime throw if `changes` is skipped and the output is '' (actionlint won't catch this).
+        ext: ${{ fromJson(needs.changes.outputs.changed_extensions || '[]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
-
     steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: 🥟 Setup Environment
-        uses: ./.github/actions/setup-bun
-
-      - name: 🔧 Build extensions (release gate)
-        uses: ./.github/actions/build-extensions
-
-      - name: 🌲 Setup Cypress binary
-        uses: ./.github/actions/setup-cypress
-
-      - name: 🧪 Clean-room extension suites
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./.github/actions/setup-bun
+      - uses: ./.github/actions/build-extensions
+        with:
+          extensions: ${{ matrix.ext }}
+      - uses: ./.github/actions/setup-cypress
+      - name: 🧪 Clean-room suite (${{ matrix.ext }})
         env:
           EXTENSION_DIST_READY: '1'
+          EXT_ONLY: ${{ matrix.ext }}
         run: bash scripts/run-tests.sh --extensions
-
-      - name: ✈️ Publish preflight (all five)
+      - name: ✈️ Preflight (${{ matrix.ext }})
+        env:
+          EXT_ONLY: ${{ matrix.ext }}
         run: bash scripts/extension-preflight.sh
 
   webapp-unit-tests:
     name: 🧪 Webapp Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name != 'schedule'
+    needs: [triage, back-validation]
+    if: |
+      always() &&
+      github.event_name != 'schedule' &&
+      needs.triage.outputs.skip_app_ci != 'true' &&
+      needs.back-validation.result != 'failure' &&
+      (needs.triage.outputs.has_front == 'true' || needs.triage.outputs.triggered != 'true' || github.event_name == 'pull_request')
     permissions:
       contents: read
 
@@ -267,19 +352,28 @@ jobs:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    needs: [changes, lint, typecheck, security, extension-tests, webapp-unit-tests]
+    needs:
+      [
+        triage,
+        changes,
+        lint,
+        typecheck,
+        security,
+        extension-tests,
+        webapp-unit-tests,
+        back-validation
+      ]
     if: |
       always() &&
       github.event_name != 'schedule' &&
+      needs.triage.outputs.skip_app_ci != 'true' &&
       needs.changes.result == 'success' &&
       (needs.lint.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.typecheck.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
       (needs.security.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
-      (needs.extension-tests.result == 'success' ||
-        (needs.extension-tests.result == 'skipped' && needs.changes.outputs.extensions != 'true') ||
-        (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
-      (needs.webapp-unit-tests.result == 'success' ||
-        (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
+      (needs.back-validation.result == 'success' || needs.back-validation.result == 'skipped' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
+      (needs.extension-tests.result == 'success' || needs.extension-tests.result == 'skipped' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates)) &&
+      (needs.webapp-unit-tests.result == 'success' || needs.webapp-unit-tests.result == 'skipped' || (github.event_name == 'workflow_dispatch' && inputs.skip_quality_gates))
     permissions:
       contents: read
 
@@ -308,65 +402,31 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
 
   # ===========================================================================
-  # STAGE 2.5 — DEPLOY GATE (precise commit-message parsing)
+  # STAGE 2.5 — DEPLOY GATE (reads triage output; no second parse)
   # ===========================================================================
-  # Replaces the previous loose `contains(...)` chain in the deploy job's `if:`.
-  # The old check matched any commit whose body contained both "build" and
-  # "front" or "back" anywhere (e.g. "fix iOS back gesture build crash" would
-  # have triggered a production deploy). This job parses the convention
-  # documented in AGENTS.md (`(build): front|back|front back`) with a real
-  # regex and surfaces the result as a job output.
+  # `app_deploy` already encodes `app_pipeline && !no_deploy`, so
+  # `(build): back front no-deploy` → app_deploy=false → gate stays shut.
   # ===========================================================================
   deploy-gate:
     name: 🚦 Deploy Gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    needs: [build]
+    needs: [triage, build]
     if: |
       always() &&
       needs.build.result == 'success' &&
-      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.force_deploy))
-    permissions:
-      contents: read
+      ((github.event_name == 'push' && needs.triage.outputs.app_deploy == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.force_deploy))
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: { contents: read }
     outputs:
       deploy: ${{ steps.gate.outputs.deploy }}
-      reason: ${{ steps.gate.outputs.reason }}
-
     steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: 🚦 Evaluate trigger
-        id: gate
+      - id: gate
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF: ${{ github.ref }}
-          FORCE_DEPLOY: ${{ inputs.force_deploy }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          DOMAINS: ${{ needs.triage.outputs.domains }}
         run: |
-          set -euo pipefail
-
-          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${FORCE_DEPLOY}" = "true" ]; then
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "reason=workflow_dispatch+force_deploy" >> "$GITHUB_OUTPUT"
-            echo "✅ Deploying: workflow_dispatch with force_deploy=true"
-            exit 0
-          fi
-
-          if [ "${EVENT_NAME}" != "push" ] || [ "${REF}" != "refs/heads/main" ]; then
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "reason=non-main push" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ Skipping deploy: not a push to main"
-            exit 0
-          fi
-
-          if bash .github/scripts/evaluate-deploy-trigger.sh prod; then
-            echo "✅ Deploying: matched (build): front|back convention"
-          else
-            echo "ℹ️ Skipping deploy: commit does not match '(build): front|back|front back'"
-            echo "ℹ️ Subject line was:"
-            printf '%s\n' "${COMMIT_MSG}" | head -1
-          fi
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+          echo "✅ app deploy authorized (domains=${DOMAINS})"
 
   # ===========================================================================
   # STAGE 3 — PRODUCTION DEPLOYMENT
@@ -761,63 +821,57 @@ jobs:
           echo "✅ Rollback to ${PREVIOUS_TAG} verified healthy"
 
   # ===========================================================================
-  # UPTIME KUMA (optional monitoring service)
+  # STAGE 4 — OBSERVABILITY DEPLOY (ordered after app deploy)
   # ===========================================================================
+  observability-deploy:
+    name: 🔭 Deploy Observability
+    needs: [triage, deploy]
+    # Runs after the app deploy. Fail-fast: if the app is in the set, deploy MUST
+    # have succeeded (a skip from an upstream failure is NOT success, so this stays
+    # skipped). If the app is absent, deploy is skipped and observability proceeds.
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.triage.outputs.has_observability == 'true' &&
+      (needs.triage.outputs.app_deploy != 'true' || needs.deploy.result == 'success')
+    uses: ./.github/workflows/observability.docs.plus.yml
+    with:
+      action: setup
+
   # ===========================================================================
-  # UPTIME KUMA (optional monitoring service)
+  # STAGE 5 — UPTIME KUMA DEPLOY (trailing, ordered last)
   # ===========================================================================
-  uptime-kuma-gate:
-    name: 🚦 Uptime Kuma Gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-    outputs:
-      deploy: ${{ steps.gate.outputs.deploy }}
-
-    steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: 🚦 Evaluate trigger
-        id: gate
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          set -euo pipefail
-          if bash .github/scripts/evaluate-deploy-trigger.sh uptime-kuma; then
-            echo "✅ Uptime Kuma: matched (build): uptime-kuma convention"
-          else
-            echo "ℹ️ Skipping Uptime Kuma: commit does not match '(build): uptime-kuma'"
-          fi
-
-  deploy-uptime-kuma:
+  uptime-kuma-deploy:
     name: 🔔 Deploy Uptime Kuma
     runs-on: prod.docs.plus
     timeout-minutes: 10
-    needs: [uptime-kuma-gate]
-    if: needs.uptime-kuma-gate.outputs.deploy == 'true'
-    permissions:
-      contents: read
-
+    # Job-level group serializes a SECOND workflow run's uptime-kuma deploy behind the
+    # first (cross-run). It does NOT shield this job from the workflow-level `…-quality`
+    # group cancelling the parent run — that residual is the pre-existing, accepted
+    # blue-green exposure (Global Constraints "preserve, do not regress"); this plan does
+    # not widen it. Matches the app deploy's own `…-deploy` group semantics.
+    concurrency:
+      group: uptime-kuma-deploy
+      cancel-in-progress: false
+    needs: [triage, deploy, observability-deploy]
+    # Always LAST. Fail-fast: any app domain in the set requires deploy success, and
+    # any observability in the set requires observability success (a skip from an
+    # upstream failure is not success). Absent domains skip and don't block.
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      needs.triage.outputs.has_uptime_kuma == 'true' &&
+      (needs.triage.outputs.app_deploy != 'true' || needs.deploy.result == 'success') &&
+      (needs.triage.outputs.has_observability != 'true' || needs.observability-deploy.result == 'success')
+    permissions: { contents: read }
     steps:
       - name: 🚀 Deploy
         run: |
-          # Pinned by digest (not :latest) so the same uptime-kuma version
-          # is reproducible across redeploys. To bump, look up new digest:
-          #   docker pull louislam/uptime-kuma:1 && docker inspect ...
           UPTIME_KUMA_IMAGE='louislam/uptime-kuma:1@sha256:bb1bcecbc3e3ffb1cb0f8fc5f9c3cdaa78c1dfb56d98d64e06da13ebfc6dba0d'
-
           docker network create docsplus-network 2>/dev/null || true
-
           docker stop uptime-kuma 2>/dev/null || true
           docker rm uptime-kuma 2>/dev/null || true
-
-          docker run -d \
-            --name uptime-kuma \
-            --network docsplus-network \
-            --restart unless-stopped \
+          docker run -d --name uptime-kuma --network docsplus-network --restart unless-stopped \
             -v uptime-kuma-data:/app/data \
             --label "traefik.enable=true" \
             --label "traefik.http.routers.uptime.rule=Host(\`status.docs.plus\`)" \
@@ -825,6 +879,8 @@ jobs:
             --label "traefik.http.routers.uptime.tls.certresolver=letsencrypt" \
             --label "traefik.http.services.uptime.loadbalancer.server.port=3001" \
             "${UPTIME_KUMA_IMAGE}"
-
-          sleep 15
-          echo "✅ Uptime Kuma deployed at https://status.docs.plus"
+          # Health poll replaces blind sleep 15 (D6 cheap win).
+          for i in $(seq 1 20); do
+            if docker exec uptime-kuma wget -qO- http://localhost:3001 >/dev/null 2>&1; then echo "✅ uptime-kuma healthy"; break; fi
+            [ "$i" -eq 20 ] && echo "⚠️ uptime-kuma health timeout (continuing)"; sleep 2
+          done

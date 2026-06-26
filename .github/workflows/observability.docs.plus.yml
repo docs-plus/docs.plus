@@ -4,8 +4,12 @@
 name: CI/CD Observability
 
 on:
-  push:
-    branches: [main]
+  workflow_call:
+    inputs:
+      action:
+        required: false
+        default: setup
+        type: string
   workflow_dispatch:
     inputs:
       action:
@@ -28,39 +32,16 @@ env:
   ENV_FILE: .env.observability
 
 jobs:
-  gate:
-    name: 🚦 Observability Gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-    outputs:
-      deploy: ${{ steps.gate.outputs.deploy }}
-    steps:
-      - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: 🚦 Evaluate trigger
-        id: gate
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: |
-          set -euo pipefail
-          if bash .github/scripts/evaluate-deploy-trigger.sh observability; then
-            echo "✅ matched (build): observability"
-          else
-            echo "ℹ️ no (build): observability trigger"
-          fi
-
   deploy:
     name: 🔭 Deploy Observability
     runs-on: prod.docs.plus
     timeout-minutes: 15
-    needs: [gate]
+    concurrency:
+      group: observability-deploy
+      cancel-in-progress: false
     if: |
-      always() &&
-      ((github.event_name == 'push' && needs.gate.outputs.deploy == 'true') ||
-       (github.event_name == 'workflow_dispatch' && inputs.action != 'down'))
+      (github.event_name == 'workflow_dispatch' && inputs.action != 'down') ||
+      github.event_name == 'workflow_call'
     # No `environment: production` — it would inherit the production environment's
     # required-reviewer protection and gate every monitoring deploy on manual approval.
     permissions:
@@ -87,7 +68,11 @@ jobs:
         # quoted string instead. Only the two Telegram vars are substituted so the Go
         # message template and the LogQL/PromQL `$` in rules.yml are left intact.
         run: |
-          set -a; . "./${ENV_FILE}"; set +a
+          set -a
+          # shellcheck disable=SC1090
+          . "./${ENV_FILE}"
+          set +a
+          # shellcheck disable=SC2016
           envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID}' \
             < scripts/observability/grafana/provisioning/alerting/contactpoints.yml.tmpl \
             > scripts/observability/grafana/provisioning/alerting/contactpoints.yml
@@ -104,8 +89,14 @@ jobs:
         run: docker network create docsplus-network 2>/dev/null || true
 
       - name: 🚀 Deploy stack
+        env:
+          ACTION_IN: ${{ inputs.action }}
         run: |
-          ACTION="${{ github.event_name == 'workflow_dispatch' && inputs.action || 'setup' }}"
+          ACTION="${ACTION_IN:-setup}"
+          case "${ACTION}" in
+            setup|update|restart|down) ;;
+            *) echo "::error::unknown observability action '${ACTION}'"; exit 1 ;;
+          esac
           case "${ACTION}" in
             restart)
               docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart ;;
