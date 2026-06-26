@@ -36,8 +36,7 @@ describe('Worker Server - Integration Tests', () => {
         HOME: process.env.HOME ?? '',
         NODE_ENV: 'test',
         DATABASE_URL:
-          process.env.DATABASE_URL ??
-          'postgresql://postgres:postgres@localhost:5432/postgres',
+          process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/postgres',
         SUPABASE_URL: process.env.SUPABASE_URL ?? 'http://localhost:54321',
         SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? 'test-anon-key'
         // No REDIS_HOST → getRedisConfig() returns null → queue.ts throws at import.
