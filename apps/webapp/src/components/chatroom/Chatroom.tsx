@@ -28,15 +28,16 @@ const ChatRoom = ({
 
   return (
     <div className={`chatroom chatroom--${variant} ${className}`}>
-      <ChatroomLayout variant={variant}>
-        <ChatroomProvider
-          channelId={chatRoom?.headingId}
-          variant={variant}
-          deepLinkMessageId={effectiveDeepLink}
-          key={chatRoom?.headingId}>
-          {children}
-        </ChatroomProvider>
-      </ChatroomLayout>
+      {/* Provider wraps the layout, not the reverse: the mobile ChatroomSheetLayout
+          renders a header (MediaFilterToggle, Breadcrumb) that consumes useChatroomContext
+          as a sibling of {children}, so nesting the provider inside left it context-less. */}
+      <ChatroomProvider
+        channelId={chatRoom?.headingId}
+        variant={variant}
+        deepLinkMessageId={effectiveDeepLink}
+        key={chatRoom?.headingId}>
+        <ChatroomLayout variant={variant}>{children}</ChatroomLayout>
+      </ChatroomProvider>
     </div>
   )
 }
