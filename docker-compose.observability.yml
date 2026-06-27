@@ -44,7 +44,8 @@ services:
       - prometheus-data:/prometheus
     networks: [docsplus-network]
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
-    deploy: { resources: { limits: { memory: 512M } } }
+    # 512M spiked to 86% (15d retention + 5 scrape jobs); host has 9GiB free.
+    deploy: { resources: { limits: { memory: 768M } } }
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
@@ -115,7 +116,8 @@ services:
       retries: 5
       start_period: 30s
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
-    deploy: { resources: { limits: { memory: 384M } } }
+    # 384M was too tight — Grafana sat at 95% of cap (provisioned dashboards + alerting); host has 9GiB free.
+    deploy: { resources: { limits: { memory: 512M } } }
 
   glitchtip-postgres:
     image: postgres:17.10-alpine3.23
