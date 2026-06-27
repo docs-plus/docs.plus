@@ -39,9 +39,12 @@ jobs:
     concurrency:
       group: observability-deploy
       cancel-in-progress: false
-    if: |
-      (github.event_name == 'workflow_dispatch' && inputs.action != 'down') ||
-      github.event_name == 'workflow_call'
+    # Gate on the action input, NOT github.event_name: inside a reusable called via
+    # workflow_call, github.event_name is the CALLER's event ('push'), never
+    # 'workflow_call', so the old check skipped every orchestrated deploy. This
+    # workflow only triggers on workflow_call/workflow_dispatch (no push), and
+    # `action` defaults to 'setup' in both, so this runs unless it's a teardown.
+    if: inputs.action != 'down'
     # No `environment: production` — it would inherit the production environment's
     # required-reviewer protection and gate every monitoring deploy on manual approval.
     permissions:
