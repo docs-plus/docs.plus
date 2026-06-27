@@ -21,6 +21,20 @@ const GA_CONNECT_HOSTS = ['analytics.google.com']
 const GIPHY_CONNECT_HOSTS = ['api.giphy.com', 'media.giphy.com', 'i.giphy.com']
 
 /**
+ * GlitchTip error-reporting host, derived from NEXT_PUBLIC_GLITCHTIP_DSN at build
+ * time so the Sentry SDK's POST to it isn't blocked by connect-src. Empty when no
+ * DSN is set (DSN-gated, like the SDK init itself).
+ */
+let GLITCHTIP_CONNECT_HOSTS = []
+try {
+  if (process.env.NEXT_PUBLIC_GLITCHTIP_DSN) {
+    GLITCHTIP_CONNECT_HOSTS = [new URL(process.env.NEXT_PUBLIC_GLITCHTIP_DSN).host]
+  }
+} catch {
+  GLITCHTIP_CONNECT_HOSTS = [] // malformed DSN — leave connect-src untouched
+}
+
+/**
  * Hostname suffixes excluded from Workbox runtime routes (derived from embed + analytics hosts).
  * Subdomain match: `www.googletagmanager.com` matches suffix `googletagmanager.com`.
  */
@@ -55,6 +69,7 @@ module.exports = {
   IFRAME_EMBED_HOSTS,
   GA_CONNECT_HOSTS,
   GIPHY_CONNECT_HOSTS,
+  GLITCHTIP_CONNECT_HOSTS,
   SW_BYPASS_HOST_SUFFIXES,
   shouldBypassServiceWorker
 }

@@ -8,7 +8,8 @@ const {
   X_CONNECT_HOSTS,
   IFRAME_EMBED_HOSTS,
   GA_CONNECT_HOSTS,
-  GIPHY_CONNECT_HOSTS
+  GIPHY_CONNECT_HOSTS,
+  GLITCHTIP_CONNECT_HOSTS
 } = require('./config/security/third-party-hosts')
 const isProduction = process.env.NODE_ENV === 'production'
 const isCoverageInstrumentation =
@@ -261,6 +262,8 @@ module.exports = withPWA({
         // Hypermultimedia X oEmbed + widgets.js follow-up requests
         ...X_CONNECT_HOSTS,
         ...GIPHY_CONNECT_HOSTS,
+        // GlitchTip error reporting — Sentry SDK POSTs client errors to the DSN host
+        ...GLITCHTIP_CONNECT_HOSTS,
         ...localUrls,
         ...envUrls,
         ...devUrls
