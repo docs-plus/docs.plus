@@ -816,15 +816,16 @@ jobs:
   # ===========================================================================
   observability-deploy:
     name: 🔭 Deploy Observability
-    needs: [triage, deploy]
-    # Runs after the app deploy. Fail-fast: if the app is in the set, deploy MUST
-    # have succeeded (a skip from an upstream failure is NOT success, so this stays
-    # skipped). If the app is absent, deploy is skipped and observability proceeds.
+    needs: [triage]
+    # Independent monitoring infra — deploys whenever `observability` is in the set.
+    # Deliberately does NOT `needs: deploy`: GitHub does not reliably run a
+    # reusable-workflow call job under `always()` when a needed job (the app deploy)
+    # is skipped, so depending on `deploy` made `(build): observability` silently
+    # skip. The single prod runner serializes app vs observability deploys anyway,
+    # and monitoring should stay up regardless of an app-deploy outcome.
     if: |
-      always() &&
       github.event_name == 'push' &&
-      needs.triage.outputs.has_observability == 'true' &&
-      (needs.triage.outputs.app_deploy != 'true' || needs.deploy.result == 'success')
+      needs.triage.outputs.has_observability == 'true'
     uses: ./.github/workflows/observability.docs.plus.yml
     with:
       action: setup
