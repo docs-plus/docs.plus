@@ -145,6 +145,21 @@ services:
   # REST API (Hocuspocus)
   # Handles HTTP requests and queues jobs - does NOT process jobs
   # ===========================================================================
+  # ===========================================================================
+  # ONE-SHOT MIGRATION GATE — single prod migration runner (mirrors glitchtip-migrate)
+  # Invoked by the deploy workflow via `compose run --rm migrate` BEFORE app
+  # replicas scale up; fail-fast (no mask). App services set RUN_MIGRATIONS=0.
+  # ===========================================================================
+  migrate:
+    image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
+    env_file: .env.production
+    restart: 'no'
+    entrypoint: ['sh', '-c', 'cd /app/apps/hocuspocus.server && bunx prisma@6.19.3 migrate deploy']
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    networks:
+      - docsplus-network
+
   rest-api:
     image: docsplus-rest-api:${DEPLOY_TAG:-latest}
     env_file: .env.production
@@ -158,6 +173,7 @@ services:
     command: bun src/index.ts
     environment:
       NODE_ENV: production
+      RUN_MIGRATIONS: '0' # one-shot `migrate` service is the single migration runner
       APP_PORT: 4000
       # Pino — see apps/hocuspocus.server/src/lib/logger.ts
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -253,6 +269,7 @@ services:
     command: bun src/hocuspocus.server.ts
     environment:
       NODE_ENV: production
+      RUN_MIGRATIONS: '0' # one-shot `migrate` service is the single migration runner
       HOCUSPOCUS_PORT: 4001
       LOG_LEVEL: ${LOG_LEVEL:-info}
       HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
@@ -350,6 +367,7 @@ services:
     command: bun src/hocuspocus.worker.ts
     environment:
       NODE_ENV: production
+      RUN_MIGRATIONS: '0' # one-shot `migrate` service is the single migration runner
       WORKER_HEALTH_PORT: 4002
       LOG_LEVEL: ${LOG_LEVEL:-info}
       WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL:-}

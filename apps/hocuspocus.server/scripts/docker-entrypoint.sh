@@ -5,17 +5,14 @@ set -e
 cd /app/apps/hocuspocus.server || exit 1
 
 echo "🔄 Entrypoint starting (monorepo layout)..."
-echo "🔄 Running database migrations..."
-
-MIGRATION_FAILED=0
-# Prisma CLI is pre-warmed into the image (Dockerfile), so bunx runs offline.
-# 120s covers a slow first-boot migration without silently skipping the schema.
-timeout 120 bunx prisma@6.19.3 migrate deploy || MIGRATION_FAILED=1
-
-if [ "$MIGRATION_FAILED" -eq 1 ]; then
-  echo "⚠️  Database migration failed, continuing to start service..."
+# Self-migrate is default-on (dev/local). In prod RUN_MIGRATIONS=0 and a one-shot
+# `migrate` service runs migrations once, fail-fast, before any app replica starts.
+# No mask, no timeout: under `set -e` a failed migration now stops boot loudly
+# instead of booting a half-migrated app behind a green /health check.
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+  echo "🔄 Running database migrations..."
+  bunx prisma@6.19.3 migrate deploy
+  echo "✅ Migrations done"
 fi
-
-echo "✅ Migrations done"
 echo "🚀 Starting: $*"
 exec "$@"

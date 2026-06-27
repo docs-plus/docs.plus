@@ -560,6 +560,17 @@ jobs:
             sleep 2
           done
 
+      - name: 🗄️ Migrate database (one-shot gate)
+        run: |
+          # Single prod migration runner: fail-fast BEFORE any app replica scales
+          # up, so a bad migration aborts the deploy and the old version keeps
+          # serving. App replicas have RUN_MIGRATIONS=0 — this is the only path.
+          # `run --rm` runs once and propagates the migrate exit code.
+          echo "🗄️ Running database migrations (one-shot, fail-fast)..."
+          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+            run --rm --no-deps migrate
+          echo "✅ Migrations applied"
+
       - name: 🚀 Deploy Services (Blue-Green)
         run: |
           echo "🚀 Starting zero-downtime deployment..."

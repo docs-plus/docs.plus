@@ -1,5 +1,5 @@
 -- DropIndex
-DROP INDEX "DocumentMetadata_updatedAt_idx";
+DROP INDEX IF EXISTS "DocumentMetadata_updatedAt_idx";
 
 -- AlterTable
 ALTER TABLE "EmailSentLog" ALTER COLUMN "expiresAt" SET DEFAULT NOW() + INTERVAL '7 days';
