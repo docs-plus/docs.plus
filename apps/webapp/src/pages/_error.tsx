@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs'
+import type { NextPageContext } from 'next'
 import Link from 'next/link'
 
 function Error({ statusCode }: { statusCode?: number }) {
@@ -25,14 +27,11 @@ function Error({ statusCode }: { statusCode?: number }) {
   )
 }
 
-Error.getInitialProps = ({
-  res,
-  err
-}: {
-  res?: { statusCode: number }
-  err?: { statusCode: number }
-}) => {
-  const statusCode = res ? res.statusCode : err ? err.statusCode : 404
+Error.getInitialProps = async (contextData: NextPageContext) => {
+  // Forward render/SSR errors to GlitchTip (no-ops when no DSN is configured).
+  await Sentry.captureUnderscoreErrorException(contextData)
+  const { res, err } = contextData
+  const statusCode = res?.statusCode ?? err?.statusCode ?? 404
   return { statusCode }
 }
 
