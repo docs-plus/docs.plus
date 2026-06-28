@@ -112,7 +112,7 @@ const serverConfig = {
   ...baseConfig,
   extensions: [...baseConfig.extensions, statelessExtension],
 
-  async onAuthenticate({ token, documentName }: any) {
+  async onAuthenticate({ token, documentName, connection }: any) {
     // The room id is the bare documentId. Resolve the user first, then deny
     // anonymous access to admin-set private documents at one choke point.
     const isProd = process.env.NODE_ENV === 'production'
@@ -163,18 +163,28 @@ const serverConfig = {
     // lookup failure fails open so a blip can't sever all collaboration; private
     // docs are admin-set and rare. is_anonymous sessions count as anonymous here.
     let isPrivate = false
+    let readOnly = false
+    let ownerId: string | null = null
     try {
       const meta = await prisma.documentMetadata.findUnique({
         where: { documentId: documentName },
-        select: { isPrivate: true }
+        select: { isPrivate: true, readOnly: true, ownerId: true }
       })
       isPrivate = meta?.isPrivate === true
+      readOnly = meta?.readOnly === true
+      ownerId = meta?.ownerId ?? null
     } catch (error) {
       wsLogger.warn({ err: error, documentName }, 'Private-doc lookup failed; allowing connection')
     }
 
     if (isPrivate && (!user || user.is_anonymous)) {
       throw new Error('Authentication required for private document')
+    }
+
+    // Enforce the admin readOnly lock on the WRITE path. The client editor honors it,
+    // but a raw WS client could otherwise write; owners keep edit rights.
+    if (readOnly && connection && user?.sub !== ownerId) {
+      connection.readOnly = true
     }
 
     return { user, slug, documentId: documentName, deviceType }
