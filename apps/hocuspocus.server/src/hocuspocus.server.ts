@@ -116,6 +116,9 @@ const serverConfig = {
     // The room id is the bare documentId. Resolve the user first, then deny
     // anonymous access to admin-set private documents at one choke point.
     const isProd = process.env.NODE_ENV === 'production'
+    // Expired/invalid Supabase tokens on (re)connect are expected and high-volume:
+    // reject them so the client refreshes, but don't capture them as errors.
+    const INVALID_TOKEN_MESSAGE = 'Invalid authentication token'
 
     let user: Awaited<ReturnType<typeof verifySupabaseToken>> = null
     let slug = ''
@@ -134,15 +137,22 @@ const serverConfig = {
           if (user) {
             wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
           } else if (isProd) {
-            throw new Error('Invalid authentication token')
+            throw new Error(INVALID_TOKEN_MESSAGE)
           } else {
             wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
           }
         }
       } catch (error) {
-        wsLogger.error({ err: error, documentName }, 'Auth error')
-        captureException(error)
-        if (isProd) throw new Error('Authentication failed', { cause: error })
+        if (error instanceof Error && error.message === INVALID_TOKEN_MESSAGE) {
+          // Expected rejection (expired/invalid token): reject so the client
+          // refreshes and reconnects; not an error to log at level 50 or capture.
+          wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
+          if (isProd) throw error
+        } else {
+          wsLogger.error({ err: error, documentName }, 'Auth error')
+          captureException(error)
+          if (isProd) throw new Error('Authentication failed', { cause: error })
+        }
         user = null
         slug = ''
         deviceType = 'desktop'
