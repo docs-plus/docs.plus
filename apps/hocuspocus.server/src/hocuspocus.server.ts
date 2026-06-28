@@ -159,9 +159,10 @@ const serverConfig = {
       }
     }
 
-    // Privacy is read authoritatively from the DB (never trust the client). A DB
-    // lookup failure fails open so a blip can't sever all collaboration; private
-    // docs are admin-set and rare. is_anonymous sessions count as anonymous here.
+    // Privacy is read authoritatively from the DB (never trust the client). "Private"
+    // means login-required ONLY (any non-anonymous user) -- NOT member-scoped by
+    // design; the DocumentUsers/Role schema is unused legacy. Lookup fails open so a
+    // blip can't sever collaboration; private docs are admin-set and rare.
     let isPrivate = false
     let readOnly = false
     let ownerId: string | null = null
