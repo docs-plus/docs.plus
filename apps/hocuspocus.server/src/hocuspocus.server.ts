@@ -10,11 +10,17 @@ import { handleHistoryStateless } from './lib/history-stateless'
 import { captureException } from './lib/instrument'
 import { logger } from './lib/logger'
 import {
+  documentLoadDuration,
+  documentPersistDuration,
   metricsContentType,
   metricsText,
+  setActiveDocumentsProvider,
   wsActiveConnections,
   wsAuthRejectionsTotal,
-  wsConnectionsTotal
+  wsAwarenessUpdatesTotal,
+  wsConnectionsTotal,
+  wsMessagesTotal,
+  ydocUpdateBytes
 } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues } from './lib/queue'
@@ -24,6 +30,11 @@ import type { HistoryPayload } from './types/document.types'
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
 const wsLogger = logger.child({ service: 'websocket' })
+
+// Bracket load/store hooks keyed by the Document object; WeakMap means an aborted
+// load that never reaches the `after` hook is GC'd instead of leaking a timer.
+const loadStartedAt = new WeakMap<object, number>()
+const storeStartedAt = new WeakMap<object, number>()
 
 function sendHistoryResponse(
   connection: Connection,
@@ -47,6 +58,49 @@ function roomDocumentId(document: { name?: string }): string | null {
   return typeof n === 'string' && n.length > 0 ? n : null
 }
 
+// High priority so the load/store START timers run BEFORE the Database extension's
+// own onLoadDocument/onStoreDocument (priority sort: higher runs first). Otherwise
+// the bracket would begin AFTER the prisma fetch / enqueue and observe ≈0.
+const metricsExtension = {
+  priority: 1000,
+
+  async onLoadDocument({ document }: { document: object }) {
+    loadStartedAt.set(document, Date.now())
+  },
+
+  async afterLoadDocument({ document }: { document: object }) {
+    const started = loadStartedAt.get(document)
+    if (started === undefined) return
+    documentLoadDuration.observe((Date.now() - started) / 1000)
+    loadStartedAt.delete(document)
+  },
+
+  async onStoreDocument({ document }: { document: object }) {
+    storeStartedAt.set(document, Date.now())
+  },
+
+  async afterStoreDocument({ document }: { document: object }) {
+    const started = storeStartedAt.get(document)
+    if (started === undefined) return
+    documentPersistDuration.observe((Date.now() - started) / 1000)
+    storeStartedAt.delete(document)
+  },
+
+  async onChange({ update }: { update: Uint8Array }) {
+    ydocUpdateBytes.observe(update.byteLength)
+  },
+
+  // Inbound sync messages are exactly 1:1 with this hook (verified at MessageReceiver).
+  async beforeSync() {
+    wsMessagesTotal.inc({ type: 'sync' })
+  },
+
+  async onAwarenessUpdate() {
+    wsAwarenessUpdatesTotal.inc()
+    wsMessagesTotal.inc({ type: 'awareness' })
+  }
+}
+
 const statelessExtension = {
   async onStateless({
     payload,
@@ -57,6 +111,8 @@ const statelessExtension = {
     connection: Connection
     document: { name?: string; broadcastStateless: (p: string) => void }
   }) {
+    wsMessagesTotal.inc({ type: 'stateless' })
+
     let parsedPayload: {
       msg?: string
       type?: string
@@ -117,7 +173,7 @@ const statelessExtension = {
 const baseConfig = HocuspocusConfig()
 const serverConfig = {
   ...baseConfig,
-  extensions: [...baseConfig.extensions, statelessExtension],
+  extensions: [...baseConfig.extensions, metricsExtension, statelessExtension],
 
   async onConnect() {
     wsConnectionsTotal.inc()
@@ -210,6 +266,10 @@ const serverConfig = {
 }
 
 const server = new Server(serverConfig)
+
+// Read the live loaded-document count at scrape time rather than tracking inc/dec,
+// which would drift up forever if a load failed before its unload.
+setActiveDocumentsProvider(() => server.hocuspocus.documents.size)
 
 server.listen()
 
