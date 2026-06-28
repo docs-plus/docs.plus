@@ -9,6 +9,13 @@ import { verifySupabaseToken } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureException } from './lib/instrument'
 import { logger } from './lib/logger'
+import {
+  metricsContentType,
+  metricsText,
+  wsActiveConnections,
+  wsAuthRejectionsTotal,
+  wsConnectionsTotal
+} from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
@@ -112,6 +119,15 @@ const serverConfig = {
   ...baseConfig,
   extensions: [...baseConfig.extensions, statelessExtension],
 
+  async onConnect() {
+    wsConnectionsTotal.inc()
+    wsActiveConnections.inc()
+  },
+
+  async onDisconnect() {
+    wsActiveConnections.dec()
+  },
+
   async onAuthenticate({ token, documentName, connection }: any) {
     // The room id is the bare documentId. Resolve the user first, then deny
     // anonymous access to admin-set private documents at one choke point.
@@ -147,6 +163,7 @@ const serverConfig = {
           // Expected rejection (expired/invalid token): reject so the client
           // refreshes and reconnects; not an error to log at level 50 or capture.
           wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
+          wsAuthRejectionsTotal.inc()
           if (isProd) throw error
         } else {
           wsLogger.error({ err: error, documentName }, 'Auth error')
@@ -203,10 +220,29 @@ wsLogger.info({
   url: `ws://localhost:${baseConfig.port}`
 })
 
+// Prometheus scrape target on a dedicated internal port (NOT 4001 — that's the WS
+// server's own port; a second listener there is a fatal EADDRINUSE). Off the Traefik route.
+const METRICS_PORT = 4003
+const metricsServer = Bun.serve({
+  port: METRICS_PORT,
+  hostname: '0.0.0.0',
+  async fetch(req) {
+    if (new URL(req.url).pathname !== '/metrics') return new Response('Not found', { status: 404 })
+    return new Response(await metricsText(), { headers: { 'Content-Type': metricsContentType } })
+  }
+})
+
+wsLogger.info({
+  msg: '📊 Metrics server started',
+  port: metricsServer.port,
+  url: `http://localhost:${metricsServer.port}/metrics`
+})
+
 const shutdown = async () => {
   wsLogger.info('Shutting down WebSocket server gracefully...')
 
   try {
+    metricsServer.stop()
     await server.destroy()
     wsLogger.info('WebSocket server stopped')
 

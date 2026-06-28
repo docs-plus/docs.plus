@@ -6,6 +6,7 @@ import type { DeadLetterJobData, StoreDocumentData } from '../types'
 import { toBullMQConnection } from '../types/redis.types'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { queueLogger } from './logger'
+import { jobDuration, jobsTotal } from './metrics'
 import { prisma } from './prisma'
 import { bullmqConnectionOptions, createRedisConnection, getRedisPublisher } from './redis'
 
@@ -263,10 +264,19 @@ export const createDocumentWorker = () => {
 
   // Worker event handlers
   worker.on('completed', (job) => {
+    jobsTotal.inc({ queue: worker.name, status: 'completed' })
+    // BullMQ stamps processedOn/finishedOn in ms; absent only on malformed jobs.
+    if (job.processedOn && job.finishedOn) {
+      jobDuration.observe(
+        { queue: worker.name, status: 'completed' },
+        (job.finishedOn - job.processedOn) / 1000
+      )
+    }
     queueLogger.info({ jobId: job.id }, 'Job completed successfully')
   })
 
   worker.on('failed', (job, err) => {
+    jobsTotal.inc({ queue: worker.name, status: 'failed' })
     if (job) {
       queueLogger.error({ jobId: job.id, err }, 'Worker: Job failed')
     }

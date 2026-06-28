@@ -13,6 +13,7 @@ import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureException } from './lib/instrument'
 import { logger, restApiLogger } from './lib/logger'
+import { httpMetricsMiddleware, metricsContentType, metricsText } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
@@ -21,6 +22,10 @@ import * as linkMetadata from './modules/link-metadata'
 
 // Create Hono app
 const app = new Hono()
+
+// Record latency + count per matched route on the shared Prometheus registry.
+// Outermost so it also sees responses the rate limiter short-circuits (429s).
+app.use('*', httpMetricsMiddleware())
 
 // Setup middleware
 setupMiddleware(app)
@@ -35,6 +40,13 @@ app.use('*', async (c, next) => {
 // Routes
 app.get('/', (c) => {
   return c.json({ message: 'Hello World!' })
+})
+
+// Prometheus exposition — internal only: bound to port 4000 and Traefik routes
+// just /api and /health, so this is unreachable from the public edge.
+app.get('/metrics', async (c) => {
+  c.header('Content-Type', metricsContentType)
+  return c.body(await metricsText())
 })
 
 // Mount routers

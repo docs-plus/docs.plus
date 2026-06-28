@@ -1117,6 +1117,284 @@
         "showHeader": true,
         "sortBy": [{ "displayName": "p95 (s)", "desc": true }]
       }
+    },
+    {
+      "id": 35,
+      "type": "row",
+      "title": "App-level (per-route & runtime)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 100 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 36,
+      "type": "timeseries",
+      "title": "REST API p95 Latency by Route",
+      "description": "In-app http_request_duration_seconds histogram, per route. Finer-grained than the Traefik edge view above.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 101 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (route, le) (rate(http_request_duration_seconds_bucket[5m])))",
+          "refId": "A",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 37,
+      "type": "timeseries",
+      "title": "REST API Error Rate by Route (5xx)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 101 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (route) (rate(http_requests_total{status=~\"5..\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "color": { "mode": "palette-classic" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 38,
+      "type": "timeseries",
+      "title": "REST API Throughput by Route",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 109 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (route) (rate(http_requests_total[5m]))",
+          "refId": "A",
+          "legendFormat": "{{route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 39,
+      "type": "timeseries",
+      "title": "Worker Job Duration p95 by Queue",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 109 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (queue, le) (rate(job_duration_seconds_bucket[5m])))",
+          "refId": "A",
+          "legendFormat": "{{queue}} p95"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "Worker Queue Depth by State",
+      "description": "queue_jobs gauge: pending/active/delayed/failed counts per BullMQ queue.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 117 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (queue, state) (queue_jobs)",
+          "refId": "A",
+          "legendFormat": "{{queue}} · {{state}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 41,
+      "type": "row",
+      "title": "Runtime (per-process, by job)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 125 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "Process Resident Memory by Job",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 126 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "process_resident_memory_bytes{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 43,
+      "type": "timeseries",
+      "title": "Node Heap Used / Total by Job",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 126 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_heap_size_used_bytes{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}",
+          "refId": "A",
+          "legendFormat": "{{job}} used"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_heap_size_total_bytes{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}",
+          "refId": "B",
+          "legendFormat": "{{job}} total"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 44,
+      "type": "timeseries",
+      "title": "Event Loop Lag by Job",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 134 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "nodejs_eventloop_lag_seconds{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
+    },
+    {
+      "id": 45,
+      "type": "timeseries",
+      "title": "GC Rate by Job",
+      "description": "rate of nodejs_gc_duration_seconds events from prom-client default metrics.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 134 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (job) (rate(nodejs_gc_duration_seconds_count{job=~\"rest-api|hocuspocus-server|hocuspocus-worker\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": { "lineWidth": 1, "fillOpacity": 10 },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      }
     }
   ]
 }

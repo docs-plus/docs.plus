@@ -17,3 +17,15 @@ scrape_configs:
   - job_name: traefik
     static_configs:
       - targets: ['traefik:8082']
+  - job_name: rest-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['rest-api:4000']
+  - job_name: hocuspocus-server
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['hocuspocus-server:4003']
+  - job_name: hocuspocus-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['hocuspocus-worker:4002']

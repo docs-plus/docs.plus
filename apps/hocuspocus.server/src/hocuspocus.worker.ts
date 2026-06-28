@@ -11,6 +11,7 @@ import {
 } from './lib/email'
 import { captureException } from './lib/instrument'
 import { workerLogger } from './lib/logger'
+import { metricsContentType, metricsText, queueJobs } from './lib/metrics'
 import { checkDatabaseHealth, prisma, shutdownDatabase } from './lib/prisma'
 import {
   getPushQueueConsumerHealth,
@@ -18,7 +19,7 @@ import {
   startPushQueueConsumer,
   stopPushQueueConsumer
 } from './lib/push'
-import { closeQueues, createDocumentWorker } from './lib/queue'
+import { closeQueues, createDocumentWorker, StoreDocumentQueue } from './lib/queue'
 import { checkRedisHealth, disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
 
 const CLEANUP_INTERVAL_MS = config.worker.idempotencyCleanupIntervalMs // 1 hour default
@@ -43,6 +44,21 @@ async function cleanupExpiredLogs() {
 
 // Schedule cleanup interval
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
+
+// Sample queue depth (waiting/active/delayed/failed/...) into the queueJobs gauge.
+const QUEUE_METRICS_INTERVAL_MS = 15000
+let queueMetricsInterval: ReturnType<typeof setInterval> | null = null
+
+async function sampleQueueDepth() {
+  try {
+    const counts = await StoreDocumentQueue.getJobCounts()
+    for (const [state, count] of Object.entries(counts)) {
+      queueJobs.set({ queue: StoreDocumentQueue.name, state }, count)
+    }
+  } catch (err) {
+    workerLogger.warn({ err }, 'Failed to sample queue depth metrics')
+  }
+}
 
 const WORKER_HEALTH_PORT = config.worker.healthPort
 
@@ -107,6 +123,10 @@ cleanupInterval = setInterval(cleanupExpiredLogs, CLEANUP_INTERVAL_MS)
 cleanupExpiredLogs()
 workerLogger.info({ intervalMs: CLEANUP_INTERVAL_MS }, '🧹 Idempotency log cleanup scheduled')
 
+// Sample queue depth on a fixed cadence so /metrics reflects backlog without per-job polling
+queueMetricsInterval = setInterval(sampleQueueDepth, QUEUE_METRICS_INTERVAL_MS)
+sampleQueueDepth()
+
 // Create health check endpoint for worker
 const healthApp = new Hono()
 
@@ -169,6 +189,11 @@ healthApp.get('/health', async (c) => {
   })
 })
 
+// Prometheus scrape target; internal-only, served on the worker health port.
+healthApp.get('/metrics', async (c) => {
+  return c.body(await metricsText(), 200, { 'Content-Type': metricsContentType })
+})
+
 healthApp.get('/health/ready', async (c) => {
   const isReady = documentWorker.isRunning() && !documentWorker.isPaused()
 
@@ -226,6 +251,12 @@ const shutdown = async () => {
     if (cleanupInterval) {
       clearInterval(cleanupInterval)
       cleanupInterval = null
+    }
+
+    // Stop queue depth sampling
+    if (queueMetricsInterval) {
+      clearInterval(queueMetricsInterval)
+      queueMetricsInterval = null
     }
 
     // Stop accepting new jobs on all workers
