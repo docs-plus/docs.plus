@@ -62,7 +62,10 @@ groups:
             datasourceUid: loki
             model:
               datasource: { type: loki, uid: loki }
-              expr: 'count_over_time({service=~".+"} |~ "PayloadTooLargeError|exceeds maximum 0.00MB" [10m])'
+              # Scope to upload-handling app services only. A bare {service=~".+"}
+              # self-fires: Grafana/Loki log this very query, Alloy re-ingests it,
+              # and the rule then matches its own "PayloadTooLargeError" footprint.
+              expr: 'count_over_time({service=~"rest-api|hocuspocus.+|webapp"} |~ "PayloadTooLargeError|exceeds maximum 0.00MB" [10m])'
               queryType: instant
               intervalMs: 1000
               maxDataPoints: 43200
