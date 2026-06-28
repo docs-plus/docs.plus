@@ -81,7 +81,7 @@ export const documentLoadDuration = new Histogram({
 
 // Hocuspocus store-hook OVERHEAD (Y.Doc decode + base64 encode + BullMQ enqueue),
 // NOT DB write latency — the real Postgres write runs async in the worker and is
-// measured by job_duration_seconds{queue=store-document}. Only the queue-down
+// measured by job_duration_seconds{queue=store-documents}. Only the queue-down
 // fallback path includes a direct write.
 export const documentPersistDuration = new Histogram({
   name: 'document_persist_duration_seconds',
