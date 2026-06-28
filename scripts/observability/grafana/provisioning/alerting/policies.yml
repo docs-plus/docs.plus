@@ -6,3 +6,18 @@ policies:
     group_wait: 30s
     group_interval: 5m
     repeat_interval: 4h
+    routes:
+      - receiver: deadman-snitch
+        object_matchers:
+          - ['deadman', '=', 'true']
+        group_wait: 0s
+        group_interval: 1m
+        repeat_interval: 1m # must re-ping within the snitch's expected period
+      - receiver: telegram-ops
+        object_matchers:
+          - ['severity', '=', 'critical']
+        repeat_interval: 1h # critical re-pings faster than the 4h default
+      - receiver: telegram-ops
+        object_matchers:
+          - ['severity', '=', 'warning']
+        repeat_interval: 4h

@@ -13,3 +13,13 @@ contactPoints:
           chatid: '${TELEGRAM_CHAT_ID}'
           message: |
             {{ template "default.message" . }}
+  - orgId: 1
+    name: deadman-snitch
+    receivers:
+      - uid: deadman-snitch
+        type: webhook
+        settings:
+          # External heartbeat (healthchecks.io / Better Stack). The snitch pages
+          # the maintainer when these pings STOP. Rendered by envsubst at deploy.
+          url: '${DEADMAN_WEBHOOK_URL}'
+          httpMethod: POST

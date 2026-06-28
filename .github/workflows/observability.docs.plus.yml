@@ -68,15 +68,21 @@ jobs:
       - name: 📨 Render Telegram contact point
         # Grafana's native ${VAR} expansion in alerting provisioning mistypes a numeric
         # chat id (-100…) into a JSON number and fails to load; envsubst renders a literal
-        # quoted string instead. Only the two Telegram vars are substituted so the Go
+        # quoted string instead. Only the allowlisted vars are substituted so the Go
         # message template and the LogQL/PromQL `$` in rules.yml are left intact.
+        # DEADMAN_WEBHOOK_URL is optional, but Grafana requires a NON-EMPTY webhook url or
+        # the whole contactpoints/policies tree fails to provision. Default it to a
+        # non-resolving placeholder (RFC-2606 .invalid) when unset: the snitch just never
+        # reaches a real endpoint until the var is set, instead of a silent blackout.
         run: |
           set -a
           # shellcheck disable=SC1090
           . "./${ENV_FILE}"
           set +a
+          : "${DEADMAN_WEBHOOK_URL:=https://deadman.invalid/heartbeat}"
+          export DEADMAN_WEBHOOK_URL
           # shellcheck disable=SC2016
-          envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID}' \
+          envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID} ${DEADMAN_WEBHOOK_URL}' \
             < scripts/observability/grafana/provisioning/alerting/contactpoints.yml.tmpl \
             > scripts/observability/grafana/provisioning/alerting/contactpoints.yml
 
