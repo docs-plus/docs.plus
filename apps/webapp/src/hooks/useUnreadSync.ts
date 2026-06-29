@@ -1,6 +1,6 @@
 import { publishUnreadSync } from '@services/eventsHub'
-import { useChatStore } from '@stores'
-import { useEffect } from 'react'
+import { useChatStore, useStore } from '@stores'
+import { useLayoutEffect } from 'react'
 
 /**
  * Hook to sync unread counts onto the ProseMirror heading-action chat buttons
@@ -13,9 +13,13 @@ import { useEffect } from 'react'
  */
 export function useUnreadSync() {
   const channels = useChatStore((state) => state.channels)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const editor = useStore((state) => state.settings.editor.instance)
 
-  useEffect(() => {
-    // Publish event to update all badges via DOM
+  useLayoutEffect(() => {
+    // Channels often load before collab sync finishes; `.ha-chat-btn` widgets
+    // only exist after the editor mounts. Re-run when either side becomes ready.
+    if (providerSyncing || !editor) return
     publishUnreadSync()
-  }, [channels])
+  }, [channels, providerSyncing, editor])
 }
