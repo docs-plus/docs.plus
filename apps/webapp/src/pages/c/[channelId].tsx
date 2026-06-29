@@ -59,9 +59,7 @@ export default function E2EChatroomPage() {
       <Chatroom variant="desktop" className="flex min-h-0 flex-1 flex-col">
         <Chatroom.Toolbar>
           <span className="text-sm font-medium">E2E Chat</span>
-          <div className="ml-auto flex items-center gap-1">
-            <Chatroom.Toolbar.MediaFilterToggle />
-          </div>
+          <div className="ml-auto flex items-center gap-1" />
         </Chatroom.Toolbar>
         <Chatroom.MessageFeed showScrollToBottom />
         <Chatroom.ChannelComposer className="w-full" />

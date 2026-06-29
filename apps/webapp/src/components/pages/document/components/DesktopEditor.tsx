@@ -42,7 +42,6 @@ const DesktopEditor = () => {
             <Chatroom.Toolbar>
               <Chatroom.Toolbar.Breadcrumb />
               <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                <Chatroom.Toolbar.MediaFilterToggle />
                 <Chatroom.Toolbar.ParticipantsList />
                 <div className="bg-base-200 rounded-selector flex items-center">
                   <Chatroom.Toolbar.ShareButton />

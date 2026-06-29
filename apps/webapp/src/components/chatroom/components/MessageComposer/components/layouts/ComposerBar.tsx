@@ -4,7 +4,6 @@ import { twMerge } from 'tailwind-merge'
 import { useComposerFileDrop } from '../../hooks/useComposerFileDrop'
 import MsgComposer from '../../MessageComposer'
 import { AttachButton } from '../Actions/ActionButtons/AttachButton'
-import { GifPickerButton } from '../Actions/ActionButtons/GifPickerButton'
 import { VoiceNoteButton } from '../Actions/ActionButtons/VoiceNoteButton'
 import { AttachmentStrip } from '../Attachments/AttachmentStrip'
 import { ComposerContextBars } from '../Context/ComposerContextBars'
@@ -46,7 +45,6 @@ export function ComposerBar({ variant, className }: Props) {
         <MsgComposer.Input className="min-w-0 flex-1 py-0" />
         <MsgComposer.Actions>
           <AttachButton />
-          <GifPickerButton />
           <VoiceNoteButton />
           <MsgComposer.EmojiButton />
           <MsgComposer.MentionButton />
