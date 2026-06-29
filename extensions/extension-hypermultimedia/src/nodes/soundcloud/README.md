@@ -25,6 +25,8 @@ Configure defaults on `HyperMultimediaKit.configure({ SoundCloud: { … } })`. W
 
 The widget `url` param is always the SoundCloud page URL from `src`. Heights above ~130px default to `visual: true` (waveform player) unless `visual` is set explicitly on the node or command.
 
+Compact players need at least **120px** height; visual players need at least **166px**. The gripper enforces those floors. On narrow viewports the loading shell keeps the committed height even when width shrinks — SoundCloud’s iframe UI does not scale down with `aspect-ratio` like images do.
+
 ## Layout
 
 | Option                                                  | Default                                  |

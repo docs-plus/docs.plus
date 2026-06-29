@@ -6,8 +6,7 @@ import {
   EMBED_BLOCK_LAYOUT_DEFAULTS,
   type EmbedNodeOptions,
   kitAttrDefaults,
-  layoutAttrDefaults,
-  resolveEmbedLayoutDimensions
+  layoutAttrDefaults
 } from '../../utils/embedKit'
 import {
   createIframeEmbedNodeView,
@@ -17,10 +16,13 @@ import {
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildSoundCloudEmbedUrl,
+  fitSoundCloudLayoutToEditorColumn,
+  parseSoundCloudTrackUrl,
   resolveSoundCloudIframeAttributes,
   SOUNDCLOUD_EMBED_ATTR_KEYS,
   SOUNDCLOUD_PLAYER_KIT_DEFAULTS,
-  type SoundCloudPlayerKitOptions
+  type SoundCloudPlayerKitOptions,
+  syncSoundCloudResponsiveHost
 } from './embedOptions'
 import { isValidSoundCloudUrl, SOUNDCLOUD_URL_REGEX_GLOBAL } from './helper'
 
@@ -39,7 +41,8 @@ const SOUNDCLOUD_IFRAME_CONFIG: IframeEmbedConfig<SoundCloudOptions> = {
   embedAttrKeys: SOUNDCLOUD_EMBED_ATTR_KEYS,
   loadingProvider: 'SoundCloud',
   buildEmbedUrl: buildSoundCloudEmbedUrl,
-  resolveIframeAttributes: resolveSoundCloudIframeAttributes
+  resolveIframeAttributes: resolveSoundCloudIframeAttributes,
+  syncLoadingHost: syncSoundCloudResponsiveHost
 }
 
 export const SoundCloud = Node.create<SoundCloudOptions>({
@@ -68,7 +71,15 @@ export const SoundCloud = Node.create<SoundCloudOptions>({
   addAttributes() {
     return {
       keyId: { default: null },
-      src: { default: null },
+      src: {
+        default: null,
+        parseHTML: (element) => {
+          const raw = element.getAttribute('src')
+          if (!raw) return null
+          const track = parseSoundCloudTrackUrl(raw) ?? raw
+          return isValidSoundCloudUrl(track) ? track : null
+        }
+      },
       caption: captionAttribute(),
       ...layoutAttrDefaults(this.options),
       ...kitAttrDefaults(this.options, SOUNDCLOUD_PLAYER_KIT_DEFAULTS)
@@ -95,7 +106,13 @@ export const SoundCloud = Node.create<SoundCloudOptions>({
           if (!isValidSoundCloudUrl(options.src)) return false
 
           const { width, height, ...rest } = options
-          const layout = resolveEmbedLayoutDimensions(this.editor, { width, height }, this.options)
+          const layout = fitSoundCloudLayoutToEditorColumn(
+            this.editor,
+            Number(width ?? this.options.width),
+            Number(height ?? this.options.height),
+            rest,
+            this.options
+          )
 
           return commands.insertContent({
             type: this.name,
@@ -119,7 +136,14 @@ export const SoundCloud = Node.create<SoundCloudOptions>({
         getAttributes: (match) => {
           const src = match.input?.trim()
           if (!src || !isValidSoundCloudUrl(src)) return false
-          return { src }
+          const layout = fitSoundCloudLayoutToEditorColumn(
+            this.editor,
+            Number(this.options.width),
+            Number(this.options.height),
+            { src },
+            this.options
+          )
+          return { src, ...layout }
         }
       })
     ]

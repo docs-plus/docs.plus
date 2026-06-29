@@ -1,4 +1,30 @@
+import type { Editor } from '@tiptap/core'
+
+import { syncResponsiveMediaHost } from '../../loading/syncLayout'
 import { resolveEmbedOption, SOUNDCLOUD_IFRAME_DOM_ATTR_KEYS } from '../../utils/embedKit'
+import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
+
+/** Page URL or `w.soundcloud.com/player/?url=…` from serialized HTML → canonical track URL. */
+export function parseSoundCloudTrackUrl(url: string): string | null {
+  try {
+    const trimmed = url.trim()
+    if (!trimmed) return null
+
+    const parsed = new URL(trimmed)
+    const host = parsed.hostname.replace(/^www\./i, '')
+
+    if (host === 'w.soundcloud.com') {
+      const track = parsed.searchParams.get('url')
+      return track ? decodeURIComponent(track) : null
+    }
+
+    if (host === 'soundcloud.com') return trimmed
+  } catch {
+    return null
+  }
+
+  return null
+}
 
 /** SoundCloud HTML5 widget params — [widget docs](https://developers.soundcloud.com/docs/api/html5-widget). */
 
@@ -40,6 +66,10 @@ export const SOUNDCLOUD_WIDGET_PARAM_KEYS = [
 
 export const SOUNDCLOUD_VISUAL_PLAYER_MIN_HEIGHT = 130
 
+/** Compact widget chrome needs ~120px; visual waveform player needs ~166px. */
+export const SOUNDCLOUD_COMPACT_PLAYER_MIN_HEIGHT = 120
+export const SOUNDCLOUD_VISUAL_PLAYER_LAYOUT_MIN_HEIGHT = 166
+
 export const SOUNDCLOUD_EMBED_ATTR_KEYS = [
   'src',
   'height',
@@ -68,52 +98,94 @@ export const SOUNDCLOUD_PLAYER_KIT_DEFAULTS: SoundCloudPlayerKitOptions = {
   allow: 'autoplay'
 }
 
-const formatWidgetValue = (value: boolean | number | string): string => {
+function formatWidgetValue(value: boolean | number | string): string {
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   return String(value)
 }
 
 /** Heights above ~130px use the visual (waveform) player unless `visual` is set explicitly. */
-export const resolveSoundCloudVisual = (
+export function resolveSoundCloudVisual(
   attrs: Record<string, unknown>,
   options: SoundCloudPlayerKitOptions
-): boolean => {
-  if (attrs.visual !== null && attrs.visual !== undefined) {
-    return Boolean(attrs.visual)
-  }
+): boolean {
+  if (attrs.visual != null) return Boolean(attrs.visual)
   const height = attrs.height
   if (typeof height === 'number' && height > SOUNDCLOUD_VISUAL_PLAYER_MIN_HEIGHT) return true
   return options.visual
 }
 
-export const buildSoundCloudEmbedUrl = (
+export function resolveSoundCloudLayoutMinHeight(
+  attrs: Record<string, unknown>,
+  options: SoundCloudPlayerKitOptions
+): number {
+  return resolveSoundCloudVisual(attrs, options)
+    ? SOUNDCLOUD_VISUAL_PLAYER_LAYOUT_MIN_HEIGHT
+    : SOUNDCLOUD_COMPACT_PLAYER_MIN_HEIGHT
+}
+
+export function resolveSoundCloudExtensionOptions(editor: Editor): SoundCloudPlayerKitOptions {
+  const extension = editor.extensionManager.extensions.find((e) => e.name === 'soundcloud')
+  return (
+    (extension?.options as SoundCloudPlayerKitOptions | undefined) ?? SOUNDCLOUD_PLAYER_KIT_DEFAULTS
+  )
+}
+
+/** Scale layout down when width exceeds the column; never shrink below widget minimum height. */
+export function fitSoundCloudLayoutToEditorColumn(
+  editor: Editor,
+  width: number,
+  height: number,
+  attrs: Record<string, unknown>,
+  options: SoundCloudPlayerKitOptions
+): { width: number; height: number } {
+  const fitted = fitLayoutToEditorColumn(editor, width, height)
+  const minHeight = resolveSoundCloudLayoutMinHeight({ ...attrs, height: fitted.height }, options)
+  return fitted.height >= minHeight ? fitted : { ...fitted, height: minHeight }
+}
+
+/** SoundCloud iframe UI does not scale — floor host height when the column shrinks width. */
+export function syncSoundCloudResponsiveHost(
+  el: HTMLElement,
+  width: number,
+  height: number,
+  attrs: Record<string, unknown>,
+  options: SoundCloudPlayerKitOptions
+): void {
+  const hostHeight = Math.max(height, resolveSoundCloudLayoutMinHeight(attrs, options))
+  syncResponsiveMediaHost(el, width, hostHeight)
+  el.style.minHeight = `${hostHeight}px`
+}
+
+export function buildSoundCloudEmbedUrl(
   trackUrl: string,
   attrs: Record<string, unknown>,
   options: SoundCloudPlayerKitOptions
-): string => {
+): string {
+  const canonical = parseSoundCloudTrackUrl(trackUrl) ?? trackUrl.trim()
   const embedUrl = new URL('https://w.soundcloud.com/player/')
-  embedUrl.searchParams.set('url', trackUrl.trim())
+  embedUrl.searchParams.set('url', canonical)
 
-  SOUNDCLOUD_WIDGET_PARAM_KEYS.forEach((key) => {
+  for (const key of SOUNDCLOUD_WIDGET_PARAM_KEYS) {
     const value = resolveEmbedOption(attrs, options, key)
-    if (value === undefined || value === null || value === '') return
+    if (value == null || value === '') continue
     embedUrl.searchParams.set(key, formatWidgetValue(value))
-  })
+  }
 
   embedUrl.searchParams.set('visual', formatWidgetValue(resolveSoundCloudVisual(attrs, options)))
-
   return embedUrl.toString()
 }
 
-export const resolveSoundCloudIframeAttributes = (
+export function resolveSoundCloudIframeAttributes(
   attrs: Record<string, unknown>,
   options: SoundCloudPlayerKitOptions,
   width: number,
   height: number
-): Record<string, string | number> => ({
-  width,
-  height,
-  scrolling: String(resolveEmbedOption(attrs, options, 'scrolling') ?? options.scrolling),
-  frameborder: String(resolveEmbedOption(attrs, options, 'frameborder') ?? options.frameborder),
-  allow: String(resolveEmbedOption(attrs, options, 'allow') ?? options.allow)
-})
+): Record<string, string | number> {
+  return {
+    width,
+    height,
+    scrolling: String(resolveEmbedOption(attrs, options, 'scrolling') ?? options.scrolling),
+    frameborder: String(resolveEmbedOption(attrs, options, 'frameborder') ?? options.frameborder),
+    allow: String(resolveEmbedOption(attrs, options, 'allow') ?? options.allow)
+  }
+}
