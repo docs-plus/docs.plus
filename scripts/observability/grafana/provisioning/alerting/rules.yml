@@ -436,7 +436,9 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket[5m])))'
+              # WS connection lifetime is counted as request duration; exclude those
+              # services so a single long-lived socket doesn't pin edge p95 at the cap.
+              expr: 'histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service!~".*websocket.*|hocuspocus.*"}[5m])))'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -884,14 +886,17 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: WS auth rejection rate elevated; tune after baseline (a small steady baseline from expired tabs is normal).
+          summary: Majority of WS connections auth-rejected (reconnect storm / token-verify failure)
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'sum(rate(ws_auth_rejections_total[5m]))'
+              # Ratio, not absolute rate: a small baseline of expired tabs stays quiet,
+              # but a connect->reject->reconnect storm pushes rejected/connections high.
+              # clamp_min avoids divide-by-zero when the socket pool is idle.
+              expr: 'sum(rate(ws_auth_rejections_total[5m])) / clamp_min(sum(rate(ws_connections_total[5m])), 1)'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -911,7 +916,7 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [1] }
+                - evaluator: { type: gt, params: [0.5] }
               refId: C
 
       - uid: realtime-doc-persist-slow
@@ -1006,15 +1011,17 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: No app logs ingested for 10m — Loki/Alloy pipeline may be down (the log alerts fail green otherwise).
+          summary: No app logs ingested for ~15m — Loki/Alloy pipeline may be down (the log alerts fail green otherwise).
         data:
           - refId: A
             queryType: instant
-            relativeTimeRange: { from: 600, to: 0 }
+            relativeTimeRange: { from: 900, to: 0 }
             datasourceUid: loki
             model:
               datasource: { type: loki, uid: loki }
-              expr: 'absent_over_time({service=~"rest-api|hocuspocus.+|webapp"}[10m])'
+              # traefik + hocuspocus log continuously in prod; rest-api/webapp are too
+              # quiet and age out, so scoping to the always-on services avoids false fires.
+              expr: 'absent_over_time({service=~"traefik|hocuspocus.+"}[15m])'
               queryType: instant
               intervalMs: 1000
               maxDataPoints: 43200
