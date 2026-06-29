@@ -84,20 +84,23 @@ const useYdocAndProvider = ({
         // Stop the unbounded reconnect loop (disconnect -> shouldConnect=false) so a dead
         // token can't hammer the server. authStoppedRef is the recovery sentinel.
         console.warn('WS authentication failed:', reason)
-        setWorkspaceSetting('providerStatus', 'error')
         authStoppedRef.current = true
         providerRef.current?.disconnect()
         // Definitive (no session: logged out / expired refresh) stays stopped until a
         // later SIGNED_IN. Transient (still-valid session, e.g. a rate-limited verify)
         // self-heals: re-arm a bounded, capped reconnect that mints a fresh token.
         const { data } = await supabaseClient.auth.getSession()
-        if (!data.session || authRearmCountRef.current >= MAX_AUTH_REARM) return
-        authRearmCountRef.current += 1
-        if (authRearmTimerRef.current) clearTimeout(authRearmTimerRef.current)
-        authRearmTimerRef.current = setTimeout(
-          () => providerRef.current?.connect(),
-          AUTH_REARM_DELAY_MS
-        )
+        const canRearm = Boolean(data.session) && authRearmCountRef.current < MAX_AUTH_REARM
+        if (canRearm) {
+          authRearmCountRef.current += 1
+          if (authRearmTimerRef.current) clearTimeout(authRearmTimerRef.current)
+          authRearmTimerRef.current = setTimeout(
+            () => providerRef.current?.connect(),
+            AUTH_REARM_DELAY_MS
+          )
+          return
+        }
+        setWorkspaceSetting('providerStatus', 'error')
       },
       onSynced: (data) => {
         isSyncedRef.current = true
@@ -168,10 +171,13 @@ const useYdocAndProvider = ({
       if (authRearmTimerRef.current) clearTimeout(authRearmTimerRef.current)
       providerRef.current?.destroy()
       // Without these, the next documentId's effect would see a truthy ref to a
-      // destroyed provider and skip recreation, and its watchdog would see the
-      // old doc's synced=true.
+      // destroyed provider and skip recreation, its watchdog would see the old
+      // doc's synced=true, or auth re-arm budget from the prior doc would block
+      // self-heal on the new one.
       providerRef.current = null
       isSyncedRef.current = false
+      authStoppedRef.current = false
+      authRearmCountRef.current = 0
     }
     // slug/accessToken/deviceType are connection metadata — only a documentId
     // change warrants a provider rebuild.
