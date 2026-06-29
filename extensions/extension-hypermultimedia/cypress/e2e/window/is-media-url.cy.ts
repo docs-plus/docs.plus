@@ -11,6 +11,9 @@ describe('window._hypermultimedia isMediaUrl contract', () => {
       expect(
         win._hypermultimedia.isMediaUrl('https://x.com/elonmusk/status/2059299542277697565?s=20')
       ).to.be.true
+      expect(
+        win._hypermultimedia.isMediaUrl('https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl')
+      ).to.be.true
     })
   })
 })

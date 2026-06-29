@@ -8,6 +8,7 @@ const FIXTURES = {
   youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   vimeo: 'https://vimeo.com/123456789',
   soundcloud: 'https://soundcloud.com/forss/flickermood',
+  spotify: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
   loom: 'https://www.loom.com/share/abcdef1234567890',
   x: 'https://x.com/jack/status/20'
 } as const
@@ -35,6 +36,9 @@ function insertMediaNode(node: MediaNode): void {
         break
       case 'soundcloud':
         editor.commands.setSoundCloud({ src: url })
+        break
+      case 'spotify':
+        editor.commands.setSpotify({ src: url })
         break
       case 'loom':
         editor.commands.setLoom({ src: url })
@@ -122,6 +126,15 @@ describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
       .should('have.attr', 'src')
       .and('include', 'w.soundcloud.com/player')
       .and('include', encodeURIComponent(FIXTURES.soundcloud))
+  })
+
+  it('round-trips spotify and keeps a playable embed src', () => {
+    insertMediaNode('spotify')
+    cy.nodeCount('spotify').should('eq', 1)
+    roundTripHtml()
+    cy.nodeCount('spotify').should('eq', 1)
+    cy.nodeAttr('spotify', 'src').should('eq', FIXTURES.spotify)
+    cy.get('#editor iframe').should('have.attr', 'src').and('include', 'open.spotify.com/embed')
   })
 
   it('round-trips loom and keeps a playable embed src', () => {

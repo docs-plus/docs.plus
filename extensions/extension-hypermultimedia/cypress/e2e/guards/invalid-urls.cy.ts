@@ -8,7 +8,8 @@ describe('invalid URL command guards', () => {
     { cmd: 'setVimeo', args: { src: 'https://example.com/video' } },
     { cmd: 'setSoundCloud', args: { src: 'https://example.com/track' } },
     { cmd: 'setX', args: { src: 'https://example.com/status/1' } },
-    { cmd: 'setLoom', args: { src: 'https://example.com/share/abc' } }
+    { cmd: 'setLoom', args: { src: 'https://example.com/share/abc' } },
+    { cmd: 'setSpotify', args: { src: 'https://example.com/track/abc' } }
   ]
 
   cases.forEach(({ cmd, args }) => {

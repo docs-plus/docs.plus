@@ -8,6 +8,7 @@ const FIXTURES = {
   youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   vimeo: 'https://vimeo.com/123456789',
   soundcloud: 'https://soundcloud.com/forss/flickermood',
+  spotify: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
   loom: 'https://www.loom.com/share/abcdef1234567890',
   x: 'https://x.com/jack/status/20'
 } as const
@@ -21,6 +22,7 @@ const MARKDOWN_SYNTAX: Record<MediaNode, (url: string) => string> = {
   youtube: (url) => `![youtube](${url})`,
   vimeo: (url) => `![vimeo](${url})`,
   soundcloud: (url) => `![soundcloud](${url})`,
+  spotify: (url) => `![spotify](${url})`,
   loom: (url) => `![loom](${url})`,
   x: (url) => `![x](${url})`
 }
@@ -32,6 +34,7 @@ const MEDIA_NODES = [
   'youtube',
   'vimeo',
   'soundcloud',
+  'spotify',
   'loom',
   'x'
 ] as const
@@ -99,6 +102,9 @@ describe('Markdown import/export — all media nodes', () => {
               break
             case 'soundcloud':
               editor.commands.setSoundCloud({ src: url })
+              break
+            case 'spotify':
+              editor.commands.setSpotify({ src: url })
               break
             case 'loom':
               editor.commands.setLoom({ src: url })

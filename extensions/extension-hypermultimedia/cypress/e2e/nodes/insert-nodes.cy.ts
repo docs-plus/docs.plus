@@ -43,6 +43,14 @@ describe('media node insertion', () => {
     cy.nodeCount('loom').should('eq', 1)
   })
 
+  it('inserts a Spotify embed (iframe) under "spotify" with an embed URL', () => {
+    cy.getEditor().then((editor) => {
+      editor.commands.setSpotify({ src: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl' })
+    })
+    cy.get('#editor iframe').should('have.attr', 'src').and('include', 'open.spotify.com/embed/')
+    cy.nodeCount('spotify').should('eq', 1)
+  })
+
   it('mints a unique keyId per inserted node (no shared build-time id)', () => {
     cy.getEditor().then((editor) => {
       editor.commands.setImage({ src: 'https://example.com/a.png' })

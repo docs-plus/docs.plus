@@ -19,6 +19,11 @@ describe('paste-to-node matrix', () => {
       node: 'soundcloud'
     },
     { label: 'Loom', url: 'https://www.loom.com/share/abcdef1234567890', node: 'loom' },
+    {
+      label: 'Spotify track',
+      url: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
+      node: 'spotify'
+    },
     { label: 'X status', url: 'https://x.com/jack/status/20', node: 'x' },
     {
       label: 'X status with share query',
@@ -70,6 +75,35 @@ describe('paste-to-node matrix', () => {
         expect($img[0].clientWidth).to.be.at.most(editorWidth)
       })
     })
+  })
+
+  it('pastes Spotify "Copy embed" iframe code (plain text) into a spotify node', () => {
+    const iframe =
+      '<iframe src="https://open.spotify.com/embed/artist/5pKCCKE2ajJHZ9KAiaK11H?utm_source=generator&si=abc123" width="100%" height="352" allowfullscreen></iframe>'
+    cy.pastePlainText(iframe)
+    cy.nodeCount('spotify').should('eq', 1)
+    cy.nodeAttr('spotify', 'src').should(
+      'eq',
+      'https://open.spotify.com/artist/5pKCCKE2ajJHZ9KAiaK11H'
+    )
+    cy.nodeAttr('spotify', 'width').should('eq', 640)
+    cy.get('#editor a').should('not.exist')
+  })
+
+  it('parses a Spotify "Copy embed" iframe via setContent — width="100%" must not poison layout', () => {
+    cy.getEditor().then((editor) => {
+      editor.commands.setContent(
+        '<iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator&si=x" width="100%" height="352" allowfullscreen></iframe>'
+      )
+    })
+    cy.nodeCount('spotify').should('eq', 1)
+    cy.nodeAttr('spotify', 'src').should(
+      'eq',
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'
+    )
+    // `width="100%"` would parseInt to 100 (a sliver) — sanitized to the column default.
+    cy.nodeAttr('spotify', 'width').should('eq', 640)
+    cy.nodeAttr('spotify', 'height').should('eq', 352)
   })
 })
 
