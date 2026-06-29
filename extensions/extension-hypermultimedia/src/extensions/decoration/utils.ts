@@ -4,6 +4,7 @@ import {
   resolveSoundCloudExtensionOptions,
   resolveSoundCloudLayoutMinHeight
 } from '../../nodes/soundcloud/embedOptions'
+import { resolveSpotifyLayoutMinHeight } from '../../nodes/spotify/embedOptions'
 import { fitDimensionsToBounds, getEditorContentWidth } from '../../utils/fitImageDimensions'
 import { PointerPosition, ResizeConstraints } from './types'
 
@@ -83,11 +84,20 @@ export function resolveMediaNodeConstraints(
   node?: { type: { name: string }; attrs: Record<string, unknown> } | null
 ): ResizeConstraints {
   const base = resolveResizeConstraints(editor)
-  if (node?.type.name !== 'soundcloud') return base
+  if (!node) return base
 
-  const options = resolveSoundCloudExtensionOptions(editor)
-  const minHeight = resolveSoundCloudLayoutMinHeight(node.attrs, options)
-  return { ...base, minHeight: Math.max(base.minHeight, minHeight) }
+  if (node.type.name === 'soundcloud') {
+    const options = resolveSoundCloudExtensionOptions(editor)
+    const minHeight = resolveSoundCloudLayoutMinHeight(node.attrs, options)
+    return { ...base, minHeight: Math.max(base.minHeight, minHeight) }
+  }
+
+  if (node.type.name === 'spotify') {
+    const minHeight = resolveSpotifyLayoutMinHeight(node.attrs)
+    return { ...base, minHeight: Math.max(base.minHeight, minHeight) }
+  }
+
+  return base
 }
 
 export function clampDimensionsToConstraints(

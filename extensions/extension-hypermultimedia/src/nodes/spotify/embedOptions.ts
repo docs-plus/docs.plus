@@ -79,6 +79,17 @@ export const SPOTIFY_TRACK_HEIGHT = 152
 export const defaultSpotifyHeight = (type: SpotifyEntityType): number =>
   type === 'track' ? SPOTIFY_TRACK_HEIGHT : SPOTIFY_FULL_HEIGHT
 
+/** Gripper + layout floor — entity type from stored share URL, else attrs.height, else full-art default. */
+export function resolveSpotifyLayoutMinHeight(attrs: Record<string, unknown>): number {
+  const src = typeof attrs.src === 'string' ? attrs.src : ''
+  const entity = parseSpotifyEntity(src)
+  if (entity) return defaultSpotifyHeight(entity.type)
+
+  const height = attrs.height
+  if (typeof height === 'number' && height > 0) return height
+  return SPOTIFY_FULL_HEIGHT
+}
+
 export const SPOTIFY_EMBED_KIT_DEFAULTS: SpotifyEmbedKitOptions = {
   theme: undefined,
   allow: 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture',
