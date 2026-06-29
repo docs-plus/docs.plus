@@ -1,5 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
+import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef } from 'react'
 import * as Y from 'yjs'
 
@@ -17,6 +18,10 @@ import * as Y from 'yjs'
 type DeviceType = 'desktop' | 'mobile' | 'tablet'
 
 const FIRST_SYNC_TIMEOUT_MS = 15_000
+// Bounded self-heal for a transient auth reject on a still-valid session: re-arm a few
+// spaced reconnects, then fall back to the onAuthStateChange recovery (refresh/re-login).
+const MAX_AUTH_REARM = 5
+const AUTH_REARM_DELAY_MS = 3_000
 
 interface UseYdocAndProviderProps {
   documentId: string
@@ -36,6 +41,11 @@ const useYdocAndProvider = ({
   const providerRef = useRef<HocuspocusProvider | null>(null)
   const isSyncedRef = useRef(false)
   const syncedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Auth-stop sentinel + re-arm budget, decoupled from providerStatus (which typing /
+  // online events overwrite, so it can't gate recovery reliably).
+  const authStoppedRef = useRef(false)
+  const authRearmTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const authRearmCountRef = useRef(0)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
@@ -58,9 +68,42 @@ const useYdocAndProvider = ({
       url: providerUrl,
       name: documentId,
       document: ydocRef.current,
-      token: JSON.stringify({ accessToken: accessToken || '', slug: slug, deviceType }),
+      // Resolve a FRESH token on every (re)connect. A static string is frozen at
+      // SSR, so once its JWT expires the provider reconnects forever with the dead
+      // token; getSession() returns the browser client's auto-refreshed token.
+      token: async () => {
+        const { data, error } = await supabaseClient.auth.getSession()
+        if (error) console.debug('WS token: getSession() failed, using fallback', error.message)
+        return JSON.stringify({
+          accessToken: data.session?.access_token ?? accessToken ?? '',
+          slug,
+          deviceType
+        })
+      },
+      onAuthenticationFailed: async ({ reason }) => {
+        // Stop the unbounded reconnect loop (disconnect -> shouldConnect=false) so a dead
+        // token can't hammer the server. authStoppedRef is the recovery sentinel.
+        console.warn('WS authentication failed:', reason)
+        setWorkspaceSetting('providerStatus', 'error')
+        authStoppedRef.current = true
+        providerRef.current?.disconnect()
+        // Definitive (no session: logged out / expired refresh) stays stopped until a
+        // later SIGNED_IN. Transient (still-valid session, e.g. a rate-limited verify)
+        // self-heals: re-arm a bounded, capped reconnect that mints a fresh token.
+        const { data } = await supabaseClient.auth.getSession()
+        if (!data.session || authRearmCountRef.current >= MAX_AUTH_REARM) return
+        authRearmCountRef.current += 1
+        if (authRearmTimerRef.current) clearTimeout(authRearmTimerRef.current)
+        authRearmTimerRef.current = setTimeout(
+          () => providerRef.current?.connect(),
+          AUTH_REARM_DELAY_MS
+        )
+      },
       onSynced: (data) => {
         isSyncedRef.current = true
+        // A successful (re)connect clears the auth-stop sentinel + re-arm budget.
+        authStoppedRef.current = false
+        authRearmCountRef.current = 0
 
         // Initial sync complete - document loaded from server (already saved)
         setWorkspaceSetting('providerStatus', 'saved')
@@ -122,6 +165,7 @@ const useYdocAndProvider = ({
 
     return () => {
       clearTimeout(connectTimer)
+      if (authRearmTimerRef.current) clearTimeout(authRearmTimerRef.current)
       providerRef.current?.destroy()
       // Without these, the next documentId's effect would see a truthy ref to a
       // destroyed provider and skip recreation, and its watchdog would see the
@@ -133,6 +177,20 @@ const useYdocAndProvider = ({
     // change warrants a provider rebuild.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId])
+
+  // Recovery from an auth-stopped provider: a freshly-refreshed or re-logged-in session
+  // must re-arm. Gate on authStoppedRef (NOT providerStatus, which typing/online events
+  // overwrite). A definitive logout never emits these events, so it stays stopped.
+  // (Supabase also re-emits SIGNED_IN on a hidden->visible tab, covering focus return.)
+  useEffect(() => {
+    const { data } = supabaseClient.auth.onAuthStateChange((event) => {
+      if (event !== 'TOKEN_REFRESHED' && event !== 'SIGNED_IN') return
+      if (!authStoppedRef.current) return
+      authRearmCountRef.current = 0 // fresh credentials -> restore the re-arm budget
+      providerRef.current?.connect()
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
 
   // First-sync watchdog per document: a created-but-never-syncing provider would
   // otherwise leave the shell on bones forever. Keep an accurate 'offline' as is.
