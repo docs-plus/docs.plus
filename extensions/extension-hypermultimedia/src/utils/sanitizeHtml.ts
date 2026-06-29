@@ -28,12 +28,21 @@ export class HTMLSanitizer {
     return this.SAFE_URL.test(trimmed)
   }
 
-  static sanitize(html: string): string {
+  private static isAllowedHrefHost(value: string, allowedHosts: readonly string[]): boolean {
+    try {
+      const host = new URL(value.trim()).hostname.replace(/^www\./i, '').replace(/^mobile\./i, '')
+      return allowedHosts.some((allowed) => host === allowed)
+    } catch {
+      return false
+    }
+  }
+
+  static sanitize(html: string, options?: { hrefHosts?: readonly string[] }): string {
     try {
       // Parse inertly: DOMParser does not execute scripts or fire `<img onerror>`
       // / `<svg onload>` handlers, so nothing runs before the scrub. [security: S3/S4]
       const doc = new DOMParser().parseFromString(html, 'text/html')
-      this.sanitizeElement(doc.body)
+      this.sanitizeElement(doc.body, options?.hrefHosts)
       return doc.body.innerHTML
     } catch (error) {
       Logger.error('HTML sanitization failed', error)
@@ -43,7 +52,7 @@ export class HTMLSanitizer {
     }
   }
 
-  private static sanitizeElement(element: Element): void {
+  private static sanitizeElement(element: Element, hrefHosts?: readonly string[]): void {
     const children = Array.from(element.children)
 
     children.forEach((child) => {
@@ -60,13 +69,18 @@ export class HTMLSanitizer {
           child.removeAttribute(attr.name)
           return
         }
-        // `href` is the only allowlisted url attr; it still needs a scheme gate.
-        if (name === 'href' && !this.isSafeUrl(attr.value)) {
-          child.removeAttribute(attr.name)
+        if (name === 'href') {
+          if (!this.isSafeUrl(attr.value)) {
+            child.removeAttribute(attr.name)
+            return
+          }
+          if (hrefHosts && !this.isAllowedHrefHost(attr.value, hrefHosts)) {
+            child.removeAttribute(attr.name)
+          }
         }
       })
 
-      this.sanitizeElement(child)
+      this.sanitizeElement(child, hrefHosts)
     })
   }
 

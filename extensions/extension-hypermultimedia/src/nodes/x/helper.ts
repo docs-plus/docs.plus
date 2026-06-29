@@ -4,8 +4,10 @@ import { HTMLSanitizer } from '../../utils/sanitizeHtml'
 export const X_URL_REGEX_GLOBAL =
   /(?:https?:\/\/)?(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]{1,15}\/status\/[0-9]+(?:\/|\?|#|$)[^\s]*/gi
 
+const X_OEMBED_HREF_HOSTS = ['x.com', 'twitter.com'] as const
+
 /** Canonical `https://x.com/{user}/status/{id}` or null when not a status URL. */
-export const normalizeXUrl = (raw: string): string | null => {
+export function normalizeXUrl(raw: string): string | null {
   const trimmed = raw.trim()
   if (!trimmed) return null
 
@@ -24,13 +26,16 @@ export const normalizeXUrl = (raw: string): string | null => {
   }
 }
 
-export const isValidXUrl = (url: string): boolean => normalizeXUrl(url) !== null
+export function isValidXUrl(url: string): boolean {
+  return normalizeXUrl(url) !== null
+}
 
 interface TwttrWidgets {
   load: (element: HTMLElement) => void
 }
 
 interface Twttr {
+  ready: (callback: () => void) => void
   widgets: TwttrWidgets
 }
 
@@ -47,17 +52,46 @@ const X_LAYOUT_MIN_HEIGHT_PX = 50
 const X_LAYOUT_STABLE_FRAMES = 2
 
 function hasRenderableXEmbed(wrapper: HTMLElement): boolean {
-  return wrapper.querySelector('blockquote.twitter-tweet, iframe') != null
+  const blockquote = wrapper.querySelector('blockquote.twitter-tweet')
+  if (blockquote) {
+    const href = blockquote.querySelector('a')?.getAttribute('href') ?? ''
+    if (normalizeXUrl(href)) return true
+  }
+  return wrapper.querySelector('iframe') != null
 }
 
-/** Grows the loading host while widgets.js expands the tweet (before markReady). */
+function measureEmbedHeight(element: HTMLElement): number {
+  return Math.max(
+    Math.ceil(element.scrollHeight),
+    Math.ceil(element.getBoundingClientRect().height)
+  )
+}
+
+export interface XEmbedHeightSyncOptions {
+  /** Reserved shell height before the widget reports a real size. */
+  minHeight: number
+  /** When true, host uses fluid/auto height and only min-height tracks growth. */
+  isFluid?: () => boolean
+}
+
+/** Tracks widget layout until dispose — pending fixed height, then fluid min-height. */
 export function watchXEmbedHeight(
   wrapper: HTMLElement,
-  onHeight: (height: number) => void
+  host: HTMLElement,
+  options: XEmbedHeightSyncOptions
 ): () => void {
+  const apply = (height: number) => {
+    const floor = Math.max(options.minHeight, height)
+    if (options.isFluid?.()) {
+      host.style.minHeight = `${floor}px`
+      return
+    }
+    host.style.height = `${floor}px`
+  }
+
   const measure = () => {
-    const h = Math.ceil(wrapper.scrollHeight)
-    if (h > 0) onHeight(h)
+    const h = measureEmbedHeight(wrapper)
+    if (h > 0) apply(h)
   }
 
   const ro = new ResizeObserver(measure)
@@ -142,17 +176,20 @@ async function waitForXEmbedStable(wrapper: HTMLElement, signal?: AbortSignal): 
   await waitForStableSize(target, signal)
 }
 
-export const loadXScript = (signal?: AbortSignal): Promise<Twttr> => {
+function whenTwttrReady(signal?: AbortSignal): Promise<Twttr> {
   if (signal?.aborted) {
     return Promise.reject(new DOMException('Aborted', 'AbortError'))
   }
-  if (window.twttr) {
-    return Promise.resolve(window.twttr)
+
+  const existing = window.twttr
+  if (existing?.widgets) {
+    return Promise.resolve(existing)
   }
 
   return new Promise((resolve, reject) => {
     let pollId: ReturnType<typeof setInterval> | undefined
     let timeoutId: ReturnType<typeof setTimeout> | undefined
+    let settled = false
 
     const cleanup = () => {
       if (pollId != null) clearInterval(pollId)
@@ -161,6 +198,8 @@ export const loadXScript = (signal?: AbortSignal): Promise<Twttr> => {
     }
 
     const finish = (fn: () => void) => {
+      if (settled) return
+      settled = true
       cleanup()
       fn()
     }
@@ -173,31 +212,83 @@ export const loadXScript = (signal?: AbortSignal): Promise<Twttr> => {
 
     signal?.addEventListener('abort', onAbort, { once: true })
 
-    const existingScript = document.querySelector(
-      'script[src="https://platform.twitter.com/widgets.js"]'
-    )
-
-    if (existingScript) {
-      pollId = setInterval(() => {
-        const twttr = window.twttr
-        if (twttr) finish(() => resolve(twttr))
-      }, X_SCRIPT_POLL_MS)
-      return
+    const resolveIfReady = () => {
+      const twttr = window.twttr
+      if (twttr?.widgets) {
+        finish(() => resolve(twttr))
+        return true
+      }
+      return false
     }
 
+    if (resolveIfReady()) return
+
+    window.twttr?.ready?.(() => {
+      if (signal?.aborted) {
+        finish(() => reject(new DOMException('Aborted', 'AbortError')))
+        return
+      }
+      if (!resolveIfReady()) {
+        finish(() => reject(new Error('X widgets script loaded without twttr.widgets')))
+      }
+    })
+
+    pollId = setInterval(() => {
+      resolveIfReady()
+    }, X_SCRIPT_POLL_MS)
+  })
+}
+
+export function loadXScript(signal?: AbortSignal): Promise<Twttr> {
+  if (signal?.aborted) {
+    return Promise.reject(new DOMException('Aborted', 'AbortError'))
+  }
+
+  const existingScript = document.querySelector(
+    'script[src="https://platform.twitter.com/widgets.js"]'
+  )
+
+  if (existingScript || window.twttr) {
+    return whenTwttrReady(signal)
+  }
+
+  return new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.src = 'https://platform.twitter.com/widgets.js'
     script.async = true
-    script.onload = () => finish(() => resolve(window.twttr!))
-    script.onerror = () => finish(() => reject(new Error('Failed to load X widgets script')))
+    script.onload = () => {
+      whenTwttrReady(signal).then(resolve).catch(reject)
+    }
+    script.onerror = () => reject(new Error('Failed to load X widgets script'))
     document.head.append(script)
   })
 }
 
-export const fetchOEmbedHtml = async (
+export function sanitizeXEmbedHtml(html: string): string {
+  return HTMLSanitizer.sanitize(html, { hrefHosts: X_OEMBED_HREF_HOSTS })
+}
+
+/** Minimal blockquote widgets.js needs when oEmbed is empty or scrubbed away. */
+export function seedXEmbedMarkup(wrapper: HTMLElement, statusUrl: string): void {
+  if (hasRenderableXEmbed(wrapper)) return
+
+  const url = normalizeXUrl(statusUrl)
+  if (!url) return
+
+  wrapper.replaceChildren()
+  const blockquote = document.createElement('blockquote')
+  blockquote.className = 'twitter-tweet'
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.textContent = url
+  blockquote.append(anchor)
+  wrapper.append(blockquote)
+}
+
+export async function fetchOEmbedHtml(
   params: Record<string, string | number>,
   signal?: AbortSignal
-): Promise<string> => {
+): Promise<string> {
   const urlParams = new URLSearchParams(
     Object.entries(params).map(([key, value]) => [key, String(value)])
   )
@@ -221,24 +312,30 @@ export async function mountXEmbed(
 ): Promise<boolean> {
   if (signal?.aborted) return false
 
+  const statusUrl = String(params.url ?? '')
+
   try {
     const html = await fetchOEmbedHtml(params, signal)
     if (signal?.aborted) return false
-    wrapper.innerHTML = HTMLSanitizer.sanitize(html)
+    wrapper.innerHTML = sanitizeXEmbedHtml(html)
   } catch {
-    // oEmbed may fail; widgets.js can still render from the status URL.
+    // oEmbed may fail; fall back to a blockquote seed for widgets.js.
   }
+
+  seedXEmbedMarkup(wrapper, statusUrl)
 
   if (signal?.aborted) return false
 
   try {
     const twttr = await loadXScript(signal)
     if (signal?.aborted) return false
-    void twttr.widgets.load(wrapper)
+    twttr.widgets.load(wrapper)
     await waitForXEmbedStable(wrapper, signal)
   } catch {
+    if (signal?.aborted) return false
     return hasRenderableXEmbed(wrapper)
   }
 
+  if (signal?.aborted) return false
   return hasRenderableXEmbed(wrapper)
 }

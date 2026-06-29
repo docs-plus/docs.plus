@@ -158,28 +158,27 @@ export const X = Node.create<XOptions>({
       layoutRoot.append(loadingHost)
 
       const mountAbort = new AbortController()
-      let disposeHeightSync = watchXEmbedHeight(embedTarget, (height) => {
-        loadingHost.style.height = `${Math.max(shellHeight, height)}px`
+      let isFluid = false
+      let disposeHeightSync = watchXEmbedHeight(embedTarget, loadingHost, {
+        minHeight: shellHeight,
+        isFluid: () => isFluid
       })
-      const endHeightSync = () => {
-        disposeHeightSync()
-        disposeHeightSync = () => {}
-      }
 
       void mountXEmbed(embedTarget, buildXOEmbedParams(node.attrs, kitOptions), mountAbort.signal)
         .then((ok) => {
-          endHeightSync()
+          if (mountAbort.signal.aborted) return
           if (!ok) {
             controller.markError()
             return
           }
+          isFluid = true
           loadingHost.classList.add('hm-media-host--fluid')
           loadingHost.style.width = '100%'
           loadingHost.style.height = 'auto'
           controller.markReady()
         })
         .catch(() => {
-          endHeightSync()
+          if (mountAbort.signal.aborted) return
           controller.markError()
         })
 
@@ -195,7 +194,7 @@ export const X = Node.create<XOptions>({
         // Caption is a nested contenteditable the node view owns; keep PM out of its events.
         stopEvent: (event: Event) => caption.el.contains(event.target as globalThis.Node | null),
         destroy: () => {
-          endHeightSync()
+          disposeHeightSync()
           mountAbort.abort()
           controller.destroy()
           caption.destroy()

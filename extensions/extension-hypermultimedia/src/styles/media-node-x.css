@@ -8,6 +8,10 @@
 
 .hypermultimedia--x__content {
   border-radius: 12px;
+  overflow: visible;
+}
+
+.hypermultimedia--x__content:not(:has(.hm-media-host[data-hm-loading='ready'])) {
   overflow: hidden;
 }
 
