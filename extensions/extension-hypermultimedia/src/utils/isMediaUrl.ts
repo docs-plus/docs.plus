@@ -1,6 +1,7 @@
 import { isImageUrl } from '../nodes/image/helper'
 import { isValidLoomUrl } from '../nodes/loom/helper'
 import { isValidSoundCloudUrl } from '../nodes/soundcloud/helper'
+import { isValidSpotifyUrl } from '../nodes/spotify/helper'
 import { isValidVimeoUrl } from '../nodes/vimeo/helper'
 import { isValidXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
@@ -18,5 +19,6 @@ export const isMediaUrl = (url: string): boolean =>
   isValidYoutubeUrl(url) ||
   isValidVimeoUrl(url) ||
   isValidSoundCloudUrl(url) ||
+  isValidSpotifyUrl(url) ||
   isValidLoomUrl(url) ||
   isValidXUrl(url)

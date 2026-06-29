@@ -1,0 +1,7 @@
+/* Spotify's signature rounded player — mirrors the 12px radius in its oEmbed iframe. */
+.hypermultimedia--spotify__content iframe,
+.spotify-media iframe {
+  display: block;
+  border: 0;
+  border-radius: 12px;
+}

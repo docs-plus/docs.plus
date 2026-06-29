@@ -5,6 +5,7 @@
 import type { SetAudioOptions } from '../nodes/audio/audio'
 import type { SetLoomOptions } from '../nodes/loom/loom'
 import type { SetSoundCloudOptions } from '../nodes/soundcloud/soundcloud'
+import type { SetSpotifyOptions } from '../nodes/spotify/spotify'
 import type { SetVideoOptions } from '../nodes/video/video'
 import type { SetVimeoOptions } from '../nodes/vimeo/vimeo'
 import type { AddXOptions } from '../nodes/x/x'
@@ -27,6 +28,8 @@ export interface MediaPublicCommands<ReturnType> {
   setVimeo: (options: SetVimeoOptions) => ReturnType
   /** Insert a SoundCloud embed; returns `false` for an invalid URL. */
   setSoundCloud: (options: SetSoundCloudOptions) => ReturnType
+  /** Insert a Spotify embed; returns `false` for an invalid URL. */
+  setSpotify: (options: SetSpotifyOptions) => ReturnType
   /** Insert an X embed; returns `false` for an invalid URL. */
   setX: (options: AddXOptions) => ReturnType
   /** Insert a Loom embed; returns `false` for an invalid URL. */

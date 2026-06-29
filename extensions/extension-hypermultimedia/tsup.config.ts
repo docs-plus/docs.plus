@@ -11,6 +11,7 @@ const STYLE_FILES = [
   'media-loading-shell.css',
   'media-node-x.css',
   'media-node-loom.css',
+  'media-node-spotify.css',
   'media-toolbar.css'
 ]
 

@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/core'
 import { getKitStorage } from '../kitStorage'
 import { isValidLoomUrl } from '../nodes/loom/helper'
 import { isValidSoundCloudUrl } from '../nodes/soundcloud/helper'
+import { isValidSpotifyUrl } from '../nodes/spotify/helper'
 import { isValidVimeoUrl } from '../nodes/vimeo/helper'
 import { normalizeXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
@@ -24,6 +25,7 @@ const REPLACE_URL_GUARDS: Record<
   youtube: { label: 'YouTube', resolve: validatedUrl(isValidYoutubeUrl) },
   vimeo: { label: 'Vimeo', resolve: validatedUrl(isValidVimeoUrl) },
   soundcloud: { label: 'SoundCloud', resolve: validatedUrl(isValidSoundCloudUrl) },
+  spotify: { label: 'Spotify', resolve: validatedUrl(isValidSpotifyUrl) },
   loom: { label: 'Loom', resolve: validatedUrl(isValidLoomUrl) },
   x: { label: 'X post', resolve: normalizeXUrl }
 }

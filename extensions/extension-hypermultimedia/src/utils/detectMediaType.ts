@@ -1,6 +1,7 @@
 import { isImageUrl } from '../nodes/image/helper'
 import { isValidLoomUrl } from '../nodes/loom/helper'
 import { isValidSoundCloudUrl } from '../nodes/soundcloud/helper'
+import { isValidSpotifyUrl } from '../nodes/spotify/helper'
 import { isValidVimeoUrl } from '../nodes/vimeo/helper'
 import { isValidXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
@@ -14,6 +15,7 @@ export type MediaNodeType =
   | 'youtube'
   | 'vimeo'
   | 'soundcloud'
+  | 'spotify'
   | 'loom'
   | 'x'
 
@@ -26,6 +28,7 @@ export const detectMediaType = (url: string): MediaNodeType | null => {
   if (isValidYoutubeUrl(url)) return 'youtube'
   if (isValidVimeoUrl(url)) return 'vimeo'
   if (isValidSoundCloudUrl(url)) return 'soundcloud'
+  if (isValidSpotifyUrl(url)) return 'spotify'
   if (isValidLoomUrl(url)) return 'loom'
   if (isValidXUrl(url)) return 'x'
   if (isImageUrl(url)) return 'image'

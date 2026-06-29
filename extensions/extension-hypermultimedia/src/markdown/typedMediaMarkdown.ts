@@ -16,6 +16,7 @@ export const TYPED_MEDIA_MARKDOWN_ALTS = [
   'youtube',
   'vimeo',
   'soundcloud',
+  'spotify',
   'loom',
   'x'
 ] as const

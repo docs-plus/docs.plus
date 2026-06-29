@@ -16,6 +16,13 @@ export {
 export { isImageUrl } from './nodes/image/helper'
 export { isValidLoomUrl } from './nodes/loom/helper'
 export { isValidSoundCloudUrl } from './nodes/soundcloud/helper'
+export {
+  isValidSpotifyUrl,
+  parseSpotifyEntity,
+  SPOTIFY_ENTITY_TYPES,
+  type SpotifyEntityType,
+  type SpotifyTheme
+} from './nodes/spotify/helper'
 export { isValidVimeoUrl } from './nodes/vimeo/helper'
 export {
   buildXOEmbedParams,

@@ -8,6 +8,7 @@ import { Audio, AudioOptions } from './nodes/audio/audio'
 import { Image } from './nodes/image/image'
 import { Loom, LoomOptions } from './nodes/loom/loom'
 import { SoundCloud, SoundCloudOptions } from './nodes/soundcloud/soundcloud'
+import { Spotify, SpotifyOptions } from './nodes/spotify/spotify'
 import { Video, VideoOptions } from './nodes/video/video'
 import { Vimeo, VimeoOptions } from './nodes/vimeo/vimeo'
 import { X, XOptions } from './nodes/x/x'
@@ -24,6 +25,7 @@ export interface HyperMultimediaKitOptions {
   Youtube: Partial<YoutubeOptions & { resizeGripper?: boolean }> | true | false
   Vimeo: Partial<VimeoOptions & { resizeGripper?: boolean }> | true | false
   SoundCloud: Partial<SoundCloudOptions & { resizeGripper?: boolean }> | true | false
+  Spotify: Partial<SpotifyOptions & { resizeGripper?: boolean }> | true | false
   Loom: Partial<LoomOptions & { resizeGripper?: boolean }> | true | false
   X: Partial<XOptions> | true | false
   /**
@@ -61,6 +63,7 @@ type MediaExtension =
   | typeof Youtube
   | typeof Vimeo
   | typeof SoundCloud
+  | typeof Spotify
   | typeof Loom
   | typeof X
 
@@ -107,6 +110,7 @@ export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
     addMediaExtension(Youtube, this.options.Youtube)
     addMediaExtension(Vimeo, this.options.Vimeo)
     addMediaExtension(SoundCloud, this.options.SoundCloud)
+    addMediaExtension(Spotify, this.options.Spotify)
     addMediaExtension(Loom, this.options.Loom)
     addMediaExtension(X, this.options.X)
 

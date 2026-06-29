@@ -41,6 +41,7 @@ const editor = new Editor({
       Youtube: true,
       Vimeo: true,
       SoundCloud: true,
+      Spotify: true,
       Loom: true,
       X: true,
       loadingShell,
