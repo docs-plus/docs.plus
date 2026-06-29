@@ -38,6 +38,7 @@ const EditFAB = () => {
         activate()
       }}
       variant="primary"
+      btnStyle="soft"
       shape="circle"
       className="edit-fab fixed right-6 bottom-8 z-20 size-16 motion-safe:animate-[doc-content-in_180ms_ease-out_both]"
       startIcon={<Icons.pencil size={28} />}
