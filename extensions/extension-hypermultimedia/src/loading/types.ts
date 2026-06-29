@@ -25,6 +25,8 @@ export interface MediaLoadingBindLoadOptions {
 export interface MediaLoadingShellWrapOptions {
   /** Auto-settle via media element load/error; omit for manual (e.g. X oEmbed). */
   bindLoad?: MediaLoadingBindLoadOptions
+  /** When set, used instead of the generic responsive host sync on mount. */
+  syncLoadingHost?: (el: HTMLElement, width: number, height: number) => void
 }
 
 export interface MediaLoadingController {

@@ -14,7 +14,7 @@ import {
   getPointerPosition,
   readGripperDimensions,
   resetGripperPosition,
-  resolveResizeConstraints,
+  resolveMediaNodeConstraints,
   setupKeyboardListeners,
   updateNodeDimensions
 } from './utils'
@@ -135,7 +135,9 @@ export function attachGripperDrag(config: GripperDragConfig): void {
 
     const keyboard = setupKeyboardListeners()
     const start = getPointerPosition(event)
-    const constraints = resolveResizeConstraints(editor)
+    const nodePos = resolveDragTargetPos(editor, gripper)
+    const node = nodePos != null ? editor.state.doc.nodeAt(nodePos) : null
+    const constraints = resolveMediaNodeConstraints(editor, node)
 
     const state: ResizeState = {
       initialX: start.x,
@@ -337,7 +339,6 @@ export function computeCornerBox(corner: Corner): ComputeGripperBox {
           left = state.initialLeft + (state.initialWidth - width)
           break
         case 'bottomRight':
-          break
       }
     } else {
       switch (corner) {

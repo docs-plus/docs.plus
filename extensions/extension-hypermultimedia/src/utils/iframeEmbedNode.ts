@@ -32,6 +32,13 @@ export interface IframeEmbedConfig<TOptions extends IframeEmbedNodeOptions> {
   buildEmbedUrl: (src: string, attrs: IframeAttrs, options: TOptions) => string | null
   /** Label in the default loading shell, e.g. "YouTube". */
   loadingProvider?: string
+  syncLoadingHost?: (
+    el: HTMLElement,
+    width: number,
+    height: number,
+    attrs: IframeAttrs,
+    options: TOptions
+  ) => void
   resolveIframeAttributes: (
     attrs: IframeAttrs,
     options: TOptions,
@@ -59,6 +66,15 @@ export function defineFullscreenIframeEmbedConfig<
     resolveIframeAttributes: (attrs, options, width, height) =>
       resolveFullscreenIframeAttributes(attrs, options, width, height)
   }
+}
+
+function bindIframeSyncLoadingHost<TOptions extends IframeEmbedNodeOptions>(
+  config: IframeEmbedConfig<TOptions>,
+  attrs: IframeAttrs,
+  options: TOptions
+): ((el: HTMLElement, width: number, height: number) => void) | undefined {
+  if (!config.syncLoadingHost) return undefined
+  return (el, width, height) => config.syncLoadingHost!(el, width, height, attrs, options)
 }
 
 function writeIframeAttributes(
@@ -128,6 +144,7 @@ export function createIframeEmbedNodeView<TOptions extends IframeEmbedNodeOption
     )
 
     content.append(iframe)
+    const syncLoadingHost = bindIframeSyncLoadingHost(config, node.attrs, options)
     const { dom: loadingHost, controller } = wrapMediaWithLoadingShell(
       editor,
       {
@@ -137,11 +154,18 @@ export function createIframeEmbedNodeView<TOptions extends IframeEmbedNodeOption
         height: dims.height
       },
       content,
-      { bindLoad: { element: iframe } }
+      { bindLoad: { element: iframe }, syncLoadingHost }
     )
 
     dom.append(loadingHost)
-    syncIframeNodeLayout({ wrapper: dom, attrs: node.attrs, loadingHost, iframe, dims })
+    syncIframeNodeLayout({
+      wrapper: dom,
+      attrs: node.attrs,
+      loadingHost,
+      iframe,
+      dims,
+      syncLoadingHost
+    })
 
     const caption: CaptionHandle = createCaptionElement({
       editor,
@@ -152,12 +176,8 @@ export function createIframeEmbedNodeView<TOptions extends IframeEmbedNodeOption
 
     return {
       dom,
-      // Leaf/atom node: no `contentDOM`. Exposing one made PM treat the iframe
-      // host as an editable content hole and re-parse it on every async mutation
-      // (iframe load, X widgets.js), recreating the node view on each DOMObserver
-      // flush (e.g. a popover stealing focus) — reloading the embed.
-      // The caption is a nested contenteditable the node view owns; PM must not
-      // process its input/key/selection events or it deletes the selected node.
+      // Leaf node: no contentDOM — PM would re-parse async iframe mutations and reload embeds.
+      // Caption is nested contenteditable; PM must not handle its events or it deletes the node.
       stopEvent: (event: Event) => caption.el.contains(event.target as Node | null),
       destroy: () => {
         controller.destroy()
@@ -173,7 +193,8 @@ export function createIframeEmbedNodeView<TOptions extends IframeEmbedNodeOption
             wrapper: dom,
             attrs: updatedNode.attrs,
             loadingHost,
-            iframe
+            iframe,
+            syncLoadingHost: bindIframeSyncLoadingHost(config, updatedNode.attrs, options)
           })
         }
 

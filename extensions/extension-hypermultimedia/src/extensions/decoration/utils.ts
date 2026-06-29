@@ -1,5 +1,9 @@
 import { Editor } from '@tiptap/core'
 
+import {
+  resolveSoundCloudExtensionOptions,
+  resolveSoundCloudLayoutMinHeight
+} from '../../nodes/soundcloud/embedOptions'
 import { fitDimensionsToBounds, getEditorContentWidth } from '../../utils/fitImageDimensions'
 import { PointerPosition, ResizeConstraints } from './types'
 
@@ -30,13 +34,10 @@ export function calculateAspectRatioDimensions(
 ): { width: number; height: number } {
   let newWidth: number
   let newHeight: number
-
-  // Determine which dimension should drive the calculation based on which delta is larger
   const absX = Math.abs(deltaX)
   const absY = Math.abs(deltaY)
 
   if (absX > absY) {
-    // Width-driven calculation
     switch (corner) {
       case 'topRight':
       case 'bottomRight':
@@ -51,7 +52,6 @@ export function calculateAspectRatioDimensions(
     }
     newHeight = newWidth / aspectRatio
   } else {
-    // Height-driven calculation
     switch (corner) {
       case 'topRight':
       case 'topLeft':
@@ -76,6 +76,18 @@ export function resolveResizeConstraints(editor: Editor): ResizeConstraints {
     ...DEFAULT_CONSTRAINTS,
     ...(maxWidth > 0 ? { maxWidth } : {})
   }
+}
+
+export function resolveMediaNodeConstraints(
+  editor: Editor,
+  node?: { type: { name: string }; attrs: Record<string, unknown> } | null
+): ResizeConstraints {
+  const base = resolveResizeConstraints(editor)
+  if (node?.type.name !== 'soundcloud') return base
+
+  const options = resolveSoundCloudExtensionOptions(editor)
+  const minHeight = resolveSoundCloudLayoutMinHeight(node.attrs, options)
+  return { ...base, minHeight: Math.max(base.minHeight, minHeight) }
 }
 
 export function clampDimensionsToConstraints(
@@ -107,7 +119,11 @@ export function updateNodeDimensions(
   const nodeAtPos = state.doc.nodeAt(nodePos)
   if (!nodeAtPos || !('keyId' in nodeAtPos.attrs) || !('width' in nodeAtPos.attrs)) return
 
-  const clamped = clampDimensionsToConstraints(width, height, resolveResizeConstraints(editor))
+  const clamped = clampDimensionsToConstraints(
+    width,
+    height,
+    resolveMediaNodeConstraints(editor, nodeAtPos)
+  )
   tr.setNodeMarkup(nodePos, null, {
     ...nodeAtPos.attrs,
     width: clamped.width,

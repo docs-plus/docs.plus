@@ -88,7 +88,8 @@ export function wrapMediaWithLoadingShell(
   const host = document.createElement('div')
   host.className = 'hm-media-host'
   host.dataset.hmLoading = 'pending'
-  syncResponsiveMediaHost(host, context.width, context.height)
+  const syncHost = options?.syncLoadingHost ?? syncResponsiveMediaHost
+  syncHost(host, context.width, context.height)
 
   const overlay = factory(context)
   stampLoadingOverlay(overlay)

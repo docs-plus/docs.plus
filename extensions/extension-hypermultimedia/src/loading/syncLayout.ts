@@ -75,13 +75,21 @@ export interface SyncResizableMediaLayoutOptions {
   height: number
   loadingHost: HTMLElement
   surfaces: HTMLElement[]
+  syncLoadingHost?: (el: HTMLElement, width: number, height: number) => void
   syncSurface?: (el: HTMLElement, width: number, height: number) => void
 }
 
 /** Mirror committed layout attrs onto the loading shell and rendered media surfaces. */
 export function syncResizableMediaLayout(options: SyncResizableMediaLayoutOptions): void {
-  const { width, height, loadingHost, surfaces, syncSurface = syncMediaSurfaceFill } = options
-  syncResponsiveMediaHost(loadingHost, width, height)
+  const {
+    width,
+    height,
+    loadingHost,
+    surfaces,
+    syncLoadingHost = syncResponsiveMediaHost,
+    syncSurface = syncMediaSurfaceFill
+  } = options
+  syncLoadingHost(loadingHost, width, height)
   for (const surface of surfaces) {
     syncSurface(surface, width, height)
   }
@@ -95,6 +103,7 @@ export interface SyncMediaNodeLayoutOptions {
   dims?: { width: number; height: number }
   fallback?: { width: number; height: number }
   justifyContent?: string
+  syncLoadingHost?: (el: HTMLElement, width: number, height: number) => void
   syncSurface?: (el: HTMLElement, width: number, height: number) => void
 }
 
@@ -114,6 +123,7 @@ export function syncMediaNodeLayout(options: SyncMediaNodeLayoutOptions): void {
     height: dims.height,
     loadingHost: options.loadingHost,
     surfaces: [options.surface],
+    syncLoadingHost: options.syncLoadingHost,
     syncSurface: options.syncSurface
   })
 }
@@ -142,12 +152,14 @@ export function syncIframeNodeLayout(options: {
   loadingHost: HTMLElement
   iframe: HTMLIFrameElement
   dims?: { width: number; height: number }
+  syncLoadingHost?: (el: HTMLElement, width: number, height: number) => void
 }): void {
   syncMediaNodeLayout({
     wrapper: options.wrapper,
     attrs: options.attrs,
     loadingHost: options.loadingHost,
     surface: options.iframe,
-    dims: options.dims
+    dims: options.dims,
+    syncLoadingHost: options.syncLoadingHost
   })
 }
