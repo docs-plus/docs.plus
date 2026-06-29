@@ -75,6 +75,7 @@ export const migrationExtensions = [
     Youtube: true,
     Vimeo: true,
     SoundCloud: true,
+    Spotify: true,
     Loom: true,
     X: true
   }),
