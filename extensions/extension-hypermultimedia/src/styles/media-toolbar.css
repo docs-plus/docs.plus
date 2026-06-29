@@ -87,9 +87,12 @@
   font-size: 12px;
 }
 .media-toolbar__divider {
+  box-sizing: border-box;
   width: 1px;
-  height: 18px;
-  margin: 0 3px;
+  align-self: stretch;
+  flex-shrink: 0;
+  margin-block: 5px;
+  margin-inline: 0;
   background: var(--hm-toolbar-border);
 }
 

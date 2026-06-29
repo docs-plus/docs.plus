@@ -507,10 +507,13 @@ $pad-toolbar-height: 38px;
   }
 
   &__divider {
+    box-sizing: border-box;
     width: 1px;
     align-self: stretch;
+    flex-shrink: 0;
     background-color: var(--color-base-300);
-    margin: 0 2px;
+    margin-block: 5px;
+    margin-inline: 0;
   }
 }
 
