@@ -10,6 +10,15 @@ historical Conventional Commits format. The project adheres to
 
 ### Added
 
+- **Spotify embed node.** A ninth media node embeds Spotify tracks, albums,
+  playlists, artists, shows, and episodes through the official iframe player
+  (`open.spotify.com/embed/{type}/{id}`). Paste a Spotify URL or call
+  `setSpotify({ src, theme })` — `theme: 1` selects the light player; a track
+  defaults to the compact height, everything else to the full-art height. The
+  player is fixed-height (drag-resizable, height pinned on narrow columns) and
+  round-trips through `![spotify](url)` markdown. Pasting a Spotify URL or its
+  "Copy embed" `<iframe>` code (HTML or plain text) inserts the node. New root
+  exports: `isValidSpotifyUrl`, `parseSpotifyEntity`, `SPOTIFY_ENTITY_TYPES`.
 - **`mediaToolbarIcons` kit slot.** Hosts swap toolbar, overflow, alignment
   submenu, and replace-URL icons by key (`caption`, `more`, `align:center`,
   custom action ids) without replacing toolbar factories or reimplementing

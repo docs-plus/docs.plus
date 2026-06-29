@@ -17,6 +17,7 @@ export const README_AUDIO = readmeMediaUrl('sample.ogg')
 export const README_YOUTUBE = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ'
 export const README_VIMEO = 'https://vimeo.com/76979871'
 export const README_SOUNDCLOUD = 'https://soundcloud.com/forss/flickermood'
+export const README_SPOTIFY = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'
 export const README_LOOM = 'https://www.loom.com/share/e5b8c04bca094dd8a5507925ab887002'
 /** Derived via production `getLoomVideoId` — must match Loom share URL above. */
 export const README_LOOM_EMBED_ID = (() => {
@@ -30,6 +31,8 @@ export const README_GALLERY_WIDTH = 480
 export const README_GALLERY_VIDEO_HEIGHT = 270
 /** Loom oEmbed is 4:3; 16:9 gallery height scrolls the iframe. */
 export const README_GALLERY_LOOM_HEIGHT = 360
+/** Spotify full-art player height (album / playlist / show / episode). */
+export const README_GALLERY_SPOTIFY_HEIGHT = 352
 export const README_GALLERY_IMAGE_WIDTH = 332
 export const README_GALLERY_IMAGE_HEIGHT = 332
 
@@ -43,6 +46,8 @@ export const README_GALLERY_EMBED_SETTLE_MS = 800
 export const README_GALLERY_LOOM_SETTLE_MS = 2500
 /** SoundCloud widget chrome needs a beat longer than other iframe embeds. */
 export const README_GALLERY_SOUNDCLOUD_SETTLE_MS = 1200
+/** Spotify paints artwork + track list a beat after the iframe loads. */
+export const README_GALLERY_SPOTIFY_SETTLE_MS = 1500
 /** widgets.js paint after oEmbed (see CONTRIBUTING). */
 export const README_GALLERY_X_WIDGETS_SETTLE_MS = 6000
 /** Loom oEmbed can exceed the default loading-shell command timeout. */

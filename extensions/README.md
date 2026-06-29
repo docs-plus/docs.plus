@@ -46,7 +46,7 @@ Cutover tracker: [.cursor/docs/extension-version-cutover.md](../.cursor/docs/ext
 
 Each package has its own [CONTRIBUTING.md](./extension-hyperlink/CONTRIBUTING.md) — see
 [hyperlink](./extension-hyperlink/CONTRIBUTING.md),
-[hypermultimedia](./extension-hypermultimedia/CONTRIBUTING.md) (full README **Gallery**, 18 PNGs),
+[hypermultimedia](./extension-hypermultimedia/CONTRIBUTING.md) (full README **Gallery**, 20 PNGs),
 [indent](./extension-indent/CONTRIBUTING.md),
 [inline-code](./extension-inline-code/CONTRIBUTING.md), and
 [placeholder](./extension-placeholder/CONTRIBUTING.md). Hero or gallery PNGs: `bun run docs:screenshots`

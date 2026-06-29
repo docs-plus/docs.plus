@@ -30,7 +30,10 @@ import {
   README_MEDIA_HAVE_CURRENT_DATA,
   readmeGalleryLayout,
   readmeGalleryXLayout,
+  README_GALLERY_SPOTIFY_HEIGHT,
+  README_GALLERY_SPOTIFY_SETTLE_MS,
   README_SOUNDCLOUD,
+  README_SPOTIFY,
   README_VIDEO,
   README_VIMEO,
   README_X,
@@ -44,6 +47,7 @@ const SCOPE = {
   youtube: '#editor .hypermultimedia--youtube__content',
   vimeo: '#editor .hypermultimedia--vimeo__content',
   soundcloud: '#editor .hypermultimedia--soundcloud__content',
+  spotify: '#editor .hypermultimedia--spotify__content',
   loom: '#editor .hypermultimedia--loom__content',
   x: '#editor .hypermultimedia--x__content'
 } as const
@@ -182,6 +186,21 @@ const GALLERY_SCENES: GalleryScene[] = [
     ready: () => {
       expectLoadingShellReady(SCOPE.soundcloud, { provider: 'SoundCloud' })
       cy.get('#editor iframe').should('have.attr', 'src').and('include', 'w.soundcloud.com')
+    }
+  },
+  {
+    slug: 'spotify',
+    scope: 'spotify',
+    settleMs: README_GALLERY_SPOTIFY_SETTLE_MS,
+    setup: (editor) => {
+      editor.commands.setSpotify({
+        src: README_SPOTIFY,
+        ...readmeGalleryLayout(README_GALLERY_WIDTH, README_GALLERY_SPOTIFY_HEIGHT)
+      })
+    },
+    ready: () => {
+      expectLoadingShellReady(SCOPE.spotify, { provider: 'Spotify' })
+      cy.get('#editor iframe').should('have.attr', 'src').and('include', 'open.spotify.com/embed')
     }
   },
   {

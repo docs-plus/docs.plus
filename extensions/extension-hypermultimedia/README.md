@@ -13,9 +13,9 @@
   </picture>
 </p>
 
-Tiptap extension for embedding media in the editor: images, audio, video, and provider embeds (YouTube, Vimeo, SoundCloud, X, Loom).
+Tiptap extension for embedding media in the editor: images, audio, video, and provider embeds (YouTube, Vimeo, SoundCloud, Spotify, X, Loom).
 
-One kit call configures all eight nodes. Each media node gets a hover toolbar in its top-right corner, drag-to-resize, an editable caption, and a loading shell; toolbar popovers position through [`@docs.plus/floating-popover`](https://github.com/docs-plus/docs.plus/tree/main/packages/floating-popover) (Floating UI, bundled into `dist`) — no tippy.js.
+One kit call configures all nine nodes. Each media node gets a hover toolbar in its top-right corner, drag-to-resize, an editable caption, and a loading shell; toolbar popovers position through [`@docs.plus/floating-popover`](https://github.com/docs-plus/docs.plus/tree/main/packages/floating-popover) (Floating UI, bundled into `dist`) — no tippy.js.
 
 ## Install
 
@@ -59,6 +59,7 @@ With `@tiptap/markdown` loaded, every media node round-trips through typed `![al
 | `youtube`    | `![youtube](src)`                                           |
 | `vimeo`      | `![vimeo](src)`                                             |
 | `soundcloud` | `![soundcloud](src)`                                        |
+| `spotify`    | `![spotify](src)`                                           |
 | `loom`       | `![loom](src)`                                              |
 | `x`          | `![x](src)`                                                 |
 
@@ -70,14 +71,14 @@ Per-node markdown details: [Nodes](#nodes) → each node's README.
 
 Kit-level options on `HyperMultimediaKit.configure({ … })`:
 
-| Option                                                                   | Default          | Description                                                                                                                                        |
-| ------------------------------------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Image`, `Audio`, `Video`, `Youtube`, `Vimeo`, `SoundCloud`, `Loom`, `X` | enabled          | Per-node options object, `true`, or `false` to disable. Every node except `X` also accepts `resizeGripper: false`.                                 |
-| `mediaToolbar`                                                           | built-in toolbar | Toolbar factory — return your own element, or `null` to render a host surface. See [Build your own toolbar](#build-your-own-toolbar).              |
-| `mediaActions`                                                           | built-in actions | Rewrites the resolved toolbar action list per node. See [Customizing actions](#customizing-actions).                                               |
-| `replaceUrlPopover`                                                      | built-in editor  | Replace URL dialog content factory — return your own element, or `null` to render a host surface. See [Customizing actions](#customizing-actions). |
-| `isUploadedMedia`                                                        | `undefined`      | Marks image/video/audio nodes as host uploads so View original stays hidden for them. See [Customizing actions](#customizing-actions).             |
-| `loadingShell`                                                           | `true`           | Loading overlay: `true` for the built-in shell, `false` for none, or a factory replacing the overlay UI. See [Loading shell](#loading-shell).      |
+| Option                                                                              | Default          | Description                                                                                                                                        |
+| ----------------------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Image`, `Audio`, `Video`, `Youtube`, `Vimeo`, `SoundCloud`, `Spotify`, `Loom`, `X` | enabled          | Per-node options object, `true`, or `false` to disable. Every node except `X` also accepts `resizeGripper: false`.                                 |
+| `mediaToolbar`                                                                      | built-in toolbar | Toolbar factory — return your own element, or `null` to render a host surface. See [Build your own toolbar](#build-your-own-toolbar).              |
+| `mediaActions`                                                                      | built-in actions | Rewrites the resolved toolbar action list per node. See [Customizing actions](#customizing-actions).                                               |
+| `replaceUrlPopover`                                                                 | built-in editor  | Replace URL dialog content factory — return your own element, or `null` to render a host surface. See [Customizing actions](#customizing-actions). |
+| `isUploadedMedia`                                                                   | `undefined`      | Marks image/video/audio nodes as host uploads so View original stays hidden for them. See [Customizing actions](#customizing-actions).             |
+| `loadingShell`                                                                      | `true`           | Loading overlay: `true` for the built-in shell, `false` for none, or a factory replacing the overlay UI. See [Loading shell](#loading-shell).      |
 
 Per-node options (player params, paste handlers, layout) are documented per node — see [Nodes](#nodes).
 
@@ -92,6 +93,7 @@ editor.commands.setAudio({ src: 'https://example.com/track.mp3' })
 editor.commands.setYoutubeVideo({ src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' })
 editor.commands.setVimeo({ src: 'https://vimeo.com/123456789' })
 editor.commands.setSoundCloud({ src: 'https://soundcloud.com/artist/track' })
+editor.commands.setSpotify({ src: 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl' })
 editor.commands.setX({ src: 'https://x.com/user/status/123' })
 editor.commands.setLoom({ src: 'https://www.loom.com/share/abcdef1234567890' })
 ```
@@ -149,6 +151,7 @@ The shimmer and spinner animations are disabled under `prefers-reduced-motion: r
 | `youtube`    | YouTube videos (+ markdown)   | [youtube](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/youtube)       |
 | `vimeo`      | Vimeo videos (+ markdown)     | [vimeo](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/vimeo)           |
 | `soundcloud` | SoundCloud audio (+ markdown) | [soundcloud](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/soundcloud) |
+| `spotify`    | Spotify player (+ markdown)   | [spotify](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/spotify)       |
 | `x`          | X / Twitter (+ markdown)      | [x](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/x)                   |
 | `loom`       | Loom recordings (+ markdown)  | [loom](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/loom)             |
 
@@ -229,6 +232,18 @@ Each node type in the kit — local asset files (image, video, audio) and public
 </details>
 
 <details>
+<summary><strong>Spotify</strong></summary>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/spotify-dark.png">
+    <img alt="Spotify playlist embed player" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/spotify-light.png">
+  </picture>
+</p>
+
+</details>
+
+<details>
 <summary><strong>Loom</strong></summary>
 
 <p align="center">
@@ -259,6 +274,7 @@ Provider embeds resolve options in two layers: kit defaults (`HyperMultimediaKit
 - **YouTube** maps camelCase options to the official iframe params (`ccLanguage` → `cc_lang_pref`, `disableKBcontrols` → `disablekb`, …). Paste extracts `start` from `?t=`, `?start=`, or `#t=`; `loop: 1` auto-sets `playlist` to the video id; `nocookie: true` embeds from `youtube-nocookie.com`.
 - **X** sizes through oEmbed `maxwidth` presets — Compact (280), Standard (400, default), Wide (550) — plus a light/dark theme, both switchable from the toolbar's Post options; X has no drag-resize. `hide_media`, `hide_thread`, `lang`, and `dnt` ship as kit defaults and per-node attrs.
 - **Vimeo**, **SoundCloud**, and **Loom** follow the same two-layer pattern with their own params (`start_time`, the SoundCloud widget params, `hide_title`, …).
+- **Spotify** builds `open.spotify.com/embed/{type}/{id}` from any track, album, playlist, artist, show, or episode URL (or its "Copy embed" `<iframe>` code); `theme: 1` switches the player to light. It is fixed-height, so it pins its height on narrow columns instead of drag-scaling like the video embeds.
 
 ## Media toolbar
 
