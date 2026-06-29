@@ -11,6 +11,7 @@ const IFRAME_EMBED_HOSTS = [
   'www.youtube-nocookie.com',
   'player.vimeo.com',
   'w.soundcloud.com',
+  'open.spotify.com',
   'www.loom.com'
 ]
 

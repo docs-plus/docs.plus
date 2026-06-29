@@ -95,6 +95,15 @@ const MEDIA_COMMENT_META: Partial<Record<MediaNodeType, MediaCommentMeta>> = {
       emphasis: 'text-[#625DF5]'
     }
   },
+  spotify: {
+    label: 'Spotify',
+    theme: {
+      borderClass: 'border-l-[#1DB954]',
+      surface: 'bg-[#1DB954]/10',
+      surfaceHover: 'hover:bg-[#1DB954]/15',
+      emphasis: 'text-[#1DB954]'
+    }
+  },
   x: {
     label: 'X',
     theme: {

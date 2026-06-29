@@ -1,6 +1,6 @@
 import type { PanelTabOption } from '@components/ui/PanelTabBar'
 import { type MediaNodeType, parseYoutubeVideoId } from '@docs.plus/extension-hypermultimedia'
-import { FaSoundcloud, FaVimeo, FaXTwitter, FaYoutube } from 'react-icons/fa6'
+import { FaSoundcloud, FaSpotify, FaVimeo, FaXTwitter, FaYoutube } from 'react-icons/fa6'
 import { FiFilm, FiVideo } from 'react-icons/fi'
 import { MdAudiotrack, MdOutlineImage } from 'react-icons/md'
 
@@ -55,6 +55,12 @@ export const MEDIA_INSERT_REGISTRY: Record<MediaNodeType, MediaInsertEntry> = {
     label: 'SoundCloud',
     Icon: FaSoundcloud,
     insert: (editor, payload) => editor.chain().focus().setSoundCloud(payload).run(),
+    unfurl: true
+  },
+  spotify: {
+    label: 'Spotify',
+    Icon: FaSpotify,
+    insert: (editor, payload) => editor.chain().focus().setSpotify(payload).run(),
     unfurl: true
   },
   loom: {

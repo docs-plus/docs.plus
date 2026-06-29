@@ -12,7 +12,7 @@ interface MediaUrlPreviewProps {
 
 /**
  * Inline field preview: static element for image/youtube/video/audio, or metadata
- * unfurl for vimeo/soundcloud/loom. Nothing for types with no preview (e.g. X).
+ * unfurl for vimeo/soundcloud/loom/spotify. Nothing for types with no preview (e.g. X).
  */
 export default function MediaUrlPreview({ detectedType, value }: MediaUrlPreviewProps) {
   const entry = detectedType ? MEDIA_INSERT_REGISTRY[detectedType] : null
