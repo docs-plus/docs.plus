@@ -1,9 +1,13 @@
 import { PanelTabBar, type PanelTabOption } from '@components/ui/PanelTabBar'
 import { ScrollArea } from '@components/ui/ScrollArea'
+import { usePanelTabSwipe } from '@hooks/usePanelTabSwipe'
 import type { PanelSurfaceVariant } from '@types'
 import type { ReactNode, Ref } from 'react'
-import { Fragment } from 'react'
+import { Fragment, useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+/** Lockstep with MOTION_PANEL_MS (200) — tab bar pill slide uses the same duration. */
+const TAB_CONTENT_FADE_CLASS = 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]' as const
 
 type TabbedPanelBodyProps<TTab extends string, TItem> = {
   variant: PanelSurfaceVariant
@@ -41,23 +45,41 @@ export function TabbedPanelBody<TTab extends string, TItem>({
   endMessage
 }: TabbedPanelBodyProps<TTab, TItem>) {
   const isSheet = variant === 'sheet'
+  const { containerRef, slideStyle, scrollLocked, fadeEnter, isAnimating, handlers } =
+    usePanelTabSwipe({
+      enabled: isSheet,
+      tabs,
+      activeTab,
+      onSelect
+    })
 
-  return (
+  const handleTabSelect = useCallback(
+    (tab: TTab) => {
+      if (isAnimating) return
+      onSelect(tab)
+    },
+    [isAnimating, onSelect]
+  )
+
+  const body = (
     <>
       <PanelTabBar<TTab>
         tabs={tabs}
         activeTab={activeTab}
-        onSelect={onSelect}
+        onSelect={handleTabSelect}
         capitalize={capitalize}
       />
       <ScrollArea
         className={twMerge('p-3', isSheet ? 'min-h-0 flex-1' : 'max-h-96 min-h-48')}
+        style={scrollLocked ? { overflow: 'hidden' } : undefined}
         scrollbarSize="thin"
         hideScrollbar
         preserveWidth={false}>
-        {/* key remounts per tab so the fade plays once per switch, in step with
-            the tab bar's 200ms pill slide; pagination appends never replay. */}
-        <div key={activeTab} className="motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
+        <div
+          ref={isSheet ? containerRef : undefined}
+          key={activeTab}
+          style={slideStyle}
+          className={fadeEnter ? TAB_CONTENT_FADE_CLASS : undefined}>
           {isLoading && items.length === 0 && loadingSkeleton}
           {emptyState}
           {items.length > 0 && (
@@ -74,7 +96,7 @@ export function TabbedPanelBody<TTab extends string, TItem>({
                 </div>
               )}
 
-              {!hasMore && items.length > 0 && (
+              {!hasMore && (
                 <p className="text-base-content/40 py-3 text-center text-xs">{endMessage}</p>
               )}
             </div>
@@ -82,5 +104,15 @@ export function TabbedPanelBody<TTab extends string, TItem>({
         </div>
       </ScrollArea>
     </>
+  )
+
+  if (!isSheet) {
+    return body
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 touch-pan-y flex-col" {...handlers}>
+      {body}
+    </div>
   )
 }
