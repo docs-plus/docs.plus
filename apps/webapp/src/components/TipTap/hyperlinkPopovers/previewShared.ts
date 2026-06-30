@@ -12,7 +12,10 @@ import type { IconType } from 'react-icons'
 
 import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
+import { describeInternalDocumentLink } from './internalDocumentLink'
+import { runInternalDocumentLink } from './internalDocumentLinkActions'
 import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
+import type { InternalDocumentLink } from './types'
 
 /**
  * Per-app icon for the special-URL fallback path.
@@ -248,4 +251,32 @@ export const observeDetachment = (element: HTMLElement, onDetach: () => void): v
     }
   })
   observer.observe(document.body, { childList: true, subtree: true })
+}
+
+/**
+ * Imperative destination chip for the desktop preview popover: icon +
+ * primary/sub label, click runs the in-document destination in place.
+ * Mirrors `createMetadataContent`'s imperative-DOM style so it slots into
+ * the existing `.hyperlink-preview-popover` without a React mount.
+ */
+export const createInternalLinkChip = (link: InternalDocumentLink, editor: Editor): HTMLElement => {
+  const { label, sublabel, icon } = describeInternalDocumentLink(link, editor)
+
+  const chip = createHTMLElement('button', {
+    className: 'internal-link-chip',
+    title: label,
+    ariaLabel: label
+  })
+  const iconEl = createHTMLElement('span', {
+    className: 'chip-icon',
+    innerHTML: renderIconMarkup(icon, 18)
+  })
+  const text = createHTMLElement('span', { className: 'chip-text' })
+  text.append(
+    createHTMLElement('span', { className: 'chip-title', innerText: label }),
+    createHTMLElement('span', { className: 'chip-sub', innerText: sublabel })
+  )
+  chip.append(iconEl, text)
+  chip.addEventListener('click', () => runInternalDocumentLink(link))
+  return chip
 }

@@ -7,6 +7,8 @@ import type { ReactNode } from 'react'
 
 import { applyEdit } from './commands/applyEdit'
 import { navigateHref } from './hrefEventHandler'
+import { classifyInternalDocumentLink } from './internalDocumentLink'
+import { runInternalDocumentLink } from './internalDocumentLinkActions'
 
 const ICON_SIZE = 20
 
@@ -30,17 +32,25 @@ export function buildLinkPreviewActions({
   switchSheet
 }: BuildLinkPreviewActionsArgs): LinkPreviewAction[] {
   const { href, editor, nodePos, attrs, isAllowedUri } = payload
+  const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
+
+  const openAction: LinkPreviewAction = {
+    key: 'open',
+    label: internalLink ? 'Go to destination' : 'Open link',
+    icon: internalLink ? (
+      <Icons.chevronRight size={ICON_SIZE} />
+    ) : (
+      <Icons.externalLink size={ICON_SIZE} />
+    ),
+    onClick: () => {
+      if (internalLink) runInternalDocumentLink(internalLink)
+      else navigateHref(href, isAllowedUri)
+      closeSheet()
+    }
+  }
 
   return [
-    {
-      key: 'open',
-      label: 'Open link',
-      icon: <Icons.externalLink size={ICON_SIZE} />,
-      onClick: () => {
-        navigateHref(href, isAllowedUri)
-        closeSheet()
-      }
-    },
+    openAction,
     {
       key: 'copy',
       label: 'Copy link',

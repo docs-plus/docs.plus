@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import type { IconType } from 'react-icons'
 
 export type HyperlinkSurface = 'pad' | 'composer'
 
@@ -151,4 +152,27 @@ export interface ApplyHyperlinkArgs {
 /** Optional command behavior; pad paths default `focus: true`. */
 export interface ApplyHyperlinkCommandOpts {
   focus?: boolean
+}
+
+/**
+ * A hyperlink pointing back into the current document. `classify` maps a raw
+ * href to one of these (or `null` for external). The `filter` variant carries
+ * the original href so `run` forwards it verbatim to `APPLY_FILTER`.
+ */
+export type InternalDocumentLink =
+  | { kind: 'document' }
+  | { kind: 'heading'; headingId: string }
+  | { kind: 'chat'; channelId: string; messageId?: string }
+  | { kind: 'filter'; terms: string[]; mode: 'and' | 'or'; href: string }
+  | { kind: 'history'; version: number | null }
+
+export interface InternalLinkDescriptor {
+  label: string
+  sublabel: string
+  icon: IconType
+}
+
+export interface InternalLinkChipProps {
+  link: InternalDocumentLink
+  editor: Editor | null
 }

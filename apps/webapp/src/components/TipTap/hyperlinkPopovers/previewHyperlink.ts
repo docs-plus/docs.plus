@@ -9,7 +9,9 @@ import {
 import { useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 
+import { classifyInternalDocumentLink } from './internalDocumentLink'
 import {
+  createInternalLinkChip,
   observeDetachment,
   type PreviewContext,
   renderIconMarkup,
@@ -127,7 +129,6 @@ const buildDesktopPopover = (
   const { link, validate, isAllowedUri } = options
 
   const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
-  const metadataContainer = createHTMLElement('div', { className: 'metadata' })
   const copyButton = createHTMLElement('button', {
     className: 'copy',
     title: 'Copy link',
@@ -147,8 +148,6 @@ const buildDesktopPopover = (
     innerHTML: renderIconMarkup(Icons.unlink, 18)
   })
 
-  const { flush } = renderMetadataInto(metadataContainer, ctx)
-
   copyButton.addEventListener('click', () => {
     copyToClipboard(href, (success) => {
       if (success) getDefaultController().close()
@@ -165,6 +164,22 @@ const buildDesktopPopover = (
     editor.chain().focus().unsetHyperlink().run()
   })
 
+  // Internal (same-document) links render a named destination chip and run
+  // in place; no external metadata fetch. Copy still yields the canonical URL.
+  const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
+  if (internalLink) {
+    popover.classList.add('is-internal')
+    popover.append(
+      createInternalLinkChip(internalLink, editor),
+      copyButton,
+      editButton,
+      removeButton
+    )
+    return { element: popover, flush: () => {} }
+  }
+
+  const metadataContainer = createHTMLElement('div', { className: 'metadata' })
+  const { flush } = renderMetadataInto(metadataContainer, ctx)
   popover.append(metadataContainer, copyButton, editButton, removeButton)
   return { element: popover, flush }
 }
