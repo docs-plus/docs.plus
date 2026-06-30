@@ -3,6 +3,7 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import Loading from '@components/ui/Loading'
+import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
@@ -14,8 +15,7 @@ import { HomeActionCard } from './HomeActionCard'
 import { HomeCollapseRegion } from './HomeCollapseRegion'
 import { HomeFooter } from './HomeFooter'
 import { HomeHero } from './HomeHero'
-import { HOME_REGION_MOTION_EASE } from './homeMobileLayout'
-import { useHomeKeyboardCompact } from './hooks/useHomeKeyboardCompact'
+import { HOME_MOBILE_MQ, HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
 import { useNavigateToDocument } from './hooks/useNavigateToDocument'
 
 const HOME_FLEX_SPACER = 'motion-safe:transition-[flex-grow] max-sm:min-h-0 max-sm:shrink'
@@ -25,7 +25,8 @@ function HomeFlexSpacer({ compact }: { compact: boolean }) {
     <div
       className={twMerge(
         HOME_FLEX_SPACER,
-        HOME_REGION_MOTION_EASE,
+        HOME_REGION_DURATION,
+        homeRegionEase(compact),
         compact ? 'max-sm:flex-grow-0' : 'max-sm:flex-grow'
       )}
       aria-hidden
@@ -51,7 +52,8 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSignInOpen, setIsSignInOpen] = useState(false)
   const { navigateToDocument, isLoading } = useNavigateToDocument()
-  const keyboardCompact = useHomeKeyboardCompact()
+  useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
+  const keyboardCompact = useStore((state) => state.isKeyboardOpen)
 
   useEffect(() => {
     useStore.getState().setWorkspaceSetting('metadata', { documentId: undefined })
@@ -72,7 +74,12 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
       </a>
 
       <div
-        className="bg-base-200 flex flex-col overflow-hidden"
+        className={twMerge(
+          'bg-base-200 flex flex-col overflow-hidden',
+          // Mobile: pin the shell to the visual viewport rect so the iOS keyboard cannot scroll
+          // the page off-screen; top/left/width track `--visual-viewport-*` (synced on focus/resize).
+          'max-sm:fixed max-sm:top-[var(--visual-viewport-offset-top,0px)] max-sm:left-[var(--visual-viewport-offset-left,0px)] max-sm:w-[var(--visual-viewport-width,100%)]'
+        )}
         style={{ height: 'var(--visual-viewport-height, 100dvh)' }}>
         <header className="flex shrink-0 items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
@@ -122,12 +129,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
           id="home-main"
           className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-y-contain px-4 max-sm:py-2 sm:justify-center sm:py-12">
           <HomeFlexSpacer compact={keyboardCompact} />
-          <div
-            id="home-action-block"
-            className={twMerge(
-              'w-full max-w-2xl shrink-0 motion-safe:transition-transform',
-              HOME_REGION_MOTION_EASE
-            )}>
+          <div id="home-action-block" className="w-full max-w-2xl shrink-0">
             <HomeHero compact={keyboardCompact} />
             <HomeActionCard
               hostname={displayHostname}
@@ -137,12 +139,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
             />
             <HomeCollapseRegion
               collapsed={keyboardCompact}
-              expandedMaxClass="max-sm:max-h-32"
-              className={twMerge(
-                'motion-safe:transition-[margin]',
-                HOME_REGION_MOTION_EASE,
-                keyboardCompact ? 'max-sm:mt-0' : 'mt-8 sm:mt-12'
-              )}>
+              className={keyboardCompact ? 'max-sm:mt-0' : 'mt-8 sm:mt-12'}>
               <div className="text-base-content/50 space-y-1 text-center text-xs motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both] sm:space-y-2 sm:text-sm">
                 <p>
                   A{' '}
@@ -178,7 +175,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
           <HomeFlexSpacer compact={keyboardCompact} />
         </main>
 
-        <HomeCollapseRegion collapsed={keyboardCompact} expandedMaxClass="max-sm:max-h-24">
+        <HomeCollapseRegion collapsed={keyboardCompact}>
           <HomeFooter />
         </HomeCollapseRegion>
       </div>

@@ -39,16 +39,9 @@ export function useVisualViewportCssSync({
     const onLandingFocusIn = (e: FocusEvent) => {
       const t = e.target
       if (!(t instanceof Element) || !t.matches(focusScrollSelector)) return
+      // The shell is pinned to the visual viewport (see HomePage); only refresh the CSS vars.
+      // No scrollIntoView — centering fought the pinned layout and drifted the header off-screen.
       scheduleSync()
-      if (!isHomeMobileLayout()) return
-      requestAnimationFrame(() => {
-        const block = document.getElementById('home-action-block')
-        if (block) {
-          block.scrollIntoView({ block: 'center', behavior: 'auto' })
-        } else {
-          t.scrollIntoView({ block: 'center', behavior: 'auto' })
-        }
-      })
     }
 
     scheduleSync()
@@ -58,7 +51,10 @@ export function useVisualViewportCssSync({
 
     const handleViewportScroll = () => {
       scheduleSync()
-      if (mode !== 'document') return
+      // Reset iOS's native layout-viewport scroll so the fixed shell stays glued to the visual
+      // viewport — document pad always, landing only while the mobile shell is pinned.
+      const pinnedShell = mode === 'document' || (mode === 'landing' && isHomeMobileLayout())
+      if (!pinnedShell) return
 
       const viewport = window.visualViewport
       if (!viewport || viewport.offsetTop === 0) return

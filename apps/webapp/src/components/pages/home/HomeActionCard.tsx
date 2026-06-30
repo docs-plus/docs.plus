@@ -3,7 +3,7 @@ import TextInput from '@components/ui/TextInput'
 import { FormEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { HOME_REGION_MOTION_EASE, HOME_SLUG_INPUT_ID } from './homeMobileLayout'
+import { HOME_REGION_DURATION, HOME_SLUG_INPUT_ID, homeRegionEase } from './homeMobileLayout'
 import { prefetchDocumentShell } from './hooks/useNavigateToDocument'
 
 interface HomeActionCardProps {
@@ -44,7 +44,8 @@ export function HomeActionCard({
     <div
       className={twMerge(
         'rounded-box bg-base-100 p-5 shadow-xl motion-safe:animate-[doc-region-in_220ms_ease-out_60ms_both] motion-safe:transition-[padding,box-shadow]',
-        HOME_REGION_MOTION_EASE,
+        HOME_REGION_DURATION,
+        homeRegionEase(compact),
         'sm:p-8',
         compact && 'max-sm:p-4 max-sm:shadow-lg'
       )}>
