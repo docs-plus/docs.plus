@@ -2,7 +2,12 @@ import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/Book
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
 import { Modal, ModalContent } from '@components/ui/Dialog'
-import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
+import {
+  Popover,
+  PopoverContent,
+  popoverPanelClassName,
+  PopoverTrigger
+} from '@components/ui/Popover'
 import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
 import { Icons } from '@icons'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
@@ -45,8 +50,6 @@ const FilterPanel = dynamic(() => import('./FilterPanel'), {
 /* ── Constants ── */
 
 const ICON_SIZE = 16
-const PANEL_CLASS =
-  'rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl'
 
 /* ── Component ── */
 
@@ -156,7 +159,7 @@ const EditorToolbar = () => {
               </ToolbarButton>
             </div>
           </PopoverTrigger>
-          <PopoverContent className={PANEL_CLASS}>
+          <PopoverContent className={popoverPanelClassName}>
             <MediaInsertPanel />
           </PopoverContent>
         </Popover>
@@ -317,7 +320,7 @@ const EditorToolbar = () => {
                   </ToolbarButton>
                 </div>
               </PopoverTrigger>
-              <PopoverContent className={PANEL_CLASS}>
+              <PopoverContent className={popoverPanelClassName}>
                 <BookmarkPanel />
               </PopoverContent>
             </Popover>
@@ -341,7 +344,7 @@ const EditorToolbar = () => {
                 </ToolbarButton>
               </div>
             </PopoverTrigger>
-            <PopoverContent className={PANEL_CLASS}>
+            <PopoverContent className={popoverPanelClassName}>
               <FilterPanel />
             </PopoverContent>
           </Popover>
@@ -356,7 +359,7 @@ const EditorToolbar = () => {
                 </ToolbarButton>
               </div>
             </PopoverTrigger>
-            <PopoverContent className={PANEL_CLASS}>
+            <PopoverContent className={popoverPanelClassName}>
               <DocumentSettingsPanel />
             </PopoverContent>
           </Popover>

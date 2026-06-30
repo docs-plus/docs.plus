@@ -189,6 +189,15 @@ export const PopoverTrigger = React.forwardRef<
   )
 })
 
+/**
+ * Shared surface for anchored popover panels (toolbar + pad: media insert,
+ * bookmarks, filter, settings, notifications). Unified with
+ * `contextMenuPanelClassName`: 1px base-300 border, rounded-xl corners, and
+ * shadow-xl elevation — one floating-surface language across the app.
+ */
+export const popoverPanelClassName =
+  'rounded-xl border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl'
+
 export const PopoverContent = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
   function PopoverContent({ style, ...props }, propRef) {
     const { context: floatingContext, ...context } = usePopoverContext()

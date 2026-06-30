@@ -3,7 +3,12 @@ import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
-import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
+import {
+  Popover,
+  PopoverContent,
+  popoverPanelClassName,
+  PopoverTrigger
+} from '@components/ui/Popover'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import { DocsPlusIcon } from '@icons'
@@ -104,7 +109,7 @@ const PadTitle = () => {
                   />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl">
+              <PopoverContent className={popoverPanelClassName}>
                 <NotificationPanel />
               </PopoverContent>
             </Popover>
