@@ -6,9 +6,6 @@ import { logger } from '@utils/logger'
 
 import { HEADING_ACTIONS_CLASSES } from '../types'
 
-const BUTTON_HALF_SIZE = 22 // half of size-11 (2.75rem) for vertical centering
-const DEFAULT_RIGHT_POSITION = '9px'
-
 const shouldShow = (editor: Editor): boolean => {
   const { state, view } = editor
   const { from, to, empty } = state.selection
@@ -27,51 +24,42 @@ const getOrCreateButton = (): HTMLButtonElement => {
   if (cachedButton) return cachedButton
 
   cachedButton = document.createElement('button')
+  cachedButton.setAttribute('type', 'button')
   cachedButton.innerHTML = AddCommentSVG({ size: 22, fill: 'currentColor' })
   cachedButton.classList.add(
     HEADING_ACTIONS_CLASSES.commentBtn,
+    HEADING_ACTIONS_CLASSES.selectionCommentDock,
     'inline-flex',
     'size-11',
     'min-h-11',
     'shrink-0',
     'items-center',
-    'justify-center',
-    'z-1'
+    'justify-center'
   )
   cachedButton.setAttribute('title', 'Add comment')
-  cachedButton.style.position = 'absolute'
 
   return cachedButton
 }
 
 const updateButtonPosition = (
   button: HTMLButtonElement,
+  editorElement: HTMLElement,
   view: EditorView,
   selection: Selection
 ): void => {
-  const editorElement = view.dom.closest('.tiptap__editor') as HTMLElement | null
-  if (!editorElement) return
-
-  const { from } = selection
-  const { top: nodeTop } = view.coordsAtPos(from)
+  const { from, to } = selection
+  const startCoords = view.coordsAtPos(from)
+  const endCoords = view.coordsAtPos(to)
   const { top: editorTop } = editorElement.getBoundingClientRect()
-
-  const offsetTop = nodeTop - editorTop
-  const node = view.nodeDOM(from) as HTMLElement | null
-  const nodeHeight = node?.offsetHeight ?? 0
-
-  const adjustedTop = nodeHeight
-    ? offsetTop + nodeHeight / 2 - BUTTON_HALF_SIZE
-    : offsetTop - BUTTON_HALF_SIZE
+  const selectionCenterY = (startCoords.top + endCoords.bottom) / 2
+  const adjustedTop = selectionCenterY - editorTop - button.offsetHeight / 2
 
   button.style.top = `${Math.round(adjustedTop)}px`
-  button.style.left = 'auto'
-  button.style.right = DEFAULT_RIGHT_POSITION
 }
 
 const showSelectionChatButton = (editor: Editor, view: EditorView, selection: Selection): void => {
-  const parentNode = view.dom.parentNode as HTMLElement | null
-  if (!parentNode) return
+  const editorElement = view.dom.closest('.tiptap__editor') as HTMLElement | null
+  if (!editorElement) return
 
   const button = getOrCreateButton()
 
@@ -81,11 +69,10 @@ const showSelectionChatButton = (editor: Editor, view: EditorView, selection: Se
   cachedClickHandler = () => openChatComment(editor)
   button.addEventListener('click', cachedClickHandler)
 
-  updateButtonPosition(button, view, selection)
-
-  if (!button.parentNode) {
-    parentNode.appendChild(button)
+  if (button.parentNode !== editorElement) {
+    editorElement.appendChild(button)
   }
+  updateButtonPosition(button, editorElement, view, selection)
 }
 
 const openChatComment = (editor: Editor): void => {

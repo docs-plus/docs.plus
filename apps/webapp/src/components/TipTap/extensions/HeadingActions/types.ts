@@ -19,6 +19,8 @@ export const HEADING_ACTIONS_CLASSES = {
   chatBtn: 'ha-chat-btn',
   /** Adds a comment for the current selection */
   commentBtn: 'ha-comment-btn',
+  /** Selection comment chip — same horizontal dock as `.ha-wrap` on headings */
+  selectionCommentDock: 'ha-selection-comment-dock',
   hasSelection: 'has-selection'
 } as const
 

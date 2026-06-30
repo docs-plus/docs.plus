@@ -5,6 +5,8 @@
 // Hit target for .ha-single and inner .ha-group actions (keep in sync with HeadingActions plugins: size-11)
 $ha-hit-size: 2.75rem;
 $heading-chat-gutter: $ha-hit-size;
+// Prose column right → sheet border: pad + half 1px border + half chip (50% = .ha-wrap / size-11 width)
+$ha-sheet-border-straddle-x: calc(var(--tiptap-inline-pad-end, 1.5rem) + 0.5px + 50%);
 
 // Inner .ha-chat-btn carries UNREAD_SYNC count; parent group reacts without duplicating the attribute
 $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-unread-count]:not([data-unread-count=""]))';
@@ -71,7 +73,7 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
     right: 0;
     top: 50%;
     // Center of .ha-wrap on sheet border: pad + half border + half self width (works for single btn or stacked group)
-    transform: translateY(-50%) translateX(calc(var(--tiptap-inline-pad-end, 1.5rem) + 0.5px + 50%));
+    transform: translateY(-50%) translateX(#{$ha-sheet-border-straddle-x});
     z-index: 10;
     display: flex;
     align-items: center;
@@ -224,4 +226,13 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
 :is(.ha-chat-btn, .ha-comment-btn) svg {
   position: relative;
   top: 1px;
+}
+
+// Non-heading text selection: same border straddle as .ha-wrap (prose edge → half in / half out on sheet outline).
+.tiptap__editor > .ha-selection-comment-dock {
+  position: absolute;
+  right: var(--tiptap-inline-pad-end, 1.5rem);
+  z-index: 10;
+  transform: translateX(#{$ha-sheet-border-straddle-x});
+  pointer-events: auto;
 }

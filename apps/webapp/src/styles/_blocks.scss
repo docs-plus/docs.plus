@@ -52,7 +52,7 @@
   }
 
   /* Read-only: no heading chat/comment widgets (extension off; belt-and-suspenders for decorations). */
-  .ha-wrap {
+  :is(.ha-wrap, .ha-selection-comment-dock) {
     display: none !important;
   }
 
