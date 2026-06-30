@@ -5,6 +5,7 @@ import '@config'
 import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import { QueryClient } from '@tanstack/react-query'
+import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
 import { getRoutePolicy } from '@utils/routePolicy'
 import { MotionConfig } from 'motion/react'
 import dynamic from 'next/dynamic'
@@ -21,6 +22,10 @@ const PWAInstallPrompt = dynamic(
   () => import('@components/pwa').then((module) => module.PWAInstallPrompt),
   { ssr: false }
 )
+
+// Install before dynamic chunks load so a stale-asset failure after a deploy
+// reloads the page once instead of leaving a broken shell.
+if (typeof window !== 'undefined') installChunkLoadRecovery()
 
 function loadDocumentStyles() {
   void import('../styles/document-styles.scss').then(
