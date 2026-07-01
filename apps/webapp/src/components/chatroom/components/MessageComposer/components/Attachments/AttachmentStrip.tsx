@@ -9,10 +9,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { useComposerAttachmentActions, useComposerAttachmentList } from '../../hooks'
 
-const MediaIcon = ({ attachment }: { attachment: ComposerAttachment }) => {
-  const kind =
-    attachment.item?.type ?? (attachment.file ? inferMessageMediaKind(attachment.file) : null)
-
+const MediaIcon = ({ kind }: { kind: ReturnType<typeof inferMessageMediaKind> | null }) => {
   if (kind === 'video') return <Icons.video size={16} className="shrink-0 stroke-[1.75]" />
   if (kind === 'audio') return <Icons.music size={16} className="shrink-0 stroke-[1.75]" />
   if (kind === 'file') return <Icons.fileText size={16} className="shrink-0 stroke-[1.75]" />
@@ -42,7 +39,13 @@ function UploadProgressRing({ progress, className }: { progress: number; classNa
   )
 }
 
-const AttachmentChip = ({ attachment }: { attachment: ComposerAttachment }) => {
+const AttachmentChip = ({
+  attachment,
+  compact
+}: {
+  attachment: ComposerAttachment
+  compact?: boolean
+}) => {
   const { removeAttachment, retryAttachment, toggleAttachmentSpoiler } =
     useComposerAttachmentActions()
   const signedPreviewUrl = useMediaDisplayUrl(
@@ -72,6 +75,80 @@ const AttachmentChip = ({ attachment }: { attachment: ComposerAttachment }) => {
     attachment.item?.type ?? (attachment.file ? inferMessageMediaKind(attachment.file) : null)
   const canSpoiler = kind === 'image'
 
+  let fullPlaceholderIcon: React.ReactNode = null
+  if (!isUploading) {
+    if (isError) {
+      fullPlaceholderIcon = <Icons.alert size={16} className="text-error shrink-0 stroke-[1.75]" />
+    } else {
+      fullPlaceholderIcon = <MediaIcon kind={kind} />
+    }
+  }
+
+  let statusLine: React.ReactNode = null
+  if (isUploading) {
+    statusLine = <p className="text-base-content/60 text-[10px] tabular-nums">Uploading…</p>
+  } else if (isError) {
+    statusLine = (
+      <p className="text-error line-clamp-2 text-[10px]" title={attachment.error}>
+        {attachment.error ?? 'Upload failed'}
+      </p>
+    )
+  } else if (attachment.status === 'ready') {
+    statusLine = <p className="text-base-content/60 text-[10px]">Ready to send</p>
+  }
+
+  if (compact) {
+    return (
+      <div
+        className={twMerge(
+          'relative size-10 shrink-0',
+          isError && 'ring-error/50 rounded-md ring-1'
+        )}>
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt=""
+            className={twMerge(
+              'size-full rounded-md object-cover',
+              isUploading && 'opacity-45',
+              attachment.spoiler && 'blur-sm'
+            )}
+          />
+        ) : (
+          <div
+            className={twMerge(
+              'bg-base-200 flex size-full items-center justify-center rounded-md',
+              isError && 'bg-error/10'
+            )}>
+            {isError ? (
+              <Icons.alert size={14} className="text-error shrink-0 stroke-[1.75]" />
+            ) : (
+              <MediaIcon kind={kind} />
+            )}
+          </div>
+        )}
+        {isUploading ? <UploadProgressRing progress={progress} /> : null}
+        {isError ? (
+          <button
+            type="button"
+            className="focus-visible:ring-primary/40 absolute inset-0 flex items-center justify-center rounded-md focus-visible:ring-2 focus-visible:outline-none"
+            aria-label={`Retry upload for ${label}`}
+            title={attachment.error ?? 'Retry upload'}
+            onClick={() => retryAttachment(attachment.id)}>
+            <Icons.sync size={14} className="text-error shrink-0 stroke-[1.75]" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="btn btn-circle btn-xs bg-base-100 absolute -top-1 -right-1 h-5 min-h-0 w-5 shadow-sm"
+          aria-label={`Remove ${label}`}
+          onClick={() => removeAttachment(attachment.id)}>
+          <Icons.close size={10} className="stroke-[1.75]" />
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div
       className={twMerge(
@@ -96,13 +173,7 @@ const AttachmentChip = ({ attachment }: { attachment: ComposerAttachment }) => {
                 'bg-base-200 flex size-8 items-center justify-center rounded-md',
                 isError && 'bg-error/10'
               )}>
-              {!isUploading ? (
-                isError ? (
-                  <Icons.alert size={16} className="text-error shrink-0 stroke-[1.75]" />
-                ) : (
-                  <MediaIcon attachment={attachment} />
-                )
-              ) : null}
+              {fullPlaceholderIcon}
             </div>
           )}
           {isUploading ? <UploadProgressRing progress={progress} /> : null}
@@ -110,15 +181,7 @@ const AttachmentChip = ({ attachment }: { attachment: ComposerAttachment }) => {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium">{label}</p>
-          {isUploading ? (
-            <p className="text-base-content/60 text-[10px] tabular-nums">Uploading…</p>
-          ) : isError ? (
-            <p className="text-error line-clamp-2 text-[10px]" title={attachment.error}>
-              {attachment.error ?? 'Upload failed'}
-            </p>
-          ) : attachment.status === 'ready' ? (
-            <p className="text-base-content/60 text-[10px]">Ready to send</p>
-          ) : null}
+          {statusLine}
         </div>
 
         <button
@@ -175,7 +238,13 @@ const AttachmentChip = ({ attachment }: { attachment: ComposerAttachment }) => {
   )
 }
 
-export const AttachmentStrip = ({ className }: { className?: string }) => {
+export const AttachmentStrip = ({
+  className,
+  compact = false
+}: {
+  className?: string
+  compact?: boolean
+}) => {
   const { channelId } = useChatroomContext()
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const attachments = useComposerAttachmentList(workspaceId, channelId)
@@ -184,11 +253,16 @@ export const AttachmentStrip = ({ className }: { className?: string }) => {
 
   return (
     <div
-      className={twMerge('border-base-300/60 flex flex-wrap gap-2 border-b px-3 py-2', className)}
+      className={twMerge(
+        compact
+          ? 'border-base-300/60 hide-scrollbar flex gap-1.5 overflow-x-auto border-b px-2 py-1.5'
+          : 'border-base-300/60 flex flex-wrap gap-2 border-b px-3 py-2',
+        className
+      )}
       aria-live="polite"
       aria-relevant="additions text">
       {attachments.map((attachment) => (
-        <AttachmentChip key={attachment.id} attachment={attachment} />
+        <AttachmentChip key={attachment.id} attachment={attachment} compact={compact} />
       ))}
     </div>
   )

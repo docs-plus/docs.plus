@@ -52,7 +52,7 @@
     padding-left: 0.6rem;
   }
 
-  // Composer bar: first line height matches size-8 action buttons (items-end row).
+  // Composer bar: first line height matches the 32px desktop action row.
   .composer-bar__input-row #chatroom-editor .ProseMirror {
     height: auto;
     min-height: 2rem;
@@ -63,5 +63,28 @@
       min-height: 2rem;
       line-height: 2rem;
     }
+  }
+
+  .composer-bar--mobile .composer-bar__input-row #chatroom-editor .ProseMirror {
+    min-height: 2.75rem;
+
+    > p {
+      min-height: 2.75rem;
+      line-height: 2.75rem;
+    }
+  }
+
+  .composer-bar--mobile .composer-bar__input-row #chatroom-editor .tiptap {
+    width: 100%;
+  }
+
+  .composer-bar__actions .btn {
+    touch-action: manipulation;
+  }
+
+  .composer-bar--mobile .composer-bar__input-row .composer-bar__actions .btn,
+  .composer-bar--mobile .composer-bar__input-row .composer-bar__insert-trigger.btn {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
   }
 }

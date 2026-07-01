@@ -4,19 +4,15 @@ import { Editor } from '@tiptap/react'
 import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface ToolbarButtonProps {
+interface ToolbarButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   type?: string
   editor?: Editor | null
   onPress?: (event: React.MouseEvent | React.TouchEvent) => void
-  children?: React.ReactNode
   tooltip?: string
   tooltipPosition?: Placement
-  className?: string
   isActive?: boolean
-  disabled?: boolean
   variant?: ButtonVariant
   shape?: ButtonShape
-  onPointerDown?: React.PointerEventHandler<HTMLButtonElement>
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
@@ -33,7 +29,9 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       disabled,
       variant = 'ghost',
       shape,
-      onPointerDown
+      onPointerDown,
+      onClick,
+      ...rest
     },
     ref
   ) => {
@@ -47,6 +45,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         return
       }
       onPress?.(e)
+      onClick?.(e as React.MouseEvent<HTMLButtonElement>)
     }
 
     function handleTouchEnd(e: React.TouchEvent) {
@@ -66,12 +65,13 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
           isButtonActive && 'is-active btn-active',
           className
         )}
-        onTouchEnd={editor && type && onPress ? handleTouchEnd : undefined}
+        onTouchEnd={onPress ? handleTouchEnd : undefined}
         onClick={handleClick}
         onPointerDown={onPointerDown}
         disabled={disabled}
         tooltip={tooltip}
-        tooltipPlacement={tooltipPosition}>
+        tooltipPlacement={tooltipPosition}
+        {...rest}>
         {children}
       </SharedButton>
     )

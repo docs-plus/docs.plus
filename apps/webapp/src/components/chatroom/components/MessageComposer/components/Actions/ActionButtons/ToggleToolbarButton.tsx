@@ -4,18 +4,20 @@ import { twMerge } from 'tailwind-merge'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import Button from '../../ui/Button'
 
-interface Props extends React.ComponentProps<typeof Button> {
+type Props = React.ComponentProps<typeof Button> & {
   size?: number
 }
 
 export const ToggleToolbarButton = ({ className, size = 18, ...props }: Props) => {
-  const { showFormattingToolbar, toggleToolbar } = useMessageComposer()
+  const { showFormattingToolbar, toggleToolbar, isMobile } = useMessageComposer()
   const label = showFormattingToolbar ? 'Hide formatting' : 'Show formatting'
 
   return (
     <Button
       className={twMerge(
-        'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+        isMobile
+          ? 'size-11 min-h-11 min-w-11 shrink-0 rounded-lg border-0 p-0'
+          : 'size-8 min-h-8 min-w-8 shrink-0 rounded-lg border-0 p-0',
         className
       )}
       onPress={toggleToolbar}

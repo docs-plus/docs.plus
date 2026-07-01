@@ -4,6 +4,7 @@ import type { Editor } from '@tiptap/core'
 import type { EmojiPickerEventType } from '../../../../../stores/chat/emojiPickerStore'
 import { useComposerEmojiPanelStore } from '../stores/composerEmojiPanelStore'
 import { useComposerLinkDialogStore } from '../stores/composerLinkDialogStore'
+import { stopComposerVoiceRecording } from './composerVoiceRecording'
 import { dismissComposerMentionSuggestion } from './mentionTypes'
 
 type ComposerEmojiPicker = { isOpen: boolean; eventType: EmojiPickerEventType | null }
@@ -13,12 +14,15 @@ export function isComposerInsertEmojiPickerOpen(picker: ComposerEmojiPicker): bo
 }
 
 export function isComposerEmojiOverlayOpen(): boolean {
-  if (useComposerEmojiPanelStore.getState().isOpen) return true
-  return isComposerInsertEmojiPickerOpen(useChatStore.getState().emojiPicker)
+  return (
+    useComposerEmojiPanelStore.getState().isOpen ||
+    isComposerInsertEmojiPickerOpen(useChatStore.getState().emojiPicker)
+  )
 }
 
 /** Close mobile inline panel and desktop composer emoji picker (not reaction picker). */
 export function dismissComposerEmojiOverlays(): void {
+  stopComposerVoiceRecording()
   useComposerEmojiPanelStore.getState().close()
   const chat = useChatStore.getState()
   if (isComposerInsertEmojiPickerOpen(chat.emojiPicker)) {
@@ -27,6 +31,7 @@ export function dismissComposerEmojiOverlays(): void {
 }
 
 export function dismissComposerOverlaysBeforeMention(): void {
+  stopComposerVoiceRecording()
   dismissComposerEmojiOverlays()
   useComposerLinkDialogStore.getState().close()
 }

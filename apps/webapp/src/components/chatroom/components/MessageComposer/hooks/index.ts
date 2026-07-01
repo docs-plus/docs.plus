@@ -1,4 +1,5 @@
 export { useComposerAttachmentActions } from '../context/ComposerAttachmentActionsContext'
+export { useComposerAttachInput } from './useComposerAttachInput'
 export { useComposerAttachmentList } from './useComposerAttachmentList'
 export * from './useHandleEscKey'
 export * from './useMessageComposer'

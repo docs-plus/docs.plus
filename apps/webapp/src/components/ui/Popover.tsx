@@ -23,7 +23,7 @@ interface PopoverOptions {
   modal?: boolean
   open?: boolean
   offset?: number
-  onOpenChange?: () => void
+  onOpenChange?: (open: boolean) => void
 }
 
 export function usePopover({
@@ -138,8 +138,6 @@ export function Popover({
 }: {
   children: React.ReactNode
 } & PopoverOptions) {
-  // This can accept any props as options, e.g. `placement`,
-  // or other positioning options.
   const popover = usePopover({ modal, ...restOptions })
   return <PopoverContext.Provider value={popover}>{children}</PopoverContext.Provider>
 }
@@ -162,9 +160,7 @@ export const PopoverTrigger = React.forwardRef<
     childrenRef
   ]) as React.Ref<HTMLButtonElement>
 
-  // `asChild` allows the user to pass any element as the anchor
   if (asChild && React.isValidElement(children)) {
-    // Strip ref from child props so it doesn't overwrite our merged ref (React 19)
     const { ref: _, ...childPropsWithoutRef } = (children as React.ReactElement<any>).props ?? {}
     return React.cloneElement(
       children,
@@ -181,7 +177,6 @@ export const PopoverTrigger = React.forwardRef<
     <button
       ref={ref}
       type="button"
-      // The user can style the trigger based on the state
       data-state={context.open ? 'open' : 'closed'}
       {...context.getReferenceProps(props)}>
       {children}

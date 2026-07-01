@@ -41,7 +41,7 @@ type Props = React.ComponentProps<typeof Button> & {
 }
 
 export const MentionButton = ({ className, size = 18, ...props }: Props) => {
-  const { editor } = useMessageComposer()
+  const { editor, isMobile } = useMessageComposer()
   const isActive = useSyncExternalStore(subscribeMentionPopup, getMentionPickerActive, () => false)
 
   const onPress = useCallback(
@@ -72,7 +72,9 @@ export const MentionButton = ({ className, size = 18, ...props }: Props) => {
   return (
     <Button
       className={twMerge(
-        'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+        isMobile
+          ? 'size-11 min-h-11 min-w-11 shrink-0 rounded-lg border-0 p-0'
+          : 'size-8 min-h-8 min-w-8 shrink-0 rounded-lg border-0 p-0',
         className
       )}
       onPress={onPress}

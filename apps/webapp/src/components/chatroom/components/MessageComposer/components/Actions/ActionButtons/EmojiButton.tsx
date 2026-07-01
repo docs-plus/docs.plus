@@ -5,6 +5,7 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
+import { stopComposerVoiceRecording } from '../../../helpers/composerVoiceRecording'
 import { isComposerInsertEmojiPickerOpen } from '../../../helpers/dismissComposerOverlays'
 import { dismissComposerMentionSuggestion } from '../../../helpers/mentionTypes'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
@@ -16,17 +17,11 @@ type Props = React.ComponentProps<typeof Button> & {
   size?: number
 }
 
-const getCaretPosition = (editor: Editor) => {
-  const { selection } = editor.state
-  const coords = editor.view.coordsAtPos(selection.from)
-  return {
-    x: coords.left + window.scrollX,
-    y: coords.top + window.scrollY,
-    bottom: coords.bottom + window.scrollY,
-    right: coords.right + window.scrollX,
-    top: coords.top + window.scrollY,
-    left: coords.left + window.scrollX
-  }
+function getCaretRect(editor: Editor): DOMRect {
+  const coords = editor.view.coordsAtPos(editor.state.selection.from)
+  const left = coords.left + window.scrollX
+  const top = coords.top + window.scrollY
+  return { left, top, x: left, y: top } as DOMRect
 }
 
 export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
@@ -42,19 +37,17 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
   const onPress = useCallback(() => {
     if (!editor) return
 
+    stopComposerVoiceRecording()
     dismissComposerMentionSuggestion(editor)
 
     if (isMobile) {
       const panel = useComposerEmojiPanelStore.getState()
       if (panel.isOpen) {
         panel.close()
-        // The press itself is a user gesture; iOS treats this focus as
-        // gestured and opens the virtual keyboard.
         editor.commands.focus()
         return
       }
-      // Order matters: open() snapshots the current keyboard height into
-      // the store before blur() resets useStore.keyboardHeight to 0.
+      useComposerLinkDialogStore.getState().close()
       panel.open(editor)
       if (useStore.getState().isKeyboardOpen) editor.view.dom.blur()
       return
@@ -66,18 +59,23 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
     if (insertOpen) return
 
     useComposerLinkDialogStore.getState().close()
-    const caret = getCaretPosition(editor)
-    const position = calculateEmojiPickerPosition(caret as DOMRect)
+    const position = calculateEmojiPickerPosition(getCaretRect(editor))
     openEmojiPicker({ top: position?.top || 0, left: position?.left || 0 }, 'insertEmojiToEditor')
   }, [closeEmojiPicker, editor, isMobile, openEmojiPicker])
 
-  const Icon = isMobile && isPanelOpen ? Icons.keyboard : Icons.emoji
-  const ariaLabel = isMobile && isPanelOpen ? 'Show keyboard' : 'Open emoji picker'
+  let Icon = Icons.emoji
+  let ariaLabel = 'Open emoji picker'
+  if (isMobile && isPanelOpen) {
+    Icon = Icons.keyboard
+    ariaLabel = 'Show keyboard'
+  }
 
   return (
     <Button
       className={twMerge(
-        'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+        isMobile
+          ? 'size-11 min-h-11 min-w-11 shrink-0 rounded-lg border-0 p-0'
+          : 'size-8 min-h-8 min-w-8 shrink-0 rounded-lg border-0 p-0',
         className
       )}
       onPress={onPress}
