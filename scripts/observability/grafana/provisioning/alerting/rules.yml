@@ -182,14 +182,14 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: A container is using >90% of its memory limit for 5m (OOM risk)
+          summary: 'Container {{ $labels.name }} is using >90% of its cgroup memory limit for 5m (OOM risk)'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'max by (name) (container_memory_usage_bytes{name!=""} / (container_spec_memory_limit_bytes{name!=""} > 0))'
+              expr: 'max by (name) (container_memory_working_set_bytes{name!=""} / clamp_min(container_spec_memory_limit_bytes{name!=""}, 1))'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200

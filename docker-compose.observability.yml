@@ -38,14 +38,16 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=4GB
+      - --storage.tsdb.wal-compression
       - --web.enable-lifecycle
     volumes:
       - ./scripts/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     networks: [docsplus-network]
     logging: { driver: json-file, options: { max-size: '20m', max-file: '3' } }
-    # 512M spiked to 86% (15d retention + 5 scrape jobs); host has 9GiB free.
-    deploy: { resources: { limits: { memory: 768M } } }
+    # 768M sat at 83–92% (641MiB steady, TSDB head ~8k series + 15d blocks). Host has ~9GiB free.
+    deploy: { resources: { limits: { memory: 1536M } } }
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.55.1

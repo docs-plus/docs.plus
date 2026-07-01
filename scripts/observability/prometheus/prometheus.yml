@@ -3,8 +3,21 @@ global:
   evaluation_interval: 30s
 scrape_configs:
   - job_name: cadvisor
+    # Infra metrics — dashboards/alerts use 5m rates; 60s cuts ingest without losing signal.
+    scrape_interval: 60s
     static_configs:
       - targets: ['cadvisor:8080']
+    metric_relabel_configs:
+      # 2.2k+ unused series on prod (advance TCP per-state labels); biggest TSDB head cost.
+      - source_labels: [__name__]
+        regex: container_network_advance_tcp_stats_total
+        action: drop
+      - source_labels: [__name__]
+        regex: container_(tasks_state|memory_failures_total)
+        action: drop
+      # Compose path/hash labels bloat the TSDB index; queries use `name` only.
+      - regex: container_label_.+
+        action: labeldrop
   - job_name: node-exporter
     static_configs:
       - targets: ['node-exporter:9100']
