@@ -62,11 +62,7 @@ export const ChatroomProvider: React.FC<{
   const currentUserId = profile?.id ?? null
   const currentUsername = profile?.username ?? null
 
-  // Persisted unread for this channel, updated by the channel_members
-  // realtime subscription in useCatchUserPresences and by SQL trigger +
-  // advance_read_cursor (which now decrements it). Mirrors the value the
-  // TOC chat-icon UnreadBadge renders, so the jump-to-present chip and
-  // the TOC stay in lockstep.
+  // TOC + jump chip share persisted unread via useUnreadCount.
   const unreadCount = useUnreadCount(channelId)
 
   const anchorKind: AnchorKind = useMemo(
@@ -86,6 +82,7 @@ export const ChatroomProvider: React.FC<{
   }, [deepLinkMessageId])
   const [feedMode, setFeedMode] = useState<ChannelFeedMode>('all')
   const {
+    loading: messagesLoading,
     oldestSeqRef,
     newestSeqRef,
     dataIncludesTailRef,
@@ -145,18 +142,13 @@ export const ChatroomProvider: React.FC<{
       const store = useChatStore.getState()
       store.clearOptimisticUnread(channelId)
       store.clearPeerReadSeq(channelId)
-      // Suppression is single-valued and tied to this mounted context, so an
-      // unconditional clear cannot clobber another channel's marker.
+      // Single-valued suppression is scoped to this mounted channel.
       store.setUnreadSuppressedChannel(null)
       lastOptimisticSeqRef.current = 0
     }
   }, [channelId])
 
-  // Seed lastOptimisticSeq from the user's persisted read cursor once channel
-  // data is loaded. Without this seed, the first onLastVisibleIndexChange walk
-  // counts every message in the loaded window as "newly crossed" and
-  // decrements unread by the entire window — opening a chatroom with many
-  // unread would instantly zero the count instead of decrementing per scroll.
+  // Seed from persisted read cursor so the first viewport walk doesn't zero unread.
   useEffect(() => {
     if (!isChannelDataLoaded || !currentUserId) return
     if (lastOptimisticSeqRef.current > 0) return
@@ -184,42 +176,25 @@ export const ChatroomProvider: React.FC<{
     feedMode
   })
 
-  // AtBottomTracker fires `true` when the user is parked at the live
-  // tail. `newestSeqRef` tracks max seq across fetches + realtime, so it
-  // can outrun what's rendered when `dataIncludesTailRef === false`
-  // (deep-link mid-history; arrivals land in the detached buffer); only
-  // advance when the loaded window actually includes the tail.
+  // Advance read cursor only when the rendered window includes the live tail.
   const onAtBottomChange = useCallback(
     (b: boolean) => {
       setAtBottom(b)
       if (!b) {
-        // Release before the next realtime UPDATE so the server unread
-        // can land in the store and the badge resumes tracking.
         useChatStore.getState().setUnreadSuppressedChannel(null)
         return
       }
       if (!dataIncludesTailRef.current) return
-      // Set suppression BEFORE the optimistic-zero below so the slice
-      // clamp agrees with the immediate write.
       useChatStore.getState().setUnreadSuppressedChannel(channelId)
       const maxSeq = newestSeqRef.current ?? 0
       if (maxSeq <= 0) return
       advance(maxSeq, 'sent')
-      // Tail snap: at-bottom means everything's been seen. Drop optimistic
-      // unread immediately for the Telegram-style "click-and-clear" feel
-      // rather than waiting on the realtime UPDATE round-trip.
       useChatStore.getState().setOptimisticUnread(channelId, 0)
       lastOptimisticSeqRef.current = maxSeq
     },
     [advance, channelId, newestSeqRef, dataIncludesTailRef]
   )
 
-  // Viewport-driven advance: when the user scrolls (or items first render)
-  // Virtuoso reports the bottom-most fully-visible item via
-  // `LastVisibleTracker`. We walk backwards from that index to find the
-  // most recent sent message — `lastVisibleItemIndex` can point at a
-  // `day` or `unread` sentinel which has no seq. `advance` is monotonic,
-  // so spamming on every scroll tick is safe.
   const onLastVisibleIndexChange = useCallback(
     (index: number) => {
       const items = listRef.current?.data.get()
@@ -228,10 +203,6 @@ export const ChatroomProvider: React.FC<{
         const it = items[i]
         if (!isMessage(it)) continue
         if (it.status !== 'sent' || typeof it.seq !== 'number') continue
-        // Optimistic decrement: walk backward counting sent messages with
-        // seq in (lastOptimisticSeq, newSeq]. Early-break once we cross
-        // back into the previously-counted region. Messages are appended
-        // in seq order so this is O(crossed), not O(items).
         const newSeq = it.seq
         if (newSeq > lastOptimisticSeqRef.current) {
           let crossed = 0
@@ -254,8 +225,6 @@ export const ChatroomProvider: React.FC<{
     },
     [advance, channelId]
   )
-  // Stable bridge: `useChannelMessages.onInitialVisible` is the rAF-polled
-  // post-replace read-cursor seed; `onListScrollSettled` handles jump flash.
   useEffect(() => {
     advanceRef.current = onLastVisibleIndexChange
   }, [onLastVisibleIndexChange])
@@ -272,8 +241,6 @@ export const ChatroomProvider: React.FC<{
     setDialogConfig({})
   }, [])
 
-  // E2E test API: exposed only when NEXT_PUBLIC_E2E=true so production
-  // bundles don't surface internals on `window`.
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_E2E !== 'true') return
     ;(window as any).__chatTestApi = {
@@ -303,9 +270,7 @@ export const ChatroomProvider: React.FC<{
     errorMsg = metadataError instanceof Error ? metadataError.message : String(metadataError)
   }
 
-  // v1 `initLoadMessages` mapped to "data still loading"; v2 reads the
-  // single metadata-loaded flag plus dataIncludesTailRef readiness.
-  const initLoadMessages = !isChannelDataLoaded
+  const isFeedReady = isChannelDataLoaded && !messagesLoading && !errorMsg
 
   const value = useMemo<ChatroomContextValue>(
     () => ({
@@ -316,7 +281,7 @@ export const ChatroomProvider: React.FC<{
       openDialog,
       closeDialog,
       isDialogOpen,
-      initLoadMessages,
+      isFeedReady,
       listRef,
       send,
       retry,
@@ -343,10 +308,10 @@ export const ChatroomProvider: React.FC<{
       variant,
       errorMsg,
       isChannelDataLoaded,
+      isFeedReady,
       openDialog,
       closeDialog,
       isDialogOpen,
-      initLoadMessages,
       send,
       retry,
       scrollToMessage,

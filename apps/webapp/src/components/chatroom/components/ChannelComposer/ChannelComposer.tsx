@@ -3,6 +3,7 @@ import { useAuthStore, useChatStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 
 import MsgComposer from '../MessageComposer/MessageComposer'
+import { ChatroomComposerSkeleton } from '../skeleton'
 import {
   JoinBroadcastChannel,
   JoinDirectChannel,
@@ -21,13 +22,17 @@ const ChannelComposerWrapper = ({ children, className }: ChannelComposerProps) =
 )
 
 const AccessControl = () => {
-  const { channelId } = useChatroomContext()
+  const { channelId, isFeedReady, variant } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const channelSettings = useChatStore(
     (state) => state.workspaceSettings.channels.get(channelId) ?? null
   )
 
   if (!channelId) return null
+
+  if (!isFeedReady) {
+    return <ChatroomComposerSkeleton variant={variant} />
+  }
 
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings ?? {}

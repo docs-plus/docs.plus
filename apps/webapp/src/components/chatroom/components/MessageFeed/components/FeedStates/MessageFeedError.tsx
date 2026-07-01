@@ -10,7 +10,7 @@ export const MessageFeedError = ({ children }: Props) => {
   if (!error) return children
 
   return (
-    <div className="bg-base-300 flex h-dvh w-full max-w-full items-center justify-center">
+    <div className="bg-base-100 flex min-h-0 flex-1 items-center justify-center px-4 py-8">
       <div className="badge badge-error">Error loading messages...</div>
     </div>
   )

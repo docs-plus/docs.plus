@@ -7,8 +7,8 @@ import { ChatList } from '../ChatList/ChatList'
 import { ChatListContextMenu } from '../ChatList/ChatListContextMenu'
 import { JumpToPresentButton } from '../JumpToPresentButton'
 import { PinnedMessagesBar } from '../PinnedMessagesBar'
+import { ChatroomFeedSkeleton } from '../skeleton'
 import { MessageFeedError } from './components/FeedStates/MessageFeedError'
-import { MessageFeedLoading } from './components/FeedStates/MessageFeedLoading'
 import { NewMessagesBanner } from './NewMessagesBanner'
 
 interface Props {
@@ -35,11 +35,12 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
     loadingOlder,
     loadNewer,
     loadingNewer,
-    currentUserId
+    currentUserId,
+    isFeedReady
   } = useChatroomContext()
 
   const backlog = backlogCount(unreadCount, newCount)
-  const showNewMessagesBanner = !!currentUserId && !atBottom && backlog > 0
+  const showNewMessagesBanner = isFeedReady && !!currentUserId && !atBottom && backlog > 0
   const lastReadSince = useChatStore((state) => {
     if (!currentUserId) return null
     const member = state.channelMembers.get(channelId)?.get(currentUserId)
@@ -50,14 +51,24 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
 
   return (
     <MessageFeedError>
-      <MessageFeedLoading>
-        <PinnedMessagesBar channelId={channelId} onJumpToMessage={scrollToMessage} />
+      <div
+        className={twMerge(
+          'message-feed scrollbar-custom scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-hidden',
+          className
+        )}
+        data-key="chatroom-feed">
+        {!isFeedReady && (
+          <div className="bg-base-100 absolute inset-0 z-10 flex min-h-0 flex-col">
+            <ChatroomFeedSkeleton variant={variant} className="flex-1" />
+          </div>
+        )}
         <div
           className={twMerge(
-            'message-feed scrollbar-custom scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-hidden',
-            className
-          )}
-          data-key="chatroom-feed">
+            'flex min-h-0 flex-1 flex-col',
+            !isFeedReady && 'pointer-events-none opacity-0',
+            isFeedReady && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]'
+          )}>
+          <PinnedMessagesBar channelId={channelId} onJumpToMessage={scrollToMessage} />
           {showNewMessagesBanner && (
             <NewMessagesBanner
               count={backlog}
@@ -92,7 +103,7 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
             />
           )}
         </div>
-      </MessageFeedLoading>
+      </div>
     </MessageFeedError>
   )
 }

@@ -1,6 +1,8 @@
 import AvatarStack from '@components/AvatarStack'
-import { useChatStore, useStore } from '@stores'
-import { useEffect, useState } from 'react'
+import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
+import { usePresentUsers } from '@components/toc/hooks/usePresentUsers'
+import { useChatStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -8,25 +10,23 @@ type Props = {
 }
 
 export const ParticipantsList = ({ className }: Props) => {
-  const [presentUsers, setPresentUsers] = useState<any>([])
-  const chatRoom = useChatStore((state) => state.chatRoom)
-  const usersPresence = useStore((state) => state.usersPresence)
+  const { isFeedReady } = useChatroomContext()
+  const headingId = useChatStore((state) => state.chatRoom?.headingId ?? '')
+  const presentUsers = usePresentUsers(headingId)
 
-  useEffect(() => {
-    if (!chatRoom) return
-    const precenseUsers = usersPresence.values()
-    const users = Array.from(precenseUsers)
-      .filter((user) => user?.channelId === chatRoom.headingId)
-      .filter((user) => user?.status !== 'OFFLINE')
-
-    setPresentUsers(users)
-  }, [usersPresence, chatRoom])
+  if (!isFeedReady) {
+    return (
+      <div className={twMerge('flex items-center', className)} aria-hidden>
+        <AvatarStackLoader size="xs" repeat={2} />
+      </div>
+    )
+  }
 
   if (!presentUsers.length) return null
 
   return (
     <div className={twMerge('flex items-center', className)}>
-      <AvatarStack size="sm" users={presentUsers} showStatus={true} tooltipPosition="bottom" />
+      <AvatarStack size="sm" users={presentUsers} showStatus tooltipPosition="bottom" />
     </div>
   )
 }

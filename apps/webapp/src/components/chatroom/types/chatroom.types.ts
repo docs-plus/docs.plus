@@ -29,12 +29,11 @@ export interface ChatroomContextValue {
   variant: keyof ChatroomVariant
   error: string | null
   isChannelDataLoaded: boolean
-  // Dialog API
   openDialog: (content: React.ReactNode, config?: DialogConfig) => void
   closeDialog: () => void
   isDialogOpen: boolean
-  initLoadMessages: boolean
-  // v2 wiring exposed for MessageFeed shim + composer:
+  /** Metadata + initial message window settled and no bootstrap error. */
+  isFeedReady: boolean
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>
   send: (draft: SendDraft) => Promise<SendResult>
   retry: (clientId: string) => Promise<void>
@@ -49,9 +48,6 @@ export interface ChatroomContextValue {
   onAtBottomChange: (atBottom: boolean) => void
   /** Fired with the bottom-most fully-visible item index for read-cursor advance. */
   onLastVisibleIndexChange: (index: number) => void
-  // Bidirectional pagination wired from useChannelMessages through to
-  // ChatList; the Virtuoso surface owns the edge triggers. loadNewer
-  // fires only when the loaded window does NOT include the live tail.
   loadOlder: () => Promise<void> | void
   hasMoreOlder: boolean
   loadingOlder: boolean
