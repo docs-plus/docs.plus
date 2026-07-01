@@ -13,6 +13,7 @@
  */
 
 import type { PushNotificationRequest } from '../../types/push.types'
+import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
 import { createPgmqConsumer } from '../pgmqConsumer'
 import { queuePush } from './queue'
@@ -58,6 +59,7 @@ async function processPushMessage(payload: PushQueuePayload, msgId: number): Pro
 
     if (!jobId) {
       pushLogger.warn({ msgId }, 'Failed to queue push job - queue may be unavailable')
+      captureUnknown(new Error('pgmq push: BullMQ enqueue returned null'))
       return false
     }
 
@@ -68,6 +70,7 @@ async function processPushMessage(payload: PushQueuePayload, msgId: number): Pro
     return true
   } catch (err) {
     pushLogger.error({ err, msgId }, 'Error processing push queue message')
+    captureUnknown(err)
     return false
   }
 }

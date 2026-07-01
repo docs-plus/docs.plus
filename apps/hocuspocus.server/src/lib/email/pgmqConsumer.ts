@@ -23,6 +23,7 @@ import type {
   NotificationEmailRequest,
   NotificationType
 } from '../../types/email.types'
+import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { queueEmail } from './queue'
@@ -256,6 +257,7 @@ async function processNotificationMessage(
 
     if (!jobId) {
       emailLogger.warn({ msgId }, 'Failed to queue email job - queue may be unavailable')
+      captureUnknown(new Error('pgmq email: BullMQ enqueue returned null'))
       return false
     }
 
@@ -266,6 +268,7 @@ async function processNotificationMessage(
     return true
   } catch (err) {
     emailLogger.error({ err, msgId }, 'Error processing email queue message')
+    captureUnknown(err)
 
     if (payload.queue_id) {
       await updateEmailStatus(client, payload.queue_id, 'failed', String(err))

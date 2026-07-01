@@ -7,8 +7,8 @@ import { Server } from '@hocuspocus/server'
 import HocuspocusConfig from './config/hocuspocus.config'
 import { verifySupabaseToken } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
-import { captureException } from './lib/instrument'
-import { logger } from './lib/logger'
+import { captureUnknown, flushObservability } from './lib/instrument'
+import { wsLogger } from './lib/logger'
 import {
   documentLoadDuration,
   documentPersistDuration,
@@ -28,8 +28,6 @@ import { disconnectRedis } from './lib/redis'
 import type { HistoryPayload } from './types/document.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
-
-const wsLogger = logger.child({ service: 'websocket' })
 
 // Bracket load/store hooks keyed by the Document object; WeakMap means an aborted
 // load that never reaches the `after` hook is GC'd instead of leaking a timer.
@@ -160,7 +158,7 @@ const statelessExtension = {
         sendHistoryResponse(connection, type, response)
       } catch (error) {
         wsLogger.error({ err: error }, 'Error handling history event')
-        captureException(error)
+        captureUnknown(error)
         sendHistoryResponse(connection, type, null, 'history_failed')
       }
       return
@@ -223,7 +221,7 @@ const serverConfig = {
           if (isProd) throw error
         } else {
           wsLogger.error({ err: error, documentName }, 'Auth error')
-          captureException(error)
+          captureUnknown(error)
           if (isProd) throw new Error('Authentication failed', { cause: error })
         }
         user = null
@@ -311,10 +309,12 @@ const shutdown = async () => {
     await disconnectRedis()
 
     wsLogger.info('✅ WebSocket server shutdown complete')
+    await flushObservability()
     process.exit(0)
   } catch (err) {
     wsLogger.error({ err }, '❌ Error during shutdown')
-    captureException(err)
+    captureUnknown(err)
+    await flushObservability()
     process.exit(1)
   }
 }
@@ -324,8 +324,10 @@ process.on('SIGTERM', shutdown)
 
 process.on('unhandledRejection', (reason) => {
   wsLogger.error({ err: reason }, 'Unhandled promise rejection')
+  captureUnknown(reason)
 })
 process.on('uncaughtException', (err) => {
   wsLogger.error({ err }, 'Uncaught exception — shutting down')
+  captureUnknown(err)
   void shutdown()
 })

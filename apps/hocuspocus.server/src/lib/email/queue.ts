@@ -10,6 +10,7 @@ import { Job, Queue, Worker } from 'bullmq'
 import { config } from '../../config/env'
 import type { EmailDLQData, EmailJobData, EmailResult } from '../../types/email.types'
 import { toBullMQConnection } from '../../types/redis.types'
+import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { prisma } from '../prisma'
 import { bullmqConnectionOptions, createRedisConnection } from '../redis'
@@ -63,6 +64,7 @@ export const EmailDeadLetterQueue = queueConnection
 // Queue error handler
 EmailQueue?.on('error', (err: Error) => {
   emailLogger.error({ err }, 'Email queue error')
+  captureUnknown(err)
 })
 
 /**
@@ -165,6 +167,7 @@ export function createEmailWorker() {
         // Move to DLQ on final attempt
         if (job.attemptsMade >= (job.opts.attempts || 3)) {
           emailLogger.error({ jobId: job.id }, 'Email exhausted retries, moving to DLQ')
+          captureUnknown(error)
 
           const dlqData: EmailDLQData = {
             ...data,
@@ -215,6 +218,7 @@ export function createEmailWorker() {
 
   worker.on('error', (err) => {
     emailLogger.error({ err }, 'Email worker error')
+    captureUnknown(err)
   })
 
   emailLogger.info('Email worker started')

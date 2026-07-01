@@ -9,7 +9,7 @@ import {
   startEmailQueueConsumer,
   stopEmailQueueConsumer
 } from './lib/email'
-import { captureException } from './lib/instrument'
+import { captureUnknown, flushObservability } from './lib/instrument'
 import { workerLogger } from './lib/logger'
 import { metricsContentType, metricsText, queueJobs } from './lib/metrics'
 import { checkDatabaseHealth, prisma, shutdownDatabase } from './lib/prisma'
@@ -67,6 +67,8 @@ const redis = getRedisClient()
 
 if (!redis) {
   workerLogger.error('❌ Redis is required for queue worker. Set REDIS_HOST and REDIS_PORT.')
+  captureUnknown(new Error('Worker startup failed: Redis client unavailable'))
+  await flushObservability()
   process.exit(1)
 }
 
@@ -74,6 +76,8 @@ if (!redis) {
 const isRedisReady = await waitForRedisReady(redis, 10000)
 if (!isRedisReady) {
   workerLogger.error('❌ Redis connection timeout - failed to connect within 10s')
+  captureUnknown(new Error('Worker startup failed: Redis connection timeout'))
+  await flushObservability()
   process.exit(1)
 }
 
@@ -289,10 +293,12 @@ const shutdown = async () => {
     await disconnectRedis()
 
     workerLogger.info('✅ Worker shutdown complete')
+    await flushObservability()
     process.exit(0)
   } catch (err) {
     workerLogger.error({ err }, '❌ Error during shutdown')
-    captureException(err)
+    captureUnknown(err)
+    await flushObservability()
     process.exit(1)
   }
 }
@@ -303,6 +309,7 @@ process.on('SIGTERM', shutdown)
 // Handle uncaught errors - DON'T exit for transient errors
 process.on('uncaughtException', (err) => {
   workerLogger.error({ err }, '💥 Uncaught exception in worker')
+  captureUnknown(err)
 
   // Fatal errors = immediate shutdown
   if (isFatalError(err)) {
@@ -339,6 +346,7 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason) => {
   workerLogger.error({ reason }, '💥 Unhandled rejection in worker')
+  captureUnknown(reason)
   // Don't exit - BullMQ handles job retries internally
 })
 

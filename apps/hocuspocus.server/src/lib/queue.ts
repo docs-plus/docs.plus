@@ -5,6 +5,7 @@ import { config } from '../config/env'
 import type { DeadLetterJobData, StoreDocumentData } from '../types'
 import { toBullMQConnection } from '../types/redis.types'
 import { sendNewDocumentNotification } from './email/document-notification'
+import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
 import { jobDuration, jobsTotal } from './metrics'
 import { prisma } from './prisma'
@@ -123,6 +124,7 @@ export const DeadLetterQueue = new Queue<DeadLetterJobData>('store-documents-dlq
 // Note: Queue events are handled by Worker events below for better reliability
 StoreDocumentQueue.on('error', (err: Error) => {
   queueLogger.error({ err }, 'Queue error')
+  captureUnknown(err)
 })
 
 // Worker to process document storage jobs
@@ -228,6 +230,7 @@ export const createDocumentWorker = () => {
         // If this is the final attempt, move to dead letter queue
         if (job.attemptsMade >= (job.opts.attempts || 5)) {
           queueLogger.error({ jobId: job.id }, 'Job exhausted all retries. Moving to DLQ')
+          captureUnknown(err)
           const dlqData: DeadLetterJobData = {
             ...data,
             originalJobId: job.id ?? undefined,
@@ -284,10 +287,12 @@ export const createDocumentWorker = () => {
 
   worker.on('error', (err) => {
     queueLogger.error({ err }, 'Worker error')
+    captureUnknown(err)
   })
 
   worker.on('stalled', (jobId) => {
     queueLogger.warn({ jobId }, 'Worker: Job stalled')
+    jobsTotal.inc({ queue: worker.name, status: 'stalled' })
   })
 
   return worker

@@ -12,6 +12,7 @@ import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Logger } from 'pino'
 
+import { captureOnce } from './instrument'
 import { getServiceRoleClient } from './supabase'
 
 /**
@@ -125,11 +126,15 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
       })
       if (error) {
         logger.error({ error }, `Failed to read ${label} queue`)
+        captureOnce(`pgmq:${label}:read`, error, {
+          tags: { surface: 'pgmq', phase: 'read', label }
+        })
         return []
       }
       return (data || []) as PgmqMessage<TPayload>[]
     } catch (err) {
       logger.error({ err }, `Error reading ${label} queue`)
+      captureOnce(`pgmq:${label}:read`, err, { tags: { surface: 'pgmq', phase: 'read', label } })
       return []
     }
   }
@@ -142,11 +147,17 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
       const { error } = await client.rpc(ackRpc, { p_msg_id: msgId })
       if (error) {
         logger.error({ error, msgId }, `Failed to ack ${label} message`)
+        captureOnce(`pgmq:${label}:ack`, error, {
+          tags: { surface: 'pgmq', phase: 'ack', label, msgId: String(msgId) }
+        })
         return false
       }
       return true
     } catch (err) {
       logger.error({ err, msgId }, `Error acking ${label} message`)
+      captureOnce(`pgmq:${label}:ack`, err, {
+        tags: { surface: 'pgmq', phase: 'ack', label, msgId: String(msgId) }
+      })
       return false
     }
   }
@@ -196,6 +207,7 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
       }
     } catch (err) {
       logger.error({ err }, `Error in ${label} queue poll cycle`)
+      captureOnce(`pgmq:${label}:poll`, err, { tags: { surface: 'pgmq', phase: 'poll', label } })
     } finally {
       isProcessing = false
     }

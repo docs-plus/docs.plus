@@ -11,6 +11,7 @@ import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
 import { prisma } from '../lib/prisma'
+import { captureDegraded, captureUnknown } from '../lib/instrument'
 import { dbLogger } from '../lib/logger'
 import {
   hasLegacyMediaNodes,
@@ -125,6 +126,7 @@ const configureExtensions = () => {
           return rawState
         } catch (err) {
           dbLogger.error({ err }, 'Error fetching document data')
+          captureUnknown(err)
           await prisma.$disconnect()
           throw err
         }
@@ -172,6 +174,7 @@ const configureExtensions = () => {
         } catch (err) {
           // Fallback: Direct DB save when queue fails (Redis OOM, connection error)
           dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
+          captureDegraded('queue-fallback', err, { extra: { documentName } })
 
           try {
             // Use transaction with FOR UPDATE lock to prevent race conditions
@@ -203,6 +206,7 @@ const configureExtensions = () => {
               { err: dbErr, documentName },
               'Fallback save failed - document may be lost'
             )
+            captureUnknown(dbErr)
             throw dbErr
           }
         }

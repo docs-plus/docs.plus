@@ -2,6 +2,7 @@ import { S3Client } from 'bun'
 import type { Context } from 'hono'
 import mime from 'mime'
 
+import { captureUnknown } from '../instrument'
 import { storageS3Logger } from '../logger'
 
 // Bun's native S3 client - blazing fast with zero overhead
@@ -94,6 +95,7 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
     })
   } catch (err) {
     storageS3Logger.error({ err, key }, 'S3 download failed')
+    captureUnknown(err)
     return c.json({ error: 'Error retrieving file from storage' }, 500)
   }
 }

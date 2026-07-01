@@ -11,7 +11,7 @@ import hypermultimediaRouter from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
-import { captureException } from './lib/instrument'
+import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
 import { logger, restApiLogger } from './lib/logger'
 import { httpMetricsMiddleware, metricsContentType, metricsText } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
@@ -69,7 +69,7 @@ app.notFound((c) =>
 )
 app.onError((err, c) => {
   restApiLogger.error({ err, method: c.req.method, path: c.req.path }, 'Unhandled request error')
-  captureException(err instanceof Error ? err : new Error(String(err)))
+  captureHttpError(err)
   const status = (err instanceof AppError ? err.statusCode : 500) as ContentfulStatusCode
   return c.json(getErrorResponse(err instanceof Error ? err : new Error(String(err))), status)
 })
@@ -78,10 +78,12 @@ app.onError((err, c) => {
 // This allows rest-api to scale to multiple replicas without duplicate workers
 emailGateway.initialize(false).catch((err) => {
   restApiLogger.error({ err }, 'Failed to initialize email gateway')
+  captureUnknown(err)
 })
 
 pushGateway.initialize(false).catch((err) => {
   restApiLogger.error({ err }, 'Failed to initialize push gateway')
+  captureUnknown(err)
 })
 
 // Start server
@@ -120,9 +122,12 @@ const shutdown = async () => {
     await disconnectRedis()
 
     restApiLogger.info('✅ REST API shutdown complete')
+    await flushObservability()
     process.exit(0)
   } catch (err) {
     restApiLogger.error({ err }, '❌ Error during shutdown')
+    captureUnknown(err)
+    await flushObservability()
     process.exit(1)
   }
 }
@@ -132,9 +137,11 @@ process.on('SIGTERM', shutdown)
 
 process.on('unhandledRejection', (reason) => {
   restApiLogger.error({ err: reason }, 'Unhandled promise rejection')
+  captureUnknown(reason)
 })
 process.on('uncaughtException', (err) => {
   restApiLogger.error({ err }, 'Uncaught exception — shutting down')
+  captureUnknown(err)
   void shutdown()
 })
 

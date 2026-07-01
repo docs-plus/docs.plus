@@ -4,6 +4,7 @@ import mime from 'mime'
 import path from 'path'
 
 import type { StorageUploadResponse } from '../../types'
+import { captureUnknown } from '../instrument'
 import { storageLocalLogger } from '../logger'
 import { extractFileType } from './fileType'
 const PLUGIN_NAME = 'hypermultimedia'
@@ -75,6 +76,7 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
       { err: error, documentId, mediaId },
       'Error retrieving file from local storage'
     )
+    captureUnknown(error)
     return c.json({ error: 'Error retrieving file' }, 500)
   }
 }

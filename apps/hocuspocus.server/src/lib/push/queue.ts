@@ -15,6 +15,7 @@ import { Queue, Worker } from 'bullmq'
 import { config } from '../../config/env'
 import type { PushDLQData, PushJobData } from '../../types/push.types'
 import { toBullMQConnection } from '../../types/redis.types'
+import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
 import { prisma } from '../prisma'
 import { bullmqConnectionOptions, createRedisConnection } from '../redis'
@@ -69,10 +70,12 @@ const pushDeadLetterQueue = queueConnection
 // Queue error handlers
 pushQueue?.on('error', (err: Error) => {
   pushLogger.error({ err }, 'Push queue error')
+  captureUnknown(err)
 })
 
 pushDeadLetterQueue?.on('error', (err: Error) => {
   pushLogger.error({ err }, 'Push DLQ error')
+  captureUnknown(err)
 })
 
 let pushWorker: Worker<PushJobData> | null = null
@@ -177,6 +180,7 @@ export function createPushWorker(): Worker<PushJobData> | null {
         // Move to DLQ on final attempt
         if (job.attemptsMade >= (job.opts.attempts || 3)) {
           pushLogger.error({ jobId: job.id }, 'Push exhausted retries, moving to DLQ')
+          captureUnknown(error)
 
           const dlqData: PushDLQData = {
             ...job.data,
@@ -211,6 +215,11 @@ export function createPushWorker(): Worker<PushJobData> | null {
 
   pushWorker.on('failed', (job, err) => {
     pushLogger.error({ jobId: job?.id, err: err.message }, 'Push job failed')
+  })
+
+  pushWorker.on('error', (err) => {
+    pushLogger.error({ err }, 'Push worker error')
+    captureUnknown(err)
   })
 
   pushLogger.info(

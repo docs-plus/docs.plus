@@ -6,6 +6,7 @@
  */
 
 import { AppError, getErrorResponse } from '../../lib/errors'
+import { captureHttpError } from '../../lib/instrument'
 import { documentsControllerLogger } from '../../lib/logger'
 import type {
   CreateDocumentInput,
@@ -24,6 +25,7 @@ const getValidQuery = <T>(c: AppContext): T => (c.req as any).valid('query') as 
 const handleError = (c: AppContext, error: unknown, context: Record<string, unknown> = {}) => {
   documentsControllerLogger.error({ err: error, ...context }, 'Document operation failed')
   const statusCode = (error instanceof AppError ? error.statusCode : 500) as 400 | 404 | 500
+  captureHttpError(error, { extra: context })
   return c.json(
     getErrorResponse(error instanceof Error ? error : new Error(String(error))),
     statusCode
