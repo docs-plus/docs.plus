@@ -1,5 +1,6 @@
 import { fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'
+import { captureGsspDocumentError } from '@utils/observability'
 import { isReservedSlug } from '@utils/reservedSlugs'
 import { createClient } from '@utils/supabase/server-props'
 import { type GetServerSidePropsContext } from 'next'
@@ -73,6 +74,10 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     }
   } catch (error: unknown) {
     logger.error('[getServerSideProps error]', error, { documentSlug })
+    captureGsspDocumentError(error, {
+      tags: { surface: 'gssp-document' },
+      extra: { documentSlug: documentSlug ?? null }
+    })
 
     const errorMessage = error instanceof Error ? error.message : String(error)
     const message = errorMessage.includes("(reading 'isPrivate')")

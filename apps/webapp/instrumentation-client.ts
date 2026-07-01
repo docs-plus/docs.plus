@@ -37,4 +37,6 @@ if (dsn) {
       return event
     }
   })
+} else if (process.env.NODE_ENV === 'production') {
+  console.warn('[observability] NEXT_PUBLIC_GLITCHTIP_DSN is unset — client capture is disabled')
 }

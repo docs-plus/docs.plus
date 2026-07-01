@@ -1,5 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
+import { captureCollabIssueOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef } from 'react'
 import * as Y from 'yjs'
@@ -46,6 +47,7 @@ const useYdocAndProvider = ({
   const authStoppedRef = useRef(false)
   const authRearmTimerRef = useRef<NodeJS.Timeout | null>(null)
   const authRearmCountRef = useRef(0)
+  const collabReportedRef = useRef(new Set<string>())
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
@@ -101,6 +103,9 @@ const useYdocAndProvider = ({
           return
         }
         setWorkspaceSetting('providerStatus', 'error')
+        captureCollabIssueOnce(collabReportedRef.current, documentId, slug, 'auth-failed', {
+          reason
+        })
       },
       onSynced: (data) => {
         isSyncedRef.current = true
@@ -128,6 +133,9 @@ const useYdocAndProvider = ({
         } else if (data.event?.code && data.event.code !== 1000) {
           // Non-normal closure, show error
           setWorkspaceSetting('providerStatus', 'error')
+          captureCollabIssueOnce(collabReportedRef.current, documentId, slug, 'disconnect', {
+            closeCode: data.event.code
+          })
         }
       },
       onStateless: ({ payload }) => {
@@ -165,6 +173,7 @@ const useYdocAndProvider = ({
     // Connect on the next tick (see autoConnect above): the throwaway StrictMode
     // mount clears this before any socket opens; the surviving mount connects.
     const connectTimer = setTimeout(() => providerRef.current?.connect(), 0)
+    const collabReported = collabReportedRef.current
 
     return () => {
       clearTimeout(connectTimer)
@@ -178,6 +187,7 @@ const useYdocAndProvider = ({
       isSyncedRef.current = false
       authStoppedRef.current = false
       authRearmCountRef.current = 0
+      collabReported.clear()
     }
     // slug/accessToken/deviceType are connection metadata — only a documentId
     // change warrants a provider rebuild.
@@ -205,10 +215,13 @@ const useYdocAndProvider = ({
       const { providerStatus: current } = useStore.getState().settings
       if (!isSyncedRef.current && current !== 'offline') {
         setWorkspaceSetting('providerStatus', 'error')
+        captureCollabIssueOnce(collabReportedRef.current, documentId, slug, 'first-sync-timeout', {
+          timeoutMs: FIRST_SYNC_TIMEOUT_MS
+        })
       }
     }, FIRST_SYNC_TIMEOUT_MS)
     return () => clearTimeout(deadline)
-  }, [documentId, setWorkspaceSetting])
+  }, [documentId, setWorkspaceSetting, slug])
 
   // Track Y.Doc updates for sync state (local changes only)
   useEffect(() => {

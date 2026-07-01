@@ -22,7 +22,7 @@ interface DocumentWithClientId extends DocumentData {
   docClientId: string
 }
 
-class DocumentFetchError extends Error {
+export class DocumentFetchError extends Error {
   constructor(
     message: string,
     public status?: number,
