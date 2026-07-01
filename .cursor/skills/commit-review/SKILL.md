@@ -137,6 +137,7 @@ Pick the most specific shared thing the change touches. The scope should help a 
 - Match the project's capitalization convention after the colon (from Step 0)
 - Atomic — if the summary needs "and", it's two commits
 - Don't restate the filename when the scope already says it
+- **No plan or brainstorm jargon** in subjects or bodies — not `v1`, `v2`, `phase 1`, `MVP`, or session shorthand like "green doc". Write what shipped in product terms (`reshape chat composer for mobile density`, not `composer v1`). Real version paths in code (`/rest/v1/`, schema types) are fine when the change is literally about them.
 
 ### Body — only when needed
 

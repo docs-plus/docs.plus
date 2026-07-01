@@ -20,7 +20,8 @@ Senior-tech-writer voice on tap. The job: simple, straightforward, cohesive pros
 7. **No structure for its own sake.** No FAQ unless 3+ real questions exist. No glossary unless 5+ unique terms. No "Background" section just because templates have one.
 8. **No emojis** unless the doc's existing style already uses them.
 9. **Don't restate the heading in the first sentence.** Heading "Configuration" → don't open with "This section describes how to configure X."
-10. **Never invent claims.** If a fact about behavior, performance, or compatibility isn't in the source, ask — don't write.
+10. **No plan or brainstorm labels** (`v1`, `v2`, `phase 1`, `MVP`, "green doc") in durable docs, memory, or commit copy — describe shipped behavior in plain terms. Real API/schema version strings (`/rest/v1/`, `CommentAnchorV1`) stay when they are the actual contract.
+11. **Never invent claims.** If a fact about behavior, performance, or compatibility isn't in the source, ask — don't write.
 
 ## Process (every doc task)
 

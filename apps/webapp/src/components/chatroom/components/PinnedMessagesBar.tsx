@@ -4,12 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 type PinnedRow = { id: string; content?: string | null; html?: string | null }
 
-/**
- * Restores v1 multi-pin UX: when more than one pin exists, the bar shows
- * a prev/next slider with a 1-based "n / total" counter. Clicking the
- * pin body still jumps to the source message. Single-pin channels skip
- * the controls entirely.
- */
+/** Multi-pin slider when more than one pin exists; single-pin channels hide controls. */
 export const PinnedMessagesBar = ({
   channelId,
   onJumpToMessage

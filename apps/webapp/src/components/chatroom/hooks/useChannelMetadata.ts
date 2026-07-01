@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import slugify from 'slugify'
 
 /**
- * Replaces v1 `useChannelInitialData` data load. Anon users and
- * authenticated-but-not-workspace-member visitors skip the write-side
+ * Channel metadata bootstrap. Anon users and authenticated-but-not-workspace-member
+ * visitors skip the write-side
  * bootstrap entirely per AGENTS.md §Anonymous Chat Read Path: the
  * upsertChannel + joinChannel writes both 403 under RLS for non-members,
  * but the metadata RPC + message window are read-only and PUBLIC channels

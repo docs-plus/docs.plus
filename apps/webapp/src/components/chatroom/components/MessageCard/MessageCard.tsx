@@ -18,7 +18,7 @@ type Props = {
   className?: string
   /** 'highlighted' renders inside the long-press portal — interaction handlers are suppressed there. */
   mode?: 'inline' | 'highlighted'
-  /** v2 props: compact suppresses author chrome; status drives the failed/pending overlay. */
+  /** compact suppresses author chrome; status drives the failed/pending overlay. */
   compact?: boolean
   status?: MessageStatus
   onRetry?: () => void
@@ -58,8 +58,8 @@ const DefaultMessageBody = ({
   status?: MessageStatus
   onRetry?: () => void
 }) => {
-  // Mirrors the desktop render-prop block from v1 DesktopEditor without
-  // its hover-menu chrome; consumer call-sites just self-close MessageCard.
+  // Default desktop body without hover-menu chrome; call-sites may self-close
+  // `MessageCard` and inject `MobileMessageBody` instead.
   // Dim-while-pending so the pending→sent/failed flip crossfades instead of popping.
   // `pending` exists only on own optimistic rows, so the send rise never plays on
   // history, pagination, or others' arrivals; a retry re-adding it replays (wanted).

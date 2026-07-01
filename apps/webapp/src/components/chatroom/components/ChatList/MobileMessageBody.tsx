@@ -46,11 +46,7 @@ function MobileMessageFooter({ children }: { children: ReactNode }) {
   )
 }
 
-/**
- * v1 mobile chat-bubble composition restored for the v2 Virtuoso feed.
- * daisyUI `chat-end`/`chat-start` come from `MessageCardContext` based on
- * `message.isOwner` + mobile variant; this body owns the bubble chrome.
- */
+/** Mobile chat-bubble shell; owner alignment comes from `MessageCardContext`. */
 export const MobileMessageBody = ({ index, message, compact, status, onRetry }: Props) => {
   return (
     <MessageCard.LongPressMenu message={message}>

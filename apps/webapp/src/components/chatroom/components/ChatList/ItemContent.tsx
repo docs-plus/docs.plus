@@ -26,8 +26,8 @@ export type ItemContentProps = {
 /**
  * Kind-dispatched render. Author-grouping is render-time: compact mode
  * fires when prev item is a same-author message. `MessageCard` owns the
- * desktop default body; mobile injects the v1 chat-bubble composition
- * via `MobileMessageBody` children.
+ * desktop default body; mobile injects chat-bubble chrome via
+ * `MobileMessageBody` children.
  *
  * Virtuoso's typed contract says `data: Data`, but during in-flight
  * `data.replace` transitions the slot is briefly undefined; render null
@@ -37,7 +37,7 @@ export const ItemContent = ({ index, data, prevData, context }: ItemContentProps
   // A notification chip between two same-author messages must break the
   // group — otherwise the post-notification message would render compact
   // (no avatar/header) and visually merge across the chip. Mirrors the
-  // v1 `projectMessageGroups` rule.
+  // grouped-projection rule for notification breaks.
   const samePrev =
     !!data &&
     isMessage(data) &&
