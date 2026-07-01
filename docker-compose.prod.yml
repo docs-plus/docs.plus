@@ -178,7 +178,7 @@ services:
       # Pino — see apps/hocuspocus.server/src/lib/logger.ts
       LOG_LEVEL: ${LOG_LEVEL:-info}
       HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
-      REST_LOG_LEVEL: ${REST_LOG_LEVEL:-error}
+      REST_LOG_LEVEL: ${REST_LOG_LEVEL:-info}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
@@ -199,6 +199,7 @@ services:
       # VAPID public key (needed for API responses, not sending)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+      GIT_HASH: ${GIT_HASH:-${DEPLOY_TAG:-}}
       SENTRY_ROLE: rest-api
     networks:
       - docsplus-network
@@ -294,6 +295,7 @@ services:
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
       DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-10485760}
       GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+      GIT_HASH: ${GIT_HASH:-${DEPLOY_TAG:-}}
       SENTRY_ROLE: hocuspocus-server
     networks:
       - docsplus-network
@@ -402,6 +404,7 @@ services:
       # Worker resilience settings (shutdown timeout should be < stop_grace_period)
       WORKER_SHUTDOWN_TIMEOUT_MS: 120000
       GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
+      GIT_HASH: ${GIT_HASH:-${DEPLOY_TAG:-}}
       SENTRY_ROLE: hocuspocus-worker
     networks:
       - docsplus-network
@@ -461,6 +464,8 @@ services:
         NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
         NEXT_PUBLIC_VIRTUOSO_LICENSE: ${NEXT_PUBLIC_VIRTUOSO_LICENSE}
         NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
+        GIT_HASH: ${GIT_HASH:-${DEPLOY_TAG:-}}
+        NEXT_PUBLIC_GIT_HASH: ${NEXT_PUBLIC_GIT_HASH:-${GIT_HASH:-${DEPLOY_TAG:-}}}
     restart: always # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -540,6 +545,8 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
         NEXT_PUBLIC_GLITCHTIP_DSN: ${NEXT_PUBLIC_GLITCHTIP_DSN:-}
+        GIT_HASH: ${GIT_HASH:-${DEPLOY_TAG:-}}
+        NEXT_PUBLIC_GIT_HASH: ${NEXT_PUBLIC_GIT_HASH:-${GIT_HASH:-${DEPLOY_TAG:-}}}
     restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
