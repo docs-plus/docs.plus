@@ -1,4 +1,5 @@
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
+import { userProfileDialogOpenConfig } from '@components/ui/dialogs/userProfileDialogOpenConfig'
 import { Tooltip } from '@components/ui/Tooltip'
 import Config from '@config'
 import { initials, lorelei, rings, shapes } from '@dicebear/collection'
@@ -114,7 +115,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
 
     const handleClick = useCallback(() => {
       if (!clickable || !id) return
-      openDialog(<UserProfileDialog userId={id} />, { size: 'lg' })
+      openDialog(<UserProfileDialog userId={id} />, userProfileDialogOpenConfig)
     }, [clickable, id, openDialog])
 
     const isTyping = status === 'TYPING'

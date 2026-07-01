@@ -1,4 +1,5 @@
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
+import { userProfileDialogOpenConfig } from '@components/ui/dialogs/userProfileDialogOpenConfig'
 import { useStore } from '@stores'
 import React, { useCallback } from 'react'
 
@@ -14,9 +15,7 @@ export const useMentionClick = () => {
       const userId = mentionElement?.dataset?.id?.trim()
       if (!userId || userId === 'everyone' || userId === '0') return
 
-      openDialog(<UserProfileDialog userId={userId} />, {
-        size: 'md'
-      })
+      openDialog(<UserProfileDialog userId={userId} />, userProfileDialogOpenConfig)
     },
     [openDialog]
   )
