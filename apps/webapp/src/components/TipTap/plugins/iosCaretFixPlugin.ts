@@ -112,6 +112,10 @@ export const IOSCaretFix = Extension.create({
   },
 
   addProseMirrorPlugins() {
+    // Off iOS Safari every handler no-ops, yet ProseMirror still attaches a
+    // non-passive `touchstart` DOM listener that Chrome flags as scroll-blocking.
+    // Register nothing so no dead listener lands on desktop/Android.
+    if (!isIOSSafari()) return []
     return [
       new Plugin({
         key: new PluginKey('iosCaretFix'),
