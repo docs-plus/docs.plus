@@ -4,9 +4,11 @@ const defaultCache = require('next-pwa/cache')
 // Matchers must be self-contained: no module-scope references inside urlPattern
 // functions or the worker throws ReferenceError on intercept.
 
-// Default next-pwa rules 3/5/6 and 13 intercept cross-origin media. SW fetch() uses
-// connect-src; page img/media tags use img-src/media-src (we allow https:). Do not
-// enumerate remote hosts in connect-src — skip SW for cross-origin image/audio/video.
+// Default next-pwa rules 3/5/6 and 13 intercept cross-origin subresources. SW fetch()
+// is gated by connect-src, not img/media/script-src. Do not enumerate remote hosts in
+// connect-src — skip SW for cross-origin image/audio/video (load as plain tags) and
+// script (NetworkFirst has no cache fallback, so a blocked gtag.js/widgets.js throws
+// an uncaught `no-response`).
 let adapted = 0
 
 const cache = defaultCache.map((route) => {
@@ -60,8 +62,10 @@ const cache = defaultCache.map((route) => {
         ...route,
         urlPattern: ({ url, request }) => {
           if (self.origin === url.origin) return false
-          const dest = request.destination
-          if (dest === 'image' || dest === 'audio' || dest === 'video') return false
+          const dest = request?.destination
+          if (dest === 'image' || dest === 'audio' || dest === 'video' || dest === 'script') {
+            return false
+          }
           return true
         }
       }
