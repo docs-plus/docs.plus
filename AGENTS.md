@@ -83,6 +83,7 @@ Persistent memory for AI agents working on **docs.plus**. Preserve these rules u
 - Theme/UI color consistency is first-class. Every surface, including third-party pickers, must follow design tokens.
 - On DaisyUI-backed surfaces, prefer DaisyUI + Tailwind over bespoke nested hover/active stacks that fight parent controls.
 - Use `.cursor/rules/daisyui.mdc` for daisyUI/Tailwind reference details and `.cursor/rules/react-floating-ui.mdc` for generic React/Floating UI pitfalls.
+- **Floating overlays and modal scrims** follow §Webapp UI Systems → **Floating Surfaces And Modal Scrims** (black-based scrims, unified panel chrome, blur rules). Do not invent per-feature backdrop colors or `base-content` full-screen washes.
 
 ## Monorepo Toolchain
 
@@ -421,6 +422,25 @@ Webapp code is split by **responsibility**, not by “whatever folder the first 
   - Mobile caret scroll uses `behavior: 'auto'`.
   - `ensureCaretVisible` uses 2x rAF plus one ~300ms retry.
 
+### Floating Surfaces And Modal Scrims
+
+Follow industry overlay UX (Material, Apple HIG, Radix/shadcn): **scrims dim the page; they never lighten it.** A modal/sheet backdrop pushes content back in depth; a white fog on dark UI breaks hierarchy and reads immature.
+
+- **`base-content` is text ink, not scrim ink.** Low-opacity `color-mix(… base-content …)` is fine for muted copy, borders, and placeholders (~8–16%). **Never** use `base-content` at high opacity for full-screen modal/sheet/lightbox scrims — on dark themes it becomes a milky `#fff` wash. Scrim color is always **black + opacity** (`color-mix(in oklch, black …, transparent)`), theme-tuned via CSS vars not `base-content`.
+- **Canonical scrim tokens** live in `apps/webapp/src/styles/globals.scss` (`:root` + `[data-theme='docsplus-dark']` / `docsplus-dark-hc` overrides):
+  - `--modal-scrim` — dialogs + bottom sheets (light: black 45%; dark/HC: black 55%).
+  - `--modal-scrim-heavy` — full-bleed media lightbox (light: black 72%; dark/HC: black 80%).
+- **React exports** in `@components/ui/Dialog.tsx` — import these; do not duplicate Tailwind/hex scrims at call sites:
+  - `modalBackdropClassName` → `bg-[var(--modal-scrim)] motion-safe:backdrop-blur-sm` (centered modals: Share, Profile, GlobalDialog, chatroom confirms, etc.).
+  - `modalBackdropHeavyClassName` → `bg-[var(--modal-scrim-heavy)] motion-safe:backdrop-blur-sm` (e.g. `ChatMediaGallery`).
+  - `modalPanelChromeClassName` → border + shadow + `bg-base-100` only (small portaled cards, e.g. composer link dialog).
+  - `modalPanelClassName` → chrome + `flex max-h-[90vh] flex-col overflow-hidden` (full `ModalContent` shells).
+- **Unified floating panel chrome** — popovers, context menus, and modal cards share one elevation language:
+  - `popoverPanelClassName` (`Popover.tsx`), `contextMenuPanelClassName` (`ContextMenu.tsx`), `modalPanelChromeClassName` / `modalPanelClassName` (`Dialog.tsx`): **`rounded-xl`**, **1px `border-base-300`**, **`shadow-xl`**, **`bg-base-100`**. Do not reintroduce ad-hoc `rounded-box` on `ModalContent` / `PopoverContent` or per-feature `PANEL_CLASS` string modules.
+- **Modal height ownership** — default max height lives on `modalPanelClassName` (`90vh`). Compact dialogs (e.g. profile peek) override once via `openDialog` / `ModalContent` `className` (`userProfileDialogOpenConfig`: `max-h-[min(80vh,28rem)]`); do not stack a second cap on the inner content shell.
+- **Blur policy:** **Dialogs** — frosted scrim (`motion-safe:backdrop-blur-sm` on `modalBackdropClassName`). **Bottom sheets** — same `--modal-scrim`, **no blur** (`.react-modal-sheet-backdrop` in `document-styles.scss`). **Popovers / context menus** — no page scrim (anchored dismiss only). Blur does not fix wrong scrim color; fix color first.
+- **New overlay surfaces** must pick the existing species (popover panel, context menu, modal, sheet, extension imperative popover) and reuse its tokens + motion tier from §Motion System — not a third border radius or shadow stack.
+
 ### Motion System (motion v1)
 
 - **Tokens live in two lockstep homes.** CSS: `:root` in `apps/webapp/src/styles/_entry.scss` (`--motion-overlay-in: 120ms`, `--motion-overlay-out: 80ms`, `--motion-panel: 200ms`, `--motion-region: 220ms`, `--motion-ease-enter: ease-out`, `--motion-ease-exit: ease-in`). JS mirror: `apps/webapp/src/utils/motion.ts` (`MOTION_*_MS`, `MOTION_DIALOG_IN_MS` 180 / `OUT` 150, `PANEL_TWEEN`, `prefersReducedMotion()`) — the `--motion-region` token is CSS-only (no JS mirror). Update the mirrored tokens together; do not invent new duration/easing values per surface.
@@ -744,6 +764,7 @@ Extension-internal rules (schema, commands, click handling, safety/normalization
 - Keep `AGENTS.md` in full human-readable prose; do not caveman-compress it or commit token-budget rewrites unless the user explicitly asks—restore from backup if an agent compresses without approval.
 - For large HoE-style reviews (landing page, app shell, chatroom, TOC, sheets, composer, toolbar panels), build cohesive context from related modules first, then wait for the explicit task before implementing; avoid overengineering and overthinking in review output and refactor plans.
 - When the user approves a numbered audit or wishlist backlog ("work on all of them"), implement the full list with a validation checkpoint per item—full coverage does not justify extra abstraction layers; keep each step minimal.
+- **Floating overlay UX:** modal/sheet/lightbox scrims use black-based `--modal-scrim` tokens (see §Floating Surfaces And Modal Scrims), not `base-content` washes; dialog cards share `rounded-xl` + `border-base-300` + `shadow-xl` with popovers/context menus; dialogs get blur-sm on the scrim, sheets do not. Follow dim-not-lift depth principles when adding any new overlay.
 - When changing `extension-hypermultimedia` embed behavior (paste rules, oEmbed/iframe params, node attrs) **or toolbar host hooks** (`mediaActions`, `mediaToolbarIcons`, hover/open hot paths), update the per-node README and package README for end users in the same change; toolbar work is performance-critical (reuse via `existingToolbar` when possible; otherwise doc-cached `resolveMediaActions` + one DOM build per mount) — no extra caching/indirection beyond that without measured hot-path justification; on multi-item embed work ("work on all of them"), honor explicit scope exclusions the user states (e.g. skip toolbar/player-param UI for YouTube when they say "do not work on the toolbar"). When the user scopes a task to **webapp-only**, leave publishable `extension-*` packages untouched and wire icons/Comment/host behavior through existing kit hooks from the webapp — do not "helpfully" refactor the extension until they ask.
 - **`extension-hypermultimedia` Cypress resize/loading specs must assert rendered DOM size** (inline `style` width/height or `getBoundingClientRect` on `img` / iframe / `.hm-media-host`), not ProseMirror node attrs alone — attrs can commit while the node view still paints the old pixel box. Gripper-drag specs on iframe embeds: loading shell keeps the slot at `opacity: 0` until load — assert the iframe stays mounted with computed `display`/`visibility` not hidden, not Cypress `be.visible`.
 - Extension README install blocks use plain `bun add @docs.plus/extension-*` only — no `@next` soak lines or dual stable/alpha install blocks; keep all five READMEs cohesive, simple, and straightforward (user override of soak-phase README install policy in main body until they revert it).

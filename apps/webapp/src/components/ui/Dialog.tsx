@@ -129,6 +129,19 @@ export function ModalDescription({
   )
 }
 
+/**
+ * Dialog scrim: black-based `--modal-scrim` (globals.scss) + frosted blur.
+ */
+export const modalBackdropClassName = 'bg-[var(--modal-scrim)] motion-safe:backdrop-blur-sm'
+
+export const modalBackdropHeavyClassName =
+  'bg-[var(--modal-scrim-heavy)] motion-safe:backdrop-blur-sm'
+
+export const modalPanelChromeClassName =
+  'rounded-xl border border-base-300 bg-base-100 shadow-xl outline-none'
+
+export const modalPanelClassName = `flex max-h-[90vh] flex-col overflow-hidden ${modalPanelChromeClassName}`
+
 export const ModalContent = function ModalContent({
   size = 'md',
   align = 'center',
@@ -186,7 +199,7 @@ export const ModalContent = function ModalContent({
   return (
     <FloatingPortal>
       <FloatingOverlay
-        className="bg-base-content/40 fixed inset-0 z-50 backdrop-blur-sm"
+        className={`fixed inset-0 z-50 ${modalBackdropClassName}`}
         style={backdropStyles}
         lockScroll>
         <div
@@ -199,7 +212,7 @@ export const ModalContent = function ModalContent({
             <div
               ref={ref}
               style={cardStyles}
-              className={`outline-none ${sizeClasses[size]} rounded-box border-base-300 bg-base-100 flex max-h-[90vh] flex-col overflow-hidden border shadow-xl ${className}`}
+              className={`${sizeClasses[size]} ${modalPanelClassName} ${className}`}
               aria-label={ariaLabel}
               aria-labelledby={ariaLabel ? undefined : labelledBy}
               aria-describedby={describedBy}

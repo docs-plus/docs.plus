@@ -367,7 +367,7 @@ const EditorToolbar = () => {
       </div>
 
       <Modal open={isDocumentsOpen} onOpenChange={setDocumentsOpen}>
-        <ModalContent size="4xl" className="rounded-box overflow-hidden p-0">
+        <ModalContent size="4xl" className="overflow-hidden p-0">
           <SettingsPanel defaultTab="documents" onClose={() => setDocumentsOpen(false)} />
         </ModalContent>
       </Modal>

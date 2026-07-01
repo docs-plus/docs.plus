@@ -155,7 +155,7 @@ const PadTitle = () => {
 
       {/* Profile Modal */}
       <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-        <ModalContent size={user ? '5xl' : 'md'} className="rounded-box overflow-hidden p-0">
+        <ModalContent size={user ? '5xl' : 'md'} className="overflow-hidden p-0">
           {user ? (
             <SettingsPanel onClose={() => setProfileModalOpen(false)} />
           ) : (

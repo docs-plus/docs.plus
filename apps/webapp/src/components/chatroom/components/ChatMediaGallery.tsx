@@ -1,5 +1,6 @@
 import { useMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
 import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
+import { modalBackdropHeavyClassName } from '@components/ui/Dialog'
 import {
   FloatingFocusManager,
   FloatingOverlay,
@@ -140,7 +141,7 @@ export function ChatMediaGallery() {
   return (
     <FloatingPortal>
       <FloatingOverlay
-        className="bg-base-content/80 fixed inset-0 z-[100] motion-safe:backdrop-blur-sm"
+        className={`fixed inset-0 z-[100] ${modalBackdropHeavyClassName}`}
         style={backdropStyles}
         lockScroll
         data-testid="chat-media-gallery">

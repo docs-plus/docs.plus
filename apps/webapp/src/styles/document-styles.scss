@@ -653,7 +653,8 @@ $pad-toolbar-height: 38px;
 
 /* ---------------------------------------------------------------------------
    react-modal-sheet — theme-aware so sheets (chatroom, notifications, filters,
-   emoji picker) respect light/dark/dark-hc. Library defaults are light-only.
+   emoji picker) respect light/dark/dark-hc. Backdrop uses `--modal-scrim`
+   (black-based; see globals.scss) — flat, no blur. Dialogs add blur-sm on top.
    --------------------------------------------------------------------------- */
 .react-modal-sheet-container {
   background-color: var(--color-base-100) !important;
@@ -666,7 +667,7 @@ $pad-toolbar-height: 38px;
 }
 
 .react-modal-sheet-backdrop {
-  background: color-mix(in oklch, var(--color-base-content) 40%, transparent) !important;
+  background: var(--modal-scrim) !important;
 }
 
 .react-modal-sheet-header {

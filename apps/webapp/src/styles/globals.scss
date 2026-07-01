@@ -193,6 +193,15 @@
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
   --hm-resize-border: var(--color-primary);
   --hm-resize-handle-bg: var(--color-base-100);
+  /* Modal/sheet scrims — always black-based (never base-content — white fog on dark UI). */
+  --modal-scrim: color-mix(in oklch, black 45%, transparent);
+  --modal-scrim-heavy: color-mix(in oklch, black 72%, transparent);
+}
+
+[data-theme='docsplus-dark'],
+[data-theme='docsplus-dark-hc'] {
+  --modal-scrim: color-mix(in oklch, black 55%, transparent);
+  --modal-scrim-heavy: color-mix(in oklch, black 80%, transparent);
 }
 
 * {

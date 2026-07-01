@@ -182,10 +182,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
       {user && (
         <Modal open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-          <ModalContent
-            size="4xl"
-            aria-label="Profile settings"
-            className="rounded-box overflow-hidden p-0">
+          <ModalContent size="4xl" aria-label="Profile settings" className="overflow-hidden p-0">
             <SettingsPanel onClose={() => setIsProfileOpen(false)} />
           </ModalContent>
         </Modal>

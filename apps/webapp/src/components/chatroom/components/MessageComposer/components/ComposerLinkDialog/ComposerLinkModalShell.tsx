@@ -1,3 +1,4 @@
+import { modalBackdropClassName, modalPanelChromeClassName } from '@components/ui/Dialog'
 import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
 import { motion } from 'motion/react'
 import { type ReactNode, useLayoutEffect, useRef } from 'react'
@@ -83,7 +84,7 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
   return createPortal(
     <div className="fixed z-[60] overflow-y-auto" style={viewportStyle}>
       <motion.div
-        className="absolute inset-0 bg-black/40"
+        className={`absolute inset-0 ${modalBackdropClassName}`}
         role="presentation"
         onClick={onBackdropClick}
         initial={{ opacity: 0 }}
@@ -97,7 +98,7 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className="bg-base-100 text-base-content border-base-300 pointer-events-auto relative w-full max-w-sm shrink-0 rounded-lg border p-4"
+          className={`${modalPanelChromeClassName} text-base-content pointer-events-auto relative w-full max-w-sm shrink-0 p-4`}
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
