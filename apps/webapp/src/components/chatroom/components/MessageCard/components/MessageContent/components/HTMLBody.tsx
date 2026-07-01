@@ -23,7 +23,7 @@ export const HTMLBody = () => {
 
   return (
     <div
-      className="message--card__content prose-slate prose-invert max-w-full overflow-hidden text-wrap break-words wrap-anywhere whitespace-pre-wrap [&_a]:cursor-pointer"
+      className="message--card__content max-w-full overflow-hidden text-wrap break-words wrap-anywhere whitespace-pre-wrap [&_a]:cursor-pointer"
       dir="auto"
       onClick={openLinkFromClick}
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}

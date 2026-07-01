@@ -96,7 +96,6 @@
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
     "@eslint/js": "catalog:",
-    "@types/minimatch": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "bun-types": "catalog:",

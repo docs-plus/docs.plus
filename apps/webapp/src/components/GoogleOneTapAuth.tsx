@@ -1,4 +1,7 @@
 import { supabaseClient } from '@utils/supabase'
+// Type-only import backed by @types/google-one-tap (the runtime ships no types).
+// One Tap runtime is Google's GSI script loaded via next/script below — not the
+// google-one-tap npm package, which clobbers window.onload and dies on SPA nav.
 import type { CredentialResponse, PromptMomentNotification } from 'google-one-tap'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
