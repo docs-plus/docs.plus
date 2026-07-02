@@ -3,7 +3,9 @@ import { useApi } from '@hooks/useApi'
 import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@types'
+import { trackSignUpOnce } from '@utils/analytics'
 import { ensureAnonymousSession, resetAnonymousSessionGate } from '@utils/ensureAnonymousSession'
+import { setObservabilityUser } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect } from 'react'
 
@@ -55,6 +57,12 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
         return
       }
 
+      if (event === 'SIGNED_IN') {
+        trackSignUpOnce(session)
+        // Identity only — profile refetch stays gated to INITIAL_SESSION/USER_UPDATED.
+        setObservabilityUser(session?.user?.id ?? null)
+      }
+
       if (event === 'INITIAL_SESSION') {
         if (!session?.user) {
           if (deferAnonymousAuth) {
@@ -72,6 +80,7 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
         }
         const isAnonymous = session?.user?.is_anonymous || false
         useAuthStore.getState().setSession(session?.user || null, isAnonymous)
+        setObservabilityUser(session?.user?.id ?? null)
 
         if (session?.user && !isAnonymous) {
           getUserProfile(session.user)
@@ -80,6 +89,7 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
         }
       }
       if (event === 'SIGNED_OUT') {
+        setObservabilityUser(null)
         useAuthStore.getState().setSession(null, false)
         useAuthStore.getState().setProfile(null)
         setLoading(false)

@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 import { CHUNK_ERROR_PATTERNS } from './src/utils/chunkErrorPatterns'
+import { isChunkRecoveryExhausted } from './src/utils/chunkLoadRecovery'
 
 // iOS Safari emits SW-lifecycle errors during an update check (network blip / browser
 // SW bug) with no app-side fix; chunk-load failures are auto-recovered by
@@ -14,15 +15,13 @@ const SW_LIFECYCLE_PATTERNS: readonly RegExp[] = [
   /\/workbox-[^/]+\.js load failed/i
 ]
 
-const NON_ACTIONABLE_PATTERNS: readonly RegExp[] = [
-  ...SW_LIFECYCLE_PATTERNS,
-  ...CHUNK_ERROR_PATTERNS
-]
-
 const isNonActionable = (event: Sentry.Event): boolean => {
   const message = event.exception?.values?.[0]?.value
   if (!message) return false
-  return NON_ACTIONABLE_PATTERNS.some((re) => re.test(message))
+  if (SW_LIFECYCLE_PATTERNS.some((re) => re.test(message))) return true
+  // Chunk errors are auto-recovered by reload; report only once recovery gave up.
+  if (CHUNK_ERROR_PATTERNS.some((re) => re.test(message))) return !isChunkRecoveryExhausted()
+  return false
 }
 
 const dsn = process.env.NEXT_PUBLIC_GLITCHTIP_DSN

@@ -10,11 +10,20 @@ import {
   shouldIncludeMessageInFeed
 } from '@components/chatroom/utils/channelFeedProjection'
 import { useChatStore } from '@stores'
+import { captureMessageOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback, useEffect, useRef } from 'react'
 
 export type BufferedArrival = { count: number; hasMention: boolean }
+
+// Once per topic+status: the subscribe callback re-fires on every reconnect
+// attempt, which would flood identical events.
+const captureRealtimeIssueOnce = (topic: string, status: string, channelId: string) =>
+  captureMessageOnce(`${topic}:${status}`, `realtime:${status} (${topic})`, {
+    level: 'error',
+    tags: { surface: 'realtime', status, channelId }
+  })
 
 // postgres_changes payloads omit RPC-computed columns (user_details,
 // is_bookmarked, bookmark_id). Use `user_details` presence as the
@@ -370,6 +379,9 @@ export const useChannelRealtime = ({
       )
       .subscribe((status: string) => {
         if (status === 'SUBSCRIBED') catchUp()
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          captureRealtimeIssueOnce(`chatroom:${channelId}`, status, channelId)
+        }
       })
 
     // Private topic gated by `chatroom_read_topic_access` on
@@ -388,7 +400,11 @@ export const useChannelRealtime = ({
               useChatStore.getState().setPeerReadSeq(channelId, payload.seq)
             }
           )
-          .subscribe()
+          .subscribe((status: string) => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              captureRealtimeIssueOnce(`chatroom-read:${channelId}`, status, channelId)
+            }
+          })
       : null
 
     const onOnline = () => {

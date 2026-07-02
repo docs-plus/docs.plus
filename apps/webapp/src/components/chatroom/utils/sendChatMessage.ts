@@ -7,7 +7,13 @@ import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths
 import { isDuplicateKeyError } from '@components/chatroom/utils/postgresErrors'
 import type { MessageMediaItem, TMsgRow } from '@types'
 import type { Database, Json } from '@types'
+import { captureUnknown } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
+
+const captureSendFailure = (error: unknown) =>
+  captureUnknown(error, {
+    tags: { surface: 'chat-send', pgCode: (error as { code?: string } | null)?.code }
+  })
 
 export type ChatMessageInsertPayload = {
   id: string
@@ -69,11 +75,13 @@ export async function persistChatMessage(
     const { error } = await supabaseClient.from('messages').insert(insertPayload(payload))
     if (error) {
       if (isDuplicateKeyError(error)) return { ok: true, duplicate: true }
+      captureSendFailure(error)
       const message = typeof error.message === 'string' ? error.message : 'Failed to send'
       return { ok: false, error: message }
     }
     return { ok: true }
   } catch (error: unknown) {
+    captureSendFailure(error)
     const message = error instanceof Error ? error.message : 'Failed to send'
     return { ok: false, error: message }
   }
@@ -118,12 +126,14 @@ export async function retryChatMessage(
           return { ok: true }
         } catch (retryError: unknown) {
           if (isDuplicateKeyError(retryError)) return { ok: true, duplicate: true }
+          captureSendFailure(retryError)
           const message = retryError instanceof Error ? retryError.message : 'Failed to send'
           return { ok: false, error: message }
         }
       }
     }
 
+    captureSendFailure(error)
     const message = error instanceof Error ? error.message : 'Failed to send'
     return { ok: false, error: message }
   }

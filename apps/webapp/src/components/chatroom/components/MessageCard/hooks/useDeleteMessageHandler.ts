@@ -1,6 +1,7 @@
 import { deleteMessage } from '@api'
 import * as toast from '@components/toast'
 import { TMsgRow } from '@types'
+import { captureUnknown } from '@utils/observability'
 import { useCallback } from 'react'
 
 export const useDeleteMessageHandler = () => {
@@ -8,6 +9,7 @@ export const useDeleteMessageHandler = () => {
     if (!message) return
     const { error } = await deleteMessage(message.channel_id, message.id)
     if (error) {
+      captureUnknown(error, { tags: { surface: 'chat-action' } })
       toast.Error('Message not deleted')
       return
     }

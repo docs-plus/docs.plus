@@ -5,6 +5,7 @@ import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignI
 import {
   dispatchOutboundChunk,
   ensureOutboundStorageReady,
+  isAlreadyCapturedError,
   prepareOutboundContent
 } from '@components/chatroom/utils/outboundMessagePipeline'
 import { showNotificationPrompt } from '@components/NotificationPromptCard'
@@ -13,6 +14,7 @@ import { discardComposerDraft } from '@db/messageComposerDB'
 import { useApi } from '@hooks/useApi'
 import type { Editor } from '@tiptap/react'
 import type { CommentMessageMemory, ComposerMessageMemory, MessageMediaItem } from '@types'
+import { captureUnknown } from '@utils/observability'
 import { sanitizeChunk } from '@utils/sanitizeContent'
 import { useCallback } from 'react'
 
@@ -168,6 +170,11 @@ export const useComposerSubmit = ({
           }
         }
       } catch (error: unknown) {
+        // Edit/comment failures are only surfaced here; direct-send wrappers were
+        // already captured inside persistChatMessage.
+        if (!isAlreadyCapturedError(error)) {
+          captureUnknown(error, { tags: { surface: 'chat-send' } })
+        }
         toast.Error(error instanceof Error ? error.message : 'Failed to send')
         return
       }

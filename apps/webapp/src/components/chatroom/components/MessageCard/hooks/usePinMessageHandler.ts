@@ -3,6 +3,7 @@ import * as toast from '@components/toast'
 import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
+import { captureUnknown } from '@utils/observability'
 import { useCallback } from 'react'
 
 export const usePinMessageHandler = () => {
@@ -16,6 +17,7 @@ export const usePinMessageHandler = () => {
       const actionType = hasMetadataProperty(message.metadata, 'pinned') ? 'unpin' : 'pin'
       const { error } = await pinMessage(message.channel_id, message.id, actionType)
       if (error) {
+        captureUnknown(error, { tags: { surface: 'chat-action' } })
         toast.Error(`Message not ${actionType}`)
       } else {
         toast.Success(`Message ${actionType} successfully`)

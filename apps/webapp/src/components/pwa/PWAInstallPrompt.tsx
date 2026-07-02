@@ -26,6 +26,7 @@
 import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { useAuthStore } from '@stores'
+import { trackEvent } from '@utils/analytics'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuDownload, LuShare, LuSmartphone, LuSquarePlus, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
@@ -87,6 +88,7 @@ export function usePWAInstall() {
 
     // ── Track appinstalled event ──
     const handleInstalled = () => {
+      trackEvent('pwa_install')
       setIsInstalled(true)
       setDeferredPrompt(null)
       // Clean up prompt state

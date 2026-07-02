@@ -11,6 +11,7 @@ import { showOptimisticMessageInFeed } from '@components/chatroom/utils/channelF
 import { profileToMessageRowUserDetails } from '@components/chatroom/utils/chatUserDetails'
 import { persistChatMessage, retryChatMessage } from '@components/chatroom/utils/sendChatMessage'
 import { useAuthStore } from '@stores'
+import { trackEvent } from '@utils/analytics'
 import { generateClientMessageId } from '@utils/clientMessageId'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback } from 'react'
@@ -115,6 +116,7 @@ export const useSendMessage = ({
       })
 
       if (result.ok) {
+        trackEvent('send_message')
         if (result.duplicate) {
           listRef.current?.data.map((i) =>
             isMessage(i) && i.client_id === clientId

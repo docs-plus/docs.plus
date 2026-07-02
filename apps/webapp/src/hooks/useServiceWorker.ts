@@ -1,4 +1,15 @@
+import { captureMessageOnce } from '@utils/observability'
 import { useCallback, useEffect } from 'react'
+
+// captureMessage events carry no `exception`, so instrumentation-client's
+// SW_LIFECYCLE_PATTERNS filter (exception-only) never drops these reports.
+// Once per kind per page load — the periodic poll would repeat the same failure.
+const reportSwIssue = (kind: string, detail: unknown) =>
+  captureMessageOnce(`sw:${kind}`, `sw:${kind}`, {
+    level: 'warning',
+    tags: { surface: 'service-worker' },
+    extra: { detail: detail instanceof Error ? detail.message : String(detail ?? '') }
+  })
 
 /**
  * Service Worker Update Hook
@@ -50,12 +61,17 @@ const useServiceWorker = () => {
     }
 
     // ── When new SW finishes installing, activate it ──
-    const handleStateChange = (event: Event) => {
+    const handleStateChange = (event: Event, reg: ServiceWorkerRegistration) => {
       const sw = event.target as ServiceWorker
       if (sw.state === 'installed' && navigator.serviceWorker.controller) {
         // There's already a controller → this is an UPDATE, not first install
         console.info('[SW] New version available, activating…')
         activateWaitingWorker()
+      }
+      if (sw.state === 'redundant' && !refreshing && !reg.installing && !reg.waiting) {
+        // A worker superseded by a NEWER update legitimately goes redundant;
+        // no successor in the registration means install/activate truly failed.
+        reportSwIssue('worker-redundant', sw.scriptURL)
       }
     }
 
@@ -63,7 +79,7 @@ const useServiceWorker = () => {
     const handleUpdateFound = (reg: ServiceWorkerRegistration) => {
       const newWorker = reg.installing
       if (newWorker) {
-        newWorker.addEventListener('statechange', handleStateChange)
+        newWorker.addEventListener('statechange', (event) => handleStateChange(event, reg))
       }
     }
 
@@ -71,8 +87,9 @@ const useServiceWorker = () => {
     const checkForUpdates = () => {
       navigator.serviceWorker.getRegistration().then((reg) => {
         if (reg) {
-          reg.update().catch(() => {
-            // Silent fail — network might be offline
+          reg.update().catch((error) => {
+            // Offline is expected; report failures that happen while online
+            if (navigator.onLine) reportSwIssue('update-failed', error)
           })
         }
       })
@@ -103,7 +120,9 @@ const useServiceWorker = () => {
       reg.addEventListener('updatefound', () => handleUpdateFound(reg))
 
       // Check for updates immediately on load
-      reg.update()
+      reg.update().catch((error) => {
+        if (navigator.onLine) reportSwIssue('update-failed', error)
+      })
     })
 
     // ── Periodic check every 10 minutes ──

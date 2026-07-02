@@ -2,6 +2,7 @@ import { removeReaction } from '@api'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { useAuthStore } from '@stores'
+import { captureUnknown } from '@utils/observability'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 type Props = {
@@ -20,7 +21,9 @@ const ReactionList = ({ className }: Props) => {
   const handleReactionClick = useCallback(
     (emoji: string) => {
       if (isUserReaction((message.reactions as any)?.[emoji] || [])) {
-        removeReaction(message, emoji).catch(console.error)
+        removeReaction(message, emoji).catch((error) =>
+          captureUnknown(error, { tags: { surface: 'chat-action' } })
+        )
       }
     },
     [message, isUserReaction]

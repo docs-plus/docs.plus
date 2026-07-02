@@ -4,10 +4,13 @@ import '@config'
 
 import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import GoogleAnalytics from '@components/GoogleAnalytics'
-import { QueryClient } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
+import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
+import { captureUnknown } from '@utils/observability'
 import { getRoutePolicy } from '@utils/routePolicy'
 import { MotionConfig } from 'motion/react'
+import type { NextWebVitalsMetric } from 'next/app'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -55,6 +58,18 @@ const Header = () => {
   )
 }
 
+// Google's web-vitals → GA4 shape: CLS is unitless (x1000), the rest are ms.
+// Custom Next.js metrics are skipped — their hyphenated names are GA4-invalid.
+export function reportWebVitals(metric: NextWebVitalsMetric) {
+  if (metric.label !== 'web-vital') return
+  trackEvent(metric.name, {
+    value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+    metric_id: metric.id,
+    metric_rating: (metric as { rating?: string }).rating,
+    non_interaction: true
+  })
+}
+
 interface AppPageProps {
   isMobile?: boolean
   isAuthServiceAvailable?: boolean
@@ -68,7 +83,17 @@ export default function MyApp({
   pageProps: AppPageProps
 }) {
   const router = useRouter()
-  const [queryClient] = useState(() => new QueryClient())
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })
+        }),
+        mutationCache: new MutationCache({
+          onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })
+        })
+      })
+  )
   const isMobileInitial = pageProps.isMobile || false
   const isAuthServiceAvailable = pageProps.isAuthServiceAvailable
   const documentShell = getRoutePolicy(router.pathname).documentShell

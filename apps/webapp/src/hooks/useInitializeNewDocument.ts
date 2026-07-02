@@ -2,6 +2,7 @@ import Config from '@config'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { Editor } from '@tiptap/react'
+import { trackEvent } from '@utils/analytics'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
@@ -30,6 +31,9 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
 
       editor.commands.setContent(defaultContent)
       ymetadata.set('needsInitialization', false)
+      // Only a genuinely new document carries needsInitialization, so this
+      // fires once, on the creating client — not on every home-screen open.
+      trackEvent('create_document')
     }
 
     initializeDocument()
