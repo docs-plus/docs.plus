@@ -12,6 +12,7 @@ import type { EmailDLQData, EmailJobData, EmailResult } from '../../types/email.
 import { toBullMQConnection } from '../../types/redis.types'
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
+import { recordJobOutcome } from '../metrics'
 import { prisma } from '../prisma'
 import { bullmqConnectionOptions, createRedisConnection } from '../redis'
 import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
@@ -207,10 +208,12 @@ export function createEmailWorker() {
 
   // Worker event handlers
   worker.on('completed', (job) => {
+    recordJobOutcome(worker.name, 'completed', job)
     emailLogger.debug({ jobId: job.id }, 'Email job completed')
   })
 
   worker.on('failed', (job, err) => {
+    recordJobOutcome(worker.name, 'failed')
     if (job) {
       emailLogger.error({ jobId: job.id, err, attempts: job.attemptsMade }, 'Email job failed')
     }

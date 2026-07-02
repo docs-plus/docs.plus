@@ -13,6 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Logger } from 'pino'
 
 import { captureOnce } from './instrument'
+import { pgmqLastSuccessfulPoll, pgmqMessagesTotal } from './metrics'
 import { getServiceRoleClient } from './supabase'
 
 /**
@@ -131,6 +132,8 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
         })
         return []
       }
+      // Only a successful read refreshes the gauge; failed polls leave it stale.
+      pgmqLastSuccessfulPoll.set({ queue: label }, Date.now() / 1000)
       return (data || []) as PgmqMessage<TPayload>[]
     } catch (err) {
       logger.error({ err }, `Error reading ${label} queue`)
@@ -168,6 +171,7 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
     const ok = await options.processMessage(message.payload, message.msg_id, ctx)
     if (!ok) {
       metrics.messagesFailed++
+      pgmqMessagesTotal.inc({ queue: label, status: 'failed' })
       return false
     }
 
@@ -180,6 +184,7 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
 
     metrics.messagesProcessed++
     metrics.lastMessageAt = new Date()
+    pgmqMessagesTotal.inc({ queue: label, status: 'processed' })
     return true
   }
 
@@ -230,6 +235,7 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
       )
 
       isShuttingDown = false
+      pgmqLastSuccessfulPoll.set({ queue: label }, Date.now() / 1000)
       runPollCycle()
       return true
     },

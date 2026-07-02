@@ -1,10 +1,28 @@
 import type { MiddlewareHandler } from 'hono'
 import { collectDefaultMetrics, Counter, Gauge, Histogram, Registry } from 'prom-client'
 
+import pkg from '../../package.json'
+
 // One shared registry for every service; runtime defaults (heap, RSS, CPU,
 // event-loop lag, GC where Bun exposes them) attach here once at import time.
 export const register = new Registry()
 collectDefaultMetrics({ register })
+
+// Constant 1; version prefers the deploy-injected GIT_HASH, service mirrors the
+// SENTRY_ROLE split used by instrument.ts.
+export const buildInfo = new Gauge({
+  name: 'docsplus_build_info',
+  help: 'Build metadata for the running service (always 1)',
+  labelNames: ['version', 'service'] as const,
+  registers: [register]
+})
+buildInfo.set(
+  {
+    version: process.env.GIT_HASH || pkg.version,
+    service: process.env.SENTRY_ROLE || 'hocuspocus'
+  },
+  1
+)
 
 export const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
@@ -112,10 +130,65 @@ export const jobsTotal = new Counter({
   registers: [register]
 })
 
+// BullMQ stamps processedOn/finishedOn in ms; absent only on malformed jobs.
+export function recordJobOutcome(
+  queue: string,
+  status: 'completed' | 'failed' | 'stalled',
+  job?: { processedOn?: number; finishedOn?: number }
+) {
+  jobsTotal.inc({ queue, status })
+  if (job?.processedOn && job?.finishedOn) {
+    jobDuration.observe({ queue, status }, (job.finishedOn - job.processedOn) / 1000)
+  }
+}
+
 export const queueJobs = new Gauge({
   name: 'queue_jobs',
   help: 'Jobs per queue by state (depth)',
   labelNames: ['queue', 'state'] as const,
+  registers: [register]
+})
+
+export const pgmqMessagesTotal = new Counter({
+  name: 'pgmq_messages_total',
+  help: 'Total pgmq messages handled by the consumers',
+  labelNames: ['queue', 'status'] as const,
+  registers: [register]
+})
+
+// Seeded at consumer start and refreshed only by successful reads, so a wedged
+// consumer shows as a stale series instead of an absent one.
+export const pgmqLastSuccessfulPoll = new Gauge({
+  name: 'pgmq_last_successful_poll_timestamp_seconds',
+  help: 'Unix time of the last successful pgmq queue read',
+  labelNames: ['queue'] as const,
+  registers: [register]
+})
+
+export const pgmqQueueLength = new Gauge({
+  name: 'pgmq_queue_length',
+  help: 'Messages currently sitting in each pgmq queue',
+  labelNames: ['queue'] as const,
+  registers: [register]
+})
+
+export const pgmqOldestMessageAge = new Gauge({
+  name: 'pgmq_oldest_message_age_seconds',
+  help: 'Age of the oldest message in each pgmq queue',
+  labelNames: ['queue'] as const,
+  registers: [register]
+})
+
+export const cronJobLastSuccess = new Gauge({
+  name: 'cron_job_last_success_timestamp_seconds',
+  help: 'Unix time of the last successful pg_cron job run',
+  labelNames: ['jobname'] as const,
+  registers: [register]
+})
+
+export const mediaWorkspaceMaxUsagePercent = new Gauge({
+  name: 'media_workspace_max_usage_percent',
+  help: 'Highest media storage quota usage across all workspaces',
   registers: [register]
 })
 

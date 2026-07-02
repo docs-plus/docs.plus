@@ -17,6 +17,7 @@ import type { PushDLQData, PushJobData } from '../../types/push.types'
 import { toBullMQConnection } from '../../types/redis.types'
 import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
+import { recordJobOutcome } from '../metrics'
 import { prisma } from '../prisma'
 import { bullmqConnectionOptions, createRedisConnection } from '../redis'
 import { sendPushNotification } from './sender'
@@ -34,7 +35,7 @@ if (!queueConnection) {
 /**
  * Push Queue - handles outgoing push notifications
  */
-const pushQueue = queueConnection
+export const pushQueue = queueConnection
   ? new Queue<PushJobData>(PUSH_QUEUE_NAME, {
       connection: queueConnection,
       defaultJobOptions: {
@@ -55,7 +56,7 @@ const pushQueue = queueConnection
 /**
  * Dead Letter Queue for permanently failed push notifications
  */
-const pushDeadLetterQueue = queueConnection
+export const pushDeadLetterQueue = queueConnection
   ? new Queue<PushDLQData>('push-notifications-dlq', {
       connection: queueConnection,
       defaultJobOptions: {
@@ -210,10 +211,12 @@ export function createPushWorker(): Worker<PushJobData> | null {
   )
 
   pushWorker.on('completed', (job) => {
+    recordJobOutcome(PUSH_QUEUE_NAME, 'completed', job)
     pushLogger.debug({ jobId: job.id }, 'Push job completed')
   })
 
   pushWorker.on('failed', (job, err) => {
+    recordJobOutcome(PUSH_QUEUE_NAME, 'failed')
     pushLogger.error({ jobId: job?.id, err: err.message }, 'Push job failed')
   })
 

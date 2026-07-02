@@ -36,7 +36,7 @@ type SummaryResult =
   | { status: 'ok'; data: WorkspaceMediaStorageSummary }
   | { status: 'error'; message: string }
 
-async function fetchFleetRows(
+export async function fetchFleetRows(
   supabase: AdminClient
 ): Promise<
   { status: 'ok'; data: WorkspaceMediaStorageStat[] } | { status: 'error'; message: string }
