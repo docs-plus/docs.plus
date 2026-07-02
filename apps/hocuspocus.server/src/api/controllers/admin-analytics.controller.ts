@@ -49,7 +49,7 @@ export const getViewsTrend = rpcRoute({
   rpc: 'get_document_views_trend',
   args: (c) => ({
     p_document_slug: c.req.query('slug') || null,
-    p_days: Math.min(parseInt(c.req.query('days') || '30'), 90)
+    p_days: Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 90)
   }),
   fallback: [],
   logMsg: 'Failed to get views trend',
@@ -70,15 +70,23 @@ export const getUserLifecycleSegments = rpcRoute({
 
 export const getDauTrend = rpcRoute({
   rpc: 'get_dau_trend',
-  args: (c) => ({ p_days: Math.min(parseInt(c.req.query('days') || '30'), 90) }),
+  args: (c) => ({ p_days: Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 90) }),
   fallback: [],
   logMsg: 'Failed to get DAU trend',
   errMsg: 'Failed to fetch DAU trend'
 })
 
+export const getSignupsTrend = rpcRoute({
+  rpc: 'get_signups_per_day',
+  args: (c) => ({ p_days: Math.min(Math.max(parseInt(c.req.query('days') || '30'), 1), 90) }),
+  fallback: [],
+  logMsg: 'Failed to get signups trend',
+  errMsg: 'Failed to fetch signups trend'
+})
+
 export const getActivityByHour = rpcRoute({
   rpc: 'get_activity_by_hour',
-  args: (c) => ({ p_days: Math.min(parseInt(c.req.query('days') || '7'), 30) }),
+  args: (c) => ({ p_days: Math.min(Math.max(parseInt(c.req.query('days') || '7'), 1), 30) }),
   fallback: [],
   logMsg: 'Failed to get activity by hour',
   errMsg: 'Failed to fetch activity data'
@@ -86,9 +94,17 @@ export const getActivityByHour = rpcRoute({
 
 export const getCommunicationStats = rpcRoute({
   rpc: 'get_communication_stats',
-  args: (c) => ({ p_days: Math.min(parseInt(c.req.query('days') || '7'), 30) }),
+  args: (c) => ({ p_days: Math.min(Math.max(parseInt(c.req.query('days') || '7'), 1), 30) }),
   logMsg: 'Failed to get communication stats',
   errMsg: 'Failed to fetch communication stats'
+})
+
+export const getMessageTypeDistribution = rpcRoute({
+  rpc: 'get_message_type_distribution',
+  args: (c) => ({ p_days: Math.min(Math.max(parseInt(c.req.query('days') || '7'), 1), 30) }),
+  fallback: [],
+  logMsg: 'Failed to get message type distribution',
+  errMsg: 'Failed to fetch message type distribution'
 })
 
 export const getNotificationReach = rpcRoute({

@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchDauTrend, fetchRetentionMetrics, fetchUserLifecycleSegments } from '@/services/api'
+import {
+  fetchDauTrend,
+  fetchMessageTypeDistribution,
+  fetchRetentionMetrics,
+  fetchSignupsTrend,
+  fetchUserLifecycleSegments
+} from '@/services/api'
 
 export function useRetentionMetrics() {
   return useQuery({
@@ -22,6 +28,22 @@ export function useDauTrend(days = 30) {
   return useQuery({
     queryKey: ['admin', 'dau-trend', days],
     queryFn: () => fetchDauTrend(days),
+    staleTime: 1000 * 60 // 1 minute
+  })
+}
+
+export function useSignupsTrend(days = 30) {
+  return useQuery({
+    queryKey: ['admin', 'signups-trend', days],
+    queryFn: () => fetchSignupsTrend(days),
+    staleTime: 1000 * 60 // 1 minute
+  })
+}
+
+export function useMessageTypeDistribution(days = 7) {
+  return useQuery({
+    queryKey: ['admin', 'message-types', days],
+    queryFn: () => fetchMessageTypeDistribution(days),
     staleTime: 1000 * 60 // 1 minute
   })
 }

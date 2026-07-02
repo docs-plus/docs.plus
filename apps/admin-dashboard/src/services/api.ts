@@ -22,6 +22,7 @@ import type {
   GhostSummary,
   MediaStorageListResponse,
   MediaStorageSortBy,
+  MessageTypeDistribution,
   NotificationHealth,
   NotificationStats,
   PaginatedResponse,
@@ -31,6 +32,7 @@ import type {
   PushStats,
   PushSubscriptionAnalytics,
   RetentionMetrics,
+  SignupsTrendPoint,
   StaleDocument,
   StaleDocumentPreview,
   StaleDocumentsSummary,
@@ -248,6 +250,14 @@ export async function fetchUserLifecycleSegments(): Promise<UserLifecycleSegment
 
 export async function fetchDauTrend(days = 30): Promise<DauTrendPoint[]> {
   return fetchApi(`/api/admin/stats/dau-trend?days=${days}`)
+}
+
+export async function fetchSignupsTrend(days = 30): Promise<SignupsTrendPoint[]> {
+  return fetchApi(`/api/admin/stats/signups-trend?days=${days}`)
+}
+
+export async function fetchMessageTypeDistribution(days = 7): Promise<MessageTypeDistribution[]> {
+  return fetchApi(`/api/admin/stats/message-types?days=${days}`)
 }
 
 export async function fetchNotificationStats(): Promise<NotificationStats> {

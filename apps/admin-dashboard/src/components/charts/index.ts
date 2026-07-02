@@ -1,6 +1,7 @@
 export { DauTrendChart } from './DauTrendChart'
 export { PushSubscriptionStats } from './PushSubscriptionStats'
 export { RetentionCards } from './RetentionCards'
+export { SignupsTrendChart } from './SignupsTrendChart'
 export { Sparkline } from './Sparkline'
 export { TopViewedDocuments } from './TopViewedDocuments'
 export { UserLifecycleChart } from './UserLifecycleChart'

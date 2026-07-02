@@ -123,6 +123,13 @@ admin.get('/stats/user-lifecycle', adminController.getUserLifecycleSegments)
 // Get DAU trend
 admin.get('/stats/dau-trend', zValidator('query', daysQuerySchema), adminController.getDauTrend)
 
+// Get signups trend
+admin.get(
+  '/stats/signups-trend',
+  zValidator('query', daysQuerySchema),
+  adminController.getSignupsTrend
+)
+
 // Get activity by hour (for heatmap)
 admin.get(
   '/stats/activity-heatmap',
@@ -142,6 +149,13 @@ admin.get(
   '/stats/communication',
   zValidator('query', daysQuerySchema),
   adminController.getCommunicationStats
+)
+
+// Get message type distribution
+admin.get(
+  '/stats/message-types',
+  zValidator('query', daysQuerySchema),
+  adminController.getMessageTypeDistribution
 )
 
 // Get notification reach

@@ -10,6 +10,7 @@ import {
   LuMessageSquare,
   LuMonitor,
   LuUserCheck,
+  LuUserPlus,
   LuUsers
 } from 'react-icons/lu'
 
@@ -18,6 +19,7 @@ import {
   DauTrendChart,
   DeviceBreakdown,
   RetentionCards,
+  SignupsTrendChart,
   TopViewedDocuments,
   UserLifecycleChart,
   UserTypeBreakdown,
@@ -26,20 +28,46 @@ import {
 } from '@/components/charts'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
+import { DataTable } from '@/components/tables/DataTable'
 import { ChartErrorBoundary } from '@/components/ui/ChartErrorBoundary'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import { useTopViewedDocuments, useViewsSummary, useViewsTrend } from '@/hooks/useDocumentViews'
 import {
   useDauTrend,
+  useMessageTypeDistribution,
   useRetentionMetrics,
+  useSignupsTrend,
   useUserLifecycleSegments
 } from '@/hooks/useRetentionMetrics'
+import type { MessageTypeDistribution } from '@/types'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
+
+const messageTypeColumns = [
+  {
+    key: 'message_type',
+    header: 'Type',
+    render: (row: MessageTypeDistribution) => (
+      <span className="font-medium capitalize">{row.message_type}</span>
+    )
+  },
+  {
+    key: 'count',
+    header: 'Messages',
+    render: (row: MessageTypeDistribution) => <span>{row.count.toLocaleString()}</span>
+  },
+  {
+    key: 'percentage',
+    header: 'Share',
+    render: (row: MessageTypeDistribution) => (
+      <span className="text-base-content/60">{row.percentage}%</span>
+    )
+  }
+]
 
 export default function OverviewPage() {
   const { documentStats, supabaseStats, loading, refetch, isRefetching } = useDashboardStats()
@@ -54,6 +82,10 @@ export default function OverviewPage() {
   const { data: retentionMetrics, isLoading: retentionLoading } = useRetentionMetrics()
   const { data: lifecycleSegments, isLoading: lifecycleLoading } = useUserLifecycleSegments()
   const { data: dauTrend, isLoading: dauTrendLoading } = useDauTrend(viewsDays)
+  const { data: signupsTrend, isLoading: signupsTrendLoading } = useSignupsTrend(viewsDays)
+
+  // Engagement
+  const { data: messageTypes, isLoading: messageTypesLoading } = useMessageTypeDistribution()
 
   return (
     <>
@@ -250,6 +282,41 @@ export default function OverviewPage() {
                   <UserLifecycleChart data={lifecycleSegments} loading={lifecycleLoading} />
                 </ChartErrorBoundary>
               </div>
+
+              {/* Signups per Day */}
+              <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-3">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuUserPlus className="text-primary h-5 w-5" />
+                  Signups per Day
+                </h3>
+                <ChartErrorBoundary fallbackHeight={280}>
+                  <SignupsTrendChart
+                    data={signupsTrend || []}
+                    loading={signupsTrendLoading}
+                    height={280}
+                  />
+                </ChartErrorBoundary>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Engagement Section */}
+          <CollapsibleSection
+            title="Engagement"
+            icon={<LuMessageSquare className="h-5 w-5" />}
+            defaultOpen={true}>
+            <div className="bg-base-100 rounded-box border-base-300 border">
+              <h3 className="flex items-center gap-2 p-5 pb-0 text-lg font-semibold">
+                <LuMessageSquare className="text-primary h-5 w-5" />
+                Message Types (last 7 days)
+              </h3>
+              <DataTable
+                columns={messageTypeColumns}
+                data={messageTypes || []}
+                rowKey={(row) => row.message_type}
+                loading={messageTypesLoading}
+                emptyMessage="No messages in the last 7 days"
+              />
             </div>
           </CollapsibleSection>
 

@@ -280,6 +280,19 @@ export interface DauTrendPoint {
   active_users: number
 }
 
+// Matches get_signups_per_day's returned columns exactly.
+export interface SignupsTrendPoint {
+  day: string
+  signups: number
+}
+
+// Matches get_message_type_distribution's returned columns exactly.
+export interface MessageTypeDistribution {
+  message_type: string
+  count: number
+  percentage: number
+}
+
 // Push Notification Debugging Types
 
 export interface PushSubscriptionDetail {
