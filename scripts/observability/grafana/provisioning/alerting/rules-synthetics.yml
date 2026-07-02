@@ -1,0 +1,45 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: synthetics
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: synthetic-probe-failed
+        title: Blackbox probe failing (endpoint down)
+        condition: C
+        for: 3m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: 'External probe of {{ $labels.instance }} is failing (probe_success==0)'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'probe_success{job="blackbox"}'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C

@@ -14,6 +14,18 @@ contactPoints:
           message: |
             {{ template "default.message" . }}
   - orgId: 1
+    name: telegram-ops-warnings
+    receivers:
+      - uid: telegram-ops-warnings
+        type: telegram
+        settings:
+          # Same bot, separate chat: keeps warning chatter out of the paging channel.
+          # The deploy render falls back to TELEGRAM_CHAT_ID when no warnings chat is set.
+          bottoken: '${TELEGRAM_BOT_TOKEN}'
+          chatid: '${TELEGRAM_WARNINGS_CHAT_ID}'
+          message: |
+            {{ template "default.message" . }}
+  - orgId: 1
     name: deadman-snitch
     receivers:
       - uid: deadman-snitch

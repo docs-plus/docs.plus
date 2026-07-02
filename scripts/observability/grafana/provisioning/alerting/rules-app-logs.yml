@@ -1,0 +1,169 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: incident-logs
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: incident-failed-migration
+        title: Failed migration (Prisma P3009)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: Prisma migration error P3009 seen in rest-api/hocuspocus logs
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              expr: 'count_over_time({service=~"rest-api|hocuspocus.+"} |= "P3009" [10m])'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: incident-upload-drift
+        title: Upload/config drift (PayloadTooLarge)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: PayloadTooLargeError or "exceeds maximum 0.00MB" in logs (upload size misconfig)
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              # Scope to upload-handling app services only. A bare {service=~".+"}
+              # self-fires: Grafana/Loki log this very query, Alloy re-ingests it,
+              # and the rule then matches its own "PayloadTooLargeError" footprint.
+              expr: 'count_over_time({service=~"rest-api|hocuspocus.+|webapp"} |~ "PayloadTooLargeError|exceeds maximum 0.00MB" [10m])'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: incident-error-surge
+        title: Error surge (level=50 rate)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Sustained error-log rate above 5/s (level=50); tune threshold after baseline
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              expr: 'sum(rate({service=~"rest-api|hocuspocus.+|webapp", level="50"} [5m]))'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+              refId: C
+
+      - uid: incident-email-broken
+        title: Email broken (SMTP 535/EAUTH)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: SMTP auth failure (535 / EAUTH) in hocuspocus logs
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              expr: 'count_over_time({service=~"hocuspocus.+"} |~ "Error: 535|EAUTH" [10m])'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C

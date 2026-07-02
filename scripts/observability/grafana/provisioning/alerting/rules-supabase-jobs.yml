@@ -1,0 +1,244 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: supabase-jobs
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: pgmq-poll-stalled
+        title: pgmq consumer poll stalled (>2m)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'pgmq consumer {{ $labels.queue }} has not completed a successful poll for >2m'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'time() - pgmq_last_successful_poll_timestamp_seconds'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [120] }
+              refId: C
+
+      - uid: pgmq-message-age
+        title: pgmq oldest message age (>15m)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Oldest message in pgmq queue {{ $labels.queue }} is older than 15m (consumer backlog)'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'max by (queue) (pgmq_oldest_message_age_seconds)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [900] }
+              refId: C
+
+      - uid: cron-stale-frequent
+        title: Frequent cron jobs stale (>15m)
+        condition: C
+        for: 5m
+        # Alerting on NoData: a missing RPC or broken sampler must not fail silent.
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'pg_cron job {{ $labels.jobname }} (runs every <=5m) has not succeeded for >15m'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"update-user-status|cleanup-push-subscriptions|message_counter_batch_job|process_document_views_queue|aggregate_document_view_stats|process_email_queue"}'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [900] }
+              refId: C
+
+      - uid: cron-stale-daily
+        title: Daily cron jobs stale (>26h)
+        condition: C
+        for: 5m
+        # Alerting on NoData: a missing RPC or broken sampler must not fail silent.
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'pg_cron job {{ $labels.jobname }} (daily / every-15m) has not succeeded for >26h'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"cleanup-orphan-chat-media|cleanup-cron-job-run-details|cleanup_email_queue|compile_digest_emails"}'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [93600] }
+              refId: C
+
+      - uid: cron-stale-weekly
+        title: Weekly cron jobs stale (>8d)
+        condition: C
+        for: 5m
+        # Alerting on NoData: a missing RPC or broken sampler must not fail silent.
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'pg_cron job {{ $labels.jobname }} (weekly) has not succeeded for >8d'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"cleanup_old_document_views"}'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [691200] }
+              refId: C
+
+      - uid: cron-stale-monthly
+        title: Monthly cron jobs stale (>33d)
+        condition: C
+        for: 5m
+        # Alerting on NoData: a missing RPC or broken sampler must not fail silent.
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'pg_cron job {{ $labels.jobname }} (monthly) has not succeeded for >33d'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"create_document_views_partitions"}'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [2851200] }
+              refId: C

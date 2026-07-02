@@ -1,0 +1,164 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: slo-app
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: slo-http-5xx-ratio
+        title: HTTP 5xx ratio per service (>5%)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: Per-service HTTP 5xx ratio >5% for 10m
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'sum by (job) (rate(http_requests_total{job=~"rest-api|hocuspocus-server",status=~"5.."}[5m])) / sum by (job) (rate(http_requests_total{job=~"rest-api|hocuspocus-server"}[5m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+              refId: C
+
+      - uid: slo-latency-p95-app
+        title: App request p95 latency (>1s)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: App HTTP request p95 latency above 1s for 10m; tune after baseline
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{job=~"rest-api|hocuspocus-server"}[5m])))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+              refId: C
+
+      - uid: slo-latency-p95-edge
+        title: Edge (Traefik) p95 latency (>1.5s)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Traefik service p95 latency above 1.5s for 10m; tune after baseline
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # WS connection lifetime is counted as request duration; exclude those
+              # services so a single long-lived socket doesn't pin edge p95 at the cap.
+              expr: 'histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service!~".*websocket.*|hocuspocus.*"}[5m])))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1.5] }
+              refId: C
+
+      - uid: slo-eventloop-lag
+        title: Node.js event-loop p99 lag (>100ms)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Node.js event-loop p99 lag above 100ms for 5m
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'max by (job) (nodejs_eventloop_lag_p99_seconds{job=~"rest-api|hocuspocus-server|hocuspocus-worker"})'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.1] }
+              refId: C

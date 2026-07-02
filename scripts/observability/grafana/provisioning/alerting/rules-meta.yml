@@ -1,0 +1,88 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: pipeline-liveness
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: pipeline-loki-liveness
+        title: No app logs ingested (Loki/Alloy pipeline)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: No app logs ingested for ~15m — Loki/Alloy pipeline may be down (the log alerts fail green otherwise).
+        data:
+          - refId: A
+            queryType: instant
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: loki
+            model:
+              datasource: { type: loki, uid: loki }
+              # traefik + hocuspocus log continuously in prod; rest-api/webapp are too
+              # quiet and age out, so scoping to the always-on services avoids false fires.
+              expr: 'absent_over_time({service=~"traefik|hocuspocus.+"}[15m])'
+              queryType: instant
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: ops-deadman
+        title: Deadman heartbeat
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: info
+          deadman: 'true'
+        annotations:
+          summary: Deadman heartbeat. If this STOPS reaching the external snitch, the alert pipeline is down.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'vector(1)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C

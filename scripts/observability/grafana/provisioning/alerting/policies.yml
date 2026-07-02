@@ -17,7 +17,8 @@ policies:
         object_matchers:
           - ['severity', '=', 'critical']
         repeat_interval: 1h # critical re-pings faster than the 4h default
-      - receiver: telegram-ops
+      - receiver: telegram-ops-warnings
         object_matchers:
           - ['severity', '=', 'warning']
-        repeat_interval: 4h
+        group_interval: 10m
+        repeat_interval: 4h # gentle: 4x the critical 1h repeat

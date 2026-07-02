@@ -1,0 +1,128 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: edge-traffic
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: edge-webapp-5xx-ratio
+        title: Webapp edge 5xx ratio (>5%)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: Traefik webapp 5xx ratio >5% for 10m (with >0.1 req/s traffic floor)
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # `and on()` traffic floor: near-zero traffic makes the ratio meaningless.
+              expr: '(sum(rate(traefik_service_requests_total{service=~"webapp.*",code=~"5.."}[5m])) / sum(rate(traefik_service_requests_total{service=~"webapp.*"}[5m]))) and on() (sum(rate(traefik_service_requests_total{service=~"webapp.*"}[5m])) > 0.1)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+              refId: C
+
+      - uid: edge-429-elevated
+        title: Edge 429 rate elevated (>1/s)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Traefik is rate-limiting >1 req/s for 5m (limits too tight or an abusive client)
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Entrypoint metric: rateLimit middlewares reject before the service
+              # counter, so service_requests_total never sees a middleware 429.
+              expr: 'sum(rate(traefik_entrypoint_requests_total{code="429"}[5m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+              refId: C
+
+      - uid: edge-4xx-flood
+        title: Edge 4xx flood (>20/s)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Traefik 4xx rate >20/s for 5m (scanner/bot flood or a broken client)
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Entrypoint metric so no-router 404s (scanners probing dead paths)
+              # count; 429 excluded — the rate-limit rule owns that signal.
+              expr: 'sum(rate(traefik_entrypoint_requests_total{code=~"4..",code!="429"}[5m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [20] }
+              refId: C

@@ -1,0 +1,126 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: realtime
+    folder: docs.plus
+    interval: 1m
+    rules:
+      - uid: realtime-ws-auth-rejection
+        title: WS auth rejections elevated
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Majority of WS connections auth-rejected (reconnect storm / token-verify failure)
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Ratio, not absolute rate: a small baseline of expired tabs stays quiet,
+              # but a connect->reject->reconnect storm pushes rejected/connections high.
+              # clamp_min avoids divide-by-zero when the socket pool is idle.
+              expr: 'sum(rate(ws_auth_rejections_total[5m])) / clamp_min(sum(rate(ws_connections_total[5m])), 1)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.5] }
+              refId: C
+
+      - uid: realtime-doc-persist-slow
+        title: Document persist enqueue p99 slow (>0.5s)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: store-hook enqueue overhead p99 >0.5s (blocks WS event loop). Actual DB write latency is covered by worker rules.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'histogram_quantile(0.99, sum by (le) (rate(document_persist_duration_seconds_bucket[5m])))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.5] }
+              refId: C
+
+      - uid: realtime-ws-mass-drop
+        title: WS connections mass-drop (halved vs 5m ago)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'WS connections halved vs 5m ago. LOWER-CONFIDENCE: tune the >20 floor and 0.5 ratio after baselining concurrency.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: '(ws_active_connections offset 5m > 20) and (ws_active_connections < ws_active_connections offset 5m * 0.5)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
