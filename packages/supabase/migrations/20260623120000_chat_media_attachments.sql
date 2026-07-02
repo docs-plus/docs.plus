@@ -568,7 +568,11 @@ alter function public.update_channel_preview_on_new_message() security definer;
 -- =============================================================================
 
 create or replace function create_mention_notifications()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
     mentioned_user_id uuid;
     is_channel_muted boolean;
@@ -633,10 +637,14 @@ begin
 
     return new;
 end;
-$$ language plpgsql;
+$$;
 
 create or replace function create_reply_notification()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
     original_message record;
     truncated_content text;
@@ -694,10 +702,14 @@ begin
 
     return new;
 end;
-$$ language plpgsql;
+$$;
 
 create or replace function create_everyone_notifications()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
     channel_member_id uuid;
     is_channel_muted  boolean;
@@ -754,10 +766,14 @@ begin
 
     return new;
 end;
-$$ language plpgsql;
+$$;
 
 create or replace function create_regular_message_notifications()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 declare
     is_channel_muted  boolean;
     truncated_content text;
@@ -808,7 +824,7 @@ begin
 
     return new;
 end;
-$$ language plpgsql;
+$$;
 
 drop trigger if exists create_mention_notifications on public.messages;
 create trigger create_mention_notifications
