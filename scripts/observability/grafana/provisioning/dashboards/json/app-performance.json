@@ -1734,7 +1734,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "time() - cron_job_last_success_timestamp_seconds",
+          "expr": "clamp_max(time() - cron_job_last_success_timestamp_seconds, 86400)",
           "refId": "A",
           "legendFormat": "{{jobname}}"
         }
