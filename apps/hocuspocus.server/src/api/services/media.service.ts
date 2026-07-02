@@ -67,13 +67,19 @@ export const getMedia = async (documentId: string, mediaId: string, c: Context) 
   return S3Storage.get(documentId, mediaId, c)
 }
 
+/** Matches webapp mediaUploadLimits.ts and Supabase media bucket (10 MB). */
+const DEFAULT_MEDIA_MAX_FILE_SIZE = 10_485_760
+
+const resolveMediaMaxFileSize = (configured: number): number =>
+  configured > 0 ? configured : DEFAULT_MEDIA_MAX_FILE_SIZE
+
 export const uploadMedia = async (documentId: string, mediaFile: File) => {
   try {
     if (!mediaFile) {
       throw new InternalServerError('No file provided')
     }
 
-    const maxFileSize = config.storage.s3.maxFileSize
+    const maxFileSize = resolveMediaMaxFileSize(config.storage.s3.maxFileSize)
 
     if (mediaFile.size > maxFileSize) {
       mediaServiceLogger.warn(

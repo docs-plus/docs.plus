@@ -22,6 +22,19 @@ const numericString = (defaultValue: string) =>
     .default(defaultValue)
     .transform((val) => parseInt(val, 10))
 
+// Upload caps: treat 0/empty as unset so misconfigured env does not block all uploads.
+const positiveByteString = (defaultValue: string) => {
+  const fallback = parseInt(defaultValue, 10)
+  return z
+    .string()
+    .optional()
+    .default(defaultValue)
+    .transform((val) => {
+      const parsed = parseInt(val ?? '', 10)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+    })
+}
+
 // Helper for comma-separated lists
 const commaSeparatedList = z
   .string()
@@ -111,7 +124,7 @@ export const envSchema = z.object({
   DO_STORAGE_BUCKET: z.string().optional().default(''),
   DO_STORAGE_ACCESS_KEY_ID: z.string().optional().default(''),
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
-  DO_STORAGE_MAX_FILE_SIZE: numericString('10485760'),
+  DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
 
   // -------------------------------------------------------------------------
   // Email (SMTP)
