@@ -23,6 +23,8 @@ declare module 'hono' {
     userId?: string
     /** Verified Supabase user. Set by requireUser/adminAuth; absent on optionalUser routes. */
     user?: SupabaseUser
+    /** Set by hono's requestId middleware; absent on apps that don't mount it. */
+    requestId?: string
   }
 }
 

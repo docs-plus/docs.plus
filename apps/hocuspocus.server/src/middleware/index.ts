@@ -96,6 +96,7 @@ export const rateLimiter = (options: {
 export const pinoLogger = () => {
   return async (c: Context, next: Next) => {
     const start = Date.now()
+    const requestId = c.get('requestId')
     const method = c.req.method
     const path = c.req.path
     const userAgent = c.req.header('user-agent')
@@ -104,6 +105,7 @@ export const pinoLogger = () => {
     // Log incoming request
     httpLogger.info({
       msg: 'Incoming request',
+      requestId,
       method,
       path,
       ip,
@@ -116,6 +118,7 @@ export const pinoLogger = () => {
       // Log errors
       httpLogger.error({
         msg: 'Request error',
+        requestId,
         method,
         path,
         err
@@ -136,6 +139,7 @@ export const pinoLogger = () => {
 
     httpLogger[logLevel]({
       msg: 'Request completed',
+      requestId,
       method,
       path,
       status,

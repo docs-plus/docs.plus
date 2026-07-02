@@ -1,6 +1,7 @@
 import './lib/instrument'
 
 import { Hono } from 'hono'
+import { requestId } from 'hono/request-id'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
 import emailRouter from './api/email'
@@ -22,6 +23,9 @@ import * as linkMetadata from './modules/link-metadata'
 
 // Create Hono app
 const app = new Hono()
+
+// Correlation id first so every log line and error capture can carry it.
+app.use('*', requestId())
 
 // Record latency + count per matched route on the shared Prometheus registry.
 // Outermost so it also sees responses the rate limiter short-circuits (429s).
@@ -68,8 +72,10 @@ app.notFound((c) =>
   c.json({ success: false, error: { message: 'Not found', code: 'NOT_FOUND' } }, 404)
 )
 app.onError((err, c) => {
-  restApiLogger.error({ err, method: c.req.method, path: c.req.path }, 'Unhandled request error')
-  captureHttpError(err)
+  const context = { requestId: c.get('requestId'), method: c.req.method, path: c.req.path }
+  restApiLogger.error({ err, ...context }, 'Unhandled request error')
+  const userId = c.get('userId') ?? c.get('user')?.sub
+  captureHttpError(err, { extra: context, ...(userId ? { user: { id: userId } } : {}) })
   const status = (err instanceof AppError ? err.statusCode : 500) as ContentfulStatusCode
   return c.json(getErrorResponse(err instanceof Error ? err : new Error(String(err))), status)
 })
