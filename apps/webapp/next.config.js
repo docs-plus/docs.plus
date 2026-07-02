@@ -378,8 +378,19 @@ module.exports = withPWA({
   }
 })
 
+// Sourcemap upload to GlitchTip only when a token is present; without one the
+// build stays capture-only and byte-identical (no upload plugin activity).
 module.exports = withSentryConfig(module.exports, {
   silent: true,
   disableLogger: true,
-  sourcemaps: { disable: true } // capture only; no sourcemap upload for now
+  ...(process.env.SENTRY_AUTH_TOKEN
+    ? {
+        telemetry: false,
+        sentryUrl: process.env.SENTRY_URL,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG || 'docsplus',
+        project: process.env.SENTRY_PROJECT || 'prod_docsplus',
+        sourcemaps: { deleteSourcemapsAfterUpload: true }
+      }
+    : { sourcemaps: { disable: true } }) // capture only; no sourcemap upload without a token
 })
