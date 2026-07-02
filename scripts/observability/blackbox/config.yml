@@ -1,0 +1,9 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 10s
+    http:
+      # Probe over IPv4: the droplet's public DNS answers both families but
+      # Traefik only listens on the v4 address.
+      preferred_ip_protocol: ip4
+      follow_redirects: true
