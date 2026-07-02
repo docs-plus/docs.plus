@@ -70,8 +70,22 @@ export const getMedia = async (documentId: string, mediaId: string, c: Context) 
 /** Matches webapp mediaUploadLimits.ts and Supabase media bucket (10 MB). */
 const DEFAULT_MEDIA_MAX_FILE_SIZE = 10_485_760
 
-const resolveMediaMaxFileSize = (configured: number): number =>
-  configured > 0 ? configured : DEFAULT_MEDIA_MAX_FILE_SIZE
+// A media cap under 1 MB is always a misconfigured env (a port/unit mix-up like
+// DO_STORAGE_MAX_FILE_SIZE=4000), which rejects every real upload as "0.00MB max";
+// floor to the default so a rebuild with a bad value can't brick uploads.
+const MIN_PLAUSIBLE_MEDIA_MAX_FILE_SIZE = 1_048_576
+
+const resolveMediaMaxFileSize = (configured: number): number => {
+  if (configured >= MIN_PLAUSIBLE_MEDIA_MAX_FILE_SIZE) return configured
+  mediaServiceLogger.warn(
+    { configured, using: DEFAULT_MEDIA_MAX_FILE_SIZE },
+    'DO_STORAGE_MAX_FILE_SIZE below the 1 MB floor; using 10 MB default'
+  )
+  return DEFAULT_MEDIA_MAX_FILE_SIZE
+}
+
+// Resolved once at load so the warning fires at startup, not on every upload.
+const MEDIA_MAX_FILE_SIZE = resolveMediaMaxFileSize(config.storage.s3.maxFileSize)
 
 export const uploadMedia = async (documentId: string, mediaFile: File) => {
   try {
@@ -79,7 +93,7 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       throw new InternalServerError('No file provided')
     }
 
-    const maxFileSize = resolveMediaMaxFileSize(config.storage.s3.maxFileSize)
+    const maxFileSize = MEDIA_MAX_FILE_SIZE
 
     if (mediaFile.size > maxFileSize) {
       mediaServiceLogger.warn(
