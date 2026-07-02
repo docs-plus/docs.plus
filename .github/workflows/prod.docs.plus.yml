@@ -457,6 +457,16 @@ jobs:
           cp "${ENV_SOURCE}" "${ENV_FILE}"
           echo "DEPLOY_TAG=${DEPLOY_TAG}" >> "${ENV_FILE}"
 
+          # Error capture must never silently regress: both DSNs feed GlitchTip.
+          # Require a real first character — dotenv strips quotes, so KEY="" or
+          # whitespace-only values are empty at runtime.
+          for k in GLITCHTIP_DSN NEXT_PUBLIC_GLITCHTIP_DSN; do
+            if ! grep -Eq "^${k}=[\"']?[^\"'[:space:]]" "${ENV_FILE}"; then
+              echo "::error::${k} is missing or empty in ${ENV_SOURCE}. Set it to the GlitchTip project DSN (https://glitchtip.docs.plus) before deploying."
+              exit 1
+            fi
+          done
+
           # Stash the previous successful tag (if any) for the rollback step.
           mkdir -p "${DEPLOY_STATE_DIR}"
           if [ -f "${LAST_GOOD_TAG_FILE}" ]; then
@@ -534,6 +544,10 @@ jobs:
 
       - name: 🔧 Ensure Infrastructure
         run: |
+          # First step that mutates the prod host — everything before (env guard,
+          # disk guard, image build) leaves production untouched, and the failure
+          # notification keys off this marker to avoid a false rollback page.
+          echo "DEPLOY_STARTED=true" >> "$GITHUB_ENV"
           echo "🔧 Ensuring infrastructure..."
 
           docker network create docsplus-network 2>/dev/null || true
@@ -741,7 +755,26 @@ jobs:
           echo "  - https://prodback.docs.plus"
           echo "======================================"
 
+      - name: 📌 Grafana deploy annotation
+        if: success()
+        run: |
+          # Grafana publishes no host port (traefik-only); reach it via its
+          # docker-network IP from the host. Never fails the deploy.
+          OBS_ENV=/opt/projects/prod.docs.plus/.env.observability
+          GRAFANA_PASS=$(grep '^GRAFANA_ADMIN_PASSWORD=' "${OBS_ENV}" 2>/dev/null | cut -d= -f2- || true)
+          GRAFANA_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' docsplus-grafana 2>/dev/null || true)
+          if [ -z "${GRAFANA_PASS}" ] || [ -z "${GRAFANA_IP}" ]; then
+            echo "::warning::Grafana unreachable; skipping deploy annotation"; exit 0
+          fi
+          curl -sf --max-time 10 -u "admin:${GRAFANA_PASS}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"text\":\"deploy ${DEPLOY_TAG}\",\"tags\":[\"deploy\"]}" \
+            "http://${GRAFANA_IP}:3000/api/annotations" >/dev/null \
+            && echo "✅ Deploy annotation posted" \
+            || echo "::warning::Grafana deploy annotation failed (non-fatal)"
+
       - name: 🚨 Rollback on Failure
+        id: rollback
         if: failure()
         run: |
           echo "⚠️ Deployment failed — attempting rollback..."
@@ -821,6 +854,22 @@ jobs:
           fi
 
           echo "✅ Rollback to ${PREVIOUS_TAG} verified healthy"
+
+      - name: 📣 Notify deploy failure
+        if: failure()
+        env:
+          ROLLBACK_OUTCOME: ${{ steps.rollback.outcome }}
+        run: |
+          # Credentials live in the observability env file on this host. Never fatal.
+          OBS_ENV=/opt/projects/prod.docs.plus/.env.observability
+          if [ "${DEPLOY_STARTED:-}" != "true" ]; then
+            TEXT="⚠️ docs.plus deploy of ${DEPLOY_TAG} aborted before touching prod (env guard or build); production unchanged"
+          elif [ "${ROLLBACK_OUTCOME}" = "success" ] && [ -n "${PREVIOUS_TAG:-}" ]; then
+            TEXT="🚨 docs.plus deploy of ${DEPLOY_TAG} FAILED — rolled back to ${PREVIOUS_TAG}"
+          else
+            TEXT="🚨 docs.plus deploy of ${DEPLOY_TAG} FAILED and rollback FAILED — manual intervention required"
+          fi
+          bash scripts/ci/notify-telegram.sh "${OBS_ENV}" "${TEXT}"
 
   # ===========================================================================
   # STAGE 4 — OBSERVABILITY DEPLOY (ordered after app deploy)

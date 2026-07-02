@@ -1,0 +1,43 @@
+# Pages Telegram when a self-hosted runner drops offline OR none is registered
+# (GitHub auto-deregisters runners dead >14 days — zero registered is terminal).
+# Needs RUNNER_WATCHDOG_TOKEN (fine-grained PAT with repo Administration:read —
+# the runners API is not grantable to the workflow GITHUB_TOKEN). Silent no-op
+# until all three secrets exist.
+name: Runner Watchdog
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: 🩺 Check self-hosted runners
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 1
+      - name: 🩺 Probe runner status
+        env:
+          GH_TOKEN: ${{ secrets.RUNNER_WATCHDOG_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "${GH_TOKEN}" ] || [ -z "${TELEGRAM_BOT_TOKEN}" ] || [ -z "${TELEGRAM_CHAT_ID}" ]; then exit 0; fi
+          if ! RESP=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runners"); then
+            echo "::warning::Could not list runners (token may lack administration:read)"; exit 0
+          fi
+          TOTAL=$(jq -r '.total_count' <<<"${RESP}")
+          OFFLINE=$(jq -r '.runners[] | select(.status != "online") | .name' <<<"${RESP}")
+          if [ "${TOTAL}" -eq 0 ]; then
+            bash scripts/ci/notify-telegram.sh - "🛑 No self-hosted runners registered for ${GITHUB_REPOSITORY} — prod deploys cannot run"
+            exit 0
+          fi
+          [ -z "${OFFLINE}" ] && { echo "✅ All ${TOTAL} self-hosted runners online"; exit 0; }
+          bash scripts/ci/notify-telegram.sh - "🛑 Self-hosted runner offline for ${GITHUB_REPOSITORY}: ${OFFLINE}"

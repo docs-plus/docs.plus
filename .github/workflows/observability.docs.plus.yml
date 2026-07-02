@@ -58,9 +58,11 @@ jobs:
       - name: 🔐 Prepare environment
         run: |
           cp "${ENV_SOURCE}" "${ENV_FILE}"
-          for k in GRAFANA_ADMIN_PASSWORD GLITCHTIP_SECRET_KEY GLITCHTIP_POSTGRES_PASSWORD TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID DATABASE_URL; do
-            if ! grep -q "^${k}=" "${ENV_FILE}"; then
-              echo "::error::${k} missing from ${ENV_SOURCE}"; exit 1
+          # Require a real first character: dotenv strips quotes, so KEY="" or
+          # whitespace-only values are empty at runtime and must fail here.
+          for k in GRAFANA_ADMIN_PASSWORD GLITCHTIP_SECRET_KEY GLITCHTIP_POSTGRES_PASSWORD TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID DATABASE_URL DEADMAN_WEBHOOK_URL; do
+            if ! grep -Eq "^${k}=[\"']?[^\"'[:space:]]" "${ENV_FILE}"; then
+              echo "::error::${k} missing or empty in ${ENV_SOURCE}"; exit 1
             fi
           done
           echo "✅ Environment ready"
@@ -69,20 +71,17 @@ jobs:
         # Grafana's native ${VAR} expansion in alerting provisioning mistypes a numeric
         # chat id (-100…) into a JSON number and fails to load; envsubst renders a literal
         # quoted string instead. Only the allowlisted vars are substituted so the Go
-        # message template and the LogQL/PromQL `$` in rules.yml are left intact.
-        # DEADMAN_WEBHOOK_URL is optional, but Grafana requires a NON-EMPTY webhook url or
-        # the whole contactpoints/policies tree fails to provision. Default it to a
-        # non-resolving placeholder (RFC-2606 .invalid) when unset: the snitch just never
-        # reaches a real endpoint until the var is set, instead of a silent blackout.
+        # message template and the LogQL/PromQL `$` in rules-*.yml are left intact.
         run: |
           set -a
           # shellcheck disable=SC1090
           . "./${ENV_FILE}"
           set +a
-          : "${DEADMAN_WEBHOOK_URL:=https://deadman.invalid/heartbeat}"
-          export DEADMAN_WEBHOOK_URL
+          # Warnings route falls back to the main ops chat until a dedicated one is set.
+          : "${TELEGRAM_WARNINGS_CHAT_ID:=${TELEGRAM_CHAT_ID}}"
+          export TELEGRAM_WARNINGS_CHAT_ID
           # shellcheck disable=SC2016
-          envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID} ${DEADMAN_WEBHOOK_URL}' \
+          envsubst '${TELEGRAM_BOT_TOKEN} ${TELEGRAM_CHAT_ID} ${TELEGRAM_WARNINGS_CHAT_ID} ${DEADMAN_WEBHOOK_URL}' \
             < scripts/observability/grafana/provisioning/alerting/contactpoints.yml.tmpl \
             > scripts/observability/grafana/provisioning/alerting/contactpoints.yml
 
@@ -111,7 +110,13 @@ jobs:
               docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart ;;
             *)
               docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull
-              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --remove-orphans ;;
+              # Validate the mounted config before touching the running stack.
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
+                run --rm --entrypoint promtool prometheus check config /etc/prometheus/prometheus.yml
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --remove-orphans
+              # `up -d` never re-reads bind-mounted config files on unchanged containers;
+              # restart forces prometheus.yml + grafana provisioning to be picked up.
+              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" restart prometheus grafana ;;
           esac
 
       - name: 🩺 Verify
@@ -131,6 +136,11 @@ jobs:
             sleep 5
           done
           [ "${ok}" = 1 ] || { echo "::error::glitchtip-web not healthy after ~90s"; exit 1; }
+
+      - name: 📣 Notify failure
+        if: failure()
+        # Reads ENV_SOURCE (not the copied file) — the copy step itself may be what failed.
+        run: bash scripts/ci/notify-telegram.sh "${ENV_SOURCE}" "🔭 Observability deploy FAILED (${GITHUB_SHA}, run ${GITHUB_RUN_ID})"
 
   teardown:
     name: 🧹 Down
