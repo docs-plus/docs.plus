@@ -595,6 +595,40 @@ revoke execute on function public.admin_get_failed_push_subs(int) from anon;
 grant execute on function public.admin_get_failed_push_subs(int) to authenticated;
 
 
+-- 7e. All-queue pgmq metrics (push + email) for the observability exporter
+create or replace function public.get_pgmq_queue_metrics()
+returns table (
+    queue_name text,
+    queue_length bigint,
+    oldest_msg_age_sec integer,
+    total_messages bigint
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+    return query
+    select
+        m.queue_name,
+        m.queue_length,
+        m.oldest_msg_age_sec,
+        m.total_messages
+    from pgmq.metrics_all() m;
+end;
+$$;
+
+comment on function public.get_pgmq_queue_metrics() is
+'Returns per-queue pgmq depth, oldest message age, and lifetime message count for monitoring.';
+
+-- Queue depth is infrastructure state, not user data. Admin gating happens at
+-- the Hocuspocus controller (service_role key); revoke the default public
+-- grant so the explicit service_role grant is exclusive.
+revoke execute on function public.get_pgmq_queue_metrics() from public, anon, authenticated;
+grant  execute on function public.get_pgmq_queue_metrics() to service_role;
+
+
 -- =============================================================================
 -- 8. Cleanup Stale Subscriptions (pg_cron job)
 -- =============================================================================

@@ -169,6 +169,48 @@ comment on function public.get_dau_trend(integer) is
 'Returns daily active user counts for the specified number of days.';
 
 -- -----------------------------------------------------------------------------
+-- 3b. Get Signups Per Day (new accounts over time)
+-- -----------------------------------------------------------------------------
+create or replace function public.get_signups_per_day(p_days integer default 30)
+returns table (
+    day date,
+    signups bigint
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+    return query
+    with date_series as (
+        select generate_series(
+            current_date - (p_days - 1),
+            current_date,
+            interval '1 day'
+        )::date as d
+    ),
+    daily_counts as (
+        select
+            created_at::date as signup_date,
+            count(*) as signups
+        from public.users
+        where created_at >= current_date - (p_days - 1)
+        group by created_at::date
+    )
+    select
+        ds.d as day,
+        coalesce(dc.signups, 0)::bigint as signups
+    from date_series ds
+    left join daily_counts dc on ds.d = dc.signup_date
+    order by ds.d;
+end;
+$$;
+
+comment on function public.get_signups_per_day(integer) is
+'Returns new-account counts per day for the specified number of days.';
+
+-- -----------------------------------------------------------------------------
 -- 4. Get Activity by Hour (for heatmap)
 -- -----------------------------------------------------------------------------
 create or replace function public.get_activity_by_hour(p_days integer default 7)
@@ -264,14 +306,14 @@ begin
 
     return query
     select
-        coalesce(m.type, 'text') as message_type,
+        coalesce(m.type::text, 'text') as message_type,
         count(*) as count,
         case when v_total > 0 then round((count(*)::numeric / v_total) * 100, 1) else 0 end as percentage
     from public.messages m
     join public.channels c on m.channel_id = c.id
     where m.created_at >= now() - (p_days || ' days')::interval
       and c.type = 'PUBLIC'
-    group by coalesce(m.type, 'text')
+    group by coalesce(m.type::text, 'text')
     order by count desc;
 end;
 $$;
@@ -392,6 +434,9 @@ grant  execute on function public.get_user_lifecycle_segments() to service_role;
 revoke execute on function public.get_dau_trend(integer) from public, anon, authenticated;
 grant  execute on function public.get_dau_trend(integer) to service_role;
 
+revoke execute on function public.get_signups_per_day(integer) from public, anon, authenticated;
+grant  execute on function public.get_signups_per_day(integer) to service_role;
+
 revoke execute on function public.get_activity_by_hour(integer) from public, anon, authenticated;
 grant  execute on function public.get_activity_by_hour(integer) to service_role;
 
@@ -414,6 +459,7 @@ grant  execute on function public.get_notification_reach() to service_role;
 ALTER FUNCTION public.get_retention_metrics() SET search_path = public;
 ALTER FUNCTION public.get_user_lifecycle_segments() SET search_path = public;
 ALTER FUNCTION public.get_dau_trend(p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_signups_per_day(p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_activity_by_hour(p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_top_active_documents(p_limit integer, p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_message_type_distribution(p_days integer) SET search_path = public;

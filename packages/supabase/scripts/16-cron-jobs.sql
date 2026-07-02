@@ -37,6 +37,62 @@ select cron.schedule(
     $$ select internal.cleanup_orphan_chat_media(interval '24 hours'); $$
 );
 
+-- cron.job_run_details grows unbounded (one row per run; the 2-minute jobs
+-- alone add ~720 rows/day). Keep a rolling week for health checks.
+select cron.unschedule('cleanup-cron-job-run-details')
+from cron.job where jobname = 'cleanup-cron-job-run-details';
+
+select cron.schedule(
+    'cleanup-cron-job-run-details',
+    '15 4 * * *',
+    $$
+    delete from cron.job_run_details
+    where end_time < now() - interval '7 days';
+    $$
+);
+
+-- Per-job health for the observability exporter: latest run status plus the
+-- end time of the most recent successful run.
+create or replace function public.get_cron_job_health()
+returns table (
+    jobname text,
+    last_run_status text,
+    last_success_at timestamptz
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+    return query
+    select
+        j.jobname::text,
+        (
+            select d.status
+            from cron.job_run_details d
+            where d.jobid = j.jobid
+            order by d.start_time desc
+            limit 1
+        ) as last_run_status,
+        (
+            select max(d.end_time)
+            from cron.job_run_details d
+            where d.jobid = j.jobid and d.status = 'succeeded'
+        ) as last_success_at
+    from cron.job j;
+end;
+$$;
+
+comment on function public.get_cron_job_health() is
+'Returns each pg_cron job with its latest run status and last successful run time.';
+
+-- Scheduler internals are not user data. Admin gating happens at the
+-- Hocuspocus controller (service_role key); revoke the default public grant
+-- so the explicit service_role grant is exclusive.
+revoke execute on function public.get_cron_job_health() from public, anon, authenticated;
+grant  execute on function public.get_cron_job_health() to service_role;
+
 -- Commented out: Delete read notifications
 -- This job would delete all notifications that have been read by users.
 -- Uncomment if you want to periodically clean up read notifications from the database.

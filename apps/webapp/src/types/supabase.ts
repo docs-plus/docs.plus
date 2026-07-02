@@ -1318,6 +1318,14 @@ export type Database = {
         Returns: Database["public"]["Enums"]["channel_notification_state"]
       }
       get_communication_stats: { Args: { p_days?: number }; Returns: Json }
+      get_cron_job_health: {
+        Args: never
+        Returns: {
+          jobname: string
+          last_run_status: string
+          last_success_at: string
+        }[]
+      }
       get_dau_trend: {
         Args: { p_days?: number }
         Returns: {
@@ -1414,6 +1422,15 @@ export type Database = {
       }
       get_notification_health: { Args: never; Returns: Json }
       get_notification_reach: { Args: never; Returns: Json }
+      get_pgmq_queue_metrics: {
+        Args: never
+        Returns: {
+          oldest_msg_age_sec: number
+          queue_length: number
+          queue_name: string
+          total_messages: number
+        }[]
+      }
       get_push_failure_summary: {
         Args: never
         Returns: {
@@ -1427,6 +1444,13 @@ export type Database = {
       }
       get_push_queue_stats: { Args: never; Returns: Json }
       get_retention_metrics: { Args: never; Returns: Json }
+      get_signups_per_day: {
+        Args: { p_days?: number }
+        Returns: {
+          day: string
+          signups: number
+        }[]
+      }
       get_top_active_documents: {
         Args: { p_days?: number; p_limit?: number }
         Returns: {
@@ -1467,6 +1491,7 @@ export type Database = {
         Args: {
           p_archived?: boolean
           p_limit?: number
+          p_marked_as_read?: boolean
           p_offset?: number
           p_workspace_id?: string
         }
