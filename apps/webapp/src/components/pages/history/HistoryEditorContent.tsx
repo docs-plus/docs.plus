@@ -1,8 +1,10 @@
+import SessionExpiredBanner from '@components/pages/document/components/SessionExpiredBanner'
 import SyncErrorCard from '@components/pages/document/components/SyncErrorCard'
 import EditorContentSkeleton from '@components/skeleton/EditorContentSkeleton'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
 import { EditorContent as TiptapEditorContent } from '@tiptap/react'
+import { isSessionExpired, shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
 
 type HistoryEditorVariant = 'desktop' | 'mobile'
 
@@ -33,10 +35,16 @@ export function HistoryEditorContent({ variant }: { variant: HistoryEditorVarian
   const skeletonClass = SKELETON_CLASS[variant]
   const editorClass = EDITOR_CLASS[variant]
 
-  if (providerSyncing && (providerStatus === 'error' || providerStatus === 'offline')) {
+  const needsAuth = isSessionExpired(providerStatus)
+
+  if (providerSyncing && shouldShowSyncErrorWhileLoading(providerStatus)) {
     return (
       <ScrollArea className={scrollRootClass} scrollbarSize="thin">
-        <SyncErrorCard offline={providerStatus === 'offline'} className={skeletonClass} />
+        <SyncErrorCard
+          offline={providerStatus === 'offline'}
+          needsAuth={needsAuth}
+          className={skeletonClass}
+        />
       </ScrollArea>
     )
   }
@@ -51,6 +59,7 @@ export function HistoryEditorContent({ variant }: { variant: HistoryEditorVarian
 
   return (
     <ScrollArea className={scrollRootClass} scrollbarSize="thin">
+      {needsAuth && <SessionExpiredBanner />}
       <TiptapEditorContent editor={editor} className={editorClass} />
     </ScrollArea>
   )

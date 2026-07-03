@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/react'
+import type { ProviderStatus } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
 type EditorSettings = {
@@ -22,7 +23,7 @@ type Workspace = {
   workspaceId?: string
   metadata?: any
   broadcaster?: any
-  providerStatus: 'saved' | 'synced' | 'saving' | 'error' | 'offline' | 'online'
+  providerStatus: ProviderStatus
   editor: EditorSettings
   hocuspocusProvider?: any
   deviceDetect?: any

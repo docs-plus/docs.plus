@@ -62,13 +62,14 @@ export function captureCollabIssueOnce(
   documentId: string,
   slug: string,
   kind: string,
-  extra: Record<string, unknown>
+  extra: Record<string, unknown>,
+  level: Sentry.SeverityLevel = 'error'
 ) {
   const key = `${documentId}:${kind}`
   if (reported.has(key)) return
   reported.add(key)
   Sentry.captureMessage(`collab:${kind}`, {
-    level: 'error',
+    level,
     tags: { surface: 'hocuspocus-provider' },
     extra: { documentId, slug, ...extra }
   })

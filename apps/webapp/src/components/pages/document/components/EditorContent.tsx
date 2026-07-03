@@ -1,3 +1,4 @@
+import SessionExpiredBanner from '@components/pages/document/components/SessionExpiredBanner'
 import SyncErrorCard from '@components/pages/document/components/SyncErrorCard'
 import EditorContentSkeleton from '@components/skeleton/EditorContentSkeleton'
 import { useMediaPasteUpload } from '@components/TipTap/mediaPopovers/useMediaPasteUpload'
@@ -5,6 +6,7 @@ import { useEditorFocusScroll, useEnableEditor } from '@hooks/useCaretPosition'
 import useDoubleTap from '@hooks/useDoubleTap'
 import { useStore } from '@stores'
 import { EditorContent as TiptapEditor } from '@tiptap/react'
+import { isSessionExpired, shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
 import { useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -34,8 +36,16 @@ const EditorContent = ({ className }: { className?: string }) => {
     }, [isKeyboardOpen, enableAndFocus])
   )
 
-  if (providerSyncing && (providerStatus === 'error' || providerStatus === 'offline')) {
-    return <SyncErrorCard offline={providerStatus === 'offline'} className={className} />
+  const needsAuth = isSessionExpired(providerStatus)
+
+  if (providerSyncing && shouldShowSyncErrorWhileLoading(providerStatus)) {
+    return (
+      <SyncErrorCard
+        offline={providerStatus === 'offline'}
+        needsAuth={needsAuth}
+        className={className}
+      />
+    )
   }
 
   if (loading || providerSyncing || !editor) {
@@ -43,22 +53,25 @@ const EditorContent = ({ className }: { className?: string }) => {
   }
 
   return (
-    <TiptapEditor
-      inputMode={'text'}
-      enterKeyHint={'enter'}
-      autoFocus={isKeyboardOpen}
-      ref={editorElement}
-      className={twMerge(
-        'tiptap__editor docy_editor relative w-full',
-        !entryFadeDone && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
-        className
-      )}
-      editor={editor}
-      onTouchEnd={handleDoubleTap}
-      onAnimationEnd={(e) => {
-        if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
-      }}
-    />
+    <>
+      {needsAuth && <SessionExpiredBanner />}
+      <TiptapEditor
+        inputMode={'text'}
+        enterKeyHint={'enter'}
+        autoFocus={isKeyboardOpen}
+        ref={editorElement}
+        className={twMerge(
+          'tiptap__editor docy_editor relative w-full',
+          !entryFadeDone && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
+          className
+        )}
+        editor={editor}
+        onTouchEnd={handleDoubleTap}
+        onAnimationEnd={(e) => {
+          if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
+        }}
+      />
+    </>
   )
 }
 

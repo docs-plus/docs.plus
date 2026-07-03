@@ -1,4 +1,5 @@
 export * from './api'
+export * from './collab'
 export * from './comment'
 export * from './domain'
 export * from './history'

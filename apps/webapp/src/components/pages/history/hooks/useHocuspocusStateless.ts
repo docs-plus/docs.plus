@@ -1,4 +1,5 @@
 import { useStore } from '@stores'
+import { shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
 import { useLayoutEffect } from 'react'
 
 import { resetHistorySessionForMount } from '../clearHistorySession'
@@ -23,7 +24,7 @@ export const useHocuspocusStateless = () => {
 
   useLayoutEffect(() => {
     if (!providerSyncing) return
-    if (providerStatus !== 'error' && providerStatus !== 'offline') return
+    if (!shouldShowSyncErrorWhileLoading(providerStatus)) return
     setLoadingHistory(false)
   }, [providerSyncing, providerStatus, setLoadingHistory])
 
