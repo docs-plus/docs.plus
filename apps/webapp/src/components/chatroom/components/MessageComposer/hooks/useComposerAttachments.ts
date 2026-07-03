@@ -12,6 +12,8 @@ import * as toast from '@components/toast'
 import type { MessageMediaItem } from '@types'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 
+import { useComposerAttachmentList } from './useComposerAttachmentList'
+
 export type { ComposerAttachment } from '@components/chatroom/stores/composerAttachmentsStore'
 
 type Args = {
@@ -28,7 +30,7 @@ export const useComposerAttachments = ({
   disabled = false
 }: Args) => {
   const storeKey = workspaceId ? composerAttachmentKey(workspaceId, channelId) : channelId
-  const attachments = useComposerAttachmentsStore((state) => state.byKey[storeKey] ?? [])
+  const attachments = useComposerAttachmentList(workspaceId, channelId)
   const setAttachments = useComposerAttachmentsStore((state) => state.setAttachments)
   const pushRemovedPersistedPath = useComposerAttachmentsStore(
     (state) => state.pushRemovedPersistedPath

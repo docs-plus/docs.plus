@@ -14,6 +14,8 @@ export type ComposerAttachment = {
   spoiler?: boolean
 }
 
+const emptyAttachments: ComposerAttachment[] = []
+
 export const composerAttachmentKey = (workspaceId: string, channelId: string): string =>
   `${workspaceId}::${channelId}`
 
@@ -30,6 +32,11 @@ type ComposerAttachmentsState = {
   resetRemovedPersistedPaths: (key: string) => void
   pruneExceptKey: (keepKey: string) => void
 }
+
+export const selectComposerAttachmentsByKey =
+  (key: string) =>
+  (state: ComposerAttachmentsState): ComposerAttachment[] =>
+    state.byKey[key] ?? emptyAttachments
 
 export const useComposerAttachmentsStore = create<ComposerAttachmentsState>((set, get) => ({
   byKey: {},
