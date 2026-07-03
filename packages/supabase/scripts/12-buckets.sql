@@ -131,6 +131,7 @@ on conflict (id) do update set
     allowed_mime_types = excluded.allowed_mime_types;
 
 -- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
+-- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
 drop policy if exists "User can upload media files" on storage.objects;
 drop policy if exists "User can update own media files" on storage.objects;
@@ -159,7 +160,7 @@ create policy "Authed can read public channel chat media" on storage.objects
         and exists (
             select 1
               from public.channels c
-             where c.id = (storage.foldername(name))[2]
+             where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
         )
     );
@@ -170,7 +171,7 @@ create policy "Anon can read public channel chat media" on storage.objects
         and exists (
             select 1
               from public.channels c
-             where c.id = (storage.foldername(name))[2]
+             where c.id = (storage.foldername(objects.name))[2]
                and c.type = 'PUBLIC'
         )
     );
