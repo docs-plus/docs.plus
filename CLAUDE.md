@@ -14,7 +14,7 @@ If guidance overlaps, project policy in `AGENTS.md` and `.cursor/docs/` wins; `.
 
 These are the rules that bite hardest if missed. Full context in [AGENTS.md](AGENTS.md).
 
-- **Bun only.** Never `npm`, `yarn`, `pnpm`, `npx` — including the install commands in published extension READMEs/CHANGELOGs (`bun add …@next` during soak, never `npm install`). Lockfile is `bun.lock`.
+- **Bun only.** Never `npm`, `yarn`, `pnpm`, `npx` — including the install commands in published extension READMEs/CHANGELOGs (plain `bun add <pkg>`, never `npm install` or `@next` soak lines; see [AGENTS.md](AGENTS.md) §Extension Package Contract). Lockfile is `bun.lock`.
 - **No commits unless asked.** No `git add`, `git commit`, `git push`, `git stash`, or `--amend` inside plan execution. End multi-task plans at a "Review checkpoint".
 - **Stay in the current worktree.** Do not switch execution to another path or parallel checkout.
 - **Tests are opt-in, not default.** Do not add tests unless asked, pinning a real regression, or covering dense branching logic. Prefer Cypress E2E over unit. Never write the banned shapes listed in [AGENTS.md](AGENTS.md) §Testing And Verification.
@@ -62,9 +62,9 @@ Skills never create branches or worktrees and never commit — they operate in t
 
 ## Workspace shape
 
-- Bun monorepo, workspaces = `apps/*` (webapp, hocuspocus.server, admin-dashboard), `extensions/*` (the five `@docs.plus/extension-*`), `packages/*` (floating-popover, eslint-config, release-tooling, supabase, email-templates). Engines: Node ≥ 24.11.0, Bun ≥ 1.3.7.
+- Bun monorepo, workspaces = `apps/*` (webapp, hocuspocus.server, admin-dashboard), `extensions/*` (the five `@docs.plus/extension-*`), `packages/*` (floating-popover, floating-tooltip, eslint-config, release-tooling, playground, supabase, email-templates). Engines: Node ≥ 24.11.0, Bun ≥ 1.3.7.
 - Webapp: [@docs.plus/webapp](apps/webapp/) (Next.js Pages Router).
-- Realtime backend: [@docs.plus/hocuspocus.server](apps/hocuspocus.server/).
+- Realtime backend: `@docs.plus/hocuspocus` at [apps/hocuspocus.server](apps/hocuspocus.server/).
 - Admin: [@docs.plus/admin-dashboard](apps/admin-dashboard/).
 - Editor: [apps/webapp/src/components/TipTap/](apps/webapp/src/components/TipTap/).
 - Publishable extensions: `extensions/extension-*` (use [@docs.plus/release-tooling](packages/release-tooling/) for `prepack` / `prepublishOnly`).
