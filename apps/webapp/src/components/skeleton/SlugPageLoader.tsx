@@ -1,5 +1,7 @@
 import {
+  clampTocWidth,
   readPersistedTocWidth,
+  resolveTocContainerWidth,
   TOC_DEFAULT_WIDTH
 } from '@components/pages/document/hooks/useTocResize'
 import EditorContentSkeleton from '@components/skeleton/EditorContentSkeleton'
@@ -13,7 +15,12 @@ const usePersistedTocWidth = () => {
   const [tocWidth, setTocWidth] = useState(TOC_DEFAULT_WIDTH)
 
   useEffect(() => {
-    setTocWidth(readPersistedTocWidth())
+    const sync = () => {
+      setTocWidth(clampTocWidth(readPersistedTocWidth(), resolveTocContainerWidth(null)))
+    }
+    sync()
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
   }, [])
 
   return tocWidth
@@ -61,13 +68,13 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
 
     <ToolbarSkeleton />
 
-    <div className="editor bg-base-200 flex min-h-0 w-full flex-1 flex-row-reverse justify-around">
-      <div
-        className="editorWrapper scrollbar-custom scrollbar-thin flex h-full items-start justify-center overflow-y-auto px-3 py-4 sm:px-6 sm:py-6"
-        style={{ width: `calc(100% - ${tocWidth}px)`, maxWidth: '100%' }}>
+    <div className="editor bg-base-200 flex min-h-0 w-full flex-1 flex-row-reverse">
+      <div className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full min-w-0 flex-1 items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
         <EditorContentSkeleton className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
       </div>
-      <aside className="bg-base-200 h-full shrink-0" style={{ width: tocWidth }}>
+      <aside
+        className="border-base-300 bg-base-200 h-full shrink-0 border-r"
+        style={{ width: tocWidth }}>
         <div className="p-4">
           <TableOfContentsLoader className="mt-2" />
         </div>

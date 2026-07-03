@@ -20,7 +20,7 @@
 
   /* NEUTRALS */
   --color-base-100: #fafbfc; /* document canvas, soft white */
-  --color-base-200: #f7f9fc; /* subtle surfaces */
+  --color-base-200: #edf0f5; /* workspace well — one step below sheets (was #f7f9fc; too close to base-100) */
   --color-base-300: #e5eaf1; /* borders/dividers */
   --color-base-content: #0f172a; /* slate-900 (clean + readable) */
 
@@ -193,6 +193,16 @@
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
   --hm-resize-border: var(--color-primary);
   --hm-resize-handle-bg: var(--color-base-100);
+  /* Pad workspace — docked regions (TOC, editor well, chat) share one divider; shadows only on floating overlays. */
+  --pad-divider: var(--color-base-300);
+  --pad-sheet-border: var(--color-base-300);
+  --pad-sheet-radius: 0.375rem;
+  --pad-sheet-shadow: none;
+  /* Panel sash (TOC + chatroom) — VS Code-style: divider at idle, primary accent on hover/drag. */
+  --resize-sash-hit: 8px;
+  --resize-sash-size: 4px;
+  --resize-sash-idle: var(--pad-divider);
+  --resize-sash-hover: var(--color-primary);
   /* Modal/sheet scrims — always black-based (never base-content — white fog on dark UI). */
   --modal-scrim: color-mix(in oklch, black 45%, transparent);
   --modal-scrim-heavy: color-mix(in oklch, black 72%, transparent);
@@ -200,6 +210,7 @@
 
 [data-theme='docsplus-dark'],
 [data-theme='docsplus-dark-hc'] {
+  --pad-sheet-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
   --modal-scrim: color-mix(in oklch, black 55%, transparent);
   --modal-scrim-heavy: color-mix(in oklch, black 80%, transparent);
 }

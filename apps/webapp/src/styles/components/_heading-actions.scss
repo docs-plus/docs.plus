@@ -17,11 +17,11 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--color-base-300);
+  border: 1px solid var(--pad-sheet-border);
   background-color: var(--color-base-100);
   color: var(--color-primary);
   border-radius: 9999px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+  box-shadow: var(--pad-sheet-shadow);
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
@@ -172,9 +172,9 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
     width: fit-content;
     max-width: fit-content;
     background-color: var(--color-base-100);
-    border: 1px solid var(--color-base-300);
+    border: 1px solid var(--pad-sheet-border);
     border-radius: 9999px;
-    box-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+    box-shadow: var(--pad-sheet-shadow);
 
     :is(.ha-chat-btn, .ha-comment-btn) {
       position: relative !important;

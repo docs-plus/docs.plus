@@ -4,71 +4,56 @@ import { twMerge } from 'tailwind-merge'
 export type ResizeHandleOrientation = 'horizontal' | 'vertical'
 
 export interface ResizeHandleProps {
-  /** Orientation of the resize handle */
   orientation: ResizeHandleOrientation
-  /** Mouse down handler for initiating resize */
   onMouseDown: (e: React.MouseEvent) => void
-  /** Whether the handle is currently being dragged */
   isResizing?: boolean
-  /** Additional CSS classes */
   className?: string
 }
 
-/**
- * ResizeHandle component following the design system guidelines.
- *
- * Design System Rules:
- * - Handle size: 6-8px hit-area (invisible by default)
- * - Cursor: col-resize (vertical) or row-resize (horizontal)
- * - Visual: thin divider on hover/drag
- * - During drag, parent should disable text selection
- *
- * @example
- * // Vertical resize (between TOC and Editor)
- * <ResizeHandle orientation="vertical" onMouseDown={handleMouseDown} />
- *
- * // Horizontal resize (between Editor and Chat)
- * <ResizeHandle orientation="horizontal" onMouseDown={handleMouseDown} />
- */
+/** VS Code-style sash: stradds the split; one divider (idle hairline → primary on hover/drag). */
 const ResizeHandle = forwardRef<HTMLDivElement, ResizeHandleProps>(
   ({ orientation, onMouseDown, isResizing = false, className }, ref) => {
     const isVertical = orientation === 'vertical'
+    const active = isResizing
+
+    const sashLine = [
+      "after:pointer-events-none after:absolute after:content-['']",
+      'after:transition-[width,height,background-color,opacity] after:duration-150',
+      active
+        ? 'after:bg-[var(--resize-sash-hover)]'
+        : 'after:bg-[var(--resize-sash-idle)] hover:after:bg-[var(--resize-sash-hover)]'
+    ]
 
     return (
       <div
         ref={ref}
         onMouseDown={onMouseDown}
         className={twMerge(
-          // Base styles - invisible by default, 6px hit area
-          'group/resize absolute z-20 transition-colors duration-150 select-none',
-          // Vertical (column resize - between left/right panels)
+          'absolute touch-none select-none',
+          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none',
           isVertical && [
-            'top-0 right-0 h-full w-1.5',
-            'cursor-col-resize',
-            // The visible line
-            'after:absolute after:top-0 after:right-0 after:h-full after:w-px',
-            'after:bg-base-300 after:transition-all after:duration-150',
-            // Hover/active state - show thicker line
-            'hover:after:bg-primary/50 hover:after:w-0.5',
-            isResizing && 'after:bg-primary after:w-0.5'
+            'top-0 h-full w-[var(--resize-sash-hit)] cursor-col-resize',
+            'right-[calc(var(--resize-sash-hit)/-2)]',
+            'after:top-0 after:left-1/2 after:h-full after:w-px after:-translate-x-1/2',
+            active
+              ? 'after:w-[var(--resize-sash-size)]'
+              : 'hover:after:w-[var(--resize-sash-size)]',
+            ...sashLine
           ],
-          // Horizontal (row resize - between top/bottom panels)
           !isVertical && [
-            'bottom-full left-0 h-1.5 w-full',
-            'cursor-row-resize',
-            // The visible line
-            'after:absolute after:bottom-0 after:left-0 after:h-px after:w-full',
-            'after:bg-base-300 after:transition-all after:duration-150',
-            // Hover/active state
-            'hover:after:bg-primary/50 hover:after:h-0.5',
-            isResizing && 'after:bg-primary after:h-0.5'
+            'bottom-full left-0 h-[var(--resize-sash-hit)] w-full cursor-row-resize',
+            'after:bottom-0 after:left-0 after:h-px after:w-full',
+            active
+              ? 'after:h-[var(--resize-sash-size)]'
+              : 'hover:after:h-[var(--resize-sash-size)]',
+            ...sashLine
           ],
           className
         )}
         role="separator"
         aria-orientation={isVertical ? 'vertical' : 'horizontal'}
-        aria-valuenow={undefined}
-        tabIndex={0}
+        aria-valuetext={active ? 'Resizing' : undefined}
+        tabIndex={-1}
       />
     )
   }

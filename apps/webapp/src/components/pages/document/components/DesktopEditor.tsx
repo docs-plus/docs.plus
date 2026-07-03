@@ -13,7 +13,7 @@ import TOC from './Toc'
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
-  const { tocRef, tocWidth, isResizing, handleMouseDown, editorContainerStyle } = useTocResize()
+  const { tocRef, tocWidth, isResizing, handleMouseDown } = useTocResize()
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
@@ -30,8 +30,8 @@ const DesktopEditor = () => {
         <EditorToolbar />
       </div>
 
-      <div className="editor bg-base-200 relative flex size-full flex-row-reverse justify-around align-top">
-        <div className="relative flex flex-col align-top" style={editorContainerStyle}>
+      <div className="editor bg-base-200 relative flex size-full min-h-0 flex-row-reverse">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           <div
             ref={editorWrapperRef}
             className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
@@ -59,13 +59,13 @@ const DesktopEditor = () => {
 
         <div
           ref={tocRef}
-          className="tableOfContents bg-base-200 relative isolate z-0 h-full max-h-full min-h-0 min-w-0"
+          className="tableOfContents bg-base-200 relative isolate z-0 h-full max-h-full min-h-0 min-w-0 shrink-0"
           style={{ width: tocWidth }}>
           <ResizeHandle
             orientation="vertical"
             onMouseDown={handleMouseDown}
             isResizing={isResizing}
-            className="z-[40]"
+            className="z-40"
           />
           <TOC />
         </div>

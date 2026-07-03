@@ -5,16 +5,7 @@ type Props = {
   children: React.ReactNode
 }
 
-/**
- * Desktop layout for the chatroom panel.
- *
- * Design System Requirements:
- * - Surface: bg-base-100 (primary canvas)
- * - Border: border-base-300
- * - Radius: rounded-box for panels (applied to top corners)
- * - Shadow: subtle elevation
- * - Resize handle: horizontal orientation
- */
+/** Docked desktop chat panel — border-top only; no drop shadow (§Pad Workspace Surfaces). */
 export const ChatroomPanelLayout = ({ children }: Props) => {
   const { handleMouseDown, containerRef, height, isResizing } = useResizeContainer()
 
@@ -23,13 +14,13 @@ export const ChatroomPanelLayout = ({ children }: Props) => {
     // ProseMirror are forbidden (containing-block/caret hazards). Exit unmounts instantly.
     <div
       ref={containerRef}
-      className="group/chat bg-base-100 border-base-300 absolute bottom-0 z-40 flex w-full flex-col border-t shadow-lg motion-safe:animate-[doc-content-in_200ms_ease-out_both]"
+      className="group/chat bg-base-100 border-base-300 absolute inset-x-0 bottom-0 z-40 flex w-full flex-col border-t motion-safe:animate-[doc-content-in_200ms_ease-out_both]"
       style={{ height: `${height}px` }}>
-      {/* Resize Handle - invisible hit area at top edge */}
       <ResizeHandle
         orientation="horizontal"
         onMouseDown={handleMouseDown}
         isResizing={isResizing}
+        className="z-50"
       />
 
       {/* Chat content */}

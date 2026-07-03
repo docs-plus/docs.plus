@@ -1,20 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-/**
- * Design System Panel Constraints
- * @see Notes/Design_System_Global_v2.md
- */
 export const TOC_MIN_WIDTH = 240
-export const TOC_MAX_WIDTH = 420
+/** Max TOC width as a fraction of the editor workspace (`.editor` row). */
+export const TOC_MAX_WIDTH_RATIO = 0.46
 export const TOC_DEFAULT_WIDTH = 320
 export const TOC_WIDTH_STORAGE_KEY = 'docsy:toc-width'
 
-// Shared with SlugPageLoader so the skeleton's TOC column matches the user's width.
+export const getTocMaxWidth = (containerWidth: number): number => {
+  if (containerWidth <= 0) return TOC_DEFAULT_WIDTH
+  return Math.max(TOC_MIN_WIDTH, Math.floor(containerWidth * TOC_MAX_WIDTH_RATIO))
+}
+
+export const clampTocWidth = (width: number, containerWidth: number): number => {
+  const max = getTocMaxWidth(containerWidth)
+  return Math.min(max, Math.max(TOC_MIN_WIDTH, width))
+}
+
+/** Width of the `.pad .editor` flex row — shared by live resize + slug skeleton. */
+export const readEditorWorkspaceWidth = (): number => {
+  if (typeof document === 'undefined') return 0
+  const editor = document.querySelector('.pad .editor')
+  return editor?.getBoundingClientRect().width ?? 0
+}
+
+/** Parent of the TOC column when mounted; otherwise the editor row or viewport. */
+export const resolveTocContainerWidth = (tocEl: HTMLDivElement | null | undefined): number => {
+  const fromParent = tocEl?.parentElement?.offsetWidth ?? 0
+  if (fromParent > 0) return fromParent
+  const fromEditor = readEditorWorkspaceWidth()
+  if (fromEditor > 0) return fromEditor
+  return typeof window !== 'undefined' ? window.innerWidth : 0
+}
+
 export const readPersistedTocWidth = (): number => {
   try {
     const parsed = parseInt(localStorage.getItem(TOC_WIDTH_STORAGE_KEY) ?? '', 10)
     if (!isNaN(parsed)) {
-      return Math.min(TOC_MAX_WIDTH, Math.max(TOC_MIN_WIDTH, parsed))
+      return Math.max(TOC_MIN_WIDTH, parsed)
     }
   } catch {
     // localStorage unavailable — fall through to the default
@@ -22,17 +44,6 @@ export const readPersistedTocWidth = (): number => {
   return TOC_DEFAULT_WIDTH
 }
 
-/**
- * Hook for managing TOC panel resize functionality.
- *
- * Design System Requirements:
- * - Min width: 240px
- * - Max width: 420px
- * - Persist width per user
- * - During drag, disable text selection
- *
- * @returns TOC resize state and handlers
- */
 export const useTocResize = () => {
   const tocRef = useRef<HTMLDivElement>(null)
   const [tocWidth, setTocWidth] = useState<number>(TOC_DEFAULT_WIDTH)
@@ -40,12 +51,26 @@ export const useTocResize = () => {
   const dragStartXRef = useRef<number>(0)
   const initialTocWidthRef = useRef<number>(0)
 
-  // Load persisted width on mount
-  useEffect(() => {
-    setTocWidth(readPersistedTocWidth())
+  const clampCurrentWidthToContainer = useCallback(() => {
+    const containerWidth = resolveTocContainerWidth(tocRef.current)
+    if (containerWidth <= 0) return
+    setTocWidth((prev) => clampTocWidth(prev, containerWidth))
   }, [])
 
-  // Persist width changes
+  useLayoutEffect(() => {
+    const parent = tocRef.current?.parentElement
+    if (!parent) return
+
+    const containerWidth = resolveTocContainerWidth(tocRef.current)
+    if (containerWidth > 0) {
+      setTocWidth(clampTocWidth(readPersistedTocWidth(), containerWidth))
+    }
+
+    const observer = new ResizeObserver(clampCurrentWidthToContainer)
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [clampCurrentWidthToContainer])
+
   useEffect(() => {
     try {
       localStorage.setItem(TOC_WIDTH_STORAGE_KEY, String(tocWidth))
@@ -54,6 +79,11 @@ export const useTocResize = () => {
     }
   }, [tocWidth])
 
+  useEffect(() => {
+    window.addEventListener('resize', clampCurrentWidthToContainer)
+    return () => window.removeEventListener('resize', clampCurrentWidthToContainer)
+  }, [clampCurrentWidthToContainer])
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     setIsResizing(true)
@@ -61,14 +91,12 @@ export const useTocResize = () => {
     if (tocRef.current) {
       initialTocWidthRef.current = tocRef.current.offsetWidth
     }
-    // Disable text selection during drag
     document.body.style.userSelect = 'none'
     document.body.style.cursor = 'col-resize'
   }, [])
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false)
-    // Re-enable text selection
     document.body.style.userSelect = ''
     document.body.style.cursor = ''
   }, [])
@@ -77,16 +105,16 @@ export const useTocResize = () => {
     (e: MouseEvent) => {
       if (!isResizing) return
 
+      const containerWidth = resolveTocContainerWidth(tocRef.current)
+      const maxWidth = getTocMaxWidth(containerWidth)
       const dx = e.clientX - dragStartXRef.current
       const newWidth = initialTocWidthRef.current + dx
 
-      // Clamp to min/max constraints
-      setTocWidth(Math.min(TOC_MAX_WIDTH, Math.max(TOC_MIN_WIDTH, newWidth)))
+      setTocWidth(Math.min(maxWidth, Math.max(TOC_MIN_WIDTH, newWidth)))
     },
     [isResizing]
   )
 
-  // Add/remove global event listeners
   useEffect(() => {
     if (isResizing) {
       document.addEventListener('mousemove', handleMouseMove)
@@ -99,18 +127,11 @@ export const useTocResize = () => {
     }
   }, [isResizing, handleMouseMove, handleMouseUp])
 
-  // Editor container takes remaining width
-  const editorContainerStyle = {
-    width: `calc(100% - ${tocWidth}px)`,
-    maxWidth: '100%'
-  }
-
   return {
     tocRef,
     tocWidth,
     isResizing,
-    handleMouseDown,
-    editorContainerStyle
+    handleMouseDown
   }
 }
 
