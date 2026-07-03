@@ -1,13 +1,33 @@
 import { getUserById } from '@api'
+import * as toast from '@components/toast'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@types'
 import { trackSignUpOnce } from '@utils/analytics'
 import { ensureAnonymousSession, resetAnonymousSessionGate } from '@utils/ensureAnonymousSession'
-import { setObservabilityUser } from '@utils/observability'
+import { captureUnknown, setObservabilityUser } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect } from 'react'
+
+let pkceFailureHandled = false
+
+// supabase-js auto-exchanges ?code= on load but swallows network failures
+// (Safari "Load failed"), stripping the URL only on success — the user is left
+// on a stale /?code= silently signed out. initialize() is idempotent and
+// resolves { error } instead of rejecting, so it is the highest catchable layer.
+const reportPkceExchangeFailure = () => {
+  if (pkceFailureHandled || !new URLSearchParams(window.location.search).has('code')) return
+  pkceFailureHandled = true
+  supabaseClient.auth.initialize().then(({ error }) => {
+    if (!error) return
+    captureUnknown(error, { tags: { surface: 'auth-pkce' } })
+    const url = new URL(window.location.href)
+    url.searchParams.delete('code')
+    window.history.replaceState(window.history.state, '', url.toString())
+    toast.Error('Sign-in could not be completed. Please try signing in again.')
+  })
+}
 
 interface UseOnAuthStateChangeOptions {
   deferAnonymousAuth: boolean
@@ -51,6 +71,7 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
     }
 
     setLoading(true)
+    reportPkceExchangeFailure()
     const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
       if (!navigator.onLine) {
         setLoading(false)
