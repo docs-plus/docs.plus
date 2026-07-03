@@ -61,16 +61,27 @@ const useServiceWorker = () => {
     }
 
     // ── When new SW finishes installing, activate it ──
-    const handleStateChange = (event: Event, reg: ServiceWorkerRegistration) => {
+    const handleStateChange = (
+      event: Event,
+      reg: ServiceWorkerRegistration,
+      priorActive: ServiceWorker | null
+    ) => {
       const sw = event.target as ServiceWorker
       if (sw.state === 'installed' && navigator.serviceWorker.controller) {
         // There's already a controller → this is an UPDATE, not first install
         console.info('[SW] New version available, activating…')
         activateWaitingWorker()
       }
-      if (sw.state === 'redundant' && !refreshing && !reg.installing && !reg.waiting) {
-        // A worker superseded by a NEWER update legitimately goes redundant;
-        // no successor in the registration means install/activate truly failed.
+      if (
+        sw.state === 'redundant' &&
+        !refreshing &&
+        !reg.installing &&
+        !reg.waiting &&
+        reg.active === priorActive
+      ) {
+        // Redundant only signals failure when nothing replaced the worker:
+        // back-to-back deploys can activate a successor before this callback
+        // runs, leaving installing/waiting null but a CHANGED active worker.
         reportSwIssue('worker-redundant', sw.scriptURL)
       }
     }
@@ -79,7 +90,12 @@ const useServiceWorker = () => {
     const handleUpdateFound = (reg: ServiceWorkerRegistration) => {
       const newWorker = reg.installing
       if (newWorker) {
-        newWorker.addEventListener('statechange', (event) => handleStateChange(event, reg))
+        // Snapshot the active worker so redundant-time can tell a successor
+        // (active changed → benign) from a failed install (active unchanged).
+        const priorActive = reg.active
+        newWorker.addEventListener('statechange', (event) =>
+          handleStateChange(event, reg, priorActive)
+        )
       }
     }
 
