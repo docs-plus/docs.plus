@@ -158,7 +158,7 @@ services:
       HOCUSPOCUS_LOGGER: true
       HOCUSPOCUS_THROTTLE: false
       HOCUSPOCUS_THROTTLE_ATTEMPTS: ${HOCUSPOCUS_THROTTLE_ATTEMPTS:-100}
-      HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-60000}
+      HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-1}
     volumes:
       - ./apps/hocuspocus.server/src:/app/apps/hocuspocus.server/src
       - ./apps/hocuspocus.server/package.json:/app/apps/hocuspocus.server/package.json

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 import { Database } from '@hocuspocus/extension-database'
@@ -155,11 +156,12 @@ const configureExtensions = () => {
         const stateBase64 = Buffer.from(newState).toString('base64')
 
         try {
-          // Primary: Add job to queue for async processing
-          // Use deterministic jobId to deduplicate saves within a 10s window
-          // This prevents duplicate saves when multiple instances try to save the same doc
-          const timeWindow = Math.floor(Date.now() / 10000) // 10 second windows
-          const jobId = `doc:${documentName}:${timeWindow}`
+          // Deterministic jobId dedupes identical saves across instances within a
+          // 10s window, but the state fingerprint keeps a newer flush (e.g. the
+          // final save on last disconnect) from being dropped in the same window.
+          const timeWindow = Math.floor(Date.now() / 10000)
+          const stateHash = createHash('sha1').update(newState).digest('hex').slice(0, 8)
+          const jobId = `doc:${documentName}:${timeWindow}:${newState.byteLength}-${stateHash}`
 
           await StoreDocumentQueue.add(
             'store-document',

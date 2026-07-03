@@ -112,7 +112,9 @@ export const envSchema = z.object({
   // -------------------------------------------------------------------------
   HOCUSPOCUS_THROTTLE: booleanString,
   HOCUSPOCUS_THROTTLE_ATTEMPTS: numericString('10'),
-  HOCUSPOCUS_THROTTLE_BANTIME: numericString('60000'),
+  // @hocuspocus/extension-throttle treats banTime as MINUTES (banTime * 60 * 1000),
+  // so keep this small — 60000 here would ban an IP for ~41.7 days.
+  HOCUSPOCUS_THROTTLE_BANTIME: numericString('1'),
 
   // -------------------------------------------------------------------------
   // Storage
