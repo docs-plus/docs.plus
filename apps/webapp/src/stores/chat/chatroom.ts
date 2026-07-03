@@ -1,3 +1,4 @@
+import { sendPresenceBroadcast } from '@services/workspacePresenceSync'
 import type { Profile } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
@@ -35,20 +36,6 @@ interface IChatroomStore {
   switchChatRoom: (channelId: string) => void
 }
 
-// Broadcast helpers - receive broadcaster to avoid circular dependency
-const broadcastPresence = (broadcaster: any, user: Profile, channelId: string | null) => {
-  if (!user || !broadcaster) return
-  try {
-    broadcaster.send?.({
-      type: 'broadcast',
-      event: 'presence',
-      payload: { ...user, channelId }
-    })
-  } catch (error) {
-    console.error('Failed to broadcast presence:', error)
-  }
-}
-
 const chatRoom = immer<IChatroomStore>((set, get) => ({
   chatRoom: {
     headingId: undefined,
@@ -80,7 +67,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
 
     if (user) {
       const broadcaster = useStore.getState().settings?.broadcaster
-      broadcastPresence(broadcaster, user, headingId)
+      sendPresenceBroadcast(broadcaster, user, headingId)
     }
   },
 
@@ -117,7 +104,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     const user = useAuthStore.getState().profile
     if (user) {
       const broadcaster = useStore.getState().settings?.broadcaster
-      broadcastPresence(broadcaster, user, channelId)
+      sendPresenceBroadcast(broadcaster, user, channelId)
     }
   },
 
@@ -138,7 +125,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     })
 
     const user = useAuthStore.getState().profile
-    if (user) broadcastPresence(broadcaster, user, null)
+    if (user) sendPresenceBroadcast(broadcaster, user, null)
   }
 }))
 

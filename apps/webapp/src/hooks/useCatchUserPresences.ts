@@ -1,8 +1,21 @@
 import { dbChannelMessageCountsListener, dbChannelsListener } from '@components/chatroom/sync'
+import {
+  attachWorkspacePresenceListeners,
+  clearAllPresenceShareTimers,
+  clearPresenceShareTimers,
+  requestPresenceSync,
+  shareHeadingPresenceWithRoom
+} from '@services/workspacePresenceSync'
 import { useAuthStore, useChatStore, useStore } from '@stores'
-import { RealtimeChannel } from '@supabase/supabase-js'
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef, useState } from 'react'
+
+type ChannelMemberRow = {
+  channel_id: string
+  member_id: string
+  unread_message_count?: number | null
+}
 
 export const useCatchUserPresences = (enabled = true) => {
   const profile = useAuthStore((state) => state.profile)
@@ -39,74 +52,30 @@ export const useCatchUserPresences = (enabled = true) => {
     // previous channel's presence so stale ONLINE entries from the old
     // subscription don't survive into the new socket's state.
     clearUsersPresence()
+    clearAllPresenceShareTimers()
 
-    // Inline handler — reads channelMembers from useChatStore.getState()
-    // at event time, avoiding the stale-closure bug that froze the map at
-    // subscribe time. Defined inside the effect so the dep list stays at
-    // the actual subscription inputs.
-    const channelMembersHandler = (payload: any) => {
+    const channelMembersHandler = (payload: RealtimePostgresChangesPayload<ChannelMemberRow>) => {
       if (payload.table !== 'channel_members') return
+      const row = payload.new as ChannelMemberRow
       const currentMembers = useChatStore.getState().channelMembers
-      updateChannelRow(payload.new.channel_id, payload.new)
-      if (!currentMembers.has(payload.new.channel_id)) {
-        addChannelMember(payload.new.channel_id, { ...payload.new, id: payload.new.member_id })
+      if (!currentMembers.has(row.channel_id)) {
+        addChannelMember(row.channel_id, { ...row, id: row.member_id })
       }
-      // Reconcile optimistic to server truth. Covers (a) cross-tab sync,
-      // (b) new message bumping unread while we're scrolled mid-channel,
-      // (c) optimistic drift from a failed advance_read_cursor RPC.
-      useChatStore
-        .getState()
-        .setOptimisticUnread(payload.new.channel_id, payload.new.unread_message_count)
+      // postgres_changes omits unread on unrelated member patches — skip when absent.
+      if (typeof row.unread_message_count === 'number') {
+        updateChannelRow(row.channel_id, { unread_message_count: row.unread_message_count })
+        useChatStore.getState().setOptimisticUnread(row.channel_id, row.unread_message_count)
+      }
     }
 
+    const presenceDeps = { setOrUpdateUserPresence }
+
     if (!profile) {
-      // Anon viewers share the authenticated `workspace:${workspaceId}`
-      // channel so they receive presence join/leave + broadcast events
-      // and AvatarStack (TOC header, TOC items, pad header, chatroom
-      // participants) renders the same set of online users an authed
-      // viewer would see. Anon must NOT call `track()` — they observe
-      // only, never broadcast themselves into presence state.
       const anonChannel = supabaseClient.channel(`workspace:${workspaceId}`, {
-        // Anon never `send()`s — `self` echo is moot; explicit `false`
-        // signals "anon is observer-only" alongside the no-`track()` rule.
         config: { broadcast: { self: false } }
       })
+      attachWorkspacePresenceListeners(anonChannel, presenceDeps)
       anonymousSubscription.current = anonChannel
-        .on('presence', { event: 'sync' }, () => {
-          // Cold-open seed: Supabase fires `sync` once on subscribe with
-          // the full current presence snapshot, BEFORE any `join` events
-          // for existing peers. Without this handler, an anon viewer that
-          // opens a tab while N authed users are already online sees an
-          // empty AvatarStack until someone joins/leaves.
-          const state = anonChannel.presenceState() as Record<string, any[]>
-          for (const entries of Object.values(state)) {
-            for (const presence of entries) {
-              if (presence?.id) {
-                setOrUpdateUserPresence(presence.id, { ...presence, status: 'ONLINE' })
-              }
-            }
-          }
-        })
-        .on('presence', { event: 'join' }, ({ newPresences }) => {
-          newPresences.forEach((presence: any) => {
-            setOrUpdateUserPresence(presence.id, { ...presence, status: 'ONLINE' })
-          })
-        })
-        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-          const leaving: any = leftPresences.at(0)
-          if (leaving?.id) setOrUpdateUserPresence(leaving.id, { ...leaving, status: 'OFFLINE' })
-        })
-        .on('broadcast', { event: 'presenceSync' }, (data) => {
-          const usersPresence = useStore.getState().usersPresence
-          const payload = data.payload
-          if (!Array.isArray(payload) || payload.length === 0) return
-          payload.forEach((user: any) => {
-            setOrUpdateUserPresence(user.id, { ...usersPresence.get(user.id), ...user })
-          })
-        })
-        .on('broadcast', { event: 'presence' }, (data) => {
-          setOrUpdateUserPresence(data.payload.id, data.payload)
-        })
         .on(
           'postgres_changes',
           {
@@ -117,16 +86,19 @@ export const useCatchUserPresences = (enabled = true) => {
           },
           dbChannelMessageCountsListener
         )
-        .subscribe()
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            requestPresenceSync(anonChannel)
+          }
+        })
       return () => {
+        clearPresenceShareTimers(anonChannel)
         anonymousSubscription.current?.unsubscribe()
       }
     }
 
     const messageSubscription = supabaseClient
       .channel(`workspace:${workspaceId}`, {
-        // `self: true` so the authed user's own `presenceSync` broadcast
-        // echoes back and seeds its `usersPresence` map symmetrically.
         config: {
           broadcast: { self: true }
         }
@@ -151,75 +123,34 @@ export const useCatchUserPresences = (enabled = true) => {
         },
         dbChannelsListener
       )
-      .on('presence', { event: 'join' }, ({ newPresences }) => {
-        // When a new user joins the channel, send the current user's status to them
-        const usersPresence = useStore.getState().usersPresence
 
-        const payload = Array.from(usersPresence.values())
-          .filter((user: any) => user.channelId)
-          .map((user: any) => ({ id: user.id, channelId: user.channelId }))
+    attachWorkspacePresenceListeners(messageSubscription, {
+      ...presenceDeps,
+      onPresenceJoin: (channel) => shareHeadingPresenceWithRoom(channel, profile),
+      onRequestPresenceSync: (channel) => shareHeadingPresenceWithRoom(channel, profile)
+    })
 
-        if (payload.length) {
-          messageSubscription.send({
-            type: 'broadcast',
-            event: 'presenceSync',
-            payload
-          })
-        }
+    messageSubscription.subscribe(async (status) => {
+      if (status !== 'SUBSCRIBED') return
 
-        newPresences.forEach((presence) => {
-          const user: any = {
-            ...presence,
-            status: 'ONLINE'
-          }
-          setOrUpdateUserPresence(user.id, user)
-        })
+      if (!navigator.onLine) {
+        messageSubscription.unsubscribe()
+        return
+      }
+
+      anonymousSubscription.current?.unsubscribe()
+
+      await messageSubscription.track(profile).catch((err) => {
+        console.error('Failed to track profile:', err)
       })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        const newUser: any = {
-          ...leftPresences.at(0),
-          status: 'OFFLINE'
-        }
-        setOrUpdateUserPresence(leftPresences.at(0)?.id, newUser)
-      })
-      .on('broadcast', { event: 'presenceSync' }, (data) => {
-        const usersPresence = useStore.getState().usersPresence
-        const payload = data.payload
-        if (!payload.length) return
+      setWorkspaceSetting('broadcaster', messageSubscription)
+      shareHeadingPresenceWithRoom(messageSubscription, profile)
+      requestPresenceSync(messageSubscription)
+    })
 
-        payload.forEach((user: any) => {
-          const newUser: any = {
-            ...usersPresence.get(user.id),
-            ...user
-          }
-          setOrUpdateUserPresence(user.id, newUser)
-        })
-      })
-      .on('broadcast', { event: 'presence' }, (data) => {
-        const payload = data.payload
-        setOrUpdateUserPresence(payload.id, payload)
-      })
-      .subscribe(async (status) => {
-        if (status !== 'SUBSCRIBED') return
-
-        // Skip if we went offline during subscription
-        if (!navigator.onLine) {
-          messageSubscription.unsubscribe()
-          return
-        }
-
-        // close the anonymous subscription
-        anonymousSubscription.current?.unsubscribe()
-
-        await messageSubscription.track(profile).catch((err) => {
-          console.error('Failed to track profile:', err)
-        })
-        setWorkspaceSetting('broadcaster', messageSubscription)
-      })
-
-    // Unsubscribe when going offline; reconnect via the `online` listener
-    // above which bumps reconnectTick and re-runs this effect.
     const handleOffline = () => {
+      clearPresenceShareTimers(messageSubscription)
+      setWorkspaceSetting('broadcaster', undefined)
       anonymousSubscription.current?.unsubscribe()
       messageSubscription?.unsubscribe()
     }
@@ -227,6 +158,8 @@ export const useCatchUserPresences = (enabled = true) => {
     window.addEventListener('offline', handleOffline)
 
     return () => {
+      clearPresenceShareTimers(messageSubscription)
+      setWorkspaceSetting('broadcaster', undefined)
       anonymousSubscription.current?.unsubscribe()
       messageSubscription?.unsubscribe()
       window.removeEventListener('offline', handleOffline)

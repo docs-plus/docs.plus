@@ -6,7 +6,7 @@ export interface IChannelStore {
   bulkSetChannels: (channels: TChannel[]) => void
   clearAndInitialChannels: (channels: TChannel[]) => void
   setOrUpdateChannel: (channelId: string, channelData: TChannel) => void
-  updateChannelRow: (channelId: string, channelData: TChannel) => void
+  updateChannelRow: (channelId: string, channelData: Partial<TChannel>) => void
   removeChannel: (channelId: string) => void
 }
 
