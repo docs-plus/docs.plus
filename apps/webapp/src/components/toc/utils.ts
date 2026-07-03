@@ -84,6 +84,7 @@ export type NestedTocNode<T extends { level: number }> = {
 // AvatarStack `sm`: 32px face width (Tailwind size-8) with 12px overlap
 // per extra face (`-space-x-3` in AvatarStack.tsx) → 20px stride. Chat slot
 // width is digit-driven so the unread badge never overlaps the avatars.
+// Layout insets/gutter: `--toc-*` on `.tiptap__toc` in `_tableOfContents.scss`.
 const TOC_TRAIL_GAP_PX = 6
 const AVATAR_SM_FACE_PX = 32
 const AVATAR_SM_STRIDE_PX = 20
@@ -107,7 +108,7 @@ function tocChatSlotPx(unreadCount: number): number {
   return CHAT_SLOT_1_DIGIT_PX
 }
 
-/** Fixed trailing rail: chat/unread (left) + gap + avatar stack (right). */
+/** Reserve width so titles clear the trail cluster; chat icon x-position is fixed separately. */
 export function tocTrailingRailPx(userCount: number, unreadCount: number): number {
   const chat = tocChatSlotPx(unreadCount)
   const stack = tocPresenceReservePx(userCount)

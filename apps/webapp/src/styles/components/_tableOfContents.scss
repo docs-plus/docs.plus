@@ -32,7 +32,28 @@
 // Main TOC Container
 // ======================
 .tiptap__toc {
+  // Keep in sync with `components/toc/utils.ts` (rail width math only).
+  // ScrollArea client width is narrower than the header row by ~one scrollbar track;
+  // extend list rows so chat triggers share the header’s fixed right inset.
+  --toc-scrollbar-gutter: 11px;
+  --toc-list-inset: 16px;
+  --toc-trail-inset: 12px;
+  --toc-nest-indent: 16px;
+
   padding-top: 8px;
+
+  .toc__item > .toc__row {
+    margin-right: calc(-1 * var(--toc-scrollbar-gutter));
+    width: calc(100% + var(--toc-scrollbar-gutter));
+  }
+
+  // Max plausibly nested TOC depth under flat heading schema (H6 practical max ~6).
+  @for $d from 1 through 8 {
+    .toc__item > .toc__row[data-depth='#{$d}'] {
+      margin-left: calc(-1 * #{$d} * var(--toc-nest-indent));
+      width: calc(100% + var(--toc-scrollbar-gutter) + #{$d} * var(--toc-nest-indent));
+    }
+  }
 
   // List indentation override (daisyui)
   .toc__list :where(li ul)::before {
@@ -71,7 +92,7 @@
 }
 
 .toc__list {
-  padding-left: 16px;
+  padding-left: var(--toc-list-inset, 16px);
 }
 
 // ======================

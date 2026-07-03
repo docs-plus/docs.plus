@@ -12,9 +12,9 @@ const getByChannel = (usersPresence: Map<string, TProfile>) => {
   if (by) return by
   by = new Map<string, TProfile[]>()
   for (const user of usersPresence.values()) {
-    const channelId = (user as { channelId?: string })?.channelId
+    const channelId = user.channelId
     if (!channelId) continue
-    if ((user as { status?: string })?.status === 'OFFLINE') continue
+    if (user.status === 'OFFLINE') continue
     const arr = by.get(channelId)
     if (arr) arr.push(user)
     else by.set(channelId, [user])

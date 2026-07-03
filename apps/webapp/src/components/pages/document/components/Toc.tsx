@@ -32,8 +32,12 @@ const TOC = ({ className = '' }: { className?: string }) => {
         if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
       }}>
       <TocHeader variant="desktop" />
-      <ScrollArea className="min-h-0 flex-1 !pt-0" scrollbarSize="thin" hideScrollbar>
-        <TocDesktop className="hover:overscroll-contain" />
+      <ScrollArea
+        className="min-h-0 flex-1 !pt-0"
+        scrollbarSize="thin"
+        hideScrollbar
+        preserveWidth={false}>
+        <TocDesktop className="w-full hover:overscroll-contain" />
       </ScrollArea>
     </div>
   )

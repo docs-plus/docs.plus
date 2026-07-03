@@ -1,4 +1,3 @@
-import AvatarStack from '@components/AvatarStack'
 import Button from '@components/ui/Button'
 import { Tooltip } from '@components/ui/Tooltip'
 import { useSortable } from '@dnd-kit/sortable'
@@ -8,11 +7,11 @@ import type { TocItem as TocItemType } from '@types'
 import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocLevelPicker } from './TocLevelPicker'
-import { type NestedTocNode, scrollToHeading, tocTrailingRailPx } from './utils'
+import { TocRowTrail } from './TocRowTrail'
+import { type NestedTocNode, scrollToHeading } from './utils'
 
 interface TocItemDesktopProps {
   item: TocItemType
@@ -20,6 +19,7 @@ interface TocItemDesktopProps {
   onToggle: (id: string) => void
   activeId?: string | null
   collapsedIds?: Set<string>
+  depth?: number
 }
 
 export function TocItemDesktop({
@@ -27,7 +27,8 @@ export function TocItemDesktop({
   nestedNodes,
   onToggle,
   activeId = null,
-  collapsedIds = new Set()
+  collapsedIds = new Set(),
+  depth = 0
 }: TocItemDesktopProps) {
   const sortable = useSortable({
     id: item.id,
@@ -48,7 +49,6 @@ export function TocItemDesktop({
   const isActive = headingId === item.id
   const hasChildren = nestedNodes.length > 0
   const hasPresentUsers = presentUsers.length > 0
-  const trailingRailPx = tocTrailingRailPx(presentUsers.length, unreadCount)
 
   const isDragging = sortable.isDragging
   const isDescendantOfDragged = activeId ? collapsedIds.has(item.id) : false
@@ -102,13 +102,13 @@ export function TocItemDesktop({
 
   const rowClassName = twMerge(
     TOC_CLASSES.row,
-    'group relative flex items-center gap-1 overflow-hidden rounded whitespace-pre-line hyphens-auto',
+    'group relative flex items-center gap-1 overflow-hidden rounded pr-3 whitespace-pre-line hyphens-auto',
     isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`
   )
 
   return (
     <li ref={sortable.setNodeRef} className={liClassName} data-id={item.id}>
-      <div className={rowClassName} data-id={item.id}>
+      <div className={rowClassName} data-id={item.id} data-depth={depth}>
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
 
         <span className="relative flex shrink-0 items-center self-stretch">
@@ -156,38 +156,20 @@ export function TocItemDesktop({
           <span className="toc__link">{item.textContent}</span>
         </a>
 
-        <div className="relative ml-auto h-8 shrink-0" style={{ width: trailingRailPx }}>
-          <Tooltip title="Chat Room" placement="left">
-            <button
-              type="button"
-              className={`${TOC_CLASSES.chatTrigger} absolute top-1/2 left-0 z-[3] flex -translate-y-1/2 items-center justify-center`}
-              data-heading-id={item.id}
-              onClick={handleChatClick}
-              aria-label={chatTriggerAriaLabel(unreadCount)}>
-              <ChatTriggerContent
-                unreadCount={unreadCount}
-                iconSize={20}
-                iconClassName={twMerge(
-                  TOC_CLASSES.chatIcon,
-                  'cursor-pointer fill-none transition-colors',
-                  isActive && TOC_CLASSES.chatIconActive,
-                  !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
-                )}
-              />
-            </button>
-          </Tooltip>
-          {hasPresentUsers && (
-            <div className="absolute top-1/2 right-0 z-[2] -translate-y-1/2">
-              <AvatarStack
-                maxDisplay={4}
-                size="sm"
-                users={presentUsers}
-                showStatus={true}
-                tooltipPosition="left"
-              />
-            </div>
+        <TocRowTrail
+          headingId={item.id}
+          unreadCount={unreadCount}
+          presentUsers={presentUsers}
+          isActive={isActive}
+          iconSize={20}
+          tooltipPlacement="left"
+          iconClassName={twMerge(
+            TOC_CLASSES.chatIcon,
+            'cursor-pointer fill-none transition-colors',
+            !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
           )}
-        </div>
+          onChatClick={handleChatClick}
+        />
       </div>
 
       {hasChildren && (
@@ -200,6 +182,7 @@ export function TocItemDesktop({
               onToggle={onToggle}
               activeId={activeId}
               collapsedIds={collapsedIds}
+              depth={depth + 1}
             />
           ))}
         </ul>
