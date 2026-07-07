@@ -1,62 +1,8 @@
 /**
- * Shared tsup config factory for the `@docs.plus/extension-*` Tiptap
- * extension packages.
- *
- * Each `extensions/extension-*` package builds the same shape (ESM + CJS, dts,
- * Tiptap as peer/external, prod-only sourcemaps/minify). This factory captures
- * that shape so individual packages only declare what's actually different
- * (e.g. extension-hyperlink also copies `styles.css` into dist).
- *
- * The `define*` verb form mirrors tsup's own `defineConfig` convention so
- * it's discoverable; the `TiptapExtension` qualifier is honest about the
- * scope — the factory hardcodes `@tiptap/core` and `@tiptap/pm` as
- * externals, so it is **not** a generic library factory.
- *
- * Usage in a package's `tsup.config.ts`:
- *
- *   import { defineConfig } from 'tsup'
- *   import { defineTiptapExtensionConfig } from '../../tsup.base'
- *
- *   export default defineConfig(defineTiptapExtensionConfig())
- *
- * With overrides:
- *
- *   export default defineConfig(
- *     defineTiptapExtensionConfig({
- *       async onSuccess() {
- *         copyFileSync('src/styles.css', 'dist/styles.css')
- *       }
- *     })
- *   )
- *
- * ## Override semantics — shallow spread, NOT deep merge
- *
- * `overrides` is shallow-spread over the base `Options` object. That means
- * nested function-valued options replace the base entirely:
- *
- *   - Overriding `esbuildOptions` → drops the base's `pure` directive, so
- *     `console.log` / `console.debug` will survive into the production
- *     bundle. If you need to override, copy the base body and call it
- *     yourself, e.g.:
- *
- *       defineTiptapExtensionConfig({
- *         esbuildOptions(options) {
- *           if (process.env.NODE_ENV === 'production') {
- *             options.pure = ['console.log', 'console.debug']
- *           }
- *           options.banner = { js: '// my-pkg' }
- *         }
- *       })
- *
- *   - Overriding `external` → drops `@tiptap/core` / `@tiptap/pm` from
- *     externals; you must re-list them.
- *
- *   - Overriding `dts` → drops `resolve: true`.
- *
- * Today `extension-hyperlink` and `extension-hypermultimedia` pass overrides
- * (`onSuccess` CSS concat, plus an explicit `external` pin that re-lists the
- * base externals so `@docs.plus/floating-popover` stays bundled — AGENTS §163).
- * Add a deep-merge layer the day a caller actually needs it — not before.
+ * Shared tsup factory for @docs.plus/extension-* (ESM+CJS, dts, Tiptap externals,
+ * prod minify + `pure`-stripped console.log/debug). Overrides are SHALLOW: function-
+ * valued options (esbuildOptions / external / dts) replace the base — re-apply the pure
+ * strip / re-list externals yourself. Contract: AGENTS.md §Shared Library Config.
  */
 
 import type { Options } from 'tsup'

@@ -21,9 +21,6 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=24.11.0"
-  },
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-inline-code#readme",
   "bugs": {
     "url": "https://github.com/docs-plus/docs.plus/issues"
@@ -61,8 +58,7 @@
     "tiptap extension",
     "inline code",
     "code",
-    "text editor",
-    "rich text",
+    "rich-text-editor",
     "prosemirror",
     "docs.plus"
   ],

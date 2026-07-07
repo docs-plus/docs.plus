@@ -21,9 +21,6 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=24.11.0"
-  },
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-indent#readme",
   "bugs": {
     "url": "https://github.com/docs-plus/docs.plus/issues"
@@ -45,7 +42,7 @@
     "test:e2e:watch": "bunx start-server-and-test playground http://127.0.0.1:5175 cypress:open",
     "cypress:run": "bunx cypress run",
     "cypress:open": "bunx cypress open",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "prepack": "bunx release-prepack",
     "prepublishOnly": "bunx release-preflight"
   },
@@ -62,8 +59,7 @@
     "tiptap extension",
     "indent",
     "outdent",
-    "text editor",
-    "rich text",
+    "rich-text-editor",
     "prosemirror",
     "docs.plus"
   ],
@@ -78,7 +74,6 @@
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
     "cypress": "catalog:",
-    "cypress-real-events": "catalog:",
     "eslint": "catalog:",
     "start-server-and-test": "catalog:",
     "tsup": "catalog:",

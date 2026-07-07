@@ -22,9 +22,6 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=24.11.0"
-  },
   "sideEffects": [
     "**/*.css"
   ],
@@ -75,6 +72,7 @@
     "soundcloud",
     "spotify",
     "x",
+    "twitter",
     "prosemirror",
     "docs.plus"
   ],
@@ -95,14 +93,9 @@
     "@tiptap/markdown": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
-    "@eslint/js": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:",
-    "@typescript-eslint/parser": "catalog:",
-    "bun-types": "catalog:",
     "cypress": "catalog:",
     "cypress-real-events": "catalog:",
     "eslint": "catalog:",
-    "globals": "catalog:",
     "start-server-and-test": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:"

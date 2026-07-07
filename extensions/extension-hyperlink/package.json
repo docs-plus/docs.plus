@@ -25,9 +25,6 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=24.11.0"
-  },
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink#readme",
   "bugs": {
     "url": "https://github.com/docs-plus/docs.plus/issues"
@@ -87,19 +84,15 @@
     "@docs.plus/floating-tooltip": "workspace:*",
     "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
-    "@eslint/js": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/markdown": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
     "@types/node": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:",
-    "@typescript-eslint/parser": "catalog:",
     "bun-types": "catalog:",
     "cypress": "catalog:",
     "cypress-real-events": "catalog:",
     "eslint": "catalog:",
-    "globals": "catalog:",
     "start-server-and-test": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:"

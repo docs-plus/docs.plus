@@ -1,7 +1,7 @@
 {
   "name": "@docs.plus/extension-placeholder",
   "version": "2.0.0",
-  "description": "A performance-optimized Tiptap placeholder extension using O(1) cursor-based decoration",
+  "description": "A performance-optimized Tiptap placeholder extension using O(depth) cursor-based decoration",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,9 +21,6 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=24.11.0"
-  },
   "homepage": "https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-placeholder#readme",
   "bugs": {
     "url": "https://github.com/docs-plus/docs.plus/issues"
@@ -60,6 +57,7 @@
     "tiptap",
     "tiptap extension",
     "placeholder",
+    "rich-text-editor",
     "prosemirror",
     "docs.plus"
   ],
