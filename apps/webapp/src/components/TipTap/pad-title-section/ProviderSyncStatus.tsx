@@ -86,7 +86,7 @@ const ProviderSyncStatus = ({
   if (providerSyncing && !disconnected) {
     return (
       <Tooltip title="Loading the latest version of this document…" placement="bottom">
-        <div className="text-base-content/50 hover:bg-base-200 flex cursor-default items-center gap-1.5 rounded-md px-3 py-1 text-sm font-medium transition-colors">
+        <div className="text-base-content/50 hover:bg-base-200 rounded-field flex cursor-default items-center gap-1.5 px-3 py-1 text-sm font-medium transition-colors">
           <Icons.sync className="animate-spin" size={18} />
           <span>Connecting</span>
         </div>
@@ -97,7 +97,7 @@ const ProviderSyncStatus = ({
   const config = statusPresentation(providerStatus)
   // Opacity-only entry tier: the mobile chip lives in the sticky header, which
   // rides the visualViewport machinery — never use transform-based animations here.
-  const chipClassName = `flex items-center gap-1.5 px-3 py-1 text-sm font-medium ${config.className} hover:bg-base-200 rounded-md transition-colors ${
+  const chipClassName = `flex items-center gap-1.5 px-3 py-1 text-sm font-medium ${config.className} hover:bg-base-200 rounded-field transition-colors ${
     disconnectedOnly ? 'motion-safe:animate-[doc-content-in_120ms_ease-out_both]' : ''
   }`
 

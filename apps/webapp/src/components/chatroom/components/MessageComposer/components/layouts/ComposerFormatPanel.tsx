@@ -22,7 +22,7 @@ export function ComposerFormatPanel({ variant }: Props) {
         <Button
           key={formatToolbarButtonKey(Button, index)}
           size={18}
-          className="btn-ghost size-10 min-h-10 min-w-10 shrink-0 rounded-lg border-0 p-0"
+          className="btn-ghost rounded-field size-10 min-h-10 min-w-10 shrink-0 border-0 p-0"
           tooltipPosition="top"
         />
       ))}

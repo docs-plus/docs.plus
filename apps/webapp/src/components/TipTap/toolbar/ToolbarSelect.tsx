@@ -25,7 +25,7 @@ const ToolbarSelectPanel = ({ items, editor }: { items: ToolbarSelectItem[]; edi
 
   return (
     <div
-      className="bg-base-100 rounded-box border-base-300 flex flex-col border py-1 shadow-lg"
+      className="bg-base-100 border-base-300 rounded-box flex flex-col border py-1 shadow-xl"
       role="menu">
       {items.map((item) => {
         const active = editor.isActive(item.value)

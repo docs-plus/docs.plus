@@ -73,8 +73,8 @@ export const MentionButton = ({ className, size = 18, ...props }: Props) => {
     <Button
       className={twMerge(
         isMobile
-          ? 'size-11 min-h-11 min-w-11 shrink-0 rounded-lg border-0 p-0'
-          : 'size-8 min-h-8 min-w-8 shrink-0 rounded-lg border-0 p-0',
+          ? 'rounded-field size-11 min-h-11 min-w-11 shrink-0 border-0 p-0'
+          : 'rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0',
         className
       )}
       onPress={onPress}

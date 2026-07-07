@@ -29,14 +29,14 @@ export function ContextBarMediaThumb({ medias }: Props) {
           src={imageUrl}
           alt=""
           aria-hidden
-          className="border-base-content/10 size-10 shrink-0 rounded-md border object-cover"
+          className="border-base-content/10 rounded-field size-10 shrink-0 border object-cover"
         />
       )
     }
     return (
       <div
         className={twMerge(
-          'flex size-10 shrink-0 items-center justify-center rounded-md border',
+          'rounded-field flex size-10 shrink-0 items-center justify-center border',
           theme.iconBg,
           theme.cardBorder
         )}
@@ -52,7 +52,7 @@ export function ContextBarMediaThumb({ medias }: Props) {
   return (
     <div
       className={twMerge(
-        'flex size-10 shrink-0 items-center justify-center rounded-md border',
+        'rounded-field flex size-10 shrink-0 items-center justify-center border',
         theme.iconBg,
         theme.cardBorder
       )}

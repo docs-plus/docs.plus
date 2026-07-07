@@ -32,7 +32,7 @@ export function CopyVersionLinkButton({
         'shrink-0 border-0 bg-transparent shadow-none active:bg-transparent',
         inlineInRow
           ? 'min-h-10 min-w-10 rounded-none hover:bg-transparent md:min-h-9 md:min-w-9'
-          : 'rounded-selector hover:bg-base-300/35 min-h-[44px] min-w-[44px] md:min-h-8 md:min-w-8',
+          : 'rounded-field hover:bg-base-300/35 min-h-[44px] min-w-[44px] md:min-h-8 md:min-w-8',
         isActiveRow ? 'text-primary' : 'text-base-content/45 hover:text-primary',
         'transition-opacity duration-150',
         isActiveRow

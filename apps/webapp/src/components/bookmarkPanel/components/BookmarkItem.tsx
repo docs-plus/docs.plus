@@ -50,7 +50,7 @@ function BookmarkMediaHint({ preview }: { preview: string }) {
   return (
     <div
       className={twMerge(
-        'bg-base-300/40 flex size-10 shrink-0 items-center justify-center rounded-md',
+        'bg-base-300/40 rounded-field flex size-10 shrink-0 items-center justify-center',
         kind === 'multi' && 'text-base-content/70'
       )}
       aria-hidden>
@@ -66,7 +66,7 @@ function BookmarkImageThumb({ media }: { media: MessageMediaItem }) {
     <img
       src={url}
       alt=""
-      className="border-base-300 size-10 shrink-0 rounded-md border object-cover"
+      className="border-base-300 rounded-field size-10 shrink-0 border object-cover"
     />
   )
 }
@@ -143,7 +143,7 @@ export const BookmarkItem = ({ bookmark, variant = 'popover' }: BookmarkItemProp
               ) : (
                 <BookmarkMediaHint preview={previewText} />
               )}
-              <p className="bg-base-200 text-base-content/70 line-clamp-2 min-w-0 flex-1 rounded-lg px-2 py-1 text-sm">
+              <p className="bg-base-200 text-base-content/70 rounded-field line-clamp-2 min-w-0 flex-1 px-2 py-1 text-sm">
                 {previewText || GENERIC_ATTACHMENT_LABEL}
               </p>
             </div>

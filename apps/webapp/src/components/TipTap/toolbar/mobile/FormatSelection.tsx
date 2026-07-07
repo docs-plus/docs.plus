@@ -38,7 +38,7 @@ const FormatSelection = ({ isVisible, editor }: { isVisible: boolean; editor: Ed
   return (
     <div
       ref={containerRef}
-      className={`tiptap-toolbar-mobile__format-selection bg-base-100 absolute top-0 left-0 z-0 w-full space-y-6 rounded-t-3xl px-4 py-6 motion-safe:transition-[opacity,transform] motion-safe:duration-200 motion-safe:ease-out ${
+      className={`tiptap-toolbar-mobile__format-selection bg-base-100 rounded-t-box absolute top-0 left-0 z-0 w-full space-y-6 px-4 py-6 motion-safe:transition-[opacity,transform] motion-safe:duration-200 motion-safe:ease-out ${
         isVisible
           ? 'pointer-events-auto -translate-y-[134px] opacity-100 shadow-lg'
           : 'pointer-events-none translate-y-0 opacity-0'

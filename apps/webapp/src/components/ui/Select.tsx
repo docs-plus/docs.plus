@@ -337,7 +337,7 @@ const Select = ({
       <div
         ref={refs.setFloating}
         style={{ ...floatingStyles, ...transitionStyles }}
-        className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-lg"
+        className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-xl"
         onKeyDown={handleKeyDown}
         role="listbox"
         aria-activedescendant={

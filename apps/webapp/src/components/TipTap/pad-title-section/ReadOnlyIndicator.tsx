@@ -34,7 +34,7 @@ const ReadOnlyIndicator = ({ className }: ReadOnlyIndicatorProps) => {
   }, [hocuspocusProvider])
 
   const classes = twMerge(
-    'rounded-md p-2 ml-4 hover:border-primary transition-[border-color,filter] hover:drop-shadow-md flex align-middle items-center justify-center border text-base-content/50 motion-safe:animate-[doc-region-in_180ms_ease-out_both]',
+    'rounded-field p-2 ml-4 hover:border-primary transition-[border-color] flex align-middle items-center justify-center border text-base-content/50 motion-safe:animate-[doc-region-in_180ms_ease-out_both]',
     className
   )
 

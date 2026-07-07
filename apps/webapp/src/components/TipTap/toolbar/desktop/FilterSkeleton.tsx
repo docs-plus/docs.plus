@@ -12,7 +12,7 @@ export const FilterSkeleton = () => {
         <div className="skeleton size-6 rounded" />
       </div>
       <div className="px-3 pt-1 pb-3">
-        <div className="skeleton h-10 w-full rounded-lg" />
+        <div className="skeleton rounded-field h-10 w-full" />
       </div>
     </div>
   )

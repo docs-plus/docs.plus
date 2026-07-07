@@ -18,7 +18,7 @@ type PanelSurfaceShellProps = {
   className?: string
 }
 
-/** Popover panel vs mobile sheet: shared title header, divergent chrome only. */
+/** Popover panel vs mobile sheet: shared title header, divergent frame only. */
 export function PanelSurfaceShell({
   variant,
   title,

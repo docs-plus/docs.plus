@@ -48,7 +48,7 @@ export function MessageContextBar(props: MessageContextBarProps) {
   return (
     <div
       className={twMerge(
-        'border-base-300/80 flex w-full items-center gap-2 border-b py-2 pr-3 pl-2',
+        'border-base-300 flex w-full items-center gap-2 border-b py-2 pr-3 pl-2',
         shell.bar
       )}>
       <span className={twMerge('shrink-0', shell.icon)}>{icon}</span>

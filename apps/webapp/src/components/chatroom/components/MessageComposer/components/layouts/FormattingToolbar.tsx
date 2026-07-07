@@ -20,7 +20,7 @@ function FormatButtonGroups() {
               <Button
                 key={formatToolbarButtonKey(Button, index)}
                 size={18}
-                className="btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0"
+                className="btn-ghost rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0"
                 tooltipPosition="top"
               />
             ))}
@@ -38,7 +38,7 @@ export function FormattingToolbar({ variant }: Props) {
   if (!showFormattingToolbar || variant === 'mobile') return null
 
   return (
-    <MsgComposer.Toolbar className="composer-bar__format-toolbar border-base-300/80 bg-base-200 flex min-h-9 w-full items-center gap-0.5 border-b px-2 py-1 sm:min-h-10 sm:px-3">
+    <MsgComposer.Toolbar className="composer-bar__format-toolbar border-base-300 bg-base-200 flex min-h-9 w-full items-center gap-0.5 border-b px-2 py-1 sm:min-h-10 sm:px-3">
       <FormatButtonGroups />
     </MsgComposer.Toolbar>
   )

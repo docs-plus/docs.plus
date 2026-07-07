@@ -50,7 +50,7 @@ const AuthErrorPage = () => {
           </p>
 
           {/* Error details */}
-          <div className="border-error/20 bg-error/5 mb-6 space-y-3 rounded-xl border p-4">
+          <div className="border-error/20 bg-error/5 rounded-box mb-6 space-y-3 border p-4">
             <div>
               <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
                 Error

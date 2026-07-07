@@ -1,4 +1,4 @@
-import { modalBackdropClassName, modalPanelChromeClassName } from '@components/ui/Dialog'
+import { modalBackdropClassName, modalPanelFrameClassName } from '@components/ui/Dialog'
 import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
 import { motion } from 'motion/react'
 import { type ReactNode, useLayoutEffect, useRef } from 'react'
@@ -98,7 +98,7 @@ export function ComposerLinkModalShell({ children, titleId, onBackdropClick }: P
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={`${modalPanelChromeClassName} text-base-content pointer-events-auto relative w-full max-w-sm shrink-0 p-4`}
+          className={`${modalPanelFrameClassName} text-base-content pointer-events-auto relative w-full max-w-sm shrink-0 p-4`}
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}

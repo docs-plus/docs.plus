@@ -19,9 +19,9 @@
   color-scheme: 'light';
 
   /* NEUTRALS */
-  --color-base-100: #fafbfc; /* document canvas, soft white */
-  --color-base-200: #edf0f5; /* workspace well — one step below sheets (was #f7f9fc; too close to base-100) */
-  --color-base-300: #e5eaf1; /* borders/dividers */
+  --color-base-100: #ffffff; /* paper — sheet, panels, header, chat */
+  --color-base-200: #eef1f6; /* workspace well — one step below sheets */
+  --color-base-300: #dce3ed; /* borders/dividers — crisp against white paper */
   --color-base-content: #0f172a; /* slate-900 (clean + readable) */
 
   /* PRIMARY (brand blue) */
@@ -36,7 +36,7 @@
   --color-accent: #eab308; /* warm gold (refined highlight) */
   --color-accent-content: #1c1917;
 
-  /* NEUTRAL (chrome / icons / secondary UI) */
+  /* NEUTRAL (secondary UI / icons) */
   --color-neutral: #334155; /* slate-700 */
   --color-neutral-content: #f8fafc;
 
@@ -56,7 +56,7 @@
   /* SHAPE SYSTEM */
   --radius-selector: 0.5rem; /* 8px */
   --radius-field: 0.5rem; /* 8px */
-  --radius-box: 1rem; /* 16px */
+  --radius-box: 0.625rem; /* 10px */
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -91,7 +91,7 @@
   --color-accent: #e3b341; /* warm gold */
   --color-accent-content: #0b1220;
 
-  /* NEUTRAL (chrome / icons) */
+  /* NEUTRAL (secondary UI / icons) */
   --color-neutral: #8b9bb0; /* muted gray-blue */
   --color-neutral-content: #0b1220;
 
@@ -111,7 +111,7 @@
   /* SHAPE SYSTEM (must match light theme) */
   --radius-selector: 0.5rem; /* 8px */
   --radius-field: 0.5rem; /* 8px */
-  --radius-box: 1rem; /* 16px */
+  --radius-box: 0.625rem; /* 10px */
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -150,7 +150,7 @@
   --color-accent: #fbbf24; /* amber-400 (brighter gold) */
   --color-accent-content: #0f172a;
 
-  /* NEUTRAL (chrome / icons) */
+  /* NEUTRAL (secondary UI / icons) */
   --color-neutral: #94a3b8; /* slate-400 (brighter for projection) */
   --color-neutral-content: #0f172a;
 
@@ -170,7 +170,7 @@
   /* SHAPE SYSTEM (same structure, thicker borders for visibility) */
   --radius-selector: 0.5rem;
   --radius-field: 0.5rem;
-  --radius-box: 1rem;
+  --radius-box: 0.625rem;
 
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
@@ -183,9 +183,14 @@
 @theme {
   /* Alias to primary so light / dark / HC themes stay aligned (DaisyUI sets --color-primary per data-theme) */
   --color-docsy: var(--color-primary);
+  /* Media-category accents (chat attachments + comment references); dark overrides below */
+  --color-media-image: #059669;
+  --color-media-video: #7c3aed;
+  --color-media-audio: #ea580c;
 }
 
 :root {
+  --font-sans: Helvetica, Arial, sans-serif;
   --color-docsy: var(--color-primary);
   --caret-color: var(--color-primary);
   --caret-color-inverse: var(--color-primary-content);
@@ -196,8 +201,20 @@
   /* Pad workspace — docked regions (TOC, editor well, chat) share one divider; shadows only on floating overlays. */
   --pad-divider: var(--color-base-300);
   --pad-sheet-border: var(--color-base-300);
-  --pad-sheet-radius: 0.375rem;
+  /* Chains to the daisyUI shape tokens — retune radii from the theme blocks alone. */
+  --pad-sheet-radius: var(--radius-box);
   --pad-sheet-shadow: none;
+  /* Workspace floor (editor scroll well + TOC rail). Dark themes drop it below the
+     sheet so paper reads raised in both themes — never reuse base-200 there directly. */
+  --pad-well: var(--color-base-200);
+  /* The soft focus-ring formula (design-system.md §State language) — one declaration,
+     consumed everywhere SCSS needs an outline-based focus ring. */
+  --focus-ring-soft: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+  /* One shadow for every anchored floating surface (SCSS panels; Tailwind sites use
+     shadow-xl). Black-based like the scrims — never base-content, which glows in dark. */
+  --shadow-overlay:
+    0 20px 25px -5px color-mix(in oklch, black 8%, transparent),
+    0 8px 10px -6px color-mix(in oklch, black 8%, transparent);
   /* Panel sash (TOC + chatroom) — VS Code-style: divider at idle, primary accent on hover/drag. */
   --resize-sash-hit: 8px;
   --resize-sash-size: 4px;
@@ -213,11 +230,23 @@
   --pad-sheet-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
   --modal-scrim: color-mix(in oklch, black 55%, transparent);
   --modal-scrim-heavy: color-mix(in oklch, black 80%, transparent);
+  /* Workspace floor drops below the sheet (light does the reverse via base-200). */
+  --pad-well: #070d18;
+  --shadow-overlay:
+    0 20px 25px -5px color-mix(in oklch, black 50%, transparent),
+    0 8px 10px -6px color-mix(in oklch, black 40%, transparent);
+  --color-media-image: #34d399;
+  --color-media-video: #a78bfa;
+  --color-media-audio: #fb923c;
+}
+
+[data-theme='docsplus-dark-hc'] {
+  --pad-well: #0b1322;
 }
 
 * {
   box-sizing: border-box;
-  font-family: Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Interactive elements should have pointer cursor */
@@ -236,9 +265,27 @@ button:disabled,
   cursor: not-allowed;
 }
 
-input {
-  outline-offset: 0px !important;
-  outline-width: 1px !important;
+/* daisyUI field focus, one standard (design-system.md §State language): a tight primary
+   ring instead of the default base-content outline at 2px offset (harsh double ring).
+   Variant fields are excluded — this rule is unlayered (beats daisyUI's layers) and must
+   not repaint an error/success field primary at the moment the user focuses to fix it. */
+:is(.input, .textarea, .select):is(:focus, :focus-within):not(
+    .input-error,
+    .input-success,
+    .input-warning,
+    .input-info,
+    .textarea-error,
+    .textarea-success,
+    .textarea-warning,
+    .textarea-info,
+    .select-error,
+    .select-success,
+    .select-warning,
+    .select-info
+  ) {
+  --input-color: var(--color-primary);
+  outline-color: var(--color-primary);
+  outline-offset: 0;
 }
 
 .ProseMirror {
@@ -282,12 +329,10 @@ html:not(.m_mobile) {
     padding: 8px;
     background-color: var(--color-base-100);
     color: var(--color-base-content);
-    border-radius: 6px;
+    border-radius: var(--radius-box);
     display: flex;
     align-items: center;
-    box-shadow:
-      0 4px 6px -1px color-mix(in oklch, var(--color-base-content) 10%, transparent),
-      0 2px 4px -1px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+    box-shadow: var(--shadow-overlay);
     border: 1px solid var(--color-base-300);
     flex-direction: row;
     flex-wrap: wrap;
@@ -300,7 +345,7 @@ html:not(.m_mobile) {
     }
 
     select {
-      border-radius: 0.375rem;
+      border-radius: var(--radius-field);
       border-color: var(--color-base-300);
       padding: 0.5rem 0.5rem;
       background-color: var(--color-base-100);
@@ -313,7 +358,7 @@ html:not(.m_mobile) {
     button {
       border-color: var(--color-base-300);
       padding: 8px;
-      border-radius: 0.375rem;
+      border-radius: var(--radius-field);
       &:hover {
         background-color: var(--color-base-200);
       }
@@ -367,12 +412,31 @@ html:not(.m_mobile) {
   z-index: 50;
 }
 
+/* react-tag-input-component — theme through its CSS vars so dark mode holds
+   (default skin is white-on-white under dark themes). The lib re-declares its
+   defaults ON .rti--container, so ours must target the container, not inherit. */
+.documentKeywordInput .rti--container {
+  --rti-bg: var(--color-base-100);
+  --rti-border: var(--color-base-300);
+  --rti-main: var(--color-primary);
+  --rti-radius: var(--radius-field);
+  --rti-tag: var(--color-base-200);
+  --rti-tag-remove: var(--color-error);
+}
+
 .documentKeywordInput .rti--tag {
   font-size: 14px;
+  color: var(--color-base-content);
 }
 
 .documentKeywordInput .rti--input {
   font-size: 14px;
+  background: transparent;
+  color: var(--color-base-content);
+
+  &::placeholder {
+    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+  }
 }
 
 .collapse-title,
@@ -381,104 +445,6 @@ html:not(.m_mobile) {
 }
 .collapse-arrow > .collapse-title:after {
   top: 1.6rem;
-}
-
-/* Bubble menu */
-.bubble-menu {
-  box-shadow: 0 0px 20px 4px color-mix(in oklch, var(--color-base-content) 6%, transparent);
-  button {
-    font-size: 16px;
-    font-weight: 400;
-  }
-}
-
-/* Mobile Bubble Menu - Selection Actions */
-.mobile-bubble-menu {
-  z-index: 50;
-
-  .bubble-menu-container {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    background: var(--color-neutral);
-    border-radius: 10px;
-    box-shadow:
-      0 4px 20px color-mix(in oklch, var(--color-base-content) 30%, transparent),
-      0 2px 6px color-mix(in oklch, var(--color-base-content) 20%, transparent);
-  }
-
-  .bubble-menu-group {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .bubble-menu-divider {
-    width: 1px;
-    height: 24px;
-    background: color-mix(in oklch, var(--color-neutral-content) 20%, transparent);
-    margin: 0 6px;
-  }
-
-  // Icon-only buttons (Cut/Copy/Paste)
-  .bubble-menu-btn--icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    background: transparent;
-    color: color-mix(in oklch, var(--color-neutral-content) 90%, transparent);
-    transition: all 0.12s ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-
-    &:active {
-      background: color-mix(in oklch, var(--color-neutral-content) 15%, transparent);
-      transform: scale(0.92);
-    }
-
-    // Copied state
-    &.copied {
-      color: var(--color-success);
-    }
-  }
-
-  // Icon + label buttons (Comment/Link)
-  .bubble-menu-btn {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 8px 14px;
-    height: 40px;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--color-primary);
-    font-size: 14px;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: all 0.12s ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-
-    svg {
-      flex-shrink: 0;
-    }
-
-    &:active {
-      background: color-mix(in oklch, var(--color-primary) 15%, transparent);
-      transform: scale(0.95);
-    }
-  }
-}
-
-/* Bubble menu arrow - hide default */
-.mobile-bubble-menu .tippy-arrow {
-  display: none;
 }
 
 /* Highlight glow — jump flash via flashMessage / useIsMessageHighlighted */
@@ -676,8 +642,8 @@ $msg-flash-rest-2: 78%;
 /* stylelint-disable-next-line selector-type-no-unknown -- em-emoji-picker is a custom element */
 em-emoji-picker {
   border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-field);
-  box-shadow: 0 2px 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-overlay);
 }
 
 /* em-emoji-picker (emoji-mart) — force our theme tokens in dark mode.

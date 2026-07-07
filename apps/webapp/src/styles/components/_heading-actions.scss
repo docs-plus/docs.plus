@@ -37,9 +37,10 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
     outline: none;
   }
 
+  // Soft-ring focus formula; outline (not box-shadow) because the chip surface owns box-shadow.
   &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+    outline: var(--focus-ring-soft);
+    outline-offset: 1px;
   }
 
   &:active {
@@ -203,8 +204,8 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
       }
 
       &:focus-visible {
-        outline: 2px solid var(--color-primary);
-        outline-offset: 2px;
+        outline: var(--focus-ring-soft);
+        outline-offset: 1px;
         z-index: 1;
       }
     }

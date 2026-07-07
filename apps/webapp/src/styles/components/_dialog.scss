@@ -1,5 +1,5 @@
 // Legacy Radix-style hooks — keep aligned with modalBackdropClassName /
-// modalPanelChromeClassName in `@components/ui/Dialog.tsx` and
+// modalPanelFrameClassName in `@components/ui/Dialog.tsx` and
 // `.react-modal-sheet-backdrop` in document-styles.scss.
 
 .Dialog-overlay {
@@ -21,6 +21,6 @@
   color: var(--color-base-content);
   padding: 15px;
   border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box, 0.75rem);
-  box-shadow: var(--tw-shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 0.1));
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-overlay);
 }

@@ -40,7 +40,8 @@ export const EmojiSelector = () => {
           position: 'fixed',
           top: `${desktopTop || 0}px`,
           left: `${desktopLeft || 0}px`,
-          zIndex: 999
+          // Above-floating tier (design-system.md §Elevation): rides over the z-50 hover-menu portal.
+          zIndex: 60
         }}>
         <Picker emojiSelectHandler={emojiSelectHandler} />
       </div>,

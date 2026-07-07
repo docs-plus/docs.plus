@@ -38,7 +38,7 @@ const ProgressIndicator: React.FC<{ progress: number; compact?: boolean }> = ({
   compact = false
 }) => (
   <div
-    className={`flex items-center gap-${compact ? '1' : '2'} rounded-md bg-black/50 p-${compact ? '1' : '2'} px-${compact ? '1.5' : '3'}`}>
+    className={`flex items-center gap-${compact ? '1' : '2'} rounded-field bg-black/50 p-${compact ? '1' : '2'} px-${compact ? '1.5' : '3'}`}>
     <span className={`loading loading-spinner loading-${compact ? 'xs' : 'sm'} text-white`} />
     <span className={`text-${compact ? 'xs' : 'sm'} font-bold text-white`}>
       {Math.round(progress)}%
@@ -72,7 +72,7 @@ const ImagePreview: React.FC<{
   if (shouldScale) {
     return (
       <div
-        className="bg-base-200 relative w-full overflow-hidden rounded-md"
+        className="bg-base-200 rounded-field relative w-full overflow-hidden"
         style={{ aspectRatio: `${width} / ${height}` }}>
         <img src={localUrl} alt={fileName} className="h-full w-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -92,7 +92,7 @@ const ImagePreview: React.FC<{
 
   return (
     <div
-      className="bg-base-200 relative mx-auto overflow-hidden rounded-md"
+      className="bg-base-200 rounded-field relative mx-auto overflow-hidden"
       style={{ width: containerSize, height: containerHeight }}>
       <img src={localUrl} alt={fileName} className="mx-auto" style={{ width, height }} />
       <div className="absolute inset-0 flex items-center justify-center">
@@ -115,7 +115,7 @@ const IconFallback: React.FC<{
   progress: number
   onCancel: () => void
 }> = ({ fileType, fileName, progress, onCancel }) => (
-  <div className="bg-base-200 relative my-4 overflow-hidden rounded-lg">
+  <div className="bg-base-200 rounded-field relative my-4 overflow-hidden">
     <div className="flex flex-col items-center justify-center px-8 py-16">
       <div className="mb-4">
         <FileTypeIcon fileType={fileType} />

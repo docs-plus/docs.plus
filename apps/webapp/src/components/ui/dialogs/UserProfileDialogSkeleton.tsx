@@ -27,14 +27,14 @@ export function UserProfileDialogSkeleton() {
       <div className="space-y-3">
         <div className="skeleton rounded-field h-3 w-12" />
         <div className="flex flex-col gap-2">
-          <div className="bg-base-200/80 flex items-center gap-3 rounded-xl p-3">
+          <div className="bg-base-200/80 rounded-box flex items-center gap-3 p-3">
             <div className="skeleton size-9 shrink-0 rounded-full" />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="skeleton rounded-field h-3.5 w-32" />
               <div className="skeleton rounded-field h-3 w-24" />
             </div>
           </div>
-          <div className="bg-base-200/80 flex items-center gap-3 rounded-xl p-3">
+          <div className="bg-base-200/80 rounded-box flex items-center gap-3 p-3">
             <div className="skeleton size-9 shrink-0 rounded-full" />
             <div className="min-w-0 flex-1">
               <div className="skeleton rounded-field h-3.5 w-28" />

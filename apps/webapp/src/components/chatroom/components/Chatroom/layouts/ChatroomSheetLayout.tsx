@@ -23,7 +23,7 @@ const ChatRoomHeader = () => {
     <div className="bg-base-100 border-base-300 flex w-full items-center gap-2 border-b px-3 py-2">
       <BreadcrumbMobile />
       <div className="ml-auto flex shrink-0 items-center gap-1">
-        <div className="bg-base-200 rounded-selector flex items-center">
+        <div className="bg-base-200 rounded-field flex items-center">
           <ShareButton size="sm" />
           <NotificationToggle size="sm" />
           <Button

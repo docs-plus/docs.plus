@@ -19,7 +19,7 @@ export const ChatroomComposerSkeleton = ({ variant = 'desktop', className }: Pro
         className={twMerge(
           'flex flex-col overflow-hidden',
           isDesktop
-            ? 'border-base-300/80 bg-base-200 mb-2 rounded-lg border'
+            ? 'border-base-300 bg-base-200 rounded-field mb-2 border'
             : 'composer-bar--mobile bg-base-100 border-base-300 border-t'
         )}>
         <div
@@ -28,10 +28,13 @@ export const ChatroomComposerSkeleton = ({ variant = 'desktop', className }: Pro
             isDesktop ? 'gap-1.5 px-2.5 py-1.5' : 'min-h-11 gap-1 px-3 py-2'
           )}>
           <div
-            className={twMerge('skeleton shrink-0 rounded-md', isDesktop ? 'size-7' : 'size-10')}
+            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-10')}
           />
           <div
-            className={twMerge('skeleton flex-1 rounded-md', isDesktop ? 'h-7' : 'h-10 min-h-10')}
+            className={twMerge(
+              'skeleton rounded-field flex-1',
+              isDesktop ? 'h-7' : 'h-10 min-h-10'
+            )}
           />
           <div
             className={twMerge('skeleton shrink-0 rounded-full', isDesktop ? 'size-7' : 'size-10')}

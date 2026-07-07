@@ -182,7 +182,7 @@ export interface RenderHandle {
  * Fetch metadata (with cache + abort) and render into `container`:
  * loading skeleton → live content on success, or href-as-title on
  * failure (same graceful degradation as pre-refactor behavior — the
- * link itself is always usable, so a visible error chrome is noise).
+ * link itself is always usable, so visible error styling is noise).
  *
  * Returns a `RenderHandle` whose `flush()` writes the freshly-fetched
  * metadata back onto the hyperlink mark (L1 cache for next session).

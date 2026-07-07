@@ -3,9 +3,9 @@ const MediaInsertPanelSkeleton = () => {
   return (
     <div className="flex w-full flex-col">
       <div className="px-4 py-2.5">
-        <div className="bg-base-300 flex w-full gap-1 rounded-xl p-1">
-          <div className="skeleton h-9 flex-1 rounded-lg" />
-          <div className="skeleton h-9 flex-1 rounded-lg" />
+        <div className="bg-base-300 rounded-box flex w-full gap-1 p-1">
+          <div className="skeleton rounded-field h-9 flex-1" />
+          <div className="skeleton rounded-field h-9 flex-1" />
         </div>
       </div>
       <div className="flex flex-col gap-3 px-4 pt-1 pb-4">

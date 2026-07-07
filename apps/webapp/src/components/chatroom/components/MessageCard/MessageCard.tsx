@@ -18,7 +18,7 @@ type Props = {
   className?: string
   /** 'highlighted' renders inside the long-press portal — interaction handlers are suppressed there. */
   mode?: 'inline' | 'highlighted'
-  /** compact suppresses author chrome; status drives the failed/pending overlay. */
+  /** compact suppresses the author header; status drives the failed/pending overlay. */
   compact?: boolean
   status?: MessageStatus
   onRetry?: () => void
@@ -58,7 +58,7 @@ const DefaultMessageBody = ({
   status?: MessageStatus
   onRetry?: () => void
 }) => {
-  // Default desktop body without hover-menu chrome; call-sites may self-close
+  // Default desktop body without the hover menu; call-sites may self-close
   // `MessageCard` and inject `MobileMessageBody` instead.
   // Dim-while-pending so the pending→sent/failed flip crossfades instead of popping.
   // `pending` exists only on own optimistic rows, so the send rise never plays on

@@ -273,7 +273,7 @@ const SearchableSelect = ({
           <div
             ref={refs.setFloating}
             style={{ ...floatingStyles, ...transitionStyles }}
-            className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-lg"
+            className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-xl"
             onKeyDown={handleKeyDown}
             aria-activedescendant={
               highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
@@ -295,7 +295,7 @@ const SearchableSelect = ({
                     setHighlightedIndex(0)
                   }}
                   placeholder={searchPlaceholder}
-                  className="bg-base-200 text-base-content placeholder:text-base-content/40 w-full rounded-md py-1.5 pr-3 pl-8 text-sm outline-none"
+                  className="bg-base-200 text-base-content placeholder:text-base-content/40 rounded-field w-full py-1.5 pr-3 pl-8 text-sm outline-none"
                 />
               </div>
             </div>

@@ -396,7 +396,7 @@ const HoverMenuContent: FC<HoverMenuContentProps> = ({ children, portalId, menuC
         }}
         {...context.getFloatingProps()}
         className={twMerge(
-          'join border-base-300 bg-base-200 z-50 flex flex-row rounded-lg border shadow-md',
+          'join border-base-300 bg-base-100 rounded-box z-50 flex flex-row border shadow-xl',
           menuClassName
         )}>
         {children}
@@ -558,7 +558,7 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
             }}
             {...dropdown.getFloatingProps()}
             className={twMerge(
-              'bg-base-100 rounded-box border-base-300 z-[60] overflow-hidden border shadow-md',
+              'bg-base-100 border-base-300 rounded-box z-[60] overflow-hidden border shadow-xl',
               contentClassName
             )}>
             <ul className="menu bg-base-100 rounded-box max-h-80 w-52 overflow-y-auto !p-1">

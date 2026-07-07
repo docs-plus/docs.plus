@@ -107,7 +107,7 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
 
   const buttonClasses =
     debug || isTestEnv
-      ? 'p-2 bg-blue-500 text-white text-xs rounded m-1'
+      ? 'p-2 bg-info text-info-content text-xs rounded m-1'
       : 'opacity-0 pointer-events-auto m-1'
 
   return (

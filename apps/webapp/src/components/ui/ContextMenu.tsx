@@ -30,7 +30,7 @@ import { useOverlayTransition } from './useOverlayTransition'
 
 /** Shared shell for TOC + chatroom right-click menus — Tailwind flex column, not daisyUI `menu`. */
 export const contextMenuPanelClassName =
-  'flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-xl border p-1.5 shadow-xl outline-none'
+  'flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-box border p-1.5 shadow-xl outline-none'
 
 export type ContextMenuRowVariant = 'default' | 'primary' | 'danger'
 
@@ -58,7 +58,7 @@ export function ContextMenuRow({
   return (
     <span
       className={twMerge(
-        'flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors duration-150',
+        'rounded-field flex w-full cursor-pointer items-center gap-2.5 px-2.5 py-2 text-sm transition-colors duration-150',
         contextMenuRowVariantClass[variant],
         className
       )}>
@@ -102,7 +102,7 @@ type MenuItemProps = React.LiHTMLAttributes<HTMLLIElement> & {
 
 export function MenuItem({ children, ref, className, ...props }: MenuItemProps) {
   return (
-    <li ref={ref} className={twMerge('group cursor-pointer rounded-lg', className)} {...props}>
+    <li ref={ref} className={twMerge('group rounded-field cursor-pointer', className)} {...props}>
       {children}
     </li>
   )

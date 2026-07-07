@@ -80,7 +80,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
         ref={ref}
         role="toolbar"
         aria-label="Quick reactions"
-        className={`bg-base-100 overflow-hidden rounded-3xl shadow-lg transition-[opacity,transform] duration-200 ease-out ${className ?? ''}`}
+        className={`bg-base-100 border-base-300 overflow-hidden rounded-full border shadow-xl transition-[opacity,transform] duration-200 ease-out ${className ?? ''}`}
         style={{
           position: 'fixed',
           left: position.x,

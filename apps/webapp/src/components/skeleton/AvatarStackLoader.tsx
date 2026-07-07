@@ -61,8 +61,8 @@ const AvatarStackLoader = ({ className = '', size = 'md', repeat = 2 }: AvatarSt
             className={twMerge(
               sizeClass,
               'skeleton rounded-full',
-              'border-2 border-white',
-              'ring-2 ring-white'
+              'border-base-100 border-2',
+              'ring-base-100 ring-2'
             )}
           />
         </div>

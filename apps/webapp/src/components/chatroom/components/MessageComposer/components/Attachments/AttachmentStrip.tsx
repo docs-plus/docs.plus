@@ -102,14 +102,14 @@ const AttachmentChip = ({
       <div
         className={twMerge(
           'relative size-10 shrink-0',
-          isError && 'ring-error/50 rounded-md ring-1'
+          isError && 'ring-error/50 rounded-field ring-1'
         )}>
         {previewUrl ? (
           <img
             src={previewUrl}
             alt=""
             className={twMerge(
-              'size-full rounded-md object-cover',
+              'rounded-field size-full object-cover',
               isUploading && 'opacity-45',
               attachment.spoiler && 'blur-sm'
             )}
@@ -117,7 +117,7 @@ const AttachmentChip = ({
         ) : (
           <div
             className={twMerge(
-              'bg-base-200 flex size-full items-center justify-center rounded-md',
+              'bg-base-200 rounded-field flex size-full items-center justify-center',
               isError && 'bg-error/10'
             )}>
             {isError ? (
@@ -131,7 +131,7 @@ const AttachmentChip = ({
         {isError ? (
           <button
             type="button"
-            className="focus-visible:ring-primary/40 absolute inset-0 flex items-center justify-center rounded-md focus-visible:ring-2 focus-visible:outline-none"
+            className="focus-visible:ring-primary/40 rounded-field absolute inset-0 flex items-center justify-center focus-visible:ring-2 focus-visible:outline-none"
             aria-label={`Retry upload for ${label}`}
             title={attachment.error ?? 'Retry upload'}
             onClick={() => retryAttachment(attachment.id)}>
@@ -152,7 +152,7 @@ const AttachmentChip = ({
   return (
     <div
       className={twMerge(
-        'bg-base-100 border-base-300/80 flex max-w-[14rem] min-w-[10rem] flex-col gap-1.5 rounded-lg border px-2 py-1.5',
+        'bg-base-100 border-base-300 rounded-field flex max-w-[14rem] min-w-[10rem] flex-col gap-1.5 border px-2 py-1.5',
         isError && 'border-error/50 bg-error/5'
       )}>
       <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ const AttachmentChip = ({
               src={previewUrl}
               alt=""
               className={twMerge(
-                'size-full rounded-md object-cover',
+                'rounded-field size-full object-cover',
                 isUploading && 'opacity-45',
                 isError && 'opacity-60'
               )}
@@ -170,7 +170,7 @@ const AttachmentChip = ({
           ) : (
             <div
               className={twMerge(
-                'bg-base-200 flex size-8 items-center justify-center rounded-md',
+                'bg-base-200 rounded-field flex size-8 items-center justify-center',
                 isError && 'bg-error/10'
               )}>
               {fullPlaceholderIcon}

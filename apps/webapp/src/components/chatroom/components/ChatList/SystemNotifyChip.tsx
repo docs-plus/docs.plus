@@ -87,7 +87,7 @@ const MobileChip = ({
     className="msg_card my-6 flex w-full items-center justify-center px-3 pb-1"
     data-msg-date={dateAttr}>
     <div
-      className="border-info/15 bg-info/10 text-base-content flex w-[94%] max-w-[94%] min-w-0 items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-snug"
+      className="border-info/15 bg-info/10 text-base-content rounded-field flex w-[94%] max-w-[94%] min-w-0 items-start gap-2.5 border px-3 py-2.5 text-xs leading-snug"
       onClick={onClick}>
       {showAvatar && message ? <NotifyUserAvatar message={message} /> : null}
       <div className="min-w-0 flex-1">{children}</div>

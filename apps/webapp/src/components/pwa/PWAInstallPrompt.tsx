@@ -317,7 +317,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
           <>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="bg-primary/10 rounded-selector p-2">
+                <div className="bg-primary/10 rounded-field p-2">
                   <LuSmartphone size={24} className="text-primary" />
                 </div>
                 <div>
@@ -329,7 +329,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
               </div>
               <button
                 onClick={handleClose}
-                className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
+                className="hover:bg-base-content/10 rounded-field -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
                 aria-label="Dismiss install prompt permanently">
                 <LuX size={16} />
               </button>
@@ -353,12 +353,12 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
             <div className="flex items-center justify-end gap-3 pt-1">
               <button
                 onClick={handleLater}
-                className="hover:bg-base-content/10 rounded-selector cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-[opacity,background-color] hover:opacity-100">
+                className="hover:bg-base-content/10 rounded-field cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-[opacity,background-color] hover:opacity-100">
                 Maybe Later
               </button>
               <button
                 onClick={handleInstall}
-                className="bg-primary hover:bg-primary/90 text-primary-content rounded-selector flex cursor-pointer items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
+                className="bg-primary hover:bg-primary/90 text-primary-content rounded-field flex cursor-pointer items-center gap-2 px-4 py-2 text-sm font-medium transition-colors">
                 <LuDownload size={16} />
                 Install
               </button>
@@ -377,7 +377,7 @@ function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () 
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="bg-primary/10 rounded-selector p-2">
+          <div className="bg-primary/10 rounded-field p-2">
             <LuSquarePlus size={24} className="text-primary" />
           </div>
           <div>
@@ -387,7 +387,7 @@ function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () 
         </div>
         <button
           onClick={onClose}
-          className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
+          className="hover:bg-base-content/10 rounded-field -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
           aria-label="Dismiss">
           <LuX size={16} />
         </button>

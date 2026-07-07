@@ -29,7 +29,7 @@ const SHELL_LAYOUT: Record<
     rowPad: 'px-2',
     rowInsetPx: 8,
     expanderClass:
-      'border-base-300 hover:bg-base-200 text-base-content/80 -mb-2 flex w-full items-center justify-between rounded-b-lg border-t px-3 py-2 text-sm transition-colors',
+      'border-base-300 hover:bg-base-200 text-base-content/80 -mb-2 flex w-full items-center justify-between rounded-b-field border-t px-3 py-2 text-sm transition-colors',
     panelClass: undefined,
     bleedClass: horizontalPadBleedClass(2)
   },

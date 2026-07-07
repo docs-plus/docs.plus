@@ -81,11 +81,11 @@ export function PanelTabBar<T extends string>({
       <div
         ref={trackRef}
         role="tablist"
-        className="bg-base-300 relative flex w-full overflow-visible rounded-xl p-1">
+        className="bg-base-300 rounded-box relative flex w-full overflow-visible p-1">
         {indicator && (
           <span
             aria-hidden
-            className="bg-base-100 pointer-events-none absolute top-1 bottom-1 rounded-lg shadow-sm transition-[left,width] duration-200 ease-out"
+            className="bg-base-100 rounded-field pointer-events-none absolute top-1 bottom-1 shadow-sm transition-[left,width] duration-200 ease-out"
             style={{ left: indicator.left, width: indicator.width }}
           />
         )}
@@ -103,7 +103,7 @@ export function PanelTabBar<T extends string>({
               aria-label={tabAriaLabel(tab.label, count)}
               onClick={() => onSelect(tab.label)}
               className={twMerge(
-                'relative z-10 flex min-h-9 flex-1 items-center justify-center rounded-lg px-2 py-1.5 text-sm font-medium transition-colors duration-200',
+                'rounded-field relative z-10 flex min-h-9 flex-1 items-center justify-center px-2 py-1.5 text-sm font-medium transition-colors duration-200',
                 isActive
                   ? 'text-base-content font-semibold'
                   : 'text-base-content/70 hover:text-base-content'

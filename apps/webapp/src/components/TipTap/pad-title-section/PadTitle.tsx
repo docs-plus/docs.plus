@@ -100,7 +100,7 @@ const PadTitle = () => {
             <Popover placement="bottom-end">
               <PopoverTrigger asChild>
                 <Button variant="ghost" shape="circle" className="relative">
-                  <Icons.notifications size={18} className="text-primary" />
+                  <Icons.notifications size={18} className="text-base-content/70" />
                   <UnreadBadge
                     count={unreadCount}
                     size="sm"
@@ -133,7 +133,7 @@ const PadTitle = () => {
                     avatarUpdatedAt={user.avatar_updated_at}
                     clickable={false}
                     size="lg"
-                    className="border-base-300 pointer-events-none border shadow-md"
+                    className="border-base-300 pointer-events-none border"
                   />
                 </Button>
               ) : (

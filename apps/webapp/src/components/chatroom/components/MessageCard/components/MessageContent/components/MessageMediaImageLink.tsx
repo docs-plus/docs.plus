@@ -62,7 +62,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
         ref={visibilityRef}
         className={twMerge(
           'bg-base-200 skeleton',
-          fill ? 'absolute inset-0' : 'min-h-[80px] rounded-lg',
+          fill ? 'absolute inset-0' : 'rounded-field min-h-[80px]',
           className
         )}
         aria-hidden
@@ -74,7 +74,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
     return (
       <MediaUnavailable
         label="Image unavailable"
-        className={twMerge(fill ? 'absolute inset-0' : 'min-h-[80px] rounded-lg', className)}
+        className={twMerge(fill ? 'absolute inset-0' : 'rounded-field min-h-[80px]', className)}
         onRetry={handleRetry}
       />
     )
@@ -116,7 +116,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
     <button
       type="button"
       className={twMerge(
-        'bg-base-200 relative block w-full max-w-full overflow-hidden rounded-lg border-0 p-0',
+        'bg-base-200 rounded-field relative block w-full max-w-full overflow-hidden border-0 p-0',
         isSpoiler ? 'cursor-pointer' : 'cursor-zoom-in',
         className
       )}

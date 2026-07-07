@@ -31,7 +31,7 @@ function TextLinesSkeleton({
         <div
           key={index}
           className={twMerge(
-            'skeleton h-3 rounded-md',
+            'skeleton rounded-field h-3',
             align === 'end' ? 'w-28' : (widths[index] ?? 'w-[45%]')
           )}
         />
@@ -68,8 +68,8 @@ function DesktopGroupStartSkeleton({
       <div className="skeleton size-8 shrink-0 rounded-full" />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
-          <div className="skeleton h-2.5 w-16 rounded-md" />
-          <div className="skeleton h-2 w-7 rounded-md" />
+          <div className="skeleton rounded-field h-2.5 w-16" />
+          <div className="skeleton rounded-field h-2 w-7" />
         </div>
         <SkeletonBody accent={accent} lines={lines} />
       </div>
@@ -81,7 +81,7 @@ function DesktopCompactSkeleton() {
   return (
     <div className="flex w-full items-start gap-1.5 px-2.5 py-1" aria-hidden>
       <div className="w-8 shrink-0" aria-hidden />
-      <div className="skeleton h-3 w-[62%] rounded-md" />
+      <div className="skeleton rounded-field h-3 w-[62%]" />
     </div>
   )
 }
@@ -101,7 +101,7 @@ function MobileIncomingSkeleton({
         <span className="size-8 shrink-0" aria-hidden />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-px">
-        {groupStart && <div className="skeleton h-2.5 w-14 rounded-md" />}
+        {groupStart && <div className="skeleton rounded-field h-2.5 w-14" />}
         <SkeletonBody
           accent={accent}
           lines={groupStart ? 2 : 1}

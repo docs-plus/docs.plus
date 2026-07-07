@@ -112,7 +112,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
       </div>
 
       {/* Copy Link */}
-      <div className="border-base-300 bg-base-100 flex items-center gap-2 rounded-lg border p-2">
+      <div className="border-base-300 bg-base-100 rounded-field flex items-center gap-2 border p-2">
         <input
           type="text"
           readOnly
@@ -165,7 +165,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
             key={key}
             onClick={() => handleShare(key)}
             title={label}
-            className={`flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-xl p-3 transition-colors ${color} ${hoverBg} hover:text-white`}>
+            className={`rounded-box flex flex-1 cursor-pointer flex-col items-center gap-2 p-3 transition-colors ${color} ${hoverBg} hover:text-white`}>
             <Icon size={24} />
             <span className="text-xs font-medium">{label}</span>
           </button>

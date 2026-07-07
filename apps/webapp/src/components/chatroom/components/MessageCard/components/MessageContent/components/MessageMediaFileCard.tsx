@@ -30,7 +30,7 @@ export function MessageMediaFileCard({ media }: { media: MessageMediaItem }) {
     <div
       ref={visibilityRef}
       className={twMerge(
-        'hover:bg-base-200/50 flex max-w-sm items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors',
+        'hover:bg-base-200/50 rounded-field flex max-w-sm items-center gap-3 border px-3 py-2.5 transition-colors',
         theme.cardBorder,
         theme.cardSurface
       )}>
@@ -42,7 +42,7 @@ export function MessageMediaFileCard({ media }: { media: MessageMediaItem }) {
         onClick={(e) => e.stopPropagation()}>
         <div
           className={twMerge(
-            'flex size-10 shrink-0 flex-col items-center justify-center rounded-lg',
+            'rounded-field flex size-10 shrink-0 flex-col items-center justify-center',
             theme.iconBg
           )}>
           <Icons.fileText size={16} className={theme.accent} aria-hidden />

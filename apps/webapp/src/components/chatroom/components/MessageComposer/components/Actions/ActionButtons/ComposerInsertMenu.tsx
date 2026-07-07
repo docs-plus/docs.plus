@@ -105,7 +105,7 @@ function ComposerInsertMenuMobile({ showVoiceEntry, onVoiceFromMenu, className }
   }, [toggleToolbar])
 
   const rowClassName =
-    'hover:bg-base-200 flex w-full min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm disabled:opacity-40'
+    'hover:bg-base-200 flex w-full min-h-11 items-center gap-3 rounded-field px-3 py-2.5 text-left text-sm disabled:opacity-40'
 
   return (
     <>
@@ -114,7 +114,7 @@ function ComposerInsertMenuMobile({ showVoiceEntry, onVoiceFromMenu, className }
         <PopoverTrigger asChild>
           <Button
             className={twMerge(
-              'size-11 min-h-11 min-w-11 shrink-0 rounded-lg border-0 p-0',
+              'rounded-field size-11 min-h-11 min-w-11 shrink-0 border-0 p-0',
               className
             )}
             data-testid="composer-insert-trigger"
@@ -169,7 +169,7 @@ function ComposerInsertMenuDesktop({ showVoiceEntry, onVoiceFromMenu, className 
   }, [toggleToolbar])
 
   const rowClassName =
-    'hover:bg-base-200 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm disabled:opacity-40'
+    'hover:bg-base-200 flex w-full items-center gap-2.5 rounded-field px-2.5 py-2 text-left text-sm disabled:opacity-40'
 
   return (
     <>
@@ -178,7 +178,7 @@ function ComposerInsertMenuDesktop({ showVoiceEntry, onVoiceFromMenu, className 
         <PopoverTrigger asChild>
           <Button
             className={twMerge(
-              'size-8 min-h-8 min-w-8 shrink-0 rounded-lg border-0 p-0',
+              'rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0',
               className
             )}
             data-testid="composer-insert-trigger"

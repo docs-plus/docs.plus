@@ -109,7 +109,7 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
                 onClick={action.onClick}
                 data-testid={`hyperlink-preview-${action.key}`}
                 className={twMerge(
-                  'group hover:bg-base-200 active:bg-base-200 text-base-content flex min-h-12 w-full items-center gap-3 rounded-lg py-2.5 text-left text-base transition-colors',
+                  'group hover:bg-base-200 active:bg-base-200 text-base-content rounded-field flex min-h-12 w-full items-center gap-3 py-2.5 text-left text-base transition-colors',
                   action.danger && 'hover:text-error active:text-error'
                 )}>
                 <span

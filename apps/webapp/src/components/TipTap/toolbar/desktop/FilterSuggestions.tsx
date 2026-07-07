@@ -48,7 +48,7 @@ export function FilterSuggestions({
       id={listboxId}
       aria-label="Matching headings"
       data-testid="filter-suggestions"
-      className="border-base-300 bg-base-100 max-h-64 overflow-y-auto rounded-lg border shadow-sm motion-safe:animate-[doc-content-in_140ms_ease-out_both]">
+      className="border-base-300 bg-base-100 rounded-box max-h-64 overflow-y-auto border shadow-xl motion-safe:animate-[doc-content-in_140ms_ease-out_both]">
       {suggestions.length === 0 ? (
         <div className="text-base-content/50 px-3 py-2.5 text-sm">No matching headings</div>
       ) : (

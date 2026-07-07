@@ -30,11 +30,11 @@ const DesktopEditor = () => {
         <EditorToolbar />
       </div>
 
-      <div className="editor bg-base-200 relative flex size-full min-h-0 flex-row-reverse">
+      <div className="editor relative flex size-full min-h-0 flex-row-reverse bg-[var(--pad-well)]">
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           <div
             ref={editorWrapperRef}
-            className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
+            className="editorWrapper scrollbar-custom scrollbar-thin flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
             <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
           </div>
 
@@ -43,7 +43,7 @@ const DesktopEditor = () => {
               <Chatroom.Toolbar.Breadcrumb />
               <div className="ml-auto flex shrink-0 items-center gap-1.5">
                 <Chatroom.Toolbar.ParticipantsList />
-                <div className="bg-base-200 rounded-selector flex items-center">
+                <div className="bg-base-200 rounded-field flex items-center">
                   <Chatroom.Toolbar.ShareButton />
                   <Chatroom.Toolbar.NotificationToggle />
                   <Chatroom.Toolbar.CloseButton />
@@ -59,7 +59,7 @@ const DesktopEditor = () => {
 
         <div
           ref={tocRef}
-          className="tableOfContents bg-base-200 relative isolate z-0 h-full max-h-full min-h-0 min-w-0 shrink-0"
+          className="tableOfContents relative isolate z-0 h-full max-h-full min-h-0 min-w-0 shrink-0 bg-[var(--pad-well)]"
           style={{ width: tocWidth }}>
           <ResizeHandle
             orientation="vertical"

@@ -1,7 +1,7 @@
 import type { MediaNodeType } from '@docs.plus/extension-hypermultimedia'
 import type { CommentAnchorV1, CommentPreview } from '@types'
 
-/** Tailwind class tokens for document-comment chrome (feed jump chip + composer context bar). */
+/** Tailwind class tokens for document-comment framing (feed jump chip + composer context bar). */
 export type CommentReferenceTheme = {
   borderClass: string
   surface: string
@@ -35,28 +35,28 @@ const MEDIA_COMMENT_META: Partial<Record<MediaNodeType, MediaCommentMeta>> = {
   image: {
     label: 'Picture',
     theme: {
-      borderClass: 'border-l-emerald-500',
-      surface: 'bg-emerald-500/10',
-      surfaceHover: 'hover:bg-emerald-500/15',
-      emphasis: 'text-emerald-600 dark:text-emerald-400'
+      borderClass: 'border-l-media-image',
+      surface: 'bg-media-image/10',
+      surfaceHover: 'hover:bg-media-image/15',
+      emphasis: 'text-media-image'
     }
   },
   video: {
     label: 'Video',
     theme: {
-      borderClass: 'border-l-violet-500',
-      surface: 'bg-violet-500/10',
-      surfaceHover: 'hover:bg-violet-500/15',
-      emphasis: 'text-violet-600 dark:text-violet-400'
+      borderClass: 'border-l-media-video',
+      surface: 'bg-media-video/10',
+      surfaceHover: 'hover:bg-media-video/15',
+      emphasis: 'text-media-video'
     }
   },
   audio: {
     label: 'Audio',
     theme: {
-      borderClass: 'border-l-orange-500',
-      surface: 'bg-orange-500/10',
-      surfaceHover: 'hover:bg-orange-500/15',
-      emphasis: 'text-orange-600 dark:text-orange-400'
+      borderClass: 'border-l-media-audio',
+      surface: 'bg-media-audio/10',
+      surfaceHover: 'hover:bg-media-audio/15',
+      emphasis: 'text-media-audio'
     }
   },
   youtube: {

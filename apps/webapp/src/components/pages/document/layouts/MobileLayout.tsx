@@ -50,7 +50,7 @@ const MobileLayout = () => {
       </div>
       {/*
         Keep sheet UI out of the mobileLayoutRoot flex column. react-modal-sheet's iOS
-        avoidKeyboard + closed-sheet chrome can still participate in flex layout and,
+        avoidKeyboard + the closed-sheet shell can still participate in flex layout and,
         after many keyboard cycles, leave dead space above the real visual viewport bottom.
       */}
       <BottomSheet />

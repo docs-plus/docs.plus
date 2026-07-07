@@ -15,12 +15,13 @@
   }
 }
 
-// Shared button chrome (pad / chat composer / mobile).
+// Shared button styling (pad / chat composer / mobile).
 // Lucide icons are stroke-based; forcing `fill` on `.is-active` paints closed paths solid (wrong look).
 .tiptap__toolbar,
 .chatroom__toolbar,
 .tiptap-toolbar-mobile,
 .composer-bar__format-toolbar,
+.composer-bar__format-panel,
 .composer-bar__input-row {
   button {
     // `.select.select-ghost` from StyleSelect can outrank plain `button.is-active` in the cascade

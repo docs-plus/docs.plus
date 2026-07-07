@@ -62,7 +62,7 @@ export function ProfileLinkRow({ link }: { link: SanitizedProfileLink }) {
   return (
     <a
       {...profileLinkAnchorProps(link)}
-      className="bg-base-200/80 hover:bg-base-300 flex items-center gap-3 rounded-xl p-3 transition-colors duration-150">
+      className="bg-base-200/80 hover:bg-base-300 rounded-box flex items-center gap-3 p-3 transition-colors duration-150">
       <span className="bg-base-100 ring-base-300/60 flex size-9 shrink-0 items-center justify-center rounded-full ring-1">
         <ProfileLinkIcon link={link} />
       </span>

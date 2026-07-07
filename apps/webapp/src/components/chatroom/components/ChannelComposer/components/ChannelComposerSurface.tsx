@@ -14,8 +14,8 @@ export function ChannelComposerSurface({ children, className }: Props) {
   return (
     <div
       className={twMerge(
-        'channel-composer-surface border-base-300/80 bg-base-200 flex w-full items-center justify-center border px-3 py-3',
-        isDesktop ? 'mb-2 rounded-lg' : 'rounded-t-xl border-b-0',
+        'channel-composer-surface border-base-300 bg-base-200 flex w-full items-center justify-center border px-3 py-3',
+        isDesktop ? 'rounded-field mb-2' : 'rounded-t-box border-b-0',
         className
       )}>
       {children}

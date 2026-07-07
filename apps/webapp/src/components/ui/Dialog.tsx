@@ -137,10 +137,10 @@ export const modalBackdropClassName = 'bg-[var(--modal-scrim)] motion-safe:backd
 export const modalBackdropHeavyClassName =
   'bg-[var(--modal-scrim-heavy)] motion-safe:backdrop-blur-sm'
 
-export const modalPanelChromeClassName =
-  'rounded-xl border border-base-300 bg-base-100 shadow-xl outline-none'
+export const modalPanelFrameClassName =
+  'rounded-box border border-base-300 bg-base-100 shadow-xl outline-none'
 
-export const modalPanelClassName = `flex max-h-[90vh] flex-col overflow-hidden ${modalPanelChromeClassName}`
+export const modalPanelClassName = `flex max-h-[90vh] flex-col overflow-hidden ${modalPanelFrameClassName}`
 
 export const ModalContent = function ModalContent({
   size = 'md',

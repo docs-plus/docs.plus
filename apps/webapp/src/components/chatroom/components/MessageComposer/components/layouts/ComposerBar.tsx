@@ -69,7 +69,7 @@ export function ComposerBar({ variant, className }: Props) {
       className={twMerge(
         'composer-bar flex flex-col overflow-hidden',
         isDesktop
-          ? 'border-base-300/80 bg-base-200 mb-2 rounded-lg border'
+          ? 'border-base-300 bg-base-200 rounded-field mb-2 border'
           : 'composer-bar--mobile bg-base-100',
         dropSurfaceClassName,
         className

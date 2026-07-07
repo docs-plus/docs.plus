@@ -157,7 +157,7 @@ const SignInForm = ({
         <div className="space-y-4">
           {/* Google OAuth button */}
           <Button
-            className="btn btn-block border-base-300 bg-base-100 text-base-content hover:border-base-300 hover:bg-base-200 h-11 rounded-xl border font-semibold transition-colors sm:h-12"
+            className="btn btn-block border-base-300 bg-base-100 text-base-content hover:border-base-300 hover:bg-base-200 rounded-box h-11 border font-semibold transition-colors sm:h-12"
             onClick={() => handleOAuthSignIn('google')}
             loading={googleLoading}
             disabled={isAnyLoading}
@@ -184,7 +184,7 @@ const SignInForm = ({
             <Button
               variant="primary"
               shape="block"
-              className="h-11 rounded-xl font-semibold sm:h-12"
+              className="rounded-box h-11 font-semibold sm:h-12"
               loading={isPending || loading}
               disabled={isAnyLoading}
               type="submit">
@@ -192,7 +192,7 @@ const SignInForm = ({
             </Button>
 
             {/* Hint box */}
-            <div className="bg-base-200 text-base-content/80 flex items-start gap-2 rounded-xl p-3 text-xs sm:text-sm">
+            <div className="bg-base-200 text-base-content/80 rounded-box flex items-start gap-2 p-3 text-xs sm:text-sm">
               <LuSparkles size={16} className="text-primary mt-0.5 shrink-0" />
               <span>We'll email you a magic link for a password-free sign in</span>
             </div>
@@ -202,7 +202,7 @@ const SignInForm = ({
 
       {/* Email sent confirmation */}
       {emailSent && (
-        <div className="bg-base-200 flex flex-col items-center justify-center rounded-xl p-6 text-center motion-safe:animate-[doc-region-in_200ms_ease-out_both] sm:p-8">
+        <div className="bg-base-200 rounded-box flex flex-col items-center justify-center p-6 text-center motion-safe:animate-[doc-region-in_200ms_ease-out_both] sm:p-8">
           <div className="bg-primary/10 mb-4 flex size-16 items-center justify-center rounded-full">
             <LuMail size={28} className="text-primary" />
           </div>

@@ -27,7 +27,7 @@ import { Head, Html, Main, NextScript } from 'next/document'
  */
 
 const APP_NAME = 'docs.plus'
-const THEME_COLOR_LIGHT = '#fafbfc' // base-100 light
+const THEME_COLOR_LIGHT = '#ffffff' // base-100 light
 const THEME_COLOR_DARK = '#0b1220' // base-100 dark
 
 // Every document page opens connections to these on boot (anon sign-in, doc

@@ -1,4 +1,4 @@
-// Shared ProseMirror document chrome (pad + chat). Pad tweaks: only CSS vars on `.editorWrapper .ProseMirror` in _blocks.scss.
+// Shared ProseMirror document styling (pad + chat). Pad tweaks: only CSS vars on `.editorWrapper .ProseMirror` in _blocks.scss.
 @use './task-list-placeholder' as taskListPlaceholder;
 
 @mixin editor-prose-shared {

@@ -101,7 +101,7 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
             </p>
             <div className="flex w-full min-w-0 items-start gap-2">
               <NotificationAttachmentHint preview={notification.message_preview} />
-              <p className="bg-base-200 text-base-content/70 line-clamp-2 min-w-0 flex-1 rounded-lg px-2 py-1 text-sm">
+              <p className="bg-base-200 text-base-content/70 rounded-field line-clamp-2 min-w-0 flex-1 px-2 py-1 text-sm">
                 {notification.message_preview}
               </p>
             </div>

@@ -61,7 +61,7 @@ export function MessageActionMenuList({
                 }}
                 whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
                 className={twMerge(
-                  'group cursor-pointer touch-manipulation rounded-lg select-none',
+                  'group rounded-field cursor-pointer touch-manipulation select-none',
                   !isInteractive && 'pointer-events-none cursor-not-allowed opacity-60'
                 )}>
                 <ActionMenuRow item={item} />

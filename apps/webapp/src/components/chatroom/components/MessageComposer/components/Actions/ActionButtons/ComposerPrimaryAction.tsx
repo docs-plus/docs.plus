@@ -18,7 +18,7 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
   const iconSize = isMobile ? 20 : 18
   const btnSize = isMobile
     ? 'size-11 min-h-11 min-w-11 rounded-full'
-    : 'size-8 min-h-8 min-w-8 rounded-lg'
+    : 'size-8 min-h-8 min-w-8 rounded-field'
 
   const bindHoldListeners = useCallback(() => {
     if (listeningRef.current) return

@@ -36,7 +36,7 @@ html.m_mobile #__next {
     width: var(--visual-viewport-width, 100%);
     right: auto;
     // Height tracks visual viewport - updated via JS on resize/scroll
-    // Fallback to 100dvh (dynamic viewport height that adjusts for browser chrome)
+    // Fallback to 100dvh (dynamic viewport height that adjusts for browser UI)
     height: var(--visual-viewport-height, 100dvh);
     display: flex;
     flex-direction: column;

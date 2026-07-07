@@ -96,8 +96,8 @@ export const MessageCardProvider: React.FC<{
           // color bg overlay (theme-agnostic) — together they're at the
           // Slack/Linear-equivalent contrast level rather than the previous
           // ~2% which users couldn't perceive as a state change.
-          'message-card group/msgcard chat msg_card relative rounded-md',
-          'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:rounded-l-md before:bg-transparent before:transition-colors',
+          'message-card group/msgcard chat msg_card rounded-field relative',
+          'before:rounded-l-field before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-transparent before:transition-colors',
           'transition-colors duration-150',
           // Desktop: every card — text or media — is a full-width, uniformly
           // padded, hoverable row. Media tiles carry their own max-width, so the

@@ -167,10 +167,10 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
             onClick={handleSignOut}
             disabled={signOutLoading}
             loading={signOutLoading}
-            variant="neutral"
+            variant="ghost"
             shape="block"
             startIcon={!signOutLoading ? LuLogOut : undefined}
-            className="font-medium">
+            className="border-base-300 text-base-content/70 hover:bg-error/10 hover:text-error border font-medium">
             Sign out
           </Button>
         </div>

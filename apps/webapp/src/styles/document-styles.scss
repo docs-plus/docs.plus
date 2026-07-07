@@ -1,6 +1,6 @@
 @use './mobile';
 @use './chat-editor';
-@use './components/document-chrome';
+@use './components/document-shell';
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;
@@ -43,13 +43,11 @@ $pad-toolbar-height: 38px;
   background-color: var(--color-base-100);
   color: var(--color-base-content);
   // Unified with the TOC + chat context menus (`contextMenuPanelClassName`):
-  // 1px base-300 border, rounded-xl corners, shadow-xl elevation — one surface
+  // 1px base-300 border, rounded-xl corners, overlay shadow — one surface
   // language across every floating menu/popover, light and dark.
   border: 1px solid var(--color-base-300);
-  border-radius: 0.75rem;
-  box-shadow:
-    0 20px 25px -5px rgb(0 0 0 / 0.1),
-    0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-overlay);
   padding: 8px;
   width: 22rem;
   max-width: calc(100vw - 1rem);
@@ -73,7 +71,7 @@ $pad-toolbar-height: 38px;
     align-items: center;
     gap: 0.5rem;
     border: 1px solid var(--color-base-300);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-field);
     padding: 0.375rem 0.5rem;
     background-color: var(--color-base-100);
     transition:
@@ -130,7 +128,7 @@ $pad-toolbar-height: 38px;
       top: -8px;
       background-color: var(--color-base-100);
       padding: 0px 2px;
-      border-radius: 0.375rem;
+      border-radius: var(--radius-field);
       box-shadow: 0 0px 2px 0px color-mix(in oklch, var(--color-base-content) 10%, transparent);
       left: 3px;
 
@@ -150,7 +148,7 @@ $pad-toolbar-height: 38px;
       border-radius: 0.25rem;
       padding: 0.375rem 0.75rem;
       font-size: 0.875rem;
-      font-family: Arial, Helvetica, sans-serif !important;
+      font-family: var(--font-sans) !important;
       cursor: pointer;
       transition: background-color 0.15s ease-in-out;
       white-space: nowrap;
@@ -212,7 +210,7 @@ $pad-toolbar-height: 38px;
     padding: 0.375rem 0.5rem 0.375rem 0.25rem;
     border: none;
     background: transparent;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-field);
     cursor: pointer;
     text-align: left;
     color: var(--color-base-content);
@@ -229,7 +227,7 @@ $pad-toolbar-height: 38px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 0.5rem;
+      border-radius: var(--radius-field);
       background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
       color: var(--color-primary);
     }
@@ -330,7 +328,7 @@ $pad-toolbar-height: 38px;
   fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
 }
 
-// Shared chrome for the React-rendered hyperlink popovers (create + edit).
+// Shared frame for the React-rendered hyperlink popovers (create + edit).
 // Kept token-for-token with `.hyperlink-preview-popover` (lines 46–53) so
 // the popover family reads as one cohesive surface; if the preview popover's
 // border / radius / shadow ever moves, update both blocks together.
@@ -338,13 +336,11 @@ $pad-toolbar-height: 38px;
   background-color: var(--color-base-100);
   color: var(--color-base-content);
   // Unified with the TOC + chat context menus (`contextMenuPanelClassName`):
-  // 1px base-300 border, rounded-xl corners, shadow-xl elevation — one surface
+  // 1px base-300 border, rounded-xl corners, overlay shadow — one surface
   // language across every floating menu/popover, light and dark.
   border: 1px solid var(--color-base-300);
-  border-radius: 0.75rem;
-  box-shadow:
-    0 20px 25px -5px rgb(0 0 0 / 0.1),
-    0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-overlay);
 
   // daisyUI's `<label class="input">` defaults `--input-color` to base-content
   // for both the unfocused tint and the focus outline, and uses a 2px outline
@@ -431,8 +427,8 @@ $pad-toolbar-height: 38px;
   background: var(--color-base-100);
   color: var(--color-base-content);
   border: 1px solid var(--color-base-300);
-  border-radius: 8px;
-  box-shadow: 0 1px 3px 1px color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-overlay);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -515,8 +511,8 @@ $pad-toolbar-height: 38px;
   background-color: var(--color-base-100);
   color: var(--color-base-content);
   border: 1px solid var(--color-base-300);
-  border-radius: 0.375rem;
-  box-shadow: 0 0px 2px 0px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-overlay);
   padding: 0.25rem;
   display: flex;
   align-items: center;
@@ -524,7 +520,7 @@ $pad-toolbar-height: 38px;
 
   &__button {
     border: 1px solid transparent;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-field);
     padding: 6px;
     cursor: pointer;
     display: flex;
@@ -557,7 +553,7 @@ $pad-toolbar-height: 38px;
 
   &__select {
     border: 1px solid var(--color-base-300);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-field);
     padding: 6px;
     cursor: pointer;
     background-color: var(--color-base-100);

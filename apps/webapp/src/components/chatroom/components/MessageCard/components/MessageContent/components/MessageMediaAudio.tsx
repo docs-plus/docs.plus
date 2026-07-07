@@ -30,7 +30,7 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
     <div
       ref={visibilityRef}
       className={twMerge(
-        'group/audio relative flex max-w-sm items-center gap-2.5 rounded-lg border px-3 py-2.5',
+        'group/audio rounded-field relative flex max-w-sm items-center gap-2.5 border px-3 py-2.5',
         theme.cardBorder,
         theme.cardSurface
       )}>

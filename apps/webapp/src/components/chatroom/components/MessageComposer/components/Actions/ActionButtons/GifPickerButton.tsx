@@ -109,7 +109,7 @@ export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props
     <div ref={containerRef} className="relative shrink-0">
       <Button
         className={twMerge(
-          'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+          'rounded-field size-9 min-h-0 min-w-9 shrink-0 border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
           open && 'text-primary bg-primary/10',
           className
         )}
@@ -124,7 +124,7 @@ export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props
       </Button>
 
       {open ? (
-        <div className="bg-base-100 border-base-300 absolute bottom-full left-0 z-50 mb-2 w-[min(20rem,calc(100vw-2rem))] rounded-lg border p-2 shadow-lg">
+        <div className="bg-base-100 border-base-300 rounded-box absolute bottom-full left-0 z-50 mb-2 w-[min(20rem,calc(100vw-2rem))] border p-2 shadow-xl">
           <div className="mb-2 flex items-center gap-1">
             <Icons.search size={14} className="text-base-content/50 shrink-0" aria-hidden />
             <input
@@ -155,7 +155,7 @@ export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props
                 <button
                   key={gif.id}
                   type="button"
-                  className="bg-base-200 hover:ring-primary overflow-hidden rounded-md ring-offset-2 hover:ring-2"
+                  className="bg-base-200 hover:ring-primary rounded-field overflow-hidden ring-offset-2 hover:ring-2"
                   aria-label={`Insert GIF ${gif.title}`}
                   onClick={() => onSelect(gif)}>
                   <img

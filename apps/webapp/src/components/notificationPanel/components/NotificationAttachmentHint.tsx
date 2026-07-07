@@ -24,7 +24,7 @@ export function NotificationAttachmentHint({ preview }: Props) {
   return (
     <div
       className={twMerge(
-        'bg-base-300/40 flex size-10 shrink-0 items-center justify-center rounded-md',
+        'bg-base-300/40 rounded-field flex size-10 shrink-0 items-center justify-center',
         kind === 'multi' && 'text-base-content/70'
       )}
       aria-hidden>

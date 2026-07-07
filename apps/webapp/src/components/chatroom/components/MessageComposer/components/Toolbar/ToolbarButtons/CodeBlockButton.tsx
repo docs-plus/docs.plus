@@ -19,7 +19,7 @@ export const CodeBlockButton = ({ className, size = 18, ...props }: Props) => {
       type="codeBlock"
       tooltip="Code block"
       className={twMerge(
-        'btn-ghost size-8 min-h-8 min-w-8 shrink-0 rounded-md border-0 p-0',
+        'btn-ghost rounded-field size-8 min-h-8 min-w-8 shrink-0 border-0 p-0',
         className
       )}
       {...props}>

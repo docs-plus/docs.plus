@@ -248,16 +248,15 @@ const ProfileSection = () => {
       {/* Spacer to account for sticky footer */}
       <div className="h-16" />
 
-      {/* Save Button — Sticky at bottom
-          Gradient must match ScrollArea bg in SettingsPanel (bg-base-200) */}
-      <div className="from-base-200 via-base-200 sticky bottom-0 -mx-4 bg-gradient-to-t to-transparent px-4 pt-6 pb-4 sm:-mx-6 sm:px-6">
+      {/* Save Button — sticky footer; bg must match ScrollArea bg in SettingsPanel (base-200) */}
+      <div className="bg-base-200 border-base-300 sticky bottom-0 -mx-4 border-t px-4 py-4 sm:-mx-6 sm:px-6">
         <Button
           onClick={handleSubmit}
           disabled={loading}
           loading={loading}
           variant="primary"
           shape="block"
-          className="font-semibold shadow-lg">
+          className="font-semibold">
           Save Changes
         </Button>
       </div>

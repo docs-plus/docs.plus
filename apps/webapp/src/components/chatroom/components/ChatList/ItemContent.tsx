@@ -26,7 +26,7 @@ export type ItemContentProps = {
 /**
  * Kind-dispatched render. Author-grouping is render-time: compact mode
  * fires when prev item is a same-author message. `MessageCard` owns the
- * desktop default body; mobile injects chat-bubble chrome via
+ * desktop default body; mobile injects the chat-bubble shell via
  * `MobileMessageBody` children.
  *
  * Virtuoso's typed contract says `data: Data`, but during in-flight

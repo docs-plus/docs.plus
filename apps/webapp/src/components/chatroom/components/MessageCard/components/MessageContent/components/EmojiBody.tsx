@@ -53,7 +53,7 @@ export const EmojiBody = () => {
     <div className="flex w-full flex-wrap gap-2">
       {emojiArray.map((emoji: string, index: number) => (
         <Tooltip key={index} title={emojiTitles[index] || 'emoji'} placement="top">
-          <div className="hover:bg-base-200 flex items-center justify-center rounded-xl p-1 transition-colors">
+          <div className="hover:bg-base-200 rounded-box flex items-center justify-center p-1 transition-colors">
             {/* @ts-expect-error – em-emoji is a web component from emoji-mart; host styled theme-aware in globals.scss */}
             <em-emoji native={emoji} set="native" size="4rem" />
           </div>

@@ -36,7 +36,7 @@ export const JumpToPresentButton = ({
       shape="circle"
       className={twMerge(
         'absolute right-2 bottom-3 z-40 motion-safe:animate-[doc-region-in_200ms_ease-out_both]',
-        subdued && 'bg-base-300 border-base-300/80 border'
+        subdued && 'bg-base-300 border-base-300 border'
       )}
       data-key="jump-to-present"
       data-mention={hasMention ? 'true' : 'false'}

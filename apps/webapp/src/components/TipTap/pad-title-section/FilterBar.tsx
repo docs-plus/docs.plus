@@ -7,7 +7,7 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const Chip = ({ text }: { text: string }) => (
-  <span className="border-info/30 bg-info/10 text-info m-0.5 inline-flex max-w-full items-center gap-1 rounded-md border px-2 py-0.5 text-xs leading-none font-medium motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
+  <span className="border-info/30 bg-info/10 text-info rounded-field m-0.5 inline-flex max-w-full items-center gap-1 border px-2 py-0.5 text-xs leading-none font-medium motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
     <span className="truncate">{text}</span>
     <button
       type="button"

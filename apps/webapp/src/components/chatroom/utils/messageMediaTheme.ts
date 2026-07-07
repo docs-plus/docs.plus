@@ -7,32 +7,35 @@ export type MessageMediaTheme = {
   cardSurface: string
 }
 
+// Neutral card, colored icon: the media category lives in the icon accent only
+// (theme-tracked --media-* tokens), never in the card surface — Slack/Telegram model.
+const NEUTRAL_CARD = {
+  cardBorder: 'border-base-300',
+  cardSurface: 'bg-base-200/60'
+}
+
 const IMAGE_THEME: MessageMediaTheme = {
-  accent: 'text-emerald-600 dark:text-emerald-400',
-  iconBg: 'bg-emerald-500/15',
-  cardBorder: 'border-emerald-500/25',
-  cardSurface: 'bg-emerald-500/5'
+  accent: 'text-media-image',
+  iconBg: 'bg-media-image/15',
+  ...NEUTRAL_CARD
 }
 
 const VIDEO_THEME: MessageMediaTheme = {
-  accent: 'text-violet-600 dark:text-violet-400',
-  iconBg: 'bg-violet-500/15',
-  cardBorder: 'border-violet-500/25',
-  cardSurface: 'bg-violet-500/5'
+  accent: 'text-media-video',
+  iconBg: 'bg-media-video/15',
+  ...NEUTRAL_CARD
 }
 
 const AUDIO_THEME: MessageMediaTheme = {
-  accent: 'text-orange-600 dark:text-orange-400',
-  iconBg: 'bg-orange-500/15',
-  cardBorder: 'border-orange-500/25',
-  cardSurface: 'bg-orange-500/5'
+  accent: 'text-media-audio',
+  iconBg: 'bg-media-audio/15',
+  ...NEUTRAL_CARD
 }
 
 const FILE_THEME: MessageMediaTheme = {
   accent: 'text-base-content/70',
   iconBg: 'bg-base-content/10',
-  cardBorder: 'border-base-content/15',
-  cardSurface: 'bg-base-content/5'
+  ...NEUTRAL_CARD
 }
 
 const MEDIA_THEMES: Record<MessageMediaKind, MessageMediaTheme> = {

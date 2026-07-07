@@ -15,7 +15,7 @@ export const SendButton = ({ className, size = 18, onPointerDown, ...props }: Pr
     <Button
       {...props}
       className={twMerge(
-        'size-9 min-h-0 min-w-9 shrink-0 rounded-lg border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
+        'rounded-field size-9 min-h-0 min-w-9 shrink-0 border-0 p-0 sm:size-8 sm:min-h-0 sm:min-w-8',
         'motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out motion-safe:active:scale-90',
         !canSend && 'text-base-content/35',
         className

@@ -200,9 +200,9 @@ const DocTitle = ({ className }: { className?: string }) => {
       <div
         className={`mx-2 flex size-4 items-center ${isPending || showSaved ? 'flex' : 'hidden'}`}>
         <AiOutlineLoading3Quarters
-          className={`${isPending ? 'show' : 'hidden'} h-4 w-4 animate-spin text-blue-500`}
+          className={`${isPending ? 'show' : 'hidden'} text-info h-4 w-4 animate-spin`}
         />
-        <IoCheckmarkCircle className={`${showSaved ? 'show' : 'hidden'} h-4 w-4 text-green-600`} />
+        <IoCheckmarkCircle className={`${showSaved ? 'show' : 'hidden'} text-success h-4 w-4`} />
       </div>
     </div>
   )

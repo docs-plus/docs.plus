@@ -106,7 +106,7 @@ const buildGallerySource = (
   }
 }
 
-/** Playlist order, start index, spoiler attrs, and chrome context in one pass. */
+/** Playlist order, start index, spoiler attrs, and overlay-controls context in one pass. */
 export const openGallerySession = (
   medias: MessageMediaItem[],
   at?: number | MessageMediaItem,

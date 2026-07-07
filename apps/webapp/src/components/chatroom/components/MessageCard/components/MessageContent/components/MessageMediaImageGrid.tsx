@@ -38,7 +38,7 @@ export function MessageMediaImageGrid({ images, onExpand }: Props) {
   return (
     <div
       className={twMerge(
-        'bg-base-300/40 relative grid w-full gap-px overflow-hidden rounded-lg',
+        'bg-base-300/40 rounded-field relative grid w-full gap-px overflow-hidden',
         CHAT_MEDIA_MAX_WIDTH_CLASS
       )}
       style={gridStyle}>
