@@ -18,7 +18,7 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 The `0.x` line below was internal to the docs.plus monorepo and never shipped to npm. If you use Tiptap's built-in `Code` mark today:
 
 1. `bun remove @tiptap/extension-code` (or drop it from StarterKit — see step 3).
-2. `bun add @docs.plus/extension-inline-code@next` (`@next` during soak — see README).
+2. `bun add @docs.plus/extension-inline-code`
 3. `StarterKit.configure({ code: false })` — InlineCode owns the `<code>` tag and `Mod-e` at priority 101.
 4. Replace `editor.commands.toggleCode()` with `toggleInlineCode()` (or keep `Mod-e` — same binding).
 5. Drop `Mod-Shift-c` if you documented it; only `Mod-e` remains.
@@ -35,7 +35,8 @@ Visually identical `<code>` output; `isActive('code')` becomes `isActive('inline
 ### Fixed
 
 - Toggling inline code off from a collapsed caret now clears code mode for the next character. It was a no-op — `removeMark` over an empty range did nothing, so the next typed character stayed code.
-- Typing backtick code no longer throws `RangeError: Position out of range`. The input regex is end-anchored and non-global (``/(^|[^`])`([^`]+)`(?!`)$/``); the global flag drifted the input-rule plugin's `lastIndex`. Paste keeps the global regex.
+- Typing backtick code no longer throws `RangeError: Position out of range`. The input regex is end-anchored and non-global (``/(?<=^|[^`])`([^`]+)`(?!`)$/``); the global flag drifted the input-rule plugin's `lastIndex`. Paste keeps the global regex.
+- Typing or pasting a code span directly after another character no longer deletes that character (or code-marks it instead of the content when both were the same single character). The no-backtick-before guard is now a lookbehind, so the preceding character stays out of the match.
 - Set `code: true` on the mark spec — other extensions' input rules (typography, bold) no longer rewrite code-span content.
 - `ArrowRight` exit works when the last textblock is nested (blockquote/list) and clears a just-toggled pending stored mark.
 
@@ -45,6 +46,7 @@ Visually identical `<code>` output; `isActive('code')` becomes `isActive('inline
 
 ### Internal
 
+- The published manifest no longer declares `engines` — the monorepo's Node floor gated engine-strict consumer installs even though the shipped bundle is plain browser-targeted ESM/CJS.
 - Added a clean-room Cypress E2E suite (`@docs.plus/playground`, port 5176) against the built `dist/`: toggle, input rule, stored-mark caret entry, arrow exit, paste, and StarterKit-`code` coexistence (priority precedence).
 
 ## [0.1.1]

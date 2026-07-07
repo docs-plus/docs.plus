@@ -14,7 +14,7 @@ export default defineConfig({
     viewportHeight: 800,
     retries: { runMode: 1, openMode: 0 },
     setupNodeEvents(on, config) {
-      flattenReadmeScreenshots(on, config, 'popovers.cy.ts')
+      flattenReadmeScreenshots(on, config, 'readme-gallery.cy.ts')
     }
   }
 })

@@ -19,6 +19,32 @@ First npm release since `0.1.1`. The major aligns the package with the docs.plus
 - The `IndentContext` helper type (resolved textblock + parent at a position) is no longer exported from the package root; `IndentContextRule` and `IndentOptions` remain.
 - `allowedIndentContexts` is required on the resolved `IndentOptions` type. `configure()` still accepts partials; the default allowlist is unchanged.
 
+### Migrating from 0.1.x
+
+Map each `allowedNodeTypes` name to one `{ textblock, parent }` pair per parent you need:
+
+```ts
+// 0.1.x
+Indent.configure({ allowedNodeTypes: ['paragraph'] })
+// 2.x
+Indent.configure({
+  allowedIndentContexts: [{ textblock: 'paragraph', parent: 'doc' }]
+})
+```
+
+`[]` now disables literal indent instead of allowing it everywhere.
+
+If you imported the `IndentContext` helper type, remove the import or define the shape locally — `IndentContextRule` and `IndentOptions` remain exported:
+
+```ts
+// 0.1.x
+import type { IndentContext } from '@docs.plus/extension-indent'
+// 2.x
+type IndentContext = { textblockName: string; parentName: string }
+```
+
+No action is needed for `allowedIndentContexts` becoming required on the resolved `IndentOptions` type — `configure()` still accepts partials and the default allowlist is unchanged.
+
 ### Fixed
 
 - Tab / Shift-Tab table-cell delegation never fired — `editor.can()` is now invoked, so `goToNextCell` / `goToPreviousCell` run when a table extension is present.
@@ -28,6 +54,7 @@ First npm release since `0.1.1`. The major aligns the package with the docs.plus
 
 ### Internal
 
+- The published manifest no longer declares `engines` — the monorepo's Node floor gated engine-strict consumer installs even though the shipped bundle is plain browser-targeted ESM/CJS.
 - Added a clean-room Cypress E2E suite (`@docs.plus/playground`, port 5175) running real keypresses against the built `dist/` — paragraph indent/outdent, reversibility, multiline position math, and the disabled-context gate. The Jest suite keeps ownership of the full `allowedIndentContexts` matrix.
 
 ## [0.2.0]

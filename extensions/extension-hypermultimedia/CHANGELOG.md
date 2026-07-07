@@ -8,62 +8,7 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-### Added
-
-- **Spotify embed node.** A ninth media node embeds Spotify tracks, albums,
-  playlists, artists, shows, and episodes through the official iframe player
-  (`open.spotify.com/embed/{type}/{id}`). Paste a Spotify URL or call
-  `setSpotify({ src, theme })` — `theme: 1` selects the light player; a track
-  defaults to the compact height, everything else to the full-art height. The
-  player is fixed-height (drag-resizable, height pinned on narrow columns) and
-  round-trips through `![spotify](url)` markdown. Pasting a Spotify URL or its
-  "Copy embed" `<iframe>` code (HTML or plain text) inserts the node. New root
-  exports: `isValidSpotifyUrl`, `parseSpotifyEntity`, `SPOTIFY_ENTITY_TYPES`.
-- **`mediaToolbarIcons` kit slot.** Hosts swap toolbar, overflow, alignment
-  submenu, and replace-URL icons by key (`caption`, `more`, `align:center`,
-  custom action ids) without replacing toolbar factories or reimplementing
-  submenus. The inline align button reuses the `align:<placement>` icons, so a
-  host supplies one icon per placement and never a dynamic resolver.
-- **`composeMediaActions` builder + `layoutMediaActions` sugar.** Rearrange
-  toolbar bricks by id — `add` / `move` / `replace` / `remove` /
-  `setPlacement` / `order` — or declare the inline and overflow rows by id,
-  instead of hand-splicing the `mediaActions` array. Both compose over the
-  existing `mediaActions` slot.
-
-### Changed
-
-- Built-in toolbar icons resolve from a single Material map in `resolveMediaToolbarIcon`
-  (host `mediaToolbarIcons` override first). `MediaAction.icon` is optional — omit it
-  on custom bricks and supply keys via `mediaToolbarIcons` instead.
-- The toolbar action list is now ordered purely by array position. The internal
-  numeric `order` field on `MediaAction` is removed; author bricks in display
-  order and arrange with the builder (X's "Post options" now anchors after
-  Replace URL via a per-node recipe rather than `order: 45`).
-
-### Fixed
-
-- Media embeds (YouTube, Vimeo, SoundCloud, Loom, X) no longer reload when a
-  focus-trap opens elsewhere in the editor — a Floating UI popover, a dialog. The
-  loading shell is no longer an `aria-live` / `role="status"` region: such a region
-  inside the editor makes focus-trap libraries stamp `inert` across the document,
-  which ProseMirror reconciles by recreating the iframe node views. Iframe embeds
-  are now leaf node views with no `contentDOM`, matching the other media nodes.
-- Caption editing no longer deletes the media node on the first typed character
-  when ProseMirror still held a `NodeSelection` on the node (click-to-lock, then
-  toolbar Caption). Focus now collapses that selection before input reaches the
-  editor.
-- Media blocks no longer overflow the editor column on narrow viewports. Wrappers
-  and loading shells cap at `max-width: 100%` while preserving committed
-  width/height attrs via `aspect-ratio` (live editor; static HTML export still
-  emits fixed pixel dimensions).
-
 ## [2.0.0] — 2026-06-16
-
-### Fixed
-
-- Re-hovering a media node within the toolbar exit window no longer mounts a
-  second toolbar — `openMediaToolbar` purges `[data-hm-closing]` siblings before
-  append.
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
 favor of Floating UI positioning, node type names are normalized to camelCase,
@@ -87,6 +32,8 @@ every media node gains an editable caption.
   single `HyperMultimediaKit.configure({ Image, … })` covers everything.
 
 ### Breaking
+
+- **No default export.** Import the named `HyperMultimediaKit` — the former `{ HyperMultimediaKit }` wrapper default was an undocumented runtime trap and is gone.
 
 - Node type names are camelCase: `Image→image`, `Video→video`, `Audio→audio`,
   `Youtube→youtube`, `Vimeo→vimeo`, `SoundCloud→soundcloud`, `Twitter→x`. Stored
@@ -114,7 +61,7 @@ every media node gains an editable caption.
 
 - URL detection API. `detectMediaType(url)` returns the media node a URL should
   render (`'image' | 'video' | 'audio' | 'youtube' | 'vimeo' | 'soundcloud' |
-'loom' | 'x'`) or `null` for non-media, testing specific providers and images
+'spotify' | 'loom' | 'x'`) or `null` for non-media, testing specific providers and images
   before the generic video/audio file-extension matchers. The new `isVideoUrl` /
   `isAudioUrl` matchers, the existing per-node validators (`isImageUrl`,
   `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`,
@@ -191,11 +138,10 @@ every media node gains an editable caption.
 - Shared `utils/media-placement.ts` for desktop toolbar and mobile sheet
   placement/margin presets (`getMediaPlacementAttrs`, `getCurrentMediaPlacement`).
 - `./styles.css` export — `dist/styles.css` bundles `resize-gripper.css`,
-  `media-loading-shell.css`, `media-node-x.css`, `media-node-loom.css`, and
-  `media-toolbar.css`. Import it in one line
+  `media-loading-shell.css`, `media-node-x.css`, `media-node-loom.css`,
+  `media-node-spotify.css`, and `media-toolbar.css`. Import it in one line
   (`import '@docs.plus/extension-hypermultimedia/styles.css'`) to load the shipped
-  styles, matching `@docs.plus/extension-hyperlink`. The five individual files
-  stay in `dist` for hosts that import them separately.
+  styles, matching `@docs.plus/extension-hyperlink`.
 - Dark mode in the shipped stylesheet — `--hm-*` tokens use `light-dark()` and
   follow the nearest ancestor's `color-scheme`.
 - `styles.css` ships the `.floating-popover` shell rules (fade/scale/arrow) so
@@ -203,6 +149,25 @@ every media node gains an editable caption.
 - `prefers-reduced-motion: reduce` disables the loading shimmer/spinner animation.
 - Escape cancels a resize drag (snaps back, commits nothing).
 - README **Gallery** — nine node types in light/dark (`assets/*-{light,dark}.png`); regenerate with `bun run docs:screenshots`.
+- **Spotify embed node.** A ninth media node embeds Spotify tracks, albums,
+  playlists, artists, shows, and episodes through the official iframe player
+  (`open.spotify.com/embed/{type}/{id}`). Paste a Spotify URL or call
+  `setSpotify({ src, theme })` — `theme: 1` selects the light player; a track
+  defaults to the compact height, everything else to the full-art height. The
+  player is fixed-height (drag-resizable, height pinned on narrow columns) and
+  round-trips through `![spotify](url)` markdown. Pasting a Spotify URL or its
+  "Copy embed" `<iframe>` code (HTML or plain text) inserts the node. New root
+  exports: `isValidSpotifyUrl`, `parseSpotifyEntity`, `SPOTIFY_ENTITY_TYPES`.
+- **`mediaToolbarIcons` kit slot.** Hosts swap toolbar, overflow, alignment
+  submenu, and replace-URL icons by key (`caption`, `more`, `align:center`,
+  custom action ids) without replacing toolbar factories or reimplementing
+  submenus. The inline align button reuses the `align:<placement>` icons, so a
+  host supplies one icon per placement and never a dynamic resolver.
+- **`composeMediaActions` builder + `layoutMediaActions` sugar.** Rearrange
+  toolbar bricks by id — `add` / `move` / `replace` / `remove` /
+  `setPlacement` / `order` — or declare the inline and overflow rows by id,
+  instead of hand-splicing the `mediaActions` array. Both compose over the
+  existing `mediaActions` slot.
 
 ### Changed
 
@@ -212,8 +177,39 @@ every media node gains an editable caption.
 - `closeMediaToolbar()`'s document-wide fallback only removes toolbars carrying
   `data-node-type`.
 - Loom embed defaults include `scrolling: 'no'` to avoid iframe scrollbars at fixed heights.
+- The default media-toolbar skin aligns with the docs.plus floating-surface
+  language: 10px shells (toolbar + menus, was 8px) with 8px inner controls
+  (was 6px) — lockstep with extension-hyperlink's radii — and a deeper two-layer
+  overlay shadow (`--hm-toolbar-shadow`). Consumers who retheme via the `--hm-*`
+  custom properties are unaffected; the lockstep `.floating-tooltip` block is
+  unchanged.
+- Built-in toolbar icons resolve from a single Material map in `resolveMediaToolbarIcon`
+  (host `mediaToolbarIcons` override first). `MediaAction.icon` is optional — omit it
+  on custom bricks and supply keys via `mediaToolbarIcons` instead.
+- The toolbar action list is now ordered purely by array position. The internal
+  numeric `order` field on `MediaAction` is removed; author bricks in display
+  order and arrange with the builder (X's "Post options" now anchors after
+  Replace URL via a per-node recipe rather than `order: 45`).
 
 ### Fixed
+
+- `![alt](src)` markdown routing to media nodes is now gated on the src actually
+  validating for that node type, so an image whose alt text collides with a reserved
+  literal (`x`, `video`, `audio`, …) imports as an image instead of a permanently
+  broken embed. Trade-off: an `![audio]`/`![video]` whose URL has no recognized media
+  extension now imports as an image rather than a media node.
+- Vimeo and X paste rules claim a URL pasted mid-sentence (previously they read the whole
+  pasted block and silently failed), and the Vimeo pattern keeps the full URL tail so the
+  unlisted-video `?h=` param survives into the embed. `.webm` is no longer treated as an
+  image extension — those URLs route to the video pipeline.
+- The media toolbar's Copy action no longer throws out of its clipboard fallback in
+  non-secure contexts, and Download routes HTTP error responses (404/expired signed URL)
+  to the open-in-tab fallback instead of saving a corrupt file.
+- The shipped type definitions no longer augment the global `Window` with `twttr`
+  (a local accessor replaces the `declare global` block), and `prefers-reduced-motion`
+  now actually suppresses the toolbar entrance animation and popover transition (the
+  entrance rules out-specified both guards). The unused `.floating-popover-arrow` rules
+  moved out of this package — the hyperlink bundle owns arrow skins.
 
 - `getHTML()` and clipboard copy no longer throw once a `video`/`audio` node
   exists (leaf-node content hole removed; bogus `contentDOM` dropped).
@@ -246,6 +242,9 @@ every media node gains an editable caption.
 - X loading shell tracks widget layout (`ResizeObserver`) and switches to fluid height after render so tall posts are not clipped.
 - X post embeds: wrapper width follows `maxwidth`; `data-x-theme` backgrounds and corner clip remove light/dark corner bleed after `widgets.js` paint.
 - Media toolbar hover bridge: deferred hide + expanded popover hit area so the pointer can reach the portaled toolbar without dismissal.
+- Re-hovering a media node within the toolbar exit window no longer mounts a
+  second toolbar — `openMediaToolbar` purges `[data-hm-closing]` siblings before
+  append.
 - Resize gripper uses `setPointerCapture` so drags stay attached over iframes, outside the editor, and at constraint limits; drags also end on blur and `pointercancel`.
 - Loading shell dimensions stay in sync with gripper resize on iframe embeds and video; ready shells use a transparent background so gray placeholder does not show through.
 - Iframe embed resize writes pixel `style` width/height on the `<iframe>` (not only HTML attrs) so the player fills the gripper.
@@ -268,6 +267,20 @@ every media node gains an editable caption.
   box and desynced its drag coordinates; it now forces `margin: 0` and measures the
   loading-shell host via `getBoundingClientRect`, so the selection box hugs the
   player and excludes the caption.
+- Media embeds (YouTube, Vimeo, SoundCloud, Loom, X) no longer reload when a
+  focus-trap opens elsewhere in the editor — a Floating UI popover, a dialog. The
+  loading shell is no longer an `aria-live` / `role="status"` region: such a region
+  inside the editor makes focus-trap libraries stamp `inert` across the document,
+  which ProseMirror reconciles by recreating the iframe node views. Iframe embeds
+  are now leaf node views with no `contentDOM`, matching the other media nodes.
+- Caption editing no longer deletes the media node on the first typed character
+  when ProseMirror still held a `NodeSelection` on the node (click-to-lock, then
+  toolbar Caption). Focus now collapses that selection before input reaches the
+  editor.
+- Media blocks no longer overflow the editor column on narrow viewports. Wrappers
+  and loading shells cap at `max-width: 100%` while preserving committed
+  width/height attrs via `aspect-ratio` (live editor; static HTML export still
+  emits fixed pixel dimensions).
 
 ### Removed
 
@@ -278,6 +291,7 @@ every media node gains an editable caption.
 
 ### Internal
 
+- The published manifest no longer declares `engines` — the monorepo's Node floor gated engine-strict consumer installs even though the shipped bundle is plain browser-targeted ESM/CJS.
 - `Logger` (`src/utils/logger.ts`) is error-only: `console.error` survives the
   shared tsup pure policy; the unused `warn`/`debug` levels were dropped.
 - Clean-room Cypress E2E suite + Bun playground. The playground harness lives in
@@ -287,7 +301,7 @@ every media node gains an editable caption.
 ### Migrating from 1.x to 2.0
 
 - Config keys are unchanged except `Twitter` → `X`; update `setTwitter` → `setX`.
-- **Stored documents (docs.plus / Hocuspocus)**: run `bun run --filter @docs.plus/hocuspocus.server migrate:media-node-names` (fail-closed; preview with `:dry`) to rewrite legacy PascalCase node types. The on-load shim (`ENABLE_SCHEMA_MIGRATION`) covers stragglers.
+- **Stored documents (docs.plus / Hocuspocus)**: run `bun run --filter @docs.plus/hocuspocus migrate:media-node-names` (fail-closed; preview with `:dry`) to rewrite legacy PascalCase node types. The on-load shim (`ENABLE_SCHEMA_MIGRATION`) covers stragglers.
 - **Stored documents (external adopters)**: rewrite node `type` strings in JSON or Yjs exports — `Image`→`image`, `Video`→`video`, `Audio`→`audio`, `Youtube`→`youtube`, `Vimeo`→`vimeo`, `SoundCloud`→`soundcloud`, `Twitter`→`x`. Attr keys are unchanged except command renames (`setTwitter`→`setX`). See the [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) for the full mapping even if you do not run the CLI.
 - Replace removed `createFloatingToolbar`/`*Modal` usage with the built-in toolbar or the `mediaToolbar` factory.
 - **Recommended pairing with `@docs.plus/extension-hyperlink`** when both ship in one editor — configure `shouldAutoLink: (url) => !isMediaUrl(url)` so media URLs become nodes, not links.
@@ -302,7 +316,7 @@ The `1.x` changelog below lived on the pre-monorepo `HMarzban/extension-hypermul
 
 - **@docs.plus/extension-hypermultimedia:** depricate "defaultOptions" [#1](https://github.com/HMarzban/extension-hypermultimedia/issues/1) ([89add0e](https://github.com/HMarzban/extension-hypermultimedia/commit/89add0ecbf35e18d534f9157b805292b5c80bee7))
 
-# [1.3.0](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.2.0...v1.3.0) (2023-11-14)
+## [1.3.0](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.2.0...v1.3.0) (2023-11-14)
 
 ### Bug Fixes
 
@@ -315,7 +329,7 @@ The `1.x` changelog below lived on the pre-monorepo `HMarzban/extension-hypermul
 - **@docs.plus/extension-hypermultimedia:** support audio tag ([814a956](https://github.com/HMarzban/extension-hypermultimedia/commit/814a956025da841cd48cc73d5509c6673904dcb8))
 - **@docs.plus/extension-hypermultimedia:** support video tag ([606ae44](https://github.com/HMarzban/extension-hypermultimedia/commit/606ae4499f9ed096a4f29a195a969c8205ffacc7))
 
-# [1.3.0-alpha.1](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.2.0...v1.3.0-alpha.1) (2023-11-09)
+## [1.3.0-alpha.1](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.2.0...v1.3.0-alpha.1) (2023-11-09)
 
 ### Bug Fixes
 
@@ -327,7 +341,7 @@ The `1.x` changelog below lived on the pre-monorepo `HMarzban/extension-hypermul
 - **@docs.plus/extension-hypermultimedia:** support audio tag ([814a956](https://github.com/HMarzban/extension-hypermultimedia/commit/814a956025da841cd48cc73d5509c6673904dcb8))
 - **@docs.plus/extension-hypermultimedia:** support video tag ([606ae44](https://github.com/HMarzban/extension-hypermultimedia/commit/606ae4499f9ed096a4f29a195a969c8205ffacc7))
 
-# [1.3.0-alpha.0](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.2.0...v1.3.0-alpha.0) (2023-11-09)
+## [1.3.0-alpha.0](https://github.com/HMarzban/extension-hypermultimedia/compare/v1.2.0...v1.3.0-alpha.0) (2023-11-09)
 
 ### Bug Fixes
 
@@ -339,7 +353,7 @@ The `1.x` changelog below lived on the pre-monorepo `HMarzban/extension-hypermul
 - **@docs.plus/extension-hypermultimedia:** support audio tag ([814a956](https://github.com/HMarzban/extension-hypermultimedia/commit/814a956025da841cd48cc73d5509c6673904dcb8))
 - **@docs.plus/extension-hypermultimedia:** support video tag ([606ae44](https://github.com/HMarzban/extension-hypermultimedia/commit/606ae4499f9ed096a4f29a195a969c8205ffacc7))
 
-# 1.2.0 (2023-10-31)
+## 1.2.0 (2023-10-31)
 
 ### Bug Fixes
 
@@ -391,41 +405,41 @@ The `1.x` changelog below lived on the pre-monorepo `HMarzban/extension-hypermul
 
 ### Bug Fixes
 
-- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/docs-plus/docs.plus/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
-- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/docs-plus/docs.plus/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
-- **@docs.plus/extension-hypermultimedia:** make sure pick attrs from node attrs ([8e00479](https://github.com/docs-plus/docs.plus/commit/8e004797454d8c70892f3a6c4804b50d2f9ee254))
+- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/HMarzban/extension-hypermultimedia/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
+- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/HMarzban/extension-hypermultimedia/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
+- **@docs.plus/extension-hypermultimedia:** make sure pick attrs from node attrs ([8e00479](https://github.com/HMarzban/extension-hypermultimedia/commit/8e004797454d8c70892f3a6c4804b50d2f9ee254))
 
 ### Features
 
-- **@docs.plus/extension-hypermultimedia:** inline or block node level ([11dd402](https://github.com/docs-plus/docs.plus/commit/11dd402e86ad689d6146ffd1f9d1e156919af719))
+- **@docs.plus/extension-hypermultimedia:** inline or block node level ([11dd402](https://github.com/HMarzban/extension-hypermultimedia/commit/11dd402e86ad689d6146ffd1f9d1e156919af719))
 
 ## 1.1.2-alpha.1 (2023-10-27)
 
 ### Bug Fixes
 
-- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/docs-plus/docs.plus/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
-- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/docs-plus/docs.plus/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
-- **@docs.plus/extension-hypermultimedia:** make sure pick attrs from node attrs ([8e00479](https://github.com/docs-plus/docs.plus/commit/8e004797454d8c70892f3a6c4804b50d2f9ee254))
+- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/HMarzban/extension-hypermultimedia/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
+- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/HMarzban/extension-hypermultimedia/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
+- **@docs.plus/extension-hypermultimedia:** make sure pick attrs from node attrs ([8e00479](https://github.com/HMarzban/extension-hypermultimedia/commit/8e004797454d8c70892f3a6c4804b50d2f9ee254))
 
 ### Features
 
-- **@docs.plus/extension-hypermultimedia:** inline or block node level ([11dd402](https://github.com/docs-plus/docs.plus/commit/11dd402e86ad689d6146ffd1f9d1e156919af719))
+- **@docs.plus/extension-hypermultimedia:** inline or block node level ([11dd402](https://github.com/HMarzban/extension-hypermultimedia/commit/11dd402e86ad689d6146ffd1f9d1e156919af719))
 
 ## 1.1.2-alpha.0 (2023-10-26)
 
 ### Bug Fixes
 
-- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/docs-plus/docs.plus/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
-- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/docs-plus/docs.plus/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
-- **@docs.plus/extension-hypermultimedia:** make sure pick attrs from node attrs ([8e00479](https://github.com/docs-plus/docs.plus/commit/8e004797454d8c70892f3a6c4804b50d2f9ee254))
+- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/HMarzban/extension-hypermultimedia/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
+- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/HMarzban/extension-hypermultimedia/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
+- **@docs.plus/extension-hypermultimedia:** make sure pick attrs from node attrs ([8e00479](https://github.com/HMarzban/extension-hypermultimedia/commit/8e004797454d8c70892f3a6c4804b50d2f9ee254))
 
 ## 1.1.1-alpha.0 (2023-10-26)
 
 ### Bug Fixes
 
-- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/docs-plus/docs.plus/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
-- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/docs-plus/docs.plus/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
+- **@docs.plus/extension-hypermultimedia:** adjust iframe width & height when resize again ([ed6657c](https://github.com/HMarzban/extension-hypermultimedia/commit/ed6657c011001e65599d7f5baa1bc4a80709f852))
+- **@docs.plus/extension-hypermultimedia:** ensure the tippy wrapper stretches widely ([1bf84db](https://github.com/HMarzban/extension-hypermultimedia/commit/1bf84db78f0bd4a838ca5a6975657c35e55b856e))
 
-# 1.1.0 (2023-10-26)
+## 1.1.0 (2023-10-26)
 
 **Note:** Version bump only for package @docs.plus/extension-hypermultimedia

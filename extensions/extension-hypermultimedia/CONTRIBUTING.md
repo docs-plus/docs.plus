@@ -37,6 +37,16 @@ The playground accepts query-string flags so specs can exercise opt-in behaviors
 
 Spec scope — release gate plus supporting areas — lives in [cypress/e2e/README.md](./cypress/e2e/README.md).
 
+## Real-device tap checklist
+
+`toolbar/touch-tap.cy.ts` pins the synthetic layer. Coarse-pointer hover gating, scroll interference during touch drags, and in-frame embed tap handling only show up on hardware — verify on iOS Safari and Android Chrome both:
+
+1. Tap an image — the media toolbar and resize gripper appear; no caret, no keyboard.
+2. Tap outside the image — toolbar and gripper dismiss.
+3. Touch-drag a gripper clamp — the image resizes and the page does not scroll mid-drag (`touch-action: none` on the gripper).
+4. Tap a toolbar action (align, `…` overflow) — the submenu opens on the first tap, no double-tap delay.
+5. Tap a YouTube/Vimeo embed — playback controls respond in-frame. Embeds have no touch entry point to the toolbar today (hover is desktop-only; tap deliberately skips interactive embeds) — confirm, and decide whether one is needed.
+
 ## Development
 
 ```sh

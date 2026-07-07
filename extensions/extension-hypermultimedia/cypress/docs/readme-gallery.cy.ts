@@ -89,7 +89,9 @@ function expectMediaDecoded(selector: string, requireVideoFrame = false): void {
     }
     expect(media.readyState, 'readyState').to.be.gte(README_MEDIA_HAVE_CURRENT_DATA)
     if (requireVideoFrame) {
-      if (media.nodeName !== 'VIDEO') {
+      // nodeName guard, not instanceof — AUT-realm elements fail cross-realm instanceof.
+      const isVideo = (m: HTMLMediaElement): m is HTMLVideoElement => m.nodeName === 'VIDEO'
+      if (!isVideo(media)) {
         throw new Error('Expected VIDEO for frame decode')
       }
       expect(media.videoWidth, 'videoWidth').to.be.gt(0)
@@ -253,7 +255,7 @@ function prepareGalleryScene(loadingShell = true): void {
   cy.setEditorContent('<p></p>')
 }
 
-function showReadmeMediaChrome(contentSelector: string, withGripper = true): void {
+function showReadmeMediaControls(contentSelector: string, withGripper = true): void {
   cy.hoverMediaControls(contentSelector)
   if (withGripper) {
     cy.get('#editor .hypermultimedia__resize-gripper--active').should('exist')
@@ -273,7 +275,7 @@ function runGalleryScene(scene: GalleryScene, theme: ReadmeGalleryTheme): void {
   if (scene.settleMs) {
     cy.wait(scene.settleMs)
   }
-  showReadmeMediaChrome(SCOPE[scene.scope], scene.withGripper ?? true)
+  showReadmeMediaControls(SCOPE[scene.scope], scene.withGripper ?? true)
   cy.screenshot(`${scene.slug}-${theme}`, readmeGalleryShotOpts)
 }
 

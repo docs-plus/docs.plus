@@ -89,7 +89,7 @@ HyperMultimediaKit.configure({
 Hints whether and how the audio should load when the page loads.
 
 - Target: `Node`
-- Default: `false`
+- Default: `metadata`
 
 ```js
 HyperMultimediaKit.configure({
@@ -178,10 +178,10 @@ editor.commands.setAudio({
 | src            | The URL of the audio                                                     | `null`  |          |
 | width          | The embed width (overrides the default option, optional)                 | `null`  | ✅       |
 | height         | The embed height (overrides the default option, optional)                | `null`  | ✅       |
-| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `null`  | ✅       |
 | clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
 | display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
-| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `auto`  | ✅       |
 | justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Markdown syntax

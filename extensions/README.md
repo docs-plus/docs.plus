@@ -8,7 +8,7 @@ Five publishable Tiptap extensions for the [docs.plus](https://docs.plus) alpha 
 | [`extension-hypermultimedia`](./extension-hypermultimedia/) | Images, audio, video, embeds (YouTube, Vimeo, X, …)   | `./styles.css` | 5174            |
 | [`extension-indent`](./extension-indent/)                   | Tab / Shift-Tab literal indent with context allowlist | —              | 5175            |
 | [`extension-inline-code`](./extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)            | —              | 5176            |
-| [`extension-placeholder`](./extension-placeholder/)         | O(1) cursor-based empty-node placeholder              | BYO CSS        | 5177            |
+| [`extension-placeholder`](./extension-placeholder/)         | O(depth) cursor-based empty-node placeholder          | BYO CSS        | 5177            |
 
 ## Install
 

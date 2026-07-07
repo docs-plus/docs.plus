@@ -112,7 +112,7 @@ With an empty selection, `outdent()` removes:
 
 ## TypeScript
 
-Exports: `Indent` (default), `IndentOptions`, `IndentContextRule`. Configure with `Indent.configure({ indentChars, allowedIndentContexts })`.
+Exports (all named): `Indent`, `IndentOptions`, `IndentContextRule`. Configure with `Indent.configure({ indentChars, allowedIndentContexts })`.
 
 ## Family
 

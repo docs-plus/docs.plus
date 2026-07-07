@@ -89,7 +89,7 @@ On a collapsed caret these seed a stored mark, so the next character you type is
 
 ## TypeScript
 
-Exports: `InlineCode` (default), `InlineCodeOptions`. Commands: `setInlineCode`, `toggleInlineCode`, `unsetInlineCode`.
+Exports (all named): `InlineCode`, `InlineCodeOptions`, `inputRegex`, `pasteRegex`. Commands: `setInlineCode`, `toggleInlineCode`, `unsetInlineCode`.
 
 ## Family
 

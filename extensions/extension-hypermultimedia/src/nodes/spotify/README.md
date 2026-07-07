@@ -41,7 +41,7 @@ Localized `open.spotify.com/intl-xx/...` links, already-`embed/` links, and `spo
 | `width`, `height`                                       | `640`, `352` (`152` for a `track`)       |
 | `margin`, `float`, `clear`, `display`, `justifyContent` | `auto`, `null`, `none`, `block`, `start` |
 
-The player is fixed-height: width fills the column (responsive, capped at `width`), and the committed height holds when the column shrinks rather than scaling away. Spotify's three sizes are `352` (full art), `152` (compact track), and `80` (play bar only) — drag the gripper to switch between them.
+The player is fixed-height: width fills the column (responsive, capped at `width`), and the committed height holds when the column shrinks rather than scaling away. The player's default height (`352` full art, `152` compact track) is also the resize floor — the gripper can enlarge the player but dragging below the default snaps back.
 
 ## Embed options
 

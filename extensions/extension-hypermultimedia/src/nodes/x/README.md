@@ -18,7 +18,7 @@ HyperMultimediaKit.configure({
 
 ## Settings
 
-Kit options set the defaults; each inserted node stores its own attributes (`theme`, `lang`, `maxwidth`, `hide_media`, `hide_thread`) which win over the kit defaults.
+Kit options set the defaults; each inserted node stores its own attributes (`theme`, `lang`, `maxwidth`, `hide_media`, `hide_thread`) which win over the kit defaults. Nodes also carry an `align` attribute (`left`/`center`/`right`), an oEmbed passthrough the host sets via `updateAttributes`; it is not serialized to HTML.
 
 ### inline
 
@@ -165,10 +165,10 @@ editor.commands.setX({
 | maxwidth       | oEmbed max width: `280`, `400`, or `550`                                 | `400`   | ✅       |
 | hide_media     | Hide photos/videos/link previews                                         | `false` | ✅       |
 | hide_thread    | Hide the parent post of a reply                                          | `false` | ✅       |
-| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `null`  | ✅       |
 | clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
 | display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
-| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `auto`  | ✅       |
 | justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Markdown syntax

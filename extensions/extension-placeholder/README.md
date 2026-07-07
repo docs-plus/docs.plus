@@ -93,7 +93,7 @@ Drop the built-in extension and add this one with the same `placeholder` string 
 
 ## TypeScript
 
-Exports: `Placeholder` (default), `PlaceholderOptions`, `PlaceholderRenderProps` (function-form `placeholder` callback).
+Exports: `Placeholder`, `PlaceholderOptions`, `PlaceholderRenderProps` (function-form `placeholder` callback).
 
 ## Family
 

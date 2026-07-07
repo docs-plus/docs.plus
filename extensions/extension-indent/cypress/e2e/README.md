@@ -1,6 +1,6 @@
 # extension-indent E2E
 
-Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playground` (`docs-playground` on port 5175). Loads built `dist/` like an npm consumer, on the published 2-space default. Jest owns the `allowedIndentContexts` matrix; the webapp suite (`apps/webapp/cypress/e2e/editor/indent/`) covers the production `'\t'` config.
+Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playground` (`docs-playground` on port 5175). Loads built `dist/` like an npm consumer, on the published 2-space default. Jest owns the `allowedIndentContexts` matrix and the command-level `enabled` gates; the webapp suite (`apps/webapp/cypress/e2e/editor/indent/`) covers the production `'\t'` config.
 
 | Spec                      | What it proves                                                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -11,6 +11,7 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 | `blockquote-indent.cy.ts` | Default allowlist: blockquote paragraphs indent/outdent; headings are a no-op                            |
 | `codeblock-indent.cy.ts`  | codeBlock gating; embedded `\n` is not treated as a block separator                                      |
 | `list-precedence.cy.ts`   | Sink/lift wins over literal indent; `?contexts=none` still sinks and lifts                               |
+| `enabled-option.cy.ts`    | `?enabled=off`: Tab inserts nothing and Shift-Tab strips nothing in an allowed context                   |
 
 Keymaps fire from synthetic `keydown` triggers (`cy.pressKey`); indents are created with real Tab presses because `setContent` HTML parsing collapses literal leading spaces.
 

@@ -103,19 +103,19 @@ Every command also accepts layout options: `width`, `height`, `margin`, `float`,
 ## Styling
 
 Import the single shipped stylesheet — it bundles the resize gripper, loading shell,
-media toolbar, and node-specific X/Loom embed styles:
+media toolbar, and node-specific X/Loom/Spotify embed styles:
 
 ```ts
 import '@docs.plus/extension-hypermultimedia/styles.css'
 ```
 
-Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the media UI follows the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and the toolbar, loading shell, gripper, and X/Loom embed surfaces flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. Override any token to retheme:
+Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the toolbar, loading shell, gripper, and caption follow the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and they flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. The X and Loom embed plates deliberately key on the node's `theme` attribute (the `X.theme` / `Loom.theme` kit options) instead, so they match what the embedded widget renders. Override any token to retheme:
 
 | Token                         | Description                                |
 | ----------------------------- | ------------------------------------------ |
 | `--hm-toolbar-bg`             | Toolbar and menu background                |
 | `--hm-toolbar-fg`             | Toolbar icon and menu text color           |
-| `--hm-toolbar-border`         | Toolbar, menu, and popover-arrow borders   |
+| `--hm-toolbar-border`         | Toolbar and menu borders                   |
 | `--hm-toolbar-hover`          | Toolbar button / menu row hover background |
 | `--hm-toolbar-active`         | Active (toggled) action background         |
 | `--hm-toolbar-active-fg`      | Active action icon/text color              |
@@ -453,13 +453,29 @@ Backspace/Delete removes the hovered media node — unless the caret is in text 
 Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })
 ```
 
+Two tradeoffs to know:
+
+- Paste claims are per provider under this recipe: YouTube, SoundCloud, and Spotify only claim a URL that is the entire pasted block, while Loom, Vimeo, and X claim their URL anywhere in the pasted text. A media URL _typed_ mid-sentence gets neither a media node nor an autolink — the veto applies to hyperlink's paste-linkify and typed autolink alike. Explicit linking (Mod-K / `setHyperlink`) still works — that path skips `shouldAutoLink`.
+- `isMediaUrl` matches every provider regardless of kit configuration, so a host that disables providers vetoes URLs nothing will claim. Compose the veto from the per-provider validators for only the providers you enable:
+
+```ts
+import { isImageUrl, isValidYoutubeUrl } from '@docs.plus/extension-hypermultimedia'
+
+// Kit configured with only Image and Youtube enabled:
+Hyperlink.configure({
+  shouldAutoLink: (url) => !isImageUrl(url) && !isValidYoutubeUrl(url)
+})
+```
+
 ## Image file paste (`editorFileUpload`)
 
 Pasting an image **file** (a screenshot, a copied image) never inserts base64 into the document. The paste handler calls `preventDefault()` and dispatches a `CustomEvent` named `editorFileUpload` on `document` with `{ file, editor }` in `detail` — the host decides where the bytes go (upload, blob URL, …) and inserts the node itself:
 
 ```ts
+import type { Editor } from '@tiptap/core'
+
 document.addEventListener('editorFileUpload', (event) => {
-  const { file, editor } = event.detail
+  const { file, editor } = (event as CustomEvent<{ file: File; editor: Editor }>).detail
   if (!file?.type.startsWith('image/')) return
 
   const objectUrl = URL.createObjectURL(file) // or upload and use the remote URL
@@ -491,7 +507,7 @@ Advanced: `createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`, and typ
 
 2.0.0 renames node types to camelCase and rebrands Twitter to X. See the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md) for the full breaking-change list.
 
-**docs.plus / Hocuspocus:** `bun run --filter @docs.plus/hocuspocus.server migrate:media-node-names` (preview with `:dry`).
+**docs.plus / Hocuspocus:** `bun run --filter @docs.plus/hocuspocus migrate:media-node-names` (preview with `:dry`).
 
 **External adopters:** rewrite stored JSON/Yjs node `type` strings (`Image`→`image`, `Twitter`→`x`, …). The [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) lists every mapping even if you do not run the CLI.
 
@@ -501,7 +517,7 @@ Embed URL parsing rejects invalid hosts before insert (`guards/invalid-urls` in 
 
 ## TypeScript
 
-Definitions ship in `dist/`. Main exports: `HyperMultimediaKit`, per-node extensions (`Image`, `Youtube`, `X`, …), insert commands (`setImage`, `setX`, …), `isMediaUrl`, loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. Per-node embed options live under each node's module — see [Nodes](#nodes).
+Definitions ship in `dist/`. Main exports: `HyperMultimediaKit` (bundles all nine media nodes — enable, configure, or disable each via kit options; the nodes are not individually exported), `isMediaUrl` plus per-host validators (`isValidYoutubeUrl`, `isValidXUrl`, …), loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. Insert commands (`setImage`, `setX`, …) are typed on `editor.commands` through the bundled `MediaPublicCommands` augmentation, and their option types are exported (`SetImageOptions`, `UpdateImageDimensionsParams`, `SetVideoOptions`, `SetAudioOptions`, `SetYoutubeVideoOptions`, `SetVimeoOptions`, `SetSoundCloudOptions`, `SetSpotifyOptions`, `SetLoomOptions`, `AddXOptions`). Per-node embed options live under each node's module — see [Nodes](#nodes).
 
 ## Family
 

@@ -7,7 +7,7 @@ All notable changes to `@docs.plus/extension-placeholder` are documented here. T
 ### Highlights
 
 - **First npm publish** — versioned `2.0.0` to align with the docs.plus extension-family shared major.
-- **O(1) cursor-based decoration** — decorates only the empty node at the cursor plus empty ancestor wrappers; no full-document `doc.descendants` scan on every keystroke.
+- **O(depth) cursor-based decoration** — decorates only the empty node at the cursor plus empty ancestor wrappers; no full-document `doc.descendants` scan on every keystroke.
 - **Runtime editable toggle** — `editor.setEditable()` refreshes the placeholder immediately when `showOnlyWhenEditable` is on.
 - **Clean-room Cypress suite** — twelve specs against built `dist/` on port 5177 (empty doc, cursor tracking, undo, full-doc paste, gap cursor).
 
@@ -25,10 +25,11 @@ All notable changes to `@docs.plus/extension-placeholder` are documented here. T
 
 ### Internal
 
+- The published manifest no longer declares `engines` — the monorepo's Node floor gated engine-strict consumer installs even though the shipped bundle is plain browser-targeted ESM/CJS.
 - Added a clean-room Cypress E2E suite (`@docs.plus/playground`, port 5177) against the built `dist/`: empty-document lifecycle, cursor tracking, ancestor propagation, the editable toggle, option resolution, `isNodeEmpty` semantics, external edits, undo/redo, full-document paste, horizontal rule and gap cursor, per-node-type `placeholder` functions, and real-keystroke Backspace.
 - Replaced a cast with `?? null` in `props.decorations`.
 - Added a `typecheck` script; corrected "TipTap" to "Tiptap" in the package description.
 
 ## [0.1.0]
 
-Pre-changelog baseline, never published to npm. O(1) cursor-based placeholder decoration — decorates only the empty node at the cursor and its empty ancestor wrappers instead of scanning with Tiptap's built-in `doc.descendants`.
+Pre-changelog baseline, never published to npm. O(depth) cursor-based placeholder decoration — decorates only the empty node at the cursor and its empty ancestor wrappers instead of scanning with Tiptap's built-in `doc.descendants`.

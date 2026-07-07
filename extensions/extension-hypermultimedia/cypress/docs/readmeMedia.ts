@@ -44,7 +44,7 @@ export const README_GALLERY_TOOLBAR_SETTLE_MS = 250
 export const README_GALLERY_LOCAL_MEDIA_SETTLE_MS = 750
 export const README_GALLERY_EMBED_SETTLE_MS = 800
 export const README_GALLERY_LOOM_SETTLE_MS = 2500
-/** SoundCloud widget chrome needs a beat longer than other iframe embeds. */
+/** The SoundCloud widget UI needs a beat longer than other iframe embeds. */
 export const README_GALLERY_SOUNDCLOUD_SETTLE_MS = 1200
 /** Spotify paints artwork + track list a beat after the iframe loads. */
 export const README_GALLERY_SPOTIFY_SETTLE_MS = 1500

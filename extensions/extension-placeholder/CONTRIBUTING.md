@@ -21,7 +21,7 @@ The playground accepts query-string flags:
 | `?editable=false`             | Editor starts read-only                                                |
 | `?showOnlyWhenEditable=false` | Placeholder visible even when the editor is not editable               |
 | `?placeholder=fn`             | Function form — per-node text (`Untitled` for headings, etc.)          |
-| `?placeholder=empty`          | Function returns `''` — suppresses decorations                         |
+| `?placeholder=empty`          | Empty string `''` — suppresses decorations                             |
 | `?nodeClass=custom`           | Sets `emptyNodeClass` / `emptyEditorClass` for class-propagation specs |
 
 Spec scope lives in [cypress/e2e/README.md](./cypress/e2e/README.md).

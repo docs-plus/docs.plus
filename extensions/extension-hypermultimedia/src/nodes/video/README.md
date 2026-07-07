@@ -119,7 +119,7 @@ HyperMultimediaKit.configure({
 Hints how much buffering the media resource will likely need.
 
 - Target: `Node`
-- Default: `auto`
+- Default: `metadata`
 
 ```js
 HyperMultimediaKit.configure({
@@ -193,10 +193,10 @@ editor.commands.setVideo({
 | src            | The URL of the video                                                     | `null`  |          |
 | width          | The embed width (overrides the default option, optional)                 | `640`   | ✅       |
 | height         | The embed height (overrides the default option, optional)                | `480`   | ✅       |
-| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `null`  | ✅       |
 | clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
 | display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
-| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `auto`  | ✅       |
 | justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Markdown syntax

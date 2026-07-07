@@ -30,8 +30,8 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 
 - `isSafeHref` + `composeGate` are the single XSS gate. `parseHTML` uses `getAttrs` + `isSafeHref(href)`; `clickHandler.ts` and the preview popover `window.open` fallback also call `isSafeHref`.
 - `composeGate(options)` composes `isSafeHref` with user `isAllowedUri(href, { defaultValidate, protocols, defaultProtocol })`.
-- All write boundaries use the composed gate: `setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover submit, `parseHTML`.
-- `DANGEROUS_SCHEME_RE` stays internal to `validateURL.ts`. Call sites import `isSafeHref`, not the regex.
+- All write boundaries use the composed gate: `setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover submit. `parseHTML`/`parseMarkdown` apply only the `isSafeHref` floor so a tightened `isAllowedUri` cannot strip marks from existing documents on import.
+- `DANGEROUS_SCHEME_RE` is defined only in `validateURL.ts` and is deliberately public (exported via `utils/index.ts` and `url-decisions/index.ts`, reachable from the package root, documented in README → Security). In-package call sites import `isSafeHref`, never the regex.
 - Every path that stores a hyperlink mark routes through `normalizeHref(raw)` or `normalizeLinkifyHref(match)`:
   - Bare domains become `https://...`; explicit schemes are preserved.
   - Bare email becomes `mailto:<email>` via strict full-string linkify match.
@@ -57,7 +57,7 @@ editor
 Moving selection across the link makes the floating toolbar think the user navigated away and destroys the popover.
 
 - Instead, compute the mark range with `getMarkRange(resolvedPos, hyperlinkType)` and dispatch a plain transaction: `tr.removeMark`, then `tr.addMark` with new attrs over the same range, optionally `setMeta('preventUpdate', true)`. No `tr.selection` changes.
-- Failed metadata fetches degrade silently: render `createMetadataContent(null, href)` so the title falls back to raw `href`. Do not render unavailable/warning chrome for preview metadata failures.
+- Failed metadata fetches degrade silently: render `createMetadataContent(null, href)` so the title falls back to raw `href`. Do not render unavailable/warning UI for preview metadata failures.
 - Desktop preview popover is title-only: one row, ellipsis truncation, 200px max width.
 - Mobile `LinkPreviewSheet` shows title + description + href with wrapping and no truncation. Do not reintroduce `line-clamp-2` on the description. Render the href line only when `data?.title && data.title !== href`.
 
@@ -78,7 +78,7 @@ Moving selection across the link makes the floating toolbar think the user navig
 - Module-internal helpers (`getURLScheme`, `isBarePhone`, `normalizeLinkifyHref`, `Link`, `Title`) are reachable from siblings but not through the package barrel.
 - Internal constants live in `src/constants.ts` (`HYPERLINK_MARK_NAME`, `PREVENT_AUTOLINK_META`). Do not export them publicly.
 - `src/utils/findLinks.ts` contains pure linkify-result filtering with Bun tests in `utils/__tests__/findLinks.test.ts`.
-- v2.0.0 symbol renames (do not reintroduce the old names): `getUrlScheme → getURLScheme`, `isValidSpecialScheme → isRecognizedSpecialScheme`, `showPopover → openHyperlinkToolbar` (since renamed `openPreviewPopoverFromClick` — it opens the preview popover; "toolbar" named the content, not the surface), `TRAILING_PUNCT_RE → TRAILING_PUNCTUATION_RE`, `stripTrailingPunct → stripTrailingPunctuation`, `hrefTitle → hrefAnchor`, `buildHrefGate → composeGate`, local `preventAutolink → shouldSkipAutolink`. `EditHyperlinkModalOptions` is a deprecated alias for `EditHyperlinkPopoverOptions`, dropped in 3.x.
+- v2.0.0 symbol renames (do not reintroduce the old names): `getUrlScheme → getURLScheme`, `isValidSpecialScheme → isRecognizedSpecialScheme`, `showPopover → openHyperlinkToolbar` (since renamed `openPreviewPopoverFromClick` — it opens the preview popover; "toolbar" named the content, not the surface), `TRAILING_PUNCT_RE → TRAILING_PUNCTUATION_RE`, `stripTrailingPunct → stripTrailingPunctuation`, `hrefTitle → hrefAnchor`, `buildHrefGate → composeGate`, local `preventAutolink → shouldSkipAutolink`. `EditHyperlinkModalOptions` / `EditHyperlinkPopoverOptions` (both v1 names) were consolidated into `EditHyperlinkOptions` in v2.0.0 — no deprecated alias shipped; do not reintroduce either old name.
 
 ## Floating Popover
 

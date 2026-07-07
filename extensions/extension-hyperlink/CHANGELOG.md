@@ -25,12 +25,8 @@ A complete migration guide from `1.5.2` is at the end of this entry, including a
 - **50+ special URL scheme catalog** (`whatsapp://`, `tg://`, `vscode://`, `slack://`, `zoom://`, `figma://`, `spotify:`, and friends) exposed as a brand-neutral `SpecialUrlType` union plus a `getSpecialUrlInfo(href)` classifier. Consumers map types to their own icon set — the extension ships zero icon catalog.
 - **Defense-in-depth XSS + navigation guards** — `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` are rejected at every entry point: `parseHTML`, input rule, paste handler, paste rule, click handler, middle-click (`auxclick`), and popover open. `renderHTML` re-validates on serialization and blanks tampered hrefs. Every `window.open` call re-checks the gate and passes `'noopener,noreferrer'`, eliminating tabnabbing end-to-end. The regex `DANGEROUS_SCHEME_RE` and the predicate `isSafeHref` are exported so BYO popovers apply the same check.
 - **Default stylesheet ships separately** (`import '@docs.plus/extension-hyperlink/styles.css'`) and is fully themeable via `--hl-*` CSS custom properties with `light-dark()` support. Fully-custom UIs pay zero CSS cost.
-- **Bun-native unit suite + clean-room Cypress E2E** — 315 unit tests (`bun test src`, ~95 ms) plus 150 E2E tests across 14 specs that exercise the **built `dist/` loaded via the published `exports` map** — exactly what an npm consumer installs.
+- **Bun-native unit suite + clean-room Cypress E2E** — 315 unit tests (`bun test src`, ~95 ms) plus E2E coverage across 15 specs that exercise the **built `dist/` loaded via the published `exports` map** — exactly what an npm consumer installs.
 - **`@tiptap/extension-link` canon parity** — `setHyperlink` is a pure command (writes the mark only); the side-effecting popover lives behind a dedicated `openCreateHyperlinkPopover` command so chains stay transactional. New `toggleHyperlink` plus migration aliases `setLink` / `unsetLink` / `toggleLink`. Options `defaultProtocol`, `isAllowedUri`, `shouldAutoLink`, `enableClickSelection`, `exitable` mirror the upstream Link-extension surface so existing policies port over without rewrites. `shouldAutoLink` is honored by the autolink plugin, paste handler, AND paste rule — full policy parity across every autolink entry point.
-
-### Security
-
-- **Mispublish disclosure.** `extension-hyperlink@4.3.0` was mistakenly published to npm under the wrong semver line. It was unpublished within npm's 72-hour window (or deprecated if that window had closed). Do not install `4.3.0` — use `2.0.0` from `@next` during the alpha v2 soak, then `@latest` after promotion. This entry is the authoritative disclosure; the archived pre-2.0 history footnote below is not a substitute.
 
 ### Breaking
 
@@ -99,7 +95,7 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 **Public surface tightened — audit your imports.**
 
-- **`export *` replaced with explicit named re-exports** in `src/index.ts` and `src/utils/index.ts`. Module-internal helpers no longer leak through the public barrel:
+- **Public barrel audited** — `src/utils/index.ts` now uses explicit named re-exports (no `export *`), and `src/index.ts` re-exports only controlled barrels (`./hyperlink`, `./utils`), so module-internal helpers no longer leak through the public surface:
   - `Link` / `Title` icons (still importable from `./utils/icons` if you forked the prebuilt popovers).
   - `normalizeLinkifyHref` (used inside autolink + paste plugins only).
   - `getUrlScheme` (used inside `validateURL` only).
@@ -167,13 +163,13 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 - `defaultProtocol: string` (default `'https'`) — scheme used by `normalizeHref` when promoting bare domains.
 - `isAllowedUri?: (uri, ctx) => boolean` — composes WITH the built-in safety floor. Receives `{ defaultValidate, protocols, defaultProtocol }` so policies can reuse `isSafeHref` instead of re-implementing it. Mirrors the `@tiptap/extension-link` shape; `IsAllowedUriContext` is exported.
-- `shouldAutoLink?: (uri) => boolean` — per-URI veto consulted by the autolink plugin, the paste handler (smart-paste over a non-empty selection), AND the markdown paste rule — full parity across every autolink surface. Lets hosts block app-wide categories (e.g. internal mention syntax) without losing paste-as-link UX for everything else.
+- `shouldAutoLink?: (uri) => boolean` — per-URI veto consulted by the autolink plugin, the paste handler (smart-paste over a non-empty selection), AND the linkify paste rule — full parity across every autolink surface. Lets hosts block app-wide categories (e.g. internal mention syntax) without losing paste-as-link UX for everything else.
 - `enableClickSelection: boolean` (default `false`) — when `true`, clicking inside a link in editable mode selects the entire mark range.
 - `exitable: boolean` (default `false`) — when `true`, ArrowRight at the end of a hyperlink mark exits the mark so the next typed character is plain text.
 
 **Tiptap canon commands.**
 
-- `openCreateHyperlinkPopover(attributes?)` — dedicated UI command that opens the create popover anchored to the current selection. The historic side-effect on `setHyperlink()` (no-args) lives here now; `Mod-k` rebinds to it. No-op when no popover factory is wired up.
+- `openCreateHyperlinkPopover(attributes?)` — dedicated UI command that opens the create popover anchored to the current selection. The historic side-effect on `setHyperlink()` (no-args) lives here now; `Mod-k` rebinds to it. Falls back to the prebuilt create popover when no `popovers.createHyperlink` factory is wired up; no-op only when a configured factory returns `null`.
 - `toggleHyperlink({ href, … })` — toggles the mark on/off across the current selection. Same XSS + `isAllowedUri` gates as `setHyperlink`.
 - `setLink` / `unsetLink` / `toggleLink` — drop-in delegating aliases that ease migration from `@tiptap/extension-link`. They forward to the canonical `setHyperlink` / `unsetHyperlink` / `toggleHyperlink`, so future policy changes flow through automatically.
 
@@ -185,7 +181,7 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 **Prebuilt popover accessibility.**
 
-- Preview-popover icon buttons ship `type="button"`, an `aria-label`, and a `title`; every popover button gets a `:focus-visible` ring.
+- Preview-popover icon buttons ship `type="button"` and an `aria-label`; every popover button gets a `:focus-visible` ring.
 
 **Write-boundary behaviors.**
 
@@ -196,8 +192,8 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 **Test harness.**
 
-- Bun-native unit suite at `src/utils/__tests__/` — 315 tests across `normalizeHref`, `phone`, `specialUrls`, `validateURL`, `findLinks`, `isSafeHref`, `DANGEROUS_SCHEME_RE`. Runs via `bun test src` (~95 ms). New scripts: `bun run test:unit`, `bun run test:unit:watch`.
-- Clean-room Cypress specs in `cypress/e2e/` (14 specs, 150 tests) exercise the built `dist/` loaded via the published `exports` map — the install-time surface. Coverage spans create, preview-edit, autolink, full-document paste, undo/redo, node contexts, destroy lifecycle, special schemes, XSS guards, navigation guards, canon options, styling, custom popovers, and scroll-stickiness; the spec-by-spec matrix lives in `cypress/e2e/README.md`. Run with `bun run test:e2e`.
+- Bun-native unit suite across `src/**/__tests__/` (13 files) — 315 tests covering `normalizeHref`, `phone`, `specialUrls`, `validateURL`, `findLinks`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, and the command/interaction/opener/url-decisions layers. Runs via `bun test src` (~95 ms). New scripts: `bun run test:unit`, `bun run test:unit:watch`.
+- Clean-room Cypress specs in `cypress/e2e/` (15 specs) exercise the built `dist/` loaded via the published `exports` map — the install-time surface. Coverage spans create, preview-edit, autolink, full-document paste, undo/redo, node contexts, destroy lifecycle, special schemes, XSS guards, navigation guards, canon options, styling, custom popovers, scroll-stickiness, and markdown round-trip; the spec-by-spec matrix lives in `cypress/e2e/README.md`. Run with `bun run test:e2e`.
 - Clean-room playground served by the shared `@docs.plus/playground` workspace harness (the `docs-playground` page-shell server plus a browser `setupPlayground` helper); this package commits only `test/playground/main.ts`. No bundler config, no Vite.
 - Root `test` script composes all three: build (via `pretest`) → unit → e2e.
 
@@ -217,13 +213,23 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 - **`setHyperlink` / `unsetHyperlink` / `toggleHyperlink` / `editHyperlinkCommand` are strictly composable.** The shared body operates on the parent transaction via `commands.setMark` (which shares `tr` across the chain) instead of dispatching a nested `chain().run()`. `editor.chain().extendMarkRange('hyperlink').setHyperlink({ href }).run()` now lands as a single transaction — no more "Applying a mismatched transaction" errors when chaining mark-range ops with a hyperlink command. No behavior change for the common single-command call site.
 - **`Hyperlink` mark `image` attribute is no longer rendered to the DOM** (`rendered: false`). `<a>` has no standard `image` attribute, so the previous behavior produced invalid HTML and polluted downstream sanitizers. The mark still carries the value for the preview popover (favicon / OG image); only the DOM serialization changed.
 - **Popover-internal write paths now route through `setHyperlink`.** The prebuilt `createHyperlink` popover used to call `editor.chain().setMark(...).setMeta(...).run()` directly; it now delegates to `editor.chain().setHyperlink({ href }).run()` so the composed XSS + `isAllowedUri` gate runs unconditionally. The popover surfaces a "Please enter a valid URL" error if the gate rejects.
-- **Symbol renames for naming consistency** (`getUrlScheme` → `getURLScheme` to match the SCREAMING-acronym policy used by `validateURL` / `DANGEROUS_SCHEME_RE`; internal `isValidSpecialScheme` → `isRecognizedSpecialScheme`; `EditHyperlinkModalOptions` / `EditHyperlinkPopoverOptions` → `EditHyperlinkOptions` (no deprecated alias kept — this is a single major bump that consolidates both v1 names into the v2 vocabulary); internal `showPopover` → `openHyperlinkToolbar`; autolink internals `TRAILING_PUNCT_RE` / `stripTrailingPunct` → `TRAILING_PUNCTUATION_RE` / `stripTrailingPunctuation`).
+- **Symbol renames for naming consistency** (`getUrlScheme` → `getURLScheme` to match the SCREAMING-acronym policy used by `validateURL` / `DANGEROUS_SCHEME_RE`; internal `isValidSpecialScheme` → `isRecognizedSpecialScheme`; `EditHyperlinkModalOptions` / `EditHyperlinkPopoverOptions` → `EditHyperlinkOptions` (no deprecated alias kept — this is a single major bump that consolidates both v1 names into the v2 vocabulary); internal `showPopover` → `openPreviewPopoverFromClick`; autolink internals `TRAILING_PUNCT_RE` / `stripTrailingPunct` → `TRAILING_PUNCTUATION_RE` / `stripTrailingPunctuation`).
 - **All cross-module string literals replaced by `src/constants.ts`** — `HYPERLINK_MARK_NAME` (`'hyperlink'`) and `PREVENT_AUTOLINK_META` (`'preventAutolink'`) are imported by every site that previously had the magic string inline. Internal-only — neither is re-exported from the public barrel.
 - **`autolinkPlugin` `findLinks` core extracted to `utils/findLinks.ts`** for unit testing without spinning up a ProseMirror editor. The plugin's `appendTransaction` body shrinks; matcher behavior is now pinned by an additional 12 unit tests covering URLs, emails, special schemes, phones, and trailing-punctuation stripping.
 - **Autolink boundary detection is Unicode-aware.** Word splitting uses `/\s+/` (not just `' '`), so links followed by a tab, NBSP, em-space, ideographic space, or any other Unicode whitespace are recognized as link boundaries. Fixes silent autolink misses in CJK / European-typography content.
 - **Autolink skips `code` marks.** A URL typed inside an inline `code` mark is content, not a navigation target — it must round-trip verbatim. The autolink plugin consults `state.schema.marks.code` and refuses to apply a hyperlink mark inside any range that already carries the `code` mark. Mirrors `@tiptap/extension-link` v3 canon.
+- The default popover skin adopts the docs.plus floating-surface elevation:
+  `--hl-radius` moves 6px → 10px, `--hl-radius-sm` 4px → 8px, and `--hl-shadow`
+  becomes a deeper two-layer shadow. Consumers who retheme via the `--hl-*`
+  custom properties are unaffected; the lockstep `.floating-tooltip` block is
+  unchanged.
 
 ### Fixed
+
+**Popovers.**
+
+- `.floating-popover-arrow-left` / `-right` bordered the wrong faces of the rotated arrow square, so horizontal placements rendered a half-outlined arrow; each side now borders its two exposed faces. The `prefers-reduced-motion` guard also gained the `.floating-popover.visible` selector — the entrance transition previously out-specified it, so reduced-motion users still saw the scale-bloom.
+- The prebuilt edit popover closes when the hyperlink mark disappeared under it (e.g. a collab peer removed the link) instead of misreporting the URL as invalid, and honors `document.execCommand('copy')` failures in the legacy clipboard fallback instead of closing as if the copy succeeded.
 
 **URL handling.**
 
@@ -262,6 +268,7 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 ### Security
 
+- **Mispublish disclosure.** `extension-hyperlink@4.3.0` was mistakenly published to npm under the wrong semver line. It was unpublished within npm's 72-hour window (or deprecated if that window had closed). Do not install `4.3.0` — install `2.0.0` (`bun add @docs.plus/extension-hyperlink`). This entry is the authoritative disclosure; the archived pre-2.0 history footnote below is not a substitute.
 - **Dangerous-scheme blocklist at every entry point.** `javascript:`, `data:`, `vbscript:`, `file:`, and `blob:` are uniformly refused at `parseHTML` (callback-based `getAttrs` runs `DANGEROUS_SCHEME_RE`), input rule, paste handler, paste rule, click handler, middle-click `auxclick` handler, preview popover, and autolink. The previous check was inconsistent — `parseHTML` allowed only `javascript:` via a CSS selector, every other surface allowed everything, and collaborative editing plus `setContent` on untrusted HTML made it a stored XSS vector. `file:` exfiltrates local-disk paths; `blob:` persists scriptable HTML across the document's lifetime; both join the blocklist. `DANGEROUS_SCHEME_RE` and `isSafeHref` are exported so BYO popovers inherit the same floor.
 - **Defensive `isSafeHref` gate inside `validateURL`.** Even if a downstream consumer skips the regex, the WHATWG `URL`-based validator refuses dangerous schemes before parsing. Closes the "validator-as-public-API" hole where consumers used `validateURL` directly to vet user input.
 - **`renderHTML` re-validates on serialization.** The mark serializer passes the stored `href` through `isSafeHref` and blanks the attribute on failure. Even if a tampered document smuggles `<a href="javascript:…">` past parse — collaborative edit, misbehaving extension, downstream HTML serializer — it is never written back into the editor DOM as a live anchor.
@@ -302,11 +309,12 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 - README accuracy pass — `HTMLAttributes` no longer documents `target` / `image` (those keys are stripped on render); the BYO `setHyperlink` example uses `editor.chain().setHyperlink({ href }).run()` instead of `setMark`; the URL-handling section names `normalizeHref` (the actual export) instead of `normalizeLinkifyHref` (internal); the Security section reflects the widened blocklist, the `renderHTML` re-validation, and the `'noopener,noreferrer'` features arg.
 - README rewritten for the v2 popover API — the "Popovers" intro now describes the two-layer surface (factory slots, openers, primitive); a new "Openers" section documents `openCreateHyperlink` / `openEditHyperlink` / `openPreviewHyperlink`; the "Floating-popover primitive" and "UI controller" sections document `createPopover`, `PopoverOptions`, `Popover`, `getDefaultController`, `PopoverController`, and the richer `ControllerState` (with `popoverKind`, `element`, `referenceElement`); the "Class names" table renames every `.floating-toolbar*` row to `.floating-popover*`; the "TypeScript" section lists the v2 exports and drops the v1 ones.
 - README restructured for junior-developer onboarding. The Popovers intro is now task-framed (use prebuilt / open from outside / replace) instead of percentage-tiered; the Openers section moved up next to the option shapes so consumers see the canonical entry points before BYO; a new `## Advanced` umbrella heading walls off the BYO factories, the `createPopover` primitive, and the `PopoverController` — sections you only read when replacing a prebuilt or building a non-link-anchored popover. The standalone "Wiring the edit popover's Back button" section was deleted; its contract lives in the BYO `editHyperlink` example as a brief comment. The `validate` description in the Options table was corrected (it gates every write boundary, not just autolinks); a new `validate` vs `isAllowedUri` subsection explains the signature-only difference. The `1.x → 2.0` migration callout demoted from an `[!IMPORTANT]` block at the top to a one-line link inside Install.
-- `CONTRIBUTING.md` added at the package root. The test docs (run commands, playground query-string flags, the 14-spec Cypress matrix) moved out of the README and into the contributor doc; the README links to it from a single-paragraph `## Contributing` section.
+- `CONTRIBUTING.md` added at the package root. The test docs (run commands, playground query-string flags, the 15-spec Cypress matrix) moved out of the README and into the contributor doc; the README links to it from a single-paragraph `## Contributing` section.
 - Documented the controller `subscribe` contract (no initial fire), `nodePos` and the forwarded `isAllowedUri` gate on the popover option shapes, the DOM-helper exports (`copyToClipboard`, `createHTMLElement`, the icon factories), and the mark's built-in markdown hooks. The BYO preview example gates `attrs.href` through `isSafeHref` before rendering a navigable anchor.
 
 ### Internal
 
+- The published manifest no longer declares `engines` — the monorepo's Node floor gated engine-strict consumer installs even though the shipped bundle is plain browser-targeted ESM/CJS.
 - **Bundle size**: ESM `dist/index.js` 31.4 KB, CJS 32.3 KB, DTS 17.7 KB — with the popover engine bundled in. Public surface grew (canon options + commands, `SpecialUrlType` 44-member literal union, `auxclick` handler, widened blocklist, navigation-safety helpers); JSDoc trim kept the DTS lean despite that growth — intentional trade-off for compile-time typo-protection.
 - **`HyperlinkAttributes<Extra>` is generic.** The default — `HyperlinkAttributes` — is fully back-compatible with `1.x` (built-in keys plus an open-ended `Record<string, unknown>` index signature). Consumers that store additional typed mark attributes can now express that without losing the index signature: `HyperlinkAttributes<{ ariaLabel: string; campaign?: string }>`.
 - **`LinkContext` cached per editor.** The dependency bag (URL Decisions pipeline + composed `isAllowedUri` gate + canon options) is built once on extension `onCreate` and stored via `addStorage`, so `addCommands` / `addInputRules` / `addPasteRules` / `addProseMirrorPlugins` share a single allocation instead of re-building the pipeline on every hook.
@@ -316,7 +324,8 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 - Dead `.floating-popover` positioning declarations and the unused `--hl-z-index` token dropped from `styles.css` pre-release — positioning is inline (see the stylesheet notes under Added), so neither ever shipped.
 - **Pre-`2.0` history trimmed out of the active changelog.** The `1.x` notes and the internal milestone log were archived to `docs/HISTORY.md`, since removed from the tracked tree — recover it from git history if you need it. Everything user-facing is rolled up into this entry.
 - **`logger` helper** at `src/utils/logger.ts` standardizes `[extension-hyperlink]`-prefixed `console.warn` / `console.error` calls. `tsup` strips `console.log` / `console.debug` in production builds but preserves `warn` / `error` (see Changed) — the typed wrapper makes the policy explicit and gives library users a single string to grep when triaging issues. All in-package call sites (`editHyperlink`, `copyToClipboard`, `createHyperlinkPopover`, `previewHyperlinkPopover`, `validateURL`) migrated.
-- **Public popover types reach the barrel.** `EditHyperlinkOptions` (the consolidated v2 name) is re-exported from `src/popovers/index.ts`, so `import { EditHyperlinkOptions } from '@docs.plus/extension-hyperlink'` resolves — previously the v1 `EditHyperlinkModalOptions` symbol was referenced in the README but unreachable from the package root.
+- **Public popover types reach the barrel.** `EditHyperlinkOptions` (the consolidated v2 name) reaches the package root through `src/index.ts`'s `export * from './hyperlink'`, so `import { EditHyperlinkOptions } from '@docs.plus/extension-hyperlink'` resolves — previously the v1 `EditHyperlinkModalOptions` symbol was referenced in the README but unreachable from the package root.
+- Option types `ValidateURLOptions` and `IconProps` are exported so the documented `validateURL` and `Copy` / `LinkOff` / `Pencil` parameters are nameable in consumer code.
 - **Playground accepts policy flags via query string** (`?shouldAutoLink=block`, `?clickSelection=on`, `?exitable=on`) so the dedicated specs (`canon-options`, `autolink`'s `shouldAutoLink` veto block) exercise opt-in behaviors without forking the playground bootstrap.
 - `tsconfig.json` excludes `src/**/__tests__/**` and `src/**/*.test.ts` from the build so unit tests don't leak into `dist/`. `bun-types` added as a dev dep so test files typecheck against `bun:test` without polluting the build.
 - `utils/index.ts` doc comment documents the explicit-named-export contract and lists every module-internal helper that intentionally does not leak through the public barrel.
@@ -324,11 +333,11 @@ The only known external consumer (`apps/webapp`) is migrated in this same releas
 
 ---
 
-## Migrating from `1.x` to `2.0`
+### Migrating from `1.x` to `2.0`
 
 If you are upgrading from `^1.5.2` directly to `2.0`, the API has been substantially redesigned. The script below handles every mechanical rename; the semantic changes are listed separately because they require code review.
 
-### One-shot rename script
+#### One-shot rename script
 
 Run this in your project root and commit the diff:
 
@@ -351,7 +360,7 @@ rg -l "autoHyperlink|hyperlinkOnPaste|editHyperLinkText|editHyperLinkHref|preven
     -e 's/btn_applyModal/apply-button/g'
 ```
 
-### Code diff
+#### Code diff
 
 ```diff
  Hyperlink.configure({
@@ -431,7 +440,7 @@ rg -l "autoHyperlink|hyperlinkOnPaste|editHyperLinkText|editHyperLinkHref|preven
 + .apply-button    { … }
 ```
 
-### Default stylesheet
+#### Default stylesheet
 
 If you used the prebuilt popovers in `1.x`, their CSS was inlined by the bundle. In `2.0` it ships separately — add this once at app bootstrap:
 
@@ -441,7 +450,7 @@ import '@docs.plus/extension-hyperlink/styles.css'
 
 Skip the import if you fully restyle the popovers in your own CSS — the JavaScript never loads it, so you pay zero cost.
 
-### Consumer icon mapping
+#### Consumer icon mapping
 
 The extension ships no icon catalog. Map `SpecialUrlInfo.type` to your own SVG renderer:
 
@@ -468,7 +477,7 @@ if (info) {
 
 `Partial<Record<SpecialUrlType, …>>` gives you autocomplete and typo-protection against the extension's catalog without forcing exhaustiveness — domain-only types like `'meet'` can be intentionally omitted because the favicon path always wins for `https://` URLs.
 
-### Stricter URL validation
+#### Stricter URL validation
 
 Audit any fixtures or seeded content that relied on the previous behavior:
 
@@ -476,7 +485,7 @@ Audit any fixtures or seeded content that relied on the previous behavior:
 - `validateURL` now requires a plausible host (TLD dot, `localhost`, or IP literal) for web-scheme URLs. Typos like `https://googlecom` no longer autolink.
 - `localhost:3000` and `mydomain.com:8080` are now treated as host:port and canonicalized to `https://localhost:3000` / `https://mydomain.com:8080`, not left as the scheme `localhost:` / `mydomain.com:`.
 
-### Need help?
+#### Need help?
 
 Open an issue at <https://github.com/docs-plus/docs.plus/issues> with the labels `extension-hyperlink` + `migration` and a snippet of the `1.x` config you're upgrading from.
 
@@ -484,4 +493,4 @@ Open an issue at <https://github.com/docs-plus/docs.plus/issues> with the labels
 
 ## Pre-`2.0` history
 
-The full `1.x` release notes plus the internal milestones between `1.5.2` and `2.0.0` (monorepo migration, build rewrite, popover + XSS overhaul, contract tightening, the unpublished `4.3.0` pre-release) were archived to `docs/HISTORY.md`, since removed from the tracked tree — recover it from git history if you need it. Everything user-facing from that stretch is rolled up into the [2.0.0](#200--2026-06-10) entry above.
+The full `1.x` release notes plus the internal milestones between `1.5.2` and `2.0.0` (monorepo migration, build rewrite, popover + XSS overhaul, contract tightening, the unpublished `4.3.0` pre-release) were archived to `docs/HISTORY.md`, since removed from the tracked tree — recover it from git history if you need it. Everything user-facing from that stretch is rolled up into the [2.0.0](#200--2026-06-16) entry above.
