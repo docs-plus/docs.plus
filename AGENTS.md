@@ -661,7 +661,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - `$ha-group-has-unread` owns the DRY `:has()` selector for unread tray visibility.
 - `_unread-badge.scss` only styles `[data-unread-count]` on `.ha-chat-btn` (the notification bell uses the React `<UnreadBadge>`). Do not add `.toc__chat-trigger` or `.ha-group` rules there.
 - TOC uses React `UnreadBadge` only. `UNREAD_SYNC` targets `.ha-chat-btn` heading widgets exclusively — it never reads or clears anything on `.toc__chat-trigger` (whose `data-heading-id` is currently emit-only; verify a reader exists before wiring behavior to it).
-- Active chat icon uses `toc__chat-icon--active` with `fill: none`; Lucide icons are stroke-based. The active accent is `var(--color-docsy)` on **both** desktop and mobile (mobile `text-accent` was retired 2026-07-06); TOC visual recipes (type ladder via `data-level`, chat-open vs scroll-spy states, rail hit-box, indent guide) live in `.cursor/docs/design-system.md` §Table of contents.
+- Active chat icon uses `toc__chat-icon--active` with `fill: none`; Lucide icons are stroke-based. Active accent is `var(--color-docsy)` on desktop; mobile uses `text-accent`. TOC visual recipes live in `.cursor/docs/design-system.md` §Table of contents.
 - When nested `ul.toc__children` lives under the parent `li`, folded subtrees hide with `&.closed > .toc__children { display: none }`.
 - Fold state still comes from editor state, not CSS alone.
 - TOC data path:
