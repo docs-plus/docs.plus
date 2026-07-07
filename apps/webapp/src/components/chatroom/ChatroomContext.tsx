@@ -20,10 +20,16 @@ import { flashMessage } from './hooks/useMessageHighlight'
 import { useReadCursor } from './hooks/useReadCursor'
 import { useScrollToMessage } from './hooks/useScrollToMessage'
 import { useSendMessage } from './hooks/useSendMessage'
+import { useComposerAttachmentsStore } from './stores/composerAttachmentsStore'
 import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
 import type { ChannelFeedMode } from './utils/channelFeedProjection'
+import {
+  clearFeedSpoilerReveal,
+  isFeedSpoilerRevealed,
+  markFeedSpoilerRevealed
+} from './utils/feedSpoilerReveal'
 import {
   MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS,
   scheduleMessageFlash,
@@ -258,6 +264,15 @@ export const ChatroomProvider: React.FC<{
       lastSeenSeq: () => newestSeqRef.current,
       jumpToPresent: () => {
         snapToPresent()
+      },
+      clearFeedSpoilerReveal,
+      revealFeedSpoiler: (path: string) => {
+        markFeedSpoilerRevealed({ path, url: path, type: 'image' })
+      },
+      isFeedSpoilerRevealed: (path: string) =>
+        isFeedSpoilerRevealed({ path, url: path, type: 'image' }),
+      resetComposerAttachments: () => {
+        useComposerAttachmentsStore.setState({ byKey: {}, removedPersistedByKey: {} })
       }
     }
     return () => {

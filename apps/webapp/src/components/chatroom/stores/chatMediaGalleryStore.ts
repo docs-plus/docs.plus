@@ -1,48 +1,77 @@
-import type { MessageMediaItem } from '@types'
+import {
+  type GalleryMediaItem,
+  type GalleryOpenOptions,
+  type GallerySourceContext,
+  openGallerySession
+} from '@components/chatroom/utils/galleryPlaylist'
+import type { MessageMediaItem, TMsgRow } from '@types'
 import { create } from 'zustand'
 
 type ChatMediaGalleryState = {
   isOpen: boolean
-  images: MessageMediaItem[]
-  video: MessageMediaItem | null
+  items: GalleryMediaItem[]
   index: number
-  openGallery: (images: MessageMediaItem[], startIndex?: number) => void
-  openVideo: (media: MessageMediaItem) => void
+  openIndex: number
+  caption: string | null
+  source: GallerySourceContext | null
+  originMessage: TMsgRow | null
+  activeResolvedUrl: string | null
+  zoomRequest: number
+  zoomResetRequest: number
+  openGallery: (
+    medias: MessageMediaItem[],
+    at?: number | MessageMediaItem,
+    options?: GalleryOpenOptions
+  ) => void
   closeGallery: () => void
-  setIndex: (index: number) => void
+  setActiveResolvedUrl: (url: string | null) => void
   step: (delta: -1 | 1) => void
+  requestZoomIn: () => void
+  requestZoomReset: () => void
+}
+
+const closedState = {
+  isOpen: false,
+  items: [] as GalleryMediaItem[],
+  index: 0,
+  openIndex: 0,
+  caption: null as string | null,
+  source: null as GallerySourceContext | null,
+  originMessage: null as TMsgRow | null,
+  activeResolvedUrl: null as string | null,
+  zoomRequest: 0,
+  zoomResetRequest: 0
 }
 
 export const useChatMediaGalleryStore = create<ChatMediaGalleryState>((set, get) => ({
-  isOpen: false,
-  images: [],
-  video: null,
-  index: 0,
+  ...closedState,
 
-  openGallery: (images, startIndex = 0) => {
-    if (images.length === 0) return
-    const clamped = Math.min(Math.max(startIndex, 0), images.length - 1)
-    set({ isOpen: true, images, video: null, index: clamped })
+  openGallery: (medias, at, options) => {
+    const session = openGallerySession(medias, at, options)
+    if (!session) return
+
+    set({
+      isOpen: true,
+      ...session,
+      activeResolvedUrl: null,
+      zoomRequest: 0,
+      zoomResetRequest: 0
+    })
   },
 
-  openVideo: (media) => {
-    if (media.type !== 'video') return
-    set({ isOpen: true, video: media, images: [], index: 0 })
-  },
+  closeGallery: () => set(closedState),
 
-  closeGallery: () => set({ isOpen: false, images: [], video: null, index: 0 }),
+  setActiveResolvedUrl: (url) => set({ activeResolvedUrl: url }),
 
-  setIndex: (index) => {
-    const { images } = get()
-    if (images.length === 0) return
-    set({ index: Math.min(Math.max(index, 0), images.length - 1) })
-  },
+  requestZoomIn: () => set((state) => ({ zoomRequest: state.zoomRequest + 1 })),
+
+  requestZoomReset: () => set((state) => ({ zoomResetRequest: state.zoomResetRequest + 1 })),
 
   step: (delta) => {
-    const { index, images } = get()
-    if (images.length <= 1) return
+    const { index, items } = get()
+    if (items.length <= 1) return
     const next = index + delta
-    if (next < 0 || next >= images.length) return
-    set({ index: next })
+    if (next < 0 || next >= items.length) return
+    set({ index: next, activeResolvedUrl: null })
   }
 }))

@@ -1,5 +1,6 @@
 import Chatroom from '@components/chatroom/Chatroom'
 import { useAuthStore, useChatStore, useStore } from '@stores'
+import { supabaseClient } from '@utils/supabase'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
@@ -11,6 +12,11 @@ function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null)
   } as ReturnType<typeof useAuthStore.getState>['profile']
   useAuthStore.getState().setProfile(e2eProfile)
   useAuthStore.getState().setSession({ user: { id: 'user-1' } }, false)
+
+  void supabaseClient.auth.setSession({
+    access_token: 'e2e-access-token',
+    refresh_token: 'e2e-refresh-token'
+  })
 
   useChatStore
     .getState()

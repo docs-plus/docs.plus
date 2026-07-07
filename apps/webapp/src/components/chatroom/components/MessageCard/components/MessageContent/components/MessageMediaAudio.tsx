@@ -2,20 +2,35 @@ import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSigne
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
+import { type MouseEvent, useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
 
-export function MessageMediaAudio({ media }: { media: MessageMediaItem }) {
+type Props = {
+  media: MessageMediaItem
+  onOpen?: () => void
+}
+
+export function MessageMediaAudio({ media, onOpen }: Props) {
   const theme = messageMediaTheme('audio')
   const label = media.name?.trim() || 'Audio attachment'
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
+
+  const onExpand = useCallback(
+    (event: MouseEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      if (resolvedUrl) onOpen?.()
+    },
+    [onOpen, resolvedUrl]
+  )
 
   return (
     <div
       ref={visibilityRef}
       className={twMerge(
-        'flex max-w-sm items-center gap-2.5 rounded-lg border px-3 py-2.5',
+        'group/audio relative flex max-w-sm items-center gap-2.5 rounded-lg border px-3 py-2.5',
         theme.cardBorder,
         theme.cardSurface
       )}>
@@ -27,7 +42,7 @@ export function MessageMediaAudio({ media }: { media: MessageMediaItem }) {
         <Icons.music size={18} className={theme.accent} aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className={twMerge('truncate text-xs font-medium', theme.accent)}>{label}</p>
+        <p className="text-base-content truncate text-xs font-medium">{label}</p>
         {resolvedUrl && !signFailed ? (
           <audio controls preload="none" className="mt-1 h-8 w-full min-w-[180px]">
             <source src={resolvedUrl} />
@@ -43,6 +58,15 @@ export function MessageMediaAudio({ media }: { media: MessageMediaItem }) {
           <div className="skeleton mt-1 h-8 w-full min-w-[180px]" aria-hidden />
         )}
       </div>
+      {onOpen && resolvedUrl && !signFailed ? (
+        <button
+          type="button"
+          onClick={onExpand}
+          className="btn btn-circle btn-xs bg-base-content/60 text-base-100 absolute top-2 right-2 border-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/audio:opacity-100 sm:focus-visible:opacity-100"
+          aria-label="Expand audio">
+          <Icons.maximize2 size={14} />
+        </button>
+      ) : null}
     </div>
   )
 }

@@ -25,7 +25,13 @@ export const MessageBody = () => {
     <div
       className={twMerge('flex flex-col', isMediaWithCaption && 'gap-1.5')}
       onClick={handleMentionClick}>
-      {medias.length > 0 && <MessageMediaAttachments medias={medias} layout={messageLayout} />}
+      {medias.length > 0 && (
+        <MessageMediaAttachments
+          medias={medias}
+          layout={messageLayout}
+          caption={isMediaWithCaption ? message.content?.trim() || null : null}
+        />
+      )}
       {showBody && (
         <div className={twMerge(isMediaWithCaption && variant === 'mobile' && 'px-2.5 pt-0.5')}>
           {isEmojiOnlyMessage ? <EmojiBody /> : <HTMLBody />}

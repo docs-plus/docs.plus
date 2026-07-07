@@ -1,4 +1,8 @@
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
+import {
+  markFeedSpoilerRevealed,
+  useFeedSpoilerRevealed
+} from '@components/chatroom/utils/feedSpoilerReveal'
 import type { MessageMediaItem } from '@types'
 import { type CSSProperties, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,8 +19,9 @@ type Props = {
 export function MessageMediaImageLink({ media, className, fill = false, onOpen }: Props) {
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
   const [imgFailed, setImgFailed] = useState(false)
-  const [revealed, setRevealed] = useState(false)
+  const revealed = useFeedSpoilerRevealed(media)
   const isSpoiler = Boolean(media.spoiler) && !revealed
+  const hasSpoiler = Boolean(media.spoiler)
   const alt = media.name?.trim() || 'Image attachment'
   const showUnavailable = signFailed || imgFailed
   const handleRetry = () => {
@@ -31,7 +36,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
   const handleActivate = (event: React.MouseEvent) => {
     event.stopPropagation()
     if (isSpoiler) {
-      setRevealed(true)
+      markFeedSpoilerRevealed(media)
       return
     }
     onOpen?.()
@@ -39,7 +44,8 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
 
   const imageLayerClass = twMerge(
     'bg-cover bg-center bg-no-repeat',
-    isSpoiler && 'scale-110 blur-xl'
+    isSpoiler && resolvedUrl && 'scale-110 blur-xl',
+    !resolvedUrl && 'bg-base-200 skeleton'
   )
 
   const spoilerOverlay = isSpoiler ? (
@@ -48,7 +54,9 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
     </span>
   ) : null
 
-  if (!resolvedUrl && !showUnavailable) {
+  const testId = isSpoiler ? 'feed-spoiler-reveal' : 'feed-image-open'
+
+  if (!hasSpoiler && !resolvedUrl && !showUnavailable) {
     return (
       <div
         ref={visibilityRef}
@@ -62,7 +70,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
     )
   }
 
-  if (showUnavailable || !resolvedUrl) {
+  if (!hasSpoiler && showUnavailable) {
     return (
       <MediaUnavailable
         label="Image unavailable"
@@ -83,6 +91,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
           className
         )}
         aria-label={isSpoiler ? 'Reveal spoiler image' : `View ${alt}`}
+        data-testid={testId}
         onClick={handleActivate}>
         <span
           aria-hidden
@@ -90,13 +99,15 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
           style={coverStyle}
         />
         {spoilerOverlay}
-        <img
-          src={resolvedUrl}
-          alt={alt}
-          className="sr-only"
-          loading="lazy"
-          onError={() => setImgFailed(true)}
-        />
+        {resolvedUrl ? (
+          <img
+            src={resolvedUrl}
+            alt={alt}
+            className="sr-only"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        ) : null}
       </button>
     )
   }
@@ -111,6 +122,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
       )}
       style={{ maxHeight: 360 }}
       aria-label={isSpoiler ? 'Reveal spoiler image' : `View ${alt}`}
+      data-testid={testId}
       ref={visibilityRef}
       onClick={handleActivate}>
       <span
@@ -123,13 +135,15 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
         }}
       />
       {spoilerOverlay}
-      <img
-        src={resolvedUrl}
-        alt={alt}
-        className="sr-only"
-        loading="lazy"
-        onError={() => setImgFailed(true)}
-      />
+      {resolvedUrl ? (
+        <img
+          src={resolvedUrl}
+          alt={alt}
+          className="sr-only"
+          loading="lazy"
+          onError={() => setImgFailed(true)}
+        />
+      ) : null}
     </button>
   )
 }

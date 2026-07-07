@@ -1,5 +1,4 @@
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
-import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
 import { CHAT_MEDIA_MAX_WIDTH_CLASS } from '@components/chatroom/utils/messageMediaPaths'
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
@@ -9,18 +8,22 @@ import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
 
-export function MessageMediaVideo({ media }: { media: MessageMediaItem }) {
+type Props = {
+  media: MessageMediaItem
+  onOpen?: () => void
+}
+
+export function MessageMediaVideo({ media, onOpen }: Props) {
   const theme = messageMediaTheme('video')
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
-  const openVideo = useChatMediaGalleryStore((state) => state.openVideo)
 
   const onExpand = useCallback(
     (event: MouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
-      if (resolvedUrl) openVideo(media)
+      if (resolvedUrl) onOpen?.()
     },
-    [media, openVideo, resolvedUrl]
+    [onOpen, resolvedUrl]
   )
 
   return (
@@ -34,13 +37,15 @@ export function MessageMediaVideo({ media }: { media: MessageMediaItem }) {
       {resolvedUrl && !signFailed ? (
         <>
           <video src={resolvedUrl} controls playsInline className="max-h-[350px] w-full" />
-          <button
-            type="button"
-            onClick={onExpand}
-            className="btn btn-circle btn-xs bg-base-content/60 text-base-100 absolute top-2 right-2 border-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/video:opacity-100 sm:focus-visible:opacity-100"
-            aria-label="Expand video">
-            <Icons.externalLink size={14} />
-          </button>
+          {onOpen ? (
+            <button
+              type="button"
+              onClick={onExpand}
+              className="btn btn-circle btn-xs bg-base-content/60 text-base-100 absolute top-2 right-2 border-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/video:opacity-100 sm:focus-visible:opacity-100"
+              aria-label="Expand video">
+              <Icons.maximize2 size={14} />
+            </button>
+          ) : null}
         </>
       ) : signFailed ? (
         <MediaUnavailable

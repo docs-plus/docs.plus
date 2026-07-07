@@ -30,6 +30,8 @@ export function useMediaDisplayUrl(media: MessageMediaItem | null | undefined): 
 
 type FeedMediaUrlOptions = {
   rootMargin?: string
+  /** Skip viewport gating for hosts already on screen (e.g. lightbox slides). */
+  eager?: boolean
 }
 
 /** Signs chat media only after the host element enters (or nears) the viewport. */
@@ -42,10 +44,11 @@ export function useFeedMediaDisplayUrl(
   signFailed: boolean
   retry: () => void
 } {
+  const eager = options.eager ?? false
   const [url, setUrl] = useState<string | null>(null)
   const [signFailed, setSignFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const [inView, setInView] = useState(false)
+  const [inView, setInView] = useState(eager)
   const [observeTarget, setObserveTarget] = useState<HTMLElement | null>(null)
   const rootMargin = options.rootMargin ?? '240px'
 
@@ -63,12 +66,17 @@ export function useFeedMediaDisplayUrl(
   }, [media])
 
   useEffect(() => {
-    setInView(false)
+    if (eager) {
+      setInView(true)
+    } else {
+      setInView(false)
+    }
     setUrl(null)
     setSignFailed(false)
-  }, [media?.path, media?.url, media?.type])
+  }, [media?.path, media?.url, media?.type, eager])
 
   useEffect(() => {
+    if (eager) return
     if (!observeTarget || !media) {
       setInView(false)
       return
@@ -82,10 +90,10 @@ export function useFeedMediaDisplayUrl(
     )
     observer.observe(observeTarget)
     return () => observer.disconnect()
-  }, [observeTarget, media, rootMargin])
+  }, [observeTarget, media, rootMargin, eager])
 
   useEffect(() => {
-    if (!media || !inView) return
+    if (!media || (!eager && !inView)) return
 
     let cancelled = false
     void resolveMediaDisplayUrl(media).then((resolved) => {
@@ -103,7 +111,7 @@ export function useFeedMediaDisplayUrl(
     return () => {
       cancelled = true
     }
-  }, [inView, media, attempt])
+  }, [inView, media, attempt, eager])
 
   return { url, ref, signFailed, retry }
 }

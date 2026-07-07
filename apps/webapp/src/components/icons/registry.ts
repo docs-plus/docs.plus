@@ -28,6 +28,7 @@ import {
   LuCopy,
   LuCrosshair,
   LuDownload,
+  LuEllipsis,
   LuEllipsisVertical,
   LuExternalLink,
   LuEye,
@@ -36,6 +37,7 @@ import {
   LuFilterX,
   LuFolderOpen,
   LuFoldVertical,
+  LuForward,
   LuGripVertical,
   LuHash,
   LuHighlighter,
@@ -54,6 +56,7 @@ import {
   LuLogIn,
   LuMail,
   LuMapPin,
+  LuMaximize2,
   LuMegaphone,
   LuMenu,
   LuMessageSquare,
@@ -99,7 +102,9 @@ import {
   LuVideo,
   LuWifi,
   LuWifiOff,
-  LuX
+  LuX,
+  LuZoomIn,
+  LuZoomOut
 } from 'react-icons/lu'
 
 /**
@@ -141,6 +146,9 @@ export const Icons = {
   reply: LuReply,
   thread: LuMessageSquare,
   moreVertical: LuEllipsisVertical,
+  moreHorizontal: LuEllipsis,
+  zoomIn: LuZoomIn,
+  zoomOut: LuZoomOut,
 
   // ── Editor Actions ───────────────────────────────────────
   undo: LuUndo2,
@@ -148,6 +156,7 @@ export const Icons = {
   print: LuPrinter,
   copy: LuCopy,
   download: LuDownload,
+  forward: LuForward,
   upload: LuUpload,
   check: LuCheck,
   settings: LuSettings,
@@ -188,6 +197,7 @@ export const Icons = {
   phone: LuPhone,
   video: LuVideo,
   play: LuPlay,
+  maximize2: LuMaximize2,
 
   // ── Media / Lifestyle ────────────────────────────────────
   calendar: LuCalendar,
