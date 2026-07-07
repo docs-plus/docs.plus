@@ -76,18 +76,13 @@ export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProp
 
   const aClassName = twMerge(
     'group relative rounded !py-2 pr-10',
-    isActive && `active ${TOC_CLASSES.activeBorder}`,
+    isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`,
     item.level === 1 && 'ml-3'
   )
 
   return (
     <li className={liClassName} data-id={item.id}>
-      <a
-        className={aClassName}
-        onClick={handleClick}
-        href={`?${item.id}`}
-        data-id={item.id}
-        data-level={item.level}>
+      <a className={aClassName} onClick={handleClick} href={`?${item.id}`} data-id={item.id}>
         {/* Fold/Unfold button — matches desktop (in-flow, same size) for tree-line alignment */}
         {hasChildren && (
           <Button
@@ -120,7 +115,7 @@ export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProp
           <ChatTriggerContent
             unreadCount={unreadCount}
             iconSize={20}
-            iconClassName={twMerge('text-base-content/40', isActive && 'text-docsy')}
+            iconClassName={twMerge('text-base-content/40', isActive && 'text-accent')}
           />
         </button>
       </a>

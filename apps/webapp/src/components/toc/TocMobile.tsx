@@ -16,12 +16,7 @@ export function TocMobile({ className = '' }: TocMobileProps) {
   useTocAutoScroll()
 
   if (!items.length) {
-    return (
-      <div className={className}>
-        <p className="text-base-content/60 px-4 py-3 text-sm">Add a heading to start the outline</p>
-        <AppendHeadingButton className="mt-2" />
-      </div>
-    )
+    return null
   }
 
   const nestedItems = buildNestedToc(items)

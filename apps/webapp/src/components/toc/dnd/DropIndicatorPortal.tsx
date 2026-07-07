@@ -20,7 +20,7 @@ export function DropIndicatorPortal({ indicatorY, left, width }: DropIndicatorPo
         top: Math.round(indicatorY),
         left,
         width,
-        zIndex: 50, // Behind the drag overlay (60) — floating tier, design-system.md §Elevation
+        zIndex: 9000, // Behind drag overlay (10000)
         pointerEvents: 'none'
       }}>
       <div className="toc-drop-indicator-line" />

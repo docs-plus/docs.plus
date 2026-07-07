@@ -5,18 +5,15 @@ type ChatTriggerContentProps = {
   unreadCount: number
   iconSize: number
   iconClassName?: string
-  /** Desktop rail passes a well-colored ring; mobile floors differ, so no default. */
-  badgeClassName?: string
 }
 
 export const ChatTriggerContent = ({
   unreadCount,
   iconSize,
-  iconClassName,
-  badgeClassName
+  iconClassName
 }: ChatTriggerContentProps) =>
   unreadCount > 0 ? (
-    <UnreadBadge count={unreadCount} size="sm" variant="error" className={badgeClassName} />
+    <UnreadBadge count={unreadCount} size="sm" variant="error" />
   ) : (
     <Icons.chatroom className={iconClassName} size={iconSize} />
   )
