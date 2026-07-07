@@ -4,13 +4,13 @@ This document defines how the `@docs.plus/extension-*` package family is version
 
 ## Status
 
-| Field                      | Value                                                                            |
-| -------------------------- | -------------------------------------------------------------------------------- |
-| Doctrine                   | **Strict lockstep, Tiptap-style** — all 5 publishable extensions share one major |
-| Major tracks               | The **docs.plus product line** (`1.x` = 2023 product, `2.x` = alpha v2)          |
-| Current phase              | **Phase 1 — Cutover.** Each extension ships its first `2.0.0` independently      |
-| Trigger to flip to Phase 2 | **Trigger D** — see [Trigger D](#trigger-d--when-strict-lockstep-activates)      |
-| Promotion gate             | **Webapp-gated soak** — see [Soak window](#soak-window-and-promotion-criteria)   |
+| Field                      | Value                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Doctrine                   | **Strict lockstep, Tiptap-style** — all 5 publishable extensions share one major                            |
+| Major tracks               | The **docs.plus product line** (`1.x` = 2023 product, `2.x` = alpha v2)                                     |
+| Current phase              | **Phase 1 — Cutover.** Each extension ships its first `2.0.0` independently                                 |
+| Trigger to flip to Phase 2 | **Trigger D** — see [Trigger D](#trigger-d--when-strict-lockstep-activates)                                 |
+| Publish gate               | **Release when ready** — see [Release Readiness](#release-readiness); stable only, no pre-release dist-tags |
 
 The five publishable packages:
 
@@ -34,12 +34,12 @@ The five publishable packages:
 
 ## Phase 1 — Cutover (current)
 
-**Goal:** get all five extensions to `2.0.0` on npm `@next`, each on its own schedule.
+**Goal:** get all five extensions to `2.0.0` on npm, each on its own schedule.
 
 **Rules during Phase 1:**
 
 1. Each extension's `package.json` `version` is bumped to `2.0.0` independently when its breaking changes are ready.
-2. Each ships per the existing per-package runbook in `AGENTS.md` ("Release routine"): `bun publish --tag next --otp <code>` → `git tag <pkg>@2.0.0` → `gh release create ... --prerelease`.
+2. Each ships per the existing per-package runbook in `AGENTS.md` ("Release routine"): `bun publish --tag latest --otp <code>` → `git tag <pkg>@2.0.0` → `gh release create ...`.
 3. Each carries its own `[2.0.0]` `CHANGELOG.md` entry following the [CHANGELOG style guide](#changelog-style-guide).
 4. Each must have the publishable-package scaffolding before its first `2.0.0` ship. See [Per-package readiness checklist](#per-package-readiness-checklist).
 5. **The CI lockstep guard is dormant in Phase 1.** No PR is blocked for non-aligned versions during cutover.
@@ -91,7 +91,7 @@ For each package, in alphabetical order (no inter-extension deps to topologicall
 
 1. Call `npm view <pkg>@<target-version>` to detect "already published" (the resume case after a mid-stream failure). If already published, skip and move to the next package.
 2. Prompt for OTP.
-3. Run `bun publish --tag <next|latest> --otp <code>`.
+3. Run `bun publish --tag latest --otp <code>`.
 4. Run `git tag '<pkg>@<target-version>'`.
 
 On `bun publish` failure: halt immediately, do not retry (would burn an OTP), print `Resume with: bun run release:family`. Already-published packages stay published — npm has no transactional multi-publish.
@@ -99,7 +99,7 @@ On `bun publish` failure: halt immediately, do not retry (would burn an OTP), pr
 #### Post-publish (batched)
 
 1. `git push origin --tags` (one call, all five new tags).
-2. For each package, `gh release create '<pkg>@<target-version>' --notes <slice from CHANGELOG.md> [--prerelease]` using the existing `awk` slice from `AGENTS.md`. The `--prerelease` flag derives from the `--tag next` choice at script start.
+2. For each package, `gh release create '<pkg>@<target-version>' --notes <slice from CHANGELOG.md>` using the existing `awk` slice from `AGENTS.md`.
 3. Print summary: 5 npm URLs, 5 GitHub release URLs.
 
 The existing `discord-release.yml` workflow fires per release event, so the team gets five Discord embeds in ~30 seconds. This is accepted noise; each embed carries its own changelog and install hint, and the cadence (a few times per year) does not warrant inventing an umbrella-release format. See [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella).
@@ -164,23 +164,15 @@ Published entries use the shorthand `### Breaking` (same meaning as `Breaking Ch
 
 **Never auto-generate from commit subjects.** Lerna, Changesets, and Release-Please all default to "extract `fix:` / `feat:` lines from commit messages and stitch them together". This produces low-quality changelogs that undercut the editorial bar set by `extension-hyperlink@2.0.0`. The manual editorial process **is** the policy. None of those tools are adopted.
 
-## Soak Window and Promotion Criteria
+## Release Readiness
 
-**Webapp-gated promotion.** The `@next` → `@latest` promotion has no fixed time window. Promotion happens after `webapp` has shipped a stable production release that consumes the new family version, and that release has been live for at least 48 hours with no rollback.
+**Release when ready.** There is no pre-release dist-tag, no soak window, and no promotion step. Every publish goes to the default `latest` tag, and it happens when the maintainer decides the package (Phase 1) or the family (Phase 2) is ready — typically: the change set is complete, the readiness checklist and preflight pass, and the CHANGELOG entry is written. Bump the version, publish, done.
 
-**Concretely:**
+**Why this is safe without a soak.** The webapp consumes the extensions via `workspace:*`, so every change ships to docs.plus production from source well before it is ever published to npm — production exposure precedes the registry, not the other way around. The quality gates are the per-package test suites, `release-preflight`, and the readiness checklist below, not a waiting period.
 
-1. Family release ships to `@next`.
-2. Webapp upgrades to the new family version on a feature branch.
-3. Webapp's own release process ships a stable production release containing the new family version.
-4. After 48 hours of stable webapp production with no rollback, the maintainer promotes each extension via `npm dist-tag add <pkg>@<version> latest`.
-5. Each promotion is a separate `npm dist-tag` call (5 calls total). No batching script is needed for this step — promotion is rare and deliberate.
+**If third-party consumption at scale ever demands staged rollouts,** revisit this section then — that would be the moment a pre-release channel earns its keep.
 
-**Why webapp-gated, not time-gated.** The platform-first framing means the extensions are ready when the platform says they're ready. A pure 7-day timer is arbitrary; "webapp shipped it stably" is a real signal driven by real users hitting real production traffic.
-
-**Why this changes later.** The moment a third party starts consuming any extension at scale, the policy shifts to a time-based or hybrid gate — third parties cannot wait on webapp's release schedule. This document gets updated then.
-
-**Discord announcements.** Each package release triggers one embed via `discord-release.yml`. A same-day five-package cutover produces five embeds in sequence — intentional (per-package install hints). No umbrella family release is planned.
+**Discord announcements.** Each package release triggers one embed via `discord-release.yml`. A same-day five-package release produces five embeds in sequence — intentional (per-package install hints). No umbrella family release is planned.
 
 ## CI Guard
 
@@ -208,8 +200,8 @@ Before any extension ships its first `2.0.0` (and joins the eventual lockstep fa
 
 - [ ] `LICENSE` in `.gitignore` (root `LICENSE` is the single source of truth; `prepack` regenerates it before each pack)
 - [ ] `"@docs.plus/release-tooling": "workspace:*"` in `devDependencies`
-- [ ] `"prepack": "release-prepack"` in `package.json` (copies root `LICENSE` into the package via the shared bin)
-- [ ] `"prepublishOnly": "release-preflight"` in `package.json` (asserts `bun/*` user-agent, no `catalog:` leaks, dist artifacts present — derived from the consumer's `exports` map)
+- [ ] `"prepack": "bunx release-prepack"` in `package.json` (copies root `LICENSE` into the package via the shared bin)
+- [ ] `"prepublishOnly": "bunx release-preflight"` in `package.json` (asserts `bun/*` user-agent, no `catalog:` leaks, dist artifacts present — derived from the consumer's `exports` map)
 - [ ] `publishConfig.access: "public"` in `package.json`
 - [ ] `exports.require.types` points to `./dist/index.d.cts` (not `.d.ts`)
 - [ ] `sideEffects: ['**/*.css']` (not bare `false`) if the package ships any CSS
@@ -236,9 +228,9 @@ The Discord workflow fires per `release.{published,prereleased}` event with pack
 
 No-op CHANGELOG entries are pure boilerplate (one fixed sentence). Auto-generating them removes 4× the typing burden per family release and removes the "I forgot to write the no-op entry" failure mode. The script generates them; the maintainer commits them before publish; preflight check #2 verifies they exist. Adopted.
 
-### Decision: Webapp-gated soak, not time-based
+### Decision: Stable releases only — no pre-release dist-tags (2026-07-07)
 
-See [Soak window and promotion criteria](#soak-window-and-promotion-criteria) for rationale.
+Supersedes the earlier "webapp-gated soak" decision. `@next` was retired before anything was ever published to it: the webapp already soaks every change from `workspace:*` source in production, so a registry-side pre-release channel added process without adding signal. Publishes go straight to `latest` when the maintainer decides they are ready; GitHub releases are never marked pre-release. See [Release Readiness](#release-readiness).
 
 ### Decision: No release-automation tooling
 

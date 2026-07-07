@@ -9,7 +9,7 @@
  * --dry-run mode can be used to verify that today.
  *
  * Usage:
- *   bun run release:family [--dry-run] [--tag next|latest] [--allow-noop]
+ *   bun run release:family [--dry-run] [--allow-noop]
  *   bun run release:family --generate-noop-changelogs
  *   bun run release:family --help
  */
@@ -27,9 +27,12 @@ import {
 
 const REPO_ROOT = resolve(import.meta.dir, '..')
 
+// Releases are stable-only: the family always publishes to the default `latest`
+// dist-tag. `@next`/pre-release was retired (RELEASE_POLICY.md §Release Readiness).
+const RELEASE_TAG = 'latest'
+
 interface CliArgs {
   dryRun: boolean
-  tag: 'next' | 'latest'
   allowNoop: boolean
   generateNoopChangelogs: boolean
 }
@@ -50,7 +53,6 @@ const HELP = `bun run release:family — coordinate a lockstep family release.
 
 Options:
   --dry-run                       Run all checks; print what would happen; never publish or tag
-  --tag <next|latest>             npm dist-tag for the release (default: next)
   --allow-noop                    Confirm intentional no-op releases for unchanged packages
   --generate-noop-changelogs      Auto-generate boilerplate CHANGELOG entries for no-op packages, then exit
   --help                          Show this message
@@ -71,16 +73,7 @@ function parseArgs(): CliArgs {
   const dryRun = args.includes('--dry-run')
   const allowNoop = args.includes('--allow-noop')
   const generateNoopChangelogs = args.includes('--generate-noop-changelogs')
-  let tag: 'next' | 'latest' = 'next'
-  const tagIdx = args.indexOf('--tag')
-  if (tagIdx >= 0) {
-    const v = args[tagIdx + 1]
-    if (v !== 'next' && v !== 'latest') {
-      die(`--tag must be 'next' or 'latest' (got: ${String(v)})`)
-    }
-    tag = v
-  }
-  return { dryRun, tag, allowNoop, generateNoopChangelogs }
+  return { dryRun, allowNoop, generateNoopChangelogs }
 }
 
 // ---------------------------------------------------------------------------
@@ -469,7 +462,6 @@ interface PublishOutcome {
 async function publishLoop(
   packages: PackageInfo[],
   targetVersion: string,
-  tag: 'next' | 'latest',
   dryRun: boolean
 ): Promise<PublishOutcome> {
   const published: PackageInfo[] = []
@@ -485,7 +477,7 @@ async function publishLoop(
     }
     if (dryRun) {
       info('[dry-run] would prompt for OTP')
-      info(`[dry-run] would run: bun publish --tag ${tag} --otp ******`)
+      info(`[dry-run] would run: bun publish --tag ${RELEASE_TAG} --otp ******`)
       info(`[dry-run] would create local tag: ${pkg.fullName}@${targetVersion}`)
       published.push(pkg)
       continue
@@ -495,7 +487,7 @@ async function publishLoop(
       die(`Invalid OTP format. Expected 6–8 digits.`)
     }
     process.stdout.write('  Publishing...\n')
-    const r = run('bun', ['publish', '--tag', tag, '--otp', otp], {
+    const r = run('bun', ['publish', '--tag', RELEASE_TAG, '--otp', otp], {
       cwd: pkg.packagePath,
       allowFail: true
     })
@@ -560,14 +552,8 @@ function ghReleaseExists(tagName: string): boolean {
   return run('gh', ['release', 'view', tagName], { allowFail: true }).status === 0
 }
 
-function createGithubReleases(
-  packages: PackageInfo[],
-  targetVersion: string,
-  tag: 'next' | 'latest',
-  dryRun: boolean
-) {
+function createGithubReleases(packages: PackageInfo[], targetVersion: string, dryRun: boolean) {
   section('Creating GitHub releases')
-  const isPrerelease = tag === 'next'
   for (const pkg of packages) {
     const tagName = `${pkg.fullName}@${targetVersion}`
     const changelogPath = join(pkg.packagePath, 'CHANGELOG.md')
@@ -577,11 +563,7 @@ function createGithubReleases(
       continue
     }
     if (dryRun) {
-      info(
-        `[dry-run] would check: gh release view '${tagName}', then create if missing ${
-          isPrerelease ? '(--prerelease)' : ''
-        }`
-      )
+      info(`[dry-run] would check: gh release view '${tagName}', then create if missing`)
       continue
     }
     if (ghReleaseExists(tagName)) {
@@ -591,7 +573,6 @@ function createGithubReleases(
     const notesFile = join('/tmp', `release-notes-${pkg.shortName}-${targetVersion}.md`)
     writeFileSync(notesFile, notes)
     const ghArgs = ['release', 'create', tagName, '--title', tagName, '--notes-file', notesFile]
-    if (isPrerelease) ghArgs.push('--prerelease')
     const r = run('gh', ghArgs, { allowFail: true })
     if (r.status !== 0) {
       warn(`Failed to create GH release for ${tagName}: ${r.stderr || r.stdout}`)
@@ -661,12 +642,12 @@ async function main() {
     }
   }
 
-  const { published, skipped } = await publishLoop(packages, targetVersion, args.tag, args.dryRun)
+  const { published, skipped } = await publishLoop(packages, targetVersion, args.dryRun)
 
   const releasedPackages = [...published, ...skipped]
   const tagsToPush = releasedPackages.map((pkg) => `${pkg.fullName}@${targetVersion}`)
   pushTags(tagsToPush, args.dryRun)
-  createGithubReleases(releasedPackages, targetVersion, args.tag, args.dryRun)
+  createGithubReleases(releasedPackages, targetVersion, args.dryRun)
 
   section('Summary')
   process.stdout.write(`  Target version: ${targetVersion}\n`)
