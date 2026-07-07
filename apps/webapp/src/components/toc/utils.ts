@@ -94,11 +94,13 @@ const CHAT_SLOT_1_DIGIT_PX = 32
 const CHAT_SLOT_2_DIGIT_PX = 36
 const CHAT_SLOT_OVERFLOW_PX = 44
 
+export const TOC_TRAIL_MAX_AVATARS = 3
+
 function tocPresenceReservePx(userCount: number): number {
   if (userCount <= 0) return 0
-  const visible = Math.min(userCount, 4)
+  const visible = Math.min(userCount, TOC_TRAIL_MAX_AVATARS)
   const stack = AVATAR_SM_FACE_PX + Math.max(0, visible - 1) * AVATAR_SM_STRIDE_PX
-  return stack + (userCount > 4 ? AVATAR_OVERFLOW_BADGE_PX : 0)
+  return stack + (userCount > TOC_TRAIL_MAX_AVATARS ? AVATAR_OVERFLOW_BADGE_PX : 0)
 }
 
 function tocChatSlotPx(unreadCount: number): number {

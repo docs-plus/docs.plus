@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { TOC_CLASSES } from './tocClasses'
-import { tocTrailingRailPx } from './utils'
+import { TOC_TRAIL_MAX_AVATARS, tocTrailingRailPx } from './utils'
 
 type TocRowTrailProps = {
   headingId: string | undefined
@@ -16,7 +16,6 @@ type TocRowTrailProps = {
   iconClassName: string
   onChatClick: (e: React.MouseEvent) => void
   tooltipPlacement?: 'top' | 'left'
-  maxAvatars?: number
 }
 
 /** Chat pinned to a fixed right inset; avatars extend left — keeps every row’s icon on one vertical axis. */
@@ -28,8 +27,7 @@ export function TocRowTrail({
   iconSize,
   iconClassName,
   onChatClick,
-  tooltipPlacement = 'top',
-  maxAvatars = 4
+  tooltipPlacement = 'top'
 }: TocRowTrailProps) {
   const spacerWidth = tocTrailingRailPx(presentUsers.length, unreadCount)
 
@@ -44,8 +42,9 @@ export function TocRowTrail({
             type="button"
             className={twMerge(
               TOC_CLASSES.chatTrigger,
-              'flex items-center justify-center',
-              unreadCount <= 0 && 'size-6'
+              // Stable hit target whether the slot shows the icon or an unread badge
+              // (min-w so a 99+ badge widens the box instead of clipping).
+              'flex h-6 min-w-6 items-center justify-center'
             )}
             data-heading-id={headingId}
             onClick={onChatClick}
@@ -54,12 +53,13 @@ export function TocRowTrail({
               unreadCount={unreadCount}
               iconSize={iconSize}
               iconClassName={twMerge(iconClassName, isActive && TOC_CLASSES.chatIconActive)}
+              badgeClassName="ring-2 ring-[var(--pad-well)]"
             />
           </button>
         </Tooltip>
         {presentUsers.length > 0 && (
           <AvatarStack
-            maxDisplay={maxAvatars}
+            maxDisplay={TOC_TRAIL_MAX_AVATARS}
             size="sm"
             users={presentUsers}
             showStatus={true}

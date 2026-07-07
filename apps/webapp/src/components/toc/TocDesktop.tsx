@@ -77,7 +77,12 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
   const nestedItems = buildNestedToc(items)
 
   if (!items.length) {
-    return <div className={className} />
+    return (
+      <div className={className}>
+        <p className="text-base-content/60 px-4 py-3 text-sm">Add a heading to start the outline</p>
+        <AppendHeadingButton className="mx-4" />
+      </div>
+    )
   }
 
   return (
@@ -113,7 +118,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
           </ul>
         </SortableContext>
 
-        <DragOverlay dropAnimation={null} style={{ zIndex: 10000 }}>
+        <DragOverlay dropAnimation={null} style={{ zIndex: 60 }}>
           {activeItem && (
             <div className="toc-drag-wrapper">
               <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />

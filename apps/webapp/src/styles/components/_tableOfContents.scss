@@ -55,11 +55,15 @@
     }
   }
 
-  // List indentation override (daisyui)
+  // One real indent guide per nesting level (channel-map direction) — replaces
+  // daisyUI's 10%-opacity vestige so depth 3+ reads unambiguously.
   .toc__list :where(li ul)::before {
     inset-inline-start: 1px;
     top: 0;
     bottom: 0;
+    width: 1px;
+    background-color: var(--color-base-300);
+    opacity: 1;
   }
 
   // During drag state
@@ -69,9 +73,13 @@
     // .toc__fold-btn,
     .toc__chat-trigger,
     .toc-drag-handle,
-    .avatar-group,
-    .toc__item--focused > .toc__row::before {
+    .avatar-group {
       opacity: 0 !important;
+    }
+
+    // Suppress the scroll-spy wash while dragging (the old focus rail died with the bar).
+    .toc__item--focused > .toc__row {
+      background-color: transparent !important;
     }
 
     .toc__level-badge {
@@ -131,45 +139,44 @@
     }
   }
 
-  // Level 1 heading
-  &--1 > .toc__row {
-    font-size: 1rem;
+  // Channel-map type ladder (design-system.md §Table of contents): H1 anchors the
+  // outline; deeper levels recede by ink, never below the 70% AA-safe floor.
+  > :is(.toc__row, a)[data-level] {
+    font-size: 0.8125rem;
+  }
+
+  > :is(.toc__row, a)[data-level='1'] {
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-base-content);
   }
 
-  // Focus sight — ::before keeps a square rail inside the link (no box-shadow); `border-radius: 0`
-  // on the row avoids Tailwind `rounded` clipping the bar into curves.
-  &.toc__item--focused > .toc__row {
-    border-radius: 0;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: -8px;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background-color: var(--color-docsy);
-      border-radius: 0;
-      pointer-events: none;
-      transition: left 0.2s ease-in-out;
-      border-radius: 4px;
-    }
-
-    &:hover::before {
-      opacity: 1;
-      left: -21px;
-    }
-
-    transition:
-      background-color 0.2s ease-in-out,
-      color 0.2s ease-in-out;
+  > :is(.toc__row, a)[data-level='2'] {
+    color: color-mix(in oklch, var(--color-base-content) 88%, transparent);
   }
 
-  // Active state
-  &.active > span a {
+  > :is(.toc__row, a):is([data-level='3'], [data-level='4'], [data-level='5'], [data-level='6']) {
+    color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+  }
+
+  // Reading position (scroll-spy): a quiet ink wash — never the accent bar,
+  // which means exactly one thing here: this heading's chat is open.
+  &.toc__item--focused > :is(.toc__row, a) {
+    background-color: color-mix(in oklch, var(--color-base-content) 6%, transparent);
+  }
+
+  // Chat-open. Background lives HERE, not as a Tailwind utility on the row: row-state
+  // backgrounds (hover above, scroll-spy wash, this) are all unlayered SCSS so file
+  // order decides deterministically — active > focused > hover. A layered `bg-primary/10`
+  // utility would lose to every one of them.
+  > :is(.toc__row, a).active {
+    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+  }
+
+  // The label joins the accent so the state doesn't ride on the bar alone.
+  > :is(.toc__row, a).active .toc__link {
     color: var(--color-primary);
+    font-weight: 500;
   }
 
   // Active chat (class from TocItemDesktop) — --color-docsy follows theme via globals.scss :root
@@ -189,7 +196,7 @@
   &.is-ghosted > .toc__row {
     background-color: var(--color-base-200) !important;
     border: 2px dashed var(--color-base-300);
-    border-radius: 6px;
+    border-radius: var(--radius-field);
     opacity: 0.6;
 
     .toc__link {
@@ -226,7 +233,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+    outline: var(--focus-ring-soft);
     outline-offset: 1px;
   }
 
@@ -257,8 +264,10 @@
 // Chat Button
 // ======================
 .toc__item {
+  // Rail-hero: the per-heading chat affordance is faintly present at rest —
+  // discoverable without hover — and solid on hover/active.
   .toc__chat-icon {
-    opacity: 0;
+    opacity: 0.45;
     padding: 1px;
     fill: none;
     stroke: currentColor;
@@ -318,7 +327,7 @@
   &:focus-visible {
     opacity: 1;
     pointer-events: auto;
-    outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+    outline: var(--focus-ring-soft);
     outline-offset: 1px;
   }
 }
@@ -375,9 +384,10 @@
   gap: 2px;
   margin-bottom: 4px;
   background: var(--color-base-100);
-  border-radius: 6px;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
   padding: 2px;
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  box-shadow: var(--shadow-overlay);
   width: fit-content;
 }
 
@@ -444,10 +454,10 @@
   align-items: center;
   gap: 4px;
   background: var(--color-base-100);
-  border-radius: 4px;
+  border-radius: var(--radius-field);
   padding: 6px 8px;
   box-shadow: 0 8px 24px color-mix(in oklch, var(--color-base-content) 10%, transparent);
-  border: 1px solid color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  border: 1px solid var(--color-base-300);
   box-sizing: border-box;
   cursor: grabbing;
   opacity: 0.8;

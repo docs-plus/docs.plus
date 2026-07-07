@@ -96,19 +96,18 @@ export function TocItemDesktop({
     isFocused && TOC_CLASSES.itemFocused,
     isGhosted && 'is-ghosted',
     isDragging && 'is-dragging',
-    hasChildren && 'has-children',
     hasPresentUsers && 'has-present-users'
   )
 
   const rowClassName = twMerge(
     TOC_CLASSES.row,
     'group relative flex items-center gap-1 overflow-hidden rounded pr-3 whitespace-pre-line hyphens-auto',
-    isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`
+    isActive && `active ${TOC_CLASSES.activeBorder}`
   )
 
   return (
     <li ref={sortable.setNodeRef} className={liClassName} data-id={item.id}>
-      <div className={rowClassName} data-id={item.id} data-depth={depth}>
+      <div className={rowClassName} data-id={item.id} data-depth={depth} data-level={item.level}>
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
 
         <span className="relative flex shrink-0 items-center self-stretch">
