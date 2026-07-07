@@ -1,0 +1,32 @@
+---
+description: docs.plus design system — tokens, themes, elevation species, state language for all webapp UI
+globs: apps/webapp/src/**/*.tsx,apps/webapp/src/**/*.ts,apps/webapp/src/styles/**
+alwaysApply: false
+---
+
+# Design System
+
+Authoritative source: [.cursor/docs/design-system.md](../docs/design-system.md). Read it before any
+UI/theme/styling work; the `design-system` skill in `.cursor/skills/` is the working protocol.
+Behavioral invariants (pad geometry, motion wiring, scrims, sheet systems) stay in `AGENTS.md`.
+
+## Cardinal rules
+
+- **Tokens only.** daisyUI semantic classes (`base-*`, `primary`, `*-content`, status colors) or
+  `var(--…)` tokens — never raw Tailwind palette classes or hex outside `globals.scss` and the
+  brand allowlist (social/platform/logo colors; media-anchored overlays stay black/white).
+- **One floating language.** Anchored surfaces = `rounded-box border-base-300 bg-base-100 shadow-xl`
+  via the canonical exports (`popoverPanelClassName`, `contextMenuPanelClassName`,
+  `modalPanelClassName`); SCSS panels use `border-radius: var(--radius-box)` + `var(--shadow-overlay)`.
+- **Docked surfaces are flat** in light (borders, no shadows); dark lift comes from tokens only.
+  The workspace floor is `--pad-well`, never `bg-base-200` directly.
+- **Shape scale = the daisyUI tokens** (`--radius-selector` 8px · `--radius-field` 8px ·
+  `--radius-box` 10px — maintainer taste is 8–10px, tuned ONLY in the theme blocks). Surfaces
+  consume `rounded-selector|field|box`/`rounded-full`, never Tailwind literal radius classes;
+  micro px radii (2–4px) live only in prose/editor decorations.
+- **States** follow the recipes in the doc (`is-active` = primary-10% bg + primary ink; hover =
+  `base-200`; focus = `focus-visible:ring-2 ring-primary`; unread = error badge).
+- **Verify in the browser, light + dark, desktop + mobile**, before calling visual work done.
+
+daisyUI vendor class reference: https://daisyui.com/llms.txt (fetch on demand). Floating UI
+behavior: [react-floating-ui.mdc](./react-floating-ui.mdc).

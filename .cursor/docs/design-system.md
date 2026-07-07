@@ -1,0 +1,1009 @@
+# docs.plus Design System — Source of Truth
+
+Canonical reference for every visual decision in `apps/webapp` (desktop + mobile). Read this before
+touching UI. Precedence: explicit maintainer instruction → this doc + `AGENTS.md` → vendor docs.
+`AGENTS.md` owns _behavioral_ invariants (pad geometry, motion wiring, focus-trap/inert rules,
+sheet systems); this doc owns the _visual language_ they render in. `.cursor/rules/design-system.mdc`
+auto-attaches a pointer here; the `design-system` skill in `.cursor/skills/` is the working protocol.
+
+## Toolchain doctrine
+
+- **Tailwind CSS v4 + daisyUI 5** are the UI toolkit. Themes are declared with `@plugin 'daisyui/theme'`
+  blocks in `src/styles/globals.scss`; there is **no `tailwind.config.js`** (Tailwind v4).
+- **Extend, never fork:** new design capability = a CSS variable on `:root` (+ per-theme overrides on
+  `[data-theme='docsplus-dark']` / `docsplus-dark-hc`), exposed to Tailwind through an `@theme` alias
+  (pattern: `--color-docsy`, `--color-media-*`). Components consume tokens — daisyUI semantic classes
+  (`base-*`, `primary`, `*-content`, `info/success/warning/error`) or `var(--…)` — never raw Tailwind
+  palette classes (`bg-gray-*`, `text-blue-500`) and never hex literals outside the token layer.
+- daisyUI component classes (`btn`, `input`, `select`, `menu`, `tab`, `collapse`, `badge`, `skeleton`)
+  are the first reach on daisyUI-backed surfaces; Tailwind utilities customize them; bespoke CSS is a
+  last resort and lives only under `src/styles/` (never colocated with components — see
+  `AGENTS.md` §TipTap Styling).
+- Vendor reference for daisyUI class names: <https://daisyui.com/llms.txt> (fetch on demand — the
+  repo no longer vendors it). Floating UI behavior: `.cursor/rules/react-floating-ui.mdc`.
+- Bun only — any upstream `npm`/`pnpm` example translates to `bun` / `bunx`.
+
+## Themes
+
+Three daisyUI themes in `globals.scss`; `data-theme` on `<html>` is applied by
+`stores/themeStore.ts` (`ThemePreference: light | dark | dark-hc | system`).
+
+|                                  | `docsplus` (light, default)                | `docsplus-dark`                             | `docsplus-dark-hc` (projector) |
+| -------------------------------- | ------------------------------------------ | ------------------------------------------- | ------------------------------ |
+| color-scheme                     | light                                      | dark                                        | dark                           |
+| base-100 — paper                 | `#ffffff`                                  | `#0b1220`                                   | `#0f172a`                      |
+| base-200 — well/hover            | `#eef1f6`                                  | `#0f172a`                                   | `#1e293b`                      |
+| base-300 — borders               | `#dce3ed`                                  | `#2d3f57`                                   | `#475569`                      |
+| base-content — ink               | `#0f172a`                                  | `#e5e7eb`                                   | `#f1f5f9`                      |
+| primary                          | `#1a73e8`                                  | `#6ea8ff`                                   | `#7ab4ff`                      |
+| secondary (presence)             | `#0f9d7a`                                  | `#2fbf9b`                                   | `#34d399`                      |
+| accent (highlight/bookmark)      | `#eab308`                                  | `#e3b341`                                   | `#fbbf24`                      |
+| neutral (secondary-UI ink)       | `#334155`                                  | `#8b9bb0`                                   | `#94a3b8`                      |
+| info / success / warning / error | sky-600 / green-600 / orange-600 / red-600 | sky-400 / green-500 / `#fb7a3a` / `#ff6b6b` | 400-series, brighter           |
+| border width                     | 1px                                        | 1px                                         | **2px**                        |
+
+- Light is **true-white paper on a cool-gray well**: the pre-recalibration `#fafbfc/#edf0f5/#e5eaf1`
+  trio read washed-out — do not drift back toward near-identical neutrals.
+- `--depth: 0`, `--noise: 0` in all themes: no daisyUI depth effects. Depth is borders + the
+  elevation species below, never per-component gradients.
+- `_document.tsx` `theme-color` meta mirrors base-100 (`#ffffff` / `#0b1220`) — update in lockstep.
+
+## Semantic tokens (`globals.scss` `:root` + dark overrides)
+
+| Token                                                                 | Light                                                                                                              | Dark (HC)                                                | Role                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
+| `--pad-well`                                                          | = base-200                                                                                                         | `#070d18` (`#0b1322`)                                    | Workspace floor: editor scroll well, TOC rail, TocHeader, skeleton mirrors. In dark it sits **below** base-100 so the sheet reads raised in both themes. Well surfaces use `bg-[var(--pad-well)]`, never `bg-base-200`.                                       |
+| `--pad-divider` / `--pad-sheet-border`                                | = base-300                                                                                                         | = base-300                                               | Docked-region dividers + sheet outline.                                                                                                                                                                                                                       |
+| `--pad-sheet-radius`                                                  | `0.5rem`                                                                                                           | same                                                     | Document sheet corners (field stop).                                                                                                                                                                                                                          |
+| `--pad-sheet-shadow`                                                  | `none`                                                                                                             | faint base-content lift                                  | Dark-only sheet lift; light docked surfaces are flat.                                                                                                                                                                                                         |
+| `--shadow-overlay`                                                    | 2-layer **black** 8% mix                                                                                           | black 50%/40% (dark override)                            | **The** box-shadow for every SCSS-styled floating panel — black-based like the scrims, never `base-content` (glows in dark). Tailwind-styled floating surfaces use `shadow-xl`. No other floating shadow literals outside §Elevation's deliberate exceptions. |
+| `--modal-scrim` / `--modal-scrim-heavy`                               | black 45% / 72%                                                                                                    | black 55% / 80%                                          | Dialog + sheet scrims / media lightbox. Always **black-based** — never `base-content` washes.                                                                                                                                                                 |
+| `--color-media-image` / `--color-media-video` / `--color-media-audio` | `#059669` / `#7c3aed` / `#ea580c` (declared in `@theme`)                                                           | `#34d399` / `#a78bfa` / `#fb923c` (dark block overrides) | Media-category accents as `media-image                                                                                                                                                                                                                        | video | audio` color utilities — one name family, no alias layer. Icon/left-border accents only; attachment cards stay neutral. |
+| `--resize-sash-*`                                                     | hit 8px, size 4px, idle = divider, hover = primary                                                                 | same                                                     | TOC/chat resize sashes (geometry rules in `AGENTS.md` §Pad Workspace Surfaces).                                                                                                                                                                               |
+| `--color-docsy`                                                       | = primary                                                                                                          | = primary                                                | Themed brand alias (TOC accents).                                                                                                                                                                                                                             |
+| `--caret-color` / `--caret-color-inverse`                             | primary / primary-content                                                                                          | same                                                     | Editor caret.                                                                                                                                                                                                                                                 |
+| `--border-color-tint` / `--muted-foreground`                          | base-content 14% / 50%                                                                                             | same                                                     | Hairlines / muted ink in imperative DOM.                                                                                                                                                                                                                      |
+| `--font-sans`                                                         | `Helvetica, Arial, sans-serif`                                                                                     | same                                                     | The app type stack (universal reset + one-off SCSS consumers). No other font stacks.                                                                                                                                                                          |
+| `--focus-ring-soft`                                                   | `2px solid` primary 45% mix                                                                                        | same (primary swaps per theme)                           | The SCSS focus-ring formula — consume via `outline: var(--focus-ring-soft); outline-offset: 1px`.                                                                                                                                                             |
+| Motion (`_entry.scss` + `utils/motion.ts`)                            | `--motion-overlay-in/out 120/80ms`, `--motion-panel 200ms`, `--motion-region 220ms`, enter ease-out / exit ease-in | same                                                     | Tiers + PRM rules in `AGENTS.md` §Motion System — the JS mirror updates in lockstep.                                                                                                                                                                          |
+
+## Ink ladder
+
+`base-content` at fixed opacities — do not invent intermediate steps:
+
+| Level | Class                  | Use                                                                                                   |
+| ----- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| 100%  | `text-base-content`    | Body text, titles, message text, filenames                                                            |
+| 70%   | `text-base-content/70` | Idle icon buttons, secondary labels, metadata                                                         |
+| 60%   | `/60`                  | Muted **informational** text: timestamps, hints, captions — the floor for anything the user must read |
+| 50%   | `/50`                  | Placeholders, decorative/duplicated text, large text or icons only — **not** informational copy       |
+| 40%   | `/40`                  | Disabled                                                                                              |
+
+**Contrast floor:** text-bearing ink meets WCAG AA (≥ 4.5:1 vs its surface). On white paper,
+`base-content/60` ≈ 4.7:1 (passes); `/50` ≈ 3.4:1 (fails) — hence the tier split. The
+`docsplus-dark-hc` theme exists for projector legibility; never lower its ink or border steps.
+
+`primary` is **interaction ink only**: links, active states, primary buttons, focused borders.
+Header/toolbar icons idle at `/70` (or `/60`) and darken on hover — attention comes from badges
+(error red), not from coloring resting icons.
+
+## Shape scale
+
+**The daisyUI shape tokens ARE the scale — and the control panel.** Radii are tuned from the
+three theme blocks in `globals.scss` alone (maintainer taste: **8–10px, no more, no less**);
+every surface consumes the token classes, so a retune never touches components.
+
+| Token               | Value (today) | Consumed as                                                       | Species                                                                                                                                                        |
+| ------------------- | ------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--radius-selector` | 8px           | `rounded-selector` (+ daisyUI selector controls)                  | Smallest controls and control clusters                                                                                                                         |
+| `--radius-field`    | 8px           | `rounded-field` (+ daisyUI `btn`/`input`/`select`)                | Controls: buttons, inputs, chips, media cards, composer bar, TOC ghost rows                                                                                    |
+| `--radius-box`      | 10px          | `rounded-box` (+ daisyUI `card`/sheets); SCSS `var(--radius-box)` | **All floating panels** (popovers, menus, dropdowns, modals, toasts, pickers), in-page cards, bottom sheets, document sheet (`--pad-sheet-radius` chains here) |
+| —                   | pill          | `rounded-full`                                                    | Avatars, badges, reaction pill, circular icon buttons                                                                                                          |
+| micro               | 2–4px literal | bare `rounded` / px in prose SCSS                                 | **Prose/editor decorations only**: inline code, TOC accent bars, cursor labels, heading-filter marks. Never on panels or cards.                                |
+
+Banned: Tailwind literal radius classes on surfaces (`rounded-field/lg/xl/2xl/3xl` — swept to token
+classes 2026-07-07; the only survivors live in the in-flight chat-media-gallery workstream), new
+SCSS px radii ≥ 8px (use `var(--radius-*)`), and per-surface radius invention.
+
+## Elevation species
+
+Depth encodes behavior. Every surface is exactly one species:
+
+| Species                                        | Recipe                                                                                                                                                                                                                                                                                                               | Members                                                                                                                                    |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **L0 · docked**                                | `border-base-300` (or `--pad-*` tokens), **no shadow** in light; dark gets `--pad-sheet-shadow` on the sheet only                                                                                                                                                                                                    | Header, toolbars, TOC column, document sheet, docked chat, composer, cards                                                                 |
+| **L1 · anchored**                              | `rounded-box border border-base-300 bg-base-100 shadow-xl` — canonical exports `popoverPanelClassName` (`ui/Popover.tsx`), `contextMenuPanelClassName` (`ui/ContextMenu.tsx`); SCSS twins use `border-radius: var(--radius-box)` + `var(--shadow-overlay)`                                                           | Popovers, context menus, hover action bar, select dropdowns, pickers, toasts, bubble/media/hyperlink toolbars, emoji picker, mention popup |
+| **L2 · modal**                                 | L1 frame (`modalPanelFrameClassName` / `modalPanelClassName`, `ui/Dialog.tsx`) + `modalBackdropClassName` scrim (`--modal-scrim` + `motion-safe:backdrop-blur-sm`); bottom sheets share the scrim, **no blur**                                                                                                       | Dialogs, GlobalDialog, Share/Profile modals, mobile bottom sheets                                                                          |
+| **Tooltip**                                    | `--radius-field` + hairline `0 2px 4px` base-content 10% (`.Popover`, `_popover.scss`) — deliberately lighter than L1                                                                                                                                                                                                | Tooltips only                                                                                                                              |
+| **Deliberate exceptions** (do not "normalize") | Edit FAB 3-layer Material shadow (`_mobile.scss`); TOC drag card `0 8px 24px` + hard-edge deck stack; crinkle paper-fold shadows (`_heading-fold.scss`); bottom-anchored mobile toolbars cast **upward** (`_toolbar.scss`, `_blocks.scss`); focus/pressed rings expressed as `box-shadow: 0 0 0 1-2px` primary mixes | drag feedback, FAB, skeuomorph fold, mobile bars                                                                                           |
+
+New overlay surfaces pick an existing species and reuse its export — never a third radius/shadow stack.
+
+**Paint order** follows the species: docked surfaces ≤ `z-40`; the floating portal layer is `z-50`
+(`[data-floating-ui-portal]`, `globals.scss`); surfaces stacked _on_ a floating surface (nested
+dropdowns, toasts over modals) use `z-[60]`. Higher one-offs (`z-[9999]`, inline `zIndex`) are
+off-system scatter — converge onto these tiers whenever a file is touched, and never mint a new
+tier to win a stacking fight (fix the portal / stacking context instead).
+
+## State language
+
+| State                              | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| hover (rows/list items)            | `bg-base-200` (SCSS: `var(--color-base-200)`) — on the well, hover may use `base-300` for one more step                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| hover (icon buttons)               | daisyUI `btn-ghost` hover + ink `/70 → /100`; icon-reveal patterns use `opacity-0 → group-hover:opacity-100`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| pressed                            | `color-mix(base-content 10%)` bg, or `active:scale-*` on touch surfaces                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| active / selected (toolbar + rows) | **`is-active` pattern**: `color-mix(primary 10%)` bg + `text-primary` (`_toolbar.scss`); TOC/doc rows: same primary-10% wash (SCSS-owned — see the TOC row entry for the cascade rule) + 4px `--color-docsy` accent bar; nav items: `variant="primary"`                                                                                                                                                                                                                                                                                    |
+| context-menu-active                | `color-mix(primary 15%)` on TOC rows, `8%` on message cards — row keeps highlight while its menu is open                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| unread                             | `UnreadBadge` (`bg-error text-error-content rounded-full`) + `animate-badge-entry`; TOC heading chips via `[data-unread-count]`                                                                                                                                                                                                                                                                                                                                                                                                            |
+| pending / failed (messages)        | pending dim + `msg-send-in` rise; failed = `MessageCard.FailedRow` with `error` ink                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| flash (deep-link jump)             | `msg_card--flash` primary color-mix pulses (`globals.scss`), PRM-static fallback                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| drag                               | ghosted: dashed `base-300` border + `opacity-60`; source: `base-content 40%` border; TOC list-drag hides trails                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| disabled                           | `/40` ink, `cursor-not-allowed`, no hover response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **focus-visible (standard)**       | `focus-visible:ring-2 ring-primary` (+ `ring-offset-2` when the bg allows); SCSS: `outline: var(--focus-ring-soft); outline-offset: 1px` — the one soft-ring token (`2px` primary at 45% mix, declared once in `globals.scss` `:root`); use the same mix as `box-shadow: 0 0 0 2px …` only where an outline is impossible. Full-strength solid-primary outlines are converged. Inputs: daisyUI focus (primary border), variant-colored fields excluded — and the global `input { outline !important }` hack is dead; never reintroduce it. |
+
+## Color policy
+
+- **Brand hexes are allowed only for third-party identity**: social icons (`settings/utils/socialIcons.ts`,
+  ShareModal, Discord `#5865F2`, HomeFooter CTA), media-platform comment accents (YouTube `#FF0000`,
+  Vimeo, SoundCloud, Loom, Spotify in `utils/commentReferenceTheme.ts`), and the app logo SVG.
+- **Media-anchored overlay ink is fixed black/white by design** (upload-progress scrims on media,
+  avatar-hover camera overlay, video/gallery letterbox `bg-black`): it sits on imagery, where black
+  scrim + white ink holds in both themes. Do not tokenize it into `neutral`/`base-content` grays.
+- Everything else goes through theme tokens. `dark:` variants paired with raw palette classes are a
+  smell — a theme-tracked token (like the media trio) replaces both halves.
+- **Native `<audio>/<video>` control shells follow the browser/OS color scheme, not the site
+  theme** — verified: Chromium paints them from the UA scheme even when the element's computed
+  `color-scheme` is `dark`. Do not chase this with CSS; the themes already declare `color-scheme`
+  correctly (form controls do follow it). A themed custom player is the only real fix if it ever
+  matters enough.
+- Print (`_print.scss`) is intentionally paper-white/ink-black.
+
+## Component catalog
+
+Species + state matrices extracted from code. Layer = desktop / mobile / both. When you change a
+recipe in code, update its row here in the same change. `> Off-system:` callouts are **todo**
+(converge whenever you touch the file) unless the entry says _deliberate_/_intentional_ — those
+are documented exceptions, not debt.
+
+## Pad shell (desktop)
+
+### PadTitle header bar + DocTitle + PresentUsers — desktop
+
+docked — `components/TipTap/pad-title-section/PadTitle.tsx` (+ `components/TipTap/DocTitle.tsx`, `components/TipTap/pad-title-section/PresentUsers.tsx`, `components/AvatarStack.tsx`)
+
+| State          | Recipe                                                                                                                                                                                                                                                                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame          | `border-base-300 bg-base-100 z-30 min-h-12 border-b px-3 py-2 motion-safe:animate-[doc-region-in_220ms_ease-out_both]` — `border-b` is the sole header↔toolbar seam                                                                                                                                                        |
+| doc title      | idle/hover `hover:border-base-300 truncate rounded-sm border border-transparent px-1 text-lg font-medium`; saving spinner `text-info h-4 w-4 animate-spin` → saved `IoCheckmarkCircle text-success`                                                                                                                        |
+| buttons        | share `btn btn-primary` (authed adds `btn-outline`); history/bell `btn btn-ghost btn-circle` + `text-base-content/70`, bell unread `UnreadBadge size=sm variant=error absolute -top-1 -right-2`; avatar `btn btn-ghost btn-circle btn-lg border-0 p-0` wrapping `Avatar border-base-300 border`; sign-in `btn btn-neutral` |
+| presence stack | `avatar-group !overflow-visible`; per-avatar `ring-base-300 bg-base-100 animate-badge-entry ring-1`; overflow +N `avatar-placeholder rounded-full ring-base-300 ring-1 bg-base-100` + `bg-neutral text-neutral-content font-semibold`                                                                                      |
+
+> Off-system: `rounded-sm` on the title is a one-off radius (rest of the shell uses rounded-field/box/field).
+
+### Pad status chips (ProviderSyncStatus + FilterBar + ReadOnlyIndicator) — both
+
+chip/badge — `components/TipTap/pad-title-section/ProviderSyncStatus.tsx`, `FilterBar.tsx`, `ReadOnlyIndicator.tsx`
+
+| State          | Recipe                                                                                                                                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame          | sync chip `gap-1.5 px-3 py-1 text-sm font-medium hover:bg-base-200 rounded-field transition-colors`                                                                                                                                                                                                          |
+| sync states    | connecting/saving/synced `text-base-content/50` + `animate-spin` sync icon; saved `text-base-content/60`; offline/unauthenticated `text-warning` (unauth is a `cursor-pointer` sign-in button); error `text-error`; mobile entry `motion-safe:animate-[doc-content-in_120ms_ease-out_both]`                  |
+| filter chip    | `border-info/30 bg-info/10 text-info m-0.5 rounded-field border px-2 py-0.5 text-xs font-medium motion-safe:animate-[doc-region-in_180ms_ease-out_both]`; remove-x `rounded-full p-0.5 opacity-60 hover:opacity-100`; Reset `btn btn-ghost btn-xs opacity-0 group-hover:opacity-100` (mobile always visible) |
+| read-only chip | `rounded-field p-2 ml-4 hover:border-primary transition-[border-color] border text-base-content/50 motion-safe:animate-[doc-region-in_180ms_ease-out_both]` + penOff `text-base-content/40`                                                                                                                  |
+
+> Off-system: ReadOnlyIndicator bare `border` with no `border-base-300` color class (inherits Tailwind default border color).
+
+### EditorToolbar bar + ToolbarButton / ToolbarDivider — desktop
+
+docked — `components/TipTap/toolbar/desktop/EditorToolbar.tsx` (+ `components/TipTap/toolbar/ToolbarButton.tsx`; active recipe `styles/components/_toolbar.scss`)
+
+| State             | Recipe                                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame             | bar `tiptap__toolbar border-base-300 bg-base-100 gap-0.5 border-b px-3 py-1.5` — `border-b` only, never `border-t`; buttons daisyUI `btn btn-ghost btn-sm btn-square`; divider `bg-base-300 mx-2 h-5 w-px` |
+| is-active         | `background: color-mix(in oklch, var(--color-primary) 10%, transparent); color: var(--color-primary)`; svg `fill:none; stroke:currentColor` (\_toolbar.scss:27) — shared by pad, chat and mobile toolbars  |
+| disabled (+hover) | `color: color-mix(base-content 40%)`, transparent bg (\_toolbar.scss:38)                                                                                                                                   |
+| indicators        | filter-active dot `bg-error ring-base-100 absolute top-0.5 right-0.5 size-1.5 rounded-full ring-2`; copy-doc success check `text-success`                                                                  |
+
+> Off-system: Discord icon `text-[#5865F2]` raw brand hex; `.m_mobile .tiptap__toolbar` one-off shadow `0 -5px 10px color-mix(base-content 10%)` (\_blocks.scss:69), not `--shadow-overlay`.
+
+### Document sheet + editorWrapper (workspace floor) — desktop
+
+docked — `styles/_blocks.scss` (wrapper JSX `components/pages/document/components/DesktopEditor.tsx`)
+
+| State   | Recipe                                                                                                                                                                                                                                                                                                                                                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame   | `.pad .editor { background: var(--pad-well) }`; `.tiptap__editor`: `max-width:56rem; background: var(--color-base-100); border:1px solid var(--pad-sheet-border); border-radius: var(--pad-sheet-radius)` (0.5rem); `box-shadow: var(--pad-sheet-shadow)` (light none / dark `0 1px 2px` base-content 6% mix); `--tiptap-inline-pad-end:1.5rem→2rem@sm` |
+| wrapper | `editorWrapper scrollbar-custom scrollbar-thin bg-[var(--pad-well)] overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6`; SCSS `padding-bottom:300px`, `overflow-x:visible`                                                                                                                                                              |
+
+### Heading action chips ($ha-btn-surface / .ha-group / unread / comment dock) — desktop
+
+control — `styles/components/_heading-actions.scss` (badge mixin `styles/components/_unread-badge.scss`)
+
+| State                         | Recipe                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                         | `$ha-btn-surface`: `border:1px solid var(--pad-sheet-border); background var(--color-base-100); color var(--color-primary); border-radius:9999px; box-shadow: var(--pad-sheet-shadow)` — sheet tokens by design, not `--shadow-overlay`; chips straddle the sheet border via `translateX(pad + 0.5px + 50%)`                                                                    |
+| reveal                        | hidden `opacity:0 visibility:hidden` → heading hover/focus-within visible (invisible `::before` hover tunnel); coarse pointers always visible                                                                                                                                                                                                                                   |
+| hover / pressed / focus       | hover `background: color-mix(primary 10%, base-100); border-color: color-mix(primary 28%, base-300)`; pressed `box-shadow: 0 0 0 1px color-mix(primary 22%, transparent)`; focus-visible `outline: var(--focus-ring-soft); outline-offset: 1px` (outline, not box-shadow — the chip surface owns box-shadow)                                                                    |
+| unread badge                  | `.ha-chat-btn[data-unread-count]::before`: `content:attr(data-unread-count); background var(--color-error) !important; color var(--color-error-content) !important; border-radius: size/2; font-weight:600; animation: badge-entry .3s`; `[data-count-dir='up'/'down']` → `badge-count-up/down .25s`; mobile inline chip `position: static !important` (\_unread-badge.scss:80) |
+| selection tray + comment dock | `.ha-group` vertical capsule `background base-100; border 1px var(--pad-sheet-border); border-radius:9999px; box-shadow var(--pad-sheet-shadow)`, inner buttons stripped with hover primary-10% mix; `.tiptap__editor > .ha-selection-comment-dock` at `right: var(--tiptap-inline-pad-end)`, same straddle                                                                     |
+
+Also on this surface: `StyleSelect`/`ToolbarSelect` (see Menus & selects); toolbar popover panels + notification bell (see Floating overlays); `UnreadBadge` (see Form & primitive foundations).
+
+## Table of contents
+
+### TocHeader (doc-title row, desktop + mobile TocModal) — both
+
+docked — `components/toc/TocHeader.tsx`
+
+| State                  | Recipe                                                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame                  | desktop `border-base-300 bg-[var(--pad-well)] z-30 border-b pt-2 pb-1` + `paddingLeft: var(--toc-list-inset)`, row `toc__header-row rounded-field py-1 pr-3 pl-2`, title `text-base-content text-lg font-bold`; mobile `border-base-300 bg-base-100 z-30 border-b px-4 py-3` + trigger `toc__chat-trigger size-8 rounded-full` |
+| idle / hover / unread  | chat icon `toc__chat-icon text-base-content/60 hover:text-primary transition-colors` (mobile idle `text-base-content/40`, `opacity:1 !important`); no row hover bg; unread swaps icon for `UnreadBadge size=sm variant=error`                                                                                                  |
+| active (doc chat open) | desktop `toc__active-border bg-primary/10 !pl-4` + accent `::after { top:4px; bottom:4px; left:4px; width:4px; border-radius:4px; background: var(--color-docsy) }`; mobile icon `text-docsy` — one accent for one semantic (converged 2026-07-06)                                                                             |
+
+### TOC rows (TocItemDesktop + TocRowTrail + TocItemMobile + fold caret) — both
+
+control — `components/toc/TocItemDesktop.tsx`, `TocRowTrail.tsx`, `TocItemMobile.tsx` (state SCSS `styles/components/_tableOfContents.scss`)
+
+| State                        | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                        | row `toc__row rounded pr-3` + SCSS `padding-left:8px !important; transition: background-color .2s, color .2s`; nesting `[data-depth=d] { margin-left: calc(-d * var(--toc-nest-indent)) }` + one real 1px `base-300` indent guide per nesting ul (`.toc__list :where(li ul)::before`); rail vars `--toc-scrollbar-gutter:11px; --toc-list-inset:16px; --toc-trail-inset:12px; --toc-nest-indent:16px`; trail pinned `right: var(--toc-trail-inset)` in a `flex-row-reverse` cluster                                                                                                                 |
+| type ladder                  | rows/anchors carry `data-level` (channel-map, 2026-07-06): base `0.8125rem`; level 1 `0.875rem/600` full ink; level 2 `color-mix(base-content 88%)`; levels 3–6 `color-mix(base-content 70%)` (AA floor)                                                                                                                                                                                                                                                                                                                                                                                            |
+| hover / pressed              | hover `background: var(--color-base-200)` + reveals drag grip; chat icon rests at `opacity:.45` (rail-hero, discoverable without hover) → `1` on row hover/active; `:active` `background: color-mix(base-content 10%)`; icon row classes `text-base-content/40 group-hover:text-primary`                                                                                                                                                                                                                                                                                                            |
+| active / focused / menu-open | active (chat open) `toc__active-border` + **SCSS-owned** primary-10% wash (never a `bg-primary/10` utility — unlayered row-state backgrounds decide by file order: active > focused > hover) + `::after { left:-8px; width:4px; background var(--color-docsy); border-radius:4px }`, `.active .toc__link { color: var(--color-primary); font-weight:500 }`, icon `toc__chat-icon--active { color: var(--color-docsy) }` — the bar means chat-open only; scroll-spy `.toc__item--focused` = quiet `color-mix(base-content 6%)` wash, no bar; context-menu-active `color-mix(primary 15%) !important` |
+| unread / presence            | `UnreadBadge sm/error` in a stable `h-6 min-w-6` trigger box (never shrinks the hit target); the desktop rail passes `badgeClassName="ring-2 ring-[var(--pad-well)]"` (mobile floors differ — no ring); `AvatarStack maxDisplay TOC_TRAIL_MAX_AVATARS` (single constant in `toc/utils.ts` shared with the spacer math), hidden during drag                                                                                                                                                                                                                                                          |
+| drag states                  | ghosted `bg base-200 !important; border:2px dashed var(--color-base-300); border-radius:0.5rem; opacity:.6`; source `border-color: color-mix(base-content 40%)`; list `.is-dragging` hides triggers/handles/avatars `opacity:0 !important`, shows level badges, rows `pointer-events:none`                                                                                                                                                                                                                                                                                                          |
+| empty state                  | `text-base-content/60 px-4 py-3 text-sm` "Add a heading to start the outline" + `AppendHeadingButton` on both desktop and mobile                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| fold caret                   | ghost `Button size=xs shape=square toc__fold-btn size-5 !p-0`, SCSS forces transparent bg; svg `fill:none; stroke:currentColor; color: color-mix(base-content 80%)`, hover/focus `color: var(--color-primary)`, closed/opened `rotate(0/90deg)`, focus-visible `outline:2px solid color-mix(primary 45%); outline-offset:1px`                                                                                                                                                                                                                                                                       |
+| mobile rows                  | `<a>` `group rounded !py-2 pr-10` with `data-level` in daisyUI `toc__list menu` ul (hover from `menu` defaults; no `toc__row` class); trigger always visible `absolute right-1 size-8 rounded-full` + `text-base-content/40`; active = SCSS-owned primary-10% wash + icon `text-docsy`; icons forced `opacity:1 !important`                                                                                                                                                                                                                                                                         |
+
+### TOC drag system (grip + overlay card + deck + level picker + level badge) — desktop
+
+drag — `components/toc/TocDesktop.tsx`, `TocLevelPicker.tsx` (SCSS `styles/components/_tableOfContents.scss`)
+
+| State                   | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                   | grip: 1.25rem square, `border-radius: var(--radius-field,.25rem); color: color-mix(base-content 55%); opacity:0; cursor:grab; transition opacity var(--motion-overlay-out, 80ms)`; hover `color: var(--color-primary); background: color-mix(base-content 8%)`; `:active` `cursor:grabbing; color: var(--color-docsy)`; focus-visible soft primary outline                                                                                     |
+| overlay card            | `background var(--color-base-100); border-radius:.5rem; padding:6px 8px; box-shadow: 0 8px 24px color-mix(base-content 10%); border:1px solid var(--color-base-300); opacity:.8`; inline `zIndex:60` (drop indicator `zIndex:50`); descendant badge `min-width:20px; h:16px; bg var(--color-neutral); color var(--color-neutral-content); border-radius:8px`                                                                                   |
+| deck + drop indicator   | `.toc-stack-indicator[data-count=1–3]` layered `3px 3px 0 0 base-200 + 3px 3px 0 1px base-300` shadows (×1/2/3); drop line `height:2px; background var(--color-base-content); border-radius:1px` + 10px circle `::before`                                                                                                                                                                                                                      |
+| level picker + chips    | `.toc-drag-levels { background base-100; border:1px solid base-300; border-radius:.75rem; padding:2px; box-shadow: var(--shadow-overlay) }` — on the floating recipe; chip idle `min-width:24px; h:18px; color: color-mix(base-content 40%); border-radius:4px`; original `border:1px solid var(--color-docsy); color: var(--color-docsy); scale(1.1)`; projected `color: var(--color-primary-content); background: var(--color-base-content)` |
+| level badge (drag-only) | hidden; `.is-dragging` shows `min-width:22px; h:18px; background var(--color-docsy); color var(--color-primary-content); border-radius:4px`                                                                                                                                                                                                                                                                                                    |
+
+> Off-system: card shadow `0 8px 24px` + `.5rem` radius — deliberate drag-feedback species; deck box-shadow fake borders (intentional, token-shadow-free); cross-token pairings (docsy/`primary-content` badge, `base-content`/`primary-content` chip).
+
+### TocContextMenu — desktop
+
+anchored (L1) — `components/toc/TocContextMenu.tsx` (panel from `components/ui/ContextMenu.tsx`)
+
+| State | Recipe                                                                                                                                                                                         |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame | `contextMenuPanelClassName` + `absolute z-40`; rows stock `MenuItem` + `ContextMenuRow`                                                                                                        |
+| rows  | Chat Room = primary, fold/focus/copy = default, Delete Section = danger + `Icons.info size=14 opacity-60`; source row `.context-menu-active { background: color-mix(primary 15%) !important }` |
+
+TOC unread badges are the React `UnreadBadge` only (see Form & primitive foundations); the ProseMirror CSS-attr badge path styles `.ha-chat-btn` only (see Pad shell → Heading action chips).
+
+## Menus & selects
+
+### ContextMenu primitives (panel + ContextMenuRow + MenuItem + divider) — both
+
+anchored (L1) — `components/ui/ContextMenu.tsx`
+
+| State                     | Recipe                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                     | `contextMenuPanelClassName` = `flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-box border p-1.5 shadow-xl outline-none` (FloatingOverlay lockScroll + FloatingFocusManager); row `cursor-pointer gap-2.5 rounded-field px-2.5 py-2 text-sm transition-colors duration-150`, li `group cursor-pointer rounded-field`, icon `opacity-70`, label `font-medium` |
+| open / dismiss / keyboard | `useOverlayTransition(closeMs:0)` — 120ms scale-in from cursor side, instant dismissal; useListNavigation moves focus with no visual highlight class                                                                                                                                                                                                                                      |
+| row variants              | default `group-hover:bg-base-300 group-active:bg-base-300/90`; primary same + `text-primary`; danger `group-hover:bg-error/20 group-active:bg-error/25 text-error`                                                                                                                                                                                                                        |
+| divider                   | `bg-base-300 pointer-events-none my-[4px] h-px p-0` on `li[role=separator]`                                                                                                                                                                                                                                                                                                               |
+
+> Off-system: keyboard-active item has focus only (invisible keyboard nav); hover fill `bg-base-300` vs `bg-base-200` in select/dropdown options — two hover tokens; `my-[4px]` arbitrary value.
+
+### Message context menus + action list (ChatListContextMenu + ContextActionsMenu + MessageActionMenuList + UserReadStatus) — both
+
+anchored (L1) — `components/chatroom/components/ChatList/ChatListContextMenu.tsx`, `…/MessageCard/components/MessageLongPressMenu/components/ContextActionsMenu.tsx`, `…/MessageCard/components/MessageActionMenuList.tsx`
+
+| State              | Recipe                                                                                                                                                                                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame              | desktop `contextMenuPanelClassName` + `absolute z-40 min-w-[12rem]`; mobile long-press same + `min-w-[12rem] transition-[opacity,transform] duration-200 ease-out`, inline `translateX(-50%) translateY(0/8px) scale(1/0.96)` show/hide                                                 |
+| rows               | `ContextMenuRow` variants (primary/danger); mobile wraps in `motion.li group touch-manipulation rounded-field select-none` with `whileTap scale 0.98`; disabled `pointer-events-none cursor-not-allowed opacity-60`; link-copied `text-success`; `separatorBefore` → ContextMenuDivider |
+| target highlight   | `.msg_card.context-menu-active { background: color-mix(primary 8%) !important }` (globals.scss:682)                                                                                                                                                                                     |
+| read-status footer | divider + li `pointer-events-none px-2.5 py-2`: label `text-base-content/50 text-xs` + `Icons.checkDouble text-base-content/40` + `AvatarStack ml-auto size=sm maxDisplay=3`; loading `skeleton h-4 w-4/w-10 rounded-full` + `AvatarStackLoader size=sm`                                |
+
+> Off-system: `min-w-[12rem]` vs the panel's `min-w-[11rem]`; mobile hand-rolls its transition (not `useOverlayTransition`, not PRM-gated); `!important` highlights.
+
+### HoverMenu bar + items + dropdown — desktop
+
+anchored (L1) — `components/ui/HoverMenu.tsx`
+
+| State               | Recipe                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | bar `join border-base-300 bg-base-100 z-50 rounded-box border shadow-xl`; items `btn btn-sm btn-square join-item btn-ghost` (chat items `Button ghost sm square join-item` + icons `text-base-content/70`)                                                            |
+| open / hold / close | `useOverlayTransition` overlay tier; `safePolygon buffer 8`, delay open 100/close 150; closes on scroll (150ms debounce) and IntersectionObserver ratio < 0.5; open dropdown blocks close                                                                             |
+| item states         | bookmarked `Icons.bookmarkMinus text-info`; pending spinner `border-base-content/30 border-t-base-content/70 size-[18px] animate-spin rounded-full border-2`; disabled daisyUI btn-disabled                                                                           |
+| dropdown            | panel `bg-base-100 border-base-300 z-[60] rounded-box border shadow-xl` + ul `menu max-h-80 w-52 rounded-box !p-1`; danger `text-error`; copied `text-success`; downloading `pointer-events-none opacity-60`; auth-group divider `border-base-300 mt-1 border-t pt-1` |
+
+> Off-system: z-index scatter (bar z-50, chat override z-30, dropdown z-[60], context menus z-40); btn classes on a `<div>`; hand-rolled spinner; dropdown rows are raw daisyUI `menu` li>a, not `ContextMenuRow` — a third row language.
+
+### ui/Select + ui/SearchableSelect — both
+
+control — `components/ui/Select.tsx`, `components/ui/SearchableSelect.tsx`
+
+| State             | Recipe                                                                                                                                                                                                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame             | trigger daisyUI `select w-full text-left` + `select-{xs..xl}/{color}/ghost/error/success` + `bg-none pr-3`; panel `bg-base-100 border-base-300 z-50 rounded-box border shadow-xl` width-matched; `useOverlayTransition` 120/80ms                          |
+| trigger states    | open `select-primary` + chevron `rotate-180 transition-transform duration-200`; `select-disabled cursor-not-allowed`; placeholder `text-base-content/50`; helpers `label text-xs` + `text-error`/`text-success`                                           |
+| options           | highlighted `bg-base-200` on `px-3 py-2 text-sm transition-colors`; selected `text-primary font-medium` + `Icons.check text-primary`; disabled `text-base-content/30 cursor-not-allowed`                                                                  |
+| searchable extras | search header `border-base-300 border-b p-2` + input `bg-base-200 placeholder:text-base-content/40 rounded-field py-1.5 pr-3 pl-8 text-sm outline-none` + `Icons.search text-base-content/40`; empty `text-base-content/50 px-3 py-4 text-center text-sm` |
+
+> Off-system: search input is a bespoke `bg-base-200 rounded-field` field, not daisyUI `input input-sm` — the only non-daisyUI text control in the menu family.
+
+### Toolbar selects (ToolbarSelect + StyleSelect) — desktop
+
+control — `components/TipTap/toolbar/ToolbarSelect.tsx`, `components/TipTap/toolbar/desktop/StyleSelect.tsx`
+
+| State                  | Recipe                                                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame                  | ToolbarSelect panel `bg-base-100 border-base-300 rounded-box border py-1 shadow-xl` role=menu inside `ui/Popover`, trigger = ToolbarButton `gap-0.5 px-1.5` + chevron `opacity-40`; StyleSelect trigger `select select-ghost select-sm bg-none pr-3 pl-3 text-left` in fixed `w-40 max-w-40` slot                              |
+| items                  | `hover:bg-base-200` on `px-3 py-1.5 text-sm transition-colors`; active `text-primary` + aria-checked (no check-mark affordance)                                                                                                                                                                                                |
+| is-active / title lock | non-Normal style & active trigger → `is-active`: `background: color-mix(primary 10%); color: var(--color-primary)` (\_toolbar.scss:27); first-block lock: non-interactive div `is-active pointer-events-none select-none` + chevron `text-base-content/50 opacity-50` (`div.select.select-ghost.is-active`, \_toolbar.scss:50) |
+
+> Off-system: ToolbarSelect panel duplicates the floating recipe inline (not `popoverPanelClassName`); `SELECT_TRIGGER_CLASS` is a hand-copied duplicate of the `Select` trigger ("keep in sync" comment) — drift risk.
+
+`TocContextMenu` is cataloged under Table of contents; the chat hover rail consumer (`MessageHoverMenu`) is referenced under Chatroom.
+
+## Floating overlays
+
+### popoverPanelClassName (shared anchored popover shell) + consumers — desktop
+
+anchored (L1) — `components/ui/Popover.tsx` (consumers `components/TipTap/toolbar/desktop/EditorToolbar.tsx`, `components/TipTap/pad-title-section/PadTitle.tsx`)
+
+| State        | Recipe                                                                                                                                                                                                                                                           |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame        | `rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl`; useFloating `transform:false`, offset 5, flip+shift                                                                                                               |
+| enter / exit | `useOverlayTransition`: scale 0.96 from anchored side, 120ms ease-out in / 80ms ease-in opacity-only out; reduced-motion → 0ms; trigger stamps `data-state='open'/'closed'`                                                                                      |
+| consumers    | MediaInsert (bottom-start), Bookmarks/Filter/Settings (bottom-end), Notification bell (PadTitle) — all bare `popoverPanelClassName`; header `PanelPopoverHeader` h2 `text-base-content text-lg font-semibold`; loading renders `*Skeleton` inside the same shell |
+
+### Modal / ModalContent / GlobalDialog + ComposerLinkModalShell — both
+
+modal (L2) — `components/ui/Dialog.tsx` (+ `components/ui/GlobalDialog.tsx`, `…/MessageComposer/components/ComposerLinkDialog/ComposerLinkModalShell.tsx`)
+
+| State               | Recipe                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | backdrop `modalBackdropClassName` = `bg-[var(--modal-scrim)] motion-safe:backdrop-blur-sm` (heavy variant `--modal-scrim-heavy`); panel `modalPanelFrameClassName` = `rounded-box border border-base-300 bg-base-100 shadow-xl outline-none`; `modalPanelClassName` adds `max-h-[90vh]`; overlay `fixed inset-0 z-50`; scrims: light black 45%/72%, dark 55%/80% (globals.scss:222–230) |
+| sizes / align       | `max-w-{sm..5xl}`; full `max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)]`; align top `items-start pt-[max(env(safe-area-inset-top,1rem),1rem)]`                                                                                                                                                                                                                                       |
+| enter / exit        | backdrop fade 150ms; card opacity+scale(0.96) 180ms in / 150ms out; reduced-motion → 0                                                                                                                                                                                                                                                                                                  |
+| composer link shell | host `fixed z-[60] overflow-y-auto`; scrim `modalBackdropClassName`; panel `modalPanelFrameClassName + max-w-sm p-4`                                                                                                                                                                                                                                                                    |
+
+> Off-system: ComposerLinkModalShell `z-[60]` one-off tier above the standard z-50 overlay.
+
+### Tooltip (React) + .Tooltip / .Popover SCSS — desktop
+
+tooltip — `components/ui/Tooltip.tsx` (SCSS twins `styles/components/_tooltip.scss`, `_popover.scss`)
+
+| State       | Recipe                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame       | `bg-neutral text-neutral-content z-50 rounded px-2 py-1 font-mono text-xs` + arrow `bg-neutral h-2 w-2` rotated; hover-only (`matchMedia '(hover: hover)'`); SCSS twins: `.Tooltip` neutral, 0.375rem radius; `.Popover` base-100, 1px base-300 border, radius `var(--radius-field)`, shadow `0 2px 4px color-mix(base-content 10%)` |
+| show / hide | `useOverlayTransition scale:false openMs:100 closeMs:0` — opacity-only, never scale; hover delay open 200ms                                                                                                                                                                                                                          |
+
+> Off-system: `rounded` + `font-mono` React skin vs 0.375rem non-mono `.Tooltip` SCSS — two tooltip skins; `.Popover` one-off `0 2px 4px` shadow instead of `--shadow-overlay`.
+
+### ToastNotification (react-hot-toast custom) — both
+
+card — `components/toast/ToastNotification.tsx`
+
+| State                   | Recipe                                                                                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                   | `max-w-md gap-3 rounded-box px-4 py-3 bg-neutral text-neutral-content dark:border-base-300 dark:bg-base-200 dark:text-base-content dark:border shadow-xl`; bottom-center, 4s (errors 5s)                                                                 |
+| enter / exit / variants | `transition-[opacity,transform] duration-200 ease-out` + `translate-y-0 opacity-100`/`translate-y-2 opacity-0`; left bar `h-6 w-1 rounded-full bg-success/error/info/warning` (neutral: none); action `text-info text-sm font-semibold hover:opacity-80` |
+
+> Off-system: `dark:` variant fork instead of pure theme tokens (deliberate inverted-surface design).
+
+### em-emoji-picker (emoji-mart) + EmojiPanel variants — both
+
+anchored (L1) — `styles/globals.scss` (variants `components/chatroom/components/EmojiPanel/`)
+
+| State               | Recipe                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | `em-emoji-picker { border:1px solid var(--color-base-300); border-radius: var(--radius-box); box-shadow: var(--shadow-overlay) }`; dark themes force token vars (`--background/--hover-background` → base-100/base-200); mobile sheet variant full-width, `--border-radius 0`, `--shadow none`, nav hidden (\_mobile.scss:68) |
+| desktop show / hide | visible `visible opacity-100 motion-safe:[transition:opacity_120ms_ease-out]` / hidden `invisible opacity-0 motion-safe:[transition:opacity_80ms_ease-in,visibility_0s_80ms]`; fixed, `zIndex: 60` (above-floating tier)                                                                                                      |
+
+### Editor SCSS menus (.media-toolbar + .dropdown-menu) — both
+
+anchored (L1) — `styles/document-styles.scss`
+
+| State           | Recipe                                                                                                                                                                                        |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame           | media-toolbar + dropdown-menu: bg base-100, 1px base-300 border, radius var(--radius-box), `box-shadow: var(--shadow-overlay)` (toolbar 0.25rem row / dropdown 0.5rem column min-width 180px) |
+| toolbar buttons | hover bg base-200 + border base-300; `--active` `bg color-mix(primary 15%), border primary, text primary` (hover 20%); `__select` 1px base-300, hover base-200; divider 1px base-300          |
+| dropdown items  | hover bg base-200 (wins over selected); `.is-selected` `bg color-mix(primary 10%), text primary`                                                                                              |
+
+The dead `.bubble-menu` / `.mobile-bubble-menu` SCSS (zero consumers) was deleted 2026-07-07.
+
+### Hyperlink popovers (.hyperlink-preview-popover / .hyperlink-link-popover-shell / .floating-popover) — both
+
+anchored (L1) — `styles/document-styles.scss` (shell TSX `components/TipTap/hyperlinkPopovers/components/HyperlinkEditorDesktopPopover.tsx`)
+
+| State               | Recipe                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | preview + shell: bg base-100, 1px base-300 border, radius var(--radius-box), `box-shadow: var(--shadow-overlay)` (token-for-token parity mandated); shell TSX adds `max-w-[min(34rem,calc(100vw-2rem))] min-w-[26rem] p-2`; `.floating-popover` engine: hidden `opacity 0 scale(.96)` → `.visible` scale(1), enter `var(--motion-overlay-in)` / exit `var(--motion-overlay-out)`, arrow 10px base-100 rotated square |
+| input focus / error | focus-within border primary + `box-shadow: 0 0 0 1px var(--color-primary)` (shell sets `--input-color primary` on daisyUI `.input`); error swaps both to `var(--color-error)`                                                                                                                                                                                                                                        |
+| buttons / loading   | icon buttons 2rem square, radius `var(--radius-selector)`, `color: color-mix(base-content 70%)`, hover bg base-200 + full base-content; remove hover/focus-visible `color: var(--color-error)`; loading `hyperlink-preview-shimmer` skeleton bars (off under reduced motion)                                                                                                                                         |
+
+### Media insert panel internals (upload dropzone + URL field + preview + skeleton) — both
+
+control — `components/TipTap/mediaPopovers/MediaUploadDropzone.tsx`, `MediaUrlField.tsx`, `MediaUrlPreview.tsx`, `MediaInsertPanelSkeleton.tsx`
+
+| State              | Recipe                                                                                                                                                                                                                                                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame              | dropzone `rounded-box h-36 cursor-pointer border-2 border-dashed transition-colors`; URL tab daisyUI `join w-full`: TextInput `join-item rounded-r-none` + `Button variant=primary join-item`                                                                                                                                                 |
+| dropzone states    | idle `border-base-300 bg-base-200 hover:bg-base-300`; drag-over `border-primary bg-primary/5` + icon `text-primary`; invalid `border-error bg-error/5` + hint `text-error`                                                                                                                                                                    |
+| URL field states   | empty: Insert disabled; type-detected: registry startIcon + caption `text-base-content/50 text-xs` with `text-base-content/70 font-medium` label; in-flight: Button `loading` spinner                                                                                                                                                         |
+| preview / skeleton | static + unfurl card `rounded-box border-base-300 bg-base-200 border` (unfurl `p-2`) wrapping `CommentPreviewVisual`; unfurl failure returns null — no error card exists in code; skeleton: tab bones `bg-base-300 rounded-box p-1` + `skeleton h-9 rounded-field`, field `skeleton rounded-field h-10`, dropzone `skeleton rounded-box h-36` |
+
+### Mention picker popup (composer @ suggestions) — both
+
+anchored (L1) — `components/chatroom/components/MessageComposer/helpers/suggestion.ts` (+ `MentionSuggestions.tsx`, `MentionSuggestionRow.tsx`)
+
+| State                   | Recipe                                                                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                   | `mention-suggestion-popup bg-base-100 border-base-300 z-[9999] overflow-hidden rounded-field border shadow-md`; width 99% of composer surface; list `max-h-[300px] p-1` |
+| rows                    | idle/hover `hover:bg-base-200 min-h-11 cursor-pointer rounded px-2 py-1.5 text-sm`; keyboard-selected adds `bg-base-200`                                                |
+| loading / error / empty | `skeleton size-8 rounded-full` + `skeleton h-4 rounded` rows; `text-error px-2 py-3 text-sm`; `text-base-content/60 px-2 py-3 text-sm`                                  |
+
+> Off-system: `rounded-field` + `shadow-md` off the rounded-box/shadow-xl recipe; `z-[9999]` one-off tier.
+
+`ComposerInsertMenu` is cataloged under Chatroom; `ContextMenu` primitives under Menus & selects; `QuickReactionMenu` under Mobile layer.
+
+## Chatroom
+
+### ChatroomPanelLayout (docked panel shell) + MessageFeed — desktop
+
+docked — `components/chatroom/components/Chatroom/layouts/ChatroomPanelLayout.tsx`, `…/MessageFeed/MessageFeed.tsx`
+
+| State                    | Recipe                                                                                                                                                                                                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                    | `group/chat bg-base-100 border-base-300 z-40 border-t motion-safe:animate-[doc-content-in_200ms_ease-out_both]` — border-top only, NO shadow, NO radius (§Pad Workspace Surfaces); feed `message-feed scrollbar-custom scrollbar-thin` |
+| entry / resize / loading | opacity-only `doc-content-in` 200ms (transforms forbidden over ProseMirror); `ResizeHandle orientation=horizontal z-50`; feed loading overlay `bg-base-100 absolute inset-0 z-10` wrapping `ChatroomFeedSkeleton`                      |
+
+### ChatroomToolbar (desktop header) + ChatroomSheetLayout header — both
+
+docked — `components/chatroom/components/ChatroomToolbar/ChatroomToolbar.tsx`, `…/Chatroom/layouts/ChatroomSheetLayout.tsx`
+
+| State           | Recipe                                                                                                                                                                                                                                                                                  |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame           | desktop `bg-base-100 border-base-300 z-50 gap-2 border-b px-3 py-1.5` (mobile sheet header same, `px-3 py-2`); trailing cluster `bg-base-200 rounded-field` around Share/Notification/Close                                                                                             |
+| breadcrumb      | leaf `text-base-content text-sm font-medium`, ancestor `text-base-content/60`, chevron `text-base-content/40`; links `hover:text-primary transition-colors`                                                                                                                             |
+| cluster buttons | `Button ghost sm square` + `text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none`; media-filter pressed `text-primary bg-primary/10`; participants loading `AvatarStackLoader size=xs repeat=2` |
+
+### MessageCard row (shell) + desktop leading rail — both
+
+card — `components/chatroom/components/MessageCard/MessageCardContext.tsx` (rail `…/ChatList/DesktopMessageBody.tsx`; flash SCSS `styles/globals.scss`)
+
+| State                       | Recipe                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                       | `message-card group/msgcard chat msg_card rounded-field transition-colors duration-150` + accent `before:inset-y-0 before:left-0 before:w-[3px] before:rounded-l-field before:bg-transparent before:transition-colors`; desktop `w-full px-3`; rail `w-10 shrink-0` (avatar on group-start, hover timestamp compact); body `text-[15px] antialiased` |
+| hover / bookmarked          | `hover:bg-base-content/[0.04] hover:before:bg-base-content/25`; bookmarked `bg-primary/5 hover:bg-primary/10` + indicator `text-primary text-xs font-medium` "Saved for later"                                                                                                                                                                       |
+| flash / menu-open           | `.msg_card--flash`: `msg-card-flash var(--motion-flash-hold) var(--motion-ease-enter)`, `::before` `var(--color-primary)`, peaks `color-mix(primary 24%/20%)`, reduced-motion static primary 16%; context-menu-active `color-mix(primary 8%) !important`                                                                                             |
+| pending / failed (own send) | body `opacity-70 motion-safe:animate-[msg-send-in_200ms_ease-out_both]` (translateY 8px rise) + 120ms opacity crossfade; status `absolute right-2 bottom-1 text-xs opacity-60` "sending…"; failed inline `text-error` "failed — tap to retry"                                                                                                        |
+| timestamp / username        | STATUS_SLOT `min-w-9 text-xs invisible opacity-50` → `visible` on group-start / `group-hover/msgcard:visible` compact (mobile always); pending clock `text-base-content/40`, failed alert `text-error`; username `text-xs font-bold`                                                                                                                 |
+| mobile alignment            | owner `chat-end owner ml-auto` vs `chat-start mr-auto`; `max-w-[90%] min-w-[80%]` or media-only `w-fit max-w-[min(400px,90%)]`; long-press host `-webkit-touch-callout:none; touch-action:manipulation`                                                                                                                                              |
+
+### MessageFooter (reactions + indicators + failed row) — both
+
+chip/badge — `components/chatroom/components/MessageCard/components/MessageFooter/` (+ `components/chatroom/components/MessageCard/components/MessageFailedRow.tsx`)
+
+| State          | Recipe                                                                                                                                                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame          | footer `chat-footer text-base-content mt-1 gap-2 px-2`; reactions row `scroll-pl-6 gap-0.5 overflow-x-auto`                                                                                                                                    |
+| reaction pills | idle `badge bg-base-300 !p-0 border-base-300 cursor-default`; reacted-by-me `border-primary cursor-pointer border-1`; count `badge badge-xs border-none !bg-transparent !font-mono`; add `Button ghost xs badge bg-base-300 border-none !px-2` |
+| indicators     | seen `Icons.checkDouble text-primary size-4` / delivered `Icons.check text-base-content/40`; edited `text-base-content text-opacity-50 text-xs`; reply count `Icons.reply text-base-content/50` + `text-xs`                                    |
+| failed row     | `text-error mt-1 gap-1.5 text-xs`; retry `hover:underline focus-visible:underline focus-visible:outline-none`; delete `text-base-content/60 hover:text-error hover:underline`; separators `text-base-content/30` middots                       |
+
+> Off-system: reaction pills have no hover state (cursor only); `EditedBadge` uses deprecated `text-opacity-50`.
+
+### ReplyReference / ReferenceJumpButton (+ comment themes) — both
+
+card — `components/chatroom/components/MessageCard/components/MessageContent/components/ReferenceJumpButton.tsx` (themes `utils/commentReferenceTheme.ts`)
+
+| State                  | Recipe                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                  | `text-base-content focus-visible:ring-primary rounded border-l-4 p-2 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none`; header `text-xs font-semibold` + kind icon                                                                                                                                                       |
+| reply / text comment   | `border-l-info bg-base-200/80 hover:bg-base-300/55` icon `text-info`; text comment `border-l-primary bg-primary/10 hover:bg-primary/15 text-primary`                                                                                                                                                                                                |
+| media / embed comments | media `border-l-media-{image\|video\|audio} bg-media-*/10 hover:bg-media-*/15 text-media-*` (theme-tracked tokens); embeds raw brand hex e.g. `border-l-[#FF0000] bg-[#FF0000]/10 text-[#FF0000]` (YouTube; Vimeo #1AB7EA, SoundCloud #FF5500, Loom #625DF5, Spotify #1DB954); X `border-l-base-content bg-base-content/5 hover:bg-base-content/10` |
+
+> Off-system: deliberate brand-hex escape hatch for third-party embeds — the only raw palette colors in chatroom.
+
+### Media tiles (image grid / video / audio / file) + MediaUnavailable + gallery lightbox — both
+
+card — `components/chatroom/components/MessageCard/components/MessageContent/components/` (+ `components/chatroom/components/ChatMediaGallery.tsx`; theme `components/chatroom/utils/messageMediaTheme.ts`)
+
+| State                | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                | NEUTRAL_CARD doctrine: `border-base-300` + `bg-base-200/60`; category color only in icon accents `text-media-{image\|video\|audio}` / `bg-media-*/15`; width cap `max-w-[min(400px,100%)]`                                                                                                                                                                                                                                                                                                                                                            |
+| image collage / tile | grid `bg-base-300/40 gap-px rounded-lg`; overflow chip `bg-base-content/60 text-base-100 rounded px-1.5 py-0.5 text-xs font-semibold`; tile `bg-base-200 rounded-lg cursor-zoom-in`; spoiler `scale-110 blur-xl` + overlay `bg-base-content/35 text-base-100 text-xs font-medium` "Tap to reveal"; loading `skeleton min-h-[80px] rounded-lg` _(in-flight gallery workstream — literal classes until it lands)_                                                                                                                                       |
+| video / audio / file | video `rounded-lg border bg-black max-h-[350px]` _(in-flight gallery workstream)_; expand `btn btn-circle btn-xs bg-base-content/60 text-base-100 border-0 sm:opacity-0 sm:group-hover/video:opacity-100 sm:focus-visible:opacity-100` (audio mirrors the same expand button + gallery `openAt` wiring, `group-hover/audio`); audio `rounded-field border px-3 py-2.5` + disc `size-10 rounded-full` iconBg; file `hover:bg-base-200/50 rounded-field border px-3 py-2.5`, ext badge `text-[9px] font-bold uppercase`, actions `btn btn-ghost btn-xs` |
+| unavailable          | `bg-base-200 text-base-content/70 p-3 text-xs` + retry `text-primary hover:underline focus-visible:underline`                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| lightbox (modal L2)  | backdrop `fixed inset-0 z-[100]` + `modalBackdropHeavyClassName`; stage `rounded-lg` _(in-flight gallery workstream)_ caps `max-h-[min(85dvh,900px)] max-w-[min(100vw-2rem,960px)]`, video `bg-black`; nav/close `btn btn-circle btn-ghost btn-sm text-base-100 disabled:opacity-30`; loading `skeleton min-h-[200px]`; counter `text-base-100/90 text-xs tabular-nums`, caption `text-base-100/70 truncate text-xs`                                                                                                                                  |
+
+> Off-system: lightbox is a bespoke fixed `z-[100]` overlay (deliberate media-viewer idiom) — heavy scrim without `modalPanelFrameClassName`; on-image controls `text-base-100` on scrim, not base-content.
+
+### Feed furniture (SystemNotifyChip + DateChip/FeedSeparator + StickyDayHeader + JumpToPresentButton + NewMessagesBanner) — both
+
+chip/badge — `components/chatroom/components/ChatList/SystemNotifyChip.tsx`, `FeedSeparator.tsx`, `StickyDayHeader.tsx`, `components/chatroom/components/JumpToPresentButton.tsx`, `…/MessageFeed/NewMessagesBanner.tsx`
+
+| State               | Recipe                                                                                                                                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame               | notify pill `bg-info/10 rounded-full px-3 py-1.5 text-xs leading-relaxed` (mobile card `border-info/15 bg-info/10 text-base-content rounded-field border px-3 py-2.5`); day separator rules `bg-base-300/80 h-px` + label `text-base-content/50 text-xs font-semibold`                                                   |
+| notify content      | actor `font-semibold` or mention `mention text-primary cursor-pointer !p-0`; doc link `DocsPlusIcon text-primary` + `font-medium underline`                                                                                                                                                                              |
+| unread sentinel     | rules `bg-error/40 h-px`, label `text-error/90 text-xs font-semibold`, chip `badge badge-error badge-xs font-bold uppercase`                                                                                                                                                                                             |
+| sticky day chip     | wrapper `transition-opacity duration-200 ease-out` + `bg-base-100/90 pt-2 pointer-events-none`, 1500ms idle fade                                                                                                                                                                                                         |
+| jump-to-present     | `Button shape=circle absolute right-2 bottom-3 z-40 motion-safe:animate-[doc-region-in_200ms_ease-out_both]`; primary variant + chevron `text-primary-content` + `UnreadBadge sm error absolute -top-1 -right-1`; subdued `variant=neutral bg-base-300 border-base-300 border` + `text-base-content`; at-bottom unmounts |
+| new-messages banner | `border-base-300 bg-primary text-primary-content z-30 border-b px-3 py-2 text-sm` + doc-region-in; dismiss `text-primary-content hover:bg-primary-content/15`                                                                                                                                                            |
+
+### ComposerBar + Input + context bars + SignInToJoinChannel — both
+
+docked — `components/chatroom/components/MessageComposer/components/layouts/ComposerBar.tsx` (+ `…/Input/Input.tsx`, `…/Context/MessageContextBar.tsx`, `…/ChannelComposer/components/`; metrics `styles/_chat-editor.scss`)
+
+| State                       | Recipe                                                                                                                                                                                                                                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                       | desktop `composer-bar border-base-300 bg-base-200 mb-2 rounded-field border`; mobile `composer-bar--mobile bg-base-100` (no border/radius); input row `gap-1.5 px-3 py-2` (mobile `min-h-11`); ProseMirror line 2rem desktop / 2.75rem mobile; action targets 44px mobile / 32px desktop |
+| input                       | borderless `text-base-content max-h-52 break-words` (`text-base leading-8`, emoji-boost `text-xl sm:text-2xl`); placeholder `color-mix(base-content 40%)` via `p.is-empty::before`                                                                                                       |
+| drag / voice-hold           | file-over `ring-primary ring-2 ring-inset`; row `pointer-events-none opacity-55` while recording unlocked                                                                                                                                                                                |
+| reply / edit / comment bars | `border-base-300 border-b py-2 pr-3 pl-2` + `border-l-[3px]`: reply `border-l-info bg-base-200/40` icon `text-info`; edit `border-l-warning` icon `text-warning`; comment shell from `commentReferenceTheme` (non-interactive)                                                           |
+| anon sign-in surface        | `channel-composer-surface border-base-300 bg-base-200 border px-3 py-3` + desktop `mb-2 rounded-field` / mobile `rounded-t-box border-b-0`; CTA `Button variant=primary shape=wide size=sm` + logIn "Sign in to join"                                                                    |
+
+### FormattingToolbar (composer) — both
+
+docked — `components/chatroom/components/MessageComposer/components/layouts/FormattingToolbar.tsx`
+
+| State   | Recipe                                                                                                                                                                                       |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame   | `composer-bar__format-toolbar border-base-300 bg-base-200 min-h-9 gap-0.5 border-b px-2 py-1 sm:min-h-10`; divider `mx-1 h-5 w-px`; groups B I S `</>` \| Link @ \| lists \| Quote CodeBlock |
+| buttons | idle `btn-ghost size-8 min-h-8 rounded-field border-0 p-0`; `is-active btn-active` → primary-10% mix + `text-primary` (\_toolbar.scss:27); disabled `color-mix(base-content 40%)`            |
+
+### Composer actions (ComposerInsertMenu + ComposerPrimaryAction + VoiceRecordingBar) — both
+
+control — `components/chatroom/components/MessageComposer/components/Actions/ActionButtons/` (+ `…/components/VoiceRecordingBar.tsx`)
+
+| State                     | Recipe                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                     | insert-menu panel = `popoverPanelClassName` + desktop `w-48 p-1` / mobile `w-52 p-1.5`, role=menu (desktop opens on hover, 100ms close timer); triggers `size-8`/`size-11 rounded-field border-0 p-0` + plus `stroke-[1.75]`; menu rows `hover:bg-base-200 gap-2.5 rounded-field px-2.5 py-2 text-sm disabled:opacity-40`, format row active `text-primary` |
+| send / mic                | send (canSend) `variant=primary text-primary-content motion-safe:transition-[filter,transform] motion-safe:duration-100 motion-safe:hover:brightness-105 motion-safe:active:scale-95`; mic ghost + tooltip; recording adds `text-error` aria-pressed; preview renders null (bar owns UI)                                                                    |
+| voice bar                 | `border-base-300/60 bg-base-200 gap-2 border-b px-3 py-2`; recording: pulse dot `bg-error size-2 animate-pulse rounded-full motion-reduce:animate-none`, elapsed `text-xs font-semibold tabular-nums`, waveform `bg-primary w-0.5 rounded-full motion-safe:transition-[height]`, hints `text-base-content/50 text-[10px]`                                   |
+| cancel / locked / preview | cancel-armed bar + `bg-error/10`; locked bar + `bg-primary/5` + lock `text-primary` + stop `btn btn-error btn-xs`; preview: elapsed `text-base-content/60 text-xs tabular-nums`, discard `btn btn-ghost btn-xs`, attach `btn btn-primary btn-xs`                                                                                                            |
+
+### AttachmentStrip tiles — both
+
+card — `components/chatroom/components/MessageComposer/components/Attachments/AttachmentStrip.tsx`
+
+| State             | Recipe                                                                                                                                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame             | full tile `bg-base-100 border-base-300 max-w-[14rem] min-w-[10rem] rounded-field border px-2 py-1.5`; compact tile `size-10`                                                                                                                                                               |
+| uploading / ready | img `opacity-45` + `radial-progress text-primary bg-base-100/85 text-[8px] font-semibold tabular-nums` (--size 2rem, --thickness 3px) + bar `bg-base-300 h-1 rounded-full` > `bg-primary motion-safe:transition-[width]` + `text-base-content/60 text-[10px]` "Uploading…"/"Ready to send" |
+| failed            | full `border-error/50 bg-error/5` + `text-error` alert + `text-error line-clamp-2 text-[10px]`; compact `ring-error/50 rounded-field ring-1` + `bg-error/10` + retry overlay `focus-visible:ring-primary/40 rounded-field focus-visible:ring-2`                                            |
+| remove / spoiler  | remove compact `btn btn-circle btn-xs bg-base-100 -top-1 -right-1 h-5 w-5 shadow-sm` / full `btn btn-ghost btn-xs btn-square h-6 w-6`; spoiler-on `text-primary bg-primary/10` + img `blur-sm`                                                                                             |
+
+> Off-system: compact remove chip `shadow-sm` — only non-token shadow in chatroom Tailwind.
+
+### ComposerEmojiPanel — mobile
+
+sheet (mobile) — `components/chatroom/components/MessageComposer/components/ComposerEmojiPanel/ComposerEmojiPanel.tsx`
+
+| State           | Recipe                                                                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame           | motion.div `bg-base-100 border-base-300 border-t`, height-animated peek↔expanded (`PANEL_TWEEN` 200ms); drag pill `bg-base-300 h-1 w-[30px] rounded-full` |
+| peek / expanded | pan thresholds 30px snap / 80px close; expanded `min(70vh, 480px)`                                                                                        |
+
+### Chat prose + chatroom skeletons — both
+
+content — `styles/_chat-editor.scss`, `components/chatroom/components/skeleton/`
+
+| State                    | Recipe                                                                                                                                                                                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame                    | `.chat_msg_container/.chat_editor_container`: pre `bg base-200, 1px base-300 border, radius 6px, mono 13px`; inline code `bg base-200, base-300 border, radius 3px, color var(--color-error)`; blockquote `border-left 3px base-300`; `.msg_card` shares `editor-prose-shared` mixin |
+| feed / composer skeleton | daisyUI `skeleton` bones (`skeleton size-8 rounded-full`, `skeleton h-2.5 w-16 rounded-field`); composer skeleton mirrors the ComposerBar frame per variant; breadcrumb `skeleton h-3 w-10 rounded-field` + chevron `skeleton size-2.5`                                              |
+| media accent bones       | at most one info accent per feed: `bg-[color-mix(in_oklch,var(--color-info)_20%,var(--color-base-300))]` (panel 18%) — never media-tinted or brand bones                                                                                                                             |
+
+> Off-system: pre 6px / inline-code 3px radii off the `--radius-*` scale; hardcoded `Monaco/Menlo/Ubuntu Mono` stack.
+
+`MessageHoverMenu` uses `HoverMenu` (see Menus & selects) with `portalId 'chat-hover-portal'`, boundary `.message-feed`, `menuClassName z-30`; the emoji picker skin is under Floating overlays.
+
+## Panels, settings & modals
+
+### Panel stack (PanelSurfaceShell + PanelPopoverHeader + PanelTabBar + TabbedPanelBody) — both
+
+content — `components/PanelSurfaceShell.tsx`, `components/PanelPopoverHeader.tsx`, `components/ui/PanelTabBar.tsx`, `components/TabbedPanelBody.tsx`
+
+| State                      | Recipe                                                                                                                                                                                                                                                                                                            |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                      | popover variant `bg-base-100` column + header `border-base-300 border-b px-4 py-3` (h2 `text-base-content text-lg font-semibold` + `CloseButton size=sm`) + footer `border-base-300 border-t`; sheet variant delegates to `SheetLayout`; body ScrollArea `p-3` + popover `max-h-96 min-h-48` vs sheet `flex-1`    |
+| tab bar                    | track `bg-base-300 rounded-box p-1`; sliding pill `bg-base-100 absolute top-1 bottom-1 rounded-field shadow-sm transition-[left,width] duration-200 ease-out`; tab `min-h-9 rounded-field px-2 py-1.5 text-sm font-medium text-base-content/70 hover:text-base-content`, active `text-base-content font-semibold` |
+| tab count badge            | `badge badge-xs badge-error text-error-content animate-badge-entry -top-2.5 min-h-4 min-w-4 rounded-full border-0 px-1 text-[10px] font-semibold tabular-nums shadow-sm ring-2`; ring-base-100 on active tab / ring-base-300 on track                                                                             |
+| tab switch / loading / end | `motion-safe:animate-[doc-content-in_200ms_ease-out_both]`; `loading loading-spinner loading-sm text-primary` sentinel; end-of-feed `text-base-content/40 py-3 text-center text-xs`                                                                                                                               |
+
+> Off-system: pill + badge `shadow-sm` one-off shadows (inset UI, not `--shadow-overlay`).
+
+### Panel feed cards (PanelFeedItem + NotificationItem + BookmarkItem) — both
+
+card — `components/PanelFeedItem.tsx`, `components/notificationPanel/components/NotificationItem.tsx`, `components/bookmarkPanel/components/BookmarkItem.tsx`
+
+| State         | Recipe                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame         | `rounded-box border-base-300 bg-base-100 hover:bg-base-200 border p-3 transition-colors motion-safe:transition-[opacity,transform] motion-safe:ease-in` — bordered, shadowless; avatar `border-base-300 size-9 rounded-full border`; preview bubble `bg-base-200 text-base-content/70 line-clamp-2 rounded-field px-2 py-1 text-sm`; timestamp `text-base-content/50 text-xs` |
+| icons / hints | system icon `bg-warning/15 text-warning size-9 rounded-full`; type icons `text-base-content/60`; attachment hint `bg-base-300/40 size-10 rounded-field` + `text-base-content/70`; image thumb `border-base-300 size-10 rounded-field border object-cover`                                                                                                                     |
+| quiet actions | copy-link `btn btn-ghost btn-sm btn-square text-base-content/50 hover:text-base-content`; mark-as-read `btn btn-ghost btn-xs text-primary hover:bg-primary/10`; archive `text-base-content/60 hover:bg-base-200`; remove `text-base-content/60 hover:bg-error/10 hover:text-error`                                                                                            |
+| CTA / exiting | View/Review `btn btn-primary btn-soft btn-xs ml-auto` (system `btn-warning btn-soft`); exiting `pointer-events-none opacity-0 motion-safe:-translate-y-1 motion-safe:scale-[0.98]` at `MOTION_OVERLAY_OUT_MS`, actions disabled aria-busy                                                                                                                                     |
+
+### DocumentSettingsPanel — both
+
+anchored (L1) — `components/TipTap/toolbar/desktop/DocumentSettingsPanel.tsx`
+
+| State                    | Recipe                                                                                                                                                                                                                                                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                    | PanelSurfaceShell popover; owner header `bg-base-200 border-base-300 border-b px-4 py-3` + avatar `border-base-300 size-8 rounded-full border` + eyebrow `text-base-content/50 text-[10px] tracking-wide uppercase`                                                                                                  |
+| cards / badges / buttons | collapse cards `collapse-arrow rounded-box border-base-300 bg-base-100 collapse border` + content `border-base-300 border-t px-4 pt-4`; read-only `badge badge-sm badge-soft` + `badge-error`/`badge-success`; save `btn btn-primary` + loading spinner; import/export `btn btn-ghost btn-sm border-base-300 border` |
+| TagsInput theming        | `--rti-bg base-100, --rti-border base-300, --rti-main primary, --rti-radius var(--radius-field), --rti-tag base-200, --rti-tag-remove error` (globals.scss:389)                                                                                                                                                      |
+
+### SettingsPanel modal + sections (SettingsCard + Profile + Appearance) — both
+
+modal (L2) — `components/settings/SettingsPanel.tsx` (+ `components/settings/components/SettingsCard.tsx`, `ProfileSection.tsx`, `AppearanceSection.tsx`)
+
+| State              | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame              | `bg-base-100 md:h-[min(85vh,800px)] md:flex-row` in `ModalContent size=5xl p-0`; aside `border-base-300 bg-base-100 md:w-72 md:border-r` + doc-content-in 180ms; detail header `border-base-300 border-b px-4 py-3`, body ScrollArea `bg-base-200` + `max-w-2xl p-4 sm:p-6`; SettingsCard `bg-base-100 border-base-300 rounded-box border p-4 sm:p-6` (bordered shadowless)                                                                     |
+| nav                | user chip `bg-base-200 rounded-box p-2.5` + Avatar `ring-base-100 shadow-sm ring-2`; item idle `btn ghost text-base-content hover:bg-base-200 min-h-[44px] text-sm font-medium`, active `btn btn-primary` full-fill + chevron `text-primary-content/70`; GitHub card `border-base-300 hover:bg-base-200 rounded-field border`; sign-out ghost `border-base-300 text-base-content/70 border` + danger hover `hover:bg-error/10 hover:text-error` |
+| avatar upload      | `group border-base-300 hover:border-primary rounded-box size-24 border-2 transition-[border-color,box-shadow] hover:shadow-md`; overlay `bg-black/40` + `LuCamera text-white` `opacity-0 group-hover:opacity-100` (uploading forces on + `loading loading-spinner text-white`); remove `text-base-content/60 hover:text-error`                                                                                                                  |
+| theme radio cards  | `rounded-box cursor-pointer border transition-colors min-h-[44px]` role=radio; idle `border-base-300 bg-base-100 hover:bg-base-200` + icon `text-base-content/60`; selected `border-primary bg-primary/10 ring-primary/30 ring-2` + `text-primary`                                                                                                                                                                                              |
+| sticky save footer | `bg-base-200 border-base-300 sticky bottom-0 border-t px-4 py-4` + primary btn `font-semibold` (with `h-16` spacer)                                                                                                                                                                                                                                                                                                                             |
+
+> **Documents tab width (planned):** When `activeTab === 'documents'`, detail column uses `max-w-none w-full` instead of `max-w-2xl` so the My documents list can use modal width. Other tabs unchanged.
+
+> Off-system: user-chip Avatar `shadow-sm` + avatar-upload `hover:shadow-md` one-off shadows; overlay raw `bg-black/40` + `text-white` (media-anchored scrim, intentional per doctrine).
+
+### DocumentsSection — My documents list (Settings) — both
+
+card list + grid — `components/settings/components/DocumentsSection.tsx` (+ `DocumentListRow`, `DocumentGridTile`, `DocumentRowMenu`, `documentsListPrefs.ts`) — planned
+
+| State        | Recipe                                                                                                                                                                                                                                                                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame        | Single `SettingsCard`: search row 1 + **toolbar row 2** + body; Documents tab `max-w-none w-full`; modal `size=5xl`                                                                                                                                                                                                                           |
+| toolbar      | Row 2 under search: **sort** `Select size=sm w-40 shrink-0` (left); **view** `join` radiogroup `LuList` / `LuLayoutGrid` with active `btn-primary` (right); `aria-label` on both                                                                                                                                                              |
+| list row     | `divide-y divide-base-300`; `DocumentListRow`: icon + truncate title + lock/read-only hints + date (desktop) + ⋮                                                                                                                                                                                                                              |
+| grid tile    | `grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4`; `DocumentGridTile`: `rounded-box border-base-300 bg-base-100 hover:bg-base-200`; preview band `aspect-[4/3] rounded-t-box bg-base-200` + centered `LuFileText` 32px — **no thumbnail image**; title `line-clamp-2 text-sm font-medium`; date `text-xs text-base-content/50`; ⋮ bottom-right |
+| ⋮ menu       | Shared `DocumentRowMenu` — **Popover** + `contextMenuPanelClassName`; list + grid reuse same component                                                                                                                                                                                                                                        |
+| menu toggles | Private `Toggle variant=warning` + optional `menu.private_hint`; Read-only `Toggle variant=primary`; per-field pending                                                                                                                                                                                                                        |
+| Copy link    | Hidden when `isPrivate`; toast on success                                                                                                                                                                                                                                                                                                     |
+| load-more    | `btn btn-ghost btn-sm border border-base-300`; centered                                                                                                                                                                                                                                                                                       |
+| signed-out   | Copy + primary **Sign in**                                                                                                                                                                                                                                                                                                                    |
+| prefs        | `sessionStorage` `docsplus:my-docs-view` + optional `docsplus:my-docs-sort`                                                                                                                                                                                                                                                                   |
+| motion       | `doc-content-in 180ms`; refetch dim `opacity-60` when fetching                                                                                                                                                                                                                                                                                |
+
+> **Not v1:** Google time-bucket headers (Previous 7 days / 30 days); screenshot grid thumbnails; “Last opened by me” sort.
+
+### PrivateDocumentGate — slug access shell — both
+
+full-viewport shell — `components/pages/document/components/PrivateDocumentGate.tsx` (planned)
+
+| State            | Recipe                                                                                                                                                                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame            | `--pad-well` / `bg-base-200` floor; centered card `bg-base-100 border-base-300 rounded-box border p-6 sm:p-8 max-w-md`; lock icon `text-warning` or `text-base-content/60`; title `text-lg font-semibold`; body `text-base-content/70`; slug context `text-base-content/50 text-sm` |
+| sign-in-required | Primary **Sign in** `btn btn-primary min-h-12`; secondary **Create a document** `btn btn-ghost`; tertiary homepage `link link-hover`                                                                                                                                                |
+| access-denied    | Primary **Create a document** `btn btn-primary min-h-12`; secondary homepage `btn btn-ghost` — **no Sign in**                                                                                                                                                                       |
+| cohesion         | Same lock language as DocumentsSection Private toggle; same `gate.*` copy keys; no TOC/chat/provider/SlugPageLoader                                                                                                                                                                 |
+
+> **SSR:** When gate applies, generic `<Head>` (no private title/description in OG); `robots: noindex`.
+
+### ShareModal — both
+
+modal (L2) — `components/TipTap/pad-title-section/ShareModal.tsx`
+
+| State               | Recipe                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | `p-6` body in `ModalContent size=lg p-0`; URL row `border-base-300 bg-base-100 rounded-field border p-2` + input `text-base-content/70 bg-transparent text-sm focus:outline-none`; divider `bg-base-300 h-px` + `text-base-content/40 text-xs uppercase`; close `btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-base-content` |
+| copy idle / success | `btn btn-sm px-4 font-medium btn-primary` → success `btn-success` + keyed check `motion-safe:animate-[doc-region-in_120ms_ease-out_both]`                                                                                                                                                                                                      |
+| social buttons      | `flex-1 rounded-box p-3 transition-colors` + brand color class; hover brand bg + `hover:text-white`                                                                                                                                                                                                                                            |
+
+> Off-system: raw brand hexes `#1877f2` (Facebook), `#0a66c2` (LinkedIn), `#25d366` (WhatsApp), `#ff4500` (Reddit) + `hover:text-white` — deliberate brand colors.
+
+## Mobile layer
+
+### Mobile pad shell (MobileLayout + MobilePadTitle) — mobile
+
+docked — `components/pages/document/layouts/MobileLayout.tsx`, `components/TipTap/pad-title-section/MobilePadTitle.tsx` (pinning `styles/_mobile.scss`)
+
+| State             | Recipe                                                                                                                                                                                                                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame             | root `mobileLayoutRoot tiptap m_mobile`; SCSS pins `position:fixed; top/left/width/height: var(--visual-viewport-*)`; title shell `bg-base-100 sticky top-0 z-20 motion-safe:animate-[doc-content-in_220ms_ease-out_both]`; bottom bar `mobileToolbarBottom bg-base-100 z-20`; header inner `border-base-300 min-h-12 border-b px-2 py-2` (z-30) |
+| read / edit modes | read: menu `btn btn-ghost btn-square size-9`, title `truncate text-lg font-semibold`; edit: check `ToolbarButton text-primary size-8`, undo/redo `ToolbarButton size-9` + `divider divider-horizontal mx-2`; mode crossfade `motion-safe:animate-[doc-content-in_120ms_ease-out_both]`                                                           |
+| bell / avatar     | bell `text-primary` when unread else `text-base-content/70` + `UnreadBadge size=xs variant=error top-0.5 right-0.5`; avatar ghost circle wrapping `Avatar border-base-300 border`; signed-out `Button variant=neutral size=sm`                                                                                                                   |
+| title-edit dialog | `openDialog size=sm align=top mt-14`; input `input input-bordered w-full`; Cancel ghost sm / Save primary sm disabled-gated, pending "Saving…"                                                                                                                                                                                                   |
+| history view      | swaps tree for `MobileHistory`; history editor `padding: 12px 16px 28px`, heading `padding-right: 0 !important`                                                                                                                                                                                                                                  |
+
+### ToolbarMobile + FormatSelection drawer + HeadingSelection stepper — mobile
+
+docked — `components/TipTap/toolbar/mobile/ToolbarMobile.tsx`, `FormatSelection.tsx`, `HeadingSelection.tsx`
+
+| State           | Recipe                                                                                                                                                                                                                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame           | wrapper `tiptap-toolbar-mobile motion-safe:animate-[doc-content-in_180ms_ease-out_both]`; main row `bg-base-100 z-10 h-14` + top shadow `0 -4px 6px -1px color-mix(base-content 10%), 0 -2px 4px -1px color-mix(base-content 6%)` (\_toolbar.scss:8); hidden unless editor && keyboard open; buttons ToolbarButton ghost sm square with shared `.is-active` primary-10% recipe |
+| format drawer   | `bg-base-100 absolute z-0 rounded-t-box px-4 py-6 motion-safe:transition-[opacity,transform] motion-safe:duration-200`; visible `-translate-y-[134px] opacity-100 shadow-lg` / hidden `translate-y-0 opacity-0` (JS visibility after 300ms)                                                                                                                                    |
+| heading stepper | `headingSelection join rounded-field border-base-300 h-9 min-w-32 border px-1`; active `.is-active { background: color-mix(primary 10%); color: var(--color-primary); border:none; box-shadow: 0 0 0 1px color-mix(primary 44%) }` (\_mobile.scss:308); disabled stepper `color-mix(base-content 40%)` at level 1/6 or first block                                             |
+
+> Off-system: toolbar top shadows (deliberate bottom-anchored species) + Tailwind `shadow-lg` on the drawer; ring-as-shadow on the stepper.
+
+### BottomSheet system + SheetLayout family — mobile
+
+sheet (mobile) — `components/BottomSheet.tsx` (skin `styles/document-styles.scss`; shells `components/SheetLayout.tsx`, `SheetHeader.tsx`, `SheetFooter.tsx`, `SheetActionFooter.tsx`, `SheetPrimaryFooter.tsx`)
+
+| State                 | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                 | container `background: var(--color-base-100) !important; border-top radius var(--radius-box, 1rem)`; backdrop `background: var(--modal-scrim) !important` — flat black scrim, no blur; drag indicator `width:30px; background: var(--color-base-300) !important`; SheetLayout `bg-base-100` + `max-h-[min(85dvh,100%)]` (fillHeight `h-full`), header `border-base-300 border-b px-4 pt-1 pb-3` + title `text-lg font-semibold` + optional `CloseButton size=sm`, footer `border-base-300 bg-base-100 border-t px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]` |
+| footer actions        | Back `btn btn-ghost btn-square min-h-12 w-12`; Apply `btn btn-primary min-h-12 flex-1 text-base font-semibold` (single-action `w-full`)                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| per-sheet config      | chatroom snapPoints [0,.7,.8,.9,1] initial top, disableDismiss, keyboard/emoji forces detent `full`, composer focusin snaps top, Sheet.Content disableDrag; filters/link/mediaControls/mediaInsert `detent=content`; notifications/bookmarks/documentSettings default                                                                                                                                                                                                                                                                                                |
+| panel sheet consumers | filters/bookmarks/notifications/documentSettings are 1-line wrappers passing `variant='sheet'` to the desktop panel (PanelSurfaceShell forks to SheetLayout); filter apply `SheetPrimaryFooter` "Apply filter" disabled when !query; dismiss via `useDismissPanel`                                                                                                                                                                                                                                                                                                   |
+
+### TocModal drawer + ModalDrawer — mobile
+
+sheet (mobile) — `components/pages/document/components/TocModal.tsx`, `components/ui/ModalDrawer.tsx`
+
+| State                 | Recipe                                                                                                                                                                                                                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame                 | ModalDrawer = pure daisyUI `drawer z-30` + `drawer-toggle` checkbox + `drawer-side` + `drawer-overlay` scrim; TocModal panel `bg-base-100 z-30 h-dvh max-w-[80%] min-w-[80%]`; header `border-base-300 bg-base-100 border-b px-4 py-3`; TOC floor `bg-base-200`; footer `border-base-300 bg-base-100 border-t` + trays `bg-base-200 rounded-box` |
+| icon buttons          | `Button ghost md square text-base-content/60 rounded-field hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none`                                                                                                                                                              |
+| filters-active / home | dot `bg-error ring-base-200 absolute top-1 right-1 size-1.5 rounded-full ring-2`; home link `hover:text-primary transition-colors`; null while loading/syncing                                                                                                                                                                                   |
+
+### Mobile pad affordances (EditFAB + heading chat tab) — mobile
+
+control — `components/pages/document/components/EditFAB.tsx` (tab `styles/_mobile.scss`)
+
+| State       | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame       | FAB `Button variant=primary btnStyle=soft shape=circle edit-fab fixed right-6 bottom-8 z-20 size-16 motion-safe:animate-[doc-content-in_180ms_ease-out_both]` (hidden when keyboard open); tab `.ha-single.ha-chat-btn`: `background base-100 !important; color var(--color-primary) !important; border 1px base-300 !important; border-radius calc(2rem/4) 0 0 calc(2rem/4); box-shadow:none`, docked flush right, always visible |
+| FAB shadows | light 3-layer Material `0 3px 5px -1px color-mix(base-content 20%), 0 6px 10px 0 …14%, 0 1px 18px 0 …12%`; dark `0 4px 14px color-mix(black 42%)` (\_mobile.scss:295–306)                                                                                                                                                                                                                                                          |
+| tab unread  | `[data-unread-count]::before`: `background var(--color-error) !important; color var(--color-error-content) !important; border-radius 0.35rem; font-weight:600; animation badge-entry .3s`                                                                                                                                                                                                                                          |
+
+> Off-system: FAB 3-layer shadow not `--shadow-overlay` (deliberate elevation); tab/badge radii `calc(2rem/4)` / `0.35rem` literals.
+
+### MobileMessageBody (chat bubbles) — mobile
+
+content — `components/chatroom/components/ChatList/MobileMessageBody.tsx`
+
+| State                    | Recipe                                                                                                                                                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                    | daisyUI `chat-bubble`; text bubbles `px-2.5`; footer `chat-footer justify-end`                                                                                                                                               |
+| owner / other            | owner `bg-primary/20 before:hidden`; other default bubble + avatar column, continuation spacer `size-10`                                                                                                                     |
+| compact / media / failed | continuation `before:hidden` (tail removed); media-only `max-w-[min(400px,100%)] bg-transparent px-0 py-0 shadow-none before:!hidden`, media-with-caption `px-0 pt-0`; FailedRow `self-end pr-2` (owner) / `self-start pl-2` |
+
+### QuickReactionMenu + reaction overlay (ChatContainerMobile) — mobile
+
+anchored (L1) — `components/chatroom/components/MessageCard/components/MessageLongPressMenu/components/QuickReactionMenu.tsx` (+ `components/pages/document/components/chat/ChatContainerMobile.tsx`)
+
+| State                 | Recipe                                                                                                                                                                                                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                 | `bg-base-100 border-base-300 rounded-full border shadow-xl transition-[opacity,transform] duration-200 ease-out`; fixed, maxWidth 380px width 88%, `zIndex 70`; show/hide `translateX(-50%) translateY(0/8px) scale(1/0.96)` + opacity                                             |
+| tap / disabled / more | whileTap `scale 0.96` + bg `color-mix(base-content 15%)` (more 20%); non-interactive `pointer-events-none cursor-not-allowed opacity-60`; buttons `size-11 rounded-full`; more-emojis `bg-base-200 sticky right-0 size-11 rounded-full shadow-lg` + inline 3-stop left-fade shadow |
+| full picker overlay   | independent Sheet `id=emoji_picker_overlay !z-40 detent=content` + own Backdrop hosting `EmojiPanel variant=mobile`; backdrop tap closes                                                                                                                                           |
+
+> Off-system: `zIndex 70` one-off tier; `shadow-lg` + inline 3-stop shadow not `--shadow-overlay`; rounded-full pill outside the rounded-box floating language (intentional).
+
+### ComposerFormatPanel (5-col format grid) — mobile
+
+docked — `components/chatroom/components/MessageComposer/components/layouts/ComposerFormatPanel.tsx`
+
+| State   | Recipe                                                                                                                                                                                                                                                                                          |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame   | `composer-bar__format-panel bg-base-100 grid grid-cols-5 gap-1 px-2 py-2 motion-safe:animate-[doc-content-in_120ms_ease-out_both]`; null unless mobile + toolbar open                                                                                                                           |
+| buttons | `btn-ghost size-10 min-h-10 rounded-field border-0 p-0`; active gets the `.is-active` primary-10% + `text-primary` recipe — `.composer-bar__format-panel` is in the `_toolbar.scss` shared-selector list (added 2026-07-06; it was missing, leaving mobile active buttons on bare `btn-active`) |
+
+### Link sheets (LinkPreviewSheet + LinkEditorSheet + InternalLinkChip) — mobile
+
+sheet (mobile) — `components/TipTap/hyperlinkPopovers/LinkPreviewSheet.tsx`, `LinkEditorSheet.tsx`, `components/TipTap/hyperlinkPopovers/components/InternalLinkChip.tsx`
+
+| State              | Recipe                                                                                                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame              | SheetLayout "Link"; header block `border-base-300 border-b pb-3`; editor sheet = SheetLayout + SheetActionFooter (canonical Back + primary Apply)                                                      |
+| action rows        | `group hover:bg-base-200 active:bg-base-200 text-base-content min-h-12 rounded-field py-2.5 text-base transition-colors`; danger `hover:text-error active:text-error` (+ icon group variants)          |
+| internal-link chip | icon tile `bg-primary/10 text-primary size-10 rounded-field`; label `text-base-content truncate font-semibold`; sublabel `text-base-content/60 text-xs`; favicon fallback `bg-base-300 size-5 rounded` |
+
+> Off-system: `rounded-field` action rows / icon tile (raw Tailwind radius, not rounded-field/box).
+
+### PWAInstallPrompt + NotificationPromptCard — both
+
+card — `components/pwa/PWAInstallPrompt.tsx`, `components/NotificationPromptCard.tsx`
+
+| State               | Recipe                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | shared prompt card `rounded-box px-5 py-4 bg-neutral text-neutral-content dark:bg-base-100 dark:text-base-content shadow-xl border-base-300 border`; PWA `fixed right-4 bottom-6 left-4 z-50 max-w-md`, Notification `fixed top-6 left-6 z-50 w-96`                                                                                                                    |
+| enter / exit        | `transition-[opacity,transform] duration-200 ease-out` + `translate-y-0/translate-y-2` (PWA) or `translate-x-0/-translate-x-2` (Notification) with opacity                                                                                                                                                                                                             |
+| buttons / iOS steps | icon badge `bg-primary/10 rounded-field p-2`; dismiss/Later `hover:bg-base-content/10 rounded-field opacity-60/70 hover:opacity-100`; primary `bg-primary hover:bg-primary/90 text-primary-content rounded-field px-4 py-2 text-sm font-medium`; iOS steps `bg-base-content/10 h-6 w-6 rounded-full text-xs font-semibold` discs + back `text-primary hover:underline` |
+
+> Off-system: neutral-inverted card in light + `shadow-xl` + raw btn-less buttons — off both the bordered-shadowless card language and daisyUI btn system.
+
+## Landing & history
+
+### Landing shell + skip link + header/nav + footer (HomePage) — both
+
+docked — `components/pages/home/HomePage.tsx` (+ `components/pages/home/HomeFooter.tsx`)
+
+| State            | Recipe                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame            | page floor `bg-base-200` + mobile viewport pin `max-sm:fixed max-sm:top-[var(--visual-viewport-offset-top,0px)] max-sm:w-[var(--visual-viewport-width,100%)]`, height `var(--visual-viewport-height, 100dvh)`; header frameless on the floor, wordmark `text-base-content text-lg font-bold sm:text-2xl` + DocsPlusIcon                                                                             |
+| skip link        | `btn btn-primary btn-sm sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50`                                                                                                                                                                                                                                                                                               |
+| avatar / sign-in | ghost circle Button wrapping `Avatar border-base-300 border` + `transition-transform hover:scale-105`; signed-out `btn-soft btn-primary size-11 sm:size-12` circle; opens `ModalContent size=4xl/sm overflow-hidden p-0`                                                                                                                                                                            |
+| keyboard-compact | HomeFlexSpacer toggles `max-sm:flex-grow`/`flex-grow-0` with `motion-safe:transition-[flex-grow] motion-safe:duration-[var(--motion-region)]` + ease `--motion-ease-exit`/`--motion-ease-enter`                                                                                                                                                                                                     |
+| footer pills     | `text-base-content/60 text-sm motion-safe:animate-[doc-region-in_220ms_ease-out_160ms_both]`, rule `bg-base-300 h-6 w-px`; GitHub `bg-neutral text-neutral-content hover:bg-neutral/90 min-h-11 rounded-full px-4 py-2.5 text-xs font-medium`; Discuss `border-base-300 text-base-content hover:bg-base-200 rounded-full border`; Discord `bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-full` |
+
+> Off-system: Discord pill raw brand hex + `text-white`.
+
+### HomeHero + HomeCollapseRegion + credits — both
+
+content — `components/pages/home/HomeHero.tsx`, `HomeCollapseRegion.tsx`
+
+| State            | Recipe                                                                                                                                                                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame            | hero `text-center motion-safe:animate-[doc-region-in_220ms_ease-out_both] motion-safe:transition-[margin]`; h1 `text-base-content font-bold text-3xl sm:text-5xl md:text-6xl`; tagline `text-base-content/60 text-sm sm:text-lg` (uses `TypingText`, see Form & primitive foundations)                                             |
+| keyboard-compact | h1 → `mb-0 text-xl` via `motion-safe:transition-[font-size,margin]`; collapse region `grid min-h-0 motion-safe:transition-[grid-template-rows,opacity,margin]` duration `var(--motion-region)` direction-aware ease; collapsed `max-sm:grid-rows-[0fr] max-sm:opacity-0 max-sm:pointer-events-none` / expanded `[1fr] opacity-100` |
+| credits          | `text-base-content/50 text-xs sm:text-sm motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both]`; links `text-primary font-medium hover:underline`                                                                                                                                                                         |
+
+### HomeActionCard (create-doc CTA + open-existing form) — both
+
+card — `components/pages/home/HomeActionCard.tsx`
+
+| State               | Recipe                                                                                                                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame               | `rounded-box bg-base-100 p-5 shadow-xl sm:p-8 motion-safe:animate-[doc-region-in_220ms_ease-out_60ms_both] motion-safe:transition-[padding,box-shadow]`; keyboard-compact `max-sm:p-4 max-sm:shadow-lg`                 |
+| create CTA          | `Button variant=primary shape=block size=lg text-base font-bold`; pending `loading` spinner + aria-busy (daisyUI btn-disabled)                                                                                          |
+| divider / open form | `bg-base-300 h-px` rules around `text-base-content/50 text-xs` "or open existing"; TextInput `size=lg` with hostname prefix label; submit `Button variant=neutral size=lg` disabled when empty/loading, pending spinner |
+
+> Off-system: `shadow-xl` → `max-sm:shadow-lg` — the only shadowed card (not bordered-shadowless, not `--shadow-overlay`); reads as intentional hero elevation.
+
+### Desktop history (toolbars + workspace shell + read-only editor) — both
+
+docked — `components/pages/history/desktop/Toolbar.tsx`, `desktop/DesktopHistory.tsx`, `components/pages/history/HistoryEditorContent.tsx`
+
+| State                  | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                  | header `border-base-300 bg-base-100 min-h-12 border-b px-3 py-2`; secondary row `tiptap__toolbar border-base-300 bg-base-100 gap-0.5 border-b px-3 py-1.5`; shell `pad tiptap history_editor bg-base-200 motion-safe:animate-[doc-content-in_200ms_ease-out_both]`; scroll root `editorWrapper bg-base-200 border-t-0 px-3 py-4 sm:px-6 sm:py-6`; loaded editor `tiptap__editor docy_editor mb-12 border-t-0 px-6 pt-8 sm:p-8` (mobile `relative w-full`) |
+| controls               | back/print/copy-link = ToolbarButton (ghost sm square); restore `Button variant=primary size=sm font-normal` (only when !isLatestVersion); version text `text-base-content/60 text-sm` with `text-base-content font-medium` date; counter "Version N of M"                                                                                                                                                                                                |
+| loading / error states | `EditorContentSkeleton` per variant; `SyncErrorCard` (offline flag from providerStatus); `SessionExpiredBanner` above editor                                                                                                                                                                                                                                                                                                                              |
+
+### HistorySidebar (frame + rows) — desktop
+
+docked — `components/pages/history/HistorySidebar.tsx` (rows `components/pages/history/components/`)
+
+| State             | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame             | frame `sidebar bg-base-200 border-base-300 w-[25%] border-l`; sticky header `border-base-300 bg-base-200 sticky top-0 z-10 border-b px-3 py-3`                                                                                                                                                                                                                                                                                                                                           |
+| session card      | idle `rounded-box border transition-colors border-base-300 bg-base-100 hover:border-base-content/20`; active `border-primary/50` + count badge `badge-ghost border-base-300 border` → `badge-primary`, title → `text-primary`, meta `text-primary/70`; header btn `btn btn-ghost btn-block hover:bg-base-200/50 active:bg-base-200/50 min-h-11 rounded-none border-0 shadow-none`; day header `bg-base-200 hover:bg-base-300/80 active:bg-base-300/80 rounded-none border-0 shadow-none` |
+| version rows      | idle li `group rounded-field min-h-10 transition-colors hover:bg-base-200/70`, dot `bg-base-300`, time `text-base-content/85`; active `bg-primary/10`, dot `bg-primary`, time `text-primary`; latest `badge badge-primary badge-sm`                                                                                                                                                                                                                                                      |
+| copy-link / empty | ghost square `text-base-content/45 hover:text-primary opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100` (always visible <md), active-row `text-primary opacity-100`; empty state disc `bg-base-300/50 size-12 rounded-full` + `text-base-content/60 font-medium` / `text-base-content/40` copy                                                                                                                                                                          |
+
+> Off-system: day/session rows fight daisyUI btn with `rounded-none border-0 shadow-none` + custom hovers — flattened-btn pattern.
+
+### MobileHistory shell + header bar — mobile
+
+docked — `components/pages/history/mobile/MobileHistory.tsx`, `mobile/Toolbar.tsx`
+
+| State    | Recipe                                                                                                                                                                                                                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame    | shell `mobileLayoutRoot pad tiptap history_editor border-base-300 border-solid`; sidebar drawer `bg-base-100 z-30 h-dvh max-w-[85%] min-w-[85%]` in ModalDrawer position=right (HistorySidebar override `bg-base-200 max-w-none border-l-0`); sticky header `bg-base-100 sticky top-0 z-30` + inner `border-base-300 min-h-12 border-b px-2 py-2` |
+| controls | back ToolbarButton; restore `Button variant=primary` "Restore this version"; copy-link ghost square `min-h-11 min-w-11`; drawer trigger label `btn btn-ghost btn-square drawer-button min-h-11 min-w-11`; version text `text-center text-sm` + `font-medium` date over `text-base-content/60` time                                                |
+
+## Form & primitive foundations
+
+### ui/Button + ui/TextInput — both
+
+control — `components/ui/Button.tsx`, `components/ui/TextInput.tsx`
+
+| State              | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame              | Button: pure daisyUI `btn` + `btn-{xs..xl}` + `btn-{neutral\|primary\|secondary\|accent\|info\|success\|warning\|error\|ghost\|link}` + `btn-{outline\|dash\|soft}` (colored variants only) + `btn-{wide\|block\|square\|circle}` — no custom heights/shadows; TextInput: `input w-full` + `input-{size}/{color}/ghost/disabled`, icon variant wraps in `label.input` with inner `grow bg-transparent focus:outline-none`, labels floating/above/inside |
+| loading / disabled | Button loading: disabled + `loading loading-spinner` entering `motion-safe:animate-[doc-content-in_120ms_ease-out_both]`; global `button:disabled { cursor: not-allowed }`                                                                                                                                                                                                                                                                              |
+| error / success    | `input-error` + helper `label text-xs text-error`; `input-success` + `text-success`                                                                                                                                                                                                                                                                                                                                                                     |
+
+### Form controls (ui/Toggle + ToggleRow + ui/Checkbox + ui/Textarea) — both
+
+control — `components/ui/Toggle.tsx`, `Checkbox.tsx`, `Textarea.tsx` (row pattern `components/settings/components/NotificationsSection.tsx`)
+
+| State                      | Recipe                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame                      | Toggle: daisyUI `toggle` + forced track `bg-base-300 border-base-content/20` + `toggle-{size}/{variant}`; Checkbox: pure daisyUI `checkbox` + `checkbox-{size}/{color}`; Textarea: `textarea w-full` + `textarea-{size}/{color}/ghost` (floating-label span-first); ToggleRow: label `text-base-content text-sm font-medium` + description `text-base-content/60 text-xs` + `Toggle variant=primary size=sm` |
+| checked                    | Toggle `checked:bg-primary checked:border-primary checked:text-primary-content` (overrides daisyUI knob-only tint)                                                                                                                                                                                                                                                                                           |
+| error / success / disabled | `textarea-error` (wins) + `text-error` helper / `textarea-success` + `text-success`; all: label `cursor-not-allowed opacity-50` + native disabled; helpers `label text-base-content/70 text-xs`                                                                                                                                                                                                              |
+
+### Avatar (ui/Avatar.tsx) — both
+
+control — `components/ui/Avatar.tsx`
+
+| State             | Recipe                                                                                                                                                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame             | container `avatar size-6…size-16 rounded-full bg-base-200 !ring-1 ring-base-300 !overflow-visible`; img `rounded-full object-cover bg-base-200 shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]` (token inset keyline) |
+| presence / typing | daisyUI `avatar-online`/`avatar-offline` dot; `avatar-typing` translateY bounce 0.8s infinite, disabled under reduced motion                                                                                                                                |
+| clickable         | `cursor-pointer` (opens UserProfileDialog) vs `cursor-default`                                                                                                                                                                                              |
+
+### UnreadBadge (ui/UnreadBadge.tsx) — both
+
+chip/badge — `components/ui/UnreadBadge.tsx`
+
+| State        | Recipe                                                                                                                                                                                                                                 |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame        | `badge animate-badge-entry rounded-full leading-none font-semibold` + size (xs `text-[10px] min-w-4 h-4 px-1` … lg `text-sm min-w-7 h-7 px-2`) + variant `bg-{token} text-{token}-content` (all 8 daisyUI pairs); RollingNumber digits |
+| entry / zero | `badge-entry` scale .5→1 + fade, 200ms ease-out backwards, motion-safe gated; count ≤ 0 unmounts (entry replays on 0→N)                                                                                                                |
+
+### ScrollArea + scrollbar tokens — both
+
+control — `components/ui/ScrollArea.tsx` (tokens `styles/components/_scrollArea.scss`)
+
+| State                         | Recipe                                                                                                                                                                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                         | root `scroll-smooth scrollbar-custom` + `scrollbar-thin\|scrollbar-default\|scrollbar-hide`; tokens `--scrollbar-size 8px / -thin 6px / --scrollbar-radius 8px`; thumb `color-mix(base-content 42%)`, reveal 320ms cubic-bezier(0.33,1,0.68,1); `scrollbarGutter: stable` |
+| thumb hover / active / hidden | `color-mix(base-content 62%)` / `82%`; `.scrollbar-hide` thumb 0% mix → 100% on container hover                                                                                                                                                                           |
+
+### TypingText (ui) — both
+
+content — `components/ui/TypingText.tsx`
+
+| State               | Recipe                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| frame               | width reserved by `invisible whitespace-pre` longest-text ghost + absolute overlay                                                                                       |
+| cursor / icon / PRM | cursor `w-[2px] bg-current motion-safe:animate-pulse` height 1.1em; icon `transition-opacity duration-150` swap; reduced-motion renders first text statically, no cursor |
+
+### Prose/editor shared styling (ProseMirror + msg_card) — both
+
+content — `styles/_prose-mirror-body.scss`
+
+| State                     | Recipe                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                     | `editor-prose-shared` mixin: placeholder `color-mix(base-content var(--prose-placeholder-mix))` (40% chat / 50% pad); pre `bg base-200 + 1px base-300 + radius 0.5rem`; blockquote 4px base-300 left border; table cells 2px base-300; hljs colors mapped to status tokens; mark `color-mix(accent 40%) !important`; mention `color-mix(primary 10%)` bg + primary text, radius 0.4rem |
+| table select / col resize | `.selectedCell:after` bg `color-mix(primary 20%)`; `.column-resize-handle` bg `var(--color-info)` 4px                                                                                                                                                                                                                                                                                  |
+
+### Focus-visible ring standard — both
+
+control — `components/ui/ResizeHandle.tsx` (+ `styles/components/_heading-actions.scss`, `_tableOfContents.scss`)
+
+| State | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame | two conventions (converged 2026-07-07): (1) Tailwind `focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none` (ResizeHandle; chat cluster buttons use `ring-primary/30`); (2) SCSS `outline: var(--focus-ring-soft); outline-offset: 1px` — the one soft-ring formula token (`globals.scss` `:root`), used by heading actions + TOC fold/drag — panels are `outline-none` with FloatingFocusManager traps |
+
+> Off-system: three focus formulas, same hue, no shared token — flagged for unification.
+
+### Off-system debt register + third-party theming shims — both
+
+content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_daisyui.scss`)
+
+| State             | Recipe                                                                                                                                                                                                                                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame             | SCSS is hex-free outside globals.scss theme blocks and intentional cases (\_print.scss `#fff`, \_blocks.scss white-bg attribute matchers); all floating SCSS shadows on `var(--shadow-overlay)`                                                                                                                                                       |
+| third-party shims | react-tag-input `--rti-*` → base/primary/error/radius-field (see DocumentSettingsPanel); em-emoji-picker + react-modal-sheet skins (see Floating overlays / Mobile layer); daisyUI vendor patches: `.skeleton` radius 0.25rem unless `rounded-*` present, `.countdown` digit roll 300ms ease-out, reduced-motion kills countdown + drawer transitions |
+
+> Off-system: one-off token-tinted shadows — edit-fab 3-layer, `.toc-drag-card` `0 8px 24px`, `.Popover` `0 2px 4px`, mobile toolbar upward shadows, crinkle-fold paper shadows (\_heading-fold.scss), `.error-message` micro shadow; ring-as-shadow idioms `0 0 0 1px color-mix(primary 44%/22%)`; sub-token px radii (2–6px) scattered in SCSS (chat pre/inline-code 6px/3px, TOC 4–6px, cursor label 3px, heading-filter 2px) — no micro-radius token exists; the type stack is tokenized as `--font-sans` (`globals.scss` `:root`; consumed by the universal reset and the hyperlink back-button — fixed 2026-07-06); intentional brand escapes (ShareModal/HomeFooter/EditorToolbar Discord, socialIcons palette, DocsPlusIcon fills, commentReferenceTheme platform hexes) are cataloged on their components.
+
+## Do / Never
+
+**Do**
+
+- Reuse the canonical exports (`popoverPanelClassName`, `contextMenuPanelClassName`,
+  `modalPanelClassName`, `modalBackdropClassName`, `PanelFeedItem`, `PanelTabBar`, `SheetLayout`
+  family, `ui/Button`, `ui/TextInput`, `Toggle`, `Checkbox`, `Textarea`) before writing bespoke frame styles.
+- Theme third-party widgets through their CSS-var APIs at the token layer (`em-emoji-picker`,
+  `.documentKeywordInput` `--rti-*`, `react-modal-sheet` backdrop).
+- Verify every visual change in the browser, light + dark (+ HC for pad/TOC work), desktop ≥1280px
+  and mobile, before calling it done (`AGENTS.md` §Testing And Verification).
+
+**Never**
+
+- Raw Tailwind palette classes or hex outside the token layer and brand allowlist.
+- New shadow or radius values; shadows on docked surfaces in light theme "for depth".
+- `base-content` scrims (white fog on dark), scrim colors other than the black tokens.
+- `*Classes.ts` / `*Styles.ts` string-constant modules (`AGENTS.md` §Code Quality).
+- A second floating-surface language (the chat hover menu was the last fork; it converged).
+- Live regions / `role="status"` inside `.ProseMirror` (`AGENTS.md` §Editor Performance).
+
+## Change protocol
+
+1. New color/effect → token in `globals.scss` (`:root` + both dark overrides) + `@theme` alias if
+   Tailwind utilities need it → consume via token classes.
+2. New surface → pick a species; if a genuinely new species is required, add it to the elevation
+   table here first, then implement.
+3. Update this doc's affected rows + `AGENTS.md` §UI And Theme / §Pad Workspace Surfaces when the
+   change touches doctrine; keep `_document.tsx` theme-color + skeleton mirrors in lockstep.
+4. Browser-verify light/dark/mobile; then run the memory updater so agent memory stays in sync.

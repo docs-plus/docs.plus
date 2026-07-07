@@ -25,7 +25,7 @@ These are the rules that bite hardest if missed. Full context in [AGENTS.md](AGE
 
 Reference material that auto-attaches in Cursor. In Claude Code, open the relevant file when the matching surface is touched.
 
-- [daisyui.mdc](.cursor/rules/daisyui.mdc) — daisyUI 5 + Tailwind reference for UI work.
+- [design-system.mdc](.cursor/rules/design-system.mdc) — design-system pointer + cardinal rules for all webapp UI work; source of truth is [.cursor/docs/design-system.md](.cursor/docs/design-system.md).
 - [react-floating-ui.mdc](.cursor/rules/react-floating-ui.mdc) — React 19.2 + `@floating-ui/react` 0.27 conventions and pitfalls.
 - [supabase.mdc](.cursor/rules/supabase.mdc) — SQL authoring, Supabase migrations, generated files, RLS. Triggers on `**/*.sql`, `packages/supabase/**`, `apps/webapp/src/types/supabase.ts`.
 - [tiptap.mdc](.cursor/rules/tiptap.mdc) — Tiptap/ProseMirror reference workflow for editor code under `apps/webapp/src/components/TipTap/**`, `chatroom/**`, `extension-*/**`, `hocuspocus.server/src/**`.
@@ -33,6 +33,7 @@ Reference material that auto-attaches in Cursor. In Claude Code, open the releva
 
 ## Long-form policy — `.cursor/docs/`
 
+- [design-system.md](.cursor/docs/design-system.md) — source of truth for the webapp visual language (daisyUI/Tailwind tokens, themes, elevation species, state recipes, component catalog) that `design-system.mdc` and the `design-system` skill point at.
 - [scripts-naming-convention.md](.cursor/docs/scripts-naming-convention.md) — timeless source of truth that `scripts-naming.mdc` points at.
 
 ## Skills — project-local
@@ -42,6 +43,7 @@ Reference material that auto-attaches in Cursor. In Claude Code, open the releva
 Open the `SKILL.md` when its trigger matches.
 
 - [code-janitor](.cursor/skills/code-janitor/SKILL.md) — autonomous cleanup pipeline (Simplification → Abstraction → Readability → Documentation → Production-Readiness). Use for "clean up", "polish", "tidy", "production ready".
+- [design-system](.cursor/skills/design-system/SKILL.md) — working protocol for any UI/theme/styling change (tokens, species, state recipes, lockstep surfaces, browser verification). Use for "theme", "colors", "dark mode", "styling", new surfaces.
 - [commit-review](.cursor/skills/commit-review/SKILL.md) — group changes and draft Conventional Commit messages. Use for "review changes", "write commits".
 - [tech-writer](.cursor/skills/tech-writer/SKILL.md) — senior-tech-writer voice for **all** prose: README, CHANGELOG, reports, post-mortems, PR descriptions, JSDoc prose. Other skills delegate prose work here.
 - [tiptap](.cursor/skills/tiptap/SKILL.md) — Tiptap integration helper (extensions, collaboration, comments, AI, document conversion).

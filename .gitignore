@@ -186,6 +186,7 @@ docs/skills-output/
 /.cursor/skills/*
 !/.cursor/skills/code-janitor/
 !/.cursor/skills/commit-review/
+!/.cursor/skills/design-system/
 !/.cursor/skills/tech-writer/
 !/.cursor/skills/tiptap/
 
