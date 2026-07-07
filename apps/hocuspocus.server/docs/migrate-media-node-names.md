@@ -15,7 +15,7 @@ Once, after deploying the 2.0 camelCase extension. Yjs documents written by 1.x 
 
 Run from `apps/hocuspocus.server`:
 
-1. Audit (no writes) — review counts and the failure JSON, which should be empty:
+1. Audit (no writes) — review counts and the failure JSON (see below if it is not empty):
    ```bash
    bun run src/scripts/migrate-media-node-names.ts --dry-run
    ```
@@ -28,6 +28,10 @@ Run from `apps/hocuspocus.server`:
    bun run src/scripts/migrate-media-node-names.ts
    ```
 
+## If the audit reports failures
+
+`encode_yjs: Unknown node type: undefined` marks a document whose stored fragment holds schema-invalid content (Yjs merge artifacts: typeless text runs directly under `doc`). The batch skips the whole document, and the on-load shim fails the same encode and serves the original bytes — neither path migrates it. Repair these documents individually: a 2.0 client cannot instantiate their legacy nodes and will render (and, on edit, persist) the document without them. Re-run the audit after.
+
 ## Verification
 
 Re-run `--dry-run`: it reports zero rows to migrate. Spot-check documents that contained media.
@@ -39,6 +43,8 @@ Keep `ENABLE_SCHEMA_MIGRATION` on through the migration window plus a short grac
 ## Data-loss posture
 
 Per document, every history row is planned: decode → rename → encode → round-trip → assert no legacy media types remain. If any row fails, the whole document is skipped — never partial history. One interactive transaction per document; `UPDATE` by `id`+`version` (optimistic lock); no `DELETE`/`INSERT`; only `data` bytes change.
+
+Webapp-only stored attrs (`paragraphStyle`, `toc-id` on tables and hyperlink marks, hyperlink `rel`/`class`/`title`) are registered in `migration-extensions.ts`, so re-encode preserves their stored values — ProseMirror silently drops attrs its schema does not know.
 
 ## Memory ceiling
 

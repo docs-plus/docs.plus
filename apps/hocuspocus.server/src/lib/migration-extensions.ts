@@ -7,7 +7,7 @@
 
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 import { InlineCode } from '@docs.plus/extension-inline-code'
-import { Mark, Node } from '@tiptap/core'
+import { Extension, Mark, Node } from '@tiptap/core'
 import Heading from '@tiptap/extension-heading'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import Subscript from '@tiptap/extension-subscript'
@@ -42,10 +42,31 @@ const MediaUploadPlaceholderNode = Node.create({
   }
 })
 
+// rel/class/title mirror the webapp Hyperlink mark: ProseMirror drops unknown
+// attrs on re-encode, so absent stubs would silently strip stored values.
 const Hyperlink = Mark.create({
   name: 'hyperlink',
   addAttributes() {
-    return { href: { default: null }, target: { default: null } }
+    return {
+      href: { default: null },
+      target: { default: null },
+      rel: { default: null },
+      class: { default: null },
+      title: { default: null }
+    }
+  }
+})
+
+/** Webapp-only stored attrs (ParagraphStyle's `paragraphStyle`, UniqueID's
+ * `toc-id` on tables/hyperlink marks; heading's lives on MigrationHeading).
+ * Registered so re-encode preserves stored values instead of restamping. */
+const StoredWebappAttrs = Extension.create({
+  name: 'migrationStoredWebappAttrs',
+  addGlobalAttributes() {
+    return [
+      { types: ['paragraph'], attributes: { paragraphStyle: { default: null } } },
+      { types: ['table', 'hyperlink'], attributes: { 'toc-id': { default: null } } }
+    ]
   }
 })
 
@@ -81,5 +102,6 @@ export const migrationExtensions = [
   }),
   MediaUploadPlaceholderNode,
   Hyperlink,
-  Highlight
+  Highlight,
+  StoredWebappAttrs
 ]
