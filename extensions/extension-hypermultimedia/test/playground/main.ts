@@ -21,7 +21,8 @@ const element = setupPlayground({
 const params = new URLSearchParams(window.location.search)
 const loadingShell = params.get('loadingShell') !== 'false'
 const uploadedParam = params.get('uploaded') === 'true'
-// `?blockquote=off` lets X's `blockquote.twitter-tweet` parse rule win in specs.
+// `?blockquote=off` removes StarterKit's blockquote so specs can assert rejected
+// twitter-tweet markup falls through to nothing instead of a blockquote node.
 const blockquoteOff = params.get('blockquote') === 'off'
 
 const editor = new Editor({

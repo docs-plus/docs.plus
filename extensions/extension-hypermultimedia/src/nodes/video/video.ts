@@ -73,6 +73,11 @@ export const Video = Node.create<VideoOptions>({
       HTMLAttributes: {},
       inline: false,
       controls: true,
+      autoplay: false,
+      loop: false,
+      muted: false,
+      poster: null,
+      preload: 'metadata',
       height: 480,
       width: 640
     }
@@ -98,19 +103,19 @@ export const Video = Node.create<VideoOptions>({
         default: this.options.controls
       },
       autoplay: {
-        default: false
+        default: this.options.autoplay
       },
       loop: {
-        default: false
+        default: this.options.loop
       },
       muted: {
-        default: false
+        default: this.options.muted
       },
       poster: {
-        default: null
+        default: this.options.poster
       },
       preload: {
-        default: 'metadata'
+        default: this.options.preload
       },
       ...layoutAttrDefaults(this.options),
       caption: captionAttribute()

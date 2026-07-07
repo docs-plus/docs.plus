@@ -68,6 +68,11 @@ export const Audio = Node.create<AudioOptions>({
     return {
       src: null,
       controls: true,
+      autoplay: false,
+      loop: false,
+      muted: false,
+      preload: 'metadata',
+      volume: 1.0,
       margin: 'auto',
       clear: 'none',
       float: null,
@@ -98,19 +103,19 @@ export const Audio = Node.create<AudioOptions>({
         default: this.options.controls
       },
       autoplay: {
-        default: false
+        default: this.options.autoplay
       },
       loop: {
-        default: false
+        default: this.options.loop
       },
       muted: {
-        default: false
+        default: this.options.muted
       },
       preload: {
-        default: 'metadata'
+        default: this.options.preload
       },
       volume: {
-        default: 1.0
+        default: this.options.volume
       },
       ...layoutAttrDefaults(this.options),
       // Audio options omit dims; persist explicit nulls, not `undefined` defaults.

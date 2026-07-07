@@ -58,6 +58,46 @@ describe('paste-to-node matrix', () => {
     })
   })
 
+  it('pastes a Loom URL inside a sentence without storing the sentence as src', () => {
+    cy.pastePlainText('see https://www.loom.com/share/abcdef1234567890 now')
+    cy.nodeCount('loom').should('eq', 1)
+    cy.nodeAttr('loom', 'src').should('eq', 'https://www.loom.com/share/abcdef1234567890')
+  })
+
+  it('pastes a bare Vimeo URL inside a sentence without storing the sentence as src', () => {
+    cy.pastePlainText('see https://vimeo.com/76979871 now')
+    cy.nodeCount('vimeo').should('eq', 1)
+    cy.nodeAttr('vimeo', 'src').should('eq', 'https://vimeo.com/76979871')
+  })
+
+  it('keeps the unlisted-video ?h= param when a Vimeo URL is pasted mid-sentence', () => {
+    cy.pastePlainText('see https://vimeo.com/76979871?h=8272103f6e now')
+    cy.nodeCount('vimeo').should('eq', 1)
+    cy.nodeAttr('vimeo', 'src').should('eq', 'https://vimeo.com/76979871?h=8272103f6e')
+    cy.get('#editor').should('not.contain.text', 'h=8272103f6e')
+  })
+
+  it('pastes an X status URL inside a sentence without storing the sentence as src', () => {
+    cy.intercept('GET', 'https://publish.x.com/oembed*', {
+      statusCode: 200,
+      body: { html: '<blockquote class="twitter-tweet"><p>stub</p></blockquote>' }
+    })
+    cy.pastePlainText('see https://x.com/jack/status/20?s=20 now')
+    cy.nodeCount('x').should('eq', 1)
+    cy.nodeAttr('x', 'src').should('eq', 'https://x.com/jack/status/20')
+    cy.get('#editor').should('not.contain.text', 's=20')
+  })
+
+  it('pastes a bare X status URL inside a sentence into an x node', () => {
+    cy.intercept('GET', 'https://publish.x.com/oembed*', {
+      statusCode: 200,
+      body: { html: '<blockquote class="twitter-tweet"><p>stub</p></blockquote>' }
+    })
+    cy.pastePlainText('see https://x.com/jack/status/20 now')
+    cy.nodeCount('x').should('eq', 1)
+    cy.nodeAttr('x', 'src').should('eq', 'https://x.com/jack/status/20')
+  })
+
   it('coexistence: a pasted non-media URL still autolinks (hyperlink owns it)', () => {
     cy.pastePlainText('https://example.com')
     cy.get('#editor a[href*="example.com"]').should('exist')

@@ -10,7 +10,7 @@ import { layoutAttrsChanged, wrapMediaWithLoadingShell } from '../../loading'
 import { createTypedMediaMarkdownHooks } from '../../markdown/typedMediaMarkdown'
 import {
   defaultsFromOptions,
-  EMBED_CHROME_DEFAULTS,
+  EMBED_BASE_DEFAULTS,
   embedAttrsEqual,
   type EmbedNodeOptions
 } from '../../utils/embedKit'
@@ -30,7 +30,7 @@ const EMBED_ATTR_KEYS = ['src', 'maxwidth', 'theme', 'lang', 'hide_media', 'hide
 const X_OEMBED_ATTR_KEYS = ['theme', 'lang', 'hide_media', 'hide_thread', 'dnt'] as const
 
 /** Wrapper placement attrs; update() re-applies layout in place when they change. */
-const X_CHROME_ATTR_KEYS = ['display', 'float', 'clear', 'margin', 'justifyContent'] as const
+const X_LAYOUT_ATTR_KEYS = ['display', 'float', 'clear', 'margin', 'justifyContent'] as const
 
 export interface XOptions extends StyleLayoutOptions, EmbedNodeOptions, XOEmbedKitOptions {}
 
@@ -59,7 +59,7 @@ export const X = Node.create<XOptions>({
       dnt: true,
       hide_media: false,
       hide_thread: false,
-      ...EMBED_CHROME_DEFAULTS
+      ...EMBED_BASE_DEFAULTS
     }
   },
 
@@ -86,7 +86,7 @@ export const X = Node.create<XOptions>({
         default: null
       },
       ...defaultsFromOptions(this.options, X_OEMBED_ATTR_KEYS),
-      ...defaultsFromOptions(this.options, X_CHROME_ATTR_KEYS),
+      ...defaultsFromOptions(this.options, X_LAYOUT_ATTR_KEYS),
       caption: captionAttribute()
     }
   },
@@ -203,7 +203,7 @@ export const X = Node.create<XOptions>({
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
 
-          if (layoutAttrsChanged(updatedNode.attrs, attrsSnapshot, X_CHROME_ATTR_KEYS)) {
+          if (layoutAttrsChanged(updatedNode.attrs, attrsSnapshot, X_LAYOUT_ATTR_KEYS)) {
             applyLayout(updatedNode.attrs)
           }
 
@@ -244,7 +244,7 @@ export const X = Node.create<XOptions>({
         find: X_URL_REGEX_GLOBAL,
         type: this.type,
         getAttributes: (match) => {
-          const src = normalizeXUrl(match.input ?? match[0])
+          const src = normalizeXUrl(match[0])
           if (!src) return false
           // Schema defaults (maxwidth, theme, …) fill in via ProseMirror computeAttrs.
           return { src }

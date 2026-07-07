@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-describe('delete-key collision between text editing and hover chrome', () => {
+describe('delete-key collision between text editing and hover controls', () => {
   beforeEach(() => {
     cy.visitPlayground()
     cy.setEditorContent('<p>hello world</p><p>below</p>')
@@ -13,7 +13,7 @@ describe('delete-key collision between text editing and hover chrome', () => {
     cy.insertSizedImage(200, 150)
     cy.nodeCount('image').should('eq', 1)
 
-    // Arm the hover chrome on the image…
+    // Arm the hover controls on the image…
     cy.get('#editor img').trigger('mouseover', { force: true })
     cy.get('#editor .hypermultimedia__resize-gripper--active').should('exist')
 
@@ -50,7 +50,7 @@ describe('delete-key collision between text editing and hover chrome', () => {
     // Upstream joinBackward deletes a leaf atom before the cut, so one
     // Backspace removes the image through the standard edit pipeline; the
     // surrounding paragraphs stay untouched and the caret stays a text cursor
-    // (no NodeSelection, no hover-chrome involvement).
+    // (no NodeSelection, no hover-controls involvement).
     cy.nodeCount('image').should('eq', 0)
     cy.get('#editor .ProseMirror p').first().should('have.text', 'hello world')
     cy.get('#editor .ProseMirror p').last().should('have.text', 'below')

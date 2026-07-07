@@ -401,6 +401,21 @@ describe('@docs.plus/extension-indent', () => {
     expect(editor.getText()).toBe('A')
   })
 
+  it('enabled: false gates both commands and leaves Tab/Shift-Tab unclaimed', () => {
+    const doc: JSONContent = {
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '  Hi' }] }]
+    }
+    const editor = track(createEditor(doc, { enabled: false }))
+    editor.commands.setTextSelection(3) // after the leading indent — outdent would strip here
+    expect(editor.commands.indent()).toBe(false)
+    expect(editor.commands.outdent()).toBe(false)
+    // False (not a handled no-op) so a host's own Tab handling still runs.
+    expect(pressTab(editor)).toBe(false)
+    expect(pressTab(editor, true)).toBe(false)
+    expect(editor.getText()).toBe('  Hi')
+  })
+
   it('indent prefixes each line across paragraphs (multiline uses \\n block separator)', () => {
     const doc: JSONContent = {
       type: 'doc',

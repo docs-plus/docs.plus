@@ -62,7 +62,7 @@ export async function copyMediaNode(ctx: MediaActionContext): Promise<void> {
       await navigator.clipboard.writeText(src)
     }
   } catch {
-    if (src) await navigator.clipboard.writeText(src).catch(() => {})
+    if (src) await navigator.clipboard?.writeText(src).catch(() => {})
   }
   ctx.close()
 }
@@ -82,6 +82,7 @@ export async function downloadMedia(ctx: MediaActionContext): Promise<void> {
   if (!src) return
   try {
     const res = await fetch(src)
+    if (!res.ok) throw new Error(`download failed: ${res.status}`)
     const blob = await res.blob()
     const objectUrl = URL.createObjectURL(blob)
     const a = document.createElement('a')

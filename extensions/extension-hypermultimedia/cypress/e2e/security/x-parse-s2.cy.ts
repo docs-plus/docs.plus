@@ -1,7 +1,8 @@
 describe('X parseHTML href gate (S2)', () => {
   beforeEach(() => {
-    // StarterKit's blockquote is disabled via fixture param so X's
-    // `blockquote.twitter-tweet` parse rule is the one that runs.
+    // Blockquote off gives deterministic fallthrough: a rejected twitter-tweet
+    // parses to nothing, not a generic blockquote. X's rule outranks blockquote
+    // either way (html-round-trip pins that under the default schema).
     cy.visitPlayground('blockquote=off')
   })
 

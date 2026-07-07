@@ -27,7 +27,6 @@ export const MediaResizeGripper = Extension.create<MediaResizeGripperOptions>({
     const { acceptedNodes } = this.options
     const editor = this.editor
 
-    // Create optimized decoration builder function
     const buildDecorations: BuildDecorationsFunction = (doc: ProseMirrorNode) => {
       return buildOptimizedDecorations(acceptedNodes, doc, editor)
     }

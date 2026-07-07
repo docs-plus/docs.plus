@@ -1,7 +1,7 @@
 import { Extension } from '@tiptap/core'
 
 import { MediaResizeControls } from './extensions/mediaResizeControls'
-import { MediaResizeGripper } from './extensions/resizeGripper'
+import { MediaResizeGripper } from './extensions/mediaResizeGripper'
 import { HYPER_MULTIMEDIA_KIT_EXTENSION_NAME } from './kitStorage'
 import type { MediaLoadingShellOption } from './loading'
 import { Audio, AudioOptions } from './nodes/audio/audio'

@@ -79,7 +79,7 @@ function buildFromCursor(
 }
 
 /**
- * Drop-in replacement for the built-in Placeholder with O(1) cursor-based
+ * Drop-in replacement for the built-in Placeholder with O(depth) cursor-based
  * state init/apply instead of the built-in's O(N) doc.descendants scan.
  * Decorates the empty node at the cursor plus empty ancestor wrappers —
  * inherently showOnlyCurrent + includeChildren.

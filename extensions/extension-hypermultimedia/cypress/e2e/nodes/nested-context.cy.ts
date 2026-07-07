@@ -63,7 +63,7 @@ function insertImageWithSelectionInside(fixtureHtml: string): void {
   cy.insertSizedImage(IMAGE_WIDTH, IMAGE_HEIGHT)
 }
 
-describe('media chrome in nested blocks', () => {
+describe('media controls in nested blocks', () => {
   beforeEach(() => {
     cy.visitPlayground()
   })

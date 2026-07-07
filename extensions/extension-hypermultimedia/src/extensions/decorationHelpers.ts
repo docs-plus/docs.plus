@@ -93,12 +93,10 @@ export function createOptimizedDecorationApply(
 
 export function createDecorationPluginState(
   buildDecorationsFunc: BuildDecorationsFunction,
-  targetNodeTypes: string[],
-  initCallback?: () => void
+  targetNodeTypes: string[]
 ): DecorationPluginState {
   return {
     init(_, { doc }: { doc: ProseMirrorNode }): DecorationSet {
-      if (initCallback) initCallback()
       return buildDecorationsFunc(doc)
     },
     apply: createOptimizedDecorationApply(buildDecorationsFunc, targetNodeTypes)

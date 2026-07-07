@@ -75,7 +75,7 @@ function clearActiveState(state: MediaControlsState): void {
   state.mediaResizing = false
 }
 
-function canUseHoverChrome(state: MediaControlsState, finePointer: boolean): boolean {
+function canUseHoverControls(state: MediaControlsState, finePointer: boolean): boolean {
   return finePointer && !state.selectionLocked
 }
 
@@ -91,7 +91,7 @@ function isFormControlInMediaUI(element: Element | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
 }
 
-/** The caption is editable chrome in node content; its Backspace/Delete must edit text, not nuke the node. */
+/** The caption is an editable shell in node content; its Backspace/Delete must edit text, not nuke the node. */
 function isEditingMediaCaption(element: Element | null): boolean {
   return element instanceof HTMLElement && element.closest('.hm-caption') != null
 }
@@ -145,7 +145,7 @@ export function deactivateResizeGripper(gripper: HTMLElement): void {
 }
 
 /** Active grippers whose media sibling is gone (delete, cut, collab) must not linger in the DOM. */
-export function purgeOrphanedResizeChrome(root: ParentNode = document): void {
+export function purgeOrphanedResizeControls(root: ParentNode = document): void {
   root.querySelectorAll('.hypermultimedia__resize-gripper--active').forEach((node) => {
     if (!(node instanceof HTMLElement)) return
     const media = resolveMediaFromGripper(node, root)
@@ -162,7 +162,7 @@ function cancelHoverHide(state: MediaControlsState): void {
   }
 }
 
-function isPointerOverActiveChrome(editor: Editor): boolean {
+function isPointerOverActiveControls(editor: Editor): boolean {
   const state = getControlsState(editor)
   if (!state.activeTarget) return false
 
@@ -187,7 +187,7 @@ function scheduleHoverHide(editor: Editor, event?: MouseEvent): void {
   cancelHoverHide(state)
   state.hoverHideTimer = window.setTimeout(() => {
     state.hoverHideTimer = null
-    if (!isPointerOverActiveChrome(editor)) hideMediaResizeControls(editor)
+    if (!isPointerOverActiveControls(editor)) hideMediaResizeControls(editor)
   }, HOVER_HIDE_DELAY_MS)
 }
 
@@ -213,7 +213,7 @@ export function hideMediaResizeControls(editor: Editor): void {
   closeMediaToolbar(state.activeTarget)
   clearActiveState(state)
   setOutsideListeners(state, false)
-  purgeOrphanedResizeChrome(editor.view.dom)
+  purgeOrphanedResizeControls(editor.view.dom)
 }
 
 /** Keeps Delete-key and toolbar actions aimed at the node when edits above shift its position. */
@@ -250,14 +250,14 @@ function repositionActiveGripper(editor: Editor, state: MediaControlsState): voi
 export function syncControlsToDoc(editor: Editor): void {
   const state = getControlsState(editor)
   if (state.mediaResizing) return
-  // Idle chrome ⇒ nothing to tear down; skip the document-wide orphan scan on every transaction.
+  // Idle controls ⇒ nothing to tear down; skip the document-wide orphan scan on every transaction.
   if (!state.activeTarget && !state.listenersAttached) return
   if (state.activeTarget && !state.activeTarget.isConnected) {
     hideMediaResizeControls(editor)
     return
   }
   repositionActiveGripper(editor, state)
-  purgeOrphanedResizeChrome(editor.view.dom)
+  purgeOrphanedResizeControls(editor.view.dom)
 }
 
 // Scroll is not a teardown trigger: gripper rides content; toolbar tracks via autoUpdate.
@@ -368,7 +368,7 @@ export function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): bool
   if (!getControlsState(editor).activeTarget) return false
   if (isFormControlInMediaUI(document.activeElement)) return false
   if (isEditingMediaCaption(document.activeElement)) return false
-  // A focused caret in text must keep editing text — hover chrome only owns the
+  // A focused caret in text must keep editing text — hover controls only own the
   // key when the node is selected or focus is outside the editor.
   if (editor.view.hasFocus() && editor.state.selection instanceof TextSelection) return false
   if (!deleteActiveMediaNode(editor)) return false
@@ -392,7 +392,7 @@ function handleToolbarEscape(editor: Editor, event: KeyboardEvent): boolean {
 
 export function handleMediaHover(editor: Editor, event: MouseEvent, finePointer: boolean): boolean {
   const state = getControlsState(editor)
-  if (!canUseHoverChrome(state, finePointer)) return false
+  if (!canUseHoverControls(state, finePointer)) return false
 
   cancelHoverHide(state)
   state.pointerX = event.clientX
@@ -414,7 +414,7 @@ export function handleMediaUnhover(
   finePointer: boolean
 ): boolean {
   const state = getControlsState(editor)
-  if (!canUseHoverChrome(state, finePointer) || !state.activeTarget || state.mediaResizing) {
+  if (!canUseHoverControls(state, finePointer) || !state.activeTarget || state.mediaResizing) {
     return false
   }
 

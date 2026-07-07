@@ -13,9 +13,12 @@ export {
   type MediaLoadingShellWrapOptions,
   wrapMediaWithLoadingShell
 } from './loading'
+export type { SetAudioOptions } from './nodes/audio/audio'
 export { isImageUrl } from './nodes/image/helper'
 export { isValidLoomUrl } from './nodes/loom/helper'
+export type { SetLoomOptions } from './nodes/loom/loom'
 export { isValidSoundCloudUrl } from './nodes/soundcloud/helper'
+export type { SetSoundCloudOptions } from './nodes/soundcloud/soundcloud'
 export {
   isValidSpotifyUrl,
   parseSpotifyEntity,
@@ -23,7 +26,10 @@ export {
   type SpotifyEntityType,
   type SpotifyTheme
 } from './nodes/spotify/helper'
+export type { SetSpotifyOptions } from './nodes/spotify/spotify'
+export type { SetVideoOptions } from './nodes/video/video'
 export { isValidVimeoUrl } from './nodes/vimeo/helper'
+export type { SetVimeoOptions } from './nodes/vimeo/vimeo'
 export {
   buildXOEmbedParams,
   resolveXEmbedSizeId,
@@ -34,7 +40,9 @@ export {
   type XEmbedTheme
 } from './nodes/x/embedOptions'
 export { isValidXUrl } from './nodes/x/helper'
+export type { AddXOptions } from './nodes/x/x'
 export { isValidYoutubeUrl, parseYoutubeVideoId } from './nodes/youtube/helper'
+export type { SetYoutubeVideoOptions } from './nodes/youtube/youtube'
 export {
   attachTooltip,
   canViewOriginal,
@@ -58,7 +66,6 @@ export {
   type MediaToolbarFactory,
   type MediaToolbarIconContext,
   type MediaToolbarIconKey,
-  type MediaToolbarIconScope,
   type MediaToolbarIconsResolver,
   type MediaToolbarLayout,
   type MediaToolbarOptions,
@@ -71,6 +78,7 @@ export {
   resolveMediaActions,
   viewOriginalMedia
 } from './toolbar'
+export type { SetImageOptions, UpdateImageDimensionsParams } from './types'
 export { detectMediaType, type MediaNodeType } from './utils/detectMediaType'
 export {
   fitDimensionsToBounds,
@@ -88,9 +96,3 @@ export {
 } from './utils/media-placement'
 export { resolveMediaNodePos } from './utils/media-resize-controls'
 export { isAudioUrl, isVideoUrl } from './utils/mediaUrl'
-
-import { HyperMultimediaKit } from './hyperMultimediaKit'
-
-export default {
-  HyperMultimediaKit
-}

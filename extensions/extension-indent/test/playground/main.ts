@@ -1,4 +1,4 @@
-/** Cypress clean-room for @docs.plus/extension-indent (shipped dist). `?contexts=none` disables literal indent. */
+/** Cypress clean-room for @docs.plus/extension-indent (shipped dist). `?contexts=none` disables literal indent; `?enabled=off` disables the extension. */
 
 import { Indent } from '@docs.plus/extension-indent'
 import { setupPlayground } from '@docs.plus/playground/setup'
@@ -12,12 +12,16 @@ const element = setupPlayground({
 
 const params = new URLSearchParams(window.location.search)
 const disableLiteralIndent = params.get('contexts') === 'none'
+const disableExtension = params.get('enabled') === 'off'
 
 const editor = new Editor({
   element,
   extensions: [
     StarterKit,
-    Indent.configure(disableLiteralIndent ? { allowedIndentContexts: [] } : {})
+    Indent.configure({
+      ...(disableLiteralIndent ? { allowedIndentContexts: [] } : {}),
+      ...(disableExtension ? { enabled: false } : {})
+    })
   ],
   content: '<p>Press Tab to indent.</p>'
 })

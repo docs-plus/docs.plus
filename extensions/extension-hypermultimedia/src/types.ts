@@ -44,6 +44,8 @@ export type SetImageOptions = {
   alt?: string
   /** Image title attribute */
   title?: string
+  /** Caption rendered under the image (markdown export drops it — documented lossy contract) */
+  caption?: string
 } & ImageLayoutOptions
 
 /**

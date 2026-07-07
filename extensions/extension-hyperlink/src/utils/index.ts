@@ -7,7 +7,12 @@
 export { SAFE_WINDOW_FEATURES } from '../constants'
 export { copyToClipboard } from './copyToClipboard'
 export { createHTMLElement } from './createHTMLElement'
-export { Copy, LinkOff, Pencil } from './icons'
+export { Copy, type IconProps, LinkOff, Pencil } from './icons'
 export { type LinkifyMatchLike, normalizeHref } from './normalizeHref'
 export { getSpecialUrlInfo, type SpecialUrlInfo, type SpecialUrlType } from './specialUrls'
-export { DANGEROUS_SCHEME_RE, isSafeHref, validateURL } from './validateURL'
+export {
+  DANGEROUS_SCHEME_RE,
+  isSafeHref,
+  validateURL,
+  type ValidateURLOptions
+} from './validateURL'

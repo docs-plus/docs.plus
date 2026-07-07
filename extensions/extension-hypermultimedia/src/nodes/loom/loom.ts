@@ -117,7 +117,7 @@ export const Loom = Node.create<LoomOptions>({
         find: LOOM_REGEX_GLOBAL,
         type: this.type,
         getAttributes: (match) => {
-          const src = match.input?.trim()
+          const src = match[0]?.trim()
           if (!src || !isValidLoomUrl(src)) return false
           return { src }
         }

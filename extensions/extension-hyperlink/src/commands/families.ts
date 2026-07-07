@@ -1,13 +1,7 @@
-// Three command families wired over the shared engine + URL Decisions
-// pipeline:
-//   • Canonical — pure schema commands plus `@tiptap/extension-link`
-//     migration aliases (set/unset/toggle Link → Hyperlink, same
-//     references so any future policy change flows through both names).
-//   • Edit — `editHyperlink*` shorthands that share one deps bag so the
-//     markName / urls / validate wiring lives in exactly one place.
-//   • UI — side-effecting popover-mounting commands. Kept separate from
-//     the pure schema commands per Tiptap canon: a clean `setHyperlink`
-//     does not open dialogs.
+// UI commands stay separate from the pure schema commands per Tiptap
+// canon: `setHyperlink` never opens dialogs. The Link-named migration
+// aliases share the canonical references so policy changes flow through
+// both names.
 
 import { editHyperlinkCommand } from '../helpers/editHyperlink'
 import { openCreateHyperlink } from '../openers/openCreateHyperlink'

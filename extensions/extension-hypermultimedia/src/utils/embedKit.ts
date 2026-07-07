@@ -15,7 +15,7 @@ export interface FullscreenIframeKitOptions {
   allowfullscreen: boolean
 }
 
-export const EMBED_CHROME_DEFAULTS = {
+export const EMBED_BASE_DEFAULTS = {
   justifyContent: 'start',
   margin: 'auto',
   clear: 'none',
@@ -28,7 +28,7 @@ export const EMBED_CHROME_DEFAULTS = {
   Pick<EmbedNodeOptions, 'inline' | 'addPasteHandler' | 'HTMLAttributes'>
 
 export const EMBED_BLOCK_LAYOUT_DEFAULTS = {
-  ...EMBED_CHROME_DEFAULTS,
+  ...EMBED_BASE_DEFAULTS,
   height: 480,
   width: 640
 } as const satisfies StyleLayoutOptions &

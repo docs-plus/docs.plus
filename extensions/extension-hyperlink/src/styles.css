@@ -36,11 +36,13 @@
   --hl-accent: light-dark(#2563eb, #60a5fa);
   --hl-accent-fg: light-dark(#ffffff, #0b1220);
   --hl-danger: light-dark(#dc2626, #f87171);
+  /* Elevation matches the docs.plus floating-surface language: 10px shells with a
+     two-layer overlay shadow (anchored panels), 8px inner controls. */
   --hl-shadow:
-    0 1px 2px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.4)),
-    0 4px 12px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5));
-  --hl-radius: 6px;
-  --hl-radius-sm: 4px;
+    0 20px 25px -5px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5)),
+    0 8px 10px -6px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.4));
+  --hl-radius: 10px;
+  --hl-radius-sm: 8px;
   --hl-font:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --hl-font-size: 14px;
@@ -78,7 +80,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floating-popover {
+  .floating-popover,
+  .floating-popover.visible {
     transition: none;
   }
 }
@@ -104,12 +107,12 @@
 }
 
 .floating-popover-arrow-left {
+  border-top: 1px solid var(--hl-border);
   border-right: 1px solid var(--hl-border);
-  border-bottom: 1px solid var(--hl-border);
 }
 
 .floating-popover-arrow-right {
-  border-top: 1px solid var(--hl-border);
+  border-bottom: 1px solid var(--hl-border);
   border-left: 1px solid var(--hl-border);
 }
 

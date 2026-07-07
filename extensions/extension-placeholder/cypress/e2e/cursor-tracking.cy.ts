@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-// O(1) cursor tracking: the placeholder follows the cursor's empty parent, and
+// O(depth) cursor tracking: the placeholder follows the cursor's empty parent, and
 // is-editor-empty is withheld while the document is non-empty.
 
 describe('placeholder — cursor tracking', () => {

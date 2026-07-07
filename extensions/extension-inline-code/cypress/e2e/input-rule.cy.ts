@@ -36,6 +36,18 @@ describe('inline code — input rule', () => {
     cy.get('#editor code').should('have.text', 'co **x**de') // literal asterisks kept
   })
 
+  // Regression: the prefix guard must stay a lookbehind. With the old in-match
+  // capture, a prefix char equal to the content char made markInputRule find the
+  // wrong range — typing x`x` collapsed all four chars to one code-marked "x".
+  it('keeps a prefix char equal to the code content intact (x`x`)', () => {
+    cy.typeInEditor('x`x`')
+    cy.get('#editor code').should('have.text', 'x')
+    cy.getEditor().should((e) => {
+      expect(e.getText()).to.equal('xx')
+      expect(e.getHTML()).to.contain('x<code>x</code>')
+    })
+  })
+
   it('Backspace right after the rule restores the literal backticks', () => {
     cy.typeInEditor('`x`')
     cy.get('#editor code').should('have.text', 'x')

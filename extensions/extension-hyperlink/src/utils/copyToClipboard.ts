@@ -11,9 +11,18 @@ export const copyToClipboard = async (
       const textArea = document.createElement('textarea')
       textArea.value = text
       document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
+      let ok = false
+      try {
+        textArea.select()
+        ok = document.execCommand('copy')
+      } finally {
+        document.body.removeChild(textArea)
+      }
+      if (!ok) {
+        logger.warn('copyToClipboard failed', 'execCommand returned false')
+        callback?.(false)
+        return false
+      }
     }
 
     callback?.(true)

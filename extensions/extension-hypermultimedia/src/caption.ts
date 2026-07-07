@@ -37,7 +37,7 @@ interface CaptionParams {
   initial: string | null
 }
 
-/** Editable figcaption committed to the `caption` attr on blur/Enter. Chrome, not PM content. */
+/** Editable figcaption committed to the `caption` attr on blur/Enter. Shell, not PM content. */
 export function createCaptionElement({ editor, getPos, initial }: CaptionParams): CaptionHandle {
   const el = document.createElement('figcaption')
   el.className = 'hm-caption'

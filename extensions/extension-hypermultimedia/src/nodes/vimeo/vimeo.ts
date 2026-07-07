@@ -116,7 +116,7 @@ export const Vimeo = Node.create<VimeoOptions>({
         find: VIMEO_REGEX_GLOBAL,
         type: this.type,
         getAttributes: (match) => {
-          const src = match.input?.trim()
+          const src = match[0]?.trim()
           if (!src || !isValidVimeoUrl(src)) return false
           return { src }
         }

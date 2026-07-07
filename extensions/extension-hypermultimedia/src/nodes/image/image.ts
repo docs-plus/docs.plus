@@ -15,7 +15,10 @@ import {
   readCaption,
   wrapRenderWithCaption
 } from '../../caption'
-import { isTypedMediaMarkdownAlt } from '../../markdown/typedMediaMarkdown'
+import {
+  isTypedMediaMarkdownAlt,
+  TYPED_MEDIA_SRC_VALIDATORS
+} from '../../markdown/typedMediaMarkdown'
 import type { ImageOptions } from '../../types'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
 import { generateShortId } from '../../utils/utils'
@@ -34,7 +37,7 @@ export const Image = Node.create<ImageOptions>({
 
   parseMarkdown: (token: MarkdownToken, _helpers: MarkdownParseHelpers) => {
     const alt = token.text || ''
-    if (isTypedMediaMarkdownAlt(alt)) {
+    if (isTypedMediaMarkdownAlt(alt) && TYPED_MEDIA_SRC_VALIDATORS[alt](token.href || '')) {
       return { type: alt, attrs: { src: token.href || '' } }
     }
     return {
@@ -170,6 +173,8 @@ export const Image = Node.create<ImageOptions>({
       setImage:
         (options) =>
         ({ commands }) => {
+          if (!options.src) return false
+
           const keyId = generateShortId()
           let { width, height, ...rest } = options
 

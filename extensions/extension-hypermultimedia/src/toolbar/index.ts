@@ -26,7 +26,6 @@ export {
 export {
   type MediaToolbarIconContext,
   type MediaToolbarIconKey,
-  type MediaToolbarIconScope,
   type MediaToolbarIconsResolver
 } from './resolveIcon'
 export type {

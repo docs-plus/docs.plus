@@ -67,7 +67,9 @@ describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
       statusCode: 200,
       body: { html: '<blockquote class="twitter-tweet"><p>stub</p></blockquote>' }
     })
-    cy.visitPlayground('blockquote=off')
+    // Default schema on purpose: X's priority-101 parse rule must beat
+    // StarterKit's blockquote in the config real consumers run.
+    cy.visitPlayground()
     cy.setEditorContent('<p></p>')
   })
 
@@ -152,6 +154,32 @@ describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
     roundTripHtml()
     cy.nodeCount('x').should('eq', 1)
     cy.nodeAttr('x', 'src').should('include', 'jack/status/20')
+  })
+
+  describe('hyperlink coexistence', () => {
+    const DOCS_HREF = 'https://example.com/docs'
+    const MAILTO_HREF = 'mailto:user@example.com'
+
+    it('keeps hyperlink hrefs intact when a media document round-trips as HTML', () => {
+      cy.setEditorContent(
+        `<img src="${FIXTURES.image}" alt="Alt text">` +
+          `<p>Read the <a href="${DOCS_HREF}">Docs</a> or <a href="${MAILTO_HREF}">mail us</a>.</p>`
+      )
+      cy.nodeCount('image').should('eq', 1)
+      cy.get('#editor a').should('have.length', 2)
+      roundTripHtml()
+      cy.nodeCount('image').should('eq', 1)
+      cy.get('#editor a').should('have.length', 2)
+      cy.getEditor().then((editor) => {
+        const hrefs: string[] = []
+        editor.state.doc.descendants((node) => {
+          for (const mark of node.marks) {
+            if (mark.type.name === 'hyperlink') hrefs.push(String(mark.attrs.href))
+          }
+        })
+        expect(hrefs).to.deep.eq([DOCS_HREF, MAILTO_HREF])
+      })
+    })
   })
 })
 

@@ -13,7 +13,7 @@ import { hasFinePointer } from '../utils/media-target'
 import { shouldHideResizeGripper, transactionAffectsTrackedNodes } from './decorationHelpers'
 
 export interface MediaResizeControlsOptions {
-  /** Media node types whose add/remove should tear down hover chrome (includes X). */
+  /** Media node types whose add/remove should tear down hover controls (includes X). */
   trackedNodes: string[]
 }
 

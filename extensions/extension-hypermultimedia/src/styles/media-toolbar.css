@@ -1,5 +1,5 @@
 /*
- * Theme tokens use `light-dark()` so the chrome follows the nearest ancestor's
+ * Theme tokens use `light-dark()` so the toolbar follows the nearest ancestor's
  * `color-scheme` — a host toggling `color-scheme: light | dark` on <html> flips
  * it automatically; with the default `normal` it falls back to the OS
  * `prefers-color-scheme`. Same approach as extension-hyperlink's styles.css.
@@ -11,7 +11,12 @@
   --hm-toolbar-hover: light-dark(#f3f4f6, #374151);
   --hm-toolbar-active: light-dark(#e5edff, #1e3a8a);
   --hm-toolbar-active-fg: light-dark(#1d4ed8, #bfdbfe);
-  --hm-toolbar-shadow: 0 4px 12px light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.5));
+  /* Elevation matches the docs.plus floating-surface language: 10px shells with a
+     two-layer overlay shadow (anchored panels), 8px inner controls — lockstep with
+     extension-hyperlink's --hl-shadow/--hl-radius. */
+  --hm-toolbar-shadow:
+    0 20px 25px -5px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5)),
+    0 8px 10px -6px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.4));
   --hm-caption-fg: light-dark(#6b7280, #9ca3af);
   --hm-caption-placeholder: light-dark(#9ca3af, #6b7280);
 }
@@ -33,7 +38,7 @@
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--hm-toolbar-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--hm-toolbar-bg);
   box-shadow: var(--hm-toolbar-shadow);
   opacity: 0;
@@ -60,7 +65,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--hm-toolbar-fg);
   cursor: pointer;
@@ -103,7 +108,7 @@
   min-width: 160px;
   padding: 4px;
   border: 1px solid var(--hm-toolbar-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--hm-toolbar-bg);
   box-shadow: var(--hm-toolbar-shadow);
 }
@@ -115,7 +120,7 @@
   width: 100%;
   padding: 5px 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--hm-toolbar-fg);
   font: inherit;
@@ -151,7 +156,7 @@
   margin-bottom: 2px;
   padding: 6px 8px;
   border: 1px solid var(--hm-toolbar-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--hm-toolbar-fg);
   font: inherit;
@@ -215,31 +220,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floating-popover {
+  .floating-popover,
+  .floating-popover.visible {
     transition: none;
   }
-}
-
-.floating-popover-arrow {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: var(--hm-toolbar-bg);
-  transform: rotate(45deg);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.floating-popover-arrow-top,
-.floating-popover-arrow-left {
-  border-right: 1px solid var(--hm-toolbar-border);
-  border-bottom: 1px solid var(--hm-toolbar-border);
-}
-
-.floating-popover-arrow-bottom,
-.floating-popover-arrow-right {
-  border-top: 1px solid var(--hm-toolbar-border);
-  border-left: 1px solid var(--hm-toolbar-border);
 }
 
 .floating-popover-content {
@@ -276,7 +260,7 @@
 
 /* Matches the media-loading-shell.css precedent: zero movement, keep instant states. */
 @media (prefers-reduced-motion: reduce) {
-  .hm-has-toolbar > .media-toolbar {
+  .hm-has-toolbar > .media-toolbar:not([data-hm-closing]) {
     animation: none;
   }
   .media-toolbar,

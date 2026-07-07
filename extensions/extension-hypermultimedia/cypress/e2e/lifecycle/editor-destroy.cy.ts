@@ -2,8 +2,8 @@
 
 import type { Editor } from '@tiptap/core'
 
-describe('editor destroy with media chrome open', () => {
-  it('tears down all chrome, survives later keypresses, and re-inits on the same element', () => {
+describe('editor destroy with media controls open', () => {
+  it('tears down all media controls, survives later keypresses, and re-inits on the same element', () => {
     cy.visitPlayground()
     cy.insertSizedImage(300, 200)
     cy.activateImageGripper()

@@ -1,8 +1,9 @@
 import { HTMLSanitizer } from '../../utils/sanitizeHtml'
 
-/** Matches x.com / twitter.com status URLs, including share params like `?s=20`. */
+/** Matches x.com / twitter.com status URLs, including share params like `?s=20`;
+ * the (?=\s|$) boundary lets bare mid-sentence URLs match without eating trailing text. */
 export const X_URL_REGEX_GLOBAL =
-  /(?:https?:\/\/)?(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]{1,15}\/status\/[0-9]+(?:\/|\?|#|$)[^\s]*/gi
+  /(?:https?:\/\/)?(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[A-Za-z0-9_]{1,15}\/status\/[0-9]+(?:[/?#][^\s]*)?(?=\s|$)/gi
 
 const X_OEMBED_HREF_HOSTS = ['x.com', 'twitter.com'] as const
 
@@ -39,11 +40,9 @@ interface Twttr {
   widgets: TwttrWidgets
 }
 
-declare global {
-  interface Window {
-    twttr?: Twttr
-  }
-}
+// No `declare global` Window augmentation: the shipped .d.ts must not mutate
+// consumers' Window type or collide with their own `twttr` declarations.
+const getTwttr = (): Twttr | undefined => (window as Window & { twttr?: Twttr }).twttr
 
 const X_SCRIPT_POLL_MS = 200
 const X_SCRIPT_TIMEOUT_MS = 10_000
@@ -181,7 +180,7 @@ function whenTwttrReady(signal?: AbortSignal): Promise<Twttr> {
     return Promise.reject(new DOMException('Aborted', 'AbortError'))
   }
 
-  const existing = window.twttr
+  const existing = getTwttr()
   if (existing?.widgets) {
     return Promise.resolve(existing)
   }
@@ -213,7 +212,7 @@ function whenTwttrReady(signal?: AbortSignal): Promise<Twttr> {
     signal?.addEventListener('abort', onAbort, { once: true })
 
     const resolveIfReady = () => {
-      const twttr = window.twttr
+      const twttr = getTwttr()
       if (twttr?.widgets) {
         finish(() => resolve(twttr))
         return true
@@ -223,7 +222,7 @@ function whenTwttrReady(signal?: AbortSignal): Promise<Twttr> {
 
     if (resolveIfReady()) return
 
-    window.twttr?.ready?.(() => {
+    getTwttr()?.ready?.(() => {
       if (signal?.aborted) {
         finish(() => reject(new DOMException('Aborted', 'AbortError')))
         return
@@ -248,7 +247,7 @@ export function loadXScript(signal?: AbortSignal): Promise<Twttr> {
     'script[src="https://platform.twitter.com/widgets.js"]'
   )
 
-  if (existingScript || window.twttr) {
+  if (existingScript || getTwttr()) {
     return whenTwttrReady(signal)
   }
 

@@ -66,7 +66,7 @@ export const SOUNDCLOUD_WIDGET_PARAM_KEYS = [
 
 export const SOUNDCLOUD_VISUAL_PLAYER_MIN_HEIGHT = 130
 
-/** Compact widget chrome needs ~120px; visual waveform player needs ~166px. */
+/** Compact widget shell needs ~120px; visual waveform player needs ~166px. */
 export const SOUNDCLOUD_COMPACT_PLAYER_MIN_HEIGHT = 120
 export const SOUNDCLOUD_VISUAL_PLAYER_LAYOUT_MIN_HEIGHT = 166
 

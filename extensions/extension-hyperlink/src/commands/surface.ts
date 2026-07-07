@@ -28,7 +28,7 @@ export interface HyperlinkPublicCommands<ReturnType> {
   unsetHyperlink: () => ReturnType
   /** Toggle the hyperlink mark; same gates as `setHyperlink`. */
   toggleHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
-  /** Open the create popover anchored to the selection; no-op without a `popovers.createHyperlink` factory. */
+  /** Open the create popover (configured `popovers.createHyperlink` or the prebuilt fallback); no-op only when the factory returns `null`. See README → Commands. */
   openCreateHyperlinkPopover: (attributes?: Partial<HyperlinkAttributes>) => ReturnType
   editHyperlinkText: (text: string) => ReturnType
   editHyperlinkHref: (href: string) => ReturnType

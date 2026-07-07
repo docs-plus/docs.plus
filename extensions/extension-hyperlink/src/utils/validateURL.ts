@@ -31,7 +31,7 @@ const STANDARD_WEB_SCHEMES = new Set(['http', 'https', 'ftp', 'ftps'])
 /** IPv4 dotted quad. Deliberately loose on octet range — we only need a shape check. */
 const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/
 
-type ValidateURLOptions = {
+export type ValidateURLOptions = {
   customValidator?: (url: string) => boolean
 }
 

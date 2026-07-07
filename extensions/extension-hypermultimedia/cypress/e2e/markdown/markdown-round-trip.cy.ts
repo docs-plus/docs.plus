@@ -148,6 +148,22 @@ describe('Markdown import/export — all media nodes', () => {
     })
   })
 
+  describe('reserved-alt collision (src-gated routing)', () => {
+    it('imports ![x](image-url) as an image with its alt, not a broken x embed', () => {
+      cy.setMarkdown(`![x](${FIXTURES.image})`)
+      cy.nodeCount('x').should('eq', 0)
+      cy.nodeCount('image').should('eq', 1)
+      cy.nodeAttr('image', 'alt').should('eq', 'x')
+    })
+
+    it('imports ![video](image-url) as an image, not a broken video node', () => {
+      cy.setMarkdown(`![video](${FIXTURES.image})`)
+      cy.nodeCount('video').should('eq', 0)
+      cy.nodeCount('image').should('eq', 1)
+      cy.nodeAttr('image', 'alt').should('eq', 'video')
+    })
+  })
+
   describe('hyperlink coexistence', () => {
     it('keeps provider URLs as embed nodes, not hyperlinks', () => {
       cy.setMarkdown(`Watch ${MARKDOWN_SYNTAX.youtube(FIXTURES.youtube)} now.`)

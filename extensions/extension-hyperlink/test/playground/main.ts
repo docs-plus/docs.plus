@@ -1,4 +1,8 @@
-/** Cypress clean-room: shipped dist; `?popover=custom` wires BYO popovers on `window._byo`. */
+/**
+ * Cypress clean-room: shipped dist; `?popover=custom` wires BYO popovers on
+ * `window._byo`; `?popover=none` drops both factories; `?readonly=on` locks
+ * the editor after mount.
+ */
 
 import '@docs.plus/extension-hyperlink/styles.css'
 
@@ -24,7 +28,7 @@ const element = setupPlayground({
       '--hl-accent': '#2563eb',
       '--hl-accent-fg': '#ffffff',
       '--hl-danger': '#dc2626',
-      '--hl-shadow': '0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.08)'
+      '--hl-shadow': '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)'
     },
     dark: {
       '--hl-bg': '#1f2937',
@@ -35,13 +39,17 @@ const element = setupPlayground({
       '--hl-accent': '#60a5fa',
       '--hl-accent-fg': '#0b1220',
       '--hl-danger': '#f87171',
-      '--hl-shadow': '0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5)'
+      '--hl-shadow': '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)'
     }
   }
 })
 
 const params = new URLSearchParams(window.location.search)
 const useCustomPopovers = params.get('popover') === 'custom'
+// `popover=none` leaves both slots null (the extension default) so specs can
+// reach clickHandler's no-popover fallback branch, unreachable otherwise.
+const noPopovers = params.get('popover') === 'none'
+const readOnly = params.get('readonly') === 'on'
 const blockAutoLink = params.get('shouldAutoLink') === 'block'
 const enableClickSelection = params.get('clickSelection') === 'on'
 const exitable = params.get('exitable') === 'on'
@@ -108,7 +116,9 @@ function byoPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): 
 
 const popovers = useCustomPopovers
   ? { previewHyperlink: byoPreviewHyperlink, createHyperlink: byoCreateHyperlink }
-  : { previewHyperlink: previewHyperlinkPopover, createHyperlink: createHyperlinkPopover }
+  : noPopovers
+    ? { previewHyperlink: null, createHyperlink: null }
+    : { previewHyperlink: previewHyperlinkPopover, createHyperlink: createHyperlinkPopover }
 
 const editor = new Editor({
   element,
@@ -129,6 +139,9 @@ const editor = new Editor({
   ],
   content: '<p>Select text and press <strong>Mod+K</strong> to create a link.</p>'
 })
+
+// `readonly=on` mimics a published read-only doc (nav-guards.cy.ts fallback spec).
+if (readOnly) editor.setEditable(false)
 
 declare global {
   interface Window {

@@ -8,7 +8,7 @@ describe('resize gripper', () => {
     cy.visitPlayground()
   })
 
-  describe('selection chrome', () => {
+  describe('selection controls', () => {
     it('mounts a gripper decoration for resizable image nodes', () => {
       cy.insertSizedImage(200, 150)
       cy.get('#editor .hypermultimedia__resize-gripper').should('exist')
@@ -224,6 +224,44 @@ describe('resize gripper', () => {
       cy.nodeAttr('image', 'height').should((height) => {
         expect(Number(height)).to.be.greaterThan(150)
       })
+    })
+  })
+
+  describe('drag cancellation', () => {
+    it('Escape mid-drag snaps back and the following mouseup commits nothing', () => {
+      cy.prepareImageForResize(200, 150)
+      cy.get('#editor .hypermultimedia__resize-gripper').then(($gripper) => {
+        cy.wrap($gripper[0].offsetWidth).as('preDragWidth')
+      })
+      cy.get('#editor .hypermultimedia__resize-gripper--active .media-resize-clamp--right').then(
+        ($clamp) => {
+          const rect = $clamp[0].getBoundingClientRect()
+          const startX = rect.left + rect.width / 2
+          const startY = rect.top + rect.height / 2
+          cy.wrap($clamp).realMouseDown({ position: 'center' })
+          cy.get('body').realMouseMove(startX + 80, startY)
+        }
+      )
+      // The preview must visibly grow first, or Escape would have nothing to undo.
+      cy.get<number>('@preDragWidth').then((preDragWidth) => {
+        cy.get('#editor .hypermultimedia__resize-gripper--dragging').should(($gripper) => {
+          expect($gripper[0].getBoundingClientRect().width).to.be.greaterThan(preDragWidth)
+        })
+        cy.get('body').realPress('Escape')
+        cy.get('#editor .hypermultimedia__resize-gripper--dragging').should('not.exist')
+        // Snap-back: dragged preview width must be gone — restored to the pre-drag
+        // box, or '' when the post-cancel deactivation cleared inline styles.
+        cy.get('#editor .hypermultimedia__resize-gripper').should(($gripper) => {
+          expect($gripper[0].style.width).to.be.oneOf(['', `${preDragWidth}px`])
+        })
+      })
+      // Post-Escape mouseup is the discriminating step — it is what would
+      // wrongly commit the dragged size if the cancel path regressed.
+      cy.get('body').realMouseUp()
+      cy.nodeAttr('image', 'width').should((width) => {
+        expect(Number(width)).to.eq(200)
+      })
+      cy.expectRenderedMediaSize('#editor img', 'width', 200)
     })
   })
 

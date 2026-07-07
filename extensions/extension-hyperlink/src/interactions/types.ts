@@ -11,7 +11,7 @@ import type { URLDecisions } from '../url-decisions'
 export interface LinkContext {
   type: MarkType
   editor: Editor
-  /** URL Decisions pipeline; one per `createLinkContext` call (the extension allocates one per `add*` hook). */
+  /** URL Decisions pipeline; one per `createLinkContext` call (the extension allocates one per editor, cached on `storage.context`). */
   urls: URLDecisions
   options: HyperlinkOptions
   /** Convenience accessor for `options.validate`. */

@@ -20,7 +20,7 @@ export const applyNodeAttributes = (
   dispatch(transaction)
 }
 
-/** Commit caption text without the hide-gripper meta — typing must not tear down chrome. */
+/** Commit caption text without the hide-gripper meta — typing must not tear down the shell. */
 export const setMediaCaption = (editor: Editor, nodePos: number, caption: string | null): void => {
   if (!editor.isEditable) return
   const { state, dispatch } = editor.view

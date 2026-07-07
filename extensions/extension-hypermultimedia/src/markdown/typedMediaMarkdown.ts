@@ -7,7 +7,13 @@ import type {
   RenderContext
 } from '@tiptap/core'
 
-import type { MediaNodeType } from '../utils/detectMediaType'
+import { isValidLoomUrl } from '../nodes/loom/helper'
+import { isValidSoundCloudUrl } from '../nodes/soundcloud/helper'
+import { isValidSpotifyUrl } from '../nodes/spotify/helper'
+import { isValidVimeoUrl } from '../nodes/vimeo/helper'
+import { isValidXUrl } from '../nodes/x/helper'
+import { isValidYoutubeUrl } from '../nodes/youtube/helper'
+import { isAudioUrl, isVideoUrl } from '../utils/mediaUrl'
 
 /** Reserved `![alt]` literals routed to non-image media nodes. */
 export const TYPED_MEDIA_MARKDOWN_ALTS = [
@@ -25,6 +31,19 @@ export type TypedMediaMarkdownAlt = (typeof TYPED_MEDIA_MARKDOWN_ALTS)[number]
 
 export function isTypedMediaMarkdownAlt(alt: string): alt is TypedMediaMarkdownAlt {
   return (TYPED_MEDIA_MARKDOWN_ALTS as readonly string[]).includes(alt)
+}
+
+// Gate routing on the src so `![x](photo.png)` — an image whose alt collides with a
+// reserved literal — stays an image instead of round-tripping into a broken embed.
+export const TYPED_MEDIA_SRC_VALIDATORS: Record<TypedMediaMarkdownAlt, (url: string) => boolean> = {
+  audio: isAudioUrl,
+  video: isVideoUrl,
+  youtube: isValidYoutubeUrl,
+  vimeo: isValidVimeoUrl,
+  soundcloud: isValidSoundCloudUrl,
+  spotify: isValidSpotifyUrl,
+  loom: isValidLoomUrl,
+  x: isValidXUrl
 }
 
 type TypedMediaMarkdownOptions = {
@@ -53,7 +72,7 @@ type TypedMediaMarkdownHooks = {
 
 /** `![{nodeName}](src)` import/export hooks shared by every non-image media node. */
 export function createTypedMediaMarkdownHooks(
-  nodeName: MediaNodeType,
+  nodeName: TypedMediaMarkdownAlt,
   options: TypedMediaMarkdownOptions = {}
 ): TypedMediaMarkdownHooks {
   const tokenName = `hm_${nodeName}`
@@ -72,6 +91,7 @@ export function createTypedMediaMarkdownHooks(
       tokenize: (src: string, _tokens: MarkdownToken[], _lexer: MarkdownLexerConfiguration) => {
         const match = pattern.exec(src)
         if (!match) return undefined
+        if (!TYPED_MEDIA_SRC_VALIDATORS[nodeName](match[1])) return undefined
 
         return {
           type: tokenName,

@@ -40,21 +40,8 @@ export type IsAllowedUriContext = {
 }
 
 /**
- * Built-in hyperlink mark attributes.
- *
- * `Extra` lets consumers extend the shape with their own typed fields
- * without losing autocomplete on the built-ins:
- *
- * ```ts
- * type CampaignAttrs = HyperlinkAttributes<{ campaign?: string }>
- * const attrs: CampaignAttrs = { href: 'https://x', campaign: 'spring' }
- * attrs.href      // string | null
- * attrs.campaign  // string | undefined
- * ```
- *
- * Defaulting `Extra` to `Record<string, unknown>` preserves the open
- * index signature the v2 surface shipped with — `attrs[someUntypedKey]`
- * still resolves to `unknown` when no `Extra` is supplied.
+ * `Extra` extends the built-ins with consumer-typed fields; it defaults to
+ * `Record<string, unknown>` to keep the v2 open index signature. Example: README → TypeScript.
  */
 export type HyperlinkAttributes<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   href: string | null
@@ -123,9 +110,8 @@ export interface HyperlinkOptions {
 /** Extension storage; one slot per editor instance. */
 export interface HyperlinkStorage {
   /**
-   * Cached `LinkContext` for the editor. Populated on first access from
-   * any of the four `add*` hooks; downstream calls reuse the same
-   * URL Decisions pipeline instead of allocating a fresh one each time.
+   * Cached `LinkContext`; populated on first access so all four `add*`
+   * hooks share one URL Decisions pipeline instead of allocating per hook.
    */
   context: LinkContext | null
 }

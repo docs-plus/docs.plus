@@ -1,4 +1,4 @@
-/** Persisted doc unchanged — loading UI is node-view chrome only. */
+/** Persisted doc unchanged — loading UI is node-view shell only. */
 export type MediaLoadingKind = 'image' | 'video' | 'audio' | 'embed'
 
 export interface MediaLoadingShellContext {

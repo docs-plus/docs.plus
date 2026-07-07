@@ -100,7 +100,7 @@ describe('media toolbar action registry', () => {
     cy.window().then((win) => {
       kitStorage(win).replaceUrlPopover = () => null
     })
-    // Real mousedown dismisses the open popover; pointerdown tears down the hover chrome.
+    // Real mousedown dismisses the open popover; pointerdown tears down the hover controls.
     cy.get('body').click(5, 5)
     cy.activateImageGripper()
     cy.get('#editor .media-toolbar .media-toolbar__more').click()

@@ -5,7 +5,6 @@ import { getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
 import { openEditHyperlink } from '../openers/openEditHyperlink'
 import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil } from '../utils'
-import { logger } from '../utils/logger'
 
 // Icon-only action button: explicit `type` (the popover lives outside any
 // form, but defaults are surprising). The floating tooltip replaces the
@@ -79,7 +78,6 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
   copyButton.addEventListener('click', () => {
     copyToClipboard(href, (success) => {
       if (success) getDefaultController().close()
-      else logger.error('previewHyperlink: copy to clipboard failed')
     })
   })
 

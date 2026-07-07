@@ -113,19 +113,22 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
     }
     if (hasErrors) return
 
-    // `editHyperlink` returns `false` when the URL fails the composed
-    // XSS + `isAllowedUri` gate (input passed `validateURL` but not the
-    // host policy — e.g. `https://blocked.example` under a custom
-    // `isAllowedUri`). Surface the same inline error and keep the
-    // popover open so the user can correct the href without losing
-    // their typed text.
+    // `editHyperlink` returns `false` on two paths: the URL fails the composed
+    // XSS + `isAllowedUri` gate (inline error, popover stays open), or the mark
+    // is gone at the stored selection (e.g. a collab peer removed the link) —
+    // then there is nothing left to edit, so close instead of blaming the URL.
+    const markName = options.markName ?? HYPERLINK_MARK_NAME
     const ok = editor
       .chain()
       .focus()
-      .extendMarkRange(options.markName ?? HYPERLINK_MARK_NAME)
+      .extendMarkRange(markName)
       .editHyperlink({ newURL: newHref, newText })
       .run()
     if (!ok) {
+      if (!editor.isActive(markName)) {
+        getDefaultController().close()
+        return
+      }
       showError(hrefWrapper, hrefError)
       return
     }

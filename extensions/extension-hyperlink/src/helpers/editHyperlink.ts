@@ -16,16 +16,10 @@ type EditHyperlinkAttributes = {
   urls?: URLDecisions
 }
 
-// Edit the hyperlink at the current selection.
-//
-// Returns a composable `Command` thunk so the caller's `editor.chain()`
-// stays a single dispatch (a nested chain here historically produced
-// "Applying a mismatched transaction" when composed with extendMarkRange).
-//
+// Returns a composable `Command` thunk: a nested chain here historically
+// produced "Applying a mismatched transaction" under `extendMarkRange`.
 // `newURL` flows through `urls.forWrite` (normalize + gate) so the edit
-// surface stays in lock-step with `setHyperlink`. `validateURL` runs as
-// a pre-gate shape check (historical contract: rejects `https://googlecom`
-// typos before the gate sees them).
+// surface stays in lock-step with `setHyperlink`.
 export const editHyperlinkCommand =
   (attributes: EditHyperlinkAttributes = {}): RawCommands['editHyperlink'] =>
   () =>

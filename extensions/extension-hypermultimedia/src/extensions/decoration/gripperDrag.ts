@@ -211,7 +211,7 @@ export function attachGripperDrag(config: GripperDragConfig): void {
       }
     }
 
-    // Escape drops the preview without committing: restore the gripper box, then re-arm hover chrome.
+    // Escape drops the preview without committing: restore the gripper box, then re-arm hover controls.
     function cancel() {
       if (ended) return
       ended = true
