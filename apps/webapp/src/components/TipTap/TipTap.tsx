@@ -22,6 +22,7 @@ import { Markdown } from '@tiptap/markdown'
 import { UseEditorOptions } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TIPTAP_NODES, type Transaction } from '@types'
+import { type CaretUser, getCursorUser } from '@utils/getCursorUser'
 import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
 import bash from 'highlight.js/lib/languages/bash'
 import css from 'highlight.js/lib/languages/css'
@@ -33,7 +34,6 @@ import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
-import randomColor from 'randomcolor'
 import ShortUniqueId from 'short-unique-id'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
@@ -288,26 +288,14 @@ const Editor = ({
 
 const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
   const profile = authStore.getState().profile
-  const user = {
-    name: profile?.display_name || profile?.username || profile?.email || 'anonymous',
-    id: profile?.id || profile?.email || 'anonymous',
-    color: randomColor({ luminosity: 'light' }),
-    avatarUpdatedAt: profile?.avatar_updated_at || null,
-    avatarUrl: profile?.avatar_url || null
-  }
-
-  interface CollaborationCaretUser {
-    color: string
-    id: string
-    name: string
-    avatarUpdatedAt?: string | null
-    avatarUrl?: string | null
-  }
+  // Shared builder keeps the caret color identical across every awareness
+  // writer (useProviderAwareness's updateUser is the other one).
+  const user = getCursorUser(profile)
 
   return {
     provider,
     user,
-    render: (caretUser: CollaborationCaretUser): HTMLElement => {
+    render: (caretUser: CaretUser): HTMLElement => {
       const cursor = document.createElement('span')
       cursor.classList.add('collaboration-cursor__caret')
       cursor.setAttribute('style', `border-color: ${caretUser.color};`)

@@ -15,7 +15,6 @@ type EditorSettings = {
     }>
   }
   isMobile?: boolean
-  presentUsers?: any
   isEditable: boolean
 }
 
@@ -52,7 +51,6 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       loading: true,
       selectionPos: 0,
       filterResult: { sortedSlugs: [] },
-      presentUsers: [],
       isEditable: false
     },
     hocuspocusProvider: undefined,

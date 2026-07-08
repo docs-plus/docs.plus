@@ -166,7 +166,6 @@ const useYdocAndProvider = ({
         setWorkspaceEditorSetting('loading', true)
         setWorkspaceEditorSetting('providerSyncing', true)
         setWorkspaceSetting('hocuspocusProvider', null)
-        setWorkspaceEditorSetting('presentUsers', [])
       },
       ...{ autoConnect: false }
     })
