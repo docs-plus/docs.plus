@@ -1,8 +1,8 @@
 /**
  * Admin Dashboard Controller — Audit Operations
  *
- * Stale Documents (Phase 13), Failed Notifications (Phase 17), and Ghost
- * Accounts (Phase 15). Handlers validate input, call the stale/ghost/
+ * Stale Documents, Failed Notifications, and Ghost Accounts. Handlers
+ * validate input, call the stale/ghost/
  * notification-failure services for data access, and shape responses.
  * Read-only notification metrics and DLQ stay inline as thin RPC/Redis wrappers.
  */
@@ -21,7 +21,7 @@ import * as stale from '../services/adminStaleDocuments.service'
 import { getSupabaseClient } from '../utils/supabase'
 
 // =============================================================================
-// Stale Documents Audit (Phase 13)
+// Stale Documents Audit
 // =============================================================================
 
 /**
@@ -139,7 +139,7 @@ export async function listMediaStorage(c: AppContext) {
 }
 
 // =============================================================================
-// Failed Notifications Audit (Phase 17)
+// Failed Notifications Audit
 // =============================================================================
 
 /**
@@ -286,8 +286,11 @@ export async function disableFailedSubscriptions(c: AppContext) {
  * Queries BullMQ DLQ queues directly via Redis
  */
 export async function getDeadLetterQueueContents(c: AppContext) {
+  let redisConnection: ReturnType<typeof createRedisConnection> = null
+  let pushDlq: Queue | null = null
+  let emailDlq: Queue | null = null
   try {
-    const redisConnection = createRedisConnection({
+    redisConnection = createRedisConnection({
       maxRetriesPerRequest: null,
       enableReadyCheck: true
     })
@@ -303,8 +306,8 @@ export async function getDeadLetterQueueContents(c: AppContext) {
 
     const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100)
 
-    const pushDlq = new Queue('push-notifications-dlq', { connection })
-    const emailDlq = new Queue('email-notifications-dlq', { connection })
+    pushDlq = new Queue('push-notifications-dlq', { connection })
+    emailDlq = new Queue('email-notifications-dlq', { connection })
 
     const [pushJobs, emailJobs] = await Promise.all([
       pushDlq.getJobs(['waiting', 'delayed'], 0, limit).catch(() => []),
@@ -315,10 +318,6 @@ export async function getDeadLetterQueueContents(c: AppContext) {
       pushDlq.getJobCounts('waiting', 'delayed').catch(() => ({ waiting: 0, delayed: 0 })),
       emailDlq.getJobCounts('waiting', 'delayed').catch(() => ({ waiting: 0, delayed: 0 }))
     ])
-
-    await pushDlq.close()
-    await emailDlq.close()
-    await redisConnection?.quit()
 
     return c.json({
       push: {
@@ -345,11 +344,15 @@ export async function getDeadLetterQueueContents(c: AppContext) {
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to get DLQ contents')
     return c.json({ error: 'Failed to fetch DLQ contents' }, 500)
+  } finally {
+    // Release the per-request BullMQ queues + connection even on the error
+    // path; allSettled so one rejection can't skip the others.
+    await Promise.allSettled([pushDlq?.close(), emailDlq?.close(), redisConnection?.quit()])
   }
 }
 
 // =============================================================================
-// Ghost Accounts Audit (Phase 15)
+// Ghost Accounts Audit
 // =============================================================================
 
 /**

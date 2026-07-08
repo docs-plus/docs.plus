@@ -162,7 +162,7 @@ admin.get(
 admin.get('/stats/notification-reach', adminController.getNotificationReach)
 
 // =============================================================================
-// Stale Documents Audit (Phase 13)
+// Stale Documents Audit
 // =============================================================================
 
 // Get stale documents summary
@@ -198,7 +198,7 @@ admin.get(
 )
 
 // =============================================================================
-// Failed Notifications Audit (Phase 17)
+// Failed Notifications Audit
 // =============================================================================
 
 // Combined notification health score (push + email delivery rates)
@@ -235,7 +235,7 @@ admin.post(
 admin.get('/audit/notifications/dlq', adminController.getDeadLetterQueueContents)
 
 // =============================================================================
-// Ghost Accounts Audit (Phase 15)
+// Ghost Accounts Audit
 // =============================================================================
 
 // List ghost accounts (detection via Admin API + public.users cross-ref)
