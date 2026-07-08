@@ -36,10 +36,7 @@ function toSnapshot(doc: {
   }
 }
 
-/**
- * Document version history over Hocuspocus stateless channel.
- * `history.prev` / `history.next` are reserved for future UI; not used by the webapp today.
- */
+/** Document version history over the Hocuspocus stateless channel. */
 export async function handleHistoryStateless(payload: HistoryPayload): Promise<unknown> {
   const { type, documentId } = payload
 
@@ -76,18 +73,6 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
 
       return toSnapshot(doc)
     }
-
-    case 'history.prev':
-      return prisma.documents.findFirst({
-        where: { documentId, version: { lt: payload.currentVersion || 0 } },
-        orderBy: { version: 'desc' }
-      })
-
-    case 'history.next':
-      return prisma.documents.findFirst({
-        where: { documentId, version: { gt: payload.currentVersion || 0 } },
-        orderBy: { version: 'asc' }
-      })
 
     default:
       return payload
