@@ -10,7 +10,13 @@
 import * as Y from 'yjs'
 
 import { prisma } from '../src/lib/prisma'
-import { closeQueues, createDocumentWorker, StoreDocumentQueue } from '../src/lib/queue'
+import {
+  buildStoreJobId,
+  closeQueues,
+  createDocumentWorker,
+  enqueueStoreDocument,
+  StoreDocumentQueue
+} from '../src/lib/queue'
 import { disconnectRedis } from '../src/lib/redis'
 
 const PREFIX = `e2e-store-${Date.now()}`
@@ -88,6 +94,39 @@ await StoreDocumentQueue.add('store-document', {
 })
 const row2 = await waitForVersion(doc2, 2)
 check(!!row2 && row2.version === 2, 'second save increments to version 2')
+
+// 3. Claim-check enqueue (the WS store-hook path): state rides a TTL'd Redis
+// key, the job carries only the reference, and the worker strips the
+// transient metadata keys from the stored snapshot.
+const doc3 = `${PREFIX}-doc3`
+const ydoc3 = new Y.Doc()
+ydoc3.getText('content').insert(0, 'claim check')
+ydoc3.getMap('metadata').set('commitMessage', 'e2e-3')
+const state3 = Buffer.from(Y.encodeStateAsUpdate(ydoc3))
+// The production builder, not a hand-rolled id: BullMQ rejects colon-bearing
+// custom jobIds, and a stand-in format is exactly how that slipped through.
+await enqueueStoreDocument({
+  jobId: buildStoreJobId(doc3, state3),
+  documentName: doc3,
+  state: state3,
+  context: { slug: doc3 },
+  commitMessage: 'e2e-3'
+})
+const row3 = await waitForVersion(doc3, 1)
+check(!!row3 && row3.version === 1, 'claim-check job persisted at version 1')
+if (row3) {
+  const restored = new Y.Doc()
+  Y.applyUpdate(restored, new Uint8Array(row3.data))
+  check(
+    restored.getText('content').toString() === 'claim check',
+    'claim-check state round-trips through Redis key + DB'
+  )
+  check(
+    !restored.getMap('metadata').has('commitMessage'),
+    'worker strips commitMessage from the stored snapshot'
+  )
+  check(row3.commitMessage === 'e2e-3', 'commitMessage rides the version row')
+}
 
 await cleanup()
 await worker.close()

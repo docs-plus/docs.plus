@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { Prisma } from '@prisma/client'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 import { Database } from '@hocuspocus/extension-database'
@@ -7,7 +7,8 @@ import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
 import { checkEnvBoolean, generateRandomId } from '../utils'
 import { config } from './env'
-import { StoreDocumentQueue } from '../lib/queue'
+import { buildStoreJobId, enqueueStoreDocument, stripSnapshotMetadata } from '../lib/queue'
+import { documentPersistFallbackTotal } from '../lib/metrics'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
@@ -33,6 +34,52 @@ const generateDefaultState = () => {
 }
 
 const healthCheck = new HealthCheck()
+
+// A rebuilt CRDT has fresh item identities: serving it without persisting lets
+// a returning client (IndexedDB cache of a previous rebuild) merge two
+// independent rebuilds and duplicate the document. Exactly one rebuild may
+// ever exist — the FOR UPDATE re-read makes concurrent replicas agree on it.
+async function persistMigratedSnapshot(
+  documentName: string,
+  baseVersion: number,
+  migrated: Buffer<ArrayBuffer>
+): Promise<Uint8Array> {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
+        SELECT version, data FROM "Documents"
+        WHERE "documentId" = ${documentName}
+        ORDER BY version DESC
+        LIMIT 1
+        FOR UPDATE
+      `
+      const head = rows[0] ?? null
+      // Someone advanced the doc first (another replica's migration or a live
+      // save): serve THEIR bytes and retry migration on a later load.
+      if (head && head.version > baseVersion) return new Uint8Array(head.data)
+
+      await tx.documents.create({
+        data: {
+          documentId: documentName,
+          commitMessage: 'Schema migration',
+          version: (head?.version ?? 0) + 1,
+          data: migrated
+        }
+      })
+      return migrated
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const winner = await prisma.documents.findFirst({
+        where: { documentId: documentName },
+        orderBy: { version: 'desc' },
+        select: { data: true }
+      })
+      if (winner?.data) return new Uint8Array(winner.data)
+    }
+    throw err
+  }
+}
 
 const configureExtensions = () => {
   const extensions: any[] = []
@@ -63,16 +110,16 @@ const configureExtensions = () => {
   }
 
   if (config.app.env === 'production' && config.redis.enabled) {
-    // Note: @hocuspocus/extension-redis creates its own Redis connection
-    // We configure it with the same settings as our centralized Redis
+    // Note: @hocuspocus/extension-redis creates its own Redis connection.
+    // Mirror the centralized db/tls selection or the sync layer silently
+    // connects to a different logical DB than the queues.
     const redisOptions: any = {
       host: config.redis.host || 'localhost',
-      port: config.redis.port
-    }
-
-    if (process.env.REDIS_PASSWORD) {
-      redisOptions.options = {
-        password: process.env.REDIS_PASSWORD
+      port: config.redis.port,
+      options: {
+        db: config.redis.db,
+        tls: config.redis.tls ? {} : undefined,
+        ...(process.env.REDIS_PASSWORD ? { password: process.env.REDIS_PASSWORD } : {})
       }
     }
 
@@ -86,7 +133,7 @@ const configureExtensions = () => {
           const doc = await prisma.documents.findFirst({
             where: { documentId: documentName },
             orderBy: { version: 'desc' },
-            select: { data: true }
+            select: { data: true, version: true }
           })
 
           const rawState = doc?.data ?? generateDefaultState()
@@ -114,7 +161,8 @@ const configureExtensions = () => {
                   'default',
                   migrationExtensions
                 )
-                return Y.encodeStateAsUpdate(newYdoc)
+                const migratedState = Buffer.from(Y.encodeStateAsUpdate(newYdoc))
+                return await persistMigratedSnapshot(documentName, doc.version, migratedState)
               }
             } catch (migrationErr) {
               dbLogger.warn(
@@ -134,70 +182,71 @@ const configureExtensions = () => {
       },
 
       async store(data: any) {
-        const { documentName, state, context } = data
-        const ydoc = new Y.Doc()
-        Y.applyUpdate(ydoc, state)
-        const meta = ydoc.getMap('metadata')
-        const commitMessageValue = meta.get('commitMessage')
-        const commitMessage = typeof commitMessageValue === 'string' ? commitMessageValue : ''
-        const isDraft = meta.get('isDraft') || false
+        const { documentName, state, context, document } = data
 
-        meta.delete('commitMessage')
+        // Metadata rides the live doc — read it O(1). Decoding the snapshot
+        // here (the old path) rebuilt the whole CRDT on the WS event loop and
+        // stalled every connection on the instance; the worker strips the
+        // metadata keys off the snapshot instead.
+        const meta = document.getMap('metadata')
 
         // If the document is draft, don't store the data
-        if (isDraft) return
+        if (meta.get('isDraft')) return
 
-        // Clean up draft flag after first save
-        if (meta.has('isDraft')) {
-          meta.delete('isDraft')
-        }
-
-        const newState = Y.encodeStateAsUpdate(ydoc)
-        const stateBase64 = Buffer.from(newState).toString('base64')
+        const commitMessageValue = meta.get('commitMessage')
+        const commitMessage = typeof commitMessageValue === 'string' ? commitMessageValue : ''
+        // Consume the one-shot restore label: left on the live doc it would
+        // stamp every later autosave as a named checkpoint (exempt from
+        // pruning) until page reload. Runs before enqueue so the queue-down
+        // fallback consumes it too; server-origin deletes don't re-trigger saves.
+        if (commitMessage) meta.delete('commitMessage')
+        const stateBuffer: Buffer = state
 
         try {
-          // Deterministic jobId dedupes identical saves across instances within a
-          // 10s window, but the state fingerprint keeps a newer flush (e.g. the
-          // final save on last disconnect) from being dropped in the same window.
-          const timeWindow = Math.floor(Date.now() / 10000)
-          const stateHash = createHash('sha1').update(newState).digest('hex').slice(0, 8)
-          const jobId = `doc:${documentName}:${timeWindow}:${newState.byteLength}-${stateHash}`
-
-          await StoreDocumentQueue.add(
-            'store-document',
-            {
-              documentName,
-              state: stateBase64,
-              context,
-              commitMessage
-            },
-            { jobId }
-          )
+          await enqueueStoreDocument({
+            jobId: buildStoreJobId(documentName, stateBuffer),
+            documentName,
+            state: stateBuffer,
+            context,
+            commitMessage
+          })
         } catch (err) {
-          // Fallback: Direct DB save when queue fails (Redis OOM, connection error)
+          // Fallback: direct DB save when the enqueue fails while the redlock
+          // was held (Redis OOM window, producer command timeout). A hard
+          // Redis outage never reaches here — extension-redis aborts the
+          // store chain first and persistence pauses until Redis returns.
+          documentPersistFallbackTotal.inc()
           dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
           captureDegraded('queue-fallback', err, { extra: { documentName } })
 
           try {
-            // Use transaction with FOR UPDATE lock to prevent race conditions
+            const snapshot = stripSnapshotMetadata(stateBuffer)
+
+            // Use transaction with FOR UPDATE lock to prevent race conditions.
             // Multiple Hocuspocus instances may hit this fallback simultaneously
+            // (redlock can lapse mid-store), so merge with the locked head like
+            // the worker does — a plain insert of divergent state would clobber.
             await prisma.$transaction(async (tx) => {
-              // Use raw query with FOR UPDATE to actually lock the row
-              const existingDocs = await tx.$queryRaw<{ version: number }[]>`
-                SELECT version FROM "Documents"
+              const existingDocs = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
+                SELECT version, data FROM "Documents"
                 WHERE "documentId" = ${documentName}
-                ORDER BY id DESC
+                ORDER BY version DESC
                 LIMIT 1
                 FOR UPDATE
               `
               const existingDoc = existingDocs[0] ?? null
+              const versionData = existingDoc
+                ? Buffer.from(
+                    Y.mergeUpdates([new Uint8Array(existingDoc.data), new Uint8Array(snapshot)])
+                  )
+                : snapshot
 
               await tx.documents.create({
                 data: {
                   documentId: documentName,
                   commitMessage: commitMessage || '',
                   version: existingDoc ? existingDoc.version + 1 : 1,
-                  data: Buffer.from(stateBase64, 'base64')
+                  data: versionData
                 }
               })
             })
@@ -242,6 +291,9 @@ export default () => {
     extensions,
     debounce: 10_000, // 10 seconds - wait for user to stop typing
     maxDebounce: 60_000, // 60 seconds - force save even if user keeps typing (prevents data loss)
+    // The app's shutdown() owns SIGTERM ordering (destroy → closeQueues → …);
+    // the library's own handler would process.exit(0) before that tail runs.
+    stopOnSignals: false,
 
     async onListen(data: any) {
       healthCheck.onConfigure({ ...data, extensions })

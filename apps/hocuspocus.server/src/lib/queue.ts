@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { Job, Queue, Worker } from 'bullmq'
+import * as Y from 'yjs'
 
 import { config } from '../config/env'
 import type { DeadLetterJobData, StoreDocumentData } from '../types'
@@ -71,14 +72,22 @@ async function upsertDocumentMetadata(
   throw new Error(`Failed to create unique slug after ${maxRetries} attempts`)
 }
 
-// Queue connection (non-blocking operations)
-const redisClient = createRedisConnection(bullmqConnectionOptions)
+// Queue connection (non-blocking operations). Tight command timeout on the
+// producer only, so a slow-but-locked enqueue fails into the store hook's
+// direct-DB fallback in seconds (a hard Redis outage never reaches it — the
+// redlock aborts the store chain first). Never lower the shared 60s
+// REDIS_COMMAND_TIMEOUT: it would race the workers' blocking bzpopmin.
+const redisClient = createRedisConnection({ ...bullmqConnectionOptions, commandTimeout: 5000 })
 const queueConnection = toBullMQConnection(redisClient)
 
-if (!queueConnection) {
+if (!redisClient || !queueConnection) {
   queueLogger.error('Failed to create Redis connection for BullMQ Queue')
   throw new Error('Redis configuration required for queue operations')
 }
+
+// Non-null alias: the throw above guarantees it, but the narrowing does not
+// survive into the closures below.
+const stateRedis = redisClient
 
 // Worker connection (blocking operations - MUST be separate)
 // BullMQ uses BRPOPLPUSH which blocks the connection
@@ -101,11 +110,17 @@ export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents'
       type: 'exponential',
       delay: 2000 // Start with 2s delay
     },
+    // BullMQ job keys carry no TTL, so volatile-lru can never evict them:
+    // unbounded retention walks the shared Redis into OOM, which flips every
+    // save onto the inline DB fallback. The DLQ keeps the recovery payloads.
     removeOnComplete: {
-      count: 1000, // Keep more completed jobs for debugging
-      age: 24 * 3600 // 24 hours
+      count: 100,
+      age: 3600
     },
-    removeOnFail: false // NEVER auto-remove failed jobs in production
+    removeOnFail: {
+      count: 200,
+      age: 7 * 24 * 3600
+    }
   }
 })
 
@@ -127,6 +142,69 @@ StoreDocumentQueue.on('error', (err: Error) => {
   captureUnknown(err)
 })
 
+// Claim-check: the raw Y.js buffer lives in its own TTL'd Redis key and the
+// job carries only the reference — multi-MB base64 strings never ride through
+// BullMQ's JSON serialization on the WS event loop or linger in job hashes.
+const STATE_KEY_PREFIX = 'store-doc-state:'
+// Covers the retry ladder (~30s) with wide margin. Accepted payload-less-DLQ
+// paths: a job waiting >TTL for its FIRST run (worker outage/backlog), and
+// volatile-lru evicting state keys under memory pressure (they are the only
+// TTL'd keys whose loss matters). The next debounced save supersedes either.
+const STATE_KEY_TTL_SECONDS = 3600
+
+// Colon-free by contract: BullMQ reserves ':' as its Redis key separator and
+// validateOptions throws on custom ids containing it — '-' joins, always.
+// The 10s window + state fingerprint dedupes identical cross-instance saves
+// while a byte-different final flush in the same window still lands.
+export function buildStoreJobId(documentName: string, state: Uint8Array): string {
+  const timeWindow = Math.floor(Date.now() / 10000)
+  const stateHash = Bun.hash(state).toString(36)
+  return `doc-${documentName.replaceAll(':', '_')}-${timeWindow}-${state.byteLength}-${stateHash}`
+}
+
+export interface EnqueueStoreDocumentParams {
+  jobId: string
+  documentName: string
+  state: Buffer
+  context: StoreDocumentData['context']
+  commitMessage: string
+}
+
+export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): Promise<void> {
+  const stateKey = STATE_KEY_PREFIX + params.jobId
+  await stateRedis.set(stateKey, params.state, 'EX', STATE_KEY_TTL_SECONDS)
+  await StoreDocumentQueue.add(
+    'store-document',
+    {
+      documentName: params.documentName,
+      stateKey,
+      context: params.context,
+      commitMessage: params.commitMessage
+    },
+    { jobId: params.jobId }
+  )
+}
+
+// Stored snapshots must not carry the transient metadata keys the client
+// stamps on the live doc (commitMessage rides the version row instead).
+export function stripSnapshotMetadata(state: Uint8Array) {
+  const ydoc = new Y.Doc()
+  Y.applyUpdate(ydoc, state instanceof Buffer ? new Uint8Array(state) : state)
+  const meta = ydoc.getMap('metadata')
+  meta.delete('commitMessage')
+  meta.delete('isDraft')
+  return Buffer.from(Y.encodeStateAsUpdate(ydoc))
+}
+
+async function resolveJobState(data: StoreDocumentData): Promise<Buffer> {
+  if (data.stateKey) {
+    const buf = await stateRedis.getBuffer(data.stateKey)
+    if (buf) return buf
+  }
+  if (data.state) return Buffer.from(data.state, 'base64')
+  throw new Error(`Store job state missing or expired (${data.stateKey ?? 'no stateKey'})`)
+}
+
 // Worker to process document storage jobs
 export const createDocumentWorker = () => {
   const redisPublisher = getRedisPublisher()
@@ -137,51 +215,85 @@ export const createDocumentWorker = () => {
     'store-documents',
     async (job: Job<StoreDocumentData>) => {
       const { data } = job
+      let rawState: Buffer | null = null
 
       try {
         const startTime = Date.now()
         const context = data.context
 
-        // Use transaction with serializable isolation to prevent race conditions
-        const { savedDoc, createdSlug, isFirstCreation } = await prisma.$transaction(async (tx) => {
-          // Use raw query with FOR UPDATE to actually lock the row
-          const existingDocs = await tx.$queryRaw<{ id: number; version: number }[]>`
-            SELECT id, version FROM "Documents"
+        // Decode + metadata strip run HERE, not in the WS store hook — this
+        // is the CPU-heavy half of a save and it must stay off the event loop
+        // that serves live connections.
+        rawState = await resolveJobState(data)
+        const snapshot = stripSnapshotMetadata(rawState)
+
+        // READ COMMITTED + FOR UPDATE serializes appends but cannot stop two
+        // concurrent jobs computing the same nextVersion (no row exists on
+        // first creation; stale latest after the lock releases). The P2002 is
+        // expected and healed by retries — snapshots are cumulative full state.
+        const { savedDoc, createdSlug, isFirstCreation } = await prisma.$transaction(
+          async (tx) => {
+            // FOR UPDATE lock on the latest row; ORDER BY version is served
+            // top-1 by the (documentId, version) unique index — id DESC had
+            // no supporting index and scanned every version of the document.
+            const existingDocs = await tx.$queryRaw<
+              { id: number; version: number; data: Buffer }[]
+            >`
+            SELECT id, version, data FROM "Documents"
             WHERE "documentId" = ${data.documentName}
-            ORDER BY id DESC
+            ORDER BY version DESC
             LIMIT 1
             FOR UPDATE
           `
-          const existingDoc = existingDocs[0] ?? null
+            const existingDoc = existingDocs[0] ?? null
 
-          const isFirst = !existingDoc
-          const nextVersion = existingDoc ? existingDoc.version + 1 : 1
+            const isFirst = !existingDoc
+            const nextVersion = existingDoc ? existingDoc.version + 1 : 1
 
-          // Handle first-time document creation with retry on slug collision
-          let slug: string | undefined
-          if (isFirst) {
-            const baseSlug = context.slug || data.documentName
-            slug = await upsertDocumentMetadata(tx, {
-              documentId: data.documentName,
-              baseSlug,
-              title: baseSlug,
-              ownerId: context.user?.sub,
-              email: context.user?.email
-            })
-          }
+            // Merge with the locked head: concurrent jobs can commit out of
+            // order, and a plain INSERT would let a stale snapshot become the
+            // newest version. merge(newer, stale) === newer; divergent
+            // cross-replica flushes union instead of clobbering.
+            const versionData = existingDoc
+              ? Buffer.from(
+                  Y.mergeUpdates([new Uint8Array(existingDoc.data), new Uint8Array(snapshot)])
+                )
+              : snapshot
 
-          // Create new version (within transaction = atomic)
-          const doc = await tx.documents.create({
-            data: {
-              documentId: data.documentName,
-              commitMessage: data.commitMessage || '',
-              version: nextVersion,
-              data: Buffer.from(data.state, 'base64')
+            // Handle first-time document creation with retry on slug collision
+            let slug: string | undefined
+            if (isFirst) {
+              const baseSlug = context.slug || data.documentName
+              slug = await upsertDocumentMetadata(tx, {
+                documentId: data.documentName,
+                baseSlug,
+                title: baseSlug,
+                ownerId: context.user?.sub,
+                email: context.user?.email
+              })
             }
-          })
 
-          return { savedDoc: doc, createdSlug: slug, isFirstCreation: isFirst }
-        })
+            // Create new version (within transaction = atomic)
+            const doc = await tx.documents.create({
+              data: {
+                documentId: data.documentName,
+                commitMessage: data.commitMessage || '',
+                version: nextVersion,
+                data: versionData
+              }
+            })
+
+            return { savedDoc: doc, createdSlug: slug, isFirstCreation: isFirst }
+          },
+          // Under bursts jobs queue on the pool; waiting must degrade into
+          // latency, not P2028 errors that burn the retry budget.
+          { maxWait: 5000, timeout: 15000 }
+        )
+
+        // Claim-check key served its purpose; TTL remains the backstop.
+        if (data.stateKey) {
+          stateRedis.del(data.stateKey).catch(() => {})
+        }
 
         const duration = Date.now() - startTime
         queueLogger.info(
@@ -227,17 +339,34 @@ export const createDocumentWorker = () => {
       } catch (err) {
         queueLogger.error({ err, jobId: job.id }, 'Error storing data for job')
 
-        // If this is the final attempt, move to dead letter queue
-        if (job.attemptsMade >= (job.opts.attempts || 5)) {
+        // Final attempt → DLQ. attemptsMade counts PRIOR attempts inside the
+        // processor (BullMQ increments it in moveToFinished, after we throw),
+        // so the final of N attempts sees N-1 — hence the +1.
+        if (job.attemptsMade + 1 >= (job.opts.attempts || 5)) {
           queueLogger.error({ jobId: job.id }, 'Job exhausted all retries. Moving to DLQ')
           captureUnknown(err)
+
+          // Embed the payload inline while the claim-check key is still live;
+          // a job that outwaited the TTL dead-letters payload-less (accepted —
+          // the next debounced save supersedes it).
+          let dlqState = data.state
+          if (!dlqState && rawState) dlqState = rawState.toString('base64')
+          if (!dlqState && data.stateKey) {
+            const buf = await stateRedis.getBuffer(data.stateKey).catch(() => null)
+            dlqState = buf?.toString('base64')
+          }
+
           const dlqData: DeadLetterJobData = {
             ...data,
+            state: dlqState,
             originalJobId: job.id ?? undefined,
             failureReason: err instanceof Error ? err.message : 'Unknown error',
             failedAt: new Date().toISOString()
           }
           await DeadLetterQueue.add('failed-document', dlqData)
+          if (data.stateKey) {
+            stateRedis.del(data.stateKey).catch(() => {})
+          }
         }
 
         throw err // Re-throw to trigger retry

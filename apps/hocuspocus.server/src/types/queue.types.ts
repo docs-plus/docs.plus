@@ -1,7 +1,10 @@
 // BullMQ document storage job data
 export interface StoreDocumentData {
   documentName: string
-  state: string // base64 encoded Y.js state
+  /** Redis claim-check key holding the raw Y.js state (preferred shape). */
+  stateKey?: string
+  /** Inline base64 Y.js state — legacy in-flight jobs and the DLQ payload embed. */
+  state?: string
   context: {
     slug?: string
     user?: {

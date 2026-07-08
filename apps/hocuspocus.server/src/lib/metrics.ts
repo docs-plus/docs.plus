@@ -104,7 +104,15 @@ export const documentLoadDuration = new Histogram({
 export const documentPersistDuration = new Histogram({
   name: 'document_persist_duration_seconds',
   help: 'Hocuspocus store-hook duration in seconds (enqueue overhead, not DB write)',
-  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  registers: [register]
+})
+
+// Each fallback is a synchronous Postgres write on the WS event loop (queue
+// down/OOM) — sustained increments mean Redis needs attention, not the DB.
+export const documentPersistFallbackTotal = new Counter({
+  name: 'document_persist_fallback_total',
+  help: 'Document saves that bypassed the queue and wrote directly to Postgres',
   registers: [register]
 })
 
