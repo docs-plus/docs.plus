@@ -176,7 +176,9 @@ const configureExtensions = () => {
         } catch (err) {
           dbLogger.error({ err }, 'Error fetching document data')
           captureUnknown(err)
-          await prisma.$disconnect()
+          // Never $disconnect() the shared pool here — one document's transient
+          // fetch error would tear the pool out from under every concurrent
+          // query. pg evicts broken clients per-connection on its own.
           throw err
         }
       },
