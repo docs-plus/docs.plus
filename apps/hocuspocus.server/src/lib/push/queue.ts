@@ -178,8 +178,9 @@ export function createPushWorker(): Worker<PushJobData> | null {
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err))
 
-        // Move to DLQ on final attempt
-        if (job.attemptsMade >= (job.opts.attempts || 3)) {
+        // Move to DLQ on final attempt (+1: attemptsMade counts prior
+        // attempts inside the processor — BullMQ increments after the throw)
+        if (job.attemptsMade + 1 >= (job.opts.attempts || 3)) {
           pushLogger.error({ jobId: job.id }, 'Push exhausted retries, moving to DLQ')
           captureUnknown(error)
 

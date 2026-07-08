@@ -165,8 +165,9 @@ export function createEmailWorker() {
         const error = err instanceof Error ? err : new Error(String(err))
         emailLogger.error({ err: error, jobId: job.id }, 'Email job failed')
 
-        // Move to DLQ on final attempt
-        if (job.attemptsMade >= (job.opts.attempts || 3)) {
+        // Move to DLQ on final attempt (+1: attemptsMade counts prior
+        // attempts inside the processor — BullMQ increments after the throw)
+        if (job.attemptsMade + 1 >= (job.opts.attempts || 3)) {
           emailLogger.error({ jobId: job.id }, 'Email exhausted retries, moving to DLQ')
           captureUnknown(error)
 
