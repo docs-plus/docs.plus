@@ -166,5 +166,8 @@ export const runHtmlScrape = async (
     return null
   } finally {
     clearTimeout(timer)
+    // Release the socket on early returns (non-ok / non-HTML / oversized) that
+    // never drained the body. A no-op once the body was fully read.
+    controller.abort()
   }
 }
