@@ -85,7 +85,7 @@ const resolveMediaMaxFileSize = (configured: number): number => {
 }
 
 // Resolved once at load so the warning fires at startup, not on every upload.
-const MEDIA_MAX_FILE_SIZE = resolveMediaMaxFileSize(config.storage.s3.maxFileSize)
+export const MEDIA_MAX_FILE_SIZE = resolveMediaMaxFileSize(config.storage.s3.maxFileSize)
 
 export const uploadMedia = async (documentId: string, mediaFile: File) => {
   try {

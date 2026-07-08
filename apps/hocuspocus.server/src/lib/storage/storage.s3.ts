@@ -31,11 +31,16 @@ export const upload = async (
   const contentType = mime.getType(fileName) || 'application/octet-stream'
   const startTime = performance.now()
 
+  // SVG/HTML render script at the object origin; the public-read Spaces URL
+  // bypasses our proxy, so stamp the stored object itself to force download.
+  const contentDisposition = /svg\+xml|html/i.test(contentType) ? 'attachment' : undefined
+
   try {
     // Bun's native write - accepts Buffer, Uint8Array, ArrayBuffer, or string
     await s3Client.write(key, fileContent, {
       type: contentType,
-      acl: 'public-read'
+      acl: 'public-read',
+      ...(contentDisposition ? { contentDisposition } : {})
     })
 
     const duration = performance.now() - startTime
@@ -75,23 +80,22 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
       return c.json({ error: 'File not found' }, 404)
     }
 
-    // Download file - Bun's optimized arrayBuffer() method
-    const buffer = await s3File.arrayBuffer()
-    const duration = performance.now() - startTime
-
     const contentType = mime.getType(fileName) || 'application/octet-stream'
+    // SVG/HTML render script at the object origin — force download for those.
+    const disposition = /svg\+xml|html/i.test(contentType) ? 'attachment' : 'inline'
 
     storageS3Logger.info(
-      { key, sizeKB: (buffer.byteLength / 1024).toFixed(2), durationMs: duration.toFixed(2) },
-      'S3 download successful'
+      { key, durationMs: (performance.now() - startTime).toFixed(2) },
+      'S3 download streaming'
     )
 
-    return c.body(buffer, 200, {
-      'Content-Type': contentType,
-      'Content-Disposition': `inline; filename="${fileName}"`,
-      'Content-Length': buffer.byteLength.toString(),
-      'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public, max-age=31536000, immutable'
+    // Stream the S3 object instead of buffering the whole file into memory.
+    return new Response(s3File.stream(), {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `${disposition}; filename="${fileName}"`,
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
     })
   } catch (err) {
     storageS3Logger.error({ err, key }, 'S3 download failed')

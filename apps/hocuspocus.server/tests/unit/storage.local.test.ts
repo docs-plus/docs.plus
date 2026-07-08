@@ -71,7 +71,11 @@ describe('Local Storage - Error Handling', () => {
         expect(response.status).toBe(200)
         expect(response.headers.get('Content-Type')).toBe('image/jpeg')
         expect(response.headers.get('Content-Disposition')).toBe(`inline; filename="${fileName}"`)
-        expect(response.headers.get('Accept-Ranges')).toBe('bytes')
+        // Range is answered by Bun.serve at serve time now (the file streams as
+        // the response body), not by a hand-set Accept-Ranges header.
+        expect(response.headers.get('Cache-Control')).toBe(
+          'public, max-age=31536000, immutable'
+        )
 
         const body = await response.text()
         expect(body).toBe(fileContent)

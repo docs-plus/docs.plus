@@ -60,16 +60,22 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
     }
 
     const contentType = mime.getType(mediaId) || 'application/octet-stream'
+    // SVG/HTML render script at the object origin — force download for those.
+    const disposition = /svg\+xml|html/i.test(contentType) ? 'attachment' : 'inline'
 
     storageLocalLogger.debug(
       { documentId, mediaId, fileSize: file.size },
       'File retrieved from local storage'
     )
 
-    return c.body(await file.arrayBuffer(), 200, {
-      'Content-Type': contentType,
-      'Content-Disposition': `inline; filename="${mediaId}"`,
-      'Accept-Ranges': 'bytes'
+    // Return the lazy file handle so Bun.serve streams it and answers Range
+    // (206) itself, instead of buffering the whole file into memory.
+    return new Response(file, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `${disposition}; filename="${mediaId}"`,
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
     })
   } catch (error) {
     storageLocalLogger.error(
