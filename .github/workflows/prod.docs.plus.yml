@@ -599,7 +599,10 @@ jobs:
             echo ""
             echo "📦 Deploying ${SERVICE} (current: ${CURRENT}, target: ${TARGET})..."
 
-            # Scale UP first (keeps old containers serving traffic)
+            # Scale UP first. NOTE: this is best-effort, not true zero-downtime
+            # — the changed image tag alters the config hash, so `up -d --scale`
+            # recreates the OLD containers at scale-up; each service has a
+            # brief no-healthy-backend window until the new replicas pass health.
             if [ "${SCALE_UP}" -gt "${CURRENT}" ]; then
               echo "⬆️  Scaling up to ${SCALE_UP}..."
               docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
@@ -629,10 +632,13 @@ jobs:
             sleep 2
           }
 
+          # Workers before servers: consumers must understand the newest job
+          # shape before producers can emit it (compose declares 2 worker
+          # replicas — a scale of 1 silently halved the fleet on every deploy).
+          deploy_service "hocuspocus-worker" 2
           deploy_service "webapp" 2
           deploy_service "rest-api" 2
           deploy_service "hocuspocus-server" 2
-          deploy_service "hocuspocus-worker" 1
           deploy_service "admin-dashboard" 1
 
           echo ""
