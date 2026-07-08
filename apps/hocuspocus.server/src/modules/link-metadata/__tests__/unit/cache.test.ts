@@ -36,9 +36,21 @@ const sample: NonNullable<StageResult> = {
 }
 
 describe('cacheKey', () => {
-  test('uses meta:v1: prefix and sha1 of the canonical url', () => {
+  test('uses meta:v1: prefix, sha1 of the canonical url, and the primary lang subtag', () => {
     const key = cacheKey('https://example.com/x', 'en-US')
-    expect(key).toMatch(/^meta:v1:[a-f0-9]{40}:en-US$/)
+    expect(key).toMatch(/^meta:v1:[a-f0-9]{40}:en$/)
+  })
+
+  test('collapses a full Accept-Language header to its primary subtag', () => {
+    const key = cacheKey('https://example.com/x', 'en-US,en;q=0.9,fr;q=0.8')
+    expect(key).toBe(cacheKey('https://example.com/x', 'en'))
+  })
+
+  test('collapses a non-language token to "_" so cardinality stays bounded', () => {
+    expect(cacheKey('https://example.com/x', 'zzzz').endsWith(':_')).toBe(true)
+    expect(cacheKey('https://example.com/x', 'garbage-value')).toBe(
+      cacheKey('https://example.com/x', undefined)
+    )
   })
 
   test('uses "_" when lang is undefined', () => {
