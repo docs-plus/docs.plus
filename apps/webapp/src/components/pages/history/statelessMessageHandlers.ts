@@ -79,6 +79,33 @@ function recoverAfterWatchFailure(deps: HistoryStatelessHandlerDeps, failedVersi
     return
   }
 
+  // Re-requesting the version that just failed loops forever — the row may
+  // have been pruned server-side while the sidebar list was stale. Evict it
+  // and fall back to the newest remaining version instead.
+  if (failedVersion != null && sidebarItem.version === failedVersion) {
+    const remaining = list.filter((item) => item.version !== failedVersion)
+    deps.setHistoryList(remaining)
+    toast.Error("That version isn't available anymore")
+
+    const fallback = remaining[0]
+    if (!fallback) {
+      deps.setActiveHistory(null)
+      deps.setLoadingHistory(false)
+      normalizeToPlainHistoryHash()
+      return
+    }
+
+    deps.setActiveHistory(fallback)
+    if (
+      tryHydrateVersion(deps, fallback, 'History: could not decode fallback row after eviction')
+    ) {
+      return
+    }
+    deps.setLoadingHistory(true)
+    deps.watchVersionContent(fallback.version, { updateUrl: false })
+    return
+  }
+
   deps.setLoadingHistory(true)
   deps.watchVersionContent(sidebarItem.version, { updateUrl: false })
 }
