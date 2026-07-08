@@ -2,9 +2,10 @@ import { describe, test, expect, mock, beforeEach } from 'bun:test'
 
 describe('Worker - Unit Tests', () => {
   describe('Worker configuration', () => {
-    test('should use default WORKER_HEALTH_PORT of 3003', () => {
-      const defaultPort = parseInt(process.env.WORKER_HEALTH_PORT || '3003', 10)
-      expect(defaultPort).toBe(3003)
+    test('should use default WORKER_HEALTH_PORT of 4002', () => {
+      // env.schema.ts defaults to 4002; the local env also sets it.
+      const defaultPort = parseInt(process.env.WORKER_HEALTH_PORT || '4002', 10)
+      expect(defaultPort).toBe(4002)
     })
 
     test('should use custom WORKER_HEALTH_PORT from env', () => {
