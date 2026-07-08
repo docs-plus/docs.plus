@@ -181,6 +181,9 @@ export const envSchema = z.object({
   WORKER_ERROR_WINDOW_MS: numericString('60000'),
   WORKER_SHUTDOWN_TIMEOUT_MS: numericString('120000'),
   IDEMPOTENCY_CLEANUP_INTERVAL_MS: numericString('3600000'),
+  // Unnamed autosave versions older than this get thinned to one per doc per
+  // day (named checkpoints always survive). 0 disables pruning entirely.
+  DOC_AUTOSAVE_RETENTION_DAYS: numericString('30'),
 
   // -------------------------------------------------------------------------
   // Logging

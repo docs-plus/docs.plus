@@ -43,6 +43,48 @@ async function cleanupExpiredLogs() {
   }
 }
 
+const AUTOSAVE_RETENTION_DAYS = config.worker.autosaveRetentionDays
+const PRUNE_BATCH_SIZE = 1000
+const PRUNE_MAX_BATCHES = 10
+
+// Thins old unnamed autosave snapshots to one per document per day. Rows with
+// a commitMessage are user-named history checkpoints and always survive, as
+// does each day's newest row — the history sidebar keeps every visible entry.
+async function pruneAutosaveVersions() {
+  if (AUTOSAVE_RETENTION_DAYS <= 0) return
+  try {
+    let totalDeleted = 0
+    for (let batch = 0; batch < PRUNE_MAX_BATCHES; batch++) {
+      const deleted = await prisma.$executeRaw`
+        DELETE FROM "Documents" WHERE id IN (
+          SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (
+              PARTITION BY "documentId", date_trunc('day', "createdAt")
+              ORDER BY version DESC
+            ) AS day_rank
+            FROM "Documents"
+            WHERE ("commitMessage" IS NULL OR "commitMessage" = '')
+              AND "createdAt" < now() - ${AUTOSAVE_RETENTION_DAYS} * interval '1 day'
+          ) ranked
+          WHERE day_rank > 1
+          LIMIT ${PRUNE_BATCH_SIZE}
+        )`
+      totalDeleted += deleted
+      if (deleted < PRUNE_BATCH_SIZE) break
+    }
+    if (totalDeleted > 0) {
+      workerLogger.info({ deleted: totalDeleted }, '🧹 Pruned old autosave document versions')
+    }
+  } catch (err) {
+    workerLogger.warn({ err }, 'Failed to prune autosave document versions')
+  }
+}
+
+async function runScheduledCleanup() {
+  await cleanupExpiredLogs()
+  await pruneAutosaveVersions()
+}
+
 // Schedule cleanup interval
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
@@ -107,11 +149,14 @@ if (emailConsumerStarted) {
   workerLogger.warn('⚠️ Email notification pgmq consumer not started - check Supabase config')
 }
 
-// Start idempotency log cleanup interval
-cleanupInterval = setInterval(cleanupExpiredLogs, CLEANUP_INTERVAL_MS)
-// Run once on startup to clean any stale logs
-cleanupExpiredLogs()
-workerLogger.info({ intervalMs: CLEANUP_INTERVAL_MS }, '🧹 Idempotency log cleanup scheduled')
+// Start idempotency log + autosave version cleanup interval
+cleanupInterval = setInterval(runScheduledCleanup, CLEANUP_INTERVAL_MS)
+// Run once on startup to clean any stale rows
+runScheduledCleanup()
+workerLogger.info(
+  { intervalMs: CLEANUP_INTERVAL_MS, autosaveRetentionDays: AUTOSAVE_RETENTION_DAYS },
+  '🧹 Idempotency log + autosave version cleanup scheduled'
+)
 
 const stopWorkerMetricsSampling = startWorkerMetricsSampling()
 
