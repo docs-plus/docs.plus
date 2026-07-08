@@ -63,7 +63,10 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'histogram_quantile(0.99, sum by (le) (rate(document_persist_duration_seconds_bucket[5m])))'
+              # Traffic guard: with saves this sparse a single slow flush owns
+              # the p99; below ~6 persists/5m the guard suppresses (noDataState
+              # OK) instead of paging on a one-document artifact.
+              expr: 'histogram_quantile(0.99, sum by (le) (rate(document_persist_duration_seconds_bucket[5m]))) and (sum(rate(document_persist_duration_seconds_count[5m])) > 0.02)'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200

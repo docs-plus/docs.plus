@@ -30,18 +30,28 @@ scrape_configs:
   - job_name: traefik
     static_configs:
       - targets: ['traefik:8082']
+  # The three app services run replicas: 2. A static service-name target
+  # round-robins between two independent counter registries under one instance
+  # label, fabricating counter resets in every rate()/histogram_quantile.
+  # DNS SD enumerates each replica IP as its own target instead.
   - job_name: rest-api
     metrics_path: /metrics
-    static_configs:
-      - targets: ['rest-api:4000']
+    dns_sd_configs:
+      - names: ['rest-api']
+        type: A
+        port: 4000
   - job_name: hocuspocus-server
     metrics_path: /metrics
-    static_configs:
-      - targets: ['hocuspocus-server:4003']
+    dns_sd_configs:
+      - names: ['hocuspocus-server']
+        type: A
+        port: 4003
   - job_name: hocuspocus-worker
     metrics_path: /metrics
-    static_configs:
-      - targets: ['hocuspocus-worker:4002']
+    dns_sd_configs:
+      - names: ['hocuspocus-worker']
+        type: A
+        port: 4002
   - job_name: blackbox
     metrics_path: /probe
     params:

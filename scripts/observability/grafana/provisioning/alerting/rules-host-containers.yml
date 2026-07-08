@@ -86,6 +86,45 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      - uid: dep-redis-evictions
+        title: Redis evicting keys (volatile-lru active)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Redis is evicting TTL'd keys — claim-check document states are in the eviction set (payload-less DLQ risk)
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: 'increase(redis_evicted_keys_total[15m])'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
       - uid: dep-redis-maxmemory
         title: Redis near maxmemory (>90%)
         condition: C
