@@ -30,35 +30,41 @@ export interface DocumentStructure {
   paragraphs: number
 }
 
+type TiptapNode = { type?: string; text?: string; content?: unknown[] }
+
+// Decode Y.js update bytes to the ProseMirror tree and visit every node. Throws
+// (bad bytes) propagate to the caller so each can shape its own failure value.
+function walkTiptapDoc(data: Buffer | Uint8Array | null, visit: (node: TiptapNode) => void): void {
+  if (!data) return
+  const ydoc = new Y.Doc()
+  const buffer = data instanceof Buffer ? new Uint8Array(data) : data
+  Y.applyUpdate(ydoc, buffer)
+
+  const json = TiptapTransformer.fromYdoc(ydoc, 'default') as { content?: unknown[] } | null
+  if (!json?.content || !Array.isArray(json.content)) return
+
+  const recurse = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    const n = node as TiptapNode
+    visit(n)
+    if (Array.isArray(n.content)) n.content.forEach(recurse)
+  }
+  json.content.forEach(recurse)
+}
+
 /** Parse Y.js update bytes into structural counts via @hocuspocus/transformer. */
 function parseDocumentStructure(data: Buffer | Uint8Array | null): DocumentStructure {
-  const empty: DocumentStructure = { headings: 0, paragraphs: 0 }
-  if (!data) return empty
-
+  let headings = 0
+  let paragraphs = 0
   try {
-    const ydoc = new Y.Doc()
-    const buffer = data instanceof Buffer ? new Uint8Array(data) : data
-    Y.applyUpdate(ydoc, buffer)
-
-    const json = TiptapTransformer.fromYdoc(ydoc, 'default') as {
-      content?: unknown[]
-    } | null
-    if (!json?.content || !Array.isArray(json.content)) return empty
-
-    let headings = 0,
-      paragraphs = 0
-    function traverse(node: unknown): void {
-      if (!node || typeof node !== 'object') return
-      const n = node as { type?: string; content?: unknown[] }
+    walkTiptapDoc(data, (n) => {
       if (n.type === 'heading') headings++
       if (n.type === 'paragraph') paragraphs++
-      if (Array.isArray(n.content)) n.content.forEach(traverse)
-    }
-    json.content.forEach(traverse)
-    return { headings, paragraphs }
+    })
   } catch {
-    return empty
+    return { headings: 0, paragraphs: 0 }
   }
+  return { headings, paragraphs }
 }
 
 const structureCache = new Map<string, { structure: DocumentStructure; expiresAt: number }>()
@@ -520,20 +526,16 @@ export async function bulkDeleteStale(
 }
 
 /** Extract a 500-char text preview from a stored document's latest version. */
-function parseContentPreview(data: unknown): string {
+function parseContentPreview(data: Buffer | Uint8Array | null): string {
+  const parts: string[] = []
   try {
-    const dataStr = JSON.stringify(data)
-    const textMatches = dataStr.match(/"text":"([^"]+)"/g)
-    if (textMatches) {
-      return textMatches
-        .map((m) => m.replace(/"text":"/, '').replace(/"$/, ''))
-        .join(' ')
-        .slice(0, 500)
-    }
-    return dataStr.slice(0, 500)
+    walkTiptapDoc(data, (n) => {
+      if (n.type === 'text' && typeof n.text === 'string') parts.push(n.text)
+    })
   } catch {
     return '(Unable to parse content)'
   }
+  return parts.join(' ').slice(0, 500)
 }
 
 export interface DocumentPreview {
