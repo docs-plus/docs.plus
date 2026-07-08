@@ -9,12 +9,12 @@
 #   - Traefik static config: ./scripts/traefik/traefik.yml
 #   - Dynamic routing: Docker labels (below)
 #
-# Zero-Downtime Strategy:
-#   Traefik only routes to HEALTHY containers. During deployment:
-#   1. New containers start alongside old ones
-#   2. Traefik waits for new containers to pass health checks
-#   3. Once healthy, Traefik routes traffic to new containers
-#   4. Old containers are removed
+# Rolling-Deploy Strategy (best-effort, NOT true zero-downtime):
+#   Traefik only routes to HEALTHY containers, but a changed image tag alters
+#   the compose config hash, so the deploy's scale-up RECREATES the old
+#   containers — each service has a brief no-healthy-backend window until the
+#   new replicas pass health checks. retry@file on idempotent routers masks
+#   the resulting connection errors for clients.
 #
 # Usage:
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
@@ -137,7 +137,10 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3584M
+          # maxmemory stays 3gb; the extra cgroup headroom absorbs the
+          # AOF-rewrite fork's copy-on-write spike instead of OOM-killing the
+          # one Redis carrying WS sync + queues + cache.
+          memory: 4096M
         reservations:
           memory: 1G
 
@@ -247,7 +250,9 @@ services:
       replicas: 2
       resources:
         limits:
-          cpus: '0.5'
+          # Ceilings sized for burst, not steady state — idle services yield
+          # via CPU shares; quotas only stop one container monopolizing.
+          cpus: '1.0'
           memory: 512M
         reservations:
           cpus: '0.25'
@@ -341,11 +346,14 @@ services:
       replicas: 2
       resources:
         limits:
-          cpus: '0.5'
-          memory: 768M
+          # Ceiling, not reservation: the store hook and Yjs sync are
+          # CPU-bound bursts — a 0.5 CFS quota throttled them past the 0.5s
+          # persist alert. Let each replica burst toward the free cores.
+          cpus: '2.0'
+          memory: 1024M
         reservations:
-          cpus: '0.25'
-          memory: 256M
+          cpus: '0.5'
+          memory: 512M
 
   # ===========================================================================
   # HOCUSPOCUS WORKER (Background Jobs)
@@ -376,8 +384,11 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
-      # Lower pool per worker since we run 2 replicas (2 workers × 5 = 10 connections)
-      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      # Concurrency is pinned to the pool per replica: more concurrent jobs
+      # than connections just converts queue latency into P2028 pool-wait
+      # errors that burn the retry budget (overrides env_file's global value).
+      DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-10}
+      BULLMQ_CONCURRENCY: ${WORKER_DB_POOL_SIZE:-10}
       DB_IDLE_TIMEOUT: 30000
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
@@ -436,10 +447,12 @@ services:
       replicas: 2
       resources:
         limits:
-          cpus: '1'
+          # Workers now own the Yjs decode/strip CPU for every save — give
+          # them burst headroom; throughput is DB-bound, not quota-bound.
+          cpus: '2.0'
           memory: 1G
         reservations:
-          cpus: '0.25'
+          cpus: '0.5'
           memory: 256M
 
   # ===========================================================================
@@ -498,7 +511,7 @@ services:
       - 'traefik.http.routers.webapp.entrypoints=websecure'
       - 'traefik.http.routers.webapp.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.webapp.service=webapp'
-      - 'traefik.http.routers.webapp.middlewares=security-headers@file,compress@file,rate-limit-web@file'
+      - 'traefik.http.routers.webapp.middlewares=security-headers@file,compress@file,rate-limit-web@file,retry@file'
       - 'traefik.http.services.webapp.loadbalancer.server.port=3000'
       # Health check - Traefik only routes to healthy containers
       - 'traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health'
@@ -526,7 +539,9 @@ services:
       replicas: 2
       resources:
         limits:
-          cpus: '0.5'
+          # SSR bursts (slug pages) benefit from a full core; shares keep it
+          # fair against the realtime tier under contention.
+          cpus: '1.0'
           memory: 768M
         reservations:
           cpus: '0.25'
