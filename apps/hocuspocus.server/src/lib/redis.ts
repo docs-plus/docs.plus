@@ -125,32 +125,6 @@ const getRedisConfig = () => {
   return buildRedisConfig(host, parseInt(port, 10), 'sync')
 }
 
-/**
- * Get config for QUEUE Redis (BullMQ job queues)
- * Uses REDIS_QUEUE_HOST / REDIS_QUEUE_PORT if set, otherwise falls back to main Redis
- * This allows running with single Redis in dev, dual Redis in prod
- */
-const getQueueRedisConfig = () => {
-  // Try queue-specific config first
-  const queueHost = process.env.REDIS_QUEUE_HOST
-  const queuePort = process.env.REDIS_QUEUE_PORT
-
-  if (queueHost && queuePort) {
-    return buildRedisConfig(queueHost, parseInt(queuePort, 10), 'queue')
-  }
-
-  // Fall back to main Redis (single Redis mode)
-  const mainHost = process.env.REDIS_HOST
-  const mainPort = process.env.REDIS_PORT
-
-  if (mainHost && mainPort) {
-    redisLogger.info('REDIS_QUEUE_HOST not set, using main Redis for queues')
-    return buildRedisConfig(mainHost, parseInt(mainPort, 10), 'queue')
-  }
-
-  return null
-}
-
 // Main Redis client (for general operations)
 let redis: RedisClient | null = globalForRedis.redis ?? null
 
@@ -314,30 +288,6 @@ export const createRedisConnection = (options: Partial<RedisOptions> = {}): Redi
     return null
   }
 
-  const commandTimeout = options.commandTimeout ?? config.commandTimeout
-
-  return new Redis({
-    ...config,
-    ...options,
-    commandTimeout
-  })
-}
-
-/**
- * Create a new dedicated Redis connection for QUEUE operations (BullMQ)
- * Uses REDIS_QUEUE_HOST / REDIS_QUEUE_PORT, falls back to main Redis
- */
-export const createQueueRedisConnection = (
-  options: Partial<RedisOptions> = {}
-): RedisClient | null => {
-  const config = getQueueRedisConfig()
-
-  if (!config) {
-    redisLogger.warn('Cannot create Redis queue connection: config not found')
-    return null
-  }
-
-  // BullMQ needs higher timeout for long-running operations
   const commandTimeout = options.commandTimeout ?? config.commandTimeout
 
   return new Redis({

@@ -55,8 +55,6 @@ Redis is optional; features degrade gracefully without it (rate limiting is disa
 | `REDIS_KEEPALIVE`       | number  | `30000`     |                                                                                                                                                                        |
 | `REDIS_MAX_RETRIES`     | number  | `10`        |                                                                                                                                                                        |
 
-`redis.ts` also reads `REDIS_QUEUE_HOST` / `REDIS_QUEUE_PORT` (not in the schema) to point BullMQ at a separate Redis; it falls back to the main Redis when unset.
-
 ## Database pool
 
 Read by `src/lib/prisma.ts`. Several effective defaults differ from the schema — flagged below.
