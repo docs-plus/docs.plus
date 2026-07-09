@@ -7,10 +7,48 @@ import { persist, PersistOptions } from 'zustand/middleware'
 // ---------------------------------------------------------------------------
 
 /** User preference — what they chose in Settings → Appearance */
-export type ThemePreference = 'light' | 'dark' | 'dark-hc' | 'system'
+export type ThemePreference =
+  | 'light'
+  | 'dark'
+  | 'dark-hc'
+  | 'graphite-light'
+  | 'graphite-dark'
+  | 'paper-light'
+  | 'paper-dark'
+  | 'system'
 
 /** Resolved DaisyUI theme name applied to `data-theme` */
-export type ResolvedTheme = 'docsplus' | 'docsplus-dark' | 'docsplus-dark-hc'
+export type ResolvedTheme =
+  | 'docsplus'
+  | 'docsplus-dark'
+  | 'docsplus-dark-hc'
+  | 'docsplus-graphite'
+  | 'docsplus-graphite-dark'
+  | 'docsplus-paper'
+  | 'docsplus-paper-dark'
+
+/** Light resolved themes — the single source for every "is this light?" test. */
+const LIGHT_RESOLVED_THEMES = new Set<ResolvedTheme>([
+  'docsplus',
+  'docsplus-graphite',
+  'docsplus-paper'
+])
+
+/** True when the resolved theme is a light one. Dark = everything else (incl. HC). */
+export function isLightTheme(resolved: ResolvedTheme): boolean {
+  return LIGHT_RESOLVED_THEMES.has(resolved)
+}
+
+/** Preference → resolved theme name, for the light themes with an explicit choice. */
+const PREFERENCE_TO_THEME: Partial<Record<ThemePreference, ResolvedTheme>> = {
+  light: 'docsplus',
+  dark: 'docsplus-dark',
+  'dark-hc': 'docsplus-dark-hc',
+  'graphite-light': 'docsplus-graphite',
+  'graphite-dark': 'docsplus-graphite-dark',
+  'paper-light': 'docsplus-paper',
+  'paper-dark': 'docsplus-paper-dark'
+}
 
 export interface ThemeStore {
   /** User's preference (persisted in localStorage) */
@@ -30,11 +68,10 @@ export interface ThemeStore {
 
 /** Resolve a preference + OS setting into a concrete theme name. */
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {
-  if (preference === 'dark') return 'docsplus-dark'
-  if (preference === 'dark-hc') return 'docsplus-dark-hc'
-  if (preference === 'light') return 'docsplus'
+  const explicit = PREFERENCE_TO_THEME[preference]
+  if (explicit) return explicit
 
-  // "system" — check OS preference
+  // "system" — follow OS; system only ever picks the base light/dark pair.
   if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'docsplus-dark'
   }
@@ -43,7 +80,7 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
 
 /** Map resolved theme to emoji-mart theme (Picker). Single place for this contract. */
 export function getEmojiMartTheme(resolved: ResolvedTheme): 'light' | 'dark' {
-  return resolved === 'docsplus' ? 'light' : 'dark'
+  return isLightTheme(resolved) ? 'light' : 'dark'
 }
 
 /** Apply theme to the DOM (instant swap — see Theme_Light_Dark.md §6.6) */

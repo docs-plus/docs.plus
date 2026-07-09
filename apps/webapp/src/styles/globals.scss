@@ -5,11 +5,12 @@
 /* Map Tailwind's dark: variant to DaisyUI's data-theme attribute.
    Without this, dark: classes only respond to OS prefers-color-scheme,
    NOT the in-app theme toggle. */
-@custom-variant dark (&:where([data-theme="docsplus-dark"] *, [data-theme="docsplus-dark"], [data-theme="docsplus-dark-hc"] *, [data-theme="docsplus-dark-hc"]));
+@custom-variant dark (&:where([data-theme="docsplus-dark"] *, [data-theme="docsplus-dark"], [data-theme="docsplus-dark-hc"] *, [data-theme="docsplus-dark-hc"], [data-theme="docsplus-graphite-dark"] *, [data-theme="docsplus-graphite-dark"], [data-theme="docsplus-paper-dark"] *, [data-theme="docsplus-paper-dark"]));
 
 /* ============================================
    docs.plus Theme System v3
-   Light · Dark · Dark High Contrast (projector)
+   Base: Light · Dark · Dark High Contrast (projector)
+   Premium (opt-in): Graphite (light/dark) · Paper (light/dark)
    ============================================ */
 
 @plugin 'daisyui/theme' {
@@ -180,6 +181,172 @@
   --noise: 0;
 }
 
+/* ============================================
+   Premium — Graphite + Electric Indigo
+   Quiet desaturated graphite, one confident indigo accent (Linear/Arc).
+   Neutrals share one hue (OKLCH H264) across every step.
+   ============================================ */
+@plugin 'daisyui/theme' {
+  name: 'docsplus-graphite';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
+
+  --color-base-100: #f9fafc; /* off-white graphite paper */
+  --color-base-200: #eceef3; /* well */
+  --color-base-300: #ced3db; /* border */
+  --color-base-content: #10141c; /* graphite-black ink (17.7:1) */
+
+  --color-primary: #4061db; /* electric indigo */
+  --color-primary-content: #ffffff;
+  --color-secondary: #00967c; /* cool jade-teal (presence) */
+  --color-secondary-content: #00110c;
+  --color-accent: #e6b22d; /* warm gold pop against cool graphite */
+  --color-accent-content: #261704;
+  --color-neutral: #2d333e;
+  --color-neutral-content: #f0f2f6;
+
+  --color-info: #0070bc;
+  --color-info-content: #ffffff;
+  --color-success: #2a824a;
+  --color-success-content: #ffffff;
+  --color-warning: #dd7b2b;
+  --color-warning-content: #211208;
+  --color-error: #d33a3c;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.625rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'docsplus-graphite-dark';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'dark';
+
+  --color-base-100: #0c0d10; /* near-black graphite (not navy) */
+  --color-base-200: #16181c; /* raised hover step */
+  --color-base-300: #333843; /* border */
+  --color-base-content: #e6e8ec; /* soft graphite-white (15.8:1) */
+
+  --color-primary: #79a2f9;
+  --color-primary-content: #090d16;
+  --color-secondary: #4bbb9f;
+  --color-secondary-content: #000f0a;
+  --color-accent: #e9b543;
+  --color-accent-content: #1a0f03;
+  --color-neutral: #8f99ab;
+  --color-neutral-content: #060911;
+
+  --color-info: #4baeed;
+  --color-info-content: #040c13;
+  --color-success: #57bc80;
+  --color-success-content: #020f06;
+  --color-warning: #f59740;
+  --color-warning-content: #1b0e04;
+  --color-error: #fd736d;
+  --color-error-content: #180807;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.625rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ============================================
+   Premium — Warm Editorial Paper / Ink
+   Warm paper surface, cool ink; reading-first (Notion/iA-Writer).
+   Neutrals share one warm hue (H55–75) at very low chroma.
+   ============================================ */
+@plugin 'daisyui/theme' {
+  name: 'docsplus-paper';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'light';
+
+  --color-base-100: #fbf8f4; /* warm paper (not cream) */
+  --color-base-200: #f3eee7; /* well */
+  --color-base-300: #d7cec4; /* border */
+  --color-base-content: #18110d; /* warm near-black ink (17.6:1) */
+
+  --color-primary: #175fa4; /* deep ink-blue (cool, against warm paper) */
+  --color-primary-content: #ffffff;
+  --color-secondary: #378054; /* muted sage */
+  --color-secondary-content: #ffffff;
+  --color-accent: #ddb13a; /* warm gold (stops short of terracotta) */
+  --color-accent-content: #261704;
+  --color-neutral: #40362e;
+  --color-neutral-content: #f5f1ec;
+
+  --color-info: #0068a7;
+  --color-info-content: #ffffff;
+  --color-success: #38804b;
+  --color-success-content: #ffffff;
+  --color-warning: #dc702f;
+  --color-warning-content: #21120a;
+  --color-error: #ca3540;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.625rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'docsplus-paper-dark';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'dark';
+
+  --color-base-100: #110e0b; /* warm near-black (not blue-black) */
+  --color-base-200: #1d1915;
+  --color-base-300: #403730;
+  --color-base-content: #ebe5df; /* warm soft-white (15.4:1) */
+
+  --color-primary: #67a3e0;
+  --color-primary-content: #050c13;
+  --color-secondary: #69b183;
+  --color-secondary-content: #030e07;
+  --color-accent: #e0b446;
+  --color-accent-content: #1a0f03;
+  --color-neutral: #a49589;
+  --color-neutral-content: #0d0804;
+
+  --color-info: #56a6e3;
+  --color-info-content: #050c13;
+  --color-success: #63b376;
+  --color-success-content: #040e06;
+  --color-warning: #f28e42;
+  --color-warning-content: #1c0e05;
+  --color-error: #f46e6d;
+  --color-error-content: #180807;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.625rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 @theme {
   /* Alias to primary so light / dark / HC themes stay aligned (DaisyUI sets --color-primary per data-theme) */
   --color-docsy: var(--color-primary);
@@ -225,8 +392,12 @@
   --modal-scrim-heavy: color-mix(in oklch, black 72%, transparent);
 }
 
+/* Shared dark-theme semantic layer — scrims, sheet lift, and overlay shadow are
+   identical for every dark theme; per-theme --pad-well / media accents follow below. */
 [data-theme='docsplus-dark'],
-[data-theme='docsplus-dark-hc'] {
+[data-theme='docsplus-dark-hc'],
+[data-theme='docsplus-graphite-dark'],
+[data-theme='docsplus-paper-dark'] {
   --pad-sheet-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
   --modal-scrim: color-mix(in oklch, black 55%, transparent);
   --modal-scrim-heavy: color-mix(in oklch, black 80%, transparent);
@@ -238,6 +409,34 @@
   --color-media-image: #34d399;
   --color-media-video: #a78bfa;
   --color-media-audio: #fb923c;
+}
+
+/* Premium light themes — media accents tuned to each palette (--pad-well = base-200). */
+[data-theme='docsplus-graphite'] {
+  --color-media-image: #008d65;
+  --color-media-video: #833ddf;
+  --color-media-audio: #e45b15;
+}
+
+[data-theme='docsplus-paper'] {
+  --color-media-image: #1f8254;
+  --color-media-video: #7c44c3;
+  --color-media-audio: #d2600c;
+}
+
+/* Premium dark themes — own workspace floor (below base-100) + media accents. */
+[data-theme='docsplus-graphite-dark'] {
+  --pad-well: #07080b;
+  --color-media-image: #00c899;
+  --color-media-video: #b38aff;
+  --color-media-audio: #fb9344;
+}
+
+[data-theme='docsplus-paper-dark'] {
+  --pad-well: #0b0806;
+  --color-media-image: #51bd85;
+  --color-media-video: #ad87ed;
+  --color-media-audio: #ee9142;
 }
 
 [data-theme='docsplus-dark-hc'] {
@@ -650,7 +849,9 @@ em-emoji-picker {
    Built-in "dark" theme can render light; set CSS vars on host so shadow DOM inherits. */
 /* stylelint-disable-next-line selector-type-no-unknown -- em-emoji-picker is a custom element */
 [data-theme='docsplus-dark'] em-emoji-picker,
-[data-theme='docsplus-dark-hc'] em-emoji-picker {
+[data-theme='docsplus-dark-hc'] em-emoji-picker,
+[data-theme='docsplus-graphite-dark'] em-emoji-picker,
+[data-theme='docsplus-paper-dark'] em-emoji-picker {
   background-color: var(--color-base-100) !important;
   --background: var(--color-base-100);
   --color: var(--color-base-content);

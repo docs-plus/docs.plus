@@ -301,7 +301,9 @@ html.m_mobile #__next {
 
 // Dark themes: base-content is light text — mixing it into shadows reads as a glow, not elevation.
 [data-theme='docsplus-dark'] .edit-fab,
-[data-theme='docsplus-dark-hc'] .edit-fab {
+[data-theme='docsplus-dark-hc'] .edit-fab,
+[data-theme='docsplus-graphite-dark'] .edit-fab,
+[data-theme='docsplus-paper-dark'] .edit-fab {
   box-shadow: 0 4px 14px color-mix(in oklch, black 42%, transparent);
 }
 
