@@ -25,8 +25,13 @@ auto-attaches a pointer here; the `design-system` skill in `.cursor/skills/` is 
 
 ## Themes
 
-Three daisyUI themes in `globals.scss`; `data-theme` on `<html>` is applied by
-`stores/themeStore.ts` (`ThemePreference: light | dark | dark-hc | system`).
+Seven daisyUI themes in `globals.scss` — three **base** (below) + two **premium** opt-in
+light/dark pairs (added 2026-07-08), added alongside the base, never replacing them. `data-theme`
+on `<html>` is applied by `stores/themeStore.ts`. `ThemePreference: light | dark | dark-hc |
+graphite-light | graphite-dark | paper-light | paper-dark | system`; `ResolvedTheme` is the
+`docsplus[-*]` name stamped on the DOM. The **Adding a theme** checklist at the end of this
+section is the canonical procedure — a new theme is a token set the app follows automatically
+_once every enumeration site is extended_.
 
 |                                  | `docsplus` (light, default)                | `docsplus-dark`                             | `docsplus-dark-hc` (projector) |
 | -------------------------------- | ------------------------------------------ | ------------------------------------------- | ------------------------------ |
@@ -42,11 +47,72 @@ Three daisyUI themes in `globals.scss`; `data-theme` on `<html>` is applied by
 | info / success / warning / error | sky-600 / green-600 / orange-600 / red-600 | sky-400 / green-500 / `#fb7a3a` / `#ff6b6b` | 400-series, brighter           |
 | border width                     | 1px                                        | 1px                                         | **2px**                        |
 
-- Light is **true-white paper on a cool-gray well**: the pre-recalibration `#fafbfc/#edf0f5/#e5eaf1`
-  trio read washed-out — do not drift back toward near-identical neutrals.
+### Premium themes (opt-in)
+
+OKLCH-even ramps, WCAG-AA verified, **same shape tokens as the base** (radius 8/8/10, `--border:1px`,
+`--depth/--noise:0`). Two directions, each a light/dark pair:
+
+- **Graphite + Indigo** — desaturated graphite neutrals, one confident indigo accent (Linear/Arc).
+- **Warm Paper / Ink** — warm low-chroma paper, cool deep-blue ink, reading-first (Notion/iA-Writer).
+
+|                                  | `docsplus-graphite` (light)                   | `docsplus-graphite-dark`                      | `docsplus-paper` (light)                      | `docsplus-paper-dark`                         |
+| -------------------------------- | --------------------------------------------- | --------------------------------------------- | --------------------------------------------- | --------------------------------------------- |
+| color-scheme                     | light                                         | dark                                          | light                                         | dark                                          |
+| base-100 — paper                 | `#f9fafc`                                     | `#0c0d10`                                     | `#fbf8f4`                                     | `#110e0b`                                     |
+| base-200 — well/hover            | `#eceef3`                                     | `#16181c`                                     | `#f3eee7`                                     | `#1d1915`                                     |
+| base-300 — borders               | `#ced3db`                                     | `#333843`                                     | `#d7cec4`                                     | `#403730`                                     |
+| base-content — ink               | `#10141c`                                     | `#e6e8ec`                                     | `#18110d`                                     | `#ebe5df`                                     |
+| primary                          | `#4061db`                                     | `#79a2f9`                                     | `#175fa4`                                     | `#67a3e0`                                     |
+| secondary (presence)             | `#00967c`                                     | `#4bbb9f`                                     | `#378054`                                     | `#69b183`                                     |
+| accent (highlight/bookmark)      | `#e6b22d`                                     | `#e9b543`                                     | `#ddb13a`                                     | `#e0b446`                                     |
+| neutral (secondary-UI ink)       | `#2d333e`                                     | `#8f99ab`                                     | `#40362e`                                     | `#a49589`                                     |
+| info / success / warning / error | `#0070bc` / `#2a824a` / `#dd7b2b` / `#d33a3c` | `#4baeed` / `#57bc80` / `#f59740` / `#fd736d` | `#0068a7` / `#38804b` / `#dc702f` / `#ca3540` | `#56a6e3` / `#63b376` / `#f28e42` / `#f46e6d` |
+| `--pad-well` (semantic)          | = base-200                                    | `#07080b`                                     | = base-200                                    | `#0b0806`                                     |
+| media image / video / audio      | `#008d65` / `#833ddf` / `#e45b15`             | `#00c899` / `#b38aff` / `#fb9344`             | `#1f8254` / `#7c44c3` / `#d2600c`             | `#51bd85` / `#ad87ed` / `#ee9142`             |
+
+Each **dark** theme declares its own `--pad-well` (below base-100) + `--color-media-*` in a
+`[data-theme]` block and joins the shared dark semantic-override block (scrims / `--shadow-overlay` /
+sheet-lift, identical across dark themes). Each **light** theme declares only `--color-media-*` (well
+aliases base-200). Premium light themes use a soft off-white base-100 by design — a deliberate,
+opt-in departure from the base `docsplus` true-white doctrine.
+
+- Base light `docsplus` is **true-white paper on a cool-gray well**: the pre-recalibration
+  `#fafbfc/#edf0f5/#e5eaf1` trio read washed-out — the base light theme does not drift back toward
+  near-identical neutrals (premium light themes deliberately opt into a soft off-white instead).
 - `--depth: 0`, `--noise: 0` in all themes: no daisyUI depth effects. Depth is borders + the
   elevation species below, never per-component gradients.
-- `_document.tsx` `theme-color` meta mirrors base-100 (`#ffffff` / `#0b1220`) — update in lockstep.
+- `_document.tsx` `theme-color` meta mirrors base-100 via `prefers-color-scheme` (`#ffffff` /
+  `#0b1220`) — it tracks OS light/dark only, so it can't reflect an in-app premium or HC choice
+  (pre-existing; keep the two literals in lockstep if a base base-100 changes).
+
+### Adding a theme
+
+A new theme is a token set the app follows automatically — **but only once every enumeration site is
+extended**. Light and dark break differently; miss one and utilities or surfaces silently fall back.
+
+Always:
+
+1. **daisyUI block** — a new `@plugin 'daisyui/theme'` in `globals.scss`: full palette + `--radius-*`
+   8/8/10 + `--size-*` + `--border:1px` + `--depth/--noise:0`; `default:false`, `prefersdark:false`.
+2. **Unions + resolver** (`themeStore.ts`): add to `ThemePreference` + `ResolvedTheme`, plus a
+   `PREFERENCE_TO_THEME` entry.
+3. **Picker** (`AppearanceSection.tsx`): a `LIGHT_THEMES`/`DARK_THEMES` entry (`resolved`, `premium?`).
+4. **FOUC script** (`_document.tsx`): the `preference → theme` mapping (a vanilla-JS copy of
+   `PREFERENCE_TO_THEME`, runs before hydration).
+
+A new **DARK** theme also — else `dark:` utilities and dark-tuned surfaces render with light values:
+
+5. the `@custom-variant dark` matcher (`globals.scss` — both the ` *` descendant and self forms);
+6. the shared dark semantic-override block (scrims / `--shadow-overlay` / sheet-lift) **plus its own
+   `[data-theme] { --pad-well` (below base-100) `+ --color-media-* }` block**;
+7. the `em-emoji-picker` dark selector list;
+8. the `.edit-fab` dark shadow (`_mobile.scss`).
+
+A new **LIGHT** theme instead — add the resolved name to `LIGHT_RESOLVED_THEMES` (`themeStore.ts`),
+the single source both `getEmojiMartTheme` and the emoji `Picker` read for "is this light?"; then its
+own `[data-theme] { --color-media-* }` block (`--pad-well` auto-aliases base-200).
+
+Then browser-verify light + dark (+ HC), and update the tables above.
 
 ## Semantic tokens (`globals.scss` `:root` + dark overrides)
 
@@ -54,7 +120,7 @@ Three daisyUI themes in `globals.scss`; `data-theme` on `<html>` is applied by
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
 | `--pad-well`                                                          | = base-200                                                                                                         | `#070d18` (`#0b1322`)                                    | Workspace floor: editor scroll well, TOC rail, TocHeader, skeleton mirrors. In dark it sits **below** base-100 so the sheet reads raised in both themes. Well surfaces use `bg-[var(--pad-well)]`, never `bg-base-200`.                                       |
 | `--pad-divider` / `--pad-sheet-border`                                | = base-300                                                                                                         | = base-300                                               | Docked-region dividers + sheet outline.                                                                                                                                                                                                                       |
-| `--pad-sheet-radius`                                                  | `0.5rem`                                                                                                           | same                                                     | Document sheet corners (field stop).                                                                                                                                                                                                                          |
+| `--pad-sheet-radius`                                                  | `var(--radius-box)`                                                                                                | same                                                     | Document sheet corners — chains to the box radius stop (10px).                                                                                                                                                                                                |
 | `--pad-sheet-shadow`                                                  | `none`                                                                                                             | faint base-content lift                                  | Dark-only sheet lift; light docked surfaces are flat.                                                                                                                                                                                                         |
 | `--shadow-overlay`                                                    | 2-layer **black** 8% mix                                                                                           | black 50%/40% (dark override)                            | **The** box-shadow for every SCSS-styled floating panel — black-based like the scrims, never `base-content` (glows in dark). Tailwind-styled floating surfaces use `shadow-xl`. No other floating shadow literals outside §Elevation's deliberate exceptions. |
 | `--modal-scrim` / `--modal-scrim-heavy`                               | black 45% / 72%                                                                                                    | black 55% / 80%                                          | Dialog + sheet scrims / media lightbox. Always **black-based** — never `base-content` washes.                                                                                                                                                                 |
@@ -90,8 +156,9 @@ Header/toolbar icons idle at `/70` (or `/60`) and darken on hover — attention 
 ## Shape scale
 
 **The daisyUI shape tokens ARE the scale — and the control panel.** Radii are tuned from the
-three theme blocks in `globals.scss` alone (maintainer taste: **8–10px, no more, no less**);
-every surface consumes the token classes, so a retune never touches components.
+theme blocks in `globals.scss` alone — every theme sets `--radius-*` 8/8/10 (maintainer taste:
+**8–10px, no more, no less**); every surface consumes the token classes, so a retune never touches
+components.
 
 | Token               | Value (today) | Consumed as                                                       | Species                                                                                                                                                        |
 | ------------------- | ------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -210,10 +277,10 @@ docked — `components/TipTap/toolbar/desktop/EditorToolbar.tsx` (+ `components/
 
 docked — `styles/_blocks.scss` (wrapper JSX `components/pages/document/components/DesktopEditor.tsx`)
 
-| State   | Recipe                                                                                                                                                                                                                                                                                                                                                  |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| frame   | `.pad .editor { background: var(--pad-well) }`; `.tiptap__editor`: `max-width:56rem; background: var(--color-base-100); border:1px solid var(--pad-sheet-border); border-radius: var(--pad-sheet-radius)` (0.5rem); `box-shadow: var(--pad-sheet-shadow)` (light none / dark `0 1px 2px` base-content 6% mix); `--tiptap-inline-pad-end:1.5rem→2rem@sm` |
-| wrapper | `editorWrapper scrollbar-custom scrollbar-thin bg-[var(--pad-well)] overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6`; SCSS `padding-bottom:300px`, `overflow-x:visible`                                                                                                                                                              |
+| State   | Recipe                                                                                                                                                                                                                                                                                                                                                                       |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame   | `.pad .editor { background: var(--pad-well) }`; `.tiptap__editor`: `max-width:56rem; background: var(--color-base-100); border:1px solid var(--pad-sheet-border); border-radius: var(--pad-sheet-radius)` (→ `var(--radius-box)`, 10px); `box-shadow: var(--pad-sheet-shadow)` (light none / dark `0 1px 2px` base-content 6% mix); `--tiptap-inline-pad-end:1.5rem→2rem@sm` |
+| wrapper | `editorWrapper scrollbar-custom scrollbar-thin bg-[var(--pad-well)] overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6`; SCSS `padding-bottom:300px`, `overflow-x:visible`                                                                                                                                                                                   |
 
 ### Heading action chips ($ha-btn-surface / .ha-group / unread / comment dock) — desktop
 
@@ -651,13 +718,13 @@ anchored (L1) — `components/TipTap/toolbar/desktop/DocumentSettingsPanel.tsx`
 
 modal (L2) — `components/settings/SettingsPanel.tsx` (+ `components/settings/components/SettingsCard.tsx`, `ProfileSection.tsx`, `AppearanceSection.tsx`)
 
-| State              | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| frame              | `bg-base-100 md:h-[min(85vh,800px)] md:flex-row` in `ModalContent size=5xl p-0`; aside `border-base-300 bg-base-100 md:w-72 md:border-r` + doc-content-in 180ms; detail header `border-base-300 border-b px-4 py-3`, body ScrollArea `bg-base-200` + `max-w-2xl p-4 sm:p-6`; SettingsCard `bg-base-100 border-base-300 rounded-box border p-4 sm:p-6` (bordered shadowless)                                                                     |
-| nav                | user chip `bg-base-200 rounded-box p-2.5` + Avatar `ring-base-100 shadow-sm ring-2`; item idle `btn ghost text-base-content hover:bg-base-200 min-h-[44px] text-sm font-medium`, active `btn btn-primary` full-fill + chevron `text-primary-content/70`; GitHub card `border-base-300 hover:bg-base-200 rounded-field border`; sign-out ghost `border-base-300 text-base-content/70 border` + danger hover `hover:bg-error/10 hover:text-error` |
-| avatar upload      | `group border-base-300 hover:border-primary rounded-box size-24 border-2 transition-[border-color,box-shadow] hover:shadow-md`; overlay `bg-black/40` + `LuCamera text-white` `opacity-0 group-hover:opacity-100` (uploading forces on + `loading loading-spinner text-white`); remove `text-base-content/60 hover:text-error`                                                                                                                  |
-| theme radio cards  | `rounded-box cursor-pointer border transition-colors min-h-[44px]` role=radio; idle `border-base-300 bg-base-100 hover:bg-base-200` + icon `text-base-content/60`; selected `border-primary bg-primary/10 ring-primary/30 ring-2` + `text-primary`                                                                                                                                                                                              |
-| sticky save footer | `bg-base-200 border-base-300 sticky bottom-0 border-t px-4 py-4` + primary btn `font-semibold` (with `h-16` spacer)                                                                                                                                                                                                                                                                                                                             |
+| State              | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame              | `bg-base-100 md:h-[min(85vh,800px)] md:flex-row` in `ModalContent size=5xl p-0`; aside `border-base-300 bg-base-100 md:w-72 md:border-r` + doc-content-in 180ms; detail header `border-base-300 border-b px-4 py-3`, body ScrollArea `bg-base-200` + `max-w-2xl p-4 sm:p-6`; SettingsCard `bg-base-100 border-base-300 rounded-box border p-4 sm:p-6` (bordered shadowless)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| nav                | user chip `bg-base-200 rounded-box p-2.5` + Avatar `ring-base-100 shadow-sm ring-2`; item idle `btn ghost text-base-content hover:bg-base-200 min-h-[44px] text-sm font-medium`, active `btn btn-primary` full-fill + chevron `text-primary-content/70`; GitHub card `border-base-300 hover:bg-base-200 rounded-field border`; sign-out ghost `border-base-300 text-base-content/70 border` + danger hover `hover:bg-error/10 hover:text-error`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| avatar upload      | `group border-base-300 hover:border-primary rounded-box size-24 border-2 transition-[border-color,box-shadow] hover:shadow-md`; overlay `bg-black/40` + `LuCamera text-white` `opacity-0 group-hover:opacity-100` (uploading forces on + `loading loading-spinner text-white`); remove `text-base-content/60 hover:text-error`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| theme picker       | one `role=radiogroup` (roving tabindex + arrow keys). **System** = full-width row `rounded-box border px-3 py-2.5` + light/dark split thumb (`data-theme` halves `docsplus`/`docsplus-dark`, `h-6 w-9 rounded-md`). **Light / Dark group labels** `text-base-content/45 text-[10px] font-bold tracking-wider uppercase` → swatch grid `grid-cols-2 sm:grid-cols-3 gap-2.5`; each card `rounded-box border overflow-hidden relative` wraps a live **`data-theme`-scoped** preview (`aspect-[4/3] bg-[var(--pad-well)] p-2` + inner sheet `bg-base-100 border-base-300 rounded-[5px]` + text lines + `bg-primary` accent bar) over a foot `border-t px-2.5 py-1.5` (label + premium `New` badge `text-primary bg-primary/10`); idle `border-base-300 hover:border-base-content/25`, selected `border-primary ring-primary/30 ring-2` + label `text-primary` + checkmark `bg-primary text-primary-content size-4 rounded-full`. Swatches never hardcode hex — the `data-theme` scope renders each theme's own tokens (same trick as `em-emoji-picker`) |
+| sticky save footer | `bg-base-200 border-base-300 sticky bottom-0 border-t px-4 py-4` + primary btn `font-semibold` (with `h-16` spacer)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 > **Documents tab width (planned):** When `activeTab === 'documents'`, detail column uses `max-w-none w-full` instead of `max-w-2xl` so the My documents list can use modal width. Other tabs unchanged.
 
