@@ -29,9 +29,9 @@ Seven daisyUI themes in `globals.scss` — three **base** (below) + two **premiu
 light/dark pairs (added 2026-07-08), added alongside the base, never replacing them. `data-theme`
 on `<html>` is applied by `stores/themeStore.ts`. `ThemePreference: light | dark | dark-hc |
 graphite-light | graphite-dark | paper-light | paper-dark | system`; `ResolvedTheme` is the
-`docsplus[-*]` name stamped on the DOM. The **Adding a theme** checklist at the end of this
-section is the canonical procedure — a new theme is a token set the app follows automatically
-_once every enumeration site is extended_.
+`docsplus[-*]` name stamped on the DOM. daisyUI sets `color-scheme` per theme, so dark styling
+resolves via CSS `light-dark()` — no companion attribute. The **Adding a theme** checklist at the end of this section is the
+canonical procedure — a new theme is a token set the app follows automatically.
 
 |                                  | `docsplus` (light, default)                | `docsplus-dark`                             | `docsplus-dark-hc` (projector) |
 | -------------------------------- | ------------------------------------------ | ------------------------------------------- | ------------------------------ |
@@ -87,32 +87,31 @@ opt-in departure from the base `docsplus` true-white doctrine.
 
 ### Adding a theme
 
-A new theme is a token set the app follows automatically — **but only once every enumeration site is
-extended**. Light and dark break differently; miss one and utilities or surfaces silently fall back.
-
-Always:
+A new theme is a token set the app follows automatically. **Dark-ness comes from the platform, not a
+custom attribute:** daisyUI emits `color-scheme: light|dark` on every theme, and the shared dark tokens
+are `light-dark(<light>, <dark>)` in `:root`/`@theme` — they resolve per theme's `color-scheme` with no
+theme-name list and no companion attribute. `applyThemeToDom` (`stores/themeConfig.ts`) writes only
+`data-theme`. So there are **no per-theme CSS dark-lists to extend** — just:
 
 1. **daisyUI block** — a new `@plugin 'daisyui/theme'` in `globals.scss`: full palette + `--radius-*`
-   8/8/10 + `--size-*` + `--border:1px` + `--depth/--noise:0`; `default:false`, `prefersdark:false`.
-2. **Unions + resolver** (`themeStore.ts`): add to `ThemePreference` + `ResolvedTheme`, plus a
-   `PREFERENCE_TO_THEME` entry.
-3. **Picker** (`AppearanceSection.tsx`): a `LIGHT_THEMES`/`DARK_THEMES` entry (`resolved`, `premium?`).
-4. **FOUC script** (`_document.tsx`): the `preference → theme` mapping (a vanilla-JS copy of
-   `PREFERENCE_TO_THEME`, runs before hydration).
+   8/8/10 + `--size-*` + `--border:1px` + `--depth/--noise:0`; `default:false`, `prefersdark:false`;
+   set `color-scheme` correctly (this is what drives `light-dark()`).
+2. **Config** (`stores/themeConfig.ts`): add to `ThemePreference` + `ResolvedTheme` and a
+   `PREFERENCE_TO_THEME` entry; for a **light** theme also add the resolved name to
+   `LIGHT_RESOLVED_THEMES` (the one "is-it-light" source — read by the emoji `Picker`). The FOUC script
+   (`_document.tsx`) interpolates the map from here, so it never drifts.
+3. **Picker** (`AppearanceSection.tsx`): a `LIGHT_THEMES`/`DARK_THEMES` entry (`value`, `label`,
+   `premium?`); the swatch derives its theme from `PREFERENCE_TO_THEME[value]`.
+4. **Per-theme values** (`globals.scss`) — only where a theme differs from the shared `light-dark()`
+   default: a **dark** theme adds `[data-theme] { --pad-well` (below base-100) `+ --color-media-* }`; a
+   **light** theme adds `[data-theme] { --color-media-* }` (`--pad-well` aliases base-200). Everything
+   else (scrims / `--shadow-overlay` / sheet-lift / default well / default media) comes free from the
+   `:root` `light-dark()` tokens.
 
-A new **DARK** theme also — else `dark:` utilities and dark-tuned surfaces render with light values:
-
-5. the `@custom-variant dark` matcher (`globals.scss` — both the ` *` descendant and self forms);
-6. the shared dark semantic-override block (scrims / `--shadow-overlay` / sheet-lift) **plus its own
-   `[data-theme] { --pad-well` (below base-100) `+ --color-media-* }` block**;
-7. the `em-emoji-picker` dark selector list;
-8. the `.edit-fab` dark shadow (`_mobile.scss`).
-
-A new **LIGHT** theme instead — add the resolved name to `LIGHT_RESOLVED_THEMES` (`themeStore.ts`),
-the single source both `getEmojiMartTheme` and the emoji `Picker` read for "is this light?"; then its
-own `[data-theme] { --color-media-* }` block (`--pad-well` auto-aliases base-200).
-
-Then browser-verify light + dark (+ HC), and update the tables above.
+Then browser-verify light + dark (+ HC). Isolated `data-theme`-scoped previews (theme swatches) need
+**only** `data-theme` — daisyUI's `color-scheme` on that element makes `light-dark()` resolve correctly.
+Values that differ light/dark by **structure** (not just color) can't use `light-dark()` — express them
+as a color-swap inside a shared structure (see `.edit-fab`, `--pad-sheet-shadow`).
 
 ## Semantic tokens (`globals.scss` `:root` + dark overrides)
 
