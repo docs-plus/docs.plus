@@ -1,7 +1,7 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useMessageAuthorDetails } from '@components/chatroom/components/MessageCard/hooks/useMessageAuthorDetails'
 import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
-import { partitionMessageMedias } from '@components/chatroom/utils/galleryPlaylist'
+import { partitionVisualMedias } from '@components/chatroom/utils/galleryPlaylist'
 import type { MessageSurfaceLayout } from '@components/chatroom/utils/messagePresentation'
 import type { MessageMediaItem } from '@types'
 import { formatGallerySentAt } from '@utils/formatGallerySentAt'
@@ -10,8 +10,7 @@ import { twMerge } from 'tailwind-merge'
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { MessageMediaAudio } from './MessageMediaAudio'
 import { MessageMediaFileCard } from './MessageMediaFileCard'
-import { MessageMediaImageGrid } from './MessageMediaImageGrid'
-import { MessageMediaVideo } from './MessageMediaVideo'
+import { MessageMediaVisualBlock } from './MessageMediaVisualBlock'
 
 type Props = {
   medias: MessageMediaItem[]
@@ -20,13 +19,13 @@ type Props = {
   className?: string
 }
 
-const pauseFeedMedia = () => {
+function pauseFeedMedia(): void {
   document.querySelectorAll('[data-chat-media] video, [data-chat-media] audio').forEach((el) => {
     if (el instanceof HTMLMediaElement) el.pause()
   })
 }
 
-export const MessageMediaAttachments = ({ medias, layout, caption, className }: Props) => {
+export function MessageMediaAttachments({ medias, layout, caption, className }: Props) {
   const openGallery = useChatMediaGalleryStore((state) => state.openGallery)
   const { variant } = useChatroomContext()
   const { message } = useMessageCardContext()
@@ -34,11 +33,11 @@ export const MessageMediaAttachments = ({ medias, layout, caption, className }: 
 
   if (medias.length === 0) return null
 
-  const { images, galleryOthers, files } = partitionMessageMedias(medias)
+  const { visuals, audio, files } = partitionVisualMedias(medias)
 
   const authorName = author?.fullname || author?.username || null
 
-  const openAt = (target: number | MessageMediaItem) => {
+  const openAt = (target: MessageMediaItem) => {
     pauseFeedMedia()
     openGallery(medias, target, {
       caption,
@@ -55,35 +54,19 @@ export const MessageMediaAttachments = ({ medias, layout, caption, className }: 
     <div
       className={twMerge(
         'flex flex-col gap-1.5',
-        layout === 'media-with-caption' && variant === 'mobile' && 'overflow-hidden rounded-t-lg',
+        layout === 'media-with-caption' && variant === 'mobile' && 'rounded-t-box overflow-hidden',
         className
       )}
       data-chat-media
       data-media-count={medias.length}>
-      {images.length > 0 && (
-        <MessageMediaImageGrid images={images} onExpand={(index) => openAt(images[index]!)} />
-      )}
-      {galleryOthers.map((media, index) => {
-        if (media.type === 'video') {
-          return (
-            <MessageMediaVideo
-              key={`${media.path ?? media.url}-${index}`}
-              media={media}
-              onOpen={() => openAt(media)}
-            />
-          )
-        }
-        if (media.type === 'audio') {
-          return (
-            <MessageMediaAudio
-              key={`${media.path ?? media.url}-${index}`}
-              media={media}
-              onOpen={() => openAt(media)}
-            />
-          )
-        }
-        return null
-      })}
+      {visuals.length > 0 ? <MessageMediaVisualBlock visuals={visuals} onOpen={openAt} /> : null}
+      {audio.map((media, index) => (
+        <MessageMediaAudio
+          key={`${media.path ?? media.url}-${index}`}
+          media={media}
+          onOpen={() => openAt(media)}
+        />
+      ))}
       {files.map((media, index) => (
         <MessageMediaFileCard key={`${media.path ?? media.url}-${index}`} media={media} />
       ))}

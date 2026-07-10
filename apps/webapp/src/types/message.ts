@@ -15,6 +15,9 @@ export type MessageMediaItem = {
   type: MessageMediaKind
   name?: string
   size?: number
+  /** Intrinsic pixel size when known (upload-time best-effort). */
+  width?: number
+  height?: number
   /** When true, feed blurs image until the viewer taps to reveal. */
   spoiler?: boolean
 }

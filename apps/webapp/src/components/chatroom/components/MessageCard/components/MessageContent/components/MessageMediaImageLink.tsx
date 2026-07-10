@@ -3,8 +3,9 @@ import {
   markFeedSpoilerRevealed,
   useFeedSpoilerRevealed
 } from '@components/chatroom/utils/feedSpoilerReveal'
+import { positiveMediaDims } from '@components/chatroom/utils/messageMediaPaths'
 import type { MessageMediaItem } from '@types'
-import { type CSSProperties, useState } from 'react'
+import { type CSSProperties, type MouseEvent, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
@@ -12,11 +13,12 @@ import { MediaUnavailable } from './MediaUnavailable'
 type Props = {
   media: MessageMediaItem
   className?: string
-  fill?: boolean
   onOpen?: () => void
+  onDimensions?: (width: number, height: number) => void
 }
 
-export function MessageMediaImageLink({ media, className, fill = false, onOpen }: Props) {
+/** Fill-only image tile for ratio-first visual cells (parent owns the box). */
+export function MessageMediaImageLink({ media, className, onOpen, onDimensions }: Props) {
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
   const [imgFailed, setImgFailed] = useState(false)
   const revealed = useFeedSpoilerRevealed(media)
@@ -33,7 +35,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
       ? ({ backgroundImage: `url(${JSON.stringify(resolvedUrl)})` } satisfies CSSProperties)
       : undefined
 
-  const handleActivate = (event: React.MouseEvent) => {
+  const handleActivate = (event: MouseEvent) => {
     event.stopPropagation()
     if (isSpoiler) {
       markFeedSpoilerRevealed(media)
@@ -60,11 +62,7 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
     return (
       <div
         ref={visibilityRef}
-        className={twMerge(
-          'bg-base-200 skeleton',
-          fill ? 'absolute inset-0' : 'rounded-field min-h-[80px]',
-          className
-        )}
+        className={twMerge('bg-base-200 skeleton absolute inset-0', className)}
         aria-hidden
       />
     )
@@ -74,65 +72,29 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
     return (
       <MediaUnavailable
         label="Image unavailable"
-        className={twMerge(fill ? 'absolute inset-0' : 'rounded-field min-h-[80px]', className)}
+        className={twMerge('absolute inset-0', className)}
         onRetry={handleRetry}
       />
-    )
-  }
-
-  if (fill) {
-    return (
-      <button
-        type="button"
-        ref={visibilityRef}
-        className={twMerge(
-          'bg-base-200 absolute inset-0 block overflow-hidden border-0 p-0',
-          isSpoiler ? 'cursor-pointer' : 'cursor-zoom-in',
-          className
-        )}
-        aria-label={isSpoiler ? 'Reveal spoiler image' : `View ${alt}`}
-        data-testid={testId}
-        onClick={handleActivate}>
-        <span
-          aria-hidden
-          className={twMerge('absolute inset-0', imageLayerClass)}
-          style={coverStyle}
-        />
-        {spoilerOverlay}
-        {resolvedUrl ? (
-          <img
-            src={resolvedUrl}
-            alt={alt}
-            className="sr-only"
-            loading="lazy"
-            onError={() => setImgFailed(true)}
-          />
-        ) : null}
-      </button>
     )
   }
 
   return (
     <button
       type="button"
+      ref={visibilityRef}
       className={twMerge(
-        'bg-base-200 rounded-field relative block w-full max-w-full overflow-hidden border-0 p-0',
+        'bg-base-200 absolute inset-0 block overflow-hidden border-0 p-0',
+        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none',
         isSpoiler ? 'cursor-pointer' : 'cursor-zoom-in',
         className
       )}
-      style={{ maxHeight: 360 }}
       aria-label={isSpoiler ? 'Reveal spoiler image' : `View ${alt}`}
       data-testid={testId}
-      ref={visibilityRef}
       onClick={handleActivate}>
       <span
         aria-hidden
-        className={twMerge('block w-full', imageLayerClass)}
-        style={{
-          ...coverStyle,
-          aspectRatio: '4 / 3',
-          maxHeight: 360
-        }}
+        className={twMerge('absolute inset-0', imageLayerClass)}
+        style={coverStyle}
       />
       {spoilerOverlay}
       {resolvedUrl ? (
@@ -141,6 +103,11 @@ export function MessageMediaImageLink({ media, className, fill = false, onOpen }
           alt={alt}
           className="sr-only"
           loading="lazy"
+          onLoad={(event) => {
+            const { naturalWidth, naturalHeight } = event.currentTarget
+            const dims = positiveMediaDims(naturalWidth, naturalHeight)
+            if (dims) onDimensions?.(dims.width, dims.height)
+          }}
           onError={() => setImgFailed(true)}
         />
       ) : null}

@@ -189,6 +189,15 @@ describe('chatroom attachments', () => {
     cy.get('[data-chat-media] [aria-label="Expand video"]', { timeout: 10_000 }).should('exist')
   }
 
+  /** Mosaic/stack video poster (multi-visual); lone video still uses Expand video. */
+  const assertVideoPosterReady = () => {
+    cy.get('[data-chat-media]', { timeout: 10_000 }).scrollIntoView()
+    waitForStorageSignIfPending()
+    cy.get('[data-chat-media] [data-testid="feed-video-poster"]', { timeout: 10_000 }).should(
+      'exist'
+    )
+  }
+
   const assertAudioExpandReady = () => {
     cy.get('[data-chat-media]', { timeout: 10_000 }).scrollIntoView()
     waitForStorageSignIfPending()
@@ -421,6 +430,7 @@ describe('chatroom attachments', () => {
         messageId
       )
       assertImageControlReady()
+      cy.get('[data-chat-media] [data-media-layout="single"]').should('exist')
       openFirstFeedImage()
       cy.get('[data-testid="chat-media-gallery"]').should('be.visible')
     })
@@ -478,6 +488,7 @@ describe('chatroom attachments', () => {
         messageId
       )
       assertVideoExpandReady()
+      cy.get('[data-chat-media] [data-media-layout="single"]').should('exist')
       cy.get('[data-chat-media] [aria-label="Expand video"]').click()
       cy.get('[data-testid="chat-media-gallery"]').should('be.visible')
       cy.get('[data-testid="chat-media-gallery"] video').should('exist')
@@ -516,6 +527,13 @@ describe('chatroom attachments', () => {
       visitFeed([mediaRow(medias, { id: messageId, seq: 4 })], messageId)
       assertImageControlReady()
       cy.contains('doc.pdf').should('exist')
+      cy.get('[data-chat-media] [data-media-layout="mosaic"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-testid="feed-image-open"]').should('have.length.at.least', 1)
+          cy.get('[data-testid="feed-video-poster"]').should('exist')
+        })
+      cy.get('[data-chat-media] [aria-label="Expand audio"]').should('exist')
 
       openFirstFeedImage()
       cy.get('[data-testid="chat-media-gallery"]').contains('1 / 4')
@@ -549,8 +567,16 @@ describe('chatroom attachments', () => {
       ]
 
       visitFeed([mediaRow(medias, { id: messageId, seq: 2 })], messageId)
-      assertVideoExpandReady()
-      cy.get('[data-chat-media] [aria-label="Expand video"]').click()
+      assertImageControlReady()
+      assertVideoPosterReady()
+      cy.get('[data-chat-media] [data-media-layout="mosaic"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-testid="feed-image-open"]').should('exist')
+          cy.get('[data-testid="feed-video-poster"]').should('exist')
+        })
+      cy.get('[data-chat-media] [aria-label="Expand video"]').should('not.exist')
+      cy.get('[data-chat-media] [data-testid="feed-video-poster"]').click()
       cy.get('[data-testid="chat-media-gallery"]').contains('2 / 2')
       cy.get('[data-testid="chat-media-gallery"] video').should('exist')
 
@@ -663,8 +689,9 @@ describe('chatroom attachments', () => {
         timeout: 10_000
       }).should('be.visible')
       waitForStorageSignIfPending()
-      assertVideoExpandReady()
-      cy.get('[data-chat-media] [aria-label="Expand video"]').click({ force: true })
+      assertVideoPosterReady()
+      cy.get('[data-chat-media] [data-media-layout="mosaic"]').should('exist')
+      cy.get('[data-chat-media] [data-testid="feed-video-poster"]').click({ force: true })
       cy.get('[data-testid="chat-media-gallery"]').contains('2 / 2')
 
       cy.get('[data-testid="chat-media-gallery"] [aria-label="Previous media"]').click()

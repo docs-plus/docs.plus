@@ -35,19 +35,26 @@ const isGalleryMediaType = (type: MessageMediaKind): type is GalleryMediaKind =>
 export const mediaKey = (media: Pick<MessageMediaItem, 'path' | 'url'>): string =>
   media.path ?? media.url
 
-export const partitionMessageMedias = (medias: MessageMediaItem[]) => {
+/** One pass: type buckets + feed `visuals` (image+video in input order). */
+export function partitionMessageMedias(medias: MessageMediaItem[]) {
   const images: MessageMediaItem[] = []
-  const galleryOthers: MessageMediaItem[] = []
+  const videos: MessageMediaItem[] = []
+  const audio: MessageMediaItem[] = []
   const files: MessageMediaItem[] = []
+  const visuals: MessageMediaItem[] = []
 
   for (const media of medias) {
     switch (media.type) {
       case 'image':
         images.push(media)
+        visuals.push(media)
         break
       case 'video':
+        videos.push(media)
+        visuals.push(media)
+        break
       case 'audio':
-        galleryOthers.push(media)
+        audio.push(media)
         break
       case 'file':
         files.push(media)
@@ -59,12 +66,19 @@ export const partitionMessageMedias = (medias: MessageMediaItem[]) => {
     }
   }
 
-  return { images, galleryOthers, files }
+  return { images, videos, audio, files, visuals }
 }
 
+/** Feed partition: image+video stay in `medias` order; audio/file cards render below. */
+export function partitionVisualMedias(medias: MessageMediaItem[]) {
+  const { visuals, audio, files } = partitionMessageMedias(medias)
+  return { visuals, audio, files }
+}
+
+/** Lightbox order: images → videos → audio (AGENTS contract; not feed order). */
 const buildGalleryPlaylist = (medias: MessageMediaItem[]): GalleryMediaItem[] => {
-  const { images, galleryOthers } = partitionMessageMedias(medias)
-  return [...images, ...galleryOthers].filter((media): media is GalleryMediaItem =>
+  const { images, videos, audio } = partitionMessageMedias(medias)
+  return [...images, ...videos, ...audio].filter((media): media is GalleryMediaItem =>
     isGalleryMediaType(media.type)
   )
 }

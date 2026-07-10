@@ -10,6 +10,30 @@ export const CHAT_MEDIA_MAX_ATTACHMENTS = 10
 export const CHAT_MEDIA_MAX_CONCURRENT_UPLOADS = 3
 export const CHAT_MEDIA_SIGNED_URL_TTL_SEC = 3600
 export const CHAT_MEDIA_MAX_WIDTH_CLASS = 'max-w-[min(400px,100%)]'
+export const CHAT_MEDIA_FEED_MAX_WIDTH_PX = 400
+export const CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX = 360
+export const CHAT_MEDIA_FEED_MAX_HEIGHT_MOBILE_PX = 280
+export const CHAT_MEDIA_TALL_ASPECT = 0.85
+export const CHAT_MEDIA_STACK_GAP_PX = 6
+export const CHAT_MEDIA_PLACEHOLDER_ASPECT = 16 / 9
+export const CHAT_MEDIA_MOSAIC_GAP_PX = 2
+
+export type MediaPixelSize = { width: number; height: number }
+
+/** Finite positive pixel pair, or null. */
+export function positiveMediaDims(width: unknown, height: unknown): MediaPixelSize | null {
+  if (
+    typeof width === 'number' &&
+    typeof height === 'number' &&
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    width > 0 &&
+    height > 0
+  ) {
+    return { width, height }
+  }
+  return null
+}
 
 export const MESSAGE_MEDIA_KIND_LABEL: Record<MessageMediaKind, string> = {
   image: 'Photo',
@@ -49,12 +73,14 @@ export const messageMediasForInsert = (medias: MessageMediaItem[]): MessageMedia
   medias.map((media) => {
     const path = mediaStoragePath(media)
     if (!path) return media
+    const dims = positiveMediaDims(media.width, media.height)
     return {
       path,
       url: path,
       type: media.type,
       ...(media.name ? { name: media.name } : {}),
       ...(media.size != null ? { size: media.size } : {}),
+      ...(dims ? { width: dims.width, height: dims.height } : {}),
       ...(media.spoiler ? { spoiler: true } : {})
     }
   })
@@ -106,6 +132,11 @@ export const parseMessageMedias = (raw: unknown): MessageMediaItem[] => {
     }
     if (typeof record.size === 'number' && Number.isFinite(record.size) && record.size >= 0) {
       parsed.size = record.size
+    }
+    const dims = positiveMediaDims(record.width, record.height)
+    if (dims) {
+      parsed.width = dims.width
+      parsed.height = dims.height
     }
     if (record.spoiler === true) {
       parsed.spoiler = true
