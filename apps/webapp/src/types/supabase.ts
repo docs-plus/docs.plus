@@ -1333,6 +1333,28 @@ export type Database = {
           activity_date: string
         }[]
       }
+      get_document_member_previews: {
+        Args: { p_slugs: string[] }
+        Returns: {
+          member_count: number
+          previews: Json
+          slug: string
+        }[]
+      }
+      get_document_members: {
+        Args: { p_slug: string }
+        Returns: {
+          avatar_updated_at: string
+          avatar_url: string
+          display_name: string
+          full_name: string
+          is_caller: boolean
+          joined_at: string
+          last_visit_at: string
+          member_id: string
+          username: string
+        }[]
+      }
       get_document_view_stats: {
         Args: { p_document_slug: string }
         Returns: Json
@@ -1563,6 +1585,10 @@ export type Database = {
       process_document_views_queue: { Args: never; Returns: Json }
       process_email_queue: { Args: never; Returns: Json }
       process_unsubscribe: { Args: { p_token: string }; Returns: Json }
+      purge_document_footprint: {
+        Args: { p_document_id: string; p_slug: string }
+        Returns: undefined
+      }
       record_email_bounce: {
         Args: {
           p_bounce_type: string

@@ -143,3 +143,113 @@ ALTER FUNCTION public.admin_get_document_member_counts(p_slugs text[]) SET searc
 -- (counters, previews, notifications) bypass RLS on side-effect tables.
 -- search_path is already pinned above; flipping security mode is safe.
 ALTER FUNCTION public.notify_user_join_workspace() SECURITY DEFINER;
+
+
+-- =============================================================================
+-- Owner document member roster (Settings → My documents)
+-- =============================================================================
+-- Membership = "opened a document while signed in". No roles, no anonymous
+-- viewers, no realtime presence. The membership gate is the caller's own
+-- workspace membership, so a non-member gets 0 rows (never an error).
+-- Slug → workspace id is resolved through the workspaces join; never compare
+-- a slug to workspace_id (varchar36). Distinct from admin_get_document_member_counts,
+-- which is is_admin-gated for the admin dashboard.
+
+-- Batched avatar-cluster previews for the visible document list. Returns the
+-- true member_count plus up to 4 earliest-joined members per slug as jsonb.
+drop function if exists public.get_document_member_previews(text[]);
+create function public.get_document_member_previews(p_slugs text[])
+returns table (
+    slug text,
+    member_count bigint,
+    previews jsonb
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    with ranked as (
+        select
+            w.slug as ws_slug,
+            wm.member_id,
+            u.display_name,
+            u.avatar_url,
+            u.avatar_updated_at,
+            row_number() over (partition by w.id order by wm.created_at asc) as rn
+        from public.workspaces w
+        join public.workspace_members wm
+            on wm.workspace_id = w.id
+            and wm.left_at is null
+        join public.users u
+            on u.id = wm.member_id
+        where w.slug = any(p_slugs)
+          and internal.is_workspace_member(w.id)
+    )
+    select
+        ws_slug as slug,
+        count(*)::bigint as member_count,
+        jsonb_agg(
+            jsonb_build_object(
+                'member_id', member_id,
+                'display_name', display_name,
+                'avatar_url', avatar_url,
+                'avatar_updated_at', avatar_updated_at
+            ) order by rn
+        ) filter (where rn <= 4) as previews
+    from ranked
+    group by ws_slug;
+$$;
+
+comment on function public.get_document_member_previews(text[]) is
+'Member-gated avatar-cluster previews (member_count + up to 4 earliest members) per document slug. Caller must be an active workspace member; non-member slugs return no row.';
+
+revoke execute on function public.get_document_member_previews(text[]) from anon;
+grant execute on function public.get_document_member_previews(text[]) to authenticated;
+
+-- Full roster for one document when the cluster popover opens. Caller sorts
+-- first, then by join order. last_visit_at falls back to join time.
+drop function if exists public.get_document_members(text);
+create function public.get_document_members(p_slug text)
+returns table (
+    member_id uuid,
+    username text,
+    display_name text,
+    full_name text,
+    avatar_url text,
+    avatar_updated_at timestamptz,
+    joined_at timestamptz,
+    last_visit_at timestamptz,
+    is_caller boolean
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select
+        wm.member_id,
+        u.username,
+        u.display_name,
+        u.full_name,
+        u.avatar_url,
+        u.avatar_updated_at,
+        wm.created_at as joined_at,
+        coalesce(wm.updated_at, wm.created_at) as last_visit_at,
+        (wm.member_id = auth.uid()) as is_caller
+    from public.workspaces w
+    join public.workspace_members wm
+        on wm.workspace_id = w.id
+        and wm.left_at is null
+    join public.users u
+        on u.id = wm.member_id
+    where w.slug = p_slug
+      and internal.is_workspace_member(w.id)
+    order by (wm.member_id = auth.uid()) desc, wm.created_at asc;
+$$;
+
+comment on function public.get_document_members(text) is
+'Member-gated full member roster for one document slug (caller first, then join order). Caller must be an active workspace member; non-member returns no rows.';
+
+revoke execute on function public.get_document_members(text) from anon;
+grant execute on function public.get_document_members(text) to authenticated;

@@ -866,6 +866,10 @@ BEGIN
         SELECT 1 FROM public.workspace_members
         WHERE workspace_id = _workspace_id AND member_id = user_id
     ) THEN
+        -- Refresh "last visit" so the member roster shows a real last-seen time.
+        UPDATE public.workspace_members
+        SET updated_at = timezone('utc', now())
+        WHERE workspace_id = _workspace_id AND member_id = user_id;
         -- Return true if the user is already a member
         RETURN TRUE;
     END IF;
