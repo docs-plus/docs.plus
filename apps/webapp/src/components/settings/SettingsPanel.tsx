@@ -34,7 +34,8 @@ const NotificationsSection = dynamic(() => import('./components/NotificationsSec
   loading: () => <NotificationsSkeleton />
 })
 
-const TAB_COMPONENTS: Record<TabType, ComponentType> = {
+// Only DocumentsSection reads `onOpenDocument`; the rest ignore the optional prop.
+const TAB_COMPONENTS: Record<TabType, ComponentType<{ onOpenDocument?: () => void }>> = {
   profile: ProfileSection,
   documents: DocumentsSection,
   appearance: AppearanceSection,
@@ -62,7 +63,8 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
   }, [onClose])
 
   const ActiveSection = TAB_COMPONENTS[activeTab]
-  const activeLabel = SETTINGS_TABS.find((tab) => tab.id === activeTab)?.label
+  const activeTabConfig = SETTINGS_TABS.find((tab) => tab.id === activeTab)
+  const activeLabel = activeTabConfig?.label
 
   return (
     <div className="bg-base-100 flex min-h-0 flex-1 flex-col overflow-hidden md:h-[min(85vh,800px)] md:flex-none md:flex-row">
@@ -197,8 +199,11 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
         </div>
 
         <ScrollArea className="bg-base-200 min-h-0 flex-1" scrollbarSize="thin">
-          <div className="mx-auto max-w-2xl p-4 sm:p-6">
-            <ActiveSection />
+          <div
+            className={`mx-auto p-4 sm:p-6 ${
+              activeTabConfig?.fullWidth ? 'w-full max-w-none' : 'max-w-2xl'
+            }`}>
+            <ActiveSection onOpenDocument={handleClose} />
           </div>
         </ScrollArea>
       </div>

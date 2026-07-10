@@ -26,7 +26,8 @@ export class DocumentFetchError extends Error {
   constructor(
     message: string,
     public status?: number,
-    public originalError?: Error
+    public originalError?: Error,
+    public access?: string
   ) {
     super(message)
     this.name = 'DocumentFetchError'
@@ -72,6 +73,16 @@ export async function fetchDocument(
     }).finally(() => clearTimeout(timeoutId))
 
     if (!response.ok) {
+      // Private-doc 403 carries a top-level `access` hint the slug gate maps to a CTA variant.
+      if (response.status === 403) {
+        let access: string | undefined
+        try {
+          access = (await response.json())?.access
+        } catch {
+          access = undefined
+        }
+        throw new DocumentFetchError('Document is private', 403, undefined, access)
+      }
       throw new DocumentFetchError(
         `Failed to fetch document: ${response.statusText}`,
         response.status

@@ -26,24 +26,51 @@ export const ProfileSkeleton = () => (
   </div>
 )
 
-export const DocumentsSkeleton = () => (
-  <div className="space-y-4">
-    <SettingsCard>
-      <div className="skeleton rounded-field h-11 w-full" />
-    </SettingsCard>
-    <SettingsCard>
-      <div className="space-y-3">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="skeleton rounded-field size-5 shrink-0" />
-            <div className="skeleton rounded-field h-4 flex-1" />
-            <div className="skeleton rounded-field hidden h-4 w-20 sm:block" />
+export const DocumentsSkeleton = () => {
+  // Match the persisted view so the loading bones do not flip layout once the section mounts.
+  const isGrid =
+    typeof window !== 'undefined' &&
+    window.sessionStorage.getItem('docsplus:my-docs-view') === 'grid'
+
+  return (
+    <div className="space-y-4">
+      <SettingsCard>
+        <div className="space-y-4">
+          <div className="skeleton rounded-field h-11 w-full" />
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="skeleton rounded-field h-8 w-40" />
+            <div className="skeleton rounded-field h-8 w-20" />
           </div>
-        ))}
-      </div>
-    </SettingsCard>
-  </div>
-)
+
+          {isGrid ? (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="border-base-300 rounded-box border">
+                  <div className="skeleton rounded-t-box aspect-[4/3]" />
+                  <div className="space-y-2 p-3">
+                    <div className="skeleton rounded-field h-4 w-3/4" />
+                    <div className="skeleton rounded-field h-3 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="divide-base-300 divide-y">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-3">
+                  <div className="skeleton size-[18px] shrink-0 rounded" />
+                  <div className="skeleton rounded-field h-4 flex-1" />
+                  <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
 
 export const SecuritySkeleton = () => (
   <div className="space-y-4">

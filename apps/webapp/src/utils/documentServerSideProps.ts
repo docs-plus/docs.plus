@@ -1,4 +1,5 @@
-import { fetchDocument } from '@utils/fetchDocument'
+import { type Session } from '@supabase/supabase-js'
+import { DocumentFetchError, fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'
 import { captureGsspDocumentError } from '@utils/observability'
 import { isReservedSlug } from '@utils/reservedSlugs'
@@ -25,6 +26,9 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
 
   const supabase = createClient(context)
 
+  // Hoisted so the catch block can fall back to session presence when a 403 arrives.
+  let session: Session | null = null
+
   try {
     // Verify user authentication (server-validated); on timeout degrade to public access
     let user = null
@@ -43,7 +47,6 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     }
 
     // Only get session if user is authenticated (prevents security warning)
-    let session = null
     if (user && !userError) {
       try {
         const sessionPromise = supabase.auth.getSession()
@@ -73,6 +76,32 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       }
     }
   } catch (error: unknown) {
+    // Private docs return 403 with an `access` hint — render the gate, never /500.
+    // Blocked viewers get no description/ownerProfile/keywords in props (docMetadata: null).
+    if (error instanceof DocumentFetchError && error.status === 403) {
+      const gateVariant =
+        error.access === 'denied'
+          ? 'access-denied'
+          : error.access === 'sign-in-required'
+            ? 'sign-in-required'
+            : session
+              ? 'access-denied'
+              : 'sign-in-required'
+
+      return {
+        props: {
+          gateVariant,
+          slug: documentSlug ?? null,
+          gateTitle: null,
+          docMetadata: null,
+          isMobile,
+          deviceType,
+          os,
+          accessToken: session?.access_token ?? null
+        }
+      }
+    }
+
     logger.error('[getServerSideProps error]', error, { documentSlug })
     captureGsspDocumentError(error, {
       tags: { surface: 'gssp-document' },

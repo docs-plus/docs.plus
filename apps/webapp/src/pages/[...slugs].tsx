@@ -1,3 +1,6 @@
+import PrivateDocumentGate, {
+  type PrivateGateVariant
+} from '@components/pages/document/components/PrivateDocumentGate'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import { useStore } from '@stores'
@@ -32,13 +35,39 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
 const DEFAULT_OG_IMAGE = `${SITE_URL}/icons/android-chrome-512x512.png`
 
-const Document = ({ docMetadata, isMobile, deviceType, accessToken }: any) => {
+const Document = ({
+  docMetadata,
+  isMobile,
+  deviceType,
+  accessToken,
+  gateVariant,
+  slug,
+  gateTitle
+}: any) => {
   useAddDeviceTypeHtmlClass(isMobile)
 
   // Zustand's initial state has no provider, so the skeleton is part of the SSR HTML
   // and survives the dynamic-chunk load without a remount; it unmounts exactly when
   // the real layout mounts (provider created) and returns on doc switch (provider destroyed).
   const hasProvider = useStore((state) => Boolean(state.settings.hocuspocusProvider))
+
+  // Blocked viewers short-circuit BEFORE SlugPageLoader/DocumentPage — no provider, no WS,
+  // no private title/description/OG. Hooks run first so the order stays stable across navs.
+  if (gateVariant) {
+    return (
+      <>
+        <Head>
+          <title>docs.plus</title>
+          <meta name="robots" content="noindex, nofollow" />
+        </Head>
+        <PrivateDocumentGate
+          variant={gateVariant as PrivateGateVariant}
+          slug={slug}
+          title={gateTitle}
+        />
+      </>
+    )
+  }
 
   // Build SSR-safe OG metadata from server-fetched docMetadata
   const ogTitle = docMetadata?.title || 'docs.plus'

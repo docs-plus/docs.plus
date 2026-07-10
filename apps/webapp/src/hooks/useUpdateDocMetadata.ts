@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
 interface UpdateDocMetadataParams {
@@ -7,35 +7,38 @@ interface UpdateDocMetadataParams {
   keywords?: string[]
   documentId: string
   readOnly?: boolean
+  isPrivate?: boolean
 }
 
 interface UpdateDocMetadataResponse {
-  id: string
-  title: string
-  description: string
-  keywords: string[]
+  documentId: string
   readOnly: boolean
+  isPrivate: boolean
+  title?: string | null
+  description?: string | null
+  keywords?: string[] | string | null
 }
 
 const useUpdateDocMetadata = () => {
-  const queryClient = useQueryClient()
-
   const { isPending, isSuccess, mutate, data } = useMutation<
     UpdateDocMetadataResponse,
     Error,
     UpdateDocMetadataParams
   >({
     mutationKey: ['updateDocumentMetadata'],
-    mutationFn: async ({ title, description, keywords, documentId, readOnly = false }) => {
+    mutationFn: async ({ title, description, keywords, documentId, readOnly, isPrivate }) => {
       // NOTE: This is a hack to get the correct URL in the build time
       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
 
-      const body: Partial<UpdateDocMetadataParams> = { readOnly }
-      if (title) body.title = title
-      if (description) body.description = description
-      if (keywords) body.keywords = keywords
+      // Send only defined fields — a default readOnly=false would clobber an owner's lock.
+      const body: Partial<UpdateDocMetadataParams> = {}
+      if (title !== undefined) body.title = title
+      if (description !== undefined) body.description = description
+      if (keywords !== undefined) body.keywords = keywords
+      if (readOnly !== undefined) body.readOnly = readOnly
+      if (isPrivate !== undefined) body.isPrivate = isPrivate
 
-      // Send the Supabase token so the backend can owner-gate the readOnly lock
+      // Send the Supabase token so the backend can owner-gate the readOnly/isPrivate flags
       // (same `token` header convention as fetchDocument/uploadMediaFile).
       const {
         data: { session }
@@ -53,10 +56,12 @@ const useUpdateDocMetadata = () => {
         throw new Error('Failed to update document metadata')
       }
 
-      return response.json()
+      const json = await response.json()
+      if (!json.success || !json.data) throw new Error('Invalid update response')
+      return json.data as UpdateDocMetadataResponse
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData(['getDocumentMetadataByDocName'], data)
+    onSuccess: () => {
+      // Documents list uses optimistic updates — do NOT invalidate here (avoids flash).
     }
   })
 

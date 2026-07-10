@@ -24,6 +24,8 @@ interface AvatarStackProps {
   clickable?: boolean
   /** Maximum number of avatars to display before showing +N */
   maxDisplay?: number
+  /** True total when it exceeds `users.length` — the +N chip counts from this, not the array */
+  overflowCount?: number
   /** Additional classes for the container */
   className?: string
 }
@@ -93,6 +95,7 @@ export function AvatarStack({
   showStatus = false,
   clickable = true,
   maxDisplay = 4,
+  overflowCount,
   className
 }: AvatarStackProps) {
   // Filter out null/undefined users
@@ -101,7 +104,11 @@ export function AvatarStack({
   // Ensure maxDisplay is a positive number
   const limit = Math.max(1, Number(maxDisplay) || 4)
   const visibleUsers = validUsers.slice(0, limit)
-  const remainingCount = Math.max(0, validUsers.length - limit)
+  // When a true total is supplied, count the +N from it minus the faces actually shown.
+  const remainingCount =
+    overflowCount != null
+      ? Math.max(0, overflowCount - visibleUsers.length)
+      : Math.max(0, validUsers.length - limit)
 
   const sizeClass = SIZE_CLASSES[size]
   const spacingClass = SPACING_CLASSES[size]

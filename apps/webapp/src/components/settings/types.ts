@@ -6,6 +6,22 @@ export { LinkType }
 
 export type TabType = 'profile' | 'documents' | 'appearance' | 'security' | 'notifications'
 
+export type DocumentSortKey = 'updatedAt_desc' | 'createdAt_desc' | 'title_asc' | 'title_desc'
+
+export interface OwnedDocument {
+  documentId: string
+  slug: string
+  title: string | null
+  readOnly: boolean
+  isPrivate: boolean
+  updatedAt: string
+  createdAt: string
+  // Populated only in the Trash view (soft-deleted rows); null/absent on live docs.
+  deletedAt?: string | null
+}
+
+export type DocumentsPage = { docs: OwnedDocument[]; total: number }
+
 export interface SettingsPanelProps {
   /** Initial active tab */
   defaultTab?: TabType

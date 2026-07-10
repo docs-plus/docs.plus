@@ -24,6 +24,8 @@ interface SignInFormProps {
   onClose?: () => void
   /** Additional class names */
   className?: string
+  /** Post-auth return URL (pathname+search); when set the OAuth/magic-link redirect lands here instead of the current location. */
+  returnTo?: string
 }
 
 const SignInForm = ({
@@ -32,7 +34,8 @@ const SignInForm = ({
   title = 'Sign in to continue',
   subtitle = 'Join the conversation',
   onClose,
-  className = ''
+  className = '',
+  returnTo
 }: SignInFormProps) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -49,7 +52,7 @@ const SignInForm = ({
 
   const handleOAuthSignIn = async (provider: Provider) => {
     try {
-      const authCallbackURL = new URL(location.href)
+      const authCallbackURL = returnTo ? new URL(returnTo, location.origin) : new URL(location.href)
 
       await request({
         provider,
@@ -117,10 +120,11 @@ const SignInForm = ({
       options: {
         // Preserve the full return context (deep-link / open_heading_chat params)
         // exactly like the OAuth path — magic-link users must land back where they were.
+        // returnTo (when set) already carries pathname+search; the OTP base ends in
+        // '/', so strip its leading slash to match the reconstructed-path format.
         emailRedirectTo:
           process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT +
-          redirectPathname +
-          window.location.search
+          (returnTo ? returnTo.replace(/^\//, '') : redirectPathname + window.location.search)
       }
     })
 
