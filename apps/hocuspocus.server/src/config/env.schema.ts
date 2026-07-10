@@ -184,6 +184,9 @@ export const envSchema = z.object({
   // Unnamed autosave versions older than this get thinned to one per doc per
   // day (named checkpoints always survive). 0 disables pruning entirely.
   DOC_AUTOSAVE_RETENTION_DAYS: numericString('30'),
+  // Soft-deleted documents older than this get their footprint reaped. 0
+  // disables the reaper entirely.
+  DOC_DELETE_RETENTION_DAYS: numericString('30'),
 
   // -------------------------------------------------------------------------
   // Logging

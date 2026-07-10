@@ -13,9 +13,12 @@ const s3Client = new S3Client({
   endpoint: process.env.DO_STORAGE_ENDPOINT
 })
 
-const generateS3Key = (documentId: string, fileName: string): string => {
-  return `${process.env.NODE_ENV}/${documentId}/${fileName}`
-}
+// Object-key layout is NODE_ENV/<documentId>/<file>. Upload and delete-by-prefix
+// share this so a key-scheme change can't desync writes from the reaper's purge.
+const s3Prefix = (documentId: string): string => `${process.env.NODE_ENV}/${documentId}/`
+
+const generateS3Key = (documentId: string, fileName: string): string =>
+  `${s3Prefix(documentId)}${fileName}`
 
 /**
  * - Direct S3 write without intermediate buffers
@@ -101,5 +104,28 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
     storageS3Logger.error({ err, key }, 'S3 download failed')
     captureUnknown(err)
     return c.json({ error: 'Error retrieving file from storage' }, 500)
+  }
+}
+
+// Bun's S3 has no batch delete, so page the listing and delete key-by-key. An
+// empty listing is a no-op — the reaper retries this and most docs have no media.
+export const deleteByPrefix = async (documentId: string): Promise<void> => {
+  if (!documentId) return
+  const prefix = s3Prefix(documentId)
+  let startAfter: string | undefined
+  let deleted = 0
+
+  do {
+    const page = await s3Client.list({ prefix, maxKeys: 1000, startAfter })
+    const contents = page.contents ?? []
+    for (const { key } of contents) {
+      await s3Client.delete(key)
+      deleted++
+    }
+    startAfter = page.isTruncated ? contents.at(-1)?.key : undefined
+  } while (startAfter)
+
+  if (deleted > 0) {
+    storageS3Logger.info({ documentId, deleted }, 'Purged document editor media from S3')
   }
 }

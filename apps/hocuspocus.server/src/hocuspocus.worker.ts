@@ -2,6 +2,7 @@ import './lib/instrument'
 
 import { Hono } from 'hono'
 
+import { purgeDocumentFootprint } from './api/services/documentPurge.service'
 import { config } from './config/env'
 import {
   emailGateway,
@@ -21,6 +22,7 @@ import {
 } from './lib/push'
 import { closeQueues, createDocumentWorker } from './lib/queue'
 import { checkRedisHealth, disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
+import { getServiceRoleClient } from './lib/supabase'
 import { startWorkerMetricsSampling } from './lib/workerMetricsSampler'
 
 const CLEANUP_INTERVAL_MS = config.worker.idempotencyCleanupIntervalMs // 1 hour default
@@ -80,9 +82,75 @@ async function pruneAutosaveVersions() {
   }
 }
 
+const DELETE_RETENTION_DAYS = config.worker.deleteRetentionDays
+
+// Selection boundary for the reaper — a soft-deleted doc is reapable once its
+// tombstone predates this cutoff. Pure so it can be reasoned about in isolation.
+export function reapCutoff(retentionDays: number, now: number = Date.now()): Date {
+  return new Date(now - retentionDays * 24 * 60 * 60 * 1000)
+}
+
+// Reaps documents soft-deleted past the retention window. The per-doc purge
+// (RPC → editor media → driver row, in that order) is shared with the permanent-
+// delete endpoint via purgeDocumentFootprint; any step's failure throws and leaves
+// deletedAt set so this pass skips the doc and the next pass retries it.
+async function reapSoftDeletedDocuments() {
+  if (DELETE_RETENTION_DAYS <= 0) return
+  const supabase = getServiceRoleClient()
+  if (!supabase) {
+    workerLogger.warn('Skipping soft-delete reaper — Supabase service-role client unavailable')
+    return
+  }
+  try {
+    let totalPurged = 0
+    for (let batch = 0; batch < PRUNE_MAX_BATCHES; batch++) {
+      const cutoff = reapCutoff(DELETE_RETENTION_DAYS)
+      // Oldest tombstones first; a batch that all fails (poison) burns this pass and
+      // defers the remaining candidates to the next hourly run rather than starving them.
+      const candidates = await prisma.documentMetadata.findMany({
+        where: { deletedAt: { not: null, lt: cutoff } },
+        orderBy: { deletedAt: 'asc' },
+        select: { documentId: true, slug: true },
+        take: PRUNE_BATCH_SIZE
+      })
+      if (candidates.length === 0) break
+
+      for (const { documentId, slug } of candidates) {
+        // Re-assert the tombstone at action time so a doc Undone mid-pass (its
+        // footprint restored) is never purged.
+        const fresh = await prisma.documentMetadata.findUnique({
+          where: { documentId },
+          select: { deletedAt: true }
+        })
+        if (!fresh?.deletedAt || fresh.deletedAt >= cutoff) continue
+
+        try {
+          const { purged } = await purgeDocumentFootprint(prisma, supabase, {
+            documentId,
+            slug,
+            cutoff
+          })
+          totalPurged += purged
+        } catch (err) {
+          workerLogger.warn({ err, documentId }, 'Document purge failed; retry next pass')
+          continue
+        }
+      }
+
+      if (candidates.length < PRUNE_BATCH_SIZE) break
+    }
+    if (totalPurged > 0) {
+      workerLogger.info({ purged: totalPurged }, '🧹 Reaped soft-deleted documents')
+    }
+  } catch (err) {
+    workerLogger.warn({ err }, 'Failed to reap soft-deleted documents')
+  }
+}
+
 async function runScheduledCleanup() {
   await cleanupExpiredLogs()
   await pruneAutosaveVersions()
+  await reapSoftDeletedDocuments()
 }
 
 // Schedule cleanup interval
@@ -154,8 +222,12 @@ cleanupInterval = setInterval(runScheduledCleanup, CLEANUP_INTERVAL_MS)
 // Run once on startup to clean any stale rows
 runScheduledCleanup()
 workerLogger.info(
-  { intervalMs: CLEANUP_INTERVAL_MS, autosaveRetentionDays: AUTOSAVE_RETENTION_DAYS },
-  '🧹 Idempotency log + autosave version cleanup scheduled'
+  {
+    intervalMs: CLEANUP_INTERVAL_MS,
+    autosaveRetentionDays: AUTOSAVE_RETENTION_DAYS,
+    deleteRetentionDays: DELETE_RETENTION_DAYS
+  },
+  '🧹 Idempotency log + autosave version + soft-delete reaper cleanup scheduled'
 )
 
 const stopWorkerMetricsSampling = startWorkerMetricsSampling()
@@ -295,14 +367,18 @@ const shutdown = async () => {
 
     workerLogger.info({ timeoutMs: SHUTDOWN_TIMEOUT_MS }, 'Waiting for active jobs to complete...')
 
-    const shutdownPromise = Promise.all([
-      documentWorker.close(),
-      closeQueues(),
-      emailGateway.shutdown(),
-      pushGateway.shutdown(),
-      stopPushQueueConsumer(),
-      stopEmailQueueConsumer()
-    ])
+    const shutdownPromise = (async () => {
+      // Drain the pgmq consumers FIRST: an in-flight poll enqueues onto the
+      // email/push BullMQ queues, so closing those concurrently would risk an
+      // add-after-close. Once the consumers stop, tear down the rest.
+      await Promise.all([stopPushQueueConsumer(), stopEmailQueueConsumer()])
+      await Promise.all([
+        documentWorker.close(),
+        closeQueues(),
+        emailGateway.shutdown(),
+        pushGateway.shutdown()
+      ])
+    })()
 
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Shutdown timeout')), SHUTDOWN_TIMEOUT_MS)

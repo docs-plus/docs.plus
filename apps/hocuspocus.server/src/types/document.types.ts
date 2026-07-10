@@ -30,7 +30,11 @@ export interface UpdateDocumentParams {
   description?: string
   keywords?: string[]
   readOnly?: boolean
+  isPrivate?: boolean
 }
+
+// Allowlisted list sort keys — mapped to a fixed Prisma orderBy in the service.
+export type DocumentSortKey = 'updatedAt_desc' | 'createdAt_desc' | 'title_asc' | 'title_desc'
 
 // Search documents parameters
 export interface SearchDocumentsParams {
@@ -38,6 +42,11 @@ export interface SearchDocumentsParams {
   keywords?: string
   description?: string
   ownerId?: string
+  // Verified caller (token.sub); absence or a missing ownerId clamps private rows out.
+  requesterId?: string
+  // Trash view: return the owner's soft-deleted docs (deletedAt set) instead of live ones.
+  deleted?: boolean
+  sort?: DocumentSortKey
   limit: number
   offset: number
 }
@@ -47,6 +56,5 @@ export interface HistoryPayload {
   type: string
   documentId: string
   version?: number
-  currentVersion?: number
   msg?: string
 }

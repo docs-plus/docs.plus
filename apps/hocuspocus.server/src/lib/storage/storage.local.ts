@@ -1,4 +1,4 @@
-import { mkdir } from 'fs/promises'
+import { mkdir, rm } from 'fs/promises'
 import type { Context } from 'hono'
 import mime from 'mime'
 import path from 'path'
@@ -85,4 +85,16 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
     captureUnknown(error)
     return c.json({ error: 'Error retrieving file' }, 500)
   }
+}
+
+// `force` makes a missing dir a no-op (the reaper retries); the falsy guard stops
+// an empty id from nuking the whole hypermultimedia tree.
+export const deleteByPrefix = async (documentId: string): Promise<void> => {
+  if (!documentId) return
+  const dirPath = `./temp/${PLUGIN_NAME}/${documentId}`
+  await rm(dirPath, { recursive: true, force: true })
+  storageLocalLogger.info(
+    { documentId, dirPath },
+    'Purged document editor media from local storage'
+  )
 }

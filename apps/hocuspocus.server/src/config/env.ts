@@ -144,6 +144,7 @@ export const config = {
     shutdownTimeoutMs: env.WORKER_SHUTDOWN_TIMEOUT_MS,
     idempotencyCleanupIntervalMs: env.IDEMPOTENCY_CLEANUP_INTERVAL_MS,
     autosaveRetentionDays: env.DOC_AUTOSAVE_RETENTION_DAYS,
+    deleteRetentionDays: env.DOC_DELETE_RETENTION_DAYS,
     healthPort: env.WORKER_HEALTH_PORT
   },
 

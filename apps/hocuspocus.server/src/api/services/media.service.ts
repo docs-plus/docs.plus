@@ -67,6 +67,28 @@ export const getMedia = async (documentId: string, mediaId: string, c: Context) 
   return S3Storage.get(documentId, mediaId, c)
 }
 
+// Reaper hook: purges a document's editor (hypermultimedia) media, which the
+// Supabase footprint RPC never touches. No-op when storage is unconfigured;
+// reuses the same local/S3 split as get/upload so the delete tracks the writes.
+export const deleteDocumentMedia = async (documentId: string): Promise<void> => {
+  if (!documentId) return
+
+  if (checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
+    await localStorage.deleteByPrefix(documentId)
+    return
+  }
+
+  if (!process.env.DO_STORAGE_ENDPOINT) {
+    mediaServiceLogger.warn(
+      { documentId },
+      'Skipping editor-media purge — S3 storage not configured'
+    )
+    return
+  }
+
+  await S3Storage.deleteByPrefix(documentId)
+}
+
 /** Matches webapp mediaUploadLimits.ts and Supabase media bucket (10 MB). */
 const DEFAULT_MEDIA_MAX_FILE_SIZE = 10_485_760
 

@@ -43,10 +43,12 @@ model DocumentMetadata {
   readOnly    Boolean  @default(false)
   ownerId     String?
   email       String?
+  deletedAt   DateTime? // Soft-delete tombstone; the reaper purges the footprint after retention.
 
   documents Documents[]
 
   @@index([ownerId])
+  @@index([deletedAt])
 }
 
 model DocumentUsers {
