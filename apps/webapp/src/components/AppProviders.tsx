@@ -13,7 +13,7 @@ import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { useVisualViewportCssSync } from '@hooks/useVisualViewportCssSync'
 import { eventsHub } from '@services/eventsHub'
-import { resolveTheme, useStore, useThemeStore } from '@stores'
+import { useStore } from '@stores'
 import { getRoutePolicy } from '@utils/routePolicy'
 import { useRouter } from 'next/router'
 import { useEffect, useLayoutEffect } from 'react'
@@ -30,7 +30,6 @@ export default function AppProviders({
   const router = useRouter()
   const policy = getRoutePolicy(router.pathname)
   const { documentShell } = policy
-  const { preference: themePreference, hydrated: themeHydrated } = useThemeStore()
 
   useLayoutEffect(() => {
     const available = isAuthServiceAvailable ?? Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
@@ -45,12 +44,6 @@ export default function AppProviders({
   useBroadcastListener(documentShell)
   useHandleUserStatus(documentShell)
   useInitialSteps(isMobileInitial, documentShell)
-
-  useEffect(() => {
-    if (!themeHydrated) return
-    const resolved = resolveTheme(themePreference)
-    document.documentElement.setAttribute('data-theme', resolved)
-  }, [themeHydrated, themePreference])
 
   useEffect(() => {
     if (!router.isReady || !documentShell) return

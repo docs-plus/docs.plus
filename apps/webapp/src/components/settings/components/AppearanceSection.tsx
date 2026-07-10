@@ -1,28 +1,29 @@
-import { type ResolvedTheme, type ThemePreference, useThemeStore } from '@stores'
+import { PREFERENCE_TO_THEME, type ThemePreference, useThemeStore } from '@stores'
 import { useRef } from 'react'
 import { LuCheck, LuPalette } from 'react-icons/lu'
 
 import SettingsCard from './SettingsCard'
 
+/** Picker entries are the explicit (non-`system`) preferences; `system` is a separate row. */
+type PickerTheme = Exclude<ThemePreference, 'system'>
+
 type ThemeChoice = {
-  value: ThemePreference
+  value: PickerTheme
   label: string
-  /** The daisyUI theme the swatch renders in (via `data-theme` scoping). */
-  resolved: ResolvedTheme
   premium?: boolean
 }
 
 const LIGHT_THEMES: ThemeChoice[] = [
-  { value: 'light', label: 'Light', resolved: 'docsplus' },
-  { value: 'graphite-light', label: 'Graphite', resolved: 'docsplus-graphite', premium: true },
-  { value: 'paper-light', label: 'Paper', resolved: 'docsplus-paper', premium: true }
+  { value: 'light', label: 'Light' },
+  { value: 'graphite-light', label: 'Graphite', premium: true },
+  { value: 'paper-light', label: 'Paper', premium: true }
 ]
 
 const DARK_THEMES: ThemeChoice[] = [
-  { value: 'dark', label: 'Dark', resolved: 'docsplus-dark' },
-  { value: 'graphite-dark', label: 'Graphite', resolved: 'docsplus-graphite-dark', premium: true },
-  { value: 'paper-dark', label: 'Paper', resolved: 'docsplus-paper-dark', premium: true },
-  { value: 'dark-hc', label: 'High Contrast', resolved: 'docsplus-dark-hc' }
+  { value: 'dark', label: 'Dark' },
+  { value: 'graphite-dark', label: 'Graphite', premium: true },
+  { value: 'paper-dark', label: 'Paper', premium: true },
+  { value: 'dark-hc', label: 'High Contrast' }
 ]
 
 // Flat traversal order for roving-tabindex arrow-key navigation (matches DOM order).
@@ -32,10 +33,12 @@ const NAV_ORDER: ThemePreference[] = [
   ...DARK_THEMES.map((c) => c.value)
 ]
 
-/** A tiny live copy of the real editor surface — well floor + floated sheet + accent. */
-const ThemePreview = ({ resolved }: { resolved: ResolvedTheme }) => (
+/** A tiny live copy of the real editor surface — well floor + floated sheet + accent.
+    `data-theme` alone drives it: daisyUI sets color-scheme per theme, so the `light-dark()`
+    tokens (--pad-well etc.) resolve correctly even in an isolated swatch. */
+const ThemePreview = ({ value }: { value: PickerTheme }) => (
   <span
-    data-theme={resolved}
+    data-theme={PREFERENCE_TO_THEME[value]}
     className="block aspect-[4/3] rounded-t-[inherit] bg-[var(--pad-well)] p-2">
     <span className="border-base-300 bg-base-100 block h-full overflow-hidden rounded-[5px] border p-1.5">
       <span className="mb-1.5 flex gap-1">
@@ -50,23 +53,21 @@ const ThemePreview = ({ resolved }: { resolved: ResolvedTheme }) => (
   </span>
 )
 
-type CardProps = ThemeChoice & { selected: boolean; onSelect: () => void; onKeyDown: KeyHandler }
 type KeyHandler = (e: React.KeyboardEvent, value: ThemePreference) => void
+type CardProps = ThemeChoice & {
+  group: string
+  selected: boolean
+  onSelect: () => void
+  onKeyDown: KeyHandler
+}
 
-const ThemeCard = ({
-  value,
-  label,
-  resolved,
-  premium,
-  selected,
-  onSelect,
-  onKeyDown
-}: CardProps) => (
+const ThemeCard = ({ value, label, group, premium, selected, onSelect, onKeyDown }: CardProps) => (
   <button
     type="button"
     role="radio"
     aria-checked={selected}
-    aria-label={label}
+    // Two "Graphite"/"Paper" radios exist (light + dark) — the group disambiguates them for SR.
+    aria-label={`${label}, ${group}`}
     tabIndex={selected ? 0 : -1}
     onClick={onSelect}
     onKeyDown={(e) => onKeyDown(e, value)}
@@ -81,7 +82,7 @@ const ThemeCard = ({
         <LuCheck size={11} strokeWidth={3} aria-hidden />
       </span>
     )}
-    <ThemePreview resolved={resolved} />
+    <ThemePreview value={value} />
     <span className="border-base-300 flex items-center justify-between gap-1 border-t px-2.5 py-1.5">
       <span className={`text-xs font-medium ${selected ? 'text-primary' : 'text-base-content'}`}>
         {label}
@@ -176,6 +177,7 @@ const AppearanceSection = () => {
                   <ThemeCard
                     key={choice.value}
                     {...choice}
+                    group={group}
                     selected={preference === choice.value}
                     onSelect={() => setPreference(choice.value)}
                     onKeyDown={handleKeyDown}

@@ -1,5 +1,12 @@
 import { Head, Html, Main, NextScript } from 'next/document'
 
+import { PREFERENCE_TO_THEME } from '../stores/themeConfig'
+
+// Runs before hydration to prevent FOUC: read the persisted preference and apply the resolved
+// `data-theme`. The map is interpolated from themeConfig (SSR), so this vanilla-JS copy never
+// drifts from the store's `resolveTheme`. daisyUI's per-theme `color-scheme` handles dark styling.
+const THEME_BOOT_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'light';var m=${JSON.stringify(PREFERENCE_TO_THEME)};var t=m[p]||(window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus');document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
+
 /**
  * PWA & Meta Tags Strategy (DRY):
  * ─────────────────────────────────────────────────────────────
@@ -123,14 +130,8 @@ export default function Document() {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <body>
-        {/* Inline theme script — runs before React hydration to prevent FOUC for dark-mode users.
-            Reads the persisted Zustand store from localStorage and applies `data-theme` immediately.
-            This is the same approach used by next-themes and GitHub. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'light';var m={light:'docsplus',dark:'docsplus-dark','dark-hc':'docsplus-dark-hc','graphite-light':'docsplus-graphite','graphite-dark':'docsplus-graphite-dark','paper-light':'docsplus-paper','paper-dark':'docsplus-paper-dark'};var t=m[p]||(window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus');document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
-          }}
-        />
+        {/* Pre-hydration theme boot — see THEME_BOOT_SCRIPT above (next-themes/GitHub approach). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <Main />
         <NextScript />
       </body>

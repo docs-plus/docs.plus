@@ -2,11 +2,6 @@
 @import 'tailwindcss';
 @plugin 'daisyui';
 
-/* Map Tailwind's dark: variant to DaisyUI's data-theme attribute.
-   Without this, dark: classes only respond to OS prefers-color-scheme,
-   NOT the in-app theme toggle. */
-@custom-variant dark (&:where([data-theme="docsplus-dark"] *, [data-theme="docsplus-dark"], [data-theme="docsplus-dark-hc"] *, [data-theme="docsplus-dark-hc"], [data-theme="docsplus-graphite-dark"] *, [data-theme="docsplus-graphite-dark"], [data-theme="docsplus-paper-dark"] *, [data-theme="docsplus-paper-dark"]));
-
 /* ============================================
    docs.plus Theme System v3
    Base: Light · Dark · Dark High Contrast (projector)
@@ -350,10 +345,11 @@
 @theme {
   /* Alias to primary so light / dark / HC themes stay aligned (DaisyUI sets --color-primary per data-theme) */
   --color-docsy: var(--color-primary);
-  /* Media-category accents (chat attachments + comment references); dark overrides below */
-  --color-media-image: #059669;
-  --color-media-video: #7c3aed;
-  --color-media-audio: #ea580c;
+  /* Media-category accents (chat attachments + comment references). Base light/dark defaults via
+     `light-dark()` (daisyUI's per-theme color-scheme); premium themes override per [data-theme] below. */
+  --color-media-image: light-dark(#059669, #34d399);
+  --color-media-video: light-dark(#7c3aed, #a78bfa);
+  --color-media-audio: light-dark(#ea580c, #fb923c);
 }
 
 :root {
@@ -370,45 +366,43 @@
   --pad-sheet-border: var(--color-base-300);
   /* Chains to the daisyUI shape tokens — retune radii from the theme blocks alone. */
   --pad-sheet-radius: var(--radius-box);
-  --pad-sheet-shadow: none;
-  /* Workspace floor (editor scroll well + TOC rail). Dark themes drop it below the
-     sheet so paper reads raised in both themes — never reuse base-200 there directly. */
-  --pad-well: var(--color-base-200);
+  /* Light/dark values chosen by daisyUI's per-theme `color-scheme` via `light-dark()` —
+     no dark theme-name list, no companion attribute. Only per-theme deltas need an override. */
+  --pad-sheet-shadow: 0 1px 2px
+    light-dark(transparent, color-mix(in oklch, var(--color-base-content) 6%, transparent));
+  /* Workspace floor (editor scroll well + TOC rail). Dark drops it BELOW the sheet (default
+     #070d18; premium darks + HC override per theme) so paper reads raised in both themes. */
+  --pad-well: light-dark(var(--color-base-200), #070d18);
   /* The soft focus-ring formula (design-system.md §State language) — one declaration,
      consumed everywhere SCSS needs an outline-based focus ring. */
   --focus-ring-soft: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
   /* One shadow for every anchored floating surface (SCSS panels; Tailwind sites use
      shadow-xl). Black-based like the scrims — never base-content, which glows in dark. */
   --shadow-overlay:
-    0 20px 25px -5px color-mix(in oklch, black 8%, transparent),
-    0 8px 10px -6px color-mix(in oklch, black 8%, transparent);
+    0 20px 25px -5px
+      light-dark(
+        color-mix(in oklch, black 8%, transparent),
+        color-mix(in oklch, black 50%, transparent)
+      ),
+    0 8px 10px -6px
+      light-dark(
+        color-mix(in oklch, black 8%, transparent),
+        color-mix(in oklch, black 40%, transparent)
+      );
   /* Panel sash (TOC + chatroom) — VS Code-style: divider at idle, primary accent on hover/drag. */
   --resize-sash-hit: 8px;
   --resize-sash-size: 4px;
   --resize-sash-idle: var(--pad-divider);
   --resize-sash-hover: var(--color-primary);
   /* Modal/sheet scrims — always black-based (never base-content — white fog on dark UI). */
-  --modal-scrim: color-mix(in oklch, black 45%, transparent);
-  --modal-scrim-heavy: color-mix(in oklch, black 72%, transparent);
-}
-
-/* Shared dark-theme semantic layer — scrims, sheet lift, and overlay shadow are
-   identical for every dark theme; per-theme --pad-well / media accents follow below. */
-[data-theme='docsplus-dark'],
-[data-theme='docsplus-dark-hc'],
-[data-theme='docsplus-graphite-dark'],
-[data-theme='docsplus-paper-dark'] {
-  --pad-sheet-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
-  --modal-scrim: color-mix(in oklch, black 55%, transparent);
-  --modal-scrim-heavy: color-mix(in oklch, black 80%, transparent);
-  /* Workspace floor drops below the sheet (light does the reverse via base-200). */
-  --pad-well: #070d18;
-  --shadow-overlay:
-    0 20px 25px -5px color-mix(in oklch, black 50%, transparent),
-    0 8px 10px -6px color-mix(in oklch, black 40%, transparent);
-  --color-media-image: #34d399;
-  --color-media-video: #a78bfa;
-  --color-media-audio: #fb923c;
+  --modal-scrim: light-dark(
+    color-mix(in oklch, black 45%, transparent),
+    color-mix(in oklch, black 55%, transparent)
+  );
+  --modal-scrim-heavy: light-dark(
+    color-mix(in oklch, black 72%, transparent),
+    color-mix(in oklch, black 80%, transparent)
+  );
 }
 
 /* Premium light themes — media accents tuned to each palette (--pad-well = base-200). */
@@ -441,6 +435,20 @@
 
 [data-theme='docsplus-dark-hc'] {
   --pad-well: #0b1322;
+}
+
+/* Inverse/high-contrast surfaces (prompt + toast cards): a dark `neutral` slab in light themes,
+   our own sheet in dark themes. `light-dark()` picks per color-scheme, so no `dark:` variant. */
+.surface-inverse {
+  background-color: light-dark(var(--color-neutral), var(--color-base-100));
+  color: light-dark(var(--color-neutral-content), var(--color-base-content));
+}
+
+/* Toast variant: raised on base-200 with a hairline border in dark only (transparent in light). */
+.surface-inverse-raised {
+  background-color: light-dark(var(--color-neutral), var(--color-base-200));
+  color: light-dark(var(--color-neutral-content), var(--color-base-content));
+  border: 1px solid light-dark(transparent, var(--color-base-300));
 }
 
 * {
@@ -845,13 +853,11 @@ em-emoji-picker {
   box-shadow: var(--shadow-overlay);
 }
 
-/* em-emoji-picker (emoji-mart) — force our theme tokens in dark mode.
-   Built-in "dark" theme can render light; set CSS vars on host so shadow DOM inherits. */
+/* em-emoji-picker (emoji-mart) — force our theme tokens onto the host so the shadow DOM
+   inherits them in every theme (its built-in "dark" can otherwise render light). All values
+   are theme-aware daisyUI tokens, so this is correct unconditionally — no dark gate needed. */
 /* stylelint-disable-next-line selector-type-no-unknown -- em-emoji-picker is a custom element */
-[data-theme='docsplus-dark'] em-emoji-picker,
-[data-theme='docsplus-dark-hc'] em-emoji-picker,
-[data-theme='docsplus-graphite-dark'] em-emoji-picker,
-[data-theme='docsplus-paper-dark'] em-emoji-picker {
+em-emoji-picker {
   background-color: var(--color-base-100) !important;
   --background: var(--color-base-100);
   --color: var(--color-base-content);

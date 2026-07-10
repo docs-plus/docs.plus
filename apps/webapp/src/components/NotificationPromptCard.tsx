@@ -167,9 +167,8 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         className={twMerge(
           // Unified prompt card — matches PWAInstallPrompt
           'rounded-box flex flex-col gap-4 px-5 py-4',
-          // Theme-aware background
-          'bg-neutral text-neutral-content',
-          'dark:bg-base-100 dark:text-base-content',
+          // Theme-aware inverse surface (light-dark via color-scheme, no dark: variant)
+          'surface-inverse',
           // Depth
           'shadow-xl',
           // Border

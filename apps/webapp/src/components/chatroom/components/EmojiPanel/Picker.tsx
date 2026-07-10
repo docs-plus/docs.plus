@@ -1,6 +1,6 @@
 import data from '@emoji-mart/data/sets/14/native.json'
 import EmojiPicker from '@emoji-mart/react'
-import { getEmojiMartTheme, isLightTheme, useChatStore, useThemeStore } from '@stores'
+import { isLightTheme, useChatStore, useThemeStore } from '@stores'
 import { useEffect, useRef } from 'react'
 
 import { useEmojiPanelContext } from './context/EmojiPanelContext'
@@ -92,7 +92,7 @@ export const Picker = ({ emojiSelectHandler }: Props) => {
         })}
         emojiVersion="14"
         set="native"
-        theme={getEmojiMartTheme(resolvedTheme)}
+        theme={isDark ? 'dark' : 'light'}
         onClickOutside={() => {
           if (emojiPicker.isOpen) closeEmojiPicker()
         }}

@@ -304,8 +304,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
       <div
         className={twMerge(
           'rounded-box flex flex-col gap-4 px-5 py-4',
-          'bg-neutral text-neutral-content',
-          'dark:bg-base-100 dark:text-base-content',
+          'surface-inverse',
           'shadow-xl',
           'border-base-300 border'
         )}>
