@@ -23,15 +23,21 @@ The REST API runs from `src/index.ts` on a Hono app. This document covers the HT
 
 Three schemes apply, by route group:
 
-| Scheme                                | Used by                                                                                                                      | Header                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/api/documents/*`, `/api/plugins/hypermultimedia/*`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe` | —                                                   |
-| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`                                                       | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
-| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                               | `Authorization: Bearer <jwt>`                       |
+| Scheme                                | Used by                                                                                                                                                                                                | Header                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| None                                  | `/`, `/health/*`, `/api/plugins/hypermultimedia/*`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`                                                                                               | —                                                   |
+| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                 | `token: <jwt>`                                      |
+| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`) | `token: <jwt>`                                      |
+| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`                                                                                                                                 | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
+| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                         | `Authorization: Bearer <jwt>`                       |
+
+> **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalUser` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
 
 Service-role checks use a constant-time compare (`src/api/utils/serviceRole.ts`). When `SUPABASE_SERVICE_ROLE_KEY` is unset, they fail closed in production and pass in non-production. Admin routes verify the JWT with Supabase, then require a matching row in `admin_users` (`src/api/middleware/adminAuth.ts`); failures return `401` (no/invalid token) or `403` (not an admin).
 
-The document CRUD endpoints take an optional `userId`/`ownerId` for filtering and ownership. They do not enforce a JWT.
+**List owner filter (shipped):** When `ownerId` is present on `GET /api/documents`, the caller must send a valid `token` header and `ownerId` must equal the JWT subject (`sub`). Missing token → `401`; mismatched `ownerId` → `403`.
+
+**Unauthenticated fleet list:** `GET /api/documents` without `ownerId` returns **public rows only** — `isPrivate: true` rows are clamped out for any unverified caller or owner-less list (both the page query and its `total` count). This closes anonymous `?title=` enumeration of private titles/descriptions. Owner-scoped calls (`ownerId === token.sub`) are unaffected and still see the owner's private docs. The webapp Settings → Documents UI always sends `ownerId` + token and never uses the fleet path.
 
 ## Response envelope
 
@@ -100,14 +106,25 @@ Base path `/api/documents` (`src/api/routers/documents.router.ts`). Success resp
 
 List or search documents. With any of `title`/`keywords`/`description`, runs a full-text search; otherwise lists all rows. Owner profiles (snake_case, mirroring `public.users`) are joined in.
 
-| Param         | Type   | Default | Description             |
-| ------------- | ------ | ------- | ----------------------- |
-| `title`       | string | —       | Search term (tokenized) |
-| `keywords`    | string | —       | Search term (tokenized) |
-| `description` | string | —       | Search term (tokenized) |
-| `ownerId`     | uuid   | —       | Filter by owner         |
-| `limit`       | string | `10`    | Page size (1–100)       |
-| `offset`      | string | `0`     | Pagination offset (≥ 0) |
+| Param         | Type   | Default          | Description                                                                |
+| ------------- | ------ | ---------------- | -------------------------------------------------------------------------- |
+| `title`       | string | —                | Search term (tokenized)                                                    |
+| `keywords`    | string | —                | Search term (tokenized)                                                    |
+| `description` | string | —                | Search term (tokenized)                                                    |
+| `ownerId`     | uuid   | —                | Filter by owner — **requires** `token` header; must match JWT `sub`        |
+| `sort`        | string | `updatedAt_desc` | Allowlisted: `updatedAt_desc`, `createdAt_desc`, `title_asc`, `title_desc` |
+| `limit`       | string | `10`             | Page size (1–100)                                                          |
+| `offset`      | string | `0`              | Pagination offset (≥ 0)                                                    |
+
+**Auth:** `optionalUser` on the route. When `ownerId` is set, missing or invalid token → `401`; `ownerId !== token.sub` → `403`. Without `ownerId`, no auth is required (fleet list — legacy).
+
+List rows include `readOnly`, `isPrivate`, `createdAt`, and `updatedAt`.
+
+**Sort:** Optional `sort` query param. Allowed values: `updatedAt_desc` (default), `createdAt_desc`, `title_asc`, `title_desc`. The server maps each key to a fixed, allowlisted Prisma `orderBy` (an unknown value falls back to `updatedAt_desc`). Required for the Settings → My Documents sort dropdown — client-side sort breaks paginated Load more.
+
+**Private clamp:** Without a verified requester (`ownerId === token.sub`), private rows are excluded from both the results and `total` — see **Unauthenticated fleet list** above.
+
+> **Semantic note:** `updatedAt` on `DocumentMetadata` reflects metadata changes (title, flags, keywords), not every collaborative body save. The UI label “Last modified” matches Google Docs parity.
 
 ```json
 {
@@ -129,6 +146,18 @@ Fetch one document by slug. When no row matches, returns a synthesized draft (`c
 | -------- | -------------- | ------------------------------------- |
 | `userId` | string (query) | Optional; accepted for access context |
 
+**Auth (shipped — owner-scoped private):** `optionalUser` attaches the caller (owner identity is `token.sub`, never the `userId` query param), and the controller applies:
+
+| Document                 | Viewer                    | Result                                                                       |
+| ------------------------ | ------------------------- | ---------------------------------------------------------------------------- |
+| Public                   | anyone                    | `200` — full metadata                                                        |
+| Private                  | no token or anonymous JWT | `403` — `{ access: 'sign-in-required' }`                                     |
+| Private                  | signed-in non-owner       | `403` — `{ access: 'denied' }`                                               |
+| Private                  | owner (`sub === ownerId`) | `200` — full metadata                                                        |
+| Private, `ownerId: null` | any signed-in user        | `403` — `{ access: 'sign-in-required' }` (sign-in wall until owner backfill) |
+
+The `403` body is `{ success: false, error: { code: 'FORBIDDEN', message }, access }`; the top-level `access` hint drives the webapp private gate's CTA. Draft slugs (no DB row) are unchanged — synthesized draft, never treated as private.
+
 ### POST /api/documents
 
 Create a document.
@@ -141,7 +170,35 @@ Create a document.
 
 ### PUT /api/documents/:docId
 
-Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`).
+Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`, **owner-only**), `isPrivate` (`boolean`, **owner-only**). Non-owners may update collaborative fields; `readOnly` / `isPrivate` changes from non-owners are silently ignored (logged server-side).
+
+### DELETE /api/documents/:documentId
+
+Soft-delete (owner-only, `requireUser`). Stamps `deletedAt`; the row survives for restore and is reaped after `DOC_DELETE_RETENTION_DAYS` (default 30). Idempotent — a missing row returns success. Non-owner → `403`.
+
+### POST /api/documents/:documentId/restore
+
+Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`.
+
+### POST /api/documents/:documentId/duplicate
+
+Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is shared, not cloned. Non-owner → `403`; soft-deleted source → `404`.
+
+### DELETE /api/documents/:documentId/permanent
+
+Purge a soft-deleted doc's full footprint (owner-only) — chat and views via the `purge_document_footprint` Supabase RPC, editor media via a storage-prefix delete, then the metadata row. Refuses a live doc → `400`. Idempotent (already-gone → success). Shares the reaper's purge path.
+
+### GET /api/documents?deleted=true
+
+The caller's own soft-deleted docs (Trash), newest-tombstone-first. `requireUser`; owner-scoped to `token.sub` (never a client `ownerId`). Same page shape as the list.
+
+### POST /api/documents/trash/purge
+
+Bulk permanent-delete (owner-only). Body `{ ids?: string[] }` — omit `ids` to empty the whole trash, or pass a selection (capped at 500). Returns `{ purged: <count> }`. Runs the per-doc purge sequentially; synchronous, so a very large trash can exceed the request timeout (small in practice — the reaper bounds growth).
+
+### POST /api/documents/trash/restore
+
+Bulk restore (owner-only). Body `{ ids: string[] }` (1–500). Returns `{ restored: <count> }`. Non-owned ids are skipped.
 
 ## Media
 
@@ -318,7 +375,7 @@ Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-R
 
 ## WebSocket API
 
-The collaboration server (`src/hocuspocus.server.ts`, default port `4001`) speaks the Hocuspocus protocol over Y.js. Connections authenticate with a JWT.
+The collaboration server (`src/hocuspocus.server.ts`, default port `4001`) speaks the Hocuspocus protocol over Y.js. Connections authenticate with a JWT passed in the Hocuspocus `token` field (JSON with `accessToken`, `slug`, `deviceType`).
 
 ```javascript
 import { HocuspocusProvider } from '@hocuspocus/provider'
@@ -326,8 +383,16 @@ import { HocuspocusProvider } from '@hocuspocus/provider'
 const provider = new HocuspocusProvider({
   url: 'ws://localhost:4001',
   name: 'document-slug',
-  token: 'jwt-token'
+  token: JSON.stringify({ accessToken, slug, deviceType: 'desktop' })
 })
 ```
 
-The document `name` is the room id and the Prisma document key; the server never trusts a client-supplied `documentId`. See the [Hocuspocus documentation](https://tiptap.dev/hocuspocus/introduction) for the wire protocol.
+The document `name` is the room id (Prisma `documentId`); the server never trusts a client-supplied id in the token for authorization.
+
+### Private documents
+
+**Breaking change (shipped):** `isPrivate` now allows the **owner only** (`user.sub === ownerId`). Anonymous and signed-in non-owners are rejected — previously any signed-in (non-anonymous) user could connect. Ownerless-private rooms (`ownerId: null`) reject everyone until owner backfill. When the metadata lookup **fails**, the server can no longer determine privacy, so it **fails closed** (rejects) instead of admitting the connection as public; a successful public-doc lookup still connects without auth. The decision is a pure resolver (`src/lib/wsAccess.ts`) with a matrix unit test.
+
+**Read-only:** When `readOnly` is true and the connector is not the owner, the connection is marked read-only on the write path (existing behavior).
+
+See the [Hocuspocus documentation](https://tiptap.dev/hocuspocus/introduction) for the wire protocol.
