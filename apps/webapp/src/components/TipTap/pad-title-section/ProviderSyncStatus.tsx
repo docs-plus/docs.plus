@@ -13,7 +13,10 @@ type StatusPresentation = {
   className: string
 }
 
-function statusPresentation(status: ProviderStatus): StatusPresentation {
+function statusPresentation(
+  status: ProviderStatus,
+  contentForkError?: boolean
+): StatusPresentation {
   switch (status) {
     case 'saving':
       return {
@@ -44,6 +47,17 @@ function statusPresentation(status: ProviderStatus): StatusPresentation {
         className: 'text-warning'
       }
     case 'error':
+      // Content-fork freeze is terminal (schema/version mismatch) and only a
+      // reload recovers it — never tell the user their changes will still sync.
+      if (contentForkError) {
+        return {
+          icon: <Icons.cloudOff size={18} />,
+          text: 'Reload',
+          tooltip:
+            'This tab is out of date and stopped syncing to protect your work. Reload the page to keep editing.',
+          className: 'text-error'
+        }
+      }
       return {
         icon: <Icons.cloudOff size={18} />,
         text: 'Error',
@@ -77,6 +91,7 @@ const ProviderSyncStatus = ({
 }) => {
   const providerStatus = useStore((state) => state.settings.providerStatus)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const contentForkError = useStore((state) => state.settings.contentForkError)
 
   const disconnected = isProviderDisconnected(providerStatus)
 
@@ -94,7 +109,7 @@ const ProviderSyncStatus = ({
     )
   }
 
-  const config = statusPresentation(providerStatus)
+  const config = statusPresentation(providerStatus, contentForkError)
   // Opacity-only entry tier: the mobile chip lives in the sticky header, which
   // rides the visualViewport machinery — never use transform-based animations here.
   const chipClassName = `flex items-center gap-1.5 px-3 py-1 text-sm font-medium ${config.className} hover:bg-base-200 rounded-field transition-colors ${

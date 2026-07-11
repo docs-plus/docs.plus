@@ -35,7 +35,6 @@ import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
-import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
 import { HeadingFilter } from './extensions/heading-filter'
@@ -86,13 +85,13 @@ const Editor = ({
   provider,
   spellcheck = false,
   editable = true,
-  localPersistence = false,
+  localYdoc,
   docName = 'example-document'
 }: {
   provider?: HocuspocusProvider | null
   spellcheck?: boolean
   editable?: boolean
-  localPersistence?: boolean
+  localYdoc?: Y.Doc
   docName?: string
 }): Partial<UseEditorOptions> => {
   const {
@@ -109,7 +108,17 @@ const Editor = ({
       heading: {
         levels: [1, 2, 3, 4, 5, 6]
       },
-      codeBlock: false
+      codeBlock: false,
+      // Not `link: false` (the composer's choice): stored pad docs contain
+      // `link` marks that must stay schema-valid under enableContentCheck.
+      // Hyperlink owns all <a> behavior, so Link stays registered but inert:
+      // shouldAutoLink:false neuters its paste rule (autolink/linkOnPaste don't).
+      link: {
+        autolink: false,
+        linkOnPaste: false,
+        openOnClick: false,
+        shouldAutoLink: () => false
+      }
     }),
 
     ParagraphStyle,
@@ -220,28 +229,18 @@ const Editor = ({
   ]
 
   if (!provider) {
-    const extensions = [
-      ...baseExtensions,
-      UndoRedo.configure({
-        depth: 5
-      })
-    ]
+    const extensions = [...baseExtensions]
 
-    const canUseIndexedDb = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined'
-
-    if (localPersistence && docName && canUseIndexedDb) {
-      const ydoc = new Y.Doc()
-      // `::media-v2` invalidates IndexedDB caches holding pre-2.0 PascalCase
-      // media node bytes, forcing a one-time re-sync from the (migrating)
-      // server. A camelCase-only client binding stale bytes would throw
-      // "Unknown node type: Image" before the server transform runs.
-      new IndexeddbPersistence(`${docName}::media-v2`, ydoc)
-
+    if (localYdoc) {
       extensions.push(
         Collaboration.configure({
-          document: ydoc
+          document: localYdoc
         })
       )
+    } else {
+      // Never alongside Collaboration: prosemirror-history records y-sync
+      // transactions, so Mod-z could undo the IndexedDB hydration.
+      extensions.push(UndoRedo)
     }
 
     return {
@@ -262,8 +261,14 @@ const Editor = ({
   return {
     onCreate: scrollDown,
     enableContentCheck: true,
-    onContentError({ error }) {
+    onContentError({ editor, error, disableCollaboration }) {
       console.error('onContentError', error)
+      // Invalid content blocks further remote transactions while local edits
+      // keep syncing — freeze this client instead of diverging silently. The
+      // freeze is terminal in-session; contentForkError drives the reload copy.
+      disableCollaboration()
+      editor.setEditable(false, false)
+      useStore.getState().setWorkspaceSettings({ contentForkError: true, providerStatus: 'error' })
     },
     editorProps: {
       attributes: {

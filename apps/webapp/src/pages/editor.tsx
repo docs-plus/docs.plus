@@ -9,7 +9,9 @@ import { moveHeadingById } from '@components/toc/utils/moveHeading'
 import { useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
 import { GetServerSideProps } from 'next'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+import { IndexeddbPersistence } from 'y-indexeddb'
+import * as Y from 'yjs'
 
 // Add this type for our props
 type EditorPageProps = {
@@ -19,7 +21,7 @@ type EditorPageProps = {
 
 declare global {
   interface Window {
-    _createDocumentFromStructure: (structure: any) => boolean
+    _createDocumentFromStructure?: (structure: any) => boolean
     _editor?: Editor
     _moveHeading?: (
       sourceId: string,
@@ -35,16 +37,43 @@ declare global {
 }
 
 const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
+  // Owned here, not in the config factory: useEditor re-evaluates its options
+  // argument every render, which would leak a Y.Doc + open IndexedDB
+  // connection per render.
+  const localYdoc = useMemo(
+    () => (localPersistence ? new Y.Doc({ guid: docName }) : undefined),
+    [localPersistence, docName]
+  )
+
   const editor = useEditor(
     editorConfig({
       provider: null,
       spellcheck: false,
-      localPersistence,
+      localYdoc,
       docName
     }),
     []
   )
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
+
+  useEffect(() => {
+    if (!localYdoc) return
+    // `::media-v2` invalidates IndexedDB caches holding pre-2.0 PascalCase
+    // media node bytes, forcing a one-time re-sync from the (migrating)
+    // server. A camelCase-only client binding stale bytes would throw
+    // "Unknown node type: Image" before the server transform runs.
+    const persistence =
+      typeof window.indexedDB !== 'undefined'
+        ? new IndexeddbPersistence(`${docName}::media-v2`, localYdoc)
+        : null
+
+    return () => {
+      // Tear down only the IndexedDB connection, not the Y.Doc: StrictMode's
+      // double-mount reuses the memoized doc, so destroying it here rebinds the
+      // editor to a dead doc and silently kills Yjs undo. The doc is GC'd on unmount.
+      persistence?.destroy()
+    }
+  }, [localYdoc, docName])
 
   useEffect(() => {
     if (!editor) return
@@ -72,6 +101,8 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
     setWorkspaceEditorSetting('providerSyncing', false)
 
     return () => {
+      delete window._editor
+      delete window._createDocumentFromStructure
       delete window._moveHeading
       delete window._getMarkdown
       delete window._parseMarkdown
