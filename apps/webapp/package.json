@@ -63,6 +63,7 @@
     "@tiptap/pm": "catalog:",
     "@tiptap/react": "catalog:",
     "@tiptap/starter-kit": "catalog:",
+    "@tiptap/y-tiptap": "catalog:",
     "@virtuoso.dev/message-list": "^1.17.0",
     "daisyui": "catalog:",
     "date-fns": "catalog:",
