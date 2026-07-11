@@ -1,7 +1,8 @@
 import SharedButton, { type ButtonShape, type ButtonVariant } from '@components/ui/Button'
 import { Placement } from '@floating-ui/react'
+import { useTouchPress } from '@hooks/useTouchPress'
 import { Editor } from '@tiptap/react'
-import React, { useRef } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ToolbarButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
@@ -35,24 +36,10 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     },
     ref
   ) => {
-    const touchPressRef = useRef(false)
     const isButtonActive = isActive || editor?.isActive(type || '')
-
-    function handleClick(e: React.MouseEvent) {
-      e.preventDefault()
-      if (touchPressRef.current) {
-        touchPressRef.current = false
-        return
-      }
-      onPress?.(e)
-      onClick?.(e as React.MouseEvent<HTMLButtonElement>)
-    }
-
-    function handleTouchEnd(e: React.TouchEvent) {
-      e.preventDefault()
-      touchPressRef.current = true
-      onPress?.(e)
-    }
+    // Click is wired unconditionally below (unlike the pad button, which gates on `onPress`): the hook's
+    // `preventDefault` on every click keeps the composer editor selection from being stolen.
+    const { handleTouchEnd, handleClick } = useTouchPress(onPress, onClick)
 
     return (
       <SharedButton
