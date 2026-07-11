@@ -18,11 +18,14 @@ type EditorSettings = {
   isEditable: boolean
 }
 
-type Workspace = {
+export type Workspace = {
   workspaceId?: string
   metadata?: any
   broadcaster?: any
   providerStatus: ProviderStatus
+  // Set by onContentError: distinguishes a permanent schema/version freeze from
+  // a transient network 'error' so the status chip can prompt a reload.
+  contentForkError?: boolean
   editor: EditorSettings
   hocuspocusProvider?: any
   deviceDetect?: any
@@ -33,6 +36,7 @@ type Workspace = {
 export interface IWorkspaceStore {
   settings: Workspace
   setWorkspaceSetting: (key: keyof Workspace, value: any) => void
+  setWorkspaceSettings: (partial: Partial<Workspace>) => void
   setWorkspaceEditorSettings: (settings: EditorSettings) => void
   setWorkspaceEditorSetting: (key: keyof EditorSettings, value: any) => void
 }
@@ -60,6 +64,13 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
   setWorkspaceSetting: (key, value) => {
     return set((state) => ({
       settings: { ...state.settings, [key]: value }
+    }))
+  },
+
+  // Merge several top-level settings in one commit — one render, no intermediate state
+  setWorkspaceSettings: (partial) => {
+    return set((state) => ({
+      settings: { ...state.settings, ...partial }
     }))
   },
 

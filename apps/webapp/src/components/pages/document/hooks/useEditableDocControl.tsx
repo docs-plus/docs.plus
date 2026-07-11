@@ -1,3 +1,4 @@
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useStore } from '@stores'
 import { useEffect, useRef } from 'react'
 
@@ -23,6 +24,8 @@ const useEditableDocControl = () => {
         divProseMirror?.setAttribute('contenteditable', 'false')
         editor?.setEditable(false)
       } else if (kb || storeWantsEdit) {
+        // Never re-enable a doc that read-only enforcement or the freeze locked.
+        if (isDocumentEditingLocked()) return
         const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
         divProseMirror?.setAttribute('contenteditable', 'true')
         editor?.setEditable(true)

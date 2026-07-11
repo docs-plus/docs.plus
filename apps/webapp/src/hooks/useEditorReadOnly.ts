@@ -8,14 +8,22 @@ const useEditorReadOnly = () => {
   useEffect(() => {
     if (!provider || !editor) return
 
-    const statelessHandler = ({ payload: _payload }: { payload: string }) => {
-      // TODO: Re-enable read-only handling when backend implementation is ready
+    // Only ever forces editable OFF: onAuthenticate never sets connection
+    // readOnly for owners (hocuspocus.server.ts), so this cannot fight the
+    // owner path in useEditorEditableState.
+    const applyScope = (scope?: string) => {
+      if (scope === 'readonly') editor.setEditable(false)
     }
 
-    provider.on('stateless', statelessHandler)
+    const authenticatedHandler = ({ scope }: { scope: string }) => applyScope(scope)
+
+    provider.on('authenticated', authenticatedHandler)
+    // The editor mounts after first sync, so 'authenticated' has usually
+    // already fired — apply the current scope immediately.
+    applyScope(provider.authorizedScope)
 
     return () => {
-      provider.off('stateless', statelessHandler)
+      provider.off('authenticated', authenticatedHandler)
     }
   }, [provider, editor])
 }

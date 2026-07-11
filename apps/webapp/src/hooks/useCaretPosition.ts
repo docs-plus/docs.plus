@@ -1,3 +1,4 @@
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/react'
 import { nudgeVirtualKeyboardOpenFromVisualViewport } from '@utils/virtualKeyboardMetrics'
@@ -138,6 +139,9 @@ export const useEnableEditor = () => {
    */
   const enableEditor = useCallback(() => {
     if (!editor) return false
+    // Read-only enforcement / content-fork freeze disabled this editor on purpose;
+    // both the EditFAB tap and the double-tap route here, so gate them together.
+    if (isDocumentEditingLocked()) return false
 
     const proseMirrorEl = document.querySelector('.tiptap.ProseMirror') as HTMLElement
     if (isKeyboardOpen) {

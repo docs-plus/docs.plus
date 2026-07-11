@@ -76,7 +76,8 @@ const useResizeContainer = () => {
       document.body.style.cursor = 'row-resize'
 
       // Disable editor during resize to prevent interference
-      if (editor?.isEditable) editor.setEditable(false)
+      const wasEditable = Boolean(editor?.isEditable)
+      if (wasEditable) editor?.setEditable(false)
 
       // Bypass React during drag: write `style.height` directly on the
       // container ref and broadcast a CustomEvent for sibling consumers
@@ -102,8 +103,9 @@ const useResizeContainer = () => {
         // Single store commit at the end of drag — drives localStorage
         // persistence, useEffect mirrors, and the one Virtuoso re-measure.
         setOrUpdateChatPanelHeight(lastHeight)
-        // Re-enable editor
-        if (editor && !editor.isEditable) editor.setEditable(true)
+        // Re-enable only if this drag disabled it — never flip a
+        // read-only document editable.
+        if (wasEditable && editor && !editor.isEditable) editor.setEditable(true)
         // Re-enable text selection
         document.body.style.userSelect = ''
         document.body.style.cursor = ''

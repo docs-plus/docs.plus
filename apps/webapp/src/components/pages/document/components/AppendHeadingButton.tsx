@@ -1,5 +1,6 @@
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
+import { isDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
@@ -55,6 +56,9 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
 
   const appendHeadingToEnd = useCallback(() => {
     if (!editor) return
+    // insertContentAt mutates even a non-editable editor, so bail before it
+    // when read-only enforcement or the content-fork freeze has locked the doc.
+    if (isDocumentEditingLocked()) return
 
     const emptyParagraphs = Array(5).fill({
       type: TIPTAP_NODES.PARAGRAPH_TYPE
