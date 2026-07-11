@@ -1,6 +1,6 @@
 # Panel feed seams
 
-Toolbar panels (bookmarks, notifications) share UI chrome but split persistent state by domain.
+Toolbar panels (bookmarks, notifications) share the panel shell but split persistent state by domain.
 
 ## UI stack (shared)
 
