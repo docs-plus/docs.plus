@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 
-import { TransientAuthError, verifySupabaseToken } from '../../lib/auth'
+import { verifySupabaseTokenOutcome } from '../../lib/auth'
 
 // Accept either `Authorization: Bearer <jwt>` or the `token` header the webapp
 // already uses on document reads (fetchDocument.ts), so callers stay consistent.
@@ -27,18 +27,22 @@ export async function requireUser(c: Context, next: Next) {
   const token = extractToken(c)
   if (!token) return unauthorized(c, 'Authentication required')
 
-  let user
-  try {
-    user = await verifySupabaseToken(token)
-  } catch (err) {
-    if (err instanceof TransientAuthError) return authUnavailable(c)
-    throw err
+  const outcome = await verifySupabaseTokenOutcome(token)
+  switch (outcome.kind) {
+    case 'unavailable':
+      return authUnavailable(c)
+    case 'invalid':
+      return unauthorized(c, 'Invalid or expired token')
+    case 'user':
+      c.set('user', outcome.user)
+      c.set('userId', outcome.user.sub)
+      await next()
+      return
+    default: {
+      const _exhaustive: never = outcome
+      return _exhaustive
+    }
   }
-  if (!user) return unauthorized(c, 'Invalid or expired token')
-
-  c.set('user', user)
-  c.set('userId', user.sub)
-  await next()
 }
 
 /** Attach the user when a valid token is present; never rejects. For routes with
@@ -46,15 +50,11 @@ export async function requireUser(c: Context, next: Next) {
 export async function optionalUser(c: Context, next: Next) {
   const token = extractToken(c)
   if (token) {
-    try {
-      const user = await verifySupabaseToken(token)
-      if (user) {
-        c.set('user', user)
-        c.set('userId', user.sub)
-      }
-    } catch (err) {
-      // optionalUser never rejects: a transient auth outage just proceeds anon.
-      if (!(err instanceof TransientAuthError)) throw err
+    const outcome = await verifySupabaseTokenOutcome(token)
+    // Transient outage → proceed anonymous; only a verified user is attached.
+    if (outcome.kind === 'user') {
+      c.set('user', outcome.user)
+      c.set('userId', outcome.user.sub)
     }
   }
   await next()

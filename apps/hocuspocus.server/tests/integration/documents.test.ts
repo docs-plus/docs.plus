@@ -1,13 +1,30 @@
 import { describe, test, expect, beforeAll, beforeEach, mock } from 'bun:test'
 
-mock.module('../../src/lib/auth', () => ({
-  verifySupabaseToken: async (token: string) => {
-    if (token === 'valid-test-token') {
-      return { sub: 'user-123', email: 'owner@example.com' }
+// Drive requireUser/optionalUser through the real auth module + a stubbed anon
+// client. Do NOT mock `lib/auth` itself — that sticky mock.module poisons later
+// suites (e.g. auth.test.ts) in the same bun test process.
+mock.module('../../src/lib/supabase', () => ({
+  getAnonClient: () => ({
+    auth: {
+      getUser: async (token: string) => {
+        if (token === 'valid-test-token') {
+          return {
+            data: {
+              user: {
+                id: 'user-123',
+                email: 'owner@example.com',
+                is_anonymous: false,
+                user_metadata: {}
+              }
+            },
+            error: null
+          }
+        }
+        return { data: { user: null }, error: { status: 401, message: 'invalid' } }
+      }
     }
-    return null
-  },
-  verifyServiceRole: () => false
+  }),
+  getServiceRoleClient: () => null
 }))
 
 // Capture footprint-purge invocations so the permanent-delete tests can assert

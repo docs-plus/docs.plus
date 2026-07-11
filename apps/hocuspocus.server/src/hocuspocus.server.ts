@@ -5,7 +5,7 @@ import type { Connection, onAuthenticatePayload } from '@hocuspocus/server'
 import { Server } from '@hocuspocus/server'
 
 import HocuspocusConfig from './config/hocuspocus.config'
-import { TransientAuthError, verifySupabaseToken } from './lib/auth'
+import { type SupabaseUser, verifySupabaseTokenOutcome } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { wsLogger } from './lib/logger'
@@ -184,48 +184,55 @@ const serverConfig = {
     // reject them so the client refreshes, but don't capture them as errors.
     const INVALID_TOKEN_MESSAGE = 'Invalid authentication token'
 
-    let user: Awaited<ReturnType<typeof verifySupabaseToken>> = null
+    let user: SupabaseUser | null = null
     let slug = ''
     let deviceType = 'desktop'
 
     if (!token) {
       wsLogger.debug({ documentName }, 'No token provided - anonymous')
     } else {
+      let tokenData: { slug?: string; deviceType?: string; accessToken?: string }
       try {
-        const tokenData = JSON.parse(token)
+        tokenData = JSON.parse(token)
         slug = tokenData.slug || ''
         deviceType = tokenData.deviceType || 'desktop'
-
-        if (tokenData.accessToken) {
-          user = await verifySupabaseToken(tokenData.accessToken)
-          if (user) {
-            wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
-          } else if (isProd) {
-            throw new Error(INVALID_TOKEN_MESSAGE)
-          } else {
-            wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
-          }
-        }
       } catch (error) {
-        if (error instanceof TransientAuthError) {
-          // Supabase auth is transiently unreachable: don't hard-reject a
-          // possibly-valid user. Degrade to anonymous and let the privacy gate
-          // decide — public docs still connect, private stay denied.
-          wsLogger.warn({ documentName }, 'Transient auth failure - degrading to anonymous')
-        } else if (error instanceof Error && error.message === INVALID_TOKEN_MESSAGE) {
-          // Expected rejection (expired/invalid token): reject so the client
-          // refreshes and reconnects; not an error to log at level 50 or capture.
-          wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
-          wsAuthRejectionsTotal.inc()
-          if (isProd) throw error
-        } else {
-          wsLogger.error({ err: error, documentName }, 'Auth error')
-          captureUnknown(error)
-          if (isProd) throw new Error('Authentication failed', { cause: error })
-        }
+        wsLogger.error({ err: error, documentName }, 'Auth error')
+        captureUnknown(error)
+        if (isProd) throw new Error('Authentication failed', { cause: error })
         user = null
         slug = ''
         deviceType = 'desktop'
+        tokenData = {}
+      }
+
+      if (tokenData.accessToken) {
+        const outcome = await verifySupabaseTokenOutcome(tokenData.accessToken)
+        switch (outcome.kind) {
+          case 'user':
+            user = outcome.user
+            wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
+            break
+          case 'unavailable':
+            // Keep slug/deviceType — only identity degrades to anonymous so a
+            // transient auth outage cannot mint the wrong first-save slug.
+            wsLogger.warn({ documentName }, 'Transient auth failure - degrading to anonymous')
+            user = null
+            break
+          case 'invalid':
+            user = null
+            if (isProd) {
+              wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
+              wsAuthRejectionsTotal.inc()
+              throw new Error(INVALID_TOKEN_MESSAGE)
+            }
+            wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
+            break
+          default: {
+            const _exhaustive: never = outcome
+            return _exhaustive
+          }
+        }
       }
     }
 
@@ -254,9 +261,7 @@ const serverConfig = {
       wsLogger.warn({ err: error, documentName }, 'Private-doc lookup failed; denying connection')
     }
 
-    // Soft-deleted docs are sealed here: denying the WS connection stops the store
-    // worker's upsertDocumentMetadata from resurrecting the whole Prisma tree.
-    if (deleted || resolveWsAccess({ isPrivate, ownerId, user, lookupFailed }) === 'deny') {
+    if (resolveWsAccess({ isPrivate, ownerId, user, lookupFailed, deleted }) === 'deny') {
       wsLogger.info(
         { documentName, hasUser: Boolean(user), lookupFailed, deleted },
         'Denying WS connection to private/deleted/uncertain document'

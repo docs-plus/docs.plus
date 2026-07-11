@@ -6,17 +6,6 @@ import { config } from '../config/env'
 import { jwtLogger } from './logger'
 import { getAnonClient } from './supabase'
 
-// Thrown when the auth backend is transiently unreachable (429/5xx/network),
-// so callers can degrade (anonymous / 503) instead of hard-rejecting a
-// possibly-valid user. A definitively-invalid token still returns null.
-export class TransientAuthError extends Error {
-  constructor(cause?: unknown) {
-    super('Transient auth backend failure')
-    this.name = 'TransientAuthError'
-    if (cause !== undefined) this.cause = cause
-  }
-}
-
 /**
  * Supabase user data from token verification
  */
@@ -31,6 +20,35 @@ export interface SupabaseUser {
   }
 }
 
+export type TokenVerifyOutcome =
+  | { kind: 'user'; user: SupabaseUser }
+  | { kind: 'invalid' }
+  | { kind: 'unavailable'; cause?: unknown }
+
+type AuthGetUser = (token: string) => Promise<{
+  data: {
+    user: {
+      id: string
+      email?: string
+      is_anonymous?: boolean
+      user_metadata?: unknown
+    } | null
+  }
+  error: { status?: number; message?: string } | null
+}>
+
+export type VerifyTokenOptions = {
+  /** Test seam — production always uses the anon Supabase client. */
+  getUser?: AuthGetUser
+}
+
+/** auth-js RETURNS (not throws) AuthError for 429/5xx/network — treat those as unavailable. */
+export function isTransientAuthFailure(error: { status?: number } | null | undefined): boolean {
+  if (error == null) return false
+  const status = error.status
+  return isAuthRetryableFetchError(error) || status == null || status === 429 || status >= 500
+}
+
 // Short-TTL cache: verifying a Supabase JWT is a network round-trip, and WS
 // reconnect storms re-verify the same token repeatedly. 60s of staleness on a
 // revoked token is an accepted trade for not hammering Supabase Auth.
@@ -41,43 +59,49 @@ const NEG_TOKEN_CACHE_TTL_MS = 30_000
 const MAX_TOKEN_CACHE = 1000
 const tokenCache = new Map<string, { user: SupabaseUser | null; expiresAt: number }>()
 
+function cacheSet(token: string, user: SupabaseUser | null, ttlMs: number): void {
+  if (tokenCache.size >= MAX_TOKEN_CACHE) tokenCache.clear()
+  tokenCache.set(token, { user, expiresAt: Date.now() + ttlMs })
+}
+
 /**
- * Verify a Supabase access token (cached for a short window).
+ * Verify a Supabase access token (cached). Returns a discriminated outcome so
+ * callers map unavailable vs invalid without try/catch ladders.
  */
-export const verifySupabaseToken = async (token: string): Promise<SupabaseUser | null> => {
+export const verifySupabaseTokenOutcome = async (
+  token: string,
+  opts?: VerifyTokenOptions
+): Promise<TokenVerifyOutcome> => {
   const now = Date.now()
   const cached = tokenCache.get(token)
-  if (cached && cached.expiresAt > now) return cached.user
-
-  const supabase = getAnonClient()
-  if (!supabase) {
-    jwtLogger.error('Supabase anon client not configured')
-    return null
+  if (cached && cached.expiresAt > now) {
+    return cached.user ? { kind: 'user', user: cached.user } : { kind: 'invalid' }
   }
+
+  const getUser: AuthGetUser =
+    opts?.getUser ??
+    (async (accessToken) => {
+      const supabase = getAnonClient()
+      if (!supabase) {
+        jwtLogger.error('Supabase anon client not configured')
+        return { data: { user: null }, error: null }
+      }
+      return supabase.auth.getUser(accessToken)
+    })
 
   try {
     const {
       data: { user },
       error
-    } = await supabase.auth.getUser(token)
+    } = await getUser(token)
 
     if (error || !user) {
       jwtLogger.warn({ error }, 'Token verification failed')
-      // auth-js RETURNS (not throws) an AuthError even for transient 429/5xx/
-      // network. Throw TransientAuthError on those so callers can degrade rather
-      // than strand a VALID user; only negative-cache a definitively-invalid
-      // (status-bearing 4xx) token so a storm with the same dead token stops.
-      const status = error?.status
-      const transient =
-        error != null &&
-        (isAuthRetryableFetchError(error) || status == null || status === 429 || status >= 500)
-      if (transient) throw new TransientAuthError(error)
-
-      if (error != null) {
-        if (tokenCache.size >= MAX_TOKEN_CACHE) tokenCache.clear()
-        tokenCache.set(token, { user: null, expiresAt: now + NEG_TOKEN_CACHE_TTL_MS })
+      if (error != null && isTransientAuthFailure(error)) {
+        return { kind: 'unavailable', cause: error }
       }
-      return null
+      if (error != null) cacheSet(token, null, NEG_TOKEN_CACHE_TTL_MS)
+      return { kind: 'invalid' }
     }
 
     const result: SupabaseUser = {
@@ -87,17 +111,13 @@ export const verifySupabaseToken = async (token: string): Promise<SupabaseUser |
       user_metadata: user.user_metadata as SupabaseUser['user_metadata']
     }
 
-    if (tokenCache.size >= MAX_TOKEN_CACHE) tokenCache.clear()
-    tokenCache.set(token, { user: result, expiresAt: now + TOKEN_CACHE_TTL_MS })
-
+    cacheSet(token, result, TOKEN_CACHE_TTL_MS)
     jwtLogger.debug({ userId: user.id }, 'Token verified')
-    return result
+    return { kind: 'user', user: result }
   } catch (error) {
-    if (error instanceof TransientAuthError) throw error
-    // getUser threw (network/timeout) rather than returning an AuthError —
-    // transient by nature, so signal it instead of masking as a bad token.
+    // getUser threw (network/timeout) rather than returning an AuthError.
     jwtLogger.error({ err: error }, 'Error verifying token')
-    throw new TransientAuthError(error)
+    return { kind: 'unavailable', cause: error }
   }
 }
 
