@@ -293,38 +293,39 @@ html.m_mobile #__next {
 }
 
 .edit-fab {
+  // base-content tints the light shadow; in dark base-content is light text (would glow), so
+  // light-dark() swaps the shadow color to black per color-scheme — same 3-layer elevation.
   box-shadow:
-    0 3px 5px -1px color-mix(in oklch, var(--color-base-content) 20%, transparent),
-    0 6px 10px 0 color-mix(in oklch, var(--color-base-content) 14%, transparent),
-    0 1px 18px 0 color-mix(in oklch, var(--color-base-content) 12%, transparent);
-}
-
-// Dark themes: base-content is light text — mixing it into shadows reads as a glow, not elevation.
-[data-theme='docsplus-dark'] .edit-fab,
-[data-theme='docsplus-dark-hc'] .edit-fab,
-[data-theme='docsplus-graphite-dark'] .edit-fab,
-[data-theme='docsplus-paper-dark'] .edit-fab {
-  box-shadow: 0 4px 14px color-mix(in oklch, black 42%, transparent);
+    0 3px 5px -1px
+      color-mix(in oklch, light-dark(var(--color-base-content), black) 20%, transparent),
+    0 6px 10px 0 color-mix(in oklch, light-dark(var(--color-base-content), black) 14%, transparent),
+    0 1px 18px 0 color-mix(in oklch, light-dark(var(--color-base-content), black) 12%, transparent);
 }
 
 .headingSelection {
   &.is-active {
     background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
     color: var(--color-primary);
-    border: none;
+    // Transparent (not removed) so the ring never shifts the control by 1px.
+    border-color: transparent;
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-primary) 44%, transparent);
 
-    svg {
-      fill: var(--color-primary);
+    // The inner segmented steppers tint to primary in lockstep with the ring.
+    .headingSelection__seg {
+      border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
     }
 
-    button {
-      &:disabled {
-        color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-        svg {
-          fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-        }
-      }
+    .headingSelection__plus {
+      border-left-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
+    }
+
+    .headingSelection__label,
+    .headingSelection__seg button:not(:disabled) {
+      color: var(--color-primary);
+    }
+
+    button:disabled {
+      color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
     }
   }
 }

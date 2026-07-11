@@ -1,17 +1,23 @@
 // Mobile editor toolbar shell (not the desktop `.tiptap__toolbar` bar — that uses Tailwind on `EditorToolbar`).
+
+// One upward-lift recipe shared by the bar and the format drawer so both floating edges speak the
+// same shadow language (the drawer no longer carries an off-system Tailwind `shadow-lg`).
+$toolbar-lift-shadow:
+  0 -4px 6px -1px color-mix(in oklch, var(--color-base-content) 10%, transparent),
+  0 -2px 4px -1px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+
 .tiptap-toolbar-mobile {
   user-select: none;
   pointer-events: none;
 
   &__main {
     pointer-events: auto;
-    box-shadow:
-      0 -4px 6px -1px color-mix(in oklch, var(--color-base-content) 10%, transparent),
-      0 -2px 4px -1px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+    box-shadow: $toolbar-lift-shadow;
   }
 
   &__format-selection {
     pointer-events: auto;
+    box-shadow: $toolbar-lift-shadow;
   }
 }
 

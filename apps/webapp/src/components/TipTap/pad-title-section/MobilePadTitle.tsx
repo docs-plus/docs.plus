@@ -9,10 +9,11 @@ import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
+import { releasePadEditMode } from '@services/openHeadingChatroom'
 import { useAuthStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
   loading: () => <SettingsPanelSkeleton />
@@ -67,20 +68,33 @@ const extractMetadataMutationResponse = (response: unknown): MetadataMutationRes
   return response as MetadataMutationResponse
 }
 
-const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
+const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: () => void }) => {
   if (isEditable) {
     return (
-      <ToolbarButton className="text-primary size-8">
-        <Icons.check size={32} />
+      <ToolbarButton
+        onPress={onDone}
+        aria-label="Done editing"
+        className="text-primary min-h-11 min-w-11 touch-manipulation">
+        <Icons.check size={28} />
       </ToolbarButton>
     )
   }
 
+  // A `<label htmlFor>` toggles the drawer checkbox on click but isn't keyboard-operable on its
+  // own; role/tabIndex/keydown make it a real button (it opens the TOC — not "close sidebar").
   return (
     <label
       htmlFor="mobile_left_side_panel"
-      aria-label="close sidebar"
-      className="btn btn-ghost btn-square size-9">
+      aria-label="Open menu"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          e.currentTarget.click()
+        }
+      }}
+      className="btn btn-ghost btn-square min-h-11 min-w-11 touch-manipulation">
       <Icons.menu size={28} className="text-base-content" />
     </label>
   )
@@ -95,6 +109,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
         size="md"
         className="border-0 p-0"
         onClick={onProfileClick}
+        aria-label="Profile"
         tooltip="Profile"
         tooltipPlacement="bottom">
         <Avatar
@@ -124,8 +139,9 @@ const NotificationButton = () => {
   return (
     <Button
       variant="ghost"
-      className="relative p-2"
+      className="relative min-h-11 min-w-11 p-2"
       onClick={openNotifications}
+      aria-label="Notifications"
       tooltip="Notifications"
       tooltipPlacement="bottom">
       <Icons.notificationsActive
@@ -150,14 +166,16 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
           onClick={() => editor?.commands.undo()}
           editor={editor}
           type="undo"
-          className="size-9">
+          aria-label="Undo"
+          className="min-h-11 min-w-11">
           <Icons.undo size={24} />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.commands.redo()}
           editor={editor}
           type="redo"
-          className="size-9">
+          aria-label="Redo"
+          className="min-h-11 min-w-11">
           <Icons.redo size={24} />
         </ToolbarButton>
       </div>
@@ -270,6 +288,9 @@ const MobilePadTitle = () => {
   const metadataRef = useRef(metadata)
   metadataRef.current = metadata
 
+  // Set by "Done" so focus lands on the title (not <body>) once the read cluster remounts.
+  const focusTitleAfterExitRef = useRef(false)
+
   useEffect(() => {
     if (!hocuspocusProvider) return
 
@@ -292,6 +313,13 @@ const MobilePadTitle = () => {
     openDialog(<TitleEditContent />, { size: 'sm', align: 'top', className: 'mt-14' })
   }
 
+  // Unlike the sheet path, "Done" releases edit mode unconditionally (iOS can still have the keyboard
+  // up before `isKeyboardOpen` flips) and re-homes focus to the title.
+  const exitEditMode = useCallback(() => {
+    focusTitleAfterExitRef.current = true
+    releasePadEditMode()
+  }, [])
+
   return (
     <>
       {/* Sticky mobile header - theme-aware */}
@@ -304,13 +332,19 @@ const MobilePadTitle = () => {
             <div
               key={isEditable ? 'edit' : 'read'}
               className="flex min-w-0 flex-1 items-center gap-1 motion-safe:animate-[doc-content-in_120ms_ease-out_both]">
-              <EditableToggle isEditable={isEditable} />
+              <EditableToggle isEditable={isEditable} onDone={exitEditMode} />
 
               {isEditable ? (
                 <UndoRedoButtons editor={editor ?? null} className="ml-2" />
               ) : (
                 <button
                   type="button"
+                  ref={(el) => {
+                    if (el && focusTitleAfterExitRef.current) {
+                      focusTitleAfterExitRef.current = false
+                      el.focus()
+                    }
+                  }}
                   className="min-w-0 flex-1 truncate text-left text-lg font-semibold"
                   onClick={handleTitleClick}>
                   {metadata?.title || 'Untitled'}

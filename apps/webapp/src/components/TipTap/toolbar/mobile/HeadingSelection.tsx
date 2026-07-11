@@ -1,14 +1,19 @@
 import { setParagraphStyle } from '@components/TipTap/extensions/paragraph-style/commands'
-import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import type { Editor } from '@tiptap/core'
-import React, { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+
+import ToolbarButton from '../ToolbarButton'
 
 interface HeadingSelectionProps {
   editor: Editor
 }
 
 type SectionKind = 'heading' | 'p' | 'subtitle'
+
+/** One first-block guard so the disabled UI and the no-op commands agree. `$from.before(1)` (top-level
+ *  ancestor) is safe only because the first block is always the non-nestable Title heading (depth 1). */
+const isFirstBlockSelected = (editor: Editor) => editor.state.selection.$from.before(1) === 0
 
 const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
   const [activeSectionType, setActiveSectionType] = useState<SectionKind>('p')
@@ -31,8 +36,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   const changeHeadingLevel = useCallback(
     (delta: number) => {
-      const { $anchor } = editor.state.selection
-      if ($anchor.before($anchor.depth) === 0) return
+      if (isFirstBlockSelected(editor)) return
 
       if ((delta < 0 && headingLevel > 1) || (delta > 0 && headingLevel < 6)) {
         const newLevel = headingLevel + delta
@@ -51,20 +55,9 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   const toggleContentSectionLevel = useCallback(() => {
     editor.view.focus()
-    const { $anchor } = editor.state.selection
+    if (isFirstBlockSelected(editor)) return
 
-    if ($anchor.before($anchor.depth) === 0) return
-
-    if (activeSectionType === 'subtitle') {
-      editor
-        .chain()
-        .focus()
-        .setHeading({ level: headingLevel as 1 | 2 | 3 | 4 | 5 | 6 })
-        .run()
-      return
-    }
-
-    if (activeSectionType === 'p') {
+    if (activeSectionType === 'subtitle' || activeSectionType === 'p') {
       editor
         .chain()
         .focus()
@@ -88,7 +81,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
     }
   }, [editor, syncFromEditor])
 
-  const isFirstBlock = editor.state.selection.$from.before(1) === 0
+  const isFirstBlock = isFirstBlockSelected(editor)
   const isStyled = activeSectionType === 'heading' || activeSectionType === 'subtitle'
 
   let centerLabel = `H${headingLevel}`
@@ -100,32 +93,42 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   return (
     <div
-      className={`headingSelection ${isStyled ? 'is-active' : ''} join rounded-field border-base-300 flex h-9 min-w-32 items-center justify-between border px-1`}>
-      <Button
-        variant="ghost"
-        size="xs"
-        shape="square"
-        className="join-item"
-        onTouchEnd={() => changeHeadingLevel(-1)}
-        disabled={headingLevel === 1 || isFirstBlock}
-        startIcon={<Icons.minus size={20} />}
-      />
-      <span
-        className="text-base-content flex min-h-8 min-w-8 cursor-pointer items-center justify-center px-1 text-sm font-semibold"
-        onTouchEnd={toggleContentSectionLevel}>
+      className={`headingSelection ${isStyled ? 'is-active' : ''} rounded-field border-base-300 flex h-11 items-center gap-1.5 border pr-1 pl-0.5`}>
+      <ToolbarButton
+        shape={null}
+        onPress={toggleContentSectionLevel}
+        aria-label={`Block type: ${centerLabel}. Change.`}
+        className="headingSelection__label rounded-field h-9 min-h-9 min-w-11 border-0 px-2 text-sm font-semibold">
         {centerLabel}
-      </span>
-      <Button
-        variant="ghost"
-        size="xs"
-        shape="square"
-        className="join-item"
-        onTouchEnd={() => changeHeadingLevel(1)}
-        disabled={headingLevel === 6 || isFirstBlock}
-        startIcon={<Icons.plus size={20} />}
-      />
+      </ToolbarButton>
+
+      <div
+        className="headingSelection__seg border-base-300 rounded-field flex h-9 items-stretch overflow-hidden border"
+        role="group"
+        aria-label="Heading level">
+        <ToolbarButton
+          shape={null}
+          onPress={() => changeHeadingLevel(-1)}
+          disabled={headingLevel === 1 || isFirstBlock}
+          aria-label="Decrease heading level"
+          className="h-9 min-h-9 w-11 rounded-none border-0">
+          <Icons.minus size={20} />
+        </ToolbarButton>
+        <ToolbarButton
+          shape={null}
+          onPress={() => changeHeadingLevel(1)}
+          disabled={headingLevel === 6 || isFirstBlock}
+          aria-label="Increase heading level"
+          className="headingSelection__plus border-base-300 h-9 min-h-9 w-11 rounded-none border-0 border-l">
+          <Icons.plus size={20} />
+        </ToolbarButton>
+      </div>
     </div>
   )
 }
 
+// NOT memoized on purpose: `centerLabel`/stepper-disabled read live editor state at render
+// (`isFirstBlockSelected`), which isn't in props — so it must re-render on every transaction via the
+// parent's `useReRenderOnEditorTransaction`. Memoizing leaves those stale when moving between two
+// same-level headings (state unchanged, but first-block-ness flips).
 export default HeadingSelection

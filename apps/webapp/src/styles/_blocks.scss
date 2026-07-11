@@ -66,12 +66,6 @@
   }
 }
 
-.m_mobile .tiptap__toolbar {
-  border: none;
-  box-shadow: 0 -5px 10px color-mix(in oklch, var(--color-base-content) 10%, transparent);
-  border-top: 1px solid var(--color-base-300);
-}
-
 // Pad document surface — prose rules live in _prose-mirror-body.scss; only tokens + layout here.
 .editorWrapper .ProseMirror {
   --prose-placeholder-mix: 50%;

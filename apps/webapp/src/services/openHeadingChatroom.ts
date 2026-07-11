@@ -4,15 +4,20 @@ import type { CommentAnchorV1, Profile } from '@types'
 import { retryWithBackoff } from '@utils/retryWithBackoff'
 import { scrollToHeading } from '@utils/scrollToHeading'
 
-/** Release pad edit mode before the chat sheet opens; blur is what dismisses iOS keyboard. */
-export function exitDocEditModeForSheet(): void {
-  const { isKeyboardOpen, settings, setWorkspaceEditorSetting } = useStore.getState()
-  if (!isKeyboardOpen) return
+/** Release pad edit mode; the blur is what dismisses the iOS soft keyboard. */
+export function releasePadEditMode(): void {
+  const { settings, setWorkspaceEditorSetting } = useStore.getState()
   const editor = settings.editor.instance
   if (!editor) return
   setWorkspaceEditorSetting('isEditable', false)
   editor.setEditable(false)
   editor.view.dom.blur()
+}
+
+/** Sheet-open variant: only acts when the keyboard is up, avoiding a redundant blur. */
+export function exitDocEditModeForSheet(): void {
+  if (!useStore.getState().isKeyboardOpen) return
+  releasePadEditMode()
 }
 
 const FOCUS_RETRY = { maxAttempts: 6, initialDelayMs: 600, maxDelayMs: 1000 }
