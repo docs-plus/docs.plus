@@ -359,6 +359,9 @@
   --caret-color-inverse: var(--color-primary-content);
   --border-color-tint: color-mix(in oklch, var(--color-base-content) 14%, transparent);
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+  /* Info hue readable as TEXT ink on light `bg-info/10` surfaces (plain `info` fails AA there). Adapts
+     per theme via base-content — darkens on light grounds, lifts on dark ones. */
+  --info-ink: color-mix(in oklch, var(--color-info), var(--color-base-content) 42%);
   --hm-resize-border: var(--color-primary);
   --hm-resize-handle-bg: var(--color-base-100);
   /* Pad workspace — docked regions (TOC, editor well, chat) share one divider; shadows only on floating overlays. */
