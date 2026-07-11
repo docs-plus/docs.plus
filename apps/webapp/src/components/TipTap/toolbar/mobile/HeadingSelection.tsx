@@ -93,17 +93,17 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   return (
     <div
-      className={`headingSelection ${isStyled ? 'is-active' : ''} rounded-field border-base-300 flex h-11 items-center gap-1.5 border pr-1 pl-0.5`}>
+      className={`headingSelection ${isStyled ? 'is-active' : ''} rounded-field border-base-300 flex min-h-11 items-stretch gap-1 border pr-1 pl-0.5`}>
       <ToolbarButton
         shape={null}
         onPress={toggleContentSectionLevel}
         aria-label={`Block type: ${centerLabel}. Change.`}
-        className="headingSelection__label rounded-field h-9 min-h-9 min-w-11 border-0 px-2 text-sm font-semibold">
+        className="headingSelection__label rounded-field h-11 min-h-11 min-w-11 border-0 px-2 text-sm font-semibold">
         {centerLabel}
       </ToolbarButton>
 
       <div
-        className="headingSelection__seg border-base-300 rounded-field flex h-9 items-stretch overflow-hidden border"
+        className="headingSelection__seg border-base-300 rounded-field flex min-h-11 items-stretch overflow-hidden border"
         role="group"
         aria-label="Heading level">
         <ToolbarButton
@@ -111,7 +111,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
           onPress={() => changeHeadingLevel(-1)}
           disabled={headingLevel === 1 || isFirstBlock}
           aria-label="Decrease heading level"
-          className="h-9 min-h-9 w-11 rounded-none border-0">
+          className="h-11 min-h-11 w-11 rounded-none border-0">
           <Icons.minus size={20} />
         </ToolbarButton>
         <ToolbarButton
@@ -119,7 +119,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
           onPress={() => changeHeadingLevel(1)}
           disabled={headingLevel === 6 || isFirstBlock}
           aria-label="Increase heading level"
-          className="headingSelection__plus border-base-300 h-9 min-h-9 w-11 rounded-none border-0 border-l">
+          className="headingSelection__plus border-base-300 h-11 min-h-11 w-11 rounded-none border-0 border-l">
           <Icons.plus size={20} />
         </ToolbarButton>
       </div>

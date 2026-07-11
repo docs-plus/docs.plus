@@ -121,7 +121,7 @@ const ToolbarMobile = () => {
             e.stopPropagation()
             createComment(editor)
           }}>
-          <Icons.thread size={24} />
+          <Icons.comment size={24} />
         </ToolbarButton>
 
         <ToolbarButton

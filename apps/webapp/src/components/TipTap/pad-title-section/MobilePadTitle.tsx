@@ -163,19 +163,19 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
     <div className={`flex items-center ${className}`}>
       <div className="flex items-center gap-2">
         <ToolbarButton
-          onClick={() => editor?.commands.undo()}
+          onPress={() => editor?.commands.undo()}
           editor={editor}
           type="undo"
           aria-label="Undo"
-          className="min-h-11 min-w-11">
+          className="min-h-11 min-w-11 touch-manipulation">
           <Icons.undo size={24} />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => editor?.commands.redo()}
+          onPress={() => editor?.commands.redo()}
           editor={editor}
           type="redo"
           aria-label="Redo"
-          className="min-h-11 min-w-11">
+          className="min-h-11 min-w-11 touch-manipulation">
           <Icons.redo size={24} />
         </ToolbarButton>
       </div>
