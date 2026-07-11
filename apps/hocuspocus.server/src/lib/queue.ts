@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client'
 import { Job, Queue, Worker } from 'bullmq'
 import * as Y from 'yjs'
 
@@ -11,11 +10,12 @@ import { queueLogger } from './logger'
 import { recordJobOutcome } from './metrics'
 import { prisma } from './prisma'
 import { bullmqConnectionOptions, createRedisConnection, getRedisPublisher } from './redis'
+import { withUniqueSlug } from './slug'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 // Upsert document metadata with retry on slug collision (handles P2002)
-async function upsertDocumentMetadata(
+function upsertDocumentMetadata(
   tx: TransactionClient,
   params: {
     documentId: string
@@ -26,13 +26,9 @@ async function upsertDocumentMetadata(
   },
   maxRetries = 3
 ): Promise<string> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    // First attempt uses base slug, retries add timestamp + random suffix
-    const slug =
-      attempt === 0
-        ? params.baseSlug
-        : `${params.baseSlug}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
-    try {
+  return withUniqueSlug(
+    params.baseSlug,
+    async (slug) => {
       await tx.documentMetadata.upsert({
         where: { documentId: params.documentId },
         update: {
@@ -53,23 +49,9 @@ async function upsertDocumentMetadata(
         }
       })
       return slug
-    } catch (err) {
-      // P2002 = unique constraint violation
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-        const target = err.meta?.target as string[] | undefined
-        if (target?.includes('slug') && attempt < maxRetries) {
-          queueLogger.debug(
-            { attempt, baseSlug: params.baseSlug },
-            'Slug collision, retrying with new slug'
-          )
-          continue
-        }
-      }
-      throw err
-    }
-  }
-  // Fallback: should not reach here but just in case
-  throw new Error(`Failed to create unique slug after ${maxRetries} attempts`)
+    },
+    maxRetries
+  )
 }
 
 // Queue connection (non-blocking operations). Tight command timeout on the
@@ -420,7 +402,9 @@ export const createDocumentWorker = () => {
   return worker
 }
 
-// Close the producer queues on shutdown so their Redis connections don't leak.
+// Stop the producer queues on shutdown. The shared ioredis connections aren't
+// released by close() (BullMQ owns them as shared) — the process exit reaps the
+// sockets — so this just flushes and detaches the queues.
 export const closeQueues = async () => {
   await Promise.all([StoreDocumentQueue.close(), DeadLetterQueue.close()])
 }
