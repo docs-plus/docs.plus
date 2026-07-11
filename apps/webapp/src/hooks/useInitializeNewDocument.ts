@@ -2,6 +2,7 @@ import Config from '@config'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { Editor } from '@tiptap/react'
+import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { trackEvent } from '@utils/analytics'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -29,7 +30,14 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
       const heading = Array.isArray(slugs) ? (slugs.at(0) ?? 'Title') : 'Title'
       const defaultContent = Config.editor.getDefaultContent(heading)
 
-      editor.commands.setContent(defaultContent)
+      // Seed outside undo history: the needsInitialization flip below lives in
+      // Y.Map metadata (not undo scope), so undoing the seed would leave the
+      // document permanently empty with no re-seed.
+      editor.chain().setMeta('addToHistory', false).setContent(defaultContent).run()
+      // Appended transactions (UniqueID id-stamping) reset ySync's addToHistory
+      // before the batch syncs to Yjs, so the seed still lands on the undo
+      // stack despite the meta — drop it outright.
+      yUndoPluginKey.getState(editor.state)?.undoManager.clear()
       ymetadata.set('needsInitialization', false)
       // Only a genuinely new document carries needsInitialization, so this
       // fires once, on the creating client — not on every home-screen open.

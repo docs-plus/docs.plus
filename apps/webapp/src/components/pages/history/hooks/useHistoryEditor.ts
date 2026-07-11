@@ -10,7 +10,12 @@ export function useHistoryEditor() {
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const setEditor = useStore((state) => state.setEditor)
 
-  const editor = useEditor(editorConfig({ editable: false }), [documentId])
+  // Namespaced fold key: snapshot hydration prunes folds against old content,
+  // so sharing the live doc's key would erase its saved folds.
+  const editor = useEditor(
+    editorConfig({ editable: false, docName: `history:${documentId ?? 'pending'}` }),
+    [documentId]
+  )
 
   useEffect(() => {
     if (editor) setEditor(editor)

@@ -15,7 +15,10 @@ import useProviderAwareness from './useProviderAwareness'
 
 const useEditorAndProvider = ({ provider }: { provider: HocuspocusProvider }) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const editor = useEditor(editorConfig({ provider, spellcheck: false }), [provider])
+  const editor = useEditor(
+    editorConfig({ provider, spellcheck: false, docName: provider.configuration.name }),
+    [provider]
+  )
 
   useInitializeNewDocument({ editor, provider })
   useNewDocumentTip({ provider })
