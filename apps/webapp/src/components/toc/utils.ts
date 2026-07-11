@@ -121,7 +121,7 @@ export function tocTrailingRailPx(userCount: number, unreadCount: number): numbe
 export function buildNestedToc<T extends { level: number }>(items: T[]): NestedTocNode<T>[] {
   const result: NestedTocNode<T>[] = []
 
-  for (let i = 0; i < items.length; ) {
+  for (let i = 0; i < items.length;) {
     const item = items[i]
     let j = i + 1
     while (j < items.length && items[j].level > item.level) {

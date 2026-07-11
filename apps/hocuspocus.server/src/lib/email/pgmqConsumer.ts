@@ -143,14 +143,12 @@ function buildDigestDocuments(
     name: ws.name,
     slug: ws.slug,
     url: `${appUrl}/${ws.slug}`,
-    channels: Array.from(ws.channels.values()).map(
-      (ch): DigestChannel => ({
-        name: ch.name,
-        id: ch.id,
-        url: ch.id ? `${appUrl}/${ws.slug}?chatroom=${ch.id}` : `${appUrl}/${ws.slug}`,
-        notifications: ch.notifications
-      })
-    )
+    channels: Array.from(ws.channels.values()).map((ch): DigestChannel => ({
+      name: ch.name,
+      id: ch.id,
+      url: ch.id ? `${appUrl}/${ws.slug}?chatroom=${ch.id}` : `${appUrl}/${ws.slug}`,
+      notifications: ch.notifications
+    }))
   }))
 }
 

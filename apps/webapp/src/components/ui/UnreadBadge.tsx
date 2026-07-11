@@ -4,14 +4,7 @@ import RollingNumber from './RollingNumber'
 
 export type UnreadBadgeSize = 'xs' | 'sm' | 'md' | 'lg'
 export type UnreadBadgeVariant =
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'neutral'
+  'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error' | 'neutral'
 
 export interface UnreadBadgeProps {
   count: number

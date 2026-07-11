@@ -22,9 +22,7 @@ export type OutboundComposerMode =
   | { kind: 'send'; replyToId: string | null }
 
 export type EditMediasPatch =
-  | { kind: 'omit' }
-  | { kind: 'set'; medias: MessageMediaItem[] }
-  | { kind: 'clear' }
+  { kind: 'omit' } | { kind: 'set'; medias: MessageMediaItem[] } | { kind: 'clear' }
 
 export type OutboundChunkPayload = {
   content: string

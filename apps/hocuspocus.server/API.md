@@ -130,9 +130,7 @@ List rows include `readOnly`, `isPrivate`, `createdAt`, and `updatedAt`.
 {
   "success": true,
   "data": {
-    "docs": [
-      /* ... */
-    ],
+    "docs": [/* ... */],
     "total": 100
   }
 }

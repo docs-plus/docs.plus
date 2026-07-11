@@ -12,8 +12,7 @@ export {
 } from './commentReferenceTheme'
 
 export type StaticMediaPreview =
-  | { kind: 'img'; src: string; badge?: boolean }
-  | { kind: 'video' | 'audio'; src: string }
+  { kind: 'img'; src: string; badge?: boolean } | { kind: 'video' | 'audio'; src: string }
 
 export type CommentPreviewMediaHint = {
   label?: string

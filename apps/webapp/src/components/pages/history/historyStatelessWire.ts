@@ -10,8 +10,7 @@ export const HISTORY_RESPONSE = 'history.response' as const
 export const HISTORY_ERROR = 'history_failed' as const
 
 export type HistoryListWireResponse =
-  | HistoryItem[]
-  | { versions: HistoryItem[]; latestSnapshot: HistoryItem | null }
+  HistoryItem[] | { versions: HistoryItem[]; latestSnapshot: HistoryItem | null }
 
 export type HistoryStatelessPayload = {
   msg?: string

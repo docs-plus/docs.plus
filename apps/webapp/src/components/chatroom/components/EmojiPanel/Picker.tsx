@@ -46,8 +46,7 @@ function useEmojiPickerTheme(ref: React.RefObject<HTMLDivElement | null>, isDark
     if (!isDark || !ref.current) return
     const inject = () => {
       const el = ref.current?.querySelector?.('em-emoji-picker') as
-        | (HTMLElement & { shadowRoot?: ShadowRoot })
-        | null
+        (HTMLElement & { shadowRoot?: ShadowRoot }) | null
       if (!el?.shadowRoot || el.hasAttribute(THEMED_ATTR)) return false
       try {
         const sheet = new CSSStyleSheet()

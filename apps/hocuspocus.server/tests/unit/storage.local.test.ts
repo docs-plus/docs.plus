@@ -73,9 +73,7 @@ describe('Local Storage - Error Handling', () => {
         expect(response.headers.get('Content-Disposition')).toBe(`inline; filename="${fileName}"`)
         // Range is answered by Bun.serve at serve time now (the file streams as
         // the response body), not by a hand-set Accept-Ranges header.
-        expect(response.headers.get('Cache-Control')).toBe(
-          'public, max-age=31536000, immutable'
-        )
+        expect(response.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
 
         const body = await response.text()
         expect(body).toBe(fileContent)

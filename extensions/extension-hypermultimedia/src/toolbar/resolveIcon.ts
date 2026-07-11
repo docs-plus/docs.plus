@@ -4,13 +4,7 @@ import { getCurrentMediaPlacement, type MediaPlacementId } from '../utils/media-
 import type { MediaActionContext } from './types'
 
 type BuiltinIconKey =
-  | 'caption'
-  | 'view-original'
-  | 'download'
-  | 'replace'
-  | 'copy'
-  | 'delete'
-  | 'more'
+  'caption' | 'view-original' | 'download' | 'replace' | 'copy' | 'delete' | 'more'
 
 type PlacementIconKey = `align:${MediaPlacementId}`
 

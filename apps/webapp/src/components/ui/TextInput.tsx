@@ -4,14 +4,7 @@ import { twMerge } from 'tailwind-merge'
 
 export type InputSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type InputColor =
-  | 'neutral'
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
+  'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   /** Label text for the input */

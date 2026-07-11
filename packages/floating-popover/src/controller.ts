@@ -24,8 +24,7 @@ export type AdoptMetadata = {
 }
 
 export type ControllerState =
-  | { kind: 'idle' }
-  | ({ kind: 'mounted'; popoverKind: PopoverKind } & AdoptMetadata)
+  { kind: 'idle' } | ({ kind: 'mounted'; popoverKind: PopoverKind } & AdoptMetadata)
 
 export interface PopoverController {
   adopt(popover: ManagedPopover, kind: PopoverKind, metadata: AdoptMetadata): () => void

@@ -84,17 +84,15 @@ export function useHyperlinkSuggestions({
     const activeRows = (active.data ?? []) as unknown as TBookmarkWithMessage[]
     const archivedRows = (archived.data ?? []) as unknown as TBookmarkWithMessage[]
     const rows: TBookmarkWithMessage[] = [...activeRows, ...archivedRows]
-    const mapped = rows.map(
-      (row): BookmarkSuggestion => ({
-        kind: 'bookmark',
-        id: String(row.bookmark_id),
-        title: (row.message_content ?? '').slice(0, 120),
-        messageId: row.message_id,
-        channelId: row.message_channel_id,
-        archived: row.bookmark_archived_at !== null,
-        createdAt: row.bookmark_created_at
-      })
-    )
+    const mapped = rows.map((row): BookmarkSuggestion => ({
+      kind: 'bookmark',
+      id: String(row.bookmark_id),
+      title: (row.message_content ?? '').slice(0, 120),
+      messageId: row.message_id,
+      channelId: row.message_channel_id,
+      archived: row.bookmark_archived_at !== null,
+      createdAt: row.bookmark_created_at
+    }))
     return mapped.sort((a, b) => {
       if (a.archived !== b.archived) return a.archived ? 1 : -1
       return (b.createdAt ?? '').localeCompare(a.createdAt ?? '')

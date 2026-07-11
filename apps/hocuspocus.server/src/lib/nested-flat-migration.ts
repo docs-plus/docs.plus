@@ -23,17 +23,12 @@ export const MIGRATION_TRANSACTION_TIMEOUT_MS = 120_000
 export const MIGRATION_TRANSACTION_MAX_WAIT_MS = 10_000
 
 export type MigrationPhase =
-  | 'decode_yjs'
-  | 'transform'
-  | 'encode_yjs'
-  | 'verify_roundtrip'
-  | 'post_verify'
+  'decode_yjs' | 'transform' | 'encode_yjs' | 'verify_roundtrip' | 'post_verify'
 
 export type RowPlan = { action: 'skip' } | { action: 'update'; bytes: Uint8Array }
 
 export type PlanRowResult =
-  | { ok: true; plan: RowPlan }
-  | { ok: false; phase: MigrationPhase; error: unknown }
+  { ok: true; plan: RowPlan } | { ok: false; phase: MigrationPhase; error: unknown }
 
 export function ydocToPmJson(
   data: Buffer | Uint8Array

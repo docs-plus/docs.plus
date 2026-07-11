@@ -3,14 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 export type FileInputSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type FileInputColor =
-  | 'neutral'
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
+  'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface FileInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,

@@ -515,9 +515,7 @@ export const duplicateDocument = async (
 }
 
 export type PermanentDeleteResult =
-  | { status: 'forbidden' }
-  | { status: 'not-deleted' }
-  | { status: 'ok' }
+  { status: 'forbidden' } | { status: 'not-deleted' } | { status: 'ok' }
 
 // Immediate footprint purge for a soft-deleted doc (Trash "Delete forever"),
 // sharing the reaper's purge. Refuses a live doc so it can't hard-delete an active

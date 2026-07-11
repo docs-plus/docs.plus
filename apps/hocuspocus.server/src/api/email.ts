@@ -286,9 +286,7 @@ interface UnsubscribeResult {
 }
 
 type UnsubscribeOutcome =
-  | { status: 'ok'; result: UnsubscribeResult }
-  | { status: 'unconfigured' }
-  | { status: 'failed' }
+  { status: 'ok'; result: UnsubscribeResult } | { status: 'unconfigured' } | { status: 'failed' }
 
 // Run the process_unsubscribe RPC via the service-role client (mirrors /bounce).
 // Separates an unconfigured client from an RPC failure so each route renders its

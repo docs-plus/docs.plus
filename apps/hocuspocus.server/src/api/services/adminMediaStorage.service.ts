@@ -33,8 +33,7 @@ type ListResult =
   | { status: 'error'; message: string }
 
 type SummaryResult =
-  | { status: 'ok'; data: WorkspaceMediaStorageSummary }
-  | { status: 'error'; message: string }
+  { status: 'ok'; data: WorkspaceMediaStorageSummary } | { status: 'error'; message: string }
 
 export async function fetchFleetRows(
   supabase: AdminClient

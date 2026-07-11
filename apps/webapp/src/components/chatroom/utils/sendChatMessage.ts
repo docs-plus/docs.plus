@@ -28,8 +28,7 @@ export type ChatMessageInsertPayload = {
 }
 
 export type PersistChatMessageResult =
-  | { ok: true; duplicate?: boolean }
-  | { ok: false; error: string }
+  { ok: true; duplicate?: boolean } | { ok: false; error: string }
 
 export type RetryChatMessageInput = Pick<
   TMsgRow,

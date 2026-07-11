@@ -3,14 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 export type TextareaSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type TextareaColor =
-  | 'neutral'
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
+  'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> {
   /** Label text for the textarea */

@@ -136,12 +136,7 @@ export interface WorkspaceMediaStorageSummary {
 }
 
 export type MediaStorageSortBy =
-  | 'name'
-  | 'slug'
-  | 'object_count'
-  | 'total_bytes'
-  | 'quota_bytes'
-  | 'usage_percent'
+  'name' | 'slug' | 'object_count' | 'total_bytes' | 'quota_bytes' | 'usage_percent'
 
 export interface MediaStorageListResponse {
   summary: WorkspaceMediaStorageSummary

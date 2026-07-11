@@ -22,14 +22,7 @@ import { useOverlayTransition } from './useOverlayTransition'
 
 export type SelectSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type SelectColor =
-  | 'neutral'
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
+  'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface SelectOption {
   value: string

@@ -7,12 +7,7 @@
 
 // Supported notification types (matches Supabase notifications.type)
 export type NotificationType =
-  | 'mention'
-  | 'reply'
-  | 'reaction'
-  | 'message'
-  | 'thread_message'
-  | 'channel_event'
+  'mention' | 'reply' | 'reaction' | 'message' | 'thread_message' | 'channel_event'
 
 // Email delivery frequency
 export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'

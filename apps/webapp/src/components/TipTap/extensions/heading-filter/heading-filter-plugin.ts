@@ -14,8 +14,7 @@ import type { SectionMatch } from '../shared/match-section'
 import type { HeadingFilterFoldAdapter } from './heading-filter'
 
 export type HeadingFilterMeta =
-  | { type: 'clear' }
-  | { type: 'apply'; slugs: string[]; mode: 'or' | 'and' }
+  { type: 'clear' } | { type: 'apply'; slugs: string[]; mode: 'or' | 'and' }
 
 export interface HeadingFilterState {
   slugs: string[]

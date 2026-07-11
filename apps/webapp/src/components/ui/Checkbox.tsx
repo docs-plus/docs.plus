@@ -3,14 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 export type CheckboxSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type CheckboxColor =
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'neutral'
-  | 'success'
-  | 'warning'
-  | 'info'
-  | 'error'
+  'primary' | 'secondary' | 'accent' | 'neutral' | 'success' | 'warning' | 'info' | 'error'
 
 export interface CheckboxProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,

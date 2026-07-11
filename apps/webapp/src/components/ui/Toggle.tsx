@@ -3,13 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 export type ToggleSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type ToggleVariant =
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'info'
+  'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'
 
 export interface ToggleProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
   /** Label text for the toggle */
