@@ -8,10 +8,12 @@ type TocRowProps = {
   className?: string
   isActive?: boolean
   depth?: number
+  /** Heading level 1–6 — owns `toc__link--level-*` typography */
+  level: number
+  title: string
   /** Desktop default min-h-8; pass min-h-11 on mobile */
   density?: 'desktop' | 'mobile'
   leading?: ReactNode
-  title: ReactNode
   trail?: ReactNode
   onTitleClick: (e: MouseEvent) => void
   titleHref: string
@@ -23,13 +25,16 @@ export function TocRow({
   className,
   isActive,
   depth = 0,
+  level,
+  title,
   density = 'desktop',
   leading,
-  title,
   trail,
   onTitleClick,
   titleHref
 }: TocRowProps) {
+  const safeLevel = Math.min(6, Math.max(1, level))
+
   return (
     <div
       className={twMerge(
@@ -50,7 +55,7 @@ export function TocRow({
         href={titleHref}
         data-id={headingId}
         onClick={onTitleClick}>
-        {title}
+        <span className={twMerge(TOC_CLASSES.link, `toc__link--level-${safeLevel}`)}>{title}</span>
       </a>
       {trail}
     </div>

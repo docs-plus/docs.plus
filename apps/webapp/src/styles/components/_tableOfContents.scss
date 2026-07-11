@@ -5,7 +5,8 @@
 // ======================
 // Utility Classes
 // ======================
-// Inset accent bar — same geometry for row active + header (text clears via !pl-4).
+// Inset accent bar — same geometry for row active + header.
+// Text clears the bar via `--toc-row-pad-start` (idle 8px → 1rem when bar shown).
 .toc__active-border::after {
   content: '';
   position: absolute;
@@ -21,6 +22,16 @@
 
 .tiptap__toc .toc__header-row.toc__active-border::after {
   z-index: 0;
+}
+
+.tiptap__toc .toc__header-row {
+  --toc-row-pad-start: 0.5rem; // matches Tailwind pl-2 idle
+
+  &.toc__active-border {
+    --toc-row-pad-start: 1rem;
+  }
+
+  padding-left: var(--toc-row-pad-start);
 }
 
 .tiptap__toc .toc__header-row:not(.toc__active-border):hover {
@@ -42,16 +53,28 @@
   padding-top: 8px;
 
   .toc__item > .toc__row {
+    --toc-row-pad-start: 8px;
     margin-right: calc(-1 * var(--toc-scrollbar-gutter));
     width: calc(100% + var(--toc-scrollbar-gutter));
+    // Own padding here (beats daisyUI `.menu li > *`) so active/depth only retune the token.
+    padding-left: var(--toc-row-pad-start);
+
+    &.active {
+      --toc-row-pad-start: 1rem;
+    }
   }
 
-  // Nest ul padding shrinks the box; pull full-width for trail axis, re-apply indent as padding.
+  .toc__item.toc__item--focused > .toc__row {
+    --toc-row-pad-start: 1rem;
+  }
+
+  // Nest ul padding shrinks the box; pull full-width for trail axis, re-apply indent as pad token.
+  // Depth ≥1 already clears the inset bar (≥24px), so it wins over active/focused 1rem.
   @for $d from 1 through 8 {
     .toc__item > .toc__row[data-depth='#{$d}'] {
+      --toc-row-pad-start: calc(8px + #{$d} * var(--toc-nest-indent));
       margin-left: calc(-1 * #{$d} * var(--toc-nest-indent));
       width: calc(100% + var(--toc-scrollbar-gutter) + #{$d} * var(--toc-nest-indent));
-      padding-left: calc(8px + #{$d} * var(--toc-nest-indent)) !important;
     }
   }
 
@@ -131,11 +154,11 @@
   transition: width 0.2s ease-in-out;
 
   // Link base — flex-start so multi-line wrap titles stay trail-aligned (not mid-row centered).
+  // Pad start is owned under `.tiptap__toc` via `--toc-row-pad-start` (no !important war).
   > .toc__row {
     display: flex;
     align-items: flex-start;
     position: relative;
-    padding-left: 8px !important;
     border-radius: var(--radius-field);
     transition:
       background-color var(--motion-panel, 200ms) var(--motion-ease-enter, ease-out),
@@ -157,8 +180,6 @@
 
     &.active {
       background-color: var(--color-base-300);
-      // Clear inset bar; nest depths keep their larger padding via [data-depth] (higher specificity).
-      padding-left: 1rem !important;
     }
 
     &.context-menu-active {
@@ -168,8 +189,6 @@
 
   // Scroll-spy — inset bar (same geometry as active ::after); static, no hover slide.
   &.toc__item--focused > .toc__row {
-    padding-left: 1rem !important; // clear inset bar (matches active !pl-4)
-
     &::before {
       content: '';
       position: absolute;

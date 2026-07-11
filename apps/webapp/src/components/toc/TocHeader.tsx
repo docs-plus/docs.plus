@@ -77,8 +77,8 @@ export function TocHeader({ variant }: TocHeaderProps) {
       style={{ paddingLeft: 'var(--toc-list-inset)' }}>
       <div
         className={twMerge(
-          `${TOC_CLASSES.headerRow} group rounded-field relative flex cursor-pointer items-center gap-1 overflow-hidden py-1 pr-3 pl-2`,
-          isActive && `${TOC_CLASSES.activeBorder} bg-base-300 !pl-4`
+          `${TOC_CLASSES.headerRow} group rounded-field relative flex cursor-pointer items-center gap-1 overflow-hidden py-1 pr-3`,
+          isActive && `${TOC_CLASSES.activeBorder} bg-base-300`
         )}
         onClick={handleClick}>
         <span className="text-base-content relative z-[1] min-w-0 flex-1 text-base font-semibold">

@@ -103,15 +103,12 @@ export function TocItemDesktop({
       <TocRow
         headingId={item.id}
         depth={depth}
+        level={item.level}
+        title={item.textContent}
         density="desktop"
         isActive={isActive}
         onTitleClick={handleClick}
         titleHref={`?${item.id}`}
-        title={
-          <span className={twMerge(TOC_CLASSES.link, `toc__link--level-${item.level}`)}>
-            {item.textContent}
-          </span>
-        }
         leading={
           <>
             <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>

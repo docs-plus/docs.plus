@@ -81,15 +81,12 @@ export function TocItemMobile({ item, nestedNodes, onToggle, depth = 0 }: TocIte
       <TocRow
         headingId={item.id}
         depth={depth}
+        level={item.level}
+        title={item.textContent}
         density="mobile"
         isActive={isActive}
         onTitleClick={handleClick}
         titleHref={`?${item.id}`}
-        title={
-          <span className={twMerge(TOC_CLASSES.link, `toc__link--level-${item.level}`)}>
-            {item.textContent}
-          </span>
-        }
         leading={
           hasChildren ? (
             <Button
