@@ -97,7 +97,7 @@ const TocModal = () => {
           <div className="bg-base-200 rounded-box flex w-full items-center justify-evenly gap-1 p-0">
             <div className="relative">
               <TocModalIconButton
-                aria-label="Open filters"
+                aria-label={hasActiveFilters ? 'Open filters (active)' : 'Open filters'}
                 onClick={() => openSheetFromToc(openFilters)}
                 startIcon={Icons.filter}
               />

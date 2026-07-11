@@ -33,9 +33,11 @@ describe('filterRoute', () => {
   it('removes one filter segment case-insensitively', () => {
     expect(removeFilterSegment('/doc/apple/carrot', 'Apple')).toBe('/doc/carrot')
     expect(removeFilterSegment('/doc/apple', 'apple')).toBe('/doc')
+    expect(removeFilterSegment('/doc/apple?mode=and', 'apple')).toBe('/doc')
   })
 
-  it('resets to the document slug and preserves search and hash', () => {
-    expect(resetFilterPath('/doc/apple/carrot?mode=and#history')).toBe('/doc?mode=and#history')
+  it('resets to the document slug and clears mode while preserving hash', () => {
+    expect(resetFilterPath('/doc/apple/carrot?mode=and#history')).toBe('/doc#history')
+    expect(resetFilterPath('/doc/apple#history')).toBe('/doc#history')
   })
 })

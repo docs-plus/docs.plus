@@ -55,6 +55,8 @@ export function removeFilterSegment(asPath: string, slug: string): string | null
   )
 
   url.pathname = `/${docSlug}${updatedFilters.length ? '/' + updatedFilters.join('/') : ''}`
+  // Mode only applies with ≥2 terms — drop it when the filter set empties.
+  if (updatedFilters.length === 0) url.searchParams.delete('mode')
   return shallowPath(url)
 }
 
@@ -64,5 +66,7 @@ export function resetFilterPath(asPath: string): string | null {
   if (!segments.length) return null
 
   url.pathname = `/${segments[0]}`
+  // Reset clears filter state entirely, including AND preference.
+  url.searchParams.delete('mode')
   return shallowPath(url)
 }

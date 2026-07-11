@@ -7,14 +7,14 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const Chip = ({ text }: { text: string }) => (
-  <span className="border-info/30 bg-info/10 rounded-field m-0.5 inline-flex max-w-full items-center gap-1 border px-2 py-0.5 text-xs leading-none font-medium text-[var(--info-ink)] motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
+  <span className="border-info/30 bg-info/10 rounded-field m-0.5 inline-flex max-w-full items-center gap-0.5 border py-0.5 pr-0.5 pl-2 text-xs leading-none font-medium text-[var(--info-ink)] motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
     <span className="truncate">{text}</span>
     <button
       type="button"
       onClick={() => PubSub.publish(REMOVE_FILTER, { slug: text })}
       aria-label={`Remove filter: ${text}`}
-      className="-mr-1 inline-flex shrink-0 cursor-pointer rounded-full p-0.5 opacity-60 hover:opacity-100">
-      <Icons.close size={12} />
+      className="inline-flex size-11 min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-70 hover:opacity-100">
+      <Icons.close size={14} />
     </button>
   </span>
 )

@@ -77,10 +77,17 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
   )
 
   useEffect(() => {
+    // Mobile sheet: TocModal is closed while filtering — skip dead TOC highlight work.
+    if (isSheet) return
     highlightTocSections(new Set(suggestions.map((match) => match.id)))
-  }, [suggestions])
+  }, [suggestions, isSheet])
 
-  useEffect(() => () => highlightTocSections(new Set()), [])
+  useEffect(
+    () => () => {
+      if (!isSheet) highlightTocSections(new Set())
+    },
+    [isSheet]
+  )
 
   useEffect(() => {
     if (activeIndex < 0) return
@@ -148,6 +155,7 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
       title="Filter"
       className={className}
       popoverHeaderBordered={false}
+      onClose={isSheet ? handleClose : undefined}
       footer={
         isSheet ? (
           <SheetPrimaryFooter
@@ -203,7 +211,7 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
               type="button"
               aria-label="Clear search"
               onClick={clearForm}
-              className="text-base-content/40 hover:text-base-content shrink-0 cursor-pointer">
+              className="text-base-content/40 hover:text-base-content inline-flex size-11 min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
               <Icons.close size={14} />
             </button>
           )}
@@ -224,16 +232,14 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
         {sortedSlugs.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 px-1 motion-safe:animate-[doc-region-in_160ms_ease-out_both]">
             <FilterBar className="flex-wrap" />
-            {!isSheet && (
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={handleClearAll}
-                startIcon={<Icons.filterX size={14} />}
-                className="text-base-content/60 hover:text-error ml-auto gap-1">
-                Reset
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={handleClearAll}
+              startIcon={<Icons.filterX size={14} />}
+              className="text-base-content/60 hover:text-error ml-auto gap-1">
+              Reset
+            </Button>
           </div>
         )}
 
