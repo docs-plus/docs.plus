@@ -15,8 +15,8 @@ const TOC = ({ className = '' }: { className?: string }) => {
 
   if (loading || !editor || providerSyncing) {
     return (
-      <div className="p-4">
-        <TableOfContentsLoader className="mt-2" />
+      <div className="tiptap__toc flex h-full min-h-0 w-full flex-col !pt-0">
+        <TableOfContentsLoader />
       </div>
     )
   }
@@ -25,7 +25,7 @@ const TOC = ({ className = '' }: { className?: string }) => {
     <div
       className={twMerge(
         'tiptap__toc flex h-full min-h-0 w-full flex-col !pt-0',
-        !entryFadeDone && 'motion-safe:animate-[doc-content-in_240ms_ease-out_both]',
+        !entryFadeDone && 'motion-safe:animate-[doc-content-in_200ms_ease-out_both]',
         className
       )}
       onAnimationEnd={(e) => {

@@ -10,6 +10,7 @@ import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocContextMenu } from './TocContextMenu'
+import { TocEmptyState } from './TocEmptyState'
 import { TocItemDesktop } from './TocItemDesktop'
 import { TocLevelPicker } from './TocLevelPicker'
 import { buildNestedToc } from './utils'
@@ -77,7 +78,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
   const nestedItems = buildNestedToc(items)
 
   if (!items.length) {
-    return <div className={className} />
+    return <TocEmptyState className={className} />
   }
 
   return (

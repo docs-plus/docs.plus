@@ -2,6 +2,7 @@ import AppendHeadingButton from '@components/pages/document/components/AppendHea
 import React from 'react'
 
 import { useToc, useTocAutoScroll } from './hooks'
+import { TocEmptyState } from './TocEmptyState'
 import { TocItemMobile } from './TocItemMobile'
 import { buildNestedToc } from './utils'
 
@@ -16,7 +17,7 @@ export function TocMobile({ className = '' }: TocMobileProps) {
   useTocAutoScroll()
 
   if (!items.length) {
-    return null
+    return <TocEmptyState className={className} />
   }
 
   const nestedItems = buildNestedToc(items)

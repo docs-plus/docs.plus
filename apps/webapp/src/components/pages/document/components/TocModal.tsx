@@ -89,7 +89,7 @@ const TocModal = () => {
         <div className="bg-base-200 flex min-h-0 flex-1 flex-col overflow-hidden">
           <TocHeader variant="mobile" />
           <ScrollArea className="h-0 min-h-0 flex-1" scrollbarSize="thin" hideScrollbar>
-            <TocMobile className="tiptap__toc w-full pb-6 !pl-2" />
+            <TocMobile className="tiptap__toc w-full pb-6" />
           </ScrollArea>
         </div>
 

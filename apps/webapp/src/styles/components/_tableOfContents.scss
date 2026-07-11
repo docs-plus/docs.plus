@@ -5,27 +5,26 @@
 // ======================
 // Utility Classes
 // ======================
+// Inset accent bar — same geometry for row active + header (text clears via !pl-4).
 .toc__active-border::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: -8px;
-  width: 4px;
-  height: 100%;
-  background-color: var(--color-docsy);
-  border-radius: 4px;
-  z-index: 1;
-}
-
-// Doc title row: bar in left gutter (!pl-4 when active); title stacks above the accent
-.tiptap__toc .toc__header-row.toc__active-border::after {
   top: 4px;
   bottom: 4px;
   left: 4px;
   width: 4px;
   height: auto;
+  background-color: var(--color-docsy);
   border-radius: 4px;
+  z-index: 1;
+}
+
+.tiptap__toc .toc__header-row.toc__active-border::after {
   z-index: 0;
+}
+
+.tiptap__toc .toc__header-row:not(.toc__active-border):hover {
+  background-color: color-mix(in oklch, var(--color-base-content) 8%, var(--pad-well));
 }
 
 // ======================
@@ -47,19 +46,23 @@
     width: calc(100% + var(--toc-scrollbar-gutter));
   }
 
-  // Max plausibly nested TOC depth under flat heading schema (H6 practical max ~6).
+  // Nest ul padding shrinks the box; pull full-width for trail axis, re-apply indent as padding.
   @for $d from 1 through 8 {
     .toc__item > .toc__row[data-depth='#{$d}'] {
       margin-left: calc(-1 * #{$d} * var(--toc-nest-indent));
       width: calc(100% + var(--toc-scrollbar-gutter) + #{$d} * var(--toc-nest-indent));
+      padding-left: calc(8px + #{$d} * var(--toc-nest-indent)) !important;
     }
   }
 
-  // List indentation override (daisyui)
-  .toc__list :where(li ul)::before {
-    inset-inline-start: 1px;
+  // Strengthen daisyUI nest rails (must nest under & — a leading .tiptap__toc doubles the prefix).
+  .toc__list.menu :where(li ul)::before {
+    inset-inline-start: 0;
     top: 0;
     bottom: 0;
+    width: var(--border, 1px);
+    background-color: color-mix(in oklch, var(--color-base-content) 24%, transparent);
+    opacity: 1;
   }
 
   // During drag state
@@ -95,6 +98,31 @@
   padding-left: var(--toc-list-inset, 16px);
 }
 
+// Quiet H1–H6 ladder — indent + type; H4–6 ink at 82% for AA on pad-well.
+.toc__link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-base-content);
+  line-height: 1.25;
+}
+
+.toc__link--level-1 {
+  font-weight: 600;
+}
+
+.toc__link--level-2,
+.toc__link--level-3 {
+  font-weight: 500;
+}
+
+.toc__link--level-4,
+.toc__link--level-5,
+.toc__link--level-6 {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: color-mix(in oklch, var(--color-base-content) 82%, transparent);
+}
+
 // ======================
 // TOC Item
 // ======================
@@ -102,23 +130,24 @@
   width: 100%;
   transition: width 0.2s ease-in-out;
 
-  &.has-present-users {
-    margin: 2px 0;
-  }
-
-  // Link base
+  // Link base — flex-start so multi-line wrap titles stay trail-aligned (not mid-row centered).
   > .toc__row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     position: relative;
     padding-left: 8px !important;
+    border-radius: var(--radius-field);
     transition:
-      background-color 0.2s ease-in-out,
-      color 0.2s ease-in-out;
+      background-color var(--motion-panel, 200ms) var(--motion-ease-enter, ease-out),
+      color var(--motion-panel, 200ms) var(--motion-ease-enter, ease-out);
     -webkit-user-drag: none;
 
-    &:hover {
-      background-color: var(--color-base-200);
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
+    &:hover:not(.active):not(.context-menu-active) {
+      background-color: color-mix(in oklch, var(--color-base-content) 8%, var(--pad-well));
     }
 
     &:active {
@@ -126,58 +155,41 @@
       color: inherit;
     }
 
+    &.active {
+      background-color: var(--color-base-300);
+      // Clear inset bar; nest depths keep their larger padding via [data-depth] (higher specificity).
+      padding-left: 1rem !important;
+    }
+
     &.context-menu-active {
       background-color: color-mix(in oklch, var(--color-primary) 15%, transparent) !important;
     }
   }
 
-  // Level 1 heading
-  &--1 > .toc__row {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-base-content);
-  }
-
-  // Focus sight — ::before keeps a square rail inside the link (no box-shadow); `border-radius: 0`
-  // on the row avoids Tailwind `rounded` clipping the bar into curves.
+  // Scroll-spy — inset bar (same geometry as active ::after); static, no hover slide.
   &.toc__item--focused > .toc__row {
-    border-radius: 0;
+    padding-left: 1rem !important; // clear inset bar (matches active !pl-4)
 
     &::before {
       content: '';
       position: absolute;
-      left: -8px;
-      top: 0;
-      bottom: 0;
+      left: 4px;
+      top: 4px;
+      bottom: 4px;
       width: 4px;
       background-color: var(--color-docsy);
-      border-radius: 0;
-      pointer-events: none;
-      transition: left 0.2s ease-in-out;
       border-radius: 4px;
+      pointer-events: none;
     }
 
-    &:hover::before {
-      opacity: 1;
-      left: -21px;
+    // Spy ∩ chat-open: one bar — wash + active icon carry “here + chat”.
+    &.active::before {
+      content: none;
     }
 
     transition:
       background-color 0.2s ease-in-out,
       color 0.2s ease-in-out;
-  }
-
-  // Active state
-  &.active > span a {
-    color: var(--color-primary);
-  }
-
-  // Active chat (class from TocItemDesktop) — --color-docsy follows theme via globals.scss :root
-  > .toc__row.active .toc__chat-icon--active {
-    fill: none;
-    color: var(--color-docsy);
-    stroke: currentColor;
-    opacity: 1;
   }
 
   // Section collapsed (editor fold); nested list is a direct child — no Tailwind `hidden` in TSX
@@ -189,7 +201,7 @@
   &.is-ghosted > .toc__row {
     background-color: var(--color-base-200) !important;
     border: 2px dashed var(--color-base-300);
-    border-radius: 6px;
+    border-radius: var(--radius-field);
     opacity: 0.6;
 
     .toc__link {
@@ -207,14 +219,23 @@
   }
 }
 
+// Active chat — header + rows (TocRowTrail / mobile header stamp `--active`; not scoped to `.toc__row.active`).
+.toc__chat-icon--active {
+  fill: none;
+  color: var(--color-docsy);
+  stroke: currentColor;
+  opacity: 1;
+}
+
 // ======================
 // Fold Button
 // ======================
 // Lucide chevron is stroke-based; daisy `btn-ghost` adds a hover fill — override to stroke-only (toolbar parity).
+// Desktop: hover-only like grip; mobile always visible (html.m_mobile + .modalWrapper).
 .toc__item .toc__fold-btn {
-  opacity: 1;
+  opacity: 0;
   cursor: pointer;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity var(--motion-overlay-out, 80ms) ease-in;
 
   &,
   &:hover,
@@ -226,8 +247,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
-    outline-offset: 1px;
+    opacity: 1;
   }
 
   > svg {
@@ -235,8 +255,12 @@
     stroke: currentColor;
     color: color-mix(in oklch, var(--color-base-content) 80%, transparent);
     transition:
-      color 0.15s ease-in-out,
-      transform 0.2s ease-in-out;
+      color var(--motion-overlay-in, 120ms) ease-out,
+      transform 160ms var(--motion-ease-enter, ease-out);
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
   &:hover > svg,
@@ -253,6 +277,19 @@
   }
 }
 
+.toc__item:hover > .toc__row .toc__fold-btn,
+.toc__item:focus-within > .toc__row .toc__fold-btn {
+  opacity: 1;
+  transition: opacity var(--motion-overlay-in, 120ms) ease-out;
+}
+
+html.m_mobile .toc__item .toc__fold-btn,
+html.m_mobile .toc__item .toc__chat-icon,
+.modalWrapper .toc__item .toc__fold-btn,
+.modalWrapper .toc__item .toc__chat-icon {
+  opacity: 1 !important;
+}
+
 // ======================
 // Chat Button
 // ======================
@@ -263,13 +300,26 @@
     fill: none;
     stroke: currentColor;
     transition:
-      opacity 0.2s ease-in-out,
-      color 0.2s ease-in-out;
+      opacity var(--motion-overlay-out, 80ms) ease-in,
+      color var(--motion-overlay-in, 120ms) ease-out;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
   &:hover > .toc__row .toc__chat-icon {
     opacity: 1;
+    transition: opacity var(--motion-overlay-in, 120ms) ease-out;
   }
+}
+
+.toc__fold-btn:focus-visible,
+.toc-drag-handle:focus-visible,
+.toc__chat-trigger:focus-visible,
+.toc__row-link:focus-visible {
+  outline: var(--focus-ring-soft);
+  outline-offset: 1px;
 }
 
 // ======================
@@ -318,8 +368,6 @@
   &:focus-visible {
     opacity: 1;
     pointer-events: auto;
-    outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
-    outline-offset: 1px;
   }
 }
 
@@ -375,9 +423,10 @@
   gap: 2px;
   margin-bottom: 4px;
   background: var(--color-base-100);
-  border-radius: 6px;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
   padding: 2px;
-  box-shadow: 0 2px 8px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  box-shadow: var(--shadow-overlay);
   width: fit-content;
 }
 
@@ -444,10 +493,15 @@
   align-items: center;
   gap: 4px;
   background: var(--color-base-100);
-  border-radius: 4px;
+  border-radius: var(--radius-field);
   padding: 6px 8px;
-  box-shadow: 0 8px 24px color-mix(in oklch, var(--color-base-content) 10%, transparent);
-  border: 1px solid color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  // Deeper in dark (light-dark swaps the shadow opacity via color-scheme, no dark selector).
+  box-shadow: 0 8px 24px
+    light-dark(
+      color-mix(in oklch, black 12%, transparent),
+      color-mix(in oklch, black 28%, transparent)
+    );
+  border: 1px solid var(--color-base-300);
   box-sizing: border-box;
   cursor: grabbing;
   opacity: 0.8;
@@ -546,25 +600,10 @@
 // ======================
 // Mobile Overrides
 // ======================
+// Fold/chat always-on lives once above (html.m_mobile + .modalWrapper). Keep layout-only rules here.
 .m_mobile {
-  .toc__chat-icon {
-    opacity: 1 !important;
-  }
-
-  // Mobile row uses a larger hit target than desktop’s 24px trigger
-  .toc__item > .toc__row > button.toc__chat-trigger {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .toc__item {
-    > .toc__row {
-      line-height: 2 !important;
-    }
-
-    .toc__fold-btn {
-      opacity: 1 !important;
-    }
+  .toc__item > .toc__row {
+    line-height: 2 !important;
   }
 
   .tiptap__toc .toc__list {

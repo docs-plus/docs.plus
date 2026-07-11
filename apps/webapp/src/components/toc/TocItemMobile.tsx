@@ -6,18 +6,20 @@ import type { TocItem as TocItemType } from '@types'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
+import { TocRow } from './TocRow'
+import { TocRowTrail } from './TocRowTrail'
 import { type NestedTocNode, scrollToHeading } from './utils'
 
 interface TocItemMobileProps {
   item: TocItemType
   nestedNodes: NestedTocNode<TocItemType>[]
   onToggle: (id: string) => void
+  depth?: number
 }
 
-export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProps) {
+export function TocItemMobile({ item, nestedNodes, onToggle, depth = 0 }: TocItemMobileProps) {
   const { headingId } = useChatStore((state) => state.chatRoom)
   const editor = useStore((state) => state.settings.editor.instance)
 
@@ -74,53 +76,48 @@ export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProp
     isFocused && TOC_CLASSES.itemFocused
   )
 
-  const aClassName = twMerge(
-    'group relative rounded !py-2 pr-10',
-    isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`,
-    item.level === 1 && 'ml-3'
-  )
-
   return (
     <li className={liClassName} data-id={item.id}>
-      <a className={aClassName} onClick={handleClick} href={`?${item.id}`} data-id={item.id}>
-        {/* Fold/Unfold button — matches desktop (in-flow, same size) for tree-line alignment */}
-        {hasChildren && (
-          <Button
-            variant="ghost"
-            size="xs"
-            shape="square"
-            className={twMerge(
-              `${TOC_CLASSES.foldBtn} size-5 min-w-5 !p-0`,
-              item.open ? 'opened' : 'closed'
-            )}
-            onClick={handleToggle}
-            aria-label={item.open ? 'Collapse section' : 'Expand section'}
-            startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
-          />
-        )}
-
-        {/* Heading text */}
-        <span className="toc__link wrap-anywhere">{item.textContent}</span>
-
-        {/* Chat button — absolute right, consistent across nesting levels */}
-        <button
-          type="button"
-          className={twMerge(
-            TOC_CLASSES.chatTrigger,
-            'absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-full'
-          )}
-          data-heading-id={item.id}
-          onClick={handleChatClick}
-          aria-label={chatTriggerAriaLabel(unreadCount)}>
-          <ChatTriggerContent
+      <TocRow
+        headingId={item.id}
+        depth={depth}
+        density="mobile"
+        isActive={isActive}
+        onTitleClick={handleClick}
+        titleHref={`?${item.id}`}
+        title={
+          <span className={twMerge(TOC_CLASSES.link, `toc__link--level-${item.level}`)}>
+            {item.textContent}
+          </span>
+        }
+        leading={
+          hasChildren ? (
+            <Button
+              variant="ghost"
+              size="xs"
+              shape="square"
+              className={twMerge(
+                `${TOC_CLASSES.foldBtn} size-11 min-h-11 min-w-11 !p-0`,
+                item.open ? 'opened' : 'closed'
+              )}
+              onClick={handleToggle}
+              aria-label={item.open ? 'Collapse section' : 'Expand section'}
+              startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
+            />
+          ) : null
+        }
+        trail={
+          <TocRowTrail
+            headingId={item.id}
             unreadCount={unreadCount}
+            isActive={isActive}
             iconSize={20}
-            iconClassName={twMerge('text-base-content/40', isActive && 'text-accent')}
+            iconClassName={twMerge(TOC_CLASSES.chatIcon, 'text-base-content/40')}
+            onChatClick={handleChatClick}
           />
-        </button>
-      </a>
+        }
+      />
 
-      {/* Nested children */}
       {hasChildren && (
         <ul className={TOC_CLASSES.children}>
           {nestedNodes.map(({ item: childItem, nodes: grandNodes }) => (
@@ -129,6 +126,7 @@ export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProp
               item={childItem}
               nestedNodes={grandNodes}
               onToggle={onToggle}
+              depth={depth + 1}
             />
           ))}
         </ul>

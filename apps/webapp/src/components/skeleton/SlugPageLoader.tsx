@@ -72,12 +72,8 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
       <div className="editorWrapper scrollbar-custom scrollbar-thin flex h-full min-w-0 flex-1 items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
         <EditorContentSkeleton className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
       </div>
-      <aside
-        className="border-base-300 h-full shrink-0 border-r bg-[var(--pad-well)]"
-        style={{ width: tocWidth }}>
-        <div className="p-4">
-          <TableOfContentsLoader className="mt-2" />
-        </div>
+      <aside className="h-full shrink-0 bg-[var(--pad-well)]" style={{ width: tocWidth }}>
+        <TableOfContentsLoader />
       </aside>
     </div>
   </div>

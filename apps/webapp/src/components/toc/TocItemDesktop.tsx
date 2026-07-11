@@ -10,6 +10,7 @@ import { twMerge } from 'tailwind-merge'
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocLevelPicker } from './TocLevelPicker'
+import { TocRow } from './TocRow'
 import { TocRowTrail } from './TocRowTrail'
 import { type NestedTocNode, scrollToHeading } from './utils'
 
@@ -48,7 +49,6 @@ export function TocItemDesktop({
 
   const isActive = headingId === item.id
   const hasChildren = nestedNodes.length > 0
-  const hasPresentUsers = presentUsers.length > 0
 
   const isDragging = sortable.isDragging
   const isDescendantOfDragged = activeId ? collapsedIds.has(item.id) : false
@@ -95,82 +95,78 @@ export function TocItemDesktop({
     !item.open && 'closed',
     isFocused && TOC_CLASSES.itemFocused,
     isGhosted && 'is-ghosted',
-    isDragging && 'is-dragging',
-    hasChildren && 'has-children',
-    hasPresentUsers && 'has-present-users'
-  )
-
-  const rowClassName = twMerge(
-    TOC_CLASSES.row,
-    'group relative flex items-center gap-1 overflow-hidden rounded pr-3 whitespace-pre-line hyphens-auto',
-    isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`
+    isDragging && 'is-dragging'
   )
 
   return (
     <li ref={sortable.setNodeRef} className={liClassName} data-id={item.id}>
-      <div className={rowClassName} data-id={item.id} data-depth={depth}>
-        <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
-
-        <span className="relative flex shrink-0 items-center self-stretch">
-          <Tooltip title="Drag to reorder" placement="top">
-            <button
-              type="button"
-              className="toc-drag-handle"
-              aria-label="Drag to reorder"
-              {...sortable.attributes}
-              {...sortable.listeners}
-              onMouseEnter={() => setIsHoveringHandle(true)}
-              onMouseLeave={() => setIsHoveringHandle(false)}
-              onClick={(e) => e.preventDefault()}>
-              <Icons.gripVertical size={16} aria-hidden className="stroke-[1.75]" />
-            </button>
-          </Tooltip>
-
-          {isHoveringHandle && !isDragging && <TocLevelPicker level={item.level} mode="preview" />}
-        </span>
-
-        {hasChildren && (
-          <Button
-            variant="ghost"
-            size="xs"
-            shape="square"
-            className={twMerge(
-              `${TOC_CLASSES.foldBtn} size-5 min-w-5 !p-0`,
-              item.open ? 'opened' : 'closed'
+      <TocRow
+        headingId={item.id}
+        depth={depth}
+        density="desktop"
+        isActive={isActive}
+        onTitleClick={handleClick}
+        titleHref={`?${item.id}`}
+        title={
+          <span className={twMerge(TOC_CLASSES.link, `toc__link--level-${item.level}`)}>
+            {item.textContent}
+          </span>
+        }
+        leading={
+          <>
+            <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
+            <span className="relative flex shrink-0 items-center self-stretch">
+              <Tooltip title="Drag to reorder" placement="top">
+                <button
+                  type="button"
+                  className="toc-drag-handle"
+                  aria-label="Drag to reorder"
+                  {...sortable.attributes}
+                  {...sortable.listeners}
+                  onMouseEnter={() => setIsHoveringHandle(true)}
+                  onMouseLeave={() => setIsHoveringHandle(false)}
+                  onClick={(e) => e.preventDefault()}>
+                  <Icons.gripVertical size={16} aria-hidden className="stroke-[1.75]" />
+                </button>
+              </Tooltip>
+              {isHoveringHandle && !isDragging && (
+                <TocLevelPicker level={item.level} mode="preview" />
+              )}
+            </span>
+            {hasChildren && (
+              <Button
+                variant="ghost"
+                size="xs"
+                shape="square"
+                className={twMerge(
+                  `${TOC_CLASSES.foldBtn} size-5 min-w-5 !p-0`,
+                  item.open ? 'opened' : 'closed'
+                )}
+                onClick={handleToggle}
+                startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
+                tooltip="Toggle"
+                tooltipPlacement="top"
+              />
             )}
-            onClick={handleToggle}
-            startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
-            tooltip="Toggle"
-            tooltipPlacement="top"
+          </>
+        }
+        trail={
+          <TocRowTrail
+            headingId={item.id}
+            unreadCount={unreadCount}
+            presentUsers={presentUsers}
+            isActive={isActive}
+            iconSize={20}
+            tooltipPlacement="left"
+            iconClassName={twMerge(
+              TOC_CLASSES.chatIcon,
+              'cursor-pointer fill-none transition-colors',
+              !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
+            )}
+            onChatClick={handleChatClick}
           />
-        )}
-
-        <a
-          className={twMerge(
-            TOC_CLASSES.rowLink,
-            'min-w-0 flex-1 hyphens-auto whitespace-pre-line text-inherit no-underline'
-          )}
-          onClick={handleClick}
-          href={`?${item.id}`}
-          data-id={item.id}>
-          <span className="toc__link">{item.textContent}</span>
-        </a>
-
-        <TocRowTrail
-          headingId={item.id}
-          unreadCount={unreadCount}
-          presentUsers={presentUsers}
-          isActive={isActive}
-          iconSize={20}
-          tooltipPlacement="left"
-          iconClassName={twMerge(
-            TOC_CLASSES.chatIcon,
-            'cursor-pointer fill-none transition-colors',
-            !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
-          )}
-          onChatClick={handleChatClick}
-        />
-      </div>
+        }
+      />
 
       {hasChildren && (
         <ul className={TOC_CLASSES.children}>

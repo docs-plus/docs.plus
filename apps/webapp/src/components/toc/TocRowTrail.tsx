@@ -10,7 +10,7 @@ import { tocTrailingRailPx } from './utils'
 type TocRowTrailProps = {
   headingId: string | undefined
   unreadCount: number
-  presentUsers: Profile[]
+  presentUsers?: Profile[]
   isActive: boolean
   iconSize: number
   iconClassName: string
@@ -23,7 +23,7 @@ type TocRowTrailProps = {
 export function TocRowTrail({
   headingId,
   unreadCount,
-  presentUsers,
+  presentUsers = [],
   isActive,
   iconSize,
   iconClassName,

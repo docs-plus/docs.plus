@@ -62,7 +62,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
               iconClassName={twMerge(
                 TOC_CLASSES.chatIcon,
                 'text-base-content/40',
-                isActive && 'text-accent'
+                isActive && TOC_CLASSES.chatIconActive
               )}
             />
           </button>
@@ -73,15 +73,15 @@ export function TocHeader({ variant }: TocHeaderProps) {
 
   return (
     <div
-      className="border-base-300 bg-base-200 relative isolate z-30 w-full shrink-0 border-b pt-2 pb-1"
+      className="border-base-300 relative isolate z-30 w-full shrink-0 border-b bg-[var(--pad-well)] pt-2 pb-1"
       style={{ paddingLeft: 'var(--toc-list-inset)' }}>
       <div
         className={twMerge(
-          `${TOC_CLASSES.headerRow} group relative flex cursor-pointer items-center gap-1 overflow-hidden rounded-md py-1 pr-3 pl-2`,
+          `${TOC_CLASSES.headerRow} group rounded-field relative flex cursor-pointer items-center gap-1 overflow-hidden py-1 pr-3 pl-2`,
           isActive && `${TOC_CLASSES.activeBorder} bg-base-300 !pl-4`
         )}
         onClick={handleClick}>
-        <span className="text-base-content relative z-[1] min-w-0 flex-1 text-lg font-bold">
+        <span className="text-base-content relative z-[1] min-w-0 flex-1 text-base font-semibold">
           {docMetadata?.title}
         </span>
         <TocRowTrail
