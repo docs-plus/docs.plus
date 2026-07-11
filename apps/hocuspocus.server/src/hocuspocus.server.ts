@@ -1,11 +1,11 @@
 import './lib/instrument'
 import './config/env' // validate env first (fail-fast at boot)
 
-import type { Connection } from '@hocuspocus/server'
+import type { Connection, onAuthenticatePayload } from '@hocuspocus/server'
 import { Server } from '@hocuspocus/server'
 
 import HocuspocusConfig from './config/hocuspocus.config'
-import { verifySupabaseToken } from './lib/auth'
+import { TransientAuthError, verifySupabaseToken } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { wsLogger } from './lib/logger'
@@ -14,8 +14,8 @@ import {
   documentPersistDuration,
   metricsContentType,
   metricsText,
+  setActiveConnectionsProvider,
   setActiveDocumentsProvider,
-  wsActiveConnections,
   wsAuthRejectionsTotal,
   wsAwarenessUpdatesTotal,
   wsConnectionsTotal,
@@ -25,6 +25,7 @@ import {
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
+import { resolveWsAccess } from './lib/wsAccess'
 import type { HistoryPayload } from './types/document.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
@@ -116,7 +117,6 @@ const statelessExtension = {
       type?: string
       documentId?: string
       version?: number
-      currentVersion?: number
     }
     try {
       parsedPayload = JSON.parse(payload) as typeof parsedPayload
@@ -149,8 +149,7 @@ const statelessExtension = {
       const historyPayload: HistoryPayload = {
         type,
         documentId: canonicalId,
-        version: parsedPayload.version,
-        currentVersion: parsedPayload.currentVersion
+        version: parsedPayload.version
       }
 
       try {
@@ -175,14 +174,9 @@ const serverConfig = {
 
   async onConnect() {
     wsConnectionsTotal.inc()
-    wsActiveConnections.inc()
   },
 
-  async onDisconnect() {
-    wsActiveConnections.dec()
-  },
-
-  async onAuthenticate({ token, documentName, connection }: any) {
+  async onAuthenticate({ token, documentName, connectionConfig }: onAuthenticatePayload) {
     // The room id is the bare documentId. Resolve the user first, then deny
     // anonymous access to admin-set private documents at one choke point.
     const isProd = process.env.NODE_ENV === 'production'
@@ -213,7 +207,12 @@ const serverConfig = {
           }
         }
       } catch (error) {
-        if (error instanceof Error && error.message === INVALID_TOKEN_MESSAGE) {
+        if (error instanceof TransientAuthError) {
+          // Supabase auth is transiently unreachable: don't hard-reject a
+          // possibly-valid user. Degrade to anonymous and let the privacy gate
+          // decide — public docs still connect, private stay denied.
+          wsLogger.warn({ documentName }, 'Transient auth failure - degrading to anonymous')
+        } else if (error instanceof Error && error.message === INVALID_TOKEN_MESSAGE) {
           // Expected rejection (expired/invalid token): reject so the client
           // refreshes and reconnects; not an error to log at level 50 or capture.
           wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
@@ -231,32 +230,45 @@ const serverConfig = {
     }
 
     // Privacy is read authoritatively from the DB (never trust the client). "Private"
-    // means login-required ONLY (any non-anonymous user) -- NOT member-scoped by
-    // design; the DocumentUsers/Role schema is unused legacy. Lookup fails open so a
-    // blip can't sever collaboration; private docs are admin-set and rare.
+    // means owner-only; anonymous and signed-in non-owners are rejected. A failed
+    // lookup can't determine privacy, so we fail CLOSED (deny) rather than admit as
+    // public; a successful public-doc lookup still connects without auth.
     let isPrivate = false
     let readOnly = false
     let ownerId: string | null = null
+    let lookupFailed = false
+    // Declared outside the try so a lookup throw leaves it false and `lookupFailed`
+    // (not a stale default) drives the fail-closed deny — the audit-#1 bug shape.
+    let deleted = false
     try {
       const meta = await prisma.documentMetadata.findUnique({
         where: { documentId: documentName },
-        select: { isPrivate: true, readOnly: true, ownerId: true }
+        select: { isPrivate: true, readOnly: true, ownerId: true, deletedAt: true }
       })
       isPrivate = meta?.isPrivate === true
       readOnly = meta?.readOnly === true
       ownerId = meta?.ownerId ?? null
+      deleted = meta?.deletedAt != null
     } catch (error) {
-      wsLogger.warn({ err: error, documentName }, 'Private-doc lookup failed; allowing connection')
+      lookupFailed = true
+      wsLogger.warn({ err: error, documentName }, 'Private-doc lookup failed; denying connection')
     }
 
-    if (isPrivate && (!user || user.is_anonymous)) {
-      throw new Error('Authentication required for private document')
+    // Soft-deleted docs are sealed here: denying the WS connection stops the store
+    // worker's upsertDocumentMetadata from resurrecting the whole Prisma tree.
+    if (deleted || resolveWsAccess({ isPrivate, ownerId, user, lookupFailed }) === 'deny') {
+      wsLogger.info(
+        { documentName, hasUser: Boolean(user), lookupFailed, deleted },
+        'Denying WS connection to private/deleted/uncertain document'
+      )
+      throw new Error('Access denied for private document')
     }
 
-    // Enforce the admin readOnly lock on the WRITE path. The client editor honors it,
-    // but a raw WS client could otherwise write; owners keep edit rights.
-    if (readOnly && connection && user?.sub !== ownerId) {
-      connection.readOnly = true
+    // Enforce the admin readOnly lock on the WRITE path. The client editor
+    // honors it, but a raw WS client could otherwise write; owners keep edit
+    // rights. v3 renamed the payload field: connectionConfig, NOT connection.
+    if (readOnly && user?.sub !== ownerId) {
+      connectionConfig.readOnly = true
     }
 
     return { user, slug, documentId: documentName, deviceType }
@@ -265,9 +277,14 @@ const serverConfig = {
 
 const server = new Server(serverConfig)
 
-// Read the live loaded-document count at scrape time rather than tracking inc/dec,
-// which would drift up forever if a load failed before its unload.
+// Read live counts at scrape time rather than tracking inc/dec, which would
+// drift up forever (a load that failed before unload; a connection rejected
+// pre-auth whose onDisconnect never fires). Auth-rejected sockets never attach
+// to a document, so summing per-document connections counts only real ones.
 setActiveDocumentsProvider(() => server.hocuspocus.documents.size)
+setActiveConnectionsProvider(() =>
+  [...server.hocuspocus.documents.values()].reduce((sum, doc) => sum + doc.getConnectionsCount(), 0)
+)
 
 server.listen()
 

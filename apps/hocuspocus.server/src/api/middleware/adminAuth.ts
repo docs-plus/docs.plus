@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 
-import { verifySupabaseToken } from '../../lib/auth'
+import { TransientAuthError, verifySupabaseToken } from '../../lib/auth'
 import { adminLogger } from '../../lib/logger'
 import { getSupabaseClient } from '../utils/supabase'
 
@@ -14,7 +14,15 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
 
   const token = authHeader.slice(7)
 
-  const user = await verifySupabaseToken(token)
+  let user
+  try {
+    user = await verifySupabaseToken(token)
+  } catch (err) {
+    if (err instanceof TransientAuthError) {
+      return c.json({ error: 'Auth service temporarily unavailable' }, 503)
+    }
+    throw err
+  }
 
   if (!user) {
     return c.json({ error: 'Invalid or expired token' }, 401)

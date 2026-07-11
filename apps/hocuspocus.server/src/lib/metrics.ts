@@ -39,10 +39,21 @@ export const httpRequestsTotal = new Counter({
   registers: [register]
 })
 
+// Live count derived at scrape time, not inc/dec: onConnect fires pre-auth but
+// onDisconnect only fires for sockets that finished auth, so a rejection storm
+// would drift an inc/dec gauge upward forever.
+let activeConnectionsProvider: (() => number) | null = null
+export const setActiveConnectionsProvider = (fn: () => number): void => {
+  activeConnectionsProvider = fn
+}
+
 export const wsActiveConnections = new Gauge({
   name: 'ws_active_connections',
   help: 'Currently open WebSocket connections',
-  registers: [register]
+  registers: [register],
+  collect() {
+    if (activeConnectionsProvider) this.set(activeConnectionsProvider())
+  }
 })
 
 export const wsConnectionsTotal = new Counter({
