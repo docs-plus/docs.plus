@@ -1,9 +1,13 @@
 import * as toast from '@components/toast'
 import { fitDimensionsToBounds, getEditorContentWidth } from '@docs.plus/extension-hypermultimedia'
 import type { Editor } from '@tiptap/core'
-import { type ProseMirrorNode, TIPTAP_NODES } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
+import {
+  addUploadPlaceholder,
+  findUploadPlaceholderPos,
+  removeUploadPlaceholder
+} from '../nodes/MediaUploadPlaceholder'
 import { MEDIA_MAX_UPLOAD_BYTES, mediaUploadLimitExceededMessage } from './mediaUploadLimits'
 
 export interface ImageDimensions {
@@ -129,20 +133,6 @@ const getImageDimensions = async (
   })
 }
 
-const findPlaceholderPos = (editor: Editor, uploadId: string): number | null => {
-  let placeholderPos: number | null = null
-  editor.state.doc.descendants((node: ProseMirrorNode, pos: number) => {
-    if (
-      node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
-      node.attrs.uploadId === uploadId
-    ) {
-      placeholderPos = pos
-      return false
-    }
-  })
-  return placeholderPos
-}
-
 export const uploadMediaFile = async (
   editor: Editor | null,
   file: File,
@@ -163,35 +153,39 @@ export const uploadMediaFile = async (
     imageData = await getImageDimensions(file, editor)
   }
 
-  editor.commands.insertContent({
-    type: TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE,
-    attrs: {
-      progress: 0,
+  const abortController = new AbortController()
+
+  // The placeholder dispatch lives inside try so a plugin-apply throw surfaces
+  // the toast and runs the catch cleanup instead of an unhandled rejection.
+  try {
+    addUploadPlaceholder(editor, {
+      uploadId,
       fileName: file.name,
       fileType,
-      uploadId,
-      ...imageData
-    }
-  })
+      localUrl: imageData.localUrl,
+      width: imageData.width,
+      height: imageData.height,
+      onCancel: () => abortController.abort()
+    })
 
-  const formData = new FormData()
-  formData.append('mediaFile', file, file.name)
+    const formData = new FormData()
+    formData.append('mediaFile', file, file.name)
 
-  // Upload is an authenticated write; send the Supabase token via the `token`
-  // header the REST API reads (same convention as fetchDocument).
-  const {
-    data: { session }
-  } = await supabaseClient.auth.getSession()
-  const headers: Record<string, string> = {}
-  if (session?.access_token) headers.token = session.access_token
+    // Upload is an authenticated write; send the Supabase token via the `token`
+    // header the REST API reads (same convention as fetchDocument).
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession()
+    const headers: Record<string, string> = {}
+    if (session?.access_token) headers.token = session.access_token
 
-  try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${docMetadata.documentId}`,
       {
         method: 'POST',
         body: formData,
-        headers
+        headers,
+        signal: abortController.signal
       }
     )
 
@@ -204,40 +198,35 @@ export const uploadMediaFile = async (
       throw new Error('File type is not recognized.')
     }
 
+    if (editor.isDestroyed) return
+
     const mediaType = FILE_TYPE_MAP[result.fileType as keyof typeof FILE_TYPE_MAP] || 'image'
-    const placeholderPos = findPlaceholderPos(editor, uploadId)
+    const nodeAttrs: UploadPlaceholderAttributes = { src: mediaURL }
 
-    if (placeholderPos !== null) {
-      const { state } = editor
-      const tr = state.tr
-      const nodeAttrs: UploadPlaceholderAttributes = { src: mediaURL }
-
-      if (mediaType === 'image' && typeof imageData.width === 'number') {
-        nodeAttrs.width = imageData.width
-      }
-      if (mediaType === 'image' && typeof imageData.height === 'number') {
-        nodeAttrs.height = imageData.height
-      }
-
-      tr.replaceWith(
-        placeholderPos,
-        placeholderPos + 1,
-        state.schema.nodes[mediaType].create(nodeAttrs)
-      )
-      editor.view.dispatch(tr)
+    if (mediaType === 'image' && typeof imageData.width === 'number') {
+      nodeAttrs.width = imageData.width
     }
+    if (mediaType === 'image' && typeof imageData.height === 'number') {
+      nodeAttrs.height = imageData.height
+    }
+
+    const placeholderPos = findUploadPlaceholderPos(editor.state, uploadId)
+    if (placeholderPos === null) {
+      console.warn('Upload placeholder context was deleted; inserting media at the selection')
+    }
+    editor.commands.insertContentAt(placeholderPos ?? editor.state.selection.from, {
+      type: mediaType,
+      attrs: nodeAttrs
+    })
+    removeUploadPlaceholder(editor, uploadId)
 
     toast.Success('Upload successful!')
   } catch (error) {
+    if (!editor.isDestroyed) removeUploadPlaceholder(editor, uploadId)
+    if (abortController.signal.aborted) return
+
     console.error('Upload error:', error)
     toast.Error(error instanceof Error ? error.message : 'Error uploading file')
-
-    const placeholderPos = findPlaceholderPos(editor, uploadId)
-    if (placeholderPos !== null) {
-      const tr = editor.state.tr
-      tr.delete(placeholderPos, placeholderPos + 1)
-      editor.view.dispatch(tr)
-    }
   } finally {
     if (imageData.localUrl) URL.revokeObjectURL(imageData.localUrl)
   }
