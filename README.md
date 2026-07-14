@@ -6,27 +6,17 @@
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.com/invite/25JPG38J59)
 [![Supabase](https://img.shields.io/badge/Supabase-Powered-3ECF8E.svg?logo=supabase&logoColor=white)](https://supabase.com)
 [![Bun](https://img.shields.io/badge/Bun-Runtime-000000.svg?logo=bun&logoColor=white)](https://bun.sh)
-[![Uptime](https://healthchecks.io/badge/512974ef-8ac4-4252-bf1c-bf8d35/sD4Zg9b5-2.svg)](https://healthchecks.io)
+
+<a href="https://docs.plus">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/editor-dark.png" />
+    <img alt="The docs.plus editor: document sheet with heading-based table of contents, each heading with its own chat" src=".github/assets/editor-light.png" />
+  </picture>
+</a>
 
 docs.plus is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
 
-## 🔌 TipTap extensions
-
-Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. Each ships on npm under `@docs.plus`:
-
-```sh
-bun add @docs.plus/extension-hyperlink
-```
-
-| Package                                                              | Description                                                            |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`extension-hyperlink`](extensions/extension-hyperlink/)             | Hyperlink mark, autolink, popovers, URL safety                         |
-| [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Images, audio, video, and embeds (YouTube, Vimeo, SoundCloud, Loom, X) |
-| [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with context allowlist                  |
-| [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                             |
-| [`extension-placeholder`](extensions/extension-placeholder/)         | O(1) cursor-based empty-node placeholder                               |
-
-Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
+**[Try it live at docs.plus →](https://docs.plus)**
 
 **Tech Stack:**
 
@@ -42,106 +32,63 @@ Install notes, recommended pairings, and contributing: [extensions/README.md](ex
 - 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
   - ⚠️ **macOS Silicon users:** Docker Desktop has IO performance issues. Use [OrbStack](https://orbstack.dev/) instead (drop-in replacement, faster, lighter).
 - 🚀 **Bun** >=1.3.7 - [Install](https://bun.sh/docs/installation)
-- 🗄️ **Supabase CLI** - [Install](https://supabase.com/docs/guides/cli/installation)
+- 📦 **Node.js** >=24.11 - [Install](https://nodejs.org/) (Next.js and tooling binaries run on Node)
+- 🪟 **Windows:** use WSL2 — the dev workflow relies on `make` and `bash`
+
+No global Supabase CLI needed — the repo pins it as a workspace dependency.
 
 ## 🚀 Quick Start
-
-### 1️⃣ Clone & Install
 
 ```bash
 git clone https://github.com/docs-plus/docs.plus.git
 cd docs.plus
-bun install
+make dev-local
 ```
 
-### 2️⃣ Environment Configuration
+One command bootstraps everything: env files from `.env.example`, dependencies, Postgres + Redis containers, local Supabase (schema and seed apply automatically), Prisma migrations, editor-extension builds — then starts the REST API, WebSocket server, worker, and webapp. The first run downloads Docker images and takes several minutes; after that it starts in seconds.
 
-**Create environment files based on your development mode:**
+**URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Supabase Studio <http://127.0.0.1:54323> · local email inbox <http://127.0.0.1:54324>
 
-```bash
-# Required: Create .env.development first (used by Docker dev and as base for local dev)
-cp .env.example .env.development
-```
+**Sign-in:** any email/password works locally (auto-confirmed, no real email sent). Google sign-in needs `GOOGLE_CLIENT_ID`/`GOOGLE_SECRET` in `.env.local`.
 
-**Environment File Mapping:**
+**Stop:** `Ctrl+C` stops the app processes · `make infra-down` stops Postgres/Redis · `bun --filter @docs.plus/supabase_back stop` stops Supabase
 
-| Docker Compose File        | Environment File   | Usage                                            |
-| -------------------------- | ------------------ | ------------------------------------------------ |
-| `docker-compose.prod.yml`  | `.env.production`  | Production deployment                            |
-| `docker-compose.dev.yml`   | `.env.development` | Docker development (all services in containers)  |
-| `docker-compose.local.yml` | `.env.local`       | Local development (infra in Docker, apps native) |
-
-**Important Differences:**
-
-**`.env.development`** (Docker Development):
-
-- Uses **Docker service names** for inter-container communication:
-  - `SERVER_RESTAPI_URL=http://rest-api:4000/api` (Docker service name)
-  - `REDIS_HOST=redis` (Docker service name)
-  - `DATABASE_URL` is set by Docker Compose (not in file)
-
-**`.env.local`** (Local Development):
-
-- Uses **localhost** for native apps connecting to Docker infrastructure:
-  - `SERVER_RESTAPI_URL=http://localhost:4000/api` (localhost)
-  - `REDIS_HOST=localhost` (localhost)
-  - `DATABASE_URL=postgresql://...@localhost:5432/...` (explicit connection string)
-- **Auto-created** from `.env.development` when you run `make dev-local` or `make infra-up`
-- **Gitignored** - safe for local customizations
-
-**Note:** `.env.local` is automatically created from `.env.development` on first run. You only need to create `.env.development` manually.
-
-### 3️⃣ Initialize Supabase
+**Reset the local database:** `bun --filter @docs.plus/supabase_back reset`
 
 <details>
-<summary><strong>🗄️ Option A: Local Supabase Setup (One-time, ~5-10 min)</strong></summary>
+<summary><strong>🐳 Alternative: full Docker (`make up-dev`)</strong></summary>
 
-**Step 1: Start Supabase** 🚀
+All services in containers instead of native processes:
 
 ```bash
-bun --filter @docs.plus/supabase_back start
+cp .env.example .env.development
+make up-dev
 ```
 
-First run downloads Docker images. Verify with `bun --filter @docs.plus/supabase_back status`.
-
-**Step 2: Activate Extensions** 🔌
-
-- Open [Supabase Studio](http://127.0.0.1:54323)
-- Go to [Integrations](http://127.0.0.1:54323/project/default/integrations)
-- Activate: **pg_cron** and **pgmq (Queues)**
-
-**Step 3: Run Migrations** 📊
-
-- Open [SQL Editor](http://127.0.0.1:54323/project/default/sql/1)
-- Execute scripts from `packages/supabase/scripts/` in order: `01-enum.sql` through `17-database-extensions.sql`
-
-**Step 4: Configure Queues** ⚙️
-
-- [Queue Settings](http://127.0.0.1:54323/project/default/integrations/queues/settings) → Enable "Expose Queues via PostgREST"
-- [Queues](http://127.0.0.1:54323/project/default/integrations/queues/queues) → Select `message_counter` → Manage permissions
-- Enable Select/Insert/Update/Delete for: `authenticated`, `postgres`, `service_role`
-- Add RLS policy: "Allow anon and authenticated to access messages from queue"
+**URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Studio <http://127.0.0.1:54323>
 
 </details>
 
 <details>
-<summary><strong>☁️ Option B: Supabase Cloud Setup</strong></summary>
+<summary><strong>☁️ Alternative: Supabase Cloud instead of local Supabase</strong></summary>
 
-If you prefer not to run Supabase locally, you can use a cloud project instead:
+Use a hosted Supabase project instead of the local stack:
 
-**Step 1: Create Supabase Project** 🚀
+**Step 1: Create a Supabase project** 🚀
 
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+1. Go to the [Supabase Dashboard](https://supabase.com/dashboard)
 2. Create a new project
-3. Copy your project URL and anon key from **Settings → API**
+3. Copy your project URL and keys from **Settings → API**
 
-**Step 2: Update Environment Variables** ⚙️
-Update `.env.development` with your cloud project credentials:
+**Step 2: Update environment variables** ⚙️
+
+Update `.env.development` (and the generated `.env.local`) with your cloud project credentials:
 
 ```bash
 # Server-side (containers → Supabase Cloud)
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Client-side (browser → Supabase Cloud)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -149,33 +96,24 @@ NEXT_PUBLIC_SUPABASE_WS_URL=wss://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-**Step 3: Configure Extensions & Migrations** 📊
-You still need to configure your cloud project:
+**Step 3: Apply schema and extensions** 📊
 
-- Activate **pg_cron** and **pgmq (Queues)** extensions in the Dashboard
-- Run SQL scripts from `packages/supabase/scripts/` in order via SQL Editor
-- Configure queues and permissions (same as local setup)
+- Activate **pg_cron** and **pgmq (Queues)** in the Dashboard's Integrations page
+- Run the SQL from `packages/supabase/scripts/` in numbered order via the SQL Editor (`00-bootstrap.sql` first — it creates the extensions and the `internal` schema the later scripts depend on)
 
-**Backend Environment Variables:**
+**Step 4: Configure push notifications (optional)** 🔔
 
 ```env
-# Supabase connection (for pgmq polling)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# VAPID keys for Web Push
 VAPID_PUBLIC_KEY=your-vapid-public-key
 VAPID_PRIVATE_KEY=your-vapid-private-key
 VAPID_SUBJECT=mailto:support@yourdomain.com
 ```
 
-Generate VAPID keys: `npx web-push generate-vapid-keys`
+Generate VAPID keys: `bunx web-push generate-vapid-keys`. Architecture notes: `packages/supabase/scripts/07-4-push-notifications-pgmq.sql`.
 
-See `docs/PUSH_NOTIFICATION_PGMQ.md` for detailed architecture.
+**Step 5: Configure OAuth redirect URLs** 🔐
 
-**Step 5: Configure OAuth Redirect URLs** 🔐
-
-Go to **Authentication → URL Configuration** in Supabase Dashboard and add your **Redirect URLs**:
+Go to **Authentication → URL Configuration** in the Supabase Dashboard and add your **Redirect URLs**:
 
 ```
 https://yourdomain.com
@@ -184,138 +122,26 @@ https://admin.yourdomain.com
 https://admin.yourdomain.com/*
 ```
 
-Replace `yourdomain.com` with your actual domain.
+**Step 6: Add admin users** 👤
 
-**Step 6: Add Admin Users** 👤
-
-Only users in the `admin_users` table can access the admin dashboard. Run this SQL to grant access:
+Only users in the `admin_users` table can access the admin dashboard:
 
 ```sql
--- Add admin user by email
 INSERT INTO public.admin_users (user_id, created_at)
 SELECT id, now() FROM auth.users WHERE email = 'your-admin@example.com';
-
--- Verify admin users
-SELECT u.email, a.created_at
-FROM public.admin_users a
-JOIN auth.users u ON a.user_id = u.id;
-```
-
-**Note:** Make sure your Supabase project allows connections from your Docker network or configure network settings accordingly.
-
-</details>
-
-### 4️⃣ Start Development Environment
-
-Choose one of three options:
-
-<details>
-<summary><strong>🐳 Option A: Full Docker (Default)</strong></summary>
-
-All services run in Docker containers. Best for consistent environments.
-
-**⚠️ macOS Silicon users:** Docker Desktop has slow IO performance (slow Next.js compile/hot reload). Use [OrbStack](https://orbstack.dev/) instead for better performance.
-
-```bash
-make up-dev
-```
-
-**Services:** 🎯
-
-- 🌐 Webapp: <http://localhost:3000>
-- 🔌 REST API: <http://localhost:4000>
-- ⚡ WebSocket: ws://localhost:4001
-- 👷 Worker: <http://localhost:4002>
-- 🐘 PostgreSQL: localhost:5432
-- 🔴 Redis: localhost:6379
-- 🗄️ Supabase Studio: <http://127.0.0.1:54323>
-
-</details>
-
-<details>
-<summary><strong>💻 Option B: Local Development (macOS-friendly, No Docker IO)</strong></summary>
-
-**Best for macOS users** - Avoids Docker volume IO performance issues. Only infrastructure (PostgreSQL, Redis) runs in Docker. Apps run natively with hot reload.
-
-**Step 1: Start Infrastructure** 🚀
-
-```bash
-make infra-up
-```
-
-**Step 2: Start Supabase** 🗄️
-
-```bash
-bun --filter @docs.plus/supabase_back start
-```
-
-**Step 3: Start Apps** 💻
-
-**Option 3a: All in one command (recommended)**
-
-```bash
-make dev-local
-```
-
-**Option 3b: Separate terminals (better for debugging)**
-
-```bash
-# Terminal 1 - Backend REST API
-bun --filter @docs.plus/hocuspocus dev:rest
-
-# Terminal 2 - Backend WebSocket
-bun --filter @docs.plus/hocuspocus dev:ws
-
-# Terminal 3 - Backend Worker
-bun --filter @docs.plus/hocuspocus dev:worker
-
-# Terminal 4 - Frontend
-bun run dev
-```
-
-**Or use convenience commands:**
-
-```bash
-make dev-backend     # Start all backend services (REST + WS + worker)
-bun run dev          # Start frontend only
-```
-
-**Environment Variables:**
-
-- ✅ **`.env.local` file** at root - automatically created from `.env.development` on first run
-- **`.env.development`** - Used by `docker-compose.dev.yml` (Docker service names: `rest-api:4000`, `redis`)
-- **`.env.local`** - Used by `docker-compose.local.yml` and native apps (localhost addresses, gitignored)
-- Scripts automatically load root `.env.local` via `dotenv -e ../../.env.local --` (uniform across backend, frontend, and admin).
-- **Key differences:** `.env.local` uses `localhost` instead of Docker service names:
-  - `SERVER_RESTAPI_URL=http://localhost:4000/api` (vs `http://rest-api:4000/api` in `.env.development`)
-  - `REDIS_HOST=localhost` (vs `redis` in `.env.development`)
-  - `DATABASE_URL=postgresql://...@localhost:5432/...` (explicit, vs set by Docker Compose in `.env.development`)
-- See **Step 2: Environment Configuration** section above for complete details
-
-**Benefits:**
-
-- ✅ Native file system performance (no Docker volume overhead)
-- ✅ Faster hot reload
-- ✅ Better debugging experience
-- ✅ Lower resource usage
-
-**Access points:**
-
-- 🌐 Webapp: <http://localhost:3000>
-- 🔌 REST API: <http://localhost:4000>
-- ⚡ WebSocket: ws://localhost:4001
-- 👷 Worker: <http://localhost:4002>
-- 🐘 PostgreSQL: localhost:5432
-- 🔴 Redis: localhost:6379
-- 🗄️ Supabase Studio: <http://127.0.0.1:54323>
-
-**Stop infrastructure:**
-
-```bash
-make infra-down
 ```
 
 </details>
+
+## ⚙️ Environment Files
+
+| Docker Compose File        | Environment File   | Usage                                            |
+| -------------------------- | ------------------ | ------------------------------------------------ |
+| `docker-compose.prod.yml`  | `.env.production`  | Production deployment                            |
+| `docker-compose.dev.yml`   | `.env.development` | Docker development (all services in containers)  |
+| `docker-compose.local.yml` | `.env.local`       | Local development (infra in Docker, apps native) |
+
+`make dev-local` creates both dev files on first run: `.env.development` from `.env.example`, then `.env.local` from it with localhost hostnames and `DATABASE_URL` applied (native apps can't resolve Docker service names). Both are gitignored — edit `.env.local` for local customizations like Google OAuth keys. Details live in the comments of [.env.example](.env.example).
 
 ## 🚀 Production Deployment
 
@@ -335,8 +161,6 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
    ```bash
    cp .env.example .env.production
    ```
-
-   **Important:** `.env.production` is used by `docker-compose.prod.yml` for production deployment.
 
    Update: database credentials, JWT secret, Supabase URLs, storage credentials, CORS origins.
 
@@ -368,34 +192,51 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
 ## 📖 Command Reference
 
 ```bash
+# Running (local apps on host)
+make dev-local         # Full local stack (bootstraps everything)
+make dev-backend       # Backend only
+make infra-up          # Start Postgres + Redis only
+make infra-down        # Stop Postgres + Redis
+bun --filter @docs.plus/supabase_back stop   # Stop Supabase
+
+# Running (all services in Docker)
+make up-dev            # Development
+make up-prod           # Production
+
 # Building
-make build             # Production build
-make build-dev         # Development build
+make build             # Production images
+make build-dev         # Development images
 
-# Running (Full Docker)
-make up-prod           # Start production
-make up-dev            # Start development (all in Docker)
-
-# Running (Local Development - macOS-friendly)
-make infra-up          # Start infrastructure only (postgres, redis)
-make infra-down        # Stop infrastructure
-make dev-local         # Start all services (backend + frontend)
-make dev-backend       # Start backend services (REST, WS, Worker)
-
-# Frontend / Admin / Supabase (Bun, not Make)
-bun run dev                                          # Webapp
+# Other Bun entrypoints
+bun run dev                                          # Webapp only
 bun run dev:admin                                    # Admin dashboard
-bun --filter @docs.plus/supabase_back start          # Supabase
-bun --filter @docs.plus/hocuspocus prisma:migrate    # Run DB migrations
 
 # Management
 make down              # Stop services (auto-detects env)
-make logs              # All logs
+make logs              # All logs (auto-detects env)
 make ps                # Container status
-make clean             # ⚠️ Cleanup + delete volumes (DATA LOSS!)
+make clean             # Cleanup + delete volumes (DATA LOSS)
 ```
 
 Run `make help` for the complete Make surface; `bun run` (no args) for all root scripts.
+
+## 🔌 TipTap extensions
+
+Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. Each ships on npm under `@docs.plus`:
+
+```sh
+bun add @docs.plus/extension-hyperlink
+```
+
+| Package                                                              | Description                                                            |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`extension-hyperlink`](extensions/extension-hyperlink/)             | Hyperlink mark, autolink, popovers, URL safety                         |
+| [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Images, audio, video, and embeds (YouTube, Vimeo, SoundCloud, Loom, X) |
+| [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with context allowlist                  |
+| [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                             |
+| [`extension-placeholder`](extensions/extension-placeholder/)         | O(1) cursor-based empty-node placeholder                               |
+
+Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
 
 ## 📁 Project Structure
 
@@ -408,7 +249,7 @@ docs.plus/
 ├── extensions/
 │   └── extension-*/         # 🔌 Five publishable @docs.plus TipTap packages
 ├── packages/
-│   └── supabase/            # 🗄️ Database migrations
+│   └── supabase/            # 🗄️ Database schema, seed, migrations
 ├── docker-compose.dev.yml   # 🐳 Development orchestration
 ├── docker-compose.prod.yml  # 🚀 Production orchestration
 ├── Makefile                 # 🛠️ Build & deployment commands

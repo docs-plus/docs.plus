@@ -26,9 +26,11 @@ Before you begin, ensure you have:
 
 - 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
 - 🚀 **Bun** >=1.3.7 - [Install](https://bun.sh/docs/installation)
-- 📦 **Node.js** >=24.11.0 (for some tooling)
-- 🗄️ **Supabase CLI** - [Install](https://supabase.com/docs/guides/cli/installation)
+- 📦 **Node.js** >=24.11.0 (Next.js and tooling binaries run on Node)
 - **Git** - [Install](https://git-scm.com/downloads)
+- 🪟 **Windows:** use WSL2 — the dev workflow relies on `make` and `bash`
+
+No global Supabase CLI needed — the repo pins it as a workspace dependency.
 
 ### Fork and Clone
 
@@ -48,48 +50,19 @@ Before you begin, ensure you have:
 
 ## 💻 Development Setup
 
-### 1. Install Dependencies
+One command bootstraps and starts the full local stack — env files, dependencies, Postgres/Redis, Supabase (schema + seed), Prisma migrations, extension builds:
 
 ```bash
-bun install
+make dev-local
 ```
 
-### 1.5 Run Doctor (Optional)
+URLs, sign-in notes, stop commands, and the full-Docker alternative (`make up-dev`) live in the [README Quick Start](README.md#-quick-start).
 
-Check your environment is correctly set up:
+Something off? Check your environment:
 
 ```bash
 bun run doctor
 ```
-
-### 2. Environment Configuration
-
-```bash
-cp .env.example .env.development
-```
-
-Update `.env.development` with your local configuration. See `.env.example` for all available variables.
-
-### 3. Initialize Supabase
-
-```bash
-bun --filter @docs.plus/supabase_back start
-```
-
-Then follow the Supabase setup instructions in the [README.md](README.md#3-initialize-supabase).
-
-### 4. Start Development Environment
-
-```bash
-make up-dev
-```
-
-This starts all services:
-
-- 🌐 Webapp: <http://localhost:3000>
-- 🔌 REST API: <http://localhost:4000>
-- ⚡ WebSocket: ws://localhost:4001
-- 👷 Worker: <http://localhost:4002>
 
 ## ✏️ Making Changes
 
@@ -249,7 +222,7 @@ Cypress E2E tests run in **parallel** across multiple workers using [cypress-spl
 
 ```bash
 # Interactive mode (single instance)
-bun run cypress:open
+bun run --filter @docs.plus/webapp cypress:open
 
 # Headless — parallel (default 4 workers)
 bun run test:e2e
@@ -361,7 +334,7 @@ Aim for good test coverage, especially for:
 
 ```
 docs.plus/
-├── packages/
+├── apps/
 │   ├── webapp/              # 🌐 Next.js frontend
 │   │   ├── src/
 │   │   │   ├── components/  # React components
@@ -377,10 +350,11 @@ docs.plus/
 │   │   │   ├── middleware/  # Hono middleware
 │   │   │   └── config/      # Configuration & env schemas
 │   │   └── prisma/          # Prisma schema & migrations
-│   ├── admin-dashboard/     # 🛠️ Admin interface (Next.js)
-│   ├── supabase/            # 🗄️ Supabase configuration
-│   │   └── scripts/         # SQL migration scripts
-│   └── extension-*/         # 🔌 TipTap extensions
+│   └── admin-dashboard/     # 🖥️ Admin interface (Next.js)
+├── extensions/
+│   └── extension-*/         # 🔌 Publishable @docs.plus TipTap packages
+├── packages/
+│   └── supabase/            # 🗄️ Database schema, seed, migrations
 ├── .github/workflows/       # 🔄 CI/CD pipelines
 ├── docker-compose.dev.yml   # 🐳 Development setup
 ├── docker-compose.prod.yml  # 🚀 Production setup
@@ -391,11 +365,9 @@ docs.plus/
 
 When adding or changing a **Dockerfile** (e.g. for a new service or image):
 
-- **Monorepo, no flatten:** Keep workspace layout (`packages/<name>`) in the image; do not copy a single package to `/app` and discard the rest.
+- **Monorepo, no flatten:** Keep the workspace layout (`apps/<name>`, `extensions/<name>`, `packages/<name>`) in the image; do not copy a single package to `/app` and discard the rest.
 - **One `bun install` per stage;** do not copy `node_modules` between stages (Bun symlinks break).
 - **Minimal copy set:** Root workspace files + full copies only of packages the service needs; use stub `package.json` for other workspaces so the lockfile resolves.
-
-Full conventions, copy-set rules, stages, entrypoints, and checklist: **[CI/CD Improvement Roadmap — § 11. Dockerfile & Monorepo Conventions (Team Guide)](Notes/CI_CD_Improvement_Roadmap.md#11-dockerfile--monorepo-conventions-team-guide).**
 
 ## 🎯 Areas for Contribution
 

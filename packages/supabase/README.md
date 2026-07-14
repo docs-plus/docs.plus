@@ -1,108 +1,28 @@
-# Supabase Slack Clone
+# @docs.plus/supabase_back
 
-## Introduction
+Local Supabase configuration and the database source of truth for docs.plus. Wraps the Supabase CLI (a workspace devDependency — no global install needed); every script loads the root `.env.local`.
 
-Welcome to the Supabase Slack Clone!
+## Commands
 
-This project is a streamlined replication of Slack's key features, combining Supabase's robust backend services like authentication, database management, and real-time functionality with the frontend prowess of ReactJS and Tailwind CSS.
-
-Our goal is to provide a full-featured chat and collaboration platform, ranging from simple messaging to advanced integrations.
-
-## Install
-
-The Supabase CLI provides tools to develop your project locally and deploy to the Supabase Platform. follow the steps below to install the CLI.
+Run from the repo root:
 
 ```bash
-brew install supabase/tap/supabase
-# or
-brew upgrade supabase
-
+bun --filter @docs.plus/supabase_back start    # start local Supabase (applies schema + seed on first run)
+bun --filter @docs.plus/supabase_back stop     # stop it
+bun --filter @docs.plus/supabase_back status   # ports, keys, health
+bun --filter @docs.plus/supabase_back reset    # regenerate seed.sql, then wipe + reseed the local DB
+bun --filter @docs.plus/supabase_back types    # regenerate apps/webapp/src/types/supabase.ts
 ```
 
-## start/stop the project
+`make dev-local` starts Supabase automatically — you rarely need `start` directly.
 
-```bash
-$ supabase start
-# or
-$ supabase stop
-```
+## Layout
 
-## Features
+- `scripts/*.sql` — canonical schema, functions, RLS, and seed data for local development. Edit these.
+- `seed.sql` — generated from `scripts/` by `generate-seed.ts`; the `reset` script regenerates it. Never edit by hand.
+- `migrations/*.sql` — remote (cloud) history only. `config.toml` disables migrations locally by design; local state always comes from `scripts/` via the seed.
+- `config.toml` — local stack config. `[db.seed].sql_paths` applies `scripts/00-bootstrap.sql` (pg_cron, pgmq, pg_net, schema `internal`) before `seed.sql`.
 
-To enhance readability and clarity, the features have been categorized based on their purpose:
+Schema changes edit `scripts/*.sql` first, then ship a paired migration for the remote push. After any SQL change, regenerate the webapp types (`types` above).
 
-### Authentication and User Profile
-
-- [ ] Auth
-- [ ] Edit Profile
-
-### User Interface
-
-- [ ] Dark Mode, Light Mode
-- [ ] Responsive Design
-- [ ] PWA (Progressive Web App)
-
-### Notifications
-
-- [ ] Push Notifications
-- [ ] Desktop Notifications
-- [ ] Toast Notifications
-
-### Platform-Specific Versions
-
-- [ ] Desktop App
-- [ ] Mobile App
-
-### Messaging
-
-- [ ] Emoji Reactions
-- [ ] User Mentions `@user`
-- [ ] Channle Mentions `@everyone`
-- [ ] Threads
-- [ ] Pin Messages
-- [ ] Edit Messages
-- [ ] Delete Messages
-- [ ] Reply to Messages
-
-### Advanced Messaging Features
-
-- [ ] Markdown Support
-- [ ] Code Block Formatting and Syntax Highlighting
-
-### Media and Integrations
-
-- [ ] Multimedai(Image, Voice, Video) File Uploads
-- [ ] Giphy Integration
-- [ ] YouTube Integration
-- [ ] Spotify Integration
-- [ ] Twitter Integration
-- [ ] GitHub Integration
-
-### Communication Features
-
-- [ ] Peer to Peer Video Chat
-- [ ] Group Video Chat
-- [ ] Screen Sharing
-
-### User Experience Enhancements
-
-- [ ] Typing Indicators
-- [ ] Read Receipts
-- [ ] Presence Indicators
-- [ ] Unread Messages
-- [ ] Unread Channels
-- [ ] Unread Threads
-- [ ] Unread Mentions
-- [ ] Unread Reactions
-- [ ] Search
-- [ ] Infinite Scroll
-- [ ] Date Group message Indicators
-
-### Suggested Additional Features
-
-- [ ] Voice Messages
-- [ ] Custom Emoji Support
-- [ ] Link Previews
-- [ ] Message Reactions with Custom Emojis
-- [ ] Calendar Integration for Event Scheduling
-- [ ] Collaboration Tools (e.g., Shared Documents, Whiteboards)
+Full-stack setup: [root README](../../README.md).
