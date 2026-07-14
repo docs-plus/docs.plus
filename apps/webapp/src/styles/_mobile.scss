@@ -293,13 +293,8 @@ html.m_mobile #__next {
 }
 
 .edit-fab {
-  // base-content tints the light shadow; in dark base-content is light text (would glow), so
-  // light-dark() swaps the shadow color to black per color-scheme — same 3-layer elevation.
-  box-shadow:
-    0 3px 5px -1px
-      color-mix(in oklch, light-dark(var(--color-base-content), black) 20%, transparent),
-    0 6px 10px 0 color-mix(in oklch, light-dark(var(--color-base-content), black) 14%, transparent),
-    0 1px 18px 0 color-mix(in oklch, light-dark(var(--color-base-content), black) 12%, transparent);
+  // L1 floating control — same overlay elevation as popovers / media toolbar.
+  box-shadow: var(--shadow-overlay);
 }
 
 .headingSelection {
