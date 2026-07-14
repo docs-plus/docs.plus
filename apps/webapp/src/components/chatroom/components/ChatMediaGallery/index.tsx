@@ -115,7 +115,6 @@ export function ChatMediaGallery() {
     }
 
     pauseStageMedia(stageRef.current)
-    setSlideZoomed(false)
     prevChannelIdRef.current = undefined
 
     const opener = openerRef.current
@@ -126,9 +125,9 @@ export function ChatMediaGallery() {
   }, [isOpen])
 
   useEffect(() => {
+    setSlideZoomed(false)
     if (!isOpen) return
     setControlsVisible(true)
-    setSlideZoomed(false)
     pauseStageMedia(stageRef.current)
   }, [index, isOpen])
 

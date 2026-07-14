@@ -1,10 +1,9 @@
 import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
-import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
+import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
-import { type MouseEvent, useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
@@ -18,20 +17,10 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
   const theme = messageMediaTheme('audio')
   const label = media.name?.trim() || 'Audio attachment'
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
-  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
-
-  const onExpand = useCallback(
-    (event: MouseEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-      if (isSpoiler) {
-        reveal()
-        return
-      }
-      if (resolvedUrl) onOpen?.()
-    },
-    [isSpoiler, onOpen, resolvedUrl, reveal]
-  )
+  const { isSpoiler, onActivate: onExpand } = useSpoilerGatedActivate(media, onOpen, {
+    ready: Boolean(resolvedUrl),
+    preventDefault: true
+  })
 
   return (
     <div

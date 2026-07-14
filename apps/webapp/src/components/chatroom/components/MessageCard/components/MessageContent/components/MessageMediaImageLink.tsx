@@ -1,9 +1,9 @@
 import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
-import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
+import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { positiveMediaDims } from '@components/chatroom/utils/messageMediaPaths'
 import type { MessageMediaItem } from '@types'
-import { type CSSProperties, type MouseEvent, useState } from 'react'
+import { type CSSProperties, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
@@ -19,7 +19,7 @@ type Props = {
 export function MessageMediaImageLink({ media, className, onOpen, onDimensions }: Props) {
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
   const [imgFailed, setImgFailed] = useState(false)
-  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
+  const { isSpoiler, onActivate } = useSpoilerGatedActivate(media, onOpen)
   const hasSpoiler = Boolean(media.spoiler)
   const alt = media.name?.trim() || 'Image attachment'
   const showUnavailable = signFailed || imgFailed
@@ -31,15 +31,6 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
     resolvedUrl && !showUnavailable
       ? ({ backgroundImage: `url(${JSON.stringify(resolvedUrl)})` } satisfies CSSProperties)
       : undefined
-
-  const handleActivate = (event: MouseEvent) => {
-    event.stopPropagation()
-    if (isSpoiler) {
-      reveal()
-      return
-    }
-    onOpen?.()
-  }
 
   const imageLayerClass = twMerge(
     'bg-cover bg-center bg-no-repeat',
@@ -81,7 +72,7 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
       )}
       aria-label={isSpoiler ? 'Reveal spoiler image' : `View ${alt}`}
       data-testid={testId}
-      onClick={handleActivate}>
+      onClick={onActivate}>
       <span
         aria-hidden
         className={twMerge('absolute inset-0', imageLayerClass)}

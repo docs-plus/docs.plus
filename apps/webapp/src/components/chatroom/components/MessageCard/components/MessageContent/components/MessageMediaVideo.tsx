@@ -1,5 +1,5 @@
 import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
-import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
+import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerReveal'
 import {
   CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX,
   CHAT_MEDIA_MAX_WIDTH_CLASS
@@ -7,7 +7,7 @@ import {
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
-import { type CSSProperties, type MouseEvent, useCallback } from 'react'
+import { type CSSProperties } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from './MediaUnavailable'
@@ -36,22 +36,12 @@ export function MessageMediaVideo({
     media,
     onDimensions
   )
-  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
+  const { isSpoiler, onActivate: openIfReady } = useSpoilerGatedActivate(media, onOpen, {
+    ready: Boolean(resolvedUrl),
+    preventDefault: true
+  })
   const hasExplicitSize = width != null && height != null
   const sizeStyle: CSSProperties | undefined = hasExplicitSize ? { width, height } : undefined
-
-  const openIfReady = useCallback(
-    (event: MouseEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-      if (isSpoiler) {
-        reveal()
-        return
-      }
-      if (resolvedUrl) onOpen?.()
-    },
-    [isSpoiler, onOpen, resolvedUrl, reveal]
-  )
 
   return (
     <div

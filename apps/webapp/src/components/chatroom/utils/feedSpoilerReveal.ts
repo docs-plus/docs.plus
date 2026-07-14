@@ -2,7 +2,7 @@
 
 import { mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import type { MessageMediaItem } from '@types'
-import { useCallback, useSyncExternalStore } from 'react'
+import { type MouseEvent, useCallback, useSyncExternalStore } from 'react'
 
 const listeners = new Set<() => void>()
 const revealedKeys = new Set<string>()
@@ -55,4 +55,36 @@ export function useFeedSpoilerGate(media: MessageMediaItem) {
   }, [media])
 
   return { isSpoiler, reveal }
+}
+
+type SpoilerGatedActivateOptions = {
+  /** When false, skip activate after reveal (e.g. unsigned URL). Default true. */
+  ready?: boolean
+  preventDefault?: boolean
+}
+
+/** Reveal-first then activate — one activate path for all feed media tiles. */
+export function useSpoilerGatedActivate(
+  media: MessageMediaItem,
+  activate: (() => void) | undefined,
+  options?: SpoilerGatedActivateOptions
+) {
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
+  const ready = options?.ready ?? true
+  const preventDefault = options?.preventDefault ?? false
+
+  const onActivate = useCallback(
+    (event: MouseEvent) => {
+      if (preventDefault) event.preventDefault()
+      event.stopPropagation()
+      if (isSpoiler) {
+        reveal()
+        return
+      }
+      if (ready) activate?.()
+    },
+    [activate, isSpoiler, preventDefault, ready, reveal]
+  )
+
+  return { isSpoiler, reveal, onActivate }
 }
