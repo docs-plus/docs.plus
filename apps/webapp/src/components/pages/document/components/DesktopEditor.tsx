@@ -59,15 +59,18 @@ const DesktopEditor = () => {
 
         <div
           ref={tocRef}
-          className="tableOfContents relative isolate z-0 h-full max-h-full min-h-0 min-w-0 shrink-0 bg-[var(--pad-well)]"
+          className="tableOfContents relative h-full max-h-full min-h-0 min-w-0 shrink-0 bg-[var(--pad-well)]"
           style={{ width: tocWidth }}>
+          <TOC />
+        </div>
+
+        {/* Row-level sash: must outrank docked chat (z-40) or the panel edge doubles the hairline. */}
+        <div className="absolute inset-y-0 z-50 w-0" style={{ left: tocWidth }}>
           <ResizeHandle
             orientation="vertical"
             onMouseDown={handleMouseDown}
             isResizing={isResizing}
-            className="z-40"
           />
-          <TOC />
         </div>
       </div>
 
