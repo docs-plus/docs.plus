@@ -31,6 +31,19 @@ type PopoverShellOptions = {
   role?: string
   /** Same ARIA axis as `role` — shell-level so BYO content inherits the accessible name. */
   ariaLabel?: string
+  /**
+   * Nodes that must not light-dismiss (toggle triggers). When set, only these
+   * are ignored — not `referenceElement` — so a larger position surface (e.g.
+   * a toolbar bar) can still dismiss on sibling clicks. When omitted, the
+   * HTMLElement `referenceElement` is ignored instead.
+   */
+  ignoreOutsideClickOn?: HTMLElement | HTMLElement[]
+  /**
+   * When false, `shift` only moves on the main axis so end-aligned menus
+   * (e.g. toolbar overflow) stay pinned to the reference’s end edge.
+   * @default true
+   */
+  crossAxisShift?: boolean
   onShow?: () => void
   onHide?: () => void
 }
@@ -111,6 +124,8 @@ export function createPopover(options: PopoverOptions): Popover {
     zIndex = DEFAULT_Z_INDEX,
     role,
     ariaLabel,
+    ignoreOutsideClickOn,
+    crossAxisShift = true,
     onShow,
     onHide
   } = options
@@ -122,9 +137,24 @@ export function createPopover(options: PopoverOptions): Popover {
   }
 
   let reference: ReferenceElement = referenceElement || createVirtualReference(coordinates!)
+  // Prefer an explicit ignore list (position ref ≠ toggle trigger). Otherwise
+  // the HTMLElement reference is the toggle target and must not light-dismiss.
+  const outsideIgnore: HTMLElement[] = ignoreOutsideClickOn
+    ? Array.isArray(ignoreOutsideClickOn)
+      ? [...ignoreOutsideClickOn]
+      : [ignoreOutsideClickOn]
+    : referenceElement
+      ? [referenceElement]
+      : []
   const cleanups: (() => void)[] = []
   let visible = false
   let autoUpdateCleanup: (() => void) | null = null
+
+  const isOutsideDismissTarget = (target: Node | null): boolean => {
+    if (!target) return true
+    if (root.contains(target)) return false
+    return !outsideIgnore.some((el) => el === target || el.contains(target))
+  }
 
   const root = document.createElement('div')
   root.className = `floating-popover ${className}`.trim()
@@ -161,7 +191,11 @@ export function createPopover(options: PopoverOptions): Popover {
 
   const updatePosition = async (): Promise<void> => {
     if (!visible) return
-    const middleware = [offset(offsetVal), flip(), shift({ padding: SHIFT_PADDING })]
+    const middleware = [
+      offset(offsetVal),
+      flip(),
+      shift({ padding: SHIFT_PADDING, crossAxis: crossAxisShift })
+    ]
     if (arrowEl) middleware.push(arrow({ element: arrowEl }))
     middleware.push(hideMiddleware({ strategy: 'referenceHidden' }))
 
@@ -250,12 +284,12 @@ export function createPopover(options: PopoverOptions): Popover {
     setTimeout(() => {
       if (!visible) return
       const onMouseDown = (e: MouseEvent) => {
-        if (!root.contains(e.target as Node)) hide()
+        if (isOutsideDismissTarget(e.target as Node)) hide()
       }
       const onTouchStart = (e: TouchEvent) => {
         if (!e.touches.length) return
         const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)
-        if (!root.contains(target)) hide()
+        if (isOutsideDismissTarget(target)) hide()
       }
       document.addEventListener('mousedown', onMouseDown, { passive: true })
       document.addEventListener('touchstart', onTouchStart, { passive: true })

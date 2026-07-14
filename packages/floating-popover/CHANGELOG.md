@@ -8,6 +8,16 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- `createPopover` no longer light-dismisses when the pointer is on the toggle
+  trigger (`referenceElement`, or `ignoreOutsideClickOn` when the position
+  reference is a larger surface). Re-clicking the trigger can toggle closed.
+- Optional `crossAxisShift: false` keeps end-aligned placements pinned to the
+  reference’s end edge (toolbar overflow no longer slides left under `shift`).
+
 ## [2.0.0] — 2026-06-12
 
 ### Added
