@@ -40,7 +40,7 @@ create type public.user_status as enum ('ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'IN
 -- 'image' is a message with an image attachment,
 -- 'video' is a message with a video attachment,
 -- 'audio' is a message with an audio attachment.
-create type public.message_type as enum ('text', 'image', 'video', 'audio', 'link', 'giphy', 'file', 'notification');
+create type public.message_type as enum ('text', 'image', 'video', 'audio', 'link', 'giphy', 'file', 'notification', 'comment');
 
 
 -- NOTE: The following types are not currently used in the schema.
@@ -1572,6 +1572,40 @@ revoke execute on function public.admin_get_failed_push_subs(int) from anon;
 grant execute on function public.admin_get_failed_push_subs(int) to authenticated;
 
 
+-- 7e. All-queue pgmq metrics (push + email) for the observability exporter
+create or replace function public.get_pgmq_queue_metrics()
+returns table (
+    queue_name text,
+    queue_length bigint,
+    oldest_msg_age_sec integer,
+    total_messages bigint
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+    return query
+    select
+        m.queue_name,
+        m.queue_length,
+        m.oldest_msg_age_sec,
+        m.total_messages
+    from pgmq.metrics_all() m;
+end;
+$$;
+
+comment on function public.get_pgmq_queue_metrics() is
+'Returns per-queue pgmq depth, oldest message age, and lifetime message count for monitoring.';
+
+-- Queue depth is infrastructure state, not user data. Admin gating happens at
+-- the Hocuspocus controller (service_role key); revoke the default public
+-- grant so the explicit service_role grant is exclusive.
+revoke execute on function public.get_pgmq_queue_metrics() from public, anon, authenticated;
+grant  execute on function public.get_pgmq_queue_metrics() to service_role;
+
+
 -- =============================================================================
 -- 8. Cleanup Stale Subscriptions (pg_cron job)
 -- =============================================================================
@@ -2984,11 +3018,14 @@ comment on function public.toggle_message_bookmark is 'Toggles a bookmark for a 
 
 -- Function: get_user_bookmarks
 -- Description: Gets all bookmarked messages for the current user with message details
+drop function if exists public.get_user_bookmarks(varchar, boolean, int, int);
+
 create or replace function public.get_user_bookmarks(
     p_workspace_id varchar(36) default null,
     p_archived boolean default false,
     p_limit int default 50,
-    p_offset int default 0
+    p_offset int default 0,
+    p_marked_as_read boolean default null
 )
 returns table (
     bookmark_id bigint,
@@ -3034,7 +3071,7 @@ begin
         mb.marked_at as bookmark_marked_at,
         mb.metadata as bookmark_metadata,
         m.id as message_id,
-        m.content as message_content,
+        message_content_preview(m.content, m.medias, m.type) as message_content,
         m.html as message_html,
         m.created_at as message_created_at,
         m.user_id as message_user_id,
@@ -3060,13 +3097,18 @@ begin
             (p_archived = true and mb.archived_at is not null)
             or (p_archived = false and mb.archived_at is null)
         )
+        and (
+            p_marked_as_read is null
+            or (p_marked_as_read = true and mb.marked_at is not null)
+            or (p_marked_as_read = false and mb.marked_at is null)
+        )
     order by mb.created_at desc
     limit p_limit
     offset p_offset;
 end;
 $$;
 
-comment on function public.get_user_bookmarks is 'Retrieves bookmarked messages for the current user with full message and channel context. Can filter by workspace and archived status.';
+comment on function public.get_user_bookmarks is 'Bookmark panel lists: archive tab (p_archived true), in progress (false + marked false), read (false + marked true).';
 
 -- Function: archive_bookmark
 -- Description: Archives or unarchives a bookmark
@@ -3213,12 +3255,13 @@ begin
         raise exception 'User not authenticated';
     end if;
 
-    -- Get counts
+    -- Tab buckets mirror the bookmark panel: in progress (active + unmarked),
+    -- archive (archived_at set), read (active + marked_at set).
     select
         count(*)::int,
         count(case when mb.archived_at is not null then 1 end)::int,
-        count(case when mb.marked_at is null then 1 end)::int,
-        count(case when mb.marked_at is not null then 1 end)::int
+        count(case when mb.archived_at is null and mb.marked_at is null then 1 end)::int,
+        count(case when mb.archived_at is null and mb.marked_at is not null then 1 end)::int
     into v_total, v_archived, v_unread, v_read
     from message_bookmarks mb
     join messages m on mb.message_id = m.id
@@ -3240,14 +3283,14 @@ begin
 end;
 $$;
 
-comment on function public.get_bookmark_stats is 'Returns bookmark statistics for the current user including total, archived, active, read, and unread counts.';
+comment on function public.get_bookmark_stats is 'Bookmark panel tab counts: unread = in progress (non-archived, unmarked), archived, read = non-archived marked.';
 
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.toggle_message_bookmark(p_message_id uuid) SET search_path = public;
-ALTER FUNCTION public.get_user_bookmarks(p_workspace_id character varying, p_archived boolean, p_limit integer, p_offset integer) SET search_path = public;
+ALTER FUNCTION public.get_user_bookmarks(p_workspace_id character varying, p_archived boolean, p_limit integer, p_offset integer, p_marked_as_read boolean) SET search_path = public;
 ALTER FUNCTION public.archive_bookmark(p_bookmark_id bigint, p_archive boolean) SET search_path = public;
 ALTER FUNCTION public.mark_bookmark_as_read(p_bookmark_id bigint, p_mark_as_read boolean) SET search_path = public;
 ALTER FUNCTION public.get_bookmark_count(p_workspace_id character varying, p_archived boolean) SET search_path = public;
@@ -4249,6 +4292,54 @@ ALTER FUNCTION public.get_top_viewed_documents(p_limit integer, p_days integer) 
 ALTER FUNCTION public.get_document_views_trend(p_document_slug text, p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_document_view_stats(p_document_slug text) SET search_path = public;
 
+-- ============================================================
+-- Document footprint purge (reaper GC after soft-delete retention)
+-- ============================================================
+-- Erases a soft-deleted document's cross-store footprint. Ordering is
+-- load-bearing: capture channel ids and delete storage BEFORE the workspace
+-- cascade removes the channels those media paths are keyed by.
+create or replace function public.purge_document_footprint(
+    p_document_id varchar(36),
+    p_slug text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    v_channel_ids varchar(36)[];
+begin
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    -- Capture channel ids before the cascade drops them; media object paths are
+    -- '<uploaderId>/<channelId>/<file>', so segment 2 is the channel id.
+    select array_agg(id) into v_channel_ids
+    from public.channels
+    where workspace_id = p_document_id;
+
+    delete from storage.objects
+    where bucket_id = 'media'
+      and split_part(name, '/', 2) = any(v_channel_ids);
+
+    delete from public.document_views where document_slug = p_slug;
+    delete from public.document_view_stats where document_slug = p_slug;
+    delete from public.document_views_daily where document_slug = p_slug;
+
+    -- Cascades every chat table (channels, messages, members, bookmarks, …).
+    delete from public.workspaces where id = p_document_id;
+end;
+$$;
+
+comment on function public.purge_document_footprint(varchar, text) is
+'Service-role GC for a soft-deleted document: storage objects first, chat/analytics rows, workspace cascade last.';
+
+revoke all on function public.purge_document_footprint(varchar, text) from public;
+revoke all on function public.purge_document_footprint(varchar, text) from anon;
+grant execute on function public.purge_document_footprint(varchar, text) to service_role;
+
 
 -- ============================================================================
 -- File: 09-message_counter.sql
@@ -4583,11 +4674,134 @@ $$ language plpgsql;
 comment on function truncate_content(text, int) is
 'Utility function to truncate text content to a specified length with ellipsis, used for preview text generation.';
 
+/**
+ * Preview label for a message row — prefers text, then attachment metadata.
+ */
+create or replace function message_content_preview(
+    p_content text,
+    p_medias jsonb,
+    p_type public.message_type default 'text'
+) returns text as $$
+declare
+    media_count int;
+    first_name text;
+    first_type text;
+begin
+    if coalesce(trim(p_content), '') <> '' then
+        return truncate_content(p_content);
+    end if;
+
+    if p_medias is null or jsonb_typeof(p_medias) <> 'array' then
+        return truncate_content('');
+    end if;
+
+    media_count := jsonb_array_length(p_medias);
+    if media_count = 0 then
+        return truncate_content('');
+    end if;
+
+    first_name := p_medias->0->>'name';
+    first_type := coalesce(p_medias->0->>'type', p_type::text);
+
+    if media_count > 1 then
+        return truncate_content(media_count || ' attachments');
+    end if;
+
+    if first_type = 'file' and coalesce(first_name, '') <> '' then
+        return truncate_content(first_name);
+    end if;
+
+    return truncate_content(case first_type
+        when 'image' then 'Photo'
+        when 'video' then 'Video'
+        when 'audio' then 'Audio'
+        when 'file' then 'File'
+        else 'Attachment'
+    end);
+end;
+$$ language plpgsql;
+
+comment on function message_content_preview(text, jsonb, public.message_type) is
+'Generates sidebar/reply/notification preview text from message content or attachment metadata.';
+
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
 -- (idempotent — safe to re-run)
 -- ============================================================
 ALTER FUNCTION public.truncate_content(input_content text, max_length integer) SET search_path = public;
+ALTER FUNCTION public.message_content_preview(text, jsonb, public.message_type) SET search_path = public;
+
+-- =====================================================================
+-- internal policy primitives (RLS)
+-- =====================================================================
+-- Defined here (not 13-RLS.sql) so later 10-x RPC scripts can call them at
+-- seed time; 13-RLS.sql owns their grants, hardening, and the policies.
+-- SECURITY DEFINER + SET search_path = public — search-path-hijack safe.
+-- STABLE SQL bodies are inlined by the planner, so policy expressions
+-- effectively become the inlined EXISTS subqueries against:
+--   workspace_members_workspace_id_member_id_key  → is_workspace_member
+--   idx_channel_members_channel_id_member_id      → is_channel_member
+--   channels_pkey + the above                     → can_read_channel
+
+CREATE SCHEMA IF NOT EXISTS internal;
+
+CREATE OR REPLACE FUNCTION internal.is_workspace_member(p_workspace_id varchar)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.workspace_members
+    WHERE workspace_id = p_workspace_id
+      AND member_id    = auth.uid()
+      AND left_at IS NULL
+  );
+$$;
+
+COMMENT ON FUNCTION internal.is_workspace_member(varchar) IS
+'Active workspace membership predicate for RLS policies.';
+
+CREATE OR REPLACE FUNCTION internal.is_channel_member(p_channel_id varchar)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.channel_members
+    WHERE channel_id = p_channel_id
+      AND member_id  = auth.uid()
+      AND left_at IS NULL
+  );
+$$;
+
+COMMENT ON FUNCTION internal.is_channel_member(varchar) IS
+'Active channel membership predicate for RLS policies.';
+
+CREATE OR REPLACE FUNCTION internal.can_read_channel(p_channel_id varchar)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.channels c
+    WHERE c.id = p_channel_id
+      AND (
+        c.type = 'PUBLIC'
+        OR EXISTS (
+          SELECT 1 FROM public.channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.member_id  = auth.uid()
+            AND cm.left_at IS NULL
+        )
+      )
+  );
+$$;
+
+COMMENT ON FUNCTION internal.can_read_channel(varchar) IS
+'PUBLIC bypass + active channel membership; read-eligibility predicate.';
 
 
 -- ============================================================================
@@ -5240,7 +5454,7 @@ BEGIN
         IF OLD.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
             UPDATE public.channels
             SET last_message_preview = (
-                    SELECT truncate_content(m.content)
+                    SELECT message_content_preview(m.content, m.medias, m.type)
                     FROM public.messages m
                     WHERE m.channel_id = OLD.channel_id
                       AND m.deleted_at IS NULL
@@ -5275,6 +5489,7 @@ BEGIN
         -- NULL transition so subscribers prune locally. Payload is id +
         -- channel only; no content leak.
         IF OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL THEN
+            PERFORM internal.delete_chat_media_paths(OLD.medias);
             PERFORM realtime.send(
                 jsonb_build_object('id', NEW.id, 'channel_id', NEW.channel_id),
                 'message:deleted',
@@ -5311,7 +5526,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT;
 BEGIN
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- Update unread notification preview
     UPDATE public.notifications
@@ -5337,9 +5552,13 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION update_message_preview_on_edit() IS 'Updates message previews in various tables when a message is edited.';
 
 CREATE TRIGGER update_message_previews
-AFTER UPDATE OF content ON public.messages
+AFTER UPDATE OF content, medias, type ON public.messages
 FOR EACH ROW
-WHEN (OLD.content IS DISTINCT FROM NEW.content)
+WHEN (
+    OLD.content IS DISTINCT FROM NEW.content
+    OR OLD.medias IS DISTINCT FROM NEW.medias
+    OR OLD.type IS DISTINCT FROM NEW.type
+)
 EXECUTE FUNCTION update_message_preview_on_edit();
 
 COMMENT ON TRIGGER update_message_previews ON public.messages IS 'Updates message previews throughout the system when message content changes.';
@@ -5353,9 +5572,9 @@ COMMENT ON TRIGGER update_message_previews ON public.messages IS 'Updates messag
  */
 CREATE OR REPLACE FUNCTION update_message_edited_at() RETURNS TRIGGER AS $$
 BEGIN
-    -- Check if the content or html column has been updated
-    IF OLD.content IS DISTINCT FROM NEW.content OR OLD.html IS DISTINCT FROM NEW.html THEN
-        -- Update the edited_at timestamp
+    IF OLD.content IS DISTINCT FROM NEW.content
+        OR OLD.html IS DISTINCT FROM NEW.html
+        OR OLD.medias IS DISTINCT FROM NEW.medias THEN
         NEW.edited_at := NOW();
     END IF;
 
@@ -5366,7 +5585,7 @@ $$ LANGUAGE plpgsql;
 COMMENT ON FUNCTION update_message_edited_at() IS 'Sets the edited_at timestamp when a message is edited.';
 
 CREATE TRIGGER set_message_edited_at
-BEFORE UPDATE OF content, html ON public.messages
+BEFORE UPDATE OF content, html, medias ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION update_message_edited_at();
 
@@ -5509,6 +5728,529 @@ $$;
 grant execute on function public.remove_reaction(uuid, text) to authenticated;
 revoke execute on function public.remove_reaction(uuid, text) from anon, public;
 
+create or replace function internal.normalize_chat_media_path(p_raw text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+    select case
+        when p_raw like 'http%' then
+            regexp_replace(p_raw, '^.+/storage/v1/object/(sign/)?public/media/', '')
+        else p_raw
+    end;
+$$;
+
+comment on function internal.normalize_chat_media_path(text) is
+'Strips signed/public storage URL prefixes to a bucket object path.';
+
+create or replace function internal.delete_chat_media_paths(p_medias jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    elem jsonb;
+    media_path text;
+begin
+    if p_medias is null or jsonb_typeof(p_medias) <> 'array' then
+        return;
+    end if;
+
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction for the GC below.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    for elem in select value from jsonb_array_elements(p_medias) as t(value)
+    loop
+        media_path := internal.normalize_chat_media_path(
+            coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+        );
+        if media_path is null or media_path = '' then
+            continue;
+        end if;
+
+        delete from storage.objects
+        where bucket_id = 'media'
+          and name = media_path;
+    end loop;
+end;
+$$;
+
+comment on function internal.delete_chat_media_paths(jsonb) is
+'Deletes chat media storage objects referenced by a messages.medias array.';
+
+revoke all on function internal.delete_chat_media_paths(jsonb) from public;
+grant execute on function internal.delete_chat_media_paths(jsonb) to service_role;
+
+create or replace function internal.cleanup_orphan_chat_media(p_older_than interval default interval '24 hours')
+returns integer
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    deleted_count integer := 0;
+begin
+    -- storage.protect_delete blocks raw DELETEs unless this GUC is set (the same
+    -- flag the Storage API uses); scope it to this transaction for the GC below.
+    perform set_config('storage.allow_delete_query', 'true', true);
+
+    with orphan_objects as (
+        select o.name
+        from storage.objects o
+        where o.bucket_id = 'media'
+          and o.created_at < now() - p_older_than
+          and not exists (
+              select 1
+                from public.messages m
+                cross join lateral jsonb_array_elements(coalesce(m.medias, '[]'::jsonb)) elem
+               where m.deleted_at is null
+                 and internal.normalize_chat_media_path(
+                       coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+                     ) = o.name
+          )
+    )
+    delete from storage.objects o
+    using orphan_objects orphan
+    where o.bucket_id = 'media'
+      and o.name = orphan.name;
+
+    get diagnostics deleted_count = row_count;
+    return deleted_count;
+end;
+$$;
+
+comment on function internal.cleanup_orphan_chat_media(interval) is
+'Removes chat media bucket objects older than p_older_than with no live message reference.';
+
+revoke all on function internal.cleanup_orphan_chat_media(interval) from public;
+grant execute on function internal.cleanup_orphan_chat_media(interval) to service_role;
+
+create or replace function validate_message_medias()
+returns trigger as $$
+declare
+    elem jsonb;
+    media_path text;
+    expected_prefix text;
+    file_ext text;
+    blocked_exts text[] := array['exe','bat','cmd','com','msi','dll','scr','vbs','js','sh','app','dmg','jar','apk','svg'];
+    allowed_exts text[] := array[
+        'jpg','jpeg','png','gif','webp','bmp','heic','heif',
+        'mp4','webm','mov','m4v','mkv','ogv',
+        'mp3','wav','ogg','m4a','aac','flac','opus',
+        'pdf','txt','csv','md','markdown','json',
+        'doc','docx','xls','xlsx','ppt','pptx','zip'
+    ];
+begin
+    if new.medias is null then
+        return new;
+    end if;
+
+    if jsonb_typeof(new.medias) <> 'array' then
+        raise exception 'medias must be a JSON array';
+    end if;
+
+    if jsonb_array_length(new.medias) > 10 then
+        raise exception 'too many media attachments (max 10)';
+    end if;
+
+    expected_prefix := new.user_id::text || '/' || new.channel_id || '/';
+
+    for elem in select value from jsonb_array_elements(new.medias) as t(value)
+    loop
+        media_path := internal.normalize_chat_media_path(
+            coalesce(nullif(elem->>'path', ''), nullif(elem->>'url', ''))
+        );
+        if media_path is null or media_path = '' then
+            raise exception 'media item requires path or url';
+        end if;
+
+        if media_path not like expected_prefix || '%' then
+            raise exception 'invalid media path for message channel';
+        end if;
+
+        file_ext := lower(regexp_replace(media_path, '^.*\.([^.]+)$', '\1'));
+        if file_ext = media_path then
+            file_ext := '';
+        end if;
+
+        if file_ext = '' or not (file_ext = any (allowed_exts)) then
+            raise exception 'media file type is not allowed';
+        end if;
+
+        if file_ext = any (blocked_exts) then
+            raise exception 'media file type is not allowed';
+        end if;
+
+        if not exists (
+            select 1
+              from storage.objects o
+             where o.bucket_id = 'media'
+               and o.name = media_path
+        ) then
+            raise exception 'media object not found in storage';
+        end if;
+    end loop;
+
+    return new;
+end;
+$$ language plpgsql;
+
+comment on function validate_message_medias() is
+'Ensures messages.medias paths belong to the sender/channel, pass allowlist, exist in storage, and cap at 10.';
+
+drop trigger if exists validate_message_medias on public.messages;
+create trigger validate_message_medias
+before insert or update of medias on public.messages
+for each row
+execute function validate_message_medias();
+
+alter function public.validate_message_medias() set search_path = public, storage;
+
+
+-- ============================================================================
+-- File: 10-4-func-chat-media-features.sql
+-- ============================================================================
+
+-- Chat media features (mirror migration 20260623120000_chat_media_attachments.sql).
+
+create or replace function public.fetch_media_message_window(
+  p_channel_id varchar,
+  p_before_seq bigint default null,
+  p_limit int default 40
+) returns jsonb
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_rows jsonb;
+  v_min_seq bigint;
+  v_has_more_before boolean;
+begin
+  select coalesce(jsonb_agg(row_to_json(t) order by t.seq asc), '[]'::jsonb)
+    into v_rows
+    from (
+      select m.*,
+        json_build_object(
+          'id', u.id,
+          'username', u.username,
+          'fullname', u.full_name,
+          'avatar_url', u.avatar_url,
+          'avatar_updated_at', u.avatar_updated_at
+        ) as user_details,
+        (mb.id is not null and mb.archived_at is null and mb.marked_at is null) as is_bookmarked,
+        mb.id as bookmark_id
+      from public.messages m
+      left join public.users u on u.id = m.user_id
+      left join public.message_bookmarks mb
+        on mb.message_id = m.id and mb.user_id = (select auth.uid())
+      where m.channel_id = p_channel_id
+        and m.deleted_at is null
+        and m.medias is not null
+        and jsonb_typeof(m.medias) = 'array'
+        and jsonb_array_length(m.medias) > 0
+        and (p_before_seq is null or m.seq < p_before_seq)
+      order by m.seq desc
+      limit greatest(p_limit, 1)
+    ) t;
+
+  if v_rows = '[]'::jsonb then
+    return jsonb_build_object(
+      'rows', '[]'::jsonb,
+      'anchor_seq', null,
+      'has_more_before', false,
+      'has_more_after', false
+    );
+  end if;
+
+  select min((elem->>'seq')::bigint)
+    into v_min_seq
+    from jsonb_array_elements(v_rows) elem;
+
+  v_has_more_before := exists (
+    select 1
+    from public.messages m
+    where m.channel_id = p_channel_id
+      and m.deleted_at is null
+      and m.medias is not null
+      and jsonb_typeof(m.medias) = 'array'
+      and jsonb_array_length(m.medias) > 0
+      and m.seq < v_min_seq
+  );
+
+  return jsonb_build_object(
+    'rows', v_rows,
+    'anchor_seq', null,
+    'has_more_before', v_has_more_before,
+    'has_more_after', false
+  );
+end;
+$$;
+
+comment on function public.fetch_media_message_window(varchar, bigint, int) is
+  'Returns a descending-fetched, ascending-ordered page of messages that have attachments.';
+
+grant execute on function public.fetch_media_message_window(varchar, bigint, int) to authenticated, anon;
+
+create or replace function public.fetch_media_messages_since(
+  p_channel_id varchar(36),
+  p_since_seq bigint,
+  p_limit int default 100
+) returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(row_to_json(t) order by t.seq asc), '[]'::jsonb)
+  from (
+    select m.*,
+      json_build_object(
+        'id', u.id,
+        'username', u.username,
+        'fullname', u.full_name,
+        'avatar_url', u.avatar_url,
+        'avatar_updated_at', u.avatar_updated_at
+      ) as user_details,
+      (mb.id is not null and mb.archived_at is null and mb.marked_at is null) as is_bookmarked,
+      mb.id as bookmark_id
+    from public.messages m
+    left join public.users u on u.id = m.user_id
+    left join public.message_bookmarks mb
+      on mb.message_id = m.id and mb.user_id = (select auth.uid())
+    where m.channel_id = p_channel_id
+      and m.seq > p_since_seq
+      and m.deleted_at is null
+      and m.medias is not null
+      and jsonb_typeof(m.medias) = 'array'
+      and jsonb_array_length(m.medias) > 0
+    order by m.seq asc
+    limit p_limit
+  ) t;
+$$;
+
+comment on function public.fetch_media_messages_since(varchar, bigint, int) is
+  'Catchup refetch for media-only feed: messages with attachments and seq > p_since_seq.';
+
+grant execute on function public.fetch_media_messages_since(varchar, bigint, int) to authenticated, anon;
+
+-- Chat media object paths: {userId}/{channelId}/{uuid}.ext — workspace via segment 2 = channel_id.
+
+create or replace function internal.media_workspace_quota_bytes()
+returns bigint
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select 10737418240::bigint;
+$$;
+
+comment on function internal.media_workspace_quota_bytes() is
+  'Per-workspace chat media quota (10 GiB). Stats RPCs and enforce_media_workspace_quota read this.';
+
+revoke all on function internal.media_workspace_quota_bytes() from public;
+
+create or replace function internal.media_workspace_usage_rows()
+returns table(
+  workspace_id varchar(36),
+  total_bytes bigint,
+  object_count bigint
+)
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  select
+    c.workspace_id,
+    coalesce(sum((o.metadata->>'size')::bigint), 0)::bigint as total_bytes,
+    count(*)::bigint as object_count
+  from storage.objects o
+  inner join public.channels c on c.id = split_part(o.name, '/', 2)
+  where o.bucket_id = 'media'
+  group by c.workspace_id;
+$$;
+
+comment on function internal.media_workspace_usage_rows() is
+  'Aggregates media bucket usage by workspace (channel_id = split_part(path, ''/'', 2)).';
+
+revoke all on function internal.media_workspace_usage_rows() from public;
+
+drop function if exists public.get_workspace_media_storage_stats(uuid);
+drop function if exists public.get_all_workspace_media_storage_stats();
+drop function if exists public.get_workspace_media_storage_summary();
+
+create or replace function public.get_workspace_media_storage_stats(p_workspace_id varchar(36))
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  with quota as (
+    select internal.media_workspace_quota_bytes() as q
+  )
+  select jsonb_build_object(
+    'workspace_id', w.id,
+    'slug', w.slug,
+    'name', w.name,
+    'total_bytes', coalesce(u.total_bytes, 0),
+    'object_count', coalesce(u.object_count, 0),
+    'quota_bytes', quota.q,
+    'usage_percent', case
+      when quota.q > 0
+      then round((coalesce(u.total_bytes, 0)::numeric / quota.q) * 100)::int
+      else 0
+    end
+  )
+  from public.workspaces w
+  cross join quota
+  left join internal.media_workspace_usage_rows() u on u.workspace_id = w.id
+  where w.id = p_workspace_id;
+$$;
+
+comment on function public.get_workspace_media_storage_stats(varchar) is
+  'Per-workspace chat media usage row (same shape as fleet RPC rows).';
+
+revoke all on function public.get_workspace_media_storage_stats(varchar) from public;
+grant execute on function public.get_workspace_media_storage_stats(varchar) to service_role;
+
+create or replace function public.get_all_workspace_media_storage_stats()
+returns table(
+  workspace_id varchar(36),
+  slug text,
+  name text,
+  total_bytes bigint,
+  object_count bigint,
+  quota_bytes bigint,
+  usage_percent int
+)
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  with quota as (
+    select internal.media_workspace_quota_bytes() as q
+  )
+  select
+    u.workspace_id,
+    w.slug,
+    w.name,
+    u.total_bytes,
+    u.object_count,
+    quota.q as quota_bytes,
+    case
+      when quota.q > 0
+      then round((u.total_bytes::numeric / quota.q) * 100)::int
+      else 0
+    end as usage_percent
+  from internal.media_workspace_usage_rows() u
+  left join public.workspaces w on w.id = u.workspace_id
+  cross join quota
+  order by u.total_bytes desc;
+$$;
+
+comment on function public.get_all_workspace_media_storage_stats() is
+  'Fleet list of workspaces with chat media (admin service reads once, paginates in TS).';
+
+revoke all on function public.get_all_workspace_media_storage_stats() from public;
+grant execute on function public.get_all_workspace_media_storage_stats() to service_role;
+
+create or replace function public.get_workspace_media_storage_summary()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  with usage as (
+    select * from internal.media_workspace_usage_rows()
+  ),
+  quota as (
+    select internal.media_workspace_quota_bytes() as q
+  )
+  select jsonb_build_object(
+    'total_bytes', coalesce((select sum(total_bytes) from usage), 0),
+    'total_objects', coalesce((select sum(object_count) from usage), 0),
+    'workspace_count', coalesce((select count(*)::int from usage), 0),
+    'over_quota_count', coalesce((
+      select count(*)::int
+      from usage u
+      cross join quota q
+      where q.q > 0
+        and round((u.total_bytes::numeric / q.q) * 100)::int >= 100
+    ), 0),
+    'quota_bytes', (select q from quota)
+  );
+$$;
+
+comment on function public.get_workspace_media_storage_summary() is
+  'Fleet rollup for admin media storage StatCards.';
+
+revoke all on function public.get_workspace_media_storage_summary() from public;
+grant execute on function public.get_workspace_media_storage_summary() to service_role;
+
+alter function public.fetch_media_message_window(varchar, bigint, int) set search_path = public;
+alter function public.fetch_media_messages_since(varchar, bigint, int) set search_path = public;
+alter function public.get_workspace_media_storage_stats(varchar) set search_path = public, storage;
+
+-- Rejects uploads that would push a workspace past internal.media_workspace_quota_bytes().
+create or replace function internal.enforce_media_workspace_quota()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+    v_workspace_id text;
+    v_used bigint;
+    v_incoming bigint;
+    v_quota bigint;
+begin
+    select c.workspace_id into v_workspace_id
+    from public.channels c
+    where c.id = split_part(new.name, '/', 2);
+
+    if v_workspace_id is null then
+        return new;
+    end if;
+
+    v_incoming := coalesce((new.metadata->>'size')::bigint, 0);
+    v_quota := internal.media_workspace_quota_bytes();
+
+    select coalesce(sum((o.metadata->>'size')::bigint), 0) into v_used
+    from storage.objects o
+    inner join public.channels c on c.id = split_part(o.name, '/', 2)
+    where o.bucket_id = 'media'
+      and c.workspace_id = v_workspace_id;
+
+    if v_used + v_incoming > v_quota then
+        raise exception 'Workspace media storage quota exceeded (10 GiB limit)'
+            using errcode = 'check_violation';
+    end if;
+
+    return new;
+end;
+$$;
+
+comment on function internal.enforce_media_workspace_quota() is
+'Rejects media uploads that would push a workspace past the 10 GiB storage quota.';
+
+revoke all on function internal.enforce_media_workspace_quota() from public;
+
+drop trigger if exists enforce_media_workspace_quota on storage.objects;
+create trigger enforce_media_workspace_quota
+before insert on storage.objects
+for each row
+when (new.bucket_id = 'media')
+execute function internal.enforce_media_workspace_quota();
+
 
 -- ============================================================================
 -- File: 10-5-func-replied_msg.sql
@@ -5523,17 +6265,24 @@ CREATE OR REPLACE FUNCTION set_replied_message_preview()
 RETURNS TRIGGER AS $$
 DECLARE
     original_message_content TEXT;
+    original_medias JSONB;
+    original_type public.message_type;
     truncated_content TEXT;
 BEGIN
     -- Only proceed if this message is a reply
     IF NEW.reply_to_message_id IS NOT NULL THEN
         -- Retrieve the content of the original message, only if not deleted
-        SELECT content INTO original_message_content FROM public.messages
-        WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
+        SELECT content, medias, type
+          INTO original_message_content, original_medias, original_type
+          FROM public.messages
+         WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
 
         IF FOUND THEN
-            -- Truncate and set the replied_message_preview
-            truncated_content := truncate_content(original_message_content);
+            truncated_content := message_content_preview(
+                original_message_content,
+                original_medias,
+                original_type
+            );
             NEW.replied_message_preview := truncated_content;
         ELSE
             -- Original message does not exist or has been deleted
@@ -5622,7 +6371,7 @@ CREATE OR REPLACE FUNCTION update_channel_preview_on_new_message() RETURNS TRIGG
 DECLARE
     truncated_content TEXT;
 BEGIN
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
         UPDATE public.channels
@@ -5982,6 +6731,116 @@ ALTER FUNCTION public.admin_get_document_member_counts(p_slugs text[]) SET searc
 ALTER FUNCTION public.notify_user_join_workspace() SECURITY DEFINER;
 
 
+-- =============================================================================
+-- Owner document member roster (Settings → My documents)
+-- =============================================================================
+-- Membership = "opened a document while signed in". No roles, no anonymous
+-- viewers, no realtime presence. The membership gate is the caller's own
+-- workspace membership, so a non-member gets 0 rows (never an error).
+-- Slug → workspace id is resolved through the workspaces join; never compare
+-- a slug to workspace_id (varchar36). Distinct from admin_get_document_member_counts,
+-- which is is_admin-gated for the admin dashboard.
+
+-- Batched avatar-cluster previews for the visible document list. Returns the
+-- true member_count plus up to 4 earliest-joined members per slug as jsonb.
+drop function if exists public.get_document_member_previews(text[]);
+create function public.get_document_member_previews(p_slugs text[])
+returns table (
+    slug text,
+    member_count bigint,
+    previews jsonb
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    with ranked as (
+        select
+            w.slug as ws_slug,
+            wm.member_id,
+            u.display_name,
+            u.avatar_url,
+            u.avatar_updated_at,
+            row_number() over (partition by w.id order by wm.created_at asc) as rn
+        from public.workspaces w
+        join public.workspace_members wm
+            on wm.workspace_id = w.id
+            and wm.left_at is null
+        join public.users u
+            on u.id = wm.member_id
+        where w.slug = any(p_slugs)
+          and internal.is_workspace_member(w.id)
+    )
+    select
+        ws_slug as slug,
+        count(*)::bigint as member_count,
+        jsonb_agg(
+            jsonb_build_object(
+                'member_id', member_id,
+                'display_name', display_name,
+                'avatar_url', avatar_url,
+                'avatar_updated_at', avatar_updated_at
+            ) order by rn
+        ) filter (where rn <= 4) as previews
+    from ranked
+    group by ws_slug;
+$$;
+
+comment on function public.get_document_member_previews(text[]) is
+'Member-gated avatar-cluster previews (member_count + up to 4 earliest members) per document slug. Caller must be an active workspace member; non-member slugs return no row.';
+
+revoke execute on function public.get_document_member_previews(text[]) from anon;
+grant execute on function public.get_document_member_previews(text[]) to authenticated;
+
+-- Full roster for one document when the cluster popover opens. Caller sorts
+-- first, then by join order. last_visit_at falls back to join time.
+drop function if exists public.get_document_members(text);
+create function public.get_document_members(p_slug text)
+returns table (
+    member_id uuid,
+    username text,
+    display_name text,
+    full_name text,
+    avatar_url text,
+    avatar_updated_at timestamptz,
+    joined_at timestamptz,
+    last_visit_at timestamptz,
+    is_caller boolean
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select
+        wm.member_id,
+        u.username,
+        u.display_name,
+        u.full_name,
+        u.avatar_url,
+        u.avatar_updated_at,
+        wm.created_at as joined_at,
+        coalesce(wm.updated_at, wm.created_at) as last_visit_at,
+        (wm.member_id = auth.uid()) as is_caller
+    from public.workspaces w
+    join public.workspace_members wm
+        on wm.workspace_id = w.id
+        and wm.left_at is null
+    join public.users u
+        on u.id = wm.member_id
+    where w.slug = p_slug
+      and internal.is_workspace_member(w.id)
+    order by (wm.member_id = auth.uid()) desc, wm.created_at asc;
+$$;
+
+comment on function public.get_document_members(text) is
+'Member-gated full member roster for one document slug (caller first, then join order). Caller must be an active workspace member; non-member returns no rows.';
+
+revoke execute on function public.get_document_members(text) from anon;
+grant execute on function public.get_document_members(text) to authenticated;
+
+
 -- ============================================================================
 -- File: 10-func-notifications.sql
 -- ============================================================================
@@ -5991,7 +6850,11 @@ ALTER FUNCTION public.notify_user_join_workspace() SECURITY DEFINER;
 
 -- Fans out one notification per channel member mentioned by @username.
 CREATE OR REPLACE FUNCTION create_mention_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     mentioned_user_id UUID;
     is_channel_muted BOOLEAN;
@@ -6024,7 +6887,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) For each mentioned username, attempt to create a notification.
     --    Anchored regex prevents `@al` from matching `alice`/`alpha`.
@@ -6068,7 +6931,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_mention_notifications() IS 'Creates notifications for users who are mentioned with @username in a message.';
 
@@ -6084,7 +6947,11 @@ COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates n
 -- Replies are high-signal: always notify the original author unless the
 -- channel is muted, regardless of notif_state.
 CREATE OR REPLACE FUNCTION create_reply_notification()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     original_message RECORD;
     truncated_content TEXT;
@@ -6126,10 +6993,7 @@ BEGIN
     END IF;
 
     -- Truncate content for preview
-    truncated_content := CASE
-        WHEN length(NEW.content) > 100 THEN substring(NEW.content, 1, 100) || '...'
-        ELSE NEW.content
-    END;
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- Create the reply notification
     INSERT INTO public.notifications (
@@ -6152,7 +7016,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_reply_notification() IS
 'Creates notification for original message author when someone replies. Always notifies regardless of notif_state.';
@@ -6170,7 +7034,11 @@ COMMENT ON TRIGGER create_reply_notification ON public.messages IS
 
 -- Fans out @everyone to every non-sender channel member that hasn't muted.
 CREATE OR REPLACE FUNCTION create_everyone_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     channel_member_id UUID;
     is_channel_muted  BOOLEAN;
@@ -6196,7 +7064,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) Check for an actual @everyone token (not a substring inside
     --    something like `@everyone_team`).
@@ -6234,7 +7102,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_everyone_notifications() IS 'Creates notifications for all channel members when @everyone is used in a message.';
 
@@ -6252,7 +7120,11 @@ COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates 
 -- Notifies offline, ALL-state, non-muted channel members for plain (no
 -- mention / no @everyone) messages. Trigger predicate filters the rest.
 CREATE OR REPLACE FUNCTION create_regular_message_notifications()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     is_channel_muted  BOOLEAN;
     truncated_content TEXT;
@@ -6277,7 +7149,7 @@ BEGIN
     END IF;
 
     -- 3) Truncate message content for preview
-    truncated_content := truncate_content(NEW.content);
+    truncated_content := message_content_preview(NEW.content, NEW.medias, NEW.type);
 
     -- 4) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
     INSERT INTO public.notifications (
@@ -6309,7 +7181,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notifications for regular messages based on user notification preferences.';
 
@@ -7417,6 +8289,10 @@ BEGIN
         SELECT 1 FROM public.workspace_members
         WHERE workspace_id = _workspace_id AND member_id = user_id
     ) THEN
+        -- Refresh "last visit" so the member roster shows a real last-seen time.
+        UPDATE public.workspace_members
+        SET updated_at = timezone('utc', now())
+        WHERE workspace_id = _workspace_id AND member_id = user_id;
         -- Return true if the user is already a member
         RETURN TRUE;
     END IF;
@@ -8160,33 +9036,97 @@ create policy "User can delete own channel avatar" on storage.objects
 
 -- Media Files Bucket Configuration
 -- Purpose: Store various media files related to messages.
--- Max File Size: 2MB (2,097,152 bytes).
--- Allowed MIME Types: All file types.
+-- Max File Size: 10MB (10,485,760 bytes).
+-- Allowed MIME Types: explicit allowlist (keep in sync with apps/webapp chatMediaMime.ts).
 insert into storage.buckets
     (id, name, public, file_size_limit, allowed_mime_types)
 values
-    ('media', 'media', true, 2097152, '{"*/*"}')
-on conflict (id) do nothing;
+    ('media', 'media', false, 10485760, array[
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/heic', 'image/heif',
+      'video/mp4', 'video/webm', 'video/quicktime', 'video/ogg', 'video/x-matroska',
+      'audio/mpeg', 'audio/webm', 'audio/wav', 'audio/ogg', 'audio/mp4', 'audio/aac', 'audio/flac', 'audio/opus',
+      'application/pdf',
+      'text/plain', 'text/csv', 'text/markdown',
+      'application/json',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/zip'
+    ]::text[])
+on conflict (id) do update set
+    file_size_limit = excluded.file_size_limit,
+    public = excluded.public,
+    allowed_mime_types = excluded.allowed_mime_types;
 
--- Policies for Media Files Bucket.
--- SELECT scoped to the uploader (owner_id) matches the UPDATE/DELETE
--- policies below. Public URLs are still served by storage's HTTP
--- handler; the SELECT exists for the upload INSERT-then-readback.
+-- Path layout: `{userId}/{channelId}/{uuid}.ext` — ownership + channel membership gate reads.
+-- In EXISTS (FROM channels c), qualify objects.name: bare `name` binds to c.name.
 drop policy if exists "Media files are publicly accessible" on storage.objects;
-create policy "Media files are publicly accessible" on storage.objects
+drop policy if exists "User can upload media files" on storage.objects;
+drop policy if exists "User can update own media files" on storage.objects;
+drop policy if exists "User can delete own media files" on storage.objects;
+drop policy if exists "Authed can read public channel chat media" on storage.objects;
+drop policy if exists "Channel members can read chat media" on storage.objects;
+drop policy if exists "Anon can read public channel chat media" on storage.objects;
+drop policy if exists "User can upload own channel chat media" on storage.objects;
+drop policy if exists "User can update own chat media" on storage.objects;
+drop policy if exists "User can delete own chat media" on storage.objects;
+
+create policy "Channel members can read chat media" on storage.objects
     for select to authenticated using (
         bucket_id = 'media'
-        and (select auth.uid())::text = owner_id
+        and exists (
+            select 1
+              from public.channel_members cm
+             where cm.channel_id = (storage.foldername(name))[2]
+               and cm.member_id = (select auth.uid())
+        )
     );
-drop policy if exists "User can upload media files" on storage.objects;
-create policy "User can upload media files" on storage.objects
-    for insert to authenticated with check (bucket_id = 'media');
-drop policy if exists "User can update own media files" on storage.objects;
-create policy "User can update own media files" on storage.objects
-    for update to authenticated using ((select auth.uid())::text = owner_id and bucket_id = 'media');
-drop policy if exists "User can delete own media files" on storage.objects;
-create policy "User can delete own media files" on storage.objects
-    for delete to authenticated using ((select auth.uid())::text = owner_id and bucket_id = 'media');
+
+create policy "Authed can read public channel chat media" on storage.objects
+    for select to authenticated using (
+        bucket_id = 'media'
+        and exists (
+            select 1
+              from public.channels c
+             where c.id = (storage.foldername(objects.name))[2]
+               and c.type = 'PUBLIC'
+        )
+    );
+
+create policy "Anon can read public channel chat media" on storage.objects
+    for select to anon using (
+        bucket_id = 'media'
+        and exists (
+            select 1
+              from public.channels c
+             where c.id = (storage.foldername(objects.name))[2]
+               and c.type = 'PUBLIC'
+        )
+    );
+
+create policy "User can upload own channel chat media" on storage.objects
+    for insert to authenticated with check (
+        bucket_id = 'media'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+        and exists (
+            select 1
+              from public.channel_members cm
+             where cm.channel_id = (storage.foldername(name))[2]
+               and cm.member_id = (select auth.uid())
+        )
+    );
+
+create policy "User can update own chat media" on storage.objects
+    for update to authenticated using (
+        bucket_id = 'media'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );
+
+create policy "User can delete own chat media" on storage.objects
+    for delete to authenticated using (
+        bucket_id = 'media'
+        and (storage.foldername(name))[1] = (select auth.uid())::text
+    );
 
 
 -- ============================================================================
@@ -8202,80 +9142,12 @@ create policy "User can delete own media files" on storage.objects
 --
 -- Load order: this file runs after the table-creation scripts (02-08),
 -- the function/RPC scripts (10-*), and the message-counter / cron / extension
--- scripts (11-12). Helpers come first in this file so the policy
--- expressions below can reference them.
+-- scripts (11-12). The internal policy primitives (is_workspace_member,
+-- is_channel_member, can_read_channel) live in 10-0-func-helpers.sql so the
+-- 10-x RPCs that call them seed after their definitions; this file keeps
+-- their grants, hardening, and every policy expression.
 -- =====================================================================
 
-
--- =====================================================================
--- 1. internal helper functions (policy primitives)
--- =====================================================================
--- SECURITY DEFINER + SET search_path = public — search-path-hijack safe.
--- STABLE SQL bodies are inlined by the planner, so policy expressions
--- effectively become the inlined EXISTS subqueries against:
---   workspace_members_workspace_id_member_id_key  → is_workspace_member
---   idx_channel_members_channel_id_member_id      → is_channel_member
---   channels_pkey + the above                     → can_read_channel
-
-CREATE SCHEMA IF NOT EXISTS internal;
-
-CREATE OR REPLACE FUNCTION internal.is_workspace_member(p_workspace_id varchar)
-RETURNS boolean
-LANGUAGE sql STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.workspace_members
-    WHERE workspace_id = p_workspace_id
-      AND member_id    = auth.uid()
-      AND left_at IS NULL
-  );
-$$;
-
-COMMENT ON FUNCTION internal.is_workspace_member(varchar) IS
-'Active workspace membership predicate for RLS policies.';
-
-CREATE OR REPLACE FUNCTION internal.is_channel_member(p_channel_id varchar)
-RETURNS boolean
-LANGUAGE sql STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.channel_members
-    WHERE channel_id = p_channel_id
-      AND member_id  = auth.uid()
-      AND left_at IS NULL
-  );
-$$;
-
-COMMENT ON FUNCTION internal.is_channel_member(varchar) IS
-'Active channel membership predicate for RLS policies.';
-
-CREATE OR REPLACE FUNCTION internal.can_read_channel(p_channel_id varchar)
-RETURNS boolean
-LANGUAGE sql STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.channels c
-    WHERE c.id = p_channel_id
-      AND (
-        c.type = 'PUBLIC'
-        OR EXISTS (
-          SELECT 1 FROM public.channel_members cm
-          WHERE cm.channel_id = c.id
-            AND cm.member_id  = auth.uid()
-            AND cm.left_at IS NULL
-        )
-      )
-  );
-$$;
-
-COMMENT ON FUNCTION internal.can_read_channel(varchar) IS
-'PUBLIC bypass + active channel membership; read-eligibility predicate.';
 
 -- Anon is blocked at the policy level (TO authenticated) before any helper
 -- call, so anon does not need USAGE on internal.
@@ -8651,6 +9523,73 @@ select cron.schedule(
     $$ select internal.cleanup_push_subscriptions(); $$
 );
 
+-- Reclaims orphaned chat media: bucket objects with no live messages.medias
+-- reference, older than 24h. Function body lives in 10-3-func-message.sql.
+select cron.unschedule('cleanup-orphan-chat-media')
+from cron.job where jobname = 'cleanup-orphan-chat-media';
+
+select cron.schedule(
+    'cleanup-orphan-chat-media',
+    '30 3 * * *',
+    $$ select internal.cleanup_orphan_chat_media(interval '24 hours'); $$
+);
+
+-- cron.job_run_details grows unbounded (one row per run; the 2-minute jobs
+-- alone add ~720 rows/day). Keep a rolling week for health checks.
+select cron.unschedule('cleanup-cron-job-run-details')
+from cron.job where jobname = 'cleanup-cron-job-run-details';
+
+select cron.schedule(
+    'cleanup-cron-job-run-details',
+    '15 4 * * *',
+    $$
+    delete from cron.job_run_details
+    where end_time < now() - interval '7 days';
+    $$
+);
+
+-- Per-job health for the observability exporter: latest run status plus the
+-- end time of the most recent successful run.
+create or replace function public.get_cron_job_health()
+returns table (
+    jobname text,
+    last_run_status text,
+    last_success_at timestamptz
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+    return query
+    select
+        j.jobname::text,
+        (
+            select d.status
+            from cron.job_run_details d
+            where d.jobid = j.jobid
+            order by d.start_time desc
+            limit 1
+        ) as last_run_status,
+        (
+            select max(d.end_time)
+            from cron.job_run_details d
+            where d.jobid = j.jobid and d.status = 'succeeded'
+        ) as last_success_at
+    from cron.job j;
+end;
+$$;
+
+comment on function public.get_cron_job_health() is
+'Returns each pg_cron job with its latest run status and last successful run time.';
+
+-- Scheduler internals are not user data. Admin gating happens at the
+-- Hocuspocus controller (service_role key); revoke the default public grant
+-- so the explicit service_role grant is exclusive.
+revoke execute on function public.get_cron_job_health() from public, anon, authenticated;
+grant  execute on function public.get_cron_job_health() to service_role;
+
 -- Commented out: Delete read notifications
 -- This job would delete all notifications that have been read by users.
 -- Uncomment if you want to periodically clean up read notifications from the database.
@@ -8869,6 +9808,48 @@ comment on function public.get_dau_trend(integer) is
 'Returns daily active user counts for the specified number of days.';
 
 -- -----------------------------------------------------------------------------
+-- 3b. Get Signups Per Day (new accounts over time)
+-- -----------------------------------------------------------------------------
+create or replace function public.get_signups_per_day(p_days integer default 30)
+returns table (
+    day date,
+    signups bigint
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+    return query
+    with date_series as (
+        select generate_series(
+            current_date - (p_days - 1),
+            current_date,
+            interval '1 day'
+        )::date as d
+    ),
+    daily_counts as (
+        select
+            created_at::date as signup_date,
+            count(*) as signups
+        from public.users
+        where created_at >= current_date - (p_days - 1)
+        group by created_at::date
+    )
+    select
+        ds.d as day,
+        coalesce(dc.signups, 0)::bigint as signups
+    from date_series ds
+    left join daily_counts dc on ds.d = dc.signup_date
+    order by ds.d;
+end;
+$$;
+
+comment on function public.get_signups_per_day(integer) is
+'Returns new-account counts per day for the specified number of days.';
+
+-- -----------------------------------------------------------------------------
 -- 4. Get Activity by Hour (for heatmap)
 -- -----------------------------------------------------------------------------
 create or replace function public.get_activity_by_hour(p_days integer default 7)
@@ -8964,14 +9945,14 @@ begin
 
     return query
     select
-        coalesce(m.type, 'text') as message_type,
+        coalesce(m.type::text, 'text') as message_type,
         count(*) as count,
         case when v_total > 0 then round((count(*)::numeric / v_total) * 100, 1) else 0 end as percentage
     from public.messages m
     join public.channels c on m.channel_id = c.id
     where m.created_at >= now() - (p_days || ' days')::interval
       and c.type = 'PUBLIC'
-    group by coalesce(m.type, 'text')
+    group by coalesce(m.type::text, 'text')
     order by count desc;
 end;
 $$;
@@ -9092,6 +10073,9 @@ grant  execute on function public.get_user_lifecycle_segments() to service_role;
 revoke execute on function public.get_dau_trend(integer) from public, anon, authenticated;
 grant  execute on function public.get_dau_trend(integer) to service_role;
 
+revoke execute on function public.get_signups_per_day(integer) from public, anon, authenticated;
+grant  execute on function public.get_signups_per_day(integer) to service_role;
+
 revoke execute on function public.get_activity_by_hour(integer) from public, anon, authenticated;
 grant  execute on function public.get_activity_by_hour(integer) to service_role;
 
@@ -9114,6 +10098,7 @@ grant  execute on function public.get_notification_reach() to service_role;
 ALTER FUNCTION public.get_retention_metrics() SET search_path = public;
 ALTER FUNCTION public.get_user_lifecycle_segments() SET search_path = public;
 ALTER FUNCTION public.get_dau_trend(p_days integer) SET search_path = public;
+ALTER FUNCTION public.get_signups_per_day(p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_activity_by_hour(p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_top_active_documents(p_limit integer, p_days integer) SET search_path = public;
 ALTER FUNCTION public.get_message_type_distribution(p_days integer) SET search_path = public;

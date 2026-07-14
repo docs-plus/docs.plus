@@ -91,3 +91,75 @@ comment on function message_content_preview(text, jsonb, public.message_type) is
 -- ============================================================
 ALTER FUNCTION public.truncate_content(input_content text, max_length integer) SET search_path = public;
 ALTER FUNCTION public.message_content_preview(text, jsonb, public.message_type) SET search_path = public;
+
+-- =====================================================================
+-- internal policy primitives (RLS)
+-- =====================================================================
+-- Defined here (not 13-RLS.sql) so later 10-x RPC scripts can call them at
+-- seed time; 13-RLS.sql owns their grants, hardening, and the policies.
+-- SECURITY DEFINER + SET search_path = public — search-path-hijack safe.
+-- STABLE SQL bodies are inlined by the planner, so policy expressions
+-- effectively become the inlined EXISTS subqueries against:
+--   workspace_members_workspace_id_member_id_key  → is_workspace_member
+--   idx_channel_members_channel_id_member_id      → is_channel_member
+--   channels_pkey + the above                     → can_read_channel
+
+CREATE SCHEMA IF NOT EXISTS internal;
+
+CREATE OR REPLACE FUNCTION internal.is_workspace_member(p_workspace_id varchar)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.workspace_members
+    WHERE workspace_id = p_workspace_id
+      AND member_id    = auth.uid()
+      AND left_at IS NULL
+  );
+$$;
+
+COMMENT ON FUNCTION internal.is_workspace_member(varchar) IS
+'Active workspace membership predicate for RLS policies.';
+
+CREATE OR REPLACE FUNCTION internal.is_channel_member(p_channel_id varchar)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.channel_members
+    WHERE channel_id = p_channel_id
+      AND member_id  = auth.uid()
+      AND left_at IS NULL
+  );
+$$;
+
+COMMENT ON FUNCTION internal.is_channel_member(varchar) IS
+'Active channel membership predicate for RLS policies.';
+
+CREATE OR REPLACE FUNCTION internal.can_read_channel(p_channel_id varchar)
+RETURNS boolean
+LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.channels c
+    WHERE c.id = p_channel_id
+      AND (
+        c.type = 'PUBLIC'
+        OR EXISTS (
+          SELECT 1 FROM public.channel_members cm
+          WHERE cm.channel_id = c.id
+            AND cm.member_id  = auth.uid()
+            AND cm.left_at IS NULL
+        )
+      )
+  );
+$$;
+
+COMMENT ON FUNCTION internal.can_read_channel(varchar) IS
+'PUBLIC bypass + active channel membership; read-eligibility predicate.';

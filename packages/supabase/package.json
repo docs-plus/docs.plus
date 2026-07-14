@@ -7,7 +7,7 @@
     "start": "dotenv -e ../../.env.local -- supabase start",
     "stop": "dotenv -e ../../.env.local -- supabase stop",
     "status": "dotenv -e ../../.env.local -- supabase status",
-    "reset": "dotenv -e ../../.env.local -- supabase db reset --debug",
+    "reset": "bun generate-seed.ts && dotenv -e ../../.env.local -- supabase db reset --debug",
     "types": "dotenv -e ../../.env.local -- bunx supabase gen types typescript --local > ../../apps/webapp/src/types/supabase.ts",
     "seed": "bun generate-seed.ts",
     "generate:functions-parity-migration": "bun generate-functions-parity-migration.ts"

@@ -343,7 +343,7 @@ deno_version = 1
 
 [edge_runtime.secrets]
 # VAPID keys for Web Push notifications
-# Generate with: npx web-push generate-vapid-keys
+# Generate with: bunx web-push generate-vapid-keys
 VAPID_PUBLIC_KEY = "env(VAPID_PUBLIC_KEY)"
 VAPID_PRIVATE_KEY = "env(VAPID_PRIVATE_KEY)"
 VAPID_SUBJECT = "env(VAPID_SUBJECT)"
