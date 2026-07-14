@@ -167,6 +167,10 @@ tmp/
 **/tmp/
 .tmp-*
 
+# Literal "~" dirs / in-tree bun cache (HOME expanded as a relative path)
+~
+**/.bun/
+
 # Supabase Studio scratch (user-local snippets)
 packages/supabase/snippets/
 
