@@ -12,42 +12,52 @@ import { Icons } from '@icons'
 import { useStore } from '@stores'
 import type { TMsgRow } from '@types'
 import { formatMediaFileSize } from '@utils/formatMediaFileSize'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type ButtonHTMLAttributes,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const PANEL =
-  'rounded-lg border border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md'
+function GalleryPillAction({
+  className,
+  isMobile,
+  type = 'button',
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { isMobile?: boolean }) {
+  return (
+    <button
+      type={type}
+      className={twMerge(
+        'rounded-field flex shrink-0 touch-manipulation items-center justify-center text-[var(--gallery-text-action)] transition-colors duration-150 hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-35',
+        isMobile ? 'size-11 min-h-11 min-w-11' : 'size-8',
+        className
+      )}
+      {...props}
+    />
+  )
+}
 
-const PILL_SHELL = twMerge(PANEL, 'flex items-center gap-0.5 px-1 py-1')
-
-const PILL_ACTION =
-  'flex size-8 shrink-0 touch-manipulation items-center justify-center rounded-md text-[var(--gallery-text-action)] transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-35'
-
-const PILL_ACTION_MOBILE =
-  'flex size-11 min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center rounded-md text-[var(--gallery-text-action)] transition hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-35'
-
-const CLOSE_BTN = twMerge(PILL_ACTION, PANEL, 'size-9 rounded-lg px-0 hover:bg-white/10')
-
-const CLOSE_BTN_MOBILE = twMerge(PILL_ACTION_MOBILE, PANEL, 'rounded-lg px-0 hover:bg-white/10')
-
-const MENU_PANEL = twMerge(PANEL, 'z-[110] w-56 p-1.5')
-
-const DETAILS_PANEL = twMerge(PANEL, 'absolute top-0 right-full z-10 mr-2 w-52 p-3')
-
-type MenuRowProps = {
+function GalleryMenuRow({
+  label,
+  icon,
+  onSelect,
+  disabled
+}: {
   label: string
   icon: ReactNode
   onSelect: () => void
   disabled?: boolean
-}
-
-function GalleryMenuRow({ label, icon, onSelect, disabled }: MenuRowProps) {
+}) {
   return (
     <li>
       <button
         type="button"
         disabled={disabled}
-        className="group flex w-full cursor-pointer items-center justify-between gap-4 rounded-md px-2.5 py-2 text-left text-sm text-[var(--gallery-text-primary)] transition-colors hover:bg-[var(--gallery-panel-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+        className="group rounded-field flex w-full cursor-pointer items-center justify-between gap-4 px-2.5 py-2 text-left text-sm text-[var(--gallery-text-primary)] transition-colors duration-150 hover:bg-[var(--gallery-panel-hover)] disabled:cursor-not-allowed disabled:opacity-40"
         onClick={onSelect}>
         <span className="font-medium">{label}</span>
         <span className="shrink-0 text-[var(--gallery-text-muted)]">{icon}</span>
@@ -61,7 +71,7 @@ function GalleryMediaDetailsPanel({ media }: { media: GalleryMediaItem }) {
   const fileSize = formatMediaFileSize(media.size)
 
   return (
-    <div className={DETAILS_PANEL}>
+    <div className="rounded-box absolute top-0 right-full z-10 mr-2 w-52 border border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] p-3 text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md">
       <dl className="space-y-3 text-sm">
         <div>
           <dt className="mb-1 text-[var(--gallery-text-muted)]">Filename</dt>
@@ -78,17 +88,15 @@ function GalleryMediaDetailsPanel({ media }: { media: GalleryMediaItem }) {
   )
 }
 
-type OverflowMenuProps = {
-  media: GalleryMediaItem
-  activeResolvedUrl: string | null
-  actionClassName?: string
-}
-
 function GalleryOverflowMenu({
   media,
   activeResolvedUrl,
-  actionClassName = PILL_ACTION
-}: OverflowMenuProps) {
+  isMobile
+}: {
+  media: GalleryMediaItem
+  activeResolvedUrl: string | null
+  isMobile: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -116,20 +124,19 @@ function GalleryOverflowMenu({
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        className={actionClassName}
+      <GalleryPillAction
+        isMobile={isMobile}
         aria-label="Media actions"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((value) => !value)}>
         <Icons.moreHorizontal size={18} />
-      </button>
+      </GalleryPillAction>
 
       {open ? (
         <div
           role="menu"
-          className={twMerge(MENU_PANEL, 'absolute top-[calc(100%+0.5rem)] right-0')}
+          className="rounded-box absolute top-[calc(100%+0.5rem)] right-0 z-[110] w-56 border border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] p-1.5 text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md"
           onClick={(event) => event.stopPropagation()}>
           <div className="relative">
             {detailsOpen ? <GalleryMediaDetailsPanel media={media} /> : null}
@@ -153,7 +160,7 @@ function GalleryOverflowMenu({
               <li>
                 <button
                   type="button"
-                  className="group flex w-full cursor-pointer items-center justify-between gap-4 rounded-md px-2.5 py-2 text-left text-sm text-[var(--gallery-text-primary)] transition-colors hover:bg-[var(--gallery-panel-hover)]"
+                  className="group rounded-field flex w-full cursor-pointer items-center justify-between gap-4 px-2.5 py-2 text-left text-sm text-[var(--gallery-text-primary)] transition-colors duration-150 hover:bg-[var(--gallery-panel-hover)]"
                   onClick={() => setDetailsOpen((value) => !value)}>
                   <span className="font-medium">View Details</span>
                   <Icons.chevronRight size={16} className="text-[var(--gallery-text-muted)]" />
@@ -206,14 +213,14 @@ export function GalleryToolbar({
   onZoomReset,
   onReply
 }: Props) {
-  const isMobile = useStore((state) => state.settings.editor.isMobile)
+  const isMobile = Boolean(useStore((state) => state.settings.editor.isMobile))
   const isImage = media.type === 'image'
-  const pillActionClass = isMobile ? PILL_ACTION_MOBILE : PILL_ACTION
-  const closeBtnClass = isMobile ? CLOSE_BTN_MOBILE : CLOSE_BTN
   const controlsHideClass = twMerge(
     'motion-safe:transition-opacity',
     !controlsVisible && 'pointer-events-none opacity-0'
   )
+  const panelShell =
+    'rounded-box border border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md'
 
   return (
     <>
@@ -258,58 +265,54 @@ export function GalleryToolbar({
             'flex shrink-0 items-center gap-2',
             controlsVisible && 'pointer-events-auto'
           )}>
-          <div role="toolbar" aria-label="Media actions" className={PILL_SHELL}>
+          <div
+            role="toolbar"
+            aria-label="Media actions"
+            className={twMerge(panelShell, 'flex items-center gap-0.5 px-1 py-1')}>
             {isImage ? (
-              <button
-                type="button"
-                className={pillActionClass}
+              <GalleryPillAction
+                isMobile={isMobile}
                 aria-label={slideZoomed ? 'Fit image to screen' : 'Zoom in'}
                 onClick={() => (slideZoomed ? onZoomReset() : onZoomIn())}>
                 {slideZoomed ? <Icons.zoomOut size={18} /> : <Icons.zoomIn size={18} />}
-              </button>
+              </GalleryPillAction>
             ) : null}
 
             {originMessage ? (
-              <button
-                type="button"
-                className={pillActionClass}
-                aria-label="Reply"
-                onClick={onReply}>
+              <GalleryPillAction isMobile={isMobile} aria-label="Reply" onClick={onReply}>
                 <Icons.reply size={18} />
-              </button>
+              </GalleryPillAction>
             ) : null}
 
-            <button
-              type="button"
-              className={pillActionClass}
+            <GalleryPillAction
+              isMobile={isMobile}
               aria-label="Download media"
               disabled={downloading}
               onClick={onDownload}>
               <Icons.download size={18} />
-            </button>
+            </GalleryPillAction>
 
-            <button
-              type="button"
-              className={pillActionClass}
+            <GalleryPillAction
+              isMobile={isMobile}
               aria-label="Open media in browser"
               onClick={() => openResolvedMediaLink(activeResolvedUrl)}>
               <Icons.externalLink size={18} />
-            </button>
+            </GalleryPillAction>
 
             <GalleryOverflowMenu
               media={media}
               activeResolvedUrl={activeResolvedUrl}
-              actionClassName={pillActionClass}
+              isMobile={isMobile}
             />
           </div>
 
-          <button
-            type="button"
-            className={closeBtnClass}
+          <GalleryPillAction
+            isMobile={isMobile}
+            className={twMerge(panelShell, isMobile ? undefined : 'size-9')}
             aria-label="Close gallery"
             onClick={onClose}>
             <Icons.close size={20} />
-          </button>
+          </GalleryPillAction>
         </div>
       </div>
 

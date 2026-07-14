@@ -23,7 +23,7 @@ export type GalleryOpenOptions = GallerySourceContext & {
 type GallerySessionSnapshot = {
   items: GalleryMediaItem[]
   index: number
-  openIndex: number
+  autoplayIndex: number
   caption: string | null
   source: GallerySourceContext | null
   originMessage: TMsgRow | null
@@ -67,12 +67,6 @@ export function partitionMessageMedias(medias: MessageMediaItem[]) {
   }
 
   return { images, videos, audio, files, visuals }
-}
-
-/** Feed partition: image+video stay in `medias` order; audio/file cards render below. */
-export function partitionVisualMedias(medias: MessageMediaItem[]) {
-  const { visuals, audio, files } = partitionMessageMedias(medias)
-  return { visuals, audio, files }
 }
 
 /** Lightbox order: images → videos → audio (AGENTS contract; not feed order). */
@@ -120,7 +114,7 @@ const buildGallerySource = (
   }
 }
 
-/** Playlist order, start index, spoiler attrs, and overlay-controls context in one pass. */
+/** Playlist order, start index, and overlay-controls context in one pass. */
 export const openGallerySession = (
   medias: MessageMediaItem[],
   at?: number | MessageMediaItem,
@@ -136,7 +130,7 @@ export const openGallerySession = (
   return {
     items,
     index,
-    openIndex: index,
+    autoplayIndex: index,
     caption,
     source,
     originMessage

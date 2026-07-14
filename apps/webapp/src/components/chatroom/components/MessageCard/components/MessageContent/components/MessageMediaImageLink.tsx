@@ -1,8 +1,6 @@
+import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
-import {
-  markFeedSpoilerRevealed,
-  useFeedSpoilerRevealed
-} from '@components/chatroom/utils/feedSpoilerReveal'
+import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { positiveMediaDims } from '@components/chatroom/utils/messageMediaPaths'
 import type { MessageMediaItem } from '@types'
 import { type CSSProperties, type MouseEvent, useState } from 'react'
@@ -21,8 +19,7 @@ type Props = {
 export function MessageMediaImageLink({ media, className, onOpen, onDimensions }: Props) {
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
   const [imgFailed, setImgFailed] = useState(false)
-  const revealed = useFeedSpoilerRevealed(media)
-  const isSpoiler = Boolean(media.spoiler) && !revealed
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
   const hasSpoiler = Boolean(media.spoiler)
   const alt = media.name?.trim() || 'Image attachment'
   const showUnavailable = signFailed || imgFailed
@@ -38,7 +35,7 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
   const handleActivate = (event: MouseEvent) => {
     event.stopPropagation()
     if (isSpoiler) {
-      markFeedSpoilerRevealed(media)
+      reveal()
       return
     }
     onOpen?.()
@@ -49,12 +46,6 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
     isSpoiler && resolvedUrl && 'scale-110 blur-xl',
     !resolvedUrl && 'bg-base-200 skeleton'
   )
-
-  const spoilerOverlay = isSpoiler ? (
-    <span className="bg-base-content/35 text-base-100 absolute inset-0 flex items-center justify-center text-xs font-medium">
-      Tap to reveal
-    </span>
-  ) : null
 
   const testId = isSpoiler ? 'feed-spoiler-reveal' : 'feed-image-open'
 
@@ -96,7 +87,7 @@ export function MessageMediaImageLink({ media, className, onOpen, onDimensions }
         className={twMerge('absolute inset-0', imageLayerClass)}
         style={coverStyle}
       />
-      {spoilerOverlay}
+      {isSpoiler ? <FeedSpoilerRevealOverlay /> : null}
       {resolvedUrl ? (
         <img
           src={resolvedUrl}

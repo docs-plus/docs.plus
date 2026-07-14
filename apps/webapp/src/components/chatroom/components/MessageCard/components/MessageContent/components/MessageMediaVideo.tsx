@@ -1,3 +1,5 @@
+import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
+import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import {
   CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX,
   CHAT_MEDIA_MAX_WIDTH_CLASS
@@ -34,6 +36,7 @@ export function MessageMediaVideo({
     media,
     onDimensions
   )
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
   const hasExplicitSize = width != null && height != null
   const sizeStyle: CSSProperties | undefined = hasExplicitSize ? { width, height } : undefined
 
@@ -41,9 +44,13 @@ export function MessageMediaVideo({
     (event: MouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
+      if (isSpoiler) {
+        reveal()
+        return
+      }
       if (resolvedUrl) onOpen?.()
     },
-    [onOpen, resolvedUrl]
+    [isSpoiler, onOpen, resolvedUrl, reveal]
   )
 
   return (
@@ -60,9 +67,9 @@ export function MessageMediaVideo({
         <>
           <video
             src={resolvedUrl}
-            controls
+            controls={!isSpoiler}
             playsInline
-            className="w-full"
+            className={twMerge('w-full', isSpoiler && 'scale-110 blur-xl')}
             style={
               hasExplicitSize
                 ? { height, width: '100%', objectFit: 'contain' }
@@ -70,7 +77,16 @@ export function MessageMediaVideo({
             }
             onLoadedMetadata={handleMetadata}
           />
-          {onOpen ? (
+          {isSpoiler ? (
+            <button
+              type="button"
+              className="absolute inset-0 cursor-pointer border-0 bg-transparent p-0"
+              aria-label="Reveal spoiler video"
+              data-testid="feed-spoiler-reveal"
+              onClick={openIfReady}>
+              <FeedSpoilerRevealOverlay className="bg-black/40" />
+            </button>
+          ) : onOpen ? (
             <button
               type="button"
               onClick={openIfReady}

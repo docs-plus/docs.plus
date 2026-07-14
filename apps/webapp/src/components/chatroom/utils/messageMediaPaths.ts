@@ -66,6 +66,8 @@ export const mediaStoragePath = (media: MessageMediaItem): string | null => {
   if (media.url.startsWith('http://') || media.url.startsWith('https://')) {
     return parsePathFromPublicMediaUrl(media.url)
   }
+  // data:/blob: are display URLs, not bucket keys — never send them to createSignedUrl.
+  if (media.url.startsWith('data:') || media.url.startsWith('blob:')) return null
   return media.url.trim() || null
 }
 

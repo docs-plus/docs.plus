@@ -1,3 +1,5 @@
+import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
+import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
 import { type CSSProperties, type MouseEvent, useCallback } from 'react'
@@ -28,6 +30,7 @@ export function MessageMediaVideoPoster({
     media,
     onDimensions
   )
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
   const hasExplicitSize = width != null && height != null
   const sizeStyle: CSSProperties | undefined = hasExplicitSize ? { width, height } : undefined
 
@@ -35,9 +38,13 @@ export function MessageMediaVideoPoster({
     (event: MouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
+      if (isSpoiler) {
+        reveal()
+        return
+      }
       if (resolvedUrl) onOpen()
     },
-    [onOpen, resolvedUrl]
+    [isSpoiler, onOpen, resolvedUrl, reveal]
   )
 
   return (
@@ -51,8 +58,8 @@ export function MessageMediaVideoPoster({
         className
       )}
       style={sizeStyle}
-      aria-label={`Play ${media.name?.trim() || 'video'}`}
-      data-testid="feed-video-poster"
+      aria-label={isSpoiler ? 'Reveal spoiler video' : `Play ${media.name?.trim() || 'video'}`}
+      data-testid={isSpoiler ? 'feed-spoiler-reveal' : 'feed-video-poster'}
       onClick={openIfReady}>
       {resolvedUrl && !signFailed ? (
         <>
@@ -61,16 +68,23 @@ export function MessageMediaVideoPoster({
             playsInline
             muted
             preload="metadata"
-            className="absolute inset-0 h-full w-full object-cover"
+            className={twMerge(
+              'absolute inset-0 h-full w-full object-cover',
+              isSpoiler && 'scale-110 blur-xl'
+            )}
             onLoadedMetadata={handleMetadata}
           />
-          <span
-            aria-hidden
-            className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <span className="bg-base-content/60 text-base-100 flex size-10 items-center justify-center rounded-full border border-white/70">
-              <Icons.play size={18} className="ml-0.5" />
+          {isSpoiler ? (
+            <FeedSpoilerRevealOverlay className="bg-black/40" />
+          ) : (
+            <span
+              aria-hidden
+              className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <span className="bg-base-content/60 text-base-100 flex size-10 items-center justify-center rounded-full border border-white/70">
+                <Icons.play size={18} className="ml-0.5" />
+              </span>
             </span>
-          </span>
+          )}
         </>
       ) : signFailed ? (
         <MediaUnavailable

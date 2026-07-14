@@ -139,10 +139,7 @@ export function useGalleryCarousel({ index, count, enabled, onStep }: Options) {
 
   const trackStyle: CSSProperties = {
     transform: `translate3d(calc(${-index * 100}% + ${dragPx}px), 0, 0)`,
-    transition:
-      isDragging || reduced
-        ? 'none'
-        : `transform ${MOTION_PANEL_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
+    transition: isDragging || reduced ? 'none' : `transform ${MOTION_PANEL_MS}ms ease-out`
   }
 
   return {

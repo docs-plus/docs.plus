@@ -1,6 +1,8 @@
+/** Two-tap spoiler gate for feed tiles and gallery slides. */
+
 import { mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import type { MessageMediaItem } from '@types'
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 const listeners = new Set<() => void>()
 const revealedKeys = new Set<string>()
@@ -16,13 +18,11 @@ const subscribe = (onStoreChange: () => void): (() => void) => {
   return () => listeners.delete(onStoreChange)
 }
 
-export const feedSpoilerRevealKey = (media: MessageMediaItem): string => mediaKey(media)
-
 export const isFeedSpoilerRevealed = (media: MessageMediaItem): boolean =>
-  getKeys().has(feedSpoilerRevealKey(media))
+  getKeys().has(mediaKey(media))
 
 export const markFeedSpoilerRevealed = (media: MessageMediaItem): void => {
-  const key = feedSpoilerRevealKey(media)
+  const key = mediaKey(media)
   const keys = getKeys()
   if (keys.has(key)) return
   keys.add(key)
@@ -37,11 +37,22 @@ export const clearFeedSpoilerReveal = (): void => {
   emit()
 }
 
-export const useFeedSpoilerRevealed = (media: MessageMediaItem): boolean => {
-  const key = feedSpoilerRevealKey(media)
+const useFeedSpoilerRevealed = (media: MessageMediaItem): boolean => {
+  const key = mediaKey(media)
   return useSyncExternalStore(
     subscribe,
     () => getKeys().has(key),
     () => false
   )
+}
+
+export function useFeedSpoilerGate(media: MessageMediaItem) {
+  const revealed = useFeedSpoilerRevealed(media)
+  const isSpoiler = Boolean(media.spoiler) && !revealed
+
+  const reveal = useCallback(() => {
+    markFeedSpoilerRevealed(media)
+  }, [media])
+
+  return { isSpoiler, reveal }
 }

@@ -57,7 +57,15 @@ export async function resolveMediaDisplayUrl(media: MessageMediaItem): Promise<s
       type: media.type,
       message: error?.message
     })
-    return media.url.startsWith('http') ? media.url : ''
+    if (
+      media.url.startsWith('http://') ||
+      media.url.startsWith('https://') ||
+      media.url.startsWith('data:') ||
+      media.url.startsWith('blob:')
+    ) {
+      return media.url
+    }
+    return ''
   }
 
   signedUrlCache.set(path, {

@@ -1,7 +1,6 @@
 import { useGalleryCarousel } from '@components/chatroom/hooks/useGalleryCarousel'
 import { useGalleryKeyboard } from '@components/chatroom/hooks/useGalleryKeyboard'
 import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
-import { galleryLightboxThemeStyle } from '@components/chatroom/utils/galleryLightboxTheme'
 import { saveMediaFile } from '@components/chatroom/utils/galleryMediaActions'
 import { mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import { modalBackdropHeavyClassName } from '@components/ui/Dialog'
@@ -23,15 +22,32 @@ import {
   MOTION_PANEL_MS,
   prefersReducedMotion
 } from '@utils/motion'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useShallow } from 'zustand/react/shallow'
 
 import { GallerySlide } from './GallerySlide'
 import { GalleryToolbar } from './GalleryToolbar'
 
-const NAV_BTN =
-  'absolute top-1/2 z-30 flex size-11 min-h-11 min-w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-[var(--gallery-nav-bg)] text-white shadow-lg transition hover:bg-[var(--gallery-nav-hover)] disabled:pointer-events-none disabled:opacity-0 motion-safe:transition-opacity'
+/** Discord-parity lightbox tokens — Off-system media overlay (design-system.md §Media tiles). */
+const galleryLightboxThemeStyle: CSSProperties & Record<`--${string}`, string> = {
+  '--gallery-panel-bg': '#111214',
+  '--gallery-panel-border': '#1e1f22',
+  '--gallery-panel-hover': '#35373c',
+  '--gallery-nav-bg': '#1e1f22',
+  '--gallery-nav-hover': '#2b2d31',
+  '--gallery-text-primary': '#dbdee1',
+  '--gallery-text-heading': '#f2f3f5',
+  '--gallery-text-muted': '#949ba4',
+  '--gallery-text-action': '#b5bac1'
+}
 
 const pauseStageMedia = (root: HTMLElement | null) => {
   root?.querySelectorAll('video, audio').forEach((el) => {
@@ -40,13 +56,13 @@ const pauseStageMedia = (root: HTMLElement | null) => {
 }
 
 export function ChatMediaGallery() {
-  const { isOpen, items, index, openIndex, originMessage, source, caption, activeResolvedUrl } =
+  const { isOpen, items, index, autoplayIndex, originMessage, source, caption, activeResolvedUrl } =
     useChatMediaGalleryStore(
       useShallow((s) => ({
         isOpen: s.isOpen,
         items: s.items,
         index: s.index,
-        openIndex: s.openIndex,
+        autoplayIndex: s.autoplayIndex,
         originMessage: s.originMessage,
         source: s.source,
         caption: s.caption,
@@ -133,7 +149,7 @@ export function ChatMediaGallery() {
   }, [activeChannelId, closeGallery, isOpen, originMessage?.channel_id])
 
   const handleStageClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
+    (event: MouseEvent<HTMLDivElement>) => {
       if (slideZoomed) return
       const target = event.target
       if (!(target instanceof Element)) return
@@ -147,9 +163,9 @@ export function ChatMediaGallery() {
     isOpen,
     slideZoomed,
     itemCount: items.length,
+    activeType: items[index]?.type,
     closeGallery,
-    step,
-    requestZoomReset
+    step
   })
 
   const handleDownload = useCallback(async () => {
@@ -214,7 +230,7 @@ export function ChatMediaGallery() {
                   <button
                     type="button"
                     className={twMerge(
-                      NAV_BTN,
+                      'absolute top-1/2 z-30 flex size-11 min-h-11 min-w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-[var(--gallery-nav-bg)] text-white duration-150 hover:bg-[var(--gallery-nav-hover)] disabled:pointer-events-none disabled:opacity-0 motion-safe:transition-opacity',
                       'left-[max(0.75rem,env(safe-area-inset-left))]',
                       !controlsVisible && 'pointer-events-none opacity-0'
                     )}
@@ -227,7 +243,7 @@ export function ChatMediaGallery() {
                   <button
                     type="button"
                     className={twMerge(
-                      NAV_BTN,
+                      'absolute top-1/2 z-30 flex size-11 min-h-11 min-w-11 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full bg-[var(--gallery-nav-bg)] text-white duration-150 hover:bg-[var(--gallery-nav-hover)] disabled:pointer-events-none disabled:opacity-0 motion-safe:transition-opacity',
                       'right-[max(0.75rem,env(safe-area-inset-right))]',
                       !controlsVisible && 'pointer-events-none opacity-0'
                     )}
@@ -244,7 +260,8 @@ export function ChatMediaGallery() {
                 ref={carousel.viewportRef}
                 className={[
                   'h-full overflow-hidden',
-                  slideZoomed ? 'touch-none' : 'touch-pan-x touch-pinch-zoom'
+                  // Pan-x only — pinch is owned by the zoom host (`touch-none` + native listeners).
+                  slideZoomed ? 'touch-none' : 'touch-pan-x'
                 ].join(' ')}
                 onPointerDown={carousel.onPointerDown}
                 onPointerMove={carousel.onPointerMove}
@@ -265,7 +282,7 @@ export function ChatMediaGallery() {
                           <GallerySlide
                             media={item}
                             slideIndex={slideIndex}
-                            openIndex={openIndex}
+                            autoplayIndex={autoplayIndex}
                             isActive={slideIndex === index}
                             onZoomedChange={slideIndex === index ? setSlideZoomed : undefined}
                           />

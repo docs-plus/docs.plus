@@ -1,7 +1,7 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useMessageAuthorDetails } from '@components/chatroom/components/MessageCard/hooks/useMessageAuthorDetails'
 import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
-import { partitionVisualMedias } from '@components/chatroom/utils/galleryPlaylist'
+import { partitionMessageMedias } from '@components/chatroom/utils/galleryPlaylist'
 import type { MessageSurfaceLayout } from '@components/chatroom/utils/messagePresentation'
 import type { MessageMediaItem } from '@types'
 import { formatGallerySentAt } from '@utils/formatGallerySentAt'
@@ -33,7 +33,7 @@ export function MessageMediaAttachments({ medias, layout, caption, className }: 
 
   if (medias.length === 0) return null
 
-  const { visuals, audio, files } = partitionVisualMedias(medias)
+  const { visuals, audio, files } = partitionMessageMedias(medias)
 
   const authorName = author?.fullname || author?.username || null
 

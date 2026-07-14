@@ -1,29 +1,111 @@
-import {
-  usePauseMediaOnInactive,
-  usePublishActiveResolvedUrl
-} from '@components/chatroom/hooks/useGallerySlideSync'
+import { GallerySpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
 import { useGalleryZoomPan } from '@components/chatroom/hooks/useGalleryZoomPan'
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
-import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
 import {
-  markFeedSpoilerRevealed,
-  useFeedSpoilerRevealed
-} from '@components/chatroom/utils/feedSpoilerReveal'
+  registerGalleryMediaController,
+  registerGalleryZoomController,
+  useChatMediaGalleryStore
+} from '@components/chatroom/stores/chatMediaGalleryStore'
+import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { type GalleryMediaItem, mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import { prefersReducedMotion } from '@utils/motion'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 import { MediaUnavailable } from '../MessageCard/components/MessageContent/components/MediaUnavailable'
 
 type GallerySlideProps = {
   media: GalleryMediaItem
   slideIndex: number
-  openIndex: number
+  autoplayIndex: number
   isActive: boolean
   onZoomedChange?: (zoomed: boolean) => void
 }
 
 type GalleryImageSlideProps = Pick<GallerySlideProps, 'media' | 'isActive' | 'onZoomedChange'>
+
+type SlideKind = 'image' | 'video' | 'audio'
+
+type VisibilityRef = (node: HTMLElement | null) => void
+
+function GallerySlideShell({
+  visibilityRef,
+  className,
+  children
+}: {
+  visibilityRef: VisibilityRef
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <div
+      ref={visibilityRef}
+      className={twMerge('flex h-full w-full items-center justify-center', className)}>
+      {children}
+    </div>
+  )
+}
+
+function GalleryLoadingBone({ kind, className }: { kind: SlideKind; className?: string }) {
+  if (kind === 'audio') {
+    return <div className={twMerge('skeleton h-24 w-full max-w-md', className)} aria-hidden />
+  }
+  return (
+    <div
+      className={twMerge(
+        'skeleton max-h-[calc(100dvh-7rem)] w-full max-w-[min(96vw,1200px)]',
+        className
+      )}
+      aria-hidden
+    />
+  )
+}
+
+function GallerySpoilerChipShell({
+  visibilityRef,
+  kind,
+  reveal
+}: {
+  visibilityRef: VisibilityRef
+  kind: SlideKind
+  reveal: () => void
+}) {
+  const label =
+    kind === 'image'
+      ? 'Reveal spoiler image'
+      : kind === 'video'
+        ? 'Reveal spoiler video'
+        : 'Reveal spoiler audio'
+
+  return (
+    <GallerySlideShell visibilityRef={visibilityRef} className="relative px-4">
+      <GalleryLoadingBone kind={kind} className="scale-110 blur-xl" />
+      <button
+        type="button"
+        className="absolute inset-0 flex cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+        aria-label={label}
+        data-testid="gallery-spoiler-reveal"
+        onClick={reveal}>
+        <GallerySpoilerRevealOverlay variant="chip" />
+      </button>
+    </GallerySlideShell>
+  )
+}
+
+function usePublishActiveResolvedUrl(isActive: boolean, url: string | null) {
+  const setActiveResolvedUrl = useChatMediaGalleryStore((s) => s.setActiveResolvedUrl)
+
+  useEffect(() => {
+    if (!isActive) return
+    setActiveResolvedUrl(url)
+  }, [isActive, setActiveResolvedUrl, url])
+}
+
+function usePauseMediaOnInactive(ref: RefObject<HTMLMediaElement | null>, isActive: boolean) {
+  useEffect(() => {
+    if (!isActive) ref.current?.pause()
+  }, [isActive, ref])
+}
 
 function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlideProps) {
   const {
@@ -33,16 +115,18 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
     retry
   } = useFeedMediaDisplayUrl(media, { eager: true })
   const [imgFailed, setImgFailed] = useState(false)
-  const revealed = useFeedSpoilerRevealed(media)
-  const isSpoiler = Boolean(media.spoiler) && !revealed
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
   const alt = media.name?.trim() || 'Image attachment'
   const showUnavailable = imgFailed || signFailed || !resolvedUrl
+  const isLoading = !resolvedUrl && !imgFailed && !signFailed
 
   const zoomEnabled = !isSpoiler && Boolean(resolvedUrl) && !showUnavailable
-  const zoom = useGalleryZoomPan(zoomEnabled, mediaKey(media))
   const {
     reset: resetZoom,
     zoomInAtCenter,
+    zoomStepInAtCenter,
+    zoomStepOutAtCenter,
+    panBy,
     isZoomed,
     cursorClass,
     transform,
@@ -53,9 +137,7 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
     onPointerDown,
     onPointerMove,
     onPointerUp
-  } = zoom
-  const zoomRequest = useChatMediaGalleryStore((s) => s.zoomRequest)
-  const zoomResetRequest = useChatMediaGalleryStore((s) => s.zoomResetRequest)
+  } = useGalleryZoomPan(zoomEnabled, mediaKey(media))
 
   usePublishActiveResolvedUrl(isActive, showUnavailable || !resolvedUrl ? null : resolvedUrl)
 
@@ -63,66 +145,52 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
     onZoomedChange?.(isZoomed)
   }, [isZoomed, onZoomedChange])
 
+  // Inactive near-mount must not clear the active slide's zoom controller.
   useEffect(() => {
-    if (!isActive) {
-      resetZoom()
+    if (!isActive) return
+    if (!zoomEnabled) {
+      registerGalleryZoomController(null)
       return
     }
-    if (zoomResetRequest > 0) resetZoom()
-  }, [isActive, resetZoom, zoomResetRequest])
-
-  useEffect(() => {
-    if (!isActive || !zoomEnabled || zoomRequest === 0) return
-    zoomInAtCenter()
-  }, [isActive, zoomEnabled, zoomInAtCenter, zoomRequest])
+    registerGalleryZoomController({
+      zoomInAtCenter,
+      zoomStepInAtCenter,
+      zoomStepOutAtCenter,
+      reset: resetZoom,
+      panBy
+    })
+    return () => registerGalleryZoomController(null)
+  }, [
+    isActive,
+    panBy,
+    resetZoom,
+    zoomEnabled,
+    zoomInAtCenter,
+    zoomStepInAtCenter,
+    zoomStepOutAtCenter
+  ])
 
   const handleRetry = () => {
     setImgFailed(false)
     retry()
   }
 
-  const handleReveal = () => {
-    markFeedSpoilerRevealed(media)
-  }
-
-  if (isSpoiler && !resolvedUrl && !imgFailed) {
+  if (isLoading) {
+    if (isSpoiler) {
+      return <GallerySpoilerChipShell visibilityRef={visibilityRef} kind="image" reveal={reveal} />
+    }
     return (
-      <div
-        ref={visibilityRef}
-        className="relative flex h-full w-full items-center justify-center px-4">
-        <div
-          className="skeleton max-h-[calc(100dvh-7rem)] w-full max-w-[min(96vw,1200px)] scale-110 blur-xl"
-          aria-hidden
-        />
-        <button
-          type="button"
-          className="absolute inset-0 flex cursor-pointer items-center justify-center border-0 bg-transparent p-0"
-          aria-label="Reveal spoiler image"
-          data-testid="gallery-spoiler-reveal"
-          onClick={handleReveal}>
-          <span className="rounded-full bg-black/60 px-4 py-2 text-sm font-medium text-white">
-            Tap to reveal
-          </span>
-        </button>
-      </div>
+      <GallerySlideShell visibilityRef={visibilityRef}>
+        <GalleryLoadingBone kind="image" />
+      </GallerySlideShell>
     )
   }
 
-  if (!resolvedUrl && !imgFailed && !signFailed) {
+  if (showUnavailable) {
     return (
-      <div
-        ref={visibilityRef}
-        className="skeleton max-h-[calc(100dvh-7rem)] w-full max-w-[min(96vw,1200px)]"
-        aria-hidden
-      />
-    )
-  }
-
-  if (showUnavailable && !isSpoiler) {
-    return (
-      <div ref={visibilityRef} className="flex h-full w-full items-center justify-center px-6">
+      <GallerySlideShell visibilityRef={visibilityRef} className="px-6">
         <MediaUnavailable label="Image unavailable" kind="image" onRetry={handleRetry} />
-      </div>
+      </GallerySlideShell>
     )
   }
 
@@ -147,7 +215,7 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
 
   const imageNode = (
     <img
-      src={resolvedUrl!}
+      src={resolvedUrl}
       alt={alt}
       className={imageClassName}
       draggable={false}
@@ -158,22 +226,22 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
 
   if (isSpoiler) {
     return (
-      <div ref={visibilityRef} className="relative flex h-full w-full items-center justify-center">
+      <GallerySlideShell visibilityRef={visibilityRef} className="relative">
         <button
           type="button"
           className="relative block cursor-pointer overflow-hidden border-0 bg-transparent p-0"
           aria-label="Reveal spoiler image"
           data-testid="gallery-spoiler-reveal"
-          onClick={handleReveal}>
+          onClick={reveal}>
           {imageNode}
-          <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm font-medium text-white">
-            Tap to reveal
-          </span>
+          <GallerySpoilerRevealOverlay />
         </button>
-      </div>
+      </GallerySlideShell>
     )
   }
 
+  // Full-slide viewport clips zoom — NOT an image-tight box (that crops portraits into a
+  // postage stamp). Letterbox clicks fall through to the stage controls toggle; img clicks zoom.
   return (
     <div
       ref={(node) => {
@@ -181,8 +249,8 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
         connectHostRef(node)
       }}
       className={[
-        'flex h-full w-full items-center justify-center overflow-hidden px-4',
-        isZoomed && 'touch-none overscroll-none'
+        'relative flex h-full w-full touch-none items-center justify-center overflow-hidden px-4',
+        isZoomed && 'overscroll-none'
       ]
         .filter(Boolean)
         .join(' ')}
@@ -195,7 +263,7 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
 function GalleryAvSlide({
   media,
   slideIndex,
-  openIndex,
+  autoplayIndex,
   isActive,
   kind
 }: GallerySlideProps & { kind: 'video' | 'audio' }) {
@@ -206,39 +274,55 @@ function GalleryAvSlide({
     retry
   } = useFeedMediaDisplayUrl(media, { eager: true })
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement>(null)
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
   const label = media.name?.trim() || (kind === 'video' ? 'Video attachment' : 'Audio attachment')
-  const autoPlay = slideIndex === openIndex && isActive && !prefersReducedMotion()
+  const canPlay = Boolean(resolvedUrl) && !signFailed && !isSpoiler
+  const autoPlay = canPlay && slideIndex === autoplayIndex && isActive && !prefersReducedMotion()
 
   usePublishActiveResolvedUrl(isActive, signFailed || !resolvedUrl ? null : resolvedUrl)
   usePauseMediaOnInactive(mediaRef, isActive)
 
+  const togglePlayback = useCallback(() => {
+    const el = mediaRef.current
+    if (!(el instanceof HTMLVideoElement)) return
+    if (el.paused) void el.play().catch(() => undefined)
+    else el.pause()
+  }, [])
+
+  // Inactive near-mount must not clear the active slide's media controller.
+  useEffect(() => {
+    if (!isActive || !canPlay || kind !== 'video') return
+    registerGalleryMediaController({ togglePlayback })
+    return () => registerGalleryMediaController(null)
+  }, [canPlay, isActive, kind, togglePlayback])
+
+  if (isSpoiler) {
+    return <GallerySpoilerChipShell visibilityRef={visibilityRef} kind={kind} reveal={reveal} />
+  }
+
   if (signFailed) {
     return (
-      <div ref={visibilityRef} className="flex h-full w-full items-center justify-center px-6">
+      <GallerySlideShell visibilityRef={visibilityRef} className="px-6">
         <MediaUnavailable
           label={kind === 'video' ? 'Video unavailable' : 'Audio unavailable'}
           kind={kind}
           onRetry={retry}
         />
-      </div>
+      </GallerySlideShell>
     )
   }
 
   if (!resolvedUrl) {
-    return kind === 'video' ? (
-      <div
-        ref={visibilityRef}
-        className="skeleton max-h-[calc(100dvh-7rem)] w-full max-w-[min(96vw,1200px)]"
-        aria-hidden
-      />
-    ) : (
-      <div ref={visibilityRef} className="skeleton h-24 w-full max-w-md" aria-hidden />
+    return (
+      <GallerySlideShell visibilityRef={visibilityRef}>
+        <GalleryLoadingBone kind={kind} />
+      </GallerySlideShell>
     )
   }
 
   if (kind === 'video') {
     return (
-      <div ref={visibilityRef} className="flex h-full w-full items-center justify-center px-4">
+      <GallerySlideShell visibilityRef={visibilityRef} className="px-4">
         <video
           ref={mediaRef as RefObject<HTMLVideoElement>}
           src={resolvedUrl}
@@ -248,14 +332,12 @@ function GalleryAvSlide({
           className="max-h-[calc(100dvh-7rem)] max-w-[min(96vw,1200px)] bg-black object-contain"
           aria-label={label}
         />
-      </div>
+      </GallerySlideShell>
     )
   }
 
   return (
-    <div
-      ref={visibilityRef}
-      className="flex h-full w-full flex-col items-center justify-center px-6">
+    <GallerySlideShell visibilityRef={visibilityRef} className="flex-col px-6">
       <p className="mb-4 max-w-md truncate text-center text-sm text-white/70">{label}</p>
       <audio
         ref={mediaRef as RefObject<HTMLAudioElement>}
@@ -265,7 +347,7 @@ function GalleryAvSlide({
         className="w-full max-w-md"
         aria-label={label}
       />
-    </div>
+    </GallerySlideShell>
   )
 }
 

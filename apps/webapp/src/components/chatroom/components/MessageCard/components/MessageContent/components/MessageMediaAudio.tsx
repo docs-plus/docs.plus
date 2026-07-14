@@ -1,4 +1,6 @@
+import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
+import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'
@@ -16,14 +18,19 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
   const theme = messageMediaTheme('audio')
   const label = media.name?.trim() || 'Audio attachment'
   const { url: resolvedUrl, ref: visibilityRef, signFailed, retry } = useFeedMediaDisplayUrl(media)
+  const { isSpoiler, reveal } = useFeedSpoilerGate(media)
 
   const onExpand = useCallback(
     (event: MouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
+      if (isSpoiler) {
+        reveal()
+        return
+      }
       if (resolvedUrl) onOpen?.()
     },
-    [onOpen, resolvedUrl]
+    [isSpoiler, onOpen, resolvedUrl, reveal]
   )
 
   return (
@@ -43,7 +50,16 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-base-content truncate text-xs font-medium">{label}</p>
-        {resolvedUrl && !signFailed ? (
+        {isSpoiler ? (
+          <button
+            type="button"
+            className="rounded-field bg-base-300/40 relative mt-1 flex h-8 w-full min-w-[180px] cursor-pointer items-center justify-center overflow-hidden border-0 p-0"
+            aria-label="Reveal spoiler audio"
+            data-testid="feed-spoiler-reveal"
+            onClick={onExpand}>
+            <FeedSpoilerRevealOverlay />
+          </button>
+        ) : resolvedUrl && !signFailed ? (
           <audio controls preload="none" className="mt-1 h-8 w-full min-w-[180px]">
             <source src={resolvedUrl} />
           </audio>
@@ -58,7 +74,7 @@ export function MessageMediaAudio({ media, onOpen }: Props) {
           <div className="skeleton mt-1 h-8 w-full min-w-[180px]" aria-hidden />
         )}
       </div>
-      {onOpen && resolvedUrl && !signFailed ? (
+      {!isSpoiler && onOpen && resolvedUrl && !signFailed ? (
         <button
           type="button"
           onClick={onExpand}
