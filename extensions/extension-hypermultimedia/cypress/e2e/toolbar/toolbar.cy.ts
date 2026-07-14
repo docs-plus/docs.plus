@@ -91,6 +91,32 @@ describe('media toolbar overlay', () => {
     })
   })
 
+  it('keeps wrap-left and wrap-right images inside the editor column', () => {
+    const assertInsideColumn = () => {
+      cy.get('#editor .ProseMirror').then(($pm) => {
+        const column = $pm[0].getBoundingClientRect()
+        cy.get('#editor .hypermultimedia--image__content').should(($media) => {
+          const box = $media[0].getBoundingClientRect()
+          expect(box.left, 'left edge').to.be.at.least(column.left - 1)
+          expect(box.right, 'right edge').to.be.at.most(column.right + 1)
+        })
+      })
+    }
+
+    cy.visitPlayground()
+    // Near full-column width so wrap margins would overflow without the float max-width cap.
+    cy.insertSizedImage(720, 400)
+    cy.activateImageGripper()
+    cy.get('#editor .media-toolbar [data-action-id="align"]').click()
+    cy.get('.media-toolbar__submenu .media-toolbar__submenu-item').contains('Wrap right').click()
+    assertInsideColumn()
+
+    cy.hoverMediaControls('#editor img')
+    cy.get('#editor .media-toolbar [data-action-id="align"]').click()
+    cy.get('.media-toolbar__submenu .media-toolbar__submenu-item').contains('Wrap left').click()
+    assertInsideColumn()
+  })
+
   it('deletes the node from the overflow menu', () => {
     cy.visitPlayground()
     cy.insertSizedImage(480, 320)

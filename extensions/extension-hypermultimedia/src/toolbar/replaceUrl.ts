@@ -1,4 +1,3 @@
-import { createPopover, DEFAULT_OFFSET, getDefaultController } from '@docs.plus/floating-popover'
 import type { Editor } from '@tiptap/core'
 
 import { getKitStorage } from '../kitStorage'
@@ -9,6 +8,7 @@ import { isValidVimeoUrl } from '../nodes/vimeo/helper'
 import { normalizeXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
 import { applyNodeAttributes } from '../utils/media-node-attrs'
+import { closeToolbarPopover, openMediaPopover } from './menu'
 import { type MediaToolbarIconScope, resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaActionContext } from './types'
 
@@ -108,7 +108,7 @@ export function openReplaceUrlPopover(ctx: MediaActionContext): void {
     const value = url.trim()
     return value ? guard.resolve(value) : null
   }
-  const close = () => getDefaultController().close()
+  const close = () => closeToolbarPopover()
 
   const content = factory({
     editor: ctx.editor,
@@ -130,18 +130,14 @@ export function openReplaceUrlPopover(ctx: MediaActionContext): void {
     return
   }
 
-  const popover = createPopover({
-    referenceElement: ctx.wrapper,
+  openMediaPopover({
+    kind: 'media-replace',
     content,
-    placement: 'bottom',
-    offset: DEFAULT_OFFSET,
+    trigger: ctx.wrapper,
+    variant: 'dialog',
     role: 'dialog',
-    ariaLabel: 'Replace URL'
+    ariaLabel: 'Replace URL',
+    toggle: false
   })
-  getDefaultController().adopt(popover, 'media-replace', {
-    element: popover.element,
-    referenceElement: ctx.wrapper
-  })
-  popover.show()
   content.querySelector('input')?.focus()
 }

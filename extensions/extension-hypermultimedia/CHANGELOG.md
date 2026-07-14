@@ -8,6 +8,26 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Media toolbar `…` overflow menu toggles closed on a second click (outside
+  dismiss no longer races the trigger). Menu anchors to the toolbar bar with
+  `bottom-end` so it aligns to the toolbar’s right edge.
+- Overflow/submenu gap under the toolbar tightened (2px offset); cross-axis
+  `shift` disabled so the menu stays flush with the bar’s end edge.
+- Wrap left/right no longer overflows the editor column: floated media gets
+  `max-width: calc(100% - horizontal margins)` so pixel width + wrap gap stay
+  inside the parent.
+
+### Internal
+
+- Media layout CSS (live + export + image block) routes through one
+  `layoutStyle` module (`StyleLayoutOptions` / `mediaLayoutCss` /
+  `applyMediaLayoutToDom`); node options re-export the same type (no dual
+  layout contracts).
+- Toolbar popovers open via `openMediaPopover` (menu + Replace dialog); engine
+  dismiss/shift knobs stay inside that adapter.
+
 ## [2.0.0] — 2026-06-16
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in

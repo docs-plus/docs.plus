@@ -380,7 +380,7 @@ The mounted element is stamped `data-hm-toolbar`, so reuse on re-hover and remov
 Two rules for action handlers:
 
 - **Re-resolve the position.** `nodePos` is a snapshot at open; edits above the node shift it. Call `resolveMediaNodePos(editor.view, target, nodeType)` at action time.
-- **Use the popover helpers** for anchored menus: `openToolbarPopover(anchor, body, kind)` opens one popover at a time with outside-click and Escape dismissal built in; `closeToolbarPopover()` closes it.
+- **Use the popover helpers** for anchored menus: `openToolbarPopover(trigger, body, kind)` toggles a menu popover (second click on the same kind closes); pass `{ positionReference }` to align against a larger surface (e.g. the toolbar bar). Prefer `openMediaPopover({ kind, content, trigger, variant })` for new call sites — it owns dismiss/shift knobs and also powers the Replace URL dialog. Outside-click and Escape dismissal are built in; `closeToolbarPopover()` closes it.
 
 `attachTooltip(myButton, 'Do thing')` gives a custom button the built-in hover/focus tooltip, re-exported from the bundled `@docs.plus/floating-tooltip`; it returns a detach function for surfaces that re-render in place.
 

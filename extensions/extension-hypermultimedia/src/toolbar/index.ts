@@ -14,7 +14,7 @@ export {
   removeMediaNode,
   viewOriginalMedia
 } from './handlers'
-export { closeToolbarPopover, openToolbarPopover } from './menu'
+export { closeToolbarPopover, openMediaPopover, openToolbarPopover } from './menu'
 export { closeMediaToolbar, openMediaToolbar } from './mount'
 export { resolveMediaActions } from './registry'
 export {

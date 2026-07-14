@@ -69,6 +69,7 @@ export {
   type MediaToolbarIconsResolver,
   type MediaToolbarLayout,
   type MediaToolbarOptions,
+  openMediaPopover,
   openMediaToolbar,
   openReplaceUrlPopover,
   openToolbarPopover,

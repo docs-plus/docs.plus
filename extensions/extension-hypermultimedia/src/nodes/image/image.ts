@@ -21,6 +21,7 @@ import {
 } from '../../markdown/typedMediaMarkdown'
 import type { ImageOptions } from '../../types'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
+import { mediaLayoutCss } from '../../utils/layoutStyle'
 import { generateShortId } from '../../utils/utils'
 import { inputRegex, isImageUrl } from './helper'
 import { createImageNodeView } from './nodeView'
@@ -151,10 +152,7 @@ export const Image = Node.create<ImageOptions>({
     if (width && height) imgStyle += `width: ${width}px; aspect-ratio: ${width} / ${height}; `
     else if (width) imgStyle += `width: ${width}px; `
 
-    let blockStyle = ''
-    if (float && float !== 'unset') blockStyle += `float: ${float}; `
-    if (clear && clear !== 'none') blockStyle += `clear: ${clear}; `
-    if (margin && margin !== '0in') blockStyle += `margin: ${margin}; `
+    const blockStyle = mediaLayoutCss({ float, clear, margin }, 'export-image-block')
 
     const img = [
       'img',

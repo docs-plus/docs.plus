@@ -1,5 +1,5 @@
 import { EMBED_LAYOUT_ATTR_KEYS } from '../utils/embedKit'
-import { applyStyles } from '../utils/utils'
+import { applyMediaLayoutToDom, styleLayoutFromAttrs } from '../utils/layoutStyle'
 
 export { EMBED_LAYOUT_ATTR_KEYS }
 
@@ -51,25 +51,6 @@ export function layoutAttrsChanged(
   return keys.some((key) => left[key] !== right[key])
 }
 
-function applyMediaWrapperLayout(
-  dom: HTMLElement,
-  attrs: Record<string, unknown>,
-  dims: { width: number; height: number },
-  options?: { justifyContent?: string }
-): void {
-  // No fixed `height` on the wrapper: the loading shell + media surface carry the pixel
-  // height (syncResizableMediaLayout), so the wrapper grows to fit the caption below the
-  // media instead of clipping it into the following paragraph.
-  applyStyles(dom, {
-    display: attrs.display as string,
-    width: dims.width,
-    float: attrs.float as string,
-    clear: attrs.clear as string,
-    margin: attrs.margin as string,
-    justifyContent: (options?.justifyContent ?? attrs.justifyContent ?? 'start') as string
-  })
-}
-
 export interface SyncResizableMediaLayoutOptions {
   width: number
   height: number
@@ -112,10 +93,13 @@ export function syncMediaNodeLayout(options: SyncMediaNodeLayoutOptions): void {
   const dims =
     options.dims ??
     parseLayoutDimensions(options.attrs, options.fallback ?? DEFAULT_LAYOUT_FALLBACK)
-  applyMediaWrapperLayout(
+  // No fixed `height` on the wrapper: the loading shell + media surface carry the pixel
+  // height (syncResizableMediaLayout), so the wrapper grows to fit the caption below the
+  // media instead of clipping it into the following paragraph.
+  applyMediaLayoutToDom(
     options.wrapper,
-    options.attrs,
-    dims,
+    styleLayoutFromAttrs(options.attrs),
+    { width: dims.width },
     options.justifyContent ? { justifyContent: options.justifyContent } : undefined
   )
   syncResizableMediaLayout({

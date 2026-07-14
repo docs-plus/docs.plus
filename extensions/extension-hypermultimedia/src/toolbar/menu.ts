@@ -4,6 +4,21 @@ import { attachTooltip } from '@docs.plus/floating-tooltip'
 import { type MediaToolbarIconsResolver, resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaAction, MediaActionContext } from './types'
 
+/** Tuck menus under the bar — DEFAULT_OFFSET (8) leaves a visible gutter. */
+const TOOLBAR_MENU_OFFSET = 2
+
+const POPOVER_BY_VARIANT = {
+  menu: {
+    placement: 'bottom-end' as const,
+    offset: TOOLBAR_MENU_OFFSET,
+    crossAxisShift: false
+  },
+  dialog: {
+    placement: 'bottom' as const,
+    offset: DEFAULT_OFFSET
+  }
+} as const
+
 const toolbarTooltipDetaches = new WeakMap<HTMLElement, (() => void)[]>()
 
 export function bindToolbarTooltips(bar: HTMLElement, detaches: (() => void)[]): void {
@@ -48,22 +63,83 @@ export function actionButton(
   return btn
 }
 
-/** Anchored popover on the shared controller; one open at a time. */
-export function openToolbarPopover(anchor: HTMLElement, body: HTMLElement, kind: string): void {
+export type OpenMediaPopoverOptions = {
+  kind: string
+  content: HTMLElement
+  /** Click target — ignored for light-dismiss so toggle works. */
+  trigger: HTMLElement
+  /** Position surface; defaults to `trigger`. Overflow menus pass the toolbar bar. */
+  positionReference?: HTMLElement
+  variant?: 'menu' | 'dialog'
+  role?: string
+  ariaLabel?: string
+  /** When false, skip toggle-close if the same kind is already open (dialogs). Default true for menu. */
+  toggle?: boolean
+}
+
+/**
+ * Media toolbar popover adapter — owns toggle, menu offset/shift, and dismiss-ignore.
+ * Callers pass content + kind + anchors only.
+ */
+export function openMediaPopover(options: OpenMediaPopoverOptions): void {
+  const {
+    kind,
+    content,
+    trigger,
+    positionReference = trigger,
+    variant = 'menu',
+    role,
+    ariaLabel,
+    toggle = variant === 'menu'
+  } = options
+
+  const controller = getDefaultController()
+  if (toggle) {
+    const state = controller.getState()
+    if (state.kind === 'mounted' && state.popoverKind === kind) {
+      controller.close()
+      return
+    }
+  }
+
   const popover = createPopover({
-    referenceElement: anchor,
-    content: body,
-    placement: 'bottom-end',
-    offset: DEFAULT_OFFSET
+    referenceElement: positionReference,
+    content,
+    ...POPOVER_BY_VARIANT[variant],
+    role,
+    ariaLabel,
+    ignoreOutsideClickOn: trigger
   })
-  getDefaultController().adopt(popover, kind, {
+
+  controller.adopt(popover, kind, {
     element: popover.element,
-    referenceElement: anchor
+    referenceElement: positionReference
   })
   popover.show()
 }
 
-/** Close the popover opened by `openToolbarPopover`, if any. */
+export type OpenToolbarPopoverOptions = {
+  /** Position against this surface; defaults to `trigger`. Overflow menus pass the toolbar bar. */
+  positionReference?: HTMLElement
+}
+
+/** Toggle an anchored menu popover on the shared controller; one open at a time. */
+export function openToolbarPopover(
+  trigger: HTMLElement,
+  body: HTMLElement,
+  kind: string,
+  options?: OpenToolbarPopoverOptions
+): void {
+  openMediaPopover({
+    kind,
+    content: body,
+    trigger,
+    positionReference: options?.positionReference,
+    variant: 'menu'
+  })
+}
+
+/** Close the popover opened by `openToolbarPopover` / `openMediaPopover`, if any. */
 export function closeToolbarPopover(): void {
   getDefaultController().close()
 }

@@ -48,7 +48,9 @@ export function renderMediaToolbar(ctx: MediaActionContext, actions: MediaAction
     more.innerHTML = resolveMediaToolbarIcon(ctx, 'more', kitIcons) ?? ''
     tooltipDetaches.push(attachTooltip(more, 'More actions'))
     more.onclick = () =>
-      openToolbarPopover(more, buildOverflowMenu(ctx, overflow, kitIcons), 'media-menu')
+      openToolbarPopover(more, buildOverflowMenu(ctx, overflow, kitIcons), 'media-menu', {
+        positionReference: bar
+      })
     bar.append(more)
   }
 
