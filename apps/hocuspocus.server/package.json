@@ -20,6 +20,7 @@
     "doctor:observability": "bun scripts/smoke-observability.ts",
     "prisma:generate": "bun --env-file=../../.env.local x prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "bun --env-file=../../.env.local x prisma migrate dev",
+    "prisma:migrate:deploy": "bun --env-file=../../.env.local x prisma migrate deploy --schema=./prisma/schema.prisma",
     "migrate:nested-to-flat": "bun --env-file=../../.env.local src/scripts/migrate-nested-to-flat.ts",
     "migrate:nested-to-flat:dry": "bun --env-file=../../.env.local src/scripts/migrate-nested-to-flat.ts --dry-run",
     "migrate:media-node-names": "bun --env-file=../../.env.local src/scripts/migrate-media-node-names.ts",

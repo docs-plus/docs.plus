@@ -18,12 +18,12 @@ help:
 	@echo "  make up-prod           - Start all services (production)"
 	@echo "  make up-dev            - Start all services (development - Docker)"
 	@echo ""
-	@echo "Local Development (macOS-friendly, no Docker IO):"
-	@echo "  make infra-up           - Start infrastructure only (postgres, redis)"
-	@echo "  make infra-down         - Stop infrastructure"
-	@echo "  make infra-logs         - View infrastructure logs"
-	@echo "  make dev-local          - Start all services (backend + frontend)"
-	@echo "  make dev-backend        - Start backend services (REST, WS, Worker)"
+	@echo "Local Development (one command):"
+	@echo "  make dev-local          - Install/deps, DB, Supabase, backend + webapp"
+	@echo "  make dev-backend        - Same bootstrap, backend processes only"
+	@echo "  make infra-up           - Start Postgres + Redis only"
+	@echo "  make infra-down         - Stop Postgres + Redis"
+	@echo "  make infra-logs         - Tail Postgres + Redis logs"
 	@echo ""
 	@echo "Individual processes (Bun, not Make):"
 	@echo "  bun run dev                                       - Frontend (webapp)"
@@ -31,7 +31,7 @@ help:
 	@echo "  bun --filter @docs.plus/hocuspocus dev:rest       - REST API"
 	@echo "  bun --filter @docs.plus/hocuspocus dev:ws         - WebSocket server"
 	@echo "  bun --filter @docs.plus/hocuspocus dev:worker     - Worker"
-	@echo "  bun --filter @docs.plus/supabase_back start       - Supabase"
+	@echo "  bun --filter @docs.plus/supabase_back start|stop  - Supabase up / down"
 	@echo ""
 	@echo "Production Deployment (Traefik):"
 	@echo "  make deploy-prod             - Deploy full stack with Traefik"
@@ -45,7 +45,7 @@ help:
 	@echo ""
 	@echo "Management:"
 	@echo "  make down              - Stop all services (auto-detects dev/prod/local)"
-	@echo "  make logs              - View all logs (auto-detects dev/prod)"
+	@echo "  make logs              - View all logs (auto-detects dev/prod/local)"
 	@echo "  make logs-webapp       - View webapp logs (auto-detects dev/prod)"
 	@echo "  make logs-backend      - View backend logs (rest-api, hocuspocus-server, worker) (auto-detects dev/prod)"
 	@echo "  make restart           - Restart all services (auto-detects dev/prod)"
@@ -141,8 +141,8 @@ up-dev: build-dev
 	fi
 	@echo ""
 	@if [ ! -f .env.development ]; then \
-		echo "⚠️  Warning: .env.development not found. Creating from template..."; \
-		cp .env .env.development 2>/dev/null || true; \
+		echo "❌ .env.development missing — run: cp .env.example .env.development"; \
+		exit 1; \
 	fi
 	@echo "Services:"
 	@echo "  📦 PostgreSQL (port 5432)"
@@ -181,26 +181,21 @@ up-dev: build-dev
 infra-up:
 	@echo "🚀 Starting infrastructure services (PostgreSQL + Redis)..."
 	@if [ ! -f .env.local ]; then \
-		echo "⚠️  Warning: .env.local not found. Creating from .env.development..."; \
-		cp .env.development .env.local 2>/dev/null || true; \
+		if [ ! -f .env.development ]; then \
+			echo "✗ .env.local missing and .env.development not found"; exit 1; \
+		fi; \
+		echo "• Creating .env.local from .env.development — review secrets"; \
+		cp .env.development .env.local; \
 	fi
-	@docker compose -f docker-compose.local.yml --env-file .env.local up -d
+	@docker compose -f docker-compose.local.yml --env-file .env.local up -d --wait
 	@echo ""
 	@echo "✅ Infrastructure started!"
 	@echo ""
 	@echo "Services:"
-	@echo "  📦 PostgreSQL: localhost:${DB_PORT:-5432}"
-	@echo "  🔴 Redis:      localhost:${REDIS_PORT:-6379}"
+	@echo "  📦 PostgreSQL: localhost:$${DB_PORT:-5432}"
+	@echo "  🔴 Redis:      localhost:$${REDIS_PORT:-6379}"
 	@echo ""
-	@echo "Next steps:"
-	@echo "  1. Start Supabase:  bun --filter @docs.plus/supabase_back start"
-	@echo "  2. Start apps:      make dev-local"
-	@echo ""
-	@echo "Or run manually:"
-	@echo "  Backend REST API:    bun --filter @docs.plus/hocuspocus dev:rest"
-	@echo "  Backend WebSocket:   bun --filter @docs.plus/hocuspocus dev:ws"
-	@echo "  Backend Worker:      bun --filter @docs.plus/hocuspocus dev:worker"
-	@echo "  Frontend:            bun run dev"
+	@echo "Next: make dev-local"
 
 infra-down:
 	@echo "🛑 Stopping infrastructure services..."
@@ -211,39 +206,20 @@ infra-logs:
 	@echo "📋 Infrastructure logs..."
 	@docker compose -f docker-compose.local.yml --env-file .env.local logs -f
 
+# Bootstraps env/deps/DB/extensions then starts processes (implementation: scripts/dev-local-preflight.ts).
 dev-local:
-	@echo "🚀 Starting local development (all services)..."
-	@if [ ! -f .env.local ]; then \
-		echo "⚠️  .env.local not found. Creating from .env.development..."; \
-		cp .env.development .env.local; \
-		echo "✅ Created .env.local - please review and adjust for localhost if needed"; \
-	fi
-	@if ! docker ps | grep -q docsy-postgres-local; then \
-		echo "⚠️  PostgreSQL not running. Starting infrastructure..."; \
-		$(MAKE) infra-up; \
-	elif ! docker ps | grep -q docsy-redis-local; then \
-		echo "⚠️  Redis not running. Starting infrastructure..."; \
-		$(MAKE) infra-up; \
-	fi
-	@if ! lsof -Pi :54321 -sTCP:LISTEN -t >/dev/null 2>&1; then \
-		echo "⚠️  Starting Supabase..."; \
-		bun --filter @docs.plus/supabase_back start > /dev/null 2>&1 || true; \
-	fi
-	@echo "🔧 Ensuring Prisma client is generated..."
-	@bun --filter @docs.plus/hocuspocus prisma:generate > /dev/null 2>&1 || true
-	@echo "🔧 Applying database migrations..."
-	@cd apps/hocuspocus.server && dotenv -e ../../.env.local -- bunx prisma migrate deploy > /dev/null 2>&1 || true
-	@echo ""
-	@echo "Starting all services..."
-	@bunx concurrently -n "REST,WS,WORKER,WEBAPP" -c "blue,green,yellow,magenta" \
+	@bun scripts/dev-local-preflight.ts
+	@echo "🚀 Starting local development (REST + WS + Worker + Webapp)..."
+	@bunx concurrently --kill-others-on-fail -n "REST,WS,WORKER,WEBAPP" -c "blue,green,yellow,magenta" \
 		"bun --filter @docs.plus/hocuspocus dev:rest" \
 		"bun --filter @docs.plus/hocuspocus dev:ws" \
 		"bun --filter @docs.plus/hocuspocus dev:worker" \
 		"bun --filter @docs.plus/webapp dev"
 
 dev-backend:
+	@bun scripts/dev-local-preflight.ts
 	@echo "🚀 Starting backend services (REST API, WebSocket, Worker)..."
-	@bunx concurrently -n "REST,WS,WORKER" -c "blue,green,yellow" \
+	@bunx concurrently --kill-others-on-fail -n "REST,WS,WORKER" -c "blue,green,yellow" \
 		"bun --filter @docs.plus/hocuspocus dev:rest" \
 		"bun --filter @docs.plus/hocuspocus dev:ws" \
 		"bun --filter @docs.plus/hocuspocus dev:worker"
@@ -275,13 +251,13 @@ down:
 		echo "🛑 Stopping all services (production)..."; \
 		docker compose -f docker-compose.prod.yml --env-file .env.production down; \
 		echo "✅ All services stopped"; \
-	elif docker compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker-compose.local.yml --env-file .env.local ps -q 2>/dev/null | grep -q .; then \
 		echo "🛑 Stopping infrastructure services (local)..."; \
-		docker compose -f docker-compose.local.yml --env-file .env.development down; \
+		docker compose -f docker-compose.local.yml --env-file .env.local down; \
 		echo "✅ Infrastructure stopped"; \
-		echo "💡 Apps are running natively - stop them manually (Ctrl+C)"; \
+		echo "💡 Apps run natively - stop them with Ctrl+C; Supabase: bun --filter @docs.plus/supabase_back stop"; \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  No running containers found. Start with 'make dev-local' (local) or 'make up-dev' (Docker)"; \
 	fi
 
 logs:
@@ -291,8 +267,11 @@ logs:
 	elif docker compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "📋 Detected production environment - showing all logs..."; \
 		docker compose -f docker-compose.prod.yml --env-file .env.production logs -f; \
+	elif docker compose -f docker-compose.local.yml --env-file .env.local ps -q 2>/dev/null | grep -q .; then \
+		echo "📋 Local mode: infra logs below; app logs live in the 'make dev-local' terminal..."; \
+		docker compose -f docker-compose.local.yml --env-file .env.local logs -f; \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  No running containers found. Start with 'make dev-local' (local) or 'make up-dev' (Docker)"; \
 	fi
 
 logs-webapp:
@@ -301,7 +280,7 @@ logs-webapp:
 	elif docker compose -f docker-compose.prod.yml --env-file .env.production ps -q webapp 2>/dev/null | grep -q .; then \
 		docker compose -f docker-compose.prod.yml --env-file .env.production logs -f webapp; \
 	else \
-		echo "⚠️  Webapp container not found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  Webapp container not found. Under 'make dev-local' the webapp runs natively — see the WEBAPP stream in that terminal"; \
 	fi
 
 logs-backend:
@@ -310,7 +289,7 @@ logs-backend:
 	elif docker compose -f docker-compose.prod.yml --env-file .env.production ps -q rest-api 2>/dev/null | grep -q .; then \
 		docker compose -f docker-compose.prod.yml --env-file .env.production logs -f rest-api hocuspocus-server hocuspocus-worker; \
 	else \
-		echo "⚠️  Backend containers not found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  Backend containers not found. Under 'make dev-local' the backend runs natively — see the REST/WS/WORKER streams in that terminal"; \
 	fi
 
 restart:
@@ -323,7 +302,7 @@ restart:
 		docker compose -f docker-compose.prod.yml --env-file .env.production restart; \
 		echo "✅ All services restarted"; \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  No running containers found. Start with 'make dev-local' (local) or 'make up-dev' (Docker)"; \
 	fi
 
 # =============================================================================
@@ -341,9 +320,9 @@ clean:
 		docker compose -f docker-compose.prod.yml --env-file .env.production down -v; \
 		docker rmi docsplus-webapp:latest docsplus-hocuspocus:latest 2>/dev/null || true; \
 		echo "✅ Production cleanup complete"; \
-	elif docker compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker-compose.local.yml --env-file .env.local ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (local)..."; \
-		docker compose -f docker-compose.local.yml --env-file .env.development down -v; \
+		docker compose -f docker-compose.local.yml --env-file .env.local down -v; \
 		echo "✅ Local cleanup complete"; \
 	else \
 		echo "🧹 No running containers found. Cleaning up project images..."; \
@@ -362,12 +341,12 @@ ps:
 		docker compose -f docker-compose.dev.yml --env-file .env.development ps; \
 	elif docker compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		docker compose -f docker-compose.prod.yml --env-file .env.production ps; \
-	elif docker compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
-		docker compose -f docker-compose.local.yml --env-file .env.development ps; \
+	elif docker compose -f docker-compose.local.yml --env-file .env.local ps -q 2>/dev/null | grep -q .; then \
+		docker compose -f docker-compose.local.yml --env-file .env.local ps; \
 		echo ""; \
 		echo "💡 Apps are running natively (not shown above)"; \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  No running containers found. Start with 'make dev-local' (local) or 'make up-dev' (Docker)"; \
 	fi
 
 stats:
@@ -376,7 +355,7 @@ stats:
 	elif docker compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		docker stats $$(docker compose -f docker-compose.prod.yml --env-file .env.production ps -q); \
 	else \
-		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+		echo "⚠️  No running containers found. Start with 'make dev-local' (local) or 'make up-dev' (Docker)"; \
 	fi
 
 # =============================================================================

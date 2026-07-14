@@ -11,9 +11,9 @@
  */
 
 import { $ } from 'bun'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { createConnection } from 'net'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 
 // =============================================================================
 // Configuration
@@ -21,8 +21,13 @@ import { resolve } from 'path'
 
 const ROOT_DIR = resolve(import.meta.dir, '..')
 
-const REQUIRED_BUN_VERSION = '1.3.7'
-const REQUIRED_NODE_VERSION = '24.0.0'
+const engines = (
+  JSON.parse(readFileSync(resolve(ROOT_DIR, 'package.json'), 'utf8')) as {
+    engines?: { bun?: string; node?: string }
+  }
+).engines
+const REQUIRED_BUN_VERSION = engines?.bun?.replace(/^[^0-9]*/, '') || '1.3.7'
+const REQUIRED_NODE_VERSION = engines?.node?.replace(/^[^0-9]*/, '') || '24.11.0'
 
 const REQUIRED_PORTS = [
   { port: 3000, service: 'Webapp' },
@@ -41,8 +46,7 @@ const OPTIONAL_ENV_FILES = ['.env.local', '.env.production']
 
 const REQUIRED_TOOLS = [
   { name: 'docker', command: ['docker', '--version'], extract: /Docker version ([\d.]+)/ },
-  { name: 'docker-compose', command: ['docker', 'compose', 'version'], extract: /v?([\d.]+)/ },
-  { name: 'supabase', command: ['supabase', '--version'], extract: /(\d+\.\d+\.\d+)/ }
+  { name: 'docker-compose', command: ['docker', 'compose', 'version'], extract: /v?([\d.]+)/ }
 ]
 
 // =============================================================================
@@ -301,9 +305,17 @@ async function checkNodeModules(): Promise<CheckResult> {
 }
 
 async function checkPrismaClient(): Promise<CheckResult> {
-  const prismaClientPath = resolve(ROOT_DIR, 'apps/hocuspocus.server/node_modules/.prisma/client')
+  // Derive from module resolution — the generated client lands in Bun's
+  // isolated store, not under the package's own node_modules.
+  let generated = false
+  try {
+    const entry = Bun.resolveSync('@prisma/client', resolve(ROOT_DIR, 'apps/hocuspocus.server'))
+    generated = existsSync(resolve(dirname(entry), '../../.prisma/client'))
+  } catch {
+    generated = false
+  }
 
-  if (existsSync(prismaClientPath)) {
+  if (generated) {
     return {
       name: 'Prisma Client',
       status: 'pass',
@@ -316,6 +328,35 @@ async function checkPrismaClient(): Promise<CheckResult> {
     status: 'warn',
     message: 'Not generated',
     details: 'Run: bun run --filter @docs.plus/hocuspocus prisma:generate'
+  }
+}
+
+async function checkSupabaseCli(): Promise<CheckResult> {
+  // The repo never needs a global CLI — @docs.plus/supabase_back pins it as a
+  // workspace devDependency and all scripts resolve node_modules/.bin.
+  const workspaceBin = resolve(ROOT_DIR, 'packages/supabase/node_modules/.bin/supabase')
+  if (existsSync(workspaceBin)) {
+    return {
+      name: 'supabase',
+      status: 'pass',
+      message: 'Workspace devDependency'
+    }
+  }
+
+  const globalCli = await runCommand(['supabase', '--version'])
+  if (globalCli.success) {
+    return {
+      name: 'supabase',
+      status: 'pass',
+      message: `Global CLI v${globalCli.output.match(/(\d+\.\d+\.\d+)/)?.[1] ?? 'unknown'}`
+    }
+  }
+
+  return {
+    name: 'supabase',
+    status: 'warn',
+    message: 'Not found yet',
+    details: 'bun install provides it (workspace devDependency)'
   }
 }
 
@@ -438,6 +479,7 @@ async function main() {
   allResults.push(await checkBunVersion())
   allResults.push(await checkNodeVersion())
   allResults.push(...(await checkRequiredTools()))
+  allResults.push(await checkSupabaseCli())
   allResults.push(await checkDockerRunning())
 
   for (const result of allResults) {
@@ -493,9 +535,9 @@ async function main() {
   } else {
     console.log('✅ All checks passed! Your environment is ready.\n')
     console.log('Quick start:')
-    console.log('  make infra-up                                  # Start PostgreSQL + Redis')
-    console.log('  bun --filter @docs.plus/supabase_back start    # Start Supabase')
-    console.log('  make dev-local                                 # Start all services\n')
+    console.log(
+      '  make dev-local                                 # Install, DB, Supabase, all services\n'
+    )
     process.exit(0)
   }
 }
