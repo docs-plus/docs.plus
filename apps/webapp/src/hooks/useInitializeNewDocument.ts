@@ -27,6 +27,17 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
 
       if (!ymetadata.get('needsInitialization')) return
 
+      // A never-persisted draft meets a fresh server default state on every
+      // reopen, whose needsInitialization=true can win the Y.Map merge over the
+      // IndexedDB mirror's false — never setContent (it REPLACES) over user text.
+      // Text, not node count: the editor pre-writes an empty heading scaffold.
+      const fragmentText = provider.configuration.document
+        .getXmlFragment('default')
+        .toString()
+        .replace(/<[^>]+>/g, '')
+        .trim()
+      if (fragmentText.length > 0) return
+
       const heading = Array.isArray(slugs) ? (slugs.at(0) ?? 'Title') : 'Title'
       const defaultContent = Config.editor.getDefaultContent(heading)
 
