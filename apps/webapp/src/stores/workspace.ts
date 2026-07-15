@@ -28,6 +28,8 @@ export type Workspace = {
   contentForkError?: boolean
   editor: EditorSettings
   hocuspocusProvider?: any
+  /** Mirrored from the provider on `authenticated` so edit-lock selectors react. */
+  authorizedScope?: string | null
   deviceDetect?: any
   isAuthServiceAvailable?: boolean
   joinedWorkspace?: boolean
@@ -58,6 +60,7 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       isEditable: false
     },
     hocuspocusProvider: undefined,
+    authorizedScope: null,
     joinedWorkspace: false
   },
   // Update a single setting

@@ -7,3 +7,11 @@ export function isDocumentOwner(
 ): boolean {
   return requesterId != null && existing?.ownerId != null && existing.ownerId === requesterId
 }
+
+/** May change Private/Read-only: owner, or any authed caller claiming an ownerless doc. */
+export function canMutateAccessFlags(
+  existing: { ownerId?: string | null } | null | undefined,
+  requesterId?: string | null
+): boolean {
+  return requesterId != null && (!existing?.ownerId || existing.ownerId === requesterId)
+}

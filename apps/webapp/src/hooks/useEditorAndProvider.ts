@@ -7,7 +7,6 @@ import { useEffect } from 'react'
 
 import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
 import useEditorEditableState from './useEditorEditableState'
-import useEditorReadOnly from './useEditorReadOnly'
 import useHandleDraftOnFocus from './useHandleDraftOnFocus'
 import useInitializeNewDocument from './useInitializeNewDocument'
 import useNewDocumentTip from './useNewDocumentTip'
@@ -27,7 +26,6 @@ const useEditorAndProvider = ({ provider }: { provider: HocuspocusProvider }) =>
 
   useProviderAwareness()
   useEditorEditableState()
-  useEditorReadOnly()
   useApplyFilters()
 
   useEffect(() => {

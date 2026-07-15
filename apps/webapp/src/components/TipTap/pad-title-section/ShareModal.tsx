@@ -67,6 +67,7 @@ interface ShareModalProps {
 const ShareModal = ({ setIsOpen }: ShareModalProps) => {
   const [href, setHref] = useState('')
   const docMetadata = useStore((state) => state.settings.metadata)
+  const isPrivate = Boolean(docMetadata?.isPrivate)
   const { copy, copied } = useCopyToClipboard({ successMessage: 'Link copied!' })
 
   useEffect(() => {
@@ -98,11 +99,14 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="mb-5 flex items-start justify-between">
         <div>
           <h2 className="text-base-content text-lg font-semibold">Share this document</h2>
-          <p className="text-base-content/50 mt-0.5 text-sm">Anyone with the link can view</p>
+          <p className="text-base-content/50 mt-0.5 text-sm">
+            {isPrivate
+              ? 'This document is private. Only you can open it.'
+              : 'Anyone with the link can view'}
+          </p>
         </div>
         <button
           onClick={() => setIsOpen(false)}
@@ -111,66 +115,71 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
         </button>
       </div>
 
-      {/* Copy Link */}
-      <div className="border-base-300 bg-base-100 rounded-field flex items-center gap-2 border p-2">
-        <input
-          type="text"
-          readOnly
-          value={href}
-          className="text-base-content/70 min-w-0 flex-1 bg-transparent px-2 text-sm focus:outline-none"
-          onClick={(e) => e.currentTarget.select()}
-        />
-        <div className="flex shrink-0 gap-1">
-          {hasWebShare && (
-            <button
-              onClick={webShareAPI}
-              title="More sharing options"
-              className="btn btn-ghost btn-sm btn-square text-base-content/50 hover:text-base-content">
-              <Icons.shareNative size={18} />
-            </button>
-          )}
-          <button
-            onClick={() => copy(href)}
-            className={`btn btn-sm gap-1.5 px-4 font-medium ${copied ? 'btn-success' : 'btn-primary'}`}>
-            <span
-              key={copied ? 'copied' : 'copy'}
-              className="flex items-center gap-1.5 motion-safe:animate-[doc-region-in_120ms_ease-out_both]">
-              {copied ? (
-                <>
-                  <Icons.check size={16} />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Icons.copy size={14} />
-                  Copy
-                </>
+      {isPrivate ? (
+        <p className="text-base-content/60 text-sm">
+          Turn off Private in Settings to share a link or post to social networks.
+        </p>
+      ) : (
+        <>
+          <div className="border-base-300 bg-base-100 rounded-field flex items-center gap-2 border p-2">
+            <input
+              type="text"
+              readOnly
+              value={href}
+              className="text-base-content/70 min-w-0 flex-1 bg-transparent px-2 text-sm focus:outline-none"
+              onClick={(e) => e.currentTarget.select()}
+            />
+            <div className="flex shrink-0 gap-1">
+              {hasWebShare && (
+                <button
+                  onClick={webShareAPI}
+                  title="More sharing options"
+                  className="btn btn-ghost btn-sm btn-square text-base-content/50 hover:text-base-content">
+                  <Icons.shareNative size={18} />
+                </button>
               )}
-            </span>
-          </button>
-        </div>
-      </div>
+              <button
+                onClick={() => copy(href)}
+                className={`btn btn-sm gap-1.5 px-4 font-medium ${copied ? 'btn-success' : 'btn-primary'}`}>
+                <span
+                  key={copied ? 'copied' : 'copy'}
+                  className="flex items-center gap-1.5 motion-safe:animate-[doc-region-in_120ms_ease-out_both]">
+                  {copied ? (
+                    <>
+                      <Icons.check size={16} />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Icons.copy size={14} />
+                      Copy
+                    </>
+                  )}
+                </span>
+              </button>
+            </div>
+          </div>
 
-      {/* Divider */}
-      <div className="my-6 flex items-center gap-3">
-        <div className="bg-base-300 h-px flex-1" />
-        <span className="text-base-content/40 text-xs tracking-wide uppercase">share via</span>
-        <div className="bg-base-300 h-px flex-1" />
-      </div>
+          <div className="my-6 flex items-center gap-3">
+            <div className="bg-base-300 h-px flex-1" />
+            <span className="text-base-content/40 text-xs tracking-wide uppercase">share via</span>
+            <div className="bg-base-300 h-px flex-1" />
+          </div>
 
-      {/* Social Icons with Brand Colors */}
-      <div className="flex items-center justify-between gap-2">
-        {socialButtons.map(({ key, icon: Icon, label, color, hoverBg }) => (
-          <button
-            key={key}
-            onClick={() => handleShare(key)}
-            title={label}
-            className={`rounded-box flex flex-1 cursor-pointer flex-col items-center gap-2 p-3 transition-colors ${color} ${hoverBg} hover:text-white`}>
-            <Icon size={24} />
-            <span className="text-xs font-medium">{label}</span>
-          </button>
-        ))}
-      </div>
+          <div className="flex items-center justify-between gap-2">
+            {socialButtons.map(({ key, icon: Icon, label, color, hoverBg }) => (
+              <button
+                key={key}
+                onClick={() => handleShare(key)}
+                title={label}
+                className={`rounded-box flex flex-1 cursor-pointer flex-col items-center gap-2 p-3 transition-colors ${color} ${hoverBg} hover:text-white`}>
+                <Icon size={24} />
+                <span className="text-xs font-medium">{label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

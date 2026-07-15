@@ -8,6 +8,7 @@ interface ToggleSectionProps {
   /** Optional stable id for the underlying checkbox (`htmlFor` / accessibility). */
   toggleId?: string
   checked: boolean
+  disabled?: boolean
   onChange: () => void
 }
 
@@ -17,6 +18,7 @@ const ToggleSection = ({
   description,
   toggleId,
   checked,
+  disabled,
   onChange
 }: ToggleSectionProps) => {
   return (
@@ -28,6 +30,7 @@ const ToggleSection = ({
       <Toggle
         id={toggleId}
         checked={checked}
+        disabled={disabled}
         onChange={() => onChange()}
         size="sm"
         variant="primary"

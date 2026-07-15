@@ -2,9 +2,10 @@ import { PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
+import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { handlePrismaError, ValidationError } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
-import { isDocumentOwner } from '../../lib/ownerAccess'
+import { canMutateAccessFlags, isDocumentOwner } from '../../lib/ownerAccess'
 import { withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
@@ -334,10 +335,10 @@ export const updateDocument = async (
     if (title !== undefined) updateData.title = title
     if (keywords !== undefined) updateData.keywords = keywords.join(',')
 
-    const isOwner = !!requesterId && (!existing?.ownerId || existing.ownerId === requesterId)
+    const mayMutateAccess = canMutateAccessFlags(existing, requesterId)
 
     const readOnlyChanged = readOnly !== undefined && (!existing || readOnly !== existing.readOnly)
-    if (readOnlyChanged && isOwner) {
+    if (readOnlyChanged && mayMutateAccess) {
       updateData.readOnly = readOnly
     } else if (readOnlyChanged) {
       documentsServiceLogger.warn(
@@ -348,7 +349,7 @@ export const updateDocument = async (
 
     const privateChanged =
       isPrivate !== undefined && (!existing || isPrivate !== existing.isPrivate)
-    if (privateChanged && isOwner) {
+    if (privateChanged && mayMutateAccess) {
       updateData.isPrivate = isPrivate
     } else if (privateChanged) {
       documentsServiceLogger.warn(
@@ -370,6 +371,26 @@ export const updateDocument = async (
         ...updateData
       }
     })
+
+    if (updateData.isPrivate !== undefined || updateData.readOnly !== undefined) {
+      // Fire-and-forget seal; DB write already succeeded for new connects.
+      // Only include changed fields so a readOnly flip on an already-private doc
+      // does not re-broadcast private / re-kick.
+      void publishDocumentAccessEvent({
+        documentId,
+        ...(updateData.isPrivate !== undefined ? { isPrivate: upsertedDoc.isPrivate } : {}),
+        ...(updateData.readOnly !== undefined ? { readOnly: upsertedDoc.readOnly } : {}),
+        ownerId: upsertedDoc.ownerId,
+        timestamp: new Date().toISOString()
+      }).then((ok) => {
+        if (!ok) {
+          documentsServiceLogger.warn(
+            { documentId },
+            'Document access event publish failed after metadata update'
+          )
+        }
+      })
+    }
 
     documentsServiceLogger.info({ documentId }, 'Document updated successfully')
 

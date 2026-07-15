@@ -20,6 +20,7 @@ const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel')
 })
 
 import FilterBar from './FilterBar'
+import PrivateIndicator from './PrivateIndicator'
 import ProviderSyncStatus from './ProviderSyncStatus'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 
@@ -355,6 +356,7 @@ const MobilePadTitle = () => {
             {/* Right section */}
             <div className="flex shrink-0 items-center gap-1">
               <ProviderSyncStatus disconnectedOnly />
+              <PrivateIndicator />
               <ReadOnlyIndicator />
               <NotificationButton />
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />

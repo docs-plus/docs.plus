@@ -2,13 +2,34 @@ import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useAuthStore, useStore } from '@stores'
 import { useEffect } from 'react'
 
+/**
+ * Single editability apply path: mirror provider scope into the store so
+ * `selectDocumentEditingLocked` reacts, then setEditable from that policy.
+ */
 const useEditorEditableState = () => {
   const user = useAuthStore((state) => state.profile)
   const editor = useStore((state) => state.settings.editor.instance)
-  // One editability policy, shared with every imperative enable path. The
-  // selector reads primitives, so a collaborator's title rename (new metadata
-  // object, same ownerId/readOnly) leaves `locked` unchanged and never re-runs.
+  const provider = useStore((state) => state.settings.hocuspocusProvider)
+  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const locked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
+
+  useEffect(() => {
+    if (!provider) {
+      setWorkspaceSetting('authorizedScope', null)
+      return
+    }
+
+    const syncScope = ({ scope }: { scope?: string }) => {
+      setWorkspaceSetting('authorizedScope', scope ?? null)
+    }
+
+    provider.on('authenticated', syncScope)
+    syncScope({ scope: provider.authorizedScope })
+
+    return () => {
+      provider.off('authenticated', syncScope)
+    }
+  }, [provider, setWorkspaceSetting])
 
   useEffect(() => {
     if (!editor) return

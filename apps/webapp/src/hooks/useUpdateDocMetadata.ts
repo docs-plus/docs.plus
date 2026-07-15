@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
-interface UpdateDocMetadataParams {
+export interface UpdateDocMetadataParams {
   title?: string
   description?: string
   keywords?: string[]
@@ -10,7 +10,7 @@ interface UpdateDocMetadataParams {
   isPrivate?: boolean
 }
 
-interface UpdateDocMetadataResponse {
+export interface UpdateDocMetadataResponse {
   documentId: string
   readOnly: boolean
   isPrivate: boolean

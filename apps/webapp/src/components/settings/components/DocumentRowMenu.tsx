@@ -6,10 +6,9 @@ import {
 } from '@components/ui/ContextMenu'
 import { Popover, PopoverContent, PopoverTrigger, usePopoverState } from '@components/ui/Popover'
 import Toggle from '@components/ui/Toggle'
-import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
+import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import { type InfiniteData, useQueryClient } from '@tanstack/react-query'
 import { copyToClipboard } from '@utils/clipboard'
-import { useState } from 'react'
 import {
   LuCopy,
   LuEllipsisVertical,
@@ -57,10 +56,11 @@ function RowMenuPanel({
 }: DocumentRowMenuProps) {
   const { close } = usePopoverState()
   const queryClient = useQueryClient()
-  const { mutate } = useUpdateDocMetadata()
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
-  // Per-field pending key `${documentId}:${field}` — disable only the toggled control.
-  const [pending, setPending] = useState<string | null>(null)
+  const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
+    documentId,
+    userId
+  })
 
   const label = title ?? slug
 
@@ -128,35 +128,6 @@ function RowMenuPanel({
     close()
   }
 
-  const patch = async (field: 'isPrivate' | 'readOnly', value: boolean) => {
-    const key = makeDocumentsKey(userId, searchQuery, sortKey)
-    const pendingKey = `${documentId}:${field}`
-    // Cancel in-flight refetches (default refetchOnWindowFocus) or a focus refetch resolving
-    // after this patch clobbers the optimistic value back to the pre-PUT state.
-    await queryClient.cancelQueries({ queryKey: key })
-    const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-    if (snapshot) {
-      queryClient.setQueryData(key, {
-        ...snapshot,
-        pages: snapshot.pages.map((page) => ({
-          ...page,
-          docs: page.docs.map((d) => (d.documentId === documentId ? { ...d, [field]: value } : d))
-        }))
-      })
-    }
-    setPending(pendingKey)
-    mutate(
-      { documentId, [field]: value },
-      {
-        onSettled: () => setPending(null),
-        onError: () => {
-          if (snapshot) queryClient.setQueryData(key, snapshot)
-          toast.Error('Couldn’t update document settings')
-        }
-      }
-    )
-  }
-
   return (
     <div className={contextMenuPanelClassName}>
       <button type="button" className="rounded-field group w-full text-left" onClick={openInNewTab}>
@@ -196,8 +167,8 @@ function RowMenuPanel({
           variant="primary"
           className="shrink-0"
           checked={isPrivate}
-          disabled={pending === `${documentId}:isPrivate`}
-          onChange={(e) => patch('isPrivate', e.target.checked)}
+          disabled={isControlDisabled('isPrivate')}
+          onChange={(e) => setPrivate(e.target.checked)}
           aria-label={`Make “${label}” private`}
         />
       </div>
@@ -212,8 +183,8 @@ function RowMenuPanel({
           variant="primary"
           className="shrink-0"
           checked={readOnly}
-          disabled={pending === `${documentId}:readOnly`}
-          onChange={(e) => patch('readOnly', e.target.checked)}
+          disabled={isControlDisabled('readOnly')}
+          onChange={(e) => setReadOnly(e.target.checked)}
           aria-label={`Make “${label}” read-only`}
         />
       </div>

@@ -1,5 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
+import { applyAccessStateless } from '@utils/applyAccessStateless'
 import {
   AUTH_REARM_DELAY_MS,
   authFailureToProviderStatus,
@@ -13,6 +14,7 @@ import {
 import { captureCollabIssueOnce } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef } from 'react'
+import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
 /**
@@ -61,6 +63,14 @@ const useYdocAndProvider = ({
       ydocRef.current = new Y.Doc()
     }
     ydocDocumentIdRef.current = documentId
+
+    // Local mirror of every Y update: content typed just before a reload survives
+    // a wedged persistence worker and re-syncs on reconnect. Cached doc bytes are
+    // readable by later users of this browser profile — accepted trade-off.
+    const persistence =
+      typeof window.indexedDB !== 'undefined'
+        ? new IndexeddbPersistence(documentId, ydocRef.current)
+        : null
 
     providerRef.current = new HocuspocusProvider({
       url: providerUrl,
@@ -156,6 +166,22 @@ const useYdocAndProvider = ({
           if (data.msg === 'document:saved' && data.documentId === documentId) {
             console.info('📝 Document saved to DB:', data)
             setWorkspaceSetting('providerStatus', 'saved')
+            return
+          }
+
+          if (data.type === 'readOnly' || data.type === 'private') {
+            applyAccessStateless({
+              documentId,
+              slug,
+              data,
+              stopReconnect: () => {
+                authStoppedRef.current = true
+              },
+              destroyProvider: () => {
+                providerRef.current?.destroy()
+                providerRef.current = null
+              }
+            })
           }
         } catch {
           // Ignore malformed payloads
@@ -190,6 +216,7 @@ const useYdocAndProvider = ({
     document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
+      persistence?.destroy()
       clearTimeout(connectTimer)
       window.removeEventListener('online', reconnect)
       document.removeEventListener('visibilitychange', onVisibilityChange)

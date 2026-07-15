@@ -27,6 +27,7 @@ const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel')
 import DocTitle from '../DocTitle'
 import FilterBar from './FilterBar'
 import PresentUsers from './PresentUsers'
+import PrivateIndicator from './PrivateIndicator'
 import ProviderSyncStatus from './ProviderSyncStatus'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import ShareModal from './ShareModal'
@@ -66,6 +67,7 @@ const PadTitle = () => {
             <FilterBar displayRestButton={true} />
           </div>
 
+          <PrivateIndicator />
           <ReadOnlyIndicator />
         </div>
 

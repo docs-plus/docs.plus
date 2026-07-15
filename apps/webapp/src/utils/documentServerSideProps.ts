@@ -4,6 +4,7 @@ import { logger } from '@utils/logger'
 import { captureGsspDocumentError } from '@utils/observability'
 import { isReservedSlug } from '@utils/reservedSlugs'
 import { createClient } from '@utils/supabase/server-props'
+import { toPrivateGateVariant } from '@utils/toPrivateGateVariant'
 import { type GetServerSidePropsContext } from 'next'
 
 import { getDeviceInfo } from './getDeviceInfo'
@@ -79,14 +80,10 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     // Private docs return 403 with an `access` hint — render the gate, never /500.
     // Blocked viewers get no description/ownerProfile/keywords in props (docMetadata: null).
     if (error instanceof DocumentFetchError && error.status === 403) {
-      const gateVariant =
-        error.access === 'denied'
-          ? 'access-denied'
-          : error.access === 'sign-in-required'
-            ? 'sign-in-required'
-            : session
-              ? 'access-denied'
-              : 'sign-in-required'
+      const gateVariant = toPrivateGateVariant({
+        access: error.access,
+        hasSession: Boolean(session)
+      })
 
       return {
         props: {
