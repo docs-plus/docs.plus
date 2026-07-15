@@ -5,6 +5,7 @@ import { exitPrivateDocument } from './exitPrivateDocument'
 type AccessStatelessPayload = {
   type?: string
   state?: boolean
+  ownerId?: string | null
 }
 
 /** Apply a live access seal payload: patch metadata, kick non-owners on Private ON. */
@@ -29,7 +30,10 @@ export function applyAccessStateless(args: {
   }
 
   if (data.type !== 'private' || data.state !== true) return
-  const ownerId = metadata?.ownerId
+  // Prefer the event's ownerId — fresh at seal time — over store metadata,
+  // which can be stale for long-open tabs; the server's connection close is
+  // the enforcement either way, this only drives the redirect UX.
+  const ownerId = data.ownerId !== undefined ? data.ownerId : metadata?.ownerId
   const profileId = authStore.getState().profile?.id
   if (ownerId && profileId === ownerId) return
 

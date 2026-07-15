@@ -13,26 +13,24 @@ export type DocumentAccessEvent = {
   timestamp: string
 }
 
-/** REST → WS seal channel. Returns false if Redis is down or publish throws. */
-export async function publishDocumentAccessEvent(event: DocumentAccessEvent): Promise<boolean> {
+/** REST → WS seal channel. Failures are logged here; callers fire-and-forget. */
+export async function publishDocumentAccessEvent(event: DocumentAccessEvent): Promise<void> {
   const publisher = getRedisPublisher()
   if (!publisher) {
     redisLogger.warn(
       { documentId: event.documentId },
       'Redis publisher unavailable; document access event not broadcast'
     )
-    return false
+    return
   }
 
   try {
     await publisher.publish(documentAccessChannel(event.documentId), JSON.stringify(event))
-    return true
   } catch (err) {
     redisLogger.error(
       { err, documentId: event.documentId },
       'Failed to publish document access event'
     )
-    return false
   }
 }
 
@@ -47,8 +45,10 @@ export function handleDocumentAccessEvent(
   }
 
   if (data.isPrivate === true) {
-    document.broadcastStateless(JSON.stringify({ type: 'private', state: true }))
     const ownerId = data.ownerId
+    // Carry ownerId so clients decide the redirect on seal-fresh data instead
+    // of possibly-stale store metadata; the close below enforces either way.
+    document.broadcastStateless(JSON.stringify({ type: 'private', state: true, ownerId }))
     for (const connection of document.getConnections()) {
       if (connection.context?.user?.sub !== ownerId) {
         connection.close()

@@ -382,13 +382,6 @@ export const updateDocument = async (
         ...(updateData.readOnly !== undefined ? { readOnly: upsertedDoc.readOnly } : {}),
         ownerId: upsertedDoc.ownerId,
         timestamp: new Date().toISOString()
-      }).then((ok) => {
-        if (!ok) {
-          documentsServiceLogger.warn(
-            { documentId },
-            'Document access event publish failed after metadata update'
-          )
-        }
       })
     }
 
