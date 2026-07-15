@@ -591,6 +591,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - **Modal height ownership** — default max height lives on `modalPanelClassName` (`90vh`). Compact dialogs (e.g. profile peek) override once via `openDialog` / `ModalContent` `className` (`userProfileDialogOpenConfig`: `max-h-[min(80vh,28rem)]`); do not stack a second cap on the inner content shell.
 - **Blur policy:** **Dialogs** — frosted scrim (`motion-safe:backdrop-blur-sm` on `modalBackdropClassName`). **Bottom sheets** — same `--modal-scrim`, **no blur** (`.react-modal-sheet-backdrop` in `document-styles.scss`). **Popovers / context menus** — no page scrim (anchored dismiss only). Blur does not fix wrong scrim color; fix color first.
 - **New overlay surfaces** must pick the existing species (popover panel, context menu, modal, sheet, extension imperative popover) and reuse its tokens + motion tier from §Motion System — not a third border radius or shadow stack.
+- **Z-index tiers.** Pad toolbars, popovers, TOC resize sash, and extension toolbars use `z-50`; global app prompt cards (`NotificationPromptCard`, `PWAInstallPrompt`) and composer link shells use `z-[60]` so they paint above the sash hairline — catalog row in `design-system.md` §Elevation.
 
 ### Motion System (motion v1)
 

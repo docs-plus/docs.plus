@@ -154,8 +154,8 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
     <div
       ref={nodeRef}
       className={twMerge(
-        // Position: top-left, below header
-        'fixed top-6 left-6 z-50',
+        // Above pad sash/toolbars (z-50) — design-system above-floating tier
+        'fixed top-6 left-6 z-[60]',
         // Size: wider for better readability
         'w-96 max-w-[calc(100vw-2rem)]',
         // Animation
