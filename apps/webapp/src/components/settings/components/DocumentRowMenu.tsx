@@ -59,7 +59,9 @@ function RowMenuPanel({
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
     documentId,
-    userId
+    userId,
+    isPrivate,
+    readOnly
   })
 
   const label = title ?? slug
@@ -176,7 +178,14 @@ function RowMenuPanel({
       <div className="rounded-field flex items-center justify-between gap-2.5 px-2.5 py-2">
         <span className="flex min-w-0 items-center gap-2.5">
           <LuEye size={16} className="text-base-content/70 shrink-0" />
-          <span className="text-sm font-medium">Read-only</span>
+          <span className="flex min-w-0 flex-col">
+            <span className="text-sm font-medium">Read-only</span>
+            {isPrivate ? (
+              <span className="text-base-content/60 text-xs">
+                Not used while the document is private.
+              </span>
+            ) : null}
+          </span>
         </span>
         <Toggle
           size="sm"

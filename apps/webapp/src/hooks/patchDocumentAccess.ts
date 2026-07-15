@@ -14,10 +14,14 @@ import {
 
 export type DocumentAccessField = 'isPrivate' | 'readOnly'
 
+export type DocumentAccessPatch = {
+  isPrivate?: boolean
+  readOnly?: boolean
+}
+
 export type PatchDocumentAccessArgs = {
   documentId: string
-  field: DocumentAccessField
-  value: boolean
+  patch: DocumentAccessPatch
   mutate: UseMutateFunction<UpdateDocMetadataResponse, Error, UpdateDocMetadataParams, unknown>
   /** When set, optimistic-patches every `['documents', userId, …]` infinite query. */
   queryClient?: QueryClient
@@ -25,38 +29,44 @@ export type PatchDocumentAccessArgs = {
   onSettled?: () => void
 }
 
-function applySuccessToast(field: DocumentAccessField, value: boolean): void {
-  if (field === 'isPrivate') {
-    toast.Success(value ? 'Document is now private' : 'Document is now public')
+function applySuccessToast(patch: DocumentAccessPatch): void {
+  if (patch.isPrivate !== undefined) {
+    toast.Success(patch.isPrivate ? 'Document is now private' : 'Document is now public')
     return
   }
   toast.Success('Read-only status updated')
 }
 
-function patchWorkspaceMetadataAccess(
-  documentId: string,
-  field: DocumentAccessField,
-  value: boolean
-) {
+function applyAccessFields<T extends { isPrivate?: boolean; readOnly?: boolean }>(
+  row: T,
+  patch: DocumentAccessPatch
+): T {
+  return {
+    ...row,
+    ...(patch.isPrivate !== undefined ? { isPrivate: patch.isPrivate } : {}),
+    ...(patch.readOnly !== undefined ? { readOnly: patch.readOnly } : {})
+  }
+}
+
+function patchWorkspaceMetadataAccess(documentId: string, patch: DocumentAccessPatch) {
   const { settings, setWorkspaceSetting } = useStore.getState()
   const metadata = settings.metadata
   if (!metadata?.documentId || metadata.documentId !== documentId) return null
   const previous = metadata
-  setWorkspaceSetting('metadata', { ...metadata, [field]: value })
+  setWorkspaceSetting('metadata', applyAccessFields(metadata, patch))
   return previous
 }
 
 function patchOwnedDocumentInPages(
   data: InfiniteData<DocumentsPage>,
   documentId: string,
-  field: DocumentAccessField,
-  value: boolean
+  patch: DocumentAccessPatch
 ): InfiniteData<DocumentsPage> {
   return {
     ...data,
     pages: data.pages.map((page) => ({
       ...page,
-      docs: page.docs.map((d) => (d.documentId === documentId ? { ...d, [field]: value } : d))
+      docs: page.docs.map((d) => (d.documentId === documentId ? applyAccessFields(d, patch) : d))
     }))
   }
 }
@@ -64,13 +74,14 @@ function patchOwnedDocumentInPages(
 /** Optimistic access patch shared by Settings soft well and Documents ⋮. */
 export function patchDocumentAccess({
   documentId,
-  field,
-  value,
+  patch,
   mutate,
   queryClient,
   userId,
   onSettled
 }: PatchDocumentAccessArgs): void {
+  if (patch.isPrivate === undefined && patch.readOnly === undefined) return
+
   void (async () => {
     type ListSnapshot = [QueryKey, InfiniteData<DocumentsPage> | undefined]
     let listSnapshots: ListSnapshot[] = []
@@ -81,16 +92,16 @@ export function patchDocumentAccess({
       listSnapshots = queryClient.getQueriesData<InfiniteData<DocumentsPage>>(filter)
       for (const [key, data] of listSnapshots) {
         if (!data) continue
-        queryClient.setQueryData(key, patchOwnedDocumentInPages(data, documentId, field, value))
+        queryClient.setQueryData(key, patchOwnedDocumentInPages(data, documentId, patch))
       }
     }
 
-    const metadataSnapshot = patchWorkspaceMetadataAccess(documentId, field, value)
+    const metadataSnapshot = patchWorkspaceMetadataAccess(documentId, patch)
 
     mutate(
-      { documentId, [field]: value },
+      { documentId, ...patch },
       {
-        onSuccess: () => applySuccessToast(field, value),
+        onSuccess: () => applySuccessToast(patch),
         onError: () => {
           if (queryClient) {
             for (const [key, data] of listSnapshots) {

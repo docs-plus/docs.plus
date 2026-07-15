@@ -43,15 +43,15 @@ const DocumentSettingsPanel = ({
   const [tags, setTags] = useState<string[]>(docMetadata.keywords || [])
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
     documentId: docMetadata.documentId,
-    userId: user?.id
+    userId: user?.id,
+    isPrivate: Boolean(docMetadata.isPrivate),
+    readOnly: Boolean(docMetadata.readOnly)
   })
 
   const isPrivate = Boolean(docMetadata.isPrivate)
   const readOnly = Boolean(docMetadata.readOnly)
   const isOwner = Boolean(user?.id && user.id === docMetadata?.ownerId)
-  const ownerProfile = docMetadata?.ownerProfile
-  const showIdentity = Boolean(ownerProfile && isAuthServiceAvailable)
-  const showAccessWell = isOwner || Boolean(docMetadata?.documentId)
+  const identity = isAuthServiceAvailable ? docMetadata?.ownerProfile : undefined
 
   const saveDescriptionHandler = () => {
     mutate(
@@ -66,29 +66,27 @@ const DocumentSettingsPanel = ({
     setTags(newTags)
   }
 
-  const softWell = showAccessWell ? (
+  const softWell = (
     <div className="bg-base-200 border-base-300 flex flex-col border-b">
-      {showIdentity ? (
+      {identity ? (
         <div className="flex items-center gap-3 px-4 py-3">
           <Image
             className="border-base-300 size-8 shrink-0 rounded-full border"
-            src={ownerProfile!.avatar_url || ownerProfile!.default_avatar_url}
+            src={identity.avatar_url || identity.default_avatar_url}
             height={32}
             width={32}
-            alt={ownerProfile!.full_name}
-            title={ownerProfile!.full_name}
+            alt={identity.full_name}
+            title={identity.full_name}
           />
           <div className="min-w-0 flex-1">
             <p className="text-base-content/50 text-[10px] font-medium tracking-wide uppercase">
               Owned by
             </p>
-            <p className="text-base-content truncate text-sm font-medium">
-              {ownerProfile!.full_name}
-            </p>
+            <p className="text-base-content truncate text-sm font-medium">{identity.full_name}</p>
           </div>
         </div>
       ) : null}
-      {showIdentity ? <div className="border-base-300 border-t" /> : null}
+      {identity ? <div className="border-base-300 border-t" /> : null}
       <div className="flex flex-col px-4 py-2">
         {isOwner && isAuthServiceAvailable ? (
           <>
@@ -102,7 +100,11 @@ const DocumentSettingsPanel = ({
             />
             <ToggleSection
               name="Read-only"
-              description="Viewers can’t edit this document."
+              description={
+                isPrivate
+                  ? 'Not used while the document is private.'
+                  : 'Viewers can’t edit this document.'
+              }
               checked={readOnly}
               disabled={isControlDisabled('readOnly')}
               onChange={() => setReadOnly(!readOnly)}
@@ -117,7 +119,7 @@ const DocumentSettingsPanel = ({
         )}
       </div>
     </div>
-  ) : null
+  )
 
   const settingsBody = (
     <div className="flex flex-col">
