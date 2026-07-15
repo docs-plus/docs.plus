@@ -979,9 +979,15 @@ begin
     where bucket_id = 'media'
       and split_part(name, '/', 2) = any(v_channel_ids);
 
-    delete from public.document_views where document_slug = p_slug;
-    delete from public.document_view_stats where document_slug = p_slug;
-    delete from public.document_views_daily where document_slug = p_slug;
+    -- View rows are keyed by lower(documentId): enqueue_document_view stores
+    -- lower(trim(<WS room name>)) and the room name IS the documentId, so a
+    -- slug-only match deletes nothing. p_slug stays as belt-and-braces.
+    delete from public.document_views
+    where document_slug in (lower(p_document_id), lower(p_slug));
+    delete from public.document_view_stats
+    where document_slug in (lower(p_document_id), lower(p_slug));
+    delete from public.document_views_daily
+    where document_slug in (lower(p_document_id), lower(p_slug));
 
     -- Cascades every chat table (channels, messages, members, bookmarks, …).
     delete from public.workspaces where id = p_document_id;
