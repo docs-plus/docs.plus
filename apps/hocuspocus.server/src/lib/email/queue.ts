@@ -14,7 +14,11 @@ import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { recordJobOutcome } from '../metrics'
 import { prisma } from '../prisma'
-import { bullmqConnectionOptions, createRedisConnection } from '../redis'
+import {
+  bullmqConnectionOptions,
+  bullmqWorkerConnectionOptions,
+  createRedisConnection
+} from '../redis'
 import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
 // Queue connection
@@ -78,7 +82,7 @@ export function createEmailWorker() {
   }
 
   // Worker needs dedicated connection (uses blocking commands)
-  const workerRedis = createRedisConnection(bullmqConnectionOptions)
+  const workerRedis = createRedisConnection(bullmqWorkerConnectionOptions)
   const workerConnection = toBullMQConnection(workerRedis)
 
   if (!workerConnection) {

@@ -14,6 +14,23 @@ export const bullmqConnectionOptions = {
   keepAlive: config.redis.keepAlive
 }
 
+// Worker (blocking bzpopmin) connections: commandTimeout races the block, and a
+// retryStrategy that ever returns null permanently kills the consumer while
+// BullMQ parks its fetch loop silently and /health keeps reporting healthy
+// (2026-07-14 sleep-wake incident) — so retry forever, even in dev.
+export const bullmqWorkerConnectionOptions = {
+  ...bullmqConnectionOptions,
+  commandTimeout: undefined,
+  retryStrategy: (times: number) => {
+    const delay = Math.min(times * 200, 5000)
+    redisLogger.warn(
+      { times, delay: `${delay}ms`, redis: 'bullmq-worker' },
+      'Redis reconnecting...'
+    )
+    return delay
+  }
+}
+
 const globalForRedis = globalThis as unknown as {
   redis: RedisClient | null
   redisSubscriber: RedisClient | null
@@ -288,7 +305,10 @@ export const createRedisConnection = (options: Partial<RedisOptions> = {}): Redi
     return null
   }
 
-  const commandTimeout = options.commandTimeout ?? config.commandTimeout
+  // An explicit `commandTimeout: undefined` (worker blocking clients) must
+  // disable the timeout, not fall back to the shared default.
+  const commandTimeout =
+    'commandTimeout' in options ? options.commandTimeout : config.commandTimeout
 
   return new Redis({
     ...config,

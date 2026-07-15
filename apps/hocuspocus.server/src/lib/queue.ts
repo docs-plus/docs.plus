@@ -9,7 +9,12 @@ import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
 import { recordJobOutcome } from './metrics'
 import { prisma } from './prisma'
-import { bullmqConnectionOptions, createRedisConnection, getRedisPublisher } from './redis'
+import {
+  bullmqConnectionOptions,
+  bullmqWorkerConnectionOptions,
+  createRedisConnection,
+  getRedisPublisher
+} from './redis'
 import { withUniqueSlug } from './slug'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
@@ -74,7 +79,7 @@ const stateRedis = redisClient
 // Worker connection (blocking operations - MUST be separate)
 // BullMQ uses BRPOPLPUSH which blocks the connection
 const createWorkerConnection = () => {
-  const conn = createRedisConnection(bullmqConnectionOptions)
+  const conn = createRedisConnection(bullmqWorkerConnectionOptions)
   const bullmqConn = toBullMQConnection(conn)
   if (!bullmqConn) {
     queueLogger.error('Failed to create Redis connection for BullMQ Worker')
@@ -165,6 +170,40 @@ export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): 
     },
     { jobId: params.jobId }
   )
+}
+
+// A job can outlive the claim-check TTL in `wait` when the worker is down or
+// backlogged — the 2026-07-14 outage turned that into payload-less DLQ
+// entries. Re-arming pending jobs' key TTLs keeps any-length outages
+// recoverable while the TTL stays the volatile-lru OOM backstop.
+export async function refreshPendingStateKeyTtls(): Promise<number> {
+  // Full range: getJobs start/end apply PER type, so "page by N" cannot bound
+  // the aggregate anyway — and every list except `waiting` is already capped
+  // (removeOnFail 200, delayed = retry ladder, active = concurrency).
+  // `waiting` is the outage backlog this exists to cover; never truncate it.
+  const jobs = await StoreDocumentQueue.getJobs(
+    ['waiting', 'paused', 'delayed', 'active', 'failed'],
+    0,
+    -1
+  )
+  const pipeline = stateRedis.pipeline()
+  for (const job of jobs) {
+    if (job?.data?.stateKey) pipeline.expire(job.data.stateKey, STATE_KEY_TTL_SECONDS)
+  }
+  if (pipeline.length === 0) return 0
+  const results = (await pipeline.exec()) ?? []
+  return results.filter(([, result]) => result === 1).length
+}
+
+// Dequeue-liveness signal for the worker /health: a healthy worker bounds
+// oldest-waiting age near zero; a parked fetch loop (dead blocking client)
+// grows it forever with isRunning() still true. Retries back off in
+// `delayed`, so this cannot false-positive on the retry ladder.
+export async function getStoreQueueOldestWaitingAgeMs(): Promise<number | null> {
+  // Range [-1, -1] = the wait list's tail — BullMQ LPUSHes new jobs onto the
+  // head, so the tail is the oldest waiting job.
+  const [oldest] = await StoreDocumentQueue.getJobs(['waiting'], -1, -1)
+  return oldest ? Date.now() - oldest.timestamp : null
 }
 
 // Stored snapshots must not carry the transient metadata keys the client

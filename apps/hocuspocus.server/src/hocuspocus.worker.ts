@@ -20,7 +20,7 @@ import {
   startPushQueueConsumer,
   stopPushQueueConsumer
 } from './lib/push'
-import { closeQueues, createDocumentWorker } from './lib/queue'
+import { closeQueues, createDocumentWorker, getStoreQueueOldestWaitingAgeMs } from './lib/queue'
 import { checkRedisHealth, disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
 import { getServiceRoleClient } from './lib/supabase'
 import { startWorkerMetricsSampling } from './lib/workerMetricsSampler'
@@ -235,6 +235,12 @@ const stopWorkerMetricsSampling = startWorkerMetricsSampling()
 // Create health check endpoint for worker
 const healthApp = new Hono()
 
+// isRunning()/isPaused() are flags that stay green while BullMQ's fetch loop
+// is parked on a dead blocking connection (2026-07-14 outage) — oldest-waiting
+// age is the signal that actually tests dequeue-liveness. 120s = 12x the 10s
+// store debounce; retries back off in `delayed`, so they cannot trip this.
+const STORE_QUEUE_MAX_WAIT_AGE_MS = 120_000
+
 healthApp.get('/health', async (c) => {
   const docWorkerRunning = documentWorker.isRunning()
   const docWorkerPaused = documentWorker.isPaused()
@@ -243,11 +249,21 @@ healthApp.get('/health', async (c) => {
   const pushConsumerHealth = getPushQueueConsumerHealth()
   const emailConsumerHealth = getEmailQueueConsumerHealth()
 
-  const [dbHealthy, redisHealthy] = await Promise.all([checkDatabaseHealth(), checkRedisHealth()])
+  const [dbHealthy, redisHealthy, storeQueueOldestWaitingAgeMs] = await Promise.all([
+    checkDatabaseHealth(),
+    checkRedisHealth(),
+    // undefined = probe failed; we cannot assert dequeue-liveness → unhealthy.
+    getStoreQueueOldestWaitingAgeMs().catch(() => undefined)
+  ])
+  const storeQueueLive =
+    storeQueueOldestWaitingAgeMs !== undefined &&
+    (storeQueueOldestWaitingAgeMs === null ||
+      storeQueueOldestWaitingAgeMs < STORE_QUEUE_MAX_WAIT_AGE_MS)
 
   const allHealthy =
     docWorkerRunning &&
     !docWorkerPaused &&
+    storeQueueLive &&
     pushConsumerHealth.running &&
     emailConsumerHealth.running &&
     dbHealthy &&
@@ -260,6 +276,8 @@ healthApp.get('/health', async (c) => {
       document: {
         running: docWorkerRunning,
         paused: docWorkerPaused,
+        queueLive: storeQueueLive,
+        oldestWaitingAgeMs: storeQueueOldestWaitingAgeMs ?? null,
         name: documentWorker.name
       },
       email: {

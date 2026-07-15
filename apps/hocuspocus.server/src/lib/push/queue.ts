@@ -19,7 +19,11 @@ import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
 import { recordJobOutcome } from '../metrics'
 import { prisma } from '../prisma'
-import { bullmqConnectionOptions, createRedisConnection } from '../redis'
+import {
+  bullmqConnectionOptions,
+  bullmqWorkerConnectionOptions,
+  createRedisConnection
+} from '../redis'
 import { sendPushNotification } from './sender'
 
 export const PUSH_QUEUE_NAME = 'push-notifications'
@@ -112,7 +116,7 @@ export function createPushWorker(): Worker<PushJobData> | null {
   if (pushWorker) return pushWorker
 
   // Worker needs DEDICATED connection (blocking commands)
-  const workerRedis = createRedisConnection(bullmqConnectionOptions)
+  const workerRedis = createRedisConnection(bullmqWorkerConnectionOptions)
   const workerConnection = toBullMQConnection(workerRedis)
   if (!workerConnection) {
     pushLogger.error('Cannot create push worker - Redis not configured')

@@ -23,7 +23,7 @@ import {
   ydocUpdateBytes
 } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
-import { closeQueues } from './lib/queue'
+import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
 import { resolveWsAccess } from './lib/wsAccess'
 import type { HistoryPayload } from './types/document.types'
@@ -318,10 +318,23 @@ wsLogger.info({
   url: `http://localhost:${metricsServer.port}/metrics`
 })
 
+// Producer-side because enqueue lives here: keeps stranded claim-check
+// payloads alive while their jobs wait out a worker outage (queue.ts
+// refreshPendingStateKeyTtls). 10 min against the 1h TTL leaves wide margin.
+const STATE_KEY_TTL_REFRESH_INTERVAL_MS = 10 * 60 * 1000
+const stateKeyTtlRefresh = setInterval(() => {
+  refreshPendingStateKeyTtls()
+    .then((refreshed) => {
+      if (refreshed > 0) wsLogger.info({ refreshed }, 'Re-armed pending store-job state-key TTLs')
+    })
+    .catch((err) => wsLogger.warn({ err }, 'State-key TTL refresh failed'))
+}, STATE_KEY_TTL_REFRESH_INTERVAL_MS)
+
 const shutdown = async () => {
   wsLogger.info('Shutting down WebSocket server gracefully...')
 
   try {
+    clearInterval(stateKeyTtlRefresh)
     metricsServer.stop()
     await server.destroy()
     wsLogger.info('WebSocket server stopped')
