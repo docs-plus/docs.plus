@@ -159,6 +159,9 @@ apps/hocuspocus.server/temp/
 # Claude Code — per-machine personal settings (do not commit)
 .claude/settings.local.json
 
+# Superpowers — local brainstorm/mocks scratch (do not commit)
+.superpowers/
+
 # local Notes and scripts
 Notes/
 
