@@ -15,7 +15,7 @@ export function ComposerFormatPanel({ variant }: Props) {
   return (
     <div
       className={twMerge(
-        'composer-bar__format-panel bg-base-100 grid grid-cols-5 gap-1 px-2 py-2',
+        'composer-bar__format-panel grid grid-cols-5 gap-1 px-2 py-2',
         'motion-safe:animate-[doc-content-in_120ms_ease-out_both]'
       )}>
       {FORMAT_TOOLBAR_FLAT.map((Button, index) => (

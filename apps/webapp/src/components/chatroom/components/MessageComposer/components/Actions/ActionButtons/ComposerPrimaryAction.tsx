@@ -17,7 +17,7 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
 
   const iconSize = isMobile ? 20 : 18
   const btnSize = isMobile
-    ? 'size-11 min-h-11 min-w-11 rounded-full'
+    ? 'size-11 min-h-11 min-w-11 rounded-field'
     : 'size-8 min-h-8 min-w-8 rounded-field'
 
   const bindHoldListeners = useCallback(() => {
@@ -60,12 +60,14 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
   if (voice.phase === 'preview') return null
 
   if (canSend) {
+    // Ghost + primary ink — same species as + / emoji / mic. A filled primary disc
+    // fights the composer toolbar recipe (Discord uses a brand disc; our row does not).
     return (
       <Button
-        variant="primary"
+        variant="ghost"
         className={twMerge(
           btnSize,
-          'text-primary-content shrink-0 border-0 p-0 motion-safe:transition-[filter,transform] motion-safe:duration-100 motion-safe:ease-out motion-safe:hover:brightness-105 motion-safe:active:scale-95',
+          'text-primary shrink-0 border-0 p-0 motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-out motion-safe:active:scale-95',
           className
         )}
         disabled={!canSend}

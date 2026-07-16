@@ -70,7 +70,7 @@ export function ComposerBar({ variant, className }: Props) {
         'composer-bar flex flex-col overflow-hidden',
         isDesktop
           ? 'border-base-300 bg-base-200 rounded-field mb-2 border'
-          : 'composer-bar--mobile bg-base-100',
+          : 'composer-bar--mobile border-base-300 bg-base-200 border-t',
         dropSurfaceClassName,
         className
       )}>
