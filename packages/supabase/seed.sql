@@ -9162,6 +9162,23 @@ GRANT EXECUTE ON FUNCTION internal.is_workspace_member(varchar) TO authenticated
 GRANT EXECUTE ON FUNCTION internal.is_channel_member(varchar)   TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION internal.can_read_channel(varchar)    TO authenticated, service_role;
 
+-- Table privileges for authenticated + service_role.
+-- Newer Supabase local stacks no longer auto-GRANT ALL on public tables to
+-- authenticated/service_role. RLS policies alone are not enough: SECURITY
+-- INVOKER RPCs (fetch_message_window, get_channel_aggregate_data, …) and
+-- PostgREST need GRANT-layer access or they 42501. Anon SELECT whitelist
+-- lives in 29-lint-hardening.sql §3; admin-table revokes stay in §4.
+GRANT SELECT, INSERT ON public.workspaces TO authenticated;
+GRANT SELECT ON public.workspace_members TO authenticated;
+GRANT SELECT, INSERT ON public.channels TO authenticated;
+GRANT SELECT, INSERT ON public.channel_members TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated;
+GRANT SELECT ON public.pinned_messages TO authenticated;
+GRANT SELECT ON public.channel_message_counts TO authenticated;
+GRANT SELECT, UPDATE ON public.notifications TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.message_bookmarks TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+
 
 -- =====================================================================
 -- 2. RLS + policies per table
