@@ -89,6 +89,49 @@ groups:
                 - evaluator: { type: gt, params: [0.5] }
               refId: C
 
+      - uid: realtime-doc-persist-fallback
+        title: Document persist queue-fallback active (Redis/queue degraded)
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: Document saves are bypassing BullMQ and writing directly to Postgres on the WS event loop (document_persist_fallback_total rising for 10m). Sustained fallback means Redis/the store queue needs attention, not the DB.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Any sustained fallback is a degradation signal: the store hook
+              # only falls back when the enqueue fails under a held redlock. A
+              # single blip rolls through the 5m rate window in <10m and the
+              # `for` clause suppresses it; a Redis outage holds rate>0 and pages.
+              expr: 'sum(rate(document_persist_fallback_total[5m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
       - uid: realtime-ws-mass-drop
         title: WS connections mass-drop (halved vs 5m ago)
         condition: C
