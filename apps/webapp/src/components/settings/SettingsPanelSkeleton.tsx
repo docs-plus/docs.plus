@@ -38,9 +38,12 @@ export const DocumentsSkeleton = () => {
         <div className="space-y-4">
           <div className="skeleton rounded-field h-11 w-full" />
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="skeleton rounded-field h-8 w-40" />
-            <div className="skeleton rounded-field h-8 w-20" />
+          <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
+            <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-40 sm:flex-none" />
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <div className="skeleton rounded-field size-11 sm:h-8 sm:w-20" />
+              <div className="skeleton rounded-field h-11 w-[5.5rem] sm:h-8 sm:w-16" />
+            </div>
           </div>
 
           {isGrid ? (

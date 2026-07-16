@@ -373,7 +373,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
               onChange={handleSearch}
             />
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
               <label htmlFor={sortLabelId} className="sr-only">
                 Sort documents
               </label>
@@ -383,17 +383,19 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 value={sortKey}
                 onChange={handleSortChange}
                 options={SORT_OPTIONS}
-                wrapperClassName="w-40 shrink-0"
+                wrapperClassName="min-w-0 flex-1 sm:w-40 sm:flex-none sm:shrink-0"
+                className="min-h-11 sm:min-h-8"
               />
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                 <Button
                   size="sm"
                   variant="ghost"
                   startIcon={LuTrash2}
-                  className="text-base-content/60 hover:text-base-content shrink-0"
+                  aria-label="Trash"
+                  className="text-base-content/60 hover:text-base-content min-h-11 min-w-11 shrink-0 sm:min-h-9 sm:min-w-0 sm:px-3"
                   onClick={() => setShowTrash(true)}>
-                  Trash
+                  <span className="hidden sm:inline">Trash</span>
                 </Button>
 
                 <div className="join shrink-0" role="radiogroup" aria-label="View layout">
@@ -403,7 +405,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                     aria-checked={viewMode === 'list'}
                     aria-label="List view"
                     onClick={() => handleViewChange('list')}
-                    className={`join-item btn btn-sm ${
+                    className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
                       viewMode === 'list'
                         ? 'btn-primary'
                         : 'btn-ghost border-base-300 text-base-content/60 border'
@@ -416,7 +418,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                     aria-checked={viewMode === 'grid'}
                     aria-label="Grid view"
                     onClick={() => handleViewChange('grid')}
-                    className={`join-item btn btn-sm ${
+                    className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
                       viewMode === 'grid'
                         ? 'btn-primary'
                         : 'btn-ghost border-base-300 text-base-content/60 border'
