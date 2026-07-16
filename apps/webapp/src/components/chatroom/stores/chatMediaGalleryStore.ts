@@ -1,13 +1,14 @@
+import type { GalleryOpenOptions } from '@components/chatroom/utils/galleryPlaylist'
 import {
-  type GalleryMediaItem,
-  type GalleryOpenOptions,
-  type GallerySourceContext,
-  openGallerySession
-} from '@components/chatroom/utils/galleryPlaylist'
-import type { MessageMediaItem, TMsgRow } from '@types'
+  beginGallerySession,
+  GALLERY_SESSION_CLOSED,
+  type GallerySessionState,
+  stepGallerySession
+} from '@components/chatroom/utils/gallerySession'
+import type { MessageMediaItem } from '@types'
 import { create } from 'zustand'
 
-/** Active-slide handles — module-local to this store file so request* and register share one instance. */
+/** Active-slide handles — module-local to this store file so request* and register share one HMR instance. */
 export type GalleryZoomController = {
   zoomInAtCenter: () => void
   zoomStepInAtCenter: () => void
@@ -20,41 +21,59 @@ export type GalleryMediaController = {
   togglePlayback: () => void
 }
 
-let zoomController: GalleryZoomController | null = null
-let mediaController: GalleryMediaController | null = null
+type BoundZoom = { key: string; controller: GalleryZoomController }
+type BoundMedia = { key: string; controller: GalleryMediaController }
 
-export const registerGalleryZoomController = (controller: GalleryZoomController | null) => {
-  zoomController = controller
+let zoom: BoundZoom | null = null
+let media: BoundMedia | null = null
+
+/** Sync URL for copy/open on the click gesture (async re-sign loses clipboard). */
+let activeMediaUrl: string | null = null
+
+export function registerGalleryZoomController(
+  key: string,
+  controller: GalleryZoomController | null
+): void {
+  if (!controller) {
+    if (zoom?.key === key) zoom = null
+    return
+  }
+  zoom = { key, controller }
 }
 
-export const registerGalleryMediaController = (controller: GalleryMediaController | null) => {
-  mediaController = controller
+export function registerGalleryMediaController(
+  key: string,
+  controller: GalleryMediaController | null
+): void {
+  if (!controller) {
+    if (media?.key === key) media = null
+    return
+  }
+  media = { key, controller }
 }
 
-const clearSlideControllers = () => {
-  zoomController = null
-  mediaController = null
+export function publishGalleryActiveMediaUrl(url: string | null): void {
+  activeMediaUrl = url
 }
 
-type ChatMediaGalleryState = {
-  isOpen: boolean
-  items: GalleryMediaItem[]
-  index: number
-  /** Index at open — A/V autoplay only for this slide, not on arrow navigate. */
-  autoplayIndex: number
-  caption: string | null
-  source: GallerySourceContext | null
-  originMessage: TMsgRow | null
-  activeResolvedUrl: string | null
+export function readGalleryActiveMediaUrl(): string | null {
+  return activeMediaUrl
+}
+
+const resetTransientHandles = () => {
+  zoom = null
+  media = null
+  activeMediaUrl = null
+}
+
+type ChatMediaGalleryState = GallerySessionState & {
   openGallery: (
     medias: MessageMediaItem[],
     at?: number | MessageMediaItem,
     options?: GalleryOpenOptions
   ) => void
   closeGallery: () => void
-  setActiveResolvedUrl: (url: string | null) => void
   step: (delta: -1 | 1) => void
-  /** Toolbar / keyboard → active image slide (no-op when none registered). */
   requestZoomIn: () => void
   requestZoomStepIn: () => void
   requestZoomOut: () => void
@@ -63,54 +82,34 @@ type ChatMediaGalleryState = {
   requestTogglePlayback: () => void
 }
 
-const closedState = {
-  isOpen: false,
-  items: [] as GalleryMediaItem[],
-  index: 0,
-  autoplayIndex: 0,
-  caption: null as string | null,
-  source: null as GallerySourceContext | null,
-  originMessage: null as TMsgRow | null,
-  activeResolvedUrl: null as string | null
-}
-
 export const useChatMediaGalleryStore = create<ChatMediaGalleryState>((set, get) => ({
-  ...closedState,
+  ...GALLERY_SESSION_CLOSED,
 
   openGallery: (medias, at, options) => {
-    const session = openGallerySession(medias, at, options)
+    const session = beginGallerySession(medias, at, options)
     if (!session) return
-
-    clearSlideControllers()
-    set({
-      isOpen: true,
-      ...session,
-      activeResolvedUrl: null
-    })
+    resetTransientHandles()
+    set(session)
   },
 
   closeGallery: () => {
-    clearSlideControllers()
-    set(closedState)
+    resetTransientHandles()
+    set(GALLERY_SESSION_CLOSED)
   },
 
-  setActiveResolvedUrl: (url) => set({ activeResolvedUrl: url }),
-
-  requestZoomIn: () => zoomController?.zoomInAtCenter(),
-  requestZoomStepIn: () => zoomController?.zoomStepInAtCenter(),
-  requestZoomOut: () => zoomController?.zoomStepOutAtCenter(),
-  requestZoomReset: () => zoomController?.reset(),
-  requestPan: (dx, dy) => zoomController?.panBy(dx, dy),
-  requestTogglePlayback: () => mediaController?.togglePlayback(),
+  requestZoomIn: () => zoom?.controller.zoomInAtCenter(),
+  requestZoomStepIn: () => zoom?.controller.zoomStepInAtCenter(),
+  requestZoomOut: () => zoom?.controller.zoomStepOutAtCenter(),
+  requestZoomReset: () => zoom?.controller.reset(),
+  requestPan: (dx, dy) => zoom?.controller.panBy(dx, dy),
+  requestTogglePlayback: () => media?.controller.togglePlayback(),
 
   step: (delta) => {
-    const { index, items } = get()
-    if (items.length <= 1) return
-    const next = index + delta
-    if (next < 0 || next >= items.length) return
+    const next = stepGallerySession(get(), delta)
+    if (!next) return
     // Controllers re-register from the newly active slide; clear so stale handles cannot fire.
-    clearSlideControllers()
-    set({ index: next, activeResolvedUrl: null })
+    resetTransientHandles()
+    set(next)
   }
 }))
 

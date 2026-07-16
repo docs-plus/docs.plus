@@ -1,10 +1,10 @@
-import { GallerySpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
+import { GallerySpoilerRevealControl } from '@components/chatroom/components/MediaSpoilerReveal'
 import { useGalleryZoomPan } from '@components/chatroom/hooks/useGalleryZoomPan'
 import { useFeedMediaDisplayUrl } from '@components/chatroom/hooks/useMediaSignedUrl'
 import {
+  publishGalleryActiveMediaUrl,
   registerGalleryMediaController,
-  registerGalleryZoomController,
-  useChatMediaGalleryStore
+  registerGalleryZoomController
 } from '@components/chatroom/stores/chatMediaGalleryStore'
 import { useFeedSpoilerGate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { type GalleryMediaItem, mediaKey } from '@components/chatroom/utils/galleryPlaylist'
@@ -70,35 +70,19 @@ function GallerySpoilerChipShell({
   kind: SlideKind
   reveal: () => void
 }) {
-  const label =
-    kind === 'image'
-      ? 'Reveal spoiler image'
-      : kind === 'video'
-        ? 'Reveal spoiler video'
-        : 'Reveal spoiler audio'
-
   return (
     <GallerySlideShell visibilityRef={visibilityRef} className="relative px-4">
       <GalleryLoadingBone kind={kind} className="scale-110 blur-xl" />
-      <button
-        type="button"
-        className="absolute inset-0 flex cursor-pointer items-center justify-center border-0 bg-transparent p-0"
-        aria-label={label}
-        data-testid="gallery-spoiler-reveal"
-        onClick={reveal}>
-        <GallerySpoilerRevealOverlay variant="chip" />
-      </button>
+      <GallerySpoilerRevealControl kind={kind} reveal={reveal} variant="chip" />
     </GallerySlideShell>
   )
 }
 
 function usePublishActiveResolvedUrl(isActive: boolean, url: string | null) {
-  const setActiveResolvedUrl = useChatMediaGalleryStore((s) => s.setActiveResolvedUrl)
-
   useEffect(() => {
     if (!isActive) return
-    setActiveResolvedUrl(url)
-  }, [isActive, setActiveResolvedUrl, url])
+    publishGalleryActiveMediaUrl(url)
+  }, [isActive, url])
 }
 
 function usePauseMediaOnInactive(ref: RefObject<HTMLMediaElement | null>, isActive: boolean) {
@@ -108,6 +92,7 @@ function usePauseMediaOnInactive(ref: RefObject<HTMLMediaElement | null>, isActi
 }
 
 function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlideProps) {
+  const slideKey = mediaKey(media)
   const {
     url: resolvedUrl,
     ref: visibilityRef,
@@ -137,7 +122,7 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
     onPointerDown,
     onPointerMove,
     onPointerUp
-  } = useGalleryZoomPan(zoomEnabled, mediaKey(media))
+  } = useGalleryZoomPan(zoomEnabled, slideKey)
 
   usePublishActiveResolvedUrl(isActive, showUnavailable || !resolvedUrl ? null : resolvedUrl)
 
@@ -145,25 +130,25 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
     onZoomedChange?.(isZoomed)
   }, [isZoomed, onZoomedChange])
 
-  // Inactive near-mount must not clear the active slide's zoom controller.
   useEffect(() => {
     if (!isActive) return
     if (!zoomEnabled) {
-      registerGalleryZoomController(null)
+      registerGalleryZoomController(slideKey, null)
       return
     }
-    registerGalleryZoomController({
+    registerGalleryZoomController(slideKey, {
       zoomInAtCenter,
       zoomStepInAtCenter,
       zoomStepOutAtCenter,
       reset: resetZoom,
       panBy
     })
-    return () => registerGalleryZoomController(null)
+    return () => registerGalleryZoomController(slideKey, null)
   }, [
     isActive,
     panBy,
     resetZoom,
+    slideKey,
     zoomEnabled,
     zoomInAtCenter,
     zoomStepInAtCenter,
@@ -227,21 +212,13 @@ function GalleryImageSlide({ media, isActive, onZoomedChange }: GalleryImageSlid
   if (isSpoiler) {
     return (
       <GallerySlideShell visibilityRef={visibilityRef} className="relative">
-        <button
-          type="button"
-          className="relative block cursor-pointer overflow-hidden border-0 bg-transparent p-0"
-          aria-label="Reveal spoiler image"
-          data-testid="gallery-spoiler-reveal"
-          onClick={reveal}>
+        <GallerySpoilerRevealControl kind="image" reveal={reveal} variant="veil">
           {imageNode}
-          <GallerySpoilerRevealOverlay />
-        </button>
+        </GallerySpoilerRevealControl>
       </GallerySlideShell>
     )
   }
 
-  // Full-slide viewport clips zoom — NOT an image-tight box (that crops portraits into a
-  // postage stamp). Letterbox clicks fall through to the stage controls toggle; img clicks zoom.
   return (
     <div
       ref={(node) => {
@@ -267,6 +244,7 @@ function GalleryAvSlide({
   isActive,
   kind
 }: GallerySlideProps & { kind: 'video' | 'audio' }) {
+  const slideKey = mediaKey(media)
   const {
     url: resolvedUrl,
     ref: visibilityRef,
@@ -289,12 +267,11 @@ function GalleryAvSlide({
     else el.pause()
   }, [])
 
-  // Inactive near-mount must not clear the active slide's media controller.
   useEffect(() => {
     if (!isActive || !canPlay || kind !== 'video') return
-    registerGalleryMediaController({ togglePlayback })
-    return () => registerGalleryMediaController(null)
-  }, [canPlay, isActive, kind, togglePlayback])
+    registerGalleryMediaController(slideKey, { togglePlayback })
+    return () => registerGalleryMediaController(slideKey, null)
+  }, [canPlay, isActive, kind, slideKey, togglePlayback])
 
   if (isSpoiler) {
     return <GallerySpoilerChipShell visibilityRef={visibilityRef} kind={kind} reveal={reveal} />

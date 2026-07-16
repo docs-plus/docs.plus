@@ -20,7 +20,7 @@ export type GalleryOpenOptions = GallerySourceContext & {
   originMessage?: TMsgRow | null
 }
 
-type GallerySessionSnapshot = {
+export type GallerySessionSnapshot = {
   items: GalleryMediaItem[]
   index: number
   autoplayIndex: number

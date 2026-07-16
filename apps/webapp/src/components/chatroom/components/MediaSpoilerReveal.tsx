@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type FeedOverlayProps = {
@@ -45,5 +46,50 @@ export function GallerySpoilerRevealOverlay({ className, variant = 'veil' }: Gal
       )}>
       Tap to reveal
     </span>
+  )
+}
+
+type GallerySpoilerKind = 'image' | 'video' | 'audio'
+
+const GALLERY_SPOILER_LABEL: Record<GallerySpoilerKind, string> = {
+  image: 'Reveal spoiler image',
+  video: 'Reveal spoiler video',
+  audio: 'Reveal spoiler audio'
+}
+
+type GallerySpoilerRevealControlProps = {
+  kind: GallerySpoilerKind
+  reveal: () => void
+  /** `chip` over skeleton; `veil` over painted preview children. */
+  variant?: 'chip' | 'veil'
+  className?: string
+  children?: ReactNode
+}
+
+/** One gallery reveal control — feed tiles keep `useSpoilerGatedActivate`. */
+export function GallerySpoilerRevealControl({
+  kind,
+  reveal,
+  variant = 'chip',
+  className,
+  children
+}: GallerySpoilerRevealControlProps) {
+  const isVeil = variant === 'veil'
+  return (
+    <button
+      type="button"
+      className={twMerge(
+        'cursor-pointer border-0 bg-transparent p-0',
+        isVeil
+          ? 'relative block overflow-hidden'
+          : 'absolute inset-0 flex items-center justify-center',
+        className
+      )}
+      aria-label={GALLERY_SPOILER_LABEL[kind]}
+      data-testid="gallery-spoiler-reveal"
+      onClick={reveal}>
+      {isVeil ? children : null}
+      <GallerySpoilerRevealOverlay variant={isVeil ? 'veil' : 'chip'} />
+    </button>
   )
 }

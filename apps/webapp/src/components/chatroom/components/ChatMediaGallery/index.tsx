@@ -3,6 +3,8 @@ import { useGalleryKeyboard } from '@components/chatroom/hooks/useGalleryKeyboar
 import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
 import { saveMediaFile } from '@components/chatroom/utils/galleryMediaActions'
 import { mediaKey } from '@components/chatroom/utils/galleryPlaylist'
+import { galleryChannelDiverged } from '@components/chatroom/utils/gallerySession'
+import { pauseChatMediaElements } from '@components/chatroom/utils/pauseChatMediaElements'
 import { modalBackdropHeavyClassName } from '@components/ui/Dialog'
 import {
   FloatingFocusManager,
@@ -22,41 +24,16 @@ import {
   MOTION_PANEL_MS,
   prefersReducedMotion
 } from '@utils/motion'
-import {
-  type CSSProperties,
-  type MouseEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState
-} from 'react'
+import { type MouseEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useShallow } from 'zustand/react/shallow'
 
 import { GallerySlide } from './GallerySlide'
+import { galleryLightboxThemeStyle } from './galleryTheme'
 import { GalleryToolbar } from './GalleryToolbar'
 
-/** Discord-parity lightbox tokens — Off-system media overlay (design-system.md §Media tiles). */
-const galleryLightboxThemeStyle: CSSProperties & Record<`--${string}`, string> = {
-  '--gallery-panel-bg': '#111214',
-  '--gallery-panel-border': '#1e1f22',
-  '--gallery-panel-hover': '#35373c',
-  '--gallery-nav-bg': '#1e1f22',
-  '--gallery-nav-hover': '#2b2d31',
-  '--gallery-text-primary': '#dbdee1',
-  '--gallery-text-heading': '#f2f3f5',
-  '--gallery-text-muted': '#949ba4',
-  '--gallery-text-action': '#b5bac1'
-}
-
-const pauseStageMedia = (root: HTMLElement | null) => {
-  root?.querySelectorAll('video, audio').forEach((el) => {
-    if (el instanceof HTMLMediaElement) el.pause()
-  })
-}
-
 export function ChatMediaGallery() {
-  const { isOpen, items, index, autoplayIndex, originMessage, source, caption, activeResolvedUrl } =
+  const { isOpen, items, index, autoplayIndex, originMessage, source, caption } =
     useChatMediaGalleryStore(
       useShallow((s) => ({
         isOpen: s.isOpen,
@@ -65,8 +42,7 @@ export function ChatMediaGallery() {
         autoplayIndex: s.autoplayIndex,
         originMessage: s.originMessage,
         source: s.source,
-        caption: s.caption,
-        activeResolvedUrl: s.activeResolvedUrl
+        caption: s.caption
       }))
     )
   const closeGallery = useChatMediaGalleryStore((s) => s.closeGallery)
@@ -114,7 +90,7 @@ export function ChatMediaGallery() {
       return
     }
 
-    pauseStageMedia(stageRef.current)
+    pauseChatMediaElements(stageRef.current)
     prevChannelIdRef.current = undefined
 
     const opener = openerRef.current
@@ -128,7 +104,7 @@ export function ChatMediaGallery() {
     setSlideZoomed(false)
     if (!isOpen) return
     setControlsVisible(true)
-    pauseStageMedia(stageRef.current)
+    pauseChatMediaElements(stageRef.current)
   }, [index, isOpen])
 
   const handleReply = useCallback(() => {
@@ -144,7 +120,7 @@ export function ChatMediaGallery() {
     if (!isOpen || !galleryChannelId || !activeChannelId) return
     if (prevChannelIdRef.current === activeChannelId) return
     prevChannelIdRef.current = activeChannelId
-    if (galleryChannelId !== activeChannelId) closeGallery()
+    if (galleryChannelDiverged(galleryChannelId, activeChannelId)) closeGallery()
   }, [activeChannelId, closeGallery, isOpen, originMessage?.channel_id])
 
   const handleStageClick = useCallback(
@@ -213,7 +189,6 @@ export function ChatMediaGallery() {
               source={source}
               caption={caption}
               originMessage={originMessage}
-              activeResolvedUrl={activeResolvedUrl}
               onClose={closeGallery}
               onDownload={() => void handleDownload()}
               onZoomIn={requestZoomIn}

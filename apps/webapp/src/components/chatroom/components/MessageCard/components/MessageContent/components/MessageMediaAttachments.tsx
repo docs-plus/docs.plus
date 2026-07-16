@@ -3,6 +3,7 @@ import { useMessageAuthorDetails } from '@components/chatroom/components/Message
 import { useChatMediaGalleryStore } from '@components/chatroom/stores/chatMediaGalleryStore'
 import { partitionMessageMedias } from '@components/chatroom/utils/galleryPlaylist'
 import type { MessageSurfaceLayout } from '@components/chatroom/utils/messagePresentation'
+import { pauseChatMediaElements } from '@components/chatroom/utils/pauseChatMediaElements'
 import type { MessageMediaItem } from '@types'
 import { formatGallerySentAt } from '@utils/formatGallerySentAt'
 import { twMerge } from 'tailwind-merge'
@@ -19,12 +20,6 @@ type Props = {
   className?: string
 }
 
-function pauseFeedMedia(): void {
-  document.querySelectorAll('[data-chat-media] video, [data-chat-media] audio').forEach((el) => {
-    if (el instanceof HTMLMediaElement) el.pause()
-  })
-}
-
 export function MessageMediaAttachments({ medias, layout, caption, className }: Props) {
   const openGallery = useChatMediaGalleryStore((state) => state.openGallery)
   const { variant } = useChatroomContext()
@@ -38,7 +33,7 @@ export function MessageMediaAttachments({ medias, layout, caption, className }: 
   const authorName = author?.fullname || author?.username || null
 
   const openAt = (target: MessageMediaItem) => {
-    pauseFeedMedia()
+    pauseChatMediaElements('feed')
     openGallery(medias, target, {
       caption,
       authorUserId: author?.id ?? message.user_id ?? null,
