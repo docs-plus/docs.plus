@@ -33,42 +33,46 @@ export const DocumentsSkeleton = () => {
     window.sessionStorage.getItem('docsplus:my-docs-view') === 'grid'
 
   return (
-    <div className="space-y-4">
-      <SettingsCard>
-        <div className="space-y-4">
-          <div className="skeleton rounded-field h-11 w-full" />
+    <div className="space-y-4 max-md:flex max-md:min-h-full max-md:flex-col">
+      <SettingsCard className="max-md:flex-1 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
+        <div className="space-y-4 max-md:space-y-0">
+          <div className="max-md:border-base-300 max-md:bg-base-100 space-y-4 max-md:space-y-2.5 max-md:border-b max-md:px-4 max-md:pt-3 max-md:pb-2.5">
+            <div className="skeleton rounded-field h-11 w-full" />
 
-          <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
-            <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-40 sm:flex-none" />
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <div className="skeleton rounded-field size-11 sm:h-8 sm:w-20" />
-              <div className="skeleton rounded-field h-11 w-[5.5rem] sm:h-8 sm:w-16" />
+            <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
+              <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-40 sm:flex-none" />
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <div className="skeleton rounded-field size-11 sm:h-8 sm:w-20" />
+                <div className="skeleton rounded-field h-11 w-[5.5rem] sm:h-8 sm:w-16" />
+              </div>
             </div>
           </div>
 
-          {isGrid ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="border-base-300 rounded-box border">
-                  <div className="skeleton rounded-t-box aspect-[4/3]" />
-                  <div className="space-y-2 p-3">
-                    <div className="skeleton rounded-field h-4 w-3/4" />
-                    <div className="skeleton rounded-field h-3 w-1/3" />
+          <div className="max-md:px-4 max-md:pt-3">
+            {isGrid ? (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="border-base-300 rounded-box border">
+                    <div className="skeleton rounded-t-box aspect-[4/3]" />
+                    <div className="space-y-2 p-3">
+                      <div className="skeleton rounded-field h-4 w-3/4" />
+                      <div className="skeleton rounded-field h-3 w-1/3" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="divide-base-300 divide-y">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-center gap-3 py-3">
-                  <div className="skeleton size-[18px] shrink-0 rounded" />
-                  <div className="skeleton rounded-field h-4 flex-1" />
-                  <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="divide-base-300 divide-y">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center gap-3 py-3">
+                    <div className="skeleton size-[18px] shrink-0 rounded" />
+                    <div className="skeleton rounded-field h-4 flex-1" />
+                    <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </SettingsCard>
     </div>
@@ -120,7 +124,7 @@ export const NotificationsSkeleton = () => (
 )
 
 const SettingsPanelSkeleton = () => (
-  <div className="bg-base-100 flex min-h-0 flex-1 flex-col overflow-hidden md:h-[min(85vh,800px)] md:flex-none md:flex-row">
+  <div className="bg-base-100 relative flex min-h-0 flex-1 flex-col overflow-clip md:h-[min(85vh,800px)] md:flex-none md:flex-row">
     <aside className="border-base-300 flex min-h-0 w-full flex-1 flex-col md:w-72 md:flex-none md:shrink-0 md:border-r lg:w-80">
       <div className="border-base-300 flex items-center justify-between border-b p-4 md:hidden">
         <div className="skeleton rounded-field h-5 w-20" />
@@ -177,7 +181,7 @@ const SettingsPanelSkeleton = () => (
         <div className="skeleton rounded-field h-[44px] w-full" />
       </div>
 
-      <div className="border-base-300 mt-auto shrink-0 border-t p-4 sm:px-6">
+      <div className="border-base-300 mt-auto shrink-0 border-t p-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
         <div className="skeleton rounded-field h-10 w-full" />
       </div>
     </aside>

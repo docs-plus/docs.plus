@@ -9,6 +9,7 @@ import { LuChevronLeft, LuChevronRight, LuExternalLink, LuGithub, LuLogOut } fro
 
 import { GITHUB_REPO_URL, SETTINGS_TABS, SUPPORT_LINKS } from './constants'
 import { useSignOut } from './hooks/useSignOut'
+import { openSignOutConfirm } from './openSignOutConfirm'
 import {
   AppearanceSkeleton,
   DocumentsSkeleton,
@@ -67,10 +68,12 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
   const activeLabel = activeTabConfig?.label
 
   return (
-    <div className="bg-base-100 flex min-h-0 flex-1 flex-col overflow-hidden md:h-[min(85vh,800px)] md:flex-none md:flex-row">
+    <div className="bg-base-100 relative flex min-h-0 flex-1 flex-col overflow-clip md:h-[min(85vh,800px)] md:flex-none md:flex-row">
       <aside
-        className={`border-base-300 bg-base-100 flex min-h-0 w-full flex-1 flex-col motion-safe:animate-[doc-content-in_180ms_ease-out_both] md:w-72 md:flex-none md:shrink-0 md:border-r lg:w-80 ${
-          showContent ? 'hidden md:flex' : 'flex'
+        className={`border-base-300 bg-base-100 flex min-h-0 w-full flex-1 flex-col motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:absolute max-md:inset-0 md:w-72 md:flex-none md:shrink-0 md:border-r lg:w-80 ${
+          showContent
+            ? 'max-md:invisible max-md:[transform:translateX(-25%)] max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-exit),visibility_0s_var(--motion-panel)]'
+            : 'max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-enter)]'
         }`}
         role="navigation"
         aria-label="Settings navigation">
@@ -79,7 +82,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
           <CloseButton onClick={handleClose} aria-label="Close settings" />
         </div>
 
-        <ScrollArea className="min-h-0 flex-1 p-4 sm:p-6" scrollbarSize="thin">
+        <ScrollArea className="min-h-0 flex-1 overscroll-contain p-4 sm:p-6" scrollbarSize="thin">
           <div className="bg-base-200 rounded-box mb-4 flex items-center gap-2.5 p-2.5">
             <Avatar
               id={user?.id}
@@ -164,9 +167,9 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
           </nav>
         </ScrollArea>
 
-        <div className="border-base-300 mt-auto shrink-0 border-t p-4 sm:px-6">
+        <div className="border-base-300 mt-auto shrink-0 border-t p-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
           <Button
-            onClick={handleSignOut}
+            onClick={() => openSignOutConfirm({ onConfirm: handleSignOut })}
             disabled={signOutLoading}
             loading={signOutLoading}
             variant="ghost"
@@ -178,7 +181,12 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
         </div>
       </aside>
 
-      <div className={`flex min-h-0 flex-1 flex-col ${showContent ? 'flex' : 'hidden md:flex'}`}>
+      <div
+        className={`bg-base-100 flex min-h-0 flex-1 flex-col max-md:absolute max-md:inset-0 ${
+          showContent
+            ? 'max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-enter)]'
+            : 'max-md:invisible max-md:[transform:translateX(100%)] max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-exit),visibility_0s_var(--motion-panel)]'
+        }`}>
         <div className="border-base-300 bg-base-100 flex shrink-0 items-center gap-2 border-b px-4 py-3">
           <Button
             onClick={handleBack}
@@ -191,17 +199,19 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
             className="md:hidden"
           />
           <h2 className="text-base-content flex-1 text-base font-semibold">{activeLabel}</h2>
-          <CloseButton
-            onClick={handleClose}
-            aria-label="Close settings"
-            className="hidden md:flex"
-          />
+          <CloseButton onClick={handleClose} aria-label="Close settings" />
         </div>
 
-        <ScrollArea className="bg-base-200 min-h-0 flex-1" scrollbarSize="thin">
+        <ScrollArea
+          className={`bg-base-200 min-h-0 flex-1 overscroll-contain ${
+            activeTabConfig?.fullWidth ? 'max-md:bg-base-100' : ''
+          }`}
+          scrollbarSize="thin">
           <div
             className={`mx-auto p-4 sm:p-6 ${
-              activeTabConfig?.fullWidth ? 'w-full max-w-none' : 'max-w-2xl'
+              activeTabConfig?.fullWidth
+                ? 'w-full max-w-none max-md:flex max-md:min-h-full max-md:flex-col max-md:p-0'
+                : 'max-w-2xl'
             }`}>
             <ActiveSection onOpenDocument={handleClose} />
           </div>

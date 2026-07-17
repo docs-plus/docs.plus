@@ -1,4 +1,5 @@
 import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
+import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
 import { Modal, ModalContent } from '@components/ui/Dialog'
@@ -14,7 +15,7 @@ import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToC
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 
 import MediaInsertPanelSkeleton from '../../mediaPopovers/MediaInsertPanelSkeleton'
 import { clearFormatting } from '../clearFormatting'
@@ -62,7 +63,7 @@ const EditorToolbar = () => {
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
   )
   const user = useAuthStore((state) => state.profile)
-  const [isDocumentsOpen, setDocumentsOpen] = useState(false)
+  const { isOpen: isDocumentsOpen, setIsOpen: setDocumentsOpen } = useSettingsModal()
 
   useReRenderOnEditorTransaction(editor ?? null)
 
@@ -367,7 +368,7 @@ const EditorToolbar = () => {
       </div>
 
       <Modal open={isDocumentsOpen} onOpenChange={setDocumentsOpen}>
-        <ModalContent size="5xl" className="overflow-hidden p-0">
+        <ModalContent size="5xl" mobileTakeover aria-label="Settings" className="p-0">
           <SettingsPanel defaultTab="documents" onClose={() => setDocumentsOpen(false)} />
         </ModalContent>
       </Modal>

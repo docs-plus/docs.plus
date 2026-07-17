@@ -75,6 +75,7 @@ export function Modal({
 type Props = {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
   align?: 'center' | 'top'
+  mobileTakeover?: boolean
   className?: string
   children: React.ReactNode
 } & Omit<React.HTMLProps<HTMLDivElement>, 'size'>
@@ -140,11 +141,21 @@ export const modalBackdropHeavyClassName =
 export const modalPanelFrameClassName =
   'rounded-box border border-base-300 bg-base-100 shadow-xl outline-none'
 
-export const modalPanelClassName = `flex max-h-[90vh] flex-col overflow-hidden ${modalPanelFrameClassName}`
+/* overflow-clip, not -hidden: browsers scroll-into-view can silently scroll a hidden
+   clip box when focusing off-screen children; clip forbids programmatic scrolling. */
+export const modalPanelClassName = `flex max-h-[90vh] flex-col overflow-clip ${modalPanelFrameClassName}`
+
+/**
+ * Mobile takeover arm (design-system.md §Elevation): below `md` the dialog card fills
+ * the visual viewport (100dvh fallback where the vv var is unsynced) with no card frame.
+ */
+export const modalPanelTakeoverClassName =
+  'max-md:h-[var(--visual-viewport-height,100dvh)] max-md:max-h-none max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none max-md:pt-[env(safe-area-inset-top,0px)]'
 
 export const ModalContent = function ModalContent({
   size = 'md',
   align = 'center',
+  mobileTakeover = false,
   className = '',
   children,
   ...restProps
@@ -203,7 +214,7 @@ export const ModalContent = function ModalContent({
         style={backdropStyles}
         lockScroll>
         <div
-          className={`fixed inset-0 flex justify-center p-4 ${
+          className={`fixed inset-0 flex justify-center p-4 ${mobileTakeover ? 'max-md:p-0' : ''} ${
             align === 'top'
               ? 'items-start pt-[max(env(safe-area-inset-top,1rem),1rem)]'
               : 'items-center'
@@ -212,7 +223,9 @@ export const ModalContent = function ModalContent({
             <div
               ref={ref}
               style={cardStyles}
-              className={`${sizeClasses[size]} ${modalPanelClassName} ${className}`}
+              className={`${sizeClasses[size]} ${modalPanelClassName} ${
+                mobileTakeover ? modalPanelTakeoverClassName : ''
+              } ${className}`}
               aria-label={ariaLabel}
               aria-labelledby={ariaLabel ? undefined : labelledBy}
               aria-describedby={describedBy}

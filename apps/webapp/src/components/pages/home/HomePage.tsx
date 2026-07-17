@@ -1,8 +1,11 @@
+import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
+import { GlobalDialog } from '@components/ui/GlobalDialog'
 import Loading from '@components/ui/Loading'
+import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
@@ -16,7 +19,6 @@ import { HomeCollapseRegion } from './HomeCollapseRegion'
 import { HomeFooter } from './HomeFooter'
 import { HomeHero } from './HomeHero'
 import { HOME_MOBILE_MQ, HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
-import { useNavigateToDocument } from './hooks/useNavigateToDocument'
 
 const HOME_FLEX_SPACER = 'motion-safe:transition-[flex-grow] max-sm:min-h-0 max-sm:shrink'
 
@@ -49,7 +51,7 @@ interface HomePageProps {
 const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
   const [displayHostname, setDisplayHostname] = useState(hostname)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
   const [isSignInOpen, setIsSignInOpen] = useState(false)
   const { navigateToDocument, isLoading } = useNavigateToDocument()
   useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
@@ -182,11 +184,14 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
       {user && (
         <Modal open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-          <ModalContent size="4xl" aria-label="Profile settings" className="overflow-hidden p-0">
+          <ModalContent size="4xl" mobileTakeover aria-label="Profile settings" className="p-0">
             <SettingsPanel onClose={() => setIsProfileOpen(false)} />
           </ModalContent>
         </Modal>
       )}
+
+      {/* Settings confirms (rename/trash/private) dispatch here; without this mount they render nothing on `/`. */}
+      <GlobalDialog />
 
       {isAuthServiceAvailable && !user && (
         <Modal open={isSignInOpen} onOpenChange={setIsSignInOpen}>

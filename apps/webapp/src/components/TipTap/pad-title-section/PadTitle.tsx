@@ -1,4 +1,5 @@
 import SignInForm from '@components/auth/SignInForm'
+import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -43,7 +44,7 @@ const NotificationPanel = dynamic(
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
-  const [isProfileModalOpen, setProfileModalOpen] = useState(false)
+  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
   const [isShareModalOpen, setShareModalOpen] = useState(false)
   const workspaceId = useStore((state) => state.settings.workspaceId)
 
@@ -157,7 +158,11 @@ const PadTitle = () => {
 
       {/* Profile Modal */}
       <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-        <ModalContent size={user ? '5xl' : 'md'} className="overflow-hidden p-0">
+        <ModalContent
+          size={user ? '5xl' : 'md'}
+          mobileTakeover={!!user}
+          aria-label={user ? 'Settings' : 'Sign in'}
+          className="p-0">
           {user ? (
             <SettingsPanel onClose={() => setProfileModalOpen(false)} />
           ) : (

@@ -1,4 +1,5 @@
 import SignInForm from '@components/auth/SignInForm'
+import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Avatar } from '@components/ui/Avatar'
@@ -278,7 +279,16 @@ const MobilePadTitle = () => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const openDialog = useStore((state) => state.openDialog)
-  const [isProfileModalOpen, setProfileModalOpen] = useState(false)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
+  const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
+
+  // Settings is navigation, not a typing continuation — drop the keyboard before the takeover.
+  const handleProfileOpen = useCallback(() => {
+    if (isKeyboardOpen) {
+      setTimeout(() => editor?.view.dom.blur(), 50)
+    }
+    setProfileModalOpen(true)
+  }, [isKeyboardOpen, editor, setProfileModalOpen])
 
   // Keep the store title in sync with remote changes from other users.
   // On desktop this is handled by the always-mounted DocTitle component;
@@ -359,7 +369,7 @@ const MobilePadTitle = () => {
               <PrivateIndicator />
               <ReadOnlyIndicator />
               <NotificationButton />
-              <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
+              <UserProfileButton user={user} onProfileClick={handleProfileOpen} />
             </div>
           </div>
 
@@ -372,7 +382,11 @@ const MobilePadTitle = () => {
 
       {/* Profile Modal */}
       <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-        <ModalContent size={user ? '4xl' : 'md'} className="overflow-hidden p-0">
+        <ModalContent
+          size={user ? '4xl' : 'md'}
+          mobileTakeover={!!user}
+          aria-label={user ? 'Settings' : 'Sign in'}
+          className="p-0">
           {user ? (
             <SettingsPanel onClose={() => setProfileModalOpen(false)} />
           ) : (

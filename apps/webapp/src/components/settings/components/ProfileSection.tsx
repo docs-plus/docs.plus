@@ -249,7 +249,7 @@ const ProfileSection = () => {
       <div className="h-16" />
 
       {/* Save Button — sticky footer; bg must match ScrollArea bg in SettingsPanel (base-200) */}
-      <div className="bg-base-200 border-base-300 sticky bottom-0 -mx-4 border-t px-4 py-4 sm:-mx-6 sm:px-6">
+      <div className="bg-base-200 border-base-300 sticky bottom-0 -mx-4 border-t px-4 py-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:px-6">
         <Button
           onClick={handleSubmit}
           disabled={loading}
