@@ -1,10 +1,10 @@
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
+import { prefetchDocumentShell } from '@hooks/useNavigateToDocument'
 import { FormEvent, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { HOME_REGION_DURATION, HOME_SLUG_INPUT_ID, homeRegionEase } from './homeMobileLayout'
-import { prefetchDocumentShell } from './hooks/useNavigateToDocument'
 
 interface HomeActionCardProps {
   hostname: string

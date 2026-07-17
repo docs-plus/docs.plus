@@ -2,6 +2,7 @@ import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import Select, { type SelectOption } from '@components/ui/Select'
 import TextInput from '@components/ui/TextInput'
+import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import { useAuthStore } from '@stores'
 import { type InfiniteData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
@@ -126,6 +127,13 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   })
   // Trash is a sub-view of this same card: swaps the whole body, not a nav tab.
   const [showTrash, setShowTrash] = useState(false)
+  const { navigateToDocument, isLoading: isCreatingDocument } = useNavigateToDocument()
+
+  // Same order as DocumentListRow open: navigate, then close the settings surface.
+  const handleCreateDocument = () => {
+    void navigateToDocument()
+    onOpenDocument?.()
+  }
 
   const debouncedSetSearch = useMemo(
     () => debounce((value: string) => setSearchQuery(value), 350),
@@ -314,8 +322,8 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
   if (!userId || isAnonymous) {
     return (
-      <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
-        <SettingsCard>
+      <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:flex max-md:min-h-full max-md:flex-col">
+        <SettingsCard className="max-md:flex max-md:flex-1 max-md:flex-col max-md:justify-center max-md:rounded-none max-md:border-0 max-md:bg-transparent">
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
               <LuFileText size={24} className="text-base-content/40" />
@@ -331,16 +339,18 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   }
 
   return (
-    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
-      <SettingsCard>
+    <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:flex max-md:min-h-full max-md:flex-col">
+      <SettingsCard className="max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
         {showTrash ? (
-          <TrashSection userId={userId} onBack={() => setShowTrash(false)} />
+          <div className="max-md:min-h-0 max-md:flex-1 max-md:p-4">
+            <TrashSection userId={userId} onBack={() => setShowTrash(false)} />
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:space-y-0">
             {pendingDelete && (
               <div
                 role="status"
-                className="bg-base-200 rounded-field flex items-center justify-between gap-3 px-3 py-2 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
+                className="bg-base-200 rounded-field flex items-center justify-between gap-3 px-3 py-2 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:mx-4 max-md:mt-3">
                 <span className="text-base-content/70 truncate text-sm">
                   Deleted “{pendingDelete.title}”
                 </span>
@@ -354,85 +364,89 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
               </div>
             )}
 
-            <TextInput
-              aria-label="Search documents"
-              startIcon={LuSearch}
-              endIcon={
-                inputValue ? (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    aria-label="Clear search"
-                    className="text-base-content/50 hover:text-base-content -mr-1 flex size-6 items-center justify-center">
-                    <LuX size={16} />
-                  </button>
-                ) : undefined
-              }
-              placeholder="Search documents"
-              value={inputValue}
-              onChange={handleSearch}
-            />
-
-            <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
-              <label htmlFor={sortLabelId} className="sr-only">
-                Sort documents
-              </label>
-              <Select
-                id={sortLabelId}
-                size="sm"
-                value={sortKey}
-                onChange={handleSortChange}
-                options={SORT_OPTIONS}
-                wrapperClassName="min-w-0 flex-1 sm:w-40 sm:flex-none sm:shrink-0"
-                className="min-h-11 sm:min-h-8"
+            <div className="max-md:border-base-300 max-md:bg-base-100 space-y-4 max-md:sticky max-md:top-0 max-md:z-10 max-md:space-y-2.5 max-md:border-b max-md:px-4 max-md:pt-3 max-md:pb-2.5">
+              <TextInput
+                aria-label="Search documents"
+                startIcon={LuSearch}
+                endIcon={
+                  inputValue ? (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      aria-label="Clear search"
+                      className="text-base-content/50 hover:text-base-content -mr-1 flex size-6 items-center justify-center">
+                      <LuX size={16} />
+                    </button>
+                  ) : undefined
+                }
+                placeholder="Search documents"
+                value={inputValue}
+                onChange={handleSearch}
               />
 
-              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                <Button
+              <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
+                <label htmlFor={sortLabelId} className="sr-only">
+                  Sort documents
+                </label>
+                <Select
+                  id={sortLabelId}
                   size="sm"
-                  variant="ghost"
-                  startIcon={LuTrash2}
-                  aria-label="Trash"
-                  className="text-base-content/60 hover:text-base-content min-h-11 min-w-11 shrink-0 sm:min-h-9 sm:min-w-0 sm:px-3"
-                  onClick={() => setShowTrash(true)}>
-                  <span className="hidden sm:inline">Trash</span>
-                </Button>
+                  value={sortKey}
+                  onChange={handleSortChange}
+                  options={SORT_OPTIONS}
+                  wrapperClassName="min-w-0 flex-1 sm:w-40 sm:flex-none sm:shrink-0"
+                  className="min-h-11 sm:min-h-8"
+                />
 
-                <div className="join shrink-0" role="radiogroup" aria-label="View layout">
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={viewMode === 'list'}
-                    aria-label="List view"
-                    onClick={() => handleViewChange('list')}
-                    className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
-                      viewMode === 'list'
-                        ? 'btn-primary'
-                        : 'btn-ghost border-base-300 text-base-content/60 border'
-                    }`}>
-                    <LuList size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={viewMode === 'grid'}
-                    aria-label="Grid view"
-                    onClick={() => handleViewChange('grid')}
-                    className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
-                      viewMode === 'grid'
-                        ? 'btn-primary'
-                        : 'btn-ghost border-base-300 text-base-content/60 border'
-                    }`}>
-                    <LuLayoutGrid size={16} />
-                  </button>
+                <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    startIcon={LuTrash2}
+                    aria-label="Trash"
+                    className="text-base-content/60 hover:text-base-content min-h-11 min-w-11 shrink-0 sm:min-h-9 sm:min-w-0 sm:px-3"
+                    onClick={() => setShowTrash(true)}>
+                    <span className="hidden sm:inline">Trash</span>
+                  </Button>
+
+                  <div className="join shrink-0" role="radiogroup" aria-label="View layout">
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={viewMode === 'list'}
+                      aria-label="List view"
+                      onClick={() => handleViewChange('list')}
+                      className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
+                        viewMode === 'list'
+                          ? 'btn-primary'
+                          : 'btn-ghost border-base-300 text-base-content/60 border'
+                      }`}>
+                      <LuList size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={viewMode === 'grid'}
+                      aria-label="Grid view"
+                      onClick={() => handleViewChange('grid')}
+                      className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
+                        viewMode === 'grid'
+                          ? 'btn-primary'
+                          : 'btn-ghost border-base-300 text-base-content/60 border'
+                      }`}>
+                      <LuLayoutGrid size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {isLoading ? (
-              <DocumentsBodySkeleton viewMode={viewMode} />
+              <div className="max-md:px-4 max-md:pt-3">
+                <DocumentsBodySkeleton viewMode={viewMode} />
+              </div>
             ) : isError ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="flex flex-col items-center justify-center py-10 text-center max-md:flex-1">
                 <p className="text-base-content text-sm font-medium">Couldn’t load documents</p>
                 <Button
                   size="sm"
@@ -444,7 +458,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
               </div>
             ) : docs.length === 0 ? (
               searchQuery ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="flex flex-col items-center justify-center py-10 text-center max-md:flex-1">
                   <p className="text-base-content text-sm font-medium">
                     No results for “{searchQuery}”
                   </p>
@@ -460,7 +474,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="flex flex-col items-center justify-center py-10 text-center max-md:flex-1">
                   <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
                     <LuFileText size={24} className="text-base-content/40" />
                   </div>
@@ -468,13 +482,20 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   <p className="text-base-content/60 mt-1 text-xs">
                     Documents you create will appear here.
                   </p>
+                  <Button
+                    variant="primary"
+                    className="mt-4 font-semibold"
+                    loading={isCreatingDocument}
+                    onClick={handleCreateDocument}>
+                    Create document
+                  </Button>
                 </div>
               )
             ) : (
               <div
-                className={
-                  isFetching && !isLoading ? 'transition-opacity motion-safe:opacity-60' : undefined
-                }>
+                className={`max-md:px-4 max-md:pt-1 max-md:pb-4 ${
+                  isFetching && !isLoading ? 'transition-opacity motion-safe:opacity-60' : ''
+                }`}>
                 <p aria-live="polite" className="sr-only">
                   {total} documents
                 </p>
