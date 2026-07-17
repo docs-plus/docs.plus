@@ -48,7 +48,7 @@ export function MessageMediaAttachments({ medias, layout, caption, className }: 
   return (
     <div
       className={twMerge(
-        'flex flex-col gap-1.5',
+        'flex min-w-0 flex-col gap-1.5',
         layout === 'media-with-caption' && variant === 'mobile' && 'rounded-t-box overflow-hidden',
         className
       )}

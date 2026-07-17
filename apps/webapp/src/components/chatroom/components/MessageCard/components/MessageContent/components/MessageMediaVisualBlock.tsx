@@ -1,23 +1,17 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { computeVisualMediaLayout } from '@components/chatroom/utils/chatMediaVisualLayout'
 import {
-  CHAT_MEDIA_VISIBLE_CAP,
-  computeVisualMediaLayout,
-  type VisualMediaLayout,
-  type VisualMediaMosaicCell,
-  type VisualMediaSizedCell
-} from '@components/chatroom/utils/chatMediaVisualLayout'
+  clampFeedColumnWidth,
+  resolveFeedColumnElement,
+  resolveFeedLayoutOptions
+} from '@components/chatroom/utils/feedAlbumLayout'
 import { mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import {
-  CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX,
-  CHAT_MEDIA_FEED_MAX_HEIGHT_MOBILE_PX,
-  CHAT_MEDIA_FEED_MAX_WIDTH_PX,
-  CHAT_MEDIA_MAX_WIDTH_CLASS,
-  CHAT_MEDIA_STACK_GAP_PX,
   type MediaPixelSize,
   positiveMediaDims
 } from '@components/chatroom/utils/messageMediaPaths'
 import type { MessageMediaItem } from '@types'
-import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MessageMediaImageLink } from './MessageMediaImageLink'
@@ -40,66 +34,37 @@ function seedMeasured(visuals: MessageMediaItem[]): MeasuredMap {
   return initial
 }
 
-function OverflowBadge({
-  count,
-  media,
-  onOpen
-}: {
-  count: number
-  media: MessageMediaItem
-  onOpen: (media: MessageMediaItem) => void
-}) {
-  return (
-    <button
-      type="button"
-      className="bg-base-content/60 text-base-100 focus-visible:ring-primary rounded-selector absolute right-1 bottom-1 z-10 px-1.5 py-0.5 text-xs font-semibold focus-visible:ring-2 focus-visible:outline-none"
-      aria-label={`Show ${count} more`}
-      onClick={(e) => {
-        e.stopPropagation()
-        onOpen(media)
-      }}>
-      +{count}
-    </button>
-  )
-}
-
-function renderImageCell(
+function mosaicTileContent(
   media: MessageMediaItem,
-  cell: VisualMediaSizedCell | VisualMediaMosaicCell,
   index: number,
-  fill: 'cover' | 'sized',
   onOpen: () => void,
   onDimensions: (w: number, h: number) => void
 ) {
   const key = `${mediaKey(media)}-${index}`
-
-  if (fill === 'cover') {
+  if (media.type === 'video') {
     return (
-      <MessageMediaImageLink key={key} media={media} onOpen={onOpen} onDimensions={onDimensions} />
+      <MessageMediaVideoPoster
+        key={key}
+        media={media}
+        className="absolute inset-0 h-full w-full rounded-none"
+        onOpen={onOpen}
+        onDimensions={onDimensions}
+      />
     )
   }
-
   return (
-    <div
-      key={key}
-      className="rounded-field relative overflow-hidden"
-      style={{ width: cell.width, height: cell.height, maxWidth: '100%' }}>
-      <MessageMediaImageLink media={media} onOpen={onOpen} onDimensions={onDimensions} />
-    </div>
+    <MessageMediaImageLink key={key} media={media} onOpen={onOpen} onDimensions={onDimensions} />
   )
 }
 
-function renderVideoCell(
+function singleTileContent(
   media: MessageMediaItem,
-  cell: VisualMediaSizedCell | VisualMediaMosaicCell,
-  index: number,
-  mode: VisualMediaLayout['mode'],
+  cell: MediaPixelSize,
   onOpen: () => void,
   onDimensions: (w: number, h: number) => void
 ) {
-  const key = `${mediaKey(media)}-${index}`
-
-  if (mode === 'single') {
+  const key = mediaKey(media)
+  if (media.type === 'video') {
     return (
       <MessageMediaVideo
         key={key}
@@ -112,48 +77,70 @@ function renderVideoCell(
       />
     )
   }
-
-  if (mode === 'mosaic') {
-    return (
-      <MessageMediaVideoPoster
-        key={key}
-        media={media}
-        className="absolute inset-0 h-full w-full rounded-none"
-        onOpen={onOpen}
-        onDimensions={onDimensions}
-      />
-    )
-  }
-
   return (
-    <MessageMediaVideoPoster
+    <div
       key={key}
-      media={media}
-      width={cell.width}
-      height={cell.height}
-      className="rounded-field"
-      onOpen={onOpen}
-      onDimensions={onDimensions}
-    />
+      className="rounded-field relative overflow-hidden"
+      style={{ width: cell.width, height: cell.height, maxWidth: '100%' }}>
+      <MessageMediaImageLink media={media} onOpen={onOpen} onDimensions={onDimensions} />
+    </div>
   )
 }
 
 export function MessageMediaVisualBlock({ visuals, onOpen }: Props) {
   const { variant } = useChatroomContext()
-  const maxHeight =
-    variant === 'mobile'
-      ? CHAT_MEDIA_FEED_MAX_HEIGHT_MOBILE_PX
-      : CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX
+  const { widthCap, maxHeight, widthClass } = useMemo(
+    () => resolveFeedLayoutOptions(variant === 'mobile' ? 'mobile' : 'desktop', visuals.length),
+    [variant, visuals.length]
+  )
+
+  const hostRef = useRef<HTMLDivElement>(null)
+  const [availableWidth, setAvailableWidth] = useState(widthCap)
+
+  useEffect(() => {
+    setAvailableWidth(widthCap)
+  }, [widthCap])
+
+  // FeedColumnWidth measure adapter — never self-measure under shrink-to-fit.
+  useEffect(() => {
+    const host = hostRef.current
+    if (!host) return
+
+    const column = resolveFeedColumnElement(host)
+    if (!column) return
+
+    const sync = () => {
+      const next = clampFeedColumnWidth(column.clientWidth, widthCap)
+      setAvailableWidth((prev) => (prev === next ? prev : next))
+    }
+
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(column)
+    return () => observer.disconnect()
+  }, [widthCap])
 
   const visualsKey = visuals.map((media) => mediaKey(media)).join('\0')
 
   const [measured, setMeasured] = useState(() => seedMeasured(visuals))
+  const pendingDimsRef = useRef<MeasuredMap>({})
+  const flushRafRef = useRef<number | null>(null)
 
   useEffect(() => {
+    if (flushRafRef.current != null) {
+      cancelAnimationFrame(flushRafRef.current)
+      flushRafRef.current = null
+    }
+    pendingDimsRef.current = {}
     setMeasured(seedMeasured(visuals))
-    // visualsKey is the identity; visuals is read for seed values of those keys.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: array identity must not reset
   }, [visualsKey])
+
+  useEffect(() => {
+    return () => {
+      if (flushRafRef.current != null) cancelAnimationFrame(flushRafRef.current)
+    }
+  }, [])
 
   const dims = useMemo(
     () => visuals.map((media) => measured[mediaKey(media)] ?? null),
@@ -163,98 +150,91 @@ export function MessageMediaVisualBlock({ visuals, onOpen }: Props) {
   const layout = useMemo(
     () =>
       computeVisualMediaLayout(dims, {
-        maxWidth: CHAT_MEDIA_FEED_MAX_WIDTH_PX,
+        maxWidth: availableWidth,
         maxHeight
       }),
-    [dims, maxHeight]
+    [availableWidth, dims, maxHeight]
   )
 
-  // First write wins (upload seed or first onLoad) — never overwrite with a later measurement.
+  // Coalesce intrinsic-size reports into one setState per frame (Virtuoso-friendly).
   const setDim = useCallback((key: string, width: number, height: number) => {
     const next = positiveMediaDims(width, height)
     if (!next) return
-    setMeasured((prev) => (prev[key] ? prev : { ...prev, [key]: next }))
+    pendingDimsRef.current[key] = next
+    if (flushRafRef.current != null) return
+    flushRafRef.current = requestAnimationFrame(() => {
+      flushRafRef.current = null
+      const batch = pendingDimsRef.current
+      pendingDimsRef.current = {}
+      setMeasured((prev) => {
+        let changed = false
+        const merged = { ...prev }
+        for (const [k, dim] of Object.entries(batch)) {
+          if (merged[k]) continue
+          merged[k] = dim
+          changed = true
+        }
+        return changed ? merged : prev
+      })
+    })
   }, [])
 
   if (visuals.length === 0) return null
 
   const visible = visuals.slice(0, layout.cells.length)
-  const overflowMedia = layout.overflowCount > 0 ? visuals[CHAT_MEDIA_VISIBLE_CAP] : undefined
-
-  const renderCell = (
-    media: MessageMediaItem,
-    cell: VisualMediaSizedCell | VisualMediaMosaicCell,
-    index: number,
-    fill: 'cover' | 'sized'
-  ) => {
-    const key = mediaKey(media)
-    const onDimensions = (w: number, h: number) => setDim(key, w, h)
-    const open = () => onOpen(media)
-
-    if (media.type === 'video') {
-      return renderVideoCell(media, cell, index, layout.mode, open, onDimensions)
-    }
-
-    return renderImageCell(media, cell, index, fill, open, onDimensions)
-  }
 
   if (layout.mode === 'mosaic') {
-    const gridStyle: CSSProperties = {
-      gridTemplateAreas: layout.templateAreas,
-      gridTemplateColumns: layout.templateColumns,
-      gridTemplateRows: layout.templateRows,
-      width: layout.containerWidth,
-      height: layout.containerHeight,
-      maxWidth: '100%',
-      gap: layout.mosaicGapPx
-    }
-
     return (
       <div
+        ref={hostRef}
         className={twMerge(
-          'bg-base-300/40 rounded-field relative grid w-full overflow-hidden',
-          CHAT_MEDIA_MAX_WIDTH_CLASS
+          // Host clips corners; tiles stay square (no per-cell radii).
+          'bg-base-300/40 rounded-field relative min-w-0 overflow-hidden',
+          widthClass
         )}
         data-media-layout="mosaic"
-        style={gridStyle}>
+        style={{
+          width: layout.containerWidth,
+          height: layout.containerHeight,
+          maxWidth: '100%'
+        }}>
         {visible.map((media, index) => {
           const cell = layout.cells[index]
           if (!cell) return null
+          const key = mediaKey(media)
           return (
             <div
-              key={`${mediaKey(media)}-${index}`}
-              className="relative min-h-0 min-w-0"
-              style={{ gridArea: cell.area }}>
-              {renderCell(media, cell, index, 'cover')}
+              key={`${key}-${index}`}
+              className="absolute overflow-hidden"
+              style={{ left: cell.x, top: cell.y, width: cell.width, height: cell.height }}>
+              {mosaicTileContent(
+                media,
+                index,
+                () => onOpen(media),
+                (w, h) => setDim(key, w, h)
+              )}
             </div>
           )
         })}
-        {overflowMedia ? (
-          <OverflowBadge count={layout.overflowCount} media={overflowMedia} onOpen={onOpen} />
-        ) : null}
-      </div>
-    )
-  }
-
-  if (layout.mode === 'stack') {
-    return (
-      <div
-        className={twMerge('flex flex-col', CHAT_MEDIA_MAX_WIDTH_CLASS)}
-        data-media-layout="stack"
-        style={{ gap: CHAT_MEDIA_STACK_GAP_PX }}>
-        {visible.map((media, index) => renderCell(media, layout.cells[index]!, index, 'sized'))}
       </div>
     )
   }
 
   const media = visible[0]!
   const cell = layout.cells[0]!
+  const key = mediaKey(media)
   return (
     <div
-      className={twMerge('relative', CHAT_MEDIA_MAX_WIDTH_CLASS)}
+      ref={hostRef}
+      className={twMerge('relative min-w-0', widthClass)}
       data-media-layout="single"
-      style={{ width: cell.width, maxWidth: '100%' }}>
-      {renderCell(media, cell, 0, 'sized')}
+      style={{ width: '100%', maxWidth: cell.width }}>
+      {singleTileContent(
+        media,
+        cell,
+        () => onOpen(media),
+        (w, h) => setDim(key, w, h)
+      )}
     </div>
   )
 }

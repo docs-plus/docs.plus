@@ -1,5 +1,6 @@
 import { MessageCard } from '@components/chatroom/components/MessageCard/MessageCard'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { FEED_COLUMN_BUBBLE_FILL_CLASS } from '@components/chatroom/utils/feedAlbumLayout'
 import type { TGroupedMsgRow } from '@types'
 import type { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -24,8 +25,11 @@ function MobileChatBubble({ message, children }: { message: TGroupedMsgRow; chil
       className={twMerge(
         'chat-bubble',
         isMediaOnly &&
-          'max-w-[min(400px,100%)] bg-transparent px-0 py-0 shadow-none before:!hidden',
-        isMediaWithCaption && 'px-0 pt-0',
+          twMerge(
+            FEED_COLUMN_BUBBLE_FILL_CLASS,
+            'max-w-full min-w-0 bg-transparent px-0 py-0 shadow-none before:!hidden'
+          ),
+        isMediaWithCaption && twMerge(FEED_COLUMN_BUBBLE_FILL_CLASS, 'px-0 pt-0'),
         !isMediaOnly && !isMediaWithCaption && 'px-2.5',
         message.isOwner && !isMediaOnly && 'bg-primary/20 before:hidden',
         !message.isGroupStart && 'before:hidden'

@@ -17,4 +17,9 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **GallerySession** — pure playlist snapshot + index (`beginGallerySession` / `stepGallerySession` + `GALLERY_SESSION_CLOSED` in `gallerySession.ts`); the Zustand store clears transient handles around those calls.
 - **GalleryActiveSlide** — identity-keyed zoom/media command registry colocated in `chatMediaGalleryStore.ts` (HMR-safe singleton; inactive unmount must not clear the active handle).
 - **GalleryActiveMediaUrl** — sync resolved URL for copy/open on the click gesture (`publishGalleryActiveMediaUrl` / `readGalleryActiveMediaUrl` in the same store module — not a Zustand field).
-- **Gallery playlist** — lightbox order images → videos → audio (not feed mosaic order); built by `openGallerySession` inside `beginGallerySession`.
+- **Gallery playlist** — lightbox order is intentionally images → videos → audio (not feed mosaic / attachment order); built by `openGallerySession` inside `beginGallerySession`. Do not reorder to match the feed album.
+
+## Chat feed album
+
+- **FeedAlbumLayout** — feed mosaic for image/video tiles: `computeVisualMediaLayout` → `single | mosaic` absolute rects (`chatMediaVisualLayout.ts` orchestrates `feedAlbumProportionLayout` for 2–4 and `feedAlbumRowPacker` for ≥5 / panorama); geometry + cap policy in `feedAlbumLayout.ts` (`resolveFeedLayoutOptions`). Attach cap stays `CHAT_MEDIA_MAX_ATTACHMENTS` (10) at compose time — no feed `+N`. Distinct from Gallery playlist order. Domain names only (no vendor product names in symbols/filenames).
+- **FeedColumnWidth** — definite column contract so absolute cover tiles do not shrink-wrap: media card `FEED_COLUMN_MEDIA_CARD_CLASS`, bubble fill `FEED_COLUMN_BUBBLE_FILL_CLASS`, measure via `resolveFeedColumnElement` / `clampFeedColumnWidth` (bubble ≥160px else `.message-feed`).

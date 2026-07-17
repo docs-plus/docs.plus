@@ -9,14 +9,6 @@ export const CHAT_MEDIA_MAX_BYTES = 10485760
 export const CHAT_MEDIA_MAX_ATTACHMENTS = 10
 export const CHAT_MEDIA_MAX_CONCURRENT_UPLOADS = 3
 export const CHAT_MEDIA_SIGNED_URL_TTL_SEC = 3600
-export const CHAT_MEDIA_MAX_WIDTH_CLASS = 'max-w-[min(400px,100%)]'
-export const CHAT_MEDIA_FEED_MAX_WIDTH_PX = 400
-export const CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX = 360
-export const CHAT_MEDIA_FEED_MAX_HEIGHT_MOBILE_PX = 280
-export const CHAT_MEDIA_TALL_ASPECT = 0.85
-export const CHAT_MEDIA_STACK_GAP_PX = 6
-export const CHAT_MEDIA_PLACEHOLDER_ASPECT = 16 / 9
-export const CHAT_MEDIA_MOSAIC_GAP_PX = 2
 
 export type MediaPixelSize = { width: number; height: number }
 

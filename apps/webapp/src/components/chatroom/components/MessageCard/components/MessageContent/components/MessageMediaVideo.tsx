@@ -1,9 +1,9 @@
 import { FeedSpoilerRevealOverlay } from '@components/chatroom/components/MediaSpoilerReveal'
-import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerReveal'
 import {
   CHAT_MEDIA_FEED_MAX_HEIGHT_DESKTOP_PX,
   CHAT_MEDIA_MAX_WIDTH_CLASS
-} from '@components/chatroom/utils/messageMediaPaths'
+} from '@components/chatroom/utils/feedAlbumLayout'
+import { useSpoilerGatedActivate } from '@components/chatroom/utils/feedSpoilerReveal'
 import { messageMediaTheme } from '@components/chatroom/utils/messageMediaTheme'
 import { Icons } from '@icons'
 import type { MessageMediaItem } from '@types'

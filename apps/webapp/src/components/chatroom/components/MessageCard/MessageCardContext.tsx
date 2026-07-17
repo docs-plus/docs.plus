@@ -1,4 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { FEED_COLUMN_MEDIA_CARD_CLASS } from '@components/chatroom/utils/feedAlbumLayout'
 import {
   deriveMessagePresentation,
   type MessageSurfaceLayout
@@ -113,7 +114,7 @@ export const MessageCardProvider: React.FC<{
             (message.isOwner ? 'chat-end owner ml-auto' : 'chat-start mr-auto'),
           variant === 'mobile' &&
             (isMobileMediaOnly
-              ? 'w-fit max-w-[min(400px,90%)]'
+              ? FEED_COLUMN_MEDIA_CARD_CLASS
               : 'max-w-[90%] min-w-[80%] sm:min-w-[250px]'),
           variant === 'mobile' && (isGroupStart ? 'mt-1' : 'mt-0.5'),
           className
