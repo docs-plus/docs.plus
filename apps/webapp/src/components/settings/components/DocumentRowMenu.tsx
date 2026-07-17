@@ -7,8 +7,10 @@ import {
 import { Popover, PopoverContent, PopoverTrigger, usePopoverState } from '@components/ui/Popover'
 import Toggle from '@components/ui/Toggle'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
+import { useStore } from '@stores'
 import { type InfiniteData, useQueryClient } from '@tanstack/react-query'
 import { copyToClipboard } from '@utils/clipboard'
+import { useEffect, useRef, useState } from 'react'
 import {
   LuCopy,
   LuEllipsisVertical,
@@ -42,7 +44,7 @@ export interface DocumentRowMenuProps {
   triggerTabIndex?: number
 }
 
-function RowMenuPanel({
+function RowMenuItems({
   documentId,
   slug,
   title,
@@ -52,9 +54,10 @@ function RowMenuPanel({
   searchQuery,
   sortKey,
   onRename,
-  onDelete
-}: DocumentRowMenuProps) {
-  const { close } = usePopoverState()
+  onDelete,
+  close,
+  rowClassName
+}: DocumentRowMenuProps & { close: () => void; rowClassName?: string }) {
   const queryClient = useQueryClient()
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
@@ -131,19 +134,25 @@ function RowMenuPanel({
   }
 
   return (
-    <div className={contextMenuPanelClassName}>
+    <>
       <button type="button" className="rounded-field group w-full text-left" onClick={openInNewTab}>
-        <ContextMenuRow icon={<LuExternalLink size={16} />}>Open in new tab</ContextMenuRow>
+        <ContextMenuRow icon={<LuExternalLink size={16} />} className={rowClassName}>
+          Open in new tab
+        </ContextMenuRow>
       </button>
 
       {!isPrivate && (
         <button type="button" className="rounded-field group w-full text-left" onClick={copyLink}>
-          <ContextMenuRow icon={<LuLink size={16} />}>Copy link</ContextMenuRow>
+          <ContextMenuRow icon={<LuLink size={16} />} className={rowClassName}>
+            Copy link
+          </ContextMenuRow>
         </button>
       )}
 
       <button type="button" className="rounded-field group w-full text-left" onClick={startRename}>
-        <ContextMenuRow icon={<LuPencilLine size={16} />}>Rename</ContextMenuRow>
+        <ContextMenuRow icon={<LuPencilLine size={16} />} className={rowClassName}>
+          Rename
+        </ContextMenuRow>
       </button>
 
       <button
@@ -151,7 +160,9 @@ function RowMenuPanel({
         className="rounded-field group w-full text-left disabled:pointer-events-none disabled:opacity-60"
         disabled={isDuplicating}
         onClick={runDuplicate}>
-        <ContextMenuRow icon={<LuCopy size={16} />}>Duplicate</ContextMenuRow>
+        <ContextMenuRow icon={<LuCopy size={16} />} className={rowClassName}>
+          Duplicate
+        </ContextMenuRow>
       </button>
 
       <ContextMenuDivider />
@@ -204,36 +215,121 @@ function RowMenuPanel({
         type="button"
         className="rounded-field group w-full text-left"
         onClick={removeDocument}>
-        <ContextMenuRow icon={<LuTrash2 size={16} />} variant="danger">
+        <ContextMenuRow icon={<LuTrash2 size={16} />} variant="danger" className={rowClassName}>
           Delete
         </ContextMenuRow>
       </button>
+    </>
+  )
+}
+
+function RowMenuPopoverPanel(props: DocumentRowMenuProps) {
+  const { close } = usePopoverState()
+  return (
+    <div className={contextMenuPanelClassName}>
+      <RowMenuItems {...props} close={close} />
     </div>
   )
 }
 
 /**
- * Shared ⋮ actions menu for list rows and grid tiles — anchored Popover (light-dismiss),
- * stays open while toggles flip. Copy link hides (optimistically) once Private is on.
+ * In-tree (not portaled): the settings modal's focus trap and outside-press dismiss must
+ * treat the sheet as inside; the full-screen blurred overlay is the fixed containing block.
+ */
+function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void }) {
+  const { onClose } = props
+  const label = props.title ?? props.slug
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    sheetRef.current?.focus()
+  }, [])
+
+  // Capture-phase Escape closes the sheet before the settings modal's own dismiss sees it —
+  // but never while a GlobalDialog confirm (Private ON, delete) is stacked above the sheet.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (useStore.getState().globalDialog.isOpen) return
+      event.stopPropagation()
+      onClose()
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[60]">
+      <button
+        type="button"
+        aria-label="Dismiss document actions"
+        className="absolute inset-0 bg-[var(--modal-scrim)]"
+        onClick={(e) => {
+          e.stopPropagation()
+          onClose()
+        }}
+      />
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-label={`Document actions for “${label}”`}
+        tabIndex={-1}
+        className="rounded-t-box border-base-300 bg-base-100 absolute inset-x-0 bottom-0 border border-b-0 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-xl outline-none motion-safe:animate-[doc-region-in_180ms_ease-out_both]"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="bg-base-300 mx-auto mb-1.5 h-1 w-10 rounded-full" aria-hidden />
+        <p className="text-base-content/60 truncate px-2.5 pb-1.5 text-xs font-medium">{label}</p>
+        <RowMenuItems {...props} close={onClose} rowClassName="min-h-12" />
+        <button
+          type="button"
+          className="rounded-field hover:bg-base-200 mt-1 flex min-h-12 w-full items-center justify-center px-3 text-sm font-semibold"
+          onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Shared ⋮ actions menu for list rows and grid tiles — anchored Popover ≥md, bottom action
+ * sheet below md. Stays open while toggles flip; Copy link hides once Private is on.
  */
 function DocumentRowMenu(props: DocumentRowMenuProps) {
   const trigger = props.title ?? props.slug
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+
   return (
-    <Popover placement="bottom-end">
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Document actions for “${trigger}”`}
-          tabIndex={props.triggerTabIndex}
-          onClick={(e) => e.stopPropagation()}
-          className="text-base-content/50 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-11 min-w-11 items-center justify-center transition-colors sm:min-h-9 sm:min-w-9">
-          <LuEllipsisVertical size={18} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent>
-        <RowMenuPanel {...props} />
-      </PopoverContent>
-    </Popover>
+    <>
+      <button
+        type="button"
+        aria-label={`Document actions for “${trigger}”`}
+        aria-expanded={isSheetOpen}
+        tabIndex={props.triggerTabIndex}
+        onClick={(e) => {
+          e.stopPropagation()
+          setIsSheetOpen(true)
+        }}
+        className="text-base-content/50 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-11 min-w-11 items-center justify-center transition-colors md:hidden">
+        <LuEllipsisVertical size={18} />
+      </button>
+      {isSheetOpen && <RowMenuActionSheet {...props} onClose={() => setIsSheetOpen(false)} />}
+
+      <Popover placement="bottom-end">
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Document actions for “${trigger}”`}
+            tabIndex={props.triggerTabIndex}
+            onClick={(e) => e.stopPropagation()}
+            className="text-base-content/50 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-9 min-w-9 items-center justify-center transition-colors max-md:hidden">
+            <LuEllipsisVertical size={18} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent>
+          <RowMenuPopoverPanel {...props} />
+        </PopoverContent>
+      </Popover>
+    </>
   )
 }
 
