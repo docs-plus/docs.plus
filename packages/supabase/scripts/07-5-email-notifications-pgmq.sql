@@ -47,7 +47,7 @@ alter table public.email_queue enable row level security;
 
 drop policy if exists "Users can view own email queue" on public.email_queue;
 create policy "Users can view own email queue" on public.email_queue
-    for select using (auth.uid() = user_id);
+    for select using ((select auth.uid()) = user_id);
 
 comment on table public.email_queue is 'Queue for email notifications with scheduling support';
 

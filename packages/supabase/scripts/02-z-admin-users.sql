@@ -61,24 +61,24 @@ alter table public.admin_users enable row level security;
 -- Users can check their own admin status (for auth check)
 create policy "Users can check own admin status"
     on public.admin_users for select
-    using (user_id = auth.uid());
+    using (user_id = (select auth.uid()));
 
 -- Admins can view all admin users
 create policy "Admins can view all"
     on public.admin_users for select
-    using (public.is_admin(auth.uid()));
+    using ((select public.is_admin((select auth.uid()))));
 
 -- Admins can add new admins
 create policy "Admins can insert"
     on public.admin_users for insert
-    with check (public.is_admin(auth.uid()));
+    with check ((select public.is_admin((select auth.uid()))));
 
 -- Admins can remove other admins (not themselves to prevent lockout)
 create policy "Admins can delete others"
     on public.admin_users for delete
     using (
-        user_id != auth.uid() and 
-        public.is_admin(auth.uid())
+        user_id != (select auth.uid()) and
+        (select public.is_admin((select auth.uid())))
     );
 
 -- ============================================================

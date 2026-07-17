@@ -52,36 +52,27 @@ select cron.schedule(
 );
 
 -- Per-job health for the observability exporter: latest run status plus the
--- end time of the most recent successful run.
+-- end time of the most recent successful run. Single pass over
+-- cron.job_run_details — the per-job correlated subqueries it replaces
+-- seq-scanned the table twice per job on every worker scrape.
 create or replace function public.get_cron_job_health()
 returns table (
     jobname text,
     last_run_status text,
     last_success_at timestamptz
 )
-language plpgsql
+language sql
 security definer
 stable
 set search_path = public
 as $$
-begin
-    return query
     select
         j.jobname::text,
-        (
-            select d.status
-            from cron.job_run_details d
-            where d.jobid = j.jobid
-            order by d.start_time desc
-            limit 1
-        ) as last_run_status,
-        (
-            select max(d.end_time)
-            from cron.job_run_details d
-            where d.jobid = j.jobid and d.status = 'succeeded'
-        ) as last_success_at
-    from cron.job j;
-end;
+        (array_agg(d.status order by d.start_time desc))[1] as last_run_status,
+        max(d.end_time) filter (where d.status = 'succeeded') as last_success_at
+    from cron.job j
+    left join cron.job_run_details d using (jobid)
+    group by j.jobid, j.jobname;
 $$;
 
 comment on function public.get_cron_job_health() is

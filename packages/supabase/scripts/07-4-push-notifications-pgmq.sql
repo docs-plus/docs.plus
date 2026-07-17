@@ -73,7 +73,7 @@ alter table public.push_subscriptions enable row level security;
 
 drop policy if exists "Users can manage own subscriptions" on public.push_subscriptions;
 create policy "Users can manage own subscriptions" on public.push_subscriptions
-    for all using (auth.uid() = user_id);
+    for all using ((select auth.uid()) = user_id);
 
 comment on table public.push_subscriptions is
 'Browser/device push notification subscriptions per user';

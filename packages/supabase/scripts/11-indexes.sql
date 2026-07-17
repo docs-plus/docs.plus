@@ -28,10 +28,6 @@ create index idx_channels_created_by on public.channels (created_by);
 create index idx_channels_workspace_id on public.channels (workspace_id);
 create index idx_channels_last_activity_at on public.channels (last_activity_at desc);
 
--- Indexes on public.pinned_messages Table
--- Optimizes query performance for channel_id and message_id.
-create unique index idx_pinned_messages_channel_id_message_id on public.pinned_messages (channel_id, message_id);
-
 -- Indexes on public.channel_members Table
 -- Optimizes query performance for channel_id and member_id.
 create unique index idx_channel_members_channel_id_member_id on public.channel_members (channel_id, member_id);

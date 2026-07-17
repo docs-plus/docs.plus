@@ -271,24 +271,24 @@ alter table public.admin_users enable row level security;
 -- Users can check their own admin status (for auth check)
 create policy "Users can check own admin status"
     on public.admin_users for select
-    using (user_id = auth.uid());
+    using (user_id = (select auth.uid()));
 
 -- Admins can view all admin users
 create policy "Admins can view all"
     on public.admin_users for select
-    using (public.is_admin(auth.uid()));
+    using ((select public.is_admin((select auth.uid()))));
 
 -- Admins can add new admins
 create policy "Admins can insert"
     on public.admin_users for insert
-    with check (public.is_admin(auth.uid()));
+    with check ((select public.is_admin((select auth.uid()))));
 
 -- Admins can remove other admins (not themselves to prevent lockout)
 create policy "Admins can delete others"
     on public.admin_users for delete
     using (
-        user_id != auth.uid() and 
-        public.is_admin(auth.uid())
+        user_id != (select auth.uid()) and
+        (select public.is_admin((select auth.uid())))
     );
 
 -- ============================================================
@@ -564,23 +564,23 @@ alter table public.message_bookmarks enable row level security;
 create policy "Users can view their own bookmarks"
     on public.message_bookmarks
     for select
-    using (auth.uid() = user_id);
+    using ((select auth.uid()) = user_id);
 
 create policy "Users can create their own bookmarks"
     on public.message_bookmarks
     for insert
-    with check (auth.uid() = user_id);
+    with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own bookmarks"
     on public.message_bookmarks
     for update
-    using (auth.uid() = user_id)
-    with check (auth.uid() = user_id);
+    using ((select auth.uid()) = user_id)
+    with check ((select auth.uid()) = user_id);
 
 create policy "Users can delete their own bookmarks"
     on public.message_bookmarks
     for delete
-    using (auth.uid() = user_id);
+    using ((select auth.uid()) = user_id);
 
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
@@ -956,7 +956,7 @@ ON realtime.messages
 FOR SELECT
 TO authenticated
 USING (
-  realtime.messages.topic = 'notifications:' || auth.uid()::text
+  realtime.messages.topic = 'notifications:' || (select auth.uid())::text
 );
 
 COMMENT ON POLICY "notifications_topic_access" ON realtime.messages IS
@@ -1050,7 +1050,7 @@ alter table public.push_subscriptions enable row level security;
 
 drop policy if exists "Users can manage own subscriptions" on public.push_subscriptions;
 create policy "Users can manage own subscriptions" on public.push_subscriptions
-    for all using (auth.uid() = user_id);
+    for all using ((select auth.uid()) = user_id);
 
 comment on table public.push_subscriptions is
 'Browser/device push notification subscriptions per user';
@@ -1748,7 +1748,7 @@ alter table public.email_queue enable row level security;
 
 drop policy if exists "Users can view own email queue" on public.email_queue;
 create policy "Users can view own email queue" on public.email_queue
-    for select using (auth.uid() = user_id);
+    for select using ((select auth.uid()) = user_id);
 
 comment on table public.email_queue is 'Queue for email notifications with scheduling support';
 
@@ -3783,7 +3783,7 @@ $$;
 comment on function public.process_document_views_queue() is
 'Batch processes document views from pgmq queue.
 Handles deduplication and inserts valid views.
-Run every 10 seconds via pg_cron.';
+Run every 10 minutes via pg_cron.';
 
 
 -- -----------------------------------------------------------------------------
@@ -4191,19 +4191,21 @@ alter table public.document_views_daily enable row level security;
 -- document_view_stats: Admins can read
 create policy "Admins can read document_view_stats"
     on public.document_view_stats for select
-    using (public.is_admin(auth.uid()));
+    using ((select public.is_admin((select auth.uid()))));
 
 -- document_views_daily: Admins can read
 create policy "Admins can read document_views_daily"
     on public.document_views_daily for select
-    using (public.is_admin(auth.uid()));
+    using ((select public.is_admin((select auth.uid()))));
 
 
 -- -----------------------------------------------------------------------------
 -- 10. pg_cron Scheduling
 -- -----------------------------------------------------------------------------
 
--- Process document views queue every 10 seconds
+-- Process document views queue every 10 minutes. Explicit 5-field schedule:
+-- the previous 6-field '*/10 * * * * *' was intended as 10-second syntax but
+-- pg_cron parsed it as every 10 minutes — keep the observed prod cadence.
 do $$
 begin
     perform cron.unschedule('process_document_views_queue')
@@ -4211,7 +4213,7 @@ begin
 
     perform cron.schedule(
         'process_document_views_queue',
-        '*/10 * * * * *',
+        '*/10 * * * *',
         'select public.process_document_views_queue();'
     );
 exception when others then
@@ -8863,10 +8865,6 @@ create index idx_channels_created_by on public.channels (created_by);
 create index idx_channels_workspace_id on public.channels (workspace_id);
 create index idx_channels_last_activity_at on public.channels (last_activity_at desc);
 
--- Indexes on public.pinned_messages Table
--- Optimizes query performance for channel_id and message_id.
-create unique index idx_pinned_messages_channel_id_message_id on public.pinned_messages (channel_id, message_id);
-
 -- Indexes on public.channel_members Table
 -- Optimizes query performance for channel_id and member_id.
 create unique index idx_channel_members_channel_id_member_id on public.channel_members (channel_id, member_id);
@@ -9200,8 +9198,8 @@ CREATE POLICY users_select ON public.users
 
 CREATE POLICY users_self_update ON public.users
   FOR UPDATE TO authenticated
-  USING      (id = auth.uid())
-  WITH CHECK (id = auth.uid());
+  USING      (id = (select auth.uid()))
+  WITH CHECK (id = (select auth.uid()));
 
 -- Mirror the anon column whitelist for authenticated. `email` is excluded;
 -- DEFINER RPCs bypass column grants so legitimate readers are unaffected.
@@ -9239,7 +9237,7 @@ CREATE POLICY workspaces_member_select ON public.workspaces
 -- from PostgREST.
 CREATE POLICY workspaces_creator_insert ON public.workspaces
   FOR INSERT TO authenticated
-  WITH CHECK (created_by = auth.uid());
+  WITH CHECK (created_by = (select auth.uid()));
 
 
 -- 2c. workspace_members — same-workspace members see each other.
@@ -9269,7 +9267,7 @@ CREATE POLICY channels_visible_select ON public.channels
 CREATE POLICY channels_member_insert ON public.channels
   FOR INSERT TO authenticated
   WITH CHECK (
-    created_by = auth.uid()
+    created_by = (select auth.uid())
     AND internal.is_workspace_member(workspace_id)
   );
 
@@ -9320,8 +9318,8 @@ CREATE POLICY channel_members_join_insert ON public.channel_members
 DROP POLICY IF EXISTS channel_members_self_update ON public.channel_members;
 CREATE POLICY channel_members_self_update ON public.channel_members
   FOR UPDATE TO authenticated
-  USING (member_id = auth.uid())
-  WITH CHECK (member_id = auth.uid());
+  USING (member_id = (select auth.uid()))
+  WITH CHECK (member_id = (select auth.uid()));
 
 REVOKE UPDATE ON public.channel_members FROM authenticated;
 GRANT UPDATE (
@@ -9348,14 +9346,14 @@ CREATE POLICY messages_visible_select ON public.messages
 CREATE POLICY messages_self_insert ON public.messages
   FOR INSERT TO authenticated
   WITH CHECK (
-    user_id = auth.uid()
+    user_id = (select auth.uid())
     AND internal.can_read_channel(channel_id)
   );
 
 CREATE POLICY messages_self_update ON public.messages
   FOR UPDATE TO authenticated
-  USING      (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING      (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
 
 
 -- 2g. pinned_messages — readable iff channel is readable.
@@ -9389,12 +9387,12 @@ DROP POLICY IF EXISTS notifications_self_update  ON public.notifications;
 
 CREATE POLICY notifications_self_select ON public.notifications
   FOR SELECT TO authenticated
-  USING (receiver_user_id = auth.uid());
+  USING (receiver_user_id = (select auth.uid()));
 
 CREATE POLICY notifications_self_update ON public.notifications
   FOR UPDATE TO authenticated
-  USING      (receiver_user_id = auth.uid())
-  WITH CHECK (receiver_user_id = auth.uid());
+  USING      (receiver_user_id = (select auth.uid()))
+  WITH CHECK (receiver_user_id = (select auth.uid()));
 
 
 -- 2j. document_views (parent + future month-partitions) — analytics only.
@@ -9572,36 +9570,27 @@ select cron.schedule(
 );
 
 -- Per-job health for the observability exporter: latest run status plus the
--- end time of the most recent successful run.
+-- end time of the most recent successful run. Single pass over
+-- cron.job_run_details — the per-job correlated subqueries it replaces
+-- seq-scanned the table twice per job on every worker scrape.
 create or replace function public.get_cron_job_health()
 returns table (
     jobname text,
     last_run_status text,
     last_success_at timestamptz
 )
-language plpgsql
+language sql
 security definer
 stable
 set search_path = public
 as $$
-begin
-    return query
     select
         j.jobname::text,
-        (
-            select d.status
-            from cron.job_run_details d
-            where d.jobid = j.jobid
-            order by d.start_time desc
-            limit 1
-        ) as last_run_status,
-        (
-            select max(d.end_time)
-            from cron.job_run_details d
-            where d.jobid = j.jobid and d.status = 'succeeded'
-        ) as last_success_at
-    from cron.job j;
-end;
+        (array_agg(d.status order by d.start_time desc))[1] as last_run_status,
+        max(d.end_time) filter (where d.status = 'succeeded') as last_success_at
+    from cron.job j
+    left join cron.job_run_details d using (jobid)
+    group by j.jobid, j.jobname;
 $$;
 
 comment on function public.get_cron_job_health() is

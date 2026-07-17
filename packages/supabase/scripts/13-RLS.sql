@@ -59,8 +59,8 @@ CREATE POLICY users_select ON public.users
 
 CREATE POLICY users_self_update ON public.users
   FOR UPDATE TO authenticated
-  USING      (id = auth.uid())
-  WITH CHECK (id = auth.uid());
+  USING      (id = (select auth.uid()))
+  WITH CHECK (id = (select auth.uid()));
 
 -- Mirror the anon column whitelist for authenticated. `email` is excluded;
 -- DEFINER RPCs bypass column grants so legitimate readers are unaffected.
@@ -98,7 +98,7 @@ CREATE POLICY workspaces_member_select ON public.workspaces
 -- from PostgREST.
 CREATE POLICY workspaces_creator_insert ON public.workspaces
   FOR INSERT TO authenticated
-  WITH CHECK (created_by = auth.uid());
+  WITH CHECK (created_by = (select auth.uid()));
 
 
 -- 2c. workspace_members — same-workspace members see each other.
@@ -128,7 +128,7 @@ CREATE POLICY channels_visible_select ON public.channels
 CREATE POLICY channels_member_insert ON public.channels
   FOR INSERT TO authenticated
   WITH CHECK (
-    created_by = auth.uid()
+    created_by = (select auth.uid())
     AND internal.is_workspace_member(workspace_id)
   );
 
@@ -179,8 +179,8 @@ CREATE POLICY channel_members_join_insert ON public.channel_members
 DROP POLICY IF EXISTS channel_members_self_update ON public.channel_members;
 CREATE POLICY channel_members_self_update ON public.channel_members
   FOR UPDATE TO authenticated
-  USING (member_id = auth.uid())
-  WITH CHECK (member_id = auth.uid());
+  USING (member_id = (select auth.uid()))
+  WITH CHECK (member_id = (select auth.uid()));
 
 REVOKE UPDATE ON public.channel_members FROM authenticated;
 GRANT UPDATE (
@@ -207,14 +207,14 @@ CREATE POLICY messages_visible_select ON public.messages
 CREATE POLICY messages_self_insert ON public.messages
   FOR INSERT TO authenticated
   WITH CHECK (
-    user_id = auth.uid()
+    user_id = (select auth.uid())
     AND internal.can_read_channel(channel_id)
   );
 
 CREATE POLICY messages_self_update ON public.messages
   FOR UPDATE TO authenticated
-  USING      (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING      (user_id = (select auth.uid()))
+  WITH CHECK (user_id = (select auth.uid()));
 
 
 -- 2g. pinned_messages — readable iff channel is readable.
@@ -248,12 +248,12 @@ DROP POLICY IF EXISTS notifications_self_update  ON public.notifications;
 
 CREATE POLICY notifications_self_select ON public.notifications
   FOR SELECT TO authenticated
-  USING (receiver_user_id = auth.uid());
+  USING (receiver_user_id = (select auth.uid()));
 
 CREATE POLICY notifications_self_update ON public.notifications
   FOR UPDATE TO authenticated
-  USING      (receiver_user_id = auth.uid())
-  WITH CHECK (receiver_user_id = auth.uid());
+  USING      (receiver_user_id = (select auth.uid()))
+  WITH CHECK (receiver_user_id = (select auth.uid()));
 
 
 -- 2j. document_views (parent + future month-partitions) — analytics only.

@@ -438,7 +438,7 @@ $$;
 comment on function public.process_document_views_queue() is
 'Batch processes document views from pgmq queue.
 Handles deduplication and inserts valid views.
-Run every 10 seconds via pg_cron.';
+Run every 10 minutes via pg_cron.';
 
 
 -- -----------------------------------------------------------------------------
@@ -846,19 +846,21 @@ alter table public.document_views_daily enable row level security;
 -- document_view_stats: Admins can read
 create policy "Admins can read document_view_stats"
     on public.document_view_stats for select
-    using (public.is_admin(auth.uid()));
+    using ((select public.is_admin((select auth.uid()))));
 
 -- document_views_daily: Admins can read
 create policy "Admins can read document_views_daily"
     on public.document_views_daily for select
-    using (public.is_admin(auth.uid()));
+    using ((select public.is_admin((select auth.uid()))));
 
 
 -- -----------------------------------------------------------------------------
 -- 10. pg_cron Scheduling
 -- -----------------------------------------------------------------------------
 
--- Process document views queue every 10 seconds
+-- Process document views queue every 10 minutes. Explicit 5-field schedule:
+-- the previous 6-field '*/10 * * * * *' was intended as 10-second syntax but
+-- pg_cron parsed it as every 10 minutes — keep the observed prod cadence.
 do $$
 begin
     perform cron.unschedule('process_document_views_queue')
@@ -866,7 +868,7 @@ begin
 
     perform cron.schedule(
         'process_document_views_queue',
-        '*/10 * * * * *',
+        '*/10 * * * *',
         'select public.process_document_views_queue();'
     );
 exception when others then

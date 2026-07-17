@@ -52,23 +52,23 @@ alter table public.message_bookmarks enable row level security;
 create policy "Users can view their own bookmarks"
     on public.message_bookmarks
     for select
-    using (auth.uid() = user_id);
+    using ((select auth.uid()) = user_id);
 
 create policy "Users can create their own bookmarks"
     on public.message_bookmarks
     for insert
-    with check (auth.uid() = user_id);
+    with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own bookmarks"
     on public.message_bookmarks
     for update
-    using (auth.uid() = user_id)
-    with check (auth.uid() = user_id);
+    using ((select auth.uid()) = user_id)
+    with check ((select auth.uid()) = user_id);
 
 create policy "Users can delete their own bookmarks"
     on public.message_bookmarks
     for delete
-    using (auth.uid() = user_id);
+    using ((select auth.uid()) = user_id);
 
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above

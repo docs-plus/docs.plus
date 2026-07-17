@@ -115,7 +115,7 @@ ON realtime.messages
 FOR SELECT
 TO authenticated
 USING (
-  realtime.messages.topic = 'notifications:' || auth.uid()::text
+  realtime.messages.topic = 'notifications:' || (select auth.uid())::text
 );
 
 COMMENT ON POLICY "notifications_topic_access" ON realtime.messages IS
