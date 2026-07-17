@@ -14,6 +14,10 @@ import { getServiceRoleClient } from './supabase'
 
 const QUEUE_METRICS_INTERVAL_MS = 15000
 
+// Cron health rides the queue tick at a slower cadence (60 s): every call
+// sweeps cron.job_run_details, and the cron-stale alerts only fire at >15m.
+const CRON_HEALTH_SAMPLE_EVERY_TICKS = 4
+
 // DLQs included: their `waiting` depth is the alerting signal for poisoned jobs.
 const monitoredQueues = [
   StoreDocumentQueue,
@@ -130,7 +134,7 @@ let metricsTick = 0
 function sampleWorkerMetrics() {
   void sampleQueueDepth()
   void samplePgmqQueueMetrics()
-  void sampleCronJobHealth()
+  if (metricsTick % CRON_HEALTH_SAMPLE_EVERY_TICKS === 0) void sampleCronJobHealth()
   if (metricsTick % MEDIA_USAGE_SAMPLE_EVERY_TICKS === 0) void sampleMediaUsage()
   metricsTick++
 }
