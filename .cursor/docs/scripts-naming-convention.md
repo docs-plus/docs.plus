@@ -67,8 +67,10 @@ cypress:run:coverage tool + subcommand + modifier
 **Make-side closed vocabularies** (different from npm/Bun — Make orchestrates Docker, so its axis values reflect deploy targets, not script-runtime envs):
 
 - Envs: `prod`, `dev`, `local` (`local` distinguishes native-on-host orchestration from Docker `dev`/`prod`).
-- Scopes: `backend`, `webapp`, `traefik`, plus `infra` as a grouped family.
+- Scopes: `backend`, `webapp`, `traefik`, plus `infra` and `swarm` as grouped families.
 - Modifiers: `ci` (clean-room build with stub env).
+
+> **Grouped-family members.** `infra-*` members are reserved verbs (`infra-up`, `infra-down`, `infra-logs`). `swarm-*` members are the document-swarm run modes (`swarm-demo`, `swarm-stress`) rather than verbs — they mirror the `@docs.plus/document-swarm run --mode demo|stress` CLI, and are the one grouped family whose members are modes. Actor provisioning stays a Bun script (`bun run --filter @docs.plus/document-swarm provision`), not a Make target.
 
 **Examples:**
 
@@ -79,7 +81,8 @@ dev-local            verb + env       (canonical local-dev orchestrator)
 dev-backend          verb + scope     (REST + WS + Worker)
 build-prod-backend   verb + env + scope
 build-prod-ci        verb + env + modifier
-infra-up             scope-first family member
+infra-up             scope-first family member (verb)
+swarm-demo           scope-first family member (run mode)
 ```
 
 ### Script file names (`scripts/`, `packages/<pkg>/scripts/`)

@@ -1,0 +1,9 @@
+# Provisioned Swarm Actor credentials — never commit
+actors.json
+
+# Playwright storage state / injected sessions
+.auth/
+
+# Playwright run artifacts
+test-results/
+playwright-report/

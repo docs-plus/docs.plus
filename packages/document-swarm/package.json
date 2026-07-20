@@ -1,0 +1,29 @@
+{
+  "name": "@docs.plus/document-swarm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internal Bun CLI that runs N seeded Swarm Actors via Playwright against a public editable document URL in Demo or Stress mode. Never published.",
+  "type": "module",
+  "bin": {
+    "document-swarm": "./src/cli.ts"
+  },
+  "scripts": {
+    "provision": "bun --env-file=../../.env.local src/cli.ts provision",
+    "run": "bun --env-file=../../.env.local src/cli.ts run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "catalog:",
+    "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "bun-types": "catalog:",
+    "eslint": "catalog:",
+    "globals": "catalog:",
+    "typescript": "catalog:"
+  }
+}

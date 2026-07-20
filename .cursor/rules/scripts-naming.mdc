@@ -11,7 +11,7 @@ Authoritative source: [.cursor/docs/scripts-naming-convention.md](../docs/script
 ## Grammar
 
 - **npm/Bun script keys:** `<verb>` | `<verb>:<axis>` | `<verb>:<scope>:<modifier>` | `<tool>:<sub>` | `pre<verb>` / `post<verb>`.
-- **Make targets:** `<verb>` | `<verb>-<env>-<scope>-<modifier>` | `<scope>-<verb>` (only for grouped families like `infra-*`). Kebab-case, no colons.
+- **Make targets:** `<verb>` | `<verb>-<env>-<scope>-<modifier>` | `<scope>-<verb>` (only for grouped families: `infra-*` verb members, `swarm-*` run-mode members). Kebab-case, no colons.
 - **Script files** in `scripts/` and `packages/<pkg>/scripts/`: kebab-case, verb-first when action-oriented, `.ts` for new scripts, `.sh` only when shell is genuinely required, `.mjs` only for JS-tooling configs.
 
 ## Closed vocabularies
@@ -35,6 +35,7 @@ Authoritative source: [.cursor/docs/scripts-naming-convention.md](../docs/script
 - Single-tool wrapper workspaces (e.g. `@docs.plus/supabase_back`) use bare verbs; the workspace name encodes the tool prefix.
 - Husky hook filenames (`pre-commit.sh`, `pre-push.sh`, `commit-msg.sh`, `post-merge.sh`) and npm-lifecycle script files (`prepack.ts`, `preflight.ts`) keep their upstream-mandated names.
 - Make's env axis includes `local` (e.g. `make dev-local`) — legitimate, not subject to the npm-side `:local` ban.
+- `swarm-*` is a grouped Make family whose members are document-swarm run modes (`swarm-demo`, `swarm-stress`), not verbs — mirrors the `@docs.plus/document-swarm run --mode` CLI.
 
 ## Package types
 

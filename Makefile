@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev build-prod-ci build-prod-backend run-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats deploy-prod rollback-prod status-prod logs-traefik
+.PHONY: help build build-dev build-prod-ci build-prod-backend run-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats deploy-prod rollback-prod status-prod logs-traefik swarm-demo swarm-stress
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -32,6 +32,13 @@ help:
 	@echo "  bun --filter @docs.plus/hocuspocus dev:ws         - WebSocket server"
 	@echo "  bun --filter @docs.plus/hocuspocus dev:worker     - Worker"
 	@echo "  bun --filter @docs.plus/supabase_back start|stop  - Supabase up / down"
+	@echo ""
+	@echo "Document swarm (local/stage only — @docs.plus/document-swarm):"
+	@echo "  make swarm-demo URL=<doc>    - Watchable multi-user demo (headed; Ctrl+C to stop)"
+	@echo "  make swarm-stress URL=<doc>  - Concurrent load run (headless, bounded)"
+	@echo "    vars: URL (required), USERS=<n>, ARGS=\"--shuffle --duration 2m --force\""
+	@echo "    provision the pool once first:"
+	@echo "      bun run --filter @docs.plus/document-swarm provision --count <n>"
 	@echo ""
 	@echo "Production Deployment (Traefik):"
 	@echo "  make deploy-prod             - Deploy full stack with Traefik"
@@ -223,6 +230,24 @@ dev-backend:
 		"bun --filter @docs.plus/hocuspocus dev:rest" \
 		"bun --filter @docs.plus/hocuspocus dev:ws" \
 		"bun --filter @docs.plus/hocuspocus dev:worker"
+
+# =============================================================================
+# DOCUMENT SWARM (local/stage bot — @docs.plus/document-swarm)
+# =============================================================================
+# Sugar over `bun run --filter @docs.plus/document-swarm run …`. Provision the actor
+# pool once first: `bun run --filter @docs.plus/document-swarm provision --count <n>`.
+# Vars: URL=<doc-url> (required), USERS=<n>, ARGS="--shuffle --duration 2m --force".
+# The tool itself refuses non-local/stage hosts and enforces per-host actor caps.
+
+SWARM_RUN = bun run --filter @docs.plus/document-swarm run
+
+swarm-demo:
+	@test -n "$(URL)" || { echo "❌ URL is required — e.g. make swarm-demo URL=http://localhost:3000/<slug>"; exit 1; }
+	@$(SWARM_RUN) --mode demo --url "$(URL)" $(if $(USERS),--users $(USERS)) $(ARGS)
+
+swarm-stress:
+	@test -n "$(URL)" || { echo "❌ URL is required — e.g. make swarm-stress URL=http://localhost:3000/<slug>"; exit 1; }
+	@$(SWARM_RUN) --mode stress --url "$(URL)" $(if $(USERS),--users $(USERS)) $(ARGS)
 
 # =============================================================================
 # SCALING COMMANDS
