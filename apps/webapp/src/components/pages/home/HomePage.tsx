@@ -109,7 +109,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                     alt={user.display_name}
                     clickable={false}
                     size="lg"
-                    className="border-base-300 pointer-events-none border"
+                    className="pointer-events-none"
                   />
                 </Button>
               ) : (

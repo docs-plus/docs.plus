@@ -1,3 +1,5 @@
+export * from './avatarFace'
+export * from './avatarStackGeometry'
 export * from './chunkHtmlContent'
 export { copyRichContentToClipboard, copyToClipboard } from './clipboard'
 export * from './collabProviderLifecycle'

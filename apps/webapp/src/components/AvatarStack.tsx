@@ -1,96 +1,39 @@
 import { Placement } from '@floating-ui/react'
+import { type FaceSource, resolveDisplayName, type StackUser } from '@utils/avatarFace'
+import {
+  avatarEdgeClass,
+  type AvatarSize,
+  type AvatarStackSurface,
+  SIZE_CLASSES,
+  SPACING_CLASSES,
+  stackSurfaceToEdge,
+  TEXT_CLASSES
+} from '@utils/avatarStackGeometry'
 import { twMerge } from 'tailwind-merge'
 
-import { Avatar, type AvatarSize } from './ui/Avatar'
+import { Avatar } from './ui/Avatar'
 
-type StackUser = {
-  id?: string
-  avatar_url?: string | null
-  avatar_updated_at?: string | number | null
-  display_name?: string | null
-  status?: string | null
-}
+export type { AvatarStackSurface, FaceSource, StackUser }
+export { SPACING_CLASSES }
 
 interface AvatarStackProps {
-  /** Array of user objects to display */
-  users?: StackUser[]
-  /** Avatar size preset */
+  users?: FaceSource[]
   size?: AvatarSize
-  /** Tooltip placement for each avatar */
+  /** Default `paper`. TOC = `well`; PadTitle = `outline`. */
+  surface?: AvatarStackSurface
   tooltipPosition?: Placement
-  /** Show status indicator on avatars */
   showStatus?: boolean
-  /** Enable click to open profile */
   clickable?: boolean
-  /** Maximum number of avatars to display before showing +N */
   maxDisplay?: number
   /** True total when it exceeds `users.length` — the +N chip counts from this, not the array */
   overflowCount?: number
-  /** Additional classes for the container */
   className?: string
 }
 
-/**
- * Size classes for the overflow counter
- * Matches Avatar SIZE_CLASSES
- */
-const SIZE_CLASSES: Record<AvatarSize, string> = {
-  xs: 'size-6', // 24px
-  sm: 'size-8', // 32px
-  md: 'size-10', // 40px
-  lg: 'size-12', // 48px
-  xl: 'size-14', // 56px
-  '2xl': 'size-16' // 64px
-}
-
-/**
- * Negative spacing for avatar overlap based on size
- */
-const SPACING_CLASSES: Record<AvatarSize, string> = {
-  xs: '-space-x-2',
-  sm: '-space-x-3',
-  md: '-space-x-4',
-  lg: '-space-x-5',
-  xl: '-space-x-6',
-  '2xl': '-space-x-7'
-}
-
-/**
- * Text size for the +N counter based on avatar size
- */
-const TEXT_CLASSES: Record<AvatarSize, string> = {
-  xs: 'text-[10px]',
-  sm: 'text-xs',
-  md: 'text-sm',
-  lg: 'text-sm',
-  xl: 'text-base',
-  '2xl': 'text-lg'
-}
-
-/**
- * AvatarStack component for displaying multiple user avatars
- *
- * Features:
- * - Overlapping avatars with consistent spacing
- * - Overflow counter when exceeding maxDisplay
- * - Tooltips showing user names
- * - Consistent styling with design system
- *
- * @example
- * ```tsx
- * // Basic usage
- * <AvatarStack users={users} />
- *
- * // With custom size and max display
- * <AvatarStack users={users} size="lg" maxDisplay={3} />
- *
- * // Non-clickable with status indicators
- * <AvatarStack users={users} clickable={false} showStatus />
- * ```
- */
 export function AvatarStack({
   users = [],
   size = 'md',
+  surface = 'paper',
   tooltipPosition = 'bottom',
   showStatus = false,
   clickable = true,
@@ -98,10 +41,8 @@ export function AvatarStack({
   overflowCount,
   className
 }: AvatarStackProps) {
-  // Filter out null/undefined users
-  const validUsers = users.filter(Boolean) as StackUser[]
+  const validUsers = users.filter(Boolean) as FaceSource[]
 
-  // Ensure maxDisplay is a positive number
   const limit = Math.max(1, Number(maxDisplay) || 4)
   const visibleUsers = validUsers.slice(0, limit)
   // When a true total is supplied, count the +N from it minus the faces actually shown.
@@ -113,25 +54,29 @@ export function AvatarStack({
   const sizeClass = SIZE_CLASSES[size]
   const spacingClass = SPACING_CLASSES[size]
   const textClass = TEXT_CLASSES[size]
+  const edge = stackSurfaceToEdge(surface)
+  const edgeClass = avatarEdgeClass(edge)
 
   return (
     <div className={twMerge('avatar-group !overflow-visible', spacingClass, className)}>
-      {visibleUsers.map((user, idx) => (
-        <Avatar
-          // Keyed by user id so reorders keep DOM nodes; entry animation plays only on join.
-          key={user.id ?? `avatar-${idx}`}
-          id={user.id}
-          src={user.avatar_url ?? undefined}
-          alt={user.display_name ?? undefined}
-          avatarUpdatedAt={user.avatar_updated_at}
-          status={showStatus ? (user.status ?? undefined) : undefined}
-          clickable={clickable}
-          size={size}
-          className="ring-base-300 bg-base-100 animate-badge-entry ring-1"
-          tooltip={user.display_name || 'Anonymous'}
-          tooltipPosition={tooltipPosition}
-        />
-      ))}
+      {visibleUsers.map((user, idx) => {
+        const displayName = resolveDisplayName(user)
+
+        return (
+          <Avatar
+            // Keyed by user id so reorders keep DOM nodes; entry animation plays only on join.
+            key={user.id ?? user.user_id ?? `avatar-${idx}`}
+            face={user}
+            status={showStatus ? (user.status ?? undefined) : undefined}
+            clickable={clickable}
+            size={size}
+            edge={edge}
+            className="bg-base-100 animate-badge-entry"
+            tooltip={displayName || 'Anonymous'}
+            tooltipPosition={tooltipPosition}
+          />
+        )
+      })}
 
       {remainingCount > 0 && (
         <div
@@ -139,7 +84,7 @@ export function AvatarStack({
             'avatar avatar-placeholder',
             sizeClass,
             'rounded-full',
-            'ring-base-300 ring-1',
+            edgeClass,
             'bg-base-100'
           )}>
           <div

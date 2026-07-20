@@ -24,18 +24,13 @@ type ChipShellProps = {
 const TIME_CLASS = 'text-base-content/50 shrink-0 text-[11px] leading-none whitespace-nowrap'
 
 const NotifyUserAvatar = ({ message }: { message: MessageRow }) => {
-  const userId = message.user_details?.id ?? message.user_id
-  if (!userId) return null
+  const ud = message.user_details
+  const id = ud?.id ?? message.user_id
+  if (!id) return null
 
   return (
     <div className="avatar shrink-0">
-      <Avatar
-        id={userId}
-        src={message.user_details?.avatar_url}
-        avatarUpdatedAt={message.user_details?.avatar_updated_at}
-        size="sm"
-        alt={message.user_details?.username ?? 'user'}
-      />
+      <Avatar face={{ ...ud, id }} size="sm" alt="user" />
     </div>
   )
 }

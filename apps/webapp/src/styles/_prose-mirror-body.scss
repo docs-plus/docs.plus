@@ -55,7 +55,9 @@
     height: 30px;
     border: 2px solid var(--color-base-300);
     position: absolute;
-    background-size: contain;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     top: -38px;
     left: -22px;
   }

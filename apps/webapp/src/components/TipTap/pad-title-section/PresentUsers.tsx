@@ -1,3 +1,4 @@
+import { selectPresenceOthers } from '@services/workspacePresenceSync'
 import { useAuthStore, useStore } from '@stores'
 import React, { useMemo } from 'react'
 
@@ -11,17 +12,16 @@ const PresentUsers = () => {
   // includes self — filter it out so "alone in the room" doesn't render
   // a single self-avatar. Anon never tracks, so the map is already just
   // the other viewers; the filter is a harmless no-op for them.
-  const others = useMemo(() => {
-    if (!usersPresence) return []
-    const selfId = (profile as { id?: string } | null)?.id
-    return Array.from(usersPresence.values()).filter((u) => (u as { id?: string }).id !== selfId)
-  }, [usersPresence, profile])
+  const others = useMemo(
+    () => selectPresenceOthers(usersPresence?.values(), profile?.id),
+    [usersPresence, profile?.id]
+  )
 
   if (others.length === 0) return null
 
   return (
     <div className="hidden sm:block">
-      <AvatarStack users={others} />
+      <AvatarStack users={others} size="sm" surface="outline" />
     </div>
   )
 }

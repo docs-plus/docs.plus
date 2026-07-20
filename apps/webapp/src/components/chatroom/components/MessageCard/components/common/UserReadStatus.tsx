@@ -7,6 +7,7 @@ import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
 import { TMsgRow } from '@types'
+import { toStackUser } from '@utils/avatarFace'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -73,13 +74,7 @@ export function UserReadStatus({
       </span>
       <AvatarStack
         className="ml-auto"
-        users={readUsers.map((user) => ({
-          id: user.user_id,
-          username: user.username,
-          full_name: user.full_name,
-          avatar_url: user.avatar_url,
-          avatar_updated_at: user.avatar_updated_at
-        }))}
+        users={readUsers.map((user) => toStackUser(user))}
         size="sm"
         maxDisplay={3}
       />

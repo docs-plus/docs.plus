@@ -118,17 +118,10 @@ export const BookmarkItem = ({ bookmark, variant = 'popover' }: BookmarkItemProp
   const thumbMedia = medias.find((media) => media.type === 'image') ?? null
   const isArchived = !!bookmark.bookmark_archived_at
   const isRead = !!bookmark.bookmark_marked_at
-
   return (
     <PanelFeedItem exiting={exiting}>
-      <div className="size-9 shrink-0">
-        <Avatar
-          id={bookmark.user_details.id}
-          src={bookmark.user_details.avatar_url}
-          avatarUpdatedAt={bookmark.user_details.avatar_updated_at}
-          clickable={false}
-          className="border-base-300 size-9 rounded-full border"
-        />
+      <div className="size-8 shrink-0">
+        <Avatar face={bookmark.user_details} clickable={false} size="sm" />
       </div>
 
       <div className="min-w-0 flex-1">

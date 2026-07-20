@@ -1,3 +1,4 @@
+import { selectPresenceOthers } from '@services/workspacePresenceSync'
 import { useAuthStore, useStore } from '@stores'
 import type { Profile as TProfile } from '@types'
 import { useMemo } from 'react'
@@ -33,6 +34,9 @@ export function usePresentUsers(channelId: string) {
   return useMemo(() => {
     if (!usersPresence || !channelId) return EMPTY
     const list = getByChannel(usersPresence).get(channelId) ?? EMPTY
-    return profileId ? list.filter((u) => u?.id !== profileId) : list
+    if (!list.length) return EMPTY
+    if (!profileId) return list
+    const others = selectPresenceOthers(list, profileId)
+    return others.length === 0 ? EMPTY : others
   }, [usersPresence, channelId, profileId])
 }

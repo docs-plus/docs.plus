@@ -305,9 +305,11 @@ const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
       cursor.classList.add('collaboration-cursor__caret')
       cursor.setAttribute('style', `border-color: ${caretUser.color};`)
 
-      const avatarAddress = caretUser.avatarUpdatedAt
-        ? Config.app.profile.getAvatarURL(caretUser.id, caretUser.avatarUpdatedAt)
-        : caretUser.avatarUrl
+      // Same face inputs as Avatar: bucket when id + avatarUpdatedAt, else OAuth src.
+      const avatarAddress =
+        caretUser.id && caretUser.avatarUpdatedAt
+          ? Config.app.profile.getAvatarURL(caretUser.id, String(caretUser.avatarUpdatedAt))
+          : caretUser.avatarUrl
 
       const avatar = document.createElement('div')
       avatar.classList.add('collaboration-cursor__avatar')

@@ -6,8 +6,18 @@ import { initials, lorelei, rings, shapes } from '@dicebear/collection'
 import { createAvatar } from '@dicebear/core'
 import { Placement } from '@floating-ui/react'
 import { useStore } from '@stores'
+import { type FaceSource, resolveFace } from '@utils/avatarFace'
+import {
+  type AvatarEdge,
+  avatarEdgeClass,
+  type AvatarSize,
+  SIZE_CLASSES
+} from '@utils/avatarStackGeometry'
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+export type { AvatarEdge, AvatarSize }
+export { SIZE_CLASSES }
 
 type AvatarCollectionKey = 'lorelei' | 'shapes' | 'rings' | 'initials'
 
@@ -18,18 +28,9 @@ const AVATAR_COLLECTIONS = {
   initials
 } as const
 
-export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
-
-const SIZE_CLASSES: Record<AvatarSize, string> = {
-  xs: 'size-6',
-  sm: 'size-8',
-  md: 'size-10',
-  lg: 'size-12',
-  xl: 'size-14',
-  '2xl': 'size-16'
-}
-
 export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>, 'children'> {
+  /** Boundary shapes (camel/snake/`user_id`) — resolved once; explicit id/src/alt win. */
+  face?: FaceSource | null
   id?: string
   displayPresence?: boolean
   collection?: AvatarCollectionKey | string
@@ -41,6 +42,8 @@ export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>,
   status?: string
   clickable?: boolean
   size?: AvatarSize
+  /** Default `ring`. Stacks pass `paper`/`well`; gallery uses `none`. */
+  edge?: AvatarEdge
   imageClassName?: string
   imageProps?: React.ComponentPropsWithoutRef<'img'>
   tooltip?: string
@@ -50,6 +53,7 @@ export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>,
 export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
   (
     {
+      face,
       id,
       displayPresence = false,
       collection = 'lorelei',
@@ -61,6 +65,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       status,
       clickable = true,
       size = 'md',
+      edge = 'ring',
       className,
       imageClassName,
       imageProps,
@@ -74,6 +79,13 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
     // 0 = bucket (custom upload), 1 = remote src (usually OAuth), 2 = DiceBear
     const [loadStage, setLoadStage] = useState(0)
 
+    const resolved = resolveFace(face)
+    const resolvedId = id ?? resolved.id
+    const resolvedSrc = src !== undefined ? src : resolved.src
+    const resolvedAvatarUpdatedAt =
+      avatarUpdatedAt !== undefined ? avatarUpdatedAt : resolved.avatarUpdatedAt
+    const resolvedAlt = alt ?? resolved.alt
+
     const fallbackAvatar = useMemo(() => {
       const resolvedCollection =
         collection in AVATAR_COLLECTIONS
@@ -81,23 +93,25 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
           : AVATAR_COLLECTIONS.lorelei
 
       const svg = createAvatar(resolvedCollection, {
-        seed: id || alt || 'avatar',
+        seed: resolvedId || resolvedAlt || 'avatar',
         backgroundType: ['solid']
       }).toString()
 
       return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-    }, [id, alt, collection])
+    }, [resolvedId, resolvedAlt, collection])
 
     const bucketSrc = useMemo(() => {
-      if (!id || !avatarUpdatedAt || !process.env.NEXT_PUBLIC_SUPABASE_URL) return null
-      return Config.app.profile.getAvatarURL(id, String(avatarUpdatedAt))
-    }, [id, avatarUpdatedAt])
+      if (!resolvedId || !resolvedAvatarUpdatedAt || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        return null
+      }
+      return Config.app.profile.getAvatarURL(resolvedId, String(resolvedAvatarUpdatedAt))
+    }, [resolvedId, resolvedAvatarUpdatedAt])
 
-    const remoteSrc = src?.trim() || null
+    const remoteSrc = resolvedSrc?.trim() || null
 
     useEffect(() => {
       setLoadStage(0)
-    }, [bucketSrc, remoteSrc, id])
+    }, [bucketSrc, remoteSrc, resolvedId])
 
     const imgSrc = useMemo(() => {
       if (loadStage >= 2) return fallbackAvatar
@@ -114,20 +128,22 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
     }, [bucketSrc, remoteSrc])
 
     const handleClick = useCallback(() => {
-      if (!clickable || !id) return
-      openDialog(<UserProfileDialog userId={id} />, userProfileDialogOpenConfig)
-    }, [clickable, id, openDialog])
+      if (!clickable || !resolvedId) return
+      openDialog(<UserProfileDialog userId={resolvedId} />, userProfileDialogOpenConfig)
+    }, [clickable, resolvedId, openDialog])
 
     const isTyping = status === 'TYPING'
     const sizeClass = SIZE_CLASSES[size]
-    const cursorClass = clickable && id ? 'cursor-pointer' : 'cursor-default'
+    const cursorClass = clickable && resolvedId ? 'cursor-pointer' : 'cursor-default'
+    const edgeClass = avatarEdgeClass(edge)
+    const showInsetKeyline = edge === 'ring'
 
     const containerClass = twMerge(
       'avatar',
       sizeClass,
       'rounded-full',
       'bg-base-200',
-      '!ring-1 ring-base-300',
+      edgeClass,
       '!overflow-visible',
       displayPresence && (online ? 'avatar-online' : 'avatar-offline'),
       isTyping && 'avatar-typing',
@@ -140,7 +156,8 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       'rounded-full',
       'object-cover',
       'bg-base-200',
-      'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]',
+      showInsetKeyline &&
+        'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]',
       cursorClass,
       imageClassName,
       justImage && className,
@@ -151,7 +168,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       <img
         {...imageProps}
         ref={ref}
-        alt={alt || 'User avatar'}
+        alt={resolvedAlt || 'User avatar'}
         src={imgSrc}
         onError={handleError}
         onClick={handleClick}

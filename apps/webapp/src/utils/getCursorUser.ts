@@ -1,4 +1,5 @@
 import type { Profile } from '@types'
+import { resolveFace } from '@utils/avatarFace'
 import randomColor from 'randomcolor'
 
 export interface CaretUser {
@@ -14,10 +15,16 @@ export interface CaretUser {
 // reconnect/effect and broadcast disagreeing user payloads back to back.
 const caretColor = randomColor({ luminosity: 'light' })
 
-export const getCursorUser = (profile: Profile | null): CaretUser => ({
-  name: profile?.display_name || profile?.username || profile?.email || 'Anonymous',
-  id: profile?.id || profile?.email || 'anonymous',
-  color: caretColor,
-  avatarUrl: profile?.avatar_url || null,
-  avatarUpdatedAt: profile?.avatar_updated_at || null
-})
+export const getCursorUser = (profile: Profile | null): CaretUser => {
+  const face = resolveFace(profile)
+  const avatarUpdatedAt = face.avatarUpdatedAt != null ? String(face.avatarUpdatedAt) : null
+
+  return {
+    // Caret label keeps email fallback (resolveFace stops at username).
+    name: face.displayName || profile?.email || 'Anonymous',
+    id: face.id || profile?.email || 'anonymous',
+    color: caretColor,
+    avatarUrl: face.src ?? null,
+    avatarUpdatedAt
+  }
+}

@@ -48,9 +48,7 @@ export const MentionSuggestionRow = memo(function MentionSuggestionRow({
         </span>
       ) : (
         <Avatar
-          id={entry.id}
-          src={entry.avatar_url || ''}
-          avatarUpdatedAt={entry.avatar_updated_at ?? null}
+          face={entry}
           alt={name}
           size="sm"
           displayPresence

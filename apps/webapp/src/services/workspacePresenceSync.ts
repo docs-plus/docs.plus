@@ -18,6 +18,40 @@ export type PresenceSnapshot = Partial<Profile> & {
 const lastShareAt = new Map<string, number>()
 const pendingShare = new Map<string, ReturnType<typeof setTimeout>>()
 
+/** Sync-only channelIds held until a full profile (track/broadcast) arrives — never stub Profiles. */
+const pendingSyncChannelIds = new Map<string, string>()
+
+const takeBufferedChannelId = (id: string): string | undefined => {
+  const channelId = pendingSyncChannelIds.get(id)
+  if (channelId !== undefined) pendingSyncChannelIds.delete(id)
+  return channelId
+}
+
+/** Prefer a non-empty incoming channelId; else consume any buffered sync channelId. */
+const resolveChannelId = (id: string, incoming?: string | null): string | null => {
+  if (typeof incoming === 'string' && incoming.length > 0) {
+    pendingSyncChannelIds.delete(id)
+    return incoming
+  }
+  const buffered = takeBufferedChannelId(id)
+  if (buffered) return buffered
+  return incoming ?? null
+}
+
+/** Presence rows minus self — pass `map.values()` or a channel list. */
+export function selectPresenceOthers(
+  users: Iterable<Profile> | null | undefined,
+  selfId: string | undefined | null
+): Profile[] {
+  if (!users) return []
+  return Array.from(users).filter((u) => u.id !== selfId)
+}
+
+/** Drop sync-only channelId buffers — must run with clearUsersPresence on resubscribe. */
+export const clearPresenceSyncBuffers = () => {
+  pendingSyncChannelIds.clear()
+}
+
 export const toPresenceSnapshot = (value: unknown): PresenceSnapshot | null => {
   if (!value || typeof value !== 'object') return null
   const row = value as PresenceSnapshot
@@ -33,7 +67,7 @@ const profileFromPresence = (
     ...presence,
     id: presence.id,
     status,
-    channelId: presence.channelId ?? null
+    channelId: resolveChannelId(presence.id, presence.channelId)
   } as Profile
 }
 
@@ -177,12 +211,13 @@ export const applyPresenceSyncPayload = (
   for (const row of payload) {
     if (typeof row?.id !== 'string' || typeof row?.channelId !== 'string') continue
     const existing = usersPresence.get(row.id)
-    setOrUpdateUserPresence(row.id, {
-      ...existing,
-      id: row.id,
-      channelId: row.channelId,
-      status: existing?.status ?? 'ONLINE'
-    } as Profile)
+    if (existing) {
+      pendingSyncChannelIds.delete(row.id)
+      setOrUpdateUserPresence(row.id, { ...existing, channelId: row.channelId })
+      continue
+    }
+    // No face yet — buffer channelId only; full track/broadcast will flush it.
+    pendingSyncChannelIds.set(row.id, row.channelId)
   }
 }
 
@@ -192,7 +227,12 @@ export const applyPresenceBroadcast = (
 ) => {
   const row = toPresenceSnapshot(payload)
   if (!row || typeof row.id !== 'string') return
-  setOrUpdateUserPresence(row.id, { ...row, status: row.status ?? 'ONLINE' } as Profile)
+  const channelId = resolveChannelId(row.id, row.channelId)
+  setOrUpdateUserPresence(row.id, {
+    ...row,
+    status: row.status ?? 'ONLINE',
+    channelId
+  } as Profile)
 }
 
 export type WorkspacePresenceListenerDeps = {
@@ -251,10 +291,12 @@ export const clearPresenceShareTimers = (channel: RealtimeChannel) => {
   lastShareAt.delete(channel.topic)
 }
 
+/** Clears share-timer state and presenceSync channelId buffers (resubscribe / teardown). */
 export const clearAllPresenceShareTimers = () => {
   for (const pending of pendingShare.values()) {
     clearTimeout(pending)
   }
   pendingShare.clear()
   lastShareAt.clear()
+  clearPresenceSyncBuffers()
 }

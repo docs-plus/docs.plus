@@ -23,3 +23,17 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 - **FeedAlbumLayout** — feed mosaic for image/video tiles: `computeVisualMediaLayout` → `single | mosaic` absolute rects (`chatMediaVisualLayout.ts` orchestrates `feedAlbumProportionLayout` for 2–4 and `feedAlbumRowPacker` for ≥5 / panorama); geometry + cap policy in `feedAlbumLayout.ts` (`resolveFeedLayoutOptions`). Attach cap stays `CHAT_MEDIA_MAX_ATTACHMENTS` (10) at compose time — no feed `+N`. Distinct from Gallery playlist order. Domain names only (no vendor product names in symbols/filenames).
 - **FeedColumnWidth** — definite column contract so absolute cover tiles do not shrink-wrap: media card `FEED_COLUMN_MEDIA_CARD_CLASS`, bubble fill `FEED_COLUMN_BUBBLE_FILL_CLASS`, measure via `resolveFeedColumnElement` / `clampFeedColumnWidth` (bubble ≥160px else `.message-feed`).
+
+## Presence awareness
+
+- **usersPresence** — Map of online Profiles keyed by user id (`useStore.usersPresence`); TOC heading stacks filter by `channelId`.
+- **presenceSync** — broadcast of `{id,channelId}` rows only (`workspacePresenceSync.ts`). Never creates face-less stub Profiles; attaches `channelId` to existing rows or buffers until a full track/broadcast profile arrives. Buffers die with the subscription (`clearPresenceSyncBuffers` via `clearAllPresenceShareTimers` on resubscribe).
+- **selectPresenceOthers** — filter self out of presence stacks (`PresentUsers`, `usePresentUsers`); pass `map.values()` or a channel list.
+- Avatar stacks never render stub-only id/`channelId` rows.
+
+## Face inputs / Stack geometry
+
+- **resolveFace** / **resolveDisplayName** / **toStackUser** (`utils/avatarFace.ts`) — normalize Profile/snake_case and caret camelCase. `<Avatar face={…}>` resolves at the atom; keep `resolveFace`/`toStackUser` only at non-Avatar boundaries (caret, `member_id` → stack). Pure; no DiceBear/load stages.
+- **Avatar** (`ui/Avatar`) owns `edge` (`ring`|`paper`|`well`|`none`) + bucket → OAuth → DiceBear.
+- **stackGeometry** (`utils/avatarStackGeometry.ts`) — `SIZE`/`SPACING`/`TEXT`, `AvatarStackSurface` → `stackSurfaceToEdge` → `avatarEdgeClass`, `tocPresenceReservePx` (sm face/stride).
+- **Custom avatar** — `avatar_updated_at` set ⇒ custom bucket upload; null falls back to OAuth `avatar_url` / DiceBear.

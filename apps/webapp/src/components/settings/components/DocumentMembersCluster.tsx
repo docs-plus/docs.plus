@@ -1,5 +1,6 @@
 import AvatarStack from '@components/AvatarStack'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
+import { toStackUser } from '@utils/avatarFace'
 
 import { type DocumentMemberPreview } from '../hooks/useDocumentMembers'
 import DocumentMembersRoster from './DocumentMembersRoster'
@@ -27,12 +28,7 @@ function DocumentMembersCluster({
 }: DocumentMembersClusterProps) {
   if (memberCount <= 1) return null
 
-  const users = previews.slice(0, 3).map((p) => ({
-    id: p.member_id,
-    avatar_url: p.avatar_url,
-    avatar_updated_at: p.avatar_updated_at,
-    display_name: p.display_name
-  }))
+  const users = previews.slice(0, 3).map((p) => toStackUser({ ...p, id: p.member_id }))
 
   return (
     <Popover placement="bottom-end">

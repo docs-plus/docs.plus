@@ -120,7 +120,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
           clickable={false}
           src={user.avatar_url}
           size="md"
-          className="border-base-300 pointer-events-none border"
+          className="pointer-events-none"
         />
       </Button>
     )

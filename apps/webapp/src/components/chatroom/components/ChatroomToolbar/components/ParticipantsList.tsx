@@ -17,7 +17,7 @@ export const ParticipantsList = ({ className }: Props) => {
   if (!isFeedReady) {
     return (
       <div className={twMerge('flex items-center', className)} aria-hidden>
-        <AvatarStackLoader size="xs" repeat={2} />
+        <AvatarStackLoader size="sm" repeat={2} />
       </div>
     )
   }

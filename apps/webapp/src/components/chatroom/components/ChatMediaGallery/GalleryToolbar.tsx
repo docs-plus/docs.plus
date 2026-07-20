@@ -100,12 +100,16 @@ export function GalleryToolbar({
             )}>
             <Avatar
               size="sm"
-              src={source.authorAvatarUrl}
-              avatarUpdatedAt={source.authorAvatarUpdatedAt}
-              id={source.authorUserId ?? undefined}
+              edge="none"
+              face={{
+                id: source.authorUserId ?? undefined,
+                avatarUrl: source.authorAvatarUrl,
+                avatarUpdatedAt: source.authorAvatarUpdatedAt,
+                display_name: source.authorName
+              }}
               alt={source.authorName}
               clickable={false}
-              className="shrink-0 bg-transparent !ring-0"
+              className="shrink-0 bg-transparent"
             />
             <div className="min-w-0 self-center leading-none">
               <p className="truncate text-[15px] leading-5 font-semibold text-[var(--gallery-text-heading)]">

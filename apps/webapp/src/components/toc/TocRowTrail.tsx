@@ -61,6 +61,7 @@ export function TocRowTrail({
           <AvatarStack
             maxDisplay={maxAvatars}
             size="sm"
+            surface="well"
             users={presentUsers}
             showStatus={true}
             tooltipPosition="left"

@@ -136,7 +136,7 @@ const PadTitle = () => {
                     avatarUpdatedAt={user.avatar_updated_at}
                     clickable={false}
                     size="lg"
-                    className="border-base-300 pointer-events-none border"
+                    className="pointer-events-none"
                   />
                 </Button>
               ) : (

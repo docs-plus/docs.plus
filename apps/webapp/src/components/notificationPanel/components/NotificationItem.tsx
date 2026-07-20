@@ -74,19 +74,13 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
 
   return (
     <PanelFeedItem exiting={exiting}>
-      <div className="size-9 shrink-0">
+      <div className="size-8 shrink-0">
         {isSystem ? (
-          <div className="bg-warning/15 text-warning flex size-9 items-center justify-center rounded-full">
+          <div className="bg-warning/15 text-warning flex size-8 items-center justify-center rounded-full">
             <LuTriangleAlert size={18} />
           </div>
         ) : (
-          <Avatar
-            id={notification.sender.id}
-            src={notification.sender.avatar_url}
-            avatarUpdatedAt={notification.sender.avatar_updated_at}
-            clickable={false}
-            className="border-base-300 size-9 rounded-full border"
-          />
+          <Avatar face={notification.sender} clickable={false} size="sm" />
         )}
       </div>
 

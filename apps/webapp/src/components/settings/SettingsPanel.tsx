@@ -90,7 +90,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
               src={user?.avatar_url}
               alt={user?.display_name || user?.full_name}
               size="sm"
-              className="ring-base-100 shrink-0 shadow-sm ring-2"
+              className="shrink-0"
             />
             <div className="min-w-0 flex-1">
               <p className="text-base-content truncate text-sm font-semibold">
