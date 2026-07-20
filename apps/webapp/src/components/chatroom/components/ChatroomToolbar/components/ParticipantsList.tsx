@@ -1,7 +1,7 @@
 import AvatarStack from '@components/AvatarStack'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
-import { usePresentUsers } from '@components/toc/hooks/usePresentUsers'
+import { usePresentUsers } from '@hooks/usePresentUsers'
 import { useChatStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 

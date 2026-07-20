@@ -1,41 +1,11 @@
-import type { Editor } from '@tiptap/react'
-import type { ProseMirrorNode as Node } from '@types'
-
 /**
- * TOC item representing a heading in the document
+ * TOC list DTO — outline fields only; resolve editor/DOM at action seams.
  */
 export interface TocItem {
   id: string
   level: number
-  originalLevel: number
   textContent: string
-  pos: number
   open: boolean
-  isActive: boolean
-  isScrolledOver: boolean
-  itemIndex: number
-  node: Node
-  editor: Editor
-  dom: HTMLHeadingElement
-}
-
-/**
- * Props for TOC item components
- */
-export interface TocItemProps {
-  item: TocItem
-  children?: TocItem[]
-  variant: 'desktop' | 'mobile'
-  onClose?: () => void
-}
-
-/**
- * Props for TOC list components
- */
-export interface TocListProps {
-  items: TocItem[]
-  variant: 'desktop' | 'mobile'
-  onClose?: () => void
 }
 
 /**

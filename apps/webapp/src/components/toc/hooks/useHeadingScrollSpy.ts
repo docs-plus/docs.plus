@@ -1,9 +1,10 @@
 import { useFocusedHeadingStore, useStore } from '@stores'
+import type { Transaction } from '@tiptap/pm/state'
 import debounce from 'lodash/debounce'
 import throttle from 'lodash/throttle'
 import { RefObject, useCallback, useEffect, useMemo, useRef } from 'react'
 
-export { useFocusedHeadingStore }
+import { transactionRequiresTocRebuild } from '../utils/headingTransaction'
 
 /** Reading line: heading closest to this offset from the scroll container top wins */
 const SPY_ANCHOR_PX = 60
@@ -54,6 +55,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const visibleHeadingsRef = useRef<Map<string, Element>>(new Map())
   const rafRef = useRef<number | null>(null)
+  const setupRafIdsRef = useRef<number[]>([])
 
   const editor = useStore((state) => state.settings.editor.instance)
   const setFocusedHeadingId = useFocusedHeadingStore((s) => s.setFocusedHeadingId)
@@ -142,9 +144,13 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
 
     headings.forEach((h) => observerRef.current?.observe(h))
 
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => scheduleUpdateFocus())
+    for (const id of setupRafIdsRef.current) window.cancelAnimationFrame(id)
+    setupRafIdsRef.current = []
+    const outer = window.requestAnimationFrame(() => {
+      const inner = window.requestAnimationFrame(() => scheduleUpdateFocus())
+      setupRafIdsRef.current.push(inner)
     })
+    setupRafIdsRef.current.push(outer)
   }, [scrollContainerRef, scheduleUpdateFocus])
 
   const debouncedSetup = useMemo(() => debounce(setupObserver, 100), [setupObserver])
@@ -152,9 +158,16 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
   useEffect(() => {
     if (!editor) return
     debouncedSetup()
-    editor.on('update', debouncedSetup)
+
+    const onTransaction = ({ transaction }: { transaction: Transaction }) => {
+      // Body typing must not tear down IntersectionObserver — only heading structure/text.
+      if (!transactionRequiresTocRebuild(transaction)) return
+      debouncedSetup()
+    }
+    editor.on('transaction', onTransaction)
+
     return () => {
-      editor.off('update', debouncedSetup)
+      editor.off('transaction', onTransaction)
       debouncedSetup.cancel()
       observerRef.current?.disconnect()
       observerRef.current = null
@@ -162,6 +175,8 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
         window.cancelAnimationFrame(rafRef.current)
         rafRef.current = null
       }
+      for (const id of setupRafIdsRef.current) window.cancelAnimationFrame(id)
+      setupRafIdsRef.current = []
     }
   }, [editor, debouncedSetup])
 
@@ -214,9 +229,8 @@ function tocRowScrollTarget(id: string): Element | null {
   return li.querySelector(':scope > a') ?? li
 }
 
+/** Align TOC scroller to spy focus without re-rendering the outline tree. */
 export function useTocAutoScroll() {
-  const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
-
   const alignTocItem = useMemo(
     () =>
       throttle(
@@ -233,7 +247,19 @@ export function useTocAutoScroll() {
   )
 
   useEffect(() => {
-    if (focusedHeadingId) alignTocItem(focusedHeadingId)
-    return () => alignTocItem.cancel()
-  }, [focusedHeadingId, alignTocItem])
+    let prevId = useFocusedHeadingStore.getState().focusedHeadingId
+    if (prevId) alignTocItem(prevId)
+
+    const unsub = useFocusedHeadingStore.subscribe((state) => {
+      const nextId = state.focusedHeadingId
+      if (nextId === prevId) return
+      prevId = nextId
+      if (nextId) alignTocItem(nextId)
+    })
+
+    return () => {
+      unsub()
+      alignTocItem.cancel()
+    }
+  }, [alignTocItem])
 }

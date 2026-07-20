@@ -1,4 +1,3 @@
-import { computeSection, moveSection } from '@components/TipTap/extensions/shared'
 import {
   type DragEndEvent,
   type DragMoveEvent,
@@ -8,7 +7,7 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core'
-import { type ProseMirrorNode, TIPTAP_EVENTS, type TocItem } from '@types'
+import type { TocItem } from '@types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useStore } from '../../../stores'
@@ -21,20 +20,7 @@ import {
   getDescendantIds,
   getItemElement
 } from '../dnd'
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-interface HeadingInfo {
-  pos: number
-  end: number
-  level: number
-  node: ProseMirrorNode
-  childIndex: number
-  sectionFrom: number
-  sectionTo: number
-}
+import { moveHeadingSection } from '../utils/moveHeading'
 
 interface DragState {
   activeId: string | null
@@ -64,54 +50,25 @@ const initialState: DragState = {
   sourceRect: null
 }
 
-// =============================================================================
-// HEADING HELPERS (FLAT SCHEMA)
-// =============================================================================
-
-function findHeadingById(doc: ProseMirrorNode, id: string): HeadingInfo | null {
-  let offset = 0
-
-  for (let i = 0; i < doc.content.childCount; i++) {
-    const child = doc.content.child(i)
-    const pos = offset
-    offset += child.nodeSize
-
-    if (child.type.name === 'heading' && (child.attrs['toc-id'] as string) === id) {
-      const section = computeSection(doc, pos, child.attrs.level as number, i)
-      return {
-        pos,
-        end: pos + child.nodeSize,
-        level: child.attrs.level as number,
-        node: child,
-        childIndex: i,
-        sectionFrom: section.from,
-        sectionTo: section.to
-      }
-    }
+function buildRectCache(flatItems: ReturnType<typeof flattenTocItems>): Map<string, DOMRect> {
+  const cache = new Map<string, DOMRect>()
+  for (const item of flatItems) {
+    const el = getItemElement(item.id)
+    if (el) cache.set(item.id, el.getBoundingClientRect())
   }
-
-  return null
+  return cache
 }
-
-function calculateFlatInsertPos(
-  doc: ProseMirrorNode,
-  target: HeadingInfo,
-  dropPosition: 'before' | 'after'
-): number {
-  if (dropPosition === 'before') {
-    return target.sectionFrom
-  }
-  return target.sectionTo
-}
-
-// =============================================================================
-// HOOK
-// =============================================================================
 
 export function useTocDrag(items: TocItem[]) {
   const [state, setState] = useState<DragState>(initialState)
   const pointerYRef = useRef(0)
+  const rectCacheRef = useRef<Map<string, DOMRect>>(new Map())
+  const scrollRafRef = useRef<number | null>(null)
+  const stateRef = useRef(state)
+  stateRef.current = state
   const flatItems = useMemo(() => flattenTocItems(items), [items])
+  const flatItemsRef = useRef(flatItems)
+  flatItemsRef.current = flatItems
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -120,15 +77,33 @@ export function useTocDrag(items: TocItem[]) {
 
     Object.assign(document.body.style, { cursor: 'grabbing', userSelect: 'none' })
     const onMove = (e: PointerEvent) => (pointerYRef.current = e.clientY)
+    // Capture scroll so TOC list scroll mid-drag refreshes hit-test rects.
+    const onScroll = () => {
+      rectCacheRef.current = buildRectCache(flatItemsRef.current)
+    }
     window.addEventListener('pointermove', onMove)
+    document.addEventListener('scroll', onScroll, true)
 
     return () => {
       window.removeEventListener('pointermove', onMove)
+      document.removeEventListener('scroll', onScroll, true)
       Object.assign(document.body.style, { cursor: '', userSelect: '' })
     }
   }, [state.activeId])
 
-  const resetState = useCallback(() => setState(initialState), [])
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current)
+        scrollRafRef.current = null
+      }
+    }
+  }, [])
+
+  const resetState = useCallback(() => {
+    rectCacheRef.current = new Map()
+    setState(initialState)
+  }, [])
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -137,6 +112,7 @@ export function useTocDrag(items: TocItem[]) {
       if (!active) return
 
       const el = getItemElement(id)
+      rectCacheRef.current = buildRectCache(flatItems)
       setState({
         activeId: id,
         projectedLevel: active.item.level,
@@ -153,24 +129,39 @@ export function useTocDrag(items: TocItem[]) {
   const handleDragMove = useCallback(
     (event: DragMoveEvent) => {
       const active = flatItems.find((f) => f.id === String(event.active.id))
-      if (active) {
-        const newLevel = calculateProjectedLevel(active.item.level, event.delta.x)
-        setState((prev) => ({ ...prev, projectedLevel: newLevel }))
-      }
-
       const pointerY = pointerYRef.current
-      if (pointerY <= 0) return
+      const newLevel = active
+        ? calculateProjectedLevel(active.item.level, event.delta.x)
+        : undefined
 
-      setState((prev) => ({
-        ...prev,
-        dropTarget: findDropTarget({
-          pointerY,
-          flatItems,
-          activeId: prev.activeId,
-          collapsedIds: prev.collapsedIds,
-          currentDropTarget: prev.dropTarget
-        })
-      }))
+      if (pointerY <= 0 && newLevel === undefined) return
+
+      setState((prev) => {
+        const nextLevel = newLevel ?? prev.projectedLevel
+        const nextDrop =
+          pointerY > 0
+            ? findDropTarget({
+                pointerY,
+                flatItems,
+                activeId: prev.activeId,
+                collapsedIds: prev.collapsedIds,
+                currentDropTarget: prev.dropTarget,
+                rectCache: rectCacheRef.current
+              })
+            : prev.dropTarget
+
+        if (
+          nextLevel === prev.projectedLevel &&
+          nextDrop.id === prev.dropTarget.id &&
+          nextDrop.position === prev.dropTarget.position &&
+          nextDrop.indicatorY === prev.dropTarget.indicatorY
+        ) {
+          return prev
+        }
+
+        // Keep collapsedIds Set identity so memoized rows bail on pointermove.
+        return { ...prev, projectedLevel: nextLevel, dropTarget: nextDrop }
+      })
     },
     [flatItems]
   )
@@ -184,7 +175,7 @@ export function useTocDrag(items: TocItem[]) {
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      const { dropTarget, projectedLevel, originalLevel } = state
+      const { dropTarget, projectedLevel } = stateRef.current
 
       if (!dropTarget.id || !dropTarget.position) {
         resetState()
@@ -192,89 +183,34 @@ export function useTocDrag(items: TocItem[]) {
       }
 
       const activeItem = flatItems.find((f) => f.id === String(event.active.id))
-      const targetItem = flatItems.find((f) => f.id === dropTarget.id)
       const editor = useStore.getState().settings.editor.instance
 
-      if (!editor || !activeItem || !targetItem) {
+      if (!editor || !activeItem) {
         resetState()
         return
       }
 
-      const doc = editor.state.doc
-      const source = findHeadingById(doc, activeItem.id)
-      const target = findHeadingById(doc, dropTarget.id)
-
-      if (!source || !target) {
-        console.warn('[DragEnd] Could not find source or target node')
-        resetState()
-        return
-      }
-
-      const effectiveLevel = projectedLevel
-      const levelDiff = effectiveLevel - originalLevel
-
-      const isSamePosition =
-        levelDiff === 0 &&
-        ((dropTarget.position === 'after' && source.sectionTo === target.sectionTo) ||
-          (dropTarget.position === 'before' && source.sectionFrom === target.sectionFrom))
-
-      if (isSamePosition) {
-        resetState()
-        return
-      }
-
-      const insertPos = calculateFlatInsertPos(doc, target, dropTarget.position)
-
-      console.info('[DragEnd] ===== MOVE =====')
-      console.info('[DragEnd] Source:', {
-        id: activeItem.id,
-        level: originalLevel,
-        section: [source.sectionFrom, source.sectionTo]
+      const moved = moveHeadingSection({
+        editor,
+        sourceId: activeItem.id,
+        targetId: dropTarget.id,
+        position: dropTarget.position,
+        newLevel: projectedLevel
       })
-      console.info('[DragEnd] Target:', {
-        id: dropTarget.id,
-        level: target.level,
-        section: [target.sectionFrom, target.sectionTo]
-      })
-      console.info('[DragEnd] Level:', { from: originalLevel, to: effectiveLevel, diff: levelDiff })
-      console.info('[DragEnd] Insert:', { position: dropTarget.position, insertPos })
 
-      const { tr } = editor.state
-
-      moveSection(tr, doc, source.sectionFrom, source.sectionTo, insertPos)
-
-      if (levelDiff !== 0) {
-        let headingPos: number
-        if (source.sectionFrom < insertPos) {
-          const sectionSize = source.sectionTo - source.sectionFrom
-          const mappedInsert = tr.mapping.map(insertPos)
-          headingPos = mappedInsert - sectionSize
-        } else {
-          headingPos = insertPos
-        }
-
-        try {
-          const node = tr.doc.nodeAt(headingPos)
-          if (node?.type.name === 'heading') {
-            tr.setNodeMarkup(headingPos, null, { ...node.attrs, level: effectiveLevel })
-          }
-        } catch {
-          console.warn('[DragEnd] Could not update heading level')
-        }
+      if (moved) {
+        if (scrollRafRef.current !== null) window.cancelAnimationFrame(scrollRafRef.current)
+        scrollRafRef.current = window.requestAnimationFrame(() => {
+          scrollRafRef.current = null
+          document
+            .querySelector(`[data-toc-id="${activeItem.id}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        })
       }
-
-      tr.setMeta(TIPTAP_EVENTS.NEW_HEADING_CREATED, true)
-      editor.view.dispatch(tr)
-
-      requestAnimationFrame(() => {
-        document
-          .querySelector(`[data-toc-id="${activeItem.id}"]`)
-          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      })
 
       resetState()
     },
-    [resetState, state, flatItems]
+    [resetState, flatItems]
   )
 
   const handleDragCancel = useCallback(() => resetState(), [resetState])

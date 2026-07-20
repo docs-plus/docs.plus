@@ -90,6 +90,15 @@ interface FindTargetParams {
   activeId: string | null
   collapsedIds: Set<string>
   currentDropTarget: DropTarget
+  /** Cached on dragStart — avoids O(n) layout reads every pointermove. */
+  rectCache?: Map<string, DOMRect>
+}
+
+function rectForItem(id: string, rectCache?: Map<string, DOMRect>): DOMRect | null {
+  const cached = rectCache?.get(id)
+  if (cached) return cached
+  const el = getItemElement(id)
+  return el ? el.getBoundingClientRect() : null
 }
 
 /**
@@ -100,7 +109,8 @@ export function findDropTarget({
   flatItems,
   activeId,
   collapsedIds,
-  currentDropTarget
+  currentDropTarget,
+  rectCache
 }: FindTargetParams): DropTarget {
   // Find closest visible item
   let closest: { id: string; rect: DOMRect; dist: number } | null = null
@@ -108,10 +118,9 @@ export function findDropTarget({
 
   for (const item of flatItems) {
     if (item.id === activeId || collapsedIds.has(item.id)) continue
-    const el = getItemElement(item.id)
-    if (!el) continue
+    const rect = rectForItem(item.id, rectCache)
+    if (!rect) continue
 
-    const rect = el.getBoundingClientRect()
     const dist = Math.abs(pointerY - (rect.top + rect.height / 2))
 
     if (item.id === currentDropTarget.id) currentDist = dist
@@ -128,8 +137,7 @@ export function findDropTarget({
   let targetId = shouldSwitch ? closest.id : currentDropTarget.id
   let targetIdx = flatItems.findIndex((f) => f.id === targetId)
   let targetItem = flatItems[targetIdx]
-  let targetEl = getItemElement(targetId!)
-  let targetRect = targetEl?.getBoundingClientRect() ?? closest.rect
+  let targetRect = rectForItem(targetId!, rectCache) ?? closest.rect
 
   // Determine before/after position with hysteresis
   const isSameTarget = currentDropTarget.id === targetId
@@ -147,12 +155,12 @@ export function findDropTarget({
       !collapsedIds.has(next.id) &&
       next.id !== activeId
     ) {
-      const nextEl = getItemElement(next.id)
-      if (nextEl) {
+      const nextRect = rectForItem(next.id, rectCache)
+      if (nextRect) {
         targetId = next.id
         targetIdx = targetIdx + 1
         targetItem = next
-        targetRect = nextEl.getBoundingClientRect()
+        targetRect = nextRect
         position = 'before'
       }
     }
@@ -166,11 +174,11 @@ export function findDropTarget({
       !collapsedIds.has(prev.id) &&
       prev.id !== activeId
     ) {
-      const prevEl = getItemElement(prev.id)
-      if (prevEl) {
+      const prevRect = rectForItem(prev.id, rectCache)
+      if (prevRect) {
         targetId = prev.id
         targetItem = prev
-        targetRect = prevEl.getBoundingClientRect()
+        targetRect = prevRect
         position = 'after'
       }
     }

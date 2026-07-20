@@ -3,7 +3,7 @@ import { ContextMenu, contextMenuPanelClassName } from '@components/ui/ContextMe
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
@@ -27,7 +27,7 @@ function removeContextMenuActiveClass() {
     })
 }
 
-export function TocDesktop({ className = '' }: TocDesktopProps) {
+function TocDesktopComponent({ className = '' }: TocDesktopProps) {
   const { items, toggleSection } = useToc()
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
@@ -75,7 +75,8 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
     removeContextMenuActiveClass()
   }, [])
 
-  const nestedItems = buildNestedToc(items)
+  const nestedItems = useMemo(() => buildNestedToc(items), [items])
+  const sortableIds = useMemo(() => flatItems.map((f) => f.id), [flatItems])
 
   if (!items.length) {
     return <TocEmptyState className={className} />
@@ -88,7 +89,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
         collisionDetection={pointerYCollision}
         modifiers={[tocDragModifier]}
         {...handlers}>
-        <SortableContext items={flatItems.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
           <ul className={`toc__list menu w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
             <ContextMenu
               className={twMerge(contextMenuPanelClassName, 'absolute z-40')}
@@ -154,4 +155,4 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
   )
 }
 
-export default React.memo(TocDesktop)
+export const TocDesktop = React.memo(TocDesktopComponent)

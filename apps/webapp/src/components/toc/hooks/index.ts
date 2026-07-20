@@ -1,15 +1,4 @@
-// Main hooks
+export { tocActions } from './tocActions'
+export { useTocAutoScroll } from './useHeadingScrollSpy'
 export { useToc } from './useToc'
-export { useTocActions } from './useTocActions'
 export { useTocDrag } from './useTocDrag'
-
-// Helper hooks
-export { useActiveHeading } from './useActiveHeading'
-export { usePresentUsers } from './usePresentUsers'
-export { useUnreadCount } from '@hooks/useUnreadCount'
-
-// Scroll spy hooks
-export { useHeadingScrollSpy, useTocAutoScroll } from './useHeadingScrollSpy'
-
-// Store re-exported from @stores for convenience
-export { useFocusedHeadingStore } from '@stores'

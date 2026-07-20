@@ -1,18 +1,22 @@
 import Button from '@components/ui/Button'
 import { Tooltip } from '@components/ui/Tooltip'
 import { useSortable } from '@dnd-kit/sortable'
+import { usePresentUsers } from '@hooks/usePresentUsers'
+import { useUnreadCount } from '@hooks/useUnreadCount'
 import { Icons } from '@icons'
-import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
+import { useChatStore, useFocusedHeadingStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
-import { useCallback, useState } from 'react'
+import { memo, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
+import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocLevelPicker } from './TocLevelPicker'
 import { TocRow } from './TocRow'
 import { TocRowTrail } from './TocRowTrail'
-import { type NestedTocNode, scrollToHeading } from './utils'
+import type { NestedTocNode } from './utils'
+
+const EMPTY_COLLAPSED = new Set<string>()
 
 interface TocItemDesktopProps {
   item: TocItemType
@@ -23,12 +27,12 @@ interface TocItemDesktopProps {
   depth?: number
 }
 
-export function TocItemDesktop({
+function TocItemDesktopComponent({
   item,
   nestedNodes,
   onToggle,
   activeId = null,
-  collapsedIds = new Set(),
+  collapsedIds = EMPTY_COLLAPSED,
   depth = 0
 }: TocItemDesktopProps) {
   const sortable = useSortable({
@@ -36,18 +40,13 @@ export function TocItemDesktop({
     disabled: collapsedIds.has(item.id)
   })
 
-  const headingId = useChatStore((state) => state.chatRoom.headingId)
-  const editor = useStore((state) => state.settings.editor.instance)
-
-  const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
-  const isFocused = focusedHeadingId === item.id
+  // Boolean selectors — only old/new focused or active rows re-render on spy/chat switch.
+  const isFocused = useFocusedHeadingStore((s) => s.focusedHeadingId === item.id)
+  const isActive = useChatStore((state) => state.chatRoom.headingId === item.id)
 
   const presentUsers = usePresentUsers(item.id)
-  const [, setActiveHeading] = useActiveHeading()
   const unreadCount = useUnreadCount(item.id)
-  const { openChatroom } = useTocActions()
 
-  const isActive = headingId === item.id
   const hasChildren = nestedNodes.length > 0
 
   const isDragging = sortable.isDragging
@@ -61,13 +60,10 @@ export function TocItemDesktop({
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
-      if (!editor) return
-
-      setActiveHeading(item.id)
       setFocusedHeadingWithLock(item.id)
-      scrollToHeading(editor, item.id, { openChatRoom: true })
+      tocActions.navigateToHeading(item.id, { openChat: true })
     },
-    [editor, item.id, setActiveHeading, setFocusedHeadingWithLock]
+    [item.id, setFocusedHeadingWithLock]
   )
 
   const handleToggle = useCallback(
@@ -83,12 +79,10 @@ export function TocItemDesktop({
     (e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      openChatroom(item.id, { focusEditor: true })
+      tocActions.openChatroom(item.id, { focusEditor: true })
     },
-    [item.id, openChatroom]
+    [item.id]
   )
-
-  if (!editor) return null
 
   const liClassName = twMerge(
     'toc__item relative w-full',
@@ -183,3 +177,5 @@ export function TocItemDesktop({
     </li>
   )
 }
+
+export const TocItemDesktop = memo(TocItemDesktopComponent)

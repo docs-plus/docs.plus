@@ -1,7 +1,7 @@
 import { Chatroom } from '@components/chatroom'
 import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
-import { useHeadingScrollSpy } from '@components/toc/hooks'
+import { useHeadingScrollSpy } from '@components/toc/hooks/useHeadingScrollSpy'
 import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useRef } from 'react'

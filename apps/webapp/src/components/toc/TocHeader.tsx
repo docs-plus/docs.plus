@@ -1,12 +1,13 @@
 import { useModal } from '@components/ui/ModalDrawer'
+import { usePresentUsers } from '@hooks/usePresentUsers'
+import { useUnreadCount } from '@hooks/useUnreadCount'
 import { useChatStore, useStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 
 import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
-import { usePresentUsers, useTocActions, useUnreadCount } from './hooks'
+import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocRowTrail } from './TocRowTrail'
-import { scrollToDocTitle } from './utils'
 
 interface TocHeaderProps {
   variant: 'desktop' | 'mobile'
@@ -15,20 +16,16 @@ interface TocHeaderProps {
 export function TocHeader({ variant }: TocHeaderProps) {
   const docMetadata = useStore((state) => state.settings.metadata)
   const workspaceId = useStore((state) => state.settings.workspaceId)
-  const headingId = useChatStore((state) => state.chatRoom.headingId)
   const unreadCount = useUnreadCount(workspaceId || '')
-  const presentUsers = usePresentUsers(workspaceId || '')
-  const { openChatroom } = useTocActions()
-  const { close: closeModal } = variant === 'mobile' ? useModal() || {} : {}
+  // Mobile header has no presence trail — empty channelId keeps EMPTY + equality bail-out.
+  const presentUsers = usePresentUsers(variant === 'desktop' ? workspaceId || '' : '')
+  const modal = useModal()
+  const closeModal = variant === 'mobile' ? modal?.close : undefined
 
-  const isActive = headingId === workspaceId
+  const isActive = useChatStore((state) => state.chatRoom.headingId === workspaceId)
 
   const handleClick = () => {
-    scrollToDocTitle({
-      workspaceId,
-      title: docMetadata?.title,
-      openChatRoom: true
-    })
+    tocActions.navigateToDocTitle({ openChat: true })
     if (variant === 'mobile') {
       closeModal?.()
     }
@@ -37,7 +34,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
   const handleChatClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (workspaceId) {
-      openChatroom(workspaceId)
+      tocActions.openChatroom(workspaceId)
     }
     if (variant === 'mobile') {
       closeModal?.()

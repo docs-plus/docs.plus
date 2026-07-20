@@ -1,5 +1,5 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import React from 'react'
+import React, { useMemo } from 'react'
 
 import { useToc, useTocAutoScroll } from './hooks'
 import { TocEmptyState } from './TocEmptyState'
@@ -10,17 +10,17 @@ interface TocMobileProps {
   className?: string
 }
 
-export function TocMobile({ className = '' }: TocMobileProps) {
+function TocMobileComponent({ className = '' }: TocMobileProps) {
   const { items, toggleSection } = useToc()
 
   // Auto-scroll TOC to the focused heading when the drawer opens (mirrors TocDesktop)
   useTocAutoScroll()
 
+  const nestedItems = useMemo(() => buildNestedToc(items), [items])
+
   if (!items.length) {
     return <TocEmptyState className={className} />
   }
-
-  const nestedItems = buildNestedToc(items)
 
   return (
     <div className={className}>
@@ -34,4 +34,4 @@ export function TocMobile({ className = '' }: TocMobileProps) {
   )
 }
 
-export default React.memo(TocMobile)
+export const TocMobile = React.memo(TocMobileComponent)

@@ -1,5 +1,5 @@
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
-import { useHeadingScrollSpy } from '@components/toc/hooks'
+import { useHeadingScrollSpy } from '@components/toc/hooks/useHeadingScrollSpy'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useRef } from 'react'
 

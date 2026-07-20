@@ -5,7 +5,7 @@ import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { TocHeader } from '@components/toc/TocHeader'
-import { moveHeadingById } from '@components/toc/utils/moveHeading'
+import { moveHeadingSection } from '@components/toc/utils/moveHeading'
 import { useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
 import { GetServerSideProps } from 'next'
@@ -85,7 +85,13 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
 
     // Expose heading move for Cypress tests
     window._moveHeading = (sourceId, targetId, position, newLevel) => {
-      return moveHeadingById(editor, sourceId, targetId, position, newLevel)
+      return moveHeadingSection({
+        editor,
+        sourceId,
+        targetId,
+        position,
+        newLevel
+      })
     }
 
     // Expose Markdown helpers for Cypress tests

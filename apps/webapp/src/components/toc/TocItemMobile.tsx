@@ -1,16 +1,17 @@
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
+import { useUnreadCount } from '@hooks/useUnreadCount'
 import { Icons } from '@icons'
-import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
+import { useChatStore, useFocusedHeadingStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
-import { useCallback } from 'react'
+import { memo, useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
+import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocRow } from './TocRow'
 import { TocRowTrail } from './TocRowTrail'
-import { type NestedTocNode, scrollToHeading } from './utils'
+import type { NestedTocNode } from './utils'
 
 interface TocItemMobileProps {
   item: TocItemType
@@ -19,19 +20,13 @@ interface TocItemMobileProps {
   depth?: number
 }
 
-export function TocItemMobile({ item, nestedNodes, onToggle, depth = 0 }: TocItemMobileProps) {
-  const { headingId } = useChatStore((state) => state.chatRoom)
-  const editor = useStore((state) => state.settings.editor.instance)
+function TocItemMobileComponent({ item, nestedNodes, onToggle, depth = 0 }: TocItemMobileProps) {
+  const isFocused = useFocusedHeadingStore((s) => s.focusedHeadingId === item.id)
+  const isActive = useChatStore((state) => state.chatRoom.headingId === item.id)
 
-  const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
-  const isFocused = focusedHeadingId === item.id
-
-  const [, setActiveHeading] = useActiveHeading()
   const unreadCount = useUnreadCount(item.id)
-  const { openChatroom } = useTocActions()
   const modal = useModal()
 
-  const isActive = headingId === item.id
   const hasChildren = nestedNodes.length > 0
 
   const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
@@ -39,14 +34,11 @@ export function TocItemMobile({ item, nestedNodes, onToggle, depth = 0 }: TocIte
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault()
-      if (!editor) return
-
-      setActiveHeading(item.id)
       setFocusedHeadingWithLock(item.id)
-      scrollToHeading(editor, item.id, { openChatRoom: false })
+      tocActions.navigateToHeading(item.id, { openChat: false })
       modal?.close?.()
     },
-    [editor, item.id, setActiveHeading, setFocusedHeadingWithLock, modal]
+    [item.id, setFocusedHeadingWithLock, modal]
   )
 
   const handleToggle = useCallback(
@@ -62,13 +54,11 @@ export function TocItemMobile({ item, nestedNodes, onToggle, depth = 0 }: TocIte
     (e: React.MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      openChatroom(item.id, { focusEditor: false })
+      tocActions.openChatroom(item.id, { focusEditor: false })
       modal?.close?.()
     },
-    [item.id, openChatroom, modal]
+    [item.id, modal]
   )
-
-  if (!editor) return null
 
   const liClassName = twMerge(
     'toc__item relative w-full',
@@ -131,3 +121,5 @@ export function TocItemMobile({ item, nestedNodes, onToggle, depth = 0 }: TocIte
     </li>
   )
 }
+
+export const TocItemMobile = memo(TocItemMobileComponent)

@@ -52,11 +52,8 @@ export function useToc() {
     const foldedIds = foldState?.foldedIds ?? new Set<string>()
     const animating = foldState?.animating ?? new Map<string, 'folding' | 'unfolding'>()
 
-    let offset = 0
     for (let i = 0; i < doc.content.childCount; i++) {
       const node = doc.content.child(i)
-      const pos = offset
-      offset += node.nodeSize
 
       if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
 
@@ -65,27 +62,11 @@ export function useToc() {
 
       const isOpen = !foldedIds.has(headingId) || animating.get(headingId) === 'unfolding'
 
-      let dom: HTMLHeadingElement | null = null
-      try {
-        const domPos = editor.view.domAtPos(pos + 1)
-        dom = domPos.node as HTMLHeadingElement
-      } catch {
-        // DOM might not be ready
-      }
-
       headings.push({
         id: headingId,
         level: node.attrs.level as number,
-        originalLevel: node.attrs.level as number,
         textContent: node.textContent,
-        pos,
-        open: isOpen,
-        isActive: false,
-        isScrolledOver: false,
-        itemIndex: headings.length,
-        node,
-        editor,
-        dom: dom as HTMLHeadingElement
+        open: isOpen
       })
     }
 
@@ -113,6 +94,10 @@ export function useToc() {
     })
 
     const handleTransaction = ({ transaction }: { transaction: Transaction }) => {
+      // Selection-only txs: skip fold snapshot clone allocation.
+      const foldMeta = transaction.getMeta(headingFoldPluginKey)
+      if (!transaction.docChanged && !foldMeta) return
+
       const nextSnap = snapshotFoldState(headingFoldPluginKey.getState(editor.state))
       if (!foldSnapshotsEqual(foldSnapshotRef.current, nextSnap)) {
         throttledHeadingRebuild.cancel()

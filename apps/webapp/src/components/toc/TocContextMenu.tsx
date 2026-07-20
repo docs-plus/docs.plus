@@ -7,7 +7,7 @@ import {
 import { Tooltip } from '@components/ui/Tooltip'
 import { Icons } from '@icons'
 
-import { useTocActions } from './hooks'
+import { tocActions } from './hooks'
 
 interface TocContextMenuProps {
   headingId: string | null
@@ -17,7 +17,6 @@ interface TocContextMenuProps {
 
 export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuProps) {
   const { setIsOpen } = useContextMenuContext()
-  const { openChatroom, copyLink, focusSection, deleteSection } = useTocActions()
 
   if (!headingId) return null
 
@@ -25,7 +24,7 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
     {
       title: 'Chat Room',
       icon: <Icons.chatroom size={16} />,
-      onClick: () => openChatroom(headingId, { scrollTo: true }),
+      onClick: () => tocActions.openChatroom(headingId, { scrollTo: true }),
       variant: 'primary' as const
     },
     {
@@ -36,12 +35,12 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
     {
       title: 'Focus Section',
       icon: <Icons.crosshair size={16} />,
-      onClick: () => focusSection(headingId)
+      onClick: () => tocActions.focusSection(headingId)
     },
     {
       title: 'Copy link',
       icon: <Icons.link size={16} />,
-      onClick: () => copyLink(headingId)
+      onClick: () => void tocActions.copyLink(headingId)
     }
   ]
 
@@ -64,7 +63,7 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
 
       <MenuItem
         onClick={() => {
-          deleteSection(headingId)
+          tocActions.deleteSection(headingId)
           setIsOpen(false)
         }}>
         <ContextMenuRow icon={<Icons.trash size={16} />} variant="danger" className="items-center">

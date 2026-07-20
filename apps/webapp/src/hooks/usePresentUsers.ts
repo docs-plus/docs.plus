@@ -1,11 +1,11 @@
 import { selectPresenceOthers } from '@services/workspacePresenceSync'
 import { useAuthStore, useStore } from '@stores'
 import type { Profile as TProfile } from '@types'
-import { useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
 // Module-level cache keyed by the usersPresence Map identity. Builds the
 // per-channel index ONCE per presence event instead of O(N) inside every
-// TOC item's useMemo. Cache entry is GC'd with the Map.
+// TOC item's selector. Cache entry is GC'd with the Map.
 const byChannelCache = new WeakMap<Map<string, TProfile>, Map<string, TProfile[]>>()
 
 const getByChannel = (usersPresence: Map<string, TProfile>) => {
@@ -28,15 +28,16 @@ const EMPTY: TProfile[] = []
 
 /** Users present in a heading channel (excludes self — authed track() adds self to the map). */
 export function usePresentUsers(channelId: string) {
-  const usersPresence = useStore((state) => state.usersPresence)
   const profileId = useAuthStore((state) => state.profile?.id)
 
-  return useMemo(() => {
-    if (!usersPresence || !channelId) return EMPTY
-    const list = getByChannel(usersPresence).get(channelId) ?? EMPTY
-    if (!list.length) return EMPTY
-    if (!profileId) return list
-    const others = selectPresenceOthers(list, profileId)
-    return others.length === 0 ? EMPTY : others
-  }, [usersPresence, channelId, profileId])
+  return useStore(
+    useShallow((state) => {
+      if (!channelId || !state.usersPresence) return EMPTY
+      const list = getByChannel(state.usersPresence).get(channelId) ?? EMPTY
+      if (!list.length) return EMPTY
+      if (!profileId) return list
+      const others = selectPresenceOthers(list, profileId)
+      return others.length === 0 ? EMPTY : others
+    })
+  )
 }
