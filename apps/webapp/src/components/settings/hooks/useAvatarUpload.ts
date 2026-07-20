@@ -1,7 +1,10 @@
 import { removeFileFromStorage, uploadFileToStorage } from '@api'
+import { prepareAvatarFile } from '@components/settings/utils/prepareAvatarFile'
 import * as toast from '@components/toast'
 import Config from '@config'
-import { useAuthStore } from '@stores'
+import { shareHeadingPresenceWithRoom } from '@services/workspacePresenceSync'
+import { useAuthStore, useStore } from '@stores'
+import type { Profile } from '@types'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useState } from 'react'
 
@@ -36,6 +39,16 @@ const updateAvatarInDB = async (
   return avatar_updated_at
 }
 
+/** Re-track + rebroadcast so peers see the new face without waiting for resubscribe. */
+function refreshPresenceAvatar(profile: Profile) {
+  const broadcaster = useStore.getState().settings.broadcaster
+  if (!broadcaster || !profile.id) return
+  void broadcaster.track(profile).catch((err: unknown) => {
+    console.error('Failed to retrack avatar presence:', err)
+  })
+  shareHeadingPresenceWithRoom(broadcaster, profile)
+}
+
 export const useAvatarUpload = () => {
   const user = useAuthStore((state) => state.profile)
   const [uploading, setUploading] = useState(false)
@@ -43,11 +56,6 @@ export const useAvatarUpload = () => {
   const handleUpload = useCallback(
     async (file: File) => {
       if (!user) return
-
-      if (file.size > MAX_AVATAR_SIZE) {
-        toast.Error('Avatar must be less than 256KB')
-        return
-      }
 
       if (!file.type.startsWith('image/')) {
         toast.Error('Avatar must be an image')
@@ -57,16 +65,17 @@ export const useAvatarUpload = () => {
       setUploading(true)
 
       try {
-        // `{userId}/avatar.png` matches `getAvatarURL`'s shape so the
-        // upload destination and the public read URL stay in lockstep,
-        // and the prefix carries ownership for the path-based RLS check.
+        // AVIF (and other non-allowlisted types) pass `image/*` but the bucket rejects them.
+        const uploadFile = await prepareAvatarFile(file, MAX_AVATAR_SIZE)
+        // Canonical storage path for getAvatarURL; content-type is the converted MIME.
         const filePath = `${user.id}/avatar.png`
         const bucketAddress = Config.app.profile.getAvatarURL(user.id, Date.now().toString())
 
         const { error: uploadError } = await uploadFileToStorage(
           Config.app.profile.avatarBucketName,
           filePath,
-          file
+          uploadFile,
+          uploadFile.type
         )
         if (uploadError) throw uploadError
 
@@ -76,16 +85,22 @@ export const useAvatarUpload = () => {
         // fire `USER_UPDATED` on the same client, so `onAuthStateChange`
         // never refetches via `getUserProfile`. Patch local profile
         // directly so the bucket URL + cache-buster are visible now.
-        useAuthStore.getState().setProfile({
+        const updatedProfile: Profile = {
           ...user,
           avatar_url: bucketAddress,
           avatar_updated_at: newAvatarUpdatedAt
-        })
+        }
+        useAuthStore.getState().setProfile(updatedProfile)
+        refreshPresenceAvatar(updatedProfile)
 
         toast.Success('Avatar uploaded successfully!')
       } catch (error) {
         console.error('Avatar upload error:', error)
-        toast.Error('Error uploading avatar, please try again.')
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : 'Error uploading avatar, please try again.'
+        toast.Error(message)
       } finally {
         setUploading(false)
       }
@@ -105,7 +120,13 @@ export const useAvatarUpload = () => {
       await updateAvatarInDB(null, user.id)
       await removeFileFromStorage(Config.app.profile.avatarBucketName, `${user.id}/avatar.png`)
 
-      useAuthStore.getState().setProfile({ ...user, avatar_url: null, avatar_updated_at: null })
+      const updatedProfile: Profile = {
+        ...user,
+        avatar_url: null,
+        avatar_updated_at: null
+      }
+      useAuthStore.getState().setProfile(updatedProfile)
+      refreshPresenceAvatar(updatedProfile)
 
       toast.Success('Avatar removed successfully!')
     } catch (error) {

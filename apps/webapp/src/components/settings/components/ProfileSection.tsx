@@ -25,7 +25,7 @@ const ProfileSection = () => {
   const { uploading, handleUpload, handleRemove } = useAvatarUpload()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const hasCustomAvatar = !!user?.avatar_url
+  const hasCustomAvatar = !!user?.avatar_updated_at
 
   // Locally controlled inputs — committed to the store only on Save so
   // keystrokes don't fan out re-renders to every `profile` subscriber.
@@ -131,7 +131,7 @@ const ProfileSection = () => {
           <div className="relative">
             <Button
               onClick={handleAvatarClick}
-              className="group border-base-300 hover:border-primary rounded-box relative size-24 overflow-hidden border-2 p-0 transition-[border-color,box-shadow] hover:shadow-md"
+              className="group relative size-24 rounded-full border-0 bg-transparent p-0 transition-[box-shadow] hover:shadow-md"
               disabled={uploading}
               aria-label="Upload profile picture">
               <Avatar
@@ -139,11 +139,11 @@ const ProfileSection = () => {
                 src={user?.avatar_url}
                 avatarUpdatedAt={user?.avatar_updated_at}
                 alt={user?.display_name || user?.full_name}
-                justImage={true}
-                className="size-full object-cover"
+                clickable={false}
+                className="group-hover:ring-primary size-full"
               />
               <div
-                className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity ${
+                className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity ${
                   uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                 }`}
                 aria-hidden="true">
@@ -165,7 +165,9 @@ const ProfileSection = () => {
           </div>
           <div className="flex flex-col gap-2">
             <h2 className="text-base-content text-base font-semibold">Profile Picture</h2>
-            <p className="text-base-content/60 text-sm">Upload a photo (max 256KB)</p>
+            <p className="text-base-content/60 text-sm">
+              Upload a photo (JPEG, PNG, WebP, or AVIF — max 256KB)
+            </p>
             <div className="flex gap-2">
               <Button
                 onClick={handleAvatarClick}
