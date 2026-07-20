@@ -11,6 +11,7 @@ import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
 import { TocContextMenu } from './TocContextMenu'
 import { TocEmptyState } from './TocEmptyState'
+import { TocHeader } from './TocHeader'
 import { TocItemDesktop } from './TocItemDesktop'
 import { TocLevelPicker } from './TocLevelPicker'
 import { buildNestedToc } from './utils'
@@ -77,9 +78,21 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
 
   const nestedItems = useMemo(() => buildNestedToc(items), [items])
   const sortableIds = useMemo(() => flatItems.map((f) => f.id), [flatItems])
+  const hasItems = items.length > 0
 
-  if (!items.length) {
-    return <TocEmptyState className={className} />
+  const headerItem = (
+    <li className={TOC_CLASSES.header}>
+      <TocHeader variant="desktop" />
+    </li>
+  )
+
+  if (!hasItems) {
+    return (
+      <div className={className}>
+        <ul className="toc__list menu w-full p-0">{headerItem}</ul>
+        <TocEmptyState />
+      </div>
+    )
   }
 
   return (
@@ -91,6 +104,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
         {...handlers}>
         <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
           <ul className={`toc__list menu w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
+            {headerItem}
             <ContextMenu
               className={twMerge(contextMenuPanelClassName, 'absolute z-40')}
               parentRef={contextMenuRef}

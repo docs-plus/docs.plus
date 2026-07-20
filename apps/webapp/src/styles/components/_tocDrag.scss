@@ -1,0 +1,243 @@
+/**
+ * TOC drag overlay / grip / level picker — intentional SCSS island (not daisyUI menu).
+ * Loaded from `_tableOfContents.scss`.
+ */
+
+.toc-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  margin: 0;
+  cursor: grab;
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-field, 0.25rem);
+  z-index: 2;
+  -webkit-user-drag: element;
+  touch-action: none;
+  transition:
+    color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out;
+
+  > svg {
+    fill: none;
+    stroke: currentColor;
+  }
+
+  &:hover {
+    color: var(--color-primary);
+    background-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
+  }
+
+  &:active {
+    cursor: grabbing;
+    color: var(--color-docsy);
+  }
+}
+
+.toc__level-picker {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  z-index: 20;
+}
+
+.toc__level-badge {
+  display: none;
+  position: absolute;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 22px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--color-docsy);
+  color: var(--color-primary-content);
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 18px;
+  z-index: 5;
+}
+
+.toc-drag-wrapper {
+  pointer-events: none;
+  transform: translate(-12px, -36px);
+}
+
+.toc-drag-levels {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 4px;
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  padding: 2px;
+  box-shadow: var(--shadow-overlay);
+  width: fit-content;
+}
+
+.toc-drag-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+  background: transparent;
+  border-radius: 4px;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out;
+
+  &.original {
+    border: 1px solid var(--color-docsy);
+    color: var(--color-docsy);
+    transform: scale(1.1);
+    margin: 0 16px;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 1px;
+      background: var(--color-base-content);
+    }
+
+    &::before {
+      right: 100%;
+      margin-right: 1px;
+    }
+
+    &::after {
+      left: 100%;
+      margin-left: 1px;
+    }
+
+    &:not(.active)::before,
+    &:not(.active)::after {
+      background: var(--color-docsy);
+    }
+  }
+
+  &.active {
+    color: var(--color-primary-content);
+    background: var(--color-base-content);
+    position: relative;
+    border-color: transparent;
+  }
+}
+
+.toc-drag-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-base-100);
+  border-radius: var(--radius-field);
+  padding: 6px 8px;
+  box-shadow: 0 8px 24px
+    light-dark(
+      color-mix(in oklch, black 12%, transparent),
+      color-mix(in oklch, black 28%, transparent)
+    );
+  border: 1px solid var(--color-base-300);
+  box-sizing: border-box;
+  cursor: grabbing;
+  opacity: 0.8;
+
+  .toc__link {
+    flex: 1;
+    white-space: normal;
+    word-wrap: break-word;
+    font-size: 0.875rem;
+    color: var(--color-base-content);
+  }
+
+  .toc-tree-icon {
+    flex-shrink: 0;
+    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+  }
+
+  .toc-descendant-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--color-neutral);
+    color: var(--color-neutral-content);
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 8px;
+  }
+
+  .toc-stack-indicator {
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: -1;
+
+    &[data-count='1'] {
+      box-shadow:
+        3px 3px 0 0 var(--color-base-200),
+        3px 3px 0 1px var(--color-base-300);
+    }
+
+    &[data-count='2'] {
+      box-shadow:
+        3px 3px 0 0 var(--color-base-200),
+        3px 3px 0 1px var(--color-base-300),
+        6px 6px 0 0 var(--color-base-200),
+        6px 6px 0 1px var(--color-base-300);
+    }
+
+    &[data-count='3'] {
+      box-shadow:
+        3px 3px 0 0 var(--color-base-200),
+        3px 3px 0 1px var(--color-base-300),
+        6px 6px 0 0 var(--color-base-200),
+        6px 6px 0 1px var(--color-base-300),
+        9px 9px 0 0 var(--color-base-200),
+        9px 9px 0 1px var(--color-base-300);
+    }
+  }
+}
+
+.toc-drop-indicator-portal {
+  pointer-events: none;
+
+  .toc-drop-indicator-line {
+    height: 2px;
+    background: var(--color-base-content);
+    border-radius: 1px;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      background: var(--color-base-content);
+      border-radius: 50%;
+    }
+  }
+}

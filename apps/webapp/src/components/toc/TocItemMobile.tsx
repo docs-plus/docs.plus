@@ -1,4 +1,3 @@
-import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
 import { useUnreadCount } from '@hooks/useUnreadCount'
 import { Icons } from '@icons'
@@ -17,10 +16,9 @@ interface TocItemMobileProps {
   item: TocItemType
   nestedNodes: NestedTocNode<TocItemType>[]
   onToggle: (id: string) => void
-  depth?: number
 }
 
-function TocItemMobileComponent({ item, nestedNodes, onToggle, depth = 0 }: TocItemMobileProps) {
+function TocItemMobileComponent({ item, nestedNodes, onToggle }: TocItemMobileProps) {
   const isFocused = useFocusedHeadingStore((s) => s.focusedHeadingId === item.id)
   const isActive = useChatStore((state) => state.chatRoom.headingId === item.id)
 
@@ -60,37 +58,31 @@ function TocItemMobileComponent({ item, nestedNodes, onToggle, depth = 0 }: TocI
     [item.id, modal]
   )
 
-  const liClassName = twMerge(
-    'toc__item relative w-full',
-    !item.open && 'closed',
-    isFocused && TOC_CLASSES.itemFocused
-  )
+  const liClassName = twMerge('toc__item relative w-full', !item.open && 'closed')
 
   return (
     <li className={liClassName} data-id={item.id}>
       <TocRow
         headingId={item.id}
-        depth={depth}
-        level={item.level}
         title={item.textContent}
         density="mobile"
         isActive={isActive}
+        isFocused={isFocused}
         onTitleClick={handleClick}
         titleHref={`?${item.id}`}
         leading={
           hasChildren ? (
-            <Button
-              variant="ghost"
-              size="xs"
-              shape="square"
+            <button
+              type="button"
               className={twMerge(
-                `${TOC_CLASSES.foldBtn} size-11 min-h-11 min-w-11 !p-0`,
+                TOC_CLASSES.foldBtn,
+                'inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center',
                 item.open ? 'opened' : 'closed'
               )}
               onClick={handleToggle}
-              aria-label={item.open ? 'Collapse section' : 'Expand section'}
-              startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
-            />
+              aria-label={item.open ? 'Collapse section' : 'Expand section'}>
+              <Icons.chevronRight size={18} className="fill-none stroke-current" aria-hidden />
+            </button>
           ) : null
         }
         trail={
@@ -99,7 +91,7 @@ function TocItemMobileComponent({ item, nestedNodes, onToggle, depth = 0 }: TocI
             unreadCount={unreadCount}
             isActive={isActive}
             iconSize={20}
-            iconClassName={twMerge(TOC_CLASSES.chatIcon, 'text-base-content/40')}
+            iconClassName={twMerge(TOC_CLASSES.chatIcon, 'text-base-content/60')}
             onChatClick={handleChatClick}
           />
         }
@@ -113,7 +105,6 @@ function TocItemMobileComponent({ item, nestedNodes, onToggle, depth = 0 }: TocI
               item={childItem}
               nestedNodes={grandNodes}
               onToggle={onToggle}
-              depth={depth + 1}
             />
           ))}
         </ul>

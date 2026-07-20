@@ -5,7 +5,6 @@ import { twMerge } from 'tailwind-merge'
 
 import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { TOC_CLASSES } from './tocClasses'
-import { tocTrailingRailPx } from './utils'
 
 type TocRowTrailProps = {
   headingId: string | undefined
@@ -19,7 +18,7 @@ type TocRowTrailProps = {
   maxAvatars?: number
 }
 
-/** Chat pinned to a fixed right inset; avatars extend left — keeps every row’s icon on one vertical axis. */
+/** Menu end-slot: presence then chat (row grid’s last column). */
 export function TocRowTrail({
   headingId,
   unreadCount,
@@ -31,43 +30,36 @@ export function TocRowTrail({
   tooltipPlacement = 'top',
   maxAvatars = 4
 }: TocRowTrailProps) {
-  const spacerWidth = tocTrailingRailPx(presentUsers.length, unreadCount)
-
   return (
-    <>
-      <div className="shrink-0" style={{ width: spacerWidth }} aria-hidden="true" />
-      <div
-        className="absolute top-1/2 z-[3] flex -translate-y-1/2 flex-row-reverse items-center gap-1.5"
-        style={{ right: 'var(--toc-trail-inset)' }}>
-        <Tooltip title="Chat Room" placement={tooltipPlacement}>
-          <button
-            type="button"
-            className={twMerge(
-              TOC_CLASSES.chatTrigger,
-              'flex items-center justify-center',
-              unreadCount <= 0 && 'size-6'
-            )}
-            data-heading-id={headingId}
-            onClick={onChatClick}
-            aria-label={chatTriggerAriaLabel(unreadCount)}>
-            <ChatTriggerContent
-              unreadCount={unreadCount}
-              iconSize={iconSize}
-              iconClassName={twMerge(iconClassName, isActive && TOC_CLASSES.chatIconActive)}
-            />
-          </button>
-        </Tooltip>
-        {presentUsers.length > 0 && (
-          <AvatarStack
-            maxDisplay={maxAvatars}
-            size="sm"
-            surface="well"
-            users={presentUsers}
-            showStatus={true}
-            tooltipPosition="left"
+    <span className="flex shrink-0 items-center gap-1.5">
+      {presentUsers.length > 0 && (
+        <AvatarStack
+          maxDisplay={maxAvatars}
+          size="sm"
+          surface="well"
+          users={presentUsers}
+          showStatus={true}
+          tooltipPosition="left"
+        />
+      )}
+      <Tooltip title="Chat Room" placement={tooltipPlacement}>
+        <button
+          type="button"
+          className={twMerge(
+            TOC_CLASSES.chatTrigger,
+            'flex items-center justify-center',
+            unreadCount <= 0 && 'size-6'
+          )}
+          data-heading-id={headingId}
+          onClick={onChatClick}
+          aria-label={chatTriggerAriaLabel(unreadCount)}>
+          <ChatTriggerContent
+            unreadCount={unreadCount}
+            iconSize={iconSize}
+            iconClassName={twMerge(iconClassName, isActive && TOC_CLASSES.chatIconActive)}
           />
-        )}
-      </div>
-    </>
+        </button>
+      </Tooltip>
+    </span>
   )
 }

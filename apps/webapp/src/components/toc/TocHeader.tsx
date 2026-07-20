@@ -7,6 +7,7 @@ import { twMerge } from 'tailwind-merge'
 import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { tocActions } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
+import { TocRow } from './TocRow'
 import { TocRowTrail } from './TocRowTrail'
 
 interface TocHeaderProps {
@@ -58,7 +59,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
               iconSize={18}
               iconClassName={twMerge(
                 TOC_CLASSES.chatIcon,
-                'text-base-content/40',
+                'text-base-content/60',
                 isActive && TOC_CLASSES.chatIconActive
               )}
             />
@@ -68,19 +69,20 @@ export function TocHeader({ variant }: TocHeaderProps) {
     )
   }
 
+  // Desktop: same menu shell as heading rows (`li.toc__header` > TocRow).
   return (
-    <div
-      className="border-base-300 relative isolate z-30 w-full shrink-0 border-b bg-[var(--pad-well)] pt-2 pb-1"
-      style={{ paddingLeft: 'var(--toc-list-inset)' }}>
-      <div
-        className={twMerge(
-          `${TOC_CLASSES.headerRow} group rounded-field relative flex cursor-pointer items-center gap-1 overflow-hidden py-1 pr-3`,
-          isActive && `${TOC_CLASSES.activeBorder} bg-base-300`
-        )}
-        onClick={handleClick}>
-        <span className="text-base-content relative z-[1] min-w-0 flex-1 text-base font-semibold">
-          {docMetadata?.title}
-        </span>
+    <TocRow
+      headingId={workspaceId || 'doc-title'}
+      title={docMetadata?.title ?? ''}
+      isActive={isActive}
+      className={`${TOC_CLASSES.headerRow} cursor-pointer`}
+      titleClassName="text-base font-semibold"
+      titleHref="#"
+      onTitleClick={(e) => {
+        e.preventDefault()
+        handleClick()
+      }}
+      trail={
         <TocRowTrail
           headingId={workspaceId || undefined}
           unreadCount={unreadCount}
@@ -94,7 +96,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
           )}
           onChatClick={handleChatClick}
         />
-      </div>
-    </div>
+      }
+    />
   )
 }

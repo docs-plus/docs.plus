@@ -65,18 +65,3 @@ export function stackSurfaceToEdge(surface: AvatarStackSurface): AvatarEdge {
     }
   }
 }
-
-/** AvatarStack `sm`: Tailwind size-8 face. */
-export const AVATAR_SM_FACE_PX = 32
-/** sm `-space-x-3` → 12px overlap → 20px stride between face origins. */
-export const AVATAR_SM_STRIDE_PX = 20
-
-const AVATAR_OVERFLOW_BADGE_PX = 24
-
-/** Width reserved for a TOC presence stack (sm faces, max 4 + optional +N). */
-export function tocPresenceReservePx(userCount: number): number {
-  if (userCount <= 0) return 0
-  const visible = Math.min(userCount, 4)
-  const stack = AVATAR_SM_FACE_PX + Math.max(0, visible - 1) * AVATAR_SM_STRIDE_PX
-  return stack + (userCount > 4 ? AVATAR_OVERFLOW_BADGE_PX : 0)
-}

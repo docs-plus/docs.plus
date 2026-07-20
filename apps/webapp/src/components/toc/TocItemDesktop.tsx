@@ -1,4 +1,3 @@
-import Button from '@components/ui/Button'
 import { Tooltip } from '@components/ui/Tooltip'
 import { useSortable } from '@dnd-kit/sortable'
 import { usePresentUsers } from '@hooks/usePresentUsers'
@@ -24,7 +23,6 @@ interface TocItemDesktopProps {
   onToggle: (id: string) => void
   activeId?: string | null
   collapsedIds?: Set<string>
-  depth?: number
 }
 
 function TocItemDesktopComponent({
@@ -32,8 +30,7 @@ function TocItemDesktopComponent({
   nestedNodes,
   onToggle,
   activeId = null,
-  collapsedIds = EMPTY_COLLAPSED,
-  depth = 0
+  collapsedIds = EMPTY_COLLAPSED
 }: TocItemDesktopProps) {
   const sortable = useSortable({
     id: item.id,
@@ -87,7 +84,6 @@ function TocItemDesktopComponent({
   const liClassName = twMerge(
     'toc__item relative w-full',
     !item.open && 'closed',
-    isFocused && TOC_CLASSES.itemFocused,
     isGhosted && 'is-ghosted',
     isDragging && 'is-dragging'
   )
@@ -96,11 +92,10 @@ function TocItemDesktopComponent({
     <li ref={sortable.setNodeRef} className={liClassName} data-id={item.id}>
       <TocRow
         headingId={item.id}
-        depth={depth}
-        level={item.level}
         title={item.textContent}
         density="desktop"
         isActive={isActive}
+        isFocused={isFocused}
         onTitleClick={handleClick}
         titleHref={`?${item.id}`}
         leading={
@@ -125,19 +120,19 @@ function TocItemDesktopComponent({
               )}
             </span>
             {hasChildren && (
-              <Button
-                variant="ghost"
-                size="xs"
-                shape="square"
-                className={twMerge(
-                  `${TOC_CLASSES.foldBtn} size-5 min-w-5 !p-0`,
-                  item.open ? 'opened' : 'closed'
-                )}
-                onClick={handleToggle}
-                startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
-                tooltip="Toggle"
-                tooltipPlacement="top"
-              />
+              <Tooltip title="Toggle" placement="top">
+                <button
+                  type="button"
+                  className={twMerge(
+                    TOC_CLASSES.foldBtn,
+                    'inline-flex size-5 shrink-0 items-center justify-center',
+                    item.open ? 'opened' : 'closed'
+                  )}
+                  onClick={handleToggle}
+                  aria-label={item.open ? 'Collapse section' : 'Expand section'}>
+                  <Icons.chevronRight size={18} className="fill-none stroke-current" aria-hidden />
+                </button>
+              </Tooltip>
             )}
           </>
         }
@@ -151,8 +146,7 @@ function TocItemDesktopComponent({
             tooltipPlacement="left"
             iconClassName={twMerge(
               TOC_CLASSES.chatIcon,
-              'cursor-pointer fill-none transition-colors',
-              !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
+              'cursor-pointer fill-none text-base-content/60 transition-colors hover:text-primary'
             )}
             onChatClick={handleChatClick}
           />
@@ -169,7 +163,6 @@ function TocItemDesktopComponent({
               onToggle={onToggle}
               activeId={activeId}
               collapsedIds={collapsedIds}
-              depth={depth + 1}
             />
           ))}
         </ul>

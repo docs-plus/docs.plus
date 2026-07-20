@@ -1,21 +1,20 @@
 /**
  * Table of contents — CSS class names (BEM-style `toc__*`).
  * Keep in sync with `styles/components/_tableOfContents.scss`.
+ * Row active/spy use daisyUI `menu-active` / `menu-focus` (not listed here).
  */
 export const TOC_CLASSES = {
-  /** Doc title row in TocHeader — paired with `.toc__active-border` for inset accent */
+  /** Desktop sticky first `<li>` wrapping the doc-title row inside `.menu`. */
+  header: 'toc__header',
+  /** Interactive `li > *` child — daisyUI menu item chrome. */
   headerRow: 'toc__header-row',
   list: 'toc__list',
   item: 'toc__item',
-  /** Desktop row shell — drag handle, link, and chat sit as siblings (not nested buttons in `<a>`). */
+  /** Desktop row shell — leading, link, and trail are siblings (not nested buttons in `<a>`). */
   row: 'toc__row',
   /** Navigational title control inside `.toc__row`. */
   rowLink: 'toc__row-link',
   link: 'toc__link',
-  /** Left accent when row / title is active */
-  activeBorder: 'toc__active-border',
-  /** Editor scroll-spy focus on this TOC row */
-  itemFocused: 'toc__item--focused',
   /** Nested list under a heading row */
   children: 'toc__children',
   /** Section expand/collapse control */
@@ -24,7 +23,7 @@ export const TOC_CLASSES = {
   chatTrigger: 'toc__chat-trigger',
   /** Icon inside chat trigger */
   chatIcon: 'toc__chat-icon',
-  /** Chat open — theme-aware accent (SCSS `.toc__chat-icon--active` → `--color-docsy`) */
+  /** Chat open — theme-aware accent (SCSS → `--color-docsy`) */
   chatIconActive: 'toc__chat-icon--active',
   /** H1–H6 badge (visible during drag) */
   levelBadge: 'toc__level-badge',

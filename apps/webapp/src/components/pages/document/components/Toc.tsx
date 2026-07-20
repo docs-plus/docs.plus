@@ -1,5 +1,5 @@
 import TableOfContentsLoader from '@components/skeleton/TableOfContentsLoader'
-import { TocDesktop, TocHeader } from '@components/toc'
+import { TocDesktop } from '@components/toc'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
 import { useState } from 'react'
@@ -31,7 +31,6 @@ const TOC = ({ className = '' }: { className?: string }) => {
       onAnimationEnd={(e) => {
         if (e.animationName === 'doc-content-in') setEntryFadeDone(true)
       }}>
-      <TocHeader variant="desktop" />
       <ScrollArea
         className="min-h-0 flex-1 !pt-0"
         scrollbarSize="thin"

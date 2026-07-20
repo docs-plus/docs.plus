@@ -1,117 +1,42 @@
 /**
  * Table of Contents Styles
+ *
+ * Row padding / hover / radius / active / focus / nest come from daisyUI `.menu`
+ * (`menu-active` / `menu-focus`). This file owns sticky header, fold chevron,
+ * chat-icon accent, and ghost/drag row states. Drag overlay → `_tocDrag.scss`.
  */
 
-// ======================
-// Utility Classes
-// ======================
-// Inset accent bar — same geometry for row active + header.
-// Text clears the bar via `--toc-row-pad-start` (idle 8px → 1rem when bar shown).
-.toc__active-border::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: 4px;
-  height: auto;
-  background-color: var(--color-docsy);
-  border-radius: 4px;
-  z-index: 1;
-}
+@use './tocDrag';
 
-.tiptap__toc .toc__header-row.toc__active-border::after {
-  z-index: 0;
-}
-
-.tiptap__toc .toc__header-row {
-  --toc-row-pad-start: 0.5rem; // matches Tailwind pl-2 idle
-
-  &.toc__active-border {
-    --toc-row-pad-start: 1rem;
-  }
-
-  padding-left: var(--toc-row-pad-start);
-}
-
-.tiptap__toc .toc__header-row:not(.toc__active-border):hover {
-  background-color: color-mix(in oklch, var(--color-base-content) 8%, var(--pad-well));
-}
-
-// ======================
-// Main TOC Container
-// ======================
 .tiptap__toc {
-  // Keep in sync with `components/toc/utils.ts` (rail width math only).
-  // ScrollArea client width is narrower than the header row by ~one scrollbar track;
-  // extend list rows so chat triggers share the header’s fixed right inset.
-  --toc-scrollbar-gutter: 11px;
   --toc-list-inset: 16px;
-  --toc-trail-inset: 12px;
-  --toc-nest-indent: 16px;
 
   padding-top: 8px;
 
-  .toc__item > .toc__row {
-    --toc-row-pad-start: 8px;
-    margin-right: calc(-1 * var(--toc-scrollbar-gutter));
-    width: calc(100% + var(--toc-scrollbar-gutter));
-    // Own padding here (beats daisyUI `.menu li > *`) so active/depth only retune the token.
-    padding-left: var(--toc-row-pad-start);
-
-    &.active {
-      --toc-row-pad-start: 1rem;
-    }
-  }
-
-  .toc__item.toc__item--focused > .toc__row {
-    --toc-row-pad-start: 1rem;
-  }
-
-  // Nest ul padding shrinks the box; pull full-width for trail axis, re-apply indent as pad token.
-  // Depth ≥1 already clears the inset bar (≥24px), so it wins over active/focused 1rem.
-  @for $d from 1 through 8 {
-    .toc__item > .toc__row[data-depth='#{$d}'] {
-      --toc-row-pad-start: calc(8px + #{$d} * var(--toc-nest-indent));
-      margin-left: calc(-1 * #{$d} * var(--toc-nest-indent));
-      width: calc(100% + var(--toc-scrollbar-gutter) + #{$d} * var(--toc-nest-indent));
-    }
-  }
-
-  // Strengthen daisyUI nest rails (must nest under & — a leading .tiptap__toc doubles the prefix).
-  .toc__list.menu :where(li ul)::before {
-    inset-inline-start: 0;
-    top: 0;
-    bottom: 0;
-    width: var(--border, 1px);
-    background-color: color-mix(in oklch, var(--color-base-content) 24%, transparent);
-    opacity: 1;
-  }
-
-  // During drag state
   .toc__list.is-dragging {
     user-select: none;
 
-    // .toc__fold-btn,
-    .toc__chat-trigger,
-    .toc-drag-handle,
-    .avatar-group,
-    .toc__item--focused > .toc__row::before {
-      opacity: 0 !important;
-    }
+    // Scope to heading rows — sticky doc-title keeps its chat during drag.
+    .toc__item {
+      .toc__chat-trigger,
+      .toc-drag-handle,
+      .avatar-group {
+        opacity: 0 !important;
+      }
 
-    .toc__level-badge {
-      display: block;
-    }
+      .toc__level-badge {
+        display: block;
+      }
 
-    .toc__item > .toc__row {
-      pointer-events: none;
+      > .toc__row {
+        pointer-events: none;
 
-      &:hover,
-      &:focus,
-      &:active {
-        background-color: transparent !important;
-        color: inherit !important;
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: transparent !important;
+          color: inherit !important;
+        }
       }
     }
   }
@@ -121,102 +46,37 @@
   padding-left: var(--toc-list-inset, 16px);
 }
 
-// Quiet H1–H6 ladder — indent + type; H4–6 ink at 82% for AA on pad-well.
-.toc__link {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-base-content);
-  line-height: 1.25;
+// First menu item: pin above the outline while the list scrolls.
+.toc__list > .toc__header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: var(--pad-well);
+  border-bottom: 1px solid var(--color-base-300);
+  // Match former header chrome above the sticky edge.
+  padding-top: 0.5rem;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 
-.toc__link--level-1 {
-  font-weight: 600;
-}
-
-.toc__link--level-2,
-.toc__link--level-3 {
-  font-weight: 500;
-}
-
-.toc__link--level-4,
-.toc__link--level-5,
-.toc__link--level-6 {
-  font-size: 0.8125rem;
-  font-weight: 400;
-  color: color-mix(in oklch, var(--color-base-content) 82%, transparent);
-}
-
-// ======================
-// TOC Item
-// ======================
 .toc__item {
   width: 100%;
-  transition: width 0.2s ease-in-out;
 
-  // Link base — flex-start so multi-line wrap titles stay trail-aligned (not mid-row centered).
-  // Pad start is owned under `.tiptap__toc` via `--toc-row-pad-start` (no !important war).
   > .toc__row {
-    display: flex;
-    align-items: flex-start;
     position: relative;
-    border-radius: var(--radius-field);
-    transition:
-      background-color var(--motion-panel, 200ms) var(--motion-ease-enter, ease-out),
-      color var(--motion-panel, 200ms) var(--motion-ease-enter, ease-out);
+    // Menu defaults to items-center; top-align so grip/chat stay on the first title line when wrap.
+    align-items: flex-start;
     -webkit-user-drag: none;
-
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
-    }
-
-    &:hover:not(.active):not(.context-menu-active) {
-      background-color: color-mix(in oklch, var(--color-base-content) 8%, var(--pad-well));
-    }
-
-    &:active {
-      background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
-      color: inherit;
-    }
-
-    &.active {
-      background-color: var(--color-base-300);
-    }
 
     &.context-menu-active {
       background-color: color-mix(in oklch, var(--color-primary) 15%, transparent) !important;
     }
   }
 
-  // Scroll-spy — inset bar (same geometry as active ::after); static, no hover slide.
-  &.toc__item--focused > .toc__row {
-    &::before {
-      content: '';
-      position: absolute;
-      left: 4px;
-      top: 4px;
-      bottom: 4px;
-      width: 4px;
-      background-color: var(--color-docsy);
-      border-radius: 4px;
-      pointer-events: none;
-    }
-
-    // Spy ∩ chat-open: one bar — wash + active icon carry “here + chat”.
-    &.active::before {
-      content: none;
-    }
-
-    transition:
-      background-color 0.2s ease-in-out,
-      color 0.2s ease-in-out;
-  }
-
-  // Section collapsed (editor fold); nested list is a direct child — no Tailwind `hidden` in TSX
   &.closed > .toc__children {
     display: none;
   }
 
-  // Ghosted state (during drag)
   &.is-ghosted > .toc__row {
     background-color: var(--color-base-200) !important;
     border: 2px dashed var(--color-base-300);
@@ -238,41 +98,29 @@
   }
 }
 
-// Active chat — header + rows (TocRowTrail / mobile header stamp `--active`; not scoped to `.toc__row.active`).
 .toc__chat-icon--active {
   fill: none;
   color: var(--color-docsy);
   stroke: currentColor;
-  opacity: 1;
 }
 
-// ======================
-// Fold Button
-// ======================
-// Lucide chevron is stroke-based; daisy `btn-ghost` adds a hover fill — override to stroke-only (toolbar parity).
-// Desktop: hover-only like grip; mobile always visible (html.m_mobile + .modalWrapper).
+.toc__chat-icon {
+  padding: 1px;
+  fill: none;
+  stroke: currentColor;
+}
+
+// Plain chevron control (not daisy `btn-ghost`) — stroke rotate only.
 .toc__item .toc__fold-btn {
-  opacity: 0;
   cursor: pointer;
-  transition: opacity var(--motion-overlay-out, 80ms) ease-in;
-
-  &,
-  &:hover,
-  &:focus-visible,
-  &:active {
-    background-color: transparent !important;
-    border-color: transparent;
-    box-shadow: none;
-  }
-
-  &:focus-visible {
-    opacity: 1;
-  }
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: color-mix(in oklch, var(--color-base-content) 80%, transparent);
 
   > svg {
     fill: none;
     stroke: currentColor;
-    color: color-mix(in oklch, var(--color-base-content) 80%, transparent);
     transition:
       color var(--motion-overlay-in, 120ms) ease-out,
       transform 160ms var(--motion-ease-enter, ease-out);
@@ -282,8 +130,8 @@
     }
   }
 
-  &:hover > svg,
-  &:focus-visible > svg {
+  &:hover,
+  &:focus-visible {
     color: var(--color-primary);
   }
 
@@ -296,43 +144,6 @@
   }
 }
 
-.toc__item:hover > .toc__row .toc__fold-btn,
-.toc__item:focus-within > .toc__row .toc__fold-btn {
-  opacity: 1;
-  transition: opacity var(--motion-overlay-in, 120ms) ease-out;
-}
-
-html.m_mobile .toc__item .toc__fold-btn,
-html.m_mobile .toc__item .toc__chat-icon,
-.modalWrapper .toc__item .toc__fold-btn,
-.modalWrapper .toc__item .toc__chat-icon {
-  opacity: 1 !important;
-}
-
-// ======================
-// Chat Button
-// ======================
-.toc__item {
-  .toc__chat-icon {
-    opacity: 0;
-    padding: 1px;
-    fill: none;
-    stroke: currentColor;
-    transition:
-      opacity var(--motion-overlay-out, 80ms) ease-in,
-      color var(--motion-overlay-in, 120ms) ease-out;
-
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
-    }
-  }
-
-  &:hover > .toc__row .toc__chat-icon {
-    opacity: 1;
-    transition: opacity var(--motion-overlay-in, 120ms) ease-out;
-  }
-}
-
 .toc__fold-btn:focus-visible,
 .toc-drag-handle:focus-visible,
 .toc__chat-trigger:focus-visible,
@@ -341,290 +152,7 @@ html.m_mobile .toc__item .toc__chat-icon,
   outline-offset: 1px;
 }
 
-// ======================
-// Drag Handle (hover-only — same reveal pattern as .toc__chat-icon)
-// ======================
-.toc-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.25rem;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  padding: 0;
-  margin: 0;
-  opacity: 0;
-  pointer-events: none;
-  cursor: grab;
-  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
-  background-color: transparent;
-  border: none;
-  border-radius: var(--radius-field, 0.25rem);
-  z-index: 2;
-  -webkit-user-drag: element;
-  touch-action: none;
-  transition:
-    opacity var(--motion-overlay-out, 80ms) ease-in,
-    color 0.15s ease-in-out,
-    background-color 0.15s ease-in-out;
-
-  > svg {
-    fill: none;
-    stroke: currentColor;
-  }
-
-  &:hover {
-    color: var(--color-primary);
-    background-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
-  }
-
-  &:active {
-    cursor: grabbing;
-    color: var(--color-docsy);
-  }
-
-  &:focus-visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-.toc__item:hover > .toc__row .toc-drag-handle {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-// ======================
-// Hover Level Picker (reuses drag-levels styles)
-// ======================
-.toc__level-picker {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 4px);
-  // Below TocHeader (z-30) when overlapping; header now sits outside the list scroll area
-  z-index: 20;
-}
-
-// ======================
-// Level Badge (hidden until drag)
-// ======================
-.toc__level-badge {
-  display: none;
-  position: absolute;
-  right: 0px;
-  top: 50%;
-  transform: translateY(-50%);
-  min-width: 22px;
-  height: 18px;
-  padding: 0 4px;
-  background: var(--color-docsy);
-  color: var(--color-primary-content);
-  font-size: 0.65rem;
-  font-weight: 700;
-  border-radius: 4px;
-  text-align: center;
-  line-height: 18px;
-  z-index: 5;
-}
-
-// ======================
-// Drag Overlay
-// ======================
-.toc-drag-wrapper {
-  pointer-events: none;
-  // Offset so cursor lands on the card (level picker is ~28px above the card)
-  transform: translate(-12px, -36px);
-}
-
-.toc-drag-levels {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 4px;
-  background: var(--color-base-100);
-  border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  padding: 2px;
-  box-shadow: var(--shadow-overlay);
-  width: fit-content;
-}
-
-.toc-drag-level {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 18px;
-  padding: 0 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-  background: transparent;
-  border-radius: 4px;
-  transition:
-    background-color 0.15s ease-in-out,
-    color 0.15s ease-in-out;
-
-  &.original {
-    border: 1px solid var(--color-docsy);
-    color: var(--color-docsy);
-    transform: scale(1.1);
-    margin: 0 16px;
-
-    &::before,
-    &::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 12px;
-      height: 1px;
-      background: var(--color-base-content);
-    }
-
-    &::before {
-      right: 100%;
-      margin-right: 1px;
-    }
-
-    &::after {
-      left: 100%;
-      margin-left: 1px;
-    }
-
-    &:not(.active)::before,
-    &:not(.active)::after {
-      background: var(--color-docsy);
-    }
-  }
-
-  &.active {
-    color: var(--color-primary-content);
-    background: var(--color-base-content);
-    position: relative;
-    border-color: transparent;
-  }
-}
-
-.toc-drag-card {
-  // Match the original TOC item styling - size set dynamically via inline style
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--color-base-100);
-  border-radius: var(--radius-field);
-  padding: 6px 8px;
-  // Deeper in dark (light-dark swaps the shadow opacity via color-scheme, no dark selector).
-  box-shadow: 0 8px 24px
-    light-dark(
-      color-mix(in oklch, black 12%, transparent),
-      color-mix(in oklch, black 28%, transparent)
-    );
-  border: 1px solid var(--color-base-300);
-  box-sizing: border-box;
-  cursor: grabbing;
-  opacity: 0.8;
-
-  .toc__link {
-    flex: 1;
-    white-space: normal;
-    word-wrap: break-word;
-    font-size: 0.875rem;
-    color: var(--color-base-content);
-  }
-
-  .toc-tree-icon {
-    flex-shrink: 0;
-    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-  }
-
-  .toc-descendant-badge {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 16px;
-    padding: 0 4px;
-    background: var(--color-neutral);
-    color: var(--color-neutral-content);
-    font-size: 0.65rem;
-    font-weight: 600;
-    border-radius: 8px;
-  }
-
-  // Stack indicator - creates a "deck of cards" effect using box-shadows
-  .toc-stack-indicator {
-    position: absolute;
-    inset: 0;
-    border-radius: 4px;
-    pointer-events: none;
-    z-index: -1;
-
-    // Single layer
-    &[data-count='1'] {
-      box-shadow:
-        3px 3px 0 0 var(--color-base-200),
-        3px 3px 0 1px var(--color-base-300);
-    }
-
-    // Two layers - fanned effect
-    &[data-count='2'] {
-      box-shadow:
-        3px 3px 0 0 var(--color-base-200),
-        3px 3px 0 1px var(--color-base-300),
-        6px 6px 0 0 var(--color-base-200),
-        6px 6px 0 1px var(--color-base-300);
-    }
-
-    // Three layers - full deck effect
-    &[data-count='3'] {
-      box-shadow:
-        3px 3px 0 0 var(--color-base-200),
-        3px 3px 0 1px var(--color-base-300),
-        6px 6px 0 0 var(--color-base-200),
-        6px 6px 0 1px var(--color-base-300),
-        9px 9px 0 0 var(--color-base-200),
-        9px 9px 0 1px var(--color-base-300);
-    }
-  }
-}
-
-// ======================
-// Drop Indicator
-// ======================
-.toc-drop-indicator-portal {
-  pointer-events: none;
-
-  .toc-drop-indicator-line {
-    height: 2px;
-    background: var(--color-base-content);
-    border-radius: 1px;
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: -5px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 10px;
-      height: 10px;
-      background: var(--color-base-content);
-      border-radius: 50%;
-    }
-  }
-}
-
-// ======================
-// Mobile Overrides
-// ======================
-// Fold/chat always-on lives once above (html.m_mobile + .modalWrapper). Keep layout-only rules here.
 .m_mobile {
-  .toc__item > .toc__row {
-    line-height: 2 !important;
-  }
-
   .tiptap__toc .toc__list {
     flex-wrap: nowrap !important;
 

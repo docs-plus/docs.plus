@@ -6,10 +6,11 @@ import { TOC_CLASSES } from './tocClasses'
 type TocRowProps = {
   headingId: string
   className?: string
+  titleClassName?: string
+  /** Chat open for this heading — daisyUI `menu-active` */
   isActive?: boolean
-  depth?: number
-  /** Heading level 1–6 — owns `toc__link--level-*` typography */
-  level: number
+  /** Scroll-spy — daisyUI `menu-focus` when not also chat-open */
+  isFocused?: boolean
   title: string
   /** Desktop default min-h-8; pass min-h-11 on mobile */
   density?: 'desktop' | 'mobile'
@@ -19,13 +20,16 @@ type TocRowProps = {
   titleHref: string
 }
 
-/** Shared docked row shell. Desktop owns DnD outside; mobile omits grip/presence. */
+/**
+ * Menu item shell: leading | title | trail as three grid children so daisyUI
+ * `.menu li > *` owns layout (no flex override). Shared by heading rows + desktop header.
+ */
 export function TocRow({
   headingId,
   className,
+  titleClassName,
   isActive,
-  depth = 0,
-  level,
+  isFocused,
   title,
   density = 'desktop',
   leading,
@@ -33,31 +37,30 @@ export function TocRow({
   onTitleClick,
   titleHref
 }: TocRowProps) {
-  const safeLevel = Math.min(6, Math.max(1, level))
-
   return (
     <div
       className={twMerge(
         TOC_CLASSES.row,
-        'group rounded-field relative flex items-start gap-1 overflow-hidden py-1 pr-3',
+        'group min-w-0 overflow-hidden',
         density === 'mobile' ? 'min-h-11' : 'min-h-8',
-        isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`,
+        isActive && 'menu-active',
+        !isActive && isFocused && 'menu-focus',
         className
       )}
-      data-id={headingId}
-      data-depth={depth}>
-      {leading}
+      data-id={headingId}>
+      {/* Always three grid children so menu’s auto column lands on the title. */}
+      <span className="flex shrink-0 items-center gap-1">{leading}</span>
       <a
         className={twMerge(
           TOC_CLASSES.rowLink,
-          'min-w-0 flex-1 text-pretty hyphens-auto whitespace-normal text-inherit no-underline'
+          'min-w-0 text-pretty hyphens-auto whitespace-normal text-inherit no-underline'
         )}
         href={titleHref}
         data-id={headingId}
         onClick={onTitleClick}>
-        <span className={twMerge(TOC_CLASSES.link, `toc__link--level-${safeLevel}`)}>{title}</span>
+        <span className={twMerge(TOC_CLASSES.link, titleClassName)}>{title}</span>
       </a>
-      {trail}
+      {trail ?? <span />}
     </div>
   )
 }
