@@ -31,9 +31,27 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **selectPresenceOthers** — filter self out of presence stacks (`PresentUsers`, `usePresentUsers`); pass `map.values()` or a channel list.
 - Avatar stacks never render stub-only id/`channelId` rows.
 
+## Document swarm
+
+- **Swarm Actor** — a seeded, reusable authenticated identity used by the document swarm. Distinct from an anonymous viewer; can track presence, edit the pad, and send chat as itself.
+- **Swarm Target** — a document URL the swarm may open. v1: must be public and not Read-only (and not soft-deleted); otherwise the swarm refuses to start.
+- **Demo mode** — paced fake collaboration meant to be watched on a live pad (join, write, format, heading chat).
+- **Stress mode** — same Swarm Actors and Swarm Target, higher concurrency and tighter loops to probe load. Not a separate product — a mode of the same swarm.
+- **Swarm Host** — an allowlisted deployment the swarm may hit (local or stage). Production hosts are out of scope.
+- **Swarm Script** — a named, fixed collaboration routine (e.g. prose, task-list, academy, chat) an actor can run.
+- **Shuffle** — optional assignment mode: actors draw Swarm Scripts from a weighted pool instead of a fixed round-robin. Default remains deterministic assignment.
+- **Write Target** — the pad section a Swarm Actor may type under for one script turn (not the Swarm Target document URL). Opaque to Swarm Scripts: Contention policy resolves it inside the pad module; scripts never see heading labels or RunOptions.
+- **Heading Chat Surface** — pad-adjacent seam for opening a heading's chatroom and sending lines (TOC trigger, heading-action fallback, composer). Swarm Scripts call it; they do not own those selectors.
+- **Contention** — how aggressively actors share the same Write Target. Demo defaults low (section-isolated); Stress defaults high (shared hotspot). Overridable by flag.
+- **Swarm Run** — one invocation of the swarm against a Swarm Target. Stops on duration expiry, Ctrl+C, or `--until-stopped` operator kill.
+- **Ramp** — staggered actor join over a window at the start of a Swarm Run. Default join pattern; optional churn (leave/rejoin mid-run) is a later add-on.
+- **Script Outcome** — what a Swarm Script returns after one turn (success plus optional counters such as chat sends). The Swarm Run folds outcomes into the Swarm Report; scripts never mutate report state.
+- **Swarm Report** — end-of-run operator summary for Stress (and optional Demo): joins, script actions, chat sends, errors; hard-failure threshold drives exit code. Reconnects appear only when a real Ramp/churn path increments them. Not a CI gate in v1.
+- **Actor cap** — hard ceiling on concurrent Swarm Actors per Swarm Host (local higher than stage); over-cap runs require an explicit force override.
+
 ## Face inputs / Stack geometry
 
 - **resolveFace** / **resolveDisplayName** / **toStackUser** (`utils/avatarFace.ts`) — normalize Profile/snake_case and caret camelCase. `<Avatar face={…}>` resolves at the atom; keep `resolveFace`/`toStackUser` only at non-Avatar boundaries (caret, `member_id` → stack). Pure; no DiceBear/load stages.
 - **Avatar** (`ui/Avatar`) owns `edge` (`ring`|`paper`|`well`|`none`) + bucket → OAuth → DiceBear.
-- **stackGeometry** (`utils/avatarStackGeometry.ts`) — `SIZE`/`SPACING`/`TEXT`, `AvatarStackSurface` → `stackSurfaceToEdge` → `avatarEdgeClass`, `tocPresenceReservePx` (sm face/stride).
+- **stackGeometry** (`utils/avatarStackGeometry.ts`) — `SIZE`/`SPACING`/`TEXT`, `AvatarStackSurface` → `stackSurfaceToEdge` → `avatarEdgeClass`.
 - **Custom avatar** — `avatar_updated_at` set ⇒ custom bucket upload; null falls back to OAuth `avatar_url` / DiceBear.
