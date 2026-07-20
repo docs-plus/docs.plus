@@ -368,7 +368,7 @@ const MobilePadTitle = () => {
               <ProviderSyncStatus disconnectedOnly />
               <PrivateIndicator />
               <ReadOnlyIndicator />
-              <NotificationButton />
+              {user && <NotificationButton />}
               <UserProfileButton user={user} onProfileClick={handleProfileOpen} />
             </div>
           </div>
