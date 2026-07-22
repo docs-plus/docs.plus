@@ -7,17 +7,7 @@
 
 // Vendor motion overrides — fragile by nature (selector-level patches over
 // node_modules CSS); keep them all in this one block so daisyUI bumps are auditable.
-.countdown > * {
-  // daisyUI's 1s cubic-bezier(1,0,0,1) digit roll is the app's furthest motion outlier.
-  transition-duration: 300ms;
-  transition-timing-function: ease-out;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .countdown > * {
-    transition: none;
-  }
-
   .drawer-toggle ~ .drawer-side > *:not(.drawer-overlay),
   .drawer-overlay {
     transition: none;

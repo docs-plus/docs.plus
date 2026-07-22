@@ -17,6 +17,8 @@ export type { CopyButtonProps, CopyButtonSize, CopyButtonVariant } from './CopyB
 export { default as CopyButton } from './CopyButton'
 export type { FileInputColor, FileInputProps, FileInputSize } from './FileInput'
 export { default as FileInput } from './FileInput'
+export type { RollingNumberProps } from './RollingNumber'
+export { default as RollingNumber } from './RollingNumber'
 export type { SelectColor, SelectOption, SelectProps, SelectSize } from './Select'
 export { default as Select } from './Select'
 export type { TextareaColor, TextareaProps, TextareaSize } from './Textarea'
