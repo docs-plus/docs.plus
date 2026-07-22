@@ -26,7 +26,7 @@ const channelsStore = immer<IChannelStore>((set) => ({
     set((state: any) => {
       const merged = { ...state.channels.get(channelId), ...channelData }
       // Anon `channelMessageCountsUpsert` lands here with a conflated activity
-      // hint; clamp so the ProseMirror heading badge (driven via UNREAD_SYNC)
+      // hint; clamp so the ProseMirror heading badge (syncHeadingWidgetUnread)
       // matches the read-gated React badges while the user reads at tail.
       if (
         state.unreadSuppressedChannelId === channelId &&

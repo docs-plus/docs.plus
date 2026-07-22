@@ -17,7 +17,7 @@ const Editor = () => {
   // IntersectionObserver-based scroll spy for TOC highlighting (mirrors DesktopEditor)
   useHeadingScrollSpy(editorWrapperRef)
 
-  // Sync unread counts to all badges via UNREAD_SYNC event (CSS handles visuals)
+  // ProseMirror `.ha-chat-btn` widgets (CSS ::before); TOC uses React UnreadBadge.
   useUnreadSync()
 
   return (

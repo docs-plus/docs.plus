@@ -22,9 +22,9 @@ interface TocDesktopProps {
 
 function removeContextMenuActiveClass() {
   document
-    .querySelectorAll(`.toc__item .${TOC_CLASSES.row}.context-menu-active`)
+    .querySelectorAll(`.toc__item .${TOC_CLASSES.row}.${TOC_CLASSES.contextMenuActive}`)
     .forEach((item) => {
-      item.classList.remove('context-menu-active')
+      item.classList.remove(TOC_CLASSES.contextMenuActive)
     })
 }
 
@@ -66,7 +66,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
     setContextMenuState({ headingId: tocId, isOpen })
     tocItem
       .querySelector(`.${TOC_CLASSES.row}[data-id="${tocId}"]`)
-      ?.classList.add('context-menu-active')
+      ?.classList.add(TOC_CLASSES.contextMenuActive)
 
     return tocItem
   }, [])
@@ -89,7 +89,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
   if (!hasItems) {
     return (
       <div className={className}>
-        <ul className="toc__list menu w-full p-0">{headerItem}</ul>
+        <ul className={`${TOC_CLASSES.listMenu} w-full p-0`}>{headerItem}</ul>
         <TocEmptyState />
       </div>
     )
@@ -103,7 +103,7 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
         modifiers={[tocDragModifier]}
         {...handlers}>
         <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-          <ul className={`toc__list menu w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
+          <ul className={`${TOC_CLASSES.listMenu} w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
             {headerItem}
             <ContextMenu
               className={twMerge(contextMenuPanelClassName, 'absolute z-40')}

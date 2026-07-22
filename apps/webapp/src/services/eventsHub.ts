@@ -1,9 +1,6 @@
-import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
-import { TOC_CLASSES } from '@components/toc/tocClasses'
 import { SheetType, useChatStore, useSheetStore } from '@stores'
 import { ensureEmojiData } from '@utils/ensureEmojiData'
 import { removeFilterSegment, resetFilterPath, shallowPathFromAsPath } from '@utils/filterRoute'
-import { formatCappedCount } from '@utils/formatCappedCount'
 import { NextRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 
@@ -12,15 +9,11 @@ import { openCommentComposer, openHeadingChatBrowse } from './openHeadingChatroo
 
 export { CHAT_COMMENT, type TChatCommentData } from './chatEvents'
 
-const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
-const tocChatTriggerSelector = `.${TOC_CLASSES.chatTrigger}`
-
 export const CHAT_OPEN = Symbol('chat.open')
 export const CHAT_CLOSE = Symbol('chat.close')
 export const APPLY_FILTER = Symbol('apply.filter')
 export const REMOVE_FILTER = Symbol('remove.filter')
 export const RESET_FILTER = Symbol('reset.filter')
-export const UNREAD_SYNC = Symbol('unread.sync')
 
 type TOpenChatData = {
   headingId: string
@@ -43,10 +36,6 @@ type TRemoveFilterData = {
 
 type TCloseChatData = {
   headingId: string
-}
-
-type TUnreadSyncData = {
-  channels: Map<string, { unread_message_count?: number }>
 }
 
 export const eventsHub = (router: NextRouter) => {
@@ -133,91 +122,4 @@ export const eventsHub = (router: NextRouter) => {
     if (!href) return
     void router.push(href, undefined, { shallow: true })
   })
-
-  /**
-   * UNREAD_SYNC: Updates unread count badges on the ProseMirror heading-action
-   * chat buttons (`.ha-chat-btn`). Those buttons are vanilla DOM nodes injected
-   * by a ProseMirror plugin and can't trivially host a React subtree, so they
-   * stay on the data-attribute + CSS-`::before` path.
-   *
-   * INVARIANT: these buttons live inside a `Decoration.widget`, so ProseMirror's
-   * DOMObserver ignores these per-tick `dataset`/`style` writes (WidgetViewDesc
-   * ignores attribute mutations). They MUST stay widget-decoration DOM — promoting
-   * them to a schema node / NodeView content child would re-parse the editor every tick.
-   *
-   * Everything else (TOC, header, chatroom, notification bell) uses the React
-   * <UnreadBadge> component directly. Do not set data-unread-count on those
-   * surfaces — the TOC clear-step below exists for legacy cleanup.
-   *
-   * Animation direction:
-   * - data-count-dir="up" → number slides from bottom (count increased)
-   * - data-count-dir="down" → number slides from top (count decreased)
-   */
-  PubSub.subscribe(UNREAD_SYNC, (msg, data: TUnreadSyncData) => {
-    const { channels } = data
-
-    document.querySelectorAll<HTMLElement>(tocChatTriggerSelector).forEach((el) => {
-      delete el.dataset.unreadCount
-      delete el.dataset.countDir
-    })
-
-    /**
-     * Helper: Update a single element with unread count + animation
-     */
-    const updateElement = (el: HTMLElement, count: number) => {
-      const oldCount = parseInt(el.dataset.unreadCount || '0', 10)
-
-      if (count > 0) {
-        const displayCount = formatCappedCount(count)
-
-        // Only animate if count actually changed
-        if (count !== oldCount) {
-          el.dataset.countDir = count > oldCount ? 'up' : 'down'
-          el.style.animation = 'none'
-          void el.offsetHeight // Force reflow
-          el.style.animation = ''
-        }
-
-        el.dataset.unreadCount = displayCount
-      } else {
-        delete el.dataset.unreadCount
-        delete el.dataset.countDir
-      }
-    }
-
-    // Strategy 1: ProseMirror heading chat buttons (TOC badges are React-driven)
-    document
-      .querySelectorAll<HTMLElement>(`${headingChatBtnSelector}[data-heading-id]`)
-      .forEach((el) => {
-        const headingId = el.dataset.headingId
-        if (!headingId) return
-
-        const channel = channels.get(headingId)
-        updateElement(el, channel?.unread_message_count ?? 0)
-      })
-
-    // Strategy 2: Fallback - Update elements near heading with data-toc-id
-    channels.forEach((channel, channelId) => {
-      if (!channel || channel.unread_message_count === undefined) return
-
-      const headingEl = document.querySelector<HTMLElement>(`[data-toc-id="${channelId}"]`)
-      if (!headingEl) return
-
-      const el = headingEl.querySelector<HTMLElement>(
-        `${headingChatBtnSelector}:not([data-heading-id])`
-      )
-      if (el) {
-        updateElement(el, channel.unread_message_count ?? 0)
-      }
-    })
-  })
-}
-
-/**
- * Publish UNREAD_SYNC event - call this when channels update.
- * Typically called from a zustand subscription or after fetching channels.
- */
-export const publishUnreadSync = () => {
-  const channels = useChatStore.getState().channels
-  PubSub.publish(UNREAD_SYNC, { channels })
 }

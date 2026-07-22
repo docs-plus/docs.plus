@@ -8,7 +8,7 @@ $heading-chat-gutter: $ha-hit-size;
 // Prose column right → sheet border: pad + half 1px border + half chip (50% = .ha-wrap / size-11 width)
 $ha-sheet-border-straddle-x: calc(var(--tiptap-inline-pad-end, 1.5rem) + 0.5px + 50%);
 
-// Inner .ha-chat-btn carries UNREAD_SYNC count; parent group reacts without duplicating the attribute
+// Inner .ha-chat-btn carries widget unread count; parent group reacts without duplicating the attribute
 $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-unread-count]:not([data-unread-count=""]))';
 
 @mixin ha-btn-surface {

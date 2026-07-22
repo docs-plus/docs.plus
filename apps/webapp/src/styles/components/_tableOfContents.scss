@@ -9,8 +9,6 @@
 @use './tocDrag';
 
 .tiptap__toc {
-  --toc-list-inset: 16px;
-
   padding-top: 8px;
 
   .toc__list.is-dragging {
@@ -43,7 +41,7 @@
 }
 
 .toc__list {
-  padding-left: var(--toc-list-inset, 16px);
+  padding: 0 6px;
 }
 
 // First menu item: pin above the outline while the list scrolls.

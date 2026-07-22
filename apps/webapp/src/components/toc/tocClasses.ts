@@ -1,14 +1,18 @@
 /**
- * Table of contents — CSS class names (BEM-style `toc__*`).
- * Keep in sync with `styles/components/_tableOfContents.scss`.
- * Row active/spy use daisyUI `menu-active` / `menu-focus` (not listed here).
+ * TOC class ownership map — the only product interface for TOC class strings.
+ *
+ * - Product (`toc__*`): listed here; SCSS in `_tableOfContents.scss`.
+ * - Drag island (`toc-drag-handle`, overlays): listed here; SCSS in `_tocDrag.scss`.
+ * - daisyUI (`.menu`, `menu-active`, `menu-focus`): vendor-owned — apply at call sites, not listed.
  */
 export const TOC_CLASSES = {
   /** Desktop sticky first `<li>` wrapping the doc-title row inside `.menu`. */
   header: 'toc__header',
-  /** Interactive `li > *` child — daisyUI menu item chrome. */
+  /** Interactive `li > *` child — daisyUI menu item frame. */
   headerRow: 'toc__header-row',
   list: 'toc__list',
+  /** daisyUI menu + product list shell (call sites add width/padding utilities). */
+  listMenu: 'toc__list menu',
   item: 'toc__item',
   /** Desktop row shell — leading, link, and trail are siblings (not nested buttons in `<a>`). */
   row: 'toc__row',
@@ -19,7 +23,7 @@ export const TOC_CLASSES = {
   children: 'toc__children',
   /** Section expand/collapse control */
   foldBtn: 'toc__fold-btn',
-  /** Opens chat for this heading (use with `data-heading-id`) */
+  /** Opens chat for this heading */
   chatTrigger: 'toc__chat-trigger',
   /** Icon inside chat trigger */
   chatIcon: 'toc__chat-icon',
@@ -28,7 +32,11 @@ export const TOC_CLASSES = {
   /** H1–H6 badge (visible during drag) */
   levelBadge: 'toc__level-badge',
   /** Level picker popover next to drag handle */
-  levelPicker: 'toc__level-picker'
+  levelPicker: 'toc__level-picker',
+  /** Drag grip (always visible, inline shrink-0) */
+  dragHandle: 'toc-drag-handle',
+  /** Row context-menu open wash */
+  contextMenuActive: 'context-menu-active'
 } as const
 
 export type TocClassName = (typeof TOC_CLASSES)[keyof typeof TOC_CLASSES]

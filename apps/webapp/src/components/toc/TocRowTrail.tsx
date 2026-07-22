@@ -1,38 +1,45 @@
 import AvatarStack from '@components/AvatarStack'
 import { Tooltip } from '@components/ui/Tooltip'
-import type { Profile } from '@types'
+import UnreadBadge from '@components/ui/UnreadBadge'
+import { usePresentUsers } from '@hooks/usePresentUsers'
+import { useUnreadCount } from '@hooks/useUnreadCount'
+import { Icons } from '@icons'
+import type { MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { chatTriggerAriaLabel, ChatTriggerContent } from './ChatTriggerContent'
 import { TOC_CLASSES } from './tocClasses'
 
 type TocRowTrailProps = {
-  headingId: string | undefined
-  unreadCount: number
-  presentUsers?: Profile[]
+  headingId: string
   isActive: boolean
-  iconSize: number
-  iconClassName: string
-  onChatClick: (e: React.MouseEvent) => void
+  /** Desktop shows usersPresence; mobile header/rows omit the stack. */
+  showPresence?: boolean
+  iconSize?: number
+  iconClassName?: string
+  triggerClassName?: string
+  onChatClick: (e: MouseEvent) => void
   tooltipPlacement?: 'top' | 'left'
   maxAvatars?: number
 }
 
-/** Menu end-slot: presence then chat (row grid’s last column). */
+/** Heading Chat Surface end-slot: presence (optional) + chat / unread. */
 export function TocRowTrail({
   headingId,
-  unreadCount,
-  presentUsers = [],
   isActive,
-  iconSize,
+  showPresence = false,
+  iconSize = 20,
   iconClassName,
+  triggerClassName,
   onChatClick,
   tooltipPlacement = 'top',
   maxAvatars = 4
 }: TocRowTrailProps) {
+  const unreadCount = useUnreadCount(headingId)
+  const presentUsers = usePresentUsers(showPresence ? headingId : '')
+
   return (
     <span className="flex shrink-0 items-center gap-1.5">
-      {presentUsers.length > 0 && (
+      {showPresence && presentUsers.length > 0 && (
         <AvatarStack
           maxDisplay={maxAvatars}
           size="sm"
@@ -48,16 +55,20 @@ export function TocRowTrail({
           className={twMerge(
             TOC_CLASSES.chatTrigger,
             'flex items-center justify-center',
-            unreadCount <= 0 && 'size-6'
+            unreadCount <= 0 && 'size-6',
+            triggerClassName
           )}
           data-heading-id={headingId}
           onClick={onChatClick}
-          aria-label={chatTriggerAriaLabel(unreadCount)}>
-          <ChatTriggerContent
-            unreadCount={unreadCount}
-            iconSize={iconSize}
-            iconClassName={twMerge(iconClassName, isActive && TOC_CLASSES.chatIconActive)}
-          />
+          aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
+          {unreadCount > 0 ? (
+            <UnreadBadge count={unreadCount} size="sm" variant="error" />
+          ) : (
+            <Icons.chatroom
+              className={twMerge(iconClassName, isActive && TOC_CLASSES.chatIconActive)}
+              size={iconSize}
+            />
+          )}
         </button>
       </Tooltip>
     </span>

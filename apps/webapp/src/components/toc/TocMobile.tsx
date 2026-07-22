@@ -2,8 +2,9 @@ import AppendHeadingButton from '@components/pages/document/components/AppendHea
 import React, { useMemo } from 'react'
 
 import { useToc, useTocAutoScroll } from './hooks'
+import { TOC_CLASSES } from './tocClasses'
 import { TocEmptyState } from './TocEmptyState'
-import { TocItemMobile } from './TocItemMobile'
+import { TocItemBody } from './TocItemBody'
 import { buildNestedToc } from './utils'
 
 interface TocMobileProps {
@@ -12,8 +13,6 @@ interface TocMobileProps {
 
 function TocMobileComponent({ className = '' }: TocMobileProps) {
   const { items, toggleSection } = useToc()
-
-  // Auto-scroll TOC to the focused heading when the drawer opens (mirrors TocDesktop)
   useTocAutoScroll()
 
   const nestedItems = useMemo(() => buildNestedToc(items), [items])
@@ -24,9 +23,15 @@ function TocMobileComponent({ className = '' }: TocMobileProps) {
 
   return (
     <div className={className}>
-      <ul className="toc__list menu my-2 p-0">
+      <ul className={`${TOC_CLASSES.listMenu} my-2 p-0`}>
         {nestedItems.map(({ item, nodes }) => (
-          <TocItemMobile key={item.id} item={item} nestedNodes={nodes} onToggle={toggleSection} />
+          <TocItemBody
+            key={item.id}
+            item={item}
+            nestedNodes={nodes}
+            onToggle={toggleSection}
+            variant="mobile"
+          />
         ))}
       </ul>
       <AppendHeadingButton className="mt-4" />
