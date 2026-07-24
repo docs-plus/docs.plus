@@ -20,6 +20,20 @@ export function exitDocEditModeForSheet(): void {
   releasePadEditMode()
 }
 
+/**
+ * Anchor a still-draft doc when its chatroom opens. Chat rows key on the
+ * documentId (=workspaceId), which rotates on reload until the draft persists —
+ * flipping isDraft fires the server first-edit anchor with the URL slug. Guarded
+ * like useHandleDraftOnFocus: a set on a pre-sync (empty) ymetadata map is lost to
+ * Yjs last-writer-wins; the isDraft check no-ops on an already-persisted doc.
+ */
+function anchorDraftForChatroom(): void {
+  const { hocuspocusProvider, editor } = useStore.getState().settings
+  if (!hocuspocusProvider || editor.providerSyncing) return
+  const meta = hocuspocusProvider.configuration.document.getMap('metadata')
+  if (meta.get('isDraft')) meta.set('isDraft', false)
+}
+
 const FOCUS_RETRY = { maxAttempts: 6, initialDelayMs: 600, maxDelayMs: 1000 }
 
 function focusChatEditor(requireSheetForMobile: boolean): boolean {
@@ -118,6 +132,10 @@ export function openHeadingChatroom({
   const chatStore = useChatStore.getState()
   const { headingId: openedHeadingId, open: chatOpen } = chatStore.chatRoom
   const user = useAuthStore.getState().profile
+
+  // Persist a draft the moment its chat opens (before the comment-intent early
+  // return below), so chat keyed on this documentId survives a reload.
+  anchorDraftForChatroom()
 
   chatStore.switchChatRoom(headingId)
 
