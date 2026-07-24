@@ -8,8 +8,29 @@
 
 @use './tocDrag';
 
+// The scroll viewport is column-width so the native scrollbar stays INSIDE the TOC
+// wrapper (a widened scroller pushed it out over the editor). Presence lives in-flow,
+// right-anchored inside the column; the left grip overhang sits within the column, so
+// row-level `overflow: visible` is enough for it without widening the scroller.
+.tableOfContents,
+.tiptap__toc {
+  overflow: visible;
+}
+
+.toc__list.menu .toc__row {
+  overflow: visible;
+}
+
 .tiptap__toc {
   padding-top: 8px;
+
+  .toc__list.menu :where(li ul) {
+    padding: 0;
+  }
+
+  .toc__list.menu :where(li ul):before {
+    inset-inline-start: 10px;
+  }
 
   .toc__list.is-dragging {
     user-select: none;
@@ -41,7 +62,7 @@
 }
 
 .toc__list {
-  padding: 0 6px;
+  padding: 0 6px 0 10px;
 }
 
 // First menu item: pin above the outline while the list scrolls.
@@ -51,7 +72,7 @@
   z-index: 30;
   background-color: var(--pad-well);
   border-bottom: 1px solid var(--color-base-300);
-  // Match former header chrome above the sticky edge.
+  // Match former header padding above the sticky edge.
   padding-top: 0.5rem;
   padding-bottom: 0.25rem;
   margin-bottom: 0.25rem;
@@ -62,8 +83,8 @@
 
   > .toc__row {
     position: relative;
-    // Menu defaults to items-center; top-align so grip/chat stay on the first title line when wrap.
-    align-items: flex-start;
+    // Vertically center leading/title/trail; matters on multi-line (wrapped) rows.
+    align-items: center;
     -webkit-user-drag: none;
 
     &.context-menu-active {
@@ -96,15 +117,21 @@
   }
 }
 
-.toc__chat-icon--active {
-  fill: none;
-  color: var(--color-docsy);
-  stroke: currentColor;
-}
-
 .toc__chat-icon {
   padding: 1px;
   fill: none;
+  stroke: currentColor;
+  color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+  transition: color var(--motion-overlay-in, 120ms) ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.toc__chat-icon--active {
+  fill: none;
+  color: var(--color-docsy);
   stroke: currentColor;
 }
 
@@ -142,12 +169,135 @@
   }
 }
 
+// Focus = base-300; hover = darker mix. Grip fill mirrors the row.
+// Idle grip shadow lives in `_tocDrag`; only override when strength changes.
+.toc__list.menu {
+  --toc-row-hover-bg: color-mix(in oklch, var(--color-base-content) 14%, var(--color-base-300));
+  --toc-grip-shadow: 0 1px 2px color-mix(in oklch, black 10%, transparent);
+  --toc-grip-shadow-lift: 0 1px 2px color-mix(in oklch, black 14%, transparent);
+  --toc-grip-shadow-strong: 0 1px 3px color-mix(in oklch, black 18%, transparent);
+
+  .toc__row.menu-focus {
+    background-color: var(--color-base-300);
+    color: var(--color-base-content);
+  }
+
+  li > .toc__row:not(.menu-active):hover {
+    background-color: var(--toc-row-hover-bg);
+    color: var(--color-base-content);
+  }
+
+  .toc__row.menu-focus .toc-drag-handle {
+    color: var(--color-base-content);
+    background-color: var(--color-base-300);
+
+    &:hover,
+    &:active {
+      box-shadow: var(--toc-grip-shadow-lift);
+    }
+  }
+
+  li > .toc__row:not(.menu-active):hover .toc-drag-handle {
+    color: var(--color-base-content);
+    background-color: var(--toc-row-hover-bg);
+
+    &:hover,
+    &:active {
+      box-shadow: var(--toc-grip-shadow-lift);
+    }
+  }
+
+  .toc__row.menu-active .toc-drag-handle {
+    color: var(--menu-active-fg);
+    background-color: var(--menu-active-bg);
+    box-shadow: var(--toc-grip-shadow-lift);
+
+    &:hover,
+    &:active {
+      // Re-state fill/ink so idle grip:hover color cannot win on equal specificity.
+      color: var(--menu-active-fg);
+      background-color: var(--menu-active-bg);
+      box-shadow: var(--toc-grip-shadow-strong);
+    }
+  }
+}
+
+.toc__row.menu-active,
+.toc__row.menu-focus {
+  .toc__fold-btn,
+  .toc__chat-icon,
+  .toc__chat-icon--active {
+    color: inherit;
+  }
+
+  .toc__fold-btn:hover,
+  .toc__fold-btn:focus-visible,
+  .toc__chat-trigger:hover .toc__chat-icon {
+    color: inherit;
+  }
+}
+
+.toc__row:not(.menu-active):not(.menu-focus) {
+  .toc__chat-trigger:hover .toc__chat-icon {
+    color: var(--color-primary);
+  }
+}
+
 .toc__fold-btn:focus-visible,
 .toc-drag-handle:focus-visible,
 .toc__chat-trigger:focus-visible,
 .toc__row-link:focus-visible {
   outline: var(--focus-ring-soft);
   outline-offset: 1px;
+}
+
+// Desktop: grip + chat idle-hidden; show on row hover. Unread / open / keyboard stay on.
+.m_desktop .toc__list {
+  li > .toc__row :is(.toc-drag-handle, .toc__chat-trigger) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  li > .toc__row .toc__chat-trigger {
+    transition: opacity var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out);
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  // Grip: opacity + slight scale pop (transform owned with translateY centering).
+  li > .toc__row .toc-drag-handle {
+    transform: translateY(-50%) scale(0.88);
+  }
+
+  // Nested: only the hovered leaf li — not ancestors while a child is hovered.
+  li:hover:not(:has(li:hover)) > .toc__row :is(.toc-drag-handle, .toc__chat-trigger),
+  li
+    > .toc__row:is(.menu-active, .menu-focus, .context-menu-active)
+    :is(.toc-drag-handle, .toc__chat-trigger),
+  li > .toc__row .toc-drag-handle:focus-visible,
+  li > .toc__row .toc__chat-trigger:focus-visible,
+  li > .toc__row .toc__chat-trigger:has(.badge) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  li:hover:not(:has(li:hover)) > .toc__row .toc-drag-handle,
+  li > .toc__row:is(.menu-active, .menu-focus, .context-menu-active) .toc-drag-handle,
+  li > .toc__row .toc-drag-handle:focus-visible {
+    transform: translateY(-50%) scale(1);
+
+    @media (prefers-reduced-motion: reduce) {
+      transform: translateY(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    li > .toc__row .toc-drag-handle {
+      transform: translateY(-50%);
+    }
+  }
 }
 
 .m_mobile {
@@ -161,5 +311,11 @@
     :where(.menu li) {
       flex-wrap: nowrap;
     }
+  }
+
+  .toc-drag-handle,
+  .toc__chat-trigger {
+    opacity: 1;
+    pointer-events: auto;
   }
 }

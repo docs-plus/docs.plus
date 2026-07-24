@@ -41,7 +41,7 @@ export function TocRow({
     <div
       className={twMerge(
         TOC_CLASSES.row,
-        'group min-w-0 overflow-hidden',
+        'group min-w-0',
         density === 'mobile' ? 'min-h-11' : 'min-h-8',
         isActive && 'menu-active',
         !isActive && isFocused && 'menu-focus',

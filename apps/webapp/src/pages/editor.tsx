@@ -125,9 +125,9 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       </div>
 
       {/* Main content with TOC sidebar */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* TOC Sidebar */}
-        <aside className="tiptap__toc border-base-300 bg-base-100 flex w-64 shrink-0 flex-col overflow-hidden border-r !pt-0">
+        <aside className="tiptap__toc border-base-300 bg-base-100 flex w-64 shrink-0 flex-col border-r !pt-0">
           <div className="scrollbar-custom scrollbar-thin min-h-0 flex-1 overflow-y-auto p-2">
             <TocDesktop />
           </div>

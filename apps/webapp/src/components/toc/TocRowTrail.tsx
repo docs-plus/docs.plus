@@ -38,17 +38,7 @@ export function TocRowTrail({
   const presentUsers = usePresentUsers(showPresence ? headingId : '')
 
   return (
-    <span className="flex shrink-0 items-center gap-1.5">
-      {showPresence && presentUsers.length > 0 && (
-        <AvatarStack
-          maxDisplay={maxAvatars}
-          size="sm"
-          surface="well"
-          users={presentUsers}
-          showStatus={true}
-          tooltipPosition="left"
-        />
-      )}
+    <span className="relative flex shrink-0 items-center gap-1.5">
       <Tooltip title="Chat Room" placement={tooltipPlacement}>
         <button
           type="button"
@@ -71,6 +61,20 @@ export function TocRowTrail({
           )}
         </button>
       </Tooltip>
+      {/* In-flow, right of chat, right-anchored: fixed right edge as the stack grows.
+          translate-x nudges it to the column's inner edge (visual only — chat/mobile flow intact). */}
+      {showPresence && presentUsers.length > 0 && (
+        <AvatarStack
+          className="translate-x-3"
+          maxDisplay={maxAvatars}
+          size="sm"
+          surface="well"
+          users={presentUsers}
+          showStatus={true}
+          anchor="right"
+          tooltipPosition="left"
+        />
+      )}
     </span>
   )
 }

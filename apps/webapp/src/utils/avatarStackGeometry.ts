@@ -6,6 +6,9 @@ export type AvatarEdge = 'ring' | 'paper' | 'well' | 'none'
 /** Stack public surface → Avatar `edge`. */
 export type AvatarStackSurface = 'paper' | 'well' | 'outline'
 
+/** Fixed edge as the stack grows: `right` pins the right edge (faces extend left), `left` the opposite. */
+export type AvatarStackAnchor = 'left' | 'right'
+
 export const SIZE_CLASSES: Record<AvatarSize, string> = {
   xs: 'size-6',
   sm: 'size-8',
@@ -34,16 +37,20 @@ export const TEXT_CLASSES: Record<AvatarSize, string> = {
   '2xl': 'text-lg'
 }
 
+/**
+ * Stack cutout color only — width is forced in `_daisyui.scss` because daisyUI’s
+ * `.avatar-group .avatar { border: 4px solid … }` wins over Tailwind ring/border utilities.
+ */
 export function avatarEdgeClass(edge: AvatarEdge): string {
   switch (edge) {
     case 'ring':
-      return '!ring-1 ring-base-300'
+      return '[--avatar-stack-edge:var(--color-base-300)] !ring-0'
     case 'paper':
-      return '!ring-2 ring-base-100'
+      return '[--avatar-stack-edge:var(--color-base-100)] !ring-0'
     case 'well':
-      return '!ring-2 ring-[var(--pad-well)]'
+      return '[--avatar-stack-edge:var(--pad-well)] !ring-0'
     case 'none':
-      return ''
+      return '!border-0 !ring-0'
     default: {
       const _exhaustive: never = edge
       return _exhaustive

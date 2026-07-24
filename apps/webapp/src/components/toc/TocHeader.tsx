@@ -41,14 +41,12 @@ export function TocHeader({ variant }: TocHeaderProps) {
       headingId={workspaceId}
       isActive={isActive}
       showPresence={variant === 'desktop'}
-      iconSize={variant === 'desktop' ? 16 : 18}
+      iconSize={20}
       maxAvatars={3}
       triggerClassName={variant === 'mobile' ? 'size-8 rounded-full' : undefined}
       iconClassName={twMerge(
         TOC_CLASSES.chatIcon,
-        variant === 'desktop'
-          ? 'cursor-pointer text-base-content/60 transition-colors hover:text-primary'
-          : 'text-base-content/60'
+        variant === 'desktop' && 'cursor-pointer fill-none'
       )}
       onChatClick={handleChatClick}
     />

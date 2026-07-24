@@ -3,6 +3,7 @@ import { type FaceSource, resolveDisplayName, type StackUser } from '@utils/avat
 import {
   avatarEdgeClass,
   type AvatarSize,
+  type AvatarStackAnchor,
   type AvatarStackSurface,
   SIZE_CLASSES,
   SPACING_CLASSES,
@@ -13,7 +14,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { Avatar } from './ui/Avatar'
 
-export type { AvatarStackSurface, FaceSource, StackUser }
+export type { AvatarStackAnchor, AvatarStackSurface, FaceSource, StackUser }
 export { SPACING_CLASSES }
 
 interface AvatarStackProps {
@@ -27,6 +28,8 @@ interface AvatarStackProps {
   maxDisplay?: number
   /** True total when it exceeds `users.length` — the +N chip counts from this, not the array */
   overflowCount?: number
+  /** Fixed edge as the stack grows. `right` pins the right edge (faces extend left). */
+  anchor?: AvatarStackAnchor
   className?: string
 }
 
@@ -39,6 +42,7 @@ export function AvatarStack({
   clickable = true,
   maxDisplay = 4,
   overflowCount,
+  anchor = 'left',
   className
 }: AvatarStackProps) {
   const validUsers = users.filter(Boolean) as FaceSource[]
@@ -57,8 +61,18 @@ export function AvatarStack({
   const edge = stackSurfaceToEdge(surface)
   const edgeClass = avatarEdgeClass(edge)
 
+  // Right anchor: pin the right edge and let faces extend left. Reverse the flow
+  // and paint the first (rightmost) face on top so the newest joiner sits behind.
+  const anchorRight = anchor === 'right'
+
   return (
-    <div className={twMerge('avatar-group !overflow-visible', spacingClass, className)}>
+    <div
+      className={twMerge(
+        'avatar-group !overflow-visible',
+        spacingClass,
+        anchorRight && 'flex-row-reverse space-x-reverse',
+        className
+      )}>
       {visibleUsers.map((user, idx) => {
         const displayName = resolveDisplayName(user)
 
@@ -72,6 +86,7 @@ export function AvatarStack({
             size={size}
             edge={edge}
             className="bg-base-100 animate-badge-entry"
+            style={anchorRight ? { zIndex: visibleUsers.length - idx } : undefined}
             tooltip={displayName || 'Anonymous'}
             tooltipPosition={tooltipPosition}
           />
@@ -80,6 +95,7 @@ export function AvatarStack({
 
       {remainingCount > 0 && (
         <div
+          style={anchorRight ? { zIndex: 0 } : undefined}
           className={twMerge(
             'avatar avatar-placeholder',
             sizeClass,

@@ -4,40 +4,56 @@
  */
 
 .toc-drag-handle {
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 1.25rem;
-  min-width: 1.25rem;
-  height: 1.25rem;
+  width: 1.15rem;
+  min-width: 1.15rem;
+  height: 1.42rem;
   padding: 0;
   margin: 0;
   cursor: grab;
   color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
-  background-color: transparent;
-  border: none;
+  // One chip frame for every state — fill/ink swap in `_tableOfContents.scss`.
+  background-color: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
   border-radius: var(--radius-field, 0.25rem);
+  box-shadow: var(--toc-grip-shadow, 0 1px 2px color-mix(in oklch, black 10%, transparent));
   z-index: 2;
   -webkit-user-drag: element;
   touch-action: none;
   transition:
-    color 0.15s ease-in-out,
-    background-color 0.15s ease-in-out;
+    color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
+    background-color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
+    border-color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
+    box-shadow var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
+    opacity var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
+    transform var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   > svg {
     fill: none;
     stroke: currentColor;
   }
 
+  // Hover only lifts ink + shadow — bg/border already match idle defaults.
   &:hover {
-    color: var(--color-primary);
-    background-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
+    color: var(--color-base-content);
+    box-shadow: var(--toc-grip-shadow-lift, 0 1px 2px color-mix(in oklch, black 14%, transparent));
   }
 
   &:active {
     cursor: grabbing;
-    color: var(--color-docsy);
+    color: var(--color-base-content);
   }
 }
 
@@ -97,8 +113,8 @@
   background: transparent;
   border-radius: 4px;
   transition:
-    background-color 0.15s ease-in-out,
-    color 0.15s ease-in-out;
+    background-color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
+    color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out);
 
   &.original {
     border: 1px solid var(--color-docsy);

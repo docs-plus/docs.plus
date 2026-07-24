@@ -95,7 +95,7 @@ function TocItemBodyComponent({
       <>
         <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
         <span className="relative flex shrink-0 items-center self-stretch">
-          <Tooltip title="Drag to reorder" placement="top">
+          <Tooltip title="Drag to reorder" placement="bottom">
             <button
               type="button"
               className={TOC_CLASSES.dragHandle}
@@ -158,12 +158,7 @@ function TocItemBodyComponent({
             showPresence={isDesktop}
             iconSize={20}
             tooltipPlacement={isDesktop ? 'left' : 'top'}
-            iconClassName={twMerge(
-              TOC_CLASSES.chatIcon,
-              isDesktop
-                ? 'cursor-pointer fill-none text-base-content/60 transition-colors hover:text-primary'
-                : 'text-base-content/60'
-            )}
+            iconClassName={twMerge(TOC_CLASSES.chatIcon, isDesktop && 'cursor-pointer fill-none')}
             onChatClick={handleChatClick}
           />
         }

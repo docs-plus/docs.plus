@@ -59,13 +59,16 @@ const DesktopEditor = () => {
 
         <div
           ref={tocRef}
-          className="tableOfContents relative h-full max-h-full min-h-0 min-w-0 shrink-0 bg-[var(--pad-well)]"
+          // z-[42]: TOC column paints above the sash hairline (z-41) so the row/grip overhang
+          // isn't clipped; below floating overlays (Dialog/Popover z-50).
+          className="tableOfContents relative z-[42] h-full max-h-full min-h-0 min-w-0 shrink-0 overflow-visible bg-[var(--pad-well)]"
           style={{ width: tocWidth }}>
           <TOC />
         </div>
 
-        {/* Row-level sash: must outrank docked chat (z-40) or the panel edge doubles the hairline. */}
-        <div className="absolute inset-y-0 z-50 w-0" style={{ left: tocWidth }}>
+        {/* Above docked chat (z-40) so the hairline isn't doubled; below TOC (z-42) and
+            floating overlays (z-50) so presence + modals/popovers stay on top. */}
+        <div className="absolute inset-y-0 z-[41] w-0" style={{ left: tocWidth }}>
           <ResizeHandle
             orientation="vertical"
             onMouseDown={handleMouseDown}
