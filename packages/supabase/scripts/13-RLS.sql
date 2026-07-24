@@ -148,15 +148,19 @@ GRANT UPDATE (
 ) ON public.channels TO authenticated;
 
 
--- 2e. channel_members — visible iff channel is readable.
---     FE: insert own row (joinChannel), update only notification + read cursor columns (column GRANT below).
+-- 2e. channel_members — own row always, plus the full roster to channel members.
+--     Not can_read_channel: that returns true for any PUBLIC channel, which would
+--     expose every peer's notif_state / mute / read cursors to authed non-members.
+--     Members read the roster (is_channel_member); non-members read only their own
+--     row. FE: insert own row (joinChannel), update only notification + read cursor
+--     columns (column GRANT below).
 
 ALTER TABLE public.channel_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS channel_members_select ON public.channel_members;
 
 CREATE POLICY channel_members_select ON public.channel_members
   FOR SELECT TO authenticated
-  USING (internal.can_read_channel(channel_id));
+  USING (member_id = (select auth.uid()) OR internal.is_channel_member(channel_id));
 
 -- FE joinChannel uses PostgREST upsert; invoker must insert/update own row only.
 -- Eligibility: PUBLIC channels (same read gate as lurkers with login) or workspace member

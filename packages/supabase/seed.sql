@@ -5515,9 +5515,15 @@ $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION handle_message_soft_delete() IS 'Performs cleanup operations when a message is soft-deleted including updating previews and removing references.';
 
+-- Guard on the NULL -> NOT NULL transition (matches the sibling counter
+-- trigger in 09-message_counter.sql). Without it the cleanup body — notification
+-- purge, unread decrement, preview rewrites, media GC, delete broadcast — runs on
+-- ANY deleted_at write, so a PATCH {deleted_at:null} on the caller's own live
+-- message fires the whole DEFINER body while the message stays visible.
 CREATE TRIGGER message_soft_delete
 AFTER UPDATE OF deleted_at ON public.messages
 FOR EACH ROW
+WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
 EXECUTE FUNCTION handle_message_soft_delete();
 
 COMMENT ON TRIGGER message_soft_delete ON public.messages IS 'Handles additional actions when a message is soft-deleted.';
@@ -7335,13 +7341,15 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- First, ensure all workspace members have a channel_members entry
-    -- If they don't, create one with unread_message_count = 1
+    -- First, ensure all workspace members have a channel_members entry.
+    -- Seed unread at 0, not 1: the increment UPDATE below always re-matches
+    -- this fresh row (its last_read_update_at is < NEW.created_at) and brings
+    -- it to 1 in the same transaction, so seeding 1 double-counts to 2.
     INSERT INTO public.channel_members (channel_id, member_id, unread_message_count, last_read_update_at)
     SELECT
         NEW.channel_id,
         wm.member_id,
-        1,
+        0,
         COALESCE((SELECT created_at FROM public.messages
                  WHERE channel_id = NEW.channel_id
                  ORDER BY created_at DESC
@@ -8715,11 +8723,15 @@ begin
     return;
   end if;
 
+  -- Exclude the reader's own messages: the increment trigger never counts a
+  -- sender's own message as unread, so the recompute must not either (a stale
+  -- debounced advance could otherwise transiently show your own send as unread).
   select coalesce(count(*), 0) into v_unread
   from public.messages
   where channel_id = p_channel_id
     and deleted_at is null
-    and seq > v_new_seq;
+    and seq > v_new_seq
+    and user_id <> v_uid;
 
   update public.channel_members
   set last_read_seq = v_new_seq,
@@ -9287,15 +9299,19 @@ GRANT UPDATE (
 ) ON public.channels TO authenticated;
 
 
--- 2e. channel_members — visible iff channel is readable.
---     FE: insert own row (joinChannel), update only notification + read cursor columns (column GRANT below).
+-- 2e. channel_members — own row always, plus the full roster to channel members.
+--     Not can_read_channel: that returns true for any PUBLIC channel, which would
+--     expose every peer's notif_state / mute / read cursors to authed non-members.
+--     Members read the roster (is_channel_member); non-members read only their own
+--     row. FE: insert own row (joinChannel), update only notification + read cursor
+--     columns (column GRANT below).
 
 ALTER TABLE public.channel_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS channel_members_select ON public.channel_members;
 
 CREATE POLICY channel_members_select ON public.channel_members
   FOR SELECT TO authenticated
-  USING (internal.can_read_channel(channel_id));
+  USING (member_id = (select auth.uid()) OR internal.is_channel_member(channel_id));
 
 -- FE joinChannel uses PostgREST upsert; invoker must insert/update own row only.
 -- Eligibility: PUBLIC channels (same read gate as lurkers with login) or workspace member

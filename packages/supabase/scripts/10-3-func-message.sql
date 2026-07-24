@@ -108,9 +108,15 @@ $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION handle_message_soft_delete() IS 'Performs cleanup operations when a message is soft-deleted including updating previews and removing references.';
 
+-- Guard on the NULL -> NOT NULL transition (matches the sibling counter
+-- trigger in 09-message_counter.sql). Without it the cleanup body — notification
+-- purge, unread decrement, preview rewrites, media GC, delete broadcast — runs on
+-- ANY deleted_at write, so a PATCH {deleted_at:null} on the caller's own live
+-- message fires the whole DEFINER body while the message stays visible.
 CREATE TRIGGER message_soft_delete
 AFTER UPDATE OF deleted_at ON public.messages
 FOR EACH ROW
+WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
 EXECUTE FUNCTION handle_message_soft_delete();
 
 COMMENT ON TRIGGER message_soft_delete ON public.messages IS 'Handles additional actions when a message is soft-deleted.';

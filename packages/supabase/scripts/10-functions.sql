@@ -1284,11 +1284,15 @@ begin
     return;
   end if;
 
+  -- Exclude the reader's own messages: the increment trigger never counts a
+  -- sender's own message as unread, so the recompute must not either (a stale
+  -- debounced advance could otherwise transiently show your own send as unread).
   select coalesce(count(*), 0) into v_unread
   from public.messages
   where channel_id = p_channel_id
     and deleted_at is null
-    and seq > v_new_seq;
+    and seq > v_new_seq
+    and user_id <> v_uid;
 
   update public.channel_members
   set last_read_seq = v_new_seq,

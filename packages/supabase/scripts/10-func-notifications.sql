@@ -480,13 +480,15 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- First, ensure all workspace members have a channel_members entry
-    -- If they don't, create one with unread_message_count = 1
+    -- First, ensure all workspace members have a channel_members entry.
+    -- Seed unread at 0, not 1: the increment UPDATE below always re-matches
+    -- this fresh row (its last_read_update_at is < NEW.created_at) and brings
+    -- it to 1 in the same transaction, so seeding 1 double-counts to 2.
     INSERT INTO public.channel_members (channel_id, member_id, unread_message_count, last_read_update_at)
     SELECT
         NEW.channel_id,
         wm.member_id,
-        1,
+        0,
         COALESCE((SELECT created_at FROM public.messages
                  WHERE channel_id = NEW.channel_id
                  ORDER BY created_at DESC
