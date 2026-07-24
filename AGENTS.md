@@ -901,6 +901,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - Admin media-storage REST: `GET /api/admin/audit/media-storage/summary` (standalone rollup) and `GET /api/admin/audit/media-storage` (Zod `mediaStorageQuerySchema`; one fleet RPC returns `{ summary, data, pagination }`; `scope=all` exports the filtered fleet, capped at 10k rows). List/search/sort/paginate logic lives in `adminMediaStorage.service.ts`.
 - **`@docs.plus/admin-dashboard`** `/storage` uses summary + paginated list — the same `StatCard` / `DataTable` / `useTableParams` shell as the dashboard's other audit pages (e.g. `pages/documents/stale.tsx`); it talks to hocuspocus REST on `NEXT_PUBLIC_API_URL` (port 4000 locally).
 - Admin access is a `public.admin_users` row checked via the `is_admin` RPC.
+- **Any admin-only data path goes through an `is_admin()`-gated `SECURITY DEFINER` RPC or the `service_role` hocuspocus REST API — never a direct anon-key table read.** The browser client is RLS-scoped `authenticated`, and several admin tables/columns are revoked from that role (`users.email`, `push_subscriptions`, `email_queue`) or scoped to the caller's own rows, so direct reads return wrong, zeroed, or `42501` results. Aggregations must paginate past the 1000-row cap.
 
 ### Production And Docker Compose
 
