@@ -228,30 +228,49 @@ const configureExtensions = () => {
             // Multiple Hocuspocus instances may hit this fallback simultaneously
             // (redlock can lapse mid-store), so merge with the locked head like
             // the worker does — a plain insert of divergent state would clobber.
-            await prisma.$transaction(async (tx) => {
-              const existingDocs = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
-                SELECT version, data FROM "Documents"
-                WHERE "documentId" = ${documentName}
-                ORDER BY version DESC
-                LIMIT 1
-                FOR UPDATE
-              `
-              const existingDoc = existingDocs[0] ?? null
-              const versionData = existingDoc
-                ? Buffer.from(
-                    Y.mergeUpdates([new Uint8Array(existingDoc.data), new Uint8Array(snapshot)])
-                  )
-                : snapshot
+            const saveMergedVersion = () =>
+              prisma.$transaction(async (tx) => {
+                const existingDocs = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
+                  SELECT version, data FROM "Documents"
+                  WHERE "documentId" = ${documentName}
+                  ORDER BY version DESC
+                  LIMIT 1
+                  FOR UPDATE
+                `
+                const existingDoc = existingDocs[0] ?? null
+                const versionData = existingDoc
+                  ? Buffer.from(
+                      Y.mergeUpdates([new Uint8Array(existingDoc.data), new Uint8Array(snapshot)])
+                    )
+                  : snapshot
 
-              await tx.documents.create({
-                data: {
-                  documentId: documentName,
-                  commitMessage: commitMessage || '',
-                  version: existingDoc ? existingDoc.version + 1 : 1,
-                  data: versionData
-                }
+                await tx.documents.create({
+                  data: {
+                    documentId: documentName,
+                    commitMessage: commitMessage || '',
+                    version: existingDoc ? existingDoc.version + 1 : 1,
+                    data: versionData
+                  }
+                })
               })
-            })
+
+            try {
+              await saveMergedVersion()
+            } catch (raceErr) {
+              // FOR UPDATE can't stop two concurrent fallbacks computing the
+              // same nextVersion under READ COMMITTED; on the (documentId,
+              // version) collision re-run ONCE so the now-newer head re-merges
+              // this delta forward. Re-merge, never serve-the-winner — the
+              // latter would drop this instance's edits. Worker retries alike.
+              if (
+                raceErr instanceof Prisma.PrismaClientKnownRequestError &&
+                raceErr.code === 'P2002'
+              ) {
+                await saveMergedVersion()
+              } else {
+                throw raceErr
+              }
+            }
 
             dbLogger.info({ documentName }, 'Document saved via fallback (direct DB)')
           } catch (dbErr) {

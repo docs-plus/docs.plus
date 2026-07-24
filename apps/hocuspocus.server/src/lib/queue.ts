@@ -36,13 +36,12 @@ function upsertDocumentMetadata(
     async (slug) => {
       await tx.documentMetadata.upsert({
         where: { documentId: params.documentId },
-        update: {
-          title: params.title,
-          description: params.title,
-          ownerId: params.ownerId,
-          email: params.email,
-          keywords: ''
-        },
+        // A content persist must NOT own metadata: the first-edit anchor,
+        // updateDocument PUT, and createDocument all set more authoritative
+        // values than title=slug. Overwriting here reverted a user-set title to
+        // the slug on reload and could flip ownerId to the last flusher — so the
+        // UPDATE branch is a no-op; CREATE stays the genuine no-row backstop.
+        update: {},
         create: {
           documentId: params.documentId,
           slug,
@@ -121,6 +120,12 @@ export const DeadLetterQueue = new Queue<DeadLetterJobData>('store-documents-dlq
     }
   }
 })
+
+// Nothing consumes the store DLQ, so every embedded payload is retained
+// indefinitely (BullMQ job hashes carry no TTL, so removeOnFail never fires).
+// Cap the inline recovery blob so a sustained store failure can't accumulate
+// multi-MB base64 into Redis OOM — the vector the main queue's bounds guard.
+const DLQ_MAX_INLINE_STATE_BYTES = 512 * 1024
 
 // Event handlers for monitoring and alerting
 // Note: Queue events are handled by Worker events below for better reliability
@@ -344,16 +349,26 @@ export const createDocumentWorker = () => {
           })
         }
 
-        // Publish save confirmation to document-specific Redis channel
+        // Publish save confirmation (fire-and-forget, like the email above).
+        // The save is already committed and the claim-check key is deleted, so
+        // an awaited reject here would re-throw a durable save into a
+        // payload-less DLQ retry plus a false 'failed' metric.
         if (redisPublisher) {
-          await redisPublisher.publish(
-            `doc:${data.documentName}:saved`,
-            JSON.stringify({
-              documentId: data.documentName,
-              version: savedDoc.version,
-              timestamp: Date.now()
+          redisPublisher
+            .publish(
+              `doc:${data.documentName}:saved`,
+              JSON.stringify({
+                documentId: data.documentName,
+                version: savedDoc.version,
+                timestamp: Date.now()
+              })
+            )
+            .catch((err) => {
+              queueLogger.error(
+                { err, documentId: data.documentName },
+                'Failed to publish save confirmation'
+              )
             })
-          )
         }
 
         return { success: true, version: savedDoc.version }
@@ -367,14 +382,18 @@ export const createDocumentWorker = () => {
           queueLogger.error({ jobId: job.id }, 'Job exhausted all retries. Moving to DLQ')
           captureUnknown(err)
 
-          // Embed the payload inline while the claim-check key is still live;
-          // a job that outwaited the TTL dead-letters payload-less (accepted —
-          // the next debounced save supersedes it).
+          // Embed the recovery payload inline while the claim-check key is live,
+          // but only when it is small enough to be a safe DLQ resident (see
+          // DLQ_MAX_INLINE_STATE_BYTES); a large or outwaited-TTL state
+          // dead-letters payload-less — the next debounced save supersedes it.
           let dlqState = data.state
-          if (!dlqState && rawState) dlqState = rawState.toString('base64')
-          if (!dlqState && data.stateKey) {
-            const buf = await stateRedis.getBuffer(data.stateKey).catch(() => null)
-            dlqState = buf?.toString('base64')
+          if (!dlqState) {
+            const recoverySource =
+              rawState ??
+              (data.stateKey ? await stateRedis.getBuffer(data.stateKey).catch(() => null) : null)
+            if (recoverySource && recoverySource.byteLength <= DLQ_MAX_INLINE_STATE_BYTES) {
+              dlqState = recoverySource.toString('base64')
+            }
           }
 
           const dlqData: DeadLetterJobData = {
