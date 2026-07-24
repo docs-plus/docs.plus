@@ -45,6 +45,9 @@ COPY packages/release-tooling/package.json ./packages/release-tooling/
 # Dev/test-only playground harness (workspace:* devDep of the extensions);
 # manifest must resolve for --frozen-lockfile, never shipped in any runtime stage.
 COPY packages/playground/package.json ./packages/playground/
+# Internal Bun+Playwright CLI (private, never published/shipped); manifest-only
+# so the packages/* workspace member resolves for --frozen-lockfile.
+COPY packages/document-swarm/package.json ./packages/document-swarm/
 
 # Copy ALL workspace package.json files (required for bun lockfile resolution)
 COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
