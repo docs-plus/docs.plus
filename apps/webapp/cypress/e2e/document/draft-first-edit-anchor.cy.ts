@@ -71,4 +71,46 @@ describe('draft first-edit anchor (full stack)', () => {
     cy.reload()
     cy.contains('Renamed Doc Title', { timeout: 40000 }).should('exist')
   })
+
+  it('anchors a titled draft under the URL slug before any body edit', () => {
+    cy.visit(`${BASE}/${slug}`)
+    pad().should('be.visible') // editor mounted; deliberately DO NOT edit the body
+
+    // Rename via the DocTitle contentEditable (never the .ProseMirror body). A title
+    // whose slug differs from the URL slug is what exposes the bug.
+    cy.get('[contenteditable]', { timeout: 40000 })
+      .not('.ProseMirror')
+      .first()
+      .click()
+      .type('{selectall}Hello Anchor World{enter}') // Enter blurs -> PUT /documents/:id
+
+    // queryDocBySlug looks up BY the URL slug, so a non-null row proves the row was
+    // created under the URL slug, not slugify("Hello Anchor World"). Pre-fix this row
+    // is absent -> reload mints a new id -> data loss.
+    cy.task('waitForDocBySlug', slug).then((row: { documentId: string } | null) => {
+      expect(row, 'titled draft anchored under URL slug').to.not.be.null
+      const documentId = row!.documentId
+
+      cy.reload()
+      cy.task('queryDocBySlug', slug).its('documentId').should('eq', documentId)
+      cy.contains('Hello Anchor World', { timeout: 40000 }).should('exist') // title survived reload
+    })
+  })
+
+  it('anchors a draft when the workspace chatroom opens (no body edit)', () => {
+    cy.visit(`${BASE}/${slug}`)
+    pad().should('be.visible') // editable => provider synced (flip won't be dropped); DO NOT edit
+
+    // Open the workspace chatroom from the TOC header — no body edit, no message sent.
+    // Chat rows key on the documentId (=channel_id), so opening chat must anchor it.
+    cy.get('[aria-label="Open chat"]', { timeout: 40000 }).first().click({ force: true })
+
+    cy.task('waitForDocBySlug', slug).then((row: { documentId: string } | null) => {
+      expect(row, 'chatroom-open anchored the draft').to.not.be.null
+      const documentId = row!.documentId
+
+      cy.reload()
+      cy.task('queryDocBySlug', slug).its('documentId').should('eq', documentId) // stable channel_id
+    })
+  })
 })
