@@ -4,6 +4,7 @@ import './config/env' // validate env first (fail-fast at boot)
 import type { Connection, onAuthenticatePayload } from '@hocuspocus/server'
 import { Server } from '@hocuspocus/server'
 
+import { ensureDraftDocumentMetadata } from './api/services/documents.service'
 import HocuspocusConfig from './config/hocuspocus.config'
 import { type SupabaseUser, verifySupabaseTokenOutcome } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
@@ -34,6 +35,10 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 // load that never reaches the `after` hook is GC'd instead of leaking a timer.
 const loadStartedAt = new WeakMap<object, number>()
 const storeStartedAt = new WeakMap<object, number>()
+
+// Anchor a draft's slug->documentId row exactly once per loaded doc; keyed by the
+// Document object so it GC's on unload (no manual cleanup, no unbounded growth).
+const draftMetadataEnsured = new WeakSet<object>()
 
 function sendHistoryResponse(
   connection: Connection,
@@ -167,10 +172,51 @@ const statelessExtension = {
   }
 }
 
+// First-edit identity anchor: the instant isDraft flips false (real edit intent),
+// create the slug->documentId metadata row so a reload's slug lookup resolves to
+// the SAME (random) documentId — the stable IndexedDB key + WS room name that let
+// the client mirror restore early edits before the debounced content store() lands.
+// Bots that open and never edit keep isDraft and stay row-less (anti-empty-doc).
+const firstEditMetadataExtension = {
+  async onChange({
+    document,
+    documentName,
+    context
+  }: {
+    document: { getMap: (name: string) => { get: (key: string) => unknown } }
+    documentName: string
+    context?: { slug?: string; user?: { sub?: string; email?: string } | null }
+  }) {
+    if (draftMetadataEnsured.has(document)) return
+    if (document.getMap('metadata').get('isDraft')) return
+    // Resolve the slug BEFORE claiming the once-guard: a slugless edit (a raw WS
+    // client / dev token-parse edge — the webapp always sends one) must not poison
+    // the guard, or a later slug-bearing edit on this doc could never anchor.
+    const slug = context?.slug ?? ''
+    if (!slug) return
+    draftMetadataEnsured.add(document)
+    try {
+      await ensureDraftDocumentMetadata(prisma, {
+        documentId: documentName,
+        slug,
+        ownerId: context?.user?.sub ?? null,
+        email: context?.user?.email ?? null
+      })
+    } catch (err) {
+      wsLogger.warn({ err, documentName }, 'First-edit metadata anchor failed')
+    }
+  }
+}
+
 const baseConfig = HocuspocusConfig()
 const serverConfig = {
   ...baseConfig,
-  extensions: [...baseConfig.extensions, metricsExtension, statelessExtension],
+  extensions: [
+    ...baseConfig.extensions,
+    metricsExtension,
+    statelessExtension,
+    firstEditMetadataExtension
+  ],
 
   async onConnect() {
     wsConnectionsTotal.inc()

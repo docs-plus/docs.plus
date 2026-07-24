@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
@@ -60,6 +60,38 @@ export const createDraftDocument = (slug: string) => {
     ownerId: null,
     email: null,
     isPrivate: false
+  }
+}
+
+// Anchor a draft's identity on the first real edit: create the slug -> documentId
+// row so a reload's slug lookup returns the SAME (random) documentId — the stable
+// IndexedDB key + WS room name that let the client mirror restore early edits. The
+// content/versions still persist later via the debounced store(). Bots that open
+// and never edit keep isDraft and never reach here (no empty rows). Idempotent:
+// P2002 = documentId already anchored, or the slug was claimed by a concurrent
+// first-open (that writer wins the id race; we cede — same as before the anchor).
+export const ensureDraftDocumentMetadata = async (
+  prisma: PrismaClient,
+  params: { documentId: string; slug: string; ownerId?: string | null; email?: string | null }
+): Promise<void> => {
+  const newSlug = slugify(params.slug.toLowerCase(), { lower: true, strict: true })
+  if (!newSlug) return
+
+  try {
+    await prisma.documentMetadata.create({
+      data: {
+        documentId: params.documentId,
+        slug: newSlug,
+        title: newSlug,
+        description: newSlug,
+        keywords: '',
+        ownerId: params.ownerId ?? null,
+        email: params.email ?? null
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return
+    throw err
   }
 }
 
