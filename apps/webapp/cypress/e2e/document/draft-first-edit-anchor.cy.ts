@@ -42,9 +42,7 @@ describe('draft first-edit anchor (full stack)', () => {
 
       cy.reload()
       pad().should('contain.text', marker)
-      cy.task('queryDocBySlug', slug)
-        .its('documentId')
-        .should('eq', documentId) // same id -> same IndexedDB key + WS room
+      cy.task('queryDocBySlug', slug).its('documentId').should('eq', documentId) // same id -> same IndexedDB key + WS room
     })
   })
 
