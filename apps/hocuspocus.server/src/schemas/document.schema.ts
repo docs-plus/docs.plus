@@ -12,7 +12,10 @@ export const updateDocumentMetadataSchema = z.object({
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   readOnly: z.boolean().optional(),
-  isPrivate: z.boolean().optional()
+  isPrivate: z.boolean().optional(),
+  // URL slug for anchoring a draft on its first metadata write; used only when the
+  // row is created (see updateDocument). Ignored on update — never renames a doc.
+  slug: z.string().optional()
 })
 
 export const documentQuerySchema = z.object({

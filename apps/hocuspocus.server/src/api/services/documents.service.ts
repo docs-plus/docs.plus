@@ -340,7 +340,7 @@ export const updateDocument = async (
   params: UpdateDocumentParams,
   requesterId?: string
 ) => {
-  const { title, description, keywords, readOnly, isPrivate } = params
+  const { title, description, keywords, readOnly, isPrivate, slug } = params
 
   if (!documentId || documentId.trim().length === 0) {
     throw new ValidationError('Document ID is required and cannot be empty')
@@ -390,12 +390,18 @@ export const updateDocument = async (
       )
     }
 
+    // Anchor a draft under its URL slug when this PUT creates the row; without a
+    // slug, non-slug callers keep the prior slugify(title) behavior, unchanged.
+    // Never enters updateData — the update branch must not rename an existing doc.
+    const anchorSlug = slug || title
     const upsertedDoc = await prisma.documentMetadata.upsert({
       where: { documentId },
       update: updateData,
       create: {
         documentId,
-        slug: title ? slugify(title.toLowerCase(), { lower: true, strict: true }) : documentId,
+        slug: anchorSlug
+          ? slugify(anchorSlug.toLowerCase(), { lower: true, strict: true })
+          : documentId,
         title: title || documentId,
         description: description || '',
         keywords: keywords ? keywords.join(',') : '',

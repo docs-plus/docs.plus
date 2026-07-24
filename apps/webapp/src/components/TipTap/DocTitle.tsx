@@ -64,7 +64,10 @@ const DocTitle = ({ className }: { className?: string }) => {
 
       mutate({
         title: newTitle,
-        documentId: docMetadata.documentId
+        documentId: docMetadata.documentId,
+        // The normalized URL slug (never slugify(newTitle)) so a title-first
+        // draft anchors under the slug reload resolves by. See useUpdateDocMetadata.
+        slug: docMetadata.slug
       })
     },
     [title, mutate, docMetadata]

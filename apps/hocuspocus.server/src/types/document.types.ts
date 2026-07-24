@@ -31,6 +31,8 @@ export interface UpdateDocumentParams {
   keywords?: string[]
   readOnly?: boolean
   isPrivate?: boolean
+  // URL slug — anchors a draft's row under the slug reload resolves by; create-only.
+  slug?: string
 }
 
 // Allowlisted list sort keys — mapped to a fixed Prisma orderBy in the service.

@@ -8,6 +8,9 @@ export interface UpdateDocMetadataParams {
   documentId: string
   readOnly?: boolean
   isPrivate?: boolean
+  // URL slug — lets the backend anchor a never-persisted draft under the slug
+  // reload resolves by, instead of slugify(title). Consumed only on row create.
+  slug?: string
 }
 
 export interface UpdateDocMetadataResponse {
@@ -26,7 +29,7 @@ const useUpdateDocMetadata = () => {
     UpdateDocMetadataParams
   >({
     mutationKey: ['updateDocumentMetadata'],
-    mutationFn: async ({ title, description, keywords, documentId, readOnly, isPrivate }) => {
+    mutationFn: async ({ title, description, keywords, documentId, readOnly, isPrivate, slug }) => {
       // NOTE: This is a hack to get the correct URL in the build time
       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
 
@@ -37,6 +40,7 @@ const useUpdateDocMetadata = () => {
       if (keywords !== undefined) body.keywords = keywords
       if (readOnly !== undefined) body.readOnly = readOnly
       if (isPrivate !== undefined) body.isPrivate = isPrivate
+      if (slug !== undefined) body.slug = slug
 
       // Send the Supabase token so the backend can owner-gate the readOnly/isPrivate flags
       // (same `token` header convention as fetchDocument/uploadMediaFile).
