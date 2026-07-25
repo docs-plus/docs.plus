@@ -42,8 +42,9 @@ const MediaUploadPlaceholderNode = Node.create({
   }
 })
 
-// rel/class/title mirror the webapp Hyperlink mark: ProseMirror drops unknown
-// attrs on re-encode, so absent stubs would silently strip stored values.
+// Mirrors every attribute the webapp Hyperlink mark declares: ProseMirror drops
+// unknown attrs on re-encode, so an absent stub silently strips stored values.
+// `title`/`image` are the cached preview metadata writeLinkMetadataAttrs persists.
 const Hyperlink = Mark.create({
   name: 'hyperlink',
   addAttributes() {
@@ -52,7 +53,8 @@ const Hyperlink = Mark.create({
       target: { default: null },
       rel: { default: null },
       class: { default: null },
-      title: { default: null }
+      title: { default: null },
+      image: { default: null }
     }
   }
 })
@@ -90,7 +92,11 @@ export const migrationExtensions = [
   Superscript,
   Subscript,
   HyperMultimediaKit.configure({
-    Image: true,
+    // Inline, matching the webapp (TipTap.tsx). Content expressions are only
+    // evaluated by an explicit `.check()`, never by toYdoc/fromYdoc, so this is
+    // byte-identical on every transform path — it exists so a schema built from
+    // this set validates paragraph-wrapped images the way the editor does.
+    Image: { inline: true },
     Video: true,
     Audio: true,
     Youtube: true,
