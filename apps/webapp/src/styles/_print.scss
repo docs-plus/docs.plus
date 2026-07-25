@@ -1,6 +1,32 @@
+@page {
+  size: A4;
+  margin: 18mm;
+}
+
 @media print {
+  // Repoint the canvas tokens to paper so every downstream color-mix (code chip,
+  // table header, borders, blockquote) resolves against white. Without this the
+  // dark themes print near-black fills once color-adjust is exact.
+  :root {
+    color-scheme: light;
+    --color-base-100: #fff;
+    --color-base-200: color-mix(in oklch, black 6%, #fff);
+    --color-base-300: color-mix(in oklch, black 14%, #fff);
+    --color-base-content: black;
+  }
+
+  // Chrome drops every background by default; these fills carry meaning.
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   * {
     overflow: visible !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
   }
 
   // Hiding unnecessary elements
@@ -10,7 +36,13 @@
   .tableOfContents,
   .skeleton,
   .pad.tiptap > header,
-  .ha-wrap {
+  .ha-wrap,
+  .edit-fab,
+  .group\/chat,
+  .media-toolbar,
+  .floating-popover,
+  [data-floating-ui-portal],
+  [role='separator'] {
     display: none !important;
   }
 
@@ -62,11 +94,22 @@
     border-radius: 0 !important;
   }
 
+  :is(table, pre, img, blockquote, figure) {
+    break-inside: avoid;
+  }
+
+  // break-inside would push an over-tall image to a fresh page and still clip it;
+  // 100vh is the page area (A4 less the @page margin).
+  img {
+    max-height: 100vh;
+  }
+
   :is(h1, h2, h3, h4, h5, h6) {
     border: none !important;
     background-color: transparent;
     margin: 8pt 0;
     padding: inherit;
+    break-after: avoid;
   }
 
   h1[data-toc-id],
