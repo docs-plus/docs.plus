@@ -159,10 +159,10 @@ describe('Markdown Export', () => {
   })
 
   describe('settings panel export button', () => {
-    it('export button is enabled when document has content', () => {
+    it('download button is enabled when document has content', () => {
       cy.get('[tooltip="Document Settings"]').click()
       cy.contains('Markdown').click()
-      cy.contains('button', 'Export .md').should('not.be.disabled')
+      cy.contains('button', 'Download').should('not.be.disabled')
     })
 
     it('import button is enabled when editor is ready', () => {

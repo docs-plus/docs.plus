@@ -9,7 +9,7 @@ import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
-import { useAuthStore, useStore } from '@stores'
+import { useAuthStore, useSheetStore, useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 import { downloadAsMarkdown, importMarkdownFile } from '@utils/markdown'
 import Image from 'next/image'
@@ -22,6 +22,35 @@ interface DocumentSettingsPanelProps {
   className?: string
   onClose?: () => void
   variant?: PanelSurfaceVariant
+}
+
+/** Import overwrites a live document for everyone in it, so the panel gates it behind consent. */
+const ImportConfirmDialog = ({ onConfirm }: { onConfirm: () => void }) => {
+  const closeDialog = useStore((state) => state.closeDialog)
+
+  return (
+    <div className="p-5">
+      <h2 className="text-base-content text-base font-semibold">Replace this document?</h2>
+      <p className="text-base-content/70 mt-2 text-sm">
+        Everyone in the document sees the new content immediately. Heading chat rooms, folds and
+        section links stop working — Markdown can’t carry the heading IDs they point at.
+      </p>
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={closeDialog}>
+          Cancel
+        </Button>
+        <Button
+          variant="error"
+          size="sm"
+          onClick={() => {
+            onConfirm()
+            closeDialog()
+          }}>
+          Choose file
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 const DocumentSettingsPanel = ({
@@ -37,6 +66,7 @@ const DocumentSettingsPanel = ({
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const docMetadata = useStore((state) => state.settings.metadata)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
+  const openDialog = useStore((state) => state.openDialog)
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isPending, mutate } = useUpdateDocMetadata()
@@ -64,6 +94,22 @@ const DocumentSettingsPanel = ({
 
   const handleTagsChange = (newTags: string[]) => {
     setTags(newTags)
+  }
+
+  // Called straight from the confirm click so the file picker keeps its user gesture on iOS Safari.
+  const runMarkdownImport = async () => {
+    if (!editor) return
+    const { ok, error } = await importMarkdownFile(editor)
+    if (ok) toast.Success('Markdown imported')
+    else if (error) toast.Error(error)
+  }
+
+  // Print snapshots the DOM the moment it is called, so let the surface finish closing first —
+  // the sheet's spring runs longer than the popover's fade.
+  const handlePrint = () => {
+    if (isSheet) useSheetStore.getState().closeSheet()
+    else handleClose()
+    setTimeout(() => window.print(), isSheet ? 320 : 100)
   }
 
   const softWell = (
@@ -171,40 +217,49 @@ const DocumentSettingsPanel = ({
         <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
           <input type="radio" className="peer" name="gear-accordion" />
           <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
-            <Icons.fileText size={16} className="text-base-content/50" />
-            Markdown
+            <Icons.download size={16} className="text-base-content/50" />
+            Markdown & print
           </div>
           <div className="collapse-content border-base-300 border-t px-4 pt-4">
-            <p className="text-base-content/60 mb-4 text-xs">
-              Import a Markdown file to replace the current document, or export the document as
-              Markdown.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!editor || editingLocked}
-                className="border-base-300 flex-1 border"
-                onClick={async () => {
-                  if (!editor) return
-                  const { ok, error } = await importMarkdownFile(editor)
-                  if (ok) toast.Success('Markdown imported')
-                  else if (error) toast.Error(error)
-                }}>
-                <Icons.upload size={14} />
-                Import .md
-              </Button>
+            <div className="flex flex-col gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={!editor || (!docMetadata.title && editor.isEmpty)}
-                className="border-base-300 flex-1 border"
+                className={`border-base-300 w-full border ${isSheet ? 'min-h-11' : ''}`}
                 onClick={() => {
                   if (!editor) return
                   downloadAsMarkdown(editor, docMetadata.title || '')
                 }}>
                 <Icons.download size={14} />
-                Export .md
+                Download .md
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!editor}
+                className={`border-base-300 w-full border ${isSheet ? 'min-h-11' : ''}`}
+                onClick={handlePrint}>
+                <Icons.print size={14} />
+                Print / Save as PDF
+              </Button>
+            </div>
+            <div className="border-base-300 mt-4 border-t pt-4">
+              <p className="text-base-content/60 mb-2 text-xs">
+                Importing replaces this document for everyone in it right now.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!editor || editingLocked}
+                className={`border-base-300 w-full border ${isSheet ? 'min-h-11' : ''}`}
+                onClick={() =>
+                  openDialog(<ImportConfirmDialog onConfirm={() => void runMarkdownImport()} />, {
+                    size: 'sm'
+                  })
+                }>
+                <Icons.upload size={14} />
+                Import .md
               </Button>
             </div>
           </div>
