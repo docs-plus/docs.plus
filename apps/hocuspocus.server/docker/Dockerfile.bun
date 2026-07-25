@@ -35,8 +35,9 @@ COPY packages/playground/package.json ./packages/playground/
 # Internal Bun+Playwright CLI (private, never published/shipped); manifest-only
 # so the packages/* workspace member resolves for --frozen-lockfile.
 COPY packages/document-swarm/package.json ./packages/document-swarm/
-COPY extensions/extension-hyperlink/package.json ./extensions/extension-hyperlink/
 # Full source: migration-extensions imports these; package "main" points at dist/ (not in repo).
+# hyperlink joined them when document-conversion started importing it at boot.
+COPY extensions/extension-hyperlink ./extensions/extension-hyperlink/
 COPY extensions/extension-hypermultimedia ./extensions/extension-hypermultimedia/
 COPY extensions/extension-indent/package.json ./extensions/extension-indent/
 COPY extensions/extension-inline-code ./extensions/extension-inline-code/
@@ -48,6 +49,7 @@ COPY apps/webapp/package.json ./apps/webapp/
 RUN bun install --frozen-lockfile --ignore-scripts
 RUN bun run --filter @docs.plus/floating-popover build \
   && bun run --filter @docs.plus/floating-tooltip build \
+  && bun run --filter @docs.plus/extension-hyperlink build \
   && bun run --filter @docs.plus/extension-hypermultimedia build \
   && bun run --filter @docs.plus/extension-inline-code build
 RUN bun install --frozen-lockfile --production --ignore-scripts

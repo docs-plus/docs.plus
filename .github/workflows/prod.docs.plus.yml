@@ -632,13 +632,15 @@ jobs:
             sleep 2
           }
 
-          # Workers before servers: consumers must understand the newest job
-          # shape before producers can emit it (compose declares 2 worker
-          # replicas — a scale of 1 silently halved the fleet on every deploy).
+          # Callees before callers, so a consumer always understands the newest
+          # shape before a producer emits it. Workers before servers for the job
+          # shape (compose declares 2 worker replicas — a scale of 1 silently
+          # halved the fleet on every deploy); hocuspocus-server before rest-api
+          # because REST forwards content applies to its internal :4003 endpoint.
           deploy_service "hocuspocus-worker" 2
           deploy_service "webapp" 2
-          deploy_service "rest-api" 2
           deploy_service "hocuspocus-server" 2
+          deploy_service "rest-api" 2
           deploy_service "admin-dashboard" 1
 
           echo ""

@@ -1,7 +1,8 @@
 name: Backend CI
 
-# Reusable backend quality gates (no-infra unit/integration + real-infra E2E),
-# called by both the stage and prod pipelines so the jobs live in one place.
+# Reusable backend quality gates (no-infra unit/integration + real-infra E2E).
+# Called only by the prod pipeline, gated on `has_back` — stage and pull
+# requests never invoke it, so these gates run on `(build): … back` commits only.
 on:
   workflow_call: {}
 
@@ -26,13 +27,15 @@ jobs:
       - name: 🔧 Build Migration Extensions
         uses: ./.github/actions/build-extensions
         with:
-          extensions: extension-hypermultimedia extension-inline-code
+          extensions: extension-hyperlink extension-hypermultimedia extension-inline-code
 
       # No-infra gate: every backend suite is mock-based (createMockPrisma/Redis),
       # so unit + lib + link-metadata + integration all run without Postgres/Redis.
+      # The package `test` script owns the suite path list; nothing guarded a
+      # second hardcoded copy here against drift, so there is only one now.
       - name: 🧪 Run Backend Tests
         working-directory: apps/hocuspocus.server
-        run: bun test tests/unit src/lib/__tests__ src/modules/link-metadata/__tests__/unit tests/integration
+        run: bun run test
 
   backend-e2e:
     name: 🧪 Backend E2E (real Postgres + Redis)
@@ -62,6 +65,11 @@ jobs:
       REDIS_DB: '15'
       SUPABASE_URL: http://127.0.0.1:9
       SUPABASE_ANON_KEY: dummy
+      # The content-inject E2E boots both entrypoints and drives the
+      # service-role content routes, which fail closed without a key.
+      SUPABASE_SERVICE_ROLE_KEY: e2e-service-role-key
+      JWT_SECRET: e2e-jwt-secret
+      ALLOWED_ORIGINS: http://localhost
       NODE_ENV: development
       LOG_LEVEL: silent
     steps:
@@ -71,6 +79,13 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
+      # The content-inject E2E boots the real REST and WS entrypoints, which
+      # load migration-extensions.ts and therefore the built extension dist.
+      - name: 🔧 Build Migration Extensions
+        uses: ./.github/actions/build-extensions
+        with:
+          extensions: extension-hyperlink extension-hypermultimedia extension-inline-code
+
       - name: 🗄️ Apply migrations to the E2E database
         working-directory: apps/hocuspocus.server
         run: bunx prisma migrate deploy --schema ./prisma/schema.prisma
@@ -78,3 +93,9 @@ jobs:
       - name: 🧪 Run real-infra E2E (service CRUD + store pipeline)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e
+
+      # The script's `--env-file=../../.env.local` is a local-dev convenience;
+      # Bun ignores a missing env file, so CI runs it on the job env above.
+      - name: 🧪 Run real-infra E2E (document content injection)
+        working-directory: apps/hocuspocus.server
+        run: bun run test:e2e:content-inject
