@@ -4,12 +4,14 @@ import { Hono } from 'hono'
 import { requestId } from 'hono/request-id'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 
+import pkg from '../package.json'
 import emailRouter from './api/email'
 import adminRouter from './api/routers/admin.router'
 import documentsRouter from './api/routers/documents.router'
 import healthRouter from './api/routers/health.router'
 import hypermultimediaRouter from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
+import { verifyServiceRole } from './lib/auth'
 import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
@@ -19,7 +21,10 @@ import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
 import { setupMiddleware } from './middleware'
+import * as documentContent from './modules/document-content'
+import * as documentConversion from './modules/document-conversion'
 import * as linkMetadata from './modules/link-metadata'
+import * as openapi from './modules/openapi'
 
 // Create Hono app
 const app = new Hono()
@@ -30,6 +35,17 @@ app.use('*', requestId())
 // Record latency + count per matched route on the shared Prometheus registry.
 // Outermost so it also sees responses the rate limiter short-circuits (429s).
 app.use('*', httpMetricsMiddleware())
+
+// OpenAPI 3.1 spec + Swagger UI. Built eagerly so a malformed document fails at
+// boot, not on first request. A relative server URL keeps Try-it-out on
+// whichever origin served the page.
+const openapiModule = openapi.init({
+  servers: [{ url: '/', description: 'This server' }],
+  version: pkg.version
+})
+// Swagger UI loads from a CDN, so its page needs a widened CSP. Registered
+// above setupMiddleware because secureHeaders rewrites the header after next().
+app.use(openapi.DOCS_PATH, openapi.swaggerUiCsp)
 
 // Setup middleware
 setupMiddleware(app)
@@ -56,6 +72,26 @@ app.get('/metrics', async (c) => {
 // Mount routers
 app.route('/health', healthRouter)
 app.route('/api/documents', documentsRouter)
+// Mounted after the legacy documents router. Content routes are two-segment, so
+// they cannot be shadowed by its single-segment `/:docName` read.
+const documentContentModule = documentContent.init({
+  prisma,
+  logger: logger.child({ module: 'document-content' }),
+  verifyServiceRole,
+  serviceRoleKey: config.supabase.serviceRoleKey ?? null,
+  wsApplyBaseUrl: config.hocuspocus.internalUrl
+})
+app.route('/api/documents', documentContentModule.router)
+const documentConversionModule = documentConversion.init({
+  prisma,
+  logger: logger.child({ module: 'document-conversion' }),
+  verifyServiceRole,
+  // `PUBLIC_RESTAPI_URL`, never a request header: this is persisted into document
+  // content, and `X-Forwarded-Host` is client-settable. Unset drops imported
+  // images with a warning rather than storing an origin nobody can resolve.
+  mediaPublicBaseUrl: config.app.publicUrl
+})
+app.route('/api/documents', documentConversionModule.router)
 app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
 app.route('/api/email', emailRouter)
 // NOTE: /api/push endpoint removed - push notifications now use pgmq Consumer architecture
@@ -66,6 +102,8 @@ const linkMetadataModule = linkMetadata.init({
   logger: logger.child({ module: 'link-metadata' })
 })
 app.route('/api/metadata', linkMetadataModule.router)
+// Absolute paths (/openapi.json, /docs), so this mounts at the root.
+app.route('/', openapiModule.router)
 
 // Single error contract: map AppError → status, redact unknown errors, one envelope.
 app.notFound((c) =>
