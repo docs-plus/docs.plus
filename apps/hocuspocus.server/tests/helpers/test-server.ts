@@ -24,7 +24,7 @@ export class TestServer {
     return {
       status: response.status,
       headers: response.headers,
-      json: async () => response.json(),
+      json: async (): Promise<any> => response.json(),
       text: async () => response.text()
     }
   }
@@ -44,7 +44,7 @@ export class TestServer {
     return {
       status: response.status,
       headers: response.headers,
-      json: async () => response.json(),
+      json: async (): Promise<any> => response.json(),
       text: async () => response.text()
     }
   }
@@ -64,7 +64,27 @@ export class TestServer {
     return {
       status: response.status,
       headers: response.headers,
-      json: async () => response.json(),
+      json: async (): Promise<any> => response.json(),
+      text: async () => response.text()
+    }
+  }
+
+  /**
+   * Make a PATCH request
+   */
+  async patch(path: string, body: any, headers: Record<string, string> = {}) {
+    const response = await this.app.request(`${this.baseURL}${path}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: JSON.stringify(body)
+    })
+    return {
+      status: response.status,
+      headers: response.headers,
+      json: async (): Promise<any> => response.json(),
       text: async () => response.text()
     }
   }
@@ -80,7 +100,7 @@ export class TestServer {
     return {
       status: response.status,
       headers: response.headers,
-      json: async () => response.json(),
+      json: async (): Promise<any> => response.json(),
       text: async () => response.text()
     }
   }
@@ -99,7 +119,7 @@ export class TestServer {
     return {
       status: response.status,
       headers: response.headers,
-      json: async () => response.json(),
+      json: async (): Promise<any> => response.json(),
       text: async () => response.text()
     }
   }
@@ -109,22 +129,34 @@ export class TestServer {
  * Create a mock Prisma client for testing
  */
 export const createMockPrisma = (): Partial<PrismaClient> => {
-  return {
+  const client: any = {
     documentMetadata: {
       findUnique: async () => null,
       findMany: async () => [],
       create: async (data: any) => ({ id: 1, ...data.data }),
       upsert: async (data: any) => ({ id: 1, ...data.create }),
+      update: async (data: any) => ({ id: 1, ...data.data }),
+      delete: async () => ({ id: 1 }),
       count: async () => 0
-    } as any,
+    },
     documents: {
       findFirst: async () => null,
+      findUnique: async () => null,
       findMany: async () => [],
-      create: async (data: any) => ({ id: 1, ...data.data })
-    } as any,
+      create: async (data: any) => ({ id: 1, ...data.data }),
+      count: async () => 0
+    },
     $queryRaw: async () => [{ result: 1 }],
     $disconnect: async () => {}
-  } as Partial<PrismaClient>
+  }
+
+  // The interactive form hands the callback this same client, so a test that
+  // overrides `mockPrisma.documents.create` observes writes made inside a
+  // transaction too.
+  client.$transaction = async (arg: any) =>
+    typeof arg === 'function' ? arg(client) : Promise.all(arg)
+
+  return client as Partial<PrismaClient>
 }
 
 /**

@@ -6,7 +6,10 @@ const defaults: Record<string, string> = {
   NODE_ENV: 'test',
   DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
   SUPABASE_URL: 'http://localhost:54321',
-  SUPABASE_ANON_KEY: 'test-anon-key'
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  // verifyServiceRole fails closed on an unset key, so the service-role branches
+  // of the documents routes are untestable without one.
+  SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key'
 }
 
 for (const [key, value] of Object.entries(defaults)) {

@@ -127,6 +127,16 @@ export const documentPersistFallbackTotal = new Counter({
   registers: [register]
 })
 
+// Content API applies, by mode and outcome. `error` covers a wedged store, which
+// keeps mutating and broadcasting to live clients while never persisting — the
+// operator signal API.md tells callers to watch. Never label by documentId.
+export const documentContentApplyTotal = new Counter({
+  name: 'document_content_apply_total',
+  help: 'Document Content API applies by mode and outcome',
+  labelNames: ['mode', 'outcome'] as const,
+  registers: [register]
+})
+
 // Size of each merged Y.Doc update applied to a document, a proxy for edit volume.
 export const ydocUpdateBytes = new Histogram({
   name: 'ydoc_update_bytes',

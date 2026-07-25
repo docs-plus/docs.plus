@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
+import { contentBodyLimit } from '../../modules/document-content'
 import {
   createDocumentSchema,
   documentQuerySchema,
@@ -10,7 +11,7 @@ import {
   userIdQuerySchema
 } from '../../schemas/document.schema'
 import * as documentsController from '../controllers/documents.controller'
-import { optionalUser, requireUser } from '../middleware/auth'
+import { optionalUser, requireServiceRoleOrUser, requireUser } from '../middleware/auth'
 
 const documents = new Hono()
 
@@ -31,10 +32,13 @@ documents.get(
   documentsController.listDocuments
 )
 
-// Create new document — authenticated; the caller becomes the owner.
+// Create new document — authenticated; the caller becomes the owner. A
+// service-role caller may additionally seed `content` and set `ownerId`, so the
+// body is capped before parse like every other content-bearing route.
 documents.post(
   '/',
-  requireUser,
+  requireServiceRoleOrUser,
+  contentBodyLimit(),
   zValidator('json', createDocumentSchema),
   documentsController.createDocument
 )

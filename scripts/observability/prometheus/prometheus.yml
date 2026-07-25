@@ -40,6 +40,10 @@ scrape_configs:
       - names: ['rest-api']
         type: A
         port: 4000
+  # 4003 is the collaboration process's general internal listener (metrics plus
+  # the service-role content-apply endpoint), set by HOCUSPOCUS_INTERNAL_HTTP_PORT.
+  # Moving that env var means editing the port below and restarting Prometheus —
+  # Compose ignores content changes to a mounted config.
   - job_name: hocuspocus-server
     metrics_path: /metrics
     dns_sd_configs:

@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 
-import { verifySupabaseTokenOutcome } from '../../lib/auth'
+import { verifyServiceRole, verifySupabaseTokenOutcome } from '../../lib/auth'
 
 // Accept either `Authorization: Bearer <jwt>` or the `token` header the webapp
 // already uses on document reads (fetchDocument.ts), so callers stay consistent.
@@ -43,6 +43,17 @@ export async function requireUser(c: Context, next: Next) {
       return _exhaustive
     }
   }
+}
+
+/** Service-role first — the key is not a JWT and would fail `requireUser`. Sets
+ *  `serviceRole` so handlers can gate the privileged fields on it. */
+export async function requireServiceRoleOrUser(c: Context, next: Next) {
+  if (verifyServiceRole(c.req.header('Authorization'))) {
+    c.set('serviceRole', true)
+    await next()
+    return
+  }
+  return requireUser(c, next)
 }
 
 /** Attach the user when a valid token is present; never rejects. For routes with

@@ -5,8 +5,9 @@ import type { Connection, onAuthenticatePayload } from '@hocuspocus/server'
 import { Server } from '@hocuspocus/server'
 
 import { ensureDraftDocumentMetadata } from './api/services/documents.service'
+import { config } from './config/env'
 import HocuspocusConfig from './config/hocuspocus.config'
-import { type SupabaseUser, verifySupabaseTokenOutcome } from './lib/auth'
+import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { wsLogger } from './lib/logger'
@@ -27,6 +28,7 @@ import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
 import { resolveWsAccess } from './lib/wsAccess'
+import * as documentContent from './modules/document-content'
 import type { HistoryPayload } from './types/document.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
@@ -346,22 +348,47 @@ wsLogger.info({
   url: `ws://localhost:${baseConfig.port}`
 })
 
-// Prometheus scrape target on a dedicated internal port (NOT 4001 — that's the WS
-// server's own port; a second listener there is a fatal EADDRINUSE). Off the Traefik route.
-const METRICS_PORT = 4003
-const metricsServer = Bun.serve({
-  port: METRICS_PORT,
-  hostname: '0.0.0.0',
-  async fetch(req) {
-    if (new URL(req.url).pathname !== '/metrics') return new Response('Not found', { status: 404 })
-    return new Response(await metricsText(), { headers: { 'Content-Type': metricsContentType } })
-  }
+// Content injection has to run where the live Y.Doc is, so the WS process serves
+// the internal apply endpoint beside /metrics. REST reaches it over the docker
+// network via HOCUSPOCUS_INTERNAL_URL; Traefik never routes this port.
+const contentApply = documentContent.initWsApply({
+  hocuspocus: server.hocuspocus,
+  prisma,
+  verifyServiceRole,
+  logger: wsLogger.child({ module: 'document-content' })
 })
 
+// Dedicated internal port (NOT 4001 — that's the WS server's own port; a second
+// listener there is a fatal EADDRINUSE). Off the Traefik route.
+const INTERNAL_HTTP_PORT = config.hocuspocus.internalHttpPort
+let internalServer: ReturnType<typeof Bun.serve>
+try {
+  internalServer = Bun.serve({
+    port: INTERNAL_HTTP_PORT,
+    hostname: config.hocuspocus.internalHttpHost,
+    async fetch(req) {
+      if (new URL(req.url).pathname === '/metrics') {
+        return new Response(await metricsText(), {
+          headers: { 'Content-Type': metricsContentType }
+        })
+      }
+      return contentApply.app.fetch(req)
+    }
+  })
+} catch (err) {
+  // This listener binds AFTER server.listen(), so a mis-set port kills the
+  // process once :4001 is already up — say why rather than dying on a raw throw.
+  wsLogger.error(
+    { err, port: INTERNAL_HTTP_PORT, hostname: config.hocuspocus.internalHttpHost },
+    '❌ Failed to bind the internal HTTP listener (metrics + content apply)'
+  )
+  throw err
+}
+
 wsLogger.info({
-  msg: '📊 Metrics server started',
-  port: metricsServer.port,
-  url: `http://localhost:${metricsServer.port}/metrics`
+  msg: '📊 Internal HTTP server started (metrics + content apply)',
+  port: internalServer.port,
+  url: `http://localhost:${internalServer.port}/metrics`
 })
 
 // Producer-side because enqueue lives here: keeps stranded claim-check
@@ -381,7 +408,7 @@ const shutdown = async () => {
 
   try {
     clearInterval(stateKeyTtlRefresh)
-    metricsServer.stop()
+    internalServer.stop()
     await server.destroy()
     wsLogger.info('WebSocket server stopped')
 

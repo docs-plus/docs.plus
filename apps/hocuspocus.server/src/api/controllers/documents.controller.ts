@@ -5,10 +5,12 @@
  * Validation is done in the router via zValidator - controllers receive pre-validated data.
  */
 
+import { sendNewDocumentNotification } from '../../lib/email/document-notification'
 import { AppError, getErrorResponse } from '../../lib/errors'
 import { captureHttpError } from '../../lib/instrument'
 import { documentsControllerLogger } from '../../lib/logger'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
+import { createDocumentWithContent } from '../../modules/document-content'
 import type {
   CreateDocumentInput,
   DocumentQueryInput,
@@ -146,14 +148,69 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   const body = getValidJson<CreateDocumentInput>(c)
   const user = c.get('user')
+  const serviceRole = c.get('serviceRole') === true
+
+  if ((body.content || body.ownerId) && !serviceRole) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'content and ownerId require service-role authorization'
+        }
+      },
+      403
+    )
+  }
 
   try {
+    if (serviceRole && body.content) {
+      const outcome = await createDocumentWithContent(prisma, {
+        slug: body.slug,
+        title: body.title,
+        description: body.description,
+        keywords: body.keywords,
+        content: body.content,
+        ownerId: body.ownerId ?? null
+      })
+
+      if (outcome.status === 'invalid-content') {
+        return c.json(
+          { success: false, error: { code: 'UNPROCESSABLE_ENTITY', message: outcome.detail } },
+          422
+        )
+      }
+
+      const created = outcome.document
+      // Parity with the worker's first-save path: without this, API-created
+      // documents never reach the operators' new-document stream.
+      setImmediate(() => {
+        sendNewDocumentNotification({
+          documentId: created.documentId,
+          documentName: created.title || created.slug,
+          slug: created.slug,
+          creatorId: body.ownerId,
+          createdAt: created.createdAt
+        }).catch((err) => {
+          documentsControllerLogger.error(
+            { err, documentId: created.documentId },
+            'Failed to send new document notification email'
+          )
+        })
+      })
+
+      const ownerProfile = body.ownerId
+        ? await documentsService.getOwnerProfile(body.ownerId)
+        : null
+      return c.json({ success: true, data: { ...created, ownerProfile } })
+    }
+
     const doc = await documentsService.createDocument(prisma, {
       slug: body.slug,
       title: body.title,
       description: body.description,
       keywords: body.keywords,
-      userId: user?.sub,
+      userId: user?.sub ?? (serviceRole ? body.ownerId : undefined),
       email: user?.email
     })
 

@@ -23,6 +23,8 @@ declare module 'hono' {
     userId?: string
     /** Verified Supabase user. Set by requireUser/adminAuth; absent on optionalUser routes. */
     user?: SupabaseUser
+    /** Set by requireServiceRoleOrUser when the caller presented the service-role key. */
+    serviceRole?: boolean
     /** Set by hono's requestId middleware; absent on apps that don't mount it. */
     requestId?: string
   }
@@ -41,5 +43,6 @@ export type AppContext = Context<{
     redis: RedisClient | null
     userId?: string
     user?: SupabaseUser
+    serviceRole?: boolean
   }
 }>

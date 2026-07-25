@@ -1,10 +1,17 @@
 import { z } from 'zod'
 
+// Deep path on purpose: the module's `http/schema` is zod-only, so importing it
+// here never drags Tiptap or the transformer into this file's consumers.
+import { tiptapDocSchema } from '../modules/document-content/http/schema'
+
 export const createDocumentSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   slug: z.string().min(1, 'Slug is required'),
   description: z.string().optional().default(''),
-  keywords: z.array(z.string()).optional().default([])
+  keywords: z.array(z.string()).optional().default([]),
+  // Service-role only — a user JWT presenting either field gets a 403.
+  content: tiptapDocSchema.optional(),
+  ownerId: z.string().optional()
 })
 
 export const updateDocumentMetadataSchema = z.object({

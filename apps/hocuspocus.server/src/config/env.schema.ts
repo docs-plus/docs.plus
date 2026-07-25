@@ -60,6 +60,18 @@ export const envSchema = z.object({
   APP_PORT: numericString('4000'),
   HOCUSPOCUS_PORT: numericString('4001'),
   WORKER_HEALTH_PORT: numericString('4002'),
+  // The WS process's internal HTTP listener (Prometheus scrape + service-role
+  // content apply). Never Traefik-routed. The bind stays 0.0.0.0 by default:
+  // Prometheus scrapes it cross-container and nothing alerts on a dead target.
+  HOCUSPOCUS_INTERNAL_HTTP_PORT: numericString('4003'),
+  HOCUSPOCUS_INTERNAL_HTTP_HOST: z.string().default('0.0.0.0'),
+  // Where REST forwards content applies; compose sets http://hocuspocus-server:4003.
+  HOCUSPOCUS_INTERNAL_URL: z.string().default('http://localhost:4003'),
+  // This server's own public origin, e.g. https://prodback.docs.plus — ORIGIN ONLY,
+  // no `/api` (unlike NEXT_PUBLIC_RESTAPI_URL), because route paths are appended and
+  // the result is persisted into document content. No default: an unset value must
+  // drop imported images, never guess an origin nobody can resolve.
+  PUBLIC_RESTAPI_URL: z.string().optional(),
 
   // -------------------------------------------------------------------------
   // Database (Required)

@@ -14,12 +14,17 @@ export const config = {
   app: {
     port: env.APP_PORT,
     name: env.APP_NAME,
-    env: env.NODE_ENV
+    env: env.NODE_ENV,
+    // Compose interpolates an unset var to `''`, which is as absent as undefined.
+    publicUrl: env.PUBLIC_RESTAPI_URL || null
   },
 
   // Hocuspocus
   hocuspocus: {
     port: env.HOCUSPOCUS_PORT,
+    internalHttpPort: env.HOCUSPOCUS_INTERNAL_HTTP_PORT,
+    internalHttpHost: env.HOCUSPOCUS_INTERNAL_HTTP_HOST,
+    internalUrl: env.HOCUSPOCUS_INTERNAL_URL,
     logger: {
       enabled: env.HOCUSPOCUS_LOGGER,
       onConnect: env.HOCUSPOCUS_LOGGER_ON_CONNECT,

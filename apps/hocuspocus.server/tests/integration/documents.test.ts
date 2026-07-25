@@ -39,6 +39,7 @@ mock.module('../../src/api/services/documentPurge.service', () => ({
 
 import { Hono } from 'hono'
 import documentsRouter from '../../src/api/routers/documents.router'
+import { config } from '../../src/config/env'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
 import {
   validDocument,
@@ -418,6 +419,182 @@ describe('Documents API', () => {
 
       expect(response.status).toBe(401)
       expect(data.error).toHaveProperty('code', 'UNAUTHORIZED')
+    })
+  })
+
+  describe('POST /api/documents with service-role content', () => {
+    // Read the effective key rather than a literal: a developer shell that
+    // exports a real one wins over the test preload's default.
+    const SERVICE_AUTH = { Authorization: `Bearer ${config.supabase.serviceRoleKey}` }
+    const titleContent = {
+      type: 'doc',
+      content: [
+        { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Seeded' }] }
+      ]
+    }
+
+    test('a user JWT presenting content is forbidden and writes nothing', async () => {
+      let created = false
+      mockPrisma.documentMetadata.create = async () => {
+        created = true
+        return {}
+      }
+
+      const response = await testServer.post(
+        '/api/documents',
+        { ...validDocument, content: titleContent },
+        { token: 'valid-test-token' }
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(403)
+      expect(data.error).toHaveProperty('code', 'FORBIDDEN')
+      expect(created).toBe(false)
+    })
+
+    test('a user JWT presenting ownerId is forbidden', async () => {
+      const response = await testServer.post(
+        '/api/documents',
+        { ...validDocument, ownerId: 'someone-else' },
+        { token: 'valid-test-token' }
+      )
+
+      expect(response.status).toBe(403)
+    })
+
+    test('service role writes metadata and version 1 in one transaction', async () => {
+      let metaCreate: any
+      let docsCreate: any
+      let transactions = 0
+      const originalTransaction = mockPrisma.$transaction
+      mockPrisma.$transaction = async (arg: any) => {
+        transactions += 1
+        return originalTransaction(arg)
+      }
+      mockPrisma.documentMetadata.create = async (args: any) => {
+        metaCreate = args
+        return { id: 1, ...args.data, createdAt: new Date() }
+      }
+      mockPrisma.documents.create = async (args: any) => {
+        docsCreate = args
+        return { id: 1, ...args.data }
+      }
+
+      const response = await testServer.post(
+        '/api/documents',
+        { ...validDocument, content: titleContent, ownerId: 'owner-abc' },
+        SERVICE_AUTH
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(transactions).toBe(1)
+      expect(data.data.documentId).toMatch(/^[0-9A-Za-z]{19}$/)
+      expect(metaCreate.data.ownerId).toBe('owner-abc')
+      expect(docsCreate.data.version).toBe(1)
+      expect(docsCreate.data.documentId).toBe(metaCreate.data.documentId)
+      expect(docsCreate.data.data.byteLength).toBeGreaterThan(0)
+    })
+
+    test('invalid content is 422 and never creates the metadata row', async () => {
+      let created = false
+      mockPrisma.documentMetadata.create = async () => {
+        created = true
+        return {}
+      }
+
+      const response = await testServer.post(
+        '/api/documents',
+        {
+          ...validDocument,
+          content: {
+            type: 'doc',
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'no title' }] }]
+          }
+        },
+        SERVICE_AUTH
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(422)
+      expect(data.error).toHaveProperty('code', 'UNPROCESSABLE_ENTITY')
+      expect(created).toBe(false)
+    })
+
+    test('an over-cap body is 413 before either row is written', async () => {
+      let metaCreated = false
+      let docCreated = false
+      mockPrisma.documentMetadata.create = async () => {
+        metaCreated = true
+        return {}
+      }
+      mockPrisma.documents.create = async () => {
+        docCreated = true
+        return {}
+      }
+
+      const response = await testServer.post(
+        '/api/documents',
+        {
+          ...validDocument,
+          content: {
+            type: 'doc',
+            content: [
+              {
+                type: 'heading',
+                attrs: { level: 1 },
+                content: [{ type: 'text', text: 'x'.repeat(5 * 1024 * 1024 + 1024) }]
+              }
+            ]
+          }
+        },
+        SERVICE_AUTH
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(413)
+      expect(data.error).toHaveProperty('code', 'PAYLOAD_TOO_LARGE')
+      expect(metaCreated).toBe(false)
+      expect(docCreated).toBe(false)
+    })
+
+    test('a taken slug conflicts rather than being silently renamed', async () => {
+      mockPrisma.documentMetadata.create = async () => {
+        throw Object.assign(new Error('Unique constraint failed'), { code: 'P2002' })
+      }
+
+      const response = await testServer.post(
+        '/api/documents',
+        { ...validDocument, content: titleContent },
+        SERVICE_AUTH
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data.error).toHaveProperty('code', 'CONFLICT')
+    })
+
+    test('service role without content keeps the plain create path and honours ownerId', async () => {
+      let metaCreate: any
+      let docCreated = false
+      mockPrisma.documentMetadata.create = async (args: any) => {
+        metaCreate = args
+        return { id: 1, ...args.data }
+      }
+      mockPrisma.documents.create = async () => {
+        docCreated = true
+        return {}
+      }
+
+      const response = await testServer.post(
+        '/api/documents',
+        { ...validDocument, ownerId: 'owner-xyz' },
+        SERVICE_AUTH
+      )
+
+      expect(response.status).toBe(200)
+      expect(metaCreate.data.ownerId).toBe('owner-xyz')
+      expect(docCreated).toBe(false)
     })
   })
 

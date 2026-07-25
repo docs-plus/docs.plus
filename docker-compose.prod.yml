@@ -178,6 +178,8 @@ services:
       NODE_ENV: production
       RUN_MIGRATIONS: '0' # one-shot `migrate` service is the single migration runner
       APP_PORT: 4000
+      # Content applies forward to the collaboration process's internal listener.
+      HOCUSPOCUS_INTERNAL_URL: http://hocuspocus-server:4003
       # Pino — see apps/hocuspocus.server/src/lib/logger.ts
       LOG_LEVEL: ${LOG_LEVEL:-info}
       HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
@@ -199,6 +201,10 @@ services:
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
       DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-10485760}
+      # This server's own public origin — ORIGIN ONLY, no `/api` suffix, because
+      # route paths are appended and the result is persisted into document
+      # content. Unset means .docx images import as dropped-image warnings.
+      PUBLIC_RESTAPI_URL: ${PUBLIC_RESTAPI_URL}
       # VAPID public key (needed for API responses, not sending)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       GLITCHTIP_DSN: ${GLITCHTIP_DSN:-}
@@ -277,6 +283,11 @@ services:
       NODE_ENV: production
       RUN_MIGRATIONS: '0' # one-shot `migrate` service is the single migration runner
       HOCUSPOCUS_PORT: 4001
+      # Internal listener: /metrics for Prometheus plus the content-apply
+      # endpoint. Not host-published and never Traefik-routed. Stated explicitly
+      # here — this is where an operator would change it, and it is what keeps
+      # the cross-container Prometheus scrape alive if the default ever tightens.
+      HOCUSPOCUS_INTERNAL_HTTP_HOST: 0.0.0.0
       LOG_LEVEL: ${LOG_LEVEL:-info}
       HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
       WS_LOG_LEVEL: ${WS_LOG_LEVEL:-}

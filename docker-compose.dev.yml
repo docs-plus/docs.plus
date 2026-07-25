@@ -91,6 +91,16 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      # There is no `env_file:` on this compose file, so this interpolates from
+      # the invoking shell. Unset there means empty, and every service-role
+      # route 401s (verifyServiceRole fails closed) while looking configured.
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      # This server's own public origin — ORIGIN ONLY, no `/api`, because route
+      # paths are appended and the result is persisted into document content.
+      # Same shell-interpolation caveat as above: unset means empty, and every
+      # image in an imported .docx is reported dropped instead of rehosted.
+      PUBLIC_RESTAPI_URL: ${PUBLIC_RESTAPI_URL}
+      HOCUSPOCUS_INTERNAL_URL: http://hocuspocus-server:4003
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       REST_LOG_LEVEL: ${REST_LOG_LEVEL:-debug}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
@@ -153,6 +163,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      # Same shell-interpolation caveat as rest-api above; the content-apply
+      # endpoint fails closed without it.
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      HOCUSPOCUS_INTERNAL_HTTP_HOST: 0.0.0.0
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       WS_LOG_LEVEL: ${WS_LOG_LEVEL:-debug}
       HOCUSPOCUS_LOGGER: true
