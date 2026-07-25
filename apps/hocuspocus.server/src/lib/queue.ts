@@ -34,7 +34,7 @@ function upsertDocumentMetadata(
   return withUniqueSlug(
     params.baseSlug,
     async (slug) => {
-      await tx.documentMetadata.upsert({
+      const row = await tx.documentMetadata.upsert({
         where: { documentId: params.documentId },
         // A content persist must NOT own metadata: the first-edit anchor,
         // updateDocument PUT, and createDocument all set more authoritative
@@ -52,7 +52,10 @@ function upsertDocumentMetadata(
           keywords: ''
         }
       })
-      return slug
+      // The row's slug, never the candidate: on the update branch the closure's
+      // candidate can name a slug that is not in the database, and it reaches
+      // the new-document email's documentUrl.
+      return row.slug
     },
     maxRetries
   )
