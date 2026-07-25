@@ -1,67 +1,222 @@
-GET http://localhost:2300/api/documents
+@base = http://localhost:4000
+@wsInternal = http://localhost:4003
+@serviceRoleKey = {{$dotenv SUPABASE_SERVICE_ROLE_KEY}}
+@documentId = yg64821524HTbijsCX2
 
-###
-GET http://localhost:2300/api/documents/test
+### List documents
+GET {{base}}/api/documents
 
-###
-POST http://localhost:2300/api/documents
+### Search by title
+GET {{base}}/api/documents?title=cats
+
+### Get one document by slug
+GET {{base}}/api/documents/test
+
+### Create a document
+POST {{base}}/api/documents
 content-type: application/json
 
 {
   "title": "My new document",
-  "content": "This is the content of my new document",
   "slug": "dr3f3d33"
 }
 
-
-###
-POST http://localhost:2300/api/documents
+### Create a document with metadata
+POST {{base}}/api/documents
+content-type: application/json
 
 {
-  "title": "My new document sdsasd",
-  "content": "This is the content of my new document",
+  "title": "Demo page",
   "slug": "demopage",
   "description": "new Demo",
   "keywords": ["test", "demo231"]
 }
 
-
-###
-PUT http://localhost:2300/api/documents/yg64821524HTbijsCX2
+### Update document metadata
+PUT {{base}}/api/documents/{{documentId}}
 content-type: application/json
 
 {
   "title": "My new s",
   "description": "new Demo hjhjh",
-  "keywords": ["test", "cats" ,"dogs3", "demo"]
+  "keywords": ["test", "cats", "dogs3", "demo"]
 }
 
-###
-GET http://localhost:2300/api/documents?title=cats
+# ---------------------------------------------------------------------------
+# Document content (service-role only)
+# ---------------------------------------------------------------------------
 
+### Read content as Tiptap JSON
+GET {{base}}/api/documents/{{documentId}}/content
+Authorization: Bearer {{serviceRoleKey}}
 
-###
-GET http://localhost:2300/api/health
+### Read content as plain text
+GET {{base}}/api/documents/{{documentId}}/content?format=text
+Authorization: Bearer {{serviceRoleKey}}
 
-###
-GET http://localhost:2300/api/health/supabase
+### Append a paragraph (live collaborators see it immediately)
+PATCH {{base}}/api/documents/{{documentId}}/content?mode=append
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
 
-###
-GET http://localhost:2300/api/health/redis
+{
+  "content": {
+    "type": "doc",
+    "content": [
+      { "type": "paragraph", "content": [{ "type": "text", "text": "Appended by automation." }] }
+    ]
+  }
+}
 
-###
-GET http://localhost:2300/api/health/database
+### Replace the whole body (must start with a level-1 heading)
+PATCH {{base}}/api/documents/{{documentId}}/content?mode=replace
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
 
-### Hocuspocus Health Check
-GET http://localhost:1234/health
+{
+  "content": {
+    "type": "doc",
+    "content": [
+      { "type": "heading", "attrs": { "level": 1 }, "content": [{ "type": "text", "text": "Quarterly report" }] },
+      { "type": "paragraph", "content": [{ "type": "text", "text": "Revenue grew 12%." }] }
+    ]
+  }
+}
 
+### Clear the body (empty title heading)
+PATCH {{base}}/api/documents/{{documentId}}/content?mode=replace
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
 
-### Hocuspocus Health Check
-GET http://localhost:1234/health/websocket
+{
+  "content": { "type": "doc", "content": [{ "type": "heading", "attrs": { "level": 1 } }] }
+}
 
-### Hocuspocus Health Check
-GET http://localhost:1234/health/database
+### Create a document with initial content
+POST {{base}}/api/documents
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
 
-### Hocuspocus Health Check
-GET http://localhost:1234/health/redis
+{
+  "title": "Generated report",
+  "slug": "generated-report",
+  "ownerId": "00000000-0000-0000-0000-000000000000",
+  "content": {
+    "type": "doc",
+    "content": [
+      { "type": "heading", "attrs": { "level": 1 }, "content": [{ "type": "text", "text": "Generated report" }] },
+      { "type": "paragraph", "content": [{ "type": "text", "text": "Written by an automation." }] }
+    ]
+  }
+}
 
+### INTERNAL ONLY — the collaboration process's apply endpoint.
+### Not Traefik-routed; reachable from the docker network or localhost. REST
+### forwards here. Call it directly only when debugging the hop itself.
+# POST {{wsInternal}}/internal/documents/{{documentId}}/content
+# Authorization: Bearer {{serviceRoleKey}}
+# content-type: application/json
+#
+# {
+#   "mode": "append",
+#   "content": {
+#     "type": "doc",
+#     "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "direct hop" }] }]
+#   }
+# }
+
+# ---------------------------------------------------------------------------
+# Document conversion (service-role only)
+# ---------------------------------------------------------------------------
+# Export responses are the raw file, not the house envelope — save them rather
+# than reading them in the response pane.
+
+### Export as .docx (the default format)
+GET {{base}}/api/documents/{{documentId}}/export
+Authorization: Bearer {{serviceRoleKey}}
+
+### Export as .docx (explicit)
+GET {{base}}/api/documents/{{documentId}}/export?format=docx
+Authorization: Bearer {{serviceRoleKey}}
+
+### Export as Markdown
+GET {{base}}/api/documents/{{documentId}}/export?format=md
+Authorization: Bearer {{serviceRoleKey}}
+
+### Export as .odt
+GET {{base}}/api/documents/{{documentId}}/export?format=odt
+Authorization: Bearer {{serviceRoleKey}}
+
+### Import a .docx — returns JSON and writes nothing
+### `< ./sample.docx` reads a file you supply; the repo ships no fixture.
+POST {{base}}/api/documents/{{documentId}}/import
+Authorization: Bearer {{serviceRoleKey}}
+Content-Type: multipart/form-data; boundary=----DocsPlusBoundary
+
+------DocsPlusBoundary
+Content-Disposition: form-data; name="documentFile"; filename="sample.docx"
+Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+< ./sample.docx
+------DocsPlusBoundary--
+
+### Import Markdown — same field name, no raw-body variant
+POST {{base}}/api/documents/{{documentId}}/import
+Authorization: Bearer {{serviceRoleKey}}
+Content-Type: multipart/form-data; boundary=----DocsPlusBoundary
+
+------DocsPlusBoundary
+Content-Disposition: form-data; name="documentFile"; filename="sample.md"
+Content-Type: text/markdown
+
+< ./sample.md
+------DocsPlusBoundary--
+
+### Apply an import: paste `data.content` from the response above.
+### Ask for mode=append — the route defaults to replace, and imported content
+### carries no toc-id, so a replace re-keys every heading and orphans its chat
+### channel, fold state and ?id= link. Drop the pasted content[0] first: every
+### import opens on a title heading, and appending one lands it mid-document.
+PATCH {{base}}/api/documents/{{documentId}}/content?mode=append
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
+
+{
+  "content": {
+    "type": "doc",
+    "content": [
+      { "type": "paragraph", "content": [{ "type": "text", "text": "Paste the imported content here." }] }
+    ]
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Health
+# ---------------------------------------------------------------------------
+
+### REST health
+GET {{base}}/health
+
+### REST health — supabase
+GET {{base}}/health/supabase
+
+### REST health — redis
+GET {{base}}/health/redis
+
+### REST health — database
+GET {{base}}/health/database
+
+### Collaboration server health
+GET http://localhost:4001/health
+
+### Collaboration server health — websocket
+GET http://localhost:4001/health/websocket
+
+### Collaboration server health — database
+GET http://localhost:4001/health/database
+
+### Collaboration server health — redis
+GET http://localhost:4001/health/redis
+
+### Collaboration server metrics (internal listener)
+GET {{wsInternal}}/metrics

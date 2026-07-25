@@ -14,7 +14,9 @@ The package ships three independent entry points. Each is its own process and sc
 
 The REST API initializes the email and push gateways in queue-only mode, so it can run as multiple replicas without spawning duplicate workers — the worker process owns job execution. Email and push notifications flow Supabase → pgmq → worker → BullMQ → SMTP / Web Push; there are no `/api/email/send` or `/api/push` HTTP endpoints.
 
-Ports are configurable via `APP_PORT`, `HOCUSPOCUS_PORT`, and `WORKER_HEALTH_PORT` (see [ENV.md](./ENV.md)).
+The WebSocket process also serves an internal HTTP listener on `4003` carrying `/metrics` and the service-role content-apply endpoint. It is never Traefik-routed; the REST process reaches it over `HOCUSPOCUS_INTERNAL_URL`.
+
+Ports are configurable via `APP_PORT`, `HOCUSPOCUS_PORT`, `WORKER_HEALTH_PORT`, and `HOCUSPOCUS_INTERNAL_HTTP_PORT` (see [ENV.md](./ENV.md)).
 
 ## Tech stack
 
@@ -41,19 +43,21 @@ bun run --filter @docs.plus/hocuspocus dev:worker   # Worker
 
 The `dev:*` scripts load `../../.env.local`. For Docker-based runs (`make up-dev` / `make up-prod`), config comes from the root `.env.development` / `.env.production`. See [ENV.md](./ENV.md).
 
+Linting runs from the monorepo root (`bun run lint` / `bun run lint:fix`); this package has no local lint script.
+
 ## Scripts
 
-| Script                                     | Description                                          |
-| ------------------------------------------ | ---------------------------------------------------- |
-| `dev:rest` / `dev:ws` / `dev:worker`       | Watch-mode dev for each process                      |
-| `start:rest` / `start:ws` / `start:worker` | Production start for each process                    |
-| `build`                                    | Bundle all three entries to `dist/` (`--target=bun`) |
-| `lint` / `lint:fix`                        | ESLint                                               |
-| `typecheck`                                | `tsc --noEmit`                                       |
-| `test` / `test:watch` / `test:coverage`    | Bun test runner                                      |
-| `prisma:generate`                          | Generate the Prisma client                           |
-| `prisma:migrate`                           | Run a dev migration                                  |
-| `migrate:nested-to-flat`                   | One-off document migration (`:dry` for a dry run)    |
+| Script                                     | Description                                               |
+| ------------------------------------------ | --------------------------------------------------------- |
+| `dev:rest` / `dev:ws` / `dev:worker`       | Watch-mode dev for each process                           |
+| `start:rest` / `start:ws` / `start:worker` | Production start for each process                         |
+| `build`                                    | Bundle all three entries to `dist/` (`--target=bun`)      |
+| `typecheck`                                | `tsc --noEmit`                                            |
+| `test` / `test:watch` / `test:coverage`    | Bun test runner                                           |
+| `test:e2e` / `test:e2e:content-inject`     | Real-infra E2E (Postgres + Redis; needs `make dev-local`) |
+| `prisma:generate`                          | Generate the Prisma client                                |
+| `prisma:migrate`                           | Run a dev migration                                       |
+| `migrate:nested-to-flat`                   | One-off document migration (`:dry` for a dry run)         |
 
 ## Structure
 
@@ -63,7 +67,7 @@ src/
 ├── hocuspocus.server.ts    # WebSocket entry (Hocuspocus)
 ├── hocuspocus.worker.ts    # Worker entry (pgmq + BullMQ)
 ├── api/                    # REST layer: routers, controllers, services, middleware, utils
-├── modules/                # Self-contained bounded modules (e.g. link-metadata)
+├── modules/                # Bounded modules (link-metadata, document-content, document-conversion, openapi)
 ├── config/                 # env.schema.ts, hocuspocus.config
 ├── extensions/             # Hocuspocus extensions
 ├── lib/                    # email, push, storage, prisma, redis, queue, logger, errors
@@ -95,8 +99,13 @@ app.route('/api/metadata', linkMetadataModule.router)
 
 See `src/modules/link-metadata/README.md` for the full boundary rules and extraction plan.
 
+`src/modules/document-content` follows the same rules with one documented extension: besides `init(deps): { router }` for the REST process, it exports a second factory `initWsApply(deps): { app }`. Content injection has to run where the live Y.Doc is, so the collaboration process mounts that app on its internal listener.
+
+`src/modules/document-conversion` converts a document to `.docx`, Markdown or ODT and reads `.docx` and Markdown back — see [API.md](./API.md#document-conversion) for the fidelity contract. Every format starts from one shared stage, `toPortableJson`, which rewrites the nodes only the editor can render (media embeds become links, upload placeholders disappear) so no writer meets them; DOCX then goes through the shared HTML rendering, while Markdown and ODT are serialized straight from that tree.
+
 ## Documentation
 
+- `GET /docs` — Swagger UI, served by the REST process; `GET /openapi.json` for the raw OpenAPI 3.1 document. Request schemas are generated from the live zod schemas. Neither path is Traefik-routed, so they are local/internal only.
 - [API.md](./API.md) — REST endpoints, auth, and response shapes
 - [ENV.md](./ENV.md) — environment variables (authoritative source: `src/config/env.schema.ts`)
 - [root README](../../README.md) — monorepo setup

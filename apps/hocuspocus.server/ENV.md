@@ -23,13 +23,34 @@ These have no default and fail startup if missing.
 
 ## Core application
 
-| Variable             | Type                                    | Default                |
-| -------------------- | --------------------------------------- | ---------------------- |
-| `NODE_ENV`           | `development` \| `production` \| `test` | `development`          |
-| `APP_NAME`           | string                                  | `hocuspocus`           |
-| `APP_PORT`           | number                                  | `4000` (REST API)      |
-| `HOCUSPOCUS_PORT`    | number                                  | `4001` (WebSocket)     |
-| `WORKER_HEALTH_PORT` | number                                  | `4002` (worker health) |
+| Variable                        | Type                                    | Default                 |
+| ------------------------------- | --------------------------------------- | ----------------------- |
+| `NODE_ENV`                      | `development` \| `production` \| `test` | `development`           |
+| `APP_NAME`                      | string                                  | `hocuspocus`            |
+| `APP_PORT`                      | number                                  | `4000` (REST API)       |
+| `HOCUSPOCUS_PORT`               | number                                  | `4001` (WebSocket)      |
+| `WORKER_HEALTH_PORT`            | number                                  | `4002` (worker health)  |
+| `HOCUSPOCUS_INTERNAL_HTTP_PORT` | number                                  | `4003` (internal HTTP)  |
+| `HOCUSPOCUS_INTERNAL_HTTP_HOST` | string                                  | `0.0.0.0`               |
+| `HOCUSPOCUS_INTERNAL_URL`       | string                                  | `http://localhost:4003` |
+| `PUBLIC_RESTAPI_URL`            | string                                  | — (unset)               |
+
+### Public origin
+
+`PUBLIC_RESTAPI_URL` is the origin this REST process itself answers on, e.g. `https://prodback.docs.plus`. Two conversion paths read it: import re-hosts images out of an uploaded `.docx` and needs it to build a URL the editor can resolve, and DOCX export uses it as the allowlist of image origins the converter is allowed to download (see [API.md](./API.md#fidelity-contract)).
+
+- **Origin only — no `/api`**, unlike `SERVER_RESTAPI_URL` (`…:4000/api`) and `NEXT_PUBLIC_RESTAPI_URL` (`…:4000/api/v1`). The route path is appended, so a value set by analogy with those two bakes `…/api/api/plugins/…` permanently into document content.
+- **Unset is a supported state, not a broken one — but it costs images in both directions.** Every image in a `.docx` import is reported as a `media-placeholder-dropped` warning and skipped, and every DOCX export comes out with no pictures at all, because an empty allowlist matches nothing. The text survives either way. There is no default and no `X-Forwarded-Host` fallback: the value is persisted into document content, and a client-settable header is not something to persist.
+- **Set it to the same origin the stored image URLs carry.** Pad uploads are saved as `NEXT_PUBLIC_RESTAPI_URL` + `/plugins/hypermultimedia/…`, so a `PUBLIC_RESTAPI_URL` pointed at an internal container name while documents hold the public hostname makes the export allowlist match nothing.
+- Compose passes it through as `${PUBLIC_RESTAPI_URL}` on `rest-api` in both dev and prod. A stale shell export of that name overrides `env_file` — the footgun that broke worker SMTP; deploy from a clean shell.
+
+### Internal HTTP listener
+
+The collaboration process serves one internal listener carrying both `/metrics` and the service-role content-apply endpoint. Never expose it through Traefik.
+
+- **`HOCUSPOCUS_INTERNAL_HTTP_PORT`** — moving it off `4003` also requires editing `scripts/observability/prometheus/prometheus.yml` (the scrape target port), and Prometheus only picks that file up after `docker restart docsplus-prometheus`; Compose ignores mounted-config content changes.
+- **`HOCUSPOCUS_INTERNAL_HTTP_HOST`** — `0.0.0.0` matches the bind this listener has always used. **Do not tighten the default.** Prometheus scrapes the port cross-container by DNS discovery, and no alert fires on a target that simply stops reporting, so a loopback default would silently kill every collaboration-process metric the moment the Compose env went missing. On a host-run dev machine set `127.0.0.1` yourself: the endpoint mutates documents, and the service-role key shipped in `.env.example` is the world-known Supabase demo JWT, not a secret.
+- **`HOCUSPOCUS_INTERNAL_URL`** — where the REST process forwards content applies. Compose sets `http://hocuspocus-server:4003`.
 
 ## Security
 
