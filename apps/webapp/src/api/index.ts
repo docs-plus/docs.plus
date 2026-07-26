@@ -1,5 +1,6 @@
 export * from './auth'
 export * from './channels'
+export * from './documents'
 export * from './messages'
 export * from './notification'
 export * from './rpc'

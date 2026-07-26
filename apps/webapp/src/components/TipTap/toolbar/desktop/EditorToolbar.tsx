@@ -355,7 +355,10 @@ const EditorToolbar = () => {
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
               <div>
-                <ToolbarButton tooltip="Document Settings" tooltipPlacement="left">
+                <ToolbarButton
+                  tooltip="Document Settings"
+                  tooltipPlacement="left"
+                  aria-label="Document settings">
                   <Icons.settings size={ICON_SIZE} />
                 </ToolbarButton>
               </div>

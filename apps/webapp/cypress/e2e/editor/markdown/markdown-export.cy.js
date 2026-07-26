@@ -158,17 +158,23 @@ describe('Markdown Export', () => {
     })
   })
 
-  describe('settings panel export button', () => {
-    it('download button is enabled when document has content', () => {
-      cy.get('[tooltip="Document Settings"]').click()
-      cy.contains('Markdown').click()
-      cy.contains('button', 'Download').should('not.be.disabled')
+  describe('settings panel import & export', () => {
+    // `tooltip` is a Floating UI prop, not a DOM attribute, so the old
+    // `[tooltip="Document Settings"]` selector never matched anything.
+    beforeEach(() => {
+      cy.get('button[aria-label="Document settings"]').click()
+      cy.get('input[name="gear-accordion"]').eq(1).click({ force: true })
+    })
+
+    it('offers every format the conversion API implements', () => {
+      cy.contains('button', 'Word').should('not.be.disabled')
+      cy.contains('button', 'Markdown').should('not.be.disabled')
+      cy.contains('button', 'OpenDocument').should('not.be.disabled')
+      cy.contains('button', 'Print / Save as PDF').should('not.be.disabled')
     })
 
     it('import button is enabled when editor is ready', () => {
-      cy.get('[tooltip="Document Settings"]').click()
-      cy.contains('Markdown').click()
-      cy.contains('button', 'Import .md').should('not.be.disabled')
+      cy.contains('button', 'Choose file').should('not.be.disabled')
     })
   })
 })
