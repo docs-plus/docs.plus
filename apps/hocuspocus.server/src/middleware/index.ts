@@ -170,7 +170,14 @@ export const setupMiddleware = (app: Hono) => {
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization', 'token', 'X-Requested-With'],
-      exposeHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+      // Content-Disposition carries the export filename. Without it here the browser
+      // hides the header cross-origin and every download lands under a guessed name.
+      exposeHeaders: [
+        'X-RateLimit-Limit',
+        'X-RateLimit-Remaining',
+        'X-RateLimit-Reset',
+        'Content-Disposition'
+      ],
       maxAge: 86400 // 24 hours
     })
   )
