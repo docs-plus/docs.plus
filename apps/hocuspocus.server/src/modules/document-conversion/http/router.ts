@@ -4,9 +4,9 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
-import { fail, houseEnvelopeHook, requireServiceRole } from '../../document-content/http/controller'
+import { requireServiceRoleOrUser } from '../../../api/middleware/auth'
+import { fail, houseEnvelopeHook } from '../../document-content/http/controller'
 import { documentIdParamSchema } from '../../document-content/http/schema'
-import type { VerifyServiceRole } from '../../document-content/types'
 import { MAX_IMPORT_BYTES } from '../types'
 import { createGetExportHandler, createPostImportHandler } from './controller'
 import { exportQuerySchema } from './schema'
@@ -14,7 +14,6 @@ import { exportQuerySchema } from './schema'
 export interface RouterDeps {
   prisma: PrismaClient
   logger: Logger
-  verifyServiceRole: VerifyServiceRole
   mediaPublicBaseUrl: string | null
 }
 
@@ -29,14 +28,15 @@ const uploadBodyLimit = bodyLimit({
 /**
  * Both paths are two-segment, so neither can shadow the legacy `/:docName` read.
  * The auth check is per-route rather than a `use` pattern: a pattern that fails
- * to match leaves the route open, and nothing would say so.
+ * to match leaves the route open, and nothing would say so. It only proves who
+ * the caller is — the handlers gate access off the document row they load.
  */
 export const createRouter = (deps: RouterDeps): Hono => {
   const router = new Hono()
 
   router.get(
     '/:documentId/export',
-    requireServiceRole(deps.verifyServiceRole),
+    requireServiceRoleOrUser,
     zValidator('param', documentIdParamSchema, houseEnvelopeHook),
     zValidator('query', exportQuerySchema, houseEnvelopeHook),
     createGetExportHandler({
@@ -48,7 +48,7 @@ export const createRouter = (deps: RouterDeps): Hono => {
 
   router.post(
     '/:documentId/import',
-    requireServiceRole(deps.verifyServiceRole),
+    requireServiceRoleOrUser,
     uploadBodyLimit,
     zValidator('param', documentIdParamSchema, houseEnvelopeHook),
     createPostImportHandler({

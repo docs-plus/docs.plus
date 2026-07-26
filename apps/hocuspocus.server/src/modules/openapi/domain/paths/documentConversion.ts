@@ -5,12 +5,15 @@ import {
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS
 } from '../../../document-conversion/types'
-import type { JsonSchema, OpenApiPaths, OpenApiResponse } from '../../types'
+import type { JsonSchema, OpenApiPaths, OpenApiResponse, SecurityRequirement } from '../../types'
 import { rateLimitedRef } from '../components'
 import { dataEnvelope, toParameters } from '../jsonSchema'
 
 const tags = ['Document content']
-const security = [{ serviceRoleKey: [] }]
+
+/** No anonymous entry: the fallback is `requireUser`, so a tokenless caller is a
+ *  401 even on a public document. Access itself is decided per document. */
+const security: SecurityRequirement[] = [{ supabaseUserToken: [] }, { serviceRoleKey: [] }]
 
 const documentIdParam = toParameters(documentIdParamSchema, 'path', {
   documentId: 'The 19-character id that is also the collaboration room name — never the slug.'
@@ -26,6 +29,7 @@ const envelopeResponse = (description: string): OpenApiResponse => ({
 const conversionErrors = {
   '400': { $ref: '#/components/responses/ValidationError' },
   '401': { $ref: '#/components/responses/Unauthorized' },
+  '403': { $ref: '#/components/responses/Forbidden' },
   '404': { $ref: '#/components/responses/NotFound' },
   '429': rateLimitedRef,
   '500': { $ref: '#/components/responses/InternalError' }
@@ -66,7 +70,7 @@ export const documentConversionPaths: OpenApiPaths = {
       operationId: 'exportDocument',
       summary: 'Download a document as a file',
       description:
-        "Converts the persisted head snapshot, so it trails an actively edited document by the store debounce. A document with metadata but no snapshot exports as an empty file. This response is the raw file, not the house envelope — errors still carry the envelope. Conversion is lossy in named ways: DOCX drops highlights and code-block line breaks, ODT renders images as links, and every format flattens embeds to links. DOCX embeds only images hosted on this API's own media origin — the converter downloads whatever `src` it is handed, so a third-party image is dropped rather than fetched.",
+        "Takes the service-role key or a Supabase user token; the browser sends its access token in the `token` header. A credential is required whatever the document's privacy — a tokenless call is a 401, not an anonymous read. A private document stays owner-only: an anonymous session or an ownerless-private document is a 401, and a signed-in non-owner a 403. Converts the persisted head snapshot, so it trails an actively edited document by the store debounce. A document with metadata but no snapshot exports as an empty file. This response is the raw file, not the house envelope — errors still carry the envelope. Conversion is lossy in named ways: DOCX drops highlights and code-block line breaks, ODT renders images as links, and every format flattens embeds to links. DOCX embeds only images hosted on this API's own media origin — the converter downloads whatever `src` it is handed, so a third-party image is dropped rather than fetched.",
       tags,
       security,
       parameters: [...documentIdParam, ...toParameters(exportQuerySchema, 'query')],
@@ -96,7 +100,7 @@ export const documentConversionPaths: OpenApiPaths = {
     post: {
       operationId: 'importDocument',
       summary: 'Convert an uploaded Word or Markdown file to document content',
-      description: `Reads a \`.docx\` or a Markdown file and returns Tiptap JSON. **No database write and no content mutation** — apply the result with \`PATCH /api/documents/{documentId}/content\`, which is where the read-only lock is enforced. Markdown carries no \`toc-id\`, so applying it with \`mode=replace\` re-keys every heading and orphans that heading's chat channel, fold state and \`?id=\` links; prefer \`mode=append\`. Both formats arrive as \`multipart/form-data\` — there is no raw-body variant, so one field, one size limit and one sniff cover every upload. The bytes are identified by their container, not their extension or declared MIME type: a zip is \`.docx\`, and anything else must decode as UTF-8 text. Embedded Word images are rehosted through the media route, which is the one side effect: those objects are written to storage even though the document is not. When the server has no public media URL configured each image is reported as a \`media-placeholder-dropped\` warning and the text still imports. Capped at ${MAX_IMPORT_BYTES} bytes uploaded and ${MAX_INFLATED_IMPORT_BYTES} bytes unpacked, and Markdown additionally at ${MAX_MARKDOWN_CHARS} characters.`,
+      description: `Reads a \`.docx\` or a Markdown file and returns Tiptap JSON. Takes the same credentials as export and gates on write access on top of them: a read-only document refuses everyone but its owner with a 403, since nobody else can apply the result and the conversion costs real CPU. **No database write and no content mutation** — apply the result with \`PATCH /api/documents/{documentId}/content\`, which enforces the read-only lock on the write itself. Markdown carries no \`toc-id\`, so applying it with \`mode=replace\` re-keys every heading and orphans that heading's chat channel, fold state and \`?id=\` links; prefer \`mode=append\`. Both formats arrive as \`multipart/form-data\` — there is no raw-body variant, so one field, one size limit and one sniff cover every upload. The bytes are identified by their container, not their extension or declared MIME type: a zip is \`.docx\`, and anything else must decode as UTF-8 text. Embedded Word images are rehosted through the media route, which is the one side effect: those objects are written to storage even though the document is not. When the server has no public media URL configured each image is reported as a \`media-placeholder-dropped\` warning and the text still imports. Capped at ${MAX_IMPORT_BYTES} bytes uploaded and ${MAX_INFLATED_IMPORT_BYTES} bytes unpacked, and Markdown additionally at ${MAX_MARKDOWN_CHARS} characters.`,
       tags,
       security,
       parameters: documentIdParam,

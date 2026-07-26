@@ -85,7 +85,6 @@ app.route('/api/documents', documentContentModule.router)
 const documentConversionModule = documentConversion.init({
   prisma,
   logger: logger.child({ module: 'document-conversion' }),
-  verifyServiceRole,
   // `PUBLIC_RESTAPI_URL`, never a request header: this is persisted into document
   // content, and `X-Forwarded-Host` is client-settable. Unset drops imported
   // images with a warning rather than storing an origin nobody can resolve.

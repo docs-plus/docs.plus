@@ -4,8 +4,9 @@ import type { Logger } from 'pino'
 import slugify from 'slugify'
 
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
+import { resolvePrivateAccess } from '../../../lib/privateAccess'
 import { fail, ok } from '../../document-content/http/controller'
-import { findDocumentMeta, findHeadRow } from '../../document-content/infra/contentStore'
+import { findHeadRow } from '../../document-content/infra/contentStore'
 import { exportDocx } from '../domain/docxExport'
 import { importDocx } from '../domain/docxImport'
 import { titleHeadingText } from '../domain/ensureTitleHeading'
@@ -16,6 +17,55 @@ import { zipInflateSize } from '../domain/zipInflateSize'
 import { createImageUpload } from '../infra/imageUpload'
 import type { ExportFormat, ImportFormat, TiptapDocJson } from '../types'
 import { MAX_IMPORT_BYTES, MAX_INFLATED_IMPORT_BYTES, MAX_MARKDOWN_CHARS } from '../types'
+
+interface ConversionMeta {
+  slug: string
+  ownerId: string | null
+  deletedAt: Date | null
+  isPrivate: boolean
+  readOnly: boolean
+}
+
+// The shared `findDocumentMeta` projection carries no access columns, so the gate
+// fields ride this one lookup instead of a second round trip per request.
+const findConversionMeta = (
+  prisma: PrismaClient,
+  documentId: string
+): Promise<ConversionMeta | null> =>
+  prisma.documentMetadata.findUnique({
+    where: { documentId },
+    select: { slug: true, ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }
+  })
+
+/** Read gate. The service-role key passes unconditionally; a user answers to the
+ *  predicate the WS gate and the slug read already share, so one privacy rule
+ *  covers every surface. */
+const denyRead = (c: Context, meta: ConversionMeta): Response | null => {
+  if (c.get('serviceRole')) return null
+
+  const access = resolvePrivateAccess({
+    isPrivate: meta.isPrivate,
+    ownerId: meta.ownerId,
+    userId: c.get('userId'),
+    isAnonymous: c.get('user')?.is_anonymous
+  })
+  if (access === 'sign-in-required')
+    return fail(c, 401, 'UNAUTHORIZED', 'Sign in to access this document')
+  if (access === 'denied') return fail(c, 403, 'FORBIDDEN', 'This document is private')
+  return null
+}
+
+/** Write gate: read access plus the admin lock the WS handshake enforces. A locked
+ *  document's non-owners cannot apply a conversion, so refuse before spending the
+ *  CPU on one. */
+const denyWrite = (c: Context, meta: ConversionMeta): Response | null => {
+  const denied = denyRead(c, meta)
+  if (denied) return denied
+  if (c.get('serviceRole')) return null
+  if (meta.readOnly && c.get('userId') !== meta.ownerId)
+    return fail(c, 403, 'FORBIDDEN', 'This document is read-only')
+  return null
+}
 
 const EXPORT_MEDIA_TYPES: Record<ExportFormat, string> = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -69,8 +119,10 @@ export const createGetExportHandler =
     const documentId = c.req.param('documentId') as string
     const { format } = c.req.valid('query' as never) as { format: ExportFormat }
 
-    const meta = await findDocumentMeta(deps.prisma, documentId)
+    const meta = await findConversionMeta(deps.prisma, documentId)
     if (!meta || meta.deletedAt) return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    const denied = denyRead(c, meta)
+    if (denied) return denied
 
     const head = await findHeadRow(deps.prisma, documentId)
     // Metadata without a snapshot is a document nobody has persisted yet, which
@@ -154,16 +206,19 @@ export interface ImportControllerDeps {
 
 /**
  * Word or Markdown to Tiptap JSON. No database write and no content mutation —
- * the caller applies the result through `PATCH /content`, the only path that
- * enforces the read-only lock. Embedded images are rehosted to object storage.
+ * the caller applies the result through `PATCH /content`. Admission still costs
+ * write access, because a locked document's readers can never apply the result.
+ * Embedded images are rehosted to object storage.
  */
 export const createPostImportHandler =
   (deps: ImportControllerDeps) =>
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
 
-    const meta = await findDocumentMeta(deps.prisma, documentId)
+    const meta = await findConversionMeta(deps.prisma, documentId)
     if (!meta || meta.deletedAt) return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    const denied = denyWrite(c, meta)
+    if (denied) return denied
 
     let form: FormData
     try {

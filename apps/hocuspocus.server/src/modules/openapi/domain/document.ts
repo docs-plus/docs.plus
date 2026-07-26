@@ -35,7 +35,7 @@ const TAGS = [
   {
     name: 'Document content',
     description:
-      'Read and write a document body from a server-side integration. Service-role only; writes reach live collaborators in real time.'
+      'Read and write a document body, and convert it to or from a file. The content routes are service-role only; export and import also take a user token. Writes reach live collaborators in real time.'
   },
   {
     name: 'Media',
