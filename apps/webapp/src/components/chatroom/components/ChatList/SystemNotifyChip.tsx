@@ -28,11 +28,7 @@ const NotifyUserAvatar = ({ message }: { message: MessageRow }) => {
   const id = ud?.id ?? message.user_id
   if (!id) return null
 
-  return (
-    <div className="avatar shrink-0">
-      <Avatar face={{ ...ud, id }} size="sm" alt="user" />
-    </div>
-  )
+  return <Avatar face={{ ...ud, id }} size="sm" className="shrink-0" />
 }
 
 const MentionLabel = ({ message, className }: { message: MessageRow; className?: string }) => {

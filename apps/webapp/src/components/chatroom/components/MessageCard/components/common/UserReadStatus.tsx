@@ -1,8 +1,8 @@
 import { ChannelMemberReadUpdate, getChannelMembersByLastReadUpdate } from '@api'
-import AvatarStack from '@components/AvatarStack'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { usePeerReadSeq } from '@components/chatroom/hooks'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
+import { AvatarStack } from '@components/ui/AvatarStack'
 import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
@@ -77,6 +77,7 @@ export function UserReadStatus({
         users={readUsers.map((user) => toStackUser(user))}
         size="sm"
         maxDisplay={3}
+        clickable={false}
       />
     </div>
   )

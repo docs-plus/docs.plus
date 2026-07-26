@@ -51,8 +51,7 @@ export const MentionSuggestionRow = memo(function MentionSuggestionRow({
           face={entry}
           alt={name}
           size="sm"
-          displayPresence
-          online={online}
+          presence={online ? 'online' : 'offline'}
           clickable={false}
           className="shrink-0"
         />

@@ -111,9 +111,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       header={
         <>
           <Avatar
-            id={userData.id || userId}
-            src={isNonEmptyString(userData.avatar_url) ? userData.avatar_url : undefined}
-            avatarUpdatedAt={userData.avatar_updated_at}
+            face={{ ...userData, id: userData.id || userId }}
             alt={fullName}
             clickable={false}
             size="2xl"

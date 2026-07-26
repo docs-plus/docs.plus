@@ -130,14 +130,7 @@ const PadTitle = () => {
                   onClick={() => setProfileModalOpen(true)}
                   tooltip="Profile"
                   tooltipPlacement="bottom">
-                  <Avatar
-                    id={user.id}
-                    src={user.avatar_url}
-                    avatarUpdatedAt={user.avatar_updated_at}
-                    clickable={false}
-                    size="lg"
-                    className="pointer-events-none"
-                  />
+                  <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
                 </Button>
               ) : (
                 <Button variant="neutral" onClick={() => setProfileModalOpen(true)}>

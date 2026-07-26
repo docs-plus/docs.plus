@@ -2,6 +2,7 @@
 export type FaceSource = {
   id?: string
   user_id?: string
+  member_id?: string
   avatar_url?: string | null
   avatar_updated_at?: string | number | null
   avatarUrl?: string | null
@@ -17,7 +18,6 @@ export type ResolvedFace = {
   id?: string
   src?: string | null
   avatarUpdatedAt?: string | number | null
-  alt?: string
   displayName?: string
 }
 
@@ -39,18 +39,12 @@ export function resolveDisplayName(source: FaceSource | null | undefined): strin
 export function resolveFace(source: FaceSource | null | undefined): ResolvedFace {
   if (!source) return {}
 
-  const id = source.id ?? source.user_id
+  const id = source.id ?? source.user_id ?? source.member_id
   const src = source.avatar_url ?? source.avatarUrl ?? null
   const avatarUpdatedAt = source.avatar_updated_at ?? source.avatarUpdatedAt ?? null
   const displayName = resolveDisplayName(source)
 
-  return {
-    id,
-    src,
-    avatarUpdatedAt,
-    alt: displayName,
-    displayName
-  }
+  return { id, src, avatarUpdatedAt, displayName }
 }
 
 /** Boundary adapter for id aliases (`member_id` / camel) → stack rows. */

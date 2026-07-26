@@ -102,15 +102,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                   aria-haspopup="dialog"
                   tooltip="Profile"
                   tooltipPlacement="bottom">
-                  <Avatar
-                    src={user.avatar_url}
-                    avatarUpdatedAt={user.avatar_updated_at}
-                    id={user.id}
-                    alt={user.display_name}
-                    clickable={false}
-                    size="lg"
-                    className="pointer-events-none"
-                  />
+                  <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
                 </Button>
               ) : (
                 <Button

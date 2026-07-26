@@ -84,14 +84,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
 
         <ScrollArea className="min-h-0 flex-1 overscroll-contain p-4 sm:p-6" scrollbarSize="thin">
           <div className="bg-base-200 rounded-box mb-4 flex items-center gap-2.5 p-2.5">
-            <Avatar
-              id={user?.id}
-              avatarUpdatedAt={user?.avatar_updated_at}
-              src={user?.avatar_url}
-              alt={user?.display_name || user?.full_name}
-              size="sm"
-              className="shrink-0"
-            />
+            <Avatar face={user} clickable={false} size="sm" className="shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-base-content truncate text-sm font-semibold">
                 {user?.display_name || user?.full_name || 'User'}

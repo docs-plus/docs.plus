@@ -1,4 +1,5 @@
 export * from './Avatar'
+export * from './AvatarStack'
 export type { ButtonProps, ButtonShape, ButtonSize, ButtonStyle, ButtonVariant } from './Button'
 export { default as Button } from './Button'
 export { default as CloseButton, type CloseButtonSize } from './CloseButton'

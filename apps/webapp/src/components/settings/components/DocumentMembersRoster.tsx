@@ -57,15 +57,7 @@ function DocumentMembersRoster({ slug, memberCount }: DocumentMembersRosterProps
         ) : (
           (members ?? []).map((m) => (
             <div key={m.member_id} className="flex items-center gap-2.5 px-3 py-2">
-              <Avatar
-                size="sm"
-                clickable={false}
-                id={m.member_id}
-                src={m.avatar_url}
-                alt={nameOf(m)}
-                avatarUpdatedAt={m.avatar_updated_at}
-                className="shrink-0"
-              />
+              <Avatar size="sm" clickable={false} face={m} alt={nameOf(m)} className="shrink-0" />
               <span className="flex min-w-0 flex-col">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="text-base-content truncate text-sm font-medium">

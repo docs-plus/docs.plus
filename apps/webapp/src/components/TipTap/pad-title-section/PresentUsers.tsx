@@ -1,8 +1,7 @@
+import { AvatarStack } from '@components/ui/AvatarStack'
 import { selectPresenceOthers } from '@services/workspacePresenceSync'
 import { useAuthStore, useStore } from '@stores'
 import React, { useMemo } from 'react'
-
-import AvatarStack from '../../AvatarStack'
 
 const PresentUsers = () => {
   const usersPresence = useStore((state) => state.usersPresence)

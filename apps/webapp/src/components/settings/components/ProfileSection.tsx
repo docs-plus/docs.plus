@@ -134,14 +134,7 @@ const ProfileSection = () => {
               className="group relative size-24 rounded-full border-0 bg-transparent p-0 transition-[box-shadow] hover:shadow-md"
               disabled={uploading}
               aria-label="Upload profile picture">
-              <Avatar
-                id={user?.id}
-                src={user?.avatar_url}
-                avatarUpdatedAt={user?.avatar_updated_at}
-                alt={user?.display_name || user?.full_name}
-                clickable={false}
-                className="group-hover:ring-primary size-full"
-              />
+              <Avatar face={user} clickable={false} className="size-full" />
               <div
                 className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity ${
                   uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'

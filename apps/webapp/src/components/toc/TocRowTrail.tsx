@@ -1,4 +1,4 @@
-import AvatarStack from '@components/AvatarStack'
+import { AvatarStack } from '@components/ui/AvatarStack'
 import { Tooltip } from '@components/ui/Tooltip'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { usePresentUsers } from '@hooks/usePresentUsers'
@@ -70,9 +70,9 @@ export function TocRowTrail({
           size="sm"
           surface="well"
           users={presentUsers}
-          showStatus={true}
+          showTypingIndicator
           anchor="right"
-          tooltipPosition="left"
+          tooltipPlacement="left"
         />
       )}
     </span>

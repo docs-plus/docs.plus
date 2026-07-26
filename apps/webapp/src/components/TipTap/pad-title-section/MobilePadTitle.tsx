@@ -114,14 +114,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
         aria-label="Profile"
         tooltip="Profile"
         tooltipPlacement="bottom">
-        <Avatar
-          id={user.id}
-          avatarUpdatedAt={user.avatar_updated_at}
-          clickable={false}
-          src={user.avatar_url}
-          size="md"
-          className="pointer-events-none"
-        />
+        <Avatar face={user} clickable={false} size="md" className="pointer-events-none" />
       </Button>
     )
   }

@@ -38,19 +38,20 @@ export const TEXT_CLASSES: Record<AvatarSize, string> = {
 }
 
 /**
- * Stack cutout color only — width is forced in `_daisyui.scss` because daisyUI’s
- * `.avatar-group .avatar { border: 4px solid … }` wins over Tailwind ring/border utilities.
+ * Cutout color for faces inside `.avatar-group`; a solo avatar reads its edge from
+ * the inset keyline instead. Width is forced in `_daisyui.scss` because daisyUI’s
+ * `.avatar-group .avatar { border: 4px solid … }` wins over Tailwind border utilities.
  */
 export function avatarEdgeClass(edge: AvatarEdge): string {
   switch (edge) {
     case 'ring':
-      return '[--avatar-stack-edge:var(--color-base-300)] !ring-0'
+      return '[--avatar-stack-edge:var(--color-base-300)]'
     case 'paper':
-      return '[--avatar-stack-edge:var(--color-base-100)] !ring-0'
+      return '[--avatar-stack-edge:var(--color-base-100)]'
     case 'well':
-      return '[--avatar-stack-edge:var(--pad-well)] !ring-0'
+      return '[--avatar-stack-edge:var(--pad-well)]'
     case 'none':
-      return '!border-0 !ring-0'
+      return '!border-0'
     default: {
       const _exhaustive: never = edge
       return _exhaustive

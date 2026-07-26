@@ -1,4 +1,4 @@
-import AvatarStack from '@components/AvatarStack'
+import { AvatarStack } from '@components/ui/AvatarStack'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
 import { toStackUser } from '@utils/avatarFace'
 
@@ -28,7 +28,7 @@ function DocumentMembersCluster({
 }: DocumentMembersClusterProps) {
   if (memberCount <= 1) return null
 
-  const users = previews.slice(0, 3).map((p) => toStackUser({ ...p, id: p.member_id }))
+  const users = previews.slice(0, 3).map(toStackUser)
 
   return (
     <Popover placement="bottom-end">
@@ -39,7 +39,7 @@ function DocumentMembersCluster({
           tabIndex={tabIndex}
           onClick={(e) => e.stopPropagation()}
           className="rounded-field focus-visible:ring-primary inline-flex min-h-11 shrink-0 items-center justify-center focus-visible:ring-2 focus-visible:outline-none sm:min-h-9">
-          <AvatarStack users={users} size={size} clickable={false} overflowCount={memberCount} />
+          <AvatarStack users={users} size={size} clickable={false} totalCount={memberCount} />
         </button>
       </PopoverTrigger>
       <PopoverContent>

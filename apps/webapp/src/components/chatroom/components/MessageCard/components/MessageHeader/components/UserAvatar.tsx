@@ -16,13 +16,7 @@ export const ProfilePic = ({ message }: { message: TGroupedMsgRow }) => {
 
   return (
     <div className={isGroupStart ? 'block' : 'hidden'}>
-      <Avatar
-        src={author?.avatar_url}
-        avatarUpdatedAt={author?.avatar_updated_at}
-        size="md"
-        id={userId}
-        alt={author?.username ? `avatar_${author.username}` : `avatar_${userId}`}
-      />
+      <Avatar face={{ ...author, id: userId }} size="md" />
     </div>
   )
 }

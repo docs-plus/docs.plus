@@ -2,7 +2,7 @@ import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
 import { userProfileDialogOpenConfig } from '@components/ui/dialogs/userProfileDialogOpenConfig'
 import { Tooltip } from '@components/ui/Tooltip'
 import Config from '@config'
-import { initials, lorelei, rings, shapes } from '@dicebear/collection'
+import { lorelei } from '@dicebear/collection'
 import { createAvatar } from '@dicebear/core'
 import { Placement } from '@floating-ui/react'
 import { useStore } from '@stores'
@@ -13,189 +13,140 @@ import {
   type AvatarSize,
   SIZE_CLASSES
 } from '@utils/avatarStackGeometry'
-import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react'
+import { forwardRef, type Ref, useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export type { AvatarEdge, AvatarSize }
-export { SIZE_CLASSES }
+/** Which candidate the `<img>` points at; steps forward on load failure. */
+type AvatarImageSource = 'bucket' | 'remote' | 'fallback'
 
-type AvatarCollectionKey = 'lorelei' | 'shapes' | 'rings' | 'initials'
+const FALLBACK_SEED = 'avatar'
 
-const AVATAR_COLLECTIONS = {
-  lorelei,
-  shapes,
-  rings,
-  initials
-} as const
+const createFallbackAvatarUri = (seed: string): string => {
+  const svg = createAvatar(lorelei, { seed, backgroundType: ['solid'] }).toString()
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
 
-export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>, 'children'> {
-  /** Boundary shapes (camel/snake/`user_id`) — resolved once; explicit id/src/alt win. */
+export interface AvatarProps extends Omit<React.HTMLAttributes<HTMLElement>, 'children'> {
+  /** The one identity input — profile, RPC row, or caret shape (`utils/avatarFace`). */
   face?: FaceSource | null
-  id?: string
-  displayPresence?: boolean
-  collection?: AvatarCollectionKey | string
-  justImage?: boolean
-  avatarUpdatedAt?: string | number | null
-  online?: boolean
-  src?: string | null
+  /** Overrides the display name resolved from `face`. */
   alt?: string | null
-  status?: string
-  clickable?: boolean
   size?: AvatarSize
   /** Default `ring`. Stacks pass `paper`/`well`; gallery uses `none`. */
   edge?: AvatarEdge
-  imageClassName?: string
-  imageProps?: React.ComponentPropsWithoutRef<'img'>
+  /** Opt-in presence dot; omit to render none. */
+  presence?: 'online' | 'offline'
+  isTyping?: boolean
+  /** Renders a button that opens the profile dialog. Needs a `face` id to activate. */
+  clickable?: boolean
   tooltip?: string
-  tooltipPosition?: Placement
+  tooltipPlacement?: Placement
 }
 
-export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
-  (
-    {
-      face,
-      id,
-      displayPresence = false,
-      collection = 'lorelei',
-      justImage = false,
-      avatarUpdatedAt,
-      online,
-      src,
-      alt,
-      status,
-      clickable = true,
-      size = 'md',
-      edge = 'ring',
-      className,
-      imageClassName,
-      imageProps,
-      tooltip,
-      tooltipPosition,
-      ...restProps
-    },
-    ref
-  ) => {
-    const openDialog = useStore((state) => state.openDialog)
-    // 0 = bucket (custom upload), 1 = remote src (usually OAuth), 2 = DiceBear
-    const [loadStage, setLoadStage] = useState(0)
+export const Avatar = forwardRef<HTMLElement, AvatarProps>(function Avatar(
+  {
+    face,
+    alt,
+    size = 'md',
+    edge = 'ring',
+    presence,
+    isTyping = false,
+    clickable = true,
+    tooltip,
+    tooltipPlacement,
+    className,
+    ...restProps
+  },
+  ref
+) {
+  const openDialog = useStore((state) => state.openDialog)
+  const [imageSource, setImageSource] = useState<AvatarImageSource>('bucket')
 
-    const resolved = resolveFace(face)
-    const resolvedId = id ?? resolved.id
-    const resolvedSrc = src !== undefined ? src : resolved.src
-    const resolvedAvatarUpdatedAt =
-      avatarUpdatedAt !== undefined ? avatarUpdatedAt : resolved.avatarUpdatedAt
-    const resolvedAlt = alt ?? resolved.alt
+  const { id, src, avatarUpdatedAt, displayName } = resolveFace(face)
+  const label = alt ?? displayName ?? 'User avatar'
 
-    const fallbackAvatar = useMemo(() => {
-      const resolvedCollection =
-        collection in AVATAR_COLLECTIONS
-          ? AVATAR_COLLECTIONS[collection as AvatarCollectionKey]
-          : AVATAR_COLLECTIONS.lorelei
+  const bucketSrc = useMemo(() => {
+    if (!id || !avatarUpdatedAt || !process.env.NEXT_PUBLIC_SUPABASE_URL) return null
+    return Config.app.profile.getAvatarURL(id, String(avatarUpdatedAt))
+  }, [id, avatarUpdatedAt])
 
-      const svg = createAvatar(resolvedCollection, {
-        seed: resolvedId || resolvedAlt || 'avatar',
-        backgroundType: ['solid']
-      }).toString()
+  const remoteSrc = src?.trim() || null
 
-      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-    }, [resolvedId, resolvedAlt, collection])
+  useEffect(() => {
+    setImageSource('bucket')
+  }, [id, bucketSrc, remoteSrc])
 
-    const bucketSrc = useMemo(() => {
-      if (!resolvedId || !resolvedAvatarUpdatedAt || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        return null
-      }
-      return Config.app.profile.getAvatarURL(resolvedId, String(resolvedAvatarUpdatedAt))
-    }, [resolvedId, resolvedAvatarUpdatedAt])
+  // DiceBear only runs once no real photo is available, so avatars with a
+  // bucket or OAuth image never pay for a generated SVG they discard.
+  const imgSrc = useMemo(() => {
+    if (imageSource === 'bucket' && bucketSrc) return bucketSrc
+    if (imageSource !== 'fallback' && remoteSrc) return remoteSrc
+    return createFallbackAvatarUri(id || alt || displayName || FALLBACK_SEED)
+  }, [imageSource, bucketSrc, remoteSrc, id, alt, displayName])
 
-    const remoteSrc = resolvedSrc?.trim() || null
-
-    useEffect(() => {
-      setLoadStage(0)
-    }, [bucketSrc, remoteSrc, resolvedId])
-
-    const imgSrc = useMemo(() => {
-      if (loadStage >= 2) return fallbackAvatar
-      if (loadStage === 1) return remoteSrc || fallbackAvatar
-      return bucketSrc || remoteSrc || fallbackAvatar
-    }, [loadStage, bucketSrc, remoteSrc, fallbackAvatar])
-
-    const handleError = useCallback(() => {
-      setLoadStage((stage) => {
-        if (stage !== 0) return 2
-        if (bucketSrc && remoteSrc && remoteSrc !== bucketSrc) return 1
-        return 2
-      })
-    }, [bucketSrc, remoteSrc])
-
-    const handleClick = useCallback(() => {
-      if (!clickable || !resolvedId) return
-      openDialog(<UserProfileDialog userId={resolvedId} />, userProfileDialogOpenConfig)
-    }, [clickable, resolvedId, openDialog])
-
-    const isTyping = status === 'TYPING'
-    const sizeClass = SIZE_CLASSES[size]
-    const cursorClass = clickable && resolvedId ? 'cursor-pointer' : 'cursor-default'
-    const edgeClass = avatarEdgeClass(edge)
-    const showInsetKeyline = edge === 'ring'
-
-    const containerClass = twMerge(
-      'avatar',
-      sizeClass,
-      'rounded-full',
-      'bg-base-200',
-      edgeClass,
-      '!overflow-visible',
-      displayPresence && (online ? 'avatar-online' : 'avatar-offline'),
-      isTyping && 'avatar-typing',
-      cursorClass,
-      className
+  const handleError = useCallback(() => {
+    setImageSource((current) =>
+      current === 'bucket' && bucketSrc && remoteSrc && remoteSrc !== bucketSrc
+        ? 'remote'
+        : 'fallback'
     )
+  }, [bucketSrc, remoteSrc])
 
-    const imgClass = twMerge(
-      'size-full',
-      'rounded-full',
-      'object-cover',
-      'bg-base-200',
-      showInsetKeyline &&
-        'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]',
-      cursorClass,
-      imageClassName,
-      justImage && className,
-      imageProps?.className
-    )
+  const interactive = clickable && Boolean(id)
 
-    const imgElement = (
-      <img
-        {...imageProps}
-        ref={ref}
-        alt={resolvedAlt || 'User avatar'}
-        src={imgSrc}
-        onError={handleError}
-        onClick={handleClick}
-        className={imgClass}
-      />
-    )
+  const openProfile = useCallback(() => {
+    if (!id) return
+    openDialog(<UserProfileDialog userId={id} />, userProfileDialogOpenConfig)
+  }, [id, openDialog])
 
-    if (justImage) {
-      return imgElement
-    }
+  const rootClassName = twMerge(
+    'avatar rounded-full bg-base-200',
+    SIZE_CLASSES[size],
+    avatarEdgeClass(edge),
+    // daisyUI clips `.avatar`; the presence dot and stack cutout paint outside the circle.
+    '!overflow-visible',
+    presence && (presence === 'online' ? 'avatar-online' : 'avatar-offline'),
+    isTyping && 'avatar-typing',
+    interactive
+      ? 'focus-visible:ring-primary cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none'
+      : 'cursor-default',
+    className
+  )
 
-    const container = (
-      <div {...restProps} className={containerClass} onClick={handleClick}>
-        {imgElement}
-      </div>
-    )
+  const image = (
+    <img
+      alt={label}
+      src={imgSrc}
+      onError={handleError}
+      className={twMerge(
+        'size-full rounded-full object-cover',
+        edge === 'ring' &&
+          'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]'
+      )}
+    />
+  )
 
-    if (tooltip) {
-      return (
-        <Tooltip title={tooltip} placement={tooltipPosition}>
-          {container}
-        </Tooltip>
-      )
-    }
+  const root = interactive ? (
+    <button
+      {...restProps}
+      ref={ref as Ref<HTMLButtonElement>}
+      type="button"
+      aria-label={displayName ? `Open ${displayName}'s profile` : 'Open profile'}
+      onClick={openProfile}
+      className={rootClassName}>
+      {image}
+    </button>
+  ) : (
+    <div {...restProps} ref={ref as Ref<HTMLDivElement>} className={rootClassName}>
+      {image}
+    </div>
+  )
 
-    return container
-  }
-)
+  if (!tooltip) return root
 
-Avatar.displayName = 'Avatar'
+  return (
+    <Tooltip title={tooltip} placement={tooltipPlacement}>
+      {root}
+    </Tooltip>
+  )
+})
