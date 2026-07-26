@@ -51,7 +51,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Face inputs / Stack geometry
 
-- **resolveFace** / **resolveDisplayName** / **toStackUser** (`utils/avatarFace.ts`) — normalize Profile/snake_case and caret camelCase. `<Avatar face={…}>` resolves at the atom; keep `resolveFace`/`toStackUser` only at non-Avatar boundaries (caret, `member_id` → stack). Pure; no DiceBear/load stages.
-- **Avatar** (`ui/Avatar`) owns `edge` (`ring`|`paper`|`well`|`none`) + bucket → OAuth → DiceBear.
+- **resolveFace** / **resolveDisplayName** / **toStackUser** (`utils/avatarFace.ts`) — normalize Profile/snake_case and caret camelCase, coalescing the `id` aliases (`user_id`, `member_id`). `<Avatar face={…}>` and `<AvatarStack users={…}>` resolve at the component, so callers pass the raw row; keep `resolveFace`/`toStackUser` for non-Avatar boundaries. Pure; no DiceBear/load stages.
+- **Avatar** (`ui/Avatar`) takes `face` as its only identity input and owns `edge` (`ring`|`paper`|`well`|`none`) + bucket → OAuth → DiceBear.
 - **stackGeometry** (`utils/avatarStackGeometry.ts`) — `SIZE`/`SPACING`/`TEXT`, `AvatarStackSurface` → `stackSurfaceToEdge` → `avatarEdgeClass`.
 - **Custom avatar** — `avatar_updated_at` set ⇒ custom bucket upload; null falls back to OAuth `avatar_url` / DiceBear.

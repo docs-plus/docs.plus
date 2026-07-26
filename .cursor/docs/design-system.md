@@ -1000,27 +1000,28 @@ control — `components/ui/Toggle.tsx`, `Checkbox.tsx`, `Textarea.tsx` (row patt
 
 ### Avatar (ui/Avatar.tsx) — both
 
-control — `components/ui/Avatar.tsx` (`edge` + `face` + bucket/OAuth/DiceBear); size/edge helpers in `utils/avatarStackGeometry.ts`
+control — `components/ui/Avatar.tsx`; `face` is the single identity input (`utils/avatarFace`) and `alt` overrides the name resolved from it; size/edge helpers in `utils/avatarStackGeometry.ts`. DiceBear is generated lazily — only once no bucket or OAuth image resolves.
 
 | State                      | Recipe                                                                                                                                                                                                                                                          |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| edge `ring`                | default solo/outline: container `avatar` + `SIZE_CLASSES` + `rounded-full bg-base-200` + `avatarEdgeClass('ring')` (`0.5px` border) + inset keyline on img                                                                                                      |
+| edge `ring`                | default solo/outline: container `avatar` + `SIZE_CLASSES` + `rounded-full bg-base-200` + `avatarEdgeClass('ring')`. A **solo** avatar reads its edge from the inset keyline on the img — the cutout color only paints inside `.avatar-group`                    |
 | edge `paper`/`well`/`ring` | stack cutouts: `2px` via unlayered `_daisyui.scss` (beats daisyUI’s `border: 4px`); color `--avatar-stack-edge` from `avatarEdgeClass` — **cutout, not drop-shadow** (Slack/Discord/GitHub/Figma convention); stacks set edge via `stackSurfaceToEdge(surface)` |
 | edge `none`                | no ring/keyline (gallery author on dark letterbox)                                                                                                                                                                                                              |
-| presence / typing          | daisyUI `avatar-online`/`avatar-offline` dot; `avatar-typing` translateY bounce 0.8s infinite, disabled under reduced motion                                                                                                                                    |
-| clickable                  | `cursor-pointer` (opens UserProfileDialog) vs `cursor-default`                                                                                                                                                                                                  |
+| presence / typing          | `presence="online"｜"offline"` → daisyUI `avatar-online`/`avatar-offline` dot (omit the prop for no dot); `isTyping` → `avatar-typing` translateY bounce 0.8s infinite, disabled under reduced motion                                                           |
+| clickable                  | with a resolved face id, renders `<button type="button">` (aria-label `Open <name>'s profile`, `focus-visible` primary ring) opening UserProfileDialog; otherwise a plain `<div>` with `cursor-default`                                                         |
 | size ladder                | closed scale in `avatarStackGeometry.ts` `SIZE_CLASSES`: `xs`=`size-6` … `2xl`=`size-16` — no off-scale (`size-9`, etc.)                                                                                                                                        |
 
 ### AvatarStack — both
 
-composition — `components/AvatarStack.tsx` (+ loader `components/skeleton/AvatarStackLoader.tsx`); both import surface/edge/`SIZE`/`SPACING`/`TEXT` from `utils/avatarStackGeometry.ts`
+composition — `components/ui/AvatarStack.tsx` (+ loader `components/skeleton/AvatarStackLoader.tsx`); both import surface/edge/`SIZE`/`SPACING`/`TEXT` from `utils/avatarStackGeometry.ts`
 
 | State        | Recipe                                                                                                                                                                                                                                                |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | surface      | one knob (`AvatarStackSurface`): `paper` (default) · `well` (TOC) · `outline` (PadTitle); maps to Avatar `edge` via `stackSurfaceToEdge`                                                                                                              |
 | anchor       | `AvatarStackAnchor` fixed edge as the stack grows: `left` (default, grows right) · `right` (fixed right edge, `flex-row-reverse space-x-reverse` + first face on top via `zIndex`; TOC presence). Keeps the UI position stable when the count changes |
-| overflow +N  | same `avatarEdgeClass(stackSurfaceToEdge(surface))` + `bg-base-100` + inner `bg-neutral text-neutral-content font-semibold`; sits on the growing end (`zIndex:0` when right-anchored)                                                                 |
-| entry motion | `animate-badge-entry` on each face (join-only; keyed by user id)                                                                                                                                                                                      |
+| counts       | `maxDisplay` caps rendered faces; `totalCount` is the **full population** (not the overflow) and the +N chip counts down from it, defaulting to `users.length`                                                                                        |
+| overflow +N  | same `avatarEdgeClass(stackSurfaceToEdge(surface))` + inner `bg-neutral text-neutral-content font-semibold` filling the frame; sits on the growing end (`zIndex:0` when right-anchored)                                                               |
+| entry motion | `animate-badge-entry` on each face and on the +N chip (join-only; keyed by the face id from `resolveFace`)                                                                                                                                            |
 | loader       | `AvatarStackLoader` takes the same `surface` + size (Participants: `size=sm`)                                                                                                                                                                         |
 | size ladder  | presence stacks (TOC/Participants/PadTitle/read-status) = `sm`; message author = `md`; profile header = `lg`; display name via `resolveDisplayName`                                                                                                   |
 
