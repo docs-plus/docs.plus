@@ -251,14 +251,11 @@
   outline-offset: 1px;
 }
 
-// Desktop: grip + chat idle-hidden; show on row hover. Unread / open / keyboard stay on.
+// Desktop: chat idle-hidden with active/focus/unread exceptions; grip hover-only (+ focus-visible).
 .m_desktop .toc__list {
-  li > .toc__row :is(.toc-drag-handle, .toc__chat-trigger) {
+  li > .toc__row .toc__chat-trigger {
     opacity: 0;
     pointer-events: none;
-  }
-
-  li > .toc__row .toc__chat-trigger {
     transition: opacity var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out);
 
     @media (prefers-reduced-motion: reduce) {
@@ -266,26 +263,24 @@
     }
   }
 
-  // Grip: opacity + slight scale pop (transform owned with translateY centering).
   li > .toc__row .toc-drag-handle {
+    opacity: 0;
+    pointer-events: none;
     transform: translateY(-50%) scale(0.88);
   }
 
-  // Nested: only the hovered leaf li — not ancestors while a child is hovered.
-  li:hover:not(:has(li:hover)) > .toc__row :is(.toc-drag-handle, .toc__chat-trigger),
-  li
-    > .toc__row:is(.menu-active, .menu-focus, .context-menu-active)
-    :is(.toc-drag-handle, .toc__chat-trigger),
-  li > .toc__row .toc-drag-handle:focus-visible,
+  li.toc__item:hover:not(:has(li:hover)) > .toc__row .toc__chat-trigger,
+  li > .toc__row:is(.menu-active, .menu-focus, .context-menu-active) .toc__chat-trigger,
   li > .toc__row .toc__chat-trigger:focus-visible,
   li > .toc__row .toc__chat-trigger:has(.badge) {
     opacity: 1;
     pointer-events: auto;
   }
 
-  li:hover:not(:has(li:hover)) > .toc__row .toc-drag-handle,
-  li > .toc__row:is(.menu-active, .menu-focus, .context-menu-active) .toc-drag-handle,
+  li.toc__item:hover:not(:has(li:hover)) > .toc__row .toc-drag-handle,
   li > .toc__row .toc-drag-handle:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
     transform: translateY(-50%) scale(1);
 
     @media (prefers-reduced-motion: reduce) {

@@ -33,7 +33,7 @@ export const TOC_CLASSES = {
   levelBadge: 'toc__level-badge',
   /** Level picker popover next to drag handle */
   levelPicker: 'toc__level-picker',
-  /** Drag grip (always visible, inline shrink-0) */
+  /** Drag grip — desktop: row hover (+ focus-visible); mobile: always on. */
   dragHandle: 'toc-drag-handle',
   /** Row context-menu open wash */
   contextMenuActive: 'context-menu-active'
