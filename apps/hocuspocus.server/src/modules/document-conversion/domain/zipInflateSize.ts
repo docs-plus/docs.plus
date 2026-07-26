@@ -1,7 +1,13 @@
+import { inflateRawSync } from 'node:zlib'
+
 const CENTRAL_SIGNATURE = 0x02014b50
 const EOCD_SIGNATURE = 0x06054b50
+const LOCAL_SIGNATURE = 0x04034b50
 const EOCD_BYTES = 22
 const CENTRAL_HEADER_BYTES = 46
+const LOCAL_HEADER_BYTES = 30
+const METHOD_STORED = 0
+const METHOD_DEFLATE = 8
 /** The comment field is 16-bit, so the record starts within this much of the tail. */
 const MAX_EOCD_SEARCH = 0xffff + EOCD_BYTES
 
@@ -13,12 +19,23 @@ const findEocd = (zip: Buffer): number | null => {
   return null
 }
 
+/** Where the entry's payload starts — the local header repeats the name and extra fields at its own lengths. */
+const payloadStart = (zip: Buffer, localAt: number): number | null => {
+  if (localAt + LOCAL_HEADER_BYTES > zip.length) return null
+  if (zip.readUInt32LE(localAt) !== LOCAL_SIGNATURE) return null
+  return (
+    localAt + LOCAL_HEADER_BYTES + zip.readUInt16LE(localAt + 26) + zip.readUInt16LE(localAt + 28)
+  )
+}
+
 /**
- * What the container claims it inflates to, summed over every entry. `null`
- * means the directory could not be read — the converter then owns the verdict,
- * so a merely unusual zip is not refused on this evidence.
+ * How much the container actually inflates to, measured entry by entry and
+ * abandoned as soon as it passes `budget`. Declared sizes are not evidence: a
+ * bomb states whatever it likes, and only the real inflate can contradict it.
+ * `null` means the container could not be read, leaving the verdict to the
+ * converter — a merely unusual zip is not refused on this evidence.
  */
-export const zipInflateSize = (zip: Buffer): number | null => {
+export const zipInflateSize = (zip: Buffer, budget: number): number | null => {
   const eocd = zip.length >= EOCD_BYTES ? findEocd(zip) : null
   if (eocd === null) return null
 
@@ -29,7 +46,30 @@ export const zipInflateSize = (zip: Buffer): number | null => {
   for (let entry = 0; entry < entries; entry += 1) {
     if (at + CENTRAL_HEADER_BYTES > zip.length) return null
     if (zip.readUInt32LE(at) !== CENTRAL_SIGNATURE) return null
-    total += zip.readUInt32LE(at + 24)
+
+    const method = zip.readUInt16LE(at + 10)
+    const compressed = zip.readUInt32LE(at + 20)
+    const from = payloadStart(zip, zip.readUInt32LE(at + 42))
+    if (from === null || from + compressed > zip.length) return null
+
+    if (method === METHOD_STORED) {
+      total += compressed
+    } else if (method === METHOD_DEFLATE) {
+      try {
+        total += inflateRawSync(zip.subarray(from, from + compressed), {
+          maxOutputLength: Math.max(1, budget - total)
+        }).length
+      } catch {
+        // Either the entry alone blew the remaining budget or the stream is corrupt.
+        // Both are refusals, and the caller reads any over-budget total the same way.
+        return budget + 1
+      }
+    } else {
+      return null
+    }
+
+    if (total > budget) return total
+
     at +=
       CENTRAL_HEADER_BYTES +
       zip.readUInt16LE(at + 28) +

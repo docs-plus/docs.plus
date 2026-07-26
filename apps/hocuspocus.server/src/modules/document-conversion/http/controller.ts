@@ -252,7 +252,10 @@ export const createPostImportHandler =
     }
     // mammoth's unzip is unbounded, so the upload cap alone lets a few hundred
     // compressed KiB inflate the process to death.
-    if (kind === 'docx' && (zipInflateSize(buffer) ?? 0) > MAX_INFLATED_IMPORT_BYTES) {
+    if (
+      kind === 'docx' &&
+      (zipInflateSize(buffer, MAX_INFLATED_IMPORT_BYTES) ?? 0) > MAX_INFLATED_IMPORT_BYTES
+    ) {
       return fail(
         c,
         413,
