@@ -5,7 +5,7 @@
 
 The REST API runs from `src/index.ts` on a Hono app. This document covers the HTTP surface only. For the three-process architecture and environment variables, see [Readme.md](./Readme.md) and [ENV.md](./ENV.md). For the WebSocket protocol, see [WebSocket API](#websocket-api).
 
-**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`), the [document version](#document-versions) routes excepted. Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge — publishing them is a routing decision, not a code change.
+**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`). Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge — publishing them is a routing decision, not a code change.
 
 ## Contents
 
@@ -62,7 +62,7 @@ The documents controller emits this envelope on error and `{ "success": true, "d
 
 > **Known inconsistency — not yet wired globally.** Several handlers return ad-hoc shapes instead of the canonical envelope. Wiring `getErrorResponse` everywhere is a separate task. Until then expect these variants:
 >
-> - `{ "error": "..." }` — email handlers, admin middleware, media-upload guards, rate-limit middleware (which also returns `retryAfter`).
+> - `{ "error": "..." }` — email handlers, admin middleware, media-upload guards.
 > - `{ "success": false, "code": "...", "message": "..." }` (note `code`/`message` at top level, not nested) — `/api/metadata`; its `code` is `INVALID_URL` or `BLOCKED_URL`.
 > - Email `send-*` and `bounce` success bodies are `{ "success": true, ... }` with their own fields, not the `data` wrapper.
 
@@ -188,7 +188,7 @@ Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`.
 
 ### POST /api/documents/:documentId/duplicate
 
-Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is shared, not cloned. Non-owner → `403`; soft-deleted source → `404`.
+Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix and the snapshot's URLs repointed there, so each document owns its media and purging one never strips the other. Non-owner → `403`; soft-deleted source → `404`.
 
 ### DELETE /api/documents/:documentId/permanent
 
@@ -322,7 +322,7 @@ Live and cold documents take the same path. If collaborators have the document o
 | `409`  | `CONFLICT`              | `POST` slug already taken                                                                                                                                                                                   |
 | `413`  | `PAYLOAD_TOO_LARGE`     | Body over 5 MiB, on `PATCH` and `POST` alike                                                                                                                                                                |
 | `422`  | `UNPROCESSABLE_ENTITY`  | Unknown node or mark, a content-expression violation, a missing level-1 title heading, or over 50 000 nodes / 100 levels of nesting. Nothing is written                                                     |
-| `429`  | —                       | Global rate limiter. Body is `{ "error": "...", "retryAfter": <seconds> }`, not the house envelope — see [Rate limiting](#rate-limiting)                                                                    |
+| `429`  | `RATE_LIMIT_EXCEEDED`   | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)                                                                              |
 | `500`  | `INTERNAL_SERVER_ERROR` | Snapshot decode failure on `GET`; persist failure on `PATCH` (see the durability contract); or the REST and collaboration processes holding different service-role keys, which the message names explicitly |
 | `503`  | `SERVICE_UNAVAILABLE`   | The collaboration process is unreachable or did not answer within 30 s                                                                                                                                      |
 
@@ -371,7 +371,7 @@ Read, compare, name, delete, and restore a document's history. Module: `src/modu
 | `DELETE /api/documents/:documentId/versions/:version`       | Delete one version, as long as it is not the newest   |
 | `POST /api/documents/:documentId/versions/:version/restore` | Put a version's content back into the live document   |
 
-All six are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`); a user JWT gets `401`. They address documents by `documentId`, never by slug — see [Identifying a document](#identifying-a-document). They are not published in `/openapi.json`.
+All six are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`); a user JWT gets `401`. They address documents by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
 
 Reads and the delete run straight off Postgres in the REST process. The checkpoint and the restore need the live Y.Doc, so REST forwards them to the collaboration process over the same internal hop the content applier uses.
 
@@ -615,7 +615,7 @@ The editor's in-app revert runs the same operation over the collaboration server
 | `413`  | `PAYLOAD_TOO_LARGE`     | Write body over 16 KiB. These routes carry a name at most — content never rides them                                                                                                                                                                                   |
 | `422`  | `DRAFT_DOCUMENT`        | Checkpoint or restore on a document that has never been saved. A draft has no history to name or roll back to                                                                                                                                                          |
 | `422`  | `UNPROCESSABLE_ENTITY`  | Restore whose stored snapshot cannot be decoded, or cannot be re-encoded against the current schema. Nothing is written                                                                                                                                                |
-| `429`  | —                       | Global rate limiter. Body is `{ "error": "...", "retryAfter": <seconds> }`, not the house envelope — see [Rate limiting](#rate-limiting)                                                                                                                               |
+| `429`  | `RATE_LIMIT_EXCEEDED`   | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)                                                                                                                                         |
 | `500`  | `INTERNAL_SERVER_ERROR` | Snapshot decode failure on read; the document could not be opened; the pre-restore backup failed; the save failed; or the REST and collaboration processes holding different service-role keys, which the message names explicitly                                     |
 | `503`  | `SERVICE_UNAVAILABLE`   | The collaboration process is unreachable or did not answer within 30 s. Only the checkpoint and the restore hop, so no read route can return this                                                                                                                      |
 
@@ -729,16 +729,16 @@ An empty `warnings` array means a clean import.
 
 ### Status codes
 
-| Status | Code                     | When                                                                                                                                     |
-| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  | `VALIDATION_ERROR`       | Malformed `documentId`, unknown `format`, a body that is not `multipart/form-data`, or no `documentFile` field                           |
-| `401`  | `UNAUTHORIZED`           | Missing, wrong, or user-JWT bearer; also when `SUPABASE_SERVICE_ROLE_KEY` is unset (fails closed)                                        |
-| `404`  | `NOT_FOUND`              | No metadata row, or the document is soft-deleted                                                                                         |
-| `413`  | `PAYLOAD_TOO_LARGE`      | Upload over 10 MiB, a `.docx` declaring over 40 MiB unpacked, or Markdown over 65 536 characters                                         |
-| `415`  | `UNSUPPORTED_MEDIA_TYPE` | Import of a legacy OLE2 `.doc`                                                                                                           |
-| `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it            |
-| `429`  | —                        | Global rate limiter. Body is `{ "error": "...", "retryAfter": <seconds> }`, not the house envelope — see [Rate limiting](#rate-limiting) |
-| `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                            |
+| Status | Code                     | When                                                                                                                           |
+| ------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `400`  | `VALIDATION_ERROR`       | Malformed `documentId`, unknown `format`, a body that is not `multipart/form-data`, or no `documentFile` field                 |
+| `401`  | `UNAUTHORIZED`           | Missing, wrong, or user-JWT bearer; also when `SUPABASE_SERVICE_ROLE_KEY` is unset (fails closed)                              |
+| `404`  | `NOT_FOUND`              | No metadata row, or the document is soft-deleted                                                                               |
+| `413`  | `PAYLOAD_TOO_LARGE`      | Upload over 10 MiB, a `.docx` declaring over 40 MiB unpacked, or Markdown over 65 536 characters                               |
+| `415`  | `UNSUPPORTED_MEDIA_TYPE` | Import of a legacy OLE2 `.doc`                                                                                                 |
+| `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it  |
+| `429`  | `RATE_LIMIT_EXCEEDED`    | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting) |
+| `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                  |
 
 ## Media
 
@@ -911,7 +911,7 @@ A global limiter (`src/middleware/index.ts`) applies to every non-`OPTIONS` requ
 
 The single limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. There is no separate per-role tier in the REST middleware.
 
-Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). On `429`, the body is `{ "error": "...", "retryAfter": <seconds> }` and a `Retry-After` header is set.
+Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
 
 ## WebSocket API
 

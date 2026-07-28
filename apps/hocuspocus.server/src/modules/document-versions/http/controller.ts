@@ -4,6 +4,7 @@ import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
 import { type ClientAuthorBinding, resolveClientAuthors } from '../../../lib/client-authors'
+import { captureUnknown } from '../../../lib/instrument'
 import { readContent } from '../../document-content/domain/readContent'
 import { fail, ok } from '../../document-content/http/controller'
 import { findDocumentMeta } from '../../document-content/infra/contentStore'
@@ -155,6 +156,7 @@ export const createGetVersionHandler =
     const read = readContent(row.data, format)
     if (!read.ok) {
       deps.logger.error({ err: read.error, documentId, version }, 'Version snapshot decode failed')
+      captureUnknown(read.error, { extra: { documentId, version } })
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Stored version content could not be decoded')
     }
 
@@ -255,6 +257,7 @@ export const createDiffHandler =
         { err: diff.error, documentId, version, base: before?.version ?? 0 },
         'Version diff decode failed'
       )
+      captureUnknown(diff.error, { extra: { documentId, version, base: before?.version ?? 0 } })
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Stored version content could not be decoded')
     }
 

@@ -136,12 +136,15 @@ const ops = createVersionOps({
 
 const app = createInternalApp({
   verifyServiceRole: (header) => header === `Bearer ${SERVICE_KEY}`,
-  ops
+  ops,
+  logger: silentLogger
 })
 const server = new TestServer(app)
 
 /** The shape the WS process takes when its service-role key is unset. */
-const closedServer = new TestServer(createInternalApp({ verifyServiceRole: () => false, ops }))
+const closedServer = new TestServer(
+  createInternalApp({ verifyServiceRole: () => false, ops, logger: silentLogger })
+)
 
 const checkpointPath = (documentId: string) => `/internal/documents/${documentId}/versions`
 const restorePath = (documentId: string, version: number | string) =>

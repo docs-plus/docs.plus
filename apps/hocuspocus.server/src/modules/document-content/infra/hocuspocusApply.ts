@@ -1,3 +1,4 @@
+import { captureUnknown } from '../../../lib/instrument'
 import { documentContentApplyTotal } from '../../../lib/metrics'
 import { applyContentToDoc } from '../domain/applyContentToDoc'
 import {
@@ -94,6 +95,7 @@ export const createApplyContent = (
       connection = await hocuspocus.openDirectConnection(documentId, context)
     } catch (error) {
       logger.error({ err: error, documentId }, 'Failed to open a direct connection')
+      captureUnknown(error, { extra: { documentId } })
       return finish({ status: 'open-failed' })
     }
 
@@ -121,6 +123,7 @@ export const createApplyContent = (
       return finish({ status: 'applied' })
     } catch (error) {
       logger.error({ err: error, documentId, mode }, 'Content apply transact rejected')
+      captureUnknown(error, { extra: { documentId, mode } })
       return finish({ status: 'persist-failed' })
     } finally {
       // A rejected store leaves the debouncer's execution uncleared, so

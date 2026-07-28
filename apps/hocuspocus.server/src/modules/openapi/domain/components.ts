@@ -89,13 +89,22 @@ const linkMetadataError: JsonSchema = {
   required: ['success', 'code', 'message']
 }
 
+// The house envelope with the code pinned. The retry seconds are the `Retry-After`
+// header only — the limiter never carried them in the body's canonical shape.
 const rateLimitError: JsonSchema = {
   type: 'object',
   properties: {
-    error: { type: 'string' },
-    retryAfter: { type: 'integer', description: 'Seconds until the window resets.' }
+    success: { type: 'boolean', const: false },
+    error: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        code: { type: 'string', const: 'RATE_LIMIT_EXCEEDED' }
+      },
+      required: ['message', 'code']
+    }
   },
-  required: ['error', 'retryAfter']
+  required: ['success', 'error']
 }
 
 const healthCheckResult: JsonSchema = {

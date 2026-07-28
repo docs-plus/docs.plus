@@ -2,6 +2,7 @@ import type { Hocuspocus } from '@hocuspocus/server'
 import * as Y from 'yjs'
 
 import { drainContributors } from '../../../lib/contributors'
+import { captureUnknown } from '../../../lib/instrument'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
 import { applyContentToDoc } from '../../document-content/domain/applyContentToDoc'
 import { encodeContent } from '../../document-content/domain/encodeContent'
@@ -74,6 +75,7 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
       connection = await hocuspocus.openDirectConnection(documentId, context)
     } catch (error) {
       logger.error({ err: error, documentId }, 'Failed to open a direct connection')
+      captureUnknown(error, { extra: { documentId } })
       return { status: 'open-failed' }
     }
 
@@ -96,6 +98,7 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
       return await run(connection, commit)
     } catch (error) {
       logger.error({ err: error, documentId }, 'Version op rejected')
+      captureUnknown(error, { extra: { documentId } })
       return { status: 'persist-failed' }
     } finally {
       // A rejected store leaves the debouncer's execution uncleared, so
@@ -158,6 +161,9 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
         { err: decoded.error, documentId, version: targetVersion },
         'Version snapshot decode failed'
       )
+      // Filed even though the caller gets a 422: the status is about the request,
+      // but the cause is a corrupt stored row that is now permanently unrestorable.
+      captureUnknown(decoded.error, { extra: { documentId, version: targetVersion } })
       return { status: 'invalid-content', detail: 'stored version could not be decoded' }
     }
 
@@ -204,6 +210,7 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
             { err: backup.error, documentId, version: targetVersion },
             'Restore backup append failed'
           )
+          captureUnknown(backup.error, { extra: { documentId, version: targetVersion } })
           return { status: 'backup-failed' }
         }
 

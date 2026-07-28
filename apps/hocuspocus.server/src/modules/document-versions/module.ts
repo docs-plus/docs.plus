@@ -48,5 +48,8 @@ export const initWsOps = (deps: InitWsOpsDeps): InitWsOpsResult => {
     stripSnapshotMetadata: deps.stripSnapshotMetadata
   })
 
-  return { app: createInternalApp({ verifyServiceRole: deps.verifyServiceRole, ops }), ops }
+  return {
+    app: createInternalApp({ verifyServiceRole: deps.verifyServiceRole, ops, logger: deps.logger }),
+    ops
+  }
 }

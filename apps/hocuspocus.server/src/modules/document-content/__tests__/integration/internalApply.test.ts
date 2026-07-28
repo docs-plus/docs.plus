@@ -82,7 +82,8 @@ prisma.documentMetadata.findUnique = async (args: any) =>
 
 const app = createInternalApp({
   verifyServiceRole: (header) => header === `Bearer ${SERVICE_KEY}`,
-  applyContent: createApplyContent({ hocuspocus, prisma, logger: silentLogger })
+  applyContent: createApplyContent({ hocuspocus, prisma, logger: silentLogger }),
+  logger: silentLogger
 })
 const server = new TestServer(app)
 

@@ -1,7 +1,10 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
 import { requestId } from 'hono/request-id'
+import type { Logger } from 'pino'
 
+import { captureUnknown } from '../../../lib/instrument'
 import { fail, houseEnvelopeHook, requireServiceRole } from '../../document-content/http/controller'
 import type { VerifyServiceRole, VersionOps } from '../types'
 import {
@@ -14,6 +17,7 @@ import { checkpointBodySchema, documentIdParamSchema, versionParamSchema } from 
 export interface InternalAppDeps {
   verifyServiceRole: VerifyServiceRole
   ops: VersionOps
+  logger: Logger
 }
 
 /**
@@ -47,6 +51,17 @@ export const createInternalApp = (deps: InternalAppDeps): Hono => {
   )
 
   app.notFound((c) => fail(c, 404, 'NOT_FOUND', 'Not found'))
+
+  // Hono answers an unhandled throw with an unstructured text/plain 500 the hop
+  // reports as an empty body. The HTTPException arm comes first because
+  // zValidator throws one for malformed JSON — that is a 400, not our bug.
+  app.onError((err, c) => {
+    if (err instanceof HTTPException) return err.getResponse()
+    const requestId = c.get('requestId') as string | undefined
+    deps.logger.error({ err, requestId, path: c.req.path }, 'Internal version op threw')
+    captureUnknown(err, { extra: { requestId, path: c.req.path } })
+    return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Internal server error')
+  })
 
   return app
 }

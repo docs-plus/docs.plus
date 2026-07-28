@@ -4,6 +4,7 @@ import { bodyLimit } from 'hono/body-limit'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { Logger } from 'pino'
 
+import { captureUnknown } from '../../../lib/instrument'
 import { emptyContent, readContent } from '../domain/readContent'
 import { findDocumentMeta, findHeadRow } from '../infra/contentStore'
 import type { ApplyContent } from '../infra/hocuspocusApply'
@@ -137,6 +138,7 @@ export const createGetContentHandler =
         { err: read.error, documentId, version: head.version },
         'Snapshot decode failed'
       )
+      captureUnknown(read.error, { extra: { documentId, version: head.version } })
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', 'Stored document content could not be decoded')
     }
 

@@ -75,10 +75,15 @@ export const rateLimiter = (options: {
       c.header('X-RateLimit-Reset', new Date(Date.now() + rejRes.msBeforeNext).toISOString())
       c.header('Retry-After', retryAfter.toString())
 
+      // House envelope. The retry seconds live in `Retry-After` only: `error.details`
+      // is stripped outside development, so a body field would vanish in production.
       return c.json(
         {
-          error: 'Too many requests, please try again later',
-          retryAfter
+          success: false,
+          error: {
+            message: 'Too many requests, please try again later',
+            code: 'RATE_LIMIT_EXCEEDED'
+          }
         },
         429
       )
