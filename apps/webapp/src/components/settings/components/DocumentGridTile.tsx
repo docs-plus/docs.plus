@@ -78,7 +78,7 @@ function DocumentGridTile({
       <div className="mt-auto flex items-center justify-between gap-2 px-3 pt-1 pb-2">
         <span className="flex min-w-0 items-center gap-2">
           <DocumentMembersCluster
-            slug={doc.slug}
+            workspaceId={doc.documentId.toLowerCase()}
             memberCount={members?.member_count ?? 0}
             previews={members?.previews ?? []}
             size="xs"

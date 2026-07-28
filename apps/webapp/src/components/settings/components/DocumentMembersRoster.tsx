@@ -7,7 +7,7 @@ import { type DocumentRosterMember, useDocumentRoster } from '../hooks/useDocume
 import { formatShortDate } from '../utils/formatShortDate'
 
 interface DocumentMembersRosterProps {
-  slug: string
+  workspaceId: string
   // Passed from the cluster so the header count is correct during the loading skeleton.
   memberCount: number
 }
@@ -24,8 +24,8 @@ const seenAfterJoin = (joined: string, lastVisit: string) =>
  * Roster popover panel — lazy-fetches on open (it only mounts inside PopoverContent).
  * Two-line rows: avatar + name (+ "You"), then join date and optional last-seen.
  */
-function DocumentMembersRoster({ slug, memberCount }: DocumentMembersRosterProps) {
-  const { data: members, isLoading, isError, refetch } = useDocumentRoster(slug)
+function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRosterProps) {
+  const { data: members, isLoading, isError, refetch } = useDocumentRoster(workspaceId)
 
   return (
     <div className={twMerge(popoverPanelClassName, 'w-64 overflow-hidden p-0')}>

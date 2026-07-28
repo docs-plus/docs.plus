@@ -188,8 +188,9 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const docs = data?.pages.flatMap((p) => p.docs) ?? []
   const total = data?.pages[0]?.total ?? 0
 
-  // One batched member-preview fetch for the whole visible page; each row reads its slug.
-  const { data: membersMap } = useDocumentMembers(docs.map((d) => d.slug))
+  // Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
+  // column's name. The human slug matches nothing.
+  const { data: membersMap } = useDocumentMembers(docs.map((d) => d.documentId.toLowerCase()))
 
   const queryClient = useQueryClient()
   const { deleteDocument, restoreDocument } = useDeleteDocument()

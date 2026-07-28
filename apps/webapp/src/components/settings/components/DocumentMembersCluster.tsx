@@ -6,7 +6,7 @@ import { type DocumentMemberPreview } from '../hooks/useDocumentMembers'
 import DocumentMembersRoster from './DocumentMembersRoster'
 
 interface DocumentMembersClusterProps {
-  slug: string
+  workspaceId: string
   memberCount: number
   previews: DocumentMemberPreview[]
   size?: 'xs' | 'sm'
@@ -20,7 +20,7 @@ interface DocumentMembersClusterProps {
  * button and stops propagation so opening the roster never navigates the row.
  */
 function DocumentMembersCluster({
-  slug,
+  workspaceId,
   memberCount,
   previews,
   size = 'sm',
@@ -43,7 +43,7 @@ function DocumentMembersCluster({
         </button>
       </PopoverTrigger>
       <PopoverContent>
-        <DocumentMembersRoster slug={slug} memberCount={memberCount} />
+        <DocumentMembersRoster workspaceId={workspaceId} memberCount={memberCount} />
       </PopoverContent>
     </Popover>
   )

@@ -134,7 +134,10 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
   }))
 
   const ownerIds = [...new Set(documents.filter((d) => d.ownerId).map((d) => d.ownerId))]
-  const slugs = documents.map((d) => d.slug)
+  // Supabase keys both surfaces on lower(documentId) despite calling the column
+  // `slug`; the human slug matches nothing. `docId` below stays the human slug —
+  // the admin UI links to it.
+  const workspaceKeys = documents.map((d) => d.documentId.toLowerCase())
 
   if (ownerIds.length > 0) {
     try {
@@ -162,13 +165,13 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
     }
   }
 
-  if (slugs.length > 0) {
+  if (workspaceKeys.length > 0) {
     try {
       const supabase = getSupabaseClient()
       if (supabase) {
         const { data: memberData, error: memberError } = await supabase.rpc(
           'admin_get_document_member_counts',
-          { p_slugs: slugs }
+          { p_slugs: workspaceKeys }
         )
         if (memberError) {
           adminLogger.error({ err: memberError }, 'RPC admin_get_document_member_counts failed')
@@ -180,7 +183,7 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
             ])
           )
           docsWithDefaults.forEach((doc) => {
-            const count = memberMap.get(doc.docId)
+            const count = memberMap.get(doc.documentId.toLowerCase())
             if (count !== undefined) doc.memberCount = count
           })
         }
@@ -190,12 +193,12 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
     }
   }
 
-  if (slugs.length > 0) {
+  if (workspaceKeys.length > 0) {
     try {
       const viewStats = await fetchByIds(
         'document_view_stats',
         'document_slug',
-        slugs,
+        workspaceKeys,
         'document_slug,views_7d,unique_users_7d'
       )
       const statsMap = new Map(
@@ -204,7 +207,7 @@ export async function listDocuments(prisma: PrismaClient, params: ListDocumentsP
         )
       )
       docsWithDefaults.forEach((doc) => {
-        const stats = statsMap.get(doc.docId)
+        const stats = statsMap.get(doc.documentId.toLowerCase())
         if (stats) {
           doc.views7d = stats.views7d
           doc.uniqueUsers7d = stats.uniqueUsers7d
