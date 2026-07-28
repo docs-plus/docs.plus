@@ -190,7 +190,10 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
   // Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
   // column's name. The human slug matches nothing.
-  const { data: membersMap } = useDocumentMembers(docs.map((d) => d.documentId.toLowerCase()))
+  const { data: membersMap } = useDocumentMembers(
+    docs.map((d) => d.documentId.toLowerCase()),
+    !!userId && !isAnonymous
+  )
 
   const queryClient = useQueryClient()
   const { deleteDocument, restoreDocument } = useDeleteDocument()

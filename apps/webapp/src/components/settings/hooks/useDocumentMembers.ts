@@ -17,11 +17,15 @@ export interface DocumentMembersEntry {
  * Batch member previews for a whole visible page of owned documents in one RPC.
  * Keyed by the page's slugs; React Query hashes the key by value, so the raw
  * `docs.map(d => d.slug)` is stable without memoization.
+ *
+ * `enabled` carries the caller's signed-in state: the RPC is revoked from `anon`,
+ * so a call made before any session exists 403s. No default, so a caller cannot
+ * silently reinstate the unguarded call.
  */
-export function useDocumentMembers(slugs: string[]) {
+export function useDocumentMembers(slugs: string[], enabled: boolean) {
   return useQuery({
     queryKey: ['document-members', slugs],
-    enabled: slugs.length > 0,
+    enabled: enabled && slugs.length > 0,
     staleTime: 30_000,
     // Load more grows the slug set (new key); hold the prior map so clusters don't blink out.
     placeholderData: keepPreviousData,

@@ -4,8 +4,23 @@ import { DocumentFetchError } from './fetchDocument'
 
 type CaptureContext = Parameters<typeof Sentry.captureException>[1]
 
+// Total by construction: this runs inside catch blocks, and JSON.stringify would
+// throw on a circular structure — a DOM event, a Response, most SDK errors — at
+// the one boundary that must never throw.
+const describeUnknown = (error: unknown): string => {
+  if (typeof error !== 'object' || error === null) return String(error)
+  const { message, code, details } = error as Record<string, unknown>
+  if (typeof message !== 'string')
+    return `unknown error with keys: ${Object.keys(error).join(', ')}`
+  return [message, code !== undefined && `(${String(code)})`, details && String(details)]
+    .filter(Boolean)
+    .join(' ')
+}
+
 export function captureUnknown(error: unknown, context?: CaptureContext) {
-  const normalized = error instanceof Error ? error : new Error(String(error))
+  // A PostgrestError is a plain object, so String() would render it
+  // "[object Object]" and lose the only line that identifies the failure.
+  const normalized = error instanceof Error ? error : new Error(describeUnknown(error))
   // No client means the DSN is unset (dev / capture disabled) — surface the
   // failure in the console instead of silently dropping it.
   if (!Sentry.getClient()) {
