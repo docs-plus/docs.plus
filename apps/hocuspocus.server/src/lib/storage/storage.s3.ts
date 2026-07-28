@@ -107,6 +107,27 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
   }
 }
 
+// Bun's S3 has no server-side copy, so read the object and re-write it through
+// `upload` — that keeps the acl and content-disposition policy in one place. The
+// file name is preserved on purpose: it makes the caller's URL rewrite a pure id
+// swap. `false` means the source object is gone (its prefix was already purged).
+export const copyObject = async (
+  sourceDocumentId: string,
+  fileName: string,
+  targetDocumentId: string
+): Promise<boolean> => {
+  const sourceKey = generateS3Key(sourceDocumentId, fileName)
+  const sourceFile = s3Client.file(sourceKey)
+
+  if (!(await sourceFile.exists())) {
+    storageS3Logger.warn({ sourceKey, targetDocumentId }, 'Referenced S3 media object is missing')
+    return false
+  }
+
+  await upload(targetDocumentId, fileName, await sourceFile.arrayBuffer())
+  return true
+}
+
 // Bun's S3 has no batch delete, so page the listing and delete key-by-key. An
 // empty listing is a no-op — the reaper retries this and most docs have no media.
 export const deleteByPrefix = async (documentId: string): Promise<void> => {

@@ -3,13 +3,15 @@ import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
-import { handlePrismaError, ValidationError } from '../../lib/errors'
+import { AppError, handlePrismaError, InternalServerError, ValidationError } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 import { canMutateAccessFlags, isDocumentOwner } from '../../lib/ownerAccess'
+import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 import { purgeDocumentFootprint } from './documentPurge.service'
+import { copyDocumentMedia, deleteDocumentMedia } from './media.service'
 
 const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
 
@@ -469,6 +471,15 @@ const setDeletedAt = async (
     documentsServiceLogger.error({ err: error, documentId }, 'Error toggling document deletedAt')
     throw handlePrismaError(error)
   }
+
+  // One publish covers soft delete and restore. Not on the P2025 path above —
+  // nothing changed there.
+  void publishDocumentAccessEvent({
+    documentId,
+    deleted: deletedAt !== null,
+    ownerId: existing?.ownerId ?? null,
+    timestamp: new Date().toISOString()
+  })
   return { authorized: true }
 }
 
@@ -486,10 +497,10 @@ export type DuplicateDocumentResult =
   | { status: 'not-found' }
   | { status: 'ok'; document: { documentId: string; slug: string; title: string } }
 
-// Strict-owner duplicate. Copies the source's latest Yjs bytes verbatim into a
-// fresh doc — no history rebuild. Media stays SHARED: the copy references the
-// same storage objects rather than cloning them (safe today; nothing purges a
-// source's media out from under a copy).
+// Strict-owner duplicate of the source's latest Yjs bytes — no history rebuild.
+// Media is RE-HOSTED, not shared: the snapshot is scanned first, exactly the
+// objects it names are cloned under the copy's own prefix and its URLs repointed
+// there. FORWARD-ONLY — copies made before this still share their source's objects.
 export const duplicateDocument = async (
   prisma: PrismaClient,
   sourceDocumentId: string,
@@ -510,43 +521,68 @@ export const duplicateDocument = async (
   if (!isDocumentOwner(source, requesterId)) return { status: 'forbidden' }
   if (source?.deletedAt) return { status: 'not-found' }
 
+  const uid = new ShortUniqueId()
+  const documentId = uid.stamp(19)
+
   try {
     const latest = await prisma.documents.findFirst({
       where: { documentId: sourceDocumentId },
       orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
       select: { data: true }
     })
-    const bytes = latest?.data ?? null
+    let bytes = latest?.data ?? null
 
-    const uid = new ShortUniqueId()
-    const documentId = uid.stamp(19)
+    // Scan before copy: the snapshot names which objects are live and under whose
+    // prefix — a copy of a copy still names the original. `data` is null when it
+    // names none, so the no-media path writes the source bytes untouched. Objects
+    // before rows: a throw from here leaves only orphans, which the catch removes.
+    const rehosted = bytes ? rehostMediaUrls(bytes, documentId) : null
+    if (rehosted?.data) {
+      try {
+        await copyDocumentMedia(rehosted.references, documentId)
+      } catch (error) {
+        // An object-store outage is not a database fault; keep it out of
+        // `handlePrismaError`, which would group it as a DatabaseError.
+        throw error instanceof AppError
+          ? error
+          : new InternalServerError("Failed to copy the source document's media")
+      }
+      bytes = rehosted.data
+    }
+
     const title = `${source?.title ?? ''} (copy)`.trim()
     const baseSlug = slugify(title.toLowerCase(), { lower: true, strict: true })
 
+    // One transaction, because the two writes are the copy: metadata alone is a
+    // document whose snapshot never landed. The slug retry stays outside it —
+    // a P2002 aborts the transaction, so the retry has to open a new one.
     const created = await withUniqueSlug(baseSlug, (slug) =>
-      prisma.documentMetadata.create({
-        data: {
-          slug,
-          title,
-          description: source?.description ?? '',
-          documentId,
-          keywords: source?.keywords ?? '',
-          ownerId: requesterId,
-          email: email ?? null,
-          isPrivate: false,
-          readOnly: false,
-          deletedAt: null
+      prisma.$transaction(async (tx) => {
+        const meta = await tx.documentMetadata.create({
+          data: {
+            slug,
+            title,
+            description: source?.description ?? '',
+            documentId,
+            keywords: source?.keywords ?? '',
+            ownerId: requesterId,
+            email: email ?? null,
+            isPrivate: false,
+            readOnly: false,
+            deletedAt: null
+          }
+        })
+
+        // A source that has never been persisted has no bytes to copy; the copy is
+        // then a fresh empty doc that hydrates on first open (same as any new doc).
+        if (bytes) {
+          await tx.documents.create({
+            data: { documentId, commitMessage: '', version: 1, data: bytes }
+          })
         }
+        return meta
       })
     )
-
-    // A source that has never been persisted has no bytes to copy; the copy is
-    // then a fresh empty doc that hydrates on first open (same as any new doc).
-    if (bytes) {
-      await prisma.documents.create({
-        data: { documentId, commitMessage: '', version: 1, data: bytes }
-      })
-    }
 
     documentsServiceLogger.info(
       { sourceDocumentId, documentId: created.documentId },
@@ -561,8 +597,17 @@ export const duplicateDocument = async (
       }
     }
   } catch (error) {
+    // Unconditional: a copy that threw partway still wrote objects, and both
+    // adapters treat "nothing under this prefix" as a no-op. Outside the row
+    // transaction, which rolls itself back.
+    await deleteDocumentMedia(documentId).catch((cleanupError) =>
+      documentsServiceLogger.error(
+        { err: cleanupError, documentId },
+        "Failed to roll back a duplicate's re-hosted media"
+      )
+    )
     documentsServiceLogger.error({ err: error, sourceDocumentId }, 'Error duplicating document')
-    throw handlePrismaError(error)
+    throw error instanceof AppError ? error : handlePrismaError(error)
   }
 }
 
@@ -594,7 +639,8 @@ export const permanentlyDeleteDocument = async (
   try {
     await purgeDocumentFootprint(prisma, getServiceRoleClient(), {
       documentId,
-      slug: existing.slug
+      slug: existing.slug,
+      scope: { permanent: true }
     })
   } catch (error) {
     documentsServiceLogger.error({ err: error, documentId }, 'Error purging document footprint')

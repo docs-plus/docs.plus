@@ -142,11 +142,15 @@ pushGateway.initialize(false).catch((err) => {
   captureUnknown(err)
 })
 
-// Start server
+// Start server. Bun's 10 s default closed the socket mid-duplicate while the
+// handler ran on, so a slow copy reported failure over a copy that completed and
+// a retry stacked a second one. 60 s covers the bounded media copy a duplicate
+// does — the objects its snapshot names, sequentially, inside the request.
 const server = Bun.serve({
   fetch: app.fetch,
   port: config.app.port,
-  hostname: '0.0.0.0'
+  hostname: '0.0.0.0',
+  idleTimeout: 60
 })
 
 // Log server startup

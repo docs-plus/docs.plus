@@ -8,6 +8,7 @@ import {
   UnsupportedMediaTypeError
 } from '../../lib/errors'
 import { mediaServiceLogger } from '../../lib/logger'
+import type { MediaReference } from '../../lib/rehostMediaUrls'
 import { extractFileType } from '../../lib/storage/fileType'
 import * as localStorage from '../../lib/storage/storage.local'
 import * as S3Storage from '../../lib/storage/storage.s3'
@@ -87,6 +88,43 @@ export const deleteDocumentMedia = async (documentId: string): Promise<void> => 
   }
 
   await S3Storage.deleteByPrefix(documentId)
+}
+
+// Duplicate hook: re-hosts exactly the objects the copy's snapshot names, under
+// the copy's own prefix, so each document owns its media and no purge can strip a
+// copy. Bounded by what the document references, not by what the source prefix
+// holds — a node the author deleted is not resurrected under a new URL.
+export const copyDocumentMedia = async (
+  references: MediaReference[],
+  targetDocumentId: string
+): Promise<number> => {
+  if (references.length === 0 || !targetDocumentId) return 0
+
+  const toLocal = checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)
+  // Refuse rather than warn: with no storage the copy would keep its source's
+  // URLs, which is the exact sharing this hook exists to prevent. Unreachable
+  // when the snapshot names nothing — the caller skips the call entirely.
+  if (!toLocal && !process.env.DO_STORAGE_ENDPOINT) {
+    throw new InternalServerError('Storage service not configured')
+  }
+
+  const copyObject = toLocal ? localStorage.copyObject : S3Storage.copyObject
+  let copied = 0
+
+  // `false` is the source object being genuinely absent — tolerated, because those
+  // URLs were already dead and refusing would make a document whose source was
+  // purged permanently un-duplicatable. A copy that FAILS throws instead, so the
+  // caller rolls the orphans back rather than landing a copy with an empty prefix.
+  for (const reference of references) {
+    if (await copyObject(reference.documentId, reference.fileName, targetDocumentId)) copied += 1
+  }
+
+  const missing = references.length - copied
+  mediaServiceLogger[missing > 0 ? 'warn' : 'info'](
+    { targetDocumentId, copied, missing },
+    'Copied the editor media a duplicate references'
+  )
+  return copied
 }
 
 /** Matches webapp mediaUploadLimits.ts and Supabase media bucket (10 MB). */

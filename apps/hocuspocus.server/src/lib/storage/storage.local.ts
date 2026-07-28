@@ -9,11 +9,17 @@ import { storageLocalLogger } from '../logger'
 import { extractFileType } from './fileType'
 const PLUGIN_NAME = 'hypermultimedia'
 
+// One root for every path here, so `copyObject`'s containment check and
+// `deleteByPrefix`'s purge cover exactly what `get` serves. Resolved per call and
+// not once: `LOCAL_STORAGE_PATH` is swapped at runtime.
+const storageRoot = (): string =>
+  path.resolve(process.cwd(), process.env.LOCAL_STORAGE_PATH || `./temp/${PLUGIN_NAME}`)
+
 export const upload = async (documentId: string, file: File): Promise<StorageUploadResponse> => {
   try {
     const format = mime.getExtension(file.type) || 'bin'
     const fileName = `${crypto.randomUUID()}.${format}`
-    const dirPath = `./temp/${PLUGIN_NAME}/${documentId}`
+    const dirPath = path.join(storageRoot(), documentId)
     const filePath = path.join(dirPath, fileName)
     const fileType = extractFileType(file.type)
 
@@ -41,14 +47,11 @@ export const upload = async (documentId: string, file: File): Promise<StorageUpl
 
 export const get = async (documentId: string, mediaId: string, c: Context) => {
   try {
-    const storageRoot = path.resolve(
-      process.cwd(),
-      process.env.LOCAL_STORAGE_PATH || `./temp/${PLUGIN_NAME}`
-    )
-    const filePath = path.resolve(storageRoot, documentId, mediaId)
+    const root = storageRoot()
+    const filePath = path.resolve(root, documentId, mediaId)
 
     // Containment guard: never serve a path that resolves outside the storage root.
-    if (filePath !== storageRoot && !filePath.startsWith(storageRoot + path.sep)) {
+    if (filePath !== root && !filePath.startsWith(root + path.sep)) {
       return c.json({ error: 'Invalid media path' }, 400)
     }
 
@@ -87,11 +90,50 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
   }
 }
 
+// S3 `copyObject`'s local twin. Both ids and the file name come from a URL stored
+// in document content, so both paths resolve against the same root `get` serves
+// from and must land inside it — a `..` in either would write outside the media
+// tree. `false` means the source object is gone (its prefix was already purged).
+export const copyObject = async (
+  sourceDocumentId: string,
+  fileName: string,
+  targetDocumentId: string
+): Promise<boolean> => {
+  const root = storageRoot()
+  const sourcePath = path.resolve(root, sourceDocumentId, fileName)
+  const targetPath = path.resolve(root, targetDocumentId, fileName)
+  const contained = (candidate: string) => candidate.startsWith(root + path.sep)
+
+  // A refusal is not an absence, so it throws rather than reporting a copy that
+  // never happened: the duplicate would otherwise land with URLs under a prefix
+  // nothing ever wrote. The URL scan drops dot segments, so this stays a guard.
+  if (!contained(sourcePath) || !contained(targetPath)) {
+    storageLocalLogger.error(
+      { sourceDocumentId, targetDocumentId, fileName },
+      'Refusing a media copy that resolves outside the storage root'
+    )
+    throw new Error('Media copy resolves outside the storage root')
+  }
+
+  const sourceFile = Bun.file(sourcePath)
+  if (!(await sourceFile.exists())) {
+    storageLocalLogger.warn(
+      { sourceDocumentId, targetDocumentId, fileName },
+      'Referenced local media object is missing'
+    )
+    return false
+  }
+
+  await mkdir(path.dirname(targetPath), { recursive: true })
+  await Bun.write(targetPath, sourceFile)
+  return true
+}
+
 // `force` makes a missing dir a no-op (the reaper retries); the falsy guard stops
 // an empty id from nuking the whole hypermultimedia tree.
 export const deleteByPrefix = async (documentId: string): Promise<void> => {
   if (!documentId) return
-  const dirPath = `./temp/${PLUGIN_NAME}/${documentId}`
+  const dirPath = path.join(storageRoot(), documentId)
   await rm(dirPath, { recursive: true, force: true })
   storageLocalLogger.info(
     { documentId, dirPath },

@@ -185,7 +185,7 @@ export const documentsPaths: OpenApiPaths = {
     post: ownedLifecycle(
       'duplicateDocument',
       'Duplicate a document',
-      "Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is `<title> (copy)`, uniquified. Media is shared, not cloned. A soft-deleted source is a 404."
+      "Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. A soft-deleted source is a 404."
     )
   },
   '/api/documents/{documentId}/permanent': {

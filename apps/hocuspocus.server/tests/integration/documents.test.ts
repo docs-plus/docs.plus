@@ -901,7 +901,7 @@ describe('Documents API', () => {
       expect(created).toBe(false)
     })
 
-    test('owner duplicate creates a copy with reset flags and verbatim bytes', async () => {
+    test('owner duplicate creates a copy with reset flags, media-less bytes unchanged', async () => {
       const sourceBytes = Buffer.from([1, 2, 3, 4])
       mockPrisma.documentMetadata.findUnique = async () => ({
         ownerId: 'user-123',
@@ -941,7 +941,8 @@ describe('Documents API', () => {
       expect(metaCreate.data.readOnly).toBe(false)
       expect(metaCreate.data.deletedAt).toBeNull()
 
-      // Documents v1 carries the source bytes verbatim under the new id.
+      // No media to re-host, so the snapshot is passed through untouched; a source
+      // WITH media has its URLs repointed at the copy's prefix (rehostMediaUrls).
       expect(docsCreate.data.version).toBe(1)
       expect(docsCreate.data.commitMessage).toBe('')
       expect(docsCreate.data.data).toBe(sourceBytes)
