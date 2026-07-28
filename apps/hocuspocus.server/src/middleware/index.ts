@@ -3,7 +3,7 @@ import '../types' // For type augmentation
 import { type Context, Hono, type Next } from 'hono'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
-import { RateLimiterRedis } from 'rate-limiter-flexible'
+import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible'
 
 import { config } from '../config/env'
 import { httpLogger } from '../lib/logger'
@@ -50,12 +50,13 @@ export const rateLimiter = (options: {
 
     // x-real-ip is set by Traefik to the true client; fall back to the first XFF hop.
     const ip = realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
-    const userAgent = c.req.header('user-agent') || 'unknown'
-    const key = `${ip}:${userAgent}`
 
     try {
-      // Consume 1 point
-      const rateLimiterRes = await limiter.consume(key, 1)
+      // The key holds nothing the caller writes. Keying it on User-Agent too gave
+      // a client that increments that header a fresh budget on every request, and
+      // minted one Redis key per distinct value in the same volatile keyspace the
+      // claim-check payloads live in.
+      const rateLimiterRes = await limiter.consume(ip, 1)
 
       // Set standard rate limit headers
       c.header('X-RateLimit-Limit', points.toString())
@@ -66,7 +67,16 @@ export const rateLimiter = (options: {
       )
 
       return next()
-    } catch (rejRes: any) {
+    } catch (rejRes: unknown) {
+      // A store fault rejects with a plain Error, not a RateLimiterRes, and there
+      // is no insuranceLimiter to absorb it. Read as a rejection it made every
+      // rate-limited route fail for as long as Redis was down, while /health —
+      // exempt from this middleware — stayed green. Let the request through.
+      if (!(rejRes instanceof RateLimiterRes)) {
+        httpLogger.error({ err: rejRes }, 'Rate limiter store failed, allowing the request')
+        return next()
+      }
+
       // Rate limit exceeded
       const retryAfter = Math.ceil(rejRes.msBeforeNext / 1000) || duration
 
