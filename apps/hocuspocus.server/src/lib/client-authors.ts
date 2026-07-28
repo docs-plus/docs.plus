@@ -13,10 +13,12 @@ export interface ClientAuthorBinding {
 }
 
 // Narrowed to the two reads the guard makes, so a unit test can stand in a room
-// without constructing a Hocuspocus Document.
+// without constructing a Hocuspocus Document. Method syntax, not properties:
+// Document.getClients takes ws's WebSocket, and a property-typed parameter is
+// checked contravariantly under strictFunctionTypes, so `object` would refuse it.
 interface ClientAuthorRoom {
-  getClients: (socket: object) => Set<number>
-  getMap: (name: string) => { get: (key: string) => unknown }
+  getClients(socket: object): Set<number>
+  getMap(name: string): { get: (key: string) => unknown }
 }
 
 export interface ClientAuthorChange {
