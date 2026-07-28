@@ -427,7 +427,10 @@ jobs:
   deploy:
     name: 🚀 Deploy Production
     runs-on: prod.docs.plus
-    timeout-minutes: 30
+    # 45, not 30: replicas are now retired serially and the worker's stop grace
+    # is 150s, so a five-service roll plus a five-service rollback no longer
+    # fits 30m. A mid-deploy SIGTERM here is worse than a slow deploy.
+    timeout-minutes: 45
     needs: [triage, build]
     concurrency:
       group: ${{ github.workflow }}-deploy
@@ -451,6 +454,92 @@ jobs:
 
       - name: 🔐 Prepare Environment
         run: |
+          # deploy_service is written to disk rather than defined inline because
+          # the rollback step runs in its own shell and must take the identical
+          # route — a second copy of this function is a drift waiting to drain
+          # the fleet. Written first so a later failure here can still source it.
+          cat > "${RUNNER_TEMP}/deploy-service.sh" <<'DEPLOY_SVC'
+          # Rolls one compose service onto the new image without ever dropping
+          # below its current backend count. Returns non-zero (and retires
+          # nothing) if the new replicas do not come up healthy.
+          deploy_service() {
+            local SERVICE="$1" TARGET="$2"
+            local -a COMPOSE=(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}")
+            local -a OLD_IDS=() NEW_IDS=()
+            local id name
+
+            # Project-scoped on purpose: these ids are stopped and removed below,
+            # and `docker ps --filter com.docker.compose.service=` also matches an
+            # identically-named service in any other compose project on the host.
+            mapfile -t OLD_IDS < <("${COMPOSE[@]}" ps -q "${SERVICE}")
+            local SCALE_UP=$(( ${#OLD_IDS[@]} + TARGET ))
+            # Clamp to one spare generation. A rollback over a half-failed forward
+            # deploy sees TARGET stale replicas already running and would otherwise
+            # ask for 3x the footprint on a host that is already unhealthy. If the
+            # clamp bites, no new container appears and the NEW_IDS check below
+            # fails loudly instead of the host running out of memory quietly.
+            local MAX_SCALE=$(( TARGET * 2 ))
+            if [ "${SCALE_UP}" -gt "${MAX_SCALE}" ]; then
+              echo "::warning::${SERVICE} already runs ${#OLD_IDS[@]} replicas (target ${TARGET}); capping scale at ${MAX_SCALE}. Retire strays before redeploying."
+              SCALE_UP=${MAX_SCALE}
+            fi
+
+            echo ""
+            echo "📦 Deploying ${SERVICE} (running: ${#OLD_IDS[@]}, target: ${TARGET})..."
+
+            # --no-recreate is load-bearing. DEPLOY_TAG changes the service config
+            # hash, so a plain `up --scale` recreates the replicas that are
+            # currently serving and takes the fleet to zero before the new ones bind.
+            echo "⬆️  Starting ${TARGET} new replicas alongside the old (scale ${SCALE_UP})..."
+            "${COMPOSE[@]}" up -d --no-deps --no-recreate --scale "${SERVICE}=${SCALE_UP}" "${SERVICE}"
+
+            for id in $("${COMPOSE[@]}" ps -q "${SERVICE}"); do
+              case " ${OLD_IDS[*]} " in
+                *" ${id} "*) ;;
+                *) NEW_IDS+=("${id}") ;;
+              esac
+            done
+            if [ "${#NEW_IDS[@]}" -ne "${TARGET}" ]; then
+              echo "::error::Expected ${TARGET} new ${SERVICE} containers, found ${#NEW_IDS[@]}. Retiring nothing."
+              "${COMPOSE[@]}" ps "${SERVICE}"
+              return 1
+            fi
+
+            # Health is checked per new container id. A count would pass on the
+            # first tick — the old replicas are already healthy and, unlike
+            # before, they stay healthy for the whole wait.
+            echo "⏳ Waiting for ${#NEW_IDS[@]} new ${SERVICE} replicas to report healthy..."
+            local READY=0 i
+            for i in {1..60}; do
+              READY=1
+              for id in "${NEW_IDS[@]}"; do
+                [ "$(docker inspect -f '{{.State.Health.Status}}' "${id}" 2>/dev/null)" = healthy ] || READY=0
+              done
+              [ "${READY}" -eq 1 ] && break
+              [ $((i % 10)) -eq 0 ] && echo "   ... attempt ${i}/60"
+              sleep 2
+            done
+            if [ "${READY}" -ne 1 ]; then
+              echo "::error::New ${SERVICE} replicas never reported healthy after 120s. Old replicas left running — no traffic was drained."
+              "${COMPOSE[@]}" ps "${SERVICE}"
+              return 1
+            fi
+            echo "✅ ${#NEW_IDS[@]} new ${SERVICE} replicas healthy"
+
+            # One at a time, so the service never loses more than one backend.
+            # A bare `docker stop` honours the container's StopTimeout, which
+            # compose sets from stop_grace_period — 150s for the worker (its
+            # jobs need it), 30s elsewhere. A flat --time would SIGKILL the worker.
+            for id in "${OLD_IDS[@]}"; do
+              name=$(docker inspect -f '{{.Name}}' "${id}" 2>/dev/null || echo "${id}")
+              echo "🛑 Retiring ${name}..."
+              docker stop "${id}" >/dev/null || true
+              docker rm "${id}" >/dev/null || true
+              sleep 2
+            done
+          }
+          DEPLOY_SVC
+
           # Compose `--env-file` is the single source of truth. We do NOT also
           # `set -a; source` it elsewhere — that path was double-loading and
           # leaking vars to subshells unintentionally.
@@ -585,52 +674,10 @@ jobs:
             run --rm --no-deps migrate
           echo "✅ Migrations applied"
 
-      - name: 🚀 Deploy Services (Blue-Green)
+      - name: 🚀 Deploy Services (rolling replace)
         run: |
-          echo "🚀 Starting zero-downtime deployment..."
-
-          deploy_service() {
-            local SERVICE="$1"
-            local TARGET="$2"
-            local CURRENT
-            CURRENT=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" -q | wc -l | tr -d ' ')
-            local SCALE_UP=$((CURRENT + TARGET))
-
-            echo ""
-            echo "📦 Deploying ${SERVICE} (current: ${CURRENT}, target: ${TARGET})..."
-
-            # Scale UP first. NOTE: this is best-effort, not true zero-downtime
-            # — the changed image tag alters the config hash, so `up -d --scale`
-            # recreates the OLD containers at scale-up; each service has a
-            # brief no-healthy-backend window until the new replicas pass health.
-            if [ "${SCALE_UP}" -gt "${CURRENT}" ]; then
-              echo "⬆️  Scaling up to ${SCALE_UP}..."
-              docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-                up -d --no-deps --scale "${SERVICE}=${SCALE_UP}" "${SERVICE}"
-
-              # Wait for healthy. 60×2s = 120s — Next.js cold start can hit
-              # 60-90s right after a --no-cache build. Was 30×2s = 60s before
-              # which produced false-fail rollbacks.
-              echo "⏳ Waiting for healthy containers..."
-              for i in {1..60}; do
-                local HEALTHY
-                HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" -q | wc -l)
-                if [ "${HEALTHY}" -ge "${TARGET}" ]; then
-                  echo "✅ ${HEALTHY} healthy containers"
-                  break
-                fi
-                [ $((i % 10)) -eq 0 ] && echo "   ... ${HEALTHY}/${TARGET} healthy (attempt ${i}/60)"
-                sleep 2
-              done
-            fi
-
-            # Scale to target (compose removes old containers)
-            echo "📏 Scaling to target: ${TARGET}..."
-            docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-              up -d --no-deps --scale "${SERVICE}=${TARGET}" "${SERVICE}"
-
-            sleep 2
-          }
+          echo "🚀 Starting rolling deployment..."
+          source "${RUNNER_TEMP}/deploy-service.sh"
 
           # Callees before callers, so a consumer always understands the newest
           # shape before a producer emits it. Workers before servers for the job
@@ -820,9 +867,24 @@ jobs:
           # Override DEPLOY_TAG in the env file and re-deploy with previous images.
           sed -i.bak "s|^DEPLOY_TAG=.*|DEPLOY_TAG=${PREVIOUS_TAG}|" "${ENV_FILE}"
           rm -f "${ENV_FILE}.bak"
-          docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            up -d --force-recreate \
-            webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard
+
+          # Identical route to the forward deploy, by construction — a
+          # --force-recreate here restarts every service at once and takes the
+          # fleet to zero, which is the outage this path exists to end.
+          if [ ! -f "${RUNNER_TEMP}/deploy-service.sh" ]; then
+            echo "::error::deploy-service.sh missing — the run failed before environment prep."
+            exit 1
+          fi
+          source "${RUNNER_TEMP}/deploy-service.sh"
+
+          # Keep going past a failed service so the rest still get their old
+          # image back; the smoke tests below decide the step's exit code.
+          ROLLBACK_OK=1
+          deploy_service "hocuspocus-worker" 2 || ROLLBACK_OK=0
+          deploy_service "webapp" 2 || ROLLBACK_OK=0
+          deploy_service "hocuspocus-server" 2 || ROLLBACK_OK=0
+          deploy_service "rest-api" 2 || ROLLBACK_OK=0
+          deploy_service "admin-dashboard" 1 || ROLLBACK_OK=0
 
           # Post-rollback verification (A3). Give containers a moment to bind
           # ports + pass first healthcheck, then run the same internal smoke
@@ -845,7 +907,6 @@ jobs:
             fi
           }
 
-          ROLLBACK_OK=1
           smoke webapp 3000 /api/health || ROLLBACK_OK=0
           smoke rest-api 4000 /health || ROLLBACK_OK=0
           smoke hocuspocus-server 4001 /health || ROLLBACK_OK=0

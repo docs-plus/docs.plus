@@ -99,3 +99,16 @@ jobs:
       - name: 🧪 Run real-infra E2E (document content injection)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:content-inject
+
+      # SUPABASE_URL points at a closed port here, so the script's user-identity
+      # checks report as skipped rather than failing the job.
+      - name: 🧪 Run real-infra E2E (document versions)
+        working-directory: apps/hocuspocus.server
+        run: bun --env-file=../../.env.local scripts/e2e-versions.ts
+
+      # Same closed-port caveat, and it costs this one more: every assertion
+      # needs three verifiable Supabase sessions, so CI runs it as one skip.
+      # The attribution evidence comes from a local run against real Auth.
+      - name: 🧪 Run real-infra E2E (change attribution)
+        working-directory: apps/hocuspocus.server
+        run: bun run test:e2e:change-attribution
