@@ -5,7 +5,7 @@
 
 The REST API runs from `src/index.ts` on a Hono app. This document covers the HTTP surface only. For the three-process architecture and environment variables, see [Readme.md](./Readme.md) and [ENV.md](./ENV.md). For the WebSocket protocol, see [WebSocket API](#websocket-api).
 
-**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`). Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge — publishing them is a routing decision, not a code change.
+**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`), the [document version](#document-versions) routes excepted. Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge — publishing them is a routing decision, not a code change.
 
 ## Contents
 
@@ -14,26 +14,28 @@ The REST API runs from `src/index.ts` on a Hono app. This document covers the HT
 3. [Health](#health)
 4. [Documents](#documents)
 5. [Document content](#document-content)
-6. [Document conversion](#document-conversion)
-7. [Media](#media)
-8. [Link metadata](#link-metadata)
-9. [Email](#email)
-10. [Admin](#admin)
-11. [Push notifications](#push-notifications)
-12. [Rate limiting](#rate-limiting)
-13. [WebSocket API](#websocket-api)
+6. [Document versions](#document-versions)
+7. [Document conversion](#document-conversion)
+8. [Media](#media)
+9. [Link metadata](#link-metadata)
+10. [Email](#email)
+11. [Admin](#admin)
+12. [Push notifications](#push-notifications)
+13. [Rate limiting](#rate-limiting)
+14. [WebSocket API](#websocket-api)
 
 ## Authentication
 
 Three schemes apply, by route group:
 
-| Scheme                                | Used by                                                                                                                                                                                                                                                                    | Header                                              |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`                                                                                                                  | —                                                   |
-| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                     | `token: <jwt>`                                      |
-| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`)                                                                     | `token: <jwt>`                                      |
-| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import`, and the `content` / `ownerId` fields on `POST /api/documents` | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
-| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                             | `Authorization: Bearer <jwt>`                       |
+| Scheme                                | Used by                                                                                                                                                                                                                                    | Header                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`                                                                                  | —                                                   |
+| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                     | `token: <jwt>`                                      |
+| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`)                                     | `token: <jwt>`                                      |
+| Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                         | `token: <jwt>` or the service-role bearer           |
+| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, and the `content` / `ownerId` fields on `POST /api/documents` | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
+| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                             | `Authorization: Bearer <jwt>`                       |
 
 > **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalUser` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
 
@@ -286,7 +288,14 @@ Applies content to the document. Query: `mode` = `replace` (default) or `append`
 }
 ```
 
+| Field           | Type            | Description                                                                 |
+| --------------- | --------------- | --------------------------------------------------------------------------- |
+| `content`       | Tiptap doc JSON | Required. `{ "type": "doc", "content": [...] }` with at least one node      |
+| `commitMessage` | string          | Optional, trimmed, 1–200 characters. Names the version row this write mints |
+
 `replace` swaps the whole body; `append` adds the payload's top-level nodes after the existing ones. Appending into an empty document makes the payload the document's first node, so the title-first rule applies there too.
+
+**Naming a write is permanent history.** A `commitMessage` becomes the version row's name, and autosave retention never thins a named row — see [Document versions](#document-versions). Name the writes a person would want to find again, and leave a bulk import's chunks unnamed: a named 500-chunk run leaves 500 rows nothing will ever prune.
 
 Live and cold documents take the same path. If collaborators have the document open, they see the change immediately without reconnecting. If nobody has it open, it loads, applies, persists, and unloads.
 
@@ -349,11 +358,276 @@ Content surfaces sit behind the constant-time, fail-closed service-role check; t
 
 `POST /internal/documents/:documentId/content` on the collaboration process's internal listener (port `HOCUSPOCUS_INTERNAL_HTTP_PORT`, default `4003`, shared with `/metrics`). Not Traefik-routed and not reachable from the public edge. REST forwards to it over `HOCUSPOCUS_INTERNAL_URL` with the same service-role bearer and the caller's `x-request-id`. Deploy `hocuspocus-server` before `rest-api` whenever this wire shape changes.
 
+## Document versions
+
+Read, compare, name, delete, and restore a document's history. Module: `src/modules/document-versions/`.
+
+| Route                                                       | Does                                                  |
+| ----------------------------------------------------------- | ----------------------------------------------------- |
+| `GET /api/documents/:documentId/versions`                   | List the history, newest first                        |
+| `POST /api/documents/:documentId/versions`                  | Name the next stored version — a checkpoint           |
+| `GET /api/documents/:documentId/versions/:version`          | Read one version's content                            |
+| `GET /api/documents/:documentId/versions/:version/diff`     | Compare a version with an earlier one, block by block |
+| `DELETE /api/documents/:documentId/versions/:version`       | Delete one version, as long as it is not the newest   |
+| `POST /api/documents/:documentId/versions/:version/restore` | Put a version's content back into the live document   |
+
+All six are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`); a user JWT gets `401`. They address documents by `documentId`, never by slug — see [Identifying a document](#identifying-a-document). They are not published in `/openapi.json`.
+
+Reads and the delete run straight off Postgres in the REST process. The checkpoint and the restore need the live Y.Doc, so REST forwards them to the collaboration process over the same internal hop the content applier uses.
+
+### Every save is already a version
+
+The collaboration server persists a full snapshot per debounced save — 10 s after typing stops, 60 s at the latest — so rows accumulate whether or not anyone asks for them. There is no versioning schedule to configure: that debounce envelope is the granularity, and it is the same window the [content read](#get-apidocumentsdocumentidcontent) can trail by.
+
+A checkpoint therefore creates no history that would otherwise be missing. What it adds is a **name**, and the name is what the retention sweep keys off: unnamed rows older than `DOC_AUTOSAVE_RETENTION_DAYS` (default 30) are thinned to one per document per day, while a row named by a person is never pruned. Spend names on the moments a person would want to find again.
+
+Names the server mints for itself are the exception — see [`trigger`](#get-apidocumentsdocumentidversions). They read like any other named row but the sweep thins them, so a restore older than the retention window stops being undoable.
+
+Snapshots are cumulative full state, not deltas, so deleting or pruning an old row never damages a newer one.
+
+### GET /api/documents/:documentId/versions
+
+Metadata for the document's versions, newest first. No snapshot bytes — read those one version at a time.
+
+| Param    | Type | Default | Description       |
+| -------- | ---- | ------- | ----------------- |
+| `limit`  | int  | `50`    | Page size, 1–100  |
+| `offset` | int  | `0`     | Rows to skip, ≥ 0 |
+
+```json
+{
+  "success": true,
+  "data": {
+    "documentId": "kR4pZ2mQ7tY1nB8xW3v",
+    "versions": [
+      {
+        "version": 14,
+        "name": "Before the board review",
+        "trigger": "checkpoint",
+        "triggeredBy": null,
+        "contributors": [],
+        "createdAt": "2026-07-25T14:02:11.301Z"
+      },
+      {
+        "version": 13,
+        "name": null,
+        "trigger": "websocket",
+        "triggeredBy": {
+          "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+          "avatar_url": "https://example.test/ada.png",
+          "avatar_updated_at": "2026-07-01T09:12:00.000Z",
+          "full_name": "Ada Lovelace",
+          "display_name": "Ada",
+          "status": "online"
+        },
+        "contributors": [],
+        "createdAt": "2026-07-25T13:58:40.117Z"
+      }
+    ],
+    "total": 14,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+`total` counts every row for the document and is read in the same transaction as the page, so it cannot describe a different history than the rows beside it.
+
+| Field          | Meaning                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`      | Monotonic per document, starting at 1. Gaps are normal — retention and `DELETE` both leave them                                                           |
+| `name`         | The row's commit message, or `null` for an unnamed autosave                                                                                               |
+| `trigger`      | What caused the row: `websocket`, `api`, `checkpoint`, `revert`, `revert-backup`, `schema-migration`, or `null` on rows stored before attribution shipped |
+| `triggeredBy`  | Profile of whoever caused the row, or `null`                                                                                                              |
+| `contributors` | Profiles of everyone whose edits landed in this row                                                                                                       |
+| `createdAt`    | Commit time of the row, not of the edits inside it                                                                                                        |
+
+Profiles are the `public.users` columns the history sidebar renders, snake_case as that table spells them. Attribution is decoration: when the profile lookup fails, `triggeredBy` falls back to `null` and unresolvable ids drop out of `contributors` rather than failing the request. An id that resolves to no profile disappears the same way.
+
+`triggeredBy` on a `websocket` row is the collaborator whose edit flushed the debounce window; on a `checkpoint` or `revert` row it is whoever asked for the operation. Both REST write routes leave it `null` — the service key is nobody, and only the editor's own in-app revert carries a real account.
+
+`contributors` is best-effort and per-replica: it is the set of accounts whose updates reached **this** collaboration replica since its previous save, so a room split across replicas records each replica's own set. Anonymous editors are stored in the column — they carry a Supabase `sub` like anyone else — but resolve to no profile and so never appear in the rendered list. Read the column's length as a floor on the rendered one, never as its equal.
+
+The server names some rows itself, and their `trigger` is what tells them apart from a name a person typed. `Before restore of version N` carries `revert-backup` and `Schema migration` carries `schema-migration`; both list like any other named version, but retention thins them once they pass the window. `Restored version N` carries `revert` — a person asked for it, so it survives retention like a checkpoint.
+
+### POST /api/documents/:documentId/versions
+
+Names the next stored version.
+
+```json
+{ "name": "Before the board review" }
+```
+
+`name` is required, trimmed, and 1–200 characters. The document's body is untouched: the checkpoint opens the document, commits an empty transaction to trigger one immediate save, and lets that save carry the name.
+
+```json
+{
+  "success": true,
+  "data": { "documentId": "kR4pZ2mQ7tY1nB8xW3v", "name": "Before the board review" }
+}
+```
+
+**A `200` means the save pipeline was triggered, not that a row exists.** The row is written by the worker; when its transaction commits, the worker publishes `doc:<documentId>:saved` on Redis and the collaboration process re-broadcasts it into the room as a `document:saved` stateless message. That broadcast is the signal the row landed. A REST caller gets no such push — poll `GET …/versions` for the name if you need certainty.
+
+One gap to know about: when the enqueue fails and the collaboration process falls back to saving directly to Postgres, the row still lands but nothing publishes `doc:*:saved`, so the room never sees a confirmation for it. That is pre-existing behavior of the fallback, not specific to checkpoints.
+
+**A checkpoint always lands, even when the bytes have not changed.** The store pipeline deduplicates saves of identical content within a ten-second window, so a checkpoint taken right after an autosave would otherwise be swallowed by it and lose the name. A checkpoint widens its own job id with a random key to stay off that dedupe, which means naming an unchanged document produces a named row whose content duplicates the row before it. That is the intent — the name is the point.
+
+### GET /api/documents/:documentId/versions/:version
+
+One version's content, through the same decoder as [`GET /content`](#get-apidocumentsdocumentidcontent). Query: `format` = `json` (default) or `text`.
+
+```json
+{
+  "success": true,
+  "data": {
+    "documentId": "kR4pZ2mQ7tY1nB8xW3v",
+    "version": 13,
+    "format": "json",
+    "content": { "type": "doc", "content": [] }
+  }
+}
+```
+
+The same [trust boundary](#get-apidocumentsdocumentidcontent) applies: stored content is returned verbatim and the server never sanitizes it.
+
+### GET /api/documents/:documentId/versions/:version/diff
+
+Which top-level blocks differ between two versions, and whose text sits in them now. `:version` is the newer side.
+
+| Param  | Type | Default                   | Description                      |
+| ------ | ---- | ------------------------- | -------------------------------- |
+| `base` | int  | the nearest version below | The older side of the comparison |
+
+The default is the greatest version below `:version`, which is not always `:version - 1` — retention and `DELETE` leave gaps. A `base` at or above `:version` is a `400`, and that check runs before the document is looked up — so it answers `400` rather than `404` even for a document that does not exist. A `base` naming a version that does not exist is a `404`; an omitted `base` on a document's oldest version is not, and comes back as `fromVersion: 0` with the whole document read as `added`.
+
+```json
+{
+  "success": true,
+  "data": {
+    "documentId": "kR4pZ2mQ7tY1nB8xW3v",
+    "fromVersion": 16,
+    "toVersion": 17,
+    "blocksBefore": 269,
+    "blocksAfter": 269,
+    "changes": [
+      {
+        "kind": "changed",
+        "index": 65,
+        "nodeType": "taskList",
+        "from": 9610,
+        "to": 11033,
+        "before": "Capture the goal\nDraft the first pass",
+        "after": "Capture the goal\nDraft the second pass",
+        "clientIds": [3728007124]
+      }
+    ],
+    "totalChanges": 4,
+    "coarse": false,
+    "unattributed": false,
+    "authors": []
+  }
+}
+```
+
+| Field                          | Meaning                                                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `fromVersion`                  | The older side. `0` when the newer version has no predecessor                                                                  |
+| `blocksBefore` / `blocksAfter` | Top-level block counts on each side                                                                                            |
+| `changes`                      | `added`, `removed`, and `changed` blocks, in the newer document's order, capped at 500 entries                                 |
+| `totalChanges`                 | The true count before the cap. `changes.length < totalChanges` means the list was clipped                                      |
+| `coarse`                       | Matching hit its cell budget and fell back to remove-all plus add-all. Positions and previews still hold, the pairing does not |
+| `unattributed`                 | The stored Yjs items did not line up with the decoded blocks, so every `clientIds` is empty                                    |
+
+Each entry in `changes` carries `index`, the top-level index in the newer document — in the older one on `removed`. `from` and `to` are ProseMirror positions in the newer document, absent on `removed`. `before` and `after` are the first 200 characters of the block's text.
+
+Comparison is over whole top-level blocks of decoded ProseMirror content, not over words, so a one-word edit reports the paragraph. Editor-regenerated `toc-id` attributes are stripped first: re-anchoring a heading is not a change.
+
+**Authorship.** `clientIds` lists the Yjs clientIDs holding live content in the block, and `authors` names them — one entry per clientID that has a binding row.
+
+```json
+{ "clientId": 3728007124, "user": { "id": "1b9d…", "display_name": "Ada" }, "anonymous": false }
+```
+
+`user` carries the same [`public.users` columns](#get-apidocumentsdocumentidversions) the history sidebar renders, or `null` when the binding exists but no profile resolved. `anonymous` records that the account was anonymous when the clientID was bound; identity is joined at read time, so an anonymous editor who later signs up gets their real name here across their whole history, with no backfill.
+
+A clientID that appears in `changes[].clientIds` but not in `authors` is unattributed. Bindings exist only for edits made after attribution capture shipped, so on an older document `authors` is `[]` while `clientIds` stays populated — that is how a caller tells "unknown writer" apart from "nobody attributed".
+
+**The diff answers who wrote the text currently in this block. It does not answer who made this change, and it does not answer who deleted this.** `removed` blocks carry no authorship at all: the collaboration server runs Yjs garbage collection, which erases deleted items, so nothing survives to name whoever removed them.
+
+**clientID bindings are a first-claim record, not an audit trail.** Yjs clientIDs are asserted by the client. The server records the account that first claimed one on a live socket and never overwrites it, so a legitimate editor cannot be displaced by a later forger — but the row is not proof of authorship, and nothing built on it should imply that it is.
+
+**Identical versions.** A checkpoint of an unchanged document mints a named row whose content duplicates the row before it. Diffing that pair returns `200` with `changes: []` and both block counts `0`: the bytes are compared without decoding either side, so the counts are never taken. Zero here means not counted, not empty.
+
+Neither `503` nor `413` can come back from this route. It reads straight off Postgres and never touches the collaboration process, and a `GET` carries no body to overrun.
+
+### DELETE /api/documents/:documentId/versions/:version
+
+Deletes one version permanently.
+
+```json
+{ "success": true, "data": { "documentId": "kR4pZ2mQ7tY1nB8xW3v", "version": 7, "deleted": true } }
+```
+
+**The newest version cannot be deleted** — `409 CONFLICT`. It is the base a cold load reads, so removing it rewinds the document to an older snapshot; worse, a room still open would then flush its newer live state back over that older base as a revert nobody asked for. Checking "is this the head" and deleting happen under one row lock, so the answer cannot go stale between the two.
+
+To drop the current state, restore an earlier version instead: that moves history forward rather than truncating it.
+
+### POST /api/documents/:documentId/versions/:version/restore
+
+Puts a version's content back into the live document.
+
+> Not to be confused with [`POST /api/documents/:documentId/restore`](#post-apidocumentsdocumentidrestore), which is the trash restore — it clears `deletedAt` on a soft-deleted document and touches no content.
+
+The route says restore and the internals say revert; they name the same operation.
+
+```json
+{
+  "success": true,
+  "data": { "documentId": "kR4pZ2mQ7tY1nB8xW3v", "restoredFrom": 7, "backupVersion": 15 }
+}
+```
+
+Three things happen, in order:
+
+1. The stored snapshot is decoded and re-encoded against the current schema. A version the schema can no longer express is rejected with `422` before anything is opened or written.
+2. The live document — including edits still inside the debounce window — is captured and committed as a new version named `Before restore of version N`. `backupVersion` is that row.
+3. The body is replaced with the target content, and the save that follows is named `Restored version N`.
+
+So a restore **appends** two versions and never rewinds the counter. Undoing one is a restore of the backup it wrote. Repeating the same restore is safe but not free: each call banks another backup and another restore row.
+
+`backupVersion` is `number | null`. Null means the collaboration process's reply could not be read, not that no backup was taken — the row exists either way. A history UI should render the absence rather than reporting "no backup".
+
+**When the backup cannot be committed, nothing is restored.** The `500` says so explicitly and the document is unchanged; that ordering is deliberate, so a worker that dies mid-operation still leaves the pre-restore state recoverable.
+
+**When persistence is wedged**, the backup is already committed and the replacement may already be visible to live collaborators without ever reaching the database. That is the persist-failed `500`, and it carries the same rule as [`PATCH /content`](#patch-apidocumentsdocumentidcontent): verify with `GET` before retrying, and treat a repeat for the same document as persistence being wedged for it until the collaboration process restarts.
+
+The editor's in-app revert runs the same operation over the collaboration server's stateless channel instead of this route. That path requires an authenticated, writable connection, which is why it can attribute the resulting rows to a person and this one cannot.
+
+### Status codes
+
+| Status | Code                    | When                                                                                                                                                                                                                                                                   |
+| ------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | `VALIDATION_ERROR`      | Malformed `documentId`; a `version` or `base` that is not a positive integer within int4; a `base` at or above the version it is compared to; `limit` outside 1–100; negative `offset`; unknown `format`; a `name` that is empty after trimming or over 200 characters |
+| `401`  | `UNAUTHORIZED`          | Missing, wrong, or user-JWT bearer; also when `SUPABASE_SERVICE_ROLE_KEY` is unset (fails closed)                                                                                                                                                                      |
+| `404`  | `NOT_FOUND`             | No metadata row, the document is soft-deleted, or no such version — including an explicitly named `base`                                                                                                                                                               |
+| `409`  | `CONFLICT`              | `DELETE` targeting the newest version                                                                                                                                                                                                                                  |
+| `413`  | `PAYLOAD_TOO_LARGE`     | Write body over 16 KiB. These routes carry a name at most — content never rides them                                                                                                                                                                                   |
+| `422`  | `DRAFT_DOCUMENT`        | Checkpoint or restore on a document that has never been saved. A draft has no history to name or roll back to                                                                                                                                                          |
+| `422`  | `UNPROCESSABLE_ENTITY`  | Restore whose stored snapshot cannot be decoded, or cannot be re-encoded against the current schema. Nothing is written                                                                                                                                                |
+| `429`  | —                       | Global rate limiter. Body is `{ "error": "...", "retryAfter": <seconds> }`, not the house envelope — see [Rate limiting](#rate-limiting)                                                                                                                               |
+| `500`  | `INTERNAL_SERVER_ERROR` | Snapshot decode failure on read; the document could not be opened; the pre-restore backup failed; the save failed; or the REST and collaboration processes holding different service-role keys, which the message names explicitly                                     |
+| `503`  | `SERVICE_UNAVAILABLE`   | The collaboration process is unreachable or did not answer within 30 s. Only the checkpoint and the restore hop, so no read route can return this                                                                                                                      |
+
+`DRAFT_DOCUMENT` is specific to these routes. It shares the `422` status with invalid content so a caller that only reads the status still behaves correctly, and carries its own code so one can be told from the other.
+
+### Internal version endpoints
+
+`POST /internal/documents/:documentId/versions` and `POST /internal/documents/:documentId/versions/:version/restore` on the collaboration process's internal listener, beside [the content apply endpoint](#internal-apply-endpoint) and `/metrics`. Not Traefik-routed. REST forwards to them over `HOCUSPOCUS_INTERNAL_URL` with the same service-role bearer and the caller's `x-request-id`. Deploy `hocuspocus-server` before `rest-api` whenever this wire shape changes.
+
 ## Document conversion
 
 Turn a document into a file, or a file into document content. Module: `src/modules/document-conversion/`.
-
-Both routes are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`) and address the document by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
 
 | Direction | Formats             | Route                                            |
 | --------- | ------------------- | ------------------------------------------------ |
@@ -362,7 +636,23 @@ Both routes are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE
 
 The asymmetry is deliberate: nothing reads ODT back, and a legacy `.doc` is refused rather than guessed at.
 
-**Import writes no content.** It returns Tiptap JSON and leaves the document untouched; the caller applies it with [`PATCH /content`](#patch-apidocumentsdocumentidcontent), which is the only write path that enforces the read-only lock. It is not side-effect free, though: images embedded in the uploaded file are re-hosted to object storage before the JSON returns, so a caller that discards the response leaves those objects behind. Read the [fidelity contract](#fidelity-contract) before converting anything you cannot re-create.
+Both routes take either the service-role key (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`) or a Supabase user token (`token: <jwt>`, or the same JWT as a bearer), and address the document by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
+
+**A token is required whatever the document's privacy.** Both routes fall back to `requireUser`, not `optionalUser`, so a call with no credential is a `401` even on a public document. That is the rule a browser caller gets wrong most often — send the Supabase access token in the `token` header on every request, public documents included.
+
+**Access matrix.** The service-role key passes every row. A user token runs the same private-document predicate as the WebSocket gate and `GET /api/documents/:slug` (`resolvePrivateAccess` in `src/lib/privateAccess.ts`) — one rule, three surfaces.
+
+| Document                                      | `GET /export`                  | `POST /import`       |
+| --------------------------------------------- | ------------------------------ | -------------------- |
+| Public, unlocked                              | any signed-in caller           | any signed-in caller |
+| Private, caller owns it                       | `200`                          | `200`                |
+| Private, caller signed in as someone else     | `403 FORBIDDEN`                | `403 FORBIDDEN`      |
+| Private, caller anonymous or `ownerId` null   | `401 UNAUTHORIZED`             | `401 UNAUTHORIZED`   |
+| Public and `readOnly`, caller does not own it | `200` — the lock is write-only | `403 FORBIDDEN`      |
+
+The privacy rule runs first, so a document that is both private and locked answers with the privacy outcome. Import gates on write access because a locked document's readers can never apply what it returns, and the conversion costs real CPU either way. The `readOnly` rule is the one the WebSocket handshake enforces: the owner keeps edit rights, everyone else is refused.
+
+**Import writes no content.** It returns Tiptap JSON and leaves the document untouched; the caller applies it with [`PATCH /content`](#patch-apidocumentsdocumentidcontent), which enforces the read-only lock on the write itself — import enforces it on admission. It is not side-effect free, though: images embedded in the uploaded file are re-hosted to object storage before the JSON returns, so a caller that discards the response leaves those objects behind. Read the [fidelity contract](#fidelity-contract) before converting anything you cannot re-create.
 
 ### GET /api/documents/:documentId/export
 
