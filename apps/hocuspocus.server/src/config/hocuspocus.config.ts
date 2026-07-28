@@ -14,7 +14,7 @@ import { documentPersistFallbackTotal, documentStoreRejectionsTotal } from '../l
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
-import { prisma } from '../lib/prisma'
+import { checkDatabaseHealth, prisma } from '../lib/prisma'
 import { captureDegraded, captureUnknown } from '../lib/instrument'
 import { dbLogger } from '../lib/logger'
 import {
@@ -117,14 +117,15 @@ const configureExtensions = () => {
   if (config.app.env === 'production' && config.redis.enabled) {
     // Note: @hocuspocus/extension-redis creates its own Redis connection.
     // Mirror the centralized db/tls selection or the sync layer silently
-    // connects to a different logical DB than the queues.
+    // connects to a different logical DB than the queues. No password here:
+    // buildRedisConfig sets none, so one set only here would authenticate the
+    // sync layer while every queue connection failed NOAUTH.
     const redisOptions: any = {
       host: config.redis.host || 'localhost',
       port: config.redis.port,
       options: {
         db: config.redis.db,
-        tls: config.redis.tls ? {} : undefined,
-        ...(process.env.REDIS_PASSWORD ? { password: process.env.REDIS_PASSWORD } : {})
+        tls: config.redis.tls ? {} : undefined
       }
     }
 
@@ -399,27 +400,42 @@ export default () => {
       healthCheck.onConfigure({ ...data, extensions })
     },
 
-    onRequest(data: any) {
-      return new Promise<void>((resolve, reject) => {
-        const { request, response } = data
+    async onRequest(data: any) {
+      const { request, response } = data
 
-        const healthRoutes: Record<string, () => unknown> = {
-          '/health': () => healthCheck.getHealth(),
-          '/health/websocket': () => healthCheck.status.websocket,
-          '/health/database': () => healthCheck.getDatabaseStatus(),
-          '/health/redis': () => healthCheck.getRedisStatus()
-        }
+      // Apart from the liveness routes below, which always answer 200: the
+      // rolling deploy retires the live replicas on this answer, and a replica
+      // that cannot reach Postgres cannot load a document. Redis is reported but
+      // not gated — store() falls back to a direct DB write when the queue is down.
+      if (request.url === '/health/ready') {
+        const dbHealthy = await checkDatabaseHealth()
+        response.writeHead(dbHealthy ? 200 : 503, { 'Content-Type': 'application/json' })
+        response.end(
+          JSON.stringify({
+            status: dbHealthy ? 'ready' : 'not ready',
+            services: {
+              database: dbHealthy ? 'connected' : 'disconnected',
+              redis: healthCheck.getRedisStatus()
+            }
+          })
+        )
+        // Rejecting short-circuits Hocuspocus's default request handling.
+        return Promise.reject()
+      }
 
-        const buildPayload = healthRoutes[request.url]
-        if (buildPayload) {
-          response.writeHead(200, { 'Content-Type': 'application/json' })
-          response.end(JSON.stringify(buildPayload()))
-          // reject() short-circuits Hocuspocus's default request handling.
-          return reject()
-        }
+      const healthRoutes: Record<string, () => unknown> = {
+        '/health': () => healthCheck.getHealth(),
+        '/health/websocket': () => healthCheck.getWebsocketStatus(),
+        '/health/database': () => healthCheck.getDatabaseStatus(),
+        '/health/redis': () => healthCheck.getRedisStatus()
+      }
 
-        resolve()
-      })
+      const buildPayload = healthRoutes[request.url]
+      if (buildPayload) {
+        response.writeHead(200, { 'Content-Type': 'application/json' })
+        response.end(JSON.stringify(buildPayload()))
+        return Promise.reject()
+      }
     }
   }
 }

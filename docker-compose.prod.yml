@@ -192,7 +192,6 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-      JWT_SECRET: ${JWT_SECRET}
       # ALLOWED_ORIGINS loaded from env_file
       # S3 Storage (DigitalOcean Spaces)
       DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
@@ -299,7 +298,6 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-      JWT_SECRET: ${JWT_SECRET}
       # ALLOWED_ORIGINS loaded from env_file
       HOCUSPOCUS_LOGGER: 'false'
       HOCUSPOCUS_THROTTLE: 'true'
@@ -332,16 +330,20 @@ services:
       - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.httponly=true'
       - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.secure=true'
       - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.samesite=lax'
-      # Health check for load balancer
+      # Health check for load balancer. Liveness on purpose: Traefik would pull a
+      # replica with live rooms attached off the pool on a transient DB blip.
       - 'traefik.http.services.hocuspocus.loadbalancer.healthcheck.path=/health'
       - 'traefik.http.services.hocuspocus.loadbalancer.healthcheck.interval=5s'
+    # Readiness, not /health: the deploy reads this container status and then
+    # stops every old replica, so a port-open-only answer would retire replicas
+    # that can load documents in favour of replicas that cannot.
     healthcheck:
       test:
         [
           'CMD',
           'bun',
           '-e',
-          "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+          "fetch('http://localhost:4001/health/ready').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
         ]
       interval: 10s
       timeout: 5s

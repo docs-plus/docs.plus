@@ -168,12 +168,27 @@ restApiLogger.info({
 })
 
 // Graceful shutdown
+// Bun's stop() also waits on idle keep-alive sockets, and Traefik holds those,
+// so this budget is spent on most retirements rather than only on a slow
+// request. 10s covers an export's realistic tail and still leaves 20s of the
+// 30s stop_grace_period for the DB close and the 2s Sentry flush below.
+const DRAIN_TIMEOUT_MS = 10_000
+
 const shutdown = async () => {
   restApiLogger.info('Shutting down REST API gracefully...')
 
   try {
-    // Close server first to stop accepting new requests
-    server.stop()
+    // Stop accepting new requests, then wait for the in-flight ones. A bare
+    // stop() drops that promise, so an export or import — work that holds no
+    // pooled Prisma client to delay the tail — was cut on every rolling deploy.
+    let drainTimer: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([
+      server.stop(),
+      new Promise((resolve) => {
+        drainTimer = setTimeout(resolve, DRAIN_TIMEOUT_MS)
+      })
+    ])
+    clearTimeout(drainTimer)
 
     // Cleanup connections
     await emailGateway.shutdown()

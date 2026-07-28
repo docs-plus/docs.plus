@@ -6,34 +6,30 @@ const healthLogger = logger.child({ extension: 'health' })
 export class HealthCheck {
   server: any
   extensions: any[]
-  status: {
-    websocket: {
-      status: string
-      connections: number
-      lastCheck: Date
-    }
-  }
 
   constructor() {
     this.server = null
     this.extensions = []
-    this.status = {
-      websocket: {
-        status: 'healthy',
-        connections: 0,
-        lastCheck: new Date()
-      }
+  }
+
+  // Counted at read time, like the /metrics providers. An inc/dec pair drifted
+  // both ways: onConnect runs before onAuthenticate, so a rejected token adds a
+  // connection that never disconnects, and a direct connection's unload fires
+  // onDisconnect with no matching onConnect, which could take the count negative.
+  getWebsocketStatus() {
+    const documents = this.server?.documents
+    const connections = documents
+      ? [...documents.values()].reduce(
+          (sum: number, doc: any) => sum + doc.getConnectionsCount(),
+          0
+        )
+      : 0
+
+    return {
+      status: 'healthy',
+      connections,
+      lastCheck: new Date()
     }
-  }
-
-  onConnect() {
-    this.status.websocket.connections += 1
-    this.status.websocket.lastCheck = new Date()
-  }
-
-  onDisconnect() {
-    this.status.websocket.connections -= 1
-    this.status.websocket.lastCheck = new Date()
   }
 
   onConfigure(data: any) {
@@ -62,7 +58,7 @@ export class HealthCheck {
       status: 'ok',
       timestamp: new Date(),
       services: {
-        websocket: this.status.websocket,
+        websocket: this.getWebsocketStatus(),
         database: this.getDatabaseStatus(),
         redis: this.getRedisStatus()
       }
