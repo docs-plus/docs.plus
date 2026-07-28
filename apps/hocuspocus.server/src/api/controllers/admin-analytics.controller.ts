@@ -171,7 +171,7 @@ export async function getBatchDocumentTrends(c: AppContext) {
     if (!supabase) return c.json({ error: 'Supabase not configured' }, 500)
 
     const slugsParam = c.req.query('slugs') || ''
-    const days = parseInt(c.req.query('days') || '7')
+    const days = Math.min(Math.max(parseInt(c.req.query('days') || '7'), 1), 90)
     const slugs = slugsParam.split(',').filter(Boolean)
     if (slugs.length === 0) return c.json({})
 

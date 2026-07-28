@@ -1,7 +1,7 @@
 /**
  * Admin media storage — fleet quota audit for the chat media bucket.
  *
- * One fleet RPC per list/export request; summary is derived from that fleet
+ * One paged fleet RPC read per list/export request; summary is derived from that fleet
  * (SQL summary RPC only when the fleet is empty, for quota_bytes).
  */
 
@@ -22,6 +22,7 @@ export type { MediaStorageQuery, WorkspaceMediaStorageStat, WorkspaceMediaStorag
 
 const fleetRowsSchema = z.array(workspaceMediaStorageStatSchema)
 const EXPORT_ROW_CAP = 10_000
+const FLEET_PAGE = 1000
 
 type ListResult =
   | {
@@ -40,14 +41,26 @@ export async function fetchFleetRows(
 ): Promise<
   { status: 'ok'; data: WorkspaceMediaStorageStat[] } | { status: 'error'; message: string }
 > {
-  const { data, error } = await supabase.rpc('get_all_workspace_media_storage_stats')
-  if (error) return { status: 'error', message: error.message }
+  // The RPC is set-returning, so PostgREST truncates it at max_rows (1000) and a
+  // partial fleet would export and summarise as if complete. Re-declare the RPC's
+  // own `total_bytes desc` and add a unique tiebreaker so paging cannot skip a row.
+  const rows: WorkspaceMediaStorageStat[] = []
+  for (let from = 0; ; from += FLEET_PAGE) {
+    const { data, error } = await supabase
+      .rpc('get_all_workspace_media_storage_stats')
+      .order('total_bytes', { ascending: false })
+      .order('workspace_id', { ascending: true })
+      .range(from, from + FLEET_PAGE - 1)
+    if (error) return { status: 'error', message: error.message }
 
-  const parsed = fleetRowsSchema.safeParse(data ?? [])
-  if (!parsed.success) {
-    return { status: 'error', message: 'Invalid media storage fleet payload' }
+    const parsed = fleetRowsSchema.safeParse(data ?? [])
+    if (!parsed.success) {
+      return { status: 'error', message: 'Invalid media storage fleet payload' }
+    }
+    rows.push(...parsed.data)
+    if (parsed.data.length < FLEET_PAGE) break
   }
-  return { status: 'ok', data: parsed.data }
+  return { status: 'ok', data: rows }
 }
 
 function computeSummaryFromFleet(rows: WorkspaceMediaStorageStat[]): WorkspaceMediaStorageSummary {

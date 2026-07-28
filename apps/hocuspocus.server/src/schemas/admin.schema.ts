@@ -103,7 +103,6 @@ export const ghostAccountsQuerySchema = z.object({
       'abandoned_sso',
       'stale_unconfirmed',
       'never_signed_in',
-      'no_public_profile',
       'stale_anonymous',
       'orphaned_anonymous'
     ])

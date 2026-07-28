@@ -263,7 +263,7 @@ export async function getStaleSummary(prisma: PrismaClient): Promise<StaleSummar
   let recoverableBytes = 0
   if (staleDocIds.length > 0) {
     const storageRows = await prisma.$queryRaw<{ total: bigint }[]>`
-      SELECT COALESCE(SUM(LENGTH(data::text)), 0) AS total
+      SELECT COALESCE(SUM(LENGTH(data)), 0) AS total
       FROM "Documents"
       WHERE "documentId" = ANY(${staleDocIds})
     `
@@ -343,7 +343,7 @@ async function getStructures(
       SELECT DISTINCT ON ("documentId") "documentId", data
       FROM "Documents"
       WHERE "documentId" = ANY(${missing})
-      ORDER BY "documentId", id DESC
+      ORDER BY "documentId", version DESC
     `
     const dataMap = new Map(latestDocs.map((d) => [d.documentId, d.data]))
     for (const id of missing) {
@@ -568,7 +568,7 @@ export async function getDocumentPreview(
 
   const latestVersion = await prisma.documents.findFirst({
     where: { documentId: doc.documentId },
-    orderBy: { id: 'desc' },
+    orderBy: { version: 'desc' },
     select: { data: true }
   })
 

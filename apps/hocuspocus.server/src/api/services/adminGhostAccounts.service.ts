@@ -2,10 +2,13 @@
  * Admin Ghost-Accounts Service — auth-user classification, caching, and
  * smart-delete operations.
  *
- * Ghost classification pages the entire auth.users base and cross-references
- * public.users, so the classified set is cached per minAgeDays within a TTL to
- * avoid re-paging on each admin view.
+ * Every ghost type is decided from auth.users alone. `no_public_profile` was
+ * removed deliberately: handle_new_user creates the profile, so a login without
+ * one means that trigger failed — a bug to fix, never an account to delete. It
+ * was also the only check needing a second full table read to reach a delete.
  */
+
+import type { PrismaClient } from '@prisma/client'
 
 import { adminLogger } from '../../lib/logger'
 import { getSupabaseClient } from '../utils/supabase'
@@ -23,7 +26,6 @@ export type GhostType =
   | 'abandoned_sso'
   | 'stale_unconfirmed'
   | 'never_signed_in'
-  | 'no_public_profile'
   | 'stale_anonymous'
   | 'orphaned_anonymous'
 
@@ -37,7 +39,6 @@ export interface GhostAccount {
   is_anonymous: boolean
   age_days: number
   ghost_type: GhostType
-  has_public_profile: boolean
 }
 
 type AuthUser = {
@@ -74,11 +75,7 @@ async function fetchAllAuthUsers(client: AdminClient): Promise<AuthUser[]> {
   return allUsers
 }
 
-function classifyGhost(
-  user: AuthUser,
-  hasPublicProfile: boolean,
-  minAgeDays: number
-): GhostType | null {
+function classifyGhost(user: AuthUser, minAgeDays: number): GhostType | null {
   const isAnon = user.is_anonymous || user.app_metadata?.provider === 'anonymous'
   const ageDays = Math.floor((Date.now() - new Date(user.created_at).getTime()) / 86400000)
 
@@ -96,7 +93,6 @@ function classifyGhost(
     return 'abandoned_sso'
   if (!user.email_confirmed_at && ageDays > 30) return 'stale_unconfirmed'
   if (!user.last_sign_in_at) return 'never_signed_in'
-  if (!hasPublicProfile) return 'no_public_profile'
   return null
 }
 
@@ -116,16 +112,11 @@ async function classifyAllGhosts(
   const cached = ghostCache.get(minAgeDays)
   if (cached && Date.now() < cached.expiresAt) return cached.data
 
-  const [authUsers, publicUsersResult] = await Promise.all([
-    fetchAllAuthUsers(client),
-    client.from('users').select('id')
-  ])
-  const publicUserIds = new Set(publicUsersResult.data?.map((u: { id: string }) => u.id) || [])
+  const authUsers = await fetchAllAuthUsers(client)
 
   const ghosts: GhostAccount[] = []
   for (const user of authUsers) {
-    const hasProfile = publicUserIds.has(user.id)
-    const ghostType = classifyGhost(user, hasProfile, minAgeDays)
+    const ghostType = classifyGhost(user, minAgeDays)
     if (!ghostType) continue
     ghosts.push({
       id: user.id,
@@ -136,8 +127,7 @@ async function classifyAllGhosts(
       last_sign_in_at: user.last_sign_in_at || null,
       is_anonymous: user.is_anonymous || false,
       age_days: Math.floor((Date.now() - new Date(user.created_at).getTime()) / 86400000),
-      ghost_type: ghostType,
-      has_public_profile: hasProfile
+      ghost_type: ghostType
     })
   }
   ghosts.sort((a, b) => b.age_days - a.age_days)
@@ -202,7 +192,6 @@ export async function getGhostSummary(client: AdminClient): Promise<GhostSummary
     abandoned_sso: 0,
     stale_unconfirmed: 0,
     never_signed_in: 0,
-    no_public_profile: 0,
     stale_anonymous: 0,
     orphaned_anonymous: 0
   }
@@ -293,10 +282,17 @@ export type DeleteGhostResult =
  */
 export async function deleteGhostAccount(
   client: AdminClient,
+  prisma: PrismaClient,
   userId: string
 ): Promise<DeleteGhostResult> {
   const row = await fetchGhostDeletionImpact(client, userId)
-  const hasBlocking = row?.has_blocking_messages ?? false
+  // Documents live in Postgres, not Supabase, so get_user_deletion_impact cannot
+  // see them. Hard-deleting an owner leaves ownerId pointing at nothing, and an
+  // ownerless private document is one no endpoint can ever open or delete again.
+  const ownedDocuments = await prisma.documentMetadata.count({
+    where: { ownerId: userId, deletedAt: null }
+  })
+  const hasBlocking = (row?.has_blocking_messages ?? false) || ownedDocuments > 0
 
   if (hasBlocking) {
     const [updateResult, banResult] = await Promise.all([
@@ -311,7 +307,10 @@ export async function deleteGhostAccount(
     invalidateGhostCaches()
     return {
       status: 'soft_delete',
-      reason: `User has ${row?.message_count} messages — soft-deleted + banned to preserve history`
+      reason:
+        ownedDocuments > 0
+          ? `User owns ${ownedDocuments} document(s) — soft-deleted + banned so they keep an owner`
+          : `User has ${row?.message_count} messages — soft-deleted + banned to preserve history`
     }
   }
 
@@ -332,6 +331,7 @@ export interface BulkDeleteGhostResult {
 /** Bulk smart-delete: soft-delete users with blocking messages, hard-delete the rest. */
 export async function bulkDeleteGhostAccounts(
   client: AdminClient,
+  prisma: PrismaClient,
   userIds: string[]
 ): Promise<BulkDeleteGhostResult> {
   const results: BulkDeleteGhostResult = { hard_deleted: 0, soft_deleted: 0, failed: 0, errors: [] }
@@ -347,9 +347,22 @@ export async function bulkDeleteGhostAccounts(
     })
   )
 
+  // One grouped count for the batch: documents are invisible to the Supabase
+  // impact RPC, and an owner hard-deleted here leaves documents nobody can reach.
+  const ownerRows = await prisma.documentMetadata.groupBy({
+    by: ['ownerId'],
+    where: { ownerId: { in: userIds }, deletedAt: null },
+    _count: { _all: true }
+  })
+  const owners = new Set(ownerRows.map((row) => row.ownerId).filter((id): id is string => !!id))
+
   const hardDeleteIds: string[] = []
   const softDeleteIds: string[] = []
   for (const { userId, impact } of impactResults) {
+    if (owners.has(userId)) {
+      softDeleteIds.push(userId)
+      continue
+    }
     if (!impact) {
       hardDeleteIds.push(userId)
       continue

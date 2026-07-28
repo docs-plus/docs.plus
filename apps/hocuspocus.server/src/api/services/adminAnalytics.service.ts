@@ -10,6 +10,8 @@ import { getSupabaseClient } from '../utils/supabase'
 
 type AdminClient = NonNullable<ReturnType<typeof getSupabaseClient>>
 
+const VIEWS_PAGE = 1000
+
 /** Invoke a Supabase RPC, with optional args. Returns the raw `{ data, error }`. */
 export function callRpc(supabase: AdminClient, rpcName: string, args?: Record<string, unknown>) {
   return args ? supabase.rpc(rpcName, args) : supabase.rpc(rpcName)
@@ -68,13 +70,25 @@ export async function getBatchDocumentTrends(
   startDate.setDate(startDate.getDate() - days)
   const startDateStr = startDate.toISOString().split('T')[0]
 
-  const { data, error } = await supabase
-    .from('document_views_daily')
-    .select('document_slug, view_date, views')
-    .in('document_slug', slugs)
-    .gte('view_date', startDateStr)
-    .order('view_date', { ascending: true })
-  if (error) return { error }
+  // slugs × days exceeds the 1000-row PostgREST cap on a wide table page, and a
+  // dropped row renders as a zero rather than as an error. `document_slug` is the
+  // tiebreaker that makes the sort key unique, so paging cannot skip a row.
+  const rows: { document_slug: string; view_date: string; views: number }[] = []
+  for (let from = 0; ; from += VIEWS_PAGE) {
+    const { data, error } = await supabase
+      .from('document_views_daily')
+      .select('document_slug, view_date, views')
+      .in('document_slug', slugs)
+      .gte('view_date', startDateStr)
+      .order('view_date', { ascending: true })
+      .order('document_slug', { ascending: true })
+      .range(from, from + VIEWS_PAGE - 1)
+    if (error) return { error }
+
+    const page = (data || []) as typeof rows
+    rows.push(...page)
+    if (page.length < VIEWS_PAGE) break
+  }
 
   const dateMap: Record<string, Record<string, number>> = {}
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
@@ -85,7 +99,7 @@ export async function getBatchDocumentTrends(
     })
   }
 
-  ;(data || []).forEach((row: { document_slug: string; view_date: string; views: number }) => {
+  rows.forEach((row) => {
     const dateStr =
       typeof row.view_date === 'string'
         ? row.view_date

@@ -414,8 +414,8 @@ export async function getGhostDeletionImpact(c: AppContext) {
 
 /**
  * Smart-delete a ghost account.
- * - has_blocking_messages = false → hard-delete via auth.admin.deleteUser (cascades)
- * - has_blocking_messages = true  → soft-delete (set deleted_at + ban auth user)
+ * - no blocking messages and no owned documents → hard-delete (cascades)
+ * - otherwise → soft-delete (set deleted_at + ban auth user)
  */
 export async function deleteGhostAccount(c: AppContext) {
   try {
@@ -425,7 +425,7 @@ export async function deleteGhostAccount(c: AppContext) {
     const userId = c.req.param('id')
     if (!userId) return c.json({ error: 'Missing user id' }, 400)
 
-    const result = await ghost.deleteGhostAccount(adminAuth, userId)
+    const result = await ghost.deleteGhostAccount(adminAuth, c.get('prisma'), userId)
     if (result.status === 'error') return c.json({ error: result.message }, 500)
     if (result.status === 'soft_delete') {
       return c.json({ success: true, strategy: 'soft_delete', reason: result.reason })
@@ -446,7 +446,7 @@ export async function bulkDeleteGhostAccounts(c: AppContext) {
     if (!adminAuth) return c.json({ error: 'Supabase not configured' }, 500)
 
     const { userIds } = await c.req.json()
-    const results = await ghost.bulkDeleteGhostAccounts(adminAuth, userIds)
+    const results = await ghost.bulkDeleteGhostAccounts(adminAuth, c.get('prisma'), userIds)
     return c.json({ success: true, ...results })
   } catch (error) {
     adminLogger.error({ err: error }, 'Failed to bulk delete ghost accounts')

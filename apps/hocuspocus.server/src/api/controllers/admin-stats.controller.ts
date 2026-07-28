@@ -461,7 +461,7 @@ export async function getUserNotificationSubs(c: AppContext) {
 const REST_PAGE = 1000
 
 /** Page through a table past the PostgREST max-rows cap (service_role, all rows). */
-async function fetchAllRows(
+export async function fetchAllRows(
   supabase: ServiceClient,
   table: string,
   opts: { columns: string; orderColumn: string; notNull?: string }

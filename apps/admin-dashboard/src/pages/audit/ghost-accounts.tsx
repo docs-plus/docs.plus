@@ -61,11 +61,6 @@ const GHOST_TYPE_CONFIG: Record<GhostType, { label: string; badge: string; descr
       badge: 'badge-warning',
       description: 'Account created but never signed in'
     },
-    no_public_profile: {
-      label: 'No Profile',
-      badge: 'badge-info',
-      description: 'Auth record exists but no public.users entry'
-    },
     stale_anonymous: {
       label: 'Stale Anon',
       badge: 'badge-ghost',
@@ -151,7 +146,6 @@ function GhostAccountsTable({
             <th>Type</th>
             <th>Provider</th>
             <th>Age</th>
-            <th>Profile?</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -184,13 +178,6 @@ function GhostAccountsTable({
               </td>
               <td>
                 <span className="text-sm">{ghost.age_days}d</span>
-              </td>
-              <td>
-                {ghost.has_public_profile ? (
-                  <span className="badge badge-success badge-sm">Yes</span>
-                ) : (
-                  <span className="badge badge-ghost badge-sm">No</span>
-                )}
               </td>
               <td>
                 <div className="flex gap-1">
@@ -398,7 +385,7 @@ export default function GhostAccountsAuditPage() {
     (userId: string) => {
       confirmToast({
         title: 'Delete this account?',
-        body: 'Will auto-choose hard or soft delete based on message history.',
+        body: 'Will auto-choose hard or soft delete based on messages and owned documents.',
         onConfirm: () => deleteMutation.mutate(userId)
       })
     },
@@ -447,7 +434,6 @@ export default function GhostAccountsAuditPage() {
         provider: g.provider,
         ghost_type: g.ghost_type,
         age_days: g.age_days,
-        has_public_profile: g.has_public_profile,
         is_anonymous: g.is_anonymous,
         created_at: g.created_at
       })),
@@ -621,8 +607,9 @@ export default function GhostAccountsAuditPage() {
               <div>
                 <p className="font-medium">Smart Deletion</p>
                 <p className="text-sm opacity-70">
-                  Accounts with messages are soft-deleted (preserves chat history). Accounts without
-                  messages are permanently removed. This is automatic — no manual choice needed.
+                  Accounts with messages or owned documents are soft-deleted, so chat history keeps
+                  its author and documents keep an owner. Accounts with neither are permanently
+                  removed. This is automatic — no manual choice needed.
                 </p>
               </div>
             </div>

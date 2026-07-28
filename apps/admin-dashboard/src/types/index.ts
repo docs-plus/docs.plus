@@ -481,7 +481,6 @@ export type GhostType =
   | 'abandoned_sso'
   | 'stale_unconfirmed'
   | 'never_signed_in'
-  | 'no_public_profile'
   | 'stale_anonymous'
   | 'orphaned_anonymous'
 
@@ -495,7 +494,6 @@ export interface GhostAccount {
   is_anonymous: boolean
   age_days: number
   ghost_type: GhostType
-  has_public_profile: boolean
 }
 
 export interface GhostAccountsResponse {
