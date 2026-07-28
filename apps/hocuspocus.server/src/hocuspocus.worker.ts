@@ -1,5 +1,6 @@
 import './lib/instrument'
 
+import { Prisma } from '@prisma/client'
 import { Hono } from 'hono'
 
 import { purgeDocumentFootprint } from './api/services/documentPurge.service'
@@ -24,6 +25,7 @@ import { closeQueues, createDocumentWorker, getStoreQueueOldestWaitingAgeMs } fr
 import { checkRedisHealth, disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
 import { getServiceRoleClient } from './lib/supabase'
 import { startWorkerMetricsSampling } from './lib/workerMetricsSampler'
+import { MACHINE_VERSION_TRIGGERS } from './types'
 
 const CLEANUP_INTERVAL_MS = config.worker.idempotencyCleanupIntervalMs // 1 hour default
 
@@ -49,9 +51,10 @@ const AUTOSAVE_RETENTION_DAYS = config.worker.autosaveRetentionDays
 const PRUNE_BATCH_SIZE = 1000
 const PRUNE_MAX_BATCHES = 10
 
-// Thins old unnamed autosave snapshots to one per document per day. Rows with
-// a commitMessage are user-named history checkpoints and always survive, as
-// does each day's newest row — the history sidebar keeps every visible entry.
+// Thins old autosave snapshots to one per document per day; each day's newest
+// row always survives. A name a person typed is exempt forever, but the names
+// the server mints for itself are not — so a pre-restore backup older than the
+// window is thinned away and that restore stops being undoable.
 async function pruneAutosaveVersions() {
   if (AUTOSAVE_RETENTION_DAYS <= 0) return
   try {
@@ -65,7 +68,8 @@ async function pruneAutosaveVersions() {
               ORDER BY version DESC
             ) AS day_rank
             FROM "Documents"
-            WHERE ("commitMessage" IS NULL OR "commitMessage" = '')
+            WHERE ("commitMessage" IS NULL OR "commitMessage" = ''
+                   OR "trigger" IN (${Prisma.join(MACHINE_VERSION_TRIGGERS)}))
               AND "createdAt" < now() - ${AUTOSAVE_RETENTION_DAYS} * interval '1 day'
           ) ranked
           WHERE day_rank > 1
