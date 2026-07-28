@@ -37,7 +37,9 @@
 create table if not exists public.document_views (
     id              uuid not null,  -- Generated upfront for duration updates
     document_slug   text not null,
-    user_id         uuid references public.users(id) on delete set null,
+    -- auth.users, not public.users: anonymous visitors never get a profile row,
+    -- so a public.users FK silently rejected every logged-out view.
+    user_id         uuid references auth.users(id) on delete set null,
     session_id      text not null,
     viewed_at       timestamp with time zone default now() not null,
     view_date       date not null default current_date,  -- For immutable dedup index
@@ -414,9 +416,12 @@ begin
 
             exception when others then
                 v_errors := v_errors + 1;
-                raise warning 'Error processing view %: %', rec.msg_id, sqlerrm;
-                -- Still delete to prevent infinite retry
-                perform pgmq.delete('document_views', rec.msg_id);
+                -- Archive rather than delete: a dropped view is otherwise
+                -- invisible. The payload stays queryable in
+                -- pgmq.a_document_views (same pattern as push_notifications).
+                raise warning 'document_views worker: archiving msg % (%: %)',
+                    rec.msg_id, sqlstate, sqlerrm;
+                perform pgmq.archive('document_views', rec.msg_id);
             end;
         end loop;
 
@@ -438,6 +443,7 @@ $$;
 comment on function public.process_document_views_queue() is
 'Batch processes document views from pgmq queue.
 Handles deduplication and inserts valid views.
+Unprocessable messages are archived to pgmq.a_document_views, never dropped.
 Run every 10 minutes via pg_cron.';
 
 
