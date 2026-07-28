@@ -7,8 +7,9 @@ import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
 import { checkEnvBoolean, generateRandomId } from '../utils'
 import { config } from './env'
+import { drainContributors } from '../lib/contributors'
 import { buildStoreJobId, enqueueStoreDocument, stripSnapshotMetadata } from '../lib/queue'
-import { documentPersistFallbackTotal } from '../lib/metrics'
+import { documentPersistFallbackTotal, documentStoreRejectionsTotal } from '../lib/metrics'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
@@ -22,6 +23,7 @@ import {
   transformNestedToFlat
 } from '../lib/schema-migration'
 import { migrationExtensions } from '../lib/migration-extensions'
+import type { MachineVersionTrigger, StoreDocumentContext } from '../types'
 
 const getServerName = () => `${config.app.name}_${generateRandomId(4)}`
 
@@ -62,6 +64,8 @@ async function persistMigratedSnapshot(
         data: {
           documentId: documentName,
           commitMessage: 'Schema migration',
+          // Named but nobody asked for it, so retention is allowed to thin it.
+          trigger: 'schema-migration' satisfies MachineVersionTrigger,
           version: (head?.version ?? 0) + 1,
           data: migrated
         }
@@ -185,6 +189,7 @@ const configureExtensions = () => {
 
       async store(data: any) {
         const { documentName, state, context, document } = data
+        const versionContext: StoreDocumentContext = context ?? {}
 
         // Metadata rides the live doc — read it O(1). Decoding the snapshot
         // here (the old path) rebuilt the whole CRDT on the WS event loop and
@@ -195,34 +200,58 @@ const configureExtensions = () => {
         // If the document is draft, don't store the data
         if (meta.get('isDraft')) return
 
-        const commitMessageValue = meta.get('commitMessage')
-        const commitMessage = typeof commitMessageValue === 'string' ? commitMessageValue : ''
-        // Consume the one-shot restore label: left on the live doc it would
-        // stamp every later autosave as a named checkpoint (exempt from
-        // pruning) until page reload. Runs before enqueue so the queue-down
-        // fallback consumes it too; server-origin deletes don't re-trigger saves.
-        if (commitMessage) meta.delete('commitMessage')
+        // A named save carried on the context leaves the doc's bytes alone, so
+        // the flush that follows it re-encodes to the same jobId and dedupes.
+        let commitMessage: string
+        if (typeof versionContext.versionName === 'string') {
+          commitMessage = versionContext.versionName
+        } else {
+          const commitMessageValue = meta.get('commitMessage')
+          commitMessage = typeof commitMessageValue === 'string' ? commitMessageValue : ''
+          // Consume the one-shot restore label: left on the live doc it would
+          // stamp every later autosave as a named checkpoint (exempt from
+          // pruning) until page reload. Runs before enqueue so the queue-down
+          // fallback consumes it too; server-origin deletes don't re-trigger saves.
+          if (commitMessage) meta.delete('commitMessage')
+        }
+
+        const trigger = versionContext.versionTrigger ?? 'websocket'
+        // Presence wins, so an explicit null stays unattributed; `??` here would
+        // credit the direct connection's owner for a server-driven save.
+        const triggeredBy =
+          'versionTriggeredBy' in versionContext
+            ? (versionContext.versionTriggeredBy ?? null)
+            : (versionContext.user?.sub ?? null)
+        // Drain once, above the try: the fallback below must ship the same ids,
+        // and a second drain there would find an empty set.
+        const contributors = drainContributors(document)
         const stateBuffer: Buffer = state
 
         try {
           await enqueueStoreDocument({
-            jobId: buildStoreJobId(documentName, stateBuffer),
+            jobId:
+              buildStoreJobId(documentName, stateBuffer) +
+              (versionContext.versionForceKey ? `-${versionContext.versionForceKey}` : ''),
             documentName,
             state: stateBuffer,
             context,
-            commitMessage
+            commitMessage,
+            trigger,
+            triggeredBy,
+            contributors
           })
         } catch (err) {
           // Fallback: direct DB save when the enqueue fails while the redlock
           // was held (Redis OOM window, producer command timeout). A hard
           // Redis outage never reaches here — extension-redis aborts the
           // store chain first and persistence pauses until Redis returns.
-          documentPersistFallbackTotal.inc()
-          dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
-          captureDegraded('queue-fallback', err, { extra: { documentName } })
-
           try {
-            const snapshot = stripSnapshotMetadata(stateBuffer)
+            // Everything here is inside the try, metric and logger included: a
+            // throw from any of them escapes store() and wedges the debouncer
+            // exactly like a failed save would.
+            documentPersistFallbackTotal.inc()
+            dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
+            captureDegraded('queue-fallback', err, { extra: { documentName } })
 
             // Use transaction with FOR UPDATE lock to prevent race conditions.
             // Multiple Hocuspocus instances may hit this fallback simultaneously
@@ -238,18 +267,28 @@ const configureExtensions = () => {
                   FOR UPDATE
                 `
                 const existingDoc = existingDocs[0] ?? null
+                // Merge RAW, strip the RESULT: mergeUpdates takes struct content
+                // from the older head and only unions delete sets, so stripping
+                // first leaves text deleted inside a surviving parent in the row
+                // forever. The strip's decode is what garbage-collects it.
                 const versionData = existingDoc
-                  ? Buffer.from(
-                      Y.mergeUpdates([new Uint8Array(existingDoc.data), new Uint8Array(snapshot)])
+                  ? stripSnapshotMetadata(
+                      Y.mergeUpdates([
+                        new Uint8Array(existingDoc.data),
+                        new Uint8Array(stateBuffer)
+                      ])
                     )
-                  : snapshot
+                  : stripSnapshotMetadata(stateBuffer)
 
                 await tx.documents.create({
                   data: {
                     documentId: documentName,
                     commitMessage: commitMessage || '',
                     version: existingDoc ? existingDoc.version + 1 : 1,
-                    data: versionData
+                    data: versionData,
+                    trigger,
+                    triggeredBy,
+                    contributors
                   }
                 })
               })
@@ -266,7 +305,26 @@ const configureExtensions = () => {
                 raceErr instanceof Prisma.PrismaClientKnownRequestError &&
                 raceErr.code === 'P2002'
               ) {
-                await saveMergedVersion()
+                try {
+                  await saveMergedVersion()
+                } catch (retryErr) {
+                  // A third writer landed between the retry's re-read and its
+                  // insert. Give up on this flush rather than loop; the next
+                  // debounced save carries the same cumulative state forward.
+                  if (!(
+                    retryErr instanceof Prisma.PrismaClientKnownRequestError &&
+                    retryErr.code === 'P2002'
+                  )) {
+                    throw retryErr
+                  }
+                  documentStoreRejectionsTotal.inc({ reason: 'version-collision' })
+                  dbLogger.warn(
+                    { err: retryErr, documentName },
+                    'Fallback save lost the version race twice - flush dropped'
+                  )
+                  // Nothing was written, so skip the success log below.
+                  return
+                }
               } else {
                 throw raceErr
               }
@@ -274,12 +332,23 @@ const configureExtensions = () => {
 
             dbLogger.info({ documentName }, 'Document saved via fallback (direct DB)')
           } catch (dbErr) {
-            dbLogger.error(
-              { err: dbErr, documentName },
-              'Fallback save failed - document may be lost'
-            )
-            captureUnknown(dbErr)
-            throw dbErr
+            // Never rethrow. Hocuspocus's debouncer caches the rejected promise
+            // under onStoreDocument-<docName> for the process lifetime, so this
+            // room would stop saving AND stop unloading, and its stuck Y.Doc
+            // would hold up the shutdown flush of every other room.
+            // This block is the last line of defence, so it gets its own guard:
+            // a throw from the metric, the logger or the Sentry client here has
+            // nothing left to catch it and would wedge the room it is reporting.
+            try {
+              documentStoreRejectionsTotal.inc({ reason: 'fallback-save-failed' })
+              dbLogger.error(
+                { err: dbErr, documentName },
+                'Fallback save failed - document may be lost'
+              )
+              captureUnknown(dbErr)
+            } catch {
+              // Reporting failed too. Returning quietly still beats a wedge.
+            }
           }
         }
       }

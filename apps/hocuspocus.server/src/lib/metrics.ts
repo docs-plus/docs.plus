@@ -127,6 +127,25 @@ export const documentPersistFallbackTotal = new Counter({
   registers: [register]
 })
 
+// A rejection out of the store hook poisons Hocuspocus's debouncer for the
+// process lifetime — that room then never saves and never unloads — so the hook
+// gives up instead. This counter is the only remaining trace that it happened.
+export const documentStoreRejectionsTotal = new Counter({
+  name: 'document_store_rejections_total',
+  help: 'Document saves the store hook abandoned rather than rethrow, by reason',
+  labelNames: ['reason'] as const,
+  registers: [register]
+})
+
+// Oversized stateless relays refused before broadcast. A burst of these is an
+// anonymous client probing the amplifier that OOM-killed replicas before the
+// budget existed, so the drop must be countable and not only logged.
+export const statelessRelayDroppedTotal = new Counter({
+  name: 'stateless_relay_dropped_total',
+  help: 'Stateless relay payloads dropped for exceeding the per-payload byte budget',
+  registers: [register]
+})
+
 // Content API applies, by mode and outcome. `error` covers a wedged store, which
 // keeps mutating and broadcasting to live clients while never persisting — the
 // operator signal API.md tells callers to watch. Never label by documentId.
