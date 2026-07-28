@@ -24,46 +24,40 @@ import { withUniqueSlug } from './slug'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
-// Upsert document metadata with retry on slug collision (handles P2002)
-function upsertDocumentMetadata(
+// Upsert document metadata under a caller-chosen slug. The slug-collision retry
+// belongs to the caller, OUTSIDE the transaction: a P2002 aborts the Postgres
+// transaction, so a retry in here can only ever hit 25P02 and lose the save.
+async function upsertDocumentMetadata(
   tx: TransactionClient,
   params: {
     documentId: string
-    baseSlug: string
+    slug: string
     title: string
     ownerId?: string
     email?: string
-  },
-  maxRetries = 3
+  }
 ): Promise<string> {
-  return withUniqueSlug(
-    params.baseSlug,
-    async (slug) => {
-      const row = await tx.documentMetadata.upsert({
-        where: { documentId: params.documentId },
-        // A content persist must NOT own metadata: the first-edit anchor,
-        // updateDocument PUT, and createDocument all set more authoritative
-        // values than title=slug. Overwriting here reverted a user-set title to
-        // the slug on reload and could flip ownerId to the last flusher — so the
-        // UPDATE branch is a no-op; CREATE stays the genuine no-row backstop.
-        update: {},
-        create: {
-          documentId: params.documentId,
-          slug,
-          title: params.title,
-          description: params.title,
-          ownerId: params.ownerId,
-          email: params.email,
-          keywords: ''
-        }
-      })
-      // The row's slug, never the candidate: on the update branch the closure's
-      // candidate can name a slug that is not in the database, and it reaches
-      // the new-document email's documentUrl.
-      return row.slug
-    },
-    maxRetries
-  )
+  const row = await tx.documentMetadata.upsert({
+    where: { documentId: params.documentId },
+    // A content persist must NOT own metadata: the anchor, the PUT and
+    // createDocument all set more authoritative values than title=slug.
+    // Overwriting reverted a user-set title on reload and could flip ownerId to
+    // the last flusher, so UPDATE is a no-op and CREATE is the no-row backstop.
+    update: {},
+    create: {
+      documentId: params.documentId,
+      slug: params.slug,
+      title: params.title,
+      description: params.title,
+      ownerId: params.ownerId,
+      email: params.email,
+      keywords: ''
+    }
+  })
+  // The row's slug, never the candidate: on the update branch the caller's
+  // candidate can name a slug that is not in the database, and it reaches
+  // the new-document email's documentUrl.
+  return row.slug
 }
 
 // Queue connection (non-blocking operations). Tight command timeout on the
@@ -440,66 +434,77 @@ export const createDocumentWorker = () => {
         // concurrent jobs computing the same nextVersion (no row exists on
         // first creation; stale latest after the lock releases). The P2002 is
         // expected and healed by retries — snapshots are cumulative full state.
-        const { savedDoc, createdSlug, isFirstCreation } = await prisma.$transaction(
-          async (tx) => {
-            // FOR UPDATE lock on the latest row; ORDER BY version is served
-            // top-1 by the (documentId, version) unique index — id DESC had
-            // no supporting index and scanned every version of the document.
-            const existingDocs = await tx.$queryRaw<
-              { id: number; version: number; data: Buffer }[]
-            >`
+        const baseSlug = context.slug || data.documentName
+
+        // The slug retry wraps the WHOLE transaction: a P2002 aborts the Postgres
+        // transaction, so retrying inside it only ever hit 25P02, and the next
+        // debounce re-enqueued into the same dead end.
+        const { savedDoc, createdSlug, isFirstCreation } = await withUniqueSlug(
+          baseSlug,
+          (candidateSlug) =>
+            prisma.$transaction(
+              async (tx) => {
+                // FOR UPDATE lock on the latest row; ORDER BY version is served
+                // top-1 by the (documentId, version) unique index — id DESC had
+                // no supporting index and scanned every version of the document.
+                const existingDocs = await tx.$queryRaw<
+                  { id: number; version: number; data: Buffer }[]
+                >`
             SELECT id, version, data FROM "Documents"
             WHERE "documentId" = ${data.documentName}
             ORDER BY version DESC
             LIMIT 1
             FOR UPDATE
           `
-            const existingDoc = existingDocs[0] ?? null
+                const existingDoc = existingDocs[0] ?? null
 
-            const isFirst = !existingDoc
-            const nextVersion = existingDoc ? existingDoc.version + 1 : 1
+                const isFirst = !existingDoc
+                const nextVersion = existingDoc ? existingDoc.version + 1 : 1
 
-            // Merge with the locked head so an out-of-order commit cannot make a
-            // stale snapshot the newest version, and divergent replicas union.
-            // Merge RAW and strip the RESULT: mergeUpdates only unions delete
-            // sets, so the strip's decode is what drops deleted text.
-            const versionData = existingDoc
-              ? stripSnapshotMetadata(Y.mergeUpdates([new Uint8Array(existingDoc.data), incoming]))
-              : stripSnapshotMetadata(incoming)
+                // Merge with the locked head so an out-of-order commit cannot make a
+                // stale snapshot the newest version, and divergent replicas union.
+                // Merge RAW and strip the RESULT: mergeUpdates only unions delete
+                // sets, so the strip's decode is what drops deleted text.
+                const versionData = existingDoc
+                  ? stripSnapshotMetadata(
+                      Y.mergeUpdates([new Uint8Array(existingDoc.data), incoming])
+                    )
+                  : stripSnapshotMetadata(incoming)
 
-            // Handle first-time document creation with retry on slug collision
-            let slug: string | undefined
-            if (isFirst) {
-              const baseSlug = context.slug || data.documentName
-              slug = await upsertDocumentMetadata(tx, {
-                documentId: data.documentName,
-                baseSlug,
-                title: baseSlug,
-                ownerId: context.user?.sub,
-                email: context.user?.email
-              })
-            }
+                // Handle first-time document creation; the title stays the BASE
+                // slug, so a collision suffixes the slug without renaming the doc.
+                let slug: string | undefined
+                if (isFirst) {
+                  slug = await upsertDocumentMetadata(tx, {
+                    documentId: data.documentName,
+                    slug: candidateSlug,
+                    title: baseSlug,
+                    ownerId: context.user?.sub,
+                    email: context.user?.email
+                  })
+                }
 
-            // Create new version (within transaction = atomic). Attribution is
-            // read top-level only: the serialized context carries a second copy
-            // whose explicit null the store hook has already resolved.
-            const doc = await tx.documents.create({
-              data: {
-                documentId: data.documentName,
-                commitMessage: data.commitMessage || '',
-                version: nextVersion,
-                data: versionData,
-                trigger: data.trigger ?? null,
-                triggeredBy: data.triggeredBy ?? null,
-                contributors: data.contributors ?? []
-              }
-            })
+                // Create new version (within transaction = atomic). Attribution is
+                // read top-level only: the serialized context carries a second copy
+                // whose explicit null the store hook has already resolved.
+                const doc = await tx.documents.create({
+                  data: {
+                    documentId: data.documentName,
+                    commitMessage: data.commitMessage || '',
+                    version: nextVersion,
+                    data: versionData,
+                    trigger: data.trigger ?? null,
+                    triggeredBy: data.triggeredBy ?? null,
+                    contributors: data.contributors ?? []
+                  }
+                })
 
-            return { savedDoc: doc, createdSlug: slug, isFirstCreation: isFirst }
-          },
-          // Under bursts jobs queue on the pool; waiting must degrade into
-          // latency, not P2028 errors that burn the retry budget.
-          { maxWait: 5000, timeout: 15000 }
+                return { savedDoc: doc, createdSlug: slug, isFirstCreation: isFirst }
+              },
+              // Under bursts jobs queue on the pool; waiting must degrade into
+              // latency, not P2028 errors that burn the retry budget.
+              { maxWait: 5000, timeout: 15000 }
+            )
         )
 
         // Claim-check key served its purpose; TTL remains the backstop.
