@@ -385,9 +385,13 @@ try {
         content: titleDoc('nope')
       })
     })
+    // This is the one content surface on requireServiceRoleOrUser, so a failed
+    // service-role compare falls through to user verification: 401 against a live
+    // Supabase, 503 when it is unreachable, and CI points SUPABASE_URL at a closed
+    // port. Both are rejections — what matters is the write count below.
     check(
-      post.status === 401,
-      `POST with content and a wrong bearer returned 401 (got ${post.status})`
+      post.status === 401 || post.status === 503,
+      `POST with content and a wrong bearer was rejected (got ${post.status})`
     )
 
     const after = await prisma.documents.count({ where: { documentId: doc.documentId } })
