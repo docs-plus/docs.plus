@@ -24,10 +24,17 @@ export const patchQuerySchema = z.object({
   mode: z.enum(['replace', 'append']).default('replace')
 })
 
-export const patchBodySchema = z.object({ content: tiptapDocSchema })
+/** Names the version row the apply mints; the trimmed value is the stored `commitMessage`. */
+const commitMessageSchema = z.string().trim().min(1).max(200)
+
+export const patchBodySchema = z.object({
+  content: tiptapDocSchema,
+  commitMessage: commitMessageSchema.optional()
+})
 
 /** The internal hop carries the mode in the body; REST has already defaulted it. */
 export const internalApplyBodySchema = z.object({
   mode: z.enum(['replace', 'append']).default('replace'),
-  content: tiptapDocSchema
+  content: tiptapDocSchema,
+  commitMessage: commitMessageSchema.optional()
 })

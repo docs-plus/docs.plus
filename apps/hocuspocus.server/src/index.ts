@@ -10,6 +10,7 @@ import adminRouter from './api/routers/admin.router'
 import documentsRouter from './api/routers/documents.router'
 import healthRouter from './api/routers/health.router'
 import hypermultimediaRouter from './api/routers/hypermultimedia.router'
+import { getOwnerProfiles } from './api/services/documents.service'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { verifyServiceRole } from './lib/auth'
 import { emailGateway } from './lib/email'
@@ -23,6 +24,7 @@ import { disconnectRedis, getRedisClient } from './lib/redis'
 import { setupMiddleware } from './middleware'
 import * as documentContent from './modules/document-content'
 import * as documentConversion from './modules/document-conversion'
+import * as documentVersions from './modules/document-versions'
 import * as linkMetadata from './modules/link-metadata'
 import * as openapi from './modules/openapi'
 
@@ -82,6 +84,17 @@ const documentContentModule = documentContent.init({
   wsApplyBaseUrl: config.hocuspocus.internalUrl
 })
 app.route('/api/documents', documentContentModule.router)
+// Reads are served straight from Prisma here; checkpoints and restores are
+// forwarded to the collaboration process, which owns the live Y.Doc.
+const documentVersionsModule = documentVersions.init({
+  prisma,
+  logger: logger.child({ module: 'document-versions' }),
+  verifyServiceRole,
+  serviceRoleKey: config.supabase.serviceRoleKey ?? null,
+  wsOpsBaseUrl: config.hocuspocus.internalUrl,
+  getOwnerProfiles
+})
+app.route('/api/documents', documentVersionsModule.router)
 const documentConversionModule = documentConversion.init({
   prisma,
   logger: logger.child({ module: 'document-conversion' }),

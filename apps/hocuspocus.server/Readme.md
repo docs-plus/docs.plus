@@ -14,7 +14,7 @@ The package ships three independent entry points. Each is its own process and sc
 
 The REST API initializes the email and push gateways in queue-only mode, so it can run as multiple replicas without spawning duplicate workers — the worker process owns job execution. Email and push notifications flow Supabase → pgmq → worker → BullMQ → SMTP / Web Push; there are no `/api/email/send` or `/api/push` HTTP endpoints.
 
-The WebSocket process also serves an internal HTTP listener on `4003` carrying `/metrics` and the service-role content-apply endpoint. It is never Traefik-routed; the REST process reaches it over `HOCUSPOCUS_INTERNAL_URL`.
+The WebSocket process also serves an internal HTTP listener on `4003` carrying `/metrics` and the service-role endpoints that need the live Y.Doc — content apply, version checkpoint, and version restore. It is never Traefik-routed; the REST process reaches it over `HOCUSPOCUS_INTERNAL_URL`.
 
 Ports are configurable via `APP_PORT`, `HOCUSPOCUS_PORT`, `WORKER_HEALTH_PORT`, and `HOCUSPOCUS_INTERNAL_HTTP_PORT` (see [ENV.md](./ENV.md)).
 
@@ -67,7 +67,7 @@ src/
 ├── hocuspocus.server.ts    # WebSocket entry (Hocuspocus)
 ├── hocuspocus.worker.ts    # Worker entry (pgmq + BullMQ)
 ├── api/                    # REST layer: routers, controllers, services, middleware, utils
-├── modules/                # Bounded modules (link-metadata, document-content, document-conversion, openapi)
+├── modules/                # Bounded modules (link-metadata, document-content, document-versions, document-conversion, openapi)
 ├── config/                 # env.schema.ts, hocuspocus.config
 ├── extensions/             # Hocuspocus extensions
 ├── lib/                    # email, push, storage, prisma, redis, queue, logger, errors
@@ -100,6 +100,8 @@ app.route('/api/metadata', linkMetadataModule.router)
 See `src/modules/link-metadata/README.md` for the full boundary rules and extraction plan.
 
 `src/modules/document-content` follows the same rules with one documented extension: besides `init(deps): { router }` for the REST process, it exports a second factory `initWsApply(deps): { app }`. Content injection has to run where the live Y.Doc is, so the collaboration process mounts that app on its internal listener.
+
+`src/modules/document-versions` splits the same way for the same reason. `init(deps): { router }` serves the REST routes — the list, the single-version read and the delete are plain Prisma queries — while `initWsOps(deps): { app, ops }` runs in the collaboration process, where naming a version and restoring one can reach the live Y.Doc. The `ops` half is handed to the stateless history handler so the editor's own revert drives the same code the REST route reaches over the hop. Two dependencies arrive by injection rather than import: the batch profile lookup, and the snapshot metadata stripper from `lib/queue` — importing that module into a REST-loaded file would boot a second pair of BullMQ queues and a Redis socket in the REST process.
 
 `src/modules/document-conversion` converts a document to `.docx`, Markdown or ODT and reads `.docx` and Markdown back — see [API.md](./API.md#document-conversion) for the fidelity contract. Every format starts from one shared stage, `toPortableJson`, which rewrites the nodes only the editor can render (media embeds become links, upload placeholders disappear) so no writer meets them; DOCX then goes through the shared HTML rendering, while Markdown and ODT are serialized straight from that tree.
 

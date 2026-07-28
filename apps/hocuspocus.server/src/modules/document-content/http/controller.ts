@@ -15,6 +15,7 @@ import type {
   ReadFormat,
   TiptapDocJson,
   VerifyServiceRole,
+  VersionStamp,
   WsApplyOutcome
 } from '../types'
 import { MAX_CONTENT_BYTES } from '../types'
@@ -158,7 +159,10 @@ export const createPatchContentHandler =
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
     const { mode } = c.req.valid('query' as never) as { mode: ApplyMode }
-    const { content } = c.req.valid('json' as never) as { content: TiptapDocJson }
+    const { content, commitMessage } = c.req.valid('json' as never) as {
+      content: TiptapDocJson
+      commitMessage?: string
+    }
 
     // Fast 404 without paying for the WS hop; the applier re-checks anyway.
     const meta = await findDocumentMeta(deps.prisma, documentId)
@@ -168,6 +172,7 @@ export const createPatchContentHandler =
       documentId,
       mode,
       content,
+      commitMessage,
       requestId: c.get('requestId')
     })
     return applyOutcomeResponse(c, documentId, mode, outcome)
@@ -177,16 +182,28 @@ export const createInternalApplyHandler =
   (applyContent: ApplyContent) =>
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
-    const { mode, content } = c.req.valid('json' as never) as {
+    const { mode, content, commitMessage } = c.req.valid('json' as never) as {
       mode: ApplyMode
       content: TiptapDocJson
+      commitMessage?: string
+    }
+    const requestId = c.get('requestId') as string | undefined
+
+    // Injected content is nobody's edit: the owner rides the context only so a
+    // rowless first save mints correct metadata. The request id is hono-sanitized
+    // to [\w\-=], so it is safe to widen a colon-separated store job id with.
+    const version: VersionStamp = {
+      ...(commitMessage ? { name: commitMessage, forceKey: requestId } : {}),
+      trigger: 'api',
+      triggeredBy: null
     }
 
     const outcome = await applyContent({
       documentId,
       mode,
       content,
-      requestId: c.get('requestId'),
+      version,
+      requestId,
       payloadBytes: Number(c.req.header('content-length') ?? 0) || undefined
     })
     return applyOutcomeResponse(c, documentId, mode, outcome)

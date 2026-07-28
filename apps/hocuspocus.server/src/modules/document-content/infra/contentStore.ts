@@ -77,7 +77,9 @@ export const createDocumentWithContent = async (
           email: params.email ?? null
         }
       })
-      await tx.documents.create({ data: { documentId, version: 1, data, commitMessage: '' } })
+      await tx.documents.create({
+        data: { documentId, version: 1, data, commitMessage: '', trigger: 'api' }
+      })
       return metadata
     })
 

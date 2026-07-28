@@ -56,7 +56,8 @@ export const startsWithTitleHeading = (content: unknown): boolean => {
  * input it exists to reject.
  */
 const boundAndStampIdentity = (
-  root: Record<string, unknown>
+  root: Record<string, unknown>,
+  enforceSizeCaps: boolean
 ): { ok: true } | { ok: false; detail: string } => {
   const seenTocIds = new Set<string>()
   const stack: { node: Record<string, unknown>; depth: number }[] = [{ node: root, depth: 0 }]
@@ -66,10 +67,10 @@ const boundAndStampIdentity = (
     const { node, depth } = stack.pop() as { node: Record<string, unknown>; depth: number }
 
     nodes += 1
-    if (nodes > MAX_CONTENT_NODES) {
+    if (enforceSizeCaps && nodes > MAX_CONTENT_NODES) {
       return { ok: false, detail: `content exceeds MAX_CONTENT_NODES (${MAX_CONTENT_NODES})` }
     }
-    if (depth > MAX_CONTENT_DEPTH) {
+    if (enforceSizeCaps && depth > MAX_CONTENT_DEPTH) {
       return { ok: false, detail: `content exceeds MAX_CONTENT_DEPTH (${MAX_CONTENT_DEPTH})` }
     }
 
@@ -107,9 +108,21 @@ const boundAndStampIdentity = (
  */
 export const encodeContent = (
   payload: TiptapDocJson,
-  options: { requireTitleHeading: boolean }
+  options: {
+    requireTitleHeading: boolean
+    /**
+     * Size caps bound a hostile REST payload. A restore replays bytes this
+     * server already accepted and stored, and live editing has no such cap, so
+     * enforcing them there makes a document permanently unrestorable once it
+     * outgrows them. Structural checks still run. Default on.
+     */
+    enforceSizeCaps?: boolean
+  }
 ): EncodeOutcome => {
-  const bounded = boundAndStampIdentity(payload as unknown as Record<string, unknown>)
+  const bounded = boundAndStampIdentity(
+    payload as unknown as Record<string, unknown>,
+    options.enforceSizeCaps ?? true
+  )
   if (!bounded.ok) return invalid(bounded.detail)
 
   if (options.requireTitleHeading && !startsWithTitleHeading(payload.content)) {

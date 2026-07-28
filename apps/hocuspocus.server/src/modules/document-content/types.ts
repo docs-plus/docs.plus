@@ -68,8 +68,46 @@ export interface ApplyRequest {
   documentId: string
   mode: ApplyMode
   content: TiptapDocJson
+  /** Names the version row this apply mints; absent leaves the row unnamed. */
+  commitMessage?: string
   requestId?: string
   payloadBytes?: number
+}
+
+/** Why a version row exists. Projected onto the row, never a read predicate. */
+export type VersionTrigger = 'api' | 'checkpoint' | 'revert'
+
+/**
+ * Attribution for the version row an apply mints. `forceKey` only widens the
+ * store job id, so a named row cannot dedupe onto an unnamed one for the same
+ * bytes; it is not attribution and never reaches the row.
+ */
+export interface VersionStamp {
+  name?: string
+  trigger: VersionTrigger
+  triggeredBy: string | null
+  forceKey?: string
+}
+
+/** The applier's view: the wire name has already been resolved into a stamp. */
+export interface ApplyContentRequest extends Omit<ApplyRequest, 'commitMessage'> {
+  version?: VersionStamp
+}
+
+/**
+ * The DirectConnection context, which the store hook reads to attribute the row
+ * it mints. Presence is the contract: an explicit `versionTriggeredBy: null`
+ * means nobody, while an absent key means "fall back to the connection user".
+ */
+export interface ApplyContext {
+  user?: { sub: string; email?: string }
+  slug: string
+  documentId: string
+  deviceType: 'service'
+  versionName?: string
+  versionTrigger?: VersionTrigger
+  versionTriggeredBy?: string | null
+  versionForceKey?: string
 }
 
 /** Wire shapes for the two public content routes. */

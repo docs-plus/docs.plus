@@ -1,0 +1,52 @@
+import type { Hono } from 'hono'
+
+import { createInternalApp } from './http/internalApp'
+import { createRouter } from './http/router'
+import { createVersionOps } from './infra/versionOps'
+import { createWsVersionsClient } from './infra/wsVersionsClient'
+import type { InitDeps, InitWsOpsDeps, VersionOps } from './types'
+
+export interface InitResult {
+  router: Hono
+}
+
+export interface InitWsOpsResult {
+  app: Hono
+  /** Also handed to the stateless WS handler, which drives the ops in-process. */
+  ops: VersionOps
+}
+
+/** REST-process wiring: reads served from Prisma, writes forwarded over the hop. */
+export const init = (deps: InitDeps): InitResult => {
+  const wsVersions = createWsVersionsClient({
+    baseUrl: deps.wsOpsBaseUrl,
+    serviceRoleKey: deps.serviceRoleKey,
+    logger: deps.logger
+  })
+
+  return {
+    router: createRouter({
+      prisma: deps.prisma,
+      logger: deps.logger,
+      verifyServiceRole: deps.verifyServiceRole,
+      getOwnerProfiles: deps.getOwnerProfiles,
+      wsVersions
+    })
+  }
+}
+
+/**
+ * WS-process wiring. Checkpoints and restores have to run where the live Y.Doc
+ * is, so the collaboration process serves this app on its internal listener and
+ * the stateless history op calls the same `ops` directly.
+ */
+export const initWsOps = (deps: InitWsOpsDeps): InitWsOpsResult => {
+  const ops = createVersionOps({
+    hocuspocus: deps.hocuspocus,
+    prisma: deps.prisma,
+    logger: deps.logger,
+    stripSnapshotMetadata: deps.stripSnapshotMetadata
+  })
+
+  return { app: createInternalApp({ verifyServiceRole: deps.verifyServiceRole, ops }), ops }
+}

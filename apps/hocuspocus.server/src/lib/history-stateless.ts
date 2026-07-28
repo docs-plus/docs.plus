@@ -1,10 +1,17 @@
+import { getOwnerProfiles } from '../api/services/documents.service'
+import type { ProfileLite } from '../modules/document-versions'
+import type { VersionTrigger } from '../types'
 import type { HistoryPayload } from '../types/document.types'
+import { wsLogger } from './logger'
 import { prisma } from './prisma'
 
 /** Metadata rows for the version sidebar (no Yjs payload). */
 export type HistoryVersionMeta = {
   version: number
   commitMessage: string | null
+  trigger: VersionTrigger | null
+  triggeredBy: string | null
+  contributors: string[]
   createdAt: Date
 }
 
@@ -20,6 +27,34 @@ export type HistorySnapshot = {
 export type HistoryListResult = {
   versions: HistoryVersionMeta[]
   latestSnapshot: HistorySnapshot | null
+  /**
+   * Uid -> profile side table rather than a profile per row: this list is
+   * unpaginated and a handful of authors repeat across every version of a doc.
+   */
+  profiles: Record<string, ProfileLite>
+}
+
+const distinctUserIds = (rows: HistoryVersionMeta[]): string[] => {
+  const ids = new Set<string>()
+  for (const row of rows) {
+    if (row.triggeredBy) ids.add(row.triggeredBy)
+    for (const contributor of row.contributors) if (contributor) ids.add(contributor)
+  }
+  return [...ids]
+}
+
+// Attribution is decoration on the payload the whole sidebar is built from, so
+// a profile-service outage degrades to bare uids; a throw here would surface as
+// history_failed and blank the client's list.
+const resolveProfiles = async (userIds: string[]): Promise<Record<string, ProfileLite>> => {
+  if (userIds.length === 0) return {}
+  try {
+    const profiles = (await getOwnerProfiles(userIds)) as ProfileLite[]
+    return Object.fromEntries(profiles.map((profile) => [profile.id, profile]))
+  } catch (error) {
+    wsLogger.warn({ err: error, count: userIds.length }, 'History attribution lookup failed')
+    return {}
+  }
 }
 
 function toSnapshot(doc: {
@@ -44,11 +79,18 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
     case 'history.list': {
       // Latest is the newest row, so query 2 no longer depends on query 1's
       // version: both filter only by documentId and batch into one round-trip.
-      const [versions, full] = await prisma.$transaction([
+      const [rows, full] = await prisma.$transaction([
         prisma.documents.findMany({
           where: { documentId },
           orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
-          select: { version: true, commitMessage: true, createdAt: true }
+          select: {
+            version: true,
+            commitMessage: true,
+            trigger: true,
+            triggeredBy: true,
+            contributors: true,
+            createdAt: true
+          }
         }),
         prisma.documents.findFirst({
           where: { documentId },
@@ -57,9 +99,15 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
         })
       ])
 
+      const versions: HistoryVersionMeta[] = rows.map((row) => ({
+        ...row,
+        trigger: row.trigger as VersionTrigger | null
+      }))
+
       return {
         versions,
-        latestSnapshot: full ? toSnapshot(full) : null
+        latestSnapshot: full ? toSnapshot(full) : null,
+        profiles: await resolveProfiles(distinctUserIds(versions))
       } satisfies HistoryListResult
     }
 

@@ -5,7 +5,13 @@ import {
   startsWithTitleHeading,
   TITLE_HEADING_DETAIL
 } from '../domain/encodeContent'
-import type { ApplyOutcome, ApplyRequest, InitWsApplyDeps } from '../types'
+import type {
+  ApplyContentRequest,
+  ApplyContext,
+  ApplyOutcome,
+  InitWsApplyDeps,
+  VersionStamp
+} from '../types'
 import { findDocumentMeta } from './contentStore'
 
 const METRIC_OUTCOME: Record<ApplyOutcome['status'], string> = {
@@ -16,7 +22,26 @@ const METRIC_OUTCOME: Record<ApplyOutcome['status'], string> = {
   'persist-failed': 'error'
 }
 
-export type ApplyContent = (request: ApplyRequest) => Promise<ApplyOutcome>
+const stampVersion = (context: ApplyContext, version: VersionStamp): void => {
+  if (version.name) context.versionName = version.name
+  context.versionTrigger = version.trigger
+  context.versionTriggeredBy = version.triggeredBy
+  if (version.forceKey) context.versionForceKey = version.forceKey
+}
+
+/**
+ * Deliberately asymmetric. A live edit landing between this flush and the
+ * disconnect flush must mint an honest unnamed, unattributed row, so the name
+ * goes but an explicit null stays. Clearing the force key would re-derive the
+ * plain job id on that flush and mint a duplicate row.
+ */
+const consumeVersionStamp = (context: ApplyContext): void => {
+  delete context.versionName
+  delete context.versionTrigger
+  context.versionTriggeredBy = null
+}
+
+export type ApplyContent = (request: ApplyContentRequest) => Promise<ApplyOutcome>
 
 /**
  * WS-process applier: the one path where injected content reaches a live Y.Doc.
@@ -29,7 +54,7 @@ export const createApplyContent = (
 ): ApplyContent => {
   const { hocuspocus, prisma, logger } = deps
 
-  return async ({ documentId, mode, content, requestId, payloadBytes }) => {
+  return async ({ documentId, mode, content, version, requestId, payloadBytes }) => {
     const startedAt = Date.now()
 
     const finish = (outcome: ApplyOutcome): ApplyOutcome => {
@@ -57,7 +82,7 @@ export const createApplyContent = (
     // A faithful WS-shaped context, not hygiene: a defensively-rowless first save
     // reads `context.slug` unguarded in the worker, and `{}` would stamp the
     // 19-char documentId into the ops email link.
-    const context = {
+    const context: ApplyContext = {
       user: meta.ownerId ? { sub: meta.ownerId, email: meta.email ?? undefined } : undefined,
       slug: meta.slug,
       documentId,
@@ -80,7 +105,19 @@ export const createApplyContent = (
         return finish({ status: 'invalid-content', detail: TITLE_HEADING_DETAIL })
       }
 
-      await connection.transact((document) => applyContentToDoc(document, encoded.scratch, mode))
+      // Stamped only once the apply is certain to run: `finally` disconnects on
+      // every path, and a rejected-content return would otherwise leave the name
+      // on the context for that flush to mint a row from.
+      if (version) stampVersion(context, version)
+
+      try {
+        await connection.transact((document) => applyContentToDoc(document, encoded.scratch, mode))
+      } finally {
+        // Consume on the rejection path too: the `finally` disconnect below
+        // re-runs the store hooks against this same context object, and a
+        // surviving stamp mints a named row for an apply that 500'd.
+        if (version) consumeVersionStamp(context)
+      }
       return finish({ status: 'applied' })
     } catch (error) {
       logger.error({ err: error, documentId, mode }, 'Content apply transact rejected')

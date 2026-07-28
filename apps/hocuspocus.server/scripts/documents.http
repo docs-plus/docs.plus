@@ -1,7 +1,8 @@
 @base = http://localhost:4000
 @wsInternal = http://localhost:4003
 @serviceRoleKey = {{$dotenv SUPABASE_SERVICE_ROLE_KEY}}
-@documentId = yg64821524HTbijsCX2
+@documentId = Igm8eYmRB6a593e56j9
+@version = 3
 
 ### List documents
 GET {{base}}/api/documents
@@ -83,6 +84,22 @@ content-type: application/json
   }
 }
 
+### Name the version this write mints
+### Retention never thins a named row — leave bulk-import chunks unnamed.
+PATCH {{base}}/api/documents/{{documentId}}/content?mode=append
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
+
+{
+  "commitMessage": "Imported the Q3 figures",
+  "content": {
+    "type": "doc",
+    "content": [
+      { "type": "paragraph", "content": [{ "type": "text", "text": "Revenue grew 12%." }] }
+    ]
+  }
+}
+
 ### Clear the body (empty title heading)
 PATCH {{base}}/api/documents/{{documentId}}/content?mode=replace
 Authorization: Bearer {{serviceRoleKey}}
@@ -124,6 +141,66 @@ content-type: application/json
 #     "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "direct hop" }] }]
 #   }
 # }
+
+# ---------------------------------------------------------------------------
+# Document versions (service-role only)
+# ---------------------------------------------------------------------------
+# Every debounced save already stores a version. A checkpoint only names one,
+# and a named row is the one retention never thins.
+
+### List the history, newest first
+GET {{base}}/api/documents/{{documentId}}/versions
+Authorization: Bearer {{serviceRoleKey}}
+
+### List the second page (limit is 1-100, default 50)
+GET {{base}}/api/documents/{{documentId}}/versions?limit=10&offset=10
+Authorization: Bearer {{serviceRoleKey}}
+
+### Name the next stored version
+### The 200 means the save was triggered, not that the row exists — list again
+### to see it land. Naming an unchanged document still mints a row.
+POST {{base}}/api/documents/{{documentId}}/versions
+Authorization: Bearer {{serviceRoleKey}}
+content-type: application/json
+
+{
+  "name": "Before the board review"
+}
+
+### Read one version as Tiptap JSON
+GET {{base}}/api/documents/{{documentId}}/versions/{{version}}
+Authorization: Bearer {{serviceRoleKey}}
+
+### Read one version as plain text
+GET {{base}}/api/documents/{{documentId}}/versions/{{version}}?format=text
+Authorization: Bearer {{serviceRoleKey}}
+
+### Delete one version — permanent
+### The newest version refuses with 409: it is the base a cold load reads.
+DELETE {{base}}/api/documents/{{documentId}}/versions/{{version}}
+Authorization: Bearer {{serviceRoleKey}}
+
+### Restore a version into the live document
+### Appends two rows: the pre-restore backup (returned as backupVersion) and
+### the restore itself. Not the trash restore — that one is
+### POST /api/documents/{{documentId}}/restore and touches no content.
+POST {{base}}/api/documents/{{documentId}}/versions/{{version}}/restore
+Authorization: Bearer {{serviceRoleKey}}
+
+### INTERNAL ONLY — the collaboration process's version endpoints.
+### Same rules as the internal apply endpoint above: not Traefik-routed, REST
+### forwards here. Call directly only when debugging the hop itself.
+# POST {{wsInternal}}/internal/documents/{{documentId}}/versions
+# Authorization: Bearer {{serviceRoleKey}}
+# content-type: application/json
+#
+# { "name": "direct hop checkpoint" }
+
+# POST {{wsInternal}}/internal/documents/{{documentId}}/versions/{{version}}/restore
+# Authorization: Bearer {{serviceRoleKey}}
+# content-type: application/json
+#
+# {}
 
 # ---------------------------------------------------------------------------
 # Document conversion (service-role only)
