@@ -13,6 +13,7 @@ import type {
   PushSubscription
 } from '../../types/push.types'
 import { pushLogger } from '../logger'
+import { isSafeUrl } from '../ssrf'
 import { getServiceRoleClient } from '../supabase'
 
 // Configure web-push with VAPID credentials
@@ -163,6 +164,15 @@ export async function sendPushNotification(
 
   const results = await Promise.allSettled(
     subscriptions.map(async (sub: PushSubscription) => {
+      // The endpoint is subscriber-written and the SQL that stores it validates
+      // nothing, so this is the one outbound target a caller chooses. Deactivate
+      // rather than record the failure: last_error is readable by its own
+      // subscriber, which would turn a refused host into a port-scan oracle.
+      if (!isSafeUrl(sub.push_credentials.endpoint)) {
+        invalidIds.push(sub.id)
+        pushLogger.warn({ subscription_id: sub.id }, 'Refused an unsafe push endpoint')
+        return { success: false, id: sub.id, error: 'Unsafe endpoint' }
+      }
       try {
         await webpush.sendNotification(
           {

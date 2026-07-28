@@ -179,8 +179,12 @@ export function createPushWorker(): Worker<PushJobData> | null {
               })
           }
 
-          if (!result.success && result.error) {
-            throw new Error(result.error)
+          // Unconditional, like the email twin: a batch where every subscription
+          // failed on a non-404/410 status carries no `error`, so an `&& error`
+          // guard completed the job and left jobs_total{status="failed"} and the
+          // DLQ flat while every push for that user was dropped.
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to send push notification')
           }
           return result
         }
