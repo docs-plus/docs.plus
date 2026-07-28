@@ -27,6 +27,8 @@ declare module 'hono' {
     serviceRole?: boolean
     /** Set by hono's requestId middleware; absent on apps that don't mount it. */
     requestId?: string
+    /** Set by optionalUser when a token was present but Supabase Auth was unreachable. */
+    authUnavailable?: boolean
   }
 }
 
@@ -44,5 +46,6 @@ export type AppContext = Context<{
     userId?: string
     user?: SupabaseUser
     serviceRole?: boolean
+    authUnavailable?: boolean
   }
 }>

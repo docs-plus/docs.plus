@@ -13,7 +13,7 @@ const extractToken = (c: Context): string | undefined => {
 const unauthorized = (c: Context, message: string) =>
   c.json({ success: false, error: { message, code: 'UNAUTHORIZED' } }, 401)
 
-const authUnavailable = (c: Context) =>
+export const authUnavailableResponse = (c: Context) =>
   c.json(
     {
       success: false,
@@ -30,7 +30,7 @@ export async function requireUser(c: Context, next: Next) {
   const outcome = await verifySupabaseTokenOutcome(token)
   switch (outcome.kind) {
     case 'unavailable':
-      return authUnavailable(c)
+      return authUnavailableResponse(c)
     case 'invalid':
       return unauthorized(c, 'Invalid or expired token')
     case 'user':
@@ -66,6 +66,10 @@ export async function optionalUser(c: Context, next: Next) {
     if (outcome.kind === 'user') {
       c.set('user', outcome.user)
       c.set('userId', outcome.user.sub)
+    } else if (outcome.kind === 'unavailable') {
+      // An owner degraded to anonymous reads as sign-in-required on their own
+      // private document. Record it so the private gate can answer 503 instead.
+      c.set('authUnavailable', true)
     }
   }
   await next()

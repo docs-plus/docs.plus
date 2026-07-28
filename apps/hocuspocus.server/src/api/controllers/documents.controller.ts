@@ -19,6 +19,7 @@ import type {
   UpdateDocumentMetadataInput
 } from '../../schemas/document.schema'
 import type { AppContext } from '../../types/hono.types'
+import { authUnavailableResponse } from '../middleware/auth'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
 
@@ -80,6 +81,7 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
     }
 
     if (doc.isPrivate) {
+      if (c.get('authUnavailable')) return authUnavailableResponse(c)
       const access = resolvePrivateAccess({
         isPrivate: true,
         ownerId: doc.ownerId,
@@ -368,9 +370,39 @@ export const getMedia = async (c: AppContext): Promise<Response> => {
 export const uploadMedia = async (c: AppContext): Promise<Response> => {
   const documentId = c.req.param('documentId')
   if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
+  const prisma = c.get('prisma')
+  const user = c.get('user')
   const userId = c.get('userId')
 
   try {
+    // The path segment is the storage prefix, so a session alone parks public-read
+    // bytes under an id no purge path can reach. Same gate the conversion import
+    // runs. Residual: a draft anchors on editor focus, so an upload racing that
+    // write by under a second 404s — allowing a row-less id reopens the hole.
+    const meta = await prisma.documentMetadata.findUnique({
+      where: { documentId },
+      select: { ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }
+    })
+    if (!meta || meta.deletedAt) {
+      return c.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
+        404
+      )
+    }
+    const access = resolvePrivateAccess({
+      isPrivate: meta.isPrivate,
+      ownerId: meta.ownerId,
+      userId,
+      isAnonymous: user?.is_anonymous
+    })
+    if (access !== 'allow') return privateGateResponse(c, access)
+    if (meta.readOnly && userId !== meta.ownerId) {
+      return c.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'This document is read-only' } },
+        403
+      )
+    }
+
     const formData = await c.req.formData()
     const mediaFile = formData.get('mediaFile')
 

@@ -3,9 +3,16 @@ import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
-import { AppError, handlePrismaError, InternalServerError, ValidationError } from '../../lib/errors'
+import {
+  AppError,
+  handlePrismaError,
+  InternalServerError,
+  NotFoundError,
+  ValidationError
+} from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 import { canMutateAccessFlags, isDocumentOwner } from '../../lib/ownerAccess'
+import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
@@ -355,8 +362,29 @@ export const updateDocument = async (
     // succeed.
     const existing = await prisma.documentMetadata.findUnique({
       where: { documentId },
-      select: { ownerId: true, readOnly: true, isPrivate: true }
+      select: { ownerId: true, readOnly: true, isPrivate: true, deletedAt: true }
     })
+
+    // The route is optionalUser on purpose (title/description are collaborative),
+    // but a private or trashed document is nobody's to rewrite. `isAnonymous` is
+    // deliberately NOT passed: an anonymous owner must keep the one PUT that can
+    // undo its own isPrivate flip. Every non-owner still refuses.
+    if (existing?.deletedAt) throw new NotFoundError('Document')
+    // Ownerless rows skip the gate: resolvePrivateAccess answers sign-in-required
+    // to everyone while ownerId is null, so gating here would seal such a row
+    // permanently — the claim arm below is the only thing that can repair one.
+    // canMutateAccessFlags still requires an authed caller before anything moves.
+    if (
+      existing &&
+      existing.ownerId &&
+      resolvePrivateAccess({
+        isPrivate: existing.isPrivate,
+        ownerId: existing.ownerId,
+        userId: requesterId
+      }) !== 'allow'
+    ) {
+      throw new AppError('This document is private', 403, 'FORBIDDEN')
+    }
 
     const updateData: {
       description?: string
@@ -364,6 +392,7 @@ export const updateDocument = async (
       keywords?: string
       readOnly?: boolean
       isPrivate?: boolean
+      ownerId?: string
     } = {}
     if (description !== undefined) updateData.description = description
     if (title !== undefined) updateData.title = title
@@ -385,6 +414,13 @@ export const updateDocument = async (
       isPrivate !== undefined && (!existing || isPrivate !== existing.isPrivate)
     if (privateChanged && mayMutateAccess) {
       updateData.isPrivate = isPrivate
+      // Privatising an OWNERLESS row sealed it for everyone, the setter included:
+      // resolvePrivateAccess returns sign-in-required while ownerId is null, so
+      // nobody could read it or undo the flip. The claimer becomes the owner —
+      // the PUT is already the authoritative owner writer (AGENTS.md §Hocuspocus).
+      if (isPrivate === true && existing && !existing.ownerId && requesterId) {
+        updateData.ownerId = requesterId
+      }
     } else if (privateChanged) {
       documentsServiceLogger.warn(
         { documentId, requesterId },
@@ -437,6 +473,9 @@ export const updateDocument = async (
         : []
     }
   } catch (error) {
+    // A gate refusal is a 4xx decision, not a database failure: handlePrismaError
+    // would relabel it a DatabaseError and the caller would answer 500.
+    if (error instanceof AppError) throw error
     documentsServiceLogger.error({ err: error, documentId }, 'Error updating document')
     throw handlePrismaError(error)
   }
@@ -525,9 +564,12 @@ export const duplicateDocument = async (
   const documentId = uid.stamp(19)
 
   try {
+    // Strictly version desc — served top-1 by the (documentId, version) unique
+    // index. Leading on createdAt walked Documents_createdAt_idx backwards past
+    // every row the whole corpus wrote since this document's last save.
     const latest = await prisma.documents.findFirst({
       where: { documentId: sourceDocumentId },
-      orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
+      orderBy: { version: 'desc' },
       select: { data: true }
     })
     let bytes = latest?.data ?? null
