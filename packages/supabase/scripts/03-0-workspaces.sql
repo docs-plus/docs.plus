@@ -6,7 +6,7 @@ create table public.workspaces (
     slug              text not null unique check (length(slug) <= 100), -- Unique slug for the workspace, used for user-friendly URLs, limited to 100 characters.
     description       text check (length(description) <= 1000), -- Optional description of the workspace, limited to 1000 characters.
     metadata          jsonb default '{}'::jsonb, -- Optional metadata about the workspace in JSONB format.
-    created_by        uuid references public.users(id) on delete set null, -- The ID of the user who created the workspace.
+    created_by        uuid references public.users(id) on delete set null, -- The first signed-in visitor to open the document, not its owner. See the column comment below.
     created_at        timestamp with time zone default timezone('utc', now()) not null, -- The timestamp when the workspace was created, set to the current UTC time.
     updated_at        timestamp with time zone default timezone('utc', now()), -- The timestamp when the workspace was last updated, set to the current UTC time.
     deleted_at        timestamp with time zone -- The timestamp when the workspace was soft deleted, NULL if not deleted.
@@ -16,3 +16,6 @@ create table public.workspaces (
 alter table public.workspaces add constraint check_slug_format check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');
 
 comment on table public.workspaces is 'This table contains information about various workspaces, which are collections of channels for group discussions and messaging. Workspaces provide a higher-level organization structure within the application, allowing for segregation and grouping of channels.';
+
+comment on column public.workspaces.created_by is
+'First signed-in visitor to open the document: join_workspace() auto-bootstraps the workspace row and stamps auth.uid() of whoever got there first. NOT ownership — that is Prisma DocumentMetadata.ownerId. Nothing reads this column; workspaces_creator_insert only checks it on INSERT.';
