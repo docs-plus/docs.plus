@@ -1,8 +1,9 @@
 name: Backend CI
 
 # Reusable backend quality gates (no-infra unit/integration + real-infra E2E).
-# Called only by the prod pipeline, gated on `has_back` — stage and pull
-# requests never invoke it, so these gates run on `(build): … back` commits only.
+# Called only by the prod pipeline, gated on `has_back || app_deploy` — every
+# deploy migrates the database and rolls the backend, so every deploy runs these.
+# Stage and pull requests never invoke it.
 on:
   workflow_call: {}
 
@@ -31,8 +32,8 @@ jobs:
 
       # No-infra gate: every backend suite is mock-based (createMockPrisma/Redis),
       # so unit + lib + link-metadata + integration all run without Postgres/Redis.
-      # The package `test` script owns the suite path list; nothing guarded a
-      # second hardcoded copy here against drift, so there is only one now.
+      # The package `test` script is a bare `bun test` — an enumerated path list
+      # silently dropped a whole `__tests__/integration` directory from this gate.
       - name: 🧪 Run Backend Tests
         working-directory: apps/hocuspocus.server
         run: bun run test

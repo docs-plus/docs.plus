@@ -256,7 +256,11 @@ jobs:
   back-validation:
     name: 🔧 Backend Validation
     needs: [triage]
-    if: needs.triage.outputs.has_back == 'true'
+    # `app_deploy` is the value the deploy job gates on, and the deploy always
+    # runs the Prisma migration and rolls all three backend services. Gating on
+    # `has_back` alone let a `(build): front` push deploy backend code no test
+    # had ever touched. `has_back` stays so `(build): back no-deploy` still runs.
+    if: needs.triage.outputs.has_back == 'true' || needs.triage.outputs.app_deploy == 'true'
     uses: ./.github/workflows/backend-ci.yml
 
   extension-tests:
@@ -400,8 +404,10 @@ jobs:
   # upstream is skipped; `needs.build.result == 'success'` is the real fail-fast
   # gate. (Inlined from a former deploy-gate job whose constant output did not
   # propagate reliably through `needs.deploy-gate.outputs` under `always()`.)
-  # IMPORTANT: opts OUT of cancel-in-progress — a mid-deploy SIGTERM during
-  # `docker compose up --scale` can corrupt blue-green state.
+  # The job-level `…-deploy` group only serializes a SECOND run's deploy behind
+  # this one. It does NOT exempt the job from the workflow-level `…-quality`
+  # group, so a later push still cancels an in-flight roll — the pre-existing,
+  # accepted blue-green exposure, same residual as `uptime-kuma-deploy`.
   # ===========================================================================
   deploy:
     name: 🚀 Deploy Production
@@ -620,9 +626,11 @@ jobs:
 
           docker network create docsplus-network 2>/dev/null || true
 
-          # Start Traefik and Redis (--no-recreate keeps existing if running)
+          # No --no-recreate: neither service interpolates DEPLOY_TAG, so compose
+          # recreates them only when their compose config actually changed.
+          # --no-recreate made every edge/queue config change inert after boot.
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            up -d --no-recreate traefik redis
+            up -d traefik redis
 
           # Force-start Traefik if somehow not running
           if ! docker ps --filter "name=traefik" --filter "status=running" --format '{{.Names}}' | grep -q traefik; then

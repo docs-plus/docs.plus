@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev build-prod-ci build-prod-backend run-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats deploy-prod rollback-prod status-prod logs-traefik swarm-demo swarm-stress
+.PHONY: help build build-dev build-prod-ci build-prod-backend run-prod-backend up-prod up-dev infra-up infra-down infra-logs dev-local dev-backend down logs logs-webapp logs-backend restart clean scale-webapp scale-hocuspocus ps stats status-prod logs-traefik swarm-demo swarm-stress
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -41,8 +41,7 @@ help:
 	@echo "      bun run --filter @docs.plus/document-swarm provision --count <n>"
 	@echo ""
 	@echo "Production Deployment (Traefik):"
-	@echo "  make deploy-prod             - Deploy full stack with Traefik"
-	@echo "  make rollback-prod           - Rollback to previous deployment"
+	@echo "  Deploy and rollback run from CI only — .github/workflows/prod.docs.plus.yml"
 	@echo "  make status-prod             - Check production status"
 	@echo "  make logs-traefik            - View Traefik logs"
 	@echo ""
@@ -106,22 +105,18 @@ build-dev:
 # RUN COMMANDS
 # =============================================================================
 
+# up-prod is a first-boot start, not a deploy route: a bare `up -d` recreates
+# every serving container. The `--scale` overrides are gone because they pinned
+# the worker to 1 against the 2 that docker-compose.prod.yml declares.
 up-prod: build
 	@echo "🚀 Starting full stack production environment (Traefik)..."
 	@echo ""
 	@echo "Services:"
 	@echo "  🔀 Traefik (ports 80, 443) - reverse proxy + SSL"
 	@echo "  🔴 Redis (internal) - cache & pub/sub"
-	@echo "  🔌 REST API - 2 replicas"
-	@echo "  🌐 Hocuspocus WS - 2 replicas"
-	@echo "  ⚙️  Worker - 1 replica"
-	@echo "  💻 Webapp - 2 replicas"
+	@echo "  🔌 REST API, 🌐 Hocuspocus WS, ⚙️  Worker, 💻 Webapp - see deploy.replicas"
 	@echo ""
-	@docker compose -f docker-compose.prod.yml --env-file .env.production up -d \
-		--scale rest-api=2 \
-		--scale hocuspocus-server=2 \
-		--scale hocuspocus-worker=1 \
-		--scale webapp=2
+	@docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 	@echo ""
 	@echo "✅ Full stack started!"
 	@echo ""
@@ -387,34 +382,10 @@ stats:
 # PRODUCTION DEPLOYMENT COMMANDS (Traefik)
 # =============================================================================
 
-deploy-prod:
-	@echo "🚀 Deploying to production with Traefik..."
-	@if [ ! -f .env.production ]; then \
-		echo "❌ .env.production not found"; \
-		exit 1; \
-	fi
-	@echo "Building images..."
-	@docker compose -f docker-compose.prod.yml --env-file .env.production build
-	@echo "Deploying services (zero-downtime)..."
-	@docker compose -f docker-compose.prod.yml --env-file .env.production up -d \
-		--scale rest-api=2 \
-		--scale hocuspocus-server=2 \
-		--scale hocuspocus-worker=1 \
-		--scale webapp=2
-	@echo "✅ Production deployed"
-	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -15
-
-rollback-prod:
-	@echo "🔄 Rolling back production..."
-	@PREV_TAG=$$(docker images docsplus-webapp --format "{{.Tag}}" | grep -v latest | head -1); \
-	if [ -n "$$PREV_TAG" ]; then \
-		echo "Rolling back to: $$PREV_TAG"; \
-		sed -i.bak "s/DEPLOY_TAG=.*/DEPLOY_TAG=$$PREV_TAG/" .env.production; \
-		docker compose -f docker-compose.prod.yml --env-file .env.production up -d; \
-		echo "✅ Rollback complete"; \
-	else \
-		echo "❌ No previous version found"; \
-	fi
+# No `deploy-prod` / `rollback-prod` here on purpose. Both did a bare `up -d`,
+# which recreates every serving container at once, and rollback read
+# `docker images … | head -1` — the newest tag, i.e. the one just shipped.
+# The deploy job's `deploy_service` roll is the only prod route.
 
 status-prod:
 	@echo "📊 Production Status"
