@@ -1,6 +1,6 @@
 import { authStore, useStore } from '@stores'
 
-import { exitPrivateDocument } from './exitPrivateDocument'
+import { exitSealedDocument } from './exitSealedDocument'
 
 type AccessStatelessPayload = {
   type?: string
@@ -8,7 +8,7 @@ type AccessStatelessPayload = {
   ownerId?: string | null
 }
 
-/** Apply a live access seal payload: patch metadata, kick non-owners on Private ON. */
+/** Apply a live access seal payload: patch metadata, kick peers on Private/Deleted ON. */
 export function applyAccessStateless(args: {
   documentId: string
   slug: string
@@ -17,6 +17,12 @@ export function applyAccessStateless(args: {
   destroyProvider: () => void
 }): void {
   const { documentId, slug, data, stopReconnect, destroyProvider } = args
+  if (data.type === 'deleted' && data.state === true) {
+    // Home, not `/${slug}`: after a purge the slug resolves to nothing, and
+    // opening an unknown slug is the document-creation path.
+    exitSealedDocument({ to: '/', stopReconnect, destroyProvider })
+    return
+  }
   if (data.type !== 'readOnly' && data.type !== 'private') return
 
   const { settings, setWorkspaceSetting } = useStore.getState()
@@ -37,5 +43,5 @@ export function applyAccessStateless(args: {
   const profileId = authStore.getState().profile?.id
   if (ownerId && profileId === ownerId) return
 
-  exitPrivateDocument({ slug, stopReconnect, destroyProvider })
+  exitSealedDocument({ to: `/${slug}`, stopReconnect, destroyProvider })
 }

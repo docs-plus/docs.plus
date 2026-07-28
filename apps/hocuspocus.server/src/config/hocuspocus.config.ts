@@ -7,6 +7,7 @@ import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
 import { checkEnvBoolean, generateRandomId } from '../utils'
 import { config } from './env'
+import { isRoomSealed } from '../lib/accessRealtime'
 import { drainContributors } from '../lib/contributors'
 import { buildStoreJobId, enqueueStoreDocument, stripSnapshotMetadata } from '../lib/queue'
 import { documentPersistFallbackTotal, documentStoreRejectionsTotal } from '../lib/metrics'
@@ -190,6 +191,15 @@ const configureExtensions = () => {
       async store(data: any) {
         const { documentName, state, context, document } = data
         const versionContext: StoreDocumentContext = context ?? {}
+
+        // The worker's first-save branch cannot tell a resurrection from a
+        // genuine new document, so the flush is dropped here instead. Covers
+        // what is not yet enqueued only: a job already in `wait` when the seal
+        // lands still reaches that branch, a window as wide as queue latency.
+        if (isRoomSealed(document)) {
+          dbLogger.info({ documentName }, 'Dropped store for a sealed (deleted) room')
+          return
+        }
 
         // Metadata rides the live doc — read it O(1). Decoding the snapshot
         // here (the old path) rebuilt the whole CRDT on the WS event loop and

@@ -132,7 +132,7 @@ async function reapSoftDeletedDocuments() {
           const { purged } = await purgeDocumentFootprint(prisma, supabase, {
             documentId,
             slug,
-            cutoff
+            scope: { retention: cutoff }
           })
           totalPurged += purged
         } catch (err) {

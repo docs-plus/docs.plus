@@ -11,8 +11,9 @@ import type { PrismaClient } from '@prisma/client'
 import * as Y from 'yjs'
 
 import { adminLogger } from '../../lib/logger'
-import { supabaseRest } from '../utils/supabase'
+import { getSupabaseClient, supabaseRest } from '../utils/supabase'
 import { fetchByIds } from '../utils/supabaseFetchByIds'
+import { purgeDocumentFootprint } from './documentPurge.service'
 
 const CACHE_TTL_MS = 5 * 60 * 1000
 
@@ -432,10 +433,12 @@ export interface DeletionImpact {
 }
 
 /** Workspace/channel/message counts for the document-preview deletion warning. */
-export async function fetchDocumentDeletionImpact(slug: string): Promise<DeletionImpact> {
+export async function fetchDocumentDeletionImpact(documentId: string): Promise<DeletionImpact> {
   const impact: DeletionImpact = { workspace_id: null, channel_count: 0, message_count: 0 }
   try {
-    const workspaceRes = await supabaseRest(`workspaces?slug=eq.${slug}&select=id`)
+    // Keyed on id: workspaces.id holds the documentId verbatim, while the slug
+    // column holds lower(documentId) and never the human slug.
+    const workspaceRes = await supabaseRest(`workspaces?id=eq.${documentId}&select=id`)
     if (!workspaceRes) return impact
     const workspaces = await workspaceRes.json()
     if (!Array.isArray(workspaces) || workspaces.length === 0) return impact
@@ -482,7 +485,7 @@ export async function bulkDeleteStale(
 ): Promise<BulkDeleteStaleResult> {
   const documents = await prisma.documentMetadata.findMany({
     where: { slug: { in: slugs } },
-    select: { id: true, slug: true, title: true, documentId: true }
+    select: { slug: true, title: true, documentId: true }
   })
 
   if (dryRun) {
@@ -496,19 +499,22 @@ export async function bulkDeleteStale(
   let workspacesDeleted = 0
   const deleted: { slug: string; title: string | null }[] = []
   const failed: { slug: string; error: string }[] = []
+  const supabase = getSupabaseClient()
 
   for (const doc of documents) {
     try {
-      const deleteRes = await supabaseRest(`workspaces?slug=eq.${doc.slug}`, {
-        method: 'DELETE',
-        headers: { Prefer: 'return=minimal' }
+      // documentId comes off the metadata row, never off the caller's slug list:
+      // the hand-rolled delete this replaces keyed the workspace on the human slug
+      // and erased nothing. Per-document catch so one bad row cannot fail the batch.
+      const { purged } = await purgeDocumentFootprint(prisma, supabase, {
+        documentId: doc.documentId,
+        slug: doc.slug,
+        scope: { permanent: true }
       })
-      if (deleteRes?.ok) workspacesDeleted++
-
-      await prisma.$transaction([
-        prisma.documents.deleteMany({ where: { documentId: doc.documentId } }),
-        prisma.documentMetadata.delete({ where: { id: doc.id } })
-      ])
+      // Accounting hangs off `purged`, not off the promise resolving: a resolved
+      // purge that removed no driver row belongs in `failed`, not in `deleted`.
+      if (purged === 0) throw new Error('Purge removed no document row')
+      workspacesDeleted++
       deleted.push({ slug: doc.slug, title: doc.title })
     } catch (err) {
       failed.push({ slug: doc.slug, error: err instanceof Error ? err.message : 'Unknown error' })
@@ -574,7 +580,7 @@ export async function getDocumentPreview(
   if (doc.ownerId) owner = await fetchOwnerSummary(doc.ownerId)
   if (!owner && doc.email) owner = { username: null, email: doc.email }
 
-  const deletionImpact = await fetchDocumentDeletionImpact(slug)
+  const deletionImpact = await fetchDocumentDeletionImpact(doc.documentId)
 
   return {
     slug: doc.slug,

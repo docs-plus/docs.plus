@@ -169,7 +169,7 @@ const useYdocAndProvider = ({
             return
           }
 
-          if (data.type === 'readOnly' || data.type === 'private') {
+          if (data.type === 'readOnly' || data.type === 'private' || data.type === 'deleted') {
             applyAccessStateless({
               documentId,
               slug,

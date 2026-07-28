@@ -5,10 +5,12 @@
 
 import type { PrismaClient } from '@prisma/client'
 
+import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
 import { adminLogger } from '../../lib/logger'
 import { parseSupabaseArray, supabaseUsersArraySchema } from '../../schemas/supabase.schema'
 import { getSupabaseClient, supabaseRest } from '../utils/supabase'
 import { fetchByIds } from '../utils/supabaseFetchByIds'
+import { purgeDocumentFootprint } from './documentPurge.service'
 
 type AdminClient = NonNullable<ReturnType<typeof getSupabaseClient>>
 
@@ -253,13 +255,29 @@ export async function updateDocumentFlags(
     data: updateData,
     select: {
       id: true,
+      documentId: true,
       slug: true,
       title: true,
       isPrivate: true,
       readOnly: true,
+      ownerId: true,
       updatedAt: true
     }
   })
+
+  // Same fire-and-forget seal the PUT route sends, so an admin toggle reaches
+  // live rooms too. Only the changed flags ride along: a readOnly flip on an
+  // already-private document must not re-broadcast private and re-kick. Guarded
+  // because an event carrying neither flag matches no arm and is a wasted publish.
+  if (updateData.isPrivate !== undefined || updateData.readOnly !== undefined) {
+    void publishDocumentAccessEvent({
+      documentId: document.documentId,
+      ...(updateData.isPrivate !== undefined ? { isPrivate: document.isPrivate } : {}),
+      ...(updateData.readOnly !== undefined ? { readOnly: document.readOnly } : {}),
+      ownerId: document.ownerId,
+      timestamp: new Date().toISOString()
+    })
+  }
 
   return {
     success: true,
@@ -285,7 +303,9 @@ export async function getDocumentDeletionImpact(prisma: PrismaClient, id: number
   let owner: { username: string | null; email: string | null } | null = null
 
   try {
-    const workspaceRes = await supabaseRest(`workspaces?slug=eq.${document.slug}&select=id`)
+    // Keyed on id: workspaces.id holds the documentId verbatim, while the slug
+    // column holds lower(documentId) and never the human slug.
+    const workspaceRes = await supabaseRest(`workspaces?id=eq.${document.documentId}&select=id`)
     if (workspaceRes) {
       const workspaces = await workspaceRes.json()
       if (Array.isArray(workspaces) && workspaces.length > 0) {
@@ -335,27 +355,24 @@ export async function deleteDocument(prisma: PrismaClient, id: number, confirmSl
   if (!document) return { status: 'not_found' as const }
   if (confirmSlug !== document.slug) return { status: 'mismatch' as const }
 
-  let workspaceDeleted = false
-  try {
-    const deleteRes = await supabaseRest(`workspaces?slug=eq.${document.slug}`, {
-      method: 'DELETE',
-      headers: { Prefer: 'return=minimal' }
-    })
-    workspaceDeleted = deleteRes?.ok ?? false
-  } catch (err) {
-    adminLogger.error({ err }, 'Failed to delete workspace')
-  }
-
-  await prisma.$transaction([
-    prisma.documents.deleteMany({ where: { documentId: document.documentId } }),
-    prisma.documentMetadata.delete({ where: { id } })
-  ])
+  // The documentId comes off the metadata row, never off the request: the hand-
+  // rolled delete this replaces keyed the workspace on the human slug and erased
+  // nothing. A throw here surfaces as a 500 instead of a false success.
+  const { purged } = await purgeDocumentFootprint(prisma, getSupabaseClient(), {
+    documentId: document.documentId,
+    slug: document.slug,
+    scope: { permanent: true }
+  })
 
   return {
     status: 'deleted' as const,
     success: true,
     deleted: { id: document.id, slug: document.slug, title: document.title },
-    workspaceDeleted
+    // Proxy, not a measurement: the RPC returns void, so whether a workspaces row
+    // existed is unknowable here. `purged` counts the driver row. A document that
+    // never had chat reports true — imprecise, but no longer the old lie of
+    // counting a 204 from a predicate that matched nothing.
+    workspaceDeleted: purged > 0
   }
 }
 
