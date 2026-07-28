@@ -2,7 +2,12 @@ import { Job, Queue, Worker } from 'bullmq'
 import * as Y from 'yjs'
 
 import { config } from '../config/env'
-import type { DeadLetterJobData, StoreDocumentData } from '../types'
+import type {
+  DeadLetterJobData,
+  StoreDocumentContext,
+  StoreDocumentData,
+  VersionTrigger
+} from '../types'
 import { toBullMQConnection } from '../types/redis.types'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
@@ -161,8 +166,11 @@ export interface EnqueueStoreDocumentParams {
   jobId: string
   documentName: string
   state: Buffer
-  context: StoreDocumentData['context']
+  context: StoreDocumentContext
   commitMessage: string
+  trigger?: VersionTrigger
+  triggeredBy?: string | null
+  contributors?: string[]
 }
 
 export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): Promise<void> {
@@ -174,33 +182,45 @@ export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): 
       documentName: params.documentName,
       stateKey,
       context: params.context,
-      commitMessage: params.commitMessage
+      commitMessage: params.commitMessage,
+      trigger: params.trigger,
+      triggeredBy: params.triggeredBy,
+      contributors: params.contributors
     },
     { jobId: params.jobId }
   )
 }
+
+// ioredis buffers every queued command until exec(), so the EXPIREs go out in
+// chunks — one flat pipeline over a 50k backlog held +164 MB on its own.
+const TTL_REFRESH_CHUNK = 1000
 
 // A job can outlive the claim-check TTL in `wait` when the worker is down or
 // backlogged — the 2026-07-14 outage turned that into payload-less DLQ
 // entries. Re-arming pending jobs' key TTLs keeps any-length outages
 // recoverable while the TTL stays the volatile-lru OOM backstop.
 export async function refreshPendingStateKeyTtls(): Promise<number> {
-  // Full range: getJobs start/end apply PER type, so "page by N" cannot bound
-  // the aggregate anyway — and every list except `waiting` is already capped
-  // (removeOnFail 200, delayed = retry ladder, active = concurrency).
-  // `waiting` is the outage backlog this exists to cover; never truncate it.
-  const jobs = await StoreDocumentQueue.getJobs(
-    ['waiting', 'paused', 'delayed', 'active', 'failed'],
-    0,
-    -1
-  )
-  const pipeline = stateRedis.pipeline()
-  for (const job of jobs) {
-    if (job?.data?.stateKey) pipeline.expire(job.data.stateKey, STATE_KEY_TTL_SECONDS)
+  // Ids off the list, never getJobs: hydrating every job hash just to read a key
+  // that enqueueStoreDocument derives from the job id cost +428 MB of WS heap at
+  // a 50k backlog. Queue.pause() RENAMEs wait→paused, so the backlog this covers
+  // answers to either name and only one of the two lists exists at a time.
+  const [waiting, paused] = await Promise.all([
+    stateRedis.lrange(StoreDocumentQueue.toKey('wait'), 0, -1),
+    stateRedis.lrange(StoreDocumentQueue.toKey('paused'), 0, -1)
+  ])
+  const jobIds = waiting.concat(paused)
+
+  let refreshed = 0
+  for (let start = 0; start < jobIds.length; start += TTL_REFRESH_CHUNK) {
+    const end = Math.min(start + TTL_REFRESH_CHUNK, jobIds.length)
+    const pipeline = stateRedis.pipeline()
+    for (let i = start; i < end; i++) {
+      pipeline.expire(STATE_KEY_PREFIX + jobIds[i], STATE_KEY_TTL_SECONDS)
+    }
+    const results = (await pipeline.exec()) ?? []
+    refreshed += results.filter(([, result]) => result === 1).length
   }
-  if (pipeline.length === 0) return 0
-  const results = (await pipeline.exec()) ?? []
-  return results.filter(([, result]) => result === 1).length
+  return refreshed
 }
 
 // Dequeue-liveness signal for the worker /health: a healthy worker bounds
@@ -250,11 +270,11 @@ export const createDocumentWorker = () => {
         const startTime = Date.now()
         const context = data.context
 
-        // Decode + metadata strip run HERE, not in the WS store hook — this
-        // is the CPU-heavy half of a save and it must stay off the event loop
-        // that serves live connections.
+        // Decode + metadata strip run in this worker, never in the WS store
+        // hook — that is the CPU-heavy half of a save and it must stay off the
+        // event loop serving live connections.
         rawState = await resolveJobState(data)
-        const snapshot = stripSnapshotMetadata(rawState)
+        const incoming = new Uint8Array(rawState)
 
         // READ COMMITTED + FOR UPDATE serializes appends but cannot stop two
         // concurrent jobs computing the same nextVersion (no row exists on
@@ -279,15 +299,13 @@ export const createDocumentWorker = () => {
             const isFirst = !existingDoc
             const nextVersion = existingDoc ? existingDoc.version + 1 : 1
 
-            // Merge with the locked head: concurrent jobs can commit out of
-            // order, and a plain INSERT would let a stale snapshot become the
-            // newest version. merge(newer, stale) === newer; divergent
-            // cross-replica flushes union instead of clobbering.
+            // Merge with the locked head so an out-of-order commit cannot make a
+            // stale snapshot the newest version, and divergent replicas union.
+            // Merge RAW and strip the RESULT: mergeUpdates only unions delete
+            // sets, so the strip's decode is what drops deleted text.
             const versionData = existingDoc
-              ? Buffer.from(
-                  Y.mergeUpdates([new Uint8Array(existingDoc.data), new Uint8Array(snapshot)])
-                )
-              : snapshot
+              ? stripSnapshotMetadata(Y.mergeUpdates([new Uint8Array(existingDoc.data), incoming]))
+              : stripSnapshotMetadata(incoming)
 
             // Handle first-time document creation with retry on slug collision
             let slug: string | undefined
@@ -302,13 +320,18 @@ export const createDocumentWorker = () => {
               })
             }
 
-            // Create new version (within transaction = atomic)
+            // Create new version (within transaction = atomic). Attribution is
+            // read top-level only: the serialized context carries a second copy
+            // whose explicit null the store hook has already resolved.
             const doc = await tx.documents.create({
               data: {
                 documentId: data.documentName,
                 commitMessage: data.commitMessage || '',
                 version: nextVersion,
-                data: versionData
+                data: versionData,
+                trigger: data.trigger ?? null,
+                triggeredBy: data.triggeredBy ?? null,
+                contributors: data.contributors ?? []
               }
             })
 
