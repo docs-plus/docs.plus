@@ -10,7 +10,8 @@ GRANT USAGE ON SCHEMA internal TO authenticated, service_role;
 /**
  * Function: handle_new_user
  * Description: Creates a new user record in public.users when a new auth user is registered.
- * Trigger: Executes after INSERT on auth.users
+ * Trigger: Executes after INSERT on auth.users, and after the UPDATE that turns an
+ *          anonymous user into a permanent one (see on_auth_user_converted below)
  * Action: Generates a username based on name or email, sanitizes it, ensures uniqueness,
  *         and creates the public user profile with data from auth metadata.
  * Returns: The NEW record (trigger standard)
@@ -92,8 +93,11 @@ BEGIN
     RAISE EXCEPTION 'Email is required for user creation';
   END IF;
 
+  -- The conversion trigger re-enters this function for an id that may already
+  -- have a profile; a raise here would abort GoTrue's transaction and break sign-up.
   INSERT INTO public.users (id, full_name, avatar_url, email, username)
-  VALUES (new.id, user_full_name, user_avatar_url, new.email, final_username);
+  VALUES (new.id, user_full_name, user_avatar_url, new.email, final_username)
+  ON CONFLICT (id) DO NOTHING;
 
   RETURN new;
 END;
@@ -105,6 +109,22 @@ $$;
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW
+EXECUTE PROCEDURE public.handle_new_user();
+
+-- Trigger: on_auth_user_converted
+-- Description: Creates the profile an anonymous user never got once they become permanent.
+-- auth.users.id survives the conversion, so this back-fills every row already attributed to
+-- that id. GoTrue clears is_anonymous in its own statement, before the address lands, so the
+-- address side of the guard is what completes most conversions.
+DROP TRIGGER IF EXISTS on_auth_user_converted ON auth.users;
+CREATE TRIGGER on_auth_user_converted
+AFTER UPDATE OF is_anonymous, email ON auth.users
+FOR EACH ROW
+WHEN (
+  new.is_anonymous = false
+  AND new.email IS NOT NULL
+  AND (old.is_anonymous = true OR old.email IS NULL)
+)
 EXECUTE PROCEDURE public.handle_new_user();
 
 ----------------------------------------------------
