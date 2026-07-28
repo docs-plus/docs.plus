@@ -101,7 +101,6 @@ export const envSchema = z.object({
   // -------------------------------------------------------------------------
   // Security
   // -------------------------------------------------------------------------
-  JWT_SECRET: z.string().optional(),
   ALLOWED_ORIGINS: commaSeparatedList,
   RATE_LIMIT_MAX: numericString('100'),
 
@@ -141,8 +140,14 @@ export const envSchema = z.object({
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
 
   // -------------------------------------------------------------------------
-  // Email (SMTP)
+  // Email
   // -------------------------------------------------------------------------
+  // Read directly by lib/email/providers, not through config: EMAIL_PROVIDER
+  // picks the sender, otherwise the first configured of resend/sendgrid/smtp
+  // wins — so a leftover RESEND_API_KEY beats working SMTP settings.
+  EMAIL_PROVIDER: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   SMTP_FROM_NAME: z.string().default('docs.plus'),
   SMTP_HOST: z.string().optional().default(''),
@@ -193,8 +198,9 @@ export const envSchema = z.object({
   WORKER_ERROR_WINDOW_MS: numericString('60000'),
   WORKER_SHUTDOWN_TIMEOUT_MS: numericString('120000'),
   IDEMPOTENCY_CLEANUP_INTERVAL_MS: numericString('3600000'),
-  // Unnamed autosave versions older than this get thinned to one per doc per
-  // day (named checkpoints always survive). 0 disables pruning entirely.
+  // Autosave versions older than this get thinned to one per doc per day. A
+  // name a person typed is exempt forever, a machine trigger is not (see
+  // CLAUDE.md). 0 disables pruning entirely.
   DOC_AUTOSAVE_RETENTION_DAYS: numericString('30'),
   // Soft-deleted documents older than this get their footprint reaped. 0
   // disables the reaper entirely.

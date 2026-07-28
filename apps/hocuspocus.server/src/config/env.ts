@@ -87,7 +87,6 @@ export const config = {
 
   // Security
   security: {
-    jwtSecret: env.JWT_SECRET,
     allowedOrigins: env.ALLOWED_ORIGINS,
     rateLimitMax: env.RATE_LIMIT_MAX
   },

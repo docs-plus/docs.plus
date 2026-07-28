@@ -77,7 +77,7 @@ model EmailSentLog {
   recipient      String
   emailType      String? // notification type
   sentAt         DateTime @default(now())
-  expiresAt      DateTime @default(dbgenerated("NOW() + INTERVAL '7 days'"))
+  expiresAt      DateTime @default(dbgenerated("(now() + '7 days'::interval)"))
 
   @@index([expiresAt])
   @@index([recipient, sentAt])
@@ -89,7 +89,7 @@ model PushSentLog {
   userId            String
   subscriptionCount Int      @default(0) // How many devices received
   sentAt            DateTime @default(now())
-  expiresAt         DateTime @default(dbgenerated("NOW() + INTERVAL '7 days'"))
+  expiresAt         DateTime @default(dbgenerated("(now() + '7 days'::interval)"))
 
   @@index([expiresAt])
   @@index([userId, sentAt])

@@ -57,7 +57,6 @@ The collaboration process serves one internal listener carrying both `/metrics` 
 | Variable                    | Type   | Default | Notes                                                                                                                                            |
 | --------------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `SUPABASE_SERVICE_ROLE_KEY` | string | —       | Required for admin routes, internal email endpoints, and server-side Supabase reads. Optional in the schema, but those features fail without it. |
-| `JWT_SECRET`                | string | —       | Optional                                                                                                                                         |
 | `ALLOWED_ORIGINS`           | list   | `[]`    | CORS allowlist. In production, falls back to `[APP_URL]` when empty. Dev allows any origin.                                                      |
 | `RATE_LIMIT_MAX`            | number | `100`   | Requests per 15-minute window (global limiter)                                                                                                   |
 
@@ -65,30 +64,28 @@ The collaboration process serves one internal listener carrying both `/metrics` 
 
 Redis is optional; features degrade gracefully without it (rate limiting is disabled, Hocuspocus sync/scaling features are unavailable).
 
-| Variable                | Type    | Default     | Notes                                                                                                                                                                  |
-| ----------------------- | ------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `REDIS`                 | boolean | `false`     |                                                                                                                                                                        |
-| `REDIS_HOST`            | string  | `localhost` | If unset at runtime, `getRedisClient()` returns `null` (Redis disabled)                                                                                                |
-| `REDIS_PORT`            | number  | `6379`      |                                                                                                                                                                        |
-| `REDIS_TLS`             | boolean | `false`     |                                                                                                                                                                        |
-| `REDIS_CONNECT_TIMEOUT` | number  | `30000`     | ⚠️ `redis.ts` reads this with a hard-coded fallback of `20000`, used only when the var is unset at runtime. The schema default (`30000`) applies when validation runs. |
-| `REDIS_COMMAND_TIMEOUT` | number  | `60000`     | ⚠️ `redis.ts` uses `30000` for the shared client and `60000` for dedicated sync/queue connections, both as runtime fallbacks.                                          |
-| `REDIS_KEEPALIVE`       | number  | `30000`     |                                                                                                                                                                        |
-| `REDIS_MAX_RETRIES`     | number  | `10`        |                                                                                                                                                                        |
+| Variable                | Type    | Default     | Notes                                                                                                                             |
+| ----------------------- | ------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `REDIS`                 | boolean | `false`     |                                                                                                                                   |
+| `REDIS_HOST`            | string  | `localhost` | If unset at runtime, `getRedisClient()` returns `null` (Redis disabled)                                                           |
+| `REDIS_PORT`            | number  | `6379`      |                                                                                                                                   |
+| `REDIS_TLS`             | boolean | `false`     |                                                                                                                                   |
+| `REDIS_CONNECT_TIMEOUT` | number  | `30000`     |                                                                                                                                   |
+| `REDIS_COMMAND_TIMEOUT` | number  | `60000`     | Producer-only connections override this with 5s in `lib/queue.ts`; the blocking worker connections set no command timeout at all. |
+| `REDIS_KEEPALIVE`       | number  | `30000`     |                                                                                                                                   |
+| `REDIS_MAX_RETRIES`     | number  | `10`        |                                                                                                                                   |
 
 ## Database pool
 
-Read by `src/lib/prisma.ts`. Several effective defaults differ from the schema — flagged below.
+Read by `src/lib/prisma.ts` from the validated config only — there are no runtime fallbacks, so the defaults below are the effective values.
 
-| Variable               | Type   | Schema default | Notes                                                                                                |
-| ---------------------- | ------ | -------------- | ---------------------------------------------------------------------------------------------------- |
-| `DB_POOL_SIZE`         | number | `10`           | ⚠️ `prisma.ts` falls back to `DB_CONNECTION_LIMIT` then `5` when `DB_POOL_SIZE` is unset at runtime. |
-| `DB_IDLE_TIMEOUT`      | number | `300000`       | ⚠️ `prisma.ts` runtime fallback is `300000` in development, `30000` otherwise.                       |
-| `DB_CONNECT_TIMEOUT`   | number | `10000`        | Matches `prisma.ts`.                                                                                 |
-| `DB_STATEMENT_TIMEOUT` | number | `60000`        | ⚠️ `prisma.ts` runtime fallback is `30000`.                                                          |
-| `DB_QUERY_TIMEOUT`     | number | `60000`        | ⚠️ `prisma.ts` runtime fallback is `30000`.                                                          |
-
-The pool fallbacks only apply when a variable is absent from `process.env`. Once `env.schema.ts` validates, the schema default is what's set — so in practice set these explicitly to avoid the mismatch.
+| Variable               | Type   | Default  |
+| ---------------------- | ------ | -------- |
+| `DB_POOL_SIZE`         | number | `10`     |
+| `DB_IDLE_TIMEOUT`      | number | `300000` |
+| `DB_CONNECT_TIMEOUT`   | number | `10000`  |
+| `DB_STATEMENT_TIMEOUT` | number | `60000`  |
+| `DB_QUERY_TIMEOUT`     | number | `60000`  |
 
 ## Storage
 
@@ -103,10 +100,15 @@ The pool fallbacks only apply when a variable is absent from `process.env`. Once
 | `DO_STORAGE_SECRET_ACCESS_KEY` | string  | `''`               |                                                                                   |
 | `DO_STORAGE_MAX_FILE_SIZE`     | number  | `10485760` (10 MB) | Max upload size for hypermultimedia (`/api/plugins/hypermultimedia/:documentId`). |
 
-## Email (SMTP)
+## Email
+
+The sender is picked by `getProvider()` (`lib/email/providers/index.ts`): `EMAIL_PROVIDER` when it names a configured provider, otherwise the first configured one in the order `resend` → `sendgrid` → `smtp`. An unrecognized `EMAIL_PROVIDER` falls through to that auto-detect. A provider counts as configured when its key is present: `RESEND_API_KEY`, `SENDGRID_API_KEY`, or all three of `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS`. So a leftover `RESEND_API_KEY` silently wins over working SMTP settings.
 
 | Variable                           | Type    | Default             |
 | ---------------------------------- | ------- | ------------------- |
+| `EMAIL_PROVIDER`                   | string  | —                   |
+| `RESEND_API_KEY`                   | string  | —                   |
+| `SENDGRID_API_KEY`                 | string  | —                   |
 | `EMAIL_FROM`                       | string  | —                   |
 | `SMTP_FROM_NAME`                   | string  | `docs.plus`         |
 | `SMTP_HOST`                        | string  | `''`                |
@@ -141,12 +143,14 @@ The pool fallbacks only apply when a variable is absent from `process.env`. Once
 
 ## Worker
 
-| Variable                          | Type   | Default   |
-| --------------------------------- | ------ | --------- |
-| `WORKER_ERROR_THRESHOLD`          | number | `10`      |
-| `WORKER_ERROR_WINDOW_MS`          | number | `60000`   |
-| `WORKER_SHUTDOWN_TIMEOUT_MS`      | number | `120000`  |
-| `IDEMPOTENCY_CLEANUP_INTERVAL_MS` | number | `3600000` |
+| Variable                          | Type   | Default   | Notes                                                                                                                                                                                                                                                           |
+| --------------------------------- | ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WORKER_ERROR_THRESHOLD`          | number | `10`      |                                                                                                                                                                                                                                                                 |
+| `WORKER_ERROR_WINDOW_MS`          | number | `60000`   |                                                                                                                                                                                                                                                                 |
+| `WORKER_SHUTDOWN_TIMEOUT_MS`      | number | `120000`  |                                                                                                                                                                                                                                                                 |
+| `IDEMPOTENCY_CLEANUP_INTERVAL_MS` | number | `3600000` |                                                                                                                                                                                                                                                                 |
+| `DOC_AUTOSAVE_RETENTION_DAYS`     | number | `30`      | The hourly cleanup thins autosave version rows older than this to one per document per day. A name a person typed (`checkpoint`, `api`, `revert`) and pre-column `trigger = null` rows are exempt forever; machine triggers are not. `0` disables the thinning. |
+| `DOC_DELETE_RETENTION_DAYS`       | number | `30`      | The hourly reaper purges the footprint of documents soft-deleted longer ago than this. `0` disables the reaper.                                                                                                                                                 |
 
 ## Hocuspocus logger
 
@@ -160,7 +164,9 @@ All boolean, default `false`. Enable per-event logging on the WebSocket server.
 | ------------------------------ | ------- | ------- |
 | `HOCUSPOCUS_THROTTLE`          | boolean | `false` |
 | `HOCUSPOCUS_THROTTLE_ATTEMPTS` | number  | `10`    |
-| `HOCUSPOCUS_THROTTLE_BANTIME`  | number  | `60000` |
+| `HOCUSPOCUS_THROTTLE_BANTIME`  | number  | `1`     |
+
+`HOCUSPOCUS_THROTTLE_BANTIME` is in **minutes**: `@hocuspocus/extension-throttle` multiplies it by 60 × 1000, so `60000` bans an IP for about 41.7 days. Keep it small. `.env.production` on the server is source of truth and can override this — verify the running value with `docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production exec hocuspocus-server env | grep BANTIME`.
 
 ## Logging
 
