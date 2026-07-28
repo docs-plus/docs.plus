@@ -132,7 +132,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'DLQ {{ $labels.queue }} holds jobs that exhausted retries; inspect and requeue or discard.'
+          summary: 'DLQ {{ $labels.queue }} holds jobs that exhausted retries. store-documents-dlq: run apps/hocuspocus.server/scripts/drain-store-dlq.ts in hocuspocus-worker (dry run, then --apply) to replay them. email/push: inspect GET /api/admin/audit/notifications/dlq.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }

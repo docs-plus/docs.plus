@@ -52,7 +52,14 @@ export const pushQueue = queueConnection
           count: 100,
           age: 24 * 3600 // 24 hours
         },
-        removeOnFail: false // Keep failed jobs - moved to DLQ manually
+        // pushDeadLetterQueue already holds the payload and the failure reason
+        // from the final attempt, so an unbounded failed set is a second copy in
+        // the Redis that also holds every claim-check payload. getFailedCount()
+        // below therefore reports a 200/7-day window, not a lifetime total.
+        removeOnFail: {
+          count: 200,
+          age: 7 * 24 * 3600
+        }
       }
     })
   : null

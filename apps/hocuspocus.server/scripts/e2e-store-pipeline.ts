@@ -14,6 +14,8 @@ import {
   buildStoreJobId,
   closeQueues,
   createDocumentWorker,
+  DeadLetterQueue,
+  drainStoreDeadLetterQueue,
   enqueueStoreDocument,
   StoreDocumentQueue
 } from '../src/lib/queue'
@@ -127,6 +129,71 @@ if (row3) {
   )
   check(row3.commitMessage === 'e2e-3', 'commitMessage rides the version row')
 }
+
+// 4. DLQ drain: a dead-lettered payload replays through the SAME worker merge, so
+// the restored version unions with the locked head instead of replacing it. Every
+// drain below names its own document — the operator's unfiltered drain would eat a
+// developer's real stranded saves, so no test may call it.
+const doc4 = `${PREFIX}-doc4`
+const headDoc = new Y.Doc()
+headDoc.getText('content').insert(0, 'head-A')
+const headState = Buffer.from(Y.encodeStateAsUpdate(headDoc))
+await enqueueStoreDocument({
+  jobId: buildStoreJobId(doc4, headState),
+  documentName: doc4,
+  state: headState,
+  context: { slug: doc4 },
+  commitMessage: 'e2e-4-head'
+})
+await waitForVersion(doc4, 1)
+
+// A second client's edit, dead-lettered raw exactly as the worker embeds it.
+const stranded = new Y.Doc()
+stranded.getText('stranded').insert(0, 'stranded-B')
+stranded.getMap('metadata').set('commitMessage', 'e2e-4')
+await DeadLetterQueue.add('failed-document', {
+  documentName: doc4,
+  state: Buffer.from(Y.encodeStateAsUpdate(stranded)).toString('base64'),
+  context: { slug: doc4 },
+  commitMessage: 'e2e-4',
+  failureReason: 'e2e synthetic',
+  failedAt: new Date().toISOString()
+})
+
+const drained = await drainStoreDeadLetterQueue({ apply: true, documentId: doc4 })
+// Vacuous on CI's empty REDIS_DB=15, load-bearing on a developer's dirty DLQ:
+// this is what says the pass left their stranded entries alone.
+check(
+  drained.entries.every((e) => e.documentName === doc4),
+  'drain considered only the filtered document'
+)
+check(
+  drained.entries.some((e) => e.documentName === doc4 && e.disposition === 'replay'),
+  'drain marks the dead-lettered entry replayable'
+)
+check(
+  drained.entries.some((e) => e.documentName === doc4 && e.headVersion === 1),
+  'drain reports the head version the replay will merge onto'
+)
+const row4 = await waitForVersion(doc4, 2)
+check(!!row4, 'replayed payload lands as a new version')
+if (row4) {
+  const merged = new Y.Doc()
+  Y.applyUpdate(merged, new Uint8Array(row4.data))
+  // A plain insert of the stranded state alone would lose 'head-A'. This is the
+  // assertion that pins "replayed through the merge path".
+  check(
+    merged.getText('content').toString() === 'head-A' &&
+      merged.getText('stranded').toString() === 'stranded-B',
+    'replay merged with the locked head instead of replacing it'
+  )
+  check(
+    !merged.getMap('metadata').has('commitMessage'),
+    'replay went through the real worker strip'
+  )
+}
+const after = await drainStoreDeadLetterQueue({ apply: false, documentId: doc4 })
+check(after.entries.length === 0, 'drained entry is removed from the DLQ')
 
 await cleanup()
 await worker.close()
