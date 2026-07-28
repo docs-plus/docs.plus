@@ -14,6 +14,10 @@ export default [
   {
     ignores: [
       '**/node_modules/**',
+      // Bun writes its cache to `~/.bun/...`, and with $HOME unset the `~` is
+      // never expanded, so a literal `~` directory of vendored sources appears
+      // wherever the command ran. Gitignored, but ESLint does not read that.
+      '**/~/**',
       '**/.claude/worktrees/**',
       '**/dist/**',
       '**/build/**',
