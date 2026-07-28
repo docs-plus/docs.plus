@@ -14,11 +14,14 @@ async function startProduction() {
 
     // Start the main application
     console.log('🎯 Starting main application...')
-    await import('./src/index')
+    await import('../src/index')
   } catch (error: any) {
-    console.error('❌ Migration failed:', error.message)
+    // Bun's $ throws a ShellError whose message is only "Failed with exit code N";
+    // the Prisma error code is in stderr, so matching on message never fired.
+    const details = `${error.message}\n${error.stderr?.toString() ?? ''}`
+    console.error('❌ Migration failed:', details)
 
-    if (error.message.includes('P3009')) {
+    if (details.includes('P3009')) {
       console.log('🔧 Attempting to fix failed migration...')
 
       try {
@@ -31,7 +34,7 @@ async function startProduction() {
 
         // Start the main application
         console.log('🎯 Starting main application...')
-        await import('./src/index')
+        await import('../src/index')
       } catch (fixError: any) {
         console.error('❌ Failed to fix migration:', fixError.message)
         process.exit(1)

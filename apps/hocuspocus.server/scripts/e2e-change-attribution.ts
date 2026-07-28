@@ -51,6 +51,7 @@ const freePort = (): number => {
   const probe = Bun.serve({ port: 0, fetch: () => new Response('') })
   const { port } = probe
   probe.stop(true)
+  if (port === undefined) throw new Error('Bun.serve did not assign a port')
   return port
 }
 
@@ -164,7 +165,7 @@ const headRow = (documentId: string) =>
     select: { version: true, data: true }
   })
 
-const decodeText = (data: Buffer): string => {
+const decodeText = (data: Uint8Array): string => {
   const ydoc = new Y.Doc()
   Y.applyUpdate(ydoc, new Uint8Array(data))
   return JSON.stringify(TiptapTransformer.fromYdoc(ydoc, 'default'))

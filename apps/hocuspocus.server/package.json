@@ -13,7 +13,7 @@
     "start:worker": "NODE_ENV=production bun src/hocuspocus.worker.ts",
     "build": "bun build src/index.ts src/hocuspocus.server.ts src/hocuspocus.worker.ts --outdir=dist --target=bun",
     "typecheck": "tsc --noEmit",
-    "test": "bun test tests/unit src/lib/__tests__ src/modules/link-metadata/__tests__/unit src/modules/document-content/__tests__ src/modules/document-versions/__tests__ src/modules/document-conversion/__tests__ tests/integration",
+    "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "test:e2e": "bun scripts/e2e-store-pipeline.ts",

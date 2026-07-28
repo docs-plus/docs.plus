@@ -34,6 +34,7 @@ const freePort = (): number => {
   const probe = Bun.serve({ port: 0, fetch: () => new Response('') })
   const { port } = probe
   probe.stop(true)
+  if (port === undefined) throw new Error('Bun.serve did not assign a port')
   return port
 }
 
@@ -152,7 +153,7 @@ const headRow = (documentId: string) =>
     select: { version: true, data: true }
   })
 
-const decodeRow = (data: Buffer) => {
+const decodeRow = (data: Uint8Array) => {
   const ydoc = new Y.Doc()
   Y.applyUpdate(ydoc, new Uint8Array(data))
   return {
