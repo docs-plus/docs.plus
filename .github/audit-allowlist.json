@@ -1,0 +1,33 @@
+{
+  "$comment": "Advisories reviewed and accepted. A key is either a GHSA id (accepts that one advisory) or a package name (accepts every advisory in that package). Each needs a reason saying why it is not reachable here, and the date it was reviewed. An entry is a decision, not a snooze — re-check it when the dependency moves. Everything else fails the build; see .github/scripts/audit-gate.ts.",
+  "minimatch": {
+    "severity": "high",
+    "reason": "Dev-only: reaches the tree through @typescript-eslint, ESLint, stylelint, Jest and Cypress. Never bundled and never in a request path. Sits at majors 3, 5, 9 and 10 simultaneously, so a single override would force one major onto consumers that cannot take it.",
+    "reviewed": "2026-07-28"
+  },
+  "brace-expansion": {
+    "severity": "high",
+    "reason": "Dev-only, via the same ESLint/Jest/Cypress chain as minimatch. Present at majors 1, 2 and 5 at once, so it cannot be pinned with a blanket override.",
+    "reviewed": "2026-07-28"
+  },
+  "js-yaml": {
+    "severity": "high",
+    "reason": "Dev-only: @cypress/code-coverage and @eslint/eslintrc. Parses this repo's own config files, never attacker input. Majors 3 and 4 coexist.",
+    "reviewed": "2026-07-28"
+  },
+  "postcss": {
+    "severity": "high",
+    "reason": "Build-time only: stylelint and the postcss plugin chain process our own stylesheets during the build, not user input at runtime. Majors 7 and 8 coexist.",
+    "reviewed": "2026-07-28"
+  },
+  "ajv": {
+    "severity": "moderate",
+    "reason": "Dev-only: ESLint config validation. Majors 6 and 8 coexist, and forcing 6 onto an 8 consumer breaks its schema API.",
+    "reviewed": "2026-07-28"
+  },
+  "serialize-javascript": {
+    "severity": "high",
+    "reason": "Build-time only: terser-webpack-plugin and workbox-build under next-pwa, which serialise our own bundle config during the webapp build. Majors 4 and 6 coexist.",
+    "reviewed": "2026-07-28"
+  }
+}

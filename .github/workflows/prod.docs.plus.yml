@@ -225,44 +225,23 @@ jobs:
           ignore-scripts: 'true'
 
       - name: 🔍 Bun Audit
+        env:
+          # Everything still outstanding at this level is dev- or build-only and
+          # written down in the allowlist, so a new high is a real regression.
+          AUDIT_FAIL_ON: high
         run: |
           set -o pipefail
           echo "🔍 Checking for known vulnerabilities..."
 
-          # Capture both human-readable and machine-readable output.
-          # `bun pm audit` exits non-zero when vulns exist; we always want both files.
-          bun pm audit 2>&1 | tee audit-results.txt || true
-          bun pm audit --json > audit-results.json 2>/dev/null || echo '{}' > audit-results.json
+          # `bun audit`, NOT `bun pm audit` — the latter is not a command, so it
+          # printed `bun pm` help, the JSON capture failed, and the fallback `{}`
+          # made this gate report zero for every run it ever made.
+          bun audit 2>&1 | tee audit-results.txt || true
+          bun audit --json > audit-results.json 2>/dev/null || true
 
-          # Structured parsing — replaces brittle `grep -ci "critical"` which
-          # matched the summary header line and produced false positives.
-          # Expected shape: { "vulnerabilities": { "critical": N, "high": N, ... } }
-          CRITICAL=$(bun -e 'const a=JSON.parse(require("fs").readFileSync("audit-results.json","utf8"));process.stdout.write(String(a?.vulnerabilities?.critical||0))')
-          HIGH=$(bun -e 'const a=JSON.parse(require("fs").readFileSync("audit-results.json","utf8"));process.stdout.write(String(a?.vulnerabilities?.high||0))')
-
-          echo ""
-          echo "📊 Summary: critical=${CRITICAL}, high=${HIGH}"
-
-          # Defensive: if both are 0 AND the JSON looks empty, the audit
-          # shape may have changed (Bun has changed it before). Print the
-          # raw JSON head so a future regression doesn't silently neutralize
-          # this gate. Caps at 4 KB to keep logs tidy.
-          if [ "${CRITICAL}" -eq 0 ] && [ "${HIGH}" -eq 0 ]; then
-            BYTES=$(wc -c < audit-results.json | tr -d ' ')
-            if [ "${BYTES}" -lt 32 ]; then
-              echo "::warning::audit-results.json is suspiciously small (${BYTES} bytes). Bun audit JSON shape may have changed."
-              echo "--- audit-results.json (head 4KB) ---"
-              head -c 4096 audit-results.json || true
-              echo ""
-              echo "--- end ---"
-            fi
-          fi
-
-          if [ "${CRITICAL}" -gt 0 ] || [ "${HIGH}" -gt 0 ]; then
-            echo "::error::Critical/High vulnerabilities detected (critical=${CRITICAL}, high=${HIGH})"
-            exit 1
-          fi
-          echo "✅ No critical/high vulnerabilities"
+          # The gate fails when the report is missing or reshaped, so a future
+          # Bun change breaks the build instead of silently passing it.
+          bun .github/scripts/audit-gate.ts audit-results.json .github/audit-allowlist.json
 
       - name: 📤 Upload Audit Results
         if: always()
