@@ -1,7 +1,12 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test'
 
-import type { EnqueueStoreDocumentParams } from '../../src/lib/queue'
-import type { StoreDocumentContext } from '../../src/types'
+import type { EnqueueStoreDocumentParams, StoreDocumentContext } from '../../src/types'
+
+import { Database } from '@hocuspocus/extension-database'
+import * as Y from 'yjs'
+
+import { recordContributor } from '../../src/lib/contributors'
+import { documentStoreRejectionsTotal } from '../../src/lib/metrics'
 
 // The real queue module opens a Redis connection at import (and throws without
 // one), so the store hook's collaborators are stubbed. The stub job id stays a
@@ -55,20 +60,31 @@ mock.module('../../src/lib/queue', () => ({
   refreshPendingStateKeyTtls: notStubbed('refreshPendingStateKeyTtls')
 }))
 
-import { Database } from '@hocuspocus/extension-database'
-import * as Y from 'yjs'
-
-import { recordContributor } from '../../src/lib/contributors'
-import { documentStoreRejectionsTotal } from '../../src/lib/metrics'
-import HocuspocusConfig from '../../src/config/hocuspocus.config'
-
 const DOCUMENT_NAME = 'aB3dEfGhIjKlMnOpQrS'
 const BYTES = Buffer.from([1, 2, 3, 4])
 const OTHER_BYTES = Buffer.from([9, 8, 7, 6, 5])
 
-const database = HocuspocusConfig().extensions.find((extension: unknown) => {
-  return extension instanceof Database
-}) as { configuration: { store: (data: unknown) => Promise<void> } }
+let store: (
+  document: Y.Doc,
+  context: StoreDocumentContext,
+  state?: Buffer
+) => Promise<void | undefined>
+
+beforeAll(async () => {
+  const { default: HocuspocusConfig } = await import('../../src/config/hocuspocus.config')
+  const database = HocuspocusConfig().extensions.find((extension: unknown) => {
+    return extension instanceof Database
+  }) as { configuration: { store: (data: unknown) => Promise<void> } }
+
+  store = (document, context, state = BYTES) =>
+    database.configuration.store({ documentName: DOCUMENT_NAME, state, context, document })
+})
+
+beforeEach(() => {
+  enqueued.length = 0
+  enqueueFailure = null
+  transactionFailure = null
+})
 
 const liveDoc = (metadata: Record<string, unknown> = {}) => {
   const document = new Y.Doc()
@@ -76,15 +92,6 @@ const liveDoc = (metadata: Record<string, unknown> = {}) => {
   for (const [key, value] of Object.entries(metadata)) meta.set(key, value)
   return document
 }
-
-const store = (document: Y.Doc, context: StoreDocumentContext, state: Buffer = BYTES) =>
-  database.configuration.store({ documentName: DOCUMENT_NAME, state, context, document })
-
-beforeEach(() => {
-  enqueued.length = 0
-  enqueueFailure = null
-  transactionFailure = null
-})
 
 const rejectionsFor = async (reason: string): Promise<number> => {
   const { values } = await documentStoreRejectionsTotal.get()

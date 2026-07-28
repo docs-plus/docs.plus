@@ -2,12 +2,7 @@ import { Job, Queue, Worker } from 'bullmq'
 import * as Y from 'yjs'
 
 import { config } from '../config/env'
-import type {
-  DeadLetterJobData,
-  StoreDocumentContext,
-  StoreDocumentData,
-  VersionTrigger
-} from '../types'
+import type { DeadLetterJobData, EnqueueStoreDocumentParams, StoreDocumentData } from '../types'
 import { toBullMQConnection } from '../types/redis.types'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
@@ -156,17 +151,6 @@ export function buildStoreJobId(documentName: string, state: Uint8Array): string
   const timeWindow = Math.floor(Date.now() / 10000)
   const stateHash = Bun.hash(state).toString(36)
   return `doc-${documentName.replaceAll(':', '_')}-${timeWindow}-${state.byteLength}-${stateHash}`
-}
-
-export interface EnqueueStoreDocumentParams {
-  jobId: string
-  documentName: string
-  state: Buffer
-  context: StoreDocumentContext
-  commitMessage: string
-  trigger?: VersionTrigger
-  triggeredBy?: string | null
-  contributors?: string[]
 }
 
 export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): Promise<void> {

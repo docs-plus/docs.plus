@@ -47,6 +47,18 @@ export interface StoreDocumentData {
   contributors?: string[]
 }
 
+/** Resolved store-hook payload passed to `enqueueStoreDocument`. */
+export interface EnqueueStoreDocumentParams {
+  jobId: string
+  documentName: string
+  state: Buffer
+  context: StoreDocumentContext
+  commitMessage: string
+  trigger?: VersionTrigger
+  triggeredBy?: string | null
+  contributors?: string[]
+}
+
 // Dead letter queue data (for failed jobs)
 export interface DeadLetterJobData extends StoreDocumentData {
   originalJobId?: string
