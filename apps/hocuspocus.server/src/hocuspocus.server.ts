@@ -3,10 +3,13 @@ import './config/env' // validate env first (fail-fast at boot)
 
 import type { Connection, onAuthenticatePayload } from '@hocuspocus/server'
 import { Server } from '@hocuspocus/server'
+import { Hono } from 'hono'
 
 import { ensureDraftDocumentMetadata } from './api/services/documents.service'
 import { config } from './config/env'
 import HocuspocusConfig from './config/hocuspocus.config'
+import { clientAuthorsExtension } from './extensions/client-authors.extension'
+import { contributorsExtension } from './extensions/contributors.extension'
 import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
@@ -18,6 +21,7 @@ import {
   metricsText,
   setActiveConnectionsProvider,
   setActiveDocumentsProvider,
+  statelessRelayDroppedTotal,
   wsAuthRejectionsTotal,
   wsAwarenessUpdatesTotal,
   wsConnectionsTotal,
@@ -25,10 +29,13 @@ import {
   ydocUpdateBytes
 } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
-import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
+import { closeQueues, refreshPendingStateKeyTtls, stripSnapshotMetadata } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
 import { resolveWsAccess } from './lib/wsAccess'
 import * as documentContent from './modules/document-content'
+import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/document-versions'
+import * as documentVersions from './modules/document-versions'
+import { MAX_VERSION_NUMBER } from './modules/document-versions/types'
 import type { HistoryPayload } from './types/document.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
@@ -42,20 +49,111 @@ const storeStartedAt = new WeakMap<object, number>()
 // Document object so it GC's on unload (no manual cleanup, no unbounded growth).
 const draftMetadataEnsured = new WeakSet<object>()
 
+const HISTORY_FAILED = 'history_failed'
+
+/** `error` stays the bare literal every client already branches on; `reason` is additive. */
+type HistoryFailure = { error: typeof HISTORY_FAILED; reason?: VersionFailureReason }
+
 function sendHistoryResponse(
   connection: Connection,
   type: string,
   response: unknown,
-  error?: string
+  failure?: HistoryFailure
 ) {
   connection.sendStateless(
     JSON.stringify({
       msg: 'history.response',
       type,
       response,
-      ...(error ? { error } : {})
+      ...(failure
+        ? { error: failure.error, ...(failure.reason && { reason: failure.reason }) }
+        : {})
     })
   )
+}
+
+// The ops need the Hocuspocus instance, which does not exist until the server is
+// constructed from a config that already captured this extension — hence a late
+// ref rather than a closure.
+let versionOps: VersionOps | null = null
+
+const REVERT_TYPE = 'history.revert'
+
+// A revert runs six whole-document traversals on this event loop and appends a
+// permanent backup row, and unlike its REST twin it is reachable by any signed-in
+// client — including the anonymous session every visitor gets. `Throttle` only
+// covers onConnect, so the cooldown lives here.
+const REVERT_COOLDOWN_MS = 2000
+const REVERT_COOLDOWN_MAX_KEYS = 10_000
+const lastRevertAt = new Map<string, number>()
+
+const revertCoolingDown = (documentId: string, now: number): boolean => {
+  const previous = lastRevertAt.get(documentId)
+  if (previous !== undefined && now - previous < REVERT_COOLDOWN_MS) return true
+  // Bounded without a timer: sweep expired keys only once the map is large.
+  if (lastRevertAt.size >= REVERT_COOLDOWN_MAX_KEYS) {
+    for (const [key, at] of lastRevertAt) {
+      if (now - at >= REVERT_COOLDOWN_MS) lastRevertAt.delete(key)
+    }
+  }
+  lastRevertAt.set(documentId, now)
+  return false
+}
+
+async function handleHistoryRevert(
+  connection: Connection,
+  documentId: string,
+  version: unknown
+): Promise<void> {
+  const refuse = (reason: VersionFailureReason) =>
+    sendHistoryResponse(connection, REVERT_TYPE, null, { error: HISTORY_FAILED, reason })
+
+  // Both gates live here because a DirectConnection write never passes through
+  // MessageReceiver, where the readOnly drop is enforced: a viewer that reached
+  // this op would otherwise rewrite the whole document with full privileges.
+  const actorId: unknown = connection.context?.user?.sub
+  if (typeof actorId !== 'string' || !actorId) return refuse('unauthorized')
+  if (connection.readOnly !== false) return refuse('read-only')
+
+  // `Documents.version` is int4: an out-of-range number would throw out of the
+  // op before its own error handling and read back as a wedged persister.
+  if (
+    typeof version !== 'number' ||
+    !Number.isInteger(version) ||
+    version < 1 ||
+    version > MAX_VERSION_NUMBER
+  ) {
+    return refuse('not-found')
+  }
+
+  // After validation so a malformed flood cannot burn the document's only slot,
+  // and before the ops so a real flood never reaches the traversals.
+  if (revertCoolingDown(documentId, Date.now())) return refuse('rate-limited')
+
+  if (!versionOps) {
+    wsLogger.error({ documentId }, 'history.revert arrived before version ops were wired')
+    sendHistoryResponse(connection, REVERT_TYPE, null, { error: HISTORY_FAILED })
+    return
+  }
+
+  let outcome: RevertOutcome
+  try {
+    outcome = await versionOps.revertOp(documentId, version, { actorId })
+  } catch (error) {
+    wsLogger.error({ err: error, documentId, version }, 'history.revert threw')
+    captureUnknown(error)
+    return refuse('persist-failed')
+  }
+
+  if (outcome.status !== 'reverted') {
+    wsLogger.warn({ documentId, version, status: outcome.status }, 'history.revert refused')
+    return refuse(documentVersions.versionFailureReason(outcome))
+  }
+
+  sendHistoryResponse(connection, REVERT_TYPE, {
+    restoredFrom: outcome.restoredFrom,
+    backupVersion: outcome.backupVersion
+  })
 }
 
 /** Hocuspocus document name === provider `name` / room id; never trust client `documentId` for Prisma. */
@@ -107,6 +205,12 @@ const metricsExtension = {
   }
 }
 
+// The relay arm below mints one OutgoingMessage per connection and is reachable
+// with no credentials on any public room, so room size × burst rate is what
+// OOM-kills a replica. The only client traffic here is `docTitle`, a metadata
+// row that measures a few hundred bytes.
+const MAX_STATELESS_RELAY_BYTES = 64 * 1024
+
 const statelessExtension = {
   async onStateless({
     payload,
@@ -140,7 +244,7 @@ const statelessExtension = {
           { parsedPayload, hasRoomName: Boolean(canonicalId) },
           'history stateless missing room or type'
         )
-        if (type) sendHistoryResponse(connection, type, null, 'history_failed')
+        if (type) sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED })
         return
       }
 
@@ -149,7 +253,14 @@ const statelessExtension = {
           { clientDocumentId: parsedPayload.documentId, canonicalId },
           'history stateless documentId does not match connection room'
         )
-        sendHistoryResponse(connection, type, null, 'history_failed')
+        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED })
+        return
+      }
+
+      // Handled ahead of the read ops: they share the envelope but not the
+      // dispatch, whose default arm echoes an unknown type back as a success.
+      if (type === REVERT_TYPE) {
+        await handleHistoryRevert(connection, canonicalId, parsedPayload.version)
         return
       }
 
@@ -165,12 +276,23 @@ const statelessExtension = {
       } catch (error) {
         wsLogger.error({ err: error }, 'Error handling history event')
         captureUnknown(error)
-        sendHistoryResponse(connection, type, null, 'history_failed')
+        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED })
       }
       return
     }
 
-    document.broadcastStateless(JSON.stringify(parsedPayload))
+    const relay = JSON.stringify(parsedPayload)
+    const relayBytes = Buffer.byteLength(relay)
+    if (relayBytes > MAX_STATELESS_RELAY_BYTES) {
+      statelessRelayDroppedTotal.inc()
+      wsLogger.warn(
+        { documentName: document.name, relayBytes, limit: MAX_STATELESS_RELAY_BYTES },
+        'Dropped oversized stateless relay payload'
+      )
+      return
+    }
+
+    document.broadcastStateless(relay)
   }
 }
 
@@ -216,8 +338,12 @@ const serverConfig = {
   extensions: [
     ...baseConfig.extensions,
     metricsExtension,
+    contributorsExtension,
     statelessExtension,
-    firstEditMetadataExtension
+    // Must follow firstEditMetadataExtension: both act on the update that clears
+    // isDraft, and the awaited chain anchors the metadata row the binding needs.
+    firstEditMetadataExtension,
+    clientAuthorsExtension
   ],
 
   async onConnect() {
@@ -348,15 +474,35 @@ wsLogger.info({
   url: `ws://localhost:${baseConfig.port}`
 })
 
-// Content injection has to run where the live Y.Doc is, so the WS process serves
-// the internal apply endpoint beside /metrics. REST reaches it over the docker
-// network via HOCUSPOCUS_INTERNAL_URL; Traefik never routes this port.
+// Content injection and version ops both have to run where the live Y.Doc is, so
+// the WS process serves their internal endpoints beside /metrics. REST reaches
+// them over the docker network via HOCUSPOCUS_INTERNAL_URL; Traefik never routes
+// this port.
 const contentApply = documentContent.initWsApply({
   hocuspocus: server.hocuspocus,
   prisma,
   verifyServiceRole,
   logger: wsLogger.child({ module: 'document-content' })
 })
+
+const documentVersionOps = documentVersions.initWsOps({
+  hocuspocus: server.hocuspocus,
+  prisma,
+  verifyServiceRole,
+  logger: wsLogger.child({ module: 'document-versions' }),
+  stripSnapshotMetadata
+})
+versionOps = documentVersionOps.ops
+
+// Hono's route() copies a sub-app's routes but not its notFound handler, so an
+// unknown internal path would fall to the framework default (plain text) unless
+// the house envelope is re-declared on the parent.
+const internalApp = new Hono()
+internalApp.route('/', contentApply.app)
+internalApp.route('/', documentVersionOps.app)
+internalApp.notFound((c) =>
+  c.json({ success: false, error: { message: 'Not found', code: 'NOT_FOUND' } }, 404)
+)
 
 // Dedicated internal port (NOT 4001 — that's the WS server's own port; a second
 // listener there is a fatal EADDRINUSE). Off the Traefik route.
@@ -367,12 +513,14 @@ try {
     port: INTERNAL_HTTP_PORT,
     hostname: config.hocuspocus.internalHttpHost,
     async fetch(req) {
+      // Stays ahead of the Hono dispatch: Prometheus scrapes this cross-container
+      // and the parent app now answers everything else with a 404 envelope.
       if (new URL(req.url).pathname === '/metrics') {
         return new Response(await metricsText(), {
           headers: { 'Content-Type': metricsContentType }
         })
       }
-      return contentApply.app.fetch(req)
+      return internalApp.fetch(req)
     }
   })
 } catch (err) {
@@ -380,13 +528,13 @@ try {
   // process once :4001 is already up — say why rather than dying on a raw throw.
   wsLogger.error(
     { err, port: INTERNAL_HTTP_PORT, hostname: config.hocuspocus.internalHttpHost },
-    '❌ Failed to bind the internal HTTP listener (metrics + content apply)'
+    '❌ Failed to bind the internal HTTP listener (metrics, content apply, version ops)'
   )
   throw err
 }
 
 wsLogger.info({
-  msg: '📊 Internal HTTP server started (metrics + content apply)',
+  msg: '📊 Internal HTTP server started (metrics, content apply, version ops)',
   port: internalServer.port,
   url: `http://localhost:${internalServer.port}/metrics`
 })
@@ -403,14 +551,47 @@ const stateKeyTtlRefresh = setInterval(() => {
     .catch((err) => wsLogger.warn({ err }, 'State-key TTL refresh failed'))
 }, STATE_KEY_TTL_REFRESH_INTERVAL_MS)
 
+// server.destroy() waits for every room to unload, so one wedged room holds it
+// past the 30s stop_grace_period and SIGKILL takes the queue drain, the DB close
+// and the Sentry flush with it. 25s leaves the tail room to finish.
+const SERVER_DESTROY_TIMEOUT_MS = 25_000
+
 const shutdown = async () => {
   wsLogger.info('Shutting down WebSocket server gracefully...')
 
   try {
     clearInterval(stateKeyTtlRefresh)
     internalServer.stop()
-    await server.destroy()
-    wsLogger.info('WebSocket server stopped')
+
+    let destroyTimer: ReturnType<typeof setTimeout> | undefined
+    // A rejection is caught here, not rethrown: the outer catch flushes Sentry
+    // but skips the queue, DB and Redis close below — the tail this bound exists
+    // to reach. A hang and a throw have to end the same way.
+    const destroyFailed = await Promise.race([
+      server
+        .destroy()
+        .then(() => null)
+        .catch((err: unknown) => err ?? new Error('server.destroy() rejected')),
+      new Promise<'timeout'>((resolve) => {
+        destroyTimer = setTimeout(() => resolve('timeout'), SERVER_DESTROY_TIMEOUT_MS)
+      })
+    ])
+    clearTimeout(destroyTimer)
+
+    if (destroyFailed === 'timeout') {
+      wsLogger.error(
+        { timeoutMs: SERVER_DESTROY_TIMEOUT_MS },
+        'WebSocket server did not stop in time — continuing shutdown so queues, DB and Sentry still close'
+      )
+    } else if (destroyFailed) {
+      wsLogger.error(
+        { err: destroyFailed },
+        'WebSocket server stop threw — continuing shutdown so queues, DB and Sentry still close'
+      )
+      captureUnknown(destroyFailed)
+    } else {
+      wsLogger.info('WebSocket server stopped')
+    }
 
     await closeQueues()
     await shutdownDatabase()
