@@ -8,25 +8,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  owner
-  collaborator
-}
-
 model Documents {
   id            Int              @id @default(autoincrement())
   documentId    String
   version       Int              @default(1)
   commitMessage String?
   data          Bytes
+  // Attribution is projection-only — never a read predicate, so no index.
+  trigger       String?
+  triggeredBy   String?
+  contributors  String[]         @default([])
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
-  collaborators DocumentUsers[]
 
   @@unique([documentId, version], name: "Documents_documentId_version_unique")
-  @@index([documentId]) // Dedicated index for fetch queries
-  @@index([documentId, version]) // Composite for version queries
+  // Not redundant with the unique above: the narrowest documentId-leading cover for
+  // the version-list count, and what the reaper's Incremental Sort presorts on.
+  @@index([documentId])
   @@index([createdAt])
 }
 
@@ -45,21 +44,25 @@ model DocumentMetadata {
   email       String?
   deletedAt   DateTime? // Soft-delete tombstone; the reaper purges the footprint after retention.
 
-  documents Documents[]
+  documents     Documents[]
+  clientAuthors DocumentClientAuthor[]
 
   @@index([ownerId])
   @@index([deletedAt])
 }
 
-model DocumentUsers {
-  documentPk Int
-  userId     String
-  role       Role?     @default(collaborator)
-  email      String?
-  document   Documents @relation(fields: [documentPk], references: [id], onDelete: Cascade)
+// Names the author behind a Yjs clientID so a version diff can attribute blocks.
+// Records who first claimed the id on a live socket, not proof of authorship.
+model DocumentClientAuthor {
+  documentId  String
+  /// Yjs draws clientIDs from the full uint32 range; roughly half exceed int4.
+  clientId    BigInt
+  userId      String
+  isAnonymous Boolean          @default(false)
+  firstSeenAt DateTime         @default(now())
+  metadata    DocumentMetadata @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
 
-  @@id([documentPk, userId])
-  @@index([userId])
+  @@id([documentId, clientId])
 }
 
 // ============================================================================
