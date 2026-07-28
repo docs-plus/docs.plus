@@ -137,12 +137,14 @@ export const documentStoreRejectionsTotal = new Counter({
   registers: [register]
 })
 
-// Oversized stateless relays refused before broadcast. A burst of these is an
-// anonymous client probing the amplifier that OOM-killed replicas before the
-// budget existed, so the drop must be countable and not only logged.
+// Stateless relays refused before broadcast. `oversized` is an anonymous client
+// probing the amplifier that OOM-killed replicas before the budget existed;
+// `type-not-allowed` and `broadcast-frame` are someone trying to mint the access
+// events the webapp obeys. Different alarms, so the reason has to be countable.
 export const statelessRelayDroppedTotal = new Counter({
   name: 'stateless_relay_dropped_total',
-  help: 'Stateless relay payloads dropped for exceeding the per-payload byte budget',
+  help: 'Stateless relay payloads refused before broadcast, by reason',
+  labelNames: ['reason'] as const,
   registers: [register]
 })
 

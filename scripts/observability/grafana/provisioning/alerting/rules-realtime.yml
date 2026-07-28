@@ -175,6 +175,47 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      - uid: realtime-stateless-relay-forged
+        title: Stateless relay refused a forged control frame
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'The relay refused a frame it will not forward (reason={{ $labels.reason }}). `type-not-allowed` and `broadcast-frame` mean a client is trying to mint the access events the webapp obeys — identify the connection before widening anything. `oversized` is excluded here; it is a capacity signal, not abuse.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Split from `oversized` on purpose: a forged envelope is someone
+              # probing the seal, and it should page differently from a large frame.
+              expr: 'sum by (reason) (increase(stateless_relay_dropped_total{reason=~"type-not-allowed|broadcast-frame"}[10m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
       - uid: realtime-doc-persist-fallback
         title: Document persist queue-fallback active (Redis/queue degraded)
         condition: C

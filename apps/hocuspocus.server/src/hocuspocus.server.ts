@@ -1,8 +1,12 @@
 import './lib/instrument'
 import './config/env' // validate env first (fail-fast at boot)
 
-import type { Connection, onAuthenticatePayload } from '@hocuspocus/server'
-import { Server } from '@hocuspocus/server'
+import type {
+  beforeHandleMessagePayload,
+  Connection,
+  onAuthenticatePayload
+} from '@hocuspocus/server'
+import { IncomingMessage, MessageType, Server } from '@hocuspocus/server'
 import { Hono } from 'hono'
 
 import { ensureDraftDocumentMetadata } from './api/services/documents.service'
@@ -211,6 +215,12 @@ const metricsExtension = {
 // row that measures a few hundred bytes.
 const MAX_STATELESS_RELAY_BYTES = 64 * 1024
 
+// The relay has no authz, so a client-chosen envelope is a client-chosen server
+// event: the webapp follows `type:'private'` into a hard redirect and `msg` into a
+// "Saved" status it reads before any type. `docTitle` is the only envelope a
+// shipped client originates; every real server event broadcasts directly, not here.
+const RELAYABLE_STATELESS_TYPES = new Set(['docTitle'])
+
 const statelessExtension = {
   async onStateless({
     payload,
@@ -281,10 +291,26 @@ const statelessExtension = {
       return
     }
 
+    // Ahead of the stringify, so a refused payload is never serialised and an
+    // oversized forgery counts as a forgery instead of muddying the OOM signal.
+    // `msg` is refused outright: the named branches above own every legitimate one.
+    if (
+      parsedPayload.msg ||
+      !parsedPayload.type ||
+      !RELAYABLE_STATELESS_TYPES.has(parsedPayload.type)
+    ) {
+      statelessRelayDroppedTotal.inc({ reason: 'type-not-allowed' })
+      wsLogger.warn(
+        { documentName: document.name, type: String(parsedPayload.type).slice(0, 64) },
+        'Refused stateless relay of a non-relayable envelope'
+      )
+      return
+    }
+
     const relay = JSON.stringify(parsedPayload)
     const relayBytes = Buffer.byteLength(relay)
     if (relayBytes > MAX_STATELESS_RELAY_BYTES) {
-      statelessRelayDroppedTotal.inc()
+      statelessRelayDroppedTotal.inc({ reason: 'oversized' })
       wsLogger.warn(
         { documentName: document.name, relayBytes, limit: MAX_STATELESS_RELAY_BYTES },
         'Dropped oversized stateless relay payload'
@@ -293,6 +319,28 @@ const statelessExtension = {
     }
 
     document.broadcastStateless(relay)
+  },
+
+  // Type 6 never reaches onStateless: MessageReceiver relays it to every room
+  // connection inline, so the allowlist above cannot see it. Rejecting here drops
+  // this document connection (a CLOSE frame, not the socket) — safe only because
+  // @hocuspocus/provider's MessageType has no 6, so nothing shipped sends one.
+  async beforeHandleMessage({ update, documentName, socketId }: beforeHandleMessagePayload) {
+    let type: number
+    try {
+      const message = new IncomingMessage(update)
+      message.readVarString()
+      type = message.readVarUint()
+    } catch {
+      return // a truncated frame stays the library's error path, not a new one
+    }
+    if (type !== MessageType.BroadcastStateless) return
+
+    statelessRelayDroppedTotal.inc({ reason: 'broadcast-frame' })
+    wsLogger.warn({ documentName, socketId }, 'Refused a client BroadcastStateless frame')
+    throw Object.assign(new Error('BroadcastStateless is not accepted from clients'), {
+      reason: 'stateless-broadcast-refused'
+    })
   }
 }
 

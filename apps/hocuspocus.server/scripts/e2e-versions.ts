@@ -8,6 +8,7 @@
  * progress under the bun test runner, but works in a normal process (as in prod).
  * Needs the `make dev-local` docker services (Postgres + Redis) and root .env.local.
  */
+import { OutgoingMessage } from '@hocuspocus/server'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import { createClient } from '@supabase/supabase-js'
 import * as Y from 'yjs'
@@ -745,6 +746,94 @@ try {
 
     await sleep(1_000)
     check((await rowCount(doc.documentId)) === before, 'the refused reverts wrote nothing')
+  }
+
+  // 8. The relay is an unauthenticated fan-out, so its envelope is the whole
+  //    access-control surface. Every check reads the counter delta: an absent
+  //    broadcast alone also passes on a misencoded frame or a wrong room. Redis is
+  //    off outside production, so this proves the local room only.
+  console.log('\n[8] stateless relay allowlist')
+  {
+    const droppedTotal = async (reason: string) => {
+      const body = await (await fetch(`http://127.0.0.1:${internalPort}/metrics`)).text()
+      const line = body
+        .split('\n')
+        .find((row) => row.startsWith(`stateless_relay_dropped_total{reason="${reason}"}`))
+      return line ? Number(line.split(' ').pop()) : 0
+    }
+
+    const doc = await createDocument('relay', { content: titleDoc('Relay') })
+    const attacker = await openProvider(doc.documentId, doc.slug)
+    const victim = await openProvider(doc.documentId, doc.slug)
+    check(attacker.synced && victim.synced, 'two anonymous collaborators synced')
+
+    // A forged access event is what the webapp follows into exitPrivateDocument.
+    victim.stateless.length = 0
+    let dropped = await droppedTotal('type-not-allowed')
+    attacker.provider.sendStateless(JSON.stringify({ type: 'private', state: true, ownerId: null }))
+    await sleep(1_000)
+    check(
+      !victim.stateless.some((m) => m?.type === 'private'),
+      'a forged private access event is not relayed'
+    )
+    check((await droppedTotal('type-not-allowed')) === dropped + 1, 'the forgery was counted')
+
+    // The webapp reads `msg` before `type`, so an allowlisted type still carries a
+    // forged save confirmation unless the guard refuses any `msg` it did not name.
+    victim.stateless.length = 0
+    dropped = await droppedTotal('type-not-allowed')
+    attacker.provider.sendStateless(
+      JSON.stringify({ type: 'docTitle', msg: 'document:saved', documentId: doc.documentId })
+    )
+    await sleep(1_000)
+    check(
+      !victim.stateless.some((m) => m?.msg === 'document:saved'),
+      'a forged save confirmation is not relayed'
+    )
+    check(
+      (await droppedTotal('type-not-allowed')) === dropped + 1,
+      'the forged save confirmation was counted'
+    )
+
+    // Positive control AFTER the negatives: without it they pass on a socket that
+    // was never listening.
+    victim.stateless.length = 0
+    attacker.provider.sendStateless(
+      JSON.stringify({ type: 'docTitle', state: { title: 'relayed' } })
+    )
+    const deadline = Date.now() + 5_000
+    let sawTitle = false
+    while (!sawTitle && Date.now() < deadline) {
+      // Asserts `state` too: only the whole-object re-stringify carries it, so a
+      // typed envelope rebuilt in the relay arm would drop the title silently.
+      sawTitle = victim.stateless.some(
+        (m) => m?.type === 'docTitle' && m?.state?.title === 'relayed'
+      )
+      await sleep(50)
+    }
+    check(sawTitle, 'docTitle still relays')
+
+    // Type 6 never enters onStateless. The raw frame rides the already-authenticated
+    // socket; the refusal closes the attacker's document connection, so it goes last.
+    victim.stateless.length = 0
+    dropped = await droppedTotal('broadcast-frame')
+    attacker.provider.configuration.websocketProvider.webSocket.send(
+      new OutgoingMessage(doc.documentId)
+        .writeBroadcastStateless(JSON.stringify({ type: 'private', state: true, ownerId: null }))
+        .toUint8Array()
+    )
+    await sleep(1_000)
+    check(
+      !victim.stateless.some((m) => m?.type === 'private'),
+      'a raw BroadcastStateless frame is not relayed'
+    )
+    check(
+      (await droppedTotal('broadcast-frame')) === dropped + 1,
+      'the raw BroadcastStateless frame was refused'
+    )
+
+    attacker.provider.destroy()
+    victim.provider.destroy()
   }
 } catch (error) {
   console.error('\nE2E aborted:', error)
