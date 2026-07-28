@@ -163,8 +163,8 @@ CREATE POLICY channel_members_select ON public.channel_members
   USING (member_id = (select auth.uid()) OR internal.is_channel_member(channel_id));
 
 -- FE joinChannel uses PostgREST upsert; invoker must insert/update own row only.
--- Eligibility: PUBLIC channels (same read gate as lurkers with login) or workspace member
--- (PRIVATE heading chats before a channel_members row exists — chicken/egg vs can_read_channel).
+-- A signed-in workspace member seeds their own row in a live PUBLIC channel;
+-- can_read_channel is the wrong gate here — the row it looks for does not exist yet.
 
 DROP POLICY IF EXISTS channel_members_join_insert ON public.channel_members;
 CREATE POLICY channel_members_join_insert ON public.channel_members
@@ -175,7 +175,7 @@ CREATE POLICY channel_members_join_insert ON public.channel_members
       SELECT 1 FROM public.channels c
       WHERE c.id = channel_id
         AND c.deleted_at IS NULL
-        AND c.type IN ('PUBLIC', 'PRIVATE')
+        AND c.type = 'PUBLIC'
         AND internal.is_workspace_member(c.workspace_id)
     )
   );

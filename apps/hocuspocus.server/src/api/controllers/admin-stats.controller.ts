@@ -12,7 +12,9 @@ import { adminLogger } from '../../lib/logger'
 import type { AppContext } from '../../types/hono.types'
 import { getSupabaseClient } from '../utils/supabase'
 
-const CHANNEL_TYPES = ['PUBLIC', 'PRIVATE', 'BROADCAST', 'ARCHIVE', 'DIRECT', 'GROUP'] as const
+// Must match the `channel_type` enum: each entry becomes an `.eq('type', …)`
+// count, and a label the enum no longer has fails the whole batched request.
+const CHANNEL_TYPES = ['PUBLIC', 'BROADCAST', 'ARCHIVE', 'DIRECT', 'GROUP'] as const
 const NOTIFICATION_TYPES = [
   'mention',
   'message',

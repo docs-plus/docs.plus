@@ -58,7 +58,6 @@ create type public.notification_type as enum (
 
 create type public.channel_type as enum (
     'PUBLIC',     -- PUBLIC: Open for all users. Any user of the application can join and participate.
-    'PRIVATE',    -- PRIVATE: Restricted access. Users can join only by invitation or approval.
     'BROADCAST',  -- BROADCAST: One-way communication channel where selected users can post, but all users can view.
     'ARCHIVE',    -- ARCHIVE: Read-only channel for historical/reference purposes. No new messages can be posted.
     'DIRECT',     -- DIRECT: One-on-one private conversation between two users.
@@ -310,7 +309,7 @@ create table public.workspaces (
     slug              text not null unique check (length(slug) <= 100), -- Unique slug for the workspace, used for user-friendly URLs, limited to 100 characters.
     description       text check (length(description) <= 1000), -- Optional description of the workspace, limited to 1000 characters.
     metadata          jsonb default '{}'::jsonb, -- Optional metadata about the workspace in JSONB format.
-    created_by        uuid references public.users(id) on delete set null, -- The ID of the user who created the workspace.
+    created_by        uuid references public.users(id) on delete set null, -- The first signed-in visitor to open the document, not its owner. See the column comment below.
     created_at        timestamp with time zone default timezone('utc', now()) not null, -- The timestamp when the workspace was created, set to the current UTC time.
     updated_at        timestamp with time zone default timezone('utc', now()), -- The timestamp when the workspace was last updated, set to the current UTC time.
     deleted_at        timestamp with time zone -- The timestamp when the workspace was soft deleted, NULL if not deleted.
@@ -320,6 +319,9 @@ create table public.workspaces (
 alter table public.workspaces add constraint check_slug_format check (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');
 
 comment on table public.workspaces is 'This table contains information about various workspaces, which are collections of channels for group discussions and messaging. Workspaces provide a higher-level organization structure within the application, allowing for segregation and grouping of channels.';
+
+comment on column public.workspaces.created_by is
+'First signed-in visitor to open the document: join_workspace() auto-bootstraps the workspace row and stamps auth.uid() of whoever got there first. NOT ownership — that is Prisma DocumentMetadata.ownerId. Nothing reads this column; workspaces_creator_insert only checks it on INSERT.';
 
 
 -- ============================================================================
@@ -3382,7 +3384,9 @@ comment on column public.channel_members.updated_at is 'Timestamp when this memb
 create table if not exists public.document_views (
     id              uuid not null,  -- Generated upfront for duration updates
     document_slug   text not null,
-    user_id         uuid references public.users(id) on delete set null,
+    -- auth.users, not public.users: anonymous visitors never get a profile row,
+    -- so a public.users FK silently rejected every logged-out view.
+    user_id         uuid references auth.users(id) on delete set null,
     session_id      text not null,
     viewed_at       timestamp with time zone default now() not null,
     view_date       date not null default current_date,  -- For immutable dedup index
@@ -3759,9 +3763,12 @@ begin
 
             exception when others then
                 v_errors := v_errors + 1;
-                raise warning 'Error processing view %: %', rec.msg_id, sqlerrm;
-                -- Still delete to prevent infinite retry
-                perform pgmq.delete('document_views', rec.msg_id);
+                -- Archive rather than delete: a dropped view is otherwise
+                -- invisible. The payload stays queryable in
+                -- pgmq.a_document_views (same pattern as push_notifications).
+                raise warning 'document_views worker: archiving msg % (%: %)',
+                    rec.msg_id, sqlstate, sqlerrm;
+                perform pgmq.archive('document_views', rec.msg_id);
             end;
         end loop;
 
@@ -3783,6 +3790,7 @@ $$;
 comment on function public.process_document_views_queue() is
 'Batch processes document views from pgmq queue.
 Handles deduplication and inserts valid views.
+Unprocessable messages are archived to pgmq.a_document_views, never dropped.
 Run every 10 minutes via pg_cron.';
 
 
@@ -4828,7 +4836,8 @@ GRANT USAGE ON SCHEMA internal TO authenticated, service_role;
 /**
  * Function: handle_new_user
  * Description: Creates a new user record in public.users when a new auth user is registered.
- * Trigger: Executes after INSERT on auth.users
+ * Trigger: Executes after INSERT on auth.users, and after the UPDATE that turns an
+ *          anonymous user into a permanent one (see on_auth_user_converted below)
  * Action: Generates a username based on name or email, sanitizes it, ensures uniqueness,
  *         and creates the public user profile with data from auth metadata.
  * Returns: The NEW record (trigger standard)
@@ -4910,8 +4919,11 @@ BEGIN
     RAISE EXCEPTION 'Email is required for user creation';
   END IF;
 
+  -- The conversion trigger re-enters this function for an id that may already
+  -- have a profile; a raise here would abort GoTrue's transaction and break sign-up.
   INSERT INTO public.users (id, full_name, avatar_url, email, username)
-  VALUES (new.id, user_full_name, user_avatar_url, new.email, final_username);
+  VALUES (new.id, user_full_name, user_avatar_url, new.email, final_username)
+  ON CONFLICT (id) DO NOTHING;
 
   RETURN new;
 END;
@@ -4923,6 +4935,22 @@ $$;
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW
+EXECUTE PROCEDURE public.handle_new_user();
+
+-- Trigger: on_auth_user_converted
+-- Description: Creates the profile an anonymous user never got once they become permanent.
+-- auth.users.id survives the conversion, so this back-fills every row already attributed to
+-- that id. GoTrue clears is_anonymous in its own statement, before the address lands, so the
+-- address side of the guard is what completes most conversions.
+DROP TRIGGER IF EXISTS on_auth_user_converted ON auth.users;
+CREATE TRIGGER on_auth_user_converted
+AFTER UPDATE OF is_anonymous, email ON auth.users
+FOR EACH ROW
+WHEN (
+  new.is_anonymous = false
+  AND new.email IS NOT NULL
+  AND (old.is_anonymous = true OR old.email IS NULL)
+)
 EXECUTE PROCEDURE public.handle_new_user();
 
 ----------------------------------------------------
@@ -8265,12 +8293,10 @@ $$;
 -----------------------------------
 -- Function to add the current user to a workspace.
 --
--- Product invariant: docs.plus workspaces are document slugs. Opening any
--- doc auto-bootstraps the workspace (creates if missing) and joins the
--- caller. Membership is intentionally self-service — there is no invite
--- gate. Workspace isolation is therefore "anyone signed in can see any
--- workspace's PUBLIC content" by design; PRIVATE channels still require
--- per-channel membership (`channels_member_insert` in 13-RLS.sql).
+-- Product invariant: docs.plus workspaces are document slugs. Opening any doc
+-- auto-bootstraps the workspace and joins the caller — membership is self-service,
+-- so any signed-in user sees every workspace's PUBLIC channels; non-PUBLIC types
+-- still need per-channel membership (`channels_visible_select` in 13-RLS.sql).
 CREATE OR REPLACE FUNCTION join_workspace(
     _workspace_id VARCHAR(36)
 )
@@ -9314,8 +9340,8 @@ CREATE POLICY channel_members_select ON public.channel_members
   USING (member_id = (select auth.uid()) OR internal.is_channel_member(channel_id));
 
 -- FE joinChannel uses PostgREST upsert; invoker must insert/update own row only.
--- Eligibility: PUBLIC channels (same read gate as lurkers with login) or workspace member
--- (PRIVATE heading chats before a channel_members row exists — chicken/egg vs can_read_channel).
+-- A signed-in workspace member seeds their own row in a live PUBLIC channel;
+-- can_read_channel is the wrong gate here — the row it looks for does not exist yet.
 
 DROP POLICY IF EXISTS channel_members_join_insert ON public.channel_members;
 CREATE POLICY channel_members_join_insert ON public.channel_members
@@ -9326,7 +9352,7 @@ CREATE POLICY channel_members_join_insert ON public.channel_members
       SELECT 1 FROM public.channels c
       WHERE c.id = channel_id
         AND c.deleted_at IS NULL
-        AND c.type IN ('PUBLIC', 'PRIVATE')
+        AND c.type = 'PUBLIC'
         AND internal.is_workspace_member(c.workspace_id)
     )
   );

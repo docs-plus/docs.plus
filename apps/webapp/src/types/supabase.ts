@@ -378,15 +378,7 @@ export type Database = {
           view_date?: string
           viewed_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "document_views_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       document_views_2026_07: {
         Row: {
@@ -1654,13 +1646,7 @@ export type Database = {
       app_role: "admin" | "moderator" | "member" | "guest"
       channel_member_role: "MEMBER" | "ADMIN" | "MODERATOR" | "GUEST"
       channel_notification_state: "MENTIONS" | "ALL" | "MUTED"
-      channel_type:
-        | "PUBLIC"
-        | "PRIVATE"
-        | "BROADCAST"
-        | "ARCHIVE"
-        | "DIRECT"
-        | "GROUP"
+      channel_type: "PUBLIC" | "BROADCAST" | "ARCHIVE" | "DIRECT" | "GROUP"
       message_type:
         | "text"
         | "image"
@@ -1850,14 +1836,7 @@ export const Constants = {
       app_role: ["admin", "moderator", "member", "guest"],
       channel_member_role: ["MEMBER", "ADMIN", "MODERATOR", "GUEST"],
       channel_notification_state: ["MENTIONS", "ALL", "MUTED"],
-      channel_type: [
-        "PUBLIC",
-        "PRIVATE",
-        "BROADCAST",
-        "ARCHIVE",
-        "DIRECT",
-        "GROUP",
-      ],
+      channel_type: ["PUBLIC", "BROADCAST", "ARCHIVE", "DIRECT", "GROUP"],
       message_type: [
         "text",
         "image",

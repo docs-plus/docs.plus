@@ -8,7 +8,6 @@ import {
   JoinBroadcastChannel,
   JoinDirectChannel,
   JoinGroupChannel,
-  JoinPrivateChannel,
   SignInToJoinChannel
 } from './components'
 
@@ -43,9 +42,6 @@ const AccessControl = () => {
     case 'DIRECT':
       return isUserChannelMember ? <MsgComposer.ComposerLayout /> : <ChannelComposer.JoinDirect />
 
-    case 'PRIVATE':
-      return isUserChannelMember ? <MsgComposer.ComposerLayout /> : <ChannelComposer.JoinPrivate />
-
     case 'BROADCAST':
       if (isUserChannelOwner || isUserChannelAdmin) return <MsgComposer.ComposerLayout />
       return isUserChannelMember ? <ChannelComposer.JoinBroadcast /> : <ChannelComposer.JoinGroup />
@@ -69,7 +65,6 @@ const ChannelComposer = ({ children, className }: ChannelComposerProps) => (
 export default ChannelComposer
 
 ChannelComposer.SignInPrompt = SignInToJoinChannel
-ChannelComposer.JoinPrivate = JoinPrivateChannel
 ChannelComposer.JoinDirect = JoinDirectChannel
 ChannelComposer.JoinGroup = JoinGroupChannel
 ChannelComposer.JoinBroadcast = JoinBroadcastChannel

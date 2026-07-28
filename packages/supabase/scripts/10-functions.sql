@@ -826,12 +826,10 @@ $$;
 -----------------------------------
 -- Function to add the current user to a workspace.
 --
--- Product invariant: docs.plus workspaces are document slugs. Opening any
--- doc auto-bootstraps the workspace (creates if missing) and joins the
--- caller. Membership is intentionally self-service — there is no invite
--- gate. Workspace isolation is therefore "anyone signed in can see any
--- workspace's PUBLIC content" by design; PRIVATE channels still require
--- per-channel membership (`channels_member_insert` in 13-RLS.sql).
+-- Product invariant: docs.plus workspaces are document slugs. Opening any doc
+-- auto-bootstraps the workspace and joins the caller — membership is self-service,
+-- so any signed-in user sees every workspace's PUBLIC channels; non-PUBLIC types
+-- still need per-channel membership (`channels_visible_select` in 13-RLS.sql).
 CREATE OR REPLACE FUNCTION join_workspace(
     _workspace_id VARCHAR(36)
 )

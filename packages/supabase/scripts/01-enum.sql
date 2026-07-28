@@ -48,7 +48,6 @@ create type public.notification_type as enum (
 
 create type public.channel_type as enum (
     'PUBLIC',     -- PUBLIC: Open for all users. Any user of the application can join and participate.
-    'PRIVATE',    -- PRIVATE: Restricted access. Users can join only by invitation or approval.
     'BROADCAST',  -- BROADCAST: One-way communication channel where selected users can post, but all users can view.
     'ARCHIVE',    -- ARCHIVE: Read-only channel for historical/reference purposes. No new messages can be posted.
     'DIRECT',     -- DIRECT: One-on-one private conversation between two users.
