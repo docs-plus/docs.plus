@@ -93,9 +93,9 @@ groups:
         noDataState: OK
         execErrState: Error
         labels:
-          severity: warning
+          severity: critical
         annotations:
-          summary: Redis is evicting TTL'd keys — claim-check document states are in the eviction set (payload-less DLQ risk)
+          summary: Redis is evicting keys, and here an eviction is a discarded document save. Claim-check document states (~262 kB) are the only keys carrying a TTL — BullMQ job hashes (~1.3 kB) have none — so volatile-lru can only ever pick the document bytes. Raise maxmemory or drain the store queue.
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }

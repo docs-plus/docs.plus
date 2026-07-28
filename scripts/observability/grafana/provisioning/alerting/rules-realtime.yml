@@ -65,7 +65,8 @@ groups:
               datasource: { type: prometheus, uid: prometheus }
               # Traffic guard: with saves this sparse a single slow flush owns
               # the p99; below ~6 persists/5m the guard suppresses (noDataState
-              # OK) instead of paging on a one-document artifact.
+              # OK) instead of paging on a one-document artifact. The total-stop
+              # case it hides is realtime-doc-persist-stalled's job, not this one's.
               expr: 'histogram_quantile(0.99, sum by (le) (rate(document_persist_duration_seconds_bucket[5m]))) and (sum(rate(document_persist_duration_seconds_count[5m])) > 0.02)'
               instant: true
               intervalMs: 1000
@@ -87,6 +88,91 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: gt, params: [0.5] }
+              refId: C
+
+      - uid: realtime-doc-persist-stalled
+        title: Document persistence stopped while users are connected
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: No document has been persisted for 10m while WS connections are open. The store hook is not running — a rejected store promise wedges the debouncer for the process lifetime, so this does not self-heal. Restart hocuspocus-server and read its logs.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Dead-man. Connections lead so the fired sample carries the live
+              # connection count; `== 0` alone returns 0 and never crosses a
+              # threshold. The >5 floor keeps idle nights quiet, and `for: 10m`
+              # on top of the 10m window means 20m of open sockets with no save.
+              expr: 'sum(ws_active_connections) > 5 and sum(rate(document_persist_duration_seconds_count[10m])) == 0'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      - uid: realtime-doc-store-rejections
+        title: Document saves rejected (writes dropped)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: 'The store hook rejected a document save (reason={{ $labels.reason }}). Those edits are gone once the room unloads. Check hocuspocus-server logs and the Postgres/queue health for the same window.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # Every rejection is lost user text, so there is no tolerance band.
+              # The counter has no series until the first inc, hence noDataState OK;
+              # by reason so the page names the failure without opening logs.
+              expr: 'sum by (reason) (increase(document_store_rejections_total[10m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
               refId: C
 
       - uid: realtime-doc-persist-fallback
