@@ -38,10 +38,13 @@ export class EmailGatewayService extends NotificationGatewayBase {
             { provider: status.active, configured: status.configured },
             'Email provider detected'
           )
-          const verified = await verifyProvider()
-          if (!verified) {
-            emailLogger.warn({ provider: status.active }, 'Email provider verification failed')
-          }
+          // Not awaited: the result only logs, so blocking boot on a provider
+          // round-trip delays the worker's signal handlers for no decision.
+          void verifyProvider().then((verified) => {
+            if (!verified) {
+              emailLogger.warn({ provider: status.active }, 'Email provider verification failed')
+            }
+          })
         } else {
           emailLogger.warn('No email provider configured - gateway in dry-run mode')
         }

@@ -21,11 +21,17 @@ function getTransporter(): nodemailer.Transporter | null {
 
   if (!host || !user || !pass) return null
 
+  // Nodemailer's own defaults are 2 minutes each, and the worker awaits
+  // verify() at boot before it binds /health or installs its SIGTERM handler —
+  // an unreachable mail host would otherwise sit in front of the deploy's 120s
+  // readiness wait. These bound every SMTP connect, not only the verify.
   transporter = nodemailer.createTransport({
     host,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     secure: process.env.SMTP_SECURE === 'true',
     auth: { user, pass },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
     pool: true,
     maxConnections: 5,
     maxMessages: 100,
