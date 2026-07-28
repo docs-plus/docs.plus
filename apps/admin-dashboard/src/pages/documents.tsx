@@ -40,6 +40,13 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
+// The list response carries the raw documentId alongside the human `docId`.
+// Declared here until the shared type carries it.
+type DocumentRow = Document & { documentId?: string }
+
+/** document_views_daily keys on lower(documentId); the human slug matches nothing. */
+const viewKey = (doc: DocumentRow) => doc.documentId?.toLowerCase() ?? ''
+
 export default function DocumentsPage() {
   // URL-synced table state
   const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
@@ -72,14 +79,17 @@ export default function DocumentsPage() {
     queryFn: fetchStaleDocumentsSummary
   })
 
-  // Get document slugs for batch trend fetch
-  const docSlugs = useMemo(() => data?.data?.map((d) => d.docId) || [], [data?.data])
+  // Get analytics keys for batch trend fetch
+  const docKeys = useMemo(() => {
+    const rows: DocumentRow[] = data?.data ?? []
+    return rows.map(viewKey).filter(Boolean)
+  }, [data?.data])
 
   // Fetch sparkline trends for current page
   const { data: trends } = useQuery({
-    queryKey: ['admin', 'documents', 'trends', docSlugs],
-    queryFn: () => fetchBatchDocumentTrends(docSlugs, 7),
-    enabled: docSlugs.length > 0
+    queryKey: ['admin', 'documents', 'trends', docKeys],
+    queryFn: () => fetchBatchDocumentTrends(docKeys, 7),
+    enabled: docKeys.length > 0
   })
 
   // Mutation for updating document flags
@@ -266,9 +276,9 @@ export default function DocumentsPage() {
     {
       key: 'trend',
       header: 'Trend',
-      render: (doc: Document) => (
+      render: (doc: DocumentRow) => (
         <Sparkline
-          data={trends?.[doc.docId] || []}
+          data={trends?.[viewKey(doc)] || []}
           width={60}
           height={20}
           strokeColor="var(--color-primary)"

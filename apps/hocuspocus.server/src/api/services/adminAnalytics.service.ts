@@ -17,19 +17,19 @@ export function callRpc(supabase: AdminClient, rpcName: string, args?: Record<st
 
 /**
  * Map view-stat document slugs (which are lower(trim(documentId))) to Prisma
- * titles. documentId is mixed-case, so match case-insensitively and key the map
+ * metadata. documentId is mixed-case, so match case-insensitively and key the map
  * on the lowercased id to line up with the RPC's document_slug values.
  */
-async function titleMapForSlugs(
+async function metaMapForSlugs(
   prisma: PrismaClient,
   slugs: string[]
-): Promise<Map<string, string | null>> {
+): Promise<Map<string, { title: string | null; slug: string }>> {
   if (slugs.length === 0) return new Map()
-  const docs = await prisma.$queryRaw<{ documentId: string; title: string | null }[]>`
-    SELECT "documentId", title FROM "DocumentMetadata"
+  const docs = await prisma.$queryRaw<{ documentId: string; title: string | null; slug: string }[]>`
+    SELECT "documentId", title, slug FROM "DocumentMetadata"
     WHERE lower("documentId") IN (${Prisma.join(slugs)})
   `
-  return new Map(docs.map((d) => [d.documentId.toLowerCase(), d.title]))
+  return new Map(docs.map((d) => [d.documentId.toLowerCase(), { title: d.title, slug: d.slug }]))
 }
 
 export async function getTopViewedDocuments(
@@ -45,14 +45,16 @@ export async function getTopViewedDocuments(
   if (error) return { error }
 
   const rows = (data || []) as { document_slug: string; views: number; unique_users: number }[]
-  const titleMap = await titleMapForSlugs(
+  const metaMap = await metaMapForSlugs(
     prisma,
     rows.map((d) => d.document_slug)
   )
-  const enriched = rows.map((d) => ({
-    ...d,
-    title: titleMap.get(d.document_slug) || d.document_slug
-  }))
+  // `slug` is the human URL segment; null when no metadata row resolves, so the
+  // UI can avoid linking to a path that would open an empty draft instead.
+  const enriched = rows.map((d) => {
+    const meta = metaMap.get(d.document_slug)
+    return { ...d, title: meta?.title || d.document_slug, slug: meta?.slug ?? null }
+  })
   return { data: enriched }
 }
 
@@ -116,13 +118,13 @@ export async function getTopActiveDocuments(
     message_count: number
     unique_users: number
   }[]
-  const titleMap = await titleMapForSlugs(
+  const metaMap = await metaMapForSlugs(
     prisma,
     rows.map((d) => d.document_slug)
   )
   const enriched = rows.map((d) => ({
     ...d,
-    title: titleMap.get(d.document_slug) || d.document_slug
+    title: metaMap.get(d.document_slug)?.title || d.document_slug
   }))
   return { data: enriched }
 }
