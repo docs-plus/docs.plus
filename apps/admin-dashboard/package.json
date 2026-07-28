@@ -18,7 +18,7 @@
     "daisyui": "catalog:",
     "date-fns": "catalog:",
     "dotenv-cli": "catalog:",
-    "next": "^16.2.9",
+    "next": "^16.2.12",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hot-toast": "^2.6.0",
@@ -34,7 +34,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "catalog:",
-    "eslint-config-next": "^16.2.9",
+    "eslint-config-next": "^16.2.12",
     "postcss": "^8.5.15",
     "sass": "^1.101.0",
     "typescript": "catalog:"

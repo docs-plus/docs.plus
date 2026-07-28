@@ -87,7 +87,9 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
       throw new Error('Admin access required.')
     }
 
-    throw new Error(error.error || `API error: ${response.status}`)
+    // Two envelopes reach here: the admin controllers' flat `{error: 'string'}`
+    // and the shared `{error: {message, code}}` the rate limiter returns.
+    throw new Error(error?.error?.message || error?.error || `API error: ${response.status}`)
   }
   return response.json()
 }
