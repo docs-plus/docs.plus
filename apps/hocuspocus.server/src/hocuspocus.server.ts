@@ -82,6 +82,7 @@ function sendHistoryResponse(
 let versionOps: VersionOps | null = null
 
 const REVERT_TYPE = 'history.revert'
+const LIST_TYPE = 'history.list'
 
 // A revert runs six whole-document traversals on this event loop and appends a
 // permanent backup row, and unlike its REST twin it is reachable by any signed-in
@@ -101,6 +102,20 @@ const revertCoolingDown = (documentId: string, now: number): boolean => {
     }
   }
   lastRevertAt.set(documentId, now)
+  return false
+}
+
+// `history.list` reads every version row plus the base64 head, and the same
+// unauthenticated frame can be looped. Keyed per CONNECTION, not per document: a
+// per-document key would let one visitor's refresh blank every other viewer's.
+// Short enough that no remount can trip it — the client never retries a refusal.
+const LIST_COOLDOWN_MS = 250
+const lastListAt = new WeakMap<Connection, number>()
+
+const listCoolingDown = (connection: Connection, now: number): boolean => {
+  const previous = lastListAt.get(connection)
+  if (previous !== undefined && now - previous < LIST_COOLDOWN_MS) return true
+  lastListAt.set(connection, now)
   return false
 }
 
@@ -271,6 +286,17 @@ const statelessExtension = {
       // dispatch, whose default arm echoes an unknown type back as a success.
       if (type === REVERT_TYPE) {
         await handleHistoryRevert(connection, canonicalId, parsedPayload.version)
+        return
+      }
+
+      // Only the list is gated: `history.watch` reads one indexed row, and the
+      // client answers a refused watch by evicting that version and asking for
+      // the next one, so a cooldown there would walk it through its own list.
+      if (type === LIST_TYPE && listCoolingDown(connection, Date.now())) {
+        sendHistoryResponse(connection, type, null, {
+          error: HISTORY_FAILED,
+          reason: 'rate-limited'
+        })
         return
       }
 
@@ -445,7 +471,7 @@ const serverConfig = {
             user = null
             if (isProd) {
               wsLogger.info({ documentName }, 'Rejecting invalid/expired token')
-              wsAuthRejectionsTotal.inc()
+              wsAuthRejectionsTotal.inc({ reason: 'invalid-token' })
               throw new Error(INVALID_TOKEN_MESSAGE)
             }
             wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
@@ -484,6 +510,9 @@ const serverConfig = {
     }
 
     if (resolveWsAccess({ isPrivate, ownerId, user, lookupFailed, deleted }) === 'deny') {
+      // Same precedence as resolveWsAccess, so the label names the arm that denied.
+      const reason = lookupFailed ? 'lookup-failed' : deleted ? 'deleted' : 'private'
+      wsAuthRejectionsTotal.inc({ reason })
       wsLogger.info(
         { documentName, hasUser: Boolean(user), lookupFailed, deleted },
         'Denying WS connection to private/deleted/uncertain document'

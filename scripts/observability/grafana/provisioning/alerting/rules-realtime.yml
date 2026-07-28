@@ -175,6 +175,49 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      - uid: realtime-content-apply-errors
+        title: Content apply failed (REST injection into a live document)
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'A PATCH /content could not open or persist the document (mode={{ $labels.mode }}). API.md names this counter as the operator signal for it. A store rejection already pages critical at realtime-doc-store-rejections; what lands here is an open failure, or a persist failure that did not reach the store fallback. Read the hocuspocus-server logs for "Content apply failed" and the requestId on the line.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # No tolerance band, but warning not critical: the caller already
+              # got a 500 and can retry. These sit under slo-http-5xx-ratio's 5%
+              # of all REST traffic, so without this rule nobody is paged until a
+              # caller reports it.
+              expr: 'sum by (mode) (increase(document_content_apply_total{outcome="error"}[10m]))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
       - uid: realtime-stateless-relay-forged
         title: Stateless relay refused a forged control frame
         condition: C

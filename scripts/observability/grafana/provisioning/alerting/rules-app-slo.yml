@@ -21,7 +21,11 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'sum by (job) (rate(http_requests_total{job=~"rest-api|hocuspocus-server",status=~"5.."}[5m])) / sum by (job) (rate(http_requests_total{job=~"rest-api|hocuspocus-server"}[5m]))'
+              # rest-api only: httpMetricsMiddleware runs in that process alone,
+              # so `hocuspocus-server` could never contribute a series and the
+              # selector promised coverage it cannot deliver. Its internal :4003
+              # requests are already counted here — REST is their only caller.
+              expr: 'sum by (job) (rate(http_requests_total{job="rest-api",status=~"5.."}[5m])) / sum by (job) (rate(http_requests_total{job="rest-api"}[5m]))'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -60,7 +64,8 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{job=~"rest-api|hocuspocus-server"}[5m])))'
+              # rest-api only, same reason as slo-http-5xx-ratio above.
+              expr: 'histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{job="rest-api"}[5m])))'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200

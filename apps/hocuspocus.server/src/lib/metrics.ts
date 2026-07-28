@@ -62,9 +62,13 @@ export const wsConnectionsTotal = new Counter({
   registers: [register]
 })
 
+// Labelled so the fail-closed deny is visible too: a metadata lookup that throws
+// (wedged pool, Postgres outage) denies every handshake, and without a counter on
+// that arm the rejection ratio the alert reads FALLS while the outage runs.
 export const wsAuthRejectionsTotal = new Counter({
   name: 'ws_auth_rejections_total',
   help: 'Total WebSocket authentication rejections',
+  labelNames: ['reason'] as const,
   registers: [register]
 })
 
