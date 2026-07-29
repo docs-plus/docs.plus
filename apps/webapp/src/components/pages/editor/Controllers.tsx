@@ -1,10 +1,7 @@
 /**
- * This component provides testing hooks for critical editor operations like copy/paste.
- * It renders invisible buttons that can be triggered programmatically or via keyboard shortcuts.
- * These buttons are critical for automated testing with Cypress and provide a consistent way
- * to trigger clipboard operations across different browsers and environments.
- *
- * */
+ * Invisible buttons plus window-scoped selection helpers so Cypress can drive clipboard and
+ * hierarchical-selection operations the same way across browsers.
+ */
 
 import { Editor } from '@tiptap/react'
 import { useCallback, useEffect, useState } from 'react'
@@ -12,12 +9,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useClipboardListener } from './hooks/useClipboardListener'
 import { useClipboardShortcuts } from './hooks/useClipboardShortcuts'
 import { useHierarchicalSelection } from './hooks/useHierarchicalSelection'
-/**
- * Controllers Component
- *
- * This component provides testing hooks and advanced selection utilities
- * for the editor, including hierarchical selection and clipboard operations.
- */
+
 type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
 
 type ControllersProps = {
@@ -34,13 +26,10 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
     )
   }, [])
 
-  // Clipboard shortcuts
   useClipboardShortcuts()
   useClipboardListener()
-  // Hierarchical selection utilities
   const { selectHierarchical, selectElement } = useHierarchicalSelection(editor)
 
-  // Copy selected content
   const copySelectedContent = useCallback(() => {
     if (!editor) return
 
@@ -57,7 +46,6 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
     console.info('[Controllers] Copy operation triggered')
   }, [editor])
 
-  // Paste from clipboard
   const pasteFromClipboard = useCallback(() => {
     if (!editor) return
 
@@ -74,7 +62,6 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
     console.info('[Controllers] Paste operation triggered')
   }, [editor])
 
-  // Select hierarchically and then copy
   const selectAndCopy = useCallback(
     (level: SelectionLevel) => {
       if (!editor) return
@@ -84,7 +71,6 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
     [editor, selectHierarchical, copySelectedContent]
   )
 
-  // Expose selection methods globally
   useEffect(() => {
     if (!editor) return
 
@@ -112,7 +98,6 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
 
   return (
     <div className="controller-buttons absolute top-0 right-0 z-50 flex flex-col items-end">
-      {/* Clipboard controls */}
       <div className="flex">
         <button
           onClick={copySelectedContent}
@@ -135,7 +120,6 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
         </button>
       </div>
 
-      {/* Selection controls */}
       {(debug || isTestEnv) && (
         <div className="mt-2 flex max-w-xs flex-wrap justify-end">
           <button

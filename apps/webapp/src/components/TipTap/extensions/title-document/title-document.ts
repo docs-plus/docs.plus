@@ -4,18 +4,9 @@ import { Fragment, Slice } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 /**
- * Custom Document node that enforces a title-first structure:
- * the document always starts with a level-1 heading, followed
- * by zero or more block nodes.
- *
- * Two plugins guard the invariant:
- *
- * 1. enforceH1Title (appendTransaction) — silently resets any
- *    heading-level change on the first node back to H1.
- *
- * 2. titlePasteHandler (handlePaste) — intercepts full-document
- *    pastes (select-all + paste) where the first pasted block is
- *    not a heading and promotes it to H1, preserving inline marks.
+ * Title-first document. `enforceH1Title` resets any level change on the first
+ * node back to H1; `titlePasteHandler` promotes a non-heading first block on
+ * select-all paste, so a full-document paste can never drop the title.
  */
 export const TitleDocument = Node.create({
   name: 'doc',

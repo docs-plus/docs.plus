@@ -2,15 +2,8 @@ import { randomDocumentSlug } from '@utils/sanitizeDocumentSlug'
 import { GetServerSidePropsContext } from 'next'
 
 /**
- * /new → Generate a random document slug and redirect
- *
- * This mirrors the `new.{domain}` proxy logic in proxy.ts,
- * but works as a same-origin route for:
- *  - PWA shortcut ("New Document" in manifest.json)
- *  - Direct navigation (docs.plus/new)
- *  - Share target future use
- *
- * Uses 307 (Temporary Redirect) so each visit creates a NEW document.
+ * Same-origin twin of the `new.{domain}` proxy rule in proxy.ts, reachable from
+ * the PWA "New Document" shortcut and from direct navigation to /new.
  */
 export async function getServerSideProps(_context: GetServerSidePropsContext) {
   const randomSlug = randomDocumentSlug()

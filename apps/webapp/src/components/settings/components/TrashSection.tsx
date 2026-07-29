@@ -33,10 +33,8 @@ interface TrashSectionProps {
 }
 
 /**
- * Trash sub-view of the Documents settings surface — the owner's soft-deleted
- * documents with a retention countdown, Restore, irreversible Delete-forever,
- * multi-select, and Empty trash. Owns its own infinite query (makeTrashKey) so
- * the live list's cache is never disturbed.
+ * Trash sub-view of the Documents settings surface. Owns its own infinite query
+ * (makeTrashKey) so the live list's cache is never disturbed.
  */
 const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   const queryClient = useQueryClient()

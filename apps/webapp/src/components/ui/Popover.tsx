@@ -185,11 +185,9 @@ export const PopoverTrigger = React.forwardRef<
 })
 
 /**
- * Shared surface for anchored popover panels (toolbar + pad: media insert,
- * bookmarks, filter, settings, notifications). Unified with
- * `contextMenuPanelClassName` and `modalPanelFrameClassName` / `modalPanelClassName`
- * in Dialog.tsx: 1px base-300 border, rounded-box corners, and shadow-xl elevation —
- * one floating-surface language across the app.
+ * Shared surface for anchored popover panels. Keep in lockstep with
+ * `contextMenuPanelClassName` and Dialog.tsx's `modalPanelFrameClassName` —
+ * one floating-surface language (1px base-300 border, rounded-box, shadow-xl).
  */
 export const popoverPanelClassName =
   'rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl'

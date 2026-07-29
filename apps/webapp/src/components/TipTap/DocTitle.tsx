@@ -51,7 +51,6 @@ const DocTitle = ({ className }: { className?: string }) => {
   const docMetadata = useStore((state) => state.settings.metadata)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
-  // Initialize title from metadata
   useEffect(() => {
     if (docMetadata?.title) setTitle(docMetadata.title)
   }, [docMetadata?.title])
@@ -91,10 +90,8 @@ const DocTitle = ({ className }: { className?: string }) => {
     const selection = window.getSelection()
     if (!selection || selection.rangeCount === 0) return
 
-    // Save current selection range
     const range = selection.getRangeAt(0)
 
-    // Calculate current caret position by counting text length before the caret
     const preCaretPosition = (() => {
       const tempRange = range.cloneRange()
       tempRange.selectNodeContents(currentTarget)
@@ -102,16 +99,14 @@ const DocTitle = ({ className }: { className?: string }) => {
       return tempRange.toString().length
     })()
 
-    // Sanitize content
     const sanitizedContent = DOMPurify.sanitize(currentTarget.innerHTML)
     currentTarget.innerHTML = sanitizedContent
 
-    // Restore selection
     const newSelection = window.getSelection()
     if (!newSelection) return
     newSelection.removeAllRanges()
 
-    // Use a TreeWalker to find the correct position for the caret
+    // Sanitizing replaces the text nodes, so walk them to re-seat the caret.
     const walker = document.createTreeWalker(currentTarget, NodeFilter.SHOW_TEXT, null)
     let charCount = 0
 
@@ -146,7 +141,6 @@ const DocTitle = ({ className }: { className?: string }) => {
       const msg = JSON.parse(payload) as DocTitleMessage
       if (msg.type === 'docTitle') {
         setTitle(msg.state.title)
-        // also update the docMetadata in the store
         setWorkspaceSetting('metadata', { ...docMetadata, title: msg.state.title })
       }
     }
@@ -162,10 +156,8 @@ const DocTitle = ({ className }: { className?: string }) => {
       setTitle(updated.title)
       hocuspocusProvider?.sendStateless(JSON.stringify({ type: 'docTitle', state: updated }))
 
-      // Clear any existing timeout
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-      // Show saved indicator and hide after duration
       setShowSaved(true)
       timeoutRef.current = setTimeout(() => {
         setShowSaved(false)
@@ -174,7 +166,6 @@ const DocTitle = ({ className }: { className?: string }) => {
     }
   }, [hocuspocusProvider, isSuccess, data, setTitle])
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)

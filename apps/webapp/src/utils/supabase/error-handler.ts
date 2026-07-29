@@ -1,11 +1,3 @@
-/**
- * Shared error handling utilities for Supabase clients
- * Provides consistent error messages for connection issues
- */
-
-/**
- * Check if Supabase URL is local development instance
- */
 export const isLocalSupabase = (url: string | URL): boolean => {
   const urlStr = String(url)
   return (
@@ -15,9 +7,7 @@ export const isLocalSupabase = (url: string | URL): boolean => {
   )
 }
 
-/**
- * Create friendly error message for Supabase connection errors
- */
+/** Against a local stack the fix is a command, so say it instead of a generic message. */
 export const createSupabaseError = (error: any, url: string | URL): Error => {
   const urlStr = String(url)
   const isLocal = isLocalSupabase(urlStr)
@@ -26,15 +16,11 @@ export const createSupabaseError = (error: any, url: string | URL): Error => {
     return new Error('Supabase is not running. Run: bun --filter @docs.plus/supabase_back start')
   }
 
-  // Cloud Supabase - generic error
   return new Error(
     `Cannot connect to Supabase. Check your network connection and Supabase project status.`
   )
 }
 
-/**
- * Check if error is a connection refused error
- */
 export const isConnectionRefusedError = (error: any): boolean => {
   return (
     error?.code === 'ECONNREFUSED' ||
@@ -46,16 +32,12 @@ export const isConnectionRefusedError = (error: any): boolean => {
   )
 }
 
-/**
- * Create a fetch wrapper with Supabase error handling
- * Use this in Supabase client configurations
- */
+/** Pass the result as the `fetch` option of a Supabase client. */
 export const createSupabaseFetch = () => {
   return async (url: RequestInfo | URL, options: RequestInit = {}) => {
     try {
       return await fetch(url, options)
     } catch (error: any) {
-      // Check for connection refused errors
       if (isConnectionRefusedError(error)) {
         const urlStr = url instanceof Request ? url.url : String(url)
         if (isLocalSupabase(urlStr)) {

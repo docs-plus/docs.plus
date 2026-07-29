@@ -1,26 +1,15 @@
-/**
- * Push Notifications Utility
- *
- * Handles Web Push subscription registration and management.
- * Works with the Supabase push_subscriptions table.
- */
+// Web Push subscriptions, persisted in the Supabase push_subscriptions table.
 
 import { supabaseClient } from '@utils/supabase'
 
 import { getDevicePlatform } from './platform'
 
-// VAPID public key - set this in your environment
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
-// Storage key for tracking subscription age
 const SUBSCRIPTION_TIMESTAMP_KEY = 'docsplus_push_subscription_timestamp'
 
-// Refresh subscription if older than 30 days (subscriptions can expire)
+// Subscriptions can expire, so re-subscribe once one is older than 30 days.
 const SUBSCRIPTION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
-
-// -----------------------------------------------------------------------------
-// Error Types for Graceful Degradation
-// -----------------------------------------------------------------------------
 
 export type PushErrorCode =
   | 'NOT_SUPPORTED'
@@ -45,25 +34,16 @@ export class PushError extends Error {
   }
 }
 
-/**
- * Check if push notifications are supported
- */
 export function isPushSupported(): boolean {
   if (typeof window === 'undefined') return false
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
-/**
- * Get current notification permission status
- */
 export function getPermissionStatus(): NotificationPermission | 'unsupported' {
   if (!isPushSupported()) return 'unsupported'
   return Notification.permission
 }
 
-/**
- * Request notification permission
- */
 export async function requestPermission(): Promise<NotificationPermission> {
   if (!isPushSupported()) {
     throw new Error('Push notifications not supported')
@@ -71,9 +51,6 @@ export async function requestPermission(): Promise<NotificationPermission> {
   return await Notification.requestPermission()
 }
 
-/**
- * Generate a unique device ID
- */
 function getDeviceId(): string {
   const storageKey = 'docsplus_device_id'
   let deviceId = localStorage.getItem(storageKey)
@@ -86,17 +63,10 @@ function getDeviceId(): string {
   return deviceId
 }
 
-/**
- * Detect platform for push subscription.
- * Delegates to the shared platform utility (src/utils/platform.ts).
- */
 function getPlatform(): 'ios' | 'android' | 'web' {
   return getDevicePlatform()
 }
 
-/**
- * Get a human-readable device name
- */
 function getDeviceName(): string {
   const ua = navigator.userAgent
 
@@ -117,9 +87,7 @@ function getDeviceName(): string {
   return `${browser} on ${platform}`
 }
 
-/**
- * Convert VAPID key to Uint8Array for applicationServerKey
- */
+/** `applicationServerKey` will not take the base64url VAPID key as a string. */
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
@@ -133,9 +101,6 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return outputArray.buffer
 }
 
-/**
- * Convert ArrayBuffer to base64 string
- */
 function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
   if (!buffer) return ''
   const bytes = new Uint8Array(buffer)
@@ -147,15 +112,12 @@ function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
 }
 
 /**
- * Detect if running in iOS Simulator
- * Simulators don't support actual push subscriptions (no APNs)
+ * The iOS Simulator has no APNs, so subscribing fails there even after the user
+ * grants permission. Heuristic: an iPhone/iPad UA reporting zero touch points.
  */
 function isIOSSimulator(): boolean {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent
-  // Check for common simulator indicators
-  // In simulator, push subscriptions will fail even with granted permission
-  // Real devices will have "iPhone" or "iPad" without simulator markers
   return (
     /iPhone|iPad/.test(ua) &&
     typeof navigator.maxTouchPoints !== 'undefined' &&
@@ -163,16 +125,12 @@ function isIOSSimulator(): boolean {
   )
 }
 
-/**
- * Register for push notifications
- * Returns the subscription ID if successful, or throws a PushError with details
- */
+/** Every failure path throws a typed `PushError` rather than returning null. */
 export async function registerPushSubscription(): Promise<string | null> {
   if (!isPushSupported()) {
     throw new PushError('NOT_SUPPORTED', 'Push notifications not supported in this browser', false)
   }
 
-  // Check for iOS Simulator (which doesn't support actual push subscriptions)
   if (isIOSSimulator()) {
     throw new PushError(
       'IOS_SIMULATOR',
@@ -185,13 +143,12 @@ export async function registerPushSubscription(): Promise<string | null> {
     throw new PushError('NOT_CONFIGURED', 'Push notifications not configured on server', false)
   }
 
-  // Check current permission
   if (Notification.permission === 'denied') {
     throw new PushError('PERMISSION_DENIED', 'Notification permission denied by user', false)
   }
 
   if (Notification.permission === 'default') {
-    // Request permission - this shows the browser/iOS dialog
+    // Shows the browser/iOS permission dialog.
     const result = await Notification.requestPermission()
 
     if (result === 'denied') {
@@ -205,7 +162,6 @@ export async function registerPushSubscription(): Promise<string | null> {
     // iOS: Wait for Safari to internally update permission state
     await new Promise((r) => setTimeout(r, 500))
 
-    // Double-check permission is now granted
     const permAfterDelay = getPermissionStatus()
     if (permAfterDelay !== 'granted') {
       await new Promise((r) => setTimeout(r, 1000))
@@ -218,14 +174,12 @@ export async function registerPushSubscription(): Promise<string | null> {
 
   // Get service worker registration with multiple fallback strategies for iOS
   const getRegistration = async (): Promise<ServiceWorkerRegistration> => {
-    // Strategy 1: Check for existing active registration
     const existing = await navigator.serviceWorker.getRegistration()
     if (existing) {
       if (existing.active) {
         return existing
       }
 
-      // If installing/waiting, wait for it to activate
       if (existing.installing || existing.waiting) {
         await new Promise((r) => setTimeout(r, 2000))
         if (existing.active) {
@@ -234,11 +188,9 @@ export async function registerPushSubscription(): Promise<string | null> {
       }
     }
 
-    // Strategy 2: Try to register the service worker manually
     try {
       const newReg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
 
-      // Wait for it to become active
       if (!newReg.active) {
         await new Promise<void>((resolve) => {
           const checkActive = () => {
@@ -249,7 +201,7 @@ export async function registerPushSubscription(): Promise<string | null> {
             }
           }
           setTimeout(checkActive, 100)
-          setTimeout(resolve, 5000) // Timeout after 5 seconds
+          setTimeout(resolve, 5000)
         })
       }
 
@@ -260,7 +212,6 @@ export async function registerPushSubscription(): Promise<string | null> {
       // Manual registration failed, try fallback
     }
 
-    // Strategy 3: Last resort - try ready with short timeout
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Service worker ready timeout')), 3000)
     })
@@ -285,14 +236,12 @@ export async function registerPushSubscription(): Promise<string | null> {
 
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      // Check if already subscribed
       const existing = await registration.pushManager.getSubscription()
       if (existing) {
         subscription = existing
         break
       }
 
-      // Try to subscribe
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -309,7 +258,6 @@ export async function registerPushSubscription(): Promise<string | null> {
   }
 
   if (!subscription) {
-    // Check if this might be an iOS Simulator issue
     const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
     const errorMsg = lastError?.message || 'Unknown error'
 
@@ -324,7 +272,6 @@ export async function registerPushSubscription(): Promise<string | null> {
     throw new PushError('SUBSCRIPTION_FAILED', errorMsg, true)
   }
 
-  // Save to database (shared logic)
   try {
     await saveSubscriptionToDatabase(subscription)
   } catch (err) {
@@ -338,12 +285,8 @@ export async function registerPushSubscription(): Promise<string | null> {
   return getDeviceId()
 }
 
-/**
- * Unregister push subscription for current device
- */
 export async function unregisterPushSubscription(): Promise<boolean> {
   try {
-    // Unsubscribe from browser push
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.getSubscription()
 
@@ -351,7 +294,6 @@ export async function unregisterPushSubscription(): Promise<boolean> {
       await subscription.unsubscribe()
     }
 
-    // Remove from Supabase
     const { data, error } = await supabaseClient.rpc('unregister_push_subscription', {
       p_device_id: getDeviceId()
     })
@@ -361,7 +303,6 @@ export async function unregisterPushSubscription(): Promise<boolean> {
       return false
     }
 
-    // Clear subscription timestamp
     clearSubscriptionTimestamp()
 
     return data as boolean
@@ -371,9 +312,6 @@ export async function unregisterPushSubscription(): Promise<boolean> {
   }
 }
 
-/**
- * Check if current device is subscribed to push
- */
 export async function isSubscribed(): Promise<boolean> {
   if (!isPushSupported()) return false
 
@@ -385,10 +323,6 @@ export async function isSubscribed(): Promise<boolean> {
     return false
   }
 }
-
-// -----------------------------------------------------------------------------
-// Subscription Refresh (handles expired subscriptions)
-// -----------------------------------------------------------------------------
 
 function shouldRefreshSubscription(): boolean {
   const timestamp = localStorage.getItem(SUBSCRIPTION_TIMESTAMP_KEY)
@@ -404,7 +338,7 @@ function clearSubscriptionTimestamp(): void {
   localStorage.removeItem(SUBSCRIPTION_TIMESTAMP_KEY)
 }
 
-/** Save subscription to database (shared by register and refresh) */
+/** Shared by the register and refresh paths. */
 async function saveSubscriptionToDatabase(subscription: PushSubscription): Promise<void> {
   const { error } = await supabaseClient.rpc('register_push_subscription', {
     p_device_id: getDeviceId(),
@@ -426,9 +360,7 @@ async function saveSubscriptionToDatabase(subscription: PushSubscription): Promi
   markSubscriptionFresh()
 }
 
-/**
- * Refresh push subscription if needed (call on app startup)
- */
+/** Call on app startup. */
 export async function refreshSubscriptionIfNeeded(): Promise<
   'fresh' | 'refreshed' | 'failed' | 'not_subscribed'
 > {
@@ -444,7 +376,6 @@ export async function refreshSubscriptionIfNeeded(): Promise<
     if (!existingSubscription) return 'not_subscribed'
     if (!shouldRefreshSubscription()) return 'fresh'
 
-    // Re-subscribe to get fresh subscription
     await existingSubscription.unsubscribe()
     const newSubscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
@@ -458,21 +389,15 @@ export async function refreshSubscriptionIfNeeded(): Promise<
   }
 }
 
-// -----------------------------------------------------------------------------
-// Permission Change Listener
-// -----------------------------------------------------------------------------
-
 /**
- * Subscribe to notification permission changes (Chrome/Firefox only)
- * Safari doesn't support Permissions API - users need to refresh after changing settings
- *
- * @returns Unsubscribe function
+ * Chrome and Firefox only. Safari has no Permissions API, so a Safari user who
+ * changes the setting has to reload before the app notices.
  */
 export function onPermissionChange(
   callback: (permission: NotificationPermission) => void
 ): () => void {
   if (typeof navigator === 'undefined' || !navigator.permissions) {
-    return () => {} // No-op for unsupported browsers
+    return () => {}
   }
 
   let status: PermissionStatus | null = null
@@ -489,7 +414,6 @@ export function onPermissionChange(
       // Permissions API not supported - no-op
     })
 
-  // Return cleanup function
   return () => {
     status?.removeEventListener('change', handleChange)
   }

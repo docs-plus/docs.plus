@@ -179,10 +179,6 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
   )
 }
 
-// ---------------------------------------------------------------------------
-// TitleEditContent – rendered inside the global dialog via openDialog()
-// ---------------------------------------------------------------------------
-
 const TitleEditContent = () => {
   const metadata = useStore((state) => state.settings.metadata)
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
@@ -260,10 +256,6 @@ const TitleEditContent = () => {
   )
 }
 
-// ---------------------------------------------------------------------------
-// MobilePadTitle – sticky header for the mobile document view
-// ---------------------------------------------------------------------------
-
 const MobilePadTitle = () => {
   const user = useAuthStore((state) => state.profile)
   const isEditable = useStore((state) => state.settings.editor.isEditable)
@@ -283,12 +275,9 @@ const MobilePadTitle = () => {
     setProfileModalOpen(true)
   }, [isKeyboardOpen, editor, setProfileModalOpen])
 
-  // Keep the store title in sync with remote changes from other users.
-  // On desktop this is handled by the always-mounted DocTitle component;
-  // on mobile we need our own listener since DocTitle is not rendered.
-  //
-  // A ref is used so the handler always reads the latest metadata without
-  // causing the effect to re-subscribe on every metadata change.
+  // Mobile doesn't render DocTitle, so remote title changes need their own
+  // listener here. The ref keeps the handler on the latest metadata without
+  // re-subscribing the effect on every metadata change.
   const metadataRef = useRef(metadata)
   metadataRef.current = metadata
 
@@ -326,13 +315,11 @@ const MobilePadTitle = () => {
 
   return (
     <>
-      {/* Sticky mobile header - theme-aware */}
       <header className="bg-base-100 sticky top-0 left-0 z-30 w-full">
         <div className="border-base-300 flex min-h-12 w-full flex-col border-b px-2 py-2">
-          {/* Main row */}
           <div className="flex w-full items-center justify-between gap-2">
-            {/* Left section — keyed so the read↔edit control swap crossfades (opacity
-                only: sticky header rides the visualViewport machinery) */}
+            {/* Keyed so the read↔edit control swap crossfades (opacity only:
+                the sticky header rides the visualViewport machinery) */}
             <div
               key={isEditable ? 'edit' : 'read'}
               className="flex min-w-0 flex-1 items-center gap-1 motion-safe:animate-[doc-content-in_120ms_ease-out_both]">
@@ -356,7 +343,6 @@ const MobilePadTitle = () => {
               )}
             </div>
 
-            {/* Right section */}
             <div className="flex shrink-0 items-center gap-1">
               <ProviderSyncStatus disconnectedOnly />
               <PrivateIndicator />
@@ -366,14 +352,12 @@ const MobilePadTitle = () => {
             </div>
           </div>
 
-          {/* Filter bar row */}
           <div className="w-full">
             <FilterBar displayRestButton />
           </div>
         </div>
       </header>
 
-      {/* Profile Modal */}
       <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
         <ModalContent
           size={user ? '4xl' : 'md'}

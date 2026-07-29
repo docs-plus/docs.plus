@@ -19,8 +19,6 @@ import { ScrollArea } from './ScrollArea'
 import type { SelectSize } from './Select'
 import { useOverlayTransition } from './useOverlayTransition'
 
-// --- Types ---
-
 export interface SearchableSelectOption {
   value: string
   label: string
@@ -58,16 +56,12 @@ export interface SearchableSelectProps {
   emptyMessage?: string
 }
 
-// --- Helpers ---
-
-/** Build daisyUI select trigger classes (shared pattern with Select) */
+/** Keep in lockstep with `Select`'s trigger classes. */
 const buildTriggerClasses = (size?: SelectSize): string => {
   const classes: string[] = ['select', 'w-full', 'text-left']
   if (size) classes.push(`select-${size}`)
   return classes.join(' ')
 }
-
-// --- Component ---
 
 const SearchableSelect = ({
   value,
@@ -96,8 +90,6 @@ const SearchableSelect = ({
   // Only one dropdown open at a time (shared across Select + SearchableSelect)
   const closeDropdown = useCallback(() => setIsOpen(false), [])
   useSelectExclusion(id, isOpen, closeDropdown)
-
-  // --- Floating UI ---
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -129,8 +121,6 @@ const SearchableSelect = ({
   const dismiss = useDismiss(context, { outsidePress: true, outsidePressEvent: 'mousedown' })
   const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss])
 
-  // --- Derived ---
-
   const filteredOptions = useMemo(() => {
     if (!search.trim()) return options
     const searchLower = search.toLowerCase()
@@ -147,8 +137,6 @@ const SearchableSelect = ({
   const selectedOption = options.find((opt) => opt.value === value)
   const displayValue = selectedOption?.label || placeholder
 
-  // --- Effects ---
-
   useEffect(() => {
     if (isOpen) {
       setSearch('')
@@ -157,14 +145,11 @@ const SearchableSelect = ({
     }
   }, [isOpen])
 
-  // Scroll highlighted option into view
   useEffect(() => {
     if (!isOpen || !listRef.current || highlightedIndex < 0) return
     const el = listRef.current.children[highlightedIndex] as HTMLElement
     el?.scrollIntoView({ block: 'nearest' })
   }, [highlightedIndex, isOpen])
-
-  // --- Select handler ---
 
   const handleSelect = useCallback(
     (optionValue: string) => {
@@ -173,8 +158,6 @@ const SearchableSelect = ({
     },
     [onChange]
   )
-
-  // --- Keyboard navigation (aligned with Select) ---
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -224,11 +207,7 @@ const SearchableSelect = ({
     [isOpen, filteredOptions, highlightedIndex, handleSelect]
   )
 
-  // --- Classes ---
-
   const triggerClasses = buildTriggerClasses(size)
-
-  // --- Render ---
 
   return (
     <div className={twMerge('form-control w-full', wrapperClassName)}>
@@ -279,7 +258,6 @@ const SearchableSelect = ({
               highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
             }
             {...getFloatingProps()}>
-            {/* Search Input */}
             <div className="border-base-300 shrink-0 border-b p-2">
               <div className="relative">
                 <Icons.search
@@ -300,7 +278,6 @@ const SearchableSelect = ({
               </div>
             </div>
 
-            {/* Options List */}
             <ScrollArea
               scrollbarSize="thin"
               preserveWidth={false}

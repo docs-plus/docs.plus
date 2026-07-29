@@ -112,7 +112,6 @@ export function Tooltip({
     ? ((children as React.ReactElement<any>).props ?? {})
     : ({} as Record<string, unknown>)
 
-  // Attach interaction props + merged ref to the child element
   const trigger = isValidElement(children)
     ? cloneElement(
         children as React.ReactElement<any>,
@@ -123,7 +122,6 @@ export function Tooltip({
       )
     : children
 
-  // Arrow geometry
   const side = finalPlacement.split('-')[0] as 'top' | 'right' | 'bottom' | 'left'
   const staticSide = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' }[side]
 

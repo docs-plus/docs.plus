@@ -5,21 +5,17 @@ import { TIPTAP_NODES } from '@types'
 
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
 
-/**
- * `classify` is the single place that maps a raw href to an
- * `InternalDocumentLink`. Side-effectful execution lives in
- * `internalDocumentLinkActions.ts`; this module stays import-light so
- * `classify` is unit-testable without the app's store/Supabase graph.
- */
+// Side-effectful execution lives in `internalDocumentLinkActions.ts`; this
+// module stays import-light so `classify` is testable without the app's
+// store/Supabase graph.
 
 const internalDocSlug = (pathname: string): string | undefined =>
   pathname.split('/').filter(Boolean)[0]
 
 /**
- * Pure: resolve a href to an in-document destination, or `null` for external.
- * Same dialect precedence as the legacy `navigateHref` ladder (history →
- * filter → chat → heading → legacy chat → bare document), with an exact
- * doc-slug match (not `startsWith`) and an origin guard.
+ * Resolves to an in-document destination, or `null` for external. Precedence
+ * is history → filter → chat → heading → legacy chat → bare document; the
+ * doc-slug match is exact (not `startsWith`) and guarded by origin.
  */
 export function classifyInternalDocumentLink(
   href: string,

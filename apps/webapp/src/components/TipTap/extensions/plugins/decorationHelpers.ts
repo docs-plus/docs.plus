@@ -15,10 +15,8 @@ interface DecorationPluginProps {
 }
 
 /**
- * O(k) check on the changed range — did the transaction insert or delete
- * any nodes of the target types?  Replaces the previous O(N) approach that
- * called `DecorationSet.find().length` (which allocates the full decoration
- * array just to count it).
+ * O(k) check on the changed range only. The previous O(N) approach called
+ * `DecorationSet.find().length`, allocating the whole array just to count it.
  */
 function transactionAffectsTargetNodes(tr: Transaction, targetNodeTypes: string[]): boolean {
   for (const step of tr.steps) {
@@ -90,13 +88,6 @@ export function createOptimizedDecorationApply(
   }
 }
 
-/**
- * Creates a standard decoration plugin state configuration
- * @param buildDecorationsFunc - Function that builds decorations from document
- * @param targetNodeTypes - Array of node type names to watch for changes
- * @param initCallback - Optional callback to run during init
- * @returns Plugin state configuration
- */
 export function createDecorationPluginState(
   buildDecorationsFunc: BuildDecorationsFunction,
   targetNodeTypes: string[],
@@ -111,10 +102,6 @@ export function createDecorationPluginState(
   }
 }
 
-/**
- * Creates standard decoration plugin props
- * @returns Plugin props configuration
- */
 export function createDecorationPluginProps(): DecorationPluginProps {
   return {
     decorations(this: { getState: (state: EditorState) => DecorationSet }, state: EditorState) {

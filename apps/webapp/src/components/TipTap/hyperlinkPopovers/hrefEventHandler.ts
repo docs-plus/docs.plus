@@ -9,14 +9,9 @@ import { runInternalDocumentLink } from './internalDocumentLinkActions'
 // exported `SAFE_WINDOW_FEATURES` so both stacks pass `'noopener,noreferrer'`.
 
 /**
- * Resolve a hyperlink href and navigate. In-app destinations that belong to
- * the current document (headings, filters, chatrooms, channel messages,
- * revision history, the doc itself) run in place via the shared internal-link
- * resolver — no reload, no new tab. Everything else opens in a new tab.
- *
- * Pure side-effect: no `MouseEvent` required. Use directly from React onClick
- * handlers; use `hrefEventHandler` below as the curried adapter for imperative
- * DOM listeners.
+ * Destinations inside the current document run in place — no reload, no new
+ * tab; everything else opens in a new tab. Takes no `MouseEvent` so React
+ * onClick handlers can call it directly.
  */
 export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boolean): void => {
   // Defense-in-depth — `parseHTML`/`renderHTML` already strip dangerous
@@ -35,9 +30,8 @@ export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boole
 }
 
 /**
- * Curried adapter that wraps `navigateHref` for imperative DOM event listeners
- * (the desktop popover's anchor clicks). Calls `event.preventDefault()` so the
- * browser doesn't also follow the href.
+ * Curried adapter for imperative DOM listeners. `preventDefault` stops the
+ * browser from also following the href.
  */
 export const hrefEventHandler =
   (href: string, isAllowedUri?: (uri: string) => boolean) =>

@@ -27,11 +27,7 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
   loading: ({ error }) => (error ? <ChunkLoadError /> : null)
 })
 
-/**
- * Site URL for absolute OG/meta tags.
- * Social crawlers require absolute URLs — relative paths like "/icons/..." are ignored.
- * Falls back gracefully for local development.
- */
+// Social crawlers ignore relative OG/meta URLs like "/icons/...", so these must be absolute.
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
 const DEFAULT_OG_IMAGE = `${SITE_URL}/icons/android-chrome-512x512.png`
 
@@ -69,7 +65,6 @@ const Document = ({
     )
   }
 
-  // Build SSR-safe OG metadata from server-fetched docMetadata
   const ogTitle = docMetadata?.title || 'docs.plus'
   const ogDescription =
     docMetadata?.description ||
@@ -80,17 +75,14 @@ const Document = ({
   return (
     <>
       {/*
-        OG/Twitter tags rendered SERVER-SIDE — this is critical.
-        Social crawlers (Slack, Discord, Twitter, Facebook, iMessage, LinkedIn)
-        do NOT execute JavaScript. They only see server-rendered HTML.
-        HeadSeo.tsx inside DocumentPage is ssr:false and will NOT be seen by crawlers.
+        These OG/Twitter tags must stay server-rendered: social crawlers do not run
+        JavaScript, and HeadSeo.tsx inside DocumentPage is ssr:false.
       */}
       <Head>
         <title>{ogTitle}</title>
         <meta name="description" content={ogDescription} />
         <meta name="robots" content="noindex, follow" />
 
-        {/* Open Graph — server-rendered for social crawlers */}
         <meta property="og:title" content={ogTitle} />
         <meta property="og:description" content={ogDescription} />
         <meta property="og:url" content={ogUrl} />
@@ -98,7 +90,6 @@ const Document = ({
         <meta property="og:image:width" content="512" />
         <meta property="og:image:height" content="512" />
 
-        {/* Twitter Card — server-rendered for Twitter/X crawler */}
         <meta name="twitter:title" content={ogTitle} />
         <meta name="twitter:description" content={ogDescription} />
         <meta name="twitter:url" content={ogUrl} />

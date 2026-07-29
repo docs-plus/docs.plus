@@ -18,27 +18,15 @@ import {
   renderMetadataInto
 } from './previewShared'
 
-/**
- * Dismiss the iOS soft keyboard before the link preview sheet seats.
- *
- * Read-mode taps are handled at the source: `useEditableDocControl`
- * keeps `contenteditable="false"` after edit→read, so iOS never
- * focuses the editor on the tap and this call is a no-op.
- *
- * The case this exists for is **edit-mode taps** — the user is
- * actively typing (keyboard up, contenteditable focused) and taps a
- * link. iOS reliably releases the keyboard only when both the focused
- * element loses focus AND there is no active selection range inside
- * the contenteditable. We collapse the selection, then defer the blur
- * one tick (matches the `useClipboard.dismissMenuAndKeyboard` pattern
- * — synchronous blur is flaky on iOS against ProseMirror's same-tick
- * selection management). We also blur the actual `activeElement` if
- * focus landed on a descendant (e.g. the tapped `<a>`); blurring the
- * editor host alone wouldn't release a focused child.
- */
 /** Shared iOS keyboard dismiss / refocus cadence (clipboard, preview sheet, composer link dialog). */
 export const KEYBOARD_DISMISS_DELAY_MS = 50
 
+/**
+ * Exists for edit-mode link taps. iOS releases the keyboard only when the
+ * focused element blurs AND no selection range is left in the contenteditable,
+ * and a synchronous blur is flaky against ProseMirror's same-tick selection
+ * work. `activeElement` is blurred too — the tapped `<a>` can hold focus.
+ */
 export const dismissSoftKeyboard = (editor: Editor): void => {
   const { to } = editor.state.selection
   editor.chain().setTextSelection(to).run()
@@ -54,23 +42,10 @@ export const dismissSoftKeyboard = (editor: Editor): void => {
 }
 
 /**
- * Thin orchestrator for the webapp's hyperlink preview popover.
- *
- * - On desktop, builds the historical inline popover (metadata + copy /
- *   edit / remove icon buttons) anchored to the link by the extension's
- *   floating-popover wrapper.
- * - On mobile, opens the React `linkPreview` bottom sheet via the
- *   global sheet store and returns `null`. The Tiptap extension's
- *   click handler treats `null` as "no popover, just hide the toolbar"
- *   (see clickHandler.ts in @docs.plus/extension-hyperlink), so the
- *   floating-popover machinery is bypassed entirely on mobile and the
- *   sheet renders through the same react-modal-sheet pipeline as every
- *   other mobile sheet in the app.
- *
- * Desktop variant cancels its in-flight `fetchMetadata` request via
- * AbortController the moment the popover is detached (outside-click,
- * scroll-out, etc.), and defers the L1 mark-attr write until after
- * detachment to avoid the floating-ui referenceHidden race.
+ * Mobile opens the React `linkPreview` sheet and returns `null`, which the
+ * extension's clickHandler reads as "no popover, just hide the toolbar" — that
+ * bypass is what lets the sheet render through the app's own sheet pipeline
+ * instead of the floating-popover machinery.
  */
 export default function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement | null {
   const { link, editor, nodePos, attrs } = options
@@ -93,10 +68,8 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
 }
 
 /**
- * Build the desktop popover and wire its detachment observer. The
- * extension mounts the returned element through the controller; the
- * prebuilt edit popover's Back closes over its own options and re-opens
- * the preview, so no explicit `onBack` re-show wiring is needed here.
+ * No `onBack` re-show wiring is needed: the prebuilt edit popover's Back
+ * closes over its own options and re-opens the preview itself.
  */
 const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLElement => {
   const { link, editor, nodePos, attrs } = options
@@ -117,9 +90,8 @@ const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLEl
 }
 
 /**
- * Desktop popover: preserves the pre-refactor DOM/class contract so the
- * existing `.hyperlink-preview-popover` CSS and Cypress specs keep
- * working.
+ * Keep the `.hyperlink-preview-popover` DOM/class contract intact — the
+ * existing CSS and Cypress specs both select against it.
  */
 const buildDesktopPopover = (
   ctx: PreviewContext,

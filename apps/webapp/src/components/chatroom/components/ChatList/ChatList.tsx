@@ -60,13 +60,10 @@ export type ChatListProps = {
 }
 
 /**
- * Virtuoso has no `startReached`/`endReached` props; both ends are
- * wired through `onScroll`. We trigger load-older when the list top
- * has reached the viewport top (within `LOAD_OLDER_PX_THRESHOLD` px)
- * and load-newer when the list bottom is within
- * `LOAD_NEWER_PX_THRESHOLD` of the viewport bottom. Re-entry is gated
- * inside `useChannelMessages` (loadingOlderRef / loadingNewerRef and
- * dataIncludesTailRef), so a per-scroll-tick call is safe.
+ * Virtuoso has no `startReached`/`endReached`; both ends are wired through
+ * `onScroll`, firing within these px of the respective viewport edge.
+ * Re-entry is gated inside `useChannelMessages` (loadingOlderRef /
+ * loadingNewerRef, dataIncludesTailRef), so a per-scroll-tick call is safe.
  */
 const LOAD_OLDER_PX_THRESHOLD = 80
 const LOAD_NEWER_PX_THRESHOLD = 80
@@ -108,12 +105,10 @@ export const ChatList = forwardRef<
     )
     const onScroll = useCallback(
       (location: ListScrollLocation) => {
-        // `useVirtuosoLocation` only re-renders on isAtBottom flips and
-        // similar coarse signals, so it never re-fires for fine-grained
-        // index changes inside the viewport. `onScroll` is the only
-        // surface that emits `lastVisibleItemIndex` on every scroll tick,
-        // which is what the read-cursor needs to advance as the user
-        // scans messages.
+        // `useVirtuosoLocation` re-renders only on coarse signals (isAtBottom
+        // flips), never on index changes inside the viewport. `onScroll` is
+        // the only surface emitting `lastVisibleItemIndex` per scroll tick,
+        // which the read-cursor needs to advance as the user scans.
         if (onLastVisibleIndexChange && typeof location.lastVisibleItemIndex === 'number') {
           onLastVisibleIndexChange(location.lastVisibleItemIndex)
         }
@@ -123,11 +118,10 @@ export const ChatList = forwardRef<
         if (loadOlder && hasMoreOlder && location.listOffset >= -LOAD_OLDER_PX_THRESHOLD) {
           void loadOlder()
         }
-        // Mirror for the bottom edge. `bottomOffset` is 0 when the list
-        // bottom is flush with the viewport bottom; positive means there's
-        // unloaded list below. The hook's own `dataIncludesTailRef` guard
-        // disarms loadNewer once the live tail is reached, so we don't
-        // need a separate `hasMoreNewer` flag here.
+        // Mirror for the bottom edge; positive `bottomOffset` means unloaded
+        // list below. No `hasMoreNewer` flag is needed — the hook's own
+        // `dataIncludesTailRef` guard disarms loadNewer once the live tail
+        // is reached.
         if (loadNewer && location.bottomOffset <= LOAD_NEWER_PX_THRESHOLD) {
           void loadNewer()
         }

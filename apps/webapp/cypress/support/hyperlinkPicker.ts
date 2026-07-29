@@ -61,10 +61,8 @@ const bookmarkRow = (input: {
 })
 
 /**
- * Static fixture covering the two interesting cases (active + archived).
- * Fields outside `bookmark_id` / `message_content` / `message_id` /
- * `message_channel_id` / `bookmark_archived_at` / `bookmark_created_at`
- * are unused by `useHyperlinkSuggestions` but kept for shape parity.
+ * Static fixture for the two interesting cases: active and archived. The extra
+ * fields are unused by `useHyperlinkSuggestions` but kept for shape parity.
  */
 export const TEST_BOOKMARKS = {
   active: bookmarkRow({
@@ -83,14 +81,9 @@ export const TEST_BOOKMARKS = {
 }
 
 /**
- * Wire the playground to render the bookmark section in the picker:
- * 1. Stub the Supabase RPC for both `archived=false` and `archived=true`
- *    fetches (the hook fires both in parallel).
- * 2. Seed `workspaceId` in the Zustand store via `_store` so
- *    `useHyperlinkSuggestions` flips `queriesEnabled` on.
- *
- * Call AFTER `cy.visitEditor` (the editor effect that publishes
- * `window._store` must have run).
+ * Stubs the Supabase RPC for both the archived and non-archived fetches (the
+ * hook fires them in parallel) and seeds `workspaceId` so `queriesEnabled` flips
+ * on. Call AFTER `cy.visitEditor` — it needs `window._store` published.
  */
 export const setupBookmarkSuggestions = (
   rows: Array<typeof TEST_BOOKMARKS.active | typeof TEST_BOOKMARKS.archived> = [

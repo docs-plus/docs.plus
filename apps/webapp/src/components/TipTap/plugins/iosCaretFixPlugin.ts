@@ -2,13 +2,8 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import type { EditorView } from '@types'
 
-/**
- * iOS Safari Caret Positioning Fix
- *
- * iOS Safari has a bug where tapping in the middle of a word often places
- * the caret at word boundaries instead of the exact tap position.
- * This plugin captures touch coordinates and corrects the caret position.
- */
+// iOS Safari bug: tapping mid-word snaps the caret to a word boundary instead
+// of the tap position. Capture the touch coordinates and re-seat the caret.
 
 const isIOSSafari = (): boolean => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
@@ -23,12 +18,9 @@ const isIOSSafari = (): boolean => {
 let lastTouchCoords: { x: number; y: number } | null = null
 
 /**
- * The caret-fix exists to correct word-boundary jumping when the user
- * is positioning a caret in plain text. A tap on a hyperlink is a
- * different gesture entirely — the hyperlink extension owns it and
- * opens its own UI (popover / mobile sheet). Dispatching a selection
- * change here fights that flow and, on a contenteditable=true host,
- * triggers iOS Safari's "scroll focused element into view" behavior.
+ * A hyperlink tap is a different gesture: the hyperlink extension owns it and
+ * opens its own UI. Dispatching a selection change fights that flow and, on a
+ * contenteditable host, triggers iOS Safari's scroll-focused-element behavior.
  */
 const isLinkTarget = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest('a') !== null
@@ -51,7 +43,6 @@ const handleTouchEnd = (_view: EditorView, _event: TouchEvent): boolean => {
 }
 
 const handleClick = (view: EditorView, event: MouseEvent): boolean => {
-  // Only apply fix for iOS Safari
   if (!isIOSSafari()) {
     lastTouchCoords = null
     return false
@@ -66,7 +57,6 @@ const handleClick = (view: EditorView, event: MouseEvent): boolean => {
   // Use touchstart coordinates (more accurate on iOS)
   const coords = lastTouchCoords || { x: event.clientX, y: event.clientY }
 
-  // Get position at tap coordinates
   const pos = view.posAtCoords({ left: coords.x, top: coords.y })
 
   if (!pos) {
@@ -83,7 +73,6 @@ const handleClick = (view: EditorView, event: MouseEvent): boolean => {
       return
     }
 
-    // Check if iOS placed caret in wrong position
     if (pos.pos !== currentSelection.from) {
       try {
         const selection = TextSelection.create(view.state.doc, pos.pos)
@@ -99,9 +88,6 @@ const handleClick = (view: EditorView, event: MouseEvent): boolean => {
   return false // Let the event propagate normally
 }
 
-/**
- * iOS Caret Fix Extension
- */
 export const IOSCaretFix = Extension.create({
   name: 'iosCaretFix',
 

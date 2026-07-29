@@ -142,7 +142,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     const [internalIsOpen, setInternalIsOpen] = useState(false)
     const [mouseEvent, setMouseEvent] = useState<MouseEvent | null>(null)
 
-    // Use external control if provided, otherwise use internal state
     const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
     const setIsOpen = onOpenChange || setInternalIsOpen
 
@@ -175,7 +174,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     // Menu tier: 120ms scale-in from the cursor side, instant dismissal.
     const { isMounted, styles: transitionStyles } = useOverlayTransition(context, { closeMs: 0 })
 
-    // Set position reference when mousePosition is provided externally
     useEffect(() => {
       if (mousePosition && externalIsOpen) {
         refs.setPositionReference({
@@ -216,19 +214,16 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       typeahead
     ])
 
-    // Only set up automatic event listeners if not using external control
     useEffect(() => {
-      if (externalIsOpen !== undefined) return // Skip if externally controlled
+      if (externalIsOpen !== undefined) return
 
       let timeout: number
 
       function onContextMenu(e: MouseEvent) {
         e.preventDefault()
 
-        // If onBeforeShow is provided, call it to get the target element
         if (onBeforeShow) {
           const targetElement = onBeforeShow(e, e.target)
-          // If onBeforeShow returns null, don't show the context menu
           if (!targetElement) return
         }
 
@@ -261,11 +256,10 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       }
 
       function onMouseUp(e: MouseEvent) {
-        // Check if mouseup happened inside the floating menu
         const menuElement = refs.floating?.current
         const isInsideMenu = menuElement && menuElement.contains(e.target as Node)
 
-        // Don't close if mouseup is inside the menu (let click events handle it)
+        // Don't close on mouseup inside the menu — let click events handle it
         if (isInsideMenu) return
 
         if (allowMouseUpCloseRef.current) {
@@ -274,7 +268,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
           if (onBeforeShow && onOpenChange) {
             onOpenChange(false)
           }
-          // Call cleanup callback
           onClose?.()
         }
       }
@@ -292,10 +285,8 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refs, parentRef, externalIsOpen, setIsOpen, onBeforeShow, onOpenChange])
 
-    // Handle mouse event from external control
     useEffect(() => {
       if (externalIsOpen && mousePosition) {
-        // Create a synthetic mouse event for the context menu items
         const syntheticEvent = {
           clientX: mousePosition.x,
           clientY: mousePosition.y,
@@ -315,8 +306,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
-    // If using external control and no parentRef, we can still render
-    // This check is moved after all hooks to comply with Rules of Hooks
+    // Placed after every hook to comply with the Rules of Hooks
     if (!parentRef?.current && externalIsOpen === undefined) return null
 
     if (!isMounted) return null
@@ -347,12 +337,9 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
 
                           child.props.onClick?.(e, mouseEvent)
 
-                          // Close menu - handle both internal and external control
                           if (externalIsOpen !== undefined && onOpenChange) {
-                            // External control - call the parent's close handler
                             onOpenChange(false)
                           } else {
-                            // Internal control - use internal state
                             setIsOpen(false)
                           }
 

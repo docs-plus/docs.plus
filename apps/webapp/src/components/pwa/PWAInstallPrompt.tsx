@@ -1,27 +1,6 @@
 /**
- * PWA Install Prompt — Industry-Standard Implementation
- *
- * Follows Google's PWA install promotion best practices:
- * https://web.dev/articles/promote-install
- *
- * Architecture:
- * ─────────────────────────────────────────────────────────────
- * 1. Captures `beforeinstallprompt` (Android/Desktop) — defers it
- * 2. Shows custom in-app UI at the RIGHT moment (engagement-based)
- * 3. Handles iOS separately (Safari has no beforeinstallprompt)
- * 4. Tracks `appinstalled` for cleanup and analytics
- *
- * Trigger strategy (Google's recommended heuristics):
- * ─────────────────────────────────────────────────────────────
- * - User must be logged in (authenticated = invested user)
- * - NOT first session (returning visitor signal)
- * - 30+ seconds of engagement in current session
- * - Not already installed / dismissed / snoozed
- * - Max 3 lifetime prompts (respect user's decision)
- *
- * Also triggerable programmatically via showPWAInstallPrompt()
- * (e.g., from NotificationPromptCard when iOS user needs PWA for push)
- * ─────────────────────────────────────────────────────────────
+ * Defers `beforeinstallprompt` for our own engagement-gated UI (web.dev/promote-install).
+ * Safari fires no such event, so iOS gets a manual Add-to-Home-Screen path instead.
  */
 import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
@@ -31,46 +10,31 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuDownload, LuShare, LuSmartphone, LuSquarePlus, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
-// ── Storage Keys ─────────────────────────────────────────────
 const STORAGE_PREFIX = 'pwa-install'
 const DISMISSED_KEY = `${STORAGE_PREFIX}-dismissed` // 'permanent' | null
 const SNOOZED_UNTIL_KEY = `${STORAGE_PREFIX}-snoozed-until` // timestamp | null
 const PROMPT_COUNT_KEY = `${STORAGE_PREFIX}-prompt-count` // number
 const SESSION_COUNT_KEY = `${STORAGE_PREFIX}-session-count` // number
 
-// ── Configuration ────────────────────────────────────────────
-const SNOOZE_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
-const MAX_PROMPT_COUNT = 3 // Stop asking after 3 times
-const ENGAGEMENT_DELAY_MS = 30_000 // 30 seconds on page
+const SNOOZE_DURATION_MS = 7 * 24 * 60 * 60 * 1000
+const MAX_PROMPT_COUNT = 3
+const ENGAGEMENT_DELAY_MS = 30_000
 const MIN_SESSION_COUNT = 2 // Don't prompt on first visit
 
-// ── Event for programmatic triggering ────────────────────────
 const SHOW_PWA_INSTALL_EVENT = 'show-pwa-install-prompt'
 
-/**
- * Programmatically show the PWA install prompt.
- *
- * Use this when user tries an action that requires PWA
- * (e.g., enabling push on iOS) — bypasses engagement checks.
- */
+/** Call when an action needs the PWA (enabling push on iOS); skips the engagement wait. */
 export function showPWAInstallPrompt() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SHOW_PWA_INSTALL_EVENT))
   }
 }
 
-// ── beforeinstallprompt type ─────────────────────────────────
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-// ── Exported Hook ────────────────────────────────────────────
-
-/**
- * Hook for managing PWA installation state.
- * Captures beforeinstallprompt, tracks install status, provides install().
- */
 export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
@@ -79,25 +43,21 @@ export function usePWAInstall() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // ── Capture beforeinstallprompt (Android/Desktop) ──
     const handleBeforeInstall = (e: Event) => {
       // Prevent Chrome's default mini-infobar — we show our own UI
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
     }
 
-    // ── Track appinstalled event ──
     const handleInstalled = () => {
       trackEvent('pwa_install')
       setIsInstalled(true)
       setDeferredPrompt(null)
-      // Clean up prompt state
       localStorage.setItem(DISMISSED_KEY, 'permanent')
       localStorage.removeItem(SNOOZED_UNTIL_KEY)
       localStorage.removeItem(PROMPT_COUNT_KEY)
     }
 
-    // ── Check standalone mode ──
     const mediaQuery = window.matchMedia('(display-mode: standalone)')
     setIsInstalled(mediaQuery.matches || isPWAInstalled)
 
@@ -140,16 +100,12 @@ export function usePWAInstall() {
     canInstall: deferredPrompt !== null || (platform === 'ios' && !isInstalled),
     /** Native browser prompt is available (Android/Desktop only) */
     canNativeInstall: deferredPrompt !== null,
-    /** PWA is currently installed */
     isInstalled,
     /** Trigger native install (returns true if accepted) */
     install,
-    /** Current platform */
     platform
   }
 }
-
-// ── Component ────────────────────────────────────────────────
 
 interface PWAInstallPromptProps {
   className?: string
@@ -164,7 +120,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
   const hasAutoShownRef = useRef(false)
   const engagementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── Eligibility check (no engagement timing — just state) ──
+  // State only — the engagement timing lives in the auto-show effect.
   const isEligible = useCallback(() => {
     if (!profile) return false
     if (isInstalled || isPWAInstalled) return false
@@ -183,18 +139,15 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     return true
   }, [profile, isInstalled, isPWAInstalled, canInstall, platform, iosSupportsWebPush])
 
-  // ── Show animation ──
   const show = useCallback(() => {
     if (!isEligible()) return
 
-    // Increment prompt count
     const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
     localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
 
     showCard()
   }, [isEligible, showCard])
 
-  // ── Hide animation ──
   const hide = useCallback(
     (permanent = false) => {
       // Persist before the exit transition so a re-show can't race the write.
@@ -211,7 +164,6 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     if (!mounted) setShowIOSSteps(false)
   }, [mounted])
 
-  // ── Install button handler ──
   const handleInstall = async () => {
     if (platform === 'ios') {
       setShowIOSSteps(true)
@@ -223,19 +175,15 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     }
   }
 
-  // ── "Maybe Later" — snooze 7 days ──
   const handleLater = () => {
     localStorage.setItem(SNOOZED_UNTIL_KEY, String(Date.now() + SNOOZE_DURATION_MS))
     hide(false)
   }
 
-  // ── Close "X" — permanent dismiss ──
   const handleClose = () => hide(true)
 
-  // ── Engagement-based auto-show (Google's recommended pattern) ──
-  //
-  // Heuristic: logged in + 2nd+ session + 30s on page
-  // This ensures we prompt users who are invested, not drive-by visitors.
+  // Auto-show heuristic: logged in + 2nd-or-later session + 30s on page, so the prompt
+  // reaches invested users rather than drive-by visitors.
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (hasAutoShownRef.current) return
@@ -253,7 +201,6 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     const sessions = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10)
     if (sessions < MIN_SESSION_COUNT) return
 
-    // Wait for engagement (30s), then show
     engagementTimerRef.current = setTimeout(() => {
       if (isEligible() && !hasAutoShownRef.current) {
         hasAutoShownRef.current = true
@@ -268,19 +215,16 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     }
   }, [profile, isEligible, show])
 
-  // ── Programmatic trigger (bypasses engagement checks) ──
+  // Programmatic trigger skips the engagement wait, not the eligibility checks.
   useEffect(() => {
     const handler = () => {
       hasAutoShownRef.current = false
-      // Reset prompt count for programmatic triggers (e.g., notification flow)
-      // so the user gets to see it even if auto-prompt count was hit
       show()
     }
     window.addEventListener(SHOW_PWA_INSTALL_EVENT, handler)
     return () => window.removeEventListener(SHOW_PWA_INSTALL_EVENT, handler)
   }, [show])
 
-  // ── Auto-hide if installed while prompt is showing ──
   useEffect(() => {
     if (isInstalled && mounted) hide(true)
   }, [isInstalled, mounted, hide])
@@ -309,10 +253,8 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
           'border-base-300 border'
         )}>
         {showIOSSteps ? (
-          // ── iOS Step-by-Step Instructions ──
           <IOSInstructions onBack={() => setShowIOSSteps(false)} onClose={handleClose} />
         ) : (
-          // ── Main Install Prompt ──
           <>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -368,8 +310,6 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     </div>
   )
 }
-
-// ── iOS Instructions Sub-Component ───────────────────────────
 
 function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
   return (

@@ -103,12 +103,10 @@ export const useChannelRealtime = ({
         pendingRafRef.current = requestAnimationFrame(drain)
         return
       }
-      // Wait for the initial fetch_message_window to populate the window
-      // and set newestSeqRef. Without this gate, arrivals captured by
-      // postgres_changes / catchUp before the window resolves would be
-      // appended onto an empty list and then survive past data.replace,
-      // landing AFTER the loaded window items — visible as a reversed
-      // pagination block (newer at top, older at tail).
+      // Gate on the initial fetch_message_window setting newestSeqRef: arrivals
+      // captured before it resolves would append onto an empty list, survive
+      // data.replace, and land AFTER the window items — a reversed pagination
+      // block (newer at top, older at tail).
       if (newestSeqRef.current == null) {
         if (++attempts >= MAX_DRAIN_ATTEMPTS) {
           flushScheduledRef.current = false
@@ -165,13 +163,10 @@ export const useChannelRealtime = ({
             }
             continue
           }
-          // Pending-block fence: own optimistic sends sit at the list tail
-          // with `status: 'pending'` until their echo merges in place. A
-          // peer arrival appended naïvely lands AFTER the pending block,
-          // and when the user's own echo later merges by id it inherits
-          // a position behind the peer — visible as an out-of-order tail.
-          // Insert peer arrivals BEFORE the first trailing pending item
-          // so the echo merge stays sort-correct.
+          // Pending-block fence: own optimistic sends sit at the tail as
+          // `pending` until their echo merges in place, so a peer arrival
+          // appended after them leaves the later echo stuck behind the peer —
+          // an out-of-order tail. Insert before the first pending item.
           const pendingIdx = listRef.current?.data.findIndex(
             (i: ChatItem) => isMessage(i) && i.status === 'pending'
           )
@@ -245,28 +240,20 @@ export const useChannelRealtime = ({
     }
 
     const catchUpInner = async () => {
-      // Wait for the initial fetch_message_window to set newestSeqRef.
-      // Without this, a fast SUBSCRIBED on a slow initial fetch falls
-      // through with `since=0`, fetches the entire channel history into
-      // arrivalBuffer, and those rows tail-pile after data.replace —
-      // visible as reversed pagination (newer block on top, older on
-      // bottom). Bounded so we don't hang forever on a stalled fetch.
+      // Wait for the initial fetch_message_window to set newestSeqRef: a fast
+      // SUBSCRIBED on a slow fetch would fall through with `since=0`, pull the
+      // whole channel history into arrivalBuffer, and tail-pile it after
+      // data.replace. Bounded so a stalled fetch can't hang here.
       let waitAttempts = 0
       while (newestSeqRef.current == null && mountedRef.current && waitAttempts < 100) {
         await new Promise((r) => setTimeout(r, 50))
         waitAttempts++
       }
       if (!mountedRef.current || newestSeqRef.current == null) return
-      // Loop until the server returns fewer than CATCHUP_PAGE rows (i.e. the
-      // gap is closed). `fetch_messages_since` truncates at p_limit, so a
-      // single-shot 100-row call silently drops anything past that — a user
-      // returning to a busy channel after hours would lose the middle. Cap
-      // pages so a runaway gap (or a misbehaving server) can't spin forever;
-      // realtime stays correct going forward even if we bail.
-      // Local pagination cursor — must NOT advance newestSeqRef because
-      // catchUp messages route to detachedBuffer when the list doesn't
-      // include the tail (deep-link / first_unread mid-channel mounts),
-      // and loadNewer relies on newestSeqRef tracking LIST max only.
+      // Page until a short response: `fetch_messages_since` truncates at
+      // p_limit, so one call drops the middle of a long gap; MAX_PAGES bounds
+      // a runaway. `sinceLocal` stays local — on mid-channel mounts these rows
+      // go to detachedBuffer, so bumping newestSeqRef would disarm loadNewer.
       const CATCHUP_PAGE = 100
       const MAX_PAGES = 20
       let sinceLocal = newestSeqRef.current
@@ -290,11 +277,10 @@ export const useChannelRealtime = ({
             row
           }
           arrivalBufferRef.current.set(row.id, item)
-          // Intentionally NOT pushing to detachedBufferRef here: these rows
-          // are paginated out, not session arrivals. Counting them inflates
-          // the JumpToPresent chip with phantom unreads on deep-link or
-          // first_unread mid-channel mounts. Genuine "new while reading"
-          // still flows via the postgres_changes INSERT handler below.
+          // Intentionally NOT pushed to detachedBufferRef: these rows are
+          // paginated out, not session arrivals, and counting them inflates
+          // the JumpToPresent chip with phantom unreads. Genuine "new while
+          // reading" still flows via the postgres_changes INSERT below.
           if (typeof row.seq === 'number' && row.seq > sinceLocal) sinceLocal = row.seq
         }
         scheduleFlush()
@@ -329,11 +315,10 @@ export const useChannelRealtime = ({
           }
           arrivalBufferRef.current.set(row.id, item)
           if (!dataIncludesTailRef.current) detachedBufferRef.current.push(item)
-          // newestSeqRef is intentionally NOT bumped here. It tracks the
-          // LIST's max seq so loadNewer can use it as the `since` cursor;
-          // arrivals routed to detachedBuffer (mid-channel mount) must not
-          // race ahead of the list and disarm loadNewer. Drain updates the
-          // ref when items actually enter the list.
+          // newestSeqRef is intentionally NOT bumped here: it tracks the LIST's
+          // max seq as loadNewer's `since` cursor, and arrivals routed to
+          // detachedBuffer (mid-channel mount) must not race ahead and disarm
+          // it. Drain updates the ref when items actually enter the list.
           scheduleFlush()
         }
       )
@@ -366,11 +351,10 @@ export const useChannelRealtime = ({
         'broadcast',
         { event: 'message:deleted' },
         ({ payload }: { payload: { id?: string } }) => {
-          // Anon viewers don't receive the postgres_changes UPDATE that flips
-          // `deleted_at` (anon SELECT policy filters it out); the trigger
-          // `handle_message_soft_delete` emits this broadcast so they prune
-          // locally. Authed members may receive both signals — deleteBufferRef
-          // is a Set, so the duplicate is idempotent.
+          // Anon viewers never get the postgres_changes UPDATE that flips
+          // `deleted_at` (anon SELECT policy filters it out), so the trigger
+          // `handle_message_soft_delete` broadcasts instead. Authed members
+          // may get both; deleteBufferRef is a Set, so it stays idempotent.
           if (payload?.id) {
             deleteBufferRef.current.add(payload.id)
             scheduleFlush()

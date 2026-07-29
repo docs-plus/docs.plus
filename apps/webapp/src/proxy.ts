@@ -1,16 +1,13 @@
 import { logger } from '@utils/logger'
 import { type NextRequest, NextResponse } from 'next/server'
 
-/**
- * Middleware for request handling, error redirects, and logging
- * Runs on Edge Runtime - keep it lightweight and fast
- */
+/** Runs on the Edge Runtime — keep it lightweight and free of Node-only APIs. */
 export async function proxy(request: NextRequest) {
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
   const { pathname, searchParams } = request.nextUrl
 
-  // Handle new.{domain} → create random doc and redirect
+  // new.{domain} → a fresh random document, mirrored by the /new page route.
   const hostname = request.headers.get('host') || ''
   if (hostname.startsWith('new.')) {
     const randomSlug = (Math.random() + 1).toString(36).substring(2)
@@ -28,16 +25,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(errorUrl)
   }
 
-  // Create response with request headers preserved
   const response = NextResponse.next({
     request: { headers: request.headers }
   })
 
-  // Add request tracking headers (useful for debugging and monitoring)
   response.headers.set('X-Request-ID', requestId)
 
-  // Log in production (sampled to reduce volume)
-  // Edge runtime doesn't have access to all Node.js APIs, keep logging minimal
+  // Sampled at 10% for page routes to keep log volume down; API routes always log.
   if (process.env.NODE_ENV === 'production') {
     const isApiRoute = pathname.startsWith('/api/')
     const shouldLog = isApiRoute || Math.random() < 0.1
@@ -49,7 +43,6 @@ export async function proxy(request: NextRequest) {
           request.headers.get('x-real-ip') ||
           'unknown'
 
-        // Use structured logging - logger handles production filtering internally
         logger.structured('info', 'Request processed', {
           requestId,
           method: request.method,
@@ -63,7 +56,6 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Set response time header after processing
   response.headers.set('X-Response-Time', `${Date.now() - startTime}ms`)
 
   return response
@@ -71,13 +63,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Exclude:
-     * - _next/* (Next.js internals)
-     * - api/* (API routes - handle logging there)
-     * - .well-known/* (system paths)
-     * - Static assets (images, fonts, etc.)
-     */
+    // Excludes _next internals, api routes (they log themselves), .well-known,
+    // and static assets.
     '/((?!_next|api|\\.well-known|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot)$).*)'
   ]
 }

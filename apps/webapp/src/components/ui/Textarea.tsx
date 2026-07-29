@@ -80,16 +80,13 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const textareaClasses = buildTextareaClasses(size, color, ghost, error, success)
 
-    // Helper text styling
     const helperTextClasses = twMerge(
       'label text-xs',
       error && 'text-error',
       success && 'text-success'
     )
 
-    // Floating label pattern
-    // NOTE: In daisyUI 5.5+, the span MUST come before the textarea.
-    // The label floats above when focused or has content, and appears inside when empty/unfocused.
+    // daisyUI 5.5+: the span MUST come before the textarea or the label never floats.
     if (labelPosition === 'floating') {
       return (
         <div className={twMerge('form-control w-full', wrapperClassName)}>
@@ -110,7 +107,6 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       )
     }
 
-    // Above label pattern (default)
     return (
       <div className={twMerge('form-control w-full', wrapperClassName)}>
         {label && (

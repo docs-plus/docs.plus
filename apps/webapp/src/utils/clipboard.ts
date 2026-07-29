@@ -1,26 +1,10 @@
 import { logger } from './logger'
 
 /**
- * Copy text to clipboard with fallback for older browsers.
- *
- * This is the single source of truth for clipboard operations in the app.
- * For React components, use the `useCopyToClipboard` hook instead.
- *
- * @param text - The text to copy to clipboard
- * @returns Promise<boolean> - true if successful, false otherwise
- *
- * @example
- * // Basic usage
- * const success = await copyToClipboard('Hello World')
- *
- * @example
- * // With error handling
- * if (await copyToClipboard(url)) {
- *   toast.Success('Link copied!')
- * }
+ * The single source of truth for clipboard writes. React components should use
+ * the `useCopyToClipboard` hook instead of calling this directly.
  */
 export const copyToClipboard = async (text: string): Promise<boolean> => {
-  // Try modern Clipboard API first
   if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     try {
       await navigator.clipboard.writeText(text)
@@ -31,19 +15,15 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
     }
   }
 
-  // Fallback for older browsers or when Clipboard API fails
   return copyToClipboardLegacy(text)
 }
 
-/**
- * Legacy clipboard copy using execCommand (for older browsers).
- * @internal
- */
+/** @internal execCommand path for browsers without the Clipboard API. */
 const copyToClipboardLegacy = (text: string): boolean => {
   const textArea = document.createElement('textarea')
   textArea.value = text
 
-  // Make textarea invisible but still functional
+  // Off-screen rather than hidden: `display: none` would break `select()`.
   textArea.style.position = 'fixed'
   textArea.style.left = '-9999px'
   textArea.style.top = '-9999px'
@@ -64,14 +44,7 @@ const copyToClipboardLegacy = (text: string): boolean => {
   }
 }
 
-/**
- * Copy rich content (HTML + plain text) to clipboard.
- * Used for copying formatted content that should preserve styling when pasted.
- *
- * @param html - HTML content
- * @param plainText - Plain text fallback
- * @returns Promise<boolean> - true if successful
- */
+/** Writes both flavours so a paste target can keep the formatting. */
 export const copyRichContentToClipboard = async (
   html: string,
   plainText: string
@@ -86,11 +59,9 @@ export const copyRichContentToClipboard = async (
       ])
       return true
     }
-    // Fallback to plain text
     return copyToClipboard(plainText)
   } catch (err) {
     logger.debug('Rich clipboard copy failed', { error: err })
-    // Fallback to plain text
     return copyToClipboard(plainText)
   }
 }

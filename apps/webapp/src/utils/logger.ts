@@ -1,9 +1,3 @@
-/**
- * Centralized logging utility
- * Replaces console.* calls with structured logging
- * Supports both client and server environments
- */
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 interface LogContext {
@@ -21,7 +15,6 @@ class Logger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    // In production, only log warnings and errors
     if (!this.isDevelopment && (level === 'debug' || level === 'info')) {
       return false
     }
@@ -62,10 +55,7 @@ class Logger {
     }
   }
 
-  /**
-   * Structured logging for production (JSON format)
-   * Useful for log aggregation tools
-   */
+  /** JSON output, shaped for log-aggregation tools. */
   structured(level: LogLevel, message: string, _context?: LogContext): void {
     if (!this.shouldLog(level)) return
 
@@ -78,12 +68,10 @@ class Logger {
     }
 
     if (this.isDevelopment) {
-      // Pretty print in development
       console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](
         JSON.stringify(logEntry, null, 2)
       )
     } else {
-      // JSON in production for log aggregation
       console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](
         JSON.stringify(logEntry)
       )
@@ -91,8 +79,6 @@ class Logger {
   }
 }
 
-// Export singleton instance
 export const logger = new Logger()
 
-// Export types for use in other files
 export type { LogContext, LogLevel }

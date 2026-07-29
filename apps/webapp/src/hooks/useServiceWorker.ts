@@ -12,33 +12,11 @@ const reportSwIssue = (kind: string, detail: unknown) =>
   })
 
 /**
- * Service Worker Update Hook
- *
- * Ensures PWA clients always get the latest version after a deploy.
- *
- * How it works:
- * ─────────────────────────────────────────────────────────────
- * 1. next-pwa registers sw.js automatically (register: true)
- * 2. This hook detects when a NEW sw.js is downloaded
- * 3. Sends SKIP_WAITING → new SW activates immediately
- * 4. On controllerchange → page reloads with fresh assets
- *
- * Update triggers (belt-and-suspenders):
- * ─────────────────────────────────────────────────────────────
- * - On page load (immediate)
- * - On visibilitychange (app returns from background — mobile PWA)
- * - On focus (desktop tab switching — belt for desktop)
- * - On online (reconnection after offline)
- * - Every 10 minutes (periodic poll)
- *
- * Why visibilitychange and NOT just focus:
- *   iOS/Android standalone PWA does NOT fire 'focus' when
- *   the app returns from background. 'visibilitychange' is
- *   the only reliable event for mobile PWA foreground detection.
- * ─────────────────────────────────────────────────────────────
+ * Keeps PWA clients on the newest deploy: next-pwa registers sw.js, this hook
+ * sends SKIP_WAITING when a new one installs and reloads on controllerchange.
+ * Update checks run on load, visibilitychange, focus, online, and a 10-min poll.
  */
 const useServiceWorker = () => {
-  // Tell waiting SW to skip waiting and become the active SW
   const activateWaitingWorker = useCallback(() => {
     navigator.serviceWorker.getRegistration().then((reg) => {
       if (reg?.waiting) {
@@ -52,7 +30,6 @@ const useServiceWorker = () => {
 
     let refreshing = false
 
-    // ── Reload when new SW takes control ──
     const handleControllerChange = () => {
       if (refreshing) return
       refreshing = true
@@ -60,7 +37,6 @@ const useServiceWorker = () => {
       window.location.reload()
     }
 
-    // ── When new SW finishes installing, activate it ──
     const handleStateChange = (
       event: Event,
       reg: ServiceWorkerRegistration,
@@ -86,7 +62,6 @@ const useServiceWorker = () => {
       }
     }
 
-    // ── Track installing workers for state changes ──
     const handleUpdateFound = (reg: ServiceWorkerRegistration) => {
       const newWorker = reg.installing
       if (newWorker) {
@@ -99,7 +74,6 @@ const useServiceWorker = () => {
       }
     }
 
-    // ── Check for SW updates (call reg.update()) ──
     const checkForUpdates = () => {
       navigator.serviceWorker.getRegistration().then((reg) => {
         if (reg) {
@@ -111,37 +85,33 @@ const useServiceWorker = () => {
       })
     }
 
-    // ── visibilitychange: the RELIABLE event for mobile PWA ──
+    // A standalone PWA on iOS/Android never fires 'focus' when it returns from
+    // background; visibilitychange is the only reliable foreground signal there.
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         checkForUpdates()
       }
     }
 
-    // ── Register all listeners ──
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange)
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', checkForUpdates) // belt for desktop
-    window.addEventListener('online', checkForUpdates) // reconnection
+    window.addEventListener('focus', checkForUpdates)
+    window.addEventListener('online', checkForUpdates)
 
-    // ── Initial setup when SW is ready ──
     navigator.serviceWorker.ready.then((reg) => {
-      // If there's already a waiting worker (e.g. from previous visit), activate it
+      // A worker can already be waiting from a previous visit.
       if (reg.waiting) {
         console.info('[SW] Update waiting on load, activating…')
         activateWaitingWorker()
       }
 
-      // Listen for future updates
       reg.addEventListener('updatefound', () => handleUpdateFound(reg))
 
-      // Check for updates immediately on load
       reg.update().catch((error) => {
         if (navigator.onLine) reportSwIssue('update-failed', error)
       })
     })
 
-    // ── Periodic check every 10 minutes ──
     const updateInterval = setInterval(checkForUpdates, 10 * 60 * 1000)
 
     return () => {

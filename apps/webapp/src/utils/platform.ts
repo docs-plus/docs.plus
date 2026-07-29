@@ -1,16 +1,5 @@
-/**
- * Platform detection utilities (framework-agnostic)
- *
- * Pure functions — no React, no side-effects, safe to call from hooks,
- * service-worker helpers, or any other context.
- *
- * iPadOS note:
- * iPadOS 13+ reports its user-agent as macOS Safari (no "iPad" in UA).
- * We use the maxTouchPoints heuristic to distinguish iPads from Macs.
- * This is the industry-standard method (Google Analytics, Apple docs, MDN).
- */
-
-// ── iPad detection ──────────────────────────────────────────────────────────
+// Pure functions, no React and no side effects — safe from hooks, service-worker
+// helpers, or anywhere else.
 
 /**
  * Detect if the device is an iPad, including iPadOS 13+ which spoofs as Mac.
@@ -30,11 +19,6 @@ export function isIPadDevice(): boolean {
   return false
 }
 
-// ── iOS detection ───────────────────────────────────────────────────────────
-
-/**
- * Detect if the device is any iOS variant (iPhone, iPod, iPad/iPadOS).
- */
 export function isIOSDevice(): boolean {
   if (typeof window === 'undefined') return false
 
@@ -46,15 +30,9 @@ export function isIOSDevice(): boolean {
   return false
 }
 
-// ── iOS version ─────────────────────────────────────────────────────────────
-
 /**
- * Parse iOS version from the user-agent string.
- *
- * For iPadOS 13+ (which reports as macOS) we map the macOS version back:
- *   macOS 10.15 → iPadOS 13, macOS 11 → iPadOS 14, etc.
- *
- * Returns null on non-iOS devices.
+ * null on non-iOS devices. iPadOS 13+ reports a macOS version, so it is mapped
+ * back: macOS 10.15 → iPadOS 13, macOS 11 → iPadOS 14, and so on.
  */
 export function getIOSVersion(): number | null {
   if (typeof window === 'undefined') return null
@@ -83,14 +61,9 @@ export function getIOSVersion(): number | null {
   return null
 }
 
-// ── Platform category ───────────────────────────────────────────────────────
-
 export type DevicePlatform = 'ios' | 'android' | 'web'
 
-/**
- * Classify the device into ios / android / web.
- * "web" means desktop browser (Mac, Windows, Linux).
- */
+/** "web" means a desktop browser — Mac, Windows, or Linux. */
 export function getDevicePlatform(): DevicePlatform {
   if (typeof window === 'undefined') return 'web'
 

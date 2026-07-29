@@ -60,7 +60,6 @@ const GoogleOneTapAuth = () => {
     if (isInitialized.current) return
 
     try {
-      // Skip if user already has a session
       const {
         data: { session }
       } = await supabase.auth.getSession()
@@ -72,7 +71,6 @@ const GoogleOneTapAuth = () => {
         return
       }
 
-      // Wait for Google script to load with timeout
       const maxAttempts = GOOGLE_SCRIPT_LOAD_TIMEOUT_MS / POLL_INTERVAL_MS
       for (let i = 0; i < maxAttempts; i++) {
         if (window.google?.accounts) break
@@ -112,7 +110,6 @@ const GoogleOneTapAuth = () => {
 
   useEffect(() => {
     return () => {
-      // Cleanup: cancel Google One Tap prompt on unmount
       window.google?.accounts?.id?.cancel()
       isInitialized.current = false
     }

@@ -1,31 +1,13 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
-/**
- * TipTap Editor Types & Constants
- *
- * This file contains all TypeScript definitions for TipTap editor functionality,
- * including ProseMirror decorations, plugins, editor-specific types, and constants.
- *
- * Note: Use library types from @tiptap/core and @tiptap/pm/* where possible.
- */
+// Prefer library types from @tiptap/core and @tiptap/pm/* over anything declared here.
 
-// ============================================================================
-// Editor Constants & Enums
-// ============================================================================
-
-/**
- * TipTap editor events
- * Used for PubSub communication between components
- */
+/** PubSub topics for editor events crossing component boundaries. */
 export const TIPTAP_EVENTS = {
-  /** New heading was created */
   NEW_HEADING_CREATED: 'newHeadingCreated'
 } as const
 
-/**
- * Transaction metadata keys
- * Used to mark transactions for specific handling (e.g., TOC updates)
- */
+/** Transaction meta keys that mark a transaction for special handling. */
 export const TRANSACTION_META = {
   RENDER_TOC: 'renderTOC',
   PASTE: 'paste',
@@ -36,9 +18,6 @@ export const TRANSACTION_META = {
   HEADING_TEXT_CHANGED: 'headingTextChanged'
 } as const
 
-/**
- * TipTap node type constants
- */
 export const TIPTAP_NODES = {
   DOC_TYPE: 'doc',
   HEADING_TYPE: 'heading',
@@ -59,21 +38,15 @@ export const TIPTAP_NODES = {
   HORIZONTAL_RULE_TYPE: 'horizontalRule'
 } as const
 
-/**
- * HTML entity constants
- */
 export const HTML_ENTITIES = {
-  NBSP: '\u00A0', // Unicode for non-breaking space
-  LT: '\u003C', // Unicode for less-than symbol
-  GT: '\u003E', // Unicode for greater-than symbol
-  AMP: '\u0026', // Unicode for ampersand
-  QUOT: '\u0022', // Unicode for double quote
-  APOSTROPHE: '\u0027' // Unicode for apostrophe
+  NBSP: '\u00A0',
+  LT: '\u003C',
+  GT: '\u003E',
+  AMP: '\u0026',
+  QUOT: '\u0022',
+  APOSTROPHE: '\u0027'
 } as const
 
-/**
- * Combined TipTap constants (backwards compatibility)
- */
 export const TIPTAP_ENUMS = {
   EVENTS: TIPTAP_EVENTS,
   NODES: TIPTAP_NODES,
@@ -81,38 +54,20 @@ export const TIPTAP_ENUMS = {
   TRANSACTION_META
 } as const
 
-/**
- * Legacy export for backwards compatibility with existing code
- * @deprecated Use named exports TIPTAP_EVENTS, TIPTAP_NODES, HTML_ENTITIES instead
- */
+/** @deprecated Use named exports TIPTAP_EVENTS, TIPTAP_NODES, HTML_ENTITIES instead */
 export default TIPTAP_ENUMS
 
-/**
- * Type definitions for the constants
- */
 export type TipTapEventType = (typeof TIPTAP_EVENTS)[keyof typeof TIPTAP_EVENTS]
 export type TipTapNodeType = (typeof TIPTAP_NODES)[keyof typeof TIPTAP_NODES]
 export type HtmlEntityType = (typeof HTML_ENTITIES)[keyof typeof HTML_ENTITIES]
 export type TransactionMetaKey = (typeof TRANSACTION_META)[keyof typeof TRANSACTION_META]
 
-// ============================================================================
-// Core Editor Types (Re-exports from TipTap/ProseMirror)
-// ============================================================================
-
 // Command augmentations removed — flat schema uses standard toggleHeading/setParagraph from StarterKit
 
-/**
- * TipTap editor instance type
- * Using 'any' for flexibility with custom commands.
- * For strict typing in new code, import Editor directly from '@tiptap/core'
- */
-
+/** Loose on purpose for custom commands; new code should import Editor from '@tiptap/core'. */
 export type TipTapEditor = any
 
-/**
- * Re-export commonly used ProseMirror/TipTap types for convenience.
- * Import from '@types' to maintain single source of truth.
- */
+// Re-exported so '@types' stays the single import site for these.
 export type { CommandProps, Editor } from '@tiptap/core'
 export type {
   DOMOutputSpec,
@@ -125,9 +80,6 @@ export type {
 export type { EditorState, Selection, Transaction } from '@tiptap/pm/state'
 export type { EditorView, ViewMutationRecord } from '@tiptap/pm/view'
 
-/**
- * Editor node position information
- */
 export interface NodePosition {
   from: number
   to: number
@@ -135,47 +87,22 @@ export interface NodePosition {
   childCount: number
 }
 
-/**
- * Editor event data for PubSub communication
- */
+/** Payload for the PubSub topics in TIPTAP_EVENTS. */
 export interface EditorEventData {
   headingId?: string | null
   open?: boolean
   [key: string]: any
 }
 
-// ============================================================================
-// Decoration System Types
-// ============================================================================
+// For decoration building, use ProseMirror types directly: DecorationSet from
+// '@tiptap/pm/view', Transaction from '@tiptap/pm/state', Node from '@tiptap/pm/model'.
 
-// Note: For decoration building, use ProseMirror types directly:
-// - DecorationSet from '@tiptap/pm/view'
-// - Transaction from '@tiptap/pm/state'
-// - Node from '@tiptap/pm/model'
-
-// ============================================================================
-// Content Structure Types
-// ============================================================================
-
-/**
- * Heading node data structure
- */
 export interface HeadingNodeData extends NodePosition {
   headingId: string
   level: number
   node: ProseMirrorNode
 }
 
-// ============================================================================
-// Plugin Configuration Types
-// ============================================================================
-
-// Note: Plugin configurations should import types directly from TipTap/ProseMirror
-// - Use Editor from '@tiptap/core'
-// - Use Node, DecorationSet from '@tiptap/pm/*'
-
-// ============================================================================
-// DOM Event Types
-// ============================================================================
+// Plugin configurations import their types directly from TipTap/ProseMirror.
 
 // HeadingToggleEvent and FoldClickEventData removed — fold is now plugin-driven via HeadingFold

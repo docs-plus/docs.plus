@@ -16,13 +16,10 @@ interface SignInFormProps {
   variant?: 'card' | 'inline'
   /** Show header with title and close button */
   showHeader?: boolean
-  /** Custom header title */
   title?: string
-  /** Custom header subtitle */
   subtitle?: string
   /** Callback when close button clicked (header only) */
   onClose?: () => void
-  /** Additional class names */
   className?: string
   /** Post-auth return URL (pathname+search); when set the OAuth/magic-link redirect lands here instead of the current location. */
   returnTo?: string
@@ -140,12 +137,10 @@ const SignInForm = ({
 
   const isAnyLoading = isPending || loading || googleLoading
 
-  // Card variant adds its own container styling
   const containerClasses = variant === 'card' ? 'bg-base-100 rounded-box p-5 shadow-lg sm:p-6' : ''
 
   return (
     <div className={`flex flex-col ${containerClasses} ${className}`}>
-      {/* Header - integrated into the same container */}
       {showHeader && (
         <div className="mb-5 flex items-start justify-between">
           <div>
@@ -156,10 +151,8 @@ const SignInForm = ({
         </div>
       )}
 
-      {/* Sign in form */}
       {!emailSent && (
         <div className="space-y-4">
-          {/* Google OAuth button */}
           <Button
             className="btn btn-block border-base-300 bg-base-100 text-base-content hover:border-base-300 hover:bg-base-200 rounded-box h-11 border font-semibold transition-colors sm:h-12"
             onClick={() => handleOAuthSignIn('google')}
@@ -169,10 +162,8 @@ const SignInForm = ({
             Continue with Google
           </Button>
 
-          {/* Divider */}
           <div className="divider text-base-content/40 text-xs sm:text-sm">OR</div>
 
-          {/* Email form */}
           <form onSubmit={handleSignInWithEmail} className="space-y-4">
             <TextInput
               labelPosition="floating"
@@ -195,7 +186,6 @@ const SignInForm = ({
               {btnSubmitText}
             </Button>
 
-            {/* Hint box */}
             <div className="bg-base-200 text-base-content/80 rounded-box flex items-start gap-2 p-3 text-xs sm:text-sm">
               <LuSparkles size={16} className="text-primary mt-0.5 shrink-0" />
               <span>We'll email you a magic link for a password-free sign in</span>
@@ -204,7 +194,6 @@ const SignInForm = ({
         </div>
       )}
 
-      {/* Email sent confirmation */}
       {emailSent && (
         <div className="bg-base-200 rounded-box flex flex-col items-center justify-center p-6 text-center motion-safe:animate-[doc-region-in_200ms_ease-out_both] sm:p-8">
           <div className="bg-primary/10 mb-4 flex size-16 items-center justify-center rounded-full">

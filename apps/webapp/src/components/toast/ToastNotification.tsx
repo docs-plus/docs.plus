@@ -14,7 +14,6 @@ export interface ToastNotificationOptions extends ToastOptions {
   onAction?: () => void
 }
 
-// Indicator colors for each variant
 const variantIndicatorColors: Record<ToastVariant, string> = {
   success: 'bg-success',
   error: 'bg-error',
@@ -29,29 +28,6 @@ const defaultOptions: ToastNotificationOptions = {
   variant: 'neutral'
 }
 
-/**
- * ToastNotification - Theme-aware toast with colored left indicator.
- *
- * Design:
- * - Light theme: Dark background (`bg-neutral`) with white text
- * - Dark theme: Light background (`bg-base-100`) with dark text
- * - Colored vertical indicator bar on left
- * - Fully dynamic content (text, icons, or any React node)
- * - Optional action button
- *
- * @example
- * // Simple text
- * ToastNotification('Document saved', { variant: 'success' })
- *
- * // With action
- * ToastNotification('Item deleted', { variant: 'error', actionLabel: 'Undo', onAction: restore })
- *
- * // With custom content (icons + text)
- * ToastNotification(
- *   <span className="flex items-center gap-2"><MdCheck /> Saved</span>,
- *   { variant: 'success' }
- * )
- */
 export const ToastNotification = (
   content: React.ReactNode,
   options?: Partial<ToastNotificationOptions>
@@ -64,22 +40,17 @@ export const ToastNotification = (
     (t) => (
       <div
         className={twMerge(
-          // Base styles
           'pointer-events-auto flex max-w-md items-center gap-3',
           'rounded-box px-4 py-3',
           // Theme-aware inverse surface (light-dark via color-scheme, no dark: variant)
           'surface-inverse-raised',
-          // Shadow for depth
           'shadow-xl',
-          // Animation
           'transition-[opacity,transform] duration-200 ease-out',
           t.visible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
-          // Custom classes
           opts.className
         )}
         role="alert"
         aria-live="polite">
-        {/* Colored indicator bar */}
         {variant !== 'neutral' && (
           <span
             className={twMerge('h-6 w-1 shrink-0 rounded-full', indicatorColor)}
@@ -87,10 +58,8 @@ export const ToastNotification = (
           />
         )}
 
-        {/* Content - fully dynamic */}
         <div className="flex-1 text-sm font-medium">{content}</div>
 
-        {/* Action button (optional) */}
         {opts.actionLabel && opts.onAction && (
           <button
             type="button"

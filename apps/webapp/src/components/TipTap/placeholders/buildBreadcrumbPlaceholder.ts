@@ -28,21 +28,13 @@ const SEGMENT_MAX_LENGTH = 24
 const SEGMENT_SEPARATOR = ' > '
 const ELLIPSIS = '...'
 
-/**
- * Truncate so the returned string is at most `max` chars including the
- * trailing ellipsis. Cuts at `max - ELLIPSIS.length` then appends `...`.
- * Returns the original string unchanged when it already fits.
- */
+/** `max` counts the trailing ellipsis, so the result never exceeds it. */
 export function truncateSegment(text: string, max: number = SEGMENT_MAX_LENGTH): string {
   if (text.length <= max) return text
   return text.slice(0, max - ELLIPSIS.length) + ELLIPSIS
 }
 
-/**
- * Format one heading entry as a breadcrumb segment.
- * Empty / whitespace-only heading text falls back to `Heading N`.
- * Result is truncated to SEGMENT_MAX_LENGTH (incl. ellipsis).
- */
+/** Empty or whitespace-only heading text falls back to `Heading N`. */
 export function formatHeadingSegment(entry: HeadingEntry): string {
   const trimmed = entry.text.trim()
   const raw = trimmed.length > 0 ? trimmed : `Heading ${entry.level}`
@@ -50,18 +42,10 @@ export function formatHeadingSegment(entry: HeadingEntry): string {
 }
 
 /**
- * Build the ancestor heading chain (in display order) for a cursor that
- * sits after `precedingHeadings`. The schema is flat (`heading block*`),
- * so hierarchy is implicit from heading level.
- *
- * Algorithm: walk preceding headings in REVERSE, accept a heading only
- * if its level is strictly less than the current `requiredLevel`, then
- * tighten `requiredLevel` to that heading's level. Stop at level 1.
- *
- * @param precedingHeadings - All headings before the cursor, in document order.
- * @param currentHeadingLevel - The cursor's own heading level (1-6) when the
- *   current node IS a heading, else `null`. Used to seed `requiredLevel` so
- *   sibling/lower headings of the same level are not treated as ancestors.
+ * The schema is flat (`heading block*`), so hierarchy is implicit from level:
+ * walk `precedingHeadings` (document order) in reverse and keep each heading
+ * shallower than the last kept one. `currentHeadingLevel` seeds that bound so
+ * siblings at the cursor's own level are not mistaken for ancestors.
  */
 export function buildAncestorChain<T extends { level: number }>(
   precedingHeadings: T[],
@@ -88,11 +72,7 @@ interface TailContext {
   isSubtitle?: boolean
 }
 
-/**
- * Resolve the trailing breadcrumb segment from the current node's role.
- * Uses PLACEHOLDER_TEXT for the generic per-node strings; headings get
- * `Heading N` (with the level) so the user sees what they're about to write.
- */
+/** Headings carry their level (`Heading N`) so the user sees what they're about to write. */
 export function resolveTailSegment(ctx: TailContext): string {
   if (ctx.nodeName === 'heading' && typeof ctx.headingLevel === 'number') {
     return `Heading ${ctx.headingLevel}`
@@ -104,10 +84,9 @@ export function resolveTailSegment(ctx: TailContext): string {
 }
 
 /**
- * Lightweight reference to a heading: just its level and the node itself.
- * We defer reading `textContent` until after the ancestor chain is selected
- * so we only pay the text-walk cost for the (≤ 6) headings we actually
- * render, not for every preceding heading in the document.
+ * Holds the node, not its text: `textContent` is read only after the ancestor
+ * chain is picked, so the text-walk cost is paid for the ≤ 6 headings actually
+ * rendered rather than every preceding heading in the document.
  */
 interface HeadingRef {
   level: number
@@ -133,9 +112,8 @@ function collectPrecedingHeadingRefs(
 }
 
 /**
- * Legacy placeholder used outside the breadcrumb's reach: container-gated
- * label first (paragraph-only, matching the pre-breadcrumb behavior), then
- * the generic per-node placeholder.
+ * Used outside the breadcrumb's reach. The container-gated label stays
+ * paragraph-only, matching the pre-breadcrumb behavior.
  */
 function legacyPlaceholder(nodeName: string, parentName: string): string {
   if (nodeName === 'paragraph' && parentName in PARENT_PLACEHOLDER) {
@@ -145,14 +123,9 @@ function legacyPlaceholder(nodeName: string, parentName: string): string {
 }
 
 /**
- * Decide whether a breadcrumb should render for the current empty node.
- *
- * - 'all-blocks' shows the breadcrumb wherever the placeholder fires.
- * - 'top-level' restricts it to paragraphs and headings whose parent is the
- *   document root, preserving the legacy `List` / `Quote` / `Write code`
- *   placeholders inside containers and code blocks.
- *
- * The first H1 is special-cased upstream and never reaches this function.
+ * 'top-level' keeps the breadcrumb off nested blocks so the legacy `List` /
+ * `Quote` / `Write code` placeholders survive inside containers and code
+ * blocks. The first H1 is special-cased upstream and never reaches here.
  */
 function shouldRenderBreadcrumb(
   scope: BreadcrumbScope,

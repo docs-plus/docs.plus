@@ -9,44 +9,18 @@ export interface UseCopyToClipboardOptions {
   successMessage?: string | null
   /** Toast message on error (set to null to disable toast) */
   errorMessage?: string | null
-  /** Callback after successful copy */
   onSuccess?: () => void
-  /** Callback after failed copy */
   onError?: (error: Error) => void
 }
 
 export interface UseCopyToClipboardReturn {
-  /** Whether content was just copied (for visual feedback) */
+  /** True for `resetDelay` ms after a successful copy, for inline button feedback. */
   copied: boolean
-  /** Whether a copy operation is in progress */
   copying: boolean
-  /** Copy text to clipboard */
   copy: (text: string) => Promise<boolean>
-  /** Reset copied state manually */
   reset: () => void
 }
 
-/**
- * Hook for copying text to clipboard with visual feedback state.
- *
- * @example
- * // Basic usage
- * const { copy, copied } = useCopyToClipboard()
- * <button onClick={() => copy('Hello!')}>
- *   {copied ? <MdCheck /> : <MdContentCopy />}
- * </button>
- *
- * @example
- * // Without toast (inline feedback only)
- * const { copy, copied } = useCopyToClipboard({ successMessage: null })
- *
- * @example
- * // Custom messages
- * const { copy, copied } = useCopyToClipboard({
- *   successMessage: 'Link copied!',
- *   resetDelay: 3000
- * })
- */
 export const useCopyToClipboard = (
   options: UseCopyToClipboardOptions = {}
 ): UseCopyToClipboardReturn => {
@@ -72,7 +46,6 @@ export const useCopyToClipboard = (
 
   const copy = useCallback(
     async (text: string): Promise<boolean> => {
-      // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
@@ -86,7 +59,6 @@ export const useCopyToClipboard = (
           throw new Error('Copy to clipboard failed')
         }
 
-        // Success
         setCopied(true)
         setCopying(false)
 
@@ -96,7 +68,6 @@ export const useCopyToClipboard = (
 
         onSuccess?.()
 
-        // Auto-reset after delay
         timeoutRef.current = setTimeout(() => {
           setCopied(false)
         }, resetDelay)

@@ -39,10 +39,9 @@ const StatusPill = () => (
   </div>
 )
 
-// Carries the real ancestor classes (`pad` → `editor` → `editorWrapper`) so the
-// `_blocks.scss` sheet rules paint the bones EXACTLY as in-layout — cohesion by
-// cascade, not by a hand-mirrored utility copy that can drift. Header rows are
-// h-14 (56px) with the anon/authed control sizes; bones className matches
+// Carries the real ancestor classes (`pad` → `editor` → `editorWrapper`) so `_blocks.scss`
+// paints the bones EXACTLY as in-layout — cohesion by cascade, not a hand-mirrored utility
+// copy that can drift. Header rows are h-14 (56px); the bones className matches
 // DesktopEditor's EditorContent call verbatim.
 const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: boolean }) => (
   <div className="pad tiptap flex min-h-0 w-full flex-1 flex-col">

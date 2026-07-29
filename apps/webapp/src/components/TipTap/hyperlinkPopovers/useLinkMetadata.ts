@@ -5,9 +5,8 @@ import { fetchMetadata, getCachedMetadata, type MetadataResponse } from './fetch
 export type LinkMetadataStatus = 'loading' | 'loaded' | 'error'
 
 /**
- * Narrowed metadata shape exposed to UI consumers. Only the fields the
- * sheet renders are surfaced; wire-shape concerns (`success`,
- * `requested_url`, `cached`, `fetched_at`) stay inside `fetchMetadata`.
+ * Only what the sheet renders; wire-shape concerns (`success`, `cached`,
+ * `requested_url`, `fetched_at`) stay inside `fetchMetadata`.
  */
 export interface LinkMetadata {
   title: string
@@ -25,9 +24,8 @@ export interface UseLinkMetadataResult {
 }
 
 /**
- * Project the wire response (or L1 mark hints) onto `LinkMetadata`. Lets
- * the consuming component depend on a stable subset that won't churn if
- * the backend grows new fields.
+ * Keeps consumers on a stable subset that won't churn when the backend grows
+ * new fields.
  */
 const toLinkMetadata = (data: MetadataResponse): LinkMetadata => ({
   title: data.title,
@@ -53,17 +51,9 @@ export interface UseLinkMetadataOptions {
 }
 
 /**
- * Fetch link metadata with cache-first behavior + abort-on-unmount.
- *
- * Resolution order:
- *   1. Inline L1 (mark attrs supplied via options) — synchronous, no fetch.
- *   2. Session L2 (`getCachedMetadata`) — synchronous, no fetch.
- *   3. Network L3 (`fetchMetadata` → backend → Redis) — async.
- *
- * Both `href` and `options` are read once on mount; later changes are
- * ignored. The bottom-sheet remounts whenever a different link is
- * tapped, which matches the React tree's actual behavior — no consumer
- * needs reactive option updates today.
+ * Cache-first: L1 mark attrs → L2 session cache → L3 network, aborting on
+ * unmount. `href` and `options` are read once on mount; the bottom sheet
+ * remounts per link, so no consumer needs reactive option updates.
  */
 export const useLinkMetadata = (
   href: string,

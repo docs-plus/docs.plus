@@ -32,7 +32,6 @@ import { twMerge } from 'tailwind-merge'
 
 import { useOverlayTransition } from './useOverlayTransition'
 
-// Global state for managing multiple HoverMenus
 class HoverMenuManager {
   private currentOpenMenu: string | null = null
   private menus: Map<string, () => void> = new Map()
@@ -46,7 +45,6 @@ class HoverMenuManager {
   }
 
   open(id: string) {
-    // Close current menu if different
     if (this.currentOpenMenu && this.currentOpenMenu !== id) {
       const closeCallback = this.menus.get(this.currentOpenMenu)
       closeCallback?.()
@@ -78,15 +76,10 @@ interface HoverMenuOptions {
    *  inside a parent stacking context to escape z-index war with that
    *  context's other children (toolbars, jump-to-present, etc.). */
   portalId?: string
-  /** Floating-UI flip/shift boundary. Resolved at lookup time so the
-   *  boundary element can mount after this hook (e.g., chatroom panel
-   *  with `.group/chat` wrapper). When set, the menu CANNOT render
-   *  outside this rectangle — flip swaps top↔bottom and shift clamps
-   *  left/right when the default placement would overflow. This is the
-   *  correct fix when `position: fixed` portals would otherwise float
-   *  over toolbars / outside their visual container; z-index can't
-   *  constrain that because fixed-positioned elements are viewport-
-   *  relative, not parent-relative. */
+  /** Floating-UI flip/shift boundary; resolved at lookup time so the element
+   *  may mount after this hook. The menu then cannot render outside that
+   *  rectangle. z-index cannot do this job: `position: fixed` portals are
+   *  viewport-relative, so they float over toolbars without a boundary. */
   boundary?: Element | BoundaryResolver | null
 }
 
@@ -150,7 +143,6 @@ function useHoverMenu({
     setOpenDropdownCount((prev) => Math.max(0, prev - 1))
   }, [])
 
-  // Register with global manager
   useEffect(() => {
     const id = menuId.current
     hoverMenuManager.register(id, () => setOpen(false))
@@ -160,7 +152,7 @@ function useHoverMenu({
     }
   }, [])
 
-  // Close menu on scroll and temporarily lock interactions
+  // Scrolling closes the menu and locks re-opening until the scroll settles.
   useEffect(() => {
     const targets = resolveScrollTargets(scrollParent)
     const fallbackTargets: Array<Element | Window | Document> = targets.length
@@ -190,31 +182,26 @@ function useHoverMenu({
     }
   }, [scrollParent])
 
-  // Resolve boundary at render-time. The boundary element may mount AFTER
-  // this hook (e.g., chatroom panel wrapper). Re-evaluating on each render
-  // means the first hover may not have a boundary (falls back to
-  // 'clippingAncestors'), the next render after panel mount picks it up,
-  // and autoUpdate refreshes the position. Cost: one querySelector per
-  // render — negligible.
+  // Resolved every render because the boundary element may mount AFTER this
+  // hook (chatroom panel wrapper). The first hover then falls back to
+  // 'clippingAncestors', the next render picks the boundary up, and autoUpdate
+  // repositions. Cost is one querySelector per render — negligible.
   const resolvedBoundary = typeof boundary === 'function' ? boundary() : (boundary ?? null)
 
   const data = useFloating({
     placement,
     open: open && !disabled && !scrollLocked && isInViewport,
     onOpenChange: (newOpen) => {
-      // Don't open if element is outside viewport
       if (newOpen && !isInViewport) return
 
-      // Don't close if any dropdown is open
+      // An open dropdown owns the menu's lifetime — it must not close underneath it.
       if (!newOpen && openDropdownCount > 0) {
         return
       }
 
       if (newOpen) {
-        // Tell manager this menu is opening
         hoverMenuManager.open(menuId.current)
       } else {
-        // Tell manager this menu is closing
         hoverMenuManager.close(menuId.current)
       }
 
@@ -266,17 +253,10 @@ function useHoverMenu({
     openRef.current = open
   }, [open])
 
-  // Track reference visibility against the scroll container via
-  // IntersectionObserver, NOT getBoundingClientRect-on-scroll. The manual
-  // rect check captured stale values at mount time before Virtuoso had
-  // measured items (initial channel open) and didn't refire on
-  // layout-only changes after mount (bookmark indicator / reactions
-  // rendering on bookmarked rows). Both bugs collapsed `isInViewport` to
-  // `false`, which gated `useHover.enabled`, which silently disabled the
-  // menu until the user scrolled and the manual check ran again.
-  // IntersectionObserver fires on the initial measurement *and* on every
-  // subsequent layout change that affects intersection, so both cases
-  // are handled by construction.
+  // IntersectionObserver, NOT getBoundingClientRect-on-scroll. The manual rect
+  // check read stale values before Virtuoso had measured items, and never
+  // refired on layout-only changes; both pinned `isInViewport` false, which
+  // gated `useHover.enabled` and silently killed the menu until a scroll.
   useEffect(() => {
     const targets = resolveScrollTargets(scrollParent)
     if (!targets.length) {
@@ -289,11 +269,9 @@ function useHoverMenu({
       setIsInViewport(true)
       return
     }
-    // Use `threshold: [0, 0.5, 1]` (not just `0.5`) so the observer fires
-    // on the initial paint regardless of the starting intersection ratio.
-    // With a single threshold the observer only fires when the ratio
-    // *crosses* it — so a message that mounts already 80% visible may
-    // never trigger a callback until the user scrolls.
+    // `threshold: [0, 0.5, 1]`, not a bare `0.5`: a single threshold only fires
+    // when the ratio *crosses* it, so a message mounting already 80% visible
+    // would never get a callback until the user scrolled.
     const root = scrollContainer instanceof Element ? scrollContainer : null
     const observer = new IntersectionObserver(
       (entries) => {
@@ -427,7 +405,6 @@ export const HoverMenuItem: FC<HoverMenuItemProps> = ({ children, tooltip, class
   )
 }
 
-// Floating UI Dropdown Hook
 function useFloatingDropdown() {
   const [open, setOpen] = useState(false)
 
@@ -470,7 +447,6 @@ function useFloatingDropdown() {
   )
 }
 
-// Dropdown Context for children to access dropdown state
 interface DropdownContextType {
   isOpen: boolean
   setOpen: (open: boolean) => void
@@ -487,7 +463,6 @@ export const useDropdownContext = () => {
   return context
 }
 
-// HoverMenuDropdown - Wrapper that provides dropdown context
 export interface HoverMenuDropdownProps {
   children: ReactNode
   trigger: ReactNode
@@ -508,7 +483,7 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
   const dropdown = useFloatingDropdown()
   const hoverMenuContext = useHoverMenuContext()
 
-  // Track dropdown state in parent context
+  // The parent HoverMenu must stay open while this dropdown is.
   useEffect(() => {
     if (dropdown.open) {
       hoverMenuContext.incrementDropdownCount()
@@ -516,7 +491,6 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
     }
   }, [dropdown.open, hoverMenuContext])
 
-  // Create context value
   const dropdownContextValue = useMemo(
     () => ({
       isOpen: dropdown.open,
@@ -543,7 +517,6 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
         </span>
       </Tooltip>
 
-      {/* Dropdown Content */}
       {dropdown.isMounted && (
         <FloatingPortal>
           <div
@@ -571,7 +544,6 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
   )
 }
 
-// Helper component for dropdown items that need to close the dropdown on click
 export interface HoverMenuDropdownItemProps {
   children: ReactNode
   onClick?: () => void

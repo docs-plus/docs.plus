@@ -43,7 +43,6 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       user = result?.data?.user || null
       userError = result?.error || null
     } catch (error) {
-      // Timeout or error - continue without user (public access)
       logger.warn('Auth check failed, continuing as public user', { error })
     }
 
@@ -57,7 +56,6 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
         const sessionResult = (await Promise.race([sessionPromise, sessionTimeout])) as any
         session = sessionResult?.data?.session || null
       } catch (error) {
-        // Timeout or error - continue without session
         logger.warn('Session check failed, continuing without session', { error })
       }
     }

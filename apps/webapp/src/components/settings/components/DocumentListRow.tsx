@@ -25,10 +25,8 @@ interface DocumentListRowProps {
 }
 
 /**
- * One row in the list view. Row body navigates; the ⋮ menu is a sibling (its own
- * trigger stops propagation), so it never fires row nav and never nests button-in-button.
- * F2 (or the menu's Rename) swaps the title for an inline input; Enter/blur commit,
- * Esc reverts. Empty/whitespace after trim reverts with no request.
+ * The ⋮ menu is a sibling of the row button (its trigger stops propagation) so it never fires
+ * row nav or nests button-in-button. F2/Rename inlines an input: Enter/blur commit, Esc reverts.
  */
 function DocumentListRow({
   doc,

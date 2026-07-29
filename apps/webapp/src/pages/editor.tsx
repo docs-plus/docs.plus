@@ -12,7 +12,6 @@ import { useEffect, useMemo } from 'react'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
-// Add this type for our props
 type EditorPageProps = {
   localPersistence: boolean
   docName: string
@@ -76,10 +75,7 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
 
   useEffect(() => {
     if (!editor) return
-    // tiptap instance
     window._editor = editor
-
-    // Updated implementation that handles the specific document structure format
     window._createDocumentFromStructure = createDocumentFromStructure({ editor })
 
     // Expose heading move for Cypress tests
@@ -118,22 +114,18 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      {/* Toolbar */}
       <div className="toolbars bg-base-100 w-full shrink-0">
         <EditorToolbar />
         <Controllers editor={editor} />
       </div>
 
-      {/* Main content with TOC sidebar */}
       <div className="flex flex-1">
-        {/* TOC Sidebar */}
         <aside className="tiptap__toc m_desktop border-base-300 bg-base-100 flex w-64 shrink-0 flex-col border-r !pt-0">
           <div className="scrollbar-custom scrollbar-thin min-h-0 flex-1 overflow-y-auto p-2">
             <TocDesktop />
           </div>
         </aside>
 
-        {/* Editor */}
         <main className="flex-1 overflow-auto">
           <div className="pad tiptap history_editor flex flex-col border-solid">
             <div className="editor relative flex size-full flex-row justify-around align-top">
@@ -152,7 +144,6 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
   )
 }
 
-// Add getServerSideProps
 export const getServerSideProps: GetServerSideProps<EditorPageProps> = async ({ query }) => {
   // Dev/E2E-only playground — it exposes window._editor/_store escape hatches, so
   // it must never be routable in production.

@@ -49,31 +49,6 @@ const variantConfig = {
   primary: 'btn-primary'
 }
 
-/**
- * CopyButton - A button that copies text to clipboard with animated feedback.
- *
- * Features:
- * - GitHub-style icon animation (copy → checkmark)
- * - Configurable toast notifications
- * - Multiple sizes and variants
- * - Optional label text
- *
- * @example
- * // Basic icon-only button
- * <CopyButton text={url} tooltip="Copy link" />
- *
- * @example
- * // With label
- * <CopyButton text={code} label="Copy" successLabel="Copied!" />
- *
- * @example
- * // Without toast (inline feedback only)
- * <CopyButton text={url} successMessage={null} />
- *
- * @example
- * // Custom success message
- * <CopyButton text={url} successMessage="Link copied!" />
- */
 const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
   (
     {
@@ -89,7 +64,6 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       circle = false,
       square = false,
       onClick,
-      // Hook options
       resetDelay,
       successMessage,
       errorMessage,
@@ -133,9 +107,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
           showLabel && gap,
           className
         )}>
-        {/* Icon container with animation */}
         <span className="relative inline-flex items-center justify-center">
-          {/* Copy icon - fades out when copied */}
           <Icon
             size={iconSize}
             className={twMerge(
@@ -143,7 +115,6 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
               copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
             )}
           />
-          {/* Success icon - fades in when copied */}
           <SuccessIcon
             size={iconSize}
             className={twMerge(
@@ -153,7 +124,6 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
           />
         </span>
 
-        {/* Label text */}
         {showLabel && (
           <span className={twMerge('transition-colors duration-200', copied && 'text-success')}>
             {currentLabel}

@@ -1,6 +1,4 @@
 /**
- * Client-side App Providers
- * =========================
  * Router-dependent hooks that can't run during SSG.
  */
 

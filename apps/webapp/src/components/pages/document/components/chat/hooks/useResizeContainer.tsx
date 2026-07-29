@@ -5,22 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * Design System Panel Constraints
  * @see Notes/Design_System_Global_v2.md
  */
-const CHAT_MIN_HEIGHT = 320 // Minimum height for Chat panel
-const CHAT_MAX_HEIGHT = 1200 // Maximum height for Chat panel
-const CHAT_DEFAULT_HEIGHT = 410 // Default height
+const CHAT_MIN_HEIGHT = 320
+const CHAT_MAX_HEIGHT = 1200
+const CHAT_DEFAULT_HEIGHT = 410
 const LOCAL_STORAGE_KEY = 'docsy:chat-height'
 
-/**
- * Hook for managing chat panel resize functionality.
- *
- * Design System Requirements:
- * - Min height: 320px
- * - Max height: 1200px (or 85% of viewport, whichever is smaller)
- * - Persist height per user
- * - During drag, disable text selection
- *
- * @returns Chat resize state and handlers
- */
 const useResizeContainer = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const setOrUpdateChatPanelHeight = useChatStore((state) => state.setOrUpdateChatPanelHeight)
@@ -28,7 +17,6 @@ const useResizeContainer = () => {
   const [isResizing, setIsResizing] = useState(false)
   const editor = useStore((state) => state.settings.editor.instance)
 
-  // Load persisted height on mount (or use default)
   useEffect(() => {
     try {
       const storedHeight = localStorage.getItem(LOCAL_STORAGE_KEY)
@@ -41,14 +29,12 @@ const useResizeContainer = () => {
           return
         }
       }
-      // No stored value - use default
       setOrUpdateChatPanelHeight(Math.min(maxHeight, CHAT_DEFAULT_HEIGHT))
     } catch {
       // Ignore localStorage errors
     }
   }, [setOrUpdateChatPanelHeight])
 
-  // Persist height changes
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, String(storeHeight))
@@ -71,7 +57,6 @@ const useResizeContainer = () => {
       const startHeight = containerRef.current.clientHeight
       const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)
 
-      // Disable text selection and set resize cursor
       document.body.style.userSelect = 'none'
       document.body.style.cursor = 'row-resize'
 
@@ -79,12 +64,10 @@ const useResizeContainer = () => {
       const wasEditable = Boolean(editor?.isEditable)
       if (wasEditable) editor?.setEditable(false)
 
-      // Bypass React during drag: write `style.height` directly on the
-      // container ref and broadcast a CustomEvent for sibling consumers
-      // (editor wrapper marginBottom in `useAdjustEditorSizeForChatRoom`).
-      // Writing to Zustand on every mousemove cascades 60×/sec through
-      // every `state.chatRoom` subscriber → Virtuoso's ResizeObserver →
-      // bottom-smooth scroll thrash. Commit to the store ONCE on mouseup.
+      // Bypass React during drag: write `style.height` on the ref and broadcast a
+      // CustomEvent for siblings (`useAdjustEditorSizeForChatRoom`). A Zustand write per
+      // mousemove cascades 60×/sec through every `state.chatRoom` subscriber → Virtuoso's
+      // ResizeObserver → bottom-smooth scroll thrash. Commit to the store ONCE on mouseup.
       let lastHeight = startHeight
       const doDrag = (e: MouseEvent) => {
         e.preventDefault()
@@ -106,7 +89,6 @@ const useResizeContainer = () => {
         // Re-enable only if this drag disabled it — never flip a
         // read-only document editable.
         if (wasEditable && editor && !editor.isEditable) editor.setEditable(true)
-        // Re-enable text selection
         document.body.style.userSelect = ''
         document.body.style.cursor = ''
 
@@ -120,7 +102,6 @@ const useResizeContainer = () => {
     [editor, setOrUpdateChatPanelHeight]
   )
 
-  // Handle window resize - validate height constraints
   useEffect(() => {
     const handleWindowResize = () => {
       const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)

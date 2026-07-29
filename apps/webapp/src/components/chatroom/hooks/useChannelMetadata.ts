@@ -4,13 +4,10 @@ import { useEffect, useState } from 'react'
 import slugify from 'slugify'
 
 /**
- * Channel metadata bootstrap. Anon users and authenticated-but-not-workspace-member
- * visitors skip the write-side
- * bootstrap entirely per AGENTS.md §Anonymous Chat Read Path: the
- * upsertChannel + joinChannel writes both 403 under RLS for non-members,
- * but the metadata RPC + message window are read-only and PUBLIC channels
- * are visible to everyone. Failures on the optional join are swallowed
- * so a non-member can lurk without surfacing an error badge.
+ * Non-members (anon or signed-in) skip the write-side bootstrap per AGENTS.md
+ * §Anonymous Chat Read Path: upsertChannel + joinChannel both 403 under RLS,
+ * while the metadata RPC and message window stay readable on PUBLIC channels.
+ * Join failures are swallowed so a lurker sees no error badge.
  */
 export const useChannelMetadata = (channelId: string) => {
   const [error, setError] = useState<unknown>(null)
@@ -25,12 +22,10 @@ export const useChannelMetadata = (channelId: string) => {
     ;(async () => {
       try {
         const uid = useAuthStore.getState()?.profile?.id || ''
-        // Lazy channel row creation: signed-in workspace members opening
-        // a heading chatroom for the first time must create the channel
-        // before joinChannel (RLS on channel_members.insert requires the
-        // row to exist). Both INSERTs are gated to workspace members at
-        // the RLS layer; non-members and anon callers get a soft failure
-        // and fall through to the read-only path.
+        // Lazy channel row creation: a first-time visit to a heading chatroom
+        // must create the channel before joinChannel, because RLS on
+        // channel_members.insert requires the row to exist. Both INSERTs are
+        // member-gated at the RLS layer; others fail soft into read-only.
         const channelExists =
           useChatStore.getState().workspaceSettings.channels.get(channelId) != null
         if (!channelExists && workspaceId && uid) {

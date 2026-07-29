@@ -34,10 +34,8 @@ const getBrowserTimezone = (): string => {
 
 const getAllTimezones = (): string[] => {
   try {
-    // Modern browsers support this
     return Intl.supportedValuesOf('timeZone')
   } catch {
-    // Fallback for older browsers
     return [
       'UTC',
       'America/New_York',
@@ -178,7 +176,6 @@ const formatTimezoneLabel = (tz: string): string => {
   const cityName = tz.replace(/_/g, ' ')
 
   if (alias) {
-    // Show primary alias (first part before comma) with city
     const primaryAlias = alias.split(',')[0].trim()
     // Avoid duplication if alias is same as city
     if (cityName.includes(primaryAlias)) {
@@ -198,7 +195,6 @@ const getTimezoneSearchText = (tz: string): string => {
   return parts.join(' ').toLowerCase()
 }
 
-// Timezone Select Component
 interface TimezoneSelectProps {
   value: string
   onChange: (value: string) => void
@@ -309,7 +305,6 @@ const IOSPWANotice = ({ iosSupportsWebPush }: IOSPWANoticeProps) => {
 const NotificationsSection = () => {
   const profileData = useAuthStore((state) => state.profile?.profile_data)
 
-  // Platform detection (iOS PWA requirements)
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
 
   // iOS in Safari (not PWA) — push won't work, show install guidance
@@ -334,7 +329,6 @@ const NotificationsSection = () => {
   }))
   const [saving, setSaving] = useState(false)
 
-  // Load preferences from profile
   useEffect(() => {
     if (profileData) {
       const saved = (profileData as Record<string, unknown>)
@@ -411,7 +405,6 @@ const NotificationsSection = () => {
           // Don't show toast - they made a conscious choice
           break
         case 'error':
-          // Show the actual error from the hook
           toast.Error(error || 'Failed to enable notifications')
           break
       }
@@ -428,7 +421,6 @@ const NotificationsSection = () => {
 
   return (
     <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
-      {/* Push Notifications */}
       <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuBell size={20} className="text-primary" />
@@ -455,7 +447,6 @@ const NotificationsSection = () => {
               disabled={isLoading || !isSupported || isPushBlocked}
             />
 
-            {/* Notification type preferences - only show when push is enabled */}
             {isPushEnabled && (
               <>
                 <ToggleRow
@@ -488,7 +479,6 @@ const NotificationsSection = () => {
         )}
       </SettingsCard>
 
-      {/* Quiet Hours */}
       {isPushEnabled && (
         <SettingsCard>
           <div className="mb-3 flex items-center gap-2">
@@ -543,14 +533,12 @@ const NotificationsSection = () => {
         </SettingsCard>
       )}
 
-      {/* Email Notifications */}
       <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuMail size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Email Notifications</h2>
         </div>
 
-        {/* Bounce warning banner */}
         {preferences.email_bounce_info && (
           <div className="border-warning/30 bg-warning/10 rounded-box mb-3 border p-4">
             <div className="flex items-start gap-3">
@@ -590,7 +578,6 @@ const NotificationsSection = () => {
             disabled={saving}
           />
 
-          {/* Email type preferences - only show when email is enabled */}
           {preferences.email_enabled && (
             <>
               <ToggleRow
@@ -618,7 +605,6 @@ const NotificationsSection = () => {
                 disabled={saving}
               />
 
-              {/* Email frequency */}
               <div className="py-3">
                 <Select
                   id="email-frequency"

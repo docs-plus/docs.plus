@@ -111,14 +111,10 @@ export const useChannelMessages = ({
           : resolveInitialLocation(win, anchorKind, channelId, items)
         list.data.replace(items, { initialLocation, purgeItemSizes: true })
         setLoading(false)
-        // Virtuoso's `align: 'end'` for `LAST` at `data.replace` time
-        // computes against items-only coords and ignores the StickyHeader
-        // slot height — initial scroll lands ~1 row short of the true
-        // tail. Re-issue scrollToItem once measurements settle; by then
-        // Virtuoso's math includes the header offset and lands flush.
-        // Gated by referential identity on tailLocation so anchored
-        // scrolls (first_unread sentinel, message_id deep-link) aren't
-        // hijacked to the tail.
+        // `align: 'end'` at `data.replace` time ignores the StickyHeader slot
+        // height, so the initial scroll lands ~1 row short of the tail;
+        // re-issue once measurements settle. The identity check on
+        // `tailLocation` keeps anchored scrolls (first_unread, deep-link) free.
         if (initialLocation === tailLocation) {
           let tailAttempt = 0
           const settleTail = () => {
@@ -143,12 +139,10 @@ export const useChannelMessages = ({
         // location off the imperative handle on the next frame to seed
         // the cursor with the bottom-most fully-visible row.
         if (onInitialVisible || onListScrollSettled) {
-          // Virtuoso measures items asynchronously after `data.replace`;
-          // the first rAF can fire with `scrollHeight === visibleListHeight`
-          // and a stale `lastVisibleItemIndex === 0` pointing at the day
-          // sentinel. Poll a handful of frames until the scroller has
-          // measured, then fire once with the settled index. Bounded so
-          // we never spin on a permanently-empty list.
+          // Virtuoso measures asynchronously after `data.replace`: the first
+          // rAF can report `scrollHeight === visibleListHeight` and a stale
+          // `lastVisibleItemIndex === 0` (the day sentinel). Poll until
+          // measured, bounded so a permanently-empty list can't spin.
           let attempt = 0
           const tryInitialFire = () => {
             if (cancelled) return
@@ -223,12 +217,10 @@ export const useChannelMessages = ({
     setHasMoreOlder(Boolean(win.has_more_before))
   }, [channelId, hasMoreOlder, listRef, feedMode])
 
-  // Scroll-down pagination: fetches messages with seq > newest loaded.
-  // Only fires when the loaded window does NOT include the tail — once
-  // it does, realtime postgres_changes is the source of new messages and
-  // a fetch here would loop on empty pages. A short response (< limit)
-  // is the tail signal: flip dataIncludesTailRef so the trigger disarms
-  // and realtime arrivals start appending directly.
+  // Disarmed once the window includes the tail: from there realtime
+  // postgres_changes is the source of new messages and a fetch would loop on
+  // empty pages. A short response (< PAGE_LIMIT) is the tail signal that
+  // flips dataIncludesTailRef.
   const loadNewer = useCallback(async () => {
     if (mediaOnly) return
     if (loadingNewerRef.current) return
@@ -276,13 +268,10 @@ export const useChannelMessages = ({
         row
       })
     }
-    // Explicitly pass `false` (no autoscroll). The default `atBottom`
-    // callback would smooth-scroll on every page because loadNewer fires
-    // when bottomOffset is within LOAD_NEWER_PX_THRESHOLD — interpreted
-    // as at-bottom — and the post-append scroll snap re-triggers the
-    // same threshold, cascading into a runaway auto-scroll to tail.
-    // Pagination keeps the viewport anchored; only optimistic sends and
-    // at-tail peer arrivals deserve a follow-the-tail scroll.
+    // `false` (no autoscroll) is required: the default at-bottom callback
+    // smooth-scrolls every page, because loadNewer fires inside
+    // LOAD_NEWER_PX_THRESHOLD and the post-append snap re-triggers it —
+    // a runaway scroll to tail. Pagination must keep the viewport anchored.
     listRef.current?.data.append(items, false)
     const seqs = items
       .filter(isMessage)

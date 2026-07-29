@@ -5,15 +5,8 @@ import { twMerge } from 'tailwind-merge'
 
 import { Tooltip } from './Tooltip'
 
-/**
- * daisyUI Button sizes
- * @see https://daisyui.com/components/button/
- */
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
-/**
- * daisyUI Button color variants
- */
 export type ButtonVariant =
   | 'neutral'
   | 'primary'
@@ -26,14 +19,8 @@ export type ButtonVariant =
   | 'ghost'
   | 'link'
 
-/**
- * daisyUI Button style modifiers
- */
 export type ButtonStyle = 'outline' | 'dash' | 'soft'
 
-/**
- * daisyUI Button shape modifiers
- */
 export type ButtonShape = 'wide' | 'block' | 'square' | 'circle'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -93,9 +80,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   tooltipPlacement?: Placement
 }
 
-/**
- * Get icon size based on button size
- */
 const getDefaultIconSize = (size?: ButtonSize): number => {
   switch (size) {
     case 'xs':
@@ -110,9 +94,6 @@ const getDefaultIconSize = (size?: ButtonSize): number => {
   }
 }
 
-/**
- * Build daisyUI button class string
- */
 const buildButtonClasses = (
   variant?: ButtonVariant,
   btnStyle?: ButtonStyle,
@@ -121,22 +102,18 @@ const buildButtonClasses = (
 ): string => {
   const classes: string[] = ['btn']
 
-  // Add size class
   if (size) {
     classes.push(`btn-${size}`)
   }
 
-  // Add variant class
   if (variant) {
     classes.push(`btn-${variant}`)
   }
 
-  // Add style class (only for colored variants, not ghost/link)
   if (btnStyle && variant && !['ghost', 'link'].includes(variant)) {
     classes.push(`btn-${btnStyle}`)
   }
 
-  // Add shape class
   if (shape) {
     classes.push(`btn-${shape}`)
   }
@@ -144,53 +121,22 @@ const buildButtonClasses = (
   return classes.join(' ')
 }
 
-/**
- * Render icon (supports both IconType and ReactNode)
- */
 const renderIcon = (
   icon: IconType | React.ReactNode | undefined,
   iconSize: number
 ): React.ReactNode => {
   if (!icon) return null
 
-  // Check if it's an IconType (function component)
   if (typeof icon === 'function') {
     const IconComponent = icon as IconType
     return <IconComponent size={iconSize} />
   }
 
-  // Otherwise, render as ReactNode
   return icon
 }
 
 /**
- * Button component following strict daisyUI styling rules.
- *
- * Uses ONLY daisyUI classes - no custom heights, shadows, or arbitrary Tailwind.
- *
- * @example
- * // Basic usage
- * <Button>Click me</Button>
- *
- * // Primary button
- * <Button variant="primary">Submit</Button>
- *
- * // Outline style
- * <Button variant="primary" btnStyle="outline">Cancel</Button>
- *
- * // With icons
- * <Button variant="primary" startIcon={MdSave}>Save</Button>
- *
- * // Loading state
- * <Button loading>Saving...</Button>
- *
- * // All sizes: xs, sm, md, lg, xl
- * <Button size="lg" variant="primary">Large Button</Button>
- *
- * // All variants: neutral, primary, secondary, accent, info, success, warning, error, ghost, link
- * // All styles: outline, dash, soft
- * // All shapes: wide, block, square, circle
- *
+ * Uses ONLY daisyUI classes — no custom heights, shadows, or arbitrary Tailwind.
  * @see https://daisyui.com/components/button/
  */
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(

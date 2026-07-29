@@ -22,7 +22,6 @@ interface PanelHeaderProps {
   className?: string
 }
 
-// Design system compliant color tokens
 const VARIANT_STYLES = {
   default: {
     bg: 'bg-base-200',
@@ -50,33 +49,6 @@ const VARIANT_STYLES = {
   }
 } as const
 
-/**
- * A consistent header component for dialogs, popovers, and panels.
- * Includes icon, title, optional description, and optional close button.
- *
- * @example
- * // Basic usage with close button
- * <PanelHeader
- *   icon={LuSettings}
- *   title="Settings"
- *   description="Document settings and preferences"
- *   onClose={handleClose}
- * />
- *
- * // With color variant
- * <PanelHeader
- *   icon={LuBell}
- *   title="Notifications"
- *   variant="info"
- *   onClose={handleClose}
- * />
- *
- * // Minimal - just title and close
- * <PanelHeader
- *   title="Notifications"
- *   onClose={handleClose}
- * />
- */
 const PanelHeader = ({
   icon: Icon,
   title,

@@ -1,13 +1,6 @@
 /**
- * Email Unsubscribe Page
- *
- * Handles one-click email unsubscribe via signed tokens.
- * No authentication required - token contains user ID and action.
- *
- * Flow:
- * 1. User clicks unsubscribe link in email
- * 2. Page calls API to verify token and process unsubscribe
- * 3. Shows confirmation with options to manage preferences
+ * One-click email unsubscribe. No authentication: the signed token in the link
+ * carries the user ID and the action.
  */
 
 import type { GetServerSideProps } from 'next'
@@ -98,7 +91,6 @@ export default function UnsubscribePage() {
           })
           setState('success')
         } else {
-          // Parse error from response
           const errorData = await postResponse.json().catch(() => ({}))
           setResult({
             success: false,
@@ -137,7 +129,6 @@ export default function UnsubscribePage() {
       <div className="from-base-200 to-base-300 flex min-h-screen items-center justify-center bg-gradient-to-br p-4">
         <div className="card bg-base-100 w-full max-w-md shadow-xl">
           <div className="card-body items-center text-center">
-            {/* Icon */}
             <div className="mb-4">
               {state === 'loading' && (
                 <span className="loading loading-spinner loading-lg text-primary" />
@@ -178,25 +169,21 @@ export default function UnsubscribePage() {
               )}
             </div>
 
-            {/* Title */}
             <h1 className="card-title text-2xl">
               {state === 'loading' && 'Processing...'}
               {state === 'success' && 'Unsubscribed'}
               {state === 'error' && 'Unable to Unsubscribe'}
             </h1>
 
-            {/* Message */}
             <p className="text-base-content/70 mt-2">
               {state === 'loading' && 'Please wait while we process your request.'}
               {(state === 'success' || state === 'error') && result?.message}
             </p>
 
-            {/* Email display for success */}
             {state === 'success' && result?.email && (
               <p className="text-base-content/50 mt-1 text-sm">{result.email}</p>
             )}
 
-            {/* Actions */}
             <div className="card-actions mt-6 w-full flex-col gap-2">
               <Link href="/settings/notifications" className="btn btn-primary btn-block">
                 Manage Preferences
@@ -206,7 +193,6 @@ export default function UnsubscribePage() {
               </Link>
             </div>
 
-            {/* Footer */}
             <div className="divider mt-6" />
             <p className="text-base-content/40 text-xs">docs.plus</p>
           </div>

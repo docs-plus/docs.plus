@@ -9,17 +9,13 @@ import {
 } from './themeConfig'
 
 export interface ThemeStore {
-  /** User's preference (persisted in localStorage) */
+  /** Persisted in localStorage under `docsplus-theme`. */
   preference: ThemePreference
-  /** The resolved theme currently applied to the DOM */
+  /** What is currently written to the DOM as `data-theme`. */
   resolvedTheme: ResolvedTheme
 
   setPreference: (preference: ThemePreference) => void
 }
-
-// ---------------------------------------------------------------------------
-// Store
-// ---------------------------------------------------------------------------
 
 export const useThemeStore = create<ThemeStore>()(
   persist(
@@ -37,7 +33,6 @@ export const useThemeStore = create<ThemeStore>()(
       name: 'docsplus-theme',
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // On hydration, resolve and apply the persisted preference
           const resolved = resolveTheme(state.preference)
           applyThemeToDom(resolved)
           state.resolvedTheme = resolved
@@ -47,10 +42,7 @@ export const useThemeStore = create<ThemeStore>()(
   )
 )
 
-// ---------------------------------------------------------------------------
-// Side-effect: listen for OS theme changes when preference is "system"
-// ---------------------------------------------------------------------------
-
+// Track OS theme changes, but only while the preference is "system".
 if (typeof window !== 'undefined') {
   const mql = window.matchMedia('(prefers-color-scheme: dark)')
 

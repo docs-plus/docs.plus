@@ -93,7 +93,6 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
     const hasIcons = startIcon || endIcon
     const datalistId = datalist.length > 0 ? `${id}-datalist` : undefined
 
-    // Build input classes based on state
     const inputBaseClasses = twMerge(
       'input w-full',
       size && `input-${size}`,
@@ -102,14 +101,12 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       disabled && 'input-disabled'
     )
 
-    // Helper text styling
     const helperTextEl = helperText && (
       <p className={twMerge('label text-xs', error && 'text-error', success && 'text-success')}>
         {helperText}
       </p>
     )
 
-    // Datalist element (reused)
     const datalistEl = datalist.length > 0 && (
       <datalist id={datalistId}>
         {datalist.map((option, index) => (
@@ -118,7 +115,6 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       </datalist>
     )
 
-    // Core input element (reused with variations)
     const inputProps = {
       ref,
       id,
@@ -128,9 +124,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       ...props
     }
 
-    // Floating label pattern
-    // NOTE: In daisyUI 5.5+, the span MUST come before the input.
-    // The label floats above when focused or has content, and appears inside when empty/unfocused.
+    // daisyUI 5.5+: the span MUST come before the input or the label never floats.
     if (labelPosition === 'floating') {
       return (
         <div className={twMerge('form-control w-full', wrapperClassName)}>
@@ -148,7 +142,6 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       )
     }
 
-    // Above label pattern
     if (labelPosition === 'above') {
       return (
         <div className={twMerge('form-control w-full', wrapperClassName)}>
@@ -188,7 +181,6 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       )
     }
 
-    // Inside label pattern (default) - label inside the input
     return (
       <div className={twMerge('form-control w-full', wrapperClassName)}>
         <label

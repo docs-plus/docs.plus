@@ -1,11 +1,6 @@
 /**
- * Notification Permission Prompt Card
- *
- * A friendly, non-intrusive UI that explains the value of notifications
- * before triggering the browser's permission prompt.
- *
- * Design: Unified prompt card pattern (matches PWAInstallPrompt)
- * Position: Top-left for visibility without blocking main content
+ * Explains the value of notifications before triggering the browser's permission prompt.
+ * Shares the prompt-card pattern with PWAInstallPrompt.
  */
 import { showPWAInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
@@ -18,20 +13,15 @@ import { useCallback, useEffect } from 'react'
 import { LuBell, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
-// Storage keys
 const STORAGE_KEY = 'notification-prompt-dismissed'
 const PROMPT_COUNT_KEY = 'notification-prompt-count'
 const SNOOZED_UNTIL_KEY = 'notification-prompt-snoozed-until'
 
-// Snooze duration (24 hours in milliseconds)
 const SNOOZE_DURATION_MS = 24 * 60 * 60 * 1000
 
-// Event for triggering the prompt
 const SHOW_PROMPT_EVENT = 'show-notification-prompt'
 
-/**
- * Call this after user performs a valuable action to show the prompt
- */
+/** Call after the user performs a valuable action, so the ask lands on an invested user. */
 export function showNotificationPrompt() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SHOW_PROMPT_EVENT))
@@ -48,7 +38,6 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
   const { subscribe } = usePushNotifications()
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
 
-  // Check if we should show the prompt (for iOS PWA detection)
   const shouldShow = useCallback(() => {
     // iOS: Push only works if PWA is installed AND iOS 16.4+
     if (platform === 'ios') {
@@ -61,7 +50,6 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
     return true
   }, [platform, isPWAInstalled, iosSupportsWebPush])
 
-  // Hide with animation
   const hide = useCallback(
     (permanent = false) => {
       // Persist before the exit transition so a re-show can't race the write.
@@ -73,7 +61,6 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
     [hideCard]
   )
 
-  // Handle "Enable" click
   const handleEnable = async () => {
     hide()
 
@@ -101,35 +88,28 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
     }
   }
 
-  // Handle "Later" click - snooze for 24 hours
   const handleLater = () => {
     localStorage.setItem(SNOOZED_UNTIL_KEY, String(Date.now() + SNOOZE_DURATION_MS))
     hide(false)
   }
 
-  // Handle "X" close (permanent dismiss)
   const handleClose = () => {
     hide(true)
   }
 
-  // Listen for show event - handle immediately without waiting for hook
   useEffect(() => {
     const handler = async () => {
       if (!profile) return
 
-      // Check iOS PWA requirements first
       if (!shouldShow()) return
 
-      // Check notification permission directly
       const currentPermission = 'Notification' in window ? Notification.permission : 'unsupported'
 
       // Already granted — subscription is managed by usePushNotifications() on mount.
       // No need to re-subscribe on every action.
       if (currentPermission === 'granted') return
 
-      // If permission is default, show the prompt card
       if (currentPermission === 'default') {
-        // Check localStorage dismissals
         const dismissed = localStorage.getItem(STORAGE_KEY)
         if (dismissed === 'permanent') return
 
@@ -139,7 +119,6 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
         if (count >= 3) return
 
-        // Increment count and show
         localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
         setTimeout(show, 2000)
       }
@@ -156,9 +135,7 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
       className={twMerge(
         // Above pad sash/toolbars (z-50) — design-system above-floating tier
         'fixed top-6 left-6 z-[60]',
-        // Size: wider for better readability
         'w-96 max-w-[calc(100vw-2rem)]',
-        // Animation
         'transition-[opacity,transform] duration-200 ease-out',
         shown ? 'translate-x-0 opacity-100' : '-translate-x-2 opacity-0',
         className
@@ -169,12 +146,9 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
           'rounded-box flex flex-col gap-4 px-5 py-4',
           // Theme-aware inverse surface (light-dark via color-scheme, no dark: variant)
           'surface-inverse',
-          // Depth
           'shadow-xl',
-          // Border
           'border-base-300 border'
         )}>
-        {/* Header: icon badge + title/subtitle + close */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 rounded-field p-2">
@@ -193,7 +167,6 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
           </button>
         </div>
 
-        {/* Description */}
         <p className="text-sm leading-relaxed opacity-70">
           Get instant notifications when someone mentions you or replies to your messages.
         </p>

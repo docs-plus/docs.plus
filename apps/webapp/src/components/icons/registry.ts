@@ -108,21 +108,11 @@ import {
 } from 'react-icons/lu'
 
 /**
- * Centralized Icon Registry — single source of truth for all UI icons.
- *
- * To swap an icon, change ONLY this file — every consumer updates automatically.
- *
- * Naming convention:
- *   camelCase, describes the action/concept, NOT the icon visual.
- *   ✅ `bold`, `image`, `orderedList`
- *   ❌ `bIcon`, `LuImage`, `numberList`
- *
- * Library convention:
- *   All icons use Lucide (`react-icons/lu`) for consistency.
- *   Brand icons use Font Awesome (`react-icons/fa`) where no Lucide equivalent exists.
+ * Keys are camelCase and name the action or concept, never the icon visual (`bold`, not
+ * `bIcon`). Lucide (`react-icons/lu`) throughout; Font Awesome only for brands Lucide lacks.
  */
 export const Icons = {
-  // ── Text Formatting ──────────────────────────────────────
+  // Text Formatting
   bold: LuBold,
   italic: LuItalic,
   underline: LuUnderline,
@@ -132,12 +122,12 @@ export const Icons = {
   textColor: LuBaseline,
   textFormat: LuType,
 
-  // ── Lists ────────────────────────────────────────────────
+  // Lists
   orderedList: LuListOrdered,
   bulletList: LuList,
   taskList: LuListChecks,
 
-  // ── Insert / Rich Content ────────────────────────────────
+  // Insert / Rich Content
   link: LuLink,
   unlink: LuLink2Off,
   heading: LuHash,
@@ -150,7 +140,7 @@ export const Icons = {
   zoomIn: LuZoomIn,
   zoomOut: LuZoomOut,
 
-  // ── Editor Actions ───────────────────────────────────────
+  // Editor Actions
   undo: LuUndo2,
   redo: LuRedo2,
   print: LuPrinter,
@@ -176,7 +166,7 @@ export const Icons = {
   splitVertical: LuSquareSplitVertical,
   externalLink: LuExternalLink,
 
-  // ── Navigation ───────────────────────────────────────────
+  // Navigation
   back: LuArrowLeft,
   menu: LuMenu,
   close: LuX,
@@ -187,7 +177,7 @@ export const Icons = {
   chevronLeft: LuChevronLeft,
   logIn: LuLogIn,
 
-  // ── Communication ────────────────────────────────────────
+  // Communication
   share: LuUsers,
   user: LuUser,
   notifications: LuBell,
@@ -199,14 +189,14 @@ export const Icons = {
   play: LuPlay,
   maximize2: LuMaximize2,
 
-  // ── Media / Lifestyle ────────────────────────────────────
+  // Media / Lifestyle
   calendar: LuCalendar,
   mapPin: LuMapPin,
   mic: LuMic,
   music: LuMusic,
   tv: LuTv,
 
-  // ── TOC ──────────────────────────────────────────────────
+  // TOC
   crosshair: LuCrosshair,
   foldVertical: LuFoldVertical,
   unfoldVertical: LuUnfoldVertical,
@@ -219,7 +209,7 @@ export const Icons = {
   pin: LuPin,
   pinOff: LuPinOff,
 
-  // ── Status ───────────────────────────────────────────────
+  // Status
   cloud: LuCloud,
   cloudOff: LuCloudOff,
   cloudUpload: LuCloudUpload,
@@ -230,12 +220,12 @@ export const Icons = {
   checkDouble: LuCheckCheck,
   lock: LuLock,
 
-  // ── Code ─────────────────────────────────────────────────
+  // Code
   code: LuCode,
   codeBlock: LuSquareCode,
   blockquote: LuTextQuote,
 
-  // ── Misc ─────────────────────────────────────────────────
+  // Misc
   emoji: LuSmile,
   emojiAdd: LuSmilePlus,
   keyboard: LuKeyboard,
@@ -250,10 +240,9 @@ export const Icons = {
   shareNative: LuShare2,
   userPlus: LuUserPlus,
 
-  // ── Brand ────────────────────────────────────────────────
+  // Brand
   discord: FaDiscord,
   github: FaGithub
 } as const satisfies Record<string, IconType>
 
-/** Union type of all registered icon names */
 export type IconName = keyof typeof Icons

@@ -4,13 +4,9 @@ import { getPointerPosition } from './pointerCollisionDetection'
 import type { DropTarget, FlattenedTocItem, SnapConfig } from './types'
 import { DEFAULT_SNAP_CONFIG, INDICATOR_Y_HYSTERESIS, TARGET_HYSTERESIS } from './types'
 
-/** Get TOC item element by ID */
 export const getItemElement = (id: string) =>
   document.querySelector(`li.toc__item[data-id="${id}"] > .toc__row`) as HTMLElement | null
 
-/**
- * Flatten nested TOC items into a flat array with depth info
- */
 export function flattenTocItems(
   items: TocItem[],
   parentId: string | null = null,
@@ -31,9 +27,7 @@ export function flattenTocItems(
   return result
 }
 
-/**
- * Get all descendant IDs of a given item (for collapsing during drag)
- */
+/** Descendants collapse during drag, so the whole subtree moves with the item. */
 export function getDescendantIds(items: TocItem[], parentId: string): string[] {
   const descendants: string[] = []
   let foundParent = false
@@ -58,16 +52,10 @@ export function getDescendantIds(items: TocItem[], parentId: string): string[] {
   return descendants
 }
 
-/**
- * Get count of descendants for a given item
- */
 export function getDescendantCount(items: TocItem[], parentId: string): number {
   return getDescendantIds(items, parentId).length
 }
 
-/**
- * Calculate projected level based on horizontal offset
- */
 export function calculateProjectedLevel(
   originalLevel: number,
   offsetX: number,
@@ -75,11 +63,10 @@ export function calculateProjectedLevel(
 ): number {
   const { stepSize, maxSteps, minLevel, maxLevel } = config
 
-  // Calculate steps from offset (negative = left = decrease level)
+  // Negative offset = dragged left = outdent
   const rawSteps = Math.round(offsetX / stepSize)
   const clampedSteps = Math.max(-maxSteps, Math.min(maxSteps, rawSteps))
 
-  // Calculate new level
   const newLevel = originalLevel + clampedSteps
   return Math.max(minLevel, Math.min(maxLevel, newLevel))
 }
@@ -101,9 +88,7 @@ function rectForItem(id: string, rectCache?: Map<string, DOMRect>): DOMRect | nu
   return el ? el.getBoundingClientRect() : null
 }
 
-/**
- * Find the closest drop target and normalize position to avoid ambiguity
- */
+/** Positions are normalized so two different rows can never describe the same gap. */
 export function findDropTarget({
   pointerY,
   flatItems,
@@ -112,7 +97,6 @@ export function findDropTarget({
   currentDropTarget,
   rectCache
 }: FindTargetParams): DropTarget {
-  // Find closest visible item
   let closest: { id: string; rect: DOMRect; dist: number } | null = null
   let currentDist = Infinity
 
@@ -139,7 +123,6 @@ export function findDropTarget({
   let targetItem = flatItems[targetIdx]
   let targetRect = rectForItem(targetId!, rectCache) ?? closest.rect
 
-  // Determine before/after position with hysteresis
   const isSameTarget = currentDropTarget.id === targetId
   let position = getPointerPosition(
     pointerY,
@@ -184,7 +167,6 @@ export function findDropTarget({
     }
   }
 
-  // Calculate indicator Y with hysteresis
   const rawY = position === 'before' ? targetRect.top - 1.5 : targetRect.bottom + 1.5
   const prevY = currentDropTarget.indicatorY
   const indicatorY =

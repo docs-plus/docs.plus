@@ -14,12 +14,7 @@ export interface RetryResult<T> {
   attempts: number
 }
 
-/**
- * Retries a function with exponential backoff
- * @param fn Function to retry (can be sync or async) - return false to retry, true/truthy to succeed
- * @param options Retry configuration options
- * @returns Promise with retry result
- */
+/** `fn` returns false to retry, true or any other truthy value to succeed. */
 export async function retryWithBackoff<T>(
   fn: () => T | Promise<T>,
   options: RetryOptions = {}
@@ -39,10 +34,8 @@ export async function retryWithBackoff<T>(
     try {
       const result = await Promise.resolve(fn())
 
-      // If result is false, treat as retry condition
       if (result === false) {
         if (attempt === maxAttempts) {
-          // Last attempt and still false, return unsuccessful
           return {
             success: false,
             error: new Error('Condition not met after all attempts'),
@@ -50,10 +43,8 @@ export async function retryWithBackoff<T>(
           }
         }
 
-        // Not last attempt, continue to retry logic
         lastError = new Error('Condition not met, retrying...')
       } else {
-        // Result is truthy, return success
         return {
           success: true,
           result,
@@ -68,7 +59,6 @@ export async function retryWithBackoff<T>(
       }
     }
 
-    // Calculate delay with exponential backoff (only if not the last attempt)
     if (attempt < maxAttempts) {
       let delay = Math.min(initialDelayMs * Math.pow(backoffMultiplier, attempt - 1), maxDelayMs)
 
@@ -77,10 +67,8 @@ export async function retryWithBackoff<T>(
         delay = delay * (0.5 + Math.random() * 0.5)
       }
 
-      // Call retry callback if provided
       onRetry?.(attempt, lastError)
 
-      // Wait before next attempt
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }

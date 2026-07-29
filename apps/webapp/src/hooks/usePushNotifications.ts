@@ -33,9 +33,6 @@ interface UsePushNotificationsReturn {
   refreshSubscription: () => Promise<void>
 }
 
-/**
- * Hook for managing push notifications
- */
 export function usePushNotifications(): UsePushNotificationsReturn {
   const [isSupported] = useState(() => isPushSupported())
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() =>
@@ -47,7 +44,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isRecoverable, setIsRecoverable] = useState(false)
 
-  // Check subscription status and refresh if needed on mount
   useEffect(() => {
     if (!isSupported) {
       setIsLoading(false)
@@ -61,7 +57,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         const subscribed = await checkSubscribed()
         setIsSubscribed(subscribed)
 
-        // If subscribed, check if refresh is needed
         if (subscribed) {
           const refreshResult = await refreshSubscriptionIfNeeded()
           if (refreshResult === 'refreshed') {
@@ -81,14 +76,13 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     initSubscription()
   }, [isSupported])
 
-  // Listen for permission changes (user revokes in browser settings)
+  // Fires when the user revokes permission in browser settings.
   useEffect(() => {
     if (!isSupported) return
 
     const unsubscribe = onPermissionChange((newPermission) => {
       setPermission(newPermission)
 
-      // If permission was revoked, update subscribed state
       if (newPermission === 'denied') {
         setIsSubscribed(false)
         setError('Notifications permission was revoked')
@@ -108,24 +102,20 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       if (event.data?.type === 'NOTIFICATION_CLICK') {
         const { url, notification_id } = event.data
 
-        // 1. Mark notification as read in database
         if (notification_id) {
           try {
             await markNotificationAsRead(notification_id)
 
-            // 2. Update notification store - remove from unread lists and decrement counts
             const store = useStore.getState()
             const { notifications, updateNotifications, setNotificationTab, notificationTabs } =
               store
 
-            // Remove notification from all tabs
             ;(['Unread', 'Mentions'] as const).forEach((tab) => {
               const tabNotifications = notifications.get(tab)
               if (tabNotifications) {
                 const filtered = tabNotifications.filter((n) => n.id !== notification_id)
                 if (filtered.length !== tabNotifications.length) {
                   updateNotifications(tab, filtered)
-                  // Update tab count
                   const tabInfo = notificationTabs.find((t) => t.label === tab)
                   if (tabInfo?.count) {
                     setNotificationTab(tab, Math.max(0, tabInfo.count - 1))
@@ -134,21 +124,20 @@ export function usePushNotifications(): UsePushNotificationsReturn {
               }
             })
 
-            // 3. Publish event for any listeners (e.g., notification summary refresh)
+            // Listeners include the notification summary refresh.
             PubSub.publish(NOTIFICATION_STATE_CHANGED, { notification_id })
           } catch (err) {
             console.error('Failed to mark notification as read:', err)
           }
         }
 
-        // 4. Navigate to the message using PubSub for seamless in-app navigation
         if (url) {
           const urlObj = new URL(url, window.location.origin)
           const channelId = urlObj.searchParams.get('chatroom')
           const messageId = urlObj.searchParams.get('msg_id')
 
           if (channelId) {
-            // Use PubSub for smooth in-app navigation (same as NotificationItem)
+            // PubSub keeps navigation in-app, same as NotificationItem.
             PubSub.publish(CHAT_OPEN, {
               headingId: channelId,
               toggleRoom: false,
@@ -191,22 +180,19 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return 'success'
       }
 
-      // Shouldn't reach here with new error handling, but handle gracefully
+      // Unreachable in practice: registerPushSubscription throws instead of returning null.
       setError('Failed to subscribe')
       setErrorCode('UNKNOWN')
       return 'error'
     } catch (err) {
-      // Handle typed PushError
       if (err instanceof PushError) {
         setError(err.message)
         setErrorCode(err.code)
         setIsRecoverable(err.recoverable)
 
-        // Update permission state
         const currentPermission = Notification.permission
         setPermission(currentPermission)
 
-        // Map error codes to result types
         switch (err.code) {
           case 'PERMISSION_DENIED':
             return 'denied'
@@ -217,7 +203,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         }
       }
 
-      // Handle unknown errors
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setError(errorMessage)
       setErrorCode('UNKNOWN')
@@ -255,7 +240,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
   }, [isSupported])
 
-  // Manual refresh subscription (e.g., from settings page)
+  // Called manually, e.g. from the settings page.
   const refreshSubscription = useCallback(async (): Promise<void> => {
     if (!isSupported || !isSubscribed) return
 

@@ -9,17 +9,12 @@ interface UseClipboardReturn {
 }
 
 /**
- * Hook for clipboard operations in TipTap editor
- *
- * Follows native mobile behavior:
- * - Cut: Copy to clipboard, delete selection, close menu & keyboard
- * - Copy: Copy to clipboard, close menu & keyboard
- * - Paste: Insert content, keep keyboard open for continued editing
+ * Mirrors native mobile behavior: cut and copy dismiss the bubble menu and the keyboard,
+ * paste keeps the keyboard open so editing continues.
  */
 const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => {
   const [copied, setCopied] = useState(false)
 
-  // Helper: Collapse selection and blur to close bubble menu + keyboard
   const dismissMenuAndKeyboard = useCallback(() => {
     if (!editor) return
 
@@ -47,7 +42,6 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
         editor.chain().deleteSelection().run()
       }
 
-      // Native behavior: close menu and keyboard after cut
       dismissMenuAndKeyboard()
     } catch {
       editor.chain().deleteSelection().run()
@@ -73,7 +67,6 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
       // Close menu and keyboard, but keep selection and scroll position
       setTimeout(() => {
         setCopied(false)
-        // Just blur to close menu/keyboard - don't change selection or scroll
         editor.view.dom.blur()
       }, 600)
     } catch {
@@ -84,7 +77,6 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
   const paste = useCallback(() => {
     if (!editor) return
 
-    // Save scroll position
     const editorWrapper = editor.view.dom.closest('.editorWrapper') as HTMLElement
     const scrollTop = editorWrapper?.scrollTop ?? 0
 
@@ -96,7 +88,6 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
       .readText()
       .then((text) => {
         if (text) {
-          // Use TipTap's native command to insert content
           editor.commands.insertContent(text)
         }
       })
@@ -105,7 +96,6 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
         document.execCommand('paste')
       })
       .finally(() => {
-        // Restore scroll position
         requestAnimationFrame(() => {
           if (editorWrapper) editorWrapper.scrollTop = scrollTop
         })

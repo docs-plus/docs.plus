@@ -1,11 +1,5 @@
-/**
- * Utility functions for safely accessing message metadata
- * Handles Supabase Json type safely
- */
+// Narrowing helpers for message metadata, which Supabase types as the wide `Json`.
 
-/**
- * Safely gets a property from metadata object
- */
 export function getMetadataProperty<T = unknown>(
   metadata: unknown,
   property: string
@@ -21,17 +15,11 @@ export function getMetadataProperty<T = unknown>(
   return undefined
 }
 
-/**
- * Safely checks if metadata has a boolean property
- */
 export function hasMetadataProperty(metadata: unknown, property: string): boolean {
   const value = getMetadataProperty(metadata, property)
   return Boolean(value)
 }
 
-/**
- * Type-safe metadata accessor with default value
- */
 export function getMetadataValue<T>(metadata: unknown, property: string, defaultValue: T): T {
   const value = getMetadataProperty<T>(metadata, property)
   return value !== undefined ? value : defaultValue

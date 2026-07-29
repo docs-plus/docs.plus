@@ -2,9 +2,6 @@ import type { Modifier } from '@dnd-kit/core'
 
 import { DEFAULT_SNAP_CONFIG } from './types'
 
-/**
- * Restrict horizontal movement to a bounded range
- */
 export function createRestrictHorizontal(maxOffset: number): Modifier {
   return ({ transform }) => ({
     ...transform,
@@ -12,9 +9,6 @@ export function createRestrictHorizontal(maxOffset: number): Modifier {
   })
 }
 
-/**
- * Snap horizontal movement to discrete level steps
- */
 export function createSnapToLevelGrid(stepSize: number = DEFAULT_SNAP_CONFIG.stepSize): Modifier {
   return ({ transform }) => ({
     ...transform,
@@ -22,9 +16,6 @@ export function createSnapToLevelGrid(stepSize: number = DEFAULT_SNAP_CONFIG.ste
   })
 }
 
-/**
- * Compose multiple modifiers
- */
 export function composeModifiers(...modifiers: Modifier[]): Modifier {
   return (args) => {
     return modifiers.reduce((acc, modifier) => {
@@ -34,9 +25,6 @@ export function composeModifiers(...modifiers: Modifier[]): Modifier {
   }
 }
 
-/**
- * Main TOC drag modifier: restricts + snaps horizontal movement
- */
 export const tocDragModifier: Modifier = composeModifiers(
   createRestrictHorizontal(DEFAULT_SNAP_CONFIG.stepSize * DEFAULT_SNAP_CONFIG.maxSteps),
   createSnapToLevelGrid(DEFAULT_SNAP_CONFIG.stepSize)

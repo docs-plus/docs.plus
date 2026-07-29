@@ -24,14 +24,10 @@ export type ItemContentProps = {
 }
 
 /**
- * Kind-dispatched render. Author-grouping is render-time: compact mode
- * fires when prev item is a same-author message. `MessageCard` owns the
- * desktop default body; mobile injects the chat-bubble shell via
- * `MobileMessageBody` children.
- *
- * Virtuoso's typed contract says `data: Data`, but during in-flight
- * `data.replace` transitions the slot is briefly undefined; render null
- * rather than throwing inside `isDay`.
+ * Author-grouping is render-time: compact fires when the prev item is a
+ * same-author message. Virtuoso's typed contract says `data: Data`, but the
+ * slot is briefly undefined during in-flight `data.replace` — render null
+ * rather than throw inside `isDay`.
  */
 export const ItemContent = ({ index, data, prevData, context }: ItemContentProps) => {
   // A notification chip between two same-author messages must break the

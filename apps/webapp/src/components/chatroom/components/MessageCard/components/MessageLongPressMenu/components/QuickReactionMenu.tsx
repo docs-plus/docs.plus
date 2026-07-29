@@ -6,10 +6,6 @@ import { forwardRef } from 'react'
 
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface EmojiReaction {
   id: string
   label: string
@@ -24,10 +20,6 @@ interface QuickReactionMenuProps {
   className?: string
   message: TMsgRow
 }
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
 
 const QUICK_REACTIONS: EmojiReaction[] = [
   { id: '+1', label: 'Like', native: '👍' },
@@ -53,10 +45,6 @@ const TAP_ANIMATION = {
 /** Min 44×44 touch target per WCAG / Apple HIG. */
 const REACTION_BTN_CLASS =
   'flex size-11 flex-shrink-0 touch-manipulation snap-center scroll-ml-6 items-center justify-center rounded-full select-none'
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuProps>(
   ({ position, isVisible, isInteractive = true, onReactionSelect, className, message }, ref) => {
@@ -121,7 +109,6 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
               </motion.button>
             ))}
 
-            {/* "More emojis" button — sticky to right edge */}
             <motion.button
               onTap={handleMoreEmojisClick}
               whileTap={

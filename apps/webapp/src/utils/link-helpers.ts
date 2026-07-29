@@ -2,9 +2,6 @@ import type { Editor } from '@tiptap/core'
 import { type LinkItem, type LinkMetadata, LinkType, TIPTAP_NODES } from '@types'
 import slugify from 'slugify'
 
-/**
- * Build the correct href for a link based on its type.
- */
 export const getFormattedHref = (link: LinkItem): string => {
   switch (link.type) {
     case LinkType.Email:
@@ -17,10 +14,8 @@ export const getFormattedHref = (link: LinkItem): string => {
 }
 
 /**
- * Build a Google Favicon Service URL for any domain.
- * Always returns a valid, cached PNG — industry-standard approach
- * used by Notion, Raindrop, Arc, etc.
- * Returns undefined for non-URL types (email/phone) or invalid URLs.
+ * Google's favicon service always answers with a cached PNG, so there is no
+ * broken-image case. undefined means the input was not a URL (email, phone).
  */
 export const getGoogleFaviconUrl = (url: string, size: 32 | 64 = 32): string | undefined => {
   try {
@@ -33,14 +28,9 @@ export const getGoogleFaviconUrl = (url: string, size: 32 | 64 = 32): string | u
 }
 
 /**
- * Sanitize raw API metadata response into a clean LinkMetadata object.
- * Strips unused fields (socialBanner, socialBannerSize, etc.) and
- * ensures all values are either valid strings or undefined.
- * Falls back icon -> favicon for best icon availability.
- *
  * Image URLs are gated to http(s) only — a hostile metadata source could
- * otherwise smuggle a `data:` or `javascript:` URL into the icon slot
- * which is later rendered into `<img src>` somewhere downstream.
+ * otherwise smuggle a `data:` or `javascript:` URL into the icon slot, which is
+ * rendered into an `<img src>` downstream.
  */
 export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => {
   const str = (val: unknown): string | undefined =>

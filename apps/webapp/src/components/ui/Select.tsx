@@ -18,8 +18,6 @@ import { useSelectExclusion } from './hooks/useSelectExclusion'
 import { ScrollArea } from './ScrollArea'
 import { useOverlayTransition } from './useOverlayTransition'
 
-// --- Types ---
-
 export type SelectSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type SelectColor =
   'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
@@ -67,9 +65,6 @@ export interface SelectProps {
   className?: string
 }
 
-// --- Helpers ---
-
-/** Build daisyUI select trigger classes */
 const buildTriggerClasses = (
   size?: SelectSize,
   color?: SelectColor,
@@ -88,34 +83,9 @@ const buildTriggerClasses = (
   return classes.join(' ')
 }
 
-// --- Component ---
-
 /**
- * Custom Select component with a styled dropdown panel.
- *
- * Uses Floating UI for positioning and renders a proper dropdown
- * (not a native <select>) so the options panel follows the design system.
- *
- * @example
- * // Basic usage
- * <Select
- *   value={role}
- *   onChange={setRole}
- *   options={[
- *     { value: 'admin', label: 'Admin' },
- *     { value: 'editor', label: 'Editor' },
- *   ]}
- * />
- *
- * // With label
- * <Select
- *   label="Role"
- *   labelPosition="above"
- *   value={role}
- *   onChange={setRole}
- *   options={roleOptions}
- * />
- *
+ * Renders a Floating UI dropdown, not a native `<select>`, so the options panel
+ * can follow the design system.
  * @see https://daisyui.com/components/select/
  */
 const Select = ({
@@ -140,7 +110,6 @@ const Select = ({
   const generatedId = useId()
   const id = _id || generatedId
 
-  // Support both controlled and uncontrolled modes
   const [internalValue, setInternalValue] = useState('')
   const value = controlledValue ?? internalValue
 
@@ -148,8 +117,6 @@ const Select = ({
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
 
   const listRef = useRef<HTMLDivElement>(null)
-
-  // --- Floating UI ---
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -181,16 +148,12 @@ const Select = ({
   const dismiss = useDismiss(context, { outsidePress: true, outsidePressEvent: 'mousedown' })
   const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss])
 
-  // --- Derived ---
-
   const selectedOption = options.find((o) => o.value === value)
   const displayLabel = selectedOption?.label || placeholder
 
   // Only one dropdown open at a time (shared across Select + SearchableSelect)
   const closeDropdown = useCallback(() => setIsOpen(false), [])
   useSelectExclusion(id, isOpen, closeDropdown)
-
-  // --- Effects ---
 
   useEffect(() => {
     if (isOpen) {
@@ -207,8 +170,6 @@ const Select = ({
     }
   }, [isOpen, options, value])
 
-  // --- Select handler ---
-
   const handleSelect = useCallback(
     (optionValue: string) => {
       setInternalValue(optionValue)
@@ -217,8 +178,6 @@ const Select = ({
     },
     [onChange]
   )
-
-  // --- Keyboard navigation ---
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -274,14 +233,11 @@ const Select = ({
     [isOpen, options, highlightedIndex, handleSelect]
   )
 
-  // Scroll highlighted item into view
   useEffect(() => {
     if (!isOpen || !listRef.current || highlightedIndex < 0) return
     const el = listRef.current.children[highlightedIndex] as HTMLElement
     el?.scrollIntoView({ block: 'nearest' })
   }, [highlightedIndex, isOpen])
-
-  // --- Classes ---
 
   const triggerClasses = buildTriggerClasses(size, color, ghost, error, success)
 
@@ -290,8 +246,6 @@ const Select = ({
     error && 'text-error',
     success && 'text-success'
   )
-
-  // --- Trigger button ---
 
   const triggerButton = (
     <button
@@ -322,8 +276,6 @@ const Select = ({
       />
     </button>
   )
-
-  // --- Dropdown panel ---
 
   const dropdown = isMounted && (
     <FloatingPortal>
@@ -370,8 +322,6 @@ const Select = ({
     </FloatingPortal>
   )
 
-  // --- Render ---
-
   if (labelPosition === 'floating') {
     return (
       <div className={twMerge('form-control w-full', wrapperClassName)}>
@@ -385,7 +335,6 @@ const Select = ({
     )
   }
 
-  // Default: 'above' label
   return (
     <div className={twMerge('form-control w-full', wrapperClassName)}>
       {label && (

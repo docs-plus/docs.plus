@@ -18,22 +18,6 @@ export interface ToggleProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
   wrapperClassName?: string
 }
 
-/**
- * Toggle component using daisyUI's native toggle styling.
- *
- * @example
- * // Basic usage
- * <Toggle checked={isEnabled} onChange={handleChange} />
- *
- * // With label
- * <Toggle label="Enable notifications" variant="primary" />
- *
- * // With size and variant
- * <Toggle size="sm" variant="primary" checked={true} />
- *
- * // All sizes: xs, sm, md, lg, xl
- * // All variants: primary, secondary, accent, success, warning, error, info
- */
 const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
   (
     { label, size, variant, helperText, wrapperClassName, className, id: _id, disabled, ...props },
@@ -55,7 +39,6 @@ const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
       className
     )
 
-    // Simple toggle without label
     if (!label) {
       return (
         <input
@@ -69,7 +52,6 @@ const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
       )
     }
 
-    // Toggle with label
     return (
       <div className={twMerge('form-control', wrapperClassName)}>
         <label

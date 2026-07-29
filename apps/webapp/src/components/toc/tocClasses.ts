@@ -1,9 +1,7 @@
 /**
  * TOC class ownership map — the only product interface for TOC class strings.
- *
- * - Product (`toc__*`): listed here; SCSS in `_tableOfContents.scss`.
- * - Drag island (`toc-drag-handle`, overlays): listed here; SCSS in `_tocDrag.scss`.
- * - daisyUI (`.menu`, `menu-active`, `menu-focus`): vendor-owned — apply at call sites, not listed.
+ * SCSS lives in `_tableOfContents.scss` (`toc__*`) and `_tocDrag.scss` (drag island).
+ * daisyUI classes stay vendor-owned: apply them at call sites, never list them here.
  */
 export const TOC_CLASSES = {
   /** Desktop sticky first `<li>` wrapping the doc-title row inside `.menu`. */

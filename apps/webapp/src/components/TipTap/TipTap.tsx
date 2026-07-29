@@ -209,19 +209,9 @@ const Editor = ({
     TableRow,
     TableHeader,
     TableCell,
-    // Why not @tiptap/extensions Placeholder?
-    // The built-in uses doc.descendants() — O(N) on every transaction.
-    // @docs.plus/extension-placeholder uses state.init/apply with cursor-only
-    // checks — O(1) for the common typing case. Critical for large collab docs.
-    //
-    // `buildBreadcrumbPlaceholder` shows the heading hierarchy leading to the
-    // cursor (e.g. `Introduction > Background > Methods > Write here`).
-    // Default scope is 'top-level' — list items / blockquotes / code blocks
-    // keep their existing 'List' / 'Quote' / 'Write code' placeholders.
-    //
-    // To render the breadcrumb on every empty textblock (including those nested
-    // inside lists / blockquotes), pass `{ scope: 'all-blocks' }`:
-    //   placeholder: (props) => buildBreadcrumbPlaceholder(props, { scope: 'all-blocks' })
+    // Not @tiptap/extensions Placeholder: the built-in walks doc.descendants()
+    // on every transaction (O(N)); @docs.plus/extension-placeholder does
+    // cursor-only checks in state.apply (O(1)). Matters on large collab docs.
     Placeholder.configure({
       placeholder: (props) => buildBreadcrumbPlaceholder(props, { scope: 'top-level' })
     }),

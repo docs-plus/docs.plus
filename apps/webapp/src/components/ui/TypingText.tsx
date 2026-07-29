@@ -36,23 +36,6 @@ export interface TypingTextProps {
   minWidth?: string
 }
 
-/**
- * TypingText - Animated typing effect component with icon and color support
- *
- * @example
- * // Simple usage
- * <TypingText texts={['Hello', 'World', 'React']} />
- *
- * @example
- * // With icons and colors
- * <TypingText
- *   texts={[
- *     { text: 'teams', icon: <LuUsers size={16} />, className: 'text-blue-600' },
- *     { text: 'communities', icon: <LuGlobe size={16} />, className: 'text-violet-600' },
- *   ]}
- *   minWidth="140px"
- * />
- */
 const TypingText = ({
   texts,
   typingSpeed = 100,
@@ -60,7 +43,6 @@ const TypingText = ({
   delayAfterTyping = 2000,
   delayBeforeTyping = 500,
   showCursor = true,
-  //cursor = '|',
   className,
   cursorClassName,
   loop = true,
@@ -98,11 +80,9 @@ const TypingText = ({
     if (isWaiting) return
 
     if (!isDeleting) {
-      // Typing
       if (displayText.length < currentText.length) {
         setDisplayText(currentText.slice(0, displayText.length + 1))
       } else {
-        // Finished typing, wait then delete
         setIsWaiting(true)
         setTimeout(() => {
           setIsWaiting(false)
@@ -110,11 +90,9 @@ const TypingText = ({
         }, delayAfterTyping)
       }
     } else {
-      // Deleting
       if (displayText.length > 0) {
         setDisplayText(displayText.slice(0, -1))
       } else {
-        // Finished deleting, move to next text
         setIsDeleting(false)
         const nextIndex = textIndex + 1
 
@@ -126,7 +104,6 @@ const TypingText = ({
           setTextIndex(nextIndex)
         }
 
-        // Small delay before typing next
         setIsWaiting(true)
         setTimeout(() => {
           setIsWaiting(false)
@@ -155,7 +132,7 @@ const TypingText = ({
     return () => clearTimeout(timer)
   }, [mounted, type, isDeleting, typingSpeed, deletingSpeed, reducedMotion, currentText])
 
-  // Find the longest text to reserve space
+  // Reserve width for the longest text so cycling never shifts layout.
   const longestText = texts.reduce<string>((longest, item) => {
     const text = typeof item === 'string' ? item : item.text
     return text.length > longest.length ? text : longest
@@ -165,7 +142,7 @@ const TypingText = ({
     <span
       className={twMerge('inline-flex items-center', className)}
       style={minWidth ? { minWidth } : undefined}>
-      {/* Always reserve space for icon */}
+      {/* Fades rather than unmounts, so the icon's space stays reserved */}
       {currentIcon && (
         <span
           className={twMerge(
@@ -181,7 +158,6 @@ const TypingText = ({
         <span className="invisible whitespace-pre" aria-hidden="true">
           {longestText}
         </span>
-        {/* Actual text + cursor overlaid, positioned at start */}
         <span className="absolute inset-0 flex items-center">
           <span>{displayText}</span>
           {showCursor && !reducedMotion && (

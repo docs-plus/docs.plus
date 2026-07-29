@@ -7,46 +7,31 @@ type ElementOrArrayLike = HTMLElement | ArrayLike<HTMLElement>
 type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
 
 /**
- * Hook to handle hierarchical selection based on current caret position
- *
- * This allows selecting content based on the document hierarchy:
- * - element: selects the current element (paragraph, list item, etc.)
- * - parent: selects the parent container of the current element
- * - section: selects the entire section containing the current element
- * - heading: selects the nearest heading and all its content
- * - list: selects the entire list if within a list
- * - document: selects the entire document
+ * Widens the DOM selection from the caret to the nearest ancestor matching the requested
+ * level; `section` means the enclosing `h1[data-toc-id]`, the docs.plus heading section.
  */
 export const useHierarchicalSelection = (editor: Editor | null) => {
-  /**
-   * Select content hierarchically based on current caret position
-   */
   const selectHierarchical = useCallback(
     (level: SelectionLevel = 'element') => {
       if (!editor) return false
 
-      // Get the current selection
       const { selection } = editor.state
 
       console.log('selection', { selection })
       if (!selection) return false
 
-      // Get the DOM node at the current selection
       const element = editor.view.domAtPos(selection.from)?.node as HTMLElement
       console.log('element', { element })
       if (!element) return false
 
       let targetElement: HTMLElement | null
 
-      // Find the appropriate element to select based on the requested level
       switch (level) {
         case 'element':
-          // Find the closest paragraph, list item, etc.
           targetElement = element.closest('p, li, h1, h2, h3, h4, h5, h6') as HTMLElement
           break
 
         case 'parent': {
-          // Find the parent container
           const immediateElement = element.closest('p, li, h1, h2, h3, h4, h5, h6') as HTMLElement
           targetElement = immediateElement?.parentElement as HTMLElement
           break
@@ -61,12 +46,10 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
           break
 
         case 'list':
-          // Find the entire list
           targetElement = element.closest('ul, ol') as HTMLElement
           break
 
         case 'document':
-          // Select entire document
           editor.commands.selectAll()
           return true
 
@@ -74,7 +57,6 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
           targetElement = element.closest('p, li, h1, h2, h3, h4, h5, h6') as HTMLElement
       }
 
-      // If we found a target element, select it
       if (targetElement) {
         const doc = targetElement.ownerDocument
         const range = doc.createRange()
@@ -97,9 +79,6 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
     [editor]
   )
 
-  /**
-   * Select the content of the specified DOM element
-   */
   const selectElement = useCallback(
     (domElement: ElementOrArrayLike) => {
       if (!editor) return false
@@ -117,7 +96,6 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
         const range = doc.createRange()
         const selection = window.getSelection()
 
-        // Select the entire element content
         range.selectNodeContents(element)
         selection?.removeAllRanges()
         selection?.addRange(range)

@@ -2,12 +2,8 @@ import { type IconName, Icons } from '@icons'
 import React from 'react'
 
 /**
- * Legacy key → registry key mapping.
- *
- * Existing consumers (e.g. chatroom toolbar buttons) use string-based keys
- * like `<Icon type="Bold" />`. This map translates those legacy keys to the
- * canonical `Icons` registry names so everything resolves through a single
- * source of truth.
+ * Existing consumers (e.g. chatroom toolbar buttons) pass string keys like
+ * `<Icon type="Bold" />`; this maps them onto the canonical `Icons` registry.
  */
 const LEGACY_KEYS: Record<string, IconName> = {
   Bold: 'bold',
@@ -46,14 +42,10 @@ interface IconProps {
 }
 
 /**
- * Icon component — thin wrapper around the centralized `Icons` registry.
- *
- * Prefer using `Icons.xxx` directly in new code. This component exists
- * for backwards compatibility with string-based `<Icon type="Bold" />` usage.
- *
- * IMPORTANT: Never pass `fill={undefined}` to react-icons — it overrides their
- * built-in `fill="currentColor"`, stripping the attribute so the SVG falls
- * back to the spec default: black.
+ * Prefer `Icons.xxx` directly in new code; this exists for the string-key call
+ * sites. Never pass `fill={undefined}` to react-icons — it overrides their
+ * built-in `fill="currentColor"` and the SVG falls back to the spec default,
+ * black.
  */
 const Icon = ({ type, fill, size = 16, className = 'text-base-content/70' }: IconProps) => {
   const registryKey = LEGACY_KEYS[type] ?? (type as IconName)

@@ -4,12 +4,9 @@ import { getMarkRange } from '@tiptap/core'
 import type { DocSelectionRange } from './types'
 
 /**
- * Defense-in-depth: only allow http(s) image sources. `<img src="javascript:…">`
- * is inert in modern browsers, but `data:` URIs can carry SVG with embedded
- * scripts in some attack contexts and are also a tracking-pixel vector when
- * the source is third-party JSON we don't fully control (oEmbed thumbnails,
- * scraped meta tags). Returns `undefined` for anything that isn't plain
- * http(s) so the caller falls through to the next image candidate.
+ * Defense-in-depth over third-party JSON (oEmbed thumbnails, scraped meta):
+ * `data:` URIs can carry scripted SVG and are a tracking-pixel vector, so only
+ * plain http(s) passes. `undefined` makes the caller try the next candidate.
  */
 export const safeImageSrc = (url: string | undefined): string | undefined => {
   if (!url) return undefined
@@ -17,9 +14,8 @@ export const safeImageSrc = (url: string | undefined): string | undefined => {
 }
 
 /**
- * Minimal shape required to write metadata back onto the hyperlink mark.
- * Both the desktop popover (`MetadataResponse`) and the React mobile sheet
- * (narrowed `LinkMetadata`) satisfy it without further conversion.
+ * Kept minimal so both the desktop popover's `MetadataResponse` and the mobile
+ * sheet's narrowed `LinkMetadata` satisfy it without conversion.
  */
 export interface MarkMetadata {
   title: string
@@ -27,32 +23,10 @@ export interface MarkMetadata {
 }
 
 /**
- * Guarded mark-attr write that updates the hyperlink's `title`/`image`
- * attrs without touching the editor selection.
- *
- * Timing rule:
- *   - **Desktop floating popover:** MUST defer until after the popover
- *     detaches. Changing mark attrs causes ProseMirror to re-render the
- *     underlying `<a>` element; the floating-popover pins to that `<a>`
- *     via `referenceElement`, and floating-ui's
- *     `hide({ strategy: 'referenceHidden' })` middleware detects the
- *     now-detached reference and hides the popover. Use the `flush`
- *     handle returned by `renderMetadataInto` for this.
- *   - **Mobile bottom sheet (React):** Safe to call immediately on
- *     metadata arrival — the sheet is fixed at the viewport bottom and
- *     isn't anchored to the link DOM, so a mark-attr re-render doesn't
- *     affect it.
- *
- * Implementation notes:
- *   - resolves the hyperlink mark range around `nodePos` via
- *     `getMarkRange` (filtered by `href` so adjacent unrelated links are
- *     never touched),
- *   - replaces the mark with one carrying the new `title`/`image` while
- *     preserving every other attr,
- *   - bails out on no-op writes (same title + image) so we never
- *     dispatch an empty transaction,
- *   - tags the tr `addToHistory: false` (background metadata is not an
- *     undoable user action).
+ * Desktop MUST defer this until the popover detaches (use `renderMetadataInto`'s
+ * `flush`): the attr write re-renders the `<a>`, and floating-ui's
+ * `hide({ strategy: 'referenceHidden' })` then hides the popover. The mobile
+ * sheet isn't anchored to the link DOM, so it can write immediately.
  */
 export const writeLinkMetadataAttrs = (
   editor: Editor,
@@ -86,6 +60,7 @@ export const writeLinkMetadataAttrs = (
   }
 
   const nextMark = hyperlinkType.create(nextAttrs)
+  // Background metadata is not an undoable user action.
   const tr = state.tr
     .removeMark(range.from, range.to, hyperlinkType)
     .addMark(range.from, range.to, nextMark)

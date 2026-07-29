@@ -3,17 +3,9 @@ import { useEffect } from 'react'
 const EVENT_NAME = 'select:close-others'
 
 /**
- * Ensures only one select/dropdown is open at a time across the entire page.
- *
- * When `isOpen` becomes true, broadcasts a close signal to all other instances.
- * Other instances hearing that signal will call `close()` to dismiss themselves.
- *
- * Works across both `Select` and `SearchableSelect` — any component that calls
- * this hook participates in the same mutual-exclusion group.
- *
- * @param id    – A stable unique identifier for this instance (e.g. from `useId()`)
- * @param isOpen – Whether this instance is currently open
- * @param close  – Callback to close this instance (typically `() => setIsOpen(false)`)
+ * Page-wide mutual exclusion: every caller joins one group, so opening any
+ * `Select` or `SearchableSelect` closes all the others. `id` must be stable
+ * and unique per instance (`useId()`) or an instance will close itself.
  */
 export function useSelectExclusion(id: string, isOpen: boolean, close: () => void) {
   // Broadcast: "I just opened — everyone else close"

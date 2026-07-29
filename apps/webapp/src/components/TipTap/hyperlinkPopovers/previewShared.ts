@@ -18,22 +18,10 @@ import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
 import type { InternalDocumentLink } from './types'
 
 /**
- * Per-app icon for the special-URL fallback path.
- *
- * The extension's `getSpecialUrlInfo` returns a brand-neutral
- * `{ type, title, category }` — it deliberately does NOT ship an icon
- * catalog so the published bundle stays small for consumers that pick
- * their own visual treatment. This table is the webapp's choice for
- * which Lucide icon (via `@components/icons/registry`) represents each
- * `type`, conforming to the design-system convention "all icons use
- * Lucide" (see registry.ts).
- *
- * Typed as `Partial<Record<SpecialUrlType, IconType>>` so TypeScript
- * catches typos and renames against the extension's exported union, but
- * absence is allowed — domain-catalog types (`meet`, plus the web
- * variants of `github`, `notion`, …) are intentionally omitted because
- * the favicon path always wins for `https://` URLs and a static icon
- * would never render for them.
+ * The extension ships no icon catalog (bundle size), so the webapp picks the
+ * Lucide icon per `type`. `Partial` is deliberate: domain-catalog types
+ * (`meet`, web `github`/`notion`, …) are omitted because the favicon path
+ * always wins for `https://` URLs and a static icon would never render.
  */
 const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
   email: Icons.mail,
@@ -107,9 +95,8 @@ const createSvgIcon = (Icon: IconType, className = ''): HTMLElement => {
 }
 
 /**
- * Build the inline metadata block: favicon/special-icon + title-as-link.
- * Used by the desktop popover and (with different CSS) inside the mobile
- * sheet header.
+ * Favicon/special-icon + title-as-link, shared by the desktop popover and the
+ * mobile sheet header (same DOM, different CSS).
  */
 export const createMetadataContent = (data: MetadataResponse | null, href: string): HTMLElement => {
   const specialInfo = getSpecialUrlInfo(href)
@@ -147,11 +134,7 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
     })
     container.prepend(img)
   } else if (specialInfo) {
-    // No favicon to fall back to (mailto:, tel:, custom-scheme apps).
-    // `TYPE_TO_ICON` only covers scheme-catalog types — domain-catalog
-    // entries (`meet`, `github`, …) intentionally have no fallback
-    // because the favicon path above virtually always succeeds for
-    // `https://` URLs.
+    // Nothing to fetch a favicon from (mailto:, tel:, custom-scheme apps).
     const Icon = TYPE_TO_ICON[specialInfo.type]
     if (Icon) {
       container.prepend(createSvgIcon(Icon, `metadata-icon-special icon-${specialInfo.category}`))
@@ -170,29 +153,17 @@ const createLoadingSkeleton = (): HTMLElement => {
 }
 
 /**
- * Handle returned by `renderMetadataInto` so callers can flush the
- * pending mark-attr write at the right moment in the popover lifecycle
- * (typically inside the `observeDetachment` callback).
+ * Lets the caller flush the pending mark-attr write at the right moment in the
+ * popover lifecycle — typically inside the `observeDetachment` callback.
  */
 export interface RenderHandle {
   flush: () => void
 }
 
 /**
- * Fetch metadata (with cache + abort) and render into `container`:
- * loading skeleton → live content on success, or href-as-title on
- * failure (same graceful degradation as pre-refactor behavior — the
- * link itself is always usable, so visible error styling is noise).
- *
- * Returns a `RenderHandle` whose `flush()` writes the freshly-fetched
- * metadata back onto the hyperlink mark (L1 cache for next session).
- * The caller MUST invoke `flush()` only AFTER the popover is detached,
- * because writing mark attrs while the popover is open re-renders the
- * `<a>` reference element and floating-ui hides the popover (see
- * `writeLinkMetadataAttrs` for the full rationale).
- *
- * If the L1 cache already had a title, no fetch happens and `flush()`
- * is a no-op.
+ * A failed fetch degrades to href-as-title: the link still works, so visible
+ * error styling would be noise. The caller MUST invoke `flush()` only AFTER
+ * the popover detaches — see `writeLinkMetadataAttrs` for why.
  */
 export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext): RenderHandle => {
   const { href, attrs, signal } = ctx
@@ -235,13 +206,9 @@ export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext):
 }
 
 /**
- * Watch for the popover element being detached from the DOM (by any
- * trigger — backdrop tap, Escape, extension's outside-click listener,
- * controller.reposition swap, etc.) and fire `onDetach` exactly
- * once. Used to abort the in-flight metadata fetch.
- *
- * The extension doesn't expose a "popover closed" event, so a
- * MutationObserver on body is the cleanest cross-cutting hook.
+ * Fires once on detachment by any trigger — backdrop tap, Escape, the
+ * extension's outside-click listener, a `controller.reposition` swap. The
+ * extension exposes no "popover closed" event, hence the MutationObserver.
  */
 export const observeDetachment = (element: HTMLElement, onDetach: () => void): void => {
   const observer = new MutationObserver(() => {
@@ -254,10 +221,8 @@ export const observeDetachment = (element: HTMLElement, onDetach: () => void): v
 }
 
 /**
- * Imperative destination chip for the desktop preview popover: icon +
- * primary/sub label, click runs the in-document destination in place.
- * Mirrors `createMetadataContent`'s imperative-DOM style so it slots into
- * the existing `.hyperlink-preview-popover` without a React mount.
+ * Imperative DOM (not React) so it slots into the existing
+ * `.hyperlink-preview-popover` without a mount, like `createMetadataContent`.
  */
 export const createInternalLinkChip = (link: InternalDocumentLink, editor: Editor): HTMLElement => {
   const { label, sublabel, icon } = describeInternalDocumentLink(link, editor)

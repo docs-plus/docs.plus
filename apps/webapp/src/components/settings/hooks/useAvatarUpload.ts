@@ -8,12 +8,11 @@ import type { Profile } from '@types'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useState } from 'react'
 
-const MAX_AVATAR_SIZE = 256_000 // 256 KB
+const MAX_AVATAR_SIZE = 256_000
 
 /**
- * Writes `avatar_url` + `avatar_updated_at` to `public.users` and mirrors
- * to auth metadata. Returns the persisted timestamp so callers patch
- * local state without a separate `new Date()` drifting from the row.
+ * Mirrors the write into auth metadata too, and returns the persisted timestamp so callers
+ * patch local state without a separate `new Date()` drifting from the row.
  */
 const updateAvatarInDB = async (
   avatarUrl: string | null,
