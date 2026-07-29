@@ -1,16 +1,12 @@
 /**
- * Full-stack E2E for the draft first-edit anchor.
- *
- * Requires the whole local stack running (`make dev-local`): webapp :3001, WS,
- * REST, Supabase, and the Prisma pg (docsy-postgres-local). It is NOT a mocked
- * spec like the chatroom suite — the whole point is IndexedDB survival across a
- * real browser reload, which cannot be faked. DB assertions run via the
- * `queryDocBySlug` / `waitForDocBySlug` / `queryDocVersionCount` / `deleteDocBySlug`
- * cy.tasks (see cypress.config.ts). Anon is sufficient. Local-only: no CI lane
- * runs e2e/document/**, so run it deliberately with the stack up.
+ * Needs the whole local stack up (`make dev-local`): webapp :3001, WS, REST,
+ * Supabase, docsy-postgres-local. Deliberately unmocked — the point is IndexedDB
+ * survival across a real browser reload, which cannot be faked. Local-only: no
+ * CI lane runs e2e/document/**, so run it deliberately with the stack up.
  */
 
 const BASE = 'http://localhost:3001'
+const REST = 'http://localhost:4000/api' // hocuspocus REST under `make dev-local`
 const pad = () => cy.get('.ProseMirror[contenteditable="true"]', { timeout: 40000 })
 const freshSlug = () => `e2e-draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
@@ -112,5 +108,28 @@ describe('draft first-edit anchor (full stack)', () => {
       cy.reload()
       cy.task('queryDocBySlug', slug).its('documentId').should('eq', documentId) // stable channel_id
     })
+  })
+
+  // Pins the 2026-07-22/24 production failure: two people opening one new slug got
+  // different random ids, so they joined different rooms and never saw each other.
+  // The loser's text persisted under a suffixed slug no URL reaches. Two reads of
+  // the draft endpoint returning one id is the property that prevents it.
+  it('gives every first-open of one new slug the same documentId', () => {
+    cy.request(`${REST}/documents/${slug}`).then((first) => {
+      const documentId = first.body.data.documentId
+      // Charset, not just length: lower(documentId) lands in workspaces.slug under a
+      // CHECK that rejects `_`, so a base64url "simplification" passes a length test
+      // and breaks in production.
+      expect(documentId, 'draft id').to.match(/^[0-9a-zA-Z]{19}$/)
+
+      cy.request(`${REST}/documents/${slug}`).then((second) => {
+        expect(second.body.data.documentId, 'same slug -> same room').to.eq(documentId)
+      })
+      // A different slug must not share it, or one identity would serve two documents.
+      cy.request(`${REST}/documents/${slug}-other`).then((other) => {
+        expect(other.body.data.documentId).to.not.eq(documentId)
+      })
+    })
+    cy.task('queryDocBySlug', slug).should('be.null') // reads alone still create no row
   })
 })

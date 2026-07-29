@@ -1,8 +1,6 @@
 /**
- * Documents Controller
- *
- * Handles document CRUD operations.
- * Validation is done in the router via zValidator - controllers receive pre-validated data.
+ * Document CRUD handlers. Validation happens in the router via zValidator, so
+ * everything here receives pre-validated data.
  */
 
 import { sendNewDocumentNotification } from '../../lib/email/document-notification'
@@ -23,11 +21,9 @@ import { authUnavailableResponse } from '../middleware/auth'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
 
-// Helper to get validated data with proper typing
 const getValidJson = <T>(c: AppContext): T => (c.req as any).valid('json') as T
 const getValidQuery = <T>(c: AppContext): T => (c.req as any).valid('query') as T
 
-// Standard error response handler
 const handleError = (c: AppContext, error: unknown, context: Record<string, unknown> = {}) => {
   documentsControllerLogger.error({ err: error, ...context }, 'Document operation failed')
   const statusCode = (error instanceof AppError ? error.statusCode : 500) as 400 | 404 | 500
@@ -68,7 +64,10 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
     const doc = await documentsService.getDocumentBySlug(prisma, docName)
 
     if (!doc) {
-      return c.json({ success: true, data: documentsService.createDraftDocument(docName) })
+      return c.json({
+        success: true,
+        data: await documentsService.createDraftDocument(prisma, docName)
+      })
     }
 
     // Soft-deleted → hard 404 (never the draft path): drafting mints a NEW documentId under

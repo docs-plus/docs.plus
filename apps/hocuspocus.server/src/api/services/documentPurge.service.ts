@@ -2,6 +2,9 @@ import type { PrismaClient } from '@prisma/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
+import { deriveDocumentId, INITIAL_EPOCH } from '../../lib/documentId'
+import { documentsServiceLogger as purgeLogger } from '../../lib/logger'
+import { normalizeSlug } from '../../lib/slug'
 import { deleteDocumentMedia } from './media.service'
 
 // `permanent` deletes the row whether or not it is tombstoned, so it must be
@@ -48,11 +51,47 @@ export async function purgeDocumentFootprint(
     timestamp: new Date().toISOString()
   })
 
-  const { count } = await prisma.documentMetadata.deleteMany({
-    where: {
-      documentId,
-      deletedAt: 'retention' in scope ? { not: null, lt: scope.retention } : undefined
-    }
-  })
+  // Row delete and epoch bump share a transaction: the delete frees the slug, and a
+  // draft opened in the gap would derive this document's id and let a stale
+  // IndexedDB mirror sync the erased content back.
+  const count = await prisma.$transaction(
+    async (tx) => {
+      const { count } = await tx.documentMetadata.deleteMany({
+        where: {
+          documentId,
+          deletedAt: 'retention' in scope ? { not: null, lt: scope.retention } : undefined
+        }
+      })
+      if (count === 0) return 0
+
+      // Prove the key instead of trusting the caller's slug. `updateDocument` and the
+      // store worker can both persist an un-normalized slug, and bumping under one
+      // leaves the real slug at INITIAL_EPOCH — the next visitor re-derives the erased
+      // id. Detects only: the base slug stays unbumped, so this warns, it does not repair.
+      const current =
+        (await tx.documentSlugEpoch.findUnique({ where: { slug }, select: { epoch: true } }))
+          ?.epoch ?? INITIAL_EPOCH
+      if (deriveDocumentId(normalizeSlug(slug), current) !== documentId) {
+        purgeLogger.warn(
+          { documentId, slug },
+          'Purged document id is not derived from its slug; epoch not bumped'
+        )
+        return count
+      }
+
+      await tx.documentSlugEpoch.upsert({
+        where: { slug },
+        create: { slug, epoch: current + 1 },
+        update: { epoch: { increment: 1 } }
+      })
+      return count
+    },
+    // The reaper is hourly and background, so both bounds favour finishing over
+    // failing fast — the opposite of the save path's. Prisma's 2s/5s defaults are a
+    // deadline the bare deleteMany never had: the worst live document is 23 MB across
+    // 18 cascading version rows (max 119 versions), and a P2028 here is permanent,
+    // because the retry re-runs an already-erased footprint into the same wall.
+    { maxWait: 10_000, timeout: 30_000 }
+  )
   return { purged: count }
 }

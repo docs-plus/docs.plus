@@ -372,7 +372,7 @@ const statelessExtension = {
 
 // First-edit identity anchor: the instant isDraft flips false (real edit intent),
 // create the slug->documentId metadata row so a reload's slug lookup resolves to
-// the SAME (random) documentId — the stable IndexedDB key + WS room name that let
+// the SAME documentId — the stable IndexedDB key + WS room name that let
 // the client mirror restore early edits before the debounced content store() lands.
 // Bots that open and never edit keep isDraft and stay row-less (anti-empty-doc).
 const firstEditMetadataExtension = {

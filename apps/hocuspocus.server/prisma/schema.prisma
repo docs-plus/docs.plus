@@ -51,6 +51,17 @@ model DocumentMetadata {
   @@index([deletedAt])
 }
 
+// Counts how many times a slug's document has been purged. A draft's documentId is
+// derived from the slug, so without this a reused slug would derive the purged
+// document's id and a stale IndexedDB mirror could resurrect erased content.
+// No @default: "no row" already means INITIAL_EPOCH, so a writer that omits the
+// column would silently mint that same state instead of failing.
+model DocumentSlugEpoch {
+  slug      String   @id
+  epoch     Int
+  updatedAt DateTime @updatedAt
+}
+
 // Names the author behind a Yjs clientID so a version diff can attribute blocks.
 // Records who first claimed the id on a live socket, not proof of authorship.
 model DocumentClientAuthor {

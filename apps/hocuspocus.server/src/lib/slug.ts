@@ -1,4 +1,10 @@
 import { Prisma } from '@prisma/client'
+import slugify from 'slugify'
+
+// The one slug normalizer. `deriveDocumentId` consumes its output, so a caller
+// that normalizes differently mints an id the purge epoch can never key on.
+export const normalizeSlug = (slug: string): string =>
+  slugify(slug.toLowerCase(), { lower: true, strict: true })
 
 // Runs `write` with the base slug, then retries with a uniquified suffix on a
 // Prisma P2002 slug collision. Shared by first-save (queue) and duplicate so the

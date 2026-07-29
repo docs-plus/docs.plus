@@ -1,9 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 
-/**
- * Test server helper for API testing
- */
 export class TestServer {
   public app: Hono
   private baseURL: string
@@ -13,9 +10,6 @@ export class TestServer {
     this.baseURL = `http://localhost:${port}`
   }
 
-  /**
-   * Make a GET request
-   */
   async get(path: string, headers: Record<string, string> = {}) {
     const response = await this.app.request(`${this.baseURL}${path}`, {
       method: 'GET',
@@ -29,9 +23,6 @@ export class TestServer {
     }
   }
 
-  /**
-   * Make a POST request
-   */
   async post(path: string, body: any, headers: Record<string, string> = {}) {
     const response = await this.app.request(`${this.baseURL}${path}`, {
       method: 'POST',
@@ -49,9 +40,6 @@ export class TestServer {
     }
   }
 
-  /**
-   * Make a PUT request
-   */
   async put(path: string, body: any, headers: Record<string, string> = {}) {
     const response = await this.app.request(`${this.baseURL}${path}`, {
       method: 'PUT',
@@ -69,9 +57,6 @@ export class TestServer {
     }
   }
 
-  /**
-   * Make a PATCH request
-   */
   async patch(path: string, body: any, headers: Record<string, string> = {}) {
     const response = await this.app.request(`${this.baseURL}${path}`, {
       method: 'PATCH',
@@ -89,9 +74,6 @@ export class TestServer {
     }
   }
 
-  /**
-   * Make a DELETE request
-   */
   async delete(path: string, headers: Record<string, string> = {}) {
     const response = await this.app.request(`${this.baseURL}${path}`, {
       method: 'DELETE',
@@ -105,9 +87,6 @@ export class TestServer {
     }
   }
 
-  /**
-   * Upload a file
-   */
   async upload(path: string, file: File, fieldName: string = 'mediaFile') {
     const formData = new FormData()
     formData.append(fieldName, file)
@@ -125,9 +104,6 @@ export class TestServer {
   }
 }
 
-/**
- * Create a mock Prisma client for testing
- */
 export const createMockPrisma = (): Partial<PrismaClient> => {
   const client: any = {
     documentMetadata: {
@@ -146,6 +122,11 @@ export const createMockPrisma = (): Partial<PrismaClient> => {
       create: async (data: any) => ({ id: 1, ...data.data }),
       count: async () => 0
     },
+    // No row => epoch 1, the same default a slug that has never been purged gets.
+    documentSlugEpoch: {
+      findUnique: async () => null,
+      upsert: async (data: any) => ({ ...data.create })
+    },
     $queryRaw: async () => [{ result: 1 }],
     $disconnect: async () => {}
   }
@@ -159,9 +140,6 @@ export const createMockPrisma = (): Partial<PrismaClient> => {
   return client as Partial<PrismaClient>
 }
 
-/**
- * Create a mock Redis client for testing
- */
 export const createMockRedis = (): any => {
   const store = new Map<string, string>()
   return {

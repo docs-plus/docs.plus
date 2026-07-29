@@ -1,8 +1,8 @@
 import { Prisma, PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
-import slugify from 'slugify'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
+import { deriveDocumentId, INITIAL_EPOCH } from '../../lib/documentId'
 import {
   AppError,
   handlePrismaError,
@@ -14,7 +14,7 @@ import { documentsServiceLogger } from '../../lib/logger'
 import { canMutateAccessFlags, isDocumentOwner } from '../../lib/ownerAccess'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
-import { withUniqueSlug } from '../../lib/slug'
+import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 import { purgeDocumentFootprint } from './documentPurge.service'
@@ -55,10 +55,35 @@ export const getOwnerProfiles = async (userIds: string[]) => {
   return data || []
 }
 
-export const createDraftDocument = (slug: string) => {
-  const newSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
-  const uid = new ShortUniqueId()
-  const documentId = uid.stamp(19)
+// Derived, so two people opening one new slug share a room instead of forking into
+// two documents. Random only where derivation cannot apply: an empty normalized slug,
+// or a candidate another row already holds.
+const resolveDraftDocumentId = async (prisma: PrismaClient, normalizedSlug: string) => {
+  if (!normalizedSlug) return new ShortUniqueId().stamp(19)
+
+  const epochRow = await prisma.documentSlugEpoch.findUnique({
+    where: { slug: normalizedSlug },
+    select: { epoch: true }
+  })
+  const candidate = deriveDocumentId(normalizedSlug, epochRow?.epoch ?? INITIAL_EPOCH)
+
+  // NOT a collision guard — a derived id is publicly computable, so anyone can claim
+  // one first and force this slug back to a random id. Keep it: without the probe that
+  // squatter's document would be served to the next visitor. It is TOCTOU against an
+  // anchor landing after it, and it cannot stop a squatter who never anchors.
+  const taken = await prisma.documentMetadata.findUnique({
+    where: { documentId: candidate },
+    select: { id: true }
+  })
+  if (!taken) return candidate
+
+  documentsServiceLogger.warn({ slug: normalizedSlug, candidate }, 'Derived documentId taken')
+  return new ShortUniqueId().stamp(19)
+}
+
+export const createDraftDocument = async (prisma: PrismaClient, slug: string) => {
+  const newSlug = normalizeSlug(slug)
+  const documentId = await resolveDraftDocumentId(prisma, newSlug)
 
   return {
     slug: newSlug,
@@ -72,18 +97,16 @@ export const createDraftDocument = (slug: string) => {
   }
 }
 
-// Anchor a draft's identity on the first real edit: create the slug -> documentId
-// row so a reload's slug lookup returns the SAME (random) documentId — the stable
-// IndexedDB key + WS room name that let the client mirror restore early edits. The
-// content/versions still persist later via the debounced store(). Bots that open
-// and never edit keep isDraft and never reach here (no empty rows). Idempotent:
-// P2002 = documentId already anchored, or the slug was claimed by a concurrent
-// first-open (that writer wins the id race; we cede — same as before the anchor).
+// Anchor a draft's identity on the first real edit so a reload's slug lookup returns the
+// same documentId — the stable IndexedDB key and WS room name the client mirror restores
+// early edits from. Bots that open and never edit never reach here, so no empty rows.
+// P2002 = already anchored, or the slug was claimed by a concurrent first-open (that
+// writer wins the id race; we cede — ids are only derived for part of the population).
 export const ensureDraftDocumentMetadata = async (
   prisma: PrismaClient,
   params: { documentId: string; slug: string; ownerId?: string | null; email?: string | null }
 ): Promise<void> => {
-  const newSlug = slugify(params.slug.toLowerCase(), { lower: true, strict: true })
+  const newSlug = normalizeSlug(params.slug)
   if (!newSlug) return
 
   try {
@@ -112,7 +135,7 @@ export const createDocument = async (prisma: PrismaClient, params: CreateDocumen
   }
 
   try {
-    const newSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
+    const newSlug = normalizeSlug(slug)
     const uid = new ShortUniqueId()
     const documentId = uid.stamp(19)
 
@@ -143,7 +166,7 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
   }
 
   try {
-    const normalizedSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
+    const normalizedSlug = normalizeSlug(slug)
 
     const doc = await prisma.documentMetadata.findUnique({
       where: { slug: normalizedSlug }
@@ -191,7 +214,6 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     offset
   } = params
 
-  // Validate pagination parameters
   if (limit < 1 || limit > 100) {
     throw new ValidationError('Limit must be between 1 and 100')
   }
@@ -308,7 +330,6 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
         : []
     }))
 
-    // Enrich with owner profiles
     const ownerIds = formattedDocs.filter((doc: any) => doc.ownerId).map((doc: any) => doc.ownerId!)
     const ownerProfiles = await getOwnerProfiles(ownerIds)
 
@@ -437,9 +458,7 @@ export const updateDocument = async (
       update: updateData,
       create: {
         documentId,
-        slug: anchorSlug
-          ? slugify(anchorSlug.toLowerCase(), { lower: true, strict: true })
-          : documentId,
+        slug: anchorSlug ? normalizeSlug(anchorSlug) : documentId,
         title: title || documentId,
         description: description || '',
         keywords: keywords ? keywords.join(',') : '',
@@ -574,10 +593,10 @@ export const duplicateDocument = async (
     })
     let bytes = latest?.data ?? null
 
-    // Scan before copy: the snapshot names which objects are live and under whose
-    // prefix — a copy of a copy still names the original. `data` is null when it
-    // names none, so the no-media path writes the source bytes untouched. Objects
-    // before rows: a throw from here leaves only orphans, which the catch removes.
+    // Scan before copy: the snapshot names which objects are live and under whose prefix —
+    // a copy of a copy still names the original. `data` is null when it names none, so the
+    // no-media path writes the source bytes untouched. Objects before rows: a throw here
+    // leaves only orphans, which the catch removes.
     const rehosted = bytes ? rehostMediaUrls(bytes, documentId) : null
     if (rehosted?.data) {
       try {
@@ -593,7 +612,7 @@ export const duplicateDocument = async (
     }
 
     const title = `${source?.title ?? ''} (copy)`.trim()
-    const baseSlug = slugify(title.toLowerCase(), { lower: true, strict: true })
+    const baseSlug = normalizeSlug(title)
 
     // One transaction, because the two writes are the copy: metadata alone is a
     // document whose snapshot never landed. The slug retry stays outside it —
@@ -691,18 +710,10 @@ export const permanentlyDeleteDocument = async (
   return { status: 'ok' }
 }
 
-// Bulk Trash purge. `ids` omitted → every soft-deleted doc the requester owns
-// (Empty trash); `ids` present → that selection. Each id runs through the
-// single-doc purge so owner + soft-deleted gating and idempotency are reused
-// verbatim; the count reflects rows actually purged. Sequential on purpose —
-// each purge fans out to storage + the Supabase footprint RPC (parallelising
-// would hammer both).
-//
-// Scale: this is synchronous, so a very large trash (hundreds) could exceed the
-// request timeout. Fine for realistic owner-scoped trashes (the 30-day reaper
-// bounds accumulation); if that assumption breaks, move the loop to the BullMQ
-// worker (which already runs the reaper's purge) and return a queued response
-// rather than capping — a bare `take` would silently leave the trash non-empty.
+// Bulk Trash purge. `ids` omitted → every soft-deleted doc the requester owns; each id
+// reuses the single-doc purge, inheriting its owner gating and idempotency. Sequential on
+// purpose — each purge fans out to storage and the Supabase footprint RPC. Synchronous, so
+// a huge trash times out: move the loop to the worker, never cap it with a bare `take`.
 export const purgeTrash = async (
   prisma: PrismaClient,
   requesterId: string,
