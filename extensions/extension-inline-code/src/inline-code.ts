@@ -19,9 +19,7 @@ declare module '@tiptap/core' {
     inlineCode: {
       /** Apply the inline-code mark (collapsed caret → stored mark, no inserted char). */
       setInlineCode: () => ReturnType
-      /** Toggle the inline-code mark. */
       toggleInlineCode: () => ReturnType
-      /** Remove the inline-code mark. */
       unsetInlineCode: () => ReturnType
     }
   }

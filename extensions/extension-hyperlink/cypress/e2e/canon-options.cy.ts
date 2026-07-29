@@ -1,12 +1,7 @@
 /// <reference types="cypress" />
 
-/**
- * Coverage for two `@tiptap/extension-link` v3 canon options that ship
- * with `@docs.plus/extension-hyperlink` v2 but were unpinned. Both are
- * opt-in (default `false`) so the absence of these tests previously
- * meant a future refactor could quietly regress either behavior. Pin
- * the contract here.
- */
+// `enableClickSelection` and `exitable` are opt-in (default `false`), so no
+// default-path spec exercises them and a refactor can regress either silently.
 
 describe('canon options — enableClickSelection + exitable', () => {
   describe('enableClickSelection: true', () => {

@@ -270,7 +270,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   },
 
   addKeyboardShortcuts() {
-    // BREAKING (v2): Mod-k routes to `openCreateHyperlinkPopover` (was overloaded `setHyperlink()`).
+    // Mod-k routes to `openCreateHyperlinkPopover` (was overloaded `setHyperlink()`).
     const shortcuts: Record<string, () => boolean> = {
       'Mod-k': () => this.editor.commands.openCreateHyperlinkPopover()
     }

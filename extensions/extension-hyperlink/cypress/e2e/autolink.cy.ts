@@ -1,24 +1,14 @@
 /// <reference types="cypress" />
 
-/**
- * Autolink + paste consistency spec.
- *
- * Pins the contract that every write path produces the same stored href
- * for the same input. Before this spec existed:
- *   - Create popover → `https://google.com` (after normalizeHref was wired)
- *   - Autolink on space → `google.com` (bare — findLinks clobbered href)
- *   - Paste over selection → `http://google.com` (linkifyjs default)
- *
- * All three now route through `normalizeLinkifyHref` for URL matches and
- * trust linkifyjs's canonical href for non-URL matches (emails, etc.).
- */
+// Create popover, autolink and paste each stored a different href for the
+// same input before this spec existed. All three now route URL matches
+// through `normalizeLinkifyHref` and trust linkifyjs's canonical href for
+// non-URL matches (emails, etc.).
 
-// Insert the word and its trailing space in *separate* transactions so
-// the autolink plugin sees the whitespace-trigger boundary on its own
-// tick, the way per-keystroke typing would. A single atomic
-// `insertContent('google.com ')` does still fire the plugin, but masks
-// regressions where the `changedRange`-shape of per-keystroke input
-// would differ (IME, composition-end, appendTransaction windowing).
+// The word and its trailing space go in *separate* transactions so the
+// autolink plugin sees the whitespace boundary on its own tick. One atomic
+// `insertContent('google.com ')` still fires it, but masks regressions in
+// the `changedRange` shape of per-keystroke input (IME, composition-end).
 const typeThroughAutolink = (text: string): void => {
   cy.getEditor().then((editor) => {
     editor.chain().focus().insertContent(text).run()
@@ -130,11 +120,9 @@ describe('Autolink + paste — canonical href consistency', () => {
 })
 
 describe('shouldAutoLink veto — parity across autolink + paste-handler + paste-rule', () => {
-  // Reload with a `shouldAutoLink: () => false` policy wired into the
-  // extension. Without the veto, all three surfaces would autolink the
-  // pasted/typed URL — these tests pin that the policy is honored
-  // consistently across every entry point. Earlier the paste handler
-  // plugin alone bypassed `shouldAutoLink` (regression mode).
+  // `?shouldAutoLink=block` wires a `() => false` policy. Every entry point
+  // must honor it — the paste handler plugin alone once bypassed
+  // `shouldAutoLink`, so all three surfaces are pinned here.
   beforeEach(() => {
     cy.visit('/?shouldAutoLink=block')
     cy.window({ timeout: 10000 }).should('have.property', '_editor')

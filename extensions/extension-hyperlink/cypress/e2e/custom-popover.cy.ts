@@ -1,14 +1,9 @@
 /// <reference types="cypress" />
 
-/**
- * Pins the BYO factory contract documented in README.md → "Custom popover
- * factories": the options shape (including forwarding of `validate` and
- * `attributes`), the floating-popover lifecycle, and the exported helpers
- * (`getDefaultController`, `validateURL`,
- * `DANGEROUS_SCHEME_RE`) that the README snippets call. The playground's
- * `?popover=custom` mode records every factory invocation on
- * `window._byo` so assertions target the live object graph.
- */
+// Pins the BYO factory contract the README's "Custom popover factories"
+// snippets rely on. The playground's `?popover=custom` mode records every
+// factory invocation on `window._byo`, so assertions target the live object
+// graph rather than the rendered DOM.
 
 const BYO_CREATE = '.byo-create-popover'
 const BYO_PREVIEW = '.byo-preview-popover'
@@ -54,11 +49,9 @@ describe('BYO popover factories — README public contract', () => {
     })
 
     it('forwards openCreateHyperlinkPopover attributes into CreateHyperlinkOptions.attributes', () => {
-      // v2 split: `setHyperlink` writes the mark; the side-effecting
-      // popover lives behind `openCreateHyperlinkPopover`. Mod+K calls
-      // it with no args (attributes default to `{}`), so a literal
-      // empty-object pass-through test is useless. Drive the command
-      // from the spec with real attributes to prove the extension's
+      // Mod+K calls `openCreateHyperlinkPopover` with no args, so attributes
+      // default to `{}` and a pass-through assertion there is vacuous. Drive
+      // the command with real attributes instead, to prove the extension's
       // `attributes ?? {}` branch actually forwards.
       cy.window().then((win) => {
         win._editor.commands.openCreateHyperlinkPopover({ href: 'https://forwarded.example' })

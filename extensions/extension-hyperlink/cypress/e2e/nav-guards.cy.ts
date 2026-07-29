@@ -1,26 +1,9 @@
 /// <reference types="cypress" />
 
-/**
- * Navigation safety spec — the two surfaces that route navigation through
- * the composed gate: middle-click (`auxclick`) and the read-only primary-
- * click fallback (no preview popover configured).
- *
- * Sister spec to `xss-guards.cy.ts`, which covers the *write* side
- * (parseHTML, input rules, paste rules). This file covers the *read*
- * side — what happens when an existing link in the doc is clicked.
- *
- * Without the auxclick handler that ships with the extension, middle-
- * click would bypass the capture-phase primary-click guard entirely
- * and the browser would open the raw `<a href>` in a new tab — a full
- * circumvention of `isAllowedUri` and the dangerous-scheme block. Pin
- * the gate so any future regression breaks fast and loud.
- *
- * The read-only `window.open` fallback is pinned by the second describe
- * below. It is NOT covered by `xss-guards.cy.ts`: that spec clicks in an
- * editable editor with the prebuilt preview configured, so it never
- * reaches the fallback branch. The `validateURL` Bun-test suite covers
- * the gate boundary only, not this navigation surface.
- */
+// Read-side counterpart to `xss-guards.cy.ts` (which covers the write side).
+// Two surfaces no other spec reaches: middle-click, which without the
+// `auxclick` handler bypasses the capture-phase primary-click guard and opens
+// the raw `<a href>`; and the read-only `window.open` fallback.
 
 const SAFE_HREF = 'https://example.com/'
 const SAFE_FEATURES = 'noopener,noreferrer'

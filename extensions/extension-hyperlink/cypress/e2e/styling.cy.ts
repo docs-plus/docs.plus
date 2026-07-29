@@ -1,14 +1,8 @@
 /// <reference types="cypress" />
 
-/**
- * These tests are the "did we actually ship the CSS?" safety net. They prove:
- *   1. The stylesheet from the `./styles.css` subpath export is loaded
- *      (packaging + exports map regression test).
- *   2. Every documented `--hl-*` custom property resolves on :root.
- *   3. Class names referenced in the JS modules exist in the CSS and vice
- *      versa — the one documented "CSS ↔ JS contract" of the public API.
- *   4. Color tokens use `light-dark()` so consumers can flip themes via `color-scheme`.
- */
+// Packaging regression net: proves the `./styles.css` subpath export actually
+// loads, the CSS ↔ JS class contract the README documents as public API holds
+// both ways, and color tokens use `light-dark()` so `color-scheme` flips them.
 
 const DOCUMENTED_CSS_VARS = [
   '--hl-bg',

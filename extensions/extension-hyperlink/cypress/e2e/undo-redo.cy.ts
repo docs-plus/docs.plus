@@ -1,11 +1,5 @@
 /// <reference types="cypress" />
 
-/**
- * History integration — autolink and the preview popover's Remove must
- * behave as clean undo/redo steps: undoing an autolink keeps the typed
- * text, redo restores the canonical href, and Remove reverts in one step.
- */
-
 // Type-only: pulls StarterKit's undo/redo command augmentation into this
 // isolated Cypress TS project (erased at runtime).
 import type {} from '@tiptap/starter-kit'

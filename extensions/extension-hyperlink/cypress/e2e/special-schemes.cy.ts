@@ -1,21 +1,9 @@
 /// <reference types="cypress" />
 
-/**
- * Pins deep-link / special-scheme support end-to-end.
- *
- * The library claims (in README + `specialUrls.ts`) to autolink and accept
- * 50+ app schemes (whatsapp:, tg:, github:, vscode:, …) and a curated set
- * of domain mappings (wa.me, t.me, github.com, …). The unit tests cover
- * the catalog itself; this spec proves the editor actually produces the
- * right `<a href>` for those inputs through the same write paths an end
- * user would touch:
- *
- *   1. Autolink on whitespace (`SPECIAL_SCHEME_REGEX_GLOBAL` branch in
- *      `src/plugins/autolink.ts`).
- *   2. Create popover (`Mod+K` → submit) — runs through `normalizeHref`
- *      and `validateURL`.
- *   3. Standard linkifyjs path for domain-mapped web URLs.
- */
+// The unit tests only cover the 50+ scheme / domain-mapping catalog in
+// `specialUrls.ts`; this proves the editor emits the right `<a href>` for them
+// through the real write paths — autolink via `SPECIAL_SCHEME_REGEX_GLOBAL`,
+// the create popover via `normalizeHref` + `validateURL`.
 
 const POPOVER = '.hyperlink-create-popover'
 const INPUT = `${POPOVER} input[name="hyperlink-url"]`

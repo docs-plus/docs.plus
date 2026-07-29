@@ -1,12 +1,6 @@
-/**
- * Unit tests for the hyperlink command façade.
- *
- * Scope: pure factory wiring — engine primitives, canonical/alias
- * mapping, the composed `buildHyperlinkCommands` shape. Editor-level
- * integration (caret behaviour, mark range edits) is covered by the
- * Cypress e2e suite; spinning a full Tiptap editor inside Bun would
- * pull jsdom into a unit-test layer that is intentionally headless.
- */
+// Pure factory wiring only. Editor-level integration lives in the Cypress
+// suite: a real Tiptap editor would drag jsdom into a deliberately headless
+// unit-test layer.
 import { describe, expect, it, mock } from 'bun:test'
 
 import { PREVENT_AUTOLINK_META } from '../../constants'
@@ -196,13 +190,9 @@ describe('buildHyperlinkCommands', () => {
     }
   })
 
-  /**
-   * Locks the public command surface (`HyperlinkPublicCommands`)
-   * against the runtime façade. If a public command is added in
-   * `surface.ts` and forgotten in `index.ts`, the `satisfies`
-   * clause is the compile-time guard; this list is the runtime
-   * smoke that catches accidental tree-shake / build-output drops.
-   */
+  // `satisfies` in `index.ts` is the compile-time guard for this surface;
+  // the list below is the runtime smoke that catches tree-shake or
+  // build-output drops that still typecheck.
   const expectedKeys = [
     'setHyperlink',
     'unsetHyperlink',

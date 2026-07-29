@@ -3,15 +3,10 @@ import { describe, expect, it } from 'bun:test'
 import { normalizeHref, normalizeLinkifyHref } from '../normalizeHref'
 
 /**
- * Pins the canonicalization contract of `normalizeHref`. Every write
- * boundary in the extension funnels through this helper:
- *   - create popover submit
- *   - edit popover submit
- *   - `setLink` programmatic command
- *   - markdown input rule (`[text](url)`)
- *   - autolink + paste (via `normalizeLinkifyHref`)
- *
- * A regression here ships a wrong `<a href>` to every consumer.
+ * Pins the canonicalization contract every write boundary funnels through
+ * (popover submit, `setLink`, the markdown input rule, autolink + paste via
+ * `normalizeLinkifyHref`). A regression here ships a wrong `<a href>` to
+ * every consumer.
  */
 describe('normalizeHref', () => {
   describe('trimming and empty inputs', () => {
@@ -135,11 +130,10 @@ describe('normalizeHref', () => {
   })
 
   describe('bare emails become mailto: (regression)', () => {
-    // BUG-FIX: bare emails went through the URL-prepend branch and
-    // came out as `https://user@example.com` — a syntactically valid
-    // URL with HTTP basic-auth credentials, which is *not* what the
-    // user typed. Matches what the autolink path already emits for
-    // whitespace-detected emails.
+    // BUG-FIX: bare emails went through the URL-prepend branch and came out
+    // as `https://user@example.com` — a valid URL with HTTP basic-auth
+    // credentials, not what the user typed. Matches what the autolink path
+    // already emits for whitespace-detected emails.
     for (const [input, expected] of [
       ['user@example.com', 'mailto:user@example.com'],
       ['hi+filter@example.com', 'mailto:hi+filter@example.com'],
@@ -152,11 +146,8 @@ describe('normalizeHref', () => {
     }
 
     it('only converts when the entire trimmed input is one email', () => {
-      // Defense-in-depth: don't mangle sentences that happen to
-      // contain an email — they were never valid hyperlink targets,
-      // and the popover's `validateURL` would have rejected them
-      // upstream. We assert the *value* the helper would emit so a
-      // refactor that loosens the strict-match check is caught here.
+      // Don't mangle sentences that merely contain an email. Asserting the
+      // emitted value catches a refactor that loosens the strict-match check.
       expect(normalizeHref('hello user@example.com')).not.toBe('mailto:user@example.com')
       expect(normalizeHref('user@example.com is my email')).not.toBe('mailto:user@example.com')
     })

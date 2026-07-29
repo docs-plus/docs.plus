@@ -1,26 +1,9 @@
 /// <reference types="cypress" />
 
-/**
- * Regression: every prebuilt popover must follow its anchor during scroll.
- *
- * Background: the floating toolbar is `position: fixed`, so whoever
- * supplies the reference must hand floating-ui a `getBoundingClientRect`
- * that returns LIVE viewport coordinates on every call. Real DOM
- * elements get this for free (the browser recomputes their rect on every
- * call); virtual references built from snapshotted coords do not — they
- * freeze the popover at its open-time viewport position and let the
- * anchor scroll out from under it.
- *
- * Pre-fix shape of the bug:
- *   - Preview popover (uses `referenceElement: <a>`)            → fine.
- *   - Edit popover    (used cached `linkCoords`, virtual ref)   → broken.
- *   - Create popover  (used cached `coordsAtPos()`, virtual ref) → broken.
- *
- * Both popovers were fixed at their respective sites:
- *   - Edit popover now uses `referenceElement: link` directly.
- *   - Create popover now passes a closure that recomputes coords from
- *     the captured `from` / `to` ProseMirror positions on every call.
- */
+// The floating toolbar is `position: fixed`, so its reference must hand
+// floating-ui a `getBoundingClientRect` returning LIVE viewport coords on
+// every call. Virtual refs built from snapshotted coords froze the edit and
+// create popovers at their open-time position while the anchor scrolled away.
 
 const PREVIEW = '.hyperlink-preview-popover'
 const CREATE = '.hyperlink-create-popover'
@@ -56,13 +39,8 @@ const pinSelectionNearViewportTop = (offsetPx = 120) => {
   })
 }
 
-/**
- * Assert that the popover's top edge moves by exactly the same delta
- * as the anchor's top edge across a scroll. This is the real invariant:
- * how much the page actually scrolled doesn't matter (it can be
- * dampened by post-scroll input-focus shenanigans), only that the
- * popover tracks the anchor 1-for-1.
- */
+// Equal Δtop is the real invariant: how far the page actually scrolled can be
+// dampened by post-scroll focus shifts, so only 1-for-1 tracking matters.
 const expectPopoverFollowsAnchor = (
   popoverSelector: string,
   anchorSelector: string,
@@ -101,9 +79,8 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
   })
 
   it('preview popover follows the link when the page scrolls (working baseline)', () => {
-    // The preview popover always used the live `<a>` element as its
-    // reference, so this has worked since v4.0. Pinning it here
-    // documents the baseline that the create / edit fixes match.
+    // The preview popover always used the live `<a>` as its reference — the
+    // working baseline the create / edit fixes were matched against.
     cy.setEditorContent(buildLongDoc('<a href="https://example.com">click me</a>'))
     cy.get('#editor a').scrollIntoView().click()
     cy.getVisibleFloatingPopover().find(PREVIEW).should('be.visible')
@@ -122,19 +99,10 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
   })
 
   it('create popover dismisses itself when a doc mutation invalidates the captured selection range', () => {
-    // Defensive path for collab edits: the create popover captures
-    // ProseMirror `from`/`to` once at open time and recomputes coords
-    // from them on every reposition. A remote op (Yjs / Hocuspocus)
-    // shrinking the doc after the popover opens makes those positions
-    // out-of-range, and `view.coordsAtPos()` throws — the rejection
-    // surfaces *inside* `computePosition`, where `autoUpdate` doesn't
-    // catch it and Cypress fails the test on the unhandled rejection.
-    //
-    // The fix catches the throw and queues a microtask to dismiss the
-    // popover: the anchor is gone, so there's nothing meaningful for
-    // the form to attach to. We simulate the remote op by calling
-    // `setContent('')` directly — same observable: invalid captured
-    // positions on the next reposition.
+    // A remote op (Yjs) shrinking the doc puts the create popover's captured
+    // `from`/`to` out of range, and `coordsAtPos()` throws inside
+    // `computePosition`, where `autoUpdate` never catches it. `setContent`
+    // reproduces the same invalid-position reposition a remote op would.
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')
@@ -153,15 +121,10 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
   })
 
   it('create popover follows the selection when the page scrolls (regression: cached coordsAtPos)', () => {
-    // Repro of the original bug: select text, Cmd+K, scroll. Pre-fix,
-    // the create popover was built from a `view.coordsAtPos(from)`
-    // snapshot and stayed glued to the viewport while the selected
-    // text scrolled away. Selection has no DOM node, so we proxy on
-    // the `<p>` containing it — same scroll delta as the selection.
-    //
-    // pinSelectionNearViewportTop after selectText keeps headroom below the
-    // selection so flip() does not swap placement mid-scroll (which breaks
-    // the equal-Δtop assertion). selectText alone lands at viewport bottom.
+    // Pre-fix the create popover froze at its `coordsAtPos(from)` snapshot.
+    // A selection has no DOM node, so the containing `<p>` proxies for it.
+    // `pinSelectionNearViewportTop` keeps headroom below the selection so
+    // flip() cannot swap placement mid-scroll and break the equal-Δtop test.
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')

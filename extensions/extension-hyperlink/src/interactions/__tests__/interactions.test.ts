@@ -1,14 +1,8 @@
 /**
- * Unit tests for the interactions layer — covers the dependency-bag
- * factory (`createLinkContext`), the URLDecisions builder
- * (`buildUrlDecisions`), and the composition (`createInteractions`)
- * that decides which plugins fire based on extension options.
- *
- * Editor-level integration (rule firing, plugin DOM behaviour) is
- * covered by the Cypress e2e suite — the factories below test the
- * wiring contract: the right plugins exist for the right options,
- * the URL Decisions instance is shared, the `LinkContext` carries
- * the right deps.
+ * Wiring contract only: the right plugins exist for the right options, the
+ * URL Decisions instance is shared, the `LinkContext` carries the right deps.
+ * Editor-level integration (rule firing, plugin DOM behaviour) is covered by
+ * the Cypress e2e suite.
  */
 import type { Editor } from '@tiptap/core'
 import type { MarkType } from '@tiptap/pm/model'

@@ -1,9 +1,3 @@
-// Recover `PreviewHyperlinkOptions` from a live `<a>` DOM node. Used by
-// the prebuilt edit popover's Back button and by BYO `editHyperlink`
-// factories that hand off to `openPreviewHyperlink` — both need the
-// same one-shot lookup (posAtDOM → mark.attrs) and a defensible
-// fallback when the mark cannot be located.
-
 import type { Editor } from '@tiptap/core'
 
 import { HYPERLINK_MARK_NAME } from '../constants'
@@ -24,15 +18,10 @@ export interface BuildPreviewOptionsFromAnchorArgs {
 }
 
 /**
- * Build `PreviewHyperlinkOptions` for `link` by reading the hyperlink
- * mark at the live ProseMirror position. When the mark cannot be found
- * (DOM detached, foreign anchor, schema mismatch), falls back to a
- * minimal `attrs` shape derived from the best available raw `href` so the
- * preview popover still has a stable `attrs.href` to render.
- *
- * The DOM `link.href` property is intentionally NOT used as a fallback
- * — it resolves relative hrefs against `document.baseURI`, which would
- * leak the host origin into a stored attribute.
+ * Exists so the edit popover's Back button and BYO `editHyperlink` factories
+ * share one `posAtDOM → mark.attrs` lookup. The DOM `link.href` property is
+ * never the raw-href fallback — it resolves relative hrefs against
+ * `document.baseURI`, leaking the host origin into a stored attribute.
  */
 export function buildPreviewOptionsFromAnchor({
   editor,

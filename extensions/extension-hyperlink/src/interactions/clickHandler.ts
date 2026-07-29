@@ -45,11 +45,9 @@ function isNavigable(href: string | null | undefined, ctx: LinkContext): href is
   return ctx.urls.forRead(href).navigable
 }
 
-// Open the preview popover (or fallback `window.open`) for the
-// just-clicked link. Three branches:
-//   1. No popover + read-only editor → gated `window.open(href)`.
-//   2. Popover slot returns `null` → host opted out (mobile bottom sheet).
-//   3. Popover slot returns content → mount, then place caret.
+// `null` from the popover slot is the host opt-out signal (mobile bottom
+// sheet); with no slot configured at all, a read-only editor falls back to
+// a gated `window.open`.
 function openPreviewPopoverFromClick(
   view: EditorView,
   link: HTMLAnchorElement,

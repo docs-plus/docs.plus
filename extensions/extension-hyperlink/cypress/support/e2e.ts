@@ -1,12 +1,7 @@
 /// <reference types="cypress" />
 
-/**
- * Support file for the extension-hyperlink clean-room E2E suite.
- *
- * Intentionally a single file: the custom-command surface is tiny and split
- * across multiple modules caused Cypress 15's JIT loader to silently skip
- * extensionless imports. Keeping it flat avoids that footgun.
- */
+// Intentionally one flat file: splitting the custom commands across modules
+// made Cypress 15's JIT loader silently skip the extensionless imports.
 
 import type * as HyperlinkModule from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
@@ -22,11 +17,8 @@ interface VisitPlaygroundOptions {
 }
 
 /**
- * Shape of the globals the playground (`test/playground/main.ts`) exposes.
- * Declared here so spec files get real types — the playground's own
- * `declare global` augmentation lives in a separate TypeScript project
- * (Bun bundler) and isn't visible to Cypress' compiler. Kept in sync by
- * hand; the set is tiny and stable.
+ * Hand-mirrored from `test/playground/main.ts`, whose own `declare global`
+ * lives in a separate TS project (Bun bundler) Cypress' compiler never sees.
  */
 interface PlaygroundByoState {
   createCalls: HyperlinkModule.CreateHyperlinkOptions[]

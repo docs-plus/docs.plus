@@ -3,15 +3,10 @@ import { describe, expect, it } from 'bun:test'
 import { DANGEROUS_SCHEME_RE, getURLScheme, isSafeHref, validateURL } from '../validateURL'
 
 /**
- * Pins `validateURL` (the gate every write boundary calls) for the three
- * shapes it has to recognize:
- *   1. Standard web URLs — http/https/ftp(s) with a plausible host.
- *   2. App / deep-link schemes — anything in `specialUrls.ts`.
- *   3. Domain-mapped web URLs — e.g. `wa.me/...` without a scheme.
- *
- * The asymmetry matters: linkifyjs alone would wave through
- * `https://googlecom` (no TLD) and reject `whatsapp://send` (unknown
- * scheme) — the helper exists to flip both decisions.
+ * Pins `validateURL`, the gate every write boundary calls. linkifyjs alone
+ * would wave through `https://googlecom` (no TLD) and reject
+ * `whatsapp://send` (unknown scheme) — the helper exists to flip both
+ * decisions.
  */
 describe('validateURL', () => {
   describe('rejects empty / whitespace input', () => {
@@ -146,12 +141,10 @@ describe('validateURL', () => {
   })
 
   describe('rejects dangerous XSS schemes (linkify never matches them)', () => {
-    // `validateURL` is the gate that powers `<a href>` storage — any
-    // `true` here would mean the editor accepts an XSS vector. The
-    // `file:` / `blob:` cases pin the v2.x security-floor widening
-    // (added defensively when `validateURL` started calling
-    // `isSafeHref` upfront, so a future custom protocol registration
-    // can never accidentally re-open these doors).
+    // `validateURL` is the gate that powers `<a href>` storage — any `true`
+    // here would mean the editor accepts an XSS vector. `file:` / `blob:` are
+    // pinned so a future custom-protocol registration can never re-open those
+    // doors.
     for (const url of [
       'javascript:alert(1)',
       'JAVASCRIPT:alert(1)',

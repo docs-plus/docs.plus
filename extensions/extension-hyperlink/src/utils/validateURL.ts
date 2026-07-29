@@ -36,29 +36,19 @@ export type ValidateURLOptions = {
 }
 
 /**
- * Whether `url` matches an entry in the `getSpecialUrlInfo` catalog —
- * an app deep-link scheme (`whatsapp:`, `vscode:`, …) or a domain
- * mapping (`wa.me`, `t.me`, …). Catalog membership only; this is NOT
- * a security gate and says nothing about whether the URL is safe to
- * render. Web schemes (`http(s)`/`ftp(s)`) are checked separately by
- * `hasPlausibleHost` further down.
+ * Catalog membership only (`whatsapp:`, `wa.me`, …) — NOT a security gate,
+ * and it says nothing about whether the URL is safe to render. Web schemes
+ * (`http(s)`/`ftp(s)`) are checked by `hasPlausibleHost` instead.
  */
 const isRecognizedSpecialScheme = (url: string): boolean => {
   return getSpecialUrlInfo(url) !== null
 }
 
 /**
- * Is the host of this URL plausible enough to store as a hyperlink?
- *
  * linkifyjs accepts any `scheme://host` string, so typos like
- * `https://googlecom` or `https://asdf` pass its own validation. For
- * http(s)/ftp we additionally require that the host has either:
- *   - a dot (any TLD — works for IDN and punycode), or
- *   - equals `localhost` (legitimate dev host), or
- *   - looks like an IPv4 or IPv6 literal.
- *
- * Non-standard schemes (mailto, tel, whatsapp, …) don't go through this
- * gate — they're handled by `isRecognizedSpecialScheme`.
+ * `https://googlecom` pass its own validation. For http(s)/ftp additionally
+ * require a dotted host (any TLD, IDN and punycode included), `localhost`,
+ * or an IP literal. Non-standard schemes skip this gate.
  */
 const hasPlausibleHost = (url: string): boolean => {
   let parsed: URL
@@ -79,23 +69,18 @@ const hasPlausibleHost = (url: string): boolean => {
 }
 
 /**
- * Shape-validate a URL. Accepts web schemes (with a plausible host —
- * TLD dot, `localhost`, IP literal), special app/protocol schemes from
- * the `getSpecialUrlInfo` catalog, and bare E.164 phone numbers.
- * Rejects schemes matched by {@link DANGEROUS_SCHEME_RE}. See README →
- * Validation for the full policy.
+ * Shape-validate a URL: web schemes with a plausible host, app schemes from
+ * the `getSpecialUrlInfo` catalog, and bare E.164 phones. Rejects schemes
+ * matched by {@link DANGEROUS_SCHEME_RE}. See README → Validation.
  */
 export const validateURL = (url: string, options?: ValidateURLOptions): boolean => {
   const trimmed = url.trim()
   if (!trimmed) return false
 
-  // Defense-in-depth security floor: dangerous schemes must NEVER pass
-  // shape validation, regardless of how linkifyjs evolves or which
-  // custom protocols a host has registered. The write-boundary command
-  // (`composeGate`) re-checks `isSafeHref`, but pinning it here keeps
-  // popover UX in lockstep with the security policy — a future scheme
-  // added to `DANGEROUS_SCHEME_RE` will be rejected by the create form
-  // immediately, not silently passed through to a downstream gate.
+  // Security floor: dangerous schemes must NEVER pass shape validation,
+  // however linkifyjs evolves or whichever custom protocols a host registers.
+  // `composeGate` re-checks at the write boundary, but pinning it here makes
+  // the create form reject a newly-banned scheme immediately.
   if (!isSafeHref(trimmed)) return false
 
   try {

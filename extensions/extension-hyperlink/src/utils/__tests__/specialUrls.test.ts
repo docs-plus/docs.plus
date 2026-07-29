@@ -3,13 +3,9 @@ import { describe, expect, it } from 'bun:test'
 import { getSpecialUrlInfo } from '../specialUrls'
 
 /**
- * Pins the catalog in `specialUrls.ts`. The mapping powers the
- * special-scheme branch of the autolinker and the per-app classification
- * in popovers — silent regressions (renamed type, dropped scheme,
- * swapped category) cause the wrong label or icon to render in the
- * consumer's create + preview popovers.
- *
- * Data-driven so every row in the catalog is one assertion in the report.
+ * Pins the catalog in `specialUrls.ts` — a renamed type, dropped scheme, or
+ * swapped category silently renders the wrong label or icon in the
+ * consumer's popovers. Data-driven so every row is one assertion.
  */
 
 type Case = {

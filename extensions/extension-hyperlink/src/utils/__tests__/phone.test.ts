@@ -3,11 +3,9 @@ import { describe, expect, it } from 'bun:test'
 import { isBarePhone } from '../phone'
 
 /**
- * Pins the strict E.164 contract of `isBarePhone`. The helper is a
- * security-relevant gate: every false positive becomes an autolinked
- * `tel:` href, so the asymmetry "more rejections than accepts" is by
- * design. Cases below cover the boundary digit-counts and every
- * permitted formatting pattern.
+ * Pins the strict E.164 contract of `isBarePhone`. Every false positive
+ * becomes an autolinked `tel:` href, so the asymmetry "more rejections than
+ * accepts" is by design.
  */
 describe('isBarePhone', () => {
   describe('accepts E.164 numbers (digits only)', () => {

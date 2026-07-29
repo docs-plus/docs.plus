@@ -3,12 +3,9 @@ import { describe, expect, it } from 'bun:test'
 import { findLinks } from '../findLinks'
 
 /**
- * `findLinks` is the pure core of the autolink plugin: it merges
- * linkifyjs URL/email matches with the extension's own special-scheme
- * regex pass and bare-phone detection. The autolink plugin used to
- * inline this function; extracting it keeps `appendTransaction` small
- * and lets us pin the matcher behaviour without spinning up a
- * ProseMirror editor.
+ * `findLinks` is the pure core of the autolink plugin. Tested here rather
+ * than through Cypress so the matcher behaviour is pinned without spinning
+ * up a ProseMirror editor.
  */
 describe('findLinks', () => {
   describe('standard URLs', () => {
@@ -86,11 +83,8 @@ describe('findLinks', () => {
     })
 
     it('leaves the href untouched when only the value carries the trailing char', () => {
-      // For email matches `value` is `user@example.com.` (with the dot)
-      // but `href` is `mailto:user@example.com.` — both end with `.`,
-      // so both lose it. Pinned so the asymmetric-strip branch (href
-      // unchanged when it doesn't share the suffix) is exercised by
-      // the unicode-trailing-bracket case below.
+      // `value` and `href` both end with the dot here, so both lose it —
+      // the strip only touches `href` when it shares the trailing chars.
       const result = findLinks('user@example.com.')
       const email = result.find((l) => l.type === 'email')
       expect(email?.value).toBe('user@example.com')

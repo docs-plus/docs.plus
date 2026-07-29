@@ -1,20 +1,9 @@
 /// <reference types="cypress" />
 
-/**
- * Touch-tap spec — the `handleDOMEvents.touchend` path in clickHandler.ts.
- *
- * On phones the extension owns link taps at `touchend`: it opens the preview
- * popover and calls `preventDefault()`, which suppresses the browser's
- * synthesized click — the event that would otherwise navigate or, on iOS
- * Safari, place the caret and pop the keyboard. Every other spec drives
- * `click`, so a regression in the touchend path would break phone taps while
- * the whole desktop suite stays green.
- *
- * A dispatched (untrusted) TouchEvent never synthesizes a follow-up click,
- * so the synthetic cases below isolate the touchend handler: if it stops
- * running, no other path opens the popover and the assertions fail. The
- * realTouch case replays the full trusted CDP touch sequence end-to-end.
- */
+// On phones the extension owns link taps at `touchend` and calls
+// `preventDefault()` to kill the synthesized click (which would navigate, or
+// pop the iOS keyboard). Every other spec drives `click`. A dispatched
+// TouchEvent never synthesizes a click, so these cases isolate the handler.
 
 const PREVIEW = '.hyperlink-preview-popover'
 const SAFE_HREF = 'https://example.com/'

@@ -1,11 +1,7 @@
 /// <reference types="cypress" />
 
-/**
- * Full-document paste shape: select-all + paste of a mixed document
- * (paragraphs, heading, blockquote, an existing anchor, bare URLs).
- * Pins that paste linkifies bare URLs once with canonical https://
- * hrefs, never stacks marks, and block structure survives the trip.
- */
+// Round-trip invariant: paste linkifies each bare URL exactly once with a
+// canonical https:// href and never stacks a second mark on a linked run.
 
 import type { Editor } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'

@@ -1,11 +1,5 @@
 /// <reference types="cypress" />
 
-/**
- * Hyperlink behavior inside non-paragraph node contexts: code blocks
- * reject autolink, headings keep their structure, list items survive the
- * Mod-k create flow, and the mark never continues past an Enter split.
- */
-
 // Verbatim JSON text inserts (HTML parsing collapses edge whitespace), with
 // the trailing space on its own tick for the autolink boundary. Caret targets
 // the FIRST block's end — StarterKit's TrailingNode appends an empty trailing

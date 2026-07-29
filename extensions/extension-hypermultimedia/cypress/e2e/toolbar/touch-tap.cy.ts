@@ -1,14 +1,10 @@
 /// <reference types="cypress" />
 
 /**
- * Touch-tap spec — the coarse-pointer entry into the media controls.
- *
- * On phones `(pointer: fine)` is false, so hover controls are gated off and
- * the synthesized click after a tap is the ONLY way handleMediaClick can
- * open the toolbar + gripper. Every other spec hovers first, which would
- * mask a click-path regression: these tests drive the mobile tap sequence
- * (touchstart → touchend → click, no mouseover) — exactly what reaches the
- * handlers on a touch device.
+ * On phones `(pointer: fine)` is false, so hover controls are gated off and the
+ * synthesized click after a tap is the ONLY way handleMediaClick can open the
+ * toolbar + gripper. Every other spec hovers first, which would mask a
+ * click-path regression; these drive touchstart → touchend → click, no mouseover.
  */
 
 const TOOLBAR = '#editor .media-toolbar'

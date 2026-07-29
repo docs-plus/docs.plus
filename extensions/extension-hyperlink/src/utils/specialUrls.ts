@@ -6,11 +6,10 @@
  */
 
 /**
- * Discriminator returned in `SpecialUrlInfo.type`. String-literal union
- * so consumers can declare a `Partial<Record<SpecialUrlType, …>>` icon
- * map with exhaustive autocomplete. Type-only — zero runtime bytes.
- * Naming convention (lowercase brand, kebab-case for multi-word) lives
- * in AGENTS.md alongside the rest of the package's public-API rules.
+ * String-literal union so consumers can declare a
+ * `Partial<Record<SpecialUrlType, …>>` icon map with exhaustive
+ * autocomplete — type-only, zero runtime bytes. Naming convention lives
+ * in this package's AGENTS.md.
  */
 export type SpecialUrlType =
   // Communication

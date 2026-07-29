@@ -36,12 +36,10 @@ const stripTrailingPunctuation = <T extends { value: string; href: string; end: 
 }
 
 /**
- * Find every link inside `text`. Merges three sources: linkifyjs
- * matches, special-scheme matches (gated through `validateURL` because
- * linkifyjs has no app-deep-link matchers), and bare E.164 phones.
- * The synthesized entries' `type` (`'url'` for special schemes,
- * `'phone'` for E.164) is load-bearing — `normalizeLinkifyHref` keys
- * off it to decide whether to re-canonicalize or pass through.
+ * Merges linkifyjs matches with special-scheme matches (gated through
+ * `validateURL` — linkifyjs has no app-deep-link matchers) and bare E.164
+ * phones. The synthesized `type` is load-bearing: `normalizeLinkifyHref`
+ * keys off it to decide whether to re-canonicalize or pass through.
  */
 export const findLinks = (text: string): FoundLink[] => {
   const links: FoundLink[] = []

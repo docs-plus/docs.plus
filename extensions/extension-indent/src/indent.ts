@@ -128,18 +128,13 @@ export function indentContextAtPos(doc: Node, pos: number): IndentContext | null
   return null
 }
 
-/**
- * Configuration options for the Indent extension
- */
 export interface IndentOptions {
   /**
-   * Character(s) to insert for each indentation
    * @default '  ' (2 spaces)
    */
   indentChars: string
 
   /**
-   * Whether the extension is enabled
    * @default true
    */
   enabled: boolean
@@ -155,13 +150,7 @@ export interface IndentOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     indent: {
-      /**
-       * Add indentation at cursor position or to selected content
-       */
       indent: () => ReturnType
-      /**
-       * Remove indentation at cursor position or from selected content
-       */
       outdent: () => ReturnType
     }
   }

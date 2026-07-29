@@ -1,11 +1,9 @@
 /// <reference types="cypress" />
 
-// `blob:` test fixture intentionally has no embedded `https://` substring
-// — otherwise the autolink plugin would linkify the inner URL on the
-// trailing-space tick after the markdown input rule rejects the outer
-// dangerous href, defeating the assertion. Real blob URLs follow this
-// shape too (`blob:<origin>/<uuid>`); the assertion here is on scheme
-// blocking, not on URL embedding.
+// The `blob:` fixture deliberately embeds no `https://` substring: once the
+// markdown input rule rejects the outer dangerous href, autolink would
+// linkify the inner URL on the trailing-space tick and defeat the assertion.
+// These cases assert scheme blocking, not URL embedding.
 const DANGEROUS = [
   'javascript:alert(1)',
   'data:text/html,hi',
@@ -104,13 +102,10 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
   })
 
   describe('renderHTML re-validation', () => {
-    // `parseHTML` strips dangerous schemes on document load and every
-    // write boundary refuses them, but a hostile mark can still reach
-    // `renderHTML` through Yjs op replay, raw `addMark` from a downstream
-    // extension, or schema migrations from older versions. The mark
-    // serializer must blank the `href` on serialize so a bad mark in
-    // the doc never round-trips into a clickable dangerous anchor
-    // downstream — matches `@tiptap/extension-link` v3 canon.
+    // A hostile mark can still reach `renderHTML` past every write boundary
+    // via Yjs op replay, a downstream `addMark`, or an old-schema migration.
+    // The serializer blanks the `href` so a bad mark in the doc never
+    // round-trips into a clickable dangerous anchor.
     DANGEROUS.forEach((href) => {
       it(`blanks href="${href}" when serialized via getHTML()`, () => {
         cy.setEditorContent('<p>tainted</p>')

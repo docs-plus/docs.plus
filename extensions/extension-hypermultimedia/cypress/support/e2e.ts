@@ -37,7 +37,6 @@ declare global {
       expectMediaLoadingReady(scope?: string, timeout?: number): Chainable<void>
       expectMediaLoadingError(message?: string, scope?: string): Chainable<void>
       getEditor(): Chainable<Editor>
-      /** Count nodes of a given type name in the current doc. */
       nodeCount(typeName: string): Chainable<number>
       setEditorContent(html: string): Chainable<void>
       pastePlainText(text: string): Chainable<void>

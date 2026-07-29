@@ -152,11 +152,9 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     })
 
     it('emits mailto: when the user types a bare email (regression: matches autolink path)', () => {
-      // Regression: bare emails went through the URL-prepend branch
-      // and came out as `https://user@example.com` — a syntactically
-      // valid URL whose `user@` is HTTP basic-auth credentials, not
-      // the address the user intended. Now matches what the autolink
-      // path emits when the same email is typed mid-paragraph.
+      // Regression: bare emails took the URL-prepend branch and came out as
+      // `https://user@example.com`, where `user@` is HTTP basic-auth
+      // credentials, not the address. Now matches the autolink path.
       cy.pressModK()
       cy.get(INPUT).type('hi@example.com{enter}')
       cy.editorFirstLinkHref().should('eq', 'mailto:hi@example.com')

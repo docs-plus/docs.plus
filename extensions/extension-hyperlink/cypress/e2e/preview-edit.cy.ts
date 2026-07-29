@@ -32,11 +32,10 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
     })
 
     it('does not leak the host page origin into the displayed href (relative-href regression)', () => {
-      // Direct parse of `<a href="google.com">` — bypasses our write-side
-      // normalization the way an external consumer or pasted HTML would.
-      // The preview MUST display the stored attribute ("google.com"),
-      // never the browser-resolved `http://<origin>/google.com` that
-      // `link.href` (DOM property) would return.
+      // Direct parse of `<a href="google.com">` bypasses write-side
+      // normalization the way pasted HTML would. The preview must show the
+      // stored attribute, never the `http://<origin>/google.com` that the
+      // `link.href` DOM property resolves it to.
       cy.setEditorContent('<p>Broken <a href="google.com">link</a>.</p>')
       cy.get('#editor a').click()
       cy.get(PREVIEW).find('a').invoke('attr', 'href').should('eq', 'google.com')
