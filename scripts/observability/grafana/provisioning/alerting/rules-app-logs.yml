@@ -146,10 +146,11 @@ groups:
             model:
               datasource: { type: loki, uid: loki }
               # nodemailer stamps EAUTH on both a permanent 535 and a transient 454, so
-              # the responseCode is the only real discriminator; keep BOTH terms, or a
-              # routine 550 pages as an auth failure. Aggregated so a replaced container
-              # leaves no orphan instance, `or vector(0)` so quiet reads 0, not NoData.
-              expr: 'sum(count_over_time({service=~"hocuspocus.+"} | json | err_code = "EAUTH" | err_responseCode >= 500 [10m])) or vector(0)'
+              # exclude the transient class rather than requiring the permanent one: a
+              # connection-level EAUTH carries no responseCode at all, and `>= 500` drops
+              # it, so a real credential failure would never page. Aggregated so a replaced
+              # container leaves no orphan instance, `or vector(0)` so quiet reads 0.
+              expr: 'sum(count_over_time({service=~"hocuspocus.+"} | json | err_code = "EAUTH" | err_responseCode !~ "4.." [10m])) or vector(0)'
               queryType: instant
               intervalMs: 1000
               maxDataPoints: 43200
