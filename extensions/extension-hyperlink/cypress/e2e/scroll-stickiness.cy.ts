@@ -21,6 +21,11 @@ const buildLongDoc = (anchorHtml: string): string => {
 }
 
 const SCROLL_PX = 200
+// Park the anchor mid-viewport (800px tall) before measuring. Cypress' default
+// `scrollBehavior: 'top'` leaves it at y≈0, where scrolling SCROLL_PX pushes it
+// off-screen — there `shift` clamps the popover to the top padding and `hide`
+// marks it hidden, which is correct engine behaviour but not 1-for-1 tracking.
+const ANCHOR_VIEWPORT_TOP_PX = 400
 // Settle window for any open-time auto-scroll (input focus on the
 // create popover, ProseMirror scrollIntoView on selection set) BEFORE
 // taking the `before` measurement, so the deltas reflect just the
@@ -30,12 +35,10 @@ const SETTLE_MS = 200
 // needs more than one rAF tick.
 const REPOSITION_WAIT_MS = 200
 
-/** selectText scrolls the caret to the viewport bottom; pin upper so flip() stays stable. */
-const pinSelectionNearViewportTop = (offsetPx = 120) => {
-  cy.window().then((win) => {
-    const { from } = win._editor.state.selection
-    const top = win._editor.view.coordsAtPos(from).top
-    win.scrollBy(0, top - offsetPx)
+const pinAnchorInViewport = (anchorSelector: string): void => {
+  cy.get(anchorSelector).then(($a) => {
+    const delta = $a[0].getBoundingClientRect().top - ANCHOR_VIEWPORT_TOP_PX
+    cy.window().then((win) => win.scrollBy(0, delta))
   })
 }
 
@@ -46,6 +49,7 @@ const expectPopoverFollowsAnchor = (
   anchorSelector: string,
   tolerancePx = 4
 ): void => {
+  pinAnchorInViewport(anchorSelector)
   // eslint-disable-next-line cypress/no-unnecessary-waiting
   cy.wait(SETTLE_MS)
   cy.get(popoverSelector).then(($p) => {
@@ -123,14 +127,9 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
   it('create popover follows the selection when the page scrolls (regression: cached coordsAtPos)', () => {
     // Pre-fix the create popover froze at its `coordsAtPos(from)` snapshot.
     // A selection has no DOM node, so the containing `<p>` proxies for it.
-    // `pinSelectionNearViewportTop` keeps headroom below the selection so
-    // flip() cannot swap placement mid-scroll and break the equal-Δtop test.
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')
-    pinSelectionNearViewportTop()
-    // eslint-disable-next-line cypress/no-unnecessary-waiting
-    cy.wait(SETTLE_MS)
     cy.pressModK()
     cy.getVisibleFloatingPopover().find(CREATE).should('be.visible')
     expectPopoverFollowsAnchor(FLOATING_VISIBLE, '#editor p:contains("select-this-target-word")')
