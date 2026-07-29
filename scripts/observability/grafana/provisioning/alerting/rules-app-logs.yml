@@ -137,7 +137,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: SMTP auth failure (535 / EAUTH) in hocuspocus logs
+          summary: 'SMTP auth failure (5xx / EAUTH) in hocuspocus logs. Transient 4xx throttles are already excluded, so this is a real credential or provider failure.'
         data:
           - refId: A
             queryType: instant
@@ -145,7 +145,11 @@ groups:
             datasourceUid: loki
             model:
               datasource: { type: loki, uid: loki }
-              expr: 'count_over_time({service=~"hocuspocus.+"} |~ "Error: 535|EAUTH" [10m])'
+              # nodemailer stamps EAUTH on both a permanent 535 and a transient 454, so
+              # the responseCode is the only real discriminator; keep BOTH terms, or a
+              # routine 550 pages as an auth failure. Aggregated so a replaced container
+              # leaves no orphan instance, `or vector(0)` so quiet reads 0, not NoData.
+              expr: 'sum(count_over_time({service=~"hocuspocus.+"} | json | err_code = "EAUTH" | err_responseCode >= 500 [10m])) or vector(0)'
               queryType: instant
               intervalMs: 1000
               maxDataPoints: 43200
