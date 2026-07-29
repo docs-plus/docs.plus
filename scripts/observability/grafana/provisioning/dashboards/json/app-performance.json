@@ -1250,7 +1250,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (queue, state) (queue_jobs)",
+          "expr": "max by (queue, state) (queue_jobs)",
           "refId": "A",
           "legendFormat": "{{queue}} · {{state}}"
         }

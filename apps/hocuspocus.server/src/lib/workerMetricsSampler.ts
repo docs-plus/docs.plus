@@ -36,6 +36,10 @@ async function sampleQueueDepth() {
         queueJobs.set({ queue: queue.name, state }, count)
       }
     } catch (err) {
+      // Deliberately keeps the last good depth. The samplers below reset() because
+      // their cron-stale rules are noDataState: Alerting, so an absent series pages;
+      // worker-dlq-depth is noDataState: OK, so resetting here would silently resolve
+      // a DLQ alert while jobs are still parked. A stale reading is the safer failure.
       workerLogger.warn({ err, queue: queue.name }, 'Failed to sample queue depth metrics')
     }
   }

@@ -140,7 +140,10 @@ groups:
             model:
               datasource: { type: prometheus, uid: prometheus }
               # DLQ queues have no worker, so parked jobs sit in waiting/delayed/prioritized.
-              expr: 'sum by (queue) (queue_jobs{queue=~".*-dlq",state=~"waiting|delayed|prioritized"})'
+              # Sum the states within one replica, then take the max across replicas:
+              # every worker samples the same shared Redis queue, so a flat sum by
+              # (queue) also adds `instance` and reported 6 for a real depth of 3.
+              expr: 'max by (queue) (sum by (queue, instance) (queue_jobs{queue=~".*-dlq",state=~"waiting|delayed|prioritized"}))'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
