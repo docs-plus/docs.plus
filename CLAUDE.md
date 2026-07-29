@@ -17,7 +17,7 @@ These are the rules that bite hardest if missed. Full context in [AGENTS.md](AGE
 - **Bun only.** Never `npm`, `yarn`, `pnpm`, `npx` — including the install commands in published extension READMEs/CHANGELOGs (plain `bun add <pkg>`, never `npm install` or `@next` soak lines; see [AGENTS.md](AGENTS.md) §Extension Package Contract). Lockfile is `bun.lock`.
 - **No commits unless asked.** No `git add`, `git commit`, `git push`, `git stash`, or `--amend` inside plan execution. End multi-task plans at a "Review checkpoint".
 - **Stay in the current worktree.** Do not switch execution to another path or parallel checkout.
-- **Tests are opt-in, not default.** Do not add tests unless asked, pinning a real regression, or covering dense branching logic. Prefer Cypress E2E over unit. Never write the banned shapes listed in [AGENTS.md](AGENTS.md) §Testing And Verification.
+- **Tests are opt-in, not default.** Do not add tests unless asked, pinning a real regression, or covering dense branching logic. Prefer Cypress E2E over unit. Never write the banned shapes listed in [AGENTS.md](AGENTS.md) §Test Policy.
 - **Prose routes through the `tech-writer` skill.** README, CHANGELOG, reports, post-mortems, PR descriptions, JSDoc.
 - **JSDoc/comments ≤ 4 lines, why-not-what.** No section banners. No restating signatures.
 
