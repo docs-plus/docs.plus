@@ -14,18 +14,24 @@ type Props = {
 /**
  * Opting out of scroll-to-expand is what lets the document and the feed scroll
  * independently, and both mobile platforms pair that opt-out with a visible grabber.
- * At 44px this is also the first version an assistive technology can reach.
+ * At 44px this is also the smallest size an assistive technology can reach.
  */
 const ChatPaneGrabber = () => {
-  const paneMode = useChatPaneMode()
+  // The stored mode, not the rendered one: while the emoji panel promotes the pane to
+  // `expanded` the promotion overrides any write, so a grabber driven by the derived
+  // value labels itself "Collapse chat" and then moves nothing. Hidden instead.
+  const storedMode = useChatStore((state) => state.chatRoom.paneMode)
+  const renderedMode = useChatPaneMode()
   const setPaneMode = useChatStore((state) => state.setPaneMode)
+
+  if (renderedMode !== storedMode) return null
 
   return (
     <button
       type="button"
-      onClick={() => setPaneMode(paneMode === 'expanded' ? 'half' : 'expanded')}
-      aria-label={paneMode === 'expanded' ? 'Collapse chat' : 'Expand chat'}
-      aria-expanded={paneMode === 'expanded'}
+      onClick={() => setPaneMode(storedMode === 'expanded' ? 'half' : 'expanded')}
+      aria-label={storedMode === 'expanded' ? 'Collapse chat' : 'Expand chat'}
+      aria-expanded={storedMode === 'expanded'}
       className="focus-visible:ring-primary/30 grid h-11 w-full shrink-0 cursor-pointer place-items-center focus-visible:ring-2 focus-visible:outline-none">
       <span className="bg-base-300 block h-1 w-9 rounded-full" />
     </button>
