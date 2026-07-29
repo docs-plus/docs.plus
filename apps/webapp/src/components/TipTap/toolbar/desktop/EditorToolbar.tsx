@@ -300,10 +300,6 @@ const EditorToolbar = () => {
             )}
           </ToolbarButton>
 
-          <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
-            <Icons.print size={ICON_SIZE} />
-          </ToolbarButton>
-
           {isAuthServiceAvailable && user && (
             <ToolbarButton onClick={() => setDocumentsOpen(true)} tooltip="Documents">
               <Icons.documents size={ICON_SIZE} />
