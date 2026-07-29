@@ -9602,12 +9602,26 @@ select cron.schedule(
 select cron.unschedule('cleanup-cron-job-run-details')
 from cron.job where jobname = 'cleanup-cron-job-run-details';
 
+-- The newest success of every job survives the window. A plain 7-day delete made
+-- get_cron_job_health report NULL for any job whose period exceeds 7 days, so the
+-- monthly partition job read as "never succeeded" for ~23 days of every 30 and
+-- cron-stale-monthly fired against a healthy job. Non-success rows still expire,
+-- so a permanently failing job cannot grow the table without bound.
 select cron.schedule(
     'cleanup-cron-job-run-details',
     '15 4 * * *',
     $$
-    delete from cron.job_run_details
-    where end_time < now() - interval '7 days';
+    delete from cron.job_run_details d
+    where d.end_time < now() - interval '7 days'
+      and (
+        d.status is distinct from 'succeeded'
+        or exists (
+          select 1 from cron.job_run_details n
+          where n.jobid = d.jobid
+            and n.status = 'succeeded'
+            and n.end_time > d.end_time
+        )
+      );
     $$
 );
 
