@@ -1,9 +1,3 @@
-/**
- * Push Notification Sender
- *
- * Handles sending web push notifications via VAPID.
- */
-
 import webpush from 'web-push'
 
 import { config } from '../../config/env'
@@ -16,7 +10,6 @@ import { pushLogger } from '../logger'
 import { isSafeUrl } from '../ssrf'
 import { getServiceRoleClient } from '../supabase'
 
-// Configure web-push with VAPID credentials
 let vapidConfigured = false
 
 export function configureVapid(): boolean {
@@ -54,9 +47,8 @@ function getSupabaseClient() {
 type SupabaseLike = ReturnType<typeof getSupabaseClient>
 
 /**
- * Flush per-subscription state after a send batch. Success/invalid rows share
- * identical values so each is one `.in()` UPDATE; failures differ per row and
- * are grouped by their (failed_count, last_error) pair to keep the query count low.
+ * Success/invalid rows share identical values so each is one `.in()` UPDATE;
+ * failures group by their (failed_count, last_error) pair to keep queries low.
  */
 async function flushSubscriptionUpdates(
   supabase: SupabaseLike,
@@ -111,9 +103,6 @@ async function flushSubscriptionUpdates(
   await Promise.allSettled(writes)
 }
 
-/**
- * Send push notification to a user
- */
 export async function sendPushNotification(
   request: PushNotificationRequest
 ): Promise<PushSendResult> {
@@ -123,8 +112,8 @@ export async function sendPushNotification(
 
   const supabase = getSupabaseClient()
 
-  // Get user's active push subscriptions (web + iOS PWA + Android PWA)
-  // All PWA platforms use VAPID - same endpoint/keys format
+  // Every PWA platform uses VAPID with the same endpoint/keys format, so web,
+  // iOS and Android all ride one query and one webpush.sendNotification path.
   const { data: subscriptions, error: fetchError } = await supabase
     .from('push_subscriptions')
     .select('*')

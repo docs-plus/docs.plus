@@ -1,19 +1,7 @@
 /**
- * Email API Router
- *
- * ARCHITECTURE (pgmq Consumer):
- *   Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ → SMTP
- *
- * The /api/email/send endpoint has been removed.
- * Emails are now queued via pgmq and consumed by the worker.
- *
- * Remaining endpoints:
- * - /api/email/send-generic: Internal generic email sending
- * - /api/email/send-digest: Digest emails
- * - /api/email/health: Health check
- * - /api/email/unsubscribe: One-click unsubscribe
- *
- * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
+ * Email routes. There is no per-notification send endpoint: that mail takes the
+ * queue path — Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ →
+ * SMTP — and is delivered by the worker, never by a request to this router.
  */
 
 import {
@@ -37,11 +25,6 @@ import {
 
 const emailRouter = new Hono()
 
-/**
- * POST /api/email/send-generic
- *
- * Send a generic email (for internal use).
- */
 emailRouter.post('/send-generic', zValidator('json', sendGenericEmailSchema), async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
@@ -70,12 +53,7 @@ emailRouter.post('/send-generic', zValidator('json', sendGenericEmailSchema), as
   }
 })
 
-/**
- * POST /api/email/send-digest
- *
- * Send a digest email (daily or weekly summary).
- * Called by Supabase cron job.
- */
+/** Called by the Supabase cron job, not by the app. */
 emailRouter.post('/send-digest', zValidator('json', sendDigestEmailSchema), async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
@@ -111,11 +89,6 @@ emailRouter.post('/send-digest', zValidator('json', sendDigestEmailSchema), asyn
   }
 })
 
-/**
- * GET /api/email/health
- *
- * Get email gateway health status.
- */
 emailRouter.get('/health', async (c) => {
   try {
     const health = await emailGateway.getHealth()
@@ -126,11 +99,6 @@ emailRouter.get('/health', async (c) => {
   }
 })
 
-/**
- * GET /api/email/status
- *
- * Check if email gateway is operational.
- */
 emailRouter.get('/status', (c) => {
   return c.json({
     operational: emailGateway.isOperational(),
@@ -138,12 +106,7 @@ emailRouter.get('/status', (c) => {
   })
 })
 
-/**
- * POST /api/email/bounce
- *
- * Record an email bounce event from a provider.
- * Hard bounces auto-disable email for the affected user.
- */
+/** A hard bounce auto-disables email for that user, inside the RPC. */
 emailRouter.post('/bounce', zValidator('json', emailBounceSchema), async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
@@ -183,12 +146,7 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema), async (c) => 
   }
 })
 
-/**
- * GET /api/email/preview/:type
- *
- * Render an email template with sample data for visual testing.
- * Types: notification, digest
- */
+/** Renders a template against hardcoded sample data, for visual testing only. */
 emailRouter.get('/preview/:type', async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
@@ -304,11 +262,8 @@ async function processUnsubscribe(token: string): Promise<UnsubscribeOutcome> {
 }
 
 /**
- * GET /api/email/unsubscribe
- *
- * Process one-click unsubscribe from email link.
- * Verifies token and updates user preferences without authentication.
- * Returns HTML page with confirmation/error.
+ * One-click unsubscribe from an email link. The token is the only credential —
+ * there is no session — and every outcome renders an HTML page, never a JSON error.
  */
 emailRouter.get('/unsubscribe', async (c) => {
   const token = c.req.query('token')
@@ -396,10 +351,8 @@ emailRouter.get('/unsubscribe', async (c) => {
 })
 
 /**
- * POST /api/email/unsubscribe
- *
- * RFC 8058 List-Unsubscribe-Post handler for one-click unsubscribe.
- * Email clients send POST with "List-Unsubscribe=One-Click" in body.
+ * RFC 8058 List-Unsubscribe-Post: mail clients POST "List-Unsubscribe=One-Click"
+ * in the body, so this answers JSON where the GET above answers HTML.
  */
 emailRouter.post(
   '/unsubscribe',

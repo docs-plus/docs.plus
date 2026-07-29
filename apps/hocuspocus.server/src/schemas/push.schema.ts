@@ -1,9 +1,5 @@
 import { z } from 'zod'
 
-// =============================================================================
-// Push Notification Schemas
-// =============================================================================
-
 export const sendPushSchema = z.object({
   user_id: z.string().uuid('Invalid user_id format'),
   notification_id: z.string().uuid('Invalid notification_id format'),
@@ -14,9 +10,5 @@ export const sendPushSchema = z.object({
   action_url: z.string().max(500).optional(),
   channel_id: z.string().uuid().optional().nullable()
 })
-
-// =============================================================================
-// Export Types
-// =============================================================================
 
 export type SendPushInput = z.infer<typeof sendPushSchema>

@@ -1,12 +1,6 @@
 /**
- * Email Gateway Service
- *
- * High-level service for email operations.
- * Supports multiple providers: SMTP, Resend, SendGrid.
- *
- * ARCHITECTURE:
- * - rest-api: Calls initialize(false) - queue only, no worker
- * - hocuspocus-worker: Calls initialize(true) - creates worker to process jobs
+ * rest-api calls `initialize(false)` — queue only, no worker.
+ * hocuspocus-worker calls `initialize(true)` — creates the worker that drains it.
  */
 
 import type {
@@ -23,9 +17,6 @@ import { getProviderStatus, isAnyProviderConfigured, verifyProvider } from './pr
 import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 import { sendEmailViaProvider } from './sender'
 
-/**
- * Email Gateway Service
- */
 export class EmailGatewayService extends NotificationGatewayBase {
   constructor() {
     super({

@@ -1,11 +1,4 @@
-/**
- * Admin Dashboard Controller — Core Operations
- *
- * Dashboard statistics, document CRUD, and user management. Handlers validate
- * input, call adminStats.service, and shape the response. Analytics and audit
- * endpoints are split into separate files and re-exported here (barrel pattern)
- * so the router import stays unchanged.
- */
+/** Admin dashboard core: statistics, document CRUD, and admin-role management. */
 
 import { adminLogger } from '../../lib/logger'
 import type { AppContext } from '../../types/hono.types'
@@ -17,13 +10,6 @@ export * from './admin-analytics.controller'
 export * from './admin-audit.controller'
 export * from './admin-stats.controller'
 
-// =============================================================================
-// Dashboard & Document Statistics
-// =============================================================================
-
-/**
- * Get overall dashboard statistics
- */
 export async function getDashboardStats(c: AppContext) {
   try {
     return c.json(await stats.getDashboardStats(c.get('prisma')))
@@ -33,9 +19,6 @@ export async function getDashboardStats(c: AppContext) {
   }
 }
 
-/**
- * Get document-specific statistics
- */
 export async function getDocumentStats(c: AppContext) {
   try {
     return c.json(await stats.getDocumentStats(c.get('prisma')))
@@ -45,13 +28,8 @@ export async function getDocumentStats(c: AppContext) {
   }
 }
 
-// =============================================================================
 // Document CRUD
-// =============================================================================
 
-/**
- * List documents with pagination, sorting, including owner and member count.
- */
 export async function listDocuments(c: AppContext) {
   try {
     const result = await stats.listDocuments(c.get('prisma'), {
@@ -68,9 +46,6 @@ export async function listDocuments(c: AppContext) {
   }
 }
 
-/**
- * Update document flags (isPrivate, readOnly)
- */
 export async function updateDocument(c: AppContext) {
   try {
     const idRaw = c.req.param('id')
@@ -94,9 +69,6 @@ export async function updateDocument(c: AppContext) {
   }
 }
 
-/**
- * Get deletion impact — check what will be deleted (workspace, channels)
- */
 export async function getDocumentDeletionImpact(c: AppContext) {
   try {
     const idRaw = c.req.param('id')
@@ -113,9 +85,7 @@ export async function getDocumentDeletionImpact(c: AppContext) {
   }
 }
 
-/**
- * Delete document and all related data across both databases.
- */
+/** Deletes the document's whole footprint across both databases, not just the row. */
 export async function deleteDocument(c: AppContext) {
   try {
     const idRaw = c.req.param('id')
@@ -141,9 +111,6 @@ export async function deleteDocument(c: AppContext) {
   }
 }
 
-/**
- * Get document counts per user (for Users page)
- */
 export async function getUserDocumentCounts(c: AppContext) {
   try {
     return c.json(await stats.getUserDocumentCounts(c.get('prisma')))
@@ -153,14 +120,8 @@ export async function getUserDocumentCounts(c: AppContext) {
   }
 }
 
-// =============================================================================
-// Admin Role Management
-// =============================================================================
+// Admin role management
 
-/**
- * Toggle admin role for a user.
- * Self-demotion is blocked. Last-admin removal is blocked.
- */
 export async function toggleAdminRole(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -185,9 +146,6 @@ export async function toggleAdminRole(c: AppContext) {
   }
 }
 
-/**
- * Fetch all admin user IDs (lightweight — just the IDs for badge rendering)
- */
 export async function getAdminUserIds(c: AppContext) {
   try {
     const supabase = getSupabaseClient()

@@ -59,7 +59,6 @@ describe('Documents API', () => {
     app = new Hono()
     mockPrisma = createMockPrisma()
 
-    // Inject mocks
     app.use('*', async (c, next) => {
       c.set('prisma', mockPrisma)
       c.set('redis', createMockRedis())
@@ -71,7 +70,6 @@ describe('Documents API', () => {
   })
 
   beforeEach(() => {
-    // Reset mocks before each test
     mockPrisma = createMockPrisma()
     purgeCalls.length = 0
   })

@@ -15,13 +15,10 @@ export interface MetadataResponse {
   image?: { url: string; width?: number; height?: number; alt?: string }
   icon?: string
   favicon?: string
-  // NOTE: the raw `html` field from oEmbed providers is intentionally NOT
-  // re-exposed here. It carries provider-controlled markup (iframes,
-  // scripts, third-party trackers) and would create a stored-XSS sink for
-  // any consumer that does `innerHTML = oembed.html`. If/when we need to
-  // render real embeds, sanitize at this boundary first (allowlist
-  // <iframe> from known provider hosts, drop everything else) and only
-  // then add the field back.
+  // The provider `html` field is deliberately not re-exposed: it is
+  // provider-controlled markup and a stored-XSS sink for any consumer doing
+  // `innerHTML = oembed.html`. Adding it back means sanitizing at this boundary
+  // first — allowlist <iframe> from known provider hosts, drop everything else.
   oembed?: {
     type: 'video' | 'rich' | 'photo' | 'link'
     provider: string
@@ -79,10 +76,8 @@ export const STAGE_TIMEOUT_MS = {
 } as const
 
 /**
- * Bot identity. Stages compose their own User-Agent around this so the
- * version bump only happens in one place. Stages don't share the full UA
- * string because each tier uses a different framing — see `htmlScrape.ts`
- * (compound UA for anti-bot allowlists) vs `handlers/reddit.ts` (plain
- * identifier per Reddit's API guidelines).
+ * Stages compose their own User-Agent around this rather than sharing one
+ * string: `htmlScrape.ts` needs a compound UA for anti-bot allowlists, and
+ * `handlers/reddit.ts` a plain identifier per Reddit's API guidelines.
  */
 export const BOT_USER_AGENT = 'DocsplusBot/1.0' as const

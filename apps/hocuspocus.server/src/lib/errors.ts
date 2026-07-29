@@ -1,7 +1,3 @@
-/**
- * Custom error classes for better error handling and HTTP status mapping
- */
-
 export class AppError extends Error {
   constructor(
     message: string,
@@ -15,7 +11,6 @@ export class AppError extends Error {
   }
 }
 
-// 400 Bad Request errors
 export class ValidationError extends AppError {
   constructor(message: string, details?: any) {
     super(message, 400, 'VALIDATION_ERROR', details)
@@ -28,51 +23,42 @@ export class BadRequestError extends AppError {
   }
 }
 
-// 404 Not Found
 export class NotFoundError extends AppError {
   constructor(resource: string = 'Resource', details?: any) {
     super(`${resource} not found`, 404, 'NOT_FOUND', details)
   }
 }
 
-// 409 Conflict
 export class ConflictError extends AppError {
   constructor(message: string, details?: any) {
     super(message, 409, 'CONFLICT', details)
   }
 }
 
-// 413 Payload Too Large
 export class PayloadTooLargeError extends AppError {
   constructor(message: string = 'File size exceeds maximum allowed', details?: any) {
     super(message, 413, 'PAYLOAD_TOO_LARGE', details)
   }
 }
 
-// 415 Unsupported Media Type
 export class UnsupportedMediaTypeError extends AppError {
   constructor(message: string = 'Invalid file type', details?: any) {
     super(message, 415, 'UNSUPPORTED_MEDIA_TYPE', details)
   }
 }
 
-// 500 Internal Server Error
 export class InternalServerError extends AppError {
   constructor(message: string = 'Internal server error', details?: any) {
     super(message, 500, 'INTERNAL_SERVER_ERROR', details)
   }
 }
 
-// Database-specific errors
 export class DatabaseError extends AppError {
   constructor(message: string, details?: any) {
     super(message, 500, 'DATABASE_ERROR', details)
   }
 }
 
-/**
- * Map Prisma errors to application errors
- */
 export const handlePrismaError = (error: any): AppError => {
   // Prisma error codes: https://www.prisma.io/docs/reference/api-reference/error-reference
   if (error.code) {
@@ -115,9 +101,6 @@ export const handlePrismaError = (error: any): AppError => {
   return new DatabaseError(error.message || 'Unknown database error')
 }
 
-/**
- * Get safe error response for client
- */
 export const getErrorResponse = (error: Error) => {
   if (error instanceof AppError) {
     return {

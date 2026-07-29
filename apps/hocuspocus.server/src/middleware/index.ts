@@ -9,32 +9,29 @@ import { config } from '../config/env'
 import { httpLogger } from '../lib/logger'
 import { getRedisClient } from '../lib/redis'
 
-// Use centralized Redis client for rate limiting
 const redisClient = getRedisClient()
 
 export const rateLimiter = (options: {
-  points: number // Number of requests allowed
-  duration: number // Time window in seconds
+  points: number
+  duration: number // seconds
   keyPrefix?: string
-  blockDuration?: number // Optional block duration after limit exceeded
+  blockDuration?: number // seconds, applied after the limit is exceeded
 }) => {
   const { points, duration, keyPrefix = 'rl', blockDuration } = options
 
-  // Skip rate limiting if Redis is not available
   if (!redisClient) {
     httpLogger.warn('Redis not available, rate limiting disabled')
     return async (c: Context, next: Next) => next()
   }
 
-  // Create rate limiter instance
   const limiter = new RateLimiterRedis({
     storeClient: redisClient,
-    points, // Number of requests
-    duration, // Per duration in seconds
+    points,
+    duration,
     keyPrefix,
-    blockDuration, // Block for N seconds after limit exceeded
-    execEvenly: false, // Don't spread requests evenly
-    insuranceLimiter: undefined // Optional: in-memory fallback if Redis fails
+    blockDuration,
+    execEvenly: false,
+    insuranceLimiter: undefined
   })
 
   return async (c: Context, next: Next) => {
@@ -58,7 +55,6 @@ export const rateLimiter = (options: {
       // claim-check payloads live in.
       const rateLimiterRes = await limiter.consume(ip, 1)
 
-      // Set standard rate limit headers
       c.header('X-RateLimit-Limit', points.toString())
       c.header('X-RateLimit-Remaining', rateLimiterRes.remainingPoints.toString())
       c.header(
@@ -77,7 +73,6 @@ export const rateLimiter = (options: {
         return next()
       }
 
-      // Rate limit exceeded
       const retryAfter = Math.ceil(rejRes.msBeforeNext / 1000) || duration
 
       c.header('X-RateLimit-Limit', points.toString())
@@ -101,13 +96,6 @@ export const rateLimiter = (options: {
   }
 }
 
-/**
- * Logs all HTTP requests with:
- * - Request details (method, path, headers, query)
- * - Response details (status, duration)
- * - Error tracking
- * - Structured JSON in production, pretty print in development
- */
 export const pinoLogger = () => {
   return async (c: Context, next: Next) => {
     const start = Date.now()
@@ -117,7 +105,6 @@ export const pinoLogger = () => {
     const userAgent = c.req.header('user-agent')
     const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
 
-    // Log incoming request
     httpLogger.info({
       msg: 'Incoming request',
       requestId,
@@ -130,7 +117,6 @@ export const pinoLogger = () => {
     try {
       await next()
     } catch (err) {
-      // Log errors
       httpLogger.error({
         msg: 'Request error',
         requestId,
@@ -141,7 +127,6 @@ export const pinoLogger = () => {
       throw err
     }
 
-    // Log response
     const duration = Date.now() - start
     const status = c.res.status
 
@@ -164,7 +149,6 @@ export const pinoLogger = () => {
   }
 }
 
-// Setup all middleware
 export const setupMiddleware = (app: Hono) => {
   // CORS - Must be first to handle preflight requests
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -212,13 +196,11 @@ export const setupMiddleware = (app: Hono) => {
     })
   )
 
-  // Production-ready Pino logger
   app.use('*', pinoLogger())
 
-  // Rate limiting (global) - Skip OPTIONS and health check requests.
   // Build the limiter ONCE (not per request) so the RateLimiterRedis instance is reused.
   const globalRateLimiter = rateLimiter({
-    points: config.security.rateLimitMax, // Number of requests allowed
+    points: config.security.rateLimitMax,
     duration: 15 * 60, // 15 minutes in seconds
     keyPrefix: 'global'
   })

@@ -1,11 +1,6 @@
 /**
- * Schema Migration: Nested → Flat heading structure
- *
- * Old schema: doc > heading > contentHeading (inline*) + contentWrapper (block*)
- * New schema: doc > heading (inline*) block*
- *
- * The transform recursively flattens the nested tree into sibling nodes.
- * It is idempotent — already-flat documents pass through unchanged.
+ * Old: doc > heading > contentHeading (inline*) + contentWrapper (block*).
+ * New: doc > heading (inline*) block*. Idempotent — flat docs pass through.
  */
 
 export interface PMNode {
@@ -16,10 +11,6 @@ export interface PMNode {
   marks?: unknown[]
 }
 
-/**
- * Check if a PM JSON document uses the old nested heading schema.
- * Returns true if any node has type 'contentHeading' or 'contentWrapper'.
- */
 export function isOldSchema(doc: PMNode): boolean {
   if (!doc.content) return false
 
@@ -59,10 +50,6 @@ function normalizeHeadingAttrs(
   return normalized
 }
 
-/**
- * Flatten a single old-schema heading node into a flat heading + its body content.
- * Returns an array of nodes (the heading itself + any flattened body content).
- */
 function flattenHeading(node: PMNode): PMNode[] {
   if (node.type !== 'heading') return [node]
 
@@ -75,7 +62,6 @@ function flattenHeading(node: PMNode): PMNode[] {
   const contentHeading = node.content?.find((c) => c.type === 'contentHeading')
   const contentWrapper = node.content?.find((c) => c.type === 'contentWrapper')
 
-  // Build the flat heading: same attrs (level, toc-id) + inline content from contentHeading
   const level = contentHeading?.attrs?.level ?? node.attrs?.level ?? 1
   const tocId =
     node.attrs?.['toc-id'] ??
@@ -92,7 +78,6 @@ function flattenHeading(node: PMNode): PMNode[] {
 
   const result: PMNode[] = [flatHeading]
 
-  // Recursively flatten contentWrapper children
   if (contentWrapper?.content) {
     for (const child of contentWrapper.content) {
       result.push(...flattenNode(child))
@@ -102,17 +87,12 @@ function flattenHeading(node: PMNode): PMNode[] {
   return result
 }
 
-/**
- * Recursively flatten a single node. Headings get flattened;
- * other block nodes have their content recursively processed.
- */
 function flattenNode(node: PMNode): PMNode[] {
   if (node.type === 'heading') {
     return flattenHeading(node)
   }
 
-  // For non-heading blocks, recursively process children
-  // (handles lists, blockquotes, etc. that might theoretically contain headings)
+  // Lists, blockquotes and the like can theoretically contain headings.
   if (node.content) {
     const newContent: PMNode[] = []
     for (const child of node.content) {
@@ -223,10 +203,7 @@ function stripNodeDeep(n: PMNode): PMNode {
   return { ...n, content: stripBlockSegment(n.content) }
 }
 
-/**
- * Transform an old nested-schema PM JSON document into the new flat schema.
- * Idempotent: if the doc is already flat, returns it unchanged.
- */
+/** Idempotent: an already-flat document is returned unchanged. */
 export function transformNestedToFlat(doc: PMNode): PMNode {
   if (!doc.content) return doc
   if (!isOldSchema(doc)) return doc

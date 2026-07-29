@@ -208,7 +208,6 @@ const configureExtensions = () => {
         // metadata keys off the snapshot instead.
         const meta = document.getMap('metadata')
 
-        // If the document is draft, don't store the data
         if (meta.get('isDraft')) return
 
         // A named save carried on the context leaves the doc's bytes alone, so
@@ -368,12 +367,10 @@ const configureExtensions = () => {
 
   extensions.push(healthCheck)
 
-  // Add Redis subscriber for save confirmations (requires Redis)
   if (config.redis.enabled) {
     extensions.push(new RedisSubscriberExtension())
   }
 
-  // Add document view tracking (requires Supabase)
   if (config.supabase.url && config.supabase.serviceRoleKey) {
     extensions.push(new DocumentViewsExtension())
     dbLogger.info('Document view tracking enabled')

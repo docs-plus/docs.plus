@@ -13,20 +13,17 @@ describe('Hypermultimedia API (Direct Route)', () => {
     app = new Hono()
     mockPrisma = createMockPrisma()
 
-    // Inject mocks
     app.use('*', async (c, next) => {
       c.set('prisma', mockPrisma)
       c.set('redis', createMockRedis())
       await next()
     })
 
-    // Mount the hypermultimedia router at the new direct path
     app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
     testServer = new TestServer(app)
   })
 
   beforeEach(() => {
-    // Reset mocks before each test
     mockPrisma = createMockPrisma()
   })
 

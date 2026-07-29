@@ -1,11 +1,3 @@
-/**
- * Email Sender
- *
- * Transforms EmailJobData into provider-ready messages.
- * Handles template rendering and Supabase status callbacks.
- * Includes RFC 8058 List-Unsubscribe headers for one-click unsubscribe.
- */
-
 import {
   buildListUnsubscribeHeaders,
   getEmailSubject,
@@ -27,9 +19,6 @@ import { getServiceRoleClient } from '../supabase'
 import { sendEmail } from './providers'
 import { buildDigestEmailText, buildNotificationEmailText } from './templates'
 
-/**
- * Fetch unsubscribe links from Supabase for a user
- */
 async function getUnsubscribeLinks(userId: string): Promise<UnsubscribeLinks | undefined> {
   const supabase = getServiceRoleClient()
   if (!supabase) return undefined
@@ -54,10 +43,6 @@ async function getUnsubscribeLinks(userId: string): Promise<UnsubscribeLinks | u
   }
 }
 
-/**
- * Send email using the configured provider
- * Includes RFC 8058 List-Unsubscribe headers for one-click unsubscribe
- */
 export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailResult> {
   const fromEmail = process.env.EMAIL_FROM || 'noreply@docs.plus'
   const appUrl = process.env.APP_URL || 'https://docs.plus'
@@ -90,7 +75,6 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           actionUrl = appUrl
         }
 
-        // Fetch unsubscribe links for this user
         const unsubscribeLinks = userId ? await getUnsubscribeLinks(userId) : undefined
 
         // Build List-Unsubscribe headers (RFC 8058)
@@ -134,7 +118,6 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
 
         subject = `Your ${payload.frequency} digest - ${totalNotifications} notification${totalNotifications !== 1 ? 's' : ''}`
 
-        // Fetch unsubscribe links for this user
         const unsubscribeLinks = userId ? await getUnsubscribeLinks(userId) : undefined
 
         // Build List-Unsubscribe headers (RFC 8058) - use digest-specific link
@@ -200,9 +183,6 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
   }
 }
 
-/**
- * Update email status in Supabase email_queue table
- */
 export async function updateSupabaseEmailStatus(callback: EmailStatusCallback): Promise<void> {
   const supabase = getServiceRoleClient()
   if (!supabase) {

@@ -1,15 +1,6 @@
 /**
- * Email Notification pgmq Consumer
- *
- * Polls Supabase pgmq queue for email notification events and processes them.
- *
- * ARCHITECTURE:
- *   Supabase email_queue → pg_cron → pgmq queue → This Consumer → BullMQ → SMTP
- *
  * Poll/ack/metrics/lifecycle live in the shared createPgmqConsumer; this module
  * owns only the email-specific message mapping, status updates, and RPC names.
- *
- * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -28,8 +19,8 @@ import { emailLogger } from '../logger'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { queueEmail } from './queue'
 
-const POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
-const BATCH_SIZE = 50 // Process up to 50 messages per poll
+const POLL_INTERVAL_MS = 2000
+const BATCH_SIZE = 50
 const VISIBILITY_TIMEOUT = 60 // Seconds before message becomes visible again
 
 interface EmailQueuePayload {
@@ -68,9 +59,6 @@ interface DigestRawNotification {
   created_at: string
 }
 
-/**
- * Update email status in Supabase (after processing)
- */
 async function updateEmailStatus(
   client: SupabaseClient,
   queueId: string,
@@ -153,9 +141,8 @@ function buildDigestDocuments(
 }
 
 /**
- * Process a compiled digest message from pgmq.
- * No single business id exists, so the BullMQ jobId is hashed from the recipient,
- * frequency, and the set of queue ids the digest covers.
+ * No single business id exists, so the BullMQ jobId is hashed from the
+ * recipient, frequency, and the set of queue ids the digest covers.
  */
 async function processDigestMessage(
   client: SupabaseClient,
@@ -224,10 +211,7 @@ async function processDigestMessage(
   }
 }
 
-/**
- * Process a single notification message from pgmq.
- * queue_id (the email_queue row id) is the stable BullMQ jobId.
- */
+/** queue_id (the email_queue row id) is the stable BullMQ jobId. */
 async function processNotificationMessage(
   client: SupabaseClient,
   msgId: number,
@@ -292,10 +276,7 @@ const consumer = createPgmqConsumer<EmailQueuePayload>({
   }
 })
 
-/**
- * Start the pgmq consumer.
- * IMPORTANT: Call this only from hocuspocus-worker, NOT from rest-api.
- */
+/** Call this only from hocuspocus-worker, NOT from rest-api. */
 export function startEmailQueueConsumer(): boolean {
   return consumer.start()
 }

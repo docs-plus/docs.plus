@@ -6,9 +6,6 @@ import { config } from '../config/env'
 import { jwtLogger } from './logger'
 import { getAnonClient } from './supabase'
 
-/**
- * Supabase user data from token verification
- */
 export interface SupabaseUser {
   sub: string
   email?: string

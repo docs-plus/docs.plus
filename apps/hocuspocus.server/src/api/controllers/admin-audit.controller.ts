@@ -1,10 +1,7 @@
 /**
- * Admin Dashboard Controller — Audit Operations
- *
- * Stale Documents, Failed Notifications, and Ghost Accounts. Handlers
- * validate input, call the stale/ghost/
- * notification-failure services for data access, and shape responses.
- * Read-only notification metrics and DLQ stay inline as thin RPC/Redis wrappers.
+ * Admin audit handlers: stale documents, media storage, failed notifications,
+ * ghost accounts. Read-only notification metrics and the DLQ read stay inline as
+ * thin RPC/Redis wrappers rather than gaining a service of their own.
  */
 
 import { Queue } from 'bullmq'
@@ -20,13 +17,8 @@ import * as notificationFailures from '../services/adminNotificationFailures.ser
 import * as stale from '../services/adminStaleDocuments.service'
 import { getSupabaseClient } from '../utils/supabase'
 
-// =============================================================================
-// Stale Documents Audit
-// =============================================================================
+// Stale documents audit
 
-/**
- * Get stale documents summary statistics
- */
 export async function getStaleDocumentsSummary(c: AppContext) {
   try {
     return c.json(await stale.getStaleSummary(c.get('prisma')))
@@ -36,9 +28,6 @@ export async function getStaleDocumentsSummary(c: AppContext) {
   }
 }
 
-/**
- * List stale documents with pagination and filtering
- */
 export async function listStaleDocuments(c: AppContext) {
   try {
     const result = await stale.listStale(c.get('prisma'), {
@@ -55,9 +44,6 @@ export async function listStaleDocuments(c: AppContext) {
   }
 }
 
-/**
- * Get document content preview (first 500 chars)
- */
 export async function getDocumentPreview(c: AppContext) {
   try {
     const slug = c.req.param('slug')
@@ -72,9 +58,6 @@ export async function getDocumentPreview(c: AppContext) {
   }
 }
 
-/**
- * Bulk delete stale documents
- */
 export async function bulkDeleteStaleDocuments(c: AppContext) {
   const prisma = c.get('prisma')
   try {
@@ -94,9 +77,7 @@ export async function bulkDeleteStaleDocuments(c: AppContext) {
   }
 }
 
-// =============================================================================
-// Media Storage Audit
-// =============================================================================
+// Media storage audit
 
 export async function getMediaStorageSummary(c: AppContext) {
   const supabase = getSupabaseClient()
@@ -138,13 +119,8 @@ export async function listMediaStorage(c: AppContext) {
   })
 }
 
-// =============================================================================
-// Failed Notifications Audit
-// =============================================================================
+// Failed notifications audit
 
-/**
- * Get combined notification health score (push + email)
- */
 export async function getNotificationHealth(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -162,9 +138,6 @@ export async function getNotificationHealth(c: AppContext) {
   }
 }
 
-/**
- * Get push failure breakdown by error category + platform
- */
 export async function getPushFailureSummary(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -182,9 +155,6 @@ export async function getPushFailureSummary(c: AppContext) {
   }
 }
 
-/**
- * Get email failure + bounce breakdown
- */
 export async function getEmailFailureSummary(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -202,9 +172,6 @@ export async function getEmailFailureSummary(c: AppContext) {
   }
 }
 
-/**
- * Get detailed failed push subscriptions with user info
- */
 export async function getFailedPushSubscriptions(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -228,9 +195,6 @@ export async function getFailedPushSubscriptions(c: AppContext) {
   }
 }
 
-/**
- * Get email bounces list with user info
- */
 export async function getEmailBounces(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -256,9 +220,6 @@ export async function getEmailBounces(c: AppContext) {
   }
 }
 
-/**
- * Bulk disable failed push subscriptions
- */
 export async function disableFailedSubscriptions(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -281,10 +242,6 @@ export async function disableFailedSubscriptions(c: AppContext) {
   }
 }
 
-/**
- * Get Dead Letter Queue contents (push + email)
- * Queries BullMQ DLQ queues directly via Redis
- */
 export async function getDeadLetterQueueContents(c: AppContext) {
   let redisConnection: ReturnType<typeof createRedisConnection> = null
   let pushDlq: Queue | null = null
@@ -351,13 +308,8 @@ export async function getDeadLetterQueueContents(c: AppContext) {
   }
 }
 
-// =============================================================================
-// Ghost Accounts Audit
-// =============================================================================
+// Ghost accounts audit
 
-/**
- * List ghost accounts — detection via Supabase Admin API + public.users cross-ref
- */
 export async function getGhostAccounts(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()
@@ -376,9 +328,6 @@ export async function getGhostAccounts(c: AppContext) {
   }
 }
 
-/**
- * Ghost accounts summary — combines Admin API counts with public.users stats
- */
 export async function getGhostAccountsSummary(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()
@@ -391,9 +340,6 @@ export async function getGhostAccountsSummary(c: AppContext) {
   }
 }
 
-/**
- * Get deletion impact for a single user (FK check)
- */
 export async function getGhostDeletionImpact(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -413,9 +359,8 @@ export async function getGhostDeletionImpact(c: AppContext) {
 }
 
 /**
- * Smart-delete a ghost account.
- * - no blocking messages and no owned documents → hard-delete (cascades)
- * - otherwise → soft-delete (set deleted_at + ban auth user)
+ * Smart-delete: hard-delete (cascades) when the account has no blocking messages
+ * and owns no documents; otherwise soft-delete — set deleted_at and ban the user.
  */
 export async function deleteGhostAccount(c: AppContext) {
   try {
@@ -437,9 +382,7 @@ export async function deleteGhostAccount(c: AppContext) {
   }
 }
 
-/**
- * Bulk smart-delete ghost accounts (max 50)
- */
+/** Bulk smart-delete, capped at 50 ids by the router schema. */
 export async function bulkDeleteGhostAccounts(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()
@@ -454,9 +397,6 @@ export async function bulkDeleteGhostAccounts(c: AppContext) {
   }
 }
 
-/**
- * Resend confirmation email for unconfirmed ghost account
- */
 export async function resendGhostConfirmation(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()
@@ -472,9 +412,6 @@ export async function resendGhostConfirmation(c: AppContext) {
   }
 }
 
-/**
- * Bulk cleanup stale anonymous sessions (> N days)
- */
 export async function cleanupAnonymousSessions(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()

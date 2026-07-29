@@ -1,9 +1,5 @@
 import { z } from 'zod'
 
-// =============================================================================
-// Hypermultimedia (Media Upload) Schemas
-// =============================================================================
-
 // Strict charset blocks path-separator / traversal sequences before the id
 // ever reaches the filesystem (defense-in-depth with the storage-root check).
 const documentIdField = z
@@ -24,10 +20,6 @@ export const mediaIdParamSchema = z.object({
     .max(200)
     .regex(/^[A-Za-z0-9][A-Za-z0-9_-]*\.[A-Za-z0-9]+$/, 'Invalid media ID')
 })
-
-// =============================================================================
-// Export Types
-// =============================================================================
 
 export type DocumentIdParam = z.infer<typeof documentIdParamSchema>
 export type MediaIdParam = z.infer<typeof mediaIdParamSchema>

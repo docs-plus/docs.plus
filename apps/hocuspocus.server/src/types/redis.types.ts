@@ -11,23 +11,15 @@ export type RedisClient = Redis
 export type BullMQConnection = ConnectionOptions
 
 /**
- * Helper to cast ioredis client to BullMQ connection.
- *
- * BullMQ internally uses ioredis and accepts Redis instances directly.
- * However, due to version mismatches between ioredis in node_modules,
- * TypeScript complains about type incompatibility. This cast is safe
- * because the runtime behavior is identical.
- *
+ * ioredis and BullMQ's bundled copy mismatch at the type level only; the cast is
+ * safe because BullMQ accepts ioredis instances at runtime.
  * @see https://github.com/taskforcesh/bullmq/issues/1543
  */
 export function toBullMQConnection(redis: Redis | null): BullMQConnection | null {
   if (!redis) return null
-  // Safe cast - BullMQ accepts ioredis instances at runtime
-
   return redis as any
 }
 
-// Redis save confirmation message
 export interface SaveConfirmation {
   documentId: string
   version: number

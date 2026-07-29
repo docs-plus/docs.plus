@@ -1,16 +1,8 @@
 /**
- * Email Gateway Module
- *
- * ARCHITECTURE (pgmq Consumer):
- *   Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ → SMTP
- *
- * The pgmqConsumer polls the Supabase queue every 2 seconds.
- * BullMQ worker sends emails via configured provider.
- *
- * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
+ * Email gateway pipeline:
+ * Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ → SMTP
  */
 
-// Types
 export type {
   BounceType,
   DigestChannel,
@@ -42,16 +34,14 @@ export {
 } from '@docs.plus/email-templates'
 
 // Plain-text builders (local)
+export { getProviderStatus, isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
+export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
+export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 export {
   buildDigestEmailText,
   buildNewDocumentEmailText,
   buildNotificationEmailText
 } from './templates'
-
-// Core
-export { getProviderStatus, isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
-export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
-export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
 // Service (main entry point)
 export { emailGateway, EmailGatewayService } from './service'

@@ -1,12 +1,6 @@
 /**
- * Push Notification Gateway Service
- *
- * High-level service for push notification operations.
- * Mirrors the email gateway service pattern for consistency.
- *
- * ARCHITECTURE:
- * - rest-api: Calls initialize(false) - queue only, no worker
- * - hocuspocus-worker: Calls initialize(true) - creates worker to process jobs
+ * rest-api calls `initialize(false)` — queue only, no worker.
+ * hocuspocus-worker calls `initialize(true)` — creates the worker that drains it.
  */
 
 import { config } from '../../config/env'
@@ -21,9 +15,6 @@ import { pushLogger } from '../logger'
 import { closePushQueue, createPushWorker, getPushQueueHealth, queuePush } from './queue'
 import { configureVapid, isVapidConfigured, sendPushNotification } from './sender'
 
-/**
- * Push Gateway Service
- */
 export class PushGatewayService extends NotificationGatewayBase {
   constructor() {
     super({
@@ -40,10 +31,7 @@ export class PushGatewayService extends NotificationGatewayBase {
     })
   }
 
-  /**
-   * Send a push notification
-   * Queues if Redis available, otherwise sends synchronously
-   */
+  /** Queues if Redis is available, otherwise sends synchronously. */
   async sendNotification(request: PushNotificationRequest): Promise<PushSendResult> {
     if (!isVapidConfigured()) {
       return {
@@ -60,7 +48,6 @@ export class PushGatewayService extends NotificationGatewayBase {
       created_at: new Date().toISOString()
     }
 
-    // Try to queue first (async, faster response)
     const jobId = await queuePush(jobData)
     if (jobId) {
       return {
@@ -71,13 +58,9 @@ export class PushGatewayService extends NotificationGatewayBase {
       }
     }
 
-    // Fallback: send synchronously
     return sendPushNotification(request)
   }
 
-  /**
-   * Get push gateway health status
-   */
   async getHealth(): Promise<PushGatewayHealth> {
     const queueHealth = await getPushQueueHealth()
 
@@ -91,9 +74,6 @@ export class PushGatewayService extends NotificationGatewayBase {
     }
   }
 
-  /**
-   * Check if gateway is operational
-   */
   isOperational(): boolean {
     return this.initialized && isVapidConfigured()
   }

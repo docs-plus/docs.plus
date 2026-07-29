@@ -1,9 +1,7 @@
 /**
- * Admin Stale-Documents Service — cross-database staleness scoring/caching.
- *
- * Stale scoring is cross-database (version/age in Prisma, views in Supabase),
- * so the full score+sort cannot be a single SQL query. We push a lossless
- * candidate prefilter into Postgres, then cache the scored list per query.
+ * Staleness is cross-database — version/age in Prisma, views in Supabase — so the
+ * score and the sort cannot be one SQL query. A lossless candidate prefilter runs
+ * in Postgres and the scored list is cached from there.
  */
 
 import { TiptapTransformer } from '@hocuspocus/transformer'

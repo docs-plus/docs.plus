@@ -1,7 +1,7 @@
 /**
- * Admin Analytics Service — Supabase RPC reads for view/retention metrics,
- * with optional Prisma title enrichment. Each function returns the RPC result
- * (or throws); controllers map errors to HTTP responses.
+ * Supabase RPC reads for view/retention metrics, optionally enriched with Prisma
+ * titles. Errors come back in the result rather than thrown; the controllers own
+ * the mapping to HTTP.
  */
 
 import { Prisma, type PrismaClient } from '@prisma/client'
@@ -18,9 +18,9 @@ export function callRpc(supabase: AdminClient, rpcName: string, args?: Record<st
 }
 
 /**
- * Map view-stat document slugs (which are lower(trim(documentId))) to Prisma
- * metadata. documentId is mixed-case, so match case-insensitively and key the map
- * on the lowercased id to line up with the RPC's document_slug values.
+ * A view stat's `document_slug` is lower(trim(documentId)) while documentId is
+ * mixed-case, so both the match and the map key have to be lowercased or the join
+ * silently returns nothing.
  */
 async function metaMapForSlugs(
   prisma: PrismaClient,

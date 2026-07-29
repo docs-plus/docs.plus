@@ -37,24 +37,6 @@ const globalForRedis = globalThis as unknown as {
   redisPublisher: RedisClient | null
 }
 
-/**
- * Production-ready Redis client using ioredis
- *
- * Features:
- * - Connection pooling and keep-alive
- * - Auto-reconnect with exponential backoff
- * - Lazy connect (connects on first command)
- * - Proper error handling and logging
- * - Graceful shutdown
- * - Dedicated clients for pub/sub
- */
-
-/**
- * Build shared Redis configuration options
- * @param host - Redis host
- * @param port - Redis port
- * @param label - Label for logging (e.g., 'sync', 'queue')
- */
 const buildRedisConfig = (host: string, port: number, label = 'main') => {
   return {
     host,
@@ -62,24 +44,21 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
     db: config.redis.db, // logical DB (0 default; lets tests isolate)
 
     // Connection settings (validated config is the single source of truth)
-    lazyConnect: false, // Connect immediately on creation
+    lazyConnect: false,
     connectTimeout: config.redis.connectTimeout,
     keepAlive: config.redis.keepAlive,
 
-    // Retry strategy with exponential backoff
-    // In production: retry forever with capped delay (Redis may restart)
-    // In development: stop after maxRetries to fail fast
+    // Production retries forever with a capped delay (Redis may restart);
+    // development stops after maxRetries so a misconfigured host fails fast.
     retryStrategy: (times: number) => {
       const isProduction = config.app.env === 'production'
       const maxRetries = config.redis.maxRetries
 
-      // Development: fail fast after max retries
       if (!isProduction && times > maxRetries) {
         redisLogger.error({ times, redis: label }, 'Redis max retries exceeded (dev mode)')
         return null
       }
 
-      // Production: never give up, but log warnings
       if (times > maxRetries) {
         redisLogger.warn(
           { times, redis: label },
@@ -87,28 +66,23 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
         )
       }
 
-      // Exponential backoff: 200ms, 400ms, 800ms... capped at 10s in prod, 5s in dev
       const maxDelay = isProduction ? 10000 : 5000
       const delay = Math.min(times * 200, maxDelay)
       redisLogger.warn({ times, delay: `${delay}ms`, redis: label }, 'Redis reconnecting...')
       return delay
     },
 
-    // Auto-pipelining for better performance
     enableAutoPipelining: true,
     autoPipeliningIgnoredCommands: ['ping'],
 
     // Command timeout (increased for dev to avoid false timeouts during hot reload)
     commandTimeout: config.redis.commandTimeout,
 
-    // Offline queue (queue commands when disconnected)
-    // Enable in both dev and prod to prevent command timeout errors during reconnection
+    // On in dev and prod alike: without it, commands time out during reconnection.
     enableOfflineQueue: true,
 
-    // TLS for production (if needed)
     tls: config.redis.tls ? {} : undefined,
 
-    // Reconnect on error - include all connection-related errors
     reconnectOnError: (err: Error) => {
       const targetErrors = [
         'READONLY',
@@ -127,10 +101,7 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
   }
 }
 
-/**
- * Get config for SYNC Redis (Hocuspocus Y.js sync, pub/sub, awareness)
- * Uses REDIS_HOST / REDIS_PORT (primary Redis)
- */
+/** Config for the SYNC Redis: Hocuspocus Y.js sync, pub/sub, and awareness. */
 const getRedisConfig = () => {
   const host = process.env.REDIS_HOST
   const port = process.env.REDIS_PORT
@@ -142,7 +113,6 @@ const getRedisConfig = () => {
   return buildRedisConfig(host, parseInt(port, 10), 'sync')
 }
 
-// Main Redis client (for general operations)
 let redis: RedisClient | null = globalForRedis.redis ?? null
 
 export const getRedisClient = (): RedisClient | null => {
@@ -168,7 +138,6 @@ export const getRedisClient = (): RedisClient | null => {
 
     redis = new Redis(config)
 
-    // Event handlers
     redis.on('connect', () => {
       redisLogger.info({ host: config.host, port: config.port }, 'Redis connecting...')
     })
@@ -222,7 +191,6 @@ export const waitForRedisReady = async (
       resolve(true)
     })
 
-    // Handle connection errors during wait
     const errorHandler = (err: Error) => {
       redisLogger.error({ err }, 'Redis connection error during startup')
       clearTimeout(timeout)
@@ -293,10 +261,6 @@ export const getRedisPublisher = (): RedisClient | null => {
   return redisPublisher
 }
 
-/**
- * Create a new dedicated Redis connection for SYNC operations (Hocuspocus)
- * Uses REDIS_HOST / REDIS_PORT
- */
 export const createRedisConnection = (options: Partial<RedisOptions> = {}): RedisClient | null => {
   const config = getRedisConfig()
 
@@ -317,7 +281,6 @@ export const createRedisConnection = (options: Partial<RedisOptions> = {}): Redi
   })
 }
 
-// Get Redis connection stats (for monitoring)
 export const getRedisStats = () => {
   if (!redis) {
     return null
@@ -333,7 +296,6 @@ export const getRedisStats = () => {
   }
 }
 
-// Health check
 export const checkRedisHealth = async (): Promise<boolean> => {
   const client = getRedisClient()
 
@@ -350,9 +312,7 @@ export const checkRedisHealth = async (): Promise<boolean> => {
   }
 }
 
-/**
- * Graceful shutdown helper (call from entry points only)
- */
+/** Graceful shutdown helper; call from entry points only. */
 export const disconnectRedis = async () => {
   redisLogger.info('Shutting down Redis connections...')
 
@@ -369,7 +329,6 @@ export const disconnectRedis = async () => {
         redisLogger.info({ client: name }, 'Redis client disconnected')
       } catch (error) {
         redisLogger.error({ err: error, client: name }, 'Error disconnecting Redis client')
-        // Force disconnect on error
         client.disconnect()
       }
     }

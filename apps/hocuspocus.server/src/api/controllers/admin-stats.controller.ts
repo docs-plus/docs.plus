@@ -1,11 +1,8 @@
 /**
- * Admin Dashboard Controller — Platform Stats & Directory
- *
- * System-wide user/channel/message/notification/push/email aggregates and the
- * user/channel directory listings. Everything here runs through the service_role
- * client so counts reflect the whole platform — the browser's anon-key client is
- * scoped by RLS (and email/push/email_queue are revoked from `authenticated`),
- * which is why these must not be computed client-side.
+ * Platform-wide aggregates and the user/channel directory. All of it runs through
+ * the service_role client: the browser's anon-key client is RLS-scoped and
+ * email/push/email_queue are revoked from `authenticated`, so these counts cannot
+ * be computed client-side.
  */
 
 import { adminLogger } from '../../lib/logger'

@@ -1,15 +1,6 @@
 /**
- * Push Notification pgmq Consumer
- *
- * Polls Supabase pgmq queue for push notification events and processes them.
- *
- * ARCHITECTURE:
- *   Supabase Trigger → pgmq queue → This Consumer → BullMQ → Web Push API
- *
  * Poll/ack/metrics/lifecycle live in the shared createPgmqConsumer; this module
  * owns only the push-specific message mapping and RPC names.
- *
- * @see docs/PUSH_NOTIFICATION_PGMQ.md
  */
 
 import type { PushNotificationRequest } from '../../types/push.types'
@@ -18,8 +9,8 @@ import { pushLogger } from '../logger'
 import { createPgmqConsumer } from '../pgmqConsumer'
 import { queuePush } from './queue'
 
-const POLL_INTERVAL_MS = 2000 // Poll every 2 seconds
-const BATCH_SIZE = 50 // Process up to 50 messages per poll
+const POLL_INTERVAL_MS = 2000
+const BATCH_SIZE = 50
 const VISIBILITY_TIMEOUT = 30 // Seconds before message becomes visible again (matches worker lock)
 
 interface PushQueuePayload {
@@ -35,7 +26,6 @@ interface PushQueuePayload {
 }
 
 /**
- * Map one pgmq message to a BullMQ push job.
  * notification_id (the source notification row id) is the stable BullMQ jobId.
  * Unlike email, push has no Supabase status sink, so there is no status update.
  */
@@ -86,10 +76,7 @@ const consumer = createPgmqConsumer<PushQueuePayload>({
   processMessage: processPushMessage
 })
 
-/**
- * Start the pgmq consumer.
- * IMPORTANT: Call this only from hocuspocus-worker, NOT from rest-api.
- */
+/** Call this only from hocuspocus-worker, NOT from rest-api. */
 export function startPushQueueConsumer(): boolean {
   return consumer.start()
 }

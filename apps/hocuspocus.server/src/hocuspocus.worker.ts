@@ -157,12 +157,10 @@ async function runScheduledCleanup() {
   await reapSoftDeletedDocuments()
 }
 
-// Schedule cleanup interval
 let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
 const WORKER_HEALTH_PORT = config.worker.healthPort
 
-// Validate Redis is available
 const redis = getRedisClient()
 
 if (!redis) {
@@ -172,7 +170,6 @@ if (!redis) {
   process.exit(1)
 }
 
-// Wait for Redis to be actually ready
 const isRedisReady = await waitForRedisReady(redis, 10000)
 if (!isRedisReady) {
   workerLogger.error('❌ Redis connection timeout - failed to connect within 10s')
@@ -183,7 +180,6 @@ if (!isRedisReady) {
 
 workerLogger.info('✅ Redis connection established and ready')
 
-// Start ALL BullMQ workers (document, email, push)
 // This is the ONLY place workers should be created - not in rest-api
 const documentWorker = createDocumentWorker()
 
@@ -204,8 +200,6 @@ workerLogger.info('📧 Email gateway worker initialized')
 await pushGateway.initialize(true)
 workerLogger.info('🔔 Push gateway worker initialized')
 
-// Start pgmq consumers for notifications (polls Supabase queues)
-// This is the new architecture - replaces pg_net HTTP calls for reliability
 const pushConsumerStarted = startPushQueueConsumer()
 const emailConsumerStarted = startEmailQueueConsumer()
 
@@ -221,7 +215,6 @@ if (emailConsumerStarted) {
   workerLogger.warn('⚠️ Email notification pgmq consumer not started - check Supabase config')
 }
 
-// Start idempotency log + autosave version cleanup interval
 cleanupInterval = setInterval(runScheduledCleanup, CLEANUP_INTERVAL_MS)
 // Run once on startup to clean any stale rows
 runScheduledCleanup()
@@ -236,7 +229,6 @@ workerLogger.info(
 
 const stopWorkerMetricsSampling = startWorkerMetricsSampling()
 
-// Create health check endpoint for worker
 const healthApp = new Hono()
 
 // isRunning()/isPaused() are flags that stay green while BullMQ's fetch loop
@@ -331,7 +323,6 @@ healthApp.get('/health/ready', async (c) => {
   return c.json({ status: 'ready' })
 })
 
-// Start health check server
 const healthServer = Bun.serve({
   fetch: healthApp.fetch,
   port: WORKER_HEALTH_PORT,
@@ -344,16 +335,13 @@ workerLogger.info({
   url: `http://localhost:${healthServer.port}/health`
 })
 
-// Circuit breaker config (configurable via env for production tuning)
 const ERROR_THRESHOLD = config.worker.errorThreshold
 const ERROR_WINDOW_MS = config.worker.errorWindowMs
 const SHUTDOWN_TIMEOUT_MS = config.worker.shutdownTimeoutMs
 
-// Track error counts for circuit breaker pattern
 let errorCount = 0
 let lastErrorTime = 0
 
-// Errors that should trigger immediate shutdown (unrecoverable)
 const FATAL_ERRORS = ['EADDRINUSE', 'ERR_WORKER_OUT_OF_MEMORY', 'ENOMEM', 'FATAL']
 
 const isFatalError = (err: Error | unknown): boolean => {
@@ -362,10 +350,9 @@ const isFatalError = (err: Error | unknown): boolean => {
   return FATAL_ERRORS.some((fatal) => message.includes(fatal) || code === fatal)
 }
 
-// Graceful shutdown - only called for fatal errors or SIGTERM/SIGINT
 let isShuttingDown = false
 const shutdown = async () => {
-  if (isShuttingDown) return // Prevent double shutdown
+  if (isShuttingDown) return
   isShuttingDown = true
 
   workerLogger.info('🛑 Shutting down worker gracefully...')
@@ -374,16 +361,13 @@ const shutdown = async () => {
     // Stop health server first to fail health checks
     healthServer.stop()
 
-    // Stop cleanup interval
     if (cleanupInterval) {
       clearInterval(cleanupInterval)
       cleanupInterval = null
     }
 
-    // Stop queue depth sampling
     stopWorkerMetricsSampling()
 
-    // Stop accepting new jobs on all workers
     await documentWorker.pause()
     workerLogger.info('Document worker paused')
 
@@ -412,7 +396,6 @@ const shutdown = async () => {
 
     workerLogger.info('All workers closed')
 
-    // Close connections
     await shutdownDatabase()
     await disconnectRedis()
 
@@ -435,19 +418,15 @@ process.on('uncaughtException', (err) => {
   workerLogger.error({ err }, '💥 Uncaught exception in worker')
   captureUnknown(err)
 
-  // Fatal errors = immediate shutdown
   if (isFatalError(err)) {
     workerLogger.error('Fatal error detected - shutting down')
     shutdown()
     return
   }
 
-  // Circuit breaker with sliding window:
-  // - Reset count if window expired (healthy period resets state)
-  // - Shutdown only if too many errors within the window
   const now = Date.now()
   if (now - lastErrorTime > ERROR_WINDOW_MS) {
-    errorCount = 1 // Start fresh window with this error
+    errorCount = 1
   } else {
     errorCount++
   }

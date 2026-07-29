@@ -13,7 +13,6 @@ describe('S3 Storage - Comprehensive Coverage', () => {
   let errorSpy: ReturnType<typeof spyOn>
 
   beforeEach(() => {
-    // Set up S3 environment
     process.env.DO_STORAGE_ENDPOINT = 'https://test.digitaloceanspaces.com'
     process.env.DO_STORAGE_BUCKET = 'test-bucket'
     process.env.DO_STORAGE_ACCESS_KEY_ID = 'test-key'
@@ -31,12 +30,11 @@ describe('S3 Storage - Comprehensive Coverage', () => {
 
   describe('upload() with different buffer types', () => {
     test('should handle ArrayBuffer and log size correctly', async () => {
-      // Create ArrayBuffer - exercises the arrayBuffer.byteLength size branch
+      // Exercises the arrayBuffer.byteLength size branch
       const arrayBuffer = new ArrayBuffer(1024)
 
       try {
         await storageS3.upload('test-doc', 'test-file.jpg', arrayBuffer)
-        // If successful, success info log fires
         expect(infoSpy).toHaveBeenCalled()
       } catch (error) {
         // S3 will fail without real credentials, which tests the error path
@@ -46,7 +44,6 @@ describe('S3 Storage - Comprehensive Coverage', () => {
     })
 
     test('should handle Buffer and log size correctly', async () => {
-      // Create Buffer
       const buffer = Buffer.from('test data')
 
       try {
@@ -128,7 +125,6 @@ describe('S3 Storage - Comprehensive Coverage', () => {
       // Will fail without real S3, but the code path is exercised
       expect([200, 404, 500]).toContain(response.status)
 
-      // Check that logging happened (either success or error)
       const loggingHappened = infoSpy.mock.calls.length > 0 || errorSpy.mock.calls.length > 0
       expect(loggingHappened).toBe(true)
     })

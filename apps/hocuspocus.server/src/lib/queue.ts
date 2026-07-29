@@ -84,14 +84,13 @@ const createWorkerConnection = () => {
   return bullmqConn
 }
 
-// Main queue for storing documents
 export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents', {
   connection: queueConnection,
   defaultJobOptions: {
-    attempts: 5, // Increased retry attempts for better reliability
+    attempts: 5,
     backoff: {
       type: 'exponential',
-      delay: 2000 // Start with 2s delay
+      delay: 2000
     },
     // BullMQ job keys carry no TTL, so volatile-lru can never evict them:
     // unbounded retention walks the shared Redis into OOM, which flips every
@@ -126,8 +125,7 @@ export const DeadLetterQueue = new Queue<DeadLetterJobData>('store-documents-dlq
 // Redis OOM the main queue's bounds guard.
 const DLQ_MAX_INLINE_STATE_BYTES = 512 * 1024
 
-// Event handlers for monitoring and alerting
-// Note: Queue events are handled by Worker events below for better reliability
+// Only 'error' is wired here; the rest of the job events ride the Worker below.
 StoreDocumentQueue.on('error', (err: Error) => {
   queueLogger.error({ err }, 'Queue error')
   captureUnknown(err)
@@ -392,7 +390,6 @@ async function resolveJobState(data: StoreDocumentData): Promise<Buffer> {
   throw new Error(`Store job state missing or expired (${data.stateKey ?? 'no stateKey'})`)
 }
 
-// Worker to process document storage jobs
 export const createDocumentWorker = () => {
   const redisPublisher = getRedisPublisher()
   // Worker MUST have dedicated connection (uses blocking commands)
@@ -594,22 +591,17 @@ export const createDocumentWorker = () => {
         max: config.bullmq.rateLimitMax,
         duration: config.bullmq.rateLimitDuration
       },
-      // Lock settings for job ownership (prevents duplicate processing)
-      // lockDuration: How long a job is "owned" by this worker before others can take it
-      // lockRenewTime: How often to extend the lock (should be < lockDuration/2)
-      lockDuration: 120000, // 2 minutes - job lock duration
-      lockRenewTime: 30000, // 30s - auto-renew lock while processing
+      // Lock settings for job ownership (prevents duplicate processing);
+      // lockRenewTime must stay below lockDuration/2.
+      lockDuration: 120000,
+      lockRenewTime: 30000,
 
-      // Stalled job detection (for crashed workers)
-      // A job is "stalled" if worker dies mid-processing without releasing lock
-      // stalledInterval: How often to check for stalled jobs
-      // maxStalledCount: How many stall checks before marking as failed
-      stalledInterval: 60000, // Check every 60s (was 30s - too aggressive)
+      // A job is "stalled" if a worker dies mid-processing without releasing its lock.
+      stalledInterval: 60000, // 30s was too aggressive
       maxStalledCount: 2 // After 2 stalls (2 min), consider it failed
     }
   )
 
-  // Worker event handlers
   worker.on('completed', (job) => {
     recordJobOutcome(worker.name, 'completed', job)
     queueLogger.info({ jobId: job.id }, 'Job completed successfully')

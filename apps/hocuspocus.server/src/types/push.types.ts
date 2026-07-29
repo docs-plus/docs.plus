@@ -1,14 +1,7 @@
 /**
- * Push Notification Types
- *
- * Types for the push notification gateway service.
- */
-
-/**
  * Push notification request payload from Supabase trigger
  */
 export interface PushNotificationRequest {
-  // Identifiers
   user_id: string
   notification_id: string
   // Raw data - service worker formats the display
@@ -44,9 +37,6 @@ export interface PushSubscription {
   updated_at: string
 }
 
-/**
- * Result of sending a push notification
- */
 export interface PushSendResult {
   success: boolean
   sent: number
@@ -59,9 +49,6 @@ export interface PushSendResult {
   error?: string
 }
 
-/**
- * Push gateway health status
- */
 export interface PushGatewayHealth {
   vapid_configured: boolean
   vapid_subject: string | null

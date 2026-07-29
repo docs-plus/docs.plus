@@ -14,11 +14,10 @@ import * as localStorage from '../../lib/storage/storage.local'
 import * as S3Storage from '../../lib/storage/storage.s3'
 import { checkEnvBoolean } from '../../utils'
 
-// Allowed upload MIME types. MUST stay a superset of the chat media allowlist
-// (apps/webapp .../chatMediaMime.ts CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase
-// scripts/12-buckets.sql) so "copy chat media to document" can re-host any chat
-// attachment here — including voice notes (audio/webm), heic/bmp images, mov/mkv
-// video, and office docs / archives (inserted as download links).
+// MUST stay a superset of the chat media allowlist (webapp chatMediaMime.ts
+// CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase scripts/12-buckets.sql) so "copy chat
+// media to document" can re-host any chat attachment — voice notes (audio/webm), heic/bmp,
+// mov/mkv, and office docs / archives (inserted as download links) included.
 const ALLOWED_MIME_TYPES = [
   // images
   'image/jpeg',

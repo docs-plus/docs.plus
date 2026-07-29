@@ -1,10 +1,6 @@
 /**
- * Generic pgmq Consumer
- *
  * Shared poll/ack/metrics/lifecycle for Supabase pgmq queues. Email and push
- * inject only their RPC names and per-message mapping; everything else (the
- * single-flight poll guard, empty-poll counter, batch settle, graceful stop)
- * is identical across both and lives here.
+ * inject only their RPC names and per-message mapping; everything else is here.
  */
 
 import { createHash } from 'node:crypto'
@@ -17,10 +13,8 @@ import { pgmqLastSuccessfulPoll, pgmqMessagesTotal } from './metrics'
 import { getServiceRoleClient } from './supabase'
 
 /**
- * Deterministic BullMQ jobId from stable business fields, used when a payload has
- * no single id (e.g. digests). Identical fields → identical id → pgmq redelivery
- * collapses to one job instead of a duplicate notification. BullMQ uses ':' as a
- * Redis key separator, so '-' joins the prefix.
+ * Deterministic id for payloads with no single business id (digests), so a pgmq
+ * redelivery collapses to one job. '-' joins the prefix: BullMQ reserves ':'.
  */
 export function deterministicJobId(prefix: string, ...fields: (string | undefined)[]): string {
   const digest = createHash('sha256').update(fields.join('|')).digest('hex').slice(0, 32)

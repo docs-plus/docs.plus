@@ -37,7 +37,6 @@ const boundByDocument = new WeakMap<object, Set<number>>()
  * Binds the clientIDs a socket announces to that socket's user, first claim wins.
  * Never throws: it runs inside the sequential onChange chain, where a rejection
  * would abort the hooks behind it, and silence beats a misattributed range.
- *
  * Best-effort provenance, NOT an audit trail — see `docs/change-attribution.md`.
  */
 export const recordClientAuthors = (prisma: PrismaClient, change: ClientAuthorChange): void => {

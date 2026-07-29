@@ -6,13 +6,8 @@ interface ProviderEntry {
   endpoint: (url: string) => string
 }
 
-/**
- * Provider registry. Each entry knows how to recognize a URL and where
- * to fetch its oEmbed JSON. Order doesn't matter; matching is hostname-based.
- *
- * Sources for endpoints: each provider's published oEmbed docs (oembed.com
- * registry). All these return JSON when given `?format=json&url=…`.
- */
+/** Endpoints come from each provider's published oEmbed docs (the oembed.com
+ *  registry); matching is hostname-based, so entry order does not matter. */
 const PROVIDERS: ProviderEntry[] = [
   {
     match: (h) => /(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(h),
@@ -91,11 +86,7 @@ const oembedTypeToMediaType = (
   return 'website'
 }
 
-/**
- * Fetch an oEmbed provider's JSON and normalize it into our response
- * shape. Returns null on no-match, non-2xx, abort, or unparseable JSON.
- * The pipeline calls the next stage on null.
- */
+/** Null is not an error: the pipeline falls through to the next stage on it. */
 export const runOembed = async (canonicalUrl: string): Promise<StageResult> => {
   const provider = findProvider(canonicalUrl)
   if (!provider) return null

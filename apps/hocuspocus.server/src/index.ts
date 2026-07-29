@@ -28,7 +28,6 @@ import * as documentVersions from './modules/document-versions'
 import * as linkMetadata from './modules/link-metadata'
 import * as openapi from './modules/openapi'
 
-// Create Hono app
 const app = new Hono()
 
 // Correlation id first so every log line and error capture can carry it.
@@ -49,17 +48,14 @@ const openapiModule = openapi.init({
 // above setupMiddleware because secureHeaders rewrites the header after next().
 app.use(openapi.DOCS_PATH, openapi.swaggerUiCsp)
 
-// Setup middleware
 setupMiddleware(app)
 
-// Inject dependencies into context (lazy load Redis on request)
 app.use('*', async (c, next) => {
   c.set('prisma', prisma)
   c.set('redis', getRedisClient())
   await next()
 })
 
-// Routes
 app.get('/', (c) => {
   return c.json({ message: 'Hello World!' })
 })
@@ -71,7 +67,6 @@ app.get('/metrics', async (c) => {
   return c.body(await metricsText())
 })
 
-// Mount routers
 app.route('/health', healthRouter)
 app.route('/api/documents', documentsRouter)
 // Mounted after the legacy documents router. Content routes are two-segment, so
@@ -106,8 +101,7 @@ const documentConversionModule = documentConversion.init({
 app.route('/api/documents', documentConversionModule.router)
 app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
 app.route('/api/email', emailRouter)
-// NOTE: /api/push endpoint removed - push notifications now use pgmq Consumer architecture
-// See: docs/PUSH_NOTIFICATION_PGMQ.md
+// /api/push removed — push notifications go through the pgmq consumer.
 app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),
@@ -153,7 +147,6 @@ const server = Bun.serve({
   idleTimeout: 60
 })
 
-// Log server startup
 restApiLogger.info({
   msg: '🚀 REST API Server started successfully',
   port: server.port,
@@ -167,7 +160,6 @@ restApiLogger.info({
   }
 })
 
-// Graceful shutdown
 // Bun's stop() also waits on idle keep-alive sockets, and Traefik holds those,
 // so this budget is spent on most retirements rather than only on a slow
 // request. 10s covers an export's realistic tail and still leaves 20s of the
@@ -190,7 +182,6 @@ const shutdown = async () => {
     ])
     clearTimeout(drainTimer)
 
-    // Cleanup connections
     await emailGateway.shutdown()
     await pushGateway.shutdown()
     await shutdownDatabase()

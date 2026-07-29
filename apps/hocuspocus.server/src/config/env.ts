@@ -1,16 +1,8 @@
-/**
- * Application Configuration
- *
- * Uses validated environment variables from env.schema.ts.
- * All env vars are type-safe and validated at startup.
- */
-
 import { env } from './env.schema'
 
 export { env }
 
 export const config = {
-  // Server
   app: {
     port: env.APP_PORT,
     name: env.APP_NAME,
@@ -19,7 +11,6 @@ export const config = {
     publicUrl: env.PUBLIC_RESTAPI_URL || null
   },
 
-  // Hocuspocus
   hocuspocus: {
     port: env.HOCUSPOCUS_PORT,
     internalHttpPort: env.HOCUSPOCUS_INTERNAL_HTTP_PORT,
@@ -44,12 +35,10 @@ export const config = {
     }
   },
 
-  // Database
   database: {
     url: env.DATABASE_URL
   },
 
-  // Redis
   redis: {
     enabled: env.REDIS,
     host: env.REDIS_HOST,
@@ -62,7 +51,6 @@ export const config = {
     maxRetries: env.REDIS_MAX_RETRIES
   },
 
-  // Storage
   storage: {
     local: {
       enabled: env.PERSIST_TO_LOCAL_STORAGE,
@@ -78,14 +66,12 @@ export const config = {
     }
   },
 
-  // Supabase
   supabase: {
     url: env.SUPABASE_URL,
     anonKey: env.SUPABASE_ANON_KEY,
     serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY
   },
 
-  // Security
   security: {
     allowedOrigins: env.ALLOWED_ORIGINS,
     rateLimitMax: env.RATE_LIMIT_MAX
@@ -125,14 +111,12 @@ export const config = {
     }
   },
 
-  // BullMQ
   bullmq: {
     concurrency: env.BULLMQ_CONCURRENCY,
     rateLimitMax: env.BULLMQ_RATE_LIMIT_MAX,
     rateLimitDuration: env.BULLMQ_RATE_LIMIT_DURATION
   },
 
-  // Database Pool
   dbPool: {
     size: env.DB_POOL_SIZE,
     idleTimeout: env.DB_IDLE_TIMEOUT,
@@ -141,7 +125,6 @@ export const config = {
     queryTimeout: env.DB_QUERY_TIMEOUT
   },
 
-  // Worker
   worker: {
     errorThreshold: env.WORKER_ERROR_THRESHOLD,
     errorWindowMs: env.WORKER_ERROR_WINDOW_MS,
@@ -152,7 +135,6 @@ export const config = {
     healthPort: env.WORKER_HEALTH_PORT
   },
 
-  // Logging
   logging: {
     level: env.LOG_LEVEL
   }

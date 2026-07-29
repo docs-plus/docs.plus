@@ -1,9 +1,6 @@
 /**
- * Admin Dashboard Controller — Analytics
- *
- * Thin handlers: validate input, call adminAnalytics.service, shape the
- * response. Pure RPC reads are registered through the `rpcRoute` table below;
- * handlers with enrichment or extra validation stay bespoke.
+ * Admin analytics handlers. Pure RPC reads are registered through the `rpcRoute`
+ * table below; handlers with enrichment or extra validation stay bespoke.
  */
 
 import { adminLogger } from '../../lib/logger'
@@ -113,9 +110,6 @@ export const getNotificationReach = rpcRoute({
   errMsg: 'Failed to fetch notification reach'
 })
 
-/**
- * Get single document view stats
- */
 export async function getDocumentViewStats(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -138,9 +132,6 @@ export async function getDocumentViewStats(c: AppContext) {
   }
 }
 
-/**
- * Get top viewed documents (enriched with Prisma titles)
- */
 export async function getTopViewedDocuments(c: AppContext) {
   const prisma = c.get('prisma')
   try {
@@ -162,9 +153,6 @@ export async function getTopViewedDocuments(c: AppContext) {
   }
 }
 
-/**
- * Get batch document view trends (for sparklines in table)
- */
 export async function getBatchDocumentTrends(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
@@ -187,9 +175,6 @@ export async function getBatchDocumentTrends(c: AppContext) {
   }
 }
 
-/**
- * Get top active documents (enriched with Prisma titles)
- */
 export async function getTopActiveDocuments(c: AppContext) {
   const prisma = c.get('prisma')
   try {

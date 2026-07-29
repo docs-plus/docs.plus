@@ -1,13 +1,6 @@
 /**
- * Push Notification Queue
- *
- * BullMQ-based queue for async push notification processing.
- * Provides rate limiting and retry logic.
- *
- * ARCHITECTURE NOTE:
- * - Queue operations (add jobs) run in rest-api containers
- * - Worker operations (process jobs) run ONLY in hocuspocus-worker container
- * - This prevents duplicate processing when rest-api scales to multiple replicas
+ * Jobs are added from rest-api but processed ONLY in hocuspocus-worker: rest-api
+ * scales to multiple replicas, so a worker there would duplicate processing.
  */
 
 import { Queue, Worker } from 'bullmq'
@@ -28,7 +21,6 @@ import { sendPushNotification } from './sender'
 
 export const PUSH_QUEUE_NAME = 'push-notifications'
 
-// Queue connection (for adding jobs - used by rest-api)
 const redisClient = createRedisConnection(bullmqConnectionOptions)
 const queueConnection = toBullMQConnection(redisClient)
 
@@ -36,9 +28,6 @@ if (!queueConnection) {
   pushLogger.warn('Redis not configured - push queue will not be available')
 }
 
-/**
- * Push Queue - handles outgoing push notifications
- */
 export const pushQueue = queueConnection
   ? new Queue<PushJobData>(PUSH_QUEUE_NAME, {
       connection: queueConnection,
@@ -50,7 +39,7 @@ export const pushQueue = queueConnection
         },
         removeOnComplete: {
           count: 100,
-          age: 24 * 3600 // 24 hours
+          age: 24 * 3600
         },
         // pushDeadLetterQueue already holds the payload and the failure reason
         // from the final attempt, so an unbounded failed set is a second copy in
@@ -64,22 +53,18 @@ export const pushQueue = queueConnection
     })
   : null
 
-/**
- * Dead Letter Queue for permanently failed push notifications
- */
 export const pushDeadLetterQueue = queueConnection
   ? new Queue<PushDLQData>('push-notifications-dlq', {
       connection: queueConnection,
       defaultJobOptions: {
         removeOnComplete: {
           count: 200,
-          age: 30 * 24 * 3600 // 30 days
+          age: 30 * 24 * 3600
         }
       }
     })
   : null
 
-// Queue error handlers
 pushQueue?.on('error', (err: Error) => {
   pushLogger.error({ err }, 'Push queue error')
   captureUnknown(err)
@@ -93,9 +78,8 @@ pushDeadLetterQueue?.on('error', (err: Error) => {
 let pushWorker: Worker<PushJobData> | null = null
 
 /**
- * Queue a push notification for async processing. Pass a stable `jobId` (from a
- * pgmq business id) so a pgmq redelivery re-adds the same BullMQ job instead of a
- * duplicate; the worker's idempotencyKey (`push:${job.id}`) keys on that same id.
+ * A stable `jobId` (a pgmq business id) makes a redelivery re-add the same job
+ * instead of a duplicate; the worker's `push:${job.id}` key follows it.
  */
 export async function queuePush(data: PushJobData, jobId?: string): Promise<string | null> {
   if (!pushQueue) return null
@@ -114,15 +98,12 @@ export async function queuePush(data: PushJobData, jobId?: string): Promise<stri
 }
 
 /**
- * Create the push worker to process queue jobs
- *
- * IMPORTANT: This should only be called from hocuspocus-worker, NOT from rest-api.
- * BullMQ workers use blocking Redis commands (BRPOPLPUSH) and need dedicated connections.
+ * Call only from hocuspocus-worker, NOT from rest-api: BullMQ workers use
+ * blocking Redis commands (BRPOPLPUSH) and need dedicated connections.
  */
 export function createPushWorker(): Worker<PushJobData> | null {
   if (pushWorker) return pushWorker
 
-  // Worker needs DEDICATED connection (blocking commands)
   const workerRedis = createRedisConnection(bullmqWorkerConnectionOptions)
   const workerConnection = toBullMQConnection(workerRedis)
   if (!workerConnection) {
@@ -219,9 +200,9 @@ export function createPushWorker(): Worker<PushJobData> | null {
         duration: config.push.gateway.rateLimitDuration
       },
       // Lock settings for job ownership (prevents duplicate processing across workers)
-      lockDuration: 30000, // 30s - push notifications are fast
-      lockRenewTime: 10000, // 10s - renew lock
-      stalledInterval: 15000, // Check every 15s
+      lockDuration: 30000, // push notifications are fast
+      lockRenewTime: 10000,
+      stalledInterval: 15000,
       maxStalledCount: 2 // 30s total before marking stalled
     }
   )
@@ -255,9 +236,6 @@ export function createPushWorker(): Worker<PushJobData> | null {
   return pushWorker
 }
 
-/**
- * Get push queue health status
- */
 export async function getPushQueueHealth(): Promise<{
   available: boolean
   waiting: number
@@ -300,9 +278,6 @@ export async function getPushQueueHealth(): Promise<{
   }
 }
 
-/**
- * Close queue and worker connections
- */
 export async function closePushQueue(): Promise<void> {
   if (pushWorker) {
     await pushWorker.close()

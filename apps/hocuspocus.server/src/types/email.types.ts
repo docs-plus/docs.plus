@@ -1,18 +1,9 @@
-/**
- * Email Gateway Types
- *
- * Single source of truth for all email-related types in the system.
- * This module defines the contract for the email gateway API.
- */
-
 // Supported notification types (matches Supabase notifications.type)
 export type NotificationType =
   'mention' | 'reply' | 'reaction' | 'message' | 'thread_message' | 'channel_event'
 
-// Email delivery frequency
 export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'
 
-// Email job status
 export type EmailStatus = 'pending' | 'processing' | 'sent' | 'failed' | 'skipped'
 
 /**
@@ -20,37 +11,28 @@ export type EmailStatus = 'pending' | 'processing' | 'sent' | 'failed' | 'skippe
  * Sent from Supabase to the email gateway
  */
 export interface NotificationEmailRequest {
-  // Queue reference (for status updates)
   queue_id: string
 
-  // Recipient
   to: string
   recipient_name: string
   recipient_id: string
 
-  // Sender
   sender_name: string
   sender_id?: string
   sender_avatar_url?: string
 
-  // Notification details
   notification_type: NotificationType
   message_preview: string
 
-  // Context (document/workspace and channel)
   document_name?: string
   document_slug?: string
   channel_name?: string
   channel_id?: string
   action_url?: string
 
-  // Metadata
   created_at?: string
 }
 
-/**
- * Generic email request for custom emails
- */
 export interface GenericEmailRequest {
   to: string[]
   subject: string
@@ -60,9 +42,6 @@ export interface GenericEmailRequest {
   tags?: string[]
 }
 
-/**
- * Email send result
- */
 export interface EmailResult {
   success: boolean
   message_id?: string
@@ -114,9 +93,6 @@ export interface DigestDocument {
   channels: DigestChannel[]
 }
 
-/**
- * Channel within a document
- */
 export interface DigestChannel {
   name: string
   id: string
@@ -124,9 +100,6 @@ export interface DigestChannel {
   notifications: DigestNotification[]
 }
 
-/**
- * Individual notification in a digest
- */
 export interface DigestNotification {
   type: NotificationType
   sender_name: string
@@ -136,9 +109,6 @@ export interface DigestNotification {
   created_at: string
 }
 
-/**
- * Email gateway health status
- */
 export interface EmailGatewayHealth {
   smtp_configured: boolean
   queue_connected: boolean
@@ -147,9 +117,6 @@ export interface EmailGatewayHealth {
   sent_last_hour: number
 }
 
-/**
- * Webhook callback for email status updates
- */
 export interface EmailStatusCallback {
   queue_id: string
   status: EmailStatus

@@ -5,7 +5,6 @@ describe('Worker Server - Integration Tests', () => {
   let workerProcess: Subprocess | null = null
   const WORKER_HEALTH_PORT = 3003
 
-  // Helper to check if worker is responsive
   const checkWorkerHealth = async (retries = 10): Promise<boolean> => {
     for (let i = 0; i < retries; i++) {
       try {
@@ -60,13 +59,11 @@ describe('Worker Server - Integration Tests', () => {
 
       await proc.exited
 
-      // Should exit with code 1
       expect(proc.exitCode).toBe(1)
       expect(stdout + stderr).toContain('Redis configuration required for queue operations')
     }, 10000)
 
     test('should start successfully with valid Redis configuration', async () => {
-      // Only run if Redis is available
       if (!process.env.REDIS_HOST) {
         console.log('⚠️  Skipping worker startup test - Redis not configured')
         return
@@ -85,7 +82,6 @@ describe('Worker Server - Integration Tests', () => {
         cwd: process.cwd()
       })
 
-      // Wait for worker to start
       const isHealthy = await checkWorkerHealth(20)
 
       expect(isHealthy).toBe(true)
@@ -191,7 +187,6 @@ describe('Worker Server - Integration Tests', () => {
       const timestamp = new Date(data.timestamp)
       expect(timestamp.toString()).not.toBe('Invalid Date')
 
-      // Timestamp should be recent (within last 5 seconds)
       const now = Date.now()
       const timestampAge = now - timestamp.getTime()
       expect(timestampAge).toBeLessThan(5000)
@@ -221,15 +216,13 @@ describe('Worker Server - Integration Tests', () => {
       // Wait for it to start
       await Bun.sleep(2000)
 
-      // Send SIGTERM
       shutdownProc.kill('SIGTERM')
 
       // Wait for graceful shutdown
       await Bun.sleep(2000)
 
-      // Should have exited
       expect(shutdownProc.exitCode).not.toBe(null)
-      expect(shutdownProc.exitCode).toBe(0) // Clean exit
+      expect(shutdownProc.exitCode).toBe(0)
     }, 15000)
   })
 })

@@ -1,9 +1,7 @@
 /**
- * Pure nested → flat heading migration pipeline (no database).
- *
- * Used by `src/scripts/migrate-nested-to-flat.ts`. ProseMirror rule: JSON → doc
- * requires a schema that knows every node/mark; round-trip must not reintroduce
- * legacy `contentHeading` / `contentWrapper` after transform.
+ * Pure nested → flat heading migration, no I/O; run by `src/scripts/migrate-nested-to-flat.ts`.
+ * Encode needs a schema knowing every node/mark, and the round trip must not
+ * reintroduce legacy `contentHeading` / `contentWrapper`.
  */
 
 import { TiptapTransformer } from '@hocuspocus/transformer'
@@ -52,9 +50,6 @@ export function pmJsonToYdocBytes(json: Record<string, unknown>): Uint8Array {
   return Y.encodeStateAsUpdate(ydoc)
 }
 
-/**
- * Decode migrated bytes and ensure legacy nested-heading wrappers are gone.
- */
 function verifyRoundTripAndNotNested(
   bytes: Uint8Array
 ): { ok: true } | { ok: false; phase: MigrationPhase; error: unknown } {

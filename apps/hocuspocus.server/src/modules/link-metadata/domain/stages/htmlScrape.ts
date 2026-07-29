@@ -52,12 +52,9 @@ const decodeBody = (bytes: Uint8Array, contentType: string | null): string => {
   }
 }
 
-/**
- * Stream the response body, aborting when the accumulated byte count
- * exceeds MAX_BODY_BYTES. Returns null on overflow or when the body is
- * unavailable. The shared AbortController stops the underlying fetch so
- * we don't continue downloading bytes we'll never read.
- */
+/** Content-Length is client-controlled, so the cap is enforced on the stream.
+ *  Aborting the shared controller stops the fetch itself rather than draining
+ *  bytes that will never be read. */
 const readCappedBody = async (
   response: Response,
   controller: AbortController
@@ -92,17 +89,10 @@ const readCappedBody = async (
 }
 
 /**
- * HTML scrape stage: full HTML fetch + metascraper. Hardened against:
- *   - hostile-to-bot sites (compound UA gets allowlisted by sites that
- *     trust facebookexternalhit while staying transparent)
- *   - non-HTML responses (PDF, image direct links → minimal shape)
- *   - mis-declared / missing charsets (Content-Type → meta → utf-8)
- *   - oversized bodies (streamed cap at MAX_BODY_BYTES; aborts mid-body
- *     instead of trusting Content-Length, which is client-controlled)
- *   - relative OG image / favicon paths after redirects (uses response.url)
- *
- * Redirects are followed via `safeFetch`, which re-runs the SSRF host
- * check on every hop so a public URL can't bounce to an internal host.
+ * `safeFetch` re-runs the SSRF host check on every redirect hop, so a public URL
+ * cannot bounce to an internal host. The compound UA is deliberate: sites that
+ * allowlist facebookexternalhit serve this bot while it stays transparent.
+ * `response.url` is the base, so OG image and favicon paths survive a redirect.
  */
 export const runHtmlScrape = async (
   canonicalUrl: string,

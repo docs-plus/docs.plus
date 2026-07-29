@@ -4,10 +4,8 @@ const BENCHMARK_RANGE_RE = /^198\.(1[89])\./
 const MULTICAST_RANGE_RE = /^(22[4-9]|23\d)\./
 
 /**
- * Normalize hosts that wrap an IPv4 address inside an IPv6 envelope
- * (e.g. `[::ffff:127.0.0.1]` or `[::ffff:7f00:1]`) back to the
- * dotted-quad form so the IPv4 rules below catch them. Returns the input
- * unchanged when no mapping applies.
+ * Unwrap IPv4-in-IPv6 hosts (`[::ffff:127.0.0.1]`, `[::ffff:7f00:1]`) back to
+ * dotted-quad so the IPv4 rules below catch them; anything else passes through.
  */
 const stripIpv4Mapped = (host: string): string => {
   const m = host.match(/^\[::ffff:([0-9a-f:.]+)\]$/i)
@@ -24,16 +22,9 @@ const stripIpv4Mapped = (host: string): string => {
 }
 
 /**
- * Reject URLs that point at the loopback interface, RFC 1918 private
- * ranges, link-local addresses, or `*.local` / `*.internal` mDNS-style
- * hostnames. Only `http:` and `https:` schemes are allowed.
- *
- * NOTE: This is a hostname-string check, not DNS resolution. It catches
- * the obvious SSRF vectors (cloud metadata endpoints, intranet hosts).
- * A determined attacker can still abuse DNS rebinding; that's an
- * acceptable v1 risk because the endpoint runs in our own egress-firewalled
- * Docker network — same threat model as the existing Next.js endpoint
- * this code replaces.
+ * A hostname-string check, not DNS resolution: it catches the obvious SSRF
+ * vectors (cloud metadata, intranet hosts) but not DNS rebinding. That risk is
+ * accepted because callers run inside our own egress-firewalled Docker network.
  */
 export const isSafeUrl = (rawUrl: string): boolean => {
   let parsed: URL

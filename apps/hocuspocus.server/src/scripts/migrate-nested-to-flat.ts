@@ -9,19 +9,10 @@
  * 4. Run full live migration in a low-traffic window; keep ENABLE_SCHEMA_MIGRATION
  *    on in Hocuspocus until you are confident, as a safety net for stragglers.
  *
- * Strategy (per documentId):
- * - Load every history row (all versions), ascending.
- * - For each row: planRow() decodes Yjs → if nested, flatten → encode → round-trip
- *   decode → assert legacy nodes are gone (post_verify). Skip rows already flat.
- * - If ANY row fails, the entire document is skipped (no partial history).
- * - One interactive transaction per document: UPDATE each row by `id` + `version`
- *   (optimistic lock). No DELETE, no INSERT — version numbers and commit messages
- *   are preserved; only `data` bytes change.
- *
  * Data-loss posture (ProseMirror / Yjs):
  * - No row is written until that row’s new payload passes encode + decode + !isOldSchema.
  * - Refuse zero-length encoded output when input was non-empty.
- * - Failed documents: zero rows updated; re-run after fixing migration schema.
+ * - If ANY row fails, the whole document is skipped: zero rows updated, no partial history.
  *
  * Usage:
  *   bun run src/scripts/migrate-nested-to-flat.ts              # migrate all

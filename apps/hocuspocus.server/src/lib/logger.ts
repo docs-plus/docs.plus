@@ -2,22 +2,14 @@ import pino from 'pino'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 
-// Base level: from LOG_LEVEL, else debug in dev, info in prod
 const baseLevel = (process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info')).toLowerCase()
 
-// Validate per-logger level from env with fallback
 const validLevels = new Set(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
 const envLevel = (value: string | undefined, fallback: string) => {
   const lvl = (value || '').toLowerCase()
   return validLevels.has(lvl) ? (lvl as pino.LevelWithSilent) : (fallback as pino.LevelWithSilent)
 }
 
-/**
- * Production-ready logger using Pino
- * - JSON in production; pretty in development
- * - Error/request/response serializers
- * - Redaction for sensitive fields
- */
 export const logger = pino({
   level: baseLevel,
 
@@ -38,17 +30,14 @@ export const logger = pino({
     app: 'hocuspocus-server'
   },
 
-  // ISO timestamp
   timestamp: () => `,"time":"${new Date().toISOString()}"`,
 
-  // Serializers
   serializers: {
     err: pino.stdSerializers.err,
     req: pino.stdSerializers.req,
     res: pino.stdSerializers.res
   },
 
-  // Redact sensitive data
   redact: {
     paths: [
       'req.headers.authorization',
@@ -62,11 +51,7 @@ export const logger = pino({
   }
 })
 
-/**
- * Child loggers
- * Per-logger levels can be overridden via env. Defaults shown in envLevel(...) fallbacks.
- * Valid levels: fatal, error, warn, info, debug, trace, silent
- */
+/** Every child level is env-overridable; the envLevel(...) second arg is its default. */
 
 // Core Infrastructure
 export const httpLogger = logger.child(

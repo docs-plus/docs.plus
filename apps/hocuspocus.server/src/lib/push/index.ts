@@ -1,13 +1,6 @@
 /**
- * Push Notification Module
- *
- * ARCHITECTURE (pgmq Consumer):
- *   Supabase Trigger → pgmq queue → pgmqConsumer → BullMQ → Web Push API
- *
- * The pgmqConsumer polls the Supabase queue every 2 seconds.
- * BullMQ worker sends push notifications via Web Push API.
- *
- * @see docs/PUSH_NOTIFICATION_PGMQ.md
+ * Push notification pipeline:
+ * Supabase Trigger → pgmq queue → pgmqConsumer → BullMQ → Web Push API
  */
 
 // pgmq Consumer - polls Supabase queue

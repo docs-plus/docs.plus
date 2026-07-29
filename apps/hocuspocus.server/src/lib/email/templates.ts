@@ -1,9 +1,6 @@
 /**
- * Email Templates — Plain Text Builders
- *
- * HTML templates have moved to @docs.plus/email-templates (eta engine).
- * This file contains only the plain-text fallback builders which mirror
- * the HTML structure for email clients that don't render HTML.
+ * Plain-text fallbacks only; the matching HTML templates live in
+ * `@docs.plus/email-templates` (eta engine).
  */
 
 import { APP_URL, getEmailSubject } from '@docs.plus/email-templates'
@@ -12,10 +9,6 @@ import type { DigestDocument, NotificationType } from '../../types/email.types'
 
 // Re-export getEmailSubject so existing barrel (index.ts) stays stable
 export { getEmailSubject }
-
-// ============================================================================
-// SINGLE NOTIFICATION — PLAIN TEXT
-// ============================================================================
 
 export function buildNotificationEmailText(params: {
   recipientName: string
@@ -55,10 +48,6 @@ Unsubscribe: ${APP_URL}/unsubscribe
 `.trim()
 }
 
-// ============================================================================
-// NEW DOCUMENT — PLAIN TEXT
-// ============================================================================
-
 export function buildNewDocumentEmailText(params: {
   documentName: string
   documentUrl: string
@@ -87,10 +76,6 @@ View Document: ${documentUrl}
 This is an automated notification from docs.plus
 `.trim()
 }
-
-// ============================================================================
-// DIGEST — PLAIN TEXT
-// ============================================================================
 
 export function buildDigestEmailText(params: {
   recipientName: string

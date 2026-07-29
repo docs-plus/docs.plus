@@ -1,10 +1,6 @@
 /**
- * Notification Gateway Base
- *
- * Shared lifecycle for the email and push gateways: the initialize-once guard,
- * worker-mode tracking, "create worker only when enabled" rule, and shutdown
- * (close worker, then close queue). Subclasses inject provider setup + the
- * worker/queue factories and keep their own send methods.
+ * Shared lifecycle for the email and push gateways: initialize-once guard,
+ * worker-mode tracking, and shutdown that closes the worker before the queue.
  */
 
 import type { Logger } from 'pino'

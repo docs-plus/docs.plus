@@ -24,14 +24,12 @@ describe('Health Check API', () => {
   })
 
   beforeEach(() => {
-    // Reset mocks before each test
     mockPrisma = createMockPrisma()
     mockRedis = createMockRedis()
     // Default: no Supabase client → checkSupabaseHealth returns 'disabled' instantly.
     // Supabase is non-critical so overall health is still 'ok' when prisma/redis are healthy.
     mockSupabaseClient = null
 
-    // Create new app instance with fresh mocks
     app = new Hono()
     app.use('*', async (c, next) => {
       c.set('prisma', mockPrisma)
@@ -117,7 +115,6 @@ describe('Health Check API', () => {
     })
 
     test('should return disabled status when redis is null', async () => {
-      // Set redis to null
       app = new Hono()
       app.use('*', async (c, next) => {
         c.set('prisma', mockPrisma)

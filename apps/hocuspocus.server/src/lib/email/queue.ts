@@ -1,10 +1,3 @@
-/**
- * Email Queue
- *
- * BullMQ-based queue for reliable email delivery.
- * Handles retries, rate limiting, and dead letter queue.
- */
-
 import { Job, Queue, Worker } from 'bullmq'
 
 import { config } from '../../config/env'
@@ -21,7 +14,6 @@ import {
 } from '../redis'
 import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
-// Queue connection
 const redisClient = createRedisConnection(bullmqConnectionOptions)
 const queueConnection = toBullMQConnection(redisClient)
 
@@ -29,10 +21,6 @@ if (!queueConnection) {
   emailLogger.warn('Redis not configured - email queue will not be available')
 }
 
-/**
- * Email Queue
- * Handles all outgoing emails with retry logic
- */
 export const EmailQueue = queueConnection
   ? new Queue<EmailJobData>('email-notifications', {
       connection: queueConnection,
@@ -40,11 +28,11 @@ export const EmailQueue = queueConnection
         attempts: 3,
         backoff: {
           type: 'exponential',
-          delay: 5000 // Start with 5s delay
+          delay: 5000
         },
         removeOnComplete: {
           count: 500,
-          age: 24 * 3600 // 24 hours
+          age: 24 * 3600
         },
         // EmailDeadLetterQueue already holds the payload and the failure reason
         // from the final attempt, so an unbounded failed set is a second copy in
@@ -58,30 +46,23 @@ export const EmailQueue = queueConnection
     })
   : null
 
-/**
- * Dead Letter Queue for permanently failed emails
- */
 export const EmailDeadLetterQueue = queueConnection
   ? new Queue<EmailDLQData>('email-notifications-dlq', {
       connection: queueConnection,
       defaultJobOptions: {
         removeOnComplete: {
           count: 200,
-          age: 30 * 24 * 3600 // 30 days
+          age: 30 * 24 * 3600
         }
       }
     })
   : null
 
-// Queue error handler
 EmailQueue?.on('error', (err: Error) => {
   emailLogger.error({ err }, 'Email queue error')
   captureUnknown(err)
 })
 
-/**
- * Create email worker for processing jobs
- */
 export function createEmailWorker() {
   if (!queueConnection) {
     emailLogger.warn('Cannot create email worker - Redis not configured')
@@ -151,7 +132,6 @@ export function createEmailWorker() {
             })
         }
 
-        // Update Supabase email_queue status
         if (data.type === 'notification' && 'queue_id' in data.payload) {
           await updateSupabaseEmailStatus({
             queue_id: data.payload.queue_id,
@@ -190,7 +170,6 @@ export function createEmailWorker() {
           }
           await EmailDeadLetterQueue?.add('failed-email', dlqData)
 
-          // Update Supabase with permanent failure
           if (data.type === 'notification' && 'queue_id' in data.payload) {
             await updateSupabaseEmailStatus({
               queue_id: data.payload.queue_id,
@@ -211,14 +190,13 @@ export function createEmailWorker() {
         duration: config.email.gateway.rateLimitDuration
       },
       // Lock settings for job ownership (prevents duplicate processing across workers)
-      lockDuration: 60000, // 1 min - email sending typically fast
-      lockRenewTime: 15000, // 15s - renew lock
-      stalledInterval: 30000, // Check every 30s
+      lockDuration: 60000, // email sending is typically fast
+      lockRenewTime: 15000,
+      stalledInterval: 30000,
       maxStalledCount: 2 // 1 min total before marking stalled
     }
   )
 
-  // Worker event handlers
   worker.on('completed', (job) => {
     recordJobOutcome(worker.name, 'completed', job)
     emailLogger.debug({ jobId: job.id }, 'Email job completed')
@@ -242,14 +220,12 @@ export function createEmailWorker() {
 }
 
 /**
- * Add email job to queue. Pass a stable `jobId` (from a pgmq business id) so a
- * pgmq redelivery re-adds the same BullMQ job instead of a duplicate; the
- * worker's idempotencyKey (`email:${job.id}`) then keys on that same id.
+ * A stable `jobId` (a pgmq business id) makes a redelivery re-add the same job
+ * instead of a duplicate; the worker's `email:${job.id}` key follows it.
  */
 export async function queueEmail(data: EmailJobData, jobId?: string): Promise<string | null> {
   if (!EmailQueue) {
     emailLogger.warn('Email queue not available - sending synchronously')
-    // Fallback to synchronous sending
     const result = await sendEmailViaProvider(data)
     return result.success ? 'sync-send' : null
   }
@@ -264,9 +240,6 @@ export async function queueEmail(data: EmailJobData, jobId?: string): Promise<st
   return job.id || null
 }
 
-/**
- * Get queue health stats
- */
 export async function getEmailQueueHealth() {
   if (!EmailQueue) {
     return {
@@ -297,9 +270,6 @@ export async function getEmailQueueHealth() {
   }
 }
 
-/**
- * Close queue connections
- */
 export async function closeEmailQueue(): Promise<void> {
   if (EmailQueue) {
     await EmailQueue.close()

@@ -5,7 +5,6 @@ import mime from 'mime'
 import { captureUnknown } from '../instrument'
 import { storageS3Logger } from '../logger'
 
-// Bun's native S3 client - blazing fast with zero overhead
 const s3Client = new S3Client({
   accessKeyId: process.env.DO_STORAGE_ACCESS_KEY_ID || '',
   secretAccessKey: process.env.DO_STORAGE_SECRET_ACCESS_KEY || '',
@@ -20,11 +19,6 @@ const s3Prefix = (documentId: string): string => `${process.env.NODE_ENV}/${docu
 const generateS3Key = (documentId: string, fileName: string): string =>
   `${s3Prefix(documentId)}${fileName}`
 
-/**
- * - Direct S3 write without intermediate buffers
- * - Automatic content-type detection
- * - Built-in caching headers
- */
 export const upload = async (
   documentId: string,
   fileName: string,
@@ -39,7 +33,6 @@ export const upload = async (
   const contentDisposition = /svg\+xml|html/i.test(contentType) ? 'attachment' : undefined
 
   try {
-    // Bun's native write - accepts Buffer, Uint8Array, ArrayBuffer, or string
     await s3Client.write(key, fileContent, {
       type: contentType,
       acl: 'public-read',
@@ -62,22 +55,15 @@ export const upload = async (
   }
 }
 
-/**
- * Bun-native S3 download - blazing fast with S3File API
- * - Zero overhead with lazy file references
- * - Direct arrayBuffer() without stream conversion
- * - Automatic metadata handling
- */
 export const get = async (documentId: string, fileName: string, c: Context) => {
   const key = generateS3Key(documentId, fileName)
 
   try {
     const startTime = performance.now()
 
-    // Get lazy reference to S3 file (synchronous, no network call)
+    // Lazy reference: synchronous, no network call.
     const s3File = s3Client.file(key)
 
-    // Check if file exists (optional but good practice)
     const exists = await s3File.exists()
     if (!exists) {
       return c.json({ error: 'File not found' }, 404)
