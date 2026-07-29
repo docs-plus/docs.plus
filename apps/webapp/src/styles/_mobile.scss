@@ -63,6 +63,13 @@ html.m_mobile #__next {
       flex-shrink: 0;
       position: relative;
     }
+
+    // Height is inline, from resolveChatPaneHeight. min-height: 0 lets the feed
+    // inside it shrink rather than pushing the composer past the shell bottom.
+    > .chatPane {
+      flex-shrink: 0;
+      min-height: 0;
+    }
   }
 
   em-emoji-picker {

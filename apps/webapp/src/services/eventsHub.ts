@@ -1,4 +1,4 @@
-import { SheetType, useChatStore, useSheetStore } from '@stores'
+import { useChatStore } from '@stores'
 import { ensureEmojiData } from '@utils/ensureEmojiData'
 import { removeFilterSegment, resetFilterPath, shallowPathFromAsPath } from '@utils/filterRoute'
 import { NextRouter } from 'next/router'
@@ -22,8 +22,6 @@ type TOpenChatData = {
   fetchMsgsFromId?: string
   focusEditor?: boolean
   insertContent?: string | null
-  clearSheetState?: boolean
-  switchSheet?: SheetType
 }
 
 type TApplyFilterData = {
@@ -54,9 +52,7 @@ export const eventsHub = (router: NextRouter) => {
       toggleRoom = true,
       fetchMsgsFromId,
       focusEditor = false,
-      insertContent = null,
-      clearSheetState = false,
-      switchSheet = null
+      insertContent = null
     } = data
 
     if (!headingId) return
@@ -73,12 +69,6 @@ export const eventsHub = (router: NextRouter) => {
       focusEditor,
       insertContent
     })
-
-    if (switchSheet) {
-      useSheetStore.getState().switchSheet(switchSheet)
-    } else if (clearSheetState) {
-      useSheetStore.getState().clearSheetState()
-    }
   })
 
   PubSub.subscribe(CHAT_CLOSE, (msg, data: TCloseChatData) => {

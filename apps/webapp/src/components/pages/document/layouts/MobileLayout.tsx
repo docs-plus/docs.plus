@@ -1,5 +1,6 @@
 import BottomSheet from '@components/BottomSheet'
 import { ComposerLinkDialogHost } from '@components/chatroom/components/MessageComposer/components/ComposerLinkDialog'
+import ChatPane from '@components/pages/document/components/chat/ChatPane'
 import EditFAB from '@components/pages/document/components/EditFAB'
 import TocModal from '@components/pages/document/components/TocModal'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
@@ -9,7 +10,9 @@ import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
+import { destroyChatRoomForHistory } from '@services/openHeadingChatroom'
 import { useStore } from '@stores'
+import { useEffect } from 'react'
 
 import MobileEditor from '../components/MobileEditor'
 
@@ -30,6 +33,10 @@ const MobileLayout = () => {
   useVirtualKeyboard()
   useVisualViewportCssSyncOnFocus(Boolean(isMobile && !isHistoryView))
 
+  useEffect(() => {
+    if (isHistoryView) destroyChatRoomForHistory()
+  }, [isHistoryView])
+
   if (isHistoryView) return <MobileHistory />
 
   return (
@@ -47,11 +54,16 @@ const MobileLayout = () => {
         <div className="mobileToolbarBottom bg-base-100 z-20 w-full shrink-0">
           <ToolbarMobile />
         </div>
+        {/*
+          Last child on purpose: the pane reserves real height so the document can scroll
+          to its end above it, and DOM order keeps the pad toolbar from ever rendering
+          below the chat during the open transition.
+        */}
+        <ChatPane />
       </div>
       {/*
-        Keep sheet UI out of the mobileLayoutRoot flex column. react-modal-sheet's iOS
-        avoidKeyboard + the closed-sheet shell can still participate in flex layout and,
-        after many keyboard cycles, leave dead space above the real visual viewport bottom.
+        The remaining sheets stay portaled to the body. Only the chat needed to reserve
+        layout height, and react-modal-sheet positions by transform, which cannot.
       */}
       <BottomSheet />
       <ComposerLinkDialogHost />

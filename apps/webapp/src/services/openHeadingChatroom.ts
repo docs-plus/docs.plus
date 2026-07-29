@@ -1,5 +1,5 @@
 import { dismissComposerEmojiAndMentionOverlays } from '@components/chatroom/components/MessageComposer/helpers/dismissComposerOverlays'
-import { useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 import type { CommentAnchorV1, Profile } from '@types'
 import { retryWithBackoff } from '@utils/retryWithBackoff'
 import { scrollToHeading } from '@utils/scrollToHeading'
@@ -12,6 +12,15 @@ export function releasePadEditMode(): void {
   setWorkspaceEditorSetting('isEditable', false)
   editor.setEditable(false)
   editor.view.dom.blur()
+}
+
+/**
+ * The history route replaces the pad shell, so the pane cannot mount there. Without
+ * this the room would stay populated with no surface rendering it.
+ */
+export function destroyChatRoomForHistory(): void {
+  const { chatRoom, destroyChatRoom } = useChatStore.getState()
+  if (chatRoom.headingId) destroyChatRoom()
 }
 
 /** Sheet-open variant: only acts when the keyboard is up, avoiding a redundant blur. */
@@ -36,43 +45,30 @@ function anchorDraftForChatroom(): void {
 
 const FOCUS_RETRY = { maxAttempts: 6, initialDelayMs: 600, maxDelayMs: 1000 }
 
-function focusChatEditor(requireSheetForMobile: boolean): boolean {
+/**
+ * A closed pane unmounts its subtree, so a live `editorInstance` already means the
+ * composer is mounted. No separate surface-open check is needed.
+ */
+function focusChatEditor(): boolean {
   const { editorInstance } = useChatStore.getState().chatRoom
   if (!editorInstance) return false
-
-  if (requireSheetForMobile) {
-    const { isSheetOpen } = useSheetStore.getState()
-    const isMobile = useStore.getState().settings.deviceDetect?.isMobile
-    if (!isSheetOpen('chatroom') && isMobile) return false
-  }
 
   editorInstance.commands.focus()
   return true
 }
 
 export function focusChatComposerWithRetry(): void {
-  retryWithBackoff(() => focusChatEditor(true), FOCUS_RETRY)
-}
-
-export function focusChatEditorWithRetry(): void {
-  retryWithBackoff(() => focusChatEditor(false), FOCUS_RETRY)
+  retryWithBackoff(focusChatEditor, FOCUS_RETRY)
 }
 
 export function insertChatComposerContentWithRetry(insertContent: string): void {
   retryWithBackoff(
     () => {
       const { editorInstance } = useChatStore.getState().chatRoom
-      const { sheetState, isSheetOpen } = useSheetStore.getState()
+      if (!editorInstance) return false
 
-      if (sheetState === 'open' && editorInstance && isSheetOpen('chatroom')) {
-        editorInstance.chain().focus().insertContent(insertContent).run()
-        return true
-      }
-      if (isSheetOpen('chatroom') && editorInstance) {
-        useSheetStore.getState().setSheetState('open')
-        return false
-      }
-      return false
+      editorInstance.chain().focus().insertContent(insertContent).run()
+      return true
     },
     {
       ...FOCUS_RETRY,
@@ -88,24 +84,26 @@ type ScheduleOpenHeadingChatroomParams = {
   workspaceId: string | undefined
   user: Profile | null
   fetchMsgsFromId?: string
-  onSheetOpen?: () => void
+  onPaneOpen?: () => void
 }
 
-function scheduleOpenHeadingChatroomSheet({
+function scheduleOpenHeadingChatroomPane({
   headingId,
   workspaceId,
   user,
   fetchMsgsFromId,
-  onSheetOpen
+  onPaneOpen
 }: ScheduleOpenHeadingChatroomParams): void {
   setTimeout(() => {
     if (workspaceId) {
       const chat = useChatStore.getState()
       chat.setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
       chat.openChatRoom()
-      useSheetStore.getState().openSheet('chatroom', { headingId })
+      // Only seed the mode on a fresh open; switching headings must not yank a
+      // reader who is deliberately holding `half`.
+      if (chat.chatRoom.paneMode === 'closed') chat.setPaneMode('expanded')
     }
-    onSheetOpen?.()
+    onPaneOpen?.()
   }, 200)
 }
 
@@ -157,18 +155,18 @@ export function openHeadingChatroom({
       return
     }
 
-    scheduleOpenHeadingChatroomSheet({ ...sheetBase, onSheetOpen: focusChatComposerWithRetry })
+    scheduleOpenHeadingChatroomPane({ ...sheetBase, onPaneOpen: focusChatComposerWithRetry })
     return
   }
 
-  scheduleOpenHeadingChatroomSheet({
+  scheduleOpenHeadingChatroomPane({
     ...sheetBase,
     fetchMsgsFromId,
-    onSheetOpen: scroll2Heading ? () => scrollToHeading(headingId) : undefined
+    onPaneOpen: scroll2Heading ? () => scrollToHeading(headingId) : undefined
   })
   exitDocEditModeForSheet()
   if (insertContent) insertChatComposerContentWithRetry(insertContent)
-  if (focusEditor) focusChatEditorWithRetry()
+  if (focusEditor) focusChatComposerWithRetry()
 }
 
 export function openCommentComposer(anchor: CommentAnchorV1): void {

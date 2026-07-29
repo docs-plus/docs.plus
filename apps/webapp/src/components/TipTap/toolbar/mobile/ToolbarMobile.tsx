@@ -1,7 +1,8 @@
+import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
 import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
 import { Icons } from '@icons'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
-import { useSheetStore, useStore } from '@stores'
+import { useChatStore, useSheetStore, useStore } from '@stores'
 import React, { useEffect, useRef, useState } from 'react'
 
 import { dismissSoftKeyboard } from '../../hyperlinkPopovers/previewHyperlink'
@@ -24,6 +25,8 @@ const ToolbarMobile = () => {
 
   const { createComment } = useTurnSelectedTextIntoComment()
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
+  // Without this the toolbar renders pad controls under the chat and steals height.
+  const padOwnsKeyboard = useChatStore(selectPadOwnsKeyboard)
 
   // Keep format-button is-active / aria-pressed live: the pad editor doesn't re-render this tree
   // on selection change, so without this the highlights go stale as the caret moves.
@@ -40,7 +43,7 @@ const ToolbarMobile = () => {
     }
   }, [isEditable])
 
-  if (!editor || !isKeyboardOpen) return null
+  if (!editor || !isKeyboardOpen || !padOwnsKeyboard) return null
 
   const toggleFormatSelection = (event: React.TouchEvent | React.MouseEvent) => {
     event.stopPropagation()

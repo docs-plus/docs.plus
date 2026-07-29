@@ -1,2 +1,2 @@
+export * from './ChatroomPaneLayout'
 export * from './ChatroomPanelLayout'
-export * from './ChatroomSheetLayout'

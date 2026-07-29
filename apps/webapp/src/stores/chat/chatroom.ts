@@ -1,5 +1,5 @@
 import { sendPresenceBroadcast } from '@services/workspacePresenceSync'
-import type { Profile } from '@types'
+import type { ChatPaneMode, Profile } from '@types'
 import { immer } from 'zustand/middleware/immer'
 
 import { useAuthStore } from '../authStore'
@@ -10,6 +10,8 @@ type TChatRoom = {
   headingId?: string
   documentId?: string
   open: boolean
+  /** Read only on mobile. Desktop sizes its docked panel from `panelHeight`. */
+  paneMode: ChatPaneMode
   panelHeight: number
   replyMessageMemory?: any
   editMessageMemory?: any
@@ -29,8 +31,8 @@ interface IChatroomStore {
   ) => void
   updateChatRoom: (key: keyof TChatRoom, value: any) => void
   openChatRoom: () => void
-  closeChatRoom: () => void
   destroyChatRoom: () => void
+  setPaneMode: (mode: ChatPaneMode) => void
   setOrUpdateChatPanelHeight: (height: number) => void
   setOrUpdateChatRoom: (key: keyof TChatRoom, value: any) => void
   switchChatRoom: (channelId: string) => void
@@ -42,6 +44,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     documentId: undefined,
     headingPath: [],
     open: false,
+    paneMode: 'closed',
     panelHeight: 410,
     replyMessageMemory: undefined,
     editMessageMemory: undefined,
@@ -90,9 +93,9 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     })
   },
 
-  closeChatRoom: () => {
+  setPaneMode: (mode) => {
     set((state) => {
-      state.chatRoom.open = false
+      state.chatRoom.paneMode = mode
     })
   },
 
@@ -118,6 +121,9 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         documentId: undefined,
         headingPath: [],
         open: false,
+        // Unlike panelHeight, the mode does not survive: closing unmounts the
+        // chat subtree, so there is no geometry left to remember.
+        paneMode: 'closed',
         panelHeight: state.chatRoom.panelHeight,
         editorInstance: undefined,
         editorRef: undefined

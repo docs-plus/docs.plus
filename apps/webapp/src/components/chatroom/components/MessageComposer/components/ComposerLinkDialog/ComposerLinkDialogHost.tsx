@@ -1,4 +1,4 @@
-import { useChatStore, useSheetStore } from '@stores'
+import { useChatStore } from '@stores'
 import { AnimatePresence } from 'motion/react'
 import { useEffect } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -25,7 +25,7 @@ export function ComposerLinkDialogHost() {
       }))
     )
   const headingId = useChatStore((s) => s.chatRoom.headingId)
-  const isChatroomOpen = useSheetStore((s) => s.activeSheet === 'chatroom')
+  const isChatroomOpen = useChatStore((s) => s.chatRoom.paneMode !== 'closed')
 
   useEffect(() => {
     const onPopState = () => handleComposerLinkDialogPopState()

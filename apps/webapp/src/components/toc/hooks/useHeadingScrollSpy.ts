@@ -1,5 +1,6 @@
 import { useFocusedHeadingStore, useStore } from '@stores'
 import type { Transaction } from '@tiptap/pm/state'
+import { clampToContainerFraction } from '@utils/clampToContainerFraction'
 import debounce from 'lodash/debounce'
 import throttle from 'lodash/throttle'
 import { RefObject, useCallback, useEffect, useMemo, useRef } from 'react'
@@ -67,7 +68,12 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
     const entries = getVisibleHeadingEntries(container, visibleHeadingsRef.current)
     if (entries.length === 0) return
 
-    const containerTop = container.getBoundingClientRect().top
+    const containerRect = container.getBoundingClientRect()
+    const containerTop = containerRect.top
+    const anchor = clampToContainerFraction(SPY_ANCHOR_PX, containerRect.height)
+    const hysteresisTop = clampToContainerFraction(SPY_HYSTERESIS_TOP, containerRect.height)
+    const hysteresisBottom = clampToContainerFraction(SPY_HYSTERESIS_BOTTOM, containerRect.height)
+    const pastMax = clampToContainerFraction(SPY_PAST_MAX, containerRect.height)
     const currentId = useFocusedHeadingStore.getState().focusedHeadingId
 
     const headings = entries
@@ -78,21 +84,17 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
       .sort((a, b) => a.offset - b.offset)
 
     const current = headings.find((h) => h.id === currentId)
-    if (
-      current &&
-      current.offset >= SPY_HYSTERESIS_TOP &&
-      current.offset <= SPY_HYSTERESIS_BOTTOM
-    ) {
+    if (current && current.offset >= hysteresisTop && current.offset <= hysteresisBottom) {
       return
     }
 
     let best: (typeof headings)[number] | undefined
     for (const h of headings) {
-      if (h.offset <= SPY_ANCHOR_PX && h.offset >= SPY_PAST_MAX) best = h
+      if (h.offset <= anchor && h.offset >= pastMax) best = h
     }
     if (!best) {
       best = headings.reduce((a, b) =>
-        Math.abs(a.offset - SPY_ANCHOR_PX) < Math.abs(b.offset - SPY_ANCHOR_PX) ? a : b
+        Math.abs(a.offset - anchor) < Math.abs(b.offset - anchor) ? a : b
       )
     }
 

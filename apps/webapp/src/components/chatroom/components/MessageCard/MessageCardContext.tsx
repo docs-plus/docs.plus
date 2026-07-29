@@ -97,7 +97,10 @@ export const MessageCardProvider: React.FC<{
           // color bg overlay (theme-agnostic) — together they're at the
           // Slack/Linear-equivalent contrast level rather than the previous
           // ~2% which users couldn't perceive as a state change.
-          'message-card group/msgcard chat msg_card rounded-field relative',
+          // `shrink-0` is load-bearing: the feed is a scrolling flex column, so the
+          // browser shrinks children to fit instead of overflowing, which flattens
+          // media tiles to a fraction of their height.
+          'message-card group/msgcard chat msg_card rounded-field relative shrink-0',
           'before:rounded-l-field before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:bg-transparent before:transition-colors',
           'transition-colors duration-150',
           // Desktop: every card — text or media — is a full-width, uniformly

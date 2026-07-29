@@ -2,7 +2,7 @@ import { EmojiPanel } from '@components/chatroom/components/EmojiPanel'
 import { useChatStore } from '@stores'
 import { PANEL_TWEEN } from '@utils/motion'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
-import { useCallback, useEffect, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useComposerEmojiPanelStore } from '../../stores/composerEmojiPanelStore'
 
@@ -13,41 +13,45 @@ const HANDLE_HEIGHT_PX = 20
 const DRAG_THRESHOLD_SNAP_PX = 30
 const DRAG_THRESHOLD_CLOSE_PX = 80
 
-// rAF-throttled and gated by `enabled` because iOS Safari fires `resize`
-// heavily during keyboard show/hide and address-bar collapse while the
-// panel is always-mounted but usually closed.
-function useExpandedHeight(enabled: boolean) {
-  const compute = () =>
-    typeof window === 'undefined'
-      ? EXPANDED_MAX_PX
-      : Math.min(window.innerHeight * EXPANDED_RATIO, EXPANDED_MAX_PX)
-  const [h, setH] = useState(compute)
+/**
+ * Measures the column the panel lives in, not the window. On mobile that column is
+ * the chat pane, which is a fraction of the shell — sizing against `innerHeight`
+ * overshoots it and leaves the pane's header and composer no room on small phones.
+ * Observes only while open, since iOS fires resize heavily during keyboard cycles.
+ */
+function useHostHeight(enabled: boolean, ref: RefObject<HTMLElement | null>) {
+  const [height, setHeight] = useState(0)
+
   useEffect(() => {
-    if (!enabled) return
-    let raf = 0
-    const onResize = () => {
-      if (raf) return
-      raf = requestAnimationFrame(() => {
-        raf = 0
-        setH(compute())
-      })
-    }
-    window.addEventListener('resize', onResize)
-    return () => {
-      if (raf) cancelAnimationFrame(raf)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [enabled])
-  return h
+    const host = ref.current?.parentElement
+    if (!enabled || !host) return
+
+    const observer = new ResizeObserver(([entry]) => {
+      setHeight(Math.round(entry.contentRect.height))
+    })
+    observer.observe(host)
+
+    return () => observer.disconnect()
+  }, [enabled, ref])
+
+  return height
 }
 
 export const ComposerEmojiPanel = () => {
   const isOpen = useComposerEmojiPanelStore((s) => s.isOpen)
   const mode = useComposerEmojiPanelStore((s) => s.mode)
   const peekHeightPx = useComposerEmojiPanelStore((s) => s.peekHeightPx)
-  const expandedHeight = useExpandedHeight(isOpen)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const hostHeight = useHostHeight(isOpen, panelRef)
 
-  const targetHeight = mode === 'expanded' ? expandedHeight : peekHeightPx
+  // Before the first measurement the host height is 0; fall back to the cap so the
+  // panel never opens at zero and then jumps.
+  const expandedHeight = hostHeight
+    ? Math.min(Math.round(hostHeight * EXPANDED_RATIO), EXPANDED_MAX_PX)
+    : EXPANDED_MAX_PX
+  // Peek is a snapshot of the keyboard's height, which can exceed the pane it now
+  // lives in, so it is capped by the same ceiling.
+  const targetHeight = Math.min(mode === 'expanded' ? expandedHeight : peekHeightPx, expandedHeight)
 
   const handlePanEnd = (_: PointerEvent, info: PanInfo) => {
     const dy = info.offset.y
@@ -84,6 +88,7 @@ export const ComposerEmojiPanel = () => {
     <AnimatePresence initial={false}>
       {isOpen && (
         <motion.div
+          ref={panelRef}
           key="composer-emoji-panel"
           role="dialog"
           aria-label="Emoji picker"

@@ -24,6 +24,14 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **FeedAlbumLayout** — feed mosaic for image/video tiles: `computeVisualMediaLayout` → `single | mosaic` absolute rects (`chatMediaVisualLayout.ts` orchestrates `feedAlbumProportionLayout` for 2–4 and `feedAlbumRowPacker` for ≥5 / panorama); geometry + cap policy in `feedAlbumLayout.ts` (`resolveFeedLayoutOptions`). Attach cap stays `CHAT_MEDIA_MAX_ATTACHMENTS` (10) at compose time — no feed `+N`. Distinct from Gallery playlist order. Domain names only (no vendor product names in symbols/filenames).
 - **FeedColumnWidth** — definite column contract so absolute cover tiles do not shrink-wrap: media card `FEED_COLUMN_MEDIA_CARD_CLASS`, bubble fill `FEED_COLUMN_BUBBLE_FILL_CLASS`, measure via `resolveFeedColumnElement` / `clampFeedColumnWidth` (bubble ≥160px else `.message-feed`).
 
+## Mobile pad split
+
+- **Chat pane** — the mobile chat surface as a layout participant in the pad shell, sized to its visible height so its composer stays reachable. Distinct from the desktop docked chat panel and from the retired mobile chat sheet; do not call it either.
+- **Pane mode** — one of the chat pane's positions: closed, half, or expanded. Named after the sibling precedent `ComposerEmojiPanelMode`. Not "full", which would imply the pane can cover the document, and not "snap" or "detent", which belong to `react-modal-sheet` and UIKit.
+- **Split ratio** — the fraction of the pad shell the chat pane occupies in half mode. Always a fraction, never a pixel height, so a keyboard that shrinks the shell preserves the split instead of breaking it.
+- **Document floor** — the height the document keeps in every pane mode, so its last section is always reachable. The chat pane can never cover it, which is why no mode collapses the document to zero.
+- **Pane floor** — the chat pane's minimum height, the sum of its non-shrinkable furniture: grabber, header, feed padding, composer. Measure it; an estimate that omits the feed's own padding pushes the composer off-screen.
+
 ## Presence awareness
 
 - **usersPresence** — Map of online Profiles keyed by user id (`useStore.usersPresence`); TOC heading stacks filter by `channelId`.
