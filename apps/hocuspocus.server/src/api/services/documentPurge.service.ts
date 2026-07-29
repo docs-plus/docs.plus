@@ -64,14 +64,18 @@ export async function purgeDocumentFootprint(
       })
       if (count === 0) return 0
 
-      // Prove the key instead of trusting the caller's slug. `updateDocument` and the
-      // store worker can both persist an un-normalized slug, and bumping under one
-      // leaves the real slug at INITIAL_EPOCH — the next visitor re-derives the erased
-      // id. Detects only: the base slug stays unbumped, so this warns, it does not repair.
+      // One key for the read, the derivation and the bump. `updateDocument` and the
+      // store worker can both persist an un-normalized slug, and `resolveDraftDocumentId`
+      // reads the epoch normalized — keying the bump off the raw slug lands it where
+      // nothing reads it, and the next visitor re-derives the erased id.
+      const key = normalizeSlug(slug)
       const current =
-        (await tx.documentSlugEpoch.findUnique({ where: { slug }, select: { epoch: true } }))
+        (await tx.documentSlugEpoch.findUnique({ where: { slug: key }, select: { epoch: true } }))
           ?.epoch ?? INITIAL_EPOCH
-      if (deriveDocumentId(normalizeSlug(slug), current) !== documentId) {
+
+      // Detects only: a non-derived id means the base slug stays unbumped, so this
+      // warns, it does not repair.
+      if (deriveDocumentId(key, current) !== documentId) {
         purgeLogger.warn(
           { documentId, slug },
           'Purged document id is not derived from its slug; epoch not bumped'
@@ -80,8 +84,8 @@ export async function purgeDocumentFootprint(
       }
 
       await tx.documentSlugEpoch.upsert({
-        where: { slug },
-        create: { slug, epoch: current + 1 },
+        where: { slug: key },
+        create: { slug: key, epoch: current + 1 },
         update: { epoch: { increment: 1 } }
       })
       return count
