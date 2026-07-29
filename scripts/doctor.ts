@@ -1,23 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Doctor: Health check script for docs.plus development environment
- *
- * Verifies all prerequisites and configurations are correctly set up.
- * Run with: bun scripts/doctor.ts
- *
- * Exit codes:
- *   0 - All checks passed
- *   1 - One or more checks failed
+ * Health check for the docs.plus development environment.
+ * Run: bun scripts/doctor.ts — exits 1 when any check fails, 0 otherwise.
  */
 
 import { $ } from 'bun'
 import { existsSync, readFileSync } from 'fs'
 import { createConnection } from 'net'
 import { dirname, resolve } from 'path'
-
-// =============================================================================
-// Configuration
-// =============================================================================
 
 const ROOT_DIR = resolve(import.meta.dir, '..')
 
@@ -49,20 +39,12 @@ const REQUIRED_TOOLS = [
   { name: 'docker-compose', command: ['docker', 'compose', 'version'], extract: /v?([\d.]+)/ }
 ]
 
-// =============================================================================
-// Types
-// =============================================================================
-
 interface CheckResult {
   name: string
   status: 'pass' | 'fail' | 'warn' | 'skip'
   message: string
   details?: string
 }
-
-// =============================================================================
-// Utilities
-// =============================================================================
 
 function compareVersions(current: string, required: string): number {
   const currentParts = current.split('.').map(Number)
@@ -133,10 +115,6 @@ function printResult(result: CheckResult) {
     console.log(`   ${result.details}`)
   }
 }
-
-// =============================================================================
-// Checks
-// =============================================================================
 
 async function checkBunVersion(): Promise<CheckResult> {
   const version = Bun.version
@@ -441,7 +419,6 @@ async function checkSupabaseRunning(): Promise<CheckResult> {
 async function checkInfrastructure(): Promise<CheckResult[]> {
   const results: CheckResult[] = []
 
-  // Check PostgreSQL
   const pgRunning = await checkPort(5432)
   results.push({
     name: 'PostgreSQL',
@@ -450,7 +427,6 @@ async function checkInfrastructure(): Promise<CheckResult[]> {
     details: pgRunning ? undefined : 'Start with: make infra-up'
   })
 
-  // Check Redis
   const redisRunning = await checkPort(6379)
   results.push({
     name: 'Redis',
@@ -462,10 +438,6 @@ async function checkInfrastructure(): Promise<CheckResult[]> {
   return results
 }
 
-// =============================================================================
-// Main
-// =============================================================================
-
 async function main() {
   console.log('\n🩺 docs.plus Doctor\n')
   console.log('Checking your development environment...\n')
@@ -474,7 +446,6 @@ async function main() {
   const allResults: CheckResult[] = []
   let hasFailures = false
 
-  // Runtime checks
   console.log('📦 Runtime & Tools\n')
   allResults.push(await checkBunVersion())
   allResults.push(await checkNodeVersion())
@@ -487,7 +458,6 @@ async function main() {
     if (result.status === 'fail') hasFailures = true
   }
 
-  // Environment checks
   console.log('\n📁 Environment & Configuration\n')
   const envResults: CheckResult[] = []
   envResults.push(...(await checkEnvFiles()))
@@ -501,7 +471,6 @@ async function main() {
   }
   allResults.push(...envResults)
 
-  // Infrastructure checks
   console.log('\n🐳 Infrastructure Services\n')
   const infraResults: CheckResult[] = []
   infraResults.push(...(await checkInfrastructure()))
@@ -514,7 +483,6 @@ async function main() {
   }
   allResults.push(...infraResults)
 
-  // Summary
   console.log('\n' + '─'.repeat(60))
 
   const passed = allResults.filter((r) => r.status === 'pass').length

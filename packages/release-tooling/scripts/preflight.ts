@@ -1,27 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Shared `prepublishOnly` guard for docs.plus publishable libraries.
- *
- * peerDependencies use the `catalog:` protocol — a Bun / pnpm workspace
- * feature. Only `bun publish` (and `pnpm publish`) resolve `catalog:` to
- * a concrete semver range at pack time. `npm publish` would ship the
- * literal string and break every consumer install with
- * `Invalid Version: catalog:`.
- *
- * Asserts:
- *   1. publisher user-agent is `bun/*`
- *   2. every relative `dist/...` path referenced by the consuming
- *      package's `exports` map exists on disk
- *   3. no literal `catalog:` string survived into the JS bundles
- *      (defense in depth — would mean a peer-dep slipped past Bun's
- *      resolver)
- *
- * Fully data-driven: package name and dist artifact list come from the
- * consuming package's own `package.json` (`process.cwd()`/package.json).
- * No per-consumer parameterization needed.
- *
- * Consumed via:
- *   "prepublishOnly": "release-preflight"
+ * Shared `prepublishOnly` guard ("prepublishOnly": "release-preflight"), driven by
+ * the consuming package's own package.json. peerDependencies use the `catalog:`
+ * protocol, which only `bun publish` resolves at pack time — `npm publish` ships
+ * the literal string and breaks every install with `Invalid Version: catalog:`.
  */
 
 import { existsSync, readFileSync } from 'node:fs'

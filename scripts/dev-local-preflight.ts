@@ -287,7 +287,7 @@ async function main() {
   await ensureEnv()
   await ensureInstall()
   await ensureInfra()
-  // Serial mutates: clear logs, no partial exit mid-sibling (staff review).
+  // Serial mutates: clear logs, no partial exit mid-sibling.
   await ensureSupabase()
   await ensurePrisma()
   await ensureExtensionDists()

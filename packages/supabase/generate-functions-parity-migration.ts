@@ -1,13 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Build a single Supabase migration that replays function/trigger/RPC SQL from
- * packages/supabase/scripts (source of truth for local db reset).
- *
- * Excludes table DDL (01–08), RLS (13), lint hardening revokes (29), buckets,
- * cron, demo seeds, and document-views partitions — prod already has schema.
- *
- * Run: bun run generate:functions-parity-migration
- * Then: bunx supabase db push (toggle [db.migrations] enabled = true in config.toml)
+ * Replays function/trigger/RPC SQL from packages/supabase/scripts (source of truth
+ * for local db reset) into one migration. Excludes table DDL (01–08), RLS (13), lint
+ * revokes (29), buckets, cron, demo seeds, and document-views partitions — prod
+ * already has the schema. Push needs [db.migrations] enabled = true in config.toml.
  */
 
 import { mkdir, readFile, writeFile } from 'fs/promises'

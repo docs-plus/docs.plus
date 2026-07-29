@@ -1,16 +1,7 @@
 /**
- * Email Template Engine
- *
- * Built on top of eta (https://eta.js.org) — a 2KB, zero-dep template engine
- * that compiles templates to native JS functions. After first compile, renders
- * are just function calls → blazing fast on Bun.
- *
- * Architecture:
- *  1. Templates are .eta files in /templates/
- *  2. On first render, eta compiles the template to a cached JS function
- *  3. Subsequent renders skip parsing entirely — just function invocation
- *  4. Helper functions (avatar, button, etc.) are injected via `it.h`
- *  5. Layout composition: body is rendered first, then wrapped by base.eta
+ * eta (https://eta.js.org) compiles each `.eta` file in /templates/ to a cached JS
+ * function on first render. Helpers reach templates as `it.h`; every body template
+ * renders first and is then wrapped by base.eta.
  */
 
 import { Eta } from 'eta'
@@ -20,23 +11,15 @@ import { fileURLToPath } from 'url'
 import { templateHelpers, type UnsubscribeLinks } from './helpers'
 import { APP_NAME, APP_URL, COLORS, RADIUS } from './tokens'
 
-// ---------------------------------------------------------------------------
-// Engine singleton
-// ---------------------------------------------------------------------------
-
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = join(__dirname, '..', 'templates')
 
 const eta = new Eta({
   views: TEMPLATES_DIR,
-  cache: true, // compile once, cache the compiled function
+  cache: true,
   autoEscape: true, // <%=  %> auto-escapes HTML; use <%~ %> for pre-rendered HTML
   autoTrim: false // preserve whitespace (important for email HTML)
 })
-
-// ---------------------------------------------------------------------------
-// Shared data builder — every template gets helpers + tokens
-// ---------------------------------------------------------------------------
 
 function baseData(extra: Record<string, unknown> = {}) {
   return {
@@ -45,10 +28,6 @@ function baseData(extra: Record<string, unknown> = {}) {
     ...extra
   }
 }
-
-// ---------------------------------------------------------------------------
-// Layout wrapper — renders body, then wraps with base.eta
-// ---------------------------------------------------------------------------
 
 function renderWithLayout(
   templateName: string,
@@ -59,13 +38,6 @@ function renderWithLayout(
   return eta.render('base', baseData({ body: bodyHtml, footerHtml }))
 }
 
-// ============================================================================
-// PUBLIC RENDER API
-// ============================================================================
-
-/**
- * Render a single notification email.
- */
 export function renderNotificationEmail(params: {
   recipientName: string
   senderName: string
@@ -85,9 +57,6 @@ export function renderNotificationEmail(params: {
   return renderWithLayout('notification', { ...rest, notificationType, subject }, footerHtml)
 }
 
-/**
- * Render a digest email (daily/weekly).
- */
 export function renderDigestEmail(params: {
   recipientName: string
   frequency: 'daily' | 'weekly'
@@ -121,7 +90,6 @@ export function renderDigestEmail(params: {
     0
   )
 
-  // For digest, prefer digest-specific unsubscribe link
   const digestLinks: UnsubscribeLinks = {
     ...unsubscribeLinks,
     unsubscribe_all: unsubscribeLinks?.unsubscribe_digest || unsubscribeLinks?.unsubscribe_all
@@ -142,9 +110,6 @@ export function renderDigestEmail(params: {
   )
 }
 
-/**
- * Render a new-document notification email.
- */
 export function renderNewDocumentEmail(params: {
   documentName: string
   documentUrl: string
@@ -161,10 +126,7 @@ export function renderNewDocumentEmail(params: {
   return renderWithLayout('new-document', params, footerHtml)
 }
 
-/**
- * Render the unsubscribe confirmation/error page.
- * This is a standalone HTML page (not an email), so no base layout.
- */
+/** A standalone HTML page, not an email — so no base layout. */
 export function renderUnsubscribePage(params: {
   success: boolean
   title: string
@@ -196,10 +158,6 @@ export function renderUnsubscribePage(params: {
   })
 }
 
-// ============================================================================
-// EMAIL SUBJECT BUILDER (non-template utility, re-exported for consumers)
-// ============================================================================
-
 export function getEmailSubject(type: string, senderName: string): string {
   const name = senderName || 'Someone'
 
@@ -221,10 +179,7 @@ export function getEmailSubject(type: string, senderName: string): string {
   }
 }
 
-// ============================================================================
-// LIST-UNSUBSCRIBE HEADERS (RFC 8058)
-// ============================================================================
-
+/** One-click List-Unsubscribe headers per RFC 8058. */
 export function buildListUnsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
   return {
     'List-Unsubscribe': `<${unsubscribeUrl}>`,

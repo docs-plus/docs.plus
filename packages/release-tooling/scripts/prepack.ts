@@ -1,22 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Shared `prepack` lifecycle hook for docs.plus publishable libraries.
- *
- * Syncs the canonical root `LICENSE` into the consuming package directory
- * so it is included in the published tarball. The per-package `LICENSE`
- * is `.gitignore`d so the source tree has a single committed copy at the
- * monorepo root, while every published npm tarball still ships its own
- * `LICENSE` (npm convention; consumed by SPDX scanners and license audit
- * tools at `node_modules/<pkg>/LICENSE`).
- *
- * Symlinks (bun pack drops them) and hard links (git stores them as two
- * independent files that drift) both fail; copy is the only correct
- * mechanism.
- *
- * Consumed by every publishable library via:
- *   "prepack": "release-prepack"
- * Never copy this script into a package's local `scripts/` directory —
- * the rule is enforced in AGENTS.md "Shared Library Config".
+ * Shared `prepack` hook ("prepack": "release-prepack") — never fork it into a
+ * package's local `scripts/` (AGENTS.md "Shared Library Config"). Copies the root
+ * `LICENSE` in (the per-package copy is `.gitignore`d) so the tarball ships one;
+ * symlinks (bun pack drops them) and hard links (they drift) both fail.
  */
 
 import { copyFileSync, existsSync } from 'node:fs'

@@ -1,17 +1,9 @@
 #!/usr/bin/env bun
 /**
- * release-family.ts — coordinate a lockstep release of all publishable
- * `@docs.plus/extension-*` packages.
- *
- * See RELEASE_POLICY.md for the doctrine, phase rules, and the contract this
- * script implements. The script is the Phase 2 release path; running it
- * during Phase 1 cutover will fail the lockstep preflight (correctly), and
- * --dry-run mode can be used to verify that today.
- *
- * Usage:
- *   bun run release:family [--dry-run] [--allow-noop]
- *   bun run release:family --generate-noop-changelogs
- *   bun run release:family --help
+ * Coordinates a lockstep release of all publishable `@docs.plus/extension-*`
+ * packages; RELEASE_POLICY.md owns the doctrine, phase rules, and contract.
+ * This is the Phase 2 release path — during Phase 1 cutover it correctly fails
+ * the lockstep preflight, which `--dry-run` can verify today. Flags: `--help`.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -60,10 +52,6 @@ Options:
 See RELEASE_POLICY.md for doctrine, phase rules, and the full contract.
 `
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
-
 function parseArgs(): CliArgs {
   const args = process.argv.slice(2)
   if (args.includes('--help') || args.includes('-h')) {
@@ -75,10 +63,6 @@ function parseArgs(): CliArgs {
   const generateNoopChangelogs = args.includes('--generate-noop-changelogs')
   return { dryRun, allowNoop, generateNoopChangelogs }
 }
-
-// ---------------------------------------------------------------------------
-// Output helpers
-// ---------------------------------------------------------------------------
 
 function section(title: string) {
   process.stdout.write(`\n${title}\n${'─'.repeat(Math.min(title.length, 60))}\n`)
@@ -97,19 +81,14 @@ function die(msg: string): never {
   process.exit(1)
 }
 
-// ---------------------------------------------------------------------------
-// Process helpers
-//
-// Use spawnSync (no shell) for all commands. This keeps secrets like the
-// npm OTP off the shell command line and out of `ps aux` argv visibility.
-// ---------------------------------------------------------------------------
-
 interface RunResult {
   status: number
   stdout: string
   stderr: string
 }
 
+// spawnSync with no shell: keeps secrets like the npm OTP off the shell command
+// line and out of `ps aux` argv visibility.
 function run(
   cmd: string,
   args: string[],
@@ -148,10 +127,6 @@ function prompt(question: string): Promise<string> {
     })
   })
 }
-
-// ---------------------------------------------------------------------------
-// Package discovery
-// ---------------------------------------------------------------------------
 
 function loadPackage(shortName: PublishableExtensionDir): PackageInfo {
   const packagePath = ['extensions', 'packages', 'apps']
@@ -192,10 +167,6 @@ function npmAllVersions(fullName: string): string[] {
     return []
   }
 }
-
-// ---------------------------------------------------------------------------
-// Preflight checks (see RELEASE_POLICY.md "Preflight")
-// ---------------------------------------------------------------------------
 
 function checkLockstep(packages: PackageInfo[]): PreflightResult {
   const versions = new Set(packages.map((p) => p.version))
@@ -408,10 +379,7 @@ function checkNoopIntentionality(
   }
 }
 
-// ---------------------------------------------------------------------------
-// No-op CHANGELOG generation (see RELEASE_POLICY.md Decision 3)
-// ---------------------------------------------------------------------------
-
+// No-op CHANGELOG generation — see RELEASE_POLICY.md Decision 3.
 function generateNoopChangelogEntries(packages: PackageInfo[], targetVersion: string): void {
   section('Generating no-op CHANGELOG entries')
   const today = new Date().toISOString().slice(0, 10)
@@ -449,10 +417,6 @@ function generateNoopChangelogEntries(packages: PackageInfo[], targetVersion: st
   }
   info('Review the generated entries, commit them, then re-run release:family.')
 }
-
-// ---------------------------------------------------------------------------
-// Publish loop and post-publish batch
-// ---------------------------------------------------------------------------
 
 interface PublishOutcome {
   published: PackageInfo[]
@@ -581,10 +545,6 @@ function createGithubReleases(packages: PackageInfo[], targetVersion: string, dr
     }
   }
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 async function main() {
   const args = parseArgs()

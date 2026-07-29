@@ -1,6 +1,4 @@
 /**
- * Email Template Engine — Tests
- *
  * Snapshot tests for each template + security / correctness assertions.
  * Run: cd packages/email-templates && bun test
  */
@@ -15,10 +13,6 @@ import {
   renderNotificationEmail,
   renderUnsubscribePage
 } from '../../index'
-
-// ============================================================================
-// Fixtures
-// ============================================================================
 
 const NOTIFICATION_PARAMS = {
   recipientName: 'Jane Smith',
@@ -76,10 +70,6 @@ const NEW_DOC_PARAMS = {
   slug: 'product-roadmap-q1',
   documentId: 'doc-abc-123'
 }
-
-// ============================================================================
-// Render tests
-// ============================================================================
 
 describe('renderNotificationEmail', () => {
   it('renders a valid HTML document', () => {
@@ -284,10 +274,6 @@ describe('renderUnsubscribePage', () => {
   })
 })
 
-// ============================================================================
-// Security — autoEscape
-// ============================================================================
-
 describe('XSS protection (autoEscape)', () => {
   it('escapes HTML in recipient name', () => {
     const html = renderNotificationEmail({
@@ -369,10 +355,6 @@ describe('XSS protection (autoEscape)', () => {
   })
 })
 
-// ============================================================================
-// Utility functions
-// ============================================================================
-
 describe('getEmailSubject', () => {
   it('returns correct subject for mention', () => {
     expect(getEmailSubject('mention', 'John')).toBe('John mentioned you')
@@ -416,10 +398,6 @@ describe('buildListUnsubscribeHeaders', () => {
     })
   })
 })
-
-// ============================================================================
-// Design token integration
-// ============================================================================
 
 describe('design tokens', () => {
   it('uses FONT_STACK from tokens in base layout', () => {
