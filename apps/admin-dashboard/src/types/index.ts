@@ -242,7 +242,7 @@ export interface ViewsTrendPoint {
   unique_visitors: number
 }
 
-// User Retention Analytics Types (Phase 8)
+// User Retention Analytics Types
 
 export interface RetentionMetrics {
   dau: number
@@ -324,7 +324,6 @@ export interface PushPipelineStats {
 // Push Subscription Analytics Types
 
 export interface PushSubscriptionAnalytics {
-  // Platform breakdown
   platforms: {
     web: number
     ios: number
@@ -332,14 +331,12 @@ export interface PushSubscriptionAnalytics {
     desktop: number
     total: number
   }
-  // Subscription health
   health: {
     fresh: number // < 7 days
     ok: number // 7-30 days
     stale: number // > 30 days
     avgAgeDays: number
   }
-  // Lifecycle
   lifecycle: {
     newThisWeek: number
     churnedThisWeek: number // became inactive
@@ -389,7 +386,7 @@ export interface StaleDocumentsSummary {
   recoverable_bytes: number
 }
 
-// Failed Notifications Audit Types (Phase 17)
+// Failed Notifications Audit Types
 
 export interface NotificationHealth {
   push: {
@@ -474,7 +471,7 @@ export interface DisableResult {
   subscription_ids: string[]
 }
 
-// Ghost Accounts Audit (Phase 15)
+// Ghost Accounts Audit
 
 export type GhostType =
   | 'unconfirmed_magic_link'
@@ -547,7 +544,7 @@ export interface GhostCleanupResult {
   remaining: number
 }
 
-// Stale Documents (Phase 13)
+// Stale Documents
 
 export interface StaleDocumentPreview {
   slug: string

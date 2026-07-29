@@ -37,8 +37,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-// Ghost Type Labels & Colors
-
 const GHOST_TYPE_CONFIG: Record<GhostType, { label: string; badge: string; description: string }> =
   {
     unconfirmed_magic_link: {
@@ -92,8 +90,6 @@ function ProviderBadge({ provider }: { provider: string }) {
   }
   return <span className={`badge badge-sm ${config[provider] || 'badge-ghost'}`}>{provider}</span>
 }
-
-// Ghost Accounts Table
 
 function GhostAccountsTable({
   ghosts,
@@ -208,8 +204,6 @@ function GhostAccountsTable({
   )
 }
 
-// Anonymous Sessions Panel
-
 function AnonymousSessionsPanel({
   summary,
   isLoading,
@@ -275,15 +269,12 @@ function AnonymousSessionsPanel({
   )
 }
 
-// Main Page
-
 export default function GhostAccountsAuditPage() {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'ghosts' | 'anonymous'>('ghosts')
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [minAgeDays, setMinAgeDays] = useState(7)
 
-  // Data fetching
   const {
     data: summaryData,
     isLoading: summaryLoading,
@@ -319,7 +310,6 @@ export default function GhostAccountsAuditPage() {
     [ghosts]
   )
 
-  // Bulk selection
   const {
     isSelected,
     isAllSelected,
@@ -331,7 +321,6 @@ export default function GhostAccountsAuditPage() {
     clearSelection
   } = useBulkSelection(visibleGhosts)
 
-  // Mutations
   const deleteMutation = useMutation({
     mutationFn: (userId: string) => deleteGhostAccount(userId),
     onSuccess: (result) => {
@@ -380,7 +369,6 @@ export default function GhostAccountsAuditPage() {
     onError: () => toast.error('Cleanup failed')
   })
 
-  // Handlers
   const handleDelete = useCallback(
     (userId: string) => {
       confirmToast({
@@ -467,7 +455,6 @@ export default function GhostAccountsAuditPage() {
       />
 
       <div className="space-y-6 p-6">
-        {/* Breadcrumb */}
         <div className="breadcrumbs text-sm">
           <ul>
             <li>
@@ -509,7 +496,6 @@ export default function GhostAccountsAuditPage() {
           />
         </div>
 
-        {/* Tabs */}
         <div className="flex items-center justify-between">
           <div role="tablist" className="tabs tabs-bordered">
             <button
@@ -586,7 +572,6 @@ export default function GhostAccountsAuditPage() {
               </button>
             </BulkActionBar>
 
-            {/* Table */}
             <div className="bg-base-100 rounded-box border-base-300 border">
               <GhostAccountsTable
                 ghosts={visibleGhosts}

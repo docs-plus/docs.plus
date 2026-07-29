@@ -45,9 +45,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-// Shared UI Helpers
-
-/** Platform badge with consistent color coding */
 function PlatformBadge({ platform }: { platform: string }) {
   const config: Record<string, string> = {
     web: 'badge-info',
@@ -58,7 +55,6 @@ function PlatformBadge({ platform }: { platform: string }) {
   return <span className={`badge badge-sm ${config[platform] || 'badge-ghost'}`}>{platform}</span>
 }
 
-/** Error category badge with severity coloring */
 function CategoryBadge({ category }: { category: string }) {
   const severeCategories = ['EXPIRED', 'NOT_FOUND', 'HARD', 'PERMANENT_FAILURE']
   const warningCategories = ['UNAUTHORIZED', 'TIMEOUT', 'SOFT', 'RATE_LIMITED']
@@ -67,8 +63,6 @@ function CategoryBadge({ category }: { category: string }) {
   else if (warningCategories.includes(category)) badgeClass = 'badge-warning'
   return <span className={`badge badge-sm ${badgeClass}`}>{category}</span>
 }
-
-// Push Failure Breakdown
 
 function PushFailureBreakdown({
   data,
@@ -105,7 +99,6 @@ function PushFailureBreakdown({
 
   const totalFailures = Object.values(byCategory).reduce((sum, v) => sum + v.count, 0)
 
-  // Aggregate by platform
   const byPlatform = data.reduce<Record<string, number>>((acc, row) => {
     acc[row.platform] = (acc[row.platform] || 0) + row.failure_count
     return acc
@@ -155,8 +148,6 @@ function PushFailureBreakdown({
     </div>
   )
 }
-
-// Email Failure Breakdown
 
 function EmailFailureBreakdown({
   data,
@@ -219,8 +210,6 @@ function EmailFailureBreakdown({
     </div>
   )
 }
-
-// Failed Subscriptions Table (with bulk select)
 
 function FailedSubscriptionsTable({
   data,
@@ -338,8 +327,6 @@ function FailedSubscriptionsTable({
   )
 }
 
-// Email Bounces Table
-
 function EmailBouncesTable({
   data,
   isLoading
@@ -398,13 +385,11 @@ function EmailBouncesTable({
   )
 }
 
-// DLQ Viewer
-
 function DLQViewer() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'audit', 'dlq'],
     queryFn: () => fetchDLQContents(20),
-    refetchInterval: 60000 // Refresh every minute
+    refetchInterval: 60000
   })
 
   if (isLoading) {
@@ -499,8 +484,6 @@ function DLQViewer() {
   )
 }
 
-// Bulk Cleanup Actions
-
 function BulkCleanupActions({
   health,
   onDisable,
@@ -545,12 +528,9 @@ function BulkCleanupActions({
   )
 }
 
-// Main Page
-
 export default function NotificationAuditPage() {
   const queryClient = useQueryClient()
 
-  // Data queries
   const {
     data: health,
     isLoading: healthLoading,
@@ -597,7 +577,6 @@ export default function NotificationAuditPage() {
     queryFn: () => fetchEmailBounces({ days: 30, limit: 100 })
   })
 
-  // Mutations
   const disableMutation = useMutation({
     mutationFn: ({
       minFailures,
@@ -610,7 +589,6 @@ export default function NotificationAuditPage() {
     }) => disableFailedSubscriptions(minFailures, errorPattern, subscriptionIds),
     onSuccess: (result) => {
       toast.success(`Disabled ${result.disabled_count} subscription(s)`)
-      // Invalidate all audit queries
       queryClient.invalidateQueries({ queryKey: ['admin', 'audit'] })
     },
     onError: (err: Error) => {
@@ -618,7 +596,6 @@ export default function NotificationAuditPage() {
     }
   })
 
-  // Handlers
   const refreshAll = useCallback(() => {
     refetchHealth()
     refetchPushFailures()
@@ -627,7 +604,6 @@ export default function NotificationAuditPage() {
     refetchBounces()
   }, [refetchHealth, refetchPushFailures, refetchEmailFailures, refetchFailedSubs, refetchBounces])
 
-  /** Confirm-then-execute helper for destructive actions */
   const confirmAndDisable = useCallback(
     (
       label: string,
@@ -677,7 +653,6 @@ export default function NotificationAuditPage() {
     )
   }, [failedSubs])
 
-  // Derived data
   const pushDeliveryRate = health?.push.delivery_rate ?? 100
   const emailDeliveryRate = health?.email.delivery_rate ?? 100
   const failedSubsCount = health?.push.failed_subscriptions ?? 0
@@ -782,7 +757,6 @@ export default function NotificationAuditPage() {
             <EmailFailureBreakdown data={emailFailures} isLoading={emailFailuresLoading} />
           </div>
 
-          {/* Failed Subscriptions Table */}
           <CollapsibleSection
             title={`Failed Push Subscriptions (${failedSubs?.length ?? 0})`}
             defaultOpen>
@@ -793,14 +767,12 @@ export default function NotificationAuditPage() {
             />
           </CollapsibleSection>
 
-          {/* Email Bounces Table */}
           <CollapsibleSection
             title={`Email Bounces (${emailBounces?.length ?? 0})`}
             defaultOpen={false}>
             <EmailBouncesTable data={emailBounces} isLoading={emailBouncesLoading} />
           </CollapsibleSection>
 
-          {/* DLQ Viewer */}
           <CollapsibleSection title="Dead Letter Queues" defaultOpen={false}>
             <DLQViewer />
           </CollapsibleSection>

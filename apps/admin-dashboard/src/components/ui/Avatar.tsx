@@ -85,23 +85,19 @@ export function Avatar({
   const colorClass = getColorFromString(userId || displayName || 'default')
   const sizeClass = SIZE_CLASSES[size]
 
-  // Build list of image sources to try in order
   const imageSources = useMemo(() => {
     const sources: string[] = []
 
-    // Priority 1: Storage bucket URL (if we have userId and avatarUpdatedAt)
     if (userId && avatarUpdatedAt) {
       const storageUrl = buildStorageUrl(userId, avatarUpdatedAt)
       if (storageUrl) sources.push(storageUrl)
     }
 
-    // Priority 2: Direct src (avatar_url from OAuth, etc.)
     if (src) sources.push(src)
 
     return sources
   }, [userId, avatarUpdatedAt, src])
 
-  // Current image source based on how many have failed
   const currentSrc = imageSources[failedSources] || null
 
   const handleError = useCallback(() => {
@@ -114,7 +110,6 @@ export function Avatar({
     className
   )
 
-  // Show image if we have a valid source
   if (currentSrc) {
     return (
       <img
@@ -127,6 +122,5 @@ export function Avatar({
     )
   }
 
-  // Fallback to initial letter
   return <div className={twMerge(containerClass, colorClass)}>{initial}</div>
 }

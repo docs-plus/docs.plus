@@ -23,7 +23,6 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
   const router = useRouter()
   const { defaultSortKey = null, defaultSortDirection = 'desc' } = options
 
-  // Parse current params from URL
   const params: TableParams = useMemo(() => {
     // Return defaults when router is not ready (SSG/SSR)
     if (!router.isReady) {
@@ -44,12 +43,10 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
     }
   }, [router.isReady, router.query, defaultSortKey, defaultSortDirection])
 
-  // Update URL params without full page reload
   const updateParams = useCallback(
     (updates: Partial<TableParams>) => {
       const newQuery = { ...router.query }
 
-      // Update or remove each param
       if (updates.page !== undefined) {
         if (updates.page === 1) {
           delete newQuery.page // Don't show page=1 in URL
@@ -92,7 +89,6 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
     [router, defaultSortKey, defaultSortDirection]
   )
 
-  // Helper: set page
   const setPage = useCallback(
     (page: number) => {
       updateParams({ page })
@@ -100,7 +96,6 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
     [updateParams]
   )
 
-  // Helper: set search (resets page to 1)
   const setSearch = useCallback(
     (search: string) => {
       updateParams({ search, page: 1 })
@@ -108,24 +103,20 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
     [updateParams]
   )
 
-  // Helper: toggle sort (resets page to 1)
   const handleSort = useCallback(
     (key: string) => {
       if (params.sortKey === key) {
-        // Toggle direction
         updateParams({
           sortDirection: params.sortDirection === 'asc' ? 'desc' : 'asc',
           page: 1
         })
       } else {
-        // New column, default to desc
         updateParams({ sortKey: key, sortDirection: 'desc', page: 1 })
       }
     },
     [params.sortKey, params.sortDirection, updateParams]
   )
 
-  // Helper: clear all filters
   const clearFilters = useCallback(() => {
     updateParams({
       search: '',

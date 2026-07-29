@@ -50,7 +50,6 @@ export default function UsersPage() {
     supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null))
   }, [])
 
-  // URL-synced table state
   const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
     defaultSortKey: 'created_at',
     defaultSortDirection: 'desc'
@@ -61,19 +60,16 @@ export default function UsersPage() {
     queryFn: () => fetchUsers(page, search, sortKey || undefined, sortDirection)
   })
 
-  // Fetch document counts per user
   const { data: docCounts } = useQuery({
     queryKey: ['admin', 'users', 'document-counts'],
     queryFn: fetchUserDocumentCounts
   })
 
-  // Fetch notification subscriptions per user
   const { data: notifSubs } = useQuery({
     queryKey: ['admin', 'users', 'notification-subs'],
     queryFn: fetchUserNotificationSubscriptions
   })
 
-  // Fetch admin user IDs
   const { data: adminUsers } = useQuery({
     queryKey: ['admin', 'users', 'admin-ids'],
     queryFn: fetchAdminUserIds
@@ -81,7 +77,6 @@ export default function UsersPage() {
 
   const adminIdSet = useMemo(() => new Set(adminUsers?.map((a) => a.user_id) || []), [adminUsers])
 
-  // Toggle admin mutation
   const toggleAdminMutation = useMutation({
     mutationFn: toggleAdminRole,
     onSuccess: (result) => {
@@ -93,7 +88,6 @@ export default function UsersPage() {
     }
   })
 
-  // Merge document counts, notification subs, and admin status into user data
   const usersWithExtras = useMemo(() => {
     if (!data?.data) return []
     return data.data.map((user) => {
@@ -318,7 +312,6 @@ export default function UsersPage() {
         />
 
         <div className="space-y-4 p-6">
-          {/* Search */}
           <SearchInput
             placeholder="Search by username, email, or name..."
             value={search}
@@ -326,7 +319,6 @@ export default function UsersPage() {
             className="max-w-md"
           />
 
-          {/* Table */}
           <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
