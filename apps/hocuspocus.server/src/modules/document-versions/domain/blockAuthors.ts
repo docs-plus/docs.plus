@@ -3,6 +3,10 @@ import * as Y from 'yjs'
 
 import { VOLATILE_BLOCK_ATTRS } from '../types'
 
+// The webapp keeps a lockstep copy of this walk in
+// `apps/webapp/src/components/pages/history/utils/blockAuthors.ts` — it runs the
+// same attribution client-side from bytes it already holds. Change both together.
+
 /** Nested Y types hang off `content.type`; everything else is leaf content. */
 const nestedType = (item: Y.Item): Y.AbstractType<unknown> | null => {
   const content = item.content as { type?: unknown }

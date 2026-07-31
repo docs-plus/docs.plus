@@ -2,6 +2,7 @@ import { getOwnerProfiles } from '../api/services/documents.service'
 import type { ProfileLite } from '../modules/document-versions'
 import type { VersionTrigger } from '../types'
 import type { HistoryPayload } from '../types/document.types'
+import type { ClientAuthorBinding } from './client-authors'
 import { wsLogger } from './logger'
 import { prisma } from './prisma'
 
@@ -32,6 +33,8 @@ export type HistoryListResult = {
    * unpaginated and a handful of authors repeat across every version of a doc.
    */
   profiles: Record<string, ProfileLite>
+  /** Per-document, not per-version (`@@id([documentId, clientId])`), so it ships once beside `profiles`. */
+  clientAuthors: ClientAuthorBinding[]
 }
 
 const distinctUserIds = (rows: HistoryVersionMeta[]): string[] => {
@@ -54,6 +57,26 @@ const resolveProfiles = async (userIds: string[]): Promise<Record<string, Profil
   } catch (error) {
     wsLogger.warn({ err: error, count: userIds.length }, 'History attribution lookup failed')
     return {}
+  }
+}
+
+// Same posture as resolveProfiles: bindings decorate the payload, and a throw here
+// would surface as history_failed and blank the client's whole list. Uncapped on
+// purpose — a cap turns real writers into "Not recorded" with no signal.
+const resolveClientAuthorBindings = async (documentId: string): Promise<ClientAuthorBinding[]> => {
+  try {
+    const rows = await prisma.documentClientAuthor.findMany({
+      where: { documentId },
+      select: { clientId: true, userId: true, isAnonymous: true }
+    })
+    return rows.map((row) => ({
+      clientId: Number(row.clientId),
+      userId: row.userId,
+      isAnonymous: row.isAnonymous
+    }))
+  } catch (error) {
+    wsLogger.warn({ err: error, documentId }, 'History client-author lookup failed')
+    return []
   }
 }
 
@@ -81,24 +104,28 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
       // Both order by version alone: the (documentId, version) unique index serves
       // it in one step, and it keeps the list head and latestSnapshot on the same
       // row when an out-of-order commit makes createdAt disagree.
-      const [rows, full] = await prisma.$transaction([
-        prisma.documents.findMany({
-          where: { documentId },
-          orderBy: { version: 'desc' },
-          select: {
-            version: true,
-            commitMessage: true,
-            trigger: true,
-            triggeredBy: true,
-            contributors: true,
-            createdAt: true
-          }
-        }),
-        prisma.documents.findFirst({
-          where: { documentId },
-          orderBy: { version: 'desc' },
-          select: { data: true, version: true, commitMessage: true, createdAt: true }
-        })
+      // Bindings run beside the transaction, not after it: two round trips, not three.
+      const [[rows, full], clientAuthors] = await Promise.all([
+        prisma.$transaction([
+          prisma.documents.findMany({
+            where: { documentId },
+            orderBy: { version: 'desc' },
+            select: {
+              version: true,
+              commitMessage: true,
+              trigger: true,
+              triggeredBy: true,
+              contributors: true,
+              createdAt: true
+            }
+          }),
+          prisma.documents.findFirst({
+            where: { documentId },
+            orderBy: { version: 'desc' },
+            select: { data: true, version: true, commitMessage: true, createdAt: true }
+          })
+        ]),
+        resolveClientAuthorBindings(documentId)
       ])
 
       const versions: HistoryVersionMeta[] = rows.map((row) => ({
@@ -106,10 +133,17 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
         trigger: row.trigger as VersionTrigger | null
       }))
 
+      // A bound writer needs a profile too, or their roster row resolves to nothing.
+      const profileIds = new Set(distinctUserIds(versions))
+      for (const binding of clientAuthors) {
+        if (!binding.isAnonymous) profileIds.add(binding.userId)
+      }
+
       return {
         versions,
         latestSnapshot: full ? toSnapshot(full) : null,
-        profiles: await resolveProfiles(distinctUserIds(versions))
+        profiles: await resolveProfiles([...profileIds]),
+        clientAuthors
       } satisfies HistoryListResult
     }
 
