@@ -5,9 +5,12 @@ import { twMerge } from 'tailwind-merge'
 import { formatRelativeTime, formatTime, sessionContainsVersion } from '../helpers'
 import type { VersionSession } from '../types'
 import {
+  CompareBaseMarker,
   CopyVersionLinkButton,
   HistoryLatestBadge,
-  HistoryTimelineDot
+  HistoryTimelineDot,
+  VersionAttribution,
+  VersionTriggerBadge
 } from './HistorySidebarRowParts'
 
 export function HistorySessionRow({
@@ -101,14 +104,33 @@ export function HistorySessionRow({
                     size="sm"
                     className="h-auto min-h-10 min-w-0 flex-1 items-center justify-start gap-2 rounded-none border-0 px-2.5 py-2 text-left shadow-none hover:bg-transparent active:bg-transparent">
                     <HistoryTimelineDot active={isCurrentActive} className="size-1.5 shrink-0" />
-                    <span
-                      className={twMerge(
-                        'text-sm font-medium',
-                        isCurrentActive ? 'text-primary' : 'text-base-content/85'
-                      )}>
-                      {formatTime(version.createdAt)}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={twMerge(
+                            'text-sm font-medium',
+                            isCurrentActive ? 'text-primary' : 'text-base-content/85'
+                          )}>
+                          {formatTime(version.createdAt)}
+                        </span>
+                        {isLatest && !isLatestSession && <HistoryLatestBadge compact />}
+                        {/* Trailing group: one line, so the badge and faces share an
+                            anchor instead of doubling the height of the majority row. */}
+                        <span className="ml-auto flex min-w-0 shrink items-center gap-1.5">
+                          <CompareBaseMarker version={version.version} />
+                          <VersionTriggerBadge trigger={version.trigger} />
+                          <VersionAttribution item={version} inline active={isCurrentActive} />
+                        </span>
+                      </span>
+                      {/* A restore always mints its two rows seconds apart, so they always
+                          group here — this is the only place their names can be read.
+                          Autosaves carry an empty message, so row density is untouched. */}
+                      {version.commitMessage && (
+                        <span className="text-base-content/70 mt-0.5 block truncate text-xs">
+                          {version.commitMessage}
+                        </span>
+                      )}
                     </span>
-                    {isLatest && !isLatestSession && <HistoryLatestBadge compact />}
                   </Button>
                   <CopyVersionLinkButton
                     version={version.version}

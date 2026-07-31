@@ -1,10 +1,12 @@
 import { HistoryEditorContent } from '../HistoryEditorContent'
 import HistorySidebar from '../HistorySidebar'
+import { useHistoryCompareDecorations } from '../hooks/useHistoryCompareDecorations'
 import { useHistoryEditor } from '../hooks/useHistoryEditor'
 import Toolbar from './Toolbar'
 
 const DesktopHistory = () => {
   useHistoryEditor()
+  useHistoryCompareDecorations()
 
   return (
     <div className="pad tiptap history_editor bg-base-200 flex h-full min-h-0 flex-col overflow-hidden motion-safe:animate-[doc-content-in_200ms_ease-out_both]">

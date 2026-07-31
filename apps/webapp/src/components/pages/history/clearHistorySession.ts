@@ -9,6 +9,12 @@ export function resetHistorySessionForMount(): void {
   state.setPendingWatchVersion(null)
   state.setHistoryList([])
   state.setLatestSnapshot(null)
+  state.setProfiles({})
+  state.setClientAuthors([])
+  state.setSilentListRefresh(false)
+  state.setCompareMode(false)
+  state.setCompareBaseItem(null)
+  state.setPendingCompareVersion(null)
   state.setLoadingHistory(true)
   clearHistoryDecodeCache()
 }

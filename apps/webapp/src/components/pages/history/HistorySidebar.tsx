@@ -1,12 +1,15 @@
 import SidebarLoader from '@components/skeleton/SidebarLoader'
 import CloseButton from '@components/ui/CloseButton'
+import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
-import { type ReactNode, useMemo } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { HistoryAuthorsBody } from './components/HistoryAuthorsBody'
 import { HistorySidebarBody } from './components/HistorySidebarBody'
 import { groupSessionsByDay } from './helpers'
+import { useHistoryCompare } from './hooks/useHistoryCompare'
 import { useHistorySidebarCollapse } from './hooks/useHistorySidebarCollapse'
 import { useVersionContent } from './hooks/useVersionContent'
 import { HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD } from './types'
@@ -19,6 +22,12 @@ function SidebarHeader({ count, onClose }: { count: number; onClose?: () => void
         <h2 className="text-base-content text-base font-semibold sm:text-lg">Version History</h2>
         <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
           {count} version{count !== 1 ? 's' : ''}
+        </p>
+        {/* Mirrors DOC_AUTOSAVE_RETENTION_DAYS (hocuspocus env.schema.ts). The prune
+            exempts named versions forever, so the second sentence is scoped to autosaves. */}
+        <p className="text-base-content/60 mt-0.5 text-xs">
+          We keep every version for 30 days. After that we keep one automatic version per day. Named
+          versions are kept.
         </p>
       </div>
       {onClose && (
@@ -58,6 +67,9 @@ function SidebarFrame({
   )
 }
 
+type HistoryTab = 'Versions' | 'Authors'
+const HISTORY_TABS = [{ label: 'Versions' as const }, { label: 'Authors' as const }]
+
 const HistorySidebar = ({
   className,
   onClose,
@@ -71,6 +83,8 @@ const HistorySidebar = ({
   const activeHistory = useStore((state) => state.activeHistory)
   const historyList = useStore((state) => state.historyList)
   const { watchVersionContent } = useVersionContent()
+  const { compareMode, selectCompareBase } = useHistoryCompare()
+  const [tab, setTab] = useState<HistoryTab>('Versions')
 
   const activeVersion = (activeHistory ?? historyList[0])?.version ?? 0
 
@@ -111,21 +125,41 @@ const HistorySidebar = ({
 
   return (
     <SidebarFrame className={className} count={historyList.length} onClose={onClose}>
-      <HistorySidebarBody
-        rows={rows}
-        virtualize={
-          variant === 'desktop' && historyList.length >= HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD
-        }
-        activeVersion={activeVersion}
-        latestVersion={historyList[0].version}
-        openDays={openDays}
-        onToggleDay={toggleDay}
-        onToggleSession={toggleSession}
-        onSelectVersion={(version) => {
-          watchVersionContent(version)
-          onClose?.()
-        }}
-      />
+      {/* Desktop only: the mobile route mounts no decoration plugin, so selecting a
+          person there would paint nothing — worse than not offering the tab. */}
+      {variant === 'desktop' && (
+        <PanelTabBar
+          tabs={HISTORY_TABS}
+          activeTab={tab}
+          onSelect={(next) => setTab(next as HistoryTab)}
+        />
+      )}
+
+      {variant === 'desktop' && tab === 'Authors' ? (
+        <HistoryAuthorsBody />
+      ) : (
+        <HistorySidebarBody
+          rows={rows}
+          virtualize={
+            variant === 'desktop' && historyList.length >= HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD
+          }
+          activeVersion={activeVersion}
+          latestVersion={historyList[0].version}
+          openDays={openDays}
+          onToggleDay={toggleDay}
+          onToggleSession={toggleSession}
+          onSelectVersion={(version) => {
+            // In compare mode a row click reassigns A. The list stays open — the reader
+            // is picking a comparison, not navigating away.
+            if (compareMode) {
+              selectCompareBase(version)
+              return
+            }
+            watchVersionContent(version)
+            onClose?.()
+          }}
+        />
+      )}
     </SidebarFrame>
   )
 }

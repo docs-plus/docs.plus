@@ -1,82 +1,96 @@
-import { clearHistoryHash } from '@components/pages/history/historyShareUrl'
+import { sendHistoryRevertRequest } from '@components/pages/history/historyStatelessWire'
 import * as toast from '@components/toast'
 import { useAuthStore, useStore } from '@stores'
-import type { Editor } from '@tiptap/react'
-import { logger } from '@utils/logger'
-import { useCallback, useState } from 'react'
+import { isProviderDisconnected } from '@utils/providerCollabStatus'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getCachedProsemirrorFromHistoryYdoc } from '../historyDecodeCache'
-
-const PAD_EDITOR_WAIT_MS = 15_000
-
-function waitForPadEditor(timeoutMs = PAD_EDITOR_WAIT_MS): Promise<Editor> {
-  return new Promise((resolve, reject) => {
-    const started = performance.now()
-    const tick = () => {
-      const editor = useStore.getState().settings.editor.instance
-      if (editor && !editor.isDestroyed) {
-        resolve(editor)
-        return
-      }
-      if (performance.now() - started > timeoutMs) {
-        reject(new Error('pad editor timeout'))
-        return
-      }
-      requestAnimationFrame(tick)
-    }
-    tick()
-  })
-}
+/**
+ * Matches the server's own version-op budget. A restore that has not answered by
+ * then may still land, so the copy on expiry must not claim it failed.
+ */
+const RESTORE_TIMEOUT_MS = 30_000
 
 export const useVersionRestore = () => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const providerStatus = useStore((state) => state.settings.providerStatus)
+  const documentId = useStore((state) => state.settings.metadata?.documentId)
+  const loadingHistory = useStore((state) => state.loadingHistory)
+  const pendingWatchVersion = useStore((state) => state.pendingWatchVersion)
   const setLoadingHistory = useStore((state) => state.setLoadingHistory)
   const activeHistory = useStore((state) => state.activeHistory)
   const user = useAuthStore((state) => state.profile)
 
   const [restoreOpen, setRestoreOpen] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = null
+  }, [])
+
+  // The ack and every refusal clear `loadingHistory`, so its falling edge is the
+  // one signal that reaches this hook — the outcome itself is owned by the handler.
+  useEffect(() => {
+    if (!restoring || loadingHistory) return
+    clearTimer()
+    setRestoring(false)
+  }, [restoring, loadingHistory, clearTimer])
+
+  useEffect(() => clearTimer, [clearTimer])
+
+  // `activeHistory` still names the PREVIOUS version while a watch is in flight, so
+  // restoring here would replace the document for everyone with a version the reader
+  // did not ask for. It also keeps the 30s timeout from being cancelled by the
+  // incoming watch clearing the shared `loadingHistory` flag.
+  const canRestore = pendingWatchVersion == null && !restoring
 
   const requestRestore = useCallback(() => {
     if (!activeHistory?.version) return
+    if (pendingWatchVersion != null) return
     if (!user) {
-      toast.Error('Please login to restore this version')
+      toast.Error('Sign in to restore a version.')
       return
     }
     setRestoreOpen(true)
-  }, [activeHistory?.version, user])
+  }, [activeHistory?.version, pendingWatchVersion, user])
 
-  const confirmRestore = useCallback(async () => {
+  const confirmRestore = useCallback(() => {
     if (!activeHistory?.version) return
-    if (!hocuspocusProvider) {
-      toast.Error('Connection unavailable. Try again when the document is connected.')
+    if (restoring) return
+
+    // A frame sent on a closed socket is QUEUED by the provider and flushed on
+    // reconnect, so an unguarded click can replace the document minutes later
+    // against content that has moved on, with nobody watching.
+    if (!hocuspocusProvider || isProviderDisconnected(providerStatus)) {
+      toast.Error('You are not connected to this document. Reconnect, then try again.')
       return
     }
 
-    const content = getCachedProsemirrorFromHistoryYdoc(activeHistory.version, activeHistory.data)
-    if (content == null) {
-      toast.Error('Could not read this version. Try another version or reload.')
-      return
-    }
-
+    // The server rewrites the live Y.Doc, so the restored text arrives over normal
+    // y-sync. The ack handler owns the outcome and the exit from the history view.
+    setRestoring(true)
     setLoadingHistory(true)
-    clearHistoryHash()
+    sendHistoryRevertRequest(hocuspocusProvider, activeHistory.version, documentId)
 
-    try {
-      const editor = await waitForPadEditor()
-      const meta = hocuspocusProvider.configuration.document.getMap('metadata')
-      meta.set('commitMessage', `Reverted to version ${activeHistory.version}`)
-      editor.commands.setContent(content)
-    } catch (e) {
-      if (e instanceof Error && e.message === 'pad editor timeout') {
-        toast.Error('Editor is not ready.')
-      } else {
-        logger.error('History restore: setContent failed', e)
-        toast.Error('Could not apply this version.')
-      }
-    } finally {
+    clearTimer()
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null
+      setRestoring(false)
       setLoadingHistory(false)
-    }
-  }, [activeHistory, hocuspocusProvider, setLoadingHistory])
+      toast.Error(
+        'We did not get an answer from the server. The restore may still have run. Go back to the document and check the text.'
+      )
+    }, RESTORE_TIMEOUT_MS)
+  }, [
+    activeHistory?.version,
+    clearTimer,
+    documentId,
+    hocuspocusProvider,
+    providerStatus,
+    restoring,
+    setLoadingHistory
+  ])
 
-  return { restoreOpen, setRestoreOpen, requestRestore, confirmRestore }
+  return { restoreOpen, setRestoreOpen, requestRestore, confirmRestore, restoring, canRestore }
 }

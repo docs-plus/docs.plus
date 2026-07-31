@@ -694,13 +694,17 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - Server unicasts `{ msg: 'history.response', type, response }` to the requesting connection. Do not use `broadcastStateless`.
 - Prisma always uses the collab room document id (`document.name`).
 - If the client sends a different `documentId`, respond `history_failed`.
-- Current `history.list` returns `{ versions, latestSnapshot }` in one RTT. Client still accepts legacy plain `HistoryItem[]`.
+- Current `history.list` returns `{ versions, latestSnapshot, profiles, clientAuthors }` in one RTT. `clientAuthors` is the per-document Yjs clientID → person table; like `profiles` it is fail-soft and can be empty. Client still accepts legacy plain `HistoryItem[]`. `profiles` is a uid → author side table rather than a profile per row; it can be empty and can miss a uid, so never fabricate a face from a bare id — `Avatar` would generate one and name a person you cannot.
+- Version rows carry `trigger` / `triggeredBy` / `contributors`; `history.watch` rows do not.
+- **Block authorship answers "whose text sits here now", and two of its limits are permanent.** `collectBlockClientIds` walks live Yjs items per top-level block; `DocumentClientAuthor` binds a clientID to a person only when a live socket announced it (`lib/client-authors.ts`). (1) **Nobody can be named as a deleter.** Yjs keys its delete set by the clientID that _created_ each deleted item and stores only a clock and a length, so no setting — garbage collection included — records who removed text. (2) **Server-side writes produce content with no bindable author.** Restore, import, `PATCH /content` and the schema-migration rebuild all apply through a direct connection with no socket, and `applyContentToDoc` clones every node under the server document's own clientID. Do not "fix" either by writing a `DocumentClientAuthor` row for a server clientID or for the acting user: the server is not the writer, and a fabricated binding turns an honest unknown into a false accusation. Surface the gap instead — the version's `trigger` names the operation that caused it.
 - `applyHistoryItemToEditor` is the single TipTap hydration path.
-- `loadingHistory` clears only after successful apply, not merely after a network response.
+- `loadingHistory` clears only after successful apply, not merely after a network response — that rule governs the read ops. A `history.revert` ack or failure clears it on the network response, because a revert never hydrates the history editor.
 - `useHistoryEditorApplyWhenReady` applies when the editor mounts after data arrives.
 - While `pendingWatchVersion` is set, do not re-apply stale `activeHistory`.
 - Late `history.list` must not reset pending watch state or hydrate from `latestSnapshot` over that watch.
-- On `history_failed`, clear `pendingWatchVersion` so the next watch is not dropped.
+- On `history_failed`, clear `pendingWatchVersion` so the next watch is not dropped — for the read ops only. A `history.revert` failure clears `loadingHistory` alone; it never owns the watch slot, and clearing it would strand a watch still in flight.
+- **Restore is a server write through the `history.revert` stateless op, never a client `setContent`.** The restored bytes reach every client over ordinary y-sync, so the ack handler confirms and exits the history view rather than applying content. Compare (desktop only) rides a second watch slot keyed on `pendingCompareVersion`; the A side is held whole as `compareBaseItem` because list rows carry no `data`.
+- `document:saved` while the history view is mounted triggers a debounced silent re-list. It must not blank the sidebar on failure: the list-failure arm also rewrites the URL, so a background refresh that fails has to return before it clears anything.
 - Shareable revision URLs use same pathname/query plus `#history?version=<n>`, where `<n>` is `HistoryItem.version`.
 - URL helpers live in `components/pages/history/historyShareUrl.ts`: `parseHistoryHash`, `buildHistoryShareUrl`, `replaceHistoryHashVersion`.
 - Without `#history?version=`, the sidebar treats the latest version as active.

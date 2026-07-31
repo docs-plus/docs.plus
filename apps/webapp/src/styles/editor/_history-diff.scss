@@ -1,0 +1,17 @@
+// Version compare — read-only history editor only. The ground tint carries the meaning;
+// ink stays base-content so a same-hue tint plus same-hue ink can never fail AA.
+.history_editor .ProseMirror {
+  .history-diff-added {
+    background-color: color-mix(in oklch, var(--color-success) 22%, transparent);
+    border-radius: 2px;
+    box-decoration-break: clone;
+  }
+
+  del.history-diff-removed {
+    background-color: color-mix(in oklch, var(--color-error) 18%, transparent);
+    border-radius: 2px;
+    box-decoration-break: clone;
+    color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+    text-decoration: line-through;
+  }
+}

@@ -9,13 +9,24 @@ type Props = {
   versionInfo: HistoryToolbarVersion | null
   onRequestRestore: () => void
   variant: 'desktop' | 'mobile'
+  restoring?: boolean
+  /** False while a version watch is in flight — `versionInfo` still names the old one. */
+  canRestore?: boolean
 }
 
-export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, variant }: Props) {
+export function HistoryToolbarVersionBlock({
+  versionInfo,
+  onRequestRestore,
+  variant,
+  restoring = false,
+  canRestore = true
+}: Props) {
   if (!versionInfo) return null
 
   const { date, time } = formatVersionDate(versionInfo.createdAt)
   const showRestore = !versionInfo.isLatestVersion
+  // The date and time is what the sidebar shows; a version number appears nowhere a reader can see.
+  const restoreLabel = `Restore this version from ${date} at ${time}`
 
   const onCopyLink = () => {
     void copyHistoryVersionLinkToClipboard(versionInfo.version)
@@ -26,12 +37,18 @@ export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, vari
     return (
       <>
         <div className="flex flex-wrap items-center justify-center gap-2">
+          {!showRestore && (
+            <span className="text-base-content/60 text-sm">This is the current version.</span>
+          )}
           {showRestore && (
             <Button
               variant="primary"
+              loading={restoring}
+              loadingText="Restoring…"
+              disabled={!canRestore}
               onClick={onRequestRestore}
-              aria-label="Restore this version"
-              tooltip={`Restore document to version ${versionInfo.version}`}
+              aria-label={restoreLabel}
+              tooltip={restoreLabel}
               tooltipPlacement="bottom">
               Restore this version
             </Button>
@@ -58,14 +75,20 @@ export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, vari
 
   return (
     <div className="flex min-w-0 items-center justify-end gap-2">
+      {!showRestore && (
+        <span className="text-base-content/60 text-sm">This is the current version.</span>
+      )}
       {showRestore && (
         <Button
           variant="primary"
           size="sm"
           className="font-normal"
+          loading={restoring}
+          loadingText="Restoring…"
+          disabled={!canRestore}
           onClick={onRequestRestore}
-          aria-label="Restore this version"
-          tooltip={`Restore document to version ${versionInfo.version}`}
+          aria-label={restoreLabel}
+          tooltip={restoreLabel}
           tooltipPlacement="bottom">
           Restore this version
         </Button>

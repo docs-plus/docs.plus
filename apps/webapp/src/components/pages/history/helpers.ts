@@ -145,3 +145,16 @@ export const formatVersionDate = (date: Date | string) => {
     })
   }
 }
+
+/**
+ * Versions saved after `version`, or null when the active version is not in the list —
+ * a real state after row eviction, and one the caller must not report as "none".
+ */
+export const countVersionsAfter = (
+  list: HistoryItem[],
+  version: number | undefined
+): number | null => {
+  if (version == null) return null
+  const index = list.findIndex((item) => item.version === version)
+  return index < 0 ? null : index
+}

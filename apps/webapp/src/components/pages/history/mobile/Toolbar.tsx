@@ -5,13 +5,16 @@ import { useStore } from '@stores'
 
 import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
 import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionBlock'
+import { countVersionsAfter } from '../helpers'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
 const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
+  const historyList = useStore((state) => state.historyList)
   const versionInfo = useGetVersionInfo()
-  const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore } = useVersionRestore()
+  const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore, restoring, canRestore } =
+    useVersionRestore()
 
   return (
     <header className="bg-base-100 sticky top-0 left-0 z-30 w-full shrink-0">
@@ -30,6 +33,8 @@ const Toolbar = () => {
               variant="mobile"
               versionInfo={versionInfo}
               onRequestRestore={requestRestore}
+              restoring={restoring}
+              canRestore={canRestore}
             />
           </div>
 
@@ -46,6 +51,8 @@ const Toolbar = () => {
         open={restoreOpen}
         onOpenChange={setRestoreOpen}
         version={activeHistory?.version}
+        createdAt={activeHistory?.createdAt}
+        newerCount={countVersionsAfter(historyList, activeHistory?.version)}
         onConfirm={confirmRestore}
       />
     </header>

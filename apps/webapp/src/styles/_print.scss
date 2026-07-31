@@ -126,5 +126,23 @@
     .mainWrapper {
       width: 100% !important;
     }
+    // The decorations live inside .ProseMirror, so the hides above miss them.
+    // A printed page that silently includes deleted text is wrong output.
+    .history-diff-added {
+      background: none;
+    }
+    del.history-diff-removed {
+      display: none;
+    }
+    // Authorship is a reading aid, not part of the document. Zeroing the margin is
+    // required: print forces `.tiptap__editor { padding: 0 }`, so a surviving
+    // negative margin pushes the rail off the page.
+    :is(.history-author-block, .history-author-block--current) {
+      background: none;
+      border-inline-start: 0;
+      margin-inline-start: 0;
+      outline: none;
+      padding-inline-start: 0;
+    }
   }
 }

@@ -1,0 +1,19 @@
+// Authorship marking — read-only history editor only. One person is shown at a time, so
+// there is no per-author palette: the rail and tint say "this person", the roster says who.
+// Ink is never set, so each theme keeps its own base-content contrast.
+.history_editor .ProseMirror {
+  .history-author-block {
+    background-color: color-mix(in oklch, var(--color-primary) 16%, transparent);
+    border-inline-start: 3px solid var(--color-primary);
+    border-radius: 2px;
+    // 3px border + 9px padding cancelled by -12px margin: marking a block moves no text.
+    padding-inline-start: 9px;
+    margin-inline-start: -12px;
+  }
+
+  // Sibling, not nested: a clicked-but-unmarked block gets the outline alone.
+  .history-author-block--current {
+    outline: var(--focus-ring-soft);
+    outline-offset: 2px;
+  }
+}

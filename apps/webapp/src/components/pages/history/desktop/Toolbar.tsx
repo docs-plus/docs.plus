@@ -4,12 +4,15 @@ import {
   copyVersionLinkTitle
 } from '@components/pages/history/historyShareUrl'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 
 import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
 import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionBlock'
+import { countVersionsAfter, formatTime } from '../helpers'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
+import { useHistoryCompare } from '../hooks/useHistoryCompare'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
 const ICON_SIZE = 16
@@ -18,7 +21,10 @@ const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
   const historyList = useStore((state) => state.historyList)
   const versionInfo = useGetVersionInfo()
-  const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore } = useVersionRestore()
+  const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore, restoring, canRestore } =
+    useVersionRestore()
+  const { compareMode, compareBaseItem, canCompare, toggleCompare, exitCompare } =
+    useHistoryCompare()
   const copyLinkLabel = versionInfo ? copyVersionLinkTitle(versionInfo.version) : null
 
   return (
@@ -36,6 +42,8 @@ const Toolbar = () => {
             variant="desktop"
             versionInfo={versionInfo}
             onRequestRestore={requestRestore}
+            restoring={restoring}
+            canRestore={canRestore}
           />
         </div>
       </header>
@@ -53,12 +61,43 @@ const Toolbar = () => {
               <Icons.link size={ICON_SIZE} />
             </ToolbarButton>
           )}
+          <ToolbarButton
+            onClick={toggleCompare}
+            isActive={compareMode}
+            disabled={!canCompare && !compareMode}
+            aria-label={compareMode ? 'Hide what changed' : 'Show what changed'}
+            tooltip={
+              compareMode
+                ? 'Hide what changed'
+                : 'Show what changed in this version. Edits that only changed formatting show nothing, and very large differences are shown as one block.'
+            }>
+            <Icons.splitVertical size={ICON_SIZE} />
+          </ToolbarButton>
         </div>
 
-        {activeHistory && (
-          <div className="text-base-content/60 shrink-0 text-sm">
-            {`Version ${activeHistory.version} of ${historyList.length}`}
+        {compareMode && compareBaseItem && activeHistory ? (
+          <div className="text-base-content/60 flex min-w-0 shrink-0 items-center gap-2 text-sm">
+            <span className="truncate">
+              <span className="text-base-content font-medium">
+                {formatTime(compareBaseItem.createdAt)}
+              </span>
+              <span aria-hidden className="text-base-content/50 mx-1.5">
+                →
+              </span>
+              <span className="text-base-content font-medium">
+                {formatTime(activeHistory.createdAt)}
+              </span>
+            </span>
+            <Button variant="ghost" size="xs" onClick={exitCompare}>
+              Exit
+            </Button>
           </div>
+        ) : (
+          activeHistory && (
+            <div className="text-base-content/60 shrink-0 text-sm">
+              {`Version ${activeHistory.version} of ${historyList.length}`}
+            </div>
+          )
         )}
       </div>
 
@@ -66,6 +105,8 @@ const Toolbar = () => {
         open={restoreOpen}
         onOpenChange={setRestoreOpen}
         version={activeHistory?.version}
+        createdAt={activeHistory?.createdAt}
+        newerCount={countVersionsAfter(historyList, activeHistory?.version)}
         onConfirm={confirmRestore}
       />
     </>
