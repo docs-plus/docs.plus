@@ -6,9 +6,13 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { DecorationSet } from '@tiptap/pm/view'
 import { useEffect } from 'react'
 
-const historyComparePluginKey = new PluginKey('historyCompare')
+const historyComparePluginKey = new PluginKey<DecorationSet>('historyCompare')
 
-/** Paints the compare diff on the read-only history editor. Mounted once, by DesktopHistory. */
+/**
+ * Paints the compare diff on the read-only history editor. Mounted once, by DesktopHistory.
+ * The set lives in plugin state and moves by transaction metadata, so toggling compare
+ * never reconfigures the editor — a reconfigure rebuilds node views and reloads embeds.
+ */
 export const useHistoryCompareDecorations = () => {
   const editor = useStore((state) => state.editor)
   const compareMode = useStore((state) => state.compareMode)
@@ -17,34 +21,21 @@ export const useHistoryCompareDecorations = () => {
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return
-    if (!compareMode || !compareBaseItem || !activeHistory) return
 
-    // Read the live doc first. TrailingNode appends an empty paragraph the decoded
-    // version JSON does not carry, and any size drift shifts every later decoration.
-    const capturedDoc = editor.state.doc
-    const jsonA = getCachedProsemirrorFromHistoryYdoc(compareBaseItem.version, compareBaseItem.data)
-    if (jsonA == null) return
-
-    const result = buildCompareDecorations(editor.schema, jsonA, capturedDoc.toJSON())
-    if ('error' in result) {
-      toast.Error("Can't compare this version")
-      return
-    }
-
-    // Built once, deliberately. `DecorationSet.create` NULLS entries in the array it
-    // is given (prosemirror-view `takeSpansForNode`), and only strips nulls on the
-    // call that made them — so handing it the same array twice sorts over a null and
-    // throws. Building once also keeps the tree off every transaction.
-    const decorationSet = DecorationSet.create(capturedDoc, result.decorations)
-
-    const plugin = new Plugin({
+    const plugin = new Plugin<DecorationSet>({
       key: historyComparePluginKey,
-      props: {
-        decorations(state) {
-          // DecorationSet.create does not range-check, so a stale set would silently
-          // paint the wrong spans of a document that has since been replaced.
-          return state.doc === capturedDoc ? decorationSet : DecorationSet.empty
+      state: {
+        init: () => DecorationSet.empty,
+        apply(tr, value) {
+          // A version switch replaces the whole document, and DecorationSet.create does
+          // not range-check — a surviving set would paint the wrong spans of the new one.
+          if (tr.docChanged) return DecorationSet.empty
+          const next = tr.getMeta(historyComparePluginKey)
+          return next === undefined ? value : (next as DecorationSet)
         }
+      },
+      props: {
+        decorations: (state) => historyComparePluginKey.getState(state) ?? DecorationSet.empty
       }
     })
 
@@ -53,5 +44,42 @@ export const useHistoryCompareDecorations = () => {
       if (editor.isDestroyed) return
       editor.unregisterPlugin(historyComparePluginKey)
     }
+  }, [editor])
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return
+
+    // `DecorationSet.empty` is a singleton, so this also skips the no-op clear on mount
+    // and on every render where compare is off.
+    const commit = (next: DecorationSet) => {
+      if (historyComparePluginKey.getState(editor.state) === next) return
+      editor.view.dispatch(editor.state.tr.setMeta(historyComparePluginKey, next))
+    }
+
+    if (!compareMode || !compareBaseItem || !activeHistory) {
+      commit(DecorationSet.empty)
+      return
+    }
+
+    // Read the live doc first. TrailingNode appends an empty paragraph the decoded
+    // version JSON does not carry, and any size drift shifts every later decoration.
+    const capturedDoc = editor.state.doc
+    const jsonA = getCachedProsemirrorFromHistoryYdoc(compareBaseItem.version, compareBaseItem.data)
+    if (jsonA == null) {
+      commit(DecorationSet.empty)
+      return
+    }
+
+    const result = buildCompareDecorations(editor.schema, jsonA, capturedDoc.toJSON())
+    if ('error' in result) {
+      commit(DecorationSet.empty)
+      toast.Error("Can't compare this version")
+      return
+    }
+
+    // `DecorationSet.create` NULLS entries in the array it is given (prosemirror-view
+    // `takeSpansForNode`) and only strips nulls on the call that made them, so it must
+    // never see the same array twice — `buildCompareDecorations` returns a fresh one.
+    commit(DecorationSet.create(capturedDoc, result.decorations))
   }, [editor, compareMode, compareBaseItem, activeHistory])
 }
