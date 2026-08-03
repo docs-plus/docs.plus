@@ -194,8 +194,15 @@ docs/skills-output/
 !/.cursor/skills/code-janitor/
 !/.cursor/skills/commit-review/
 !/.cursor/skills/design-system/
+!/.cursor/skills/release-extensions/
 !/.cursor/skills/tech-writer/
 !/.cursor/skills/tiptap/
 
 # Rendered at deploy by envsubst from contactpoints.yml.tmpl — holds the real Telegram bot token
 scripts/observability/grafana/provisioning/alerting/contactpoints.yml
+
+# Agent memory: canonical home for the Claude Code memory directory, symlinked from
+# ~/.claude/projects/<cwd>/memory so Cursor and Claude Code share one source of truth.
+# NEVER commit it — it records prod hosts, project refs and infra details.
+/.agents/memory
+/.agents/memory/
