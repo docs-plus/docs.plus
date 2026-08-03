@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import slugify from 'slugify'
 
 /**
- * Non-members (anon or signed-in) skip the write-side bootstrap per AGENTS.md
+ * Non-members (anon or signed-in) skip the write-side bootstrap per chatroom CLAUDE.md §Anonymous Chat Read Path
  * §Anonymous Chat Read Path: upsertChannel + joinChannel both 403 under RLS,
  * while the metadata RPC and message window stay readable on PUBLIC channels.
  * Join failures are swallowed so a lurker sees no error badge.

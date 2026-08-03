@@ -1,6 +1,6 @@
 # AGENTS.md — `@docs.plus/extension-hyperlink`
 
-Persistent memory for AI agents working inside this package. Covers schema, commands, safety, click handling, metadata/preview, the `specialUrls` catalog, the public API surface, the floating toolbar, and the clean-room Cypress harness. Repo-wide rules (package manager, scripts naming, release flow) live in the root `AGENTS.md`. Webapp-side popover integration lives there too, under §Webapp-Owned Hyperlink Popovers.
+Persistent memory for AI agents working inside this package. Covers schema, commands, safety, click handling, metadata/preview, the `specialUrls` catalog, the public API surface, the floating toolbar, and the clean-room Cypress harness. Repo-wide rules (package manager, scripts naming) live in the root `AGENTS.md`; release flow is in the `release-extensions` skill. Webapp-side popover integration is in `extensions/CLAUDE.md`, under §Webapp-Owned Hyperlink Popovers.
 
 ## Schema And Commands
 

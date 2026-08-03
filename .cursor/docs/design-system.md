@@ -2,7 +2,7 @@
 
 Canonical reference for every visual decision in `apps/webapp` (desktop + mobile). Read this before
 touching UI. Precedence: explicit maintainer instruction → this doc + `AGENTS.md` → vendor docs.
-`AGENTS.md` owns _behavioral_ invariants (pad geometry, motion wiring, focus-trap/inert rules,
+`apps/webapp/CLAUDE.md` owns _behavioral_ invariants (pad geometry, motion wiring, focus-trap/inert rules,
 sheet systems); this doc owns the _visual language_ they render in. `.cursor/rules/design-system.mdc`
 auto-attaches a pointer here; the `design-system` skill in `.cursor/skills/` is the working protocol.
 
@@ -18,7 +18,7 @@ auto-attaches a pointer here; the `design-system` skill in `.cursor/skills/` is 
 - daisyUI component classes (`btn`, `input`, `select`, `menu`, `tab`, `collapse`, `badge`, `skeleton`)
   are the first reach on daisyUI-backed surfaces; Tailwind utilities customize them; bespoke CSS is a
   last resort and lives only under `src/styles/` (never colocated with components — see
-  `AGENTS.md` §TipTap Styling).
+  `apps/webapp/CLAUDE.md` §TipTap Styling).
 - Vendor reference for daisyUI class names: <https://daisyui.com/llms.txt> (fetch on demand — the
   repo no longer vendors it). Floating UI behavior: `.cursor/rules/react-floating-ui.mdc`.
 - Bun only — any upstream `npm`/`pnpm` example translates to `bun` / `bunx`.
@@ -121,17 +121,17 @@ as a color-swap inside a shared structure (see `--pad-sheet-shadow`).
 | `--pad-divider` / `--pad-sheet-border` | = base-300 | = base-300 | Docked-region dividers + sheet outline. |
 | `--pad-sheet-radius` | `var(--radius-box)` | same | Document sheet corners — chains to the box radius stop (10px). |
 | `--pad-sheet-shadow` | `none` | faint base-content lift | Dark-only sheet lift; light docked surfaces are flat. |
-| `--shadow-overlay` | 2-layer **black** 8% mix | black 50%/40% (dark override) | **The** box-shadow for every SCSS-styled floating panel — black-based like the scrims, never `base-content` (glows in dark). Tailwind-styled floating surfaces use `shadow-xl`. No other floating shadow literals outside §Elevation's deliberate exceptions. |
+| `--shadow-overlay` | 2-layer **black** 8% mix | black 50%/40% (dark override) | **The** box-shadow for every SCSS-styled floating panel — black-based like the scrims, never `base-content` (glows in dark). Tailwind-styled floating surfaces use `shadow-xl`. No other floating shadow literals outside §Elevation species — deliberate exceptions. |
 | `--modal-scrim` / `--modal-scrim-heavy` | black 45% / 72% | black 55% / 80% | Dialog + sheet scrims / media lightbox. Always **black-based** — never `base-content` washes. |
 | `--color-media-image` / `--color-media-video` / `--color-media-audio` | `#059669` / `#7c3aed` / `#ea580c` (declared in `@theme`) | `#34d399` / `#a78bfa` / `#fb923c` (dark block overrides) | Media-category accents as `media-image                                                                                                                                                                                                                                     | video | audio` color utilities — one name family, no alias layer. Icon/left-border accents only; attachment cards stay neutral. |
-| `--resize-sash-*` | hit 8px, size 4px, idle = divider, hover = primary | same | TOC/chat resize sashes (geometry rules in `AGENTS.md` §Pad Workspace Surfaces). |
+| `--resize-sash-*` | hit 8px, size 4px, idle = divider, hover = primary | same | TOC/chat resize sashes (geometry rules in `apps/webapp/CLAUDE.md` §Pad Workspace Surfaces (desktop)). |
 | `--color-docsy` | = primary | = primary | Themed brand alias (TOC accents). |
 | `--caret-color` / `--caret-color-inverse` | primary / primary-content | same | Editor caret. |
 | `--border-color-tint` / `--muted-foreground` | base-content 14% / 50% | same | Hairlines / muted ink in imperative DOM. |
 | `--info-ink` | `color-mix(info, base-content 42%)` | same (adapts) | Info hue readable as **text ink** on light `bg-info/10` (plain `info` fails AA there); mix adapts per theme — darkens on light, lifts on dark. Used by the filter chip. (No `--color-*` prefix: it is not a daisyUI utility color — consume via `text-[var(--info-ink)]`.) |
 | `--font-sans` | `Helvetica, Arial, sans-serif` | same | The app type stack (universal reset + one-off SCSS consumers). No other font stacks. |
 | `--focus-ring-soft` | `2px solid` primary 45% mix | same (primary swaps per theme) | The SCSS focus-ring formula — consume via `outline: var(--focus-ring-soft); outline-offset: 1px`. |
-| Motion (`_entry.scss` + `utils/motion.ts`) | `--motion-overlay-in/out 120/80ms`, `--motion-panel 200ms`, `--motion-region 220ms`, enter ease-out / exit ease-in | same | Tiers + PRM rules in `AGENTS.md` §Motion System — the JS mirror updates in lockstep. |
+| Motion (`_entry.scss` + `utils/motion.ts`) | `--motion-overlay-in/out 120/80ms`, `--motion-panel 200ms`, `--motion-region 220ms`, enter ease-out / exit ease-in | same | Tiers + PRM rules in `apps/webapp/CLAUDE.md` §Motion System — the JS mirror updates in lockstep. |
 
 ## Ink ladder
 
@@ -723,7 +723,7 @@ modal (L2) — `components/settings/SettingsPanel.tsx` (+ `components/settings/c
 
 | State              | Recipe                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| frame              | `bg-base-100 md:h-[min(85vh,800px)] md:flex-row` in `ModalContent p-0` + **`mobileTakeover` on every mount** (full-bleed below `md`, §Elevation L2 arm) — mounts: HomePage/MobilePadTitle `size=4xl`, PadTitle/EditorToolbar `size=5xl`; aside `border-base-300 bg-base-100 md:w-72 md:border-r` + doc-content-in 180ms; detail header `border-base-300 border-b px-4 py-3` with always-visible CloseButton (back chevron stays `md:hidden`), body ScrollArea `bg-base-200 overscroll-contain` + `max-w-2xl p-4 sm:p-6`; SettingsCard `bg-base-100 border-base-300 rounded-box border p-4 sm:p-6` (bordered shadowless)                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| frame              | `bg-base-100 md:h-[min(85vh,800px)] md:flex-row` in `ModalContent p-0` + **`mobileTakeover` on every mount** (full-bleed below `md`, §Elevation species (L2 arm)) — mounts: HomePage/MobilePadTitle `size=4xl`, PadTitle/EditorToolbar `size=5xl`; aside `border-base-300 bg-base-100 md:w-72 md:border-r` + doc-content-in 180ms; detail header `border-base-300 border-b px-4 py-3` with always-visible CloseButton (back chevron stays `md:hidden`), body ScrollArea `bg-base-200 overscroll-contain` + `max-w-2xl p-4 sm:p-6`; SettingsCard `bg-base-100 border-base-300 rounded-box border p-4 sm:p-6` (bordered shadowless)                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | nav                | user chip `bg-base-200 rounded-box p-2.5` + `Avatar size=sm shrink-0` (default ring frame); item idle `btn ghost text-base-content hover:bg-base-200 min-h-[44px] text-sm font-medium`, active `btn btn-primary` full-fill + chevron `text-primary-content/70`; GitHub card `border-base-300 hover:bg-base-200 rounded-field border`; sign-out ghost `border-base-300 text-base-content/70 border` + danger hover `hover:bg-error/10 hover:text-error`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | avatar upload      | outer hit target `size-24 rounded-full border-0 bg-transparent` (96px); `Avatar clickable={false} className="size-full group-hover:ring-primary"` (fills the hit target); overlay `rounded-full bg-black/40` + `LuCamera text-white` `opacity-0 group-hover:opacity-100` (uploading forces on + `loading loading-spinner text-white`); remove `text-base-content/60 hover:text-error`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | theme picker       | one `role=radiogroup` (roving tabindex + arrow keys). **System** = full-width row `rounded-box border px-3 py-2.5` + light/dark split thumb (`data-theme` halves `docsplus`/`docsplus-dark`, `h-6 w-9 rounded-md`). **Light / Dark group labels** `text-base-content/45 text-[10px] font-bold tracking-wider uppercase` → swatch grid `grid-cols-2 sm:grid-cols-3 gap-2.5`; each card `rounded-box border overflow-hidden relative` wraps a live **`data-theme`-scoped** preview (`aspect-[4/3] bg-[var(--pad-well)] p-2` + inner sheet `bg-base-100 border-base-300 rounded-[5px]` + text lines + `bg-primary` accent bar) over a foot `border-t px-2.5 py-1.5` (label + premium `New` badge `text-primary bg-primary/10`); idle `border-base-300 hover:border-base-content/25`, selected `border-primary ring-primary/30 ring-2` + label `text-primary` + checkmark `bg-primary text-primary-content size-4 rounded-full`. Swatches never hardcode hex — the `data-theme` scope renders each theme's own tokens (same trick as `em-emoji-picker`) |
@@ -1107,7 +1107,7 @@ content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_da
 - Theme third-party widgets through their CSS-var APIs at the token layer (`em-emoji-picker`,
   `.documentKeywordInput` `--rti-*`, `react-modal-sheet` backdrop).
 - Verify every visual change in the browser, light + dark (+ HC for pad/TOC work), desktop ≥1280px
-  and mobile, before calling it done (`AGENTS.md` §Testing And Verification).
+  and mobile, before calling it done (`AGENTS.md` §Test Policy).
 
 **Never**
 
@@ -1116,7 +1116,7 @@ content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_da
 - `base-content` scrims (white fog on dark), scrim colors other than the black tokens.
 - `*Classes.ts` / `*Styles.ts` string-constant modules (`AGENTS.md` §Code Quality).
 - A second floating-surface language (the chat hover menu was the last fork; it converged).
-- Live regions / `role="status"` inside `.ProseMirror` (`AGENTS.md` §Editor Performance).
+- Live regions / `role="status"` inside `.ProseMirror` (`apps/webapp/src/components/TipTap/CLAUDE.md` §Editor Performance).
 
 ## Change protocol
 
@@ -1124,6 +1124,6 @@ content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_da
    Tailwind utilities need it → consume via token classes.
 2. New surface → pick a species; if a genuinely new species is required, add it to the elevation
    table here first, then implement.
-3. Update this doc's affected rows + `AGENTS.md` §UI And Theme / §Pad Workspace Surfaces when the
+3. Update this doc's affected rows + `AGENTS.md` §UI And Theme / §Pad Workspace Surfaces (desktop) when the
    change touches doctrine; keep `_document.tsx` theme-color + skeleton mirrors in lockstep.
 4. Browser-verify light/dark/mobile; then run the memory updater so agent memory stays in sync.

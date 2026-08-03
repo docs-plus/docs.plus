@@ -17,8 +17,8 @@ Use this rule when modifying the Tiptap editor, ProseMirror plugins, editor exte
 
 ## docs.plus Boundaries
 
-- Keep docs.plus editor invariants in `AGENTS.md`: flat heading schema, HeadingScale, editor references, mobile pad behavior, hyperlink extension rules, and chat composer constraints.
-- Do not paste the full Tiptap `llms.txt` into this repo. Use it as a live upstream index, then write only project-specific rules here or in `AGENTS.md`.
+- docs.plus editor invariants live in the per-directory `CLAUDE.md` files, not `AGENTS.md`: flat heading schema, HeadingScale and editor references in `apps/webapp/src/components/TipTap/CLAUDE.md`; mobile pad behavior in `apps/webapp/CLAUDE.md`; hyperlink extension rules in `extensions/CLAUDE.md`; chat composer constraints in `apps/webapp/src/components/chatroom/CLAUDE.md`. See `AGENTS.md` §Filed by directory.
+- Do not paste the full Tiptap `llms.txt` into this repo. Use it as a live upstream index, then write only project-specific rules here or in the `CLAUDE.md` that owns the directory.
 - Use Bun and the root catalog/dependency policy from `AGENTS.md`; do not add or update `@tiptap/*` packages from memory.
 - Keep all `@tiptap/*` package versions aligned when dependency work is explicitly requested.
 

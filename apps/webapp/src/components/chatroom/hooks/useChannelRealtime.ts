@@ -28,7 +28,7 @@ const captureRealtimeIssueOnce = (topic: string, status: string, channelId: stri
 // postgres_changes payloads omit RPC-computed columns (user_details,
 // is_bookmarked, bookmark_id). Use `user_details` presence as the
 // discriminator: hydrated → authoritative; raw → graft existing. Both
-// merge sites call this so the AGENTS.md lockstep rule is enforced.
+// merge sites call this so the chatroom CLAUDE.md §Chatroom Realtime lockstep rule is enforced.
 const mergeRowPreservingComputedColumns = (
   incoming: MessageRow | null | undefined,
   existing: MessageRow | null | undefined

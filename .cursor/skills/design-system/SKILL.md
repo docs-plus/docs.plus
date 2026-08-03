@@ -7,8 +7,10 @@ description: Apply the docs.plus design system (tokens, themes, elevation specie
 
 Working protocol for visual changes in `apps/webapp`. The source of truth is
 [.cursor/docs/design-system.md](../../docs/design-system.md) — tokens, themes, elevation species,
-state language, and the per-component catalog. `AGENTS.md` owns behavioral invariants
-(§UI And Theme, §Pad Workspace Surfaces, §Floating Surfaces And Modal Scrims, §Motion System).
+state language, and the per-component catalog. `AGENTS.md` owns §UI And Theme;
+[apps/webapp/CLAUDE.md](../../../apps/webapp/CLAUDE.md) owns the rest of the behavioral invariants
+(§Pad Workspace Surfaces, §Floating Surfaces And Modal Scrims, §Motion System) and loads
+automatically when you work under `apps/webapp/`.
 
 ## Protocol
 
@@ -38,5 +40,5 @@ state language, and the per-component catalog. `AGENTS.md` owns behavioral invar
 
 - No new shadow/radius values; no shadows on docked light surfaces; scrims are black tokens only.
 - No `*Classes.ts`/`*Styles.ts` string modules; no second floating-surface language.
-- No live regions inside `.ProseMirror`; overlay species and motion tiers come from AGENTS.md.
+- No live regions inside `.ProseMirror`; overlay species and motion tiers come from `apps/webapp/CLAUDE.md`.
 - Never `next build` against a live dev server (shared `.next`) — `tsc --noEmit` + the running app.

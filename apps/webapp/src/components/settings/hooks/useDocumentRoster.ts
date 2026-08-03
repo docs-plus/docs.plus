@@ -22,7 +22,7 @@ export function useDocumentRoster(slug: string) {
     queryKey: ['document-roster', slug],
     enabled: !!slug,
     staleTime: 30_000,
-    // await dispatches the lazy PostgrestBuilder (AGENTS.md §Supabase lazy rpc).
+    // await dispatches the lazy PostgrestBuilder (packages/supabase/CLAUDE.md §Supabase — lazy rpc).
     queryFn: async () => {
       const res = await supabaseClient.rpc('get_document_members', { p_slug: slug })
       if (res.error) throw res.error

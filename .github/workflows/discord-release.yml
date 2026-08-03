@@ -154,7 +154,7 @@ jobs:
           set -euo pipefail
 
           if [ -z "${WEBHOOK:-}" ]; then
-            echo "::error::DISCORD_RELEASE_WEBHOOK secret is not set. See AGENTS.md → Releasing for setup."
+            echo "::error::DISCORD_RELEASE_WEBHOOK secret is not set. See .cursor/skills/release-extensions/SKILL.md for setup."
             exit 1
           fi
 

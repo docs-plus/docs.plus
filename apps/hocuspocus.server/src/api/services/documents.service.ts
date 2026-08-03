@@ -438,7 +438,7 @@ export const updateDocument = async (
       // Privatising an OWNERLESS row sealed it for everyone, the setter included:
       // resolvePrivateAccess returns sign-in-required while ownerId is null, so
       // nobody could read it or undo the flip. The claimer becomes the owner —
-      // the PUT is already the authoritative owner writer (AGENTS.md §Hocuspocus).
+      // the PUT is already the authoritative owner writer (CLAUDE.md §Hocuspocus Server).
       if (isPrivate === true && existing && !existing.ownerId && requesterId) {
         updateData.ownerId = requesterId
       }

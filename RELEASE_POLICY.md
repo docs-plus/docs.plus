@@ -1,6 +1,6 @@
 # Release Policy
 
-This document defines how the `@docs.plus/extension-*` package family is versioned, published, and announced. It is the authoritative reference; `AGENTS.md` carries a short pointer to here.
+This document defines how the `@docs.plus/extension-*` package family is versioned, published, and announced. It is the authoritative reference; the `release-extensions` skill (`.cursor/skills/release-extensions/SKILL.md`) carries the operational subset and points here.
 
 ## Status
 
@@ -39,7 +39,7 @@ The five publishable packages:
 **Rules during Phase 1:**
 
 1. Each extension's `package.json` `version` is bumped to `2.0.0` independently when its breaking changes are ready.
-2. Each ships per the existing per-package runbook in `AGENTS.md` ("Release routine"): `bun publish --tag latest --otp <code>` → `git tag <pkg>@2.0.0` → `gh release create ...`.
+2. Each ships per the existing per-package runbook in the `release-extensions` skill: `bun publish --tag latest --otp <code>` → `git tag <pkg>@2.0.0` → `gh release create ...`.
 3. Each carries its own `[2.0.0]` `CHANGELOG.md` entry following the [CHANGELOG style guide](#changelog-style-guide).
 4. Each must have the publishable-package scaffolding before its first `2.0.0` ship. See [Per-package readiness checklist](#per-package-readiness-checklist).
 5. **The CI lockstep guard is dormant in Phase 1.** No PR is blocked for non-aligned versions during cutover.
@@ -99,7 +99,7 @@ On `bun publish` failure: halt immediately, do not retry (would burn an OTP), pr
 #### Post-publish (batched)
 
 1. `git push origin --tags` (one call, all five new tags).
-2. For each package, `gh release create '<pkg>@<target-version>' --notes <slice from CHANGELOG.md>` using the existing `awk` slice from `AGENTS.md`.
+2. For each package, `gh release create '<pkg>@<target-version>' --notes <slice from CHANGELOG.md>` using the existing `awk` slice from the `release-extensions` skill.
 3. Print summary: 5 npm URLs, 5 GitHub release URLs.
 
 The existing `discord-release.yml` workflow fires per release event, so the team gets five Discord embeds in ~30 seconds. This is accepted noise; each embed carries its own changelog and install hint, and the cadence (a few times per year) does not warrant inventing an umbrella-release format. See [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella).

@@ -60,7 +60,7 @@ const ensureMediaStorageReady = async (
   return { ok: false, error: 'Attachments are not available in storage yet' }
 }
 
-/** Direct insert — canonical first-send path (AGENTS.md §Optimistic Message Lifecycle). */
+/** Direct insert — canonical first-send path (chatroom CLAUDE.md §Optimistic Message Lifecycle). */
 export async function persistChatMessage(
   payload: ChatMessageInsertPayload
 ): Promise<PersistChatMessageResult> {

@@ -29,7 +29,7 @@ export function useDocumentMembers(slugs: string[], enabled: boolean) {
     staleTime: 30_000,
     // Load more grows the slug set (new key); hold the prior map so clusters don't blink out.
     placeholderData: keepPreviousData,
-    // await dispatches the lazy PostgrestBuilder (AGENTS.md §Supabase lazy rpc).
+    // await dispatches the lazy PostgrestBuilder (packages/supabase/CLAUDE.md §Supabase — lazy rpc).
     queryFn: async () => {
       const res = await supabaseClient.rpc('get_document_member_previews', { p_slugs: slugs })
       if (res.error) throw res.error
