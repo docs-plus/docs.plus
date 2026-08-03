@@ -22,7 +22,7 @@ Before drafting anything, learn what this repo actually accepts:
 
 ## Step 1 — context depth (tier the work)
 
-Default is fast: current conversation + working-tree diff + `AGENTS.md`. Most commits don't need more.
+Default is fast: current conversation + working-tree diff + `AGENTS.md` + every `CLAUDE.md` on the path of the changed files. Most commits don't need more.
 
 **Escalate to session archaeology (tier 2) when any of:**
 
@@ -87,7 +87,8 @@ These three sources together give a HoE-grade picture in seconds and are the _co
 ```bash
 git log --oneline origin/HEAD..HEAD     # the branch's prior commit messages tell the story arc
 git status --porcelain                   # diff already groups itself by feature folder
-cat AGENTS.md                            # workspace context for the why
+cat AGENTS.md                            # repo-wide context for the why
+# plus every CLAUDE.md on the path of the changed files (see AGENTS.md §Filed by directory)
 ```
 
 Use this **whenever** it's sufficient. Tier 2 archaeology is for when conversation history actually carries unique signal that git + AGENTS.md don't.
