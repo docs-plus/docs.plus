@@ -1,0 +1,59 @@
+---
+description: Where this repo's agent rules and durable memory live, and the order to read them. Applies to every task.
+alwaysApply: true
+---
+
+# Agent rules and memory
+
+Cursor does not read `CLAUDE.md` files. Claude Code does, and this repo files most of its rules
+there, so Cursor needs this pointer to reach the same rules. Read in this order.
+
+## 1. Durable memory
+
+`.agents/memory/` is a symlink to the Claude Code memory store, so both tools share one copy. Start
+at `.agents/memory/MEMORY.md` — a one-line index of every memory file — then open the entries
+relevant to the task.
+
+It is **gitignored and must stay that way**. It records production hosts, project refs and infra
+details that must not reach a public repo.
+
+## 2. Repo-wide rules
+
+[`AGENTS.md`](../../AGENTS.md) at the repo root. Package manager, git and commit policy, code
+quality, test policy, release safety, monorepo toolchain. Read it in full before any substantive
+work.
+
+## 3. Directory-scoped rules
+
+Rules for one area live in that area's `CLAUDE.md`. Claude Code loads these automatically by path;
+in Cursor you must open them yourself. `AGENTS.md` §Filed by directory lists every section and its
+file. The map:
+
+| Working on | Read |
+| --- | --- |
+| Webapp UI, document features | `apps/webapp/CLAUDE.md` |
+| Editor, TipTap, ProseMirror | `apps/webapp/src/components/TipTap/CLAUDE.md` |
+| Chatroom, messaging, composer | `apps/webapp/src/components/chatroom/CLAUDE.md` |
+| Hocuspocus, REST, persistence, production | `apps/hocuspocus.server/CLAUDE.md` |
+| Admin dashboard | `apps/admin-dashboard/CLAUDE.md` |
+| Supabase, SQL, RLS, storage | `packages/supabase/CLAUDE.md` |
+| Extensions | `extensions/CLAUDE.md` |
+| Publishing a release | `.cursor/skills/release-extensions/SKILL.md` |
+
+Nested files stack: work under `apps/webapp/src/components/chatroom/` is governed by the root file,
+the webapp file and the chatroom file together.
+
+## 4. Package-local and reference material
+
+A package's own `AGENTS.md` when working inside it (today:
+`extensions/extension-hyperlink/AGENTS.md`). Then the `.cursor/rules/*.mdc` that auto-attach for the
+files you are editing, and the long-form docs in `.cursor/docs/`.
+
+When guidance overlaps, `AGENTS.md` and the area `CLAUDE.md` win; `.mdc` files are authoring
+reference.
+
+## Keeping this honest
+
+`bun run check:agent-docs` asserts that every section reference and relative link between these
+files still resolves, and that every rule file is tracked by git. Run it after moving content
+between them.
