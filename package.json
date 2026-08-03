@@ -48,7 +48,7 @@
     "dev:admin": "bun --filter @docs.plus/admin-dashboard dev",
     "build": "bun run --filter '*' build",
     "start": "bun --filter @docs.plus/webapp start",
-    "check": "bun run lint && bun run lint:styles && bun run format && bun run typecheck",
+    "check": "bun run lint && bun run lint:styles && bun run format && bun run typecheck && bun run check:agent-docs",
     "check:push": "bun run lint && bun run lint:styles && bun run typecheck",
     "check:fix": "bun run lint:fix && bun run lint:styles:fix && bun run format:fix",
     "lint": "eslint . --max-warnings=0",
@@ -65,7 +65,8 @@
     "doctor": "bun scripts/doctor.ts",
     "release:family": "bun scripts/release-family.ts",
     "update": "bash ./scripts/update-packages.sh",
-    "pre-push": "bun scripts/pre-push.ts"
+    "pre-push": "bun scripts/pre-push.ts",
+    "check:agent-docs": "bun scripts/check-agent-docs.ts"
   },
   "engines": {
     "node": ">=24.11.0",
