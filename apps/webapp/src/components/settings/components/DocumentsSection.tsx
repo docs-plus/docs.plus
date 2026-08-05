@@ -48,6 +48,11 @@ const SORT_OPTIONS: SelectOption[] = [
 const SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
 const VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
 
+/** Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
+ *  column's name. The human slug matches nothing. One expression so the fetch key and both
+ *  lookups cannot drift apart — a drift here was the original bug. */
+const membersKey = (doc: { documentId: string }) => doc.documentId.toLowerCase()
+
 async function fetchMyDocumentsPage(
   uid: string,
   pageParam: number,
@@ -188,12 +193,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const docs = data?.pages.flatMap((p) => p.docs) ?? []
   const total = data?.pages[0]?.total ?? 0
 
-  // Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
-  // column's name. The human slug matches nothing.
-  const { data: membersMap } = useDocumentMembers(
-    docs.map((d) => d.documentId.toLowerCase()),
-    !!userId && !isAnonymous
-  )
+  const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId && !isAnonymous)
 
   const queryClient = useQueryClient()
   const { deleteDocument, restoreDocument } = useDeleteDocument()
@@ -517,7 +517,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                         userId={userId}
                         searchQuery={searchQuery}
                         sortKey={sortKey}
-                        members={membersMap?.get(doc.slug)}
+                        members={membersMap?.get(membersKey(doc))}
                         onOpenDocument={onOpenDocument}
                         index={i}
                         isActive={i === activeIndex}
@@ -535,7 +535,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                         userId={userId}
                         searchQuery={searchQuery}
                         sortKey={sortKey}
-                        members={membersMap?.get(doc.slug)}
+                        members={membersMap?.get(membersKey(doc))}
                         onOpenDocument={onOpenDocument}
                         onDelete={handleDelete}
                       />
