@@ -8,7 +8,7 @@ describe('chatroom send and retry', () => {
 
   it('sends a message and renders it', () => {
     cy.get('[data-testid="composer-input"]').type('hello from cypress')
-    cy.get('[data-testid="composer-submit"]').click()
+    cy.get('[data-testid="composer-primary-action"]').click()
     cy.contains('hello from cypress').should('be.visible')
   })
 
@@ -18,7 +18,7 @@ describe('chatroom send and retry', () => {
       body: { code: '42501' }
     }).as('failedSend')
     cy.get('[data-testid="composer-input"]').type('this will fail')
-    cy.get('[data-testid="composer-submit"]').click()
+    cy.get('[data-testid="composer-primary-action"]').click()
     cy.wait('@failedSend')
     cy.get('[data-status="failed"]').should('be.visible')
     cy.get('[data-testid="composer-input"]').should('contain.text', 'this will fail')
@@ -30,7 +30,7 @@ describe('chatroom send and retry', () => {
       body: { code: '23505', message: 'duplicate key value violates unique constraint' }
     }).as('dupSend')
     cy.get('[data-testid="composer-input"]').type('idempotent send')
-    cy.get('[data-testid="composer-submit"]').click()
+    cy.get('[data-testid="composer-primary-action"]').click()
     cy.wait('@dupSend')
     cy.get('[data-status="sent"]').should('exist')
   })

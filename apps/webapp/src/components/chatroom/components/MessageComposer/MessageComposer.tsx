@@ -11,14 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../ChatroomContext'
-import {
-  Actions,
-  AttachButton,
-  EmojiButton,
-  MentionButton,
-  SendButton,
-  ToggleToolbarButton
-} from './components/Actions'
+import { Actions, EmojiButton, MentionButton } from './components/Actions'
 import { ComposerEmojiPanel } from './components/ComposerEmojiPanel'
 import { Context } from './components/Context'
 import CommentContext from './components/Context/CommentContext'
@@ -190,6 +183,10 @@ const MessageComposer = ({
     const onPopState = () => {
       const { isOpen, close } = useComposerEmojiPanelStore.getState()
       if (!isOpen) return
+      // Landing back ON our own entry (not off it) means some other surface's back()
+      // consumed an entry pushed on top of ours (e.g. useHistoryDismiss closing an
+      // unrelated sheet) — not a user gesture aimed at this panel. Ignore it.
+      if ((window.history.state as { composerEmojiPanel?: true } | null)?.composerEmojiPanel) return
       close()
       editor.commands.focus()
     }
@@ -308,11 +305,8 @@ MessageComposer.ReplyContext = ReplyContext
 MessageComposer.EditContext = EditContext
 MessageComposer.CommentContext = CommentContext
 MessageComposer.Actions = Actions
-MessageComposer.AttachButton = AttachButton
 MessageComposer.EmojiButton = EmojiButton
 MessageComposer.MentionButton = MentionButton
-MessageComposer.SendButton = SendButton
-MessageComposer.ToggleToolbarButton = ToggleToolbarButton
 MessageComposer.Input = Input
 MessageComposer.ComposerDesktopLayout = ComposerDesktopLayout
 MessageComposer.ComposerMobileLayout = ComposerMobileLayout
