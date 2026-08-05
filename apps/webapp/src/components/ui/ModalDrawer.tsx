@@ -1,9 +1,11 @@
+import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import React, {
   createContext,
   forwardRef,
   useCallback,
   useContext,
-  useImperativeHandle
+  useImperativeHandle,
+  useState
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -54,9 +56,11 @@ export const ModalDrawer = forwardRef<unknown, ModalDrawerProps>(
     ref
   ) => {
     const checkboxRef = React.useRef<HTMLInputElement>(null)
+    const [isOpen, setIsOpen] = useState(false)
 
     const handleCheckboxChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
+        setIsOpen(event.target.checked)
         if (onModalStateChange) {
           onModalStateChange(event.target.checked)
         }
@@ -91,6 +95,10 @@ export const ModalDrawer = forwardRef<unknown, ModalDrawerProps>(
         }
       }
     }
+
+    // Every close path (scrim label, in-drawer close, imperative uncheck()) funnels
+    // through handleCheckboxChange, so isOpen reflects them all — see useHistoryDismiss.
+    useHistoryDismiss(isOpen, modalControl.close)
 
     return (
       <div className={twMerge('drawer z-30 w-full', position === 'right' && 'drawer-end')}>

@@ -1,6 +1,7 @@
 import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
 import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
 import FilterSheet from '@components/pages/document/components/FilterSheet'
+import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { type SheetData, type SheetDataMap, type SheetType, useSheetStore } from '@stores'
 import { useMemo } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
@@ -69,6 +70,10 @@ const DEFAULT_SHEET_PROPS: Partial<SheetProps> = { id: 'bottom_sheet' }
 const BottomSheet = () => {
   const { activeSheet, closeSheet, sheetData } = useSheetStore()
   const setSheetState = useSheetStore((state) => state.setSheetState)
+
+  // Every dismiss path (X, scrim, drag) already routes through closeSheet, whether
+  // called here or from inside sheet content — see useHistoryDismiss.
+  useHistoryDismiss(!!activeSheet, closeSheet)
 
   const content = useMemo((): React.ReactNode => {
     if (!activeSheet) return null
