@@ -362,8 +362,6 @@
   /* Info hue readable as TEXT ink on light `bg-info/10` surfaces (plain `info` fails AA there). Adapts
      per theme via base-content — darkens on light grounds, lifts on dark ones. */
   --info-ink: color-mix(in oklch, var(--color-info), var(--color-base-content) 42%);
-  --hm-resize-border: var(--color-primary);
-  --hm-resize-handle-bg: var(--color-base-100);
   /* Pad workspace — docked regions (TOC, editor well, chat) share one divider; shadows only on floating overlays. */
   --pad-divider: var(--color-base-300);
   --pad-sheet-border: var(--color-base-300);
@@ -406,6 +404,39 @@
     color-mix(in oklch, black 72%, transparent),
     color-mix(in oklch, black 80%, transparent)
   );
+}
+
+/* extension-hypermultimedia (resize-gripper.css, media-toolbar.css, media-loading-shell.css)
+   redeclares these custom properties on `:root` with hardcoded light-dark() literals, and its
+   sheet loads after this one in `_app.tsx` — equal (0,1,0) specificity means later source order
+   wins, so the webapp's theme tokens were dead in 6 of 7 themes. `html[data-theme]` is (0,1,1),
+   which always wins regardless of load order; `data-theme` is present on every page (see
+   `_document.tsx` THEME_BOOT_SCRIPT). Values here must not drift from the extension's own
+   property names — see extensions/extension-hypermultimedia/src/styles/*.css. */
+html[data-theme] {
+  --hm-resize-border: var(--color-primary);
+  --hm-resize-handle-bg: var(--color-base-100);
+
+  --hm-toolbar-bg: var(--color-base-100);
+  --hm-toolbar-fg: var(--color-base-content);
+  --hm-toolbar-border: var(--border-color-tint);
+  --hm-toolbar-hover: var(--color-base-300);
+  --hm-toolbar-active: color-mix(in oklch, var(--color-primary) 14%, var(--color-base-100));
+  --hm-toolbar-active-fg: var(--color-primary);
+  --hm-toolbar-shadow: var(--shadow-overlay);
+  --hm-caption-fg: var(--muted-foreground);
+  --hm-caption-placeholder: color-mix(in oklch, var(--color-base-content) 35%, transparent);
+
+  --hm-loading-bg: var(--color-base-200);
+  --hm-loading-shimmer: light-dark(
+    color-mix(in oklch, white 45%, transparent),
+    color-mix(in oklch, white 8%, transparent)
+  );
+  --hm-loading-provider: var(--color-base-content);
+  --hm-loading-message: var(--muted-foreground);
+  --hm-loading-error: var(--color-error);
+  --hm-loading-spinner-track: var(--color-base-300);
+  --hm-loading-spinner-active: var(--color-primary);
 }
 
 /* Premium light themes — media accents tuned to each palette (--pad-well = base-200). */
