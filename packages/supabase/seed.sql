@@ -7347,20 +7347,22 @@ EXECUTE FUNCTION create_reaction_notifications();
 
 COMMENT ON TRIGGER create_reaction_notifications ON public.messages IS 'Creates notifications when a message receives new reactions.';
 
--- Bumps unread_message_count for every workspace member (creating their
--- channel_members row if missing) except the sender, so unread badges
--- include people who never explicitly joined the channel.
+-- Bumps unread_message_count for every workspace member except the sender, so
+-- unread badges include people who never explicitly joined. On PUBLIC channels it
+-- also creates the missing channel_members row; on every other type it must not,
+-- because that row is what grants read access.
 CREATE OR REPLACE FUNCTION increment_unread_count_on_new_message() RETURNS TRIGGER AS $$
 DECLARE
     workspace_id_var VARCHAR(36);
+    channel_type_var public.channel_type;
 BEGIN
     -- Skip if message type is notification
     IF NEW.type = 'notification' THEN
         RETURN NEW;
     END IF;
 
-    -- Get the workspace ID for the channel where the message was posted
-    SELECT workspace_id INTO workspace_id_var
+    -- Get the workspace ID and type for the channel where the message was posted
+    SELECT workspace_id, type INTO workspace_id_var, channel_type_var
     FROM public.channels
     WHERE id = NEW.channel_id;
 
@@ -7369,31 +7371,36 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- First, ensure all workspace members have a channel_members entry.
-    -- Seed unread at 0, not 1: the increment UPDATE below always re-matches
-    -- this fresh row (its last_read_update_at is < NEW.created_at) and brings
-    -- it to 1 in the same transaction, so seeding 1 double-counts to 2.
-    INSERT INTO public.channel_members (channel_id, member_id, unread_message_count, last_read_update_at)
-    SELECT
-        NEW.channel_id,
-        wm.member_id,
-        0,
-        COALESCE((SELECT created_at FROM public.messages
-                 WHERE channel_id = NEW.channel_id
-                 ORDER BY created_at DESC
-                 LIMIT 1 OFFSET 1),
-                 timezone('utc', now()) - interval '1 second')
-    FROM public.workspace_members wm
-    WHERE wm.workspace_id = workspace_id_var
-      AND wm.left_at IS NULL
-      AND wm.member_id != NEW.user_id
-      AND NOT EXISTS (
-          SELECT 1
-          FROM public.channel_members cm
-          WHERE cm.channel_id = NEW.channel_id
-            AND cm.member_id = wm.member_id
-      )
-    ON CONFLICT (channel_id, member_id) DO NOTHING;
+    -- Auto-enrolment is PUBLIC-only, because internal.can_read_channel grants read
+    -- on an active channel_members row: enrolling the workspace into a DIRECT or
+    -- GROUP channel would publish it to everyone. PUBLIC already reads via its type,
+    -- so the row it creates grants nothing and only carries the unread badge.
+    IF channel_type_var = 'PUBLIC' THEN
+        -- Seed unread at 0, not 1: the increment UPDATE below always re-matches
+        -- this fresh row (its last_read_update_at is < NEW.created_at) and brings
+        -- it to 1 in the same transaction, so seeding 1 double-counts to 2.
+        INSERT INTO public.channel_members (channel_id, member_id, unread_message_count, last_read_update_at)
+        SELECT
+            NEW.channel_id,
+            wm.member_id,
+            0,
+            COALESCE((SELECT created_at FROM public.messages
+                     WHERE channel_id = NEW.channel_id
+                     ORDER BY created_at DESC
+                     LIMIT 1 OFFSET 1),
+                     timezone('utc', now()) - interval '1 second')
+        FROM public.workspace_members wm
+        WHERE wm.workspace_id = workspace_id_var
+          AND wm.left_at IS NULL
+          AND wm.member_id != NEW.user_id
+          AND NOT EXISTS (
+              SELECT 1
+              FROM public.channel_members cm
+              WHERE cm.channel_id = NEW.channel_id
+                AND cm.member_id = wm.member_id
+          )
+        ON CONFLICT (channel_id, member_id) DO NOTHING;
+    END IF;
 
     -- Then, increment unread message count for all existing channel members
     -- who are also active workspace members (excluding the sender)
@@ -7411,7 +7418,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION increment_unread_count_on_new_message() IS 'Increments unread message count for ALL workspace members (even non-channel members) upon insertion of a new message.';
+COMMENT ON FUNCTION increment_unread_count_on_new_message() IS 'Increments unread message count for workspace members on a new message. Auto-enrols non-members on PUBLIC channels only — a channel_members row grants read access, so enrolling on any other type would expose the channel.';
 
 -- Trigger: increment_unread_count
 CREATE TRIGGER increment_unread_count
@@ -7419,7 +7426,7 @@ AFTER INSERT ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION increment_unread_count_on_new_message();
 
-COMMENT ON TRIGGER increment_unread_count ON public.messages IS 'Increments the unread message count for all workspace members when a new message is posted.';
+COMMENT ON TRIGGER increment_unread_count ON public.messages IS 'Increments the unread message count for workspace members when a new message is posted; auto-enrols only on PUBLIC channels.';
 
 /**
  * DEPRECATED: update_unread_count_on_message_delete
@@ -9602,11 +9609,10 @@ select cron.schedule(
 select cron.unschedule('cleanup-cron-job-run-details')
 from cron.job where jobname = 'cleanup-cron-job-run-details';
 
--- The newest success of every job survives the window. A plain 7-day delete made
+-- The newest success of every job survives the window: a plain 7-day delete made
 -- get_cron_job_health report NULL for any job whose period exceeds 7 days, so the
--- monthly partition job read as "never succeeded" for ~23 days of every 30 and
--- cron-stale-monthly fired against a healthy job. Non-success rows still expire,
--- so a permanently failing job cannot grow the table without bound.
+-- monthly partition job read as "never succeeded" and paged. Non-success rows still
+-- expire, so a permanently failing job cannot grow the table without bound.
 select cron.schedule(
     'cleanup-cron-job-run-details',
     '15 4 * * *',
