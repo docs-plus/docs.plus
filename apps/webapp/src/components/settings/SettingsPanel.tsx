@@ -185,7 +185,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
             onClick={handleBack}
             variant="ghost"
             size="sm"
-            shape="circle"
+            shape="square"
             startIcon={LuChevronLeft}
             iconSize={20}
             aria-label="Back to menu"

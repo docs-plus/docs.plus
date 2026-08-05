@@ -1,5 +1,6 @@
 import { TocHeader, TocMobile } from '@components/toc'
 import Button from '@components/ui/Button'
+import CloseButton from '@components/ui/CloseButton'
 import { useModal } from '@components/ui/ModalDrawer'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useBottomSheet } from '@hooks/useBottomSheet'
@@ -78,10 +79,11 @@ const TocModal = () => {
               }}
               startIcon={Icons.history}
             />
-            <TocModalIconButton
+            <CloseButton
               aria-label="Close sidebar"
               onClick={() => closeModal?.()}
-              startIcon={Icons.close}
+              size="md"
+              className="min-h-11 min-w-11"
             />
           </div>
         </header>

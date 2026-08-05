@@ -6,6 +6,7 @@ import {
   searchGiphy
 } from '@components/chatroom/utils/giphySearch'
 import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignIn'
+import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -135,13 +136,12 @@ export const GifPickerButton = ({ className, size: _size = 18, ...props }: Props
               className="input input-sm input-bordered w-full min-w-0"
               aria-label="Search GIFs"
             />
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs btn-square shrink-0"
+            <CloseButton
+              onClick={() => setOpen(false)}
+              size="xs"
+              className="shrink-0"
               aria-label="Close GIF picker"
-              onClick={() => setOpen(false)}>
-              <Icons.close size={14} />
-            </button>
+            />
           </div>
           {loading ? (
             <div className="flex justify-center py-6">

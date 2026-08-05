@@ -1,3 +1,4 @@
+import CloseButton from '@components/ui/CloseButton'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
@@ -108,11 +109,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
               : 'Anyone with the link can view'}
           </p>
         </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-base-content -mt-1 -mr-2">
-          <Icons.close size={16} />
-        </button>
+        <CloseButton onClick={() => setIsOpen(false)} className="-mt-1 -mr-2" />
       </div>
 
       {isPrivate ? (

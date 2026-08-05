@@ -1,8 +1,7 @@
 import { NotificationToggle } from '@components/chatroom/components/ChatroomToolbar/components/NotificationToggle'
 import { ShareButton } from '@components/chatroom/components/ChatroomToolbar/components/ShareButton'
 import { useChatPaneMode } from '@components/chatroom/hooks/useChatPaneMode'
-import Button from '@components/ui/Button'
-import { Icons } from '@icons'
+import CloseButton from '@components/ui/CloseButton'
 import { useChatStore } from '@stores'
 
 import BreadcrumbMobile from '../../BreadcrumbMobile'
@@ -48,15 +47,11 @@ const ChatPaneHeader = () => {
         <div className="bg-base-200 rounded-field flex items-center">
           <ShareButton size="sm" className="min-h-11 min-w-11" />
           <NotificationToggle size="sm" className="min-h-11 min-w-11" />
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="square"
+          <CloseButton
             onClick={destroyChatRoom}
-            className="text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 min-h-11 min-w-11 focus-visible:ring-2 focus-visible:outline-none"
-            aria-label="Close chat">
-            <Icons.close size={16} />
-          </Button>
+            className="min-h-11 min-w-11"
+            aria-label="Close chat"
+          />
         </div>
       </div>
     </div>
