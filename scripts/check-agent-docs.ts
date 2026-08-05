@@ -31,14 +31,33 @@ const HEADING_SOURCES = [
   '.cursor/skills/release-extensions/SKILL.md'
 ]
 
-/** Rule files whose relative links must resolve — the move changed their directory depth. */
-const LINK_SOURCES = HEADING_SOURCES.filter(
-  (f) => f.endsWith('CLAUDE.md') || f.endsWith('SKILL.md')
-)
-
 const REFERRER_TYPES = /\.(md|mdc|ts|tsx|js|mjs|cjs|sh|sql|ya?ml)$/
 const SECTION_REF = /§([A-Za-z][\w'-]*(?:\s+(?:\([^)]*\)|[A-Za-z][\w'-]*))*)/g
 const MD_LINK = /\]\(([^)\s]+?)(?:#[^)\s]*)?\)/g
+const BACKTICK = /`([^`\n]+)`/g
+const PATH_EXT_WHITELIST = new Set([
+  'ts',
+  'tsx',
+  'js',
+  'jsx',
+  'mjs',
+  'cjs',
+  'cts',
+  'mts',
+  'json',
+  'md',
+  'mdc',
+  'scss',
+  'css',
+  'sql',
+  'sh',
+  'yml',
+  'yaml',
+  'html'
+])
+/** Phrasing this repo already uses to record that a path no longer exists or was never built. */
+const NON_EXISTENCE_MARKER =
+  /\b(deleted|removed|gone|migrated)\b|not implemented|out of scope|non-goals?/i
 
 const read = (f: string) => readFileSync(resolve(ROOT, f), 'utf8')
 const failures: string[] = []
@@ -80,7 +99,10 @@ for (const file of HEADING_SOURCES) {
     failures.push(`${file} — not tracked by git; stage it or the rule ships to nobody`)
 }
 
-const files = [...trackedFiles].filter((f) => REFERRER_TYPES.test(f))
+/** Working-tree deletions of tracked files (staged or not) are an ordinary workflow, not a gate failure. */
+const files = [...trackedFiles].filter(
+  (f) => REFERRER_TYPES.test(f) && existsSync(resolve(ROOT, f))
+)
 
 for (const file of files) {
   const body = read(file)
@@ -93,6 +115,17 @@ for (const file of files) {
   })
 }
 
+/** Rule/prose files whose relative links and prose paths must resolve. */
+const LINK_SOURCES = [
+  ...new Set([
+    ...HEADING_SOURCES.filter((f) => f.endsWith('CLAUDE.md') || f.endsWith('SKILL.md')),
+    'AGENTS.md',
+    'RELEASE_POLICY.md',
+    'CONTEXT.md',
+    ...[...trackedFiles].filter((f) => /^\.cursor\/(docs|rules)\//.test(f))
+  ])
+].filter((f) => existsSync(resolve(ROOT, f)))
+
 for (const file of LINK_SOURCES) {
   const here = dirname(file)
   read(file)
@@ -100,13 +133,68 @@ for (const file of LINK_SOURCES) {
     .forEach((line, i) => {
       for (const m of line.matchAll(MD_LINK)) {
         const target = m[1]
-        if (/^(https?:|mailto:)/.test(target)) continue
+        if (/^(https?:|mailto:|#)/.test(target)) continue
         if (target.startsWith('/'))
           failures.push(`${file}:${i + 1}  ${target} — root-absolute, use a relative path`)
         else if (!existsSync(resolve(ROOT, here, target)))
           failures.push(`${file}:${i + 1}  ${target} — broken link`)
       }
     })
+}
+
+/**
+ * A backticked token that contains a `/` and ends in a known file extension reads as a repo path.
+ * It resolves if it exists at its literal location, or as a tracked file's trailing path segment —
+ * docs abbreviate by dropping leading directories (`utils/clientMessageId.ts`), never a middle one.
+ */
+const looksLikePath = (token: string) => {
+  if (!/^[\w./-]+$/.test(token)) return false
+  if (!token.includes('/')) return false
+  if (token.startsWith('./') || token.startsWith('../')) return false
+  if (token.split('/').some((seg) => seg === 'dist' || seg === 'node_modules')) return false
+  const ext = /\.([A-Za-z0-9]{1,8})$/.exec(token)
+  return !!ext && PATH_EXT_WHITELIST.has(ext[1].toLowerCase())
+}
+
+const pathResolves = (token: string) => {
+  if (existsSync(resolve(ROOT, token))) return true
+  const suffix = '/' + token
+  for (const f of trackedFiles) if (f === token || f.endsWith(suffix)) return true
+  return false
+}
+
+for (const file of LINK_SOURCES) {
+  read(file)
+    .split('\n')
+    .forEach((line, i) => {
+      // Scoped to the line, not the section: one "was removed" anywhere under a heading used to
+      // exempt every path below it — 25% of all path tokens, hiding 9 broken ones.
+      if (NON_EXISTENCE_MARKER.test(line)) return
+      for (const m of line.matchAll(BACKTICK)) {
+        const token = m[1].replace(/:\d+(-\d+)?$/, '')
+        if (!looksLikePath(token)) continue
+        if (pathResolves(token)) continue
+        failures.push(`${file}:${i + 1}  \`${token}\` — path does not exist`)
+      }
+    })
+}
+
+/** Every per-directory CLAUDE.md must be reachable from the router, or a task's rules go unread. */
+const routerLines = read('AGENTS.md').split('\n')
+const routerStart = routerLines.findIndex((l) => l.trim() === '## Task router')
+
+if (routerStart === -1) {
+  failures.push('AGENTS.md — no "## Task router" section found')
+} else {
+  const routerEnd = routerLines.findIndex((l, i) => i > routerStart && /^##\s/.test(l))
+  const routerText = routerLines
+    .slice(routerStart, routerEnd === -1 ? routerLines.length : routerEnd)
+    .join('\n')
+
+  for (const file of [...trackedFiles].filter((f) => f.endsWith('/CLAUDE.md'))) {
+    if (!routerText.includes(file))
+      failures.push(`AGENTS.md Task router — ${file} is unreachable; add a router row for it`)
+  }
 }
 
 if (failures.length) {
