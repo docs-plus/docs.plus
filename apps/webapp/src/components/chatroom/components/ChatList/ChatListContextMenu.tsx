@@ -36,14 +36,7 @@ const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
   const { isOpen } = useContextMenuContext()
   if (!message) return null
 
-  return (
-    <MessageMenuReadStatus
-      message={message}
-      isOpen={isOpen}
-      wrapper="MenuItem"
-      className="px-2.5 py-2"
-    />
-  )
+  return <MessageMenuReadStatus message={message} isOpen={isOpen} className="px-2.5 py-2" />
 }
 
 export const ChatListContextMenu = ({ children, className }: Props) => {

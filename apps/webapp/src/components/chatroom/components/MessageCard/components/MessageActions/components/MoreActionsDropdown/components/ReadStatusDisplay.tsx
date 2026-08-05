@@ -15,7 +15,6 @@ export const ReadStatusDisplay = ({ className }: Props) => {
     <UserReadStatus
       message={message}
       isOpen={isOpen}
-      wrapper="li"
       avatarLoaderRepeat={4}
       className={className}
     />

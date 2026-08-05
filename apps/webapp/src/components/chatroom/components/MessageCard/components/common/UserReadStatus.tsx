@@ -3,7 +3,6 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { usePeerReadSeq } from '@components/chatroom/hooks'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { AvatarStack } from '@components/ui/AvatarStack'
-import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
 import { TMsgRow } from '@types'
@@ -20,18 +19,11 @@ export function useIsMessageSeenByPeers(message: TMsgRow) {
 type Props = {
   message: TMsgRow
   isOpen: boolean
-  wrapper?: 'li' | 'MenuItem'
   avatarLoaderRepeat?: number
   className?: string
 }
 
-export function UserReadStatus({
-  message,
-  isOpen,
-  wrapper = 'MenuItem',
-  avatarLoaderRepeat = 3,
-  className
-}: Props) {
+export function UserReadStatus({ message, isOpen, avatarLoaderRepeat = 3, className }: Props) {
   const isSeen = useIsMessageSeenByPeers(message)
 
   const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[]>([])
@@ -82,17 +74,14 @@ export function UserReadStatus({
     </div>
   )
 
-  const wrapperProps = {
-    className: twMerge(
-      'pointer-events-none select-none',
-      readUsersLoading && 'flex flex-row items-center gap-2',
-      className
-    )
-  }
-
-  if (wrapper === 'li') {
-    return <li {...wrapperProps}>{body}</li>
-  }
-
-  return <MenuItem {...wrapperProps}>{body}</MenuItem>
+  return (
+    <li
+      className={twMerge(
+        'pointer-events-none select-none',
+        readUsersLoading && 'flex flex-row items-center gap-2',
+        className
+      )}>
+      {body}
+    </li>
+  )
 }

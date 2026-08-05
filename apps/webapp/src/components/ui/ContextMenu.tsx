@@ -2,6 +2,7 @@ import {
   autoUpdate,
   flip,
   FloatingFocusManager,
+  FloatingList,
   FloatingOverlay,
   FloatingPortal,
   offset,
@@ -9,21 +10,13 @@ import {
   useDismiss,
   useFloating,
   useInteractions,
+  useListItem,
   useListNavigation,
+  useMergeRefs,
   useRole,
   useTypeahead
 } from '@floating-ui/react'
-import {
-  Children,
-  cloneElement,
-  createContext,
-  forwardRef,
-  isValidElement,
-  useContext,
-  useEffect,
-  useRef,
-  useState
-} from 'react'
+import { createContext, forwardRef, useContext, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useOverlayTransition } from './useOverlayTransition'
@@ -80,10 +73,13 @@ export function ContextMenuDivider({ className }: { className?: string }) {
   )
 }
 
+type ContextMenuItemProps = ReturnType<typeof useInteractions>['getItemProps']
+
 interface ContextMenuContextType {
   setIsOpen: (open: boolean) => void
   isOpen: boolean
-  mouseEvent: MouseEvent | null
+  activeIndex: number | null
+  getItemProps: ContextMenuItemProps
 }
 
 const ContextMenuContext = createContext<ContextMenuContextType | undefined>(undefined)
@@ -100,22 +96,41 @@ type MenuItemProps = React.LiHTMLAttributes<HTMLLIElement> & {
   ref?: React.Ref<HTMLLIElement>
 }
 
-export function MenuItem({ children, ref, className, ...props }: MenuItemProps) {
+/**
+ * Registers via `useListItem` (Floating UI's `FloatingList`), not DOM position, so keyboard
+ * and focus wiring reaches rows through any wrapper the caller nests them in.
+ * Throws outside a `ContextMenu` provider — no longer a standalone `<li>`.
+ * Clicking does not close the menu; the caller owns `setIsOpen(false)`.
+ */
+export function MenuItem({ children, ref, className, onKeyDown, ...props }: MenuItemProps) {
+  const { activeIndex, getItemProps } = useContextMenuContext()
+  const { ref: itemRef, index } = useListItem()
+  const mergedRef = useMergeRefs([ref, itemRef])
+
   return (
-    <li ref={ref} className={twMerge('group rounded-field cursor-pointer', className)} {...props}>
+    <li
+      role="menuitem"
+      className={twMerge('group rounded-field cursor-pointer', className)}
+      {...getItemProps({
+        ref: mergedRef,
+        tabIndex: activeIndex === index ? 0 : -1,
+        ...props,
+        onKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+          onKeyDown?.(e as React.KeyboardEvent<HTMLLIElement>)
+          // <li> gets no native Enter/Space-to-click; useListNavigation only
+          // moves focus, so activation has to be wired here.
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.currentTarget.click()
+          }
+        }
+      })}>
       {children}
     </li>
   )
 }
 
-type ContextMenuChildProps = {
-  label?: string
-  onClick?: (e: React.MouseEvent, mouseEvent: MouseEvent | null) => void
-}
-
 interface Props {
-  label?: string
-  nested?: boolean
   parentRef?: React.RefObject<HTMLElement | null>
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -140,18 +155,15 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
   ) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null)
     const [internalIsOpen, setInternalIsOpen] = useState(false)
-    const [mouseEvent, setMouseEvent] = useState<MouseEvent | null>(null)
 
     const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
     const setIsOpen = onOpenChange || setInternalIsOpen
 
     // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
+    // Populated by each MenuItem's useListItem() — not DOM position — so
+    // wrapper components (TocContextMenu, ContextMenuItems, …) don't break it.
     const listItemsRef = useRef<Array<HTMLLIElement | null>>([])
-    const listContentRef = useRef<Array<string | null>>(
-      Children.map(children, (child) =>
-        isValidElement<ContextMenuChildProps>(child) ? (child.props.label ?? null) : null
-      ) ?? []
-    )
+    const listContentRef = useRef<Array<string | null>>([])
     const allowMouseUpCloseRef = useRef(false)
 
     const { refs, floatingStyles, context } = useFloating({
@@ -227,8 +239,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
           if (!targetElement) return
         }
 
-        setMouseEvent(e)
-
         // Always position at mouse click location, regardless of target element
         // The target element is used for context/validation, not positioning
         refs.setPositionReference({
@@ -286,18 +296,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     }, [refs, parentRef, externalIsOpen, setIsOpen, onBeforeShow, onOpenChange])
 
     useEffect(() => {
-      if (externalIsOpen && mousePosition) {
-        const syntheticEvent = {
-          clientX: mousePosition.x,
-          clientY: mousePosition.y,
-          preventDefault: () => {},
-          target: null
-        } as MouseEvent
-        setMouseEvent(syntheticEvent)
-      }
-    }, [externalIsOpen, mousePosition])
-
-    useEffect(() => {
       if (!isOpen && onClose) {
         onClose()
       }
@@ -312,7 +310,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     if (!isMounted) return null
 
     return (
-      <ContextMenuContext.Provider value={{ setIsOpen, isOpen, mouseEvent }}>
+      <ContextMenuContext.Provider value={{ setIsOpen, isOpen, activeIndex, getItemProps }}>
         <FloatingPortal>
           <FloatingOverlay lockScroll>
             <FloatingFocusManager context={context} initialFocus={refs.floating}>
@@ -321,35 +319,9 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
                 ref={refs.setFloating || ref}
                 style={{ ...floatingStyles, ...transitionStyles }}
                 {...getFloatingProps()}>
-                {Children.map(children, (child, index) => {
-                  if (isValidElement<ContextMenuChildProps>(child)) {
-                    return cloneElement(
-                      child,
-                      getItemProps({
-                        tabIndex: activeIndex === index ? 0 : -1,
-                        ref(node: HTMLLIElement | null) {
-                          listItemsRef.current[index] = node
-                        },
-                        onClick(e) {
-                          // Stop propagation to prevent conflicts with document mouseup
-                          e.stopPropagation()
-                          e.preventDefault()
-
-                          child.props.onClick?.(e, mouseEvent)
-
-                          if (externalIsOpen !== undefined && onOpenChange) {
-                            onOpenChange(false)
-                          } else {
-                            setIsOpen(false)
-                          }
-
-                          onClose?.()
-                        }
-                      })
-                    )
-                  }
-                  return child
-                })}
+                <FloatingList elementsRef={listItemsRef} labelsRef={listContentRef}>
+                  {children}
+                </FloatingList>
               </ul>
             </FloatingFocusManager>
           </FloatingOverlay>

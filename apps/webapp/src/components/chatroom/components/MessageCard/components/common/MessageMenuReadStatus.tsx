@@ -6,7 +6,6 @@ import { useIsMessageSeenByPeers, UserReadStatus } from './UserReadStatus'
 type Props = {
   message: TMsgRow
   isOpen: boolean
-  wrapper: 'li' | 'MenuItem'
   className?: string
   avatarLoaderRepeat?: number
 }

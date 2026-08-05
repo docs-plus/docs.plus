@@ -69,6 +69,7 @@ const EditorToolbar = () => {
 
   const { createComment } = useTurnSelectedTextIntoComment()
   const { copyDocumentToClipboard, copied } = useCopyDocumentToClipboard(editor ?? null)
+  const copyDocumentTooltip = copied ? 'Copied!' : 'Copy Document'
   const clearFormattingSelectionRef = useRef<{
     from: number
     to: number
@@ -108,7 +109,8 @@ const EditorToolbar = () => {
           type="bold"
           data-testid="toolbar-bold"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          tooltip="Bold (⌘+B)">
+          tooltip="Bold (⌘+B)"
+          aria-label="Bold (⌘+B)">
           <Icons.bold size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -117,7 +119,8 @@ const EditorToolbar = () => {
           type="italic"
           data-testid="toolbar-italic"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          tooltip="Italic (⌘+I)">
+          tooltip="Italic (⌘+I)"
+          aria-label="Italic (⌘+I)">
           <Icons.italic size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -126,7 +129,8 @@ const EditorToolbar = () => {
           type="underline"
           data-testid="toolbar-underline"
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          tooltip="Underline (⌘+U)">
+          tooltip="Underline (⌘+U)"
+          aria-label="Underline (⌘+U)">
           <Icons.underline size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -135,7 +139,8 @@ const EditorToolbar = () => {
           type="strike"
           data-testid="toolbar-strike"
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          tooltip="Strikethrough (⌘+⇧+S)">
+          tooltip="Strikethrough (⌘+⇧+S)"
+          aria-label="Strikethrough (⌘+⇧+S)">
           <Icons.strikethrough size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -144,7 +149,8 @@ const EditorToolbar = () => {
           type="highlight"
           data-testid="toolbar-highlight"
           onClick={() => editor.chain().focus().toggleHighlight().run()}
-          tooltip="Highlight (⌘+⇧+H)">
+          tooltip="Highlight (⌘+⇧+H)"
+          aria-label="Highlight (⌘+⇧+H)">
           <Icons.highlight size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -155,7 +161,7 @@ const EditorToolbar = () => {
         <Popover placement="bottom-start">
           <PopoverTrigger asChild>
             <div>
-              <ToolbarButton tooltip="Insert Media">
+              <ToolbarButton tooltip="Insert Media" aria-label="Insert Media">
                 <Icons.image size={ICON_SIZE} />
               </ToolbarButton>
             </div>
@@ -170,7 +176,8 @@ const EditorToolbar = () => {
           type="chatComment"
           data-testid="toolbar-comment"
           onClick={() => createComment(editor)}
-          tooltip="Comment (⌘+⌥+M)">
+          tooltip="Comment (⌘+⌥+M)"
+          aria-label="Comment (⌘+⌥+M)">
           <Icons.comment size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -179,7 +186,8 @@ const EditorToolbar = () => {
           type="hyperlink"
           data-testid="toolbar-hyperlink"
           onClick={() => editor.chain().focus().openCreateHyperlinkPopover().run()}
-          tooltip="Hyperlink (⌘+K)">
+          tooltip="Hyperlink (⌘+K)"
+          aria-label="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -191,6 +199,7 @@ const EditorToolbar = () => {
           editor={editor}
           fallbackIcon={Icons.bulletList}
           tooltip="Lists"
+          aria-label="Lists"
           items={[
             {
               value: 'bulletList',
@@ -220,7 +229,8 @@ const EditorToolbar = () => {
           type="blockquote"
           data-testid="toolbar-blockquote"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          tooltip="Blockquote">
+          tooltip="Blockquote"
+          aria-label="Blockquote">
           <Icons.blockquote size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -230,6 +240,7 @@ const EditorToolbar = () => {
           editor={editor}
           fallbackIcon={Icons.code}
           tooltip="Code"
+          aria-label="Code"
           items={[
             {
               value: 'codeBlock',
@@ -275,7 +286,8 @@ const EditorToolbar = () => {
 
             clearFormatting(editor)
           }}
-          tooltip="Clear Formatting">
+          tooltip="Clear Formatting"
+          aria-label="Clear Formatting">
           <Icons.clearFormatting size={ICON_SIZE} />
         </ToolbarButton>
 
@@ -284,7 +296,8 @@ const EditorToolbar = () => {
         <div className="!ml-auto flex items-center gap-0.5">
           <ToolbarButton
             onClick={() => window.open('https://discord.gg/25JPG38J59', '_blank')}
-            tooltip="Join Discord Community">
+            tooltip="Join Discord Community"
+            aria-label="Join Discord Community">
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />
           </ToolbarButton>
 
@@ -292,7 +305,8 @@ const EditorToolbar = () => {
 
           <ToolbarButton
             onClick={copyDocumentToClipboard}
-            tooltip={copied ? 'Copied!' : 'Copy Document'}>
+            tooltip={copyDocumentTooltip}
+            aria-label={copyDocumentTooltip}>
             {copied ? (
               <Icons.check size={ICON_SIZE} className="text-success" />
             ) : (
@@ -301,7 +315,10 @@ const EditorToolbar = () => {
           </ToolbarButton>
 
           {isAuthServiceAvailable && user && (
-            <ToolbarButton onClick={() => setDocumentsOpen(true)} tooltip="Documents">
+            <ToolbarButton
+              onClick={() => setDocumentsOpen(true)}
+              tooltip="Documents"
+              aria-label="Documents">
               <Icons.documents size={ICON_SIZE} />
             </ToolbarButton>
           )}
@@ -312,7 +329,7 @@ const EditorToolbar = () => {
             <Popover placement="bottom-end">
               <PopoverTrigger asChild>
                 <div>
-                  <ToolbarButton tooltip="Bookmarks">
+                  <ToolbarButton tooltip="Bookmarks" aria-label="Bookmarks">
                     <Icons.bookmark size={ICON_SIZE} />
                   </ToolbarButton>
                 </div>

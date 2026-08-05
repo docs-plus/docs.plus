@@ -35,7 +35,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
         }}
         onClick={(e) => e.stopPropagation()}>
         <LongPressMenuItems message={message} isInteractive={isInteractive} />
-        <MessageMenuReadStatus message={message} isOpen wrapper="li" className="px-2.5 py-2" />
+        <MessageMenuReadStatus message={message} isOpen className="px-2.5 py-2" />
       </ul>
     )
   }

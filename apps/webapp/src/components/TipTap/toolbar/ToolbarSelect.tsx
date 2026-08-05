@@ -17,6 +17,8 @@ interface ToolbarSelectProps {
   editor: Editor
   items: ToolbarSelectItem[]
   tooltip?: string
+  /** Trigger's accessible name — reuse the same string passed to `tooltip`. */
+  'aria-label'?: string
   fallbackIcon: IconType
 }
 
@@ -56,6 +58,7 @@ const ToolbarSelect = ({
   editor,
   items,
   tooltip,
+  'aria-label': ariaLabel,
   fallbackIcon: FallbackIcon
 }: ToolbarSelectProps) => {
   const activeItem = items.find((item) => editor.isActive(item.value))
@@ -68,6 +71,7 @@ const ToolbarSelect = ({
           <ToolbarButton
             isActive={!!activeItem}
             tooltip={tooltip}
+            aria-label={ariaLabel}
             shape={null}
             className="gap-0.5 px-1.5">
             <TriggerIcon size={16} className="stroke-currentColor fill-none" />
