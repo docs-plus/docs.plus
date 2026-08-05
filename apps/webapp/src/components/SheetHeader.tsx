@@ -28,7 +28,9 @@ function SheetHeader({ onClose, className, children }: SheetHeaderProps) {
   return (
     <div className={twMerge('flex w-full items-center justify-between gap-2', className)}>
       {children}
-      {onClose !== undefined && <CloseButton onClick={onClose} size="sm" className="shrink-0" />}
+      {onClose !== undefined && (
+        <CloseButton onClick={onClose} size="sm" className="min-h-11 min-w-11 shrink-0" />
+      )}
     </div>
   )
 }

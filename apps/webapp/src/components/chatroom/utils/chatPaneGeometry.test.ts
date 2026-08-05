@@ -40,7 +40,7 @@ describe('resolveChatPaneHeight', () => {
   })
 
   it('raises a too-small half to the pane floor rather than hiding the composer', () => {
-    // iPhone SE with the keyboard up: the ratio wants 166, below the 176 furniture sum.
+    // iPhone SE with the keyboard up: the ratio wants 166, below the 184 furniture sum.
     expect(resolveChatPaneHeight({ shellHeight: 331, reservedHeight: TITLE, mode: 'half' })).toBe(
       CHAT_PANE_FLOOR_PX
     )

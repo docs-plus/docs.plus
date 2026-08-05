@@ -38,7 +38,13 @@ export function SheetLayout({
         <SheetHeader.Title>{title}</SheetHeader.Title>
         {headerActions ? <SheetHeader.Actions>{headerActions}</SheetHeader.Actions> : null}
       </SheetHeader>
-      <div className={twMerge('flex min-h-0 flex-1 flex-col overflow-y-auto', bodyClassName)}>
+      <div
+        className={twMerge(
+          'flex min-h-0 flex-1 flex-col overflow-y-auto',
+          // SheetFooter already insets for the safe area — only add it here when there's no footer.
+          !footer && 'pb-[max(1rem,env(safe-area-inset-bottom))]',
+          bodyClassName
+        )}>
         {children}
       </div>
       {footer}

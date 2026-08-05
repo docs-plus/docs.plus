@@ -4,35 +4,37 @@ import type { ChatPaneMode } from '@types'
 export const CHAT_PANE_DOC_FLOOR_PX = 96
 
 /**
- * The pane's non-shrinkable furniture: grabber 44 + header 45 + feed padding 20 +
- * composer 61 = 170, rounded up to 176 because only the grabber's 44 is pinned by a
- * class — the rest is emergent from padding and content, so it can drift upward. The
- * feed is `flex-1 min-h-0`, but its own padding does not shrink, so a smaller floor
- * pushes the composer below the viewport.
+ * 184px is measured furniture (grabber+header+feed+composer), not estimated — that's what
+ * makes a regression here catchable. The bottom safe-area inset is deliberately excluded and
+ * measured at runtime instead (see `resolveChatPaneHeight`'s `safeAreaInsetBottom`), so baking
+ * the notched value in here would over-reserve on every other device.
  */
-export const CHAT_PANE_FLOOR_PX = 176
+export const CHAT_PANE_FLOOR_PX = 184
 
 const MODE_RATIO: Record<ChatPaneMode, number> = { closed: 0, half: 0.5, expanded: 1 }
 
 /**
- * One clamp for every mode. The upper bound keeps the document from collapsing;
- * `Math.max` resolves a shell too short for both floors by letting the pane keep
- * enough height to type in. `reservedHeight` is measured, not assumed, so nothing
- * here has to track the pad header's rendered size.
+ * One clamp for every mode; `Math.max` keeps the pane usable when the shell is too short
+ * for both floors. `reservedHeight` and `safeAreaInsetBottom` are both measured, not
+ * assumed, so nothing here has to track the pad header's rendered size or bake in a
+ * notch value that would over-reserve on other devices.
  */
 export const resolveChatPaneHeight = ({
   shellHeight,
   reservedHeight,
+  safeAreaInsetBottom = 0,
   mode
 }: {
   shellHeight: number
   reservedHeight: number
+  safeAreaInsetBottom?: number
   mode: ChatPaneMode
 }): number => {
   if (mode === 'closed' || shellHeight <= 0) return 0
 
+  const floor = CHAT_PANE_FLOOR_PX + safeAreaInsetBottom
   const wanted = Math.round(shellHeight * MODE_RATIO[mode])
-  const upper = Math.max(CHAT_PANE_FLOOR_PX, shellHeight - reservedHeight - CHAT_PANE_DOC_FLOOR_PX)
+  const upper = Math.max(floor, shellHeight - reservedHeight - CHAT_PANE_DOC_FLOOR_PX)
 
-  return Math.min(Math.max(wanted, CHAT_PANE_FLOOR_PX), upper)
+  return Math.min(Math.max(wanted, floor), upper)
 }

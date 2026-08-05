@@ -9,6 +9,10 @@ import ChatContainerMobile from './ChatContainerMobile'
 /** Pad header the pane sits below; its height is reserved for the document floor. */
 const PAD_HEADER_SELECTOR = '.mobilePadTitleShell'
 
+/** The pane's true bottom edge — carries the safe-area inset regardless of whether
+ *  the composer or the emoji panel is the last visible child (see ChatContainerMobile). */
+const PANE_BODY_SELECTOR = '[data-chat-pane-body]'
+
 /**
  * Chat as a flex child of the pad shell, sized to a fraction of it. The shell tracks
  * the visual viewport, so the keyboard shrinks both panes and the split survives
@@ -34,9 +38,14 @@ const ChatPane = () => {
 
     const apply = () => {
       const header = shell.querySelector<HTMLElement>(PAD_HEADER_SELECTOR)
+      // `paddingBottom` resolves `env(safe-area-inset-bottom)` to a real px value
+      // (unlike a CSS custom property, which would read back the literal env() text).
+      const body = el.querySelector<HTMLElement>(PANE_BODY_SELECTOR)
+      const safeAreaInsetBottom = body ? parseFloat(getComputedStyle(body).paddingBottom) || 0 : 0
       el.style.height = `${resolveChatPaneHeight({
         shellHeight: shell.clientHeight,
         reservedHeight: header?.offsetHeight ?? 0,
+        safeAreaInsetBottom,
         mode: paneMode
       })}px`
     }

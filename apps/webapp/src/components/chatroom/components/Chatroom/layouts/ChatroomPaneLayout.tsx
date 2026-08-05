@@ -46,14 +46,14 @@ const ChatPaneHeader = () => {
       <BreadcrumbMobile />
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <div className="bg-base-200 rounded-field flex items-center">
-          <ShareButton size="sm" />
-          <NotificationToggle size="sm" />
+          <ShareButton size="sm" className="min-h-11 min-w-11" />
+          <NotificationToggle size="sm" className="min-h-11 min-w-11" />
           <Button
             variant="ghost"
             size="sm"
             shape="square"
             onClick={destroyChatRoom}
-            className="text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
+            className="text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 min-h-11 min-w-11 focus-visible:ring-2 focus-visible:outline-none"
             aria-label="Close chat">
             <Icons.close size={16} />
           </Button>

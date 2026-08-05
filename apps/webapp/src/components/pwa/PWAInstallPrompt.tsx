@@ -239,7 +239,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
       aria-describedby="pwa-install-desc"
       className={twMerge(
         // Above docked chat / pad sash (z-50) — design-system above-floating tier
-        'fixed right-4 bottom-6 left-4 z-[60] mx-auto max-w-md',
+        'fixed right-4 bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] left-4 z-[60] mx-auto max-w-md',
         // Slide-up animation
         'transition-[opacity,transform] duration-200 ease-out',
         shown ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',

@@ -27,7 +27,7 @@ function TocModalIconButton({
       size="md"
       shape="square"
       iconSize={18}
-      className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
+      className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 min-h-11 min-w-11 focus-visible:ring-2 focus-visible:outline-none"
       onClick={onClick}
       startIcon={startIcon}
     />
