@@ -146,17 +146,12 @@ export function useNotificationPanelFeed(): UseNotificationPanelFeedResult {
     if (notificationActiveTab === 'Read') {
       void loadInitialTabPage()
     } else {
-      const count = (notifications.get(notificationActiveTab) || []).length
+      // One-shot seed on tab change; loadMore owns hasMore from here via its own
+      // setHasMore(false), so this must not re-run on every notifications Map write.
+      const count = (useStore.getState().notifications.get(notificationActiveTab) || []).length
       setHasMore(count >= PAGE_SIZE)
     }
-  }, [
-    notificationActiveTab,
-    user?.id,
-    workspaceId,
-    notifications,
-    setLoadingNotification,
-    updateNotifications
-  ])
+  }, [notificationActiveTab, user?.id, workspaceId, setLoadingNotification, updateNotifications])
 
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore || loadingNotification || !user?.id) return
