@@ -443,16 +443,18 @@ modal (L2) — `components/ui/Dialog.tsx` (+ `components/ui/GlobalDialog.tsx`, `
 
 > Off-system: ComposerLinkModalShell `z-[60]` one-off tier above the standard z-50 overlay.
 
-### Tooltip (React) + .Tooltip / .Popover SCSS — desktop
+### Tooltip (React) — desktop
 
-tooltip — `components/ui/Tooltip.tsx` (SCSS twins `styles/components/_tooltip.scss`, `_popover.scss`)
+tooltip — `components/ui/Tooltip.tsx`
 
-| State       | Recipe                                                                                                                                                                                                                                                                                                                               |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| frame       | `bg-neutral text-neutral-content z-50 rounded px-2 py-1 font-mono text-xs` + arrow `bg-neutral h-2 w-2` rotated; hover-only (`matchMedia '(hover: hover)'`); SCSS twins: `.Tooltip` neutral, 0.375rem radius; `.Popover` base-100, 1px base-300 border, radius `var(--radius-field)`, shadow `0 2px 4px color-mix(base-content 10%)` |
-| show / hide | `useOverlayTransition scale:false openMs:100 closeMs:0` — opacity-only, never scale; hover delay open 200ms                                                                                                                                                                                                                          |
+| State       | Recipe                                                                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame       | `bg-neutral text-neutral-content z-50 rounded px-2 py-1 font-mono text-xs` + arrow `bg-neutral h-2 w-2` rotated; hover-only (`matchMedia '(hover: hover)'`) |
+| show / hide | `useOverlayTransition scale:false openMs:100 closeMs:0` — opacity-only, never scale; hover delay open 200ms                                                 |
 
-> Off-system: `rounded` + `font-mono` React skin vs 0.375rem non-mono `.Tooltip` SCSS — two tooltip skins; `.Popover` one-off `0 2px 4px` shadow instead of `--shadow-overlay`.
+The `.Tooltip` / `.Popover` / `.Dialog` SCSS partials were deleted — they had no consumers. The tooltip that renders inside the pad is `.floating-tooltip`, skinned in `extension-hyperlink/src/styles.css` (raw literals behind a publish boundary, so the webapp cannot theme it).
+
+> Off-system: on touch, `Tooltip` returns its children unwrapped, so a tooltip string is not an accessible name — icon-only controls need their own `aria-label`.
 
 ### ToastNotification (react-hot-toast custom) — both
 
