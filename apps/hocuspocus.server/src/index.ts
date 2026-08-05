@@ -210,5 +210,3 @@ process.on('uncaughtException', (err) => {
   captureUnknown(err)
   void shutdown()
 })
-
-export default app

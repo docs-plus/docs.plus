@@ -57,10 +57,6 @@ const waitForHttp = async (url: string, timeoutMs = 30_000): Promise<boolean> =>
 const wsPort = freePort()
 const internalPort = freePort()
 const restPort = freePort()
-// src/index.ts ends in `export default app`, so Bun also auto-starts an implicit
-// server for the default export — on $PORT, else 3000. Pin it out of the way or
-// the child dies with EADDRINUSE whenever a dev stack already holds 3000.
-const implicitPort = freePort()
 
 const childEnv = {
   ...process.env,
@@ -68,7 +64,6 @@ const childEnv = {
   LOG_LEVEL: 'warn',
   REST_LOG_LEVEL: 'warn',
   WS_LOG_LEVEL: 'warn',
-  PORT: String(implicitPort),
   HOCUSPOCUS_PORT: String(wsPort),
   HOCUSPOCUS_INTERNAL_HTTP_PORT: String(internalPort),
   HOCUSPOCUS_INTERNAL_HTTP_HOST: '127.0.0.1',
