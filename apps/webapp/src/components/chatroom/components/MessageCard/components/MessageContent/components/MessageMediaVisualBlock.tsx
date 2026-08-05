@@ -3,7 +3,8 @@ import { computeVisualMediaLayout } from '@components/chatroom/utils/chatMediaVi
 import {
   clampFeedColumnWidth,
   resolveFeedColumnElement,
-  resolveFeedLayoutOptions
+  resolveFeedLayoutOptions,
+  resolveInitialFeedWidth
 } from '@components/chatroom/utils/feedAlbumLayout'
 import { mediaKey } from '@components/chatroom/utils/galleryPlaylist'
 import {
@@ -95,10 +96,10 @@ export function MessageMediaVisualBlock({ visuals, onOpen }: Props) {
   )
 
   const hostRef = useRef<HTMLDivElement>(null)
-  const [availableWidth, setAvailableWidth] = useState(widthCap)
+  const [availableWidth, setAvailableWidth] = useState(() => resolveInitialFeedWidth(widthCap))
 
   useEffect(() => {
-    setAvailableWidth(widthCap)
+    setAvailableWidth(resolveInitialFeedWidth(widthCap))
   }, [widthCap])
 
   // FeedColumnWidth measure adapter — never self-measure under shrink-to-fit.
@@ -110,7 +111,11 @@ export function MessageMediaVisualBlock({ visuals, onOpen }: Props) {
     if (!column) return
 
     const sync = () => {
-      const next = clampFeedColumnWidth(column.clientWidth, widthCap)
+      const measured = column.clientWidth
+      // Not laid out yet — keep the last known-good width instead of springing back to the cap.
+      if (measured <= 0) return
+      // Never report more than what the column actually measured, even if the cap's floor tried to.
+      const next = Math.min(clampFeedColumnWidth(measured, widthCap), measured)
       setAvailableWidth((prev) => (prev === next ? prev : next))
     }
 

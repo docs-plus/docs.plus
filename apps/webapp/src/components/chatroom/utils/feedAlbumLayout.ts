@@ -52,14 +52,25 @@ export function resolveFeedLayoutOptions(
   }
 }
 
-/** DOM measure adapter for FeedColumnWidth — prefer bubble interior, else feed. */
+/** DOM measure adapter for FeedColumnWidth — prefer bubble interior, else the message card (still a definite %-of-feed width), else feed. */
 export function resolveFeedColumnElement(host: HTMLElement): HTMLElement | null {
   const bubble = host.closest('.chat-bubble') as HTMLElement | null
   if (bubble && bubble.clientWidth >= FEED_COLUMN_MIN_MEASURE_PX) return bubble
+  const card = host.closest('.message-card') as HTMLElement | null
+  if (card && card.clientWidth >= FEED_COLUMN_MIN_MEASURE_PX) return card
   return (host.closest('.message-feed') as HTMLElement | null) ?? host.parentElement
 }
 
 export function clampFeedColumnWidth(rawClientWidth: number, widthCap: number): number {
   const raw = rawClientWidth > 0 ? Math.floor(rawClientWidth) : widthCap
   return Math.max(FEED_COLUMN_MIN_MEASURE_PX, Math.min(widthCap, raw))
+}
+
+/**
+ * Pre-measurement width — the mobile pad can't scroll horizontally, so the
+ * viewport is a hard ceiling a raw cap seed must never exceed.
+ */
+export function resolveInitialFeedWidth(widthCap: number): number {
+  if (typeof document === 'undefined' || !document.documentElement) return widthCap
+  return Math.min(widthCap, document.documentElement.clientWidth)
 }
