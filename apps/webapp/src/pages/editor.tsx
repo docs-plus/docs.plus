@@ -5,6 +5,7 @@ import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { moveHeadingSection } from '@components/toc/utils/moveHeading'
+import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
 import { GetServerSideProps } from 'next'
@@ -140,6 +141,9 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       </div>
 
       <HyperlinkPopoverPortal />
+
+      {/* Settings confirms (rename/trash/private/sign-out) dispatch here; without this mount they render nothing. */}
+      <GlobalDialog />
     </div>
   )
 }
