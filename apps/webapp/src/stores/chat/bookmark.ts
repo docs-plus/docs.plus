@@ -29,6 +29,16 @@ function adjustBookmarkTabCount(
   )
 }
 
+// Split from the list mutation so the badge can drop on runWithExit's onStart
+// while the row itself is removed later, on onComplete (notification-store parity).
+function decrementBookmarkTabCount(state: BookmarkDraft, bookmarkId: number) {
+  for (const [tab, bookmarkList] of state.bookmarks) {
+    if (bookmarkList.some((b) => b.bookmark_id === bookmarkId)) {
+      state.bookmarkTabs = adjustBookmarkTabCount(state.bookmarkTabs, tab, -1)
+    }
+  }
+}
+
 function removeBookmarkFromLists(state: BookmarkDraft, bookmarkId: number) {
   for (const [tab, bookmarkList] of state.bookmarks) {
     if (!bookmarkList.some((b) => b.bookmark_id === bookmarkId)) continue
@@ -37,8 +47,35 @@ function removeBookmarkFromLists(state: BookmarkDraft, bookmarkId: number) {
       tab,
       bookmarkList.filter((b) => b.bookmark_id !== bookmarkId)
     )
-    state.bookmarkTabs = adjustBookmarkTabCount(state.bookmarkTabs, tab, -1)
   }
+}
+
+/** The one precondition both halves of a relocation share, so the badge and the list
+ *  cannot disagree about whether the row is still in `fromTab`. */
+function findBookmarkInTab(state: BookmarkDraft, bookmarkId: number, tab: TBookmarkTab) {
+  return (state.bookmarks.get(tab) || []).find((b) => b.bookmark_id === bookmarkId)
+}
+
+function relocateBookmarkTabCount(
+  state: BookmarkDraft,
+  fromTab: TBookmarkTab,
+  toTab: TBookmarkTab
+) {
+  state.bookmarkTabs = adjustBookmarkTabCount(
+    adjustBookmarkTabCount(state.bookmarkTabs, fromTab, -1),
+    toTab,
+    1
+  )
+}
+
+function relocateBookmarkTabCountIfPresent(
+  state: BookmarkDraft,
+  bookmarkId: number,
+  fromTab: TBookmarkTab,
+  toTab: TBookmarkTab
+) {
+  if (!findBookmarkInTab(state, bookmarkId, fromTab)) return
+  relocateBookmarkTabCount(state, fromTab, toTab)
 }
 
 function relocateBookmark(
@@ -48,21 +85,15 @@ function relocateBookmark(
   toTab: TBookmarkTab,
   patch?: Partial<TBookmarkWithMessage>
 ) {
-  const fromList = state.bookmarks.get(fromTab) || []
-  const bookmark = fromList.find((b) => b.bookmark_id === bookmarkId)
+  const bookmark = findBookmarkInTab(state, bookmarkId, fromTab)
   if (!bookmark) return
 
   const updated = patch ? { ...bookmark, ...patch } : bookmark
   state.bookmarks.set(
     fromTab,
-    fromList.filter((b) => b.bookmark_id !== bookmarkId)
+    (state.bookmarks.get(fromTab) || []).filter((b) => b.bookmark_id !== bookmarkId)
   )
   state.bookmarks.set(toTab, [updated, ...(state.bookmarks.get(toTab) || [])])
-  state.bookmarkTabs = adjustBookmarkTabCount(
-    adjustBookmarkTabCount(state.bookmarkTabs, fromTab, -1),
-    toTab,
-    1
-  )
 }
 
 interface IBookmarkStore {
@@ -80,9 +111,13 @@ interface IBookmarkStore {
   setBookmarkPage: (page: number) => void
   clearBookmarks: () => void
   updateBookmarks: (tab: TBookmarkTab, newBookmarks: TBookmarkWithMessage[]) => void
+  commitBookmarkRemovedCount: (bookmarkId: number) => void
   commitBookmarkRemoved: (bookmarkId: number) => void
+  commitBookmarkMarkedReadCount: (bookmarkId: number) => void
   commitBookmarkMarkedRead: (bookmarkId: number) => void
+  commitBookmarkArchivedCount: (fromTab: TBookmarkTab) => void
   commitBookmarkArchived: (bookmarkId: number, fromTab: TBookmarkTab) => void
+  commitBookmarkRestoredCount: (bookmarkId: number) => void
   commitBookmarkRestored: (bookmarkId: number) => void
 }
 
@@ -167,9 +202,21 @@ const bookmark = immer<IBookmarkStore>((set) => ({
     })
   },
 
+  commitBookmarkRemovedCount: (bookmarkId: number) => {
+    set((state) => {
+      decrementBookmarkTabCount(state, bookmarkId)
+    })
+  },
+
   commitBookmarkRemoved: (bookmarkId: number) => {
     set((state) => {
       removeBookmarkFromLists(state, bookmarkId)
+    })
+  },
+
+  commitBookmarkMarkedReadCount: (bookmarkId: number) => {
+    set((state) => {
+      relocateBookmarkTabCountIfPresent(state, bookmarkId, 'in progress', 'read')
     })
   },
 
@@ -183,6 +230,12 @@ const bookmark = immer<IBookmarkStore>((set) => ({
     })
   },
 
+  commitBookmarkArchivedCount: (fromTab: TBookmarkTab) => {
+    set((state) => {
+      relocateBookmarkTabCount(state, fromTab, 'archive')
+    })
+  },
+
   commitBookmarkArchived: (bookmarkId: number, fromTab: TBookmarkTab) => {
     set((state) => {
       const now = new Date().toISOString()
@@ -190,6 +243,12 @@ const bookmark = immer<IBookmarkStore>((set) => ({
         bookmark_archived_at: now,
         bookmark_updated_at: now
       })
+    })
+  },
+
+  commitBookmarkRestoredCount: (bookmarkId: number) => {
+    set((state) => {
+      relocateBookmarkTabCountIfPresent(state, bookmarkId, 'archive', 'in progress')
     })
   },
 

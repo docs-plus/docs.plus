@@ -7,15 +7,25 @@ import { useCallback } from 'react'
 
 export function useBookmarkPanelActions() {
   const bookmarkActiveTab = useChatStore((state) => state.bookmarkActiveTab)
+  const commitBookmarkRemovedCount = useChatStore((state) => state.commitBookmarkRemovedCount)
   const commitBookmarkRemoved = useChatStore((state) => state.commitBookmarkRemoved)
+  const commitBookmarkMarkedReadCount = useChatStore((state) => state.commitBookmarkMarkedReadCount)
   const commitBookmarkMarkedRead = useChatStore((state) => state.commitBookmarkMarkedRead)
+  const commitBookmarkArchivedCount = useChatStore((state) => state.commitBookmarkArchivedCount)
   const commitBookmarkArchived = useChatStore((state) => state.commitBookmarkArchived)
+  const commitBookmarkRestoredCount = useChatStore((state) => state.commitBookmarkRestoredCount)
   const commitBookmarkRestored = useChatStore((state) => state.commitBookmarkRestored)
   const { isExiting, runWithExit } = useFeedItemExit<number>()
 
   const remove = useCallback(
     async (bookmark: TBookmarkWithMessage) => {
-      if (!runWithExit(bookmark.bookmark_id, () => commitBookmarkRemoved(bookmark.bookmark_id))) {
+      if (
+        !runWithExit(
+          bookmark.bookmark_id,
+          () => commitBookmarkRemoved(bookmark.bookmark_id),
+          () => commitBookmarkRemovedCount(bookmark.bookmark_id)
+        )
+      ) {
         return
       }
 
@@ -26,7 +36,7 @@ export function useBookmarkPanelActions() {
         toast.Error('Failed to remove bookmark')
       }
     },
-    [commitBookmarkRemoved, runWithExit]
+    [commitBookmarkRemoved, commitBookmarkRemovedCount, runWithExit]
   )
 
   const markAsRead = useCallback(
@@ -34,7 +44,11 @@ export function useBookmarkPanelActions() {
       if (bookmark.bookmark_marked_at || bookmark.bookmark_archived_at) return
 
       if (
-        !runWithExit(bookmark.bookmark_id, () => commitBookmarkMarkedRead(bookmark.bookmark_id))
+        !runWithExit(
+          bookmark.bookmark_id,
+          () => commitBookmarkMarkedRead(bookmark.bookmark_id),
+          () => commitBookmarkMarkedReadCount(bookmark.bookmark_id)
+        )
       ) {
         return
       }
@@ -46,7 +60,7 @@ export function useBookmarkPanelActions() {
         toast.Error('Failed to mark bookmark')
       }
     },
-    [commitBookmarkMarkedRead, runWithExit]
+    [commitBookmarkMarkedRead, commitBookmarkMarkedReadCount, runWithExit]
   )
 
   const archive = useCallback(
@@ -60,8 +74,15 @@ export function useBookmarkPanelActions() {
           commitBookmarkArchived(bookmark.bookmark_id, bookmarkActiveTab)
         }
       }
+      const onStart = () => {
+        if (isArchived) {
+          commitBookmarkRestoredCount(bookmark.bookmark_id)
+        } else {
+          commitBookmarkArchivedCount(bookmarkActiveTab)
+        }
+      }
 
-      if (!runWithExit(bookmark.bookmark_id, onComplete)) return
+      if (!runWithExit(bookmark.bookmark_id, onComplete, onStart)) return
 
       try {
         await archiveBookmark({ bookmarkId: bookmark.bookmark_id, archive: !isArchived })
@@ -70,7 +91,14 @@ export function useBookmarkPanelActions() {
         toast.Error('Failed to archive bookmark')
       }
     },
-    [bookmarkActiveTab, commitBookmarkArchived, commitBookmarkRestored, runWithExit]
+    [
+      bookmarkActiveTab,
+      commitBookmarkArchived,
+      commitBookmarkArchivedCount,
+      commitBookmarkRestored,
+      commitBookmarkRestoredCount,
+      runWithExit
+    ]
   )
 
   return { remove, markAsRead, archive, isExiting }
