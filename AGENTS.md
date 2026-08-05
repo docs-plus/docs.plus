@@ -16,6 +16,7 @@ A task is usually governed by sections filed far from it, so reading in heading 
 - **Chatroom or messaging** → [`apps/webapp/src/components/chatroom/CLAUDE.md`](apps/webapp/src/components/chatroom/CLAUDE.md) (whole file) · §Composer Link Dialog And Internal Links [extensions]
 - **Document features** → [`apps/webapp/CLAUDE.md`](apps/webapp/CLAUDE.md) §Document Features (access, version history, TOC, comments, filters, panels)
 - **Backend, hocuspocus, REST** → [`apps/hocuspocus.server/CLAUDE.md`](apps/hocuspocus.server/CLAUDE.md) (whole file) · §Docker
+- **Admin dashboard** → [`apps/admin-dashboard/CLAUDE.md`](apps/admin-dashboard/CLAUDE.md) (whole file) · §Admin API And Dashboard [hocuspocus]
 - **Supabase, SQL, RLS** → [`packages/supabase/CLAUDE.md`](packages/supabase/CLAUDE.md) · §Document Access [webapp] · §Anonymous Chat Read Path [chatroom] · §Admin API And Dashboard [hocuspocus] · §Learned Workspace Facts · `.cursor/rules/supabase.mdc`
 - **Docker, CI, deploy** → §Docker · §Production And Docker Compose [hocuspocus] · §Workspace · §ESLint Config
 - **Write a standalone script** → §Standalone Bun Scripts · §Workspace · §Package Manager
@@ -280,7 +281,7 @@ tag a section's home in brackets.
 
 **[`apps/hocuspocus.server/CLAUDE.md`](apps/hocuspocus.server/CLAUDE.md)** · router tag `[hocuspocus]`
 
-§Backend And Infrastructure · §HTTP Modules · §Hocuspocus Server · §Admin API And Dashboard · §Production And Docker Compose
+§Persistence · §Retention and schema · §Runtime limits · §Documented hazards we accept · §Backend And Infrastructure · §HTTP Modules · §Hocuspocus Server · §Admin API And Dashboard · §Production And Docker Compose
 
 **[`apps/admin-dashboard/CLAUDE.md`](apps/admin-dashboard/CLAUDE.md)** · router tag `[admin]`
 

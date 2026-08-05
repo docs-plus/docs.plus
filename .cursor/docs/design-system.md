@@ -239,7 +239,7 @@ are documented exceptions, not debt.
 
 ### PadTitle header bar + DocTitle + PresentUsers — desktop
 
-docked — `components/TipTap/pad-title-section/PadTitle.tsx` (+ `components/TipTap/DocTitle.tsx`, `components/TipTap/pad-title-section/PresentUsers.tsx`, `components/AvatarStack.tsx`)
+docked — `components/TipTap/pad-title-section/PadTitle.tsx` (+ `components/TipTap/DocTitle.tsx`, `components/TipTap/pad-title-section/PresentUsers.tsx`, `components/ui/AvatarStack.tsx`)
 
 | State          | Recipe                                                                                                                                                                                                                                                                                                              |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -554,7 +554,7 @@ card — `components/chatroom/components/MessageCard/MessageCardContext.tsx` (ra
 | flash / menu-open           | `.msg_card--flash`: `msg-card-flash var(--motion-flash-hold) var(--motion-ease-enter)`, `::before` `var(--color-primary)`, peaks `color-mix(primary 24%/20%)`, reduced-motion static primary 16%; context-menu-active `color-mix(primary 8%) !important`                                                                                             |
 | pending / failed (own send) | body `opacity-70 motion-safe:animate-[msg-send-in_200ms_ease-out_both]` (translateY 8px rise) + 120ms opacity crossfade; status `absolute right-2 bottom-1 text-xs opacity-60` "sending…"; failed inline `text-error` "failed — tap to retry"                                                                                                        |
 | timestamp / username        | STATUS_SLOT `min-w-9 text-xs invisible opacity-50` → `visible` on group-start / `group-hover/msgcard:visible` compact (mobile always); pending clock `text-base-content/40`, failed alert `text-error`; username `text-xs font-bold`                                                                                                                 |
-| mobile alignment            | owner `chat-end owner ml-auto` vs `chat-start mr-auto`; `max-w-[90%] min-w-[80%]` or media-only `w-fit max-w-[min(400px,90%)]`; long-press host `-webkit-touch-callout:none; touch-action:manipulation`                                                                                                                                              |
+| mobile alignment            | owner `chat-end owner ml-auto` vs `chat-start mr-auto`; `max-w-[90%] min-w-[80%]` or media-only `w-full max-w-[92%] min-w-0`; long-press host `-webkit-touch-callout:none; touch-action:manipulation`                                                                                                                                                |
 
 ### MessageFooter (reactions + indicators + failed row) — both
 

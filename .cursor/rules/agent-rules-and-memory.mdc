@@ -23,7 +23,15 @@ details that must not reach a public repo.
 quality, test policy, release safety, monorepo toolchain. Read it in full before any substantive
 work.
 
-## 3. Directory-scoped rules
+## 3. Root CLAUDE.md
+
+[`CLAUDE.md`](../../CLAUDE.md) at the repo root. Claude Code loads it automatically at session
+start; Cursor does not, so read it here. It indexes the per-directory `CLAUDE.md` files and carries
+the `### Settled — do not re-propose` list — decisions made, tried, and in most cases reverted
+(including the TOC channel-map rework). That list exists in no other file; skipping this step risks
+re-proposing a change the maintainer already rejected.
+
+## 4. Directory-scoped rules
 
 Rules for one area live in that area's `CLAUDE.md`. Claude Code loads these automatically by path;
 in Cursor you must open them yourself. `AGENTS.md` §Filed by directory lists every section and its
@@ -43,7 +51,7 @@ file. The map:
 Nested files stack: work under `apps/webapp/src/components/chatroom/` is governed by the root file,
 the webapp file and the chatroom file together.
 
-## 4. Package-local and reference material
+## 5. Package-local and reference material
 
 A package's own `AGENTS.md` when working inside it (today:
 `extensions/extension-hyperlink/AGENTS.md`). Then the `.cursor/rules/*.mdc` that auto-attach for the

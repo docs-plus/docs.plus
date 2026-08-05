@@ -10,7 +10,7 @@ Moved verbatim out of the repo-root [AGENTS.md](../AGENTS.md) so it loads only w
 
 - Standalone packages: `extension-hyperlink`, `extension-hypermultimedia`, `extension-indent`, `extension-inline-code`, `extension-placeholder`.
 - Shared structure: TypeScript + tsup build + `@tiptap/core` peer dep.
-- GFM markdown uses `@tiptap/markdown`; paste lives at `apps/webapp/src/components/TipTap/extensions/markdown-paste/`; import/export lives in `apps/webapp/src/utils/markdown.ts` and `toolbar/desktop/DocumentSettingsPanel`.
+- GFM markdown uses `@tiptap/markdown`; paste lives at `apps/webapp/src/components/TipTap/extensions/markdown-paste/`; import/export conversion lives in `apps/hocuspocus.server/src/modules/document-conversion/domain/` (`markdownImport.ts`, `markdownExport.ts`, plus DOCX/ODT export), wired to the UI through `toolbar/desktop/DocumentSettingsPanel` → `ImportExportSection.tsx`.
 - `sanitizeJsonContent` runs on paste and import paths.
 - After modifying any `extensions/extension-*` source:
   1. Run `bunx tsup` in that package.

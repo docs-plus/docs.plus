@@ -1,4 +1,6 @@
 ---
+description: React 19 + Floating UI 0.27 conventions and pitfalls for floating/anchored components (tooltips, popovers, context menus, dialogs, selects)
+globs: apps/webapp/src/components/ui/**,apps/webapp/src/components/chatroom/components/ChatMediaGallery/**,apps/webapp/src/components/chatroom/components/MessageComposer/components/**,apps/webapp/src/components/DocumentShellInner.tsx
 alwaysApply: false
 ---
 # React 19 + Floating UI — Project Conventions & Pitfalls

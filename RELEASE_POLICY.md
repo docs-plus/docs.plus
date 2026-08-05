@@ -42,7 +42,7 @@ The five publishable packages:
 2. Each ships per the existing per-package runbook in the `release-extensions` skill: `bun publish --tag latest --otp <code>` → `git tag <pkg>@2.0.0` → `gh release create ...`.
 3. Each carries its own `[2.0.0]` `CHANGELOG.md` entry following the [CHANGELOG style guide](#changelog-style-guide).
 4. Each must have the publishable-package scaffolding before its first `2.0.0` ship. See [Per-package readiness checklist](#per-package-readiness-checklist).
-5. **The CI lockstep guard is dormant in Phase 1.** No PR is blocked for non-aligned versions during cutover.
+5. **The CI lockstep guard is not implemented.** No workflow enforces version alignment during Phase 1, so no PR is blocked for non-aligned versions during cutover. See [CI Guard](#ci-guard).
 
 **Order of cutover:**
 
@@ -56,11 +56,11 @@ The five publishable packages:
 Lockstep is **not** auto-derived. It activates the moment **both** of the following hold:
 
 - **Family alignment:** all five publishable extensions are at the same major version on npm (i.e. all five have shipped a `2.x`).
-- **Deliberate switch-flip:** an explicit commit lands on `main` that updates this section of `RELEASE_POLICY.md` from "Phase 1 — Cutover" to "Phase 2 — Lockstep active", and flips the CI guard from `if: false` to `if: true` in the same commit.
+- **Deliberate switch-flip:** an explicit commit lands on `main` that updates this section of `RELEASE_POLICY.md` from "Phase 1 — Cutover" to "Phase 2 — Lockstep active", and adds the CI guard described in [CI Guard](#ci-guard) in the same commit.
 
 The deliberate-commit gate is intentional. Family alignment alone is not enough — the maintainer must affirm that the family is ready for coordinated releases. This prevents lockstep from accidentally engaging the moment the fifth `2.0.0` lands while the team is still treating it as a per-package release.
 
-When the switch-flip commit lands, the CI guard becomes binding for every subsequent PR.
+Until the switch-flip commit lands, the CI guard does not exist and nothing is binding.
 
 ## Phase 2 — Steady State
 
@@ -176,9 +176,9 @@ Published entries use the shorthand `### Breaking` (same meaning as `Breaking Ch
 
 ## CI Guard
 
-A GitHub Action enforces the lockstep invariant in Phase 2.
+**Not implemented.** No `.github/workflows/lockstep-guard.yml` file exists in this repo, and no PR is blocked for non-aligned extension versions today. Building it is part of the Trigger D switch-flip commit, not a separate step; the spec below is the contract that commit must satisfy.
 
-**Location:** `.github/workflows/lockstep-guard.yml`.
+**Location:** `.github/workflows/lockstep-guard.yml` — not implemented; the Trigger D commit creates it.
 
 **Trigger:** any PR that touches `extensions/extension-*/package.json`.
 
@@ -192,7 +192,7 @@ See RELEASE_POLICY.md "Versioning Doctrine".
 
 **Bypass:** add the label `lockstep-bypass` to the PR. Reserved for the rare hotfix that legitimately ships outside the family — should be near-zero in practice.
 
-**Phase 1 behavior:** the workflow file exists with `if: false` at the top. The Trigger D switch-flip commit flips it to `if: true` in the same commit. No retroactive enforcement, no PR breakage during cutover.
+**Phase 1 behavior:** no guard workflow exists, so nothing enforces lockstep and no PR is blocked. The Trigger D switch-flip commit creates the workflow already active (`if: true`) — there is no earlier dormant/`if: false` state to flip. No retroactive enforcement, no PR breakage during cutover.
 
 ## Per-package Readiness Checklist
 
