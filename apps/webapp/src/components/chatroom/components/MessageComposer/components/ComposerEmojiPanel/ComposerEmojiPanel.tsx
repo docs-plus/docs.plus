@@ -112,9 +112,9 @@ export const ComposerEmojiPanel = () => {
               style={{ height: HANDLE_HEIGHT_PX, touchAction: 'none', cursor: 'grab' }}>
               <span className="bg-base-300 h-1 w-[30px] rounded-full" />
             </motion.div>
-            <div
-              className="min-h-0 flex-1"
-              style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            {/* No safe-area padding here — the pane body (`data-chat-pane-body` in
+                ChatContainerMobile) already reserves that inset below this panel. */}
+            <div className="min-h-0 flex-1">
               <EmojiPanel variant="mobile" onSelect={handleSelect}>
                 <EmojiPanel.Selector />
               </EmojiPanel>
