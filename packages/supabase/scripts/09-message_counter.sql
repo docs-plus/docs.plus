@@ -258,9 +258,6 @@ $$;
 -- to 60s. To upgrade to ~10s on a host that supports it:
 --   ALTER SYSTEM SET cron.use_background_workers = 'on';
 --   -- then restart Postgres and reschedule with '*/10 * * * * *'
-SELECT cron.unschedule('message_counter_batch_job')
-FROM cron.job WHERE jobname = 'message_counter_batch_job';
-
 SELECT cron.schedule(
             'message_counter_batch_job',      -- A job name for reference
             '* * * * *',                      -- Every minute (portable)

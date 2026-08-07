@@ -869,9 +869,6 @@ create policy "Admins can read document_views_daily"
 -- pg_cron parsed it as every 10 minutes — keep the observed prod cadence.
 do $$
 begin
-    perform cron.unschedule('process_document_views_queue')
-    where exists (select 1 from cron.job where jobname = 'process_document_views_queue');
-
     perform cron.schedule(
         'process_document_views_queue',
         '*/10 * * * *',
@@ -885,9 +882,6 @@ $$;
 -- Aggregate stats every 5 minutes
 do $$
 begin
-    perform cron.unschedule('aggregate_document_view_stats')
-    where exists (select 1 from cron.job where jobname = 'aggregate_document_view_stats');
-
     perform cron.schedule(
         'aggregate_document_view_stats',
         '*/5 * * * *',
@@ -901,9 +895,6 @@ $$;
 -- Create partitions monthly (1st of each month at 00:05)
 do $$
 begin
-    perform cron.unschedule('create_document_views_partitions')
-    where exists (select 1 from cron.job where jobname = 'create_document_views_partitions');
-
     perform cron.schedule(
         'create_document_views_partitions',
         '5 0 1 * *',
@@ -917,9 +908,6 @@ $$;
 -- Cleanup old data weekly (Sunday at 03:00)
 do $$
 begin
-    perform cron.unschedule('cleanup_old_document_views')
-    where exists (select 1 from cron.job where jobname = 'cleanup_old_document_views');
-
     perform cron.schedule(
         'cleanup_old_document_views',
         '0 3 * * 0',

@@ -2472,11 +2472,12 @@ comment on function public.update_email_status(uuid, text, text) is
 -- 9. Schedule Email Queue Processing (pg_cron)
 -- =============================================================================
 
+-- No unschedule before schedule: cron.schedule() upserts on (jobname, username)
+-- and keeps the existing jobid. Unscheduling first mints a new jobid, and
+-- cron.job_run_details has no FK to cron.job, so the run history that
+-- get_cron_job_health joins on goes orphaned and reports last_success_at NULL.
 do $$
 begin
-    perform cron.unschedule('process_email_queue')
-    where exists (select 1 from cron.job where jobname = 'process_email_queue');
-
     perform cron.schedule(
         'process_email_queue',
         '*/2 * * * *',  -- Every 2 minutes (immediate emails only)
@@ -2490,9 +2491,6 @@ $$;
 -- Schedule digest compilation (every 15 minutes)
 do $$
 begin
-    perform cron.unschedule('compile_digest_emails')
-    where exists (select 1 from cron.job where jobname = 'compile_digest_emails');
-
     perform cron.schedule(
         'compile_digest_emails',
         '*/15 * * * *',  -- Every 15 minutes (catches different timezone 9am slots)
@@ -2529,9 +2527,6 @@ $$;
 
 do $$
 begin
-    perform cron.unschedule('cleanup_email_queue')
-    where exists (select 1 from cron.job where jobname = 'cleanup_email_queue');
-
     perform cron.schedule(
         'cleanup_email_queue',
         '0 3 * * *',
@@ -4216,9 +4211,6 @@ create policy "Admins can read document_views_daily"
 -- pg_cron parsed it as every 10 minutes — keep the observed prod cadence.
 do $$
 begin
-    perform cron.unschedule('process_document_views_queue')
-    where exists (select 1 from cron.job where jobname = 'process_document_views_queue');
-
     perform cron.schedule(
         'process_document_views_queue',
         '*/10 * * * *',
@@ -4232,9 +4224,6 @@ $$;
 -- Aggregate stats every 5 minutes
 do $$
 begin
-    perform cron.unschedule('aggregate_document_view_stats')
-    where exists (select 1 from cron.job where jobname = 'aggregate_document_view_stats');
-
     perform cron.schedule(
         'aggregate_document_view_stats',
         '*/5 * * * *',
@@ -4248,9 +4237,6 @@ $$;
 -- Create partitions monthly (1st of each month at 00:05)
 do $$
 begin
-    perform cron.unschedule('create_document_views_partitions')
-    where exists (select 1 from cron.job where jobname = 'create_document_views_partitions');
-
     perform cron.schedule(
         'create_document_views_partitions',
         '5 0 1 * *',
@@ -4264,9 +4250,6 @@ $$;
 -- Cleanup old data weekly (Sunday at 03:00)
 do $$
 begin
-    perform cron.unschedule('cleanup_old_document_views')
-    where exists (select 1 from cron.job where jobname = 'cleanup_old_document_views');
-
     perform cron.schedule(
         'cleanup_old_document_views',
         '0 3 * * 0',
@@ -4621,9 +4604,6 @@ $$;
 -- to 60s. To upgrade to ~10s on a host that supports it:
 --   ALTER SYSTEM SET cron.use_background_workers = 'on';
 --   -- then restart Postgres and reschedule with '*/10 * * * * *'
-SELECT cron.unschedule('message_counter_batch_job')
-FROM cron.job WHERE jobname = 'message_counter_batch_job';
-
 SELECT cron.schedule(
             'message_counter_batch_job',      -- A job name for reference
             '* * * * *',                      -- Every minute (portable)
@@ -9584,9 +9564,6 @@ select cron.schedule(
 
 -- Drains failed/expired push subscriptions so they do not accumulate
 -- forever; function body is defined in 07-4 (push pipeline).
-select cron.unschedule('cleanup-push-subscriptions')
-from cron.job where jobname = 'cleanup-push-subscriptions';
-
 select cron.schedule(
     'cleanup-push-subscriptions',
     '*/5 * * * *',
@@ -9595,9 +9572,6 @@ select cron.schedule(
 
 -- Reclaims orphaned chat media: bucket objects with no live messages.medias
 -- reference, older than 24h. Function body lives in 10-3-func-message.sql.
-select cron.unschedule('cleanup-orphan-chat-media')
-from cron.job where jobname = 'cleanup-orphan-chat-media';
-
 select cron.schedule(
     'cleanup-orphan-chat-media',
     '30 3 * * *',
@@ -9606,8 +9580,6 @@ select cron.schedule(
 
 -- cron.job_run_details grows unbounded (one row per run; the 2-minute jobs
 -- alone add ~720 rows/day). Keep a rolling week for health checks.
-select cron.unschedule('cleanup-cron-job-run-details')
-from cron.job where jobname = 'cleanup-cron-job-run-details';
 
 -- The newest success of every job survives the window: a plain 7-day delete made
 -- get_cron_job_health report NULL for any job whose period exceeds 7 days, so the

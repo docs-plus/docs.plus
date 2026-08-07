@@ -769,11 +769,12 @@ comment on function public.update_email_status(uuid, text, text) is
 -- 9. Schedule Email Queue Processing (pg_cron)
 -- =============================================================================
 
+-- No unschedule before schedule: cron.schedule() upserts on (jobname, username)
+-- and keeps the existing jobid. Unscheduling first mints a new jobid, and
+-- cron.job_run_details has no FK to cron.job, so the run history that
+-- get_cron_job_health joins on goes orphaned and reports last_success_at NULL.
 do $$
 begin
-    perform cron.unschedule('process_email_queue')
-    where exists (select 1 from cron.job where jobname = 'process_email_queue');
-
     perform cron.schedule(
         'process_email_queue',
         '*/2 * * * *',  -- Every 2 minutes (immediate emails only)
@@ -787,9 +788,6 @@ $$;
 -- Schedule digest compilation (every 15 minutes)
 do $$
 begin
-    perform cron.unschedule('compile_digest_emails')
-    where exists (select 1 from cron.job where jobname = 'compile_digest_emails');
-
     perform cron.schedule(
         'compile_digest_emails',
         '*/15 * * * *',  -- Every 15 minutes (catches different timezone 9am slots)
@@ -826,9 +824,6 @@ $$;
 
 do $$
 begin
-    perform cron.unschedule('cleanup_email_queue')
-    where exists (select 1 from cron.job where jobname = 'cleanup_email_queue');
-
     perform cron.schedule(
         'cleanup_email_queue',
         '0 3 * * *',

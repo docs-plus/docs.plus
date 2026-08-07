@@ -17,9 +17,6 @@ select cron.schedule(
 
 -- Drains failed/expired push subscriptions so they do not accumulate
 -- forever; function body is defined in 07-4 (push pipeline).
-select cron.unschedule('cleanup-push-subscriptions')
-from cron.job where jobname = 'cleanup-push-subscriptions';
-
 select cron.schedule(
     'cleanup-push-subscriptions',
     '*/5 * * * *',
@@ -28,9 +25,6 @@ select cron.schedule(
 
 -- Reclaims orphaned chat media: bucket objects with no live messages.medias
 -- reference, older than 24h. Function body lives in 10-3-func-message.sql.
-select cron.unschedule('cleanup-orphan-chat-media')
-from cron.job where jobname = 'cleanup-orphan-chat-media';
-
 select cron.schedule(
     'cleanup-orphan-chat-media',
     '30 3 * * *',
@@ -39,8 +33,6 @@ select cron.schedule(
 
 -- cron.job_run_details grows unbounded (one row per run; the 2-minute jobs
 -- alone add ~720 rows/day). Keep a rolling week for health checks.
-select cron.unschedule('cleanup-cron-job-run-details')
-from cron.job where jobname = 'cleanup-cron-job-run-details';
 
 -- The newest success of every job survives the window: a plain 7-day delete made
 -- get_cron_job_health report NULL for any job whose period exceeds 7 days, so the
