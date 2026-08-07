@@ -31,35 +31,35 @@ Before:
 
 ```ts
 type Request = {
-  body: { id: string }
-  headers: Record<string, string>
-  cookies: Record<string, string>
+  body: { id: string };
+  headers: Record<string, string>;
+  cookies: Record<string, string>;
   // ...20 more properties
-}
+};
 
-it('gets user by id', () => {
+it("gets user by id", () => {
   // Only care about body.id but must fake entire Request
   getUser({
-    body: { id: '123' },
+    body: { id: "123" },
     headers: {},
-    cookies: {}
+    cookies: {},
     // ...fake all 20 properties
-  })
-})
+  });
+});
 ```
 
 After:
 
 ```ts
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from "@total-typescript/shoehorn";
 
-it('gets user by id', () => {
+it("gets user by id", () => {
   getUser(
     fromPartial({
-      body: { id: '123' }
-    })
-  )
-})
+      body: { id: "123" },
+    }),
+  );
+});
 ```
 
 ### `as Type` → `fromPartial()`
@@ -67,15 +67,15 @@ it('gets user by id', () => {
 Before:
 
 ```ts
-getUser({ body: { id: '123' } } as Request)
+getUser({ body: { id: "123" } } as Request);
 ```
 
 After:
 
 ```ts
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from "@total-typescript/shoehorn";
 
-getUser(fromPartial({ body: { id: '123' } }))
+getUser(fromPartial({ body: { id: "123" } }));
 ```
 
 ### `as unknown as Type` → `fromAny()`
@@ -83,15 +83,15 @@ getUser(fromPartial({ body: { id: '123' } }))
 Before:
 
 ```ts
-getUser({ body: { id: 123 } } as unknown as Request) // wrong type on purpose
+getUser({ body: { id: 123 } } as unknown as Request); // wrong type on purpose
 ```
 
 After:
 
 ```ts
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny } from "@total-typescript/shoehorn";
 
-getUser(fromAny({ body: { id: 123 } }))
+getUser(fromAny({ body: { id: 123 } }));
 ```
 
 ## When to use each

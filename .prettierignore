@@ -16,3 +16,4 @@
 **/public
 ./components/icons/icons.jsx
 apps/webapp/src/types/supabase.ts
+.agents/skills
