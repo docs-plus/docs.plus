@@ -182,7 +182,7 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'media_workspace_max_usage_percent'
+              expr: 'max(media_workspace_max_usage_percent)'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200

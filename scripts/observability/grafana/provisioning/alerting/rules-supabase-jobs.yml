@@ -21,7 +21,7 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'time() - pgmq_last_successful_poll_timestamp_seconds'
+              expr: 'time() - max by (queue) (pgmq_last_successful_poll_timestamp_seconds)'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -93,14 +93,15 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'pg_cron job {{ $labels.jobname }} (runs every <=5m) has not succeeded for >15m'
+          summary: 'pg_cron job {{ $labels.jobname }} (runs every <=5m) has not succeeded in {{ humanizeDuration $values.B.Value }} — alert threshold is 15m.'
+          description: 'An age near 56 years means get_cron_job_health() returned NULL — not that the job stalled for decades. cron.schedule() preserves the jobid, but an unschedule-then-schedule apply mints a new one, and cron.job_run_details has no FK to cron.job, so the old run history is orphaned. NULL also happens when the job has never run. An overrun of minutes to hours past the 15m threshold means the job is genuinely stale. A blank jobname means this fired on NoData (exporter or RPC unreachable), not on this job specifically.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"update-user-status|cleanup-push-subscriptions|message_counter_batch_job|process_document_views_queue|aggregate_document_view_stats|process_email_queue"}'
+              expr: 'time() - max by (jobname) (cron_job_last_success_timestamp_seconds{jobname=~"update-user-status|cleanup-push-subscriptions|message_counter_batch_job|process_document_views_queue|aggregate_document_view_stats|process_email_queue"})'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -133,14 +134,15 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'pg_cron job {{ $labels.jobname }} (daily / every-15m) has not succeeded for >26h'
+          summary: 'pg_cron job {{ $labels.jobname }} (daily / every-15m) has not succeeded in {{ humanizeDuration $values.B.Value }} — alert threshold is 26h.'
+          description: 'An age near 56 years means get_cron_job_health() returned NULL — not that the job stalled for decades. cron.schedule() preserves the jobid, but an unschedule-then-schedule apply mints a new one, and cron.job_run_details has no FK to cron.job, so the old run history is orphaned. NULL also happens when the job has never run. An overrun of hours to a day past the 26h threshold means the job is genuinely stale. A blank jobname means this fired on NoData (exporter or RPC unreachable), not on this job specifically.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"cleanup-orphan-chat-media|cleanup-cron-job-run-details|cleanup_email_queue|compile_digest_emails"}'
+              expr: 'time() - max by (jobname) (cron_job_last_success_timestamp_seconds{jobname=~"cleanup-orphan-chat-media|cleanup-cron-job-run-details|cleanup_email_queue|compile_digest_emails"})'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -173,14 +175,15 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'pg_cron job {{ $labels.jobname }} (weekly) has not succeeded for >8d'
+          summary: 'pg_cron job {{ $labels.jobname }} (weekly) has not succeeded in {{ humanizeDuration $values.B.Value }} — alert threshold is 8d.'
+          description: 'An age near 56 years means get_cron_job_health() returned NULL — not that the job stalled for decades. cron.schedule() preserves the jobid, but an unschedule-then-schedule apply mints a new one, and cron.job_run_details has no FK to cron.job, so the old run history is orphaned. NULL also happens when the job has never run. An overrun of a day or two past the 8d threshold means the job is genuinely stale. A blank jobname means this fired on NoData (exporter or RPC unreachable), not on this job specifically.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"cleanup_old_document_views"}'
+              expr: 'time() - max by (jobname) (cron_job_last_success_timestamp_seconds{jobname=~"cleanup_old_document_views"})'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
@@ -213,14 +216,15 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'pg_cron job {{ $labels.jobname }} (monthly) has not succeeded for >33d'
+          summary: 'pg_cron job {{ $labels.jobname }} (monthly) has not succeeded in {{ humanizeDuration $values.B.Value }} — alert threshold is 33d.'
+          description: 'An age near 56 years means get_cron_job_health() returned NULL — not that the job stalled for decades. cron.schedule() preserves the jobid, but an unschedule-then-schedule apply mints a new one, and cron.job_run_details has no FK to cron.job, so the old run history is orphaned. NULL also happens when the job has never run. An overrun of a few days past the 33d threshold means the job is genuinely stale. A blank jobname means this fired on NoData (exporter or RPC unreachable), not on this job specifically.'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: 'time() - cron_job_last_success_timestamp_seconds{jobname=~"create_document_views_partitions"}'
+              expr: 'time() - max by (jobname) (cron_job_last_success_timestamp_seconds{jobname=~"create_document_views_partitions"})'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
