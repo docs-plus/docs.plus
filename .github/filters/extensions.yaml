@@ -11,6 +11,8 @@ _shared: &shared
   - 'packages/floating-tooltip/**'
   - '.github/actions/build-extensions/**'
   - '.github/actions/setup-cypress/**'
+  # Pins the Bun version and runs the frozen-lockfile install for every ext job.
+  - '.github/actions/setup-bun/**'
   - 'packages/playground/**'
   - 'scripts/publishable-extensions.ts'
   - 'scripts/build-extensions.sh'

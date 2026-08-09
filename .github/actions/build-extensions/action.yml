@@ -16,6 +16,17 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    # The cache stores all five dists but the build step only builds `EXT_ONLY`,
+    # so a scoped run must not save under the same key as a full one — a later
+    # exact hit would skip the build and serve stale dist for the rest.
+    # Normalised because callers pass multi-name lists (backend-ci passes three).
+    - name: 🏷️ Resolve cache scope
+      id: scope
+      shell: bash
+      env:
+        EXT_ONLY: ${{ inputs.extensions }}
+      run: echo "key=$(echo "${EXT_ONLY:-all}" | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
     - name: 📦 Restore extension build cache
       id: cache-ext
       uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
@@ -28,7 +39,7 @@ runs:
           extensions/*/dist
           packages/floating-popover/dist
           packages/floating-tooltip/dist
-        key: ext-v3-${{ runner.os }}-${{ hashFiles('bun.lock',
+        key: ext-v3-${{ runner.os }}-${{ steps.scope.outputs.key }}-${{ hashFiles('bun.lock',
           'tsup.base.ts',
           'tsconfig.base.json',
           'scripts/build-extensions.sh',
