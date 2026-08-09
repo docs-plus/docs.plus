@@ -1,4 +1,4 @@
-import { getChannels, getChannelsWithMessageCounts, upsertWorkspace } from '@api'
+import { getChannels, getChannelsWithMessageCounts } from '@api'
 import { useAuthStore, useChatStore } from '@stores'
 import { Channel } from '@types'
 import { logger } from '@utils/logger'
@@ -65,20 +65,10 @@ const useMapDocumentAndWorkspace = (docMetadata: DocMetadata): UseMapDocumentAnd
       setLoading(true)
       setError(null)
       try {
-        // Workspace bootstrap is authenticated-only. RLS requires
-        // `created_by = auth.uid()`, so anon callers can't insert. Anon
-        // still fetches channels via getChannelsWithMessageCounts below
-        // (read-only path through PUBLIC RLS policies).
-        if (profile?.id) {
-          await upsertWorkspace({
-            id: docMetadata.documentId,
-            name: docMetadata.title,
-            description: docMetadata.description,
-            slug: docMetadata.slug,
-            created_by: profile.id
-          })
-        }
-
+        // The workspace row is written server-side by join_workspace (SECURITY
+        // DEFINER, via useJoinWorkspace). PostgREST cannot write it: `on_conflict`
+        // and `select` both pull workspaces_member_select onto the new row, and the
+        // caller is not a member yet, so the insert always 403s. See CLAUDE.md.
         const channels = await fetchChannels(docMetadata.documentId, profile?.id)
         if (isMounted && channels) {
           bulkSetChannels(channels)

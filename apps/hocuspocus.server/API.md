@@ -176,7 +176,9 @@ Two further fields are accepted **only** under the service-role key: `content` (
 
 ### PUT /api/documents/:docId
 
-Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`, **owner-only**), `isPrivate` (`boolean`, **owner-only**). Non-owners may update collaborative fields; `readOnly` / `isPrivate` changes from non-owners are silently ignored (logged server-side).
+Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`).
+
+Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open — anyone, signed in or not, may set `title` / `description` / `keywords` — but its locks cannot move, because a document with no owner has nobody to be private for; those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request.
 
 ### DELETE /api/documents/:documentId
 

@@ -1,5 +1,6 @@
 import { Tooltip } from '@components/ui/Tooltip'
-import { useStore } from '@stores'
+import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
+import { useAuthStore, useStore } from '@stores'
 import DOMPurify from 'dompurify'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
@@ -50,6 +51,8 @@ const DocTitle = ({ className }: { className?: string }) => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const docMetadata = useStore((state) => state.settings.metadata)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
+  const profileId = useAuthStore((state) => state.profile?.id)
+  const canEdit = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
 
   useEffect(() => {
     if (docMetadata?.title) setTitle(docMetadata.title)
@@ -174,11 +177,16 @@ const DocTitle = ({ className }: { className?: string }) => {
 
   return (
     <div className={twMerge(className, 'flex items-center gap-1')}>
-      <Tooltip title="Rename" placement="bottom">
+      <Tooltip
+        title={canEdit ? 'Rename' : 'Only the owner can rename this document'}
+        placement="bottom">
         <div
           dangerouslySetInnerHTML={{ __html: title || '' }}
-          contentEditable
-          className="hover:border-base-300 truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium"
+          contentEditable={canEdit}
+          className={twMerge(
+            'truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium',
+            canEdit && 'hover:border-base-300'
+          )}
           style={{ flex: 1 }}
           onBlur={saveData}
           onKeyDown={(e) => {

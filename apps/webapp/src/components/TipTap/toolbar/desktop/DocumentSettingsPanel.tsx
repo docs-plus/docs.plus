@@ -5,6 +5,7 @@ import CloseButton from '@components/ui/CloseButton'
 import { usePopoverState } from '@components/ui/Popover'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import Textarea from '@components/ui/Textarea'
+import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
@@ -37,6 +38,7 @@ const DocumentSettingsPanel = ({
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const docMetadata = useStore((state) => state.settings.metadata)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
+  const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, user?.id))
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isPending, mutate } = useUpdateDocMetadata()
@@ -147,7 +149,12 @@ const DocumentSettingsPanel = ({
                 labelPosition="above"
                 value={docDescription}
                 onChange={(e) => setDocDescription(e.target.value)}
-                placeholder="Enter document description..."
+                placeholder={
+                  canEditMetadata
+                    ? 'Enter document description...'
+                    : 'Only the owner can edit this document’s details.'
+                }
+                disabled={!canEditMetadata}
                 rows={3}
               />
 
@@ -162,13 +169,18 @@ const DocumentSettingsPanel = ({
                     value={tags}
                     onChange={handleTagsChange}
                     name="tags"
-                    placeHolder="Type keyword..."
+                    disabled={!canEditMetadata}
+                    placeHolder={canEditMetadata ? 'Type keyword...' : ''}
                   />
                 </span>
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button variant="primary" loading={isPending} onClick={saveDescriptionHandler}>
+                <Button
+                  variant="primary"
+                  loading={isPending}
+                  disabled={!canEditMetadata}
+                  onClick={saveDescriptionHandler}>
                   Save Changes
                 </Button>
               </div>

@@ -11,8 +11,7 @@ import {
   ValidationError
 } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
-import { canMutateAccessFlags, isDocumentOwner } from '../../lib/ownerAccess'
-import { resolvePrivateAccess } from '../../lib/privateAccess'
+import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
@@ -377,34 +376,21 @@ export const updateDocument = async (
   }
 
   try {
-    // Title/description/keywords are collaborative and open. readOnly/isPrivate are
-    // privileged locks: only the owner (or any authed caller on an ownerless doc)
-    // may change them; unauthorized changes are ignored so collaborative edits still
-    // succeed.
+    // An owned document belongs to its owner: title, description, keywords and both
+    // locks move only for them. An ownerless one is open — anyone may retitle it,
+    // signed in or not — until the ownership handoff feature gives it an owner.
     const existing = await prisma.documentMetadata.findUnique({
       where: { documentId },
       select: { ownerId: true, readOnly: true, isPrivate: true, deletedAt: true }
     })
 
-    // The route is optionalUser on purpose (title/description are collaborative),
-    // but a private or trashed document is nobody's to rewrite. `isAnonymous` is
-    // deliberately NOT passed: an anonymous owner must keep the one PUT that can
-    // undo its own isPrivate flip. Every non-owner still refuses.
     if (existing?.deletedAt) throw new NotFoundError('Document')
-    // Ownerless rows skip the gate: resolvePrivateAccess answers sign-in-required
-    // to everyone while ownerId is null, so gating here would seal such a row
-    // permanently — the claim arm below is the only thing that can repair one.
-    // canMutateAccessFlags still requires an authed caller before anything moves.
-    if (
-      existing &&
-      existing.ownerId &&
-      resolvePrivateAccess({
-        isPrivate: existing.isPrivate,
-        ownerId: existing.ownerId,
-        userId: requesterId
-      }) !== 'allow'
-    ) {
-      throw new AppError('This document is private', 403, 'FORBIDDEN')
+
+    // The route is optionalUser because an open document accepts an anonymous
+    // retitle. An owned one refuses every caller who is not its owner, private or
+    // not, which is why resolvePrivateAccess is not consulted here any more.
+    if (!isOpenDocument(existing) && !isDocumentOwner(existing, requesterId)) {
+      throw new AppError('Only the document owner can change its metadata', 403, 'FORBIDDEN')
     }
 
     const updateData: {
@@ -419,7 +405,12 @@ export const updateDocument = async (
     if (title !== undefined) updateData.title = title
     if (keywords !== undefined) updateData.keywords = keywords.join(',')
 
-    const mayMutateAccess = canMutateAccessFlags(existing, requesterId)
+    // On create the row does not exist yet and the `ownerId` below decides it, so an
+    // authed creator may set the locks in the same request. An open document may not:
+    // with no owner, resolvePrivateAccess answers sign-in-required to everyone, so a
+    // flip would seal the row against the world with nothing able to undo it.
+    const ownerAfterWrite = existing ? existing.ownerId : (requesterId ?? null)
+    const mayMutateAccess = ownerAfterWrite != null && ownerAfterWrite === requesterId
 
     const readOnlyChanged = readOnly !== undefined && (!existing || readOnly !== existing.readOnly)
     if (readOnlyChanged && mayMutateAccess) {
@@ -427,7 +418,7 @@ export const updateDocument = async (
     } else if (readOnlyChanged) {
       documentsServiceLogger.warn(
         { documentId, requesterId },
-        'Ignored unauthorized readOnly change'
+        'Ignored readOnly change on an open document'
       )
     }
 
@@ -435,17 +426,10 @@ export const updateDocument = async (
       isPrivate !== undefined && (!existing || isPrivate !== existing.isPrivate)
     if (privateChanged && mayMutateAccess) {
       updateData.isPrivate = isPrivate
-      // Privatising an OWNERLESS row sealed it for everyone, the setter included:
-      // resolvePrivateAccess returns sign-in-required while ownerId is null, so
-      // nobody could read it or undo the flip. The claimer becomes the owner —
-      // the PUT is already the authoritative owner writer (CLAUDE.md §Hocuspocus Server).
-      if (isPrivate === true && existing && !existing.ownerId && requesterId) {
-        updateData.ownerId = requesterId
-      }
     } else if (privateChanged) {
       documentsServiceLogger.warn(
         { documentId, requesterId },
-        'Ignored unauthorized isPrivate change'
+        'Ignored isPrivate change on an open document'
       )
     }
 

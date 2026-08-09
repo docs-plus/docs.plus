@@ -6,6 +6,7 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import UnreadBadge from '@components/ui/UnreadBadge'
+import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
@@ -265,6 +266,7 @@ const MobilePadTitle = () => {
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const openDialog = useStore((state) => state.openDialog)
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
+  const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, user?.id))
   const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
 
   // Settings is navigation, not a typing continuation — drop the keyboard before the takeover.
@@ -337,7 +339,8 @@ const MobilePadTitle = () => {
                     }
                   }}
                   className="min-w-0 flex-1 truncate text-left text-lg font-semibold"
-                  onClick={handleTitleClick}>
+                  aria-disabled={!canEditMetadata}
+                  onClick={canEditMetadata ? handleTitleClick : undefined}>
                   {metadata?.title || 'Untitled'}
                 </button>
               )}
