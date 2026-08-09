@@ -5,9 +5,24 @@
 
 import { APP_NAME, APP_URL, COLORS, FONT_STACK, RADIUS, SPACING } from './tokens'
 
+// Every avatar source is user-writable: `users.avatar_url` allows any
+// non-whitespace string, and `raw_user_meta_data.avatar_url` is unconstrained.
+// An unescaped quote would close `src=` and append attacker markup to a
+// DKIM-signed mail, so anything that is not an http(s) URL falls back to initials.
+const safeAvatarSrc = (value: string | undefined): string | undefined => {
+  if (!value) return undefined
+  try {
+    const { protocol } = new URL(value)
+    return protocol === 'http:' || protocol === 'https:' ? escapeAttr(value) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function avatar(name: string, avatarUrl?: string, size: number = 40): string {
-  if (avatarUrl) {
-    return `<img src="${avatarUrl}" alt="${escapeAttr(name)}" style="width: ${size}px; height: ${size}px; border-radius: 50%; object-fit: cover; border: 2px solid ${COLORS.white};">`
+  const src = safeAvatarSrc(avatarUrl)
+  if (src) {
+    return `<img src="${src}" alt="${escapeAttr(name)}" style="width: ${size}px; height: ${size}px; border-radius: 50%; object-fit: cover; border: 2px solid ${COLORS.white};">`
   }
 
   const fontSize = Math.floor(size * 0.4)
@@ -30,7 +45,7 @@ export function button(
   const textColor = variant === 'primary' ? COLORS.white : COLORS.primary
   const border = variant === 'secondary' ? `border: 1px solid ${COLORS.primary};` : ''
 
-  return `<a href="${escapeAttr(url)}" style="display: inline-block; background: ${bgColor}; color: ${textColor}; text-decoration: none; padding: 12px 24px; border-radius: ${RADIUS.md}; font-size: 14px; font-weight: 500; ${border}">${text}</a>`
+  return `<a href="${escapeAttr(url)}" style="display: inline-block; background: ${bgColor}; color: ${textColor}; text-decoration: none; padding: 12px 24px; border-radius: ${RADIUS.md}; font-size: 14px; font-weight: 500; ${border}">${escapeHtml(text)}</a>`
 }
 
 /** VML button for Outlook (MSO conditional), with the plain anchor as the fallback. */
@@ -38,7 +53,7 @@ export function msoButton(text: string, url: string, width: number = 200): strin
   return `<!--[if mso]>
     <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeAttr(url)}" style="height:44px;v-text-anchor:middle;width:${width}px;" arcsize="18%" fillcolor="${COLORS.primary}" stroke="f">
       <w:anchorlock/>
-      <center style="color:${COLORS.white};font-family:Arial,sans-serif;font-size:14px;font-weight:bold;">${text}</center>
+      <center style="color:${COLORS.white};font-family:Arial,sans-serif;font-size:14px;font-weight:bold;">${escapeHtml(text)}</center>
     </v:roundrect>
     <![endif]-->
     <!--[if !mso]><!-->
