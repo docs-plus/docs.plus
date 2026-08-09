@@ -8,7 +8,7 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-07
+## [2.0.0] — 2026-08-09
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
 favor of Floating UI positioning, node type names are normalized to camelCase,
@@ -303,9 +303,6 @@ every media node gains an editable caption.
 - Wrap left/right no longer overflows the editor column: floated media gets
   `max-width: calc(100% - horizontal margins)` so pixel width + wrap gap stay
   inside the parent.
-- Toolbar button labels render as text instead of markup, so a media node whose
-  `margin` attribute carries HTML can no longer execute script when the toolbar
-  opens.
 - Pasting a copied media node mints a fresh `keyId` instead of reusing the
   serialized one. Two nodes sharing an id resolved to the same first-match
   `[data-key-id]`, so the resize gripper drove the original while sitting over
@@ -317,11 +314,6 @@ every media node gains an editable caption.
 - `video` and `audio` keep width, height and placement through an HTML
   round-trip. The values were emitted only inside the wrapper's inline `style`,
   which nothing parses back, so the node returned at schema defaults.
-- Every stored media `src` passes a scheme gate. `javascript:`, `data:`,
-  `vbscript:`, `file:` and `blob:` are rejected on `parseHTML` for the four
-  nodes that lacked a check, on markdown import, and in the Replace URL dialog.
-  The embed builders already refused to render such a URL, but the raw value
-  was persisted into the collaborative document.
 - Reserved markdown alts route only through each node's own tokenizer. The image
   node's `parseMarkdown` also emitted `{ type: 'audio' }`, `{ type: 'youtube' }`
   and so on, which have no schema node when the kit disabled them — Tiptap caught
@@ -351,14 +343,32 @@ every media node gains an editable caption.
 - The media toolbar no longer writes node attributes on a read-only editor. An
   open toolbar survived `setEditable(false)`, and align, margin, size, theme and
   Replace URL all still dispatched.
-- Layout attributes cannot inject extra CSS declarations into exported HTML.
+
+### Security
+
+- **Toolbar button labels render as text, not markup.** A media node's `margin`
+  attribute is document-controlled and was reported verbatim inside the label, so
+  an attribute carrying HTML executed script the moment the toolbar opened.
+  Labels are written with `textContent`; a stored payload now renders as literal
+  text.
+- **Dangerous schemes are refused where `src` enters the document.**
+  `javascript:`, `data:`, `vbscript:`, `file:` and `blob:` are rejected at
+  `parseHTML` for the four nodes that lacked a check — `video`, `audio`, `vimeo`
+  and `youtube` — on markdown import, and in the Replace URL dialog. The last two
+  admit inline `data:image/*` payloads for the image node; SVG stays excluded
+  because it carries script. The embed builders already refused to render a bad
+  URL, but the raw value still reached the collaborative document. This is not a
+  whole-document guarantee: insert commands and collaborative sync write `src`
+  without passing the gate, which is why the read side carries its own allowlist.
+- **Layout attributes cannot inject CSS declarations into exported HTML.**
   `margin` is read verbatim off pasted elements and concatenated into the
-  wrapper's inline `style`; a value carrying `;`, `}` or `url(` is now dropped.
-  This also covers the server-side DOCX/ODT/HTML export path, which serializes
-  through the same `renderHTML`.
-- "View original" and the download fallback open only `http(s):`, `blob:` and
-  root-relative sources. The insert commands and collaborative sync can both put
-  a value in `src` that the parse-time scheme gate never saw.
+  wrapper's inline `style`; a value carrying `;`, `}` or `url(` is dropped. This
+  also covers the server-side DOCX/ODT/HTML export path, which serializes through
+  the same `renderHTML`.
+- **"View original" and the download fallback open only `http(s):`, `blob:` and
+  root-relative sources.** Insert commands and collaborative sync can both put a
+  value in `src` that the parse-time gate never saw, so the `window.open` sink
+  re-checks rather than trusting the stored value.
 
 ### Removed
 
