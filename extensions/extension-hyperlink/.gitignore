@@ -1,10 +1,10 @@
 node_modules
 dist
-*.log
-.DS_Store
 
-# Local docs (e.g. HISTORY archive); anchor so cypress/docs/*.cy.ts stays tracked
+# Local docs only; anchor so cypress/docs/*.cy.ts stays tracked
 /docs/
+.DS_Store
+*.log
 
 # Cypress artifacts
 cypress/screenshots

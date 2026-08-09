@@ -1,8 +1,6 @@
-// Pure schema primitives for the hyperlink mark (write / remove / toggle).
-// Returns composable Tiptap `Command` thunks that act on the shared
-// `tr`, so callers can chain them with `extendMarkRange` etc. without
-// nesting `editor.chain().run()` calls (which would produce
-// "Applying a mismatched transaction").
+// Returns composable Tiptap `Command` thunks acting on the shared `tr`, so
+// callers can chain `extendMarkRange` etc. without a nested
+// `editor.chain().run()` — that produced "Applying a mismatched transaction".
 
 import type { Command, CommandProps } from '@tiptap/core'
 

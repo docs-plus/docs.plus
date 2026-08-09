@@ -6,9 +6,18 @@ _shared: &shared
   - 'package.json'
   - 'bun.lock'
   - 'tsconfig.base.json'
+  - 'tsup.base.ts'
+  - 'packages/floating-popover/**'
+  - 'packages/floating-tooltip/**'
   - '.github/actions/build-extensions/**'
+  - '.github/actions/setup-cypress/**'
+  - 'packages/playground/**'
   - 'scripts/publishable-extensions.ts'
   - 'scripts/build-extensions.sh'
+  - 'scripts/run-tests.sh'
+  - 'scripts/extension-preflight.sh'
+  # Implements `release-preflight`, which every extension's prepublishOnly runs.
+  - 'packages/release-tooling/**'
 
 extension-indent:
   - *shared
@@ -25,6 +34,3 @@ extension-inline-code:
 extension-placeholder:
   - *shared
   - 'extensions/extension-placeholder/**'
-any_extension:
-  - *shared
-  - 'extensions/**'

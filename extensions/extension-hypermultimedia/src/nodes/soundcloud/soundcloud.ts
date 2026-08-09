@@ -13,6 +13,7 @@ import {
   type IframeEmbedConfig,
   renderIframeEmbedHTML
 } from '../../utils/iframeEmbedNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildSoundCloudEmbedUrl,
@@ -70,7 +71,7 @@ export const SoundCloud = Node.create<SoundCloudOptions>({
 
   addAttributes() {
     return {
-      keyId: { default: null },
+      keyId: keyIdAttribute(),
       src: {
         default: null,
         parseHTML: (element) => {

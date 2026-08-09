@@ -8,9 +8,10 @@ import {
   syncMediaNodeLayout,
   wrapMediaWithLoadingShell
 } from '../loading'
-import { embedAttrsEqual } from './embedKit'
+import { EMBED_LAYOUT_ATTR_KEYS, embedAttrsEqual } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
-import { createStyleString, omitNullishAndFalse, type StyleLayoutOptions } from './utils'
+import { mediaLayoutCss } from './layoutStyle'
+import { omitNullishAndFalse, type StyleLayoutOptions } from './utils'
 
 export interface HtmlMediaNodeConfig {
   tag: 'video' | 'audio'
@@ -18,7 +19,6 @@ export interface HtmlMediaNodeConfig {
   elementAttrKeys: readonly string[]
   /** Pixel box when attrs carry no dimensions (audio has no intrinsic size). */
   layoutFallback?: { width: number; height: number }
-  isAlreadyReady: (element: HTMLMediaElement) => boolean
 }
 
 /** `src` falls back to the rendered attr so parsed nodes keep their source. */
@@ -74,7 +74,10 @@ export function createHtmlMediaNodeView(
       {
         bindLoad: {
           element: media,
-          isAlreadyReady: () => config.isAlreadyReady(media)
+          // `preload: 'none'` fetches nothing and fires no ready event, so the
+          // controls are all there is to paint — settle now or the shell never does.
+          isAlreadyReady: () =>
+            media.preload === 'none' || media.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
         }
       }
     )
@@ -143,20 +146,32 @@ export function renderHtmlMediaHTML(
   }
 ): [string, Record<string, unknown>, [string, Record<string, unknown>]] {
   const mediaClass = `hypermultimedia--${config.tag}__content`
-  const style = createStyleString(options, {
-    height: parseInt(String(HTMLAttributes.height)),
-    width: parseInt(String(HTMLAttributes.width)),
-    float: HTMLAttributes.float as string | null | undefined,
-    clear: HTMLAttributes.clear as string | undefined,
-    margin: HTMLAttributes.margin as string | undefined
-  })
+  const style = mediaLayoutCss(
+    {
+      height: parseInt(String(HTMLAttributes.height)),
+      width: parseInt(String(HTMLAttributes.width)),
+      float: HTMLAttributes.float as string | null | undefined,
+      clear: HTMLAttributes.clear as string | undefined,
+      margin: HTMLAttributes.margin as string | undefined
+    },
+    'export-html',
+    options
+  )
 
   const htmlAttributes = pickMediaElementAttrs(node, HTMLAttributes, config.elementAttrKeys)
+
+  // The parse rule targets the inner element and the wrapper's inline style is
+  // never read back, so size and placement must ride the element itself. Kept out
+  // of `elementAttrKeys`, which drives node-view remounts — resizing must not
+  // reload the media.
+  const layout = omitNullishAndFalse(
+    Object.fromEntries(EMBED_LAYOUT_ATTR_KEYS.map((key) => [key, node.attrs[key]]))
+  )
 
   // Leaf node: no content hole — a trailing `0` makes DOMSerializer throw on getHTML/copy.
   return [
     'div',
     { [`data-${config.tag}`]: '', class: mediaClass, style },
-    [config.tag, mergeAttributes(htmlAttributes, { class: mediaClass, style })]
+    [config.tag, mergeAttributes(htmlAttributes, layout, { class: mediaClass, style })]
   ]
 }

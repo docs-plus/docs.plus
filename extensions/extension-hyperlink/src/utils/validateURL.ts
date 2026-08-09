@@ -8,6 +8,9 @@ import { getSpecialUrlInfo } from './specialUrls'
  * Schemes blocked at every write boundary: `javascript:` / `vbscript:`
  * (script execution), `data:` (arbitrary HTML), `file:` (local FS),
  * `blob:` (in-page memory; never legitimate in stored content).
+ *
+ * Twin of `extension-hypermultimedia`'s copy. Adding a scheme to one and not
+ * the other opens a hole in the twin, so preflight diffs them byte-for-byte.
  */
 export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
 
@@ -125,7 +128,7 @@ export const getURLScheme = (url: string): string | null => {
 }
 
 /** Single http/https/ftp/ftps predicate — keeps `validateURL` and `url-decisions` on one policy. Module-internal. */
-export const isStandardWebScheme = (url: string): boolean => {
+const isStandardWebScheme = (url: string): boolean => {
   const scheme = getURLScheme(url)
   return scheme !== null && STANDARD_WEB_SCHEMES.has(scheme)
 }

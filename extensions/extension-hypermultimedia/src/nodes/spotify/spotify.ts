@@ -14,6 +14,7 @@ import {
   type IframeEmbedConfig,
   renderIframeEmbedHTML
 } from '../../utils/iframeEmbedNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildSpotifyEmbedUrl,
@@ -82,7 +83,7 @@ export const Spotify = Node.create<SpotifyOptions>({
 
   addAttributes() {
     return {
-      keyId: { default: null },
+      keyId: keyIdAttribute(),
       src: {
         default: null,
         // Serialized iframes carry the `embed/` URL; normalize back to the canonical share URL.

@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 /**
- * Support file for the extension-placeholder clean-room E2E suite.
  * Single file on purpose — Cypress 15's JIT loader silently skips
  * extensionless split imports.
  */
@@ -47,10 +46,8 @@ Cypress.Commands.add('setEditorContent', (html: string) => {
 Cypress.Commands.add('caretInBlock', (index: number) => {
   cy.getEditor().then((editor) => {
     let pos: number | undefined
-    let i = 0
-    editor.state.doc.forEach((_node, offset) => {
+    editor.state.doc.forEach((_node, offset, i) => {
       if (i === index) pos = offset + 1
-      i += 1
     })
     if (pos === undefined) throw new Error(`caretInBlock: no block at index ${index}`)
     editor.chain().focus().setTextSelection(pos).run()

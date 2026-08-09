@@ -48,7 +48,7 @@ export interface SoundCloudPlayerKitOptions {
   allow: string
 }
 
-export const SOUNDCLOUD_WIDGET_PARAM_KEYS = [
+const SOUNDCLOUD_WIDGET_PARAM_KEYS = [
   'auto_play',
   'hide_related',
   'show_comments',
@@ -64,11 +64,11 @@ export const SOUNDCLOUD_WIDGET_PARAM_KEYS = [
   'single_active'
 ] as const satisfies readonly (keyof SoundCloudPlayerKitOptions)[]
 
-export const SOUNDCLOUD_VISUAL_PLAYER_MIN_HEIGHT = 130
+const SOUNDCLOUD_VISUAL_PLAYER_MIN_HEIGHT = 130
 
 /** Compact widget shell needs ~120px; visual waveform player needs ~166px. */
-export const SOUNDCLOUD_COMPACT_PLAYER_MIN_HEIGHT = 120
-export const SOUNDCLOUD_VISUAL_PLAYER_LAYOUT_MIN_HEIGHT = 166
+const SOUNDCLOUD_COMPACT_PLAYER_MIN_HEIGHT = 120
+const SOUNDCLOUD_VISUAL_PLAYER_LAYOUT_MIN_HEIGHT = 166
 
 export const SOUNDCLOUD_EMBED_ATTR_KEYS = [
   'src',
@@ -104,7 +104,7 @@ function formatWidgetValue(value: boolean | number | string): string {
 }
 
 /** Heights above ~130px use the visual (waveform) player unless `visual` is set explicitly. */
-export function resolveSoundCloudVisual(
+function resolveSoundCloudVisual(
   attrs: Record<string, unknown>,
   options: SoundCloudPlayerKitOptions
 ): boolean {

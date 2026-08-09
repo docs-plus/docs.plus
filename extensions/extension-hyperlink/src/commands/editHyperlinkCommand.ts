@@ -1,28 +1,24 @@
-import { getMarkRange, type RawCommands } from '@tiptap/core'
+import { type Command, getMarkRange } from '@tiptap/core'
 
 import { HYPERLINK_MARK_NAME } from '../constants'
 import { createURLDecisions, type URLDecisions } from '../url-decisions'
 import { logger } from '../utils/logger'
 import { validateURL } from '../utils/validateURL'
+import type { EditHyperlinkAttributes } from './surface'
 
-type EditHyperlinkAttributes = {
-  newURL?: string
-  newText?: string
-  title?: string
-  image?: string
+type EditHyperlinkCommandArgs = EditHyperlinkAttributes & {
   markName?: string
   validate?: (url: string) => boolean
   /** URL Decisions instance; defaults to a vanilla one so manual/test callers work standalone. */
   urls?: URLDecisions
 }
 
-// Returns a composable `Command` thunk: a nested chain here historically
-// produced "Applying a mismatched transaction" under `extendMarkRange`.
-// `newURL` flows through `urls.forWrite` (normalize + gate) so the edit
-// surface stays in lock-step with `setHyperlink`.
+// Returns a composable `Command`: a nested chain here historically produced
+// "Applying a mismatched transaction" under `extendMarkRange`. `newURL` flows
+// through `urls.forWrite` (normalize + gate) so the edit surface stays in
+// lock-step with `setHyperlink`.
 export const editHyperlinkCommand =
-  (attributes: EditHyperlinkAttributes = {}): RawCommands['editHyperlink'] =>
-  () =>
+  (attributes: EditHyperlinkCommandArgs = {}): Command =>
   ({ tr, dispatch }) => {
     const {
       newURL,
@@ -55,11 +51,8 @@ export const editHyperlinkCommand =
     }
     if (!currentMark) return false
 
-    if (!dispatch) return true
-
-    const currentText = tr.doc.textBetween(range.from, range.to)
-    const text = newText || currentText
-
+    // Runs above the dry-run exit (`forWrite` is pure) so `can()` and the real
+    // command agree when `isAllowedUri` rejects the new URL.
     let href: string = currentMark.attrs.href
     if (newURL) {
       // `validate` is re-passed for defense-in-depth against a permissive `validateURL`.
@@ -67,6 +60,11 @@ export const editHyperlinkCommand =
       if (!decision) return false
       href = decision.href
     }
+
+    if (!dispatch) return true
+
+    const currentText = tr.doc.textBetween(range.from, range.to)
+    const text = newText || currentText
 
     const newMark = markType.create({
       ...currentMark.attrs,

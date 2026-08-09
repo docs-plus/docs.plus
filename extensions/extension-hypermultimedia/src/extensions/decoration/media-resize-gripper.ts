@@ -34,14 +34,7 @@ export function collectMediaGripperInfo(
   const result: MediaGripperInfo[] = []
   doc.descendants((node, pos) => {
     if (nodeNames.includes(node.type.name)) {
-      const { size: nodeSize, childCount } = node.content
-      result.push({
-        from: pos,
-        to: pos + nodeSize,
-        nodeSize,
-        childCount,
-        keyId: node.attrs.keyId
-      })
+      result.push({ from: pos, keyId: node.attrs.keyId })
     }
   })
   return result

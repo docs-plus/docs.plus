@@ -12,28 +12,29 @@ export const HyperImagePastePlugin = (
     props: {
       handlePaste: (view, event, slice) => {
         if (event.clipboardData?.files?.length) {
-          const files = Array.from(event.clipboardData.files)
-          const imageFile = files.find((file) => file.type.startsWith('image/'))
+          const imageFiles = Array.from(event.clipboardData.files).filter((file) =>
+            file.type.startsWith('image/')
+          )
 
-          if (imageFile) {
+          if (imageFiles.length > 0) {
             event.preventDefault()
-            triggerFileUpload(imageFile, editor)
+            triggerFileUpload(imageFiles, editor)
+            // Claim the paste even though the host inserts: a screenshot populates
+            // both `files` and `items`, and the branch below would fire again.
             return true
           }
         }
 
         if (event.clipboardData?.items?.length) {
-          const items = Array.from(event.clipboardData.items)
-          const imageItem = items.find((item) => item.type.startsWith('image/'))
+          const imageFiles = Array.from(event.clipboardData.items)
+            .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+            .map((item) => item.getAsFile())
+            .filter((file): file is File => file !== null)
 
-          if (imageItem) {
+          if (imageFiles.length > 0) {
             event.preventDefault()
-
-            const file = imageItem.getAsFile()
-            if (file) {
-              triggerFileUpload(file, editor)
-              return true
-            }
+            triggerFileUpload(imageFiles, editor)
+            return true
           }
         }
 
@@ -73,10 +74,6 @@ export const HyperImagePastePlugin = (
   })
 }
 
-const triggerFileUpload = (file: File, editor: Editor) => {
-  const uploadEvent = new CustomEvent('editorFileUpload', {
-    detail: { file, editor }
-  })
-
-  document.dispatchEvent(uploadEvent)
+const triggerFileUpload = (files: File[], editor: Editor) => {
+  document.dispatchEvent(new CustomEvent('editorFileUpload', { detail: { files, editor } }))
 }

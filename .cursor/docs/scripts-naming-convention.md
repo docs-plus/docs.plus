@@ -127,7 +127,7 @@ Six rules. Together they prevent the `scripts/archive/` graveyard from refilling
 - Test scopes: `:unit`, `:e2e`.
 - Workspace scopes: `:webapp`, `:admin`, `:backend`.
 - Process scopes: `:rest`, `:ws`, `:worker`.
-- Tool/asset scopes: `:styles` (Stylelint sub-axis of `lint`), `:family` (lockstep release), `:screenshots` (docs scope), `:nested-to-flat` (migration scope).
+- Tool/asset scopes: `:styles` (Stylelint sub-axis of `lint`), `:family` (lockstep release), `:screenshots` (docs scope), `:nested-to-flat` (migration scope), `:agent-docs` (agent-doc reference gate).
 
 ### Allowed lifecycle hooks (closed list)
 
@@ -173,7 +173,7 @@ Five deliberate corner cases. The first three depart from the bare-canonical rul
 
 ### Aggregates
 
-- `check` = `lint && lint:styles && format && typecheck`. Full report gate for CI and PR template.
+- `check` = `lint && lint:styles && format && typecheck && check:agent-docs`. Full report gate for CI and PR template.
 - `check:push` = `lint && lint:styles && typecheck`. Pre-push gate (Prettier already runs on staged files via `lint-staged`).
 - `check:fix` = `lint:fix && lint:styles:fix && format:fix`.
 

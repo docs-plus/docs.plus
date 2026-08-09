@@ -52,7 +52,7 @@ export const findLinks = (text: string): FoundLink[] => {
   if (text.includes(':')) {
     for (const match of text.matchAll(SPECIAL_SCHEME_REGEX_GLOBAL)) {
       const url = match[0]
-      const start = match.index!
+      const start = match.index
       const end = start + url.length
       const alreadyCovered = standardLinks.some((link) => start >= link.start && end <= link.end)
       if (!alreadyCovered && validateURL(url)) {

@@ -15,17 +15,15 @@ import {
   readCaption,
   wrapRenderWithCaption
 } from '../../caption'
-import {
-  isTypedMediaMarkdownAlt,
-  TYPED_MEDIA_SRC_VALIDATORS
-} from '../../markdown/typedMediaMarkdown'
-import type { ImageOptions } from '../../types'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
 import { mediaLayoutCss } from '../../utils/layoutStyle'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId } from '../../utils/utils'
 import { inputRegex, isImageUrl } from './helper'
 import { createImageNodeView } from './nodeView'
 import { HyperImagePastePlugin } from './plugin'
+import type { ImageOptions } from './types'
 
 export const Image = Node.create<ImageOptions>({
   name: 'image',
@@ -38,12 +36,16 @@ export const Image = Node.create<ImageOptions>({
 
   parseMarkdown: (token: MarkdownToken, _helpers: MarkdownParseHelpers) => {
     const alt = token.text || ''
-    if (isTypedMediaMarkdownAlt(alt) && TYPED_MEDIA_SRC_VALIDATORS[alt](token.href || '')) {
-      return { type: alt, attrs: { src: token.href || '' } }
-    }
+    // Markdown import is a write boundary like paste and parseHTML: an
+    // imported `![alt](javascript:…)` must not reach a stored node attribute.
+    // Inline images pass — a `.md` that embeds base64 is the case `allowBase64`
+    // exists for, and the HTML parse rule stays the authority on that policy.
+    const href = isSafeMediaSrc(token.href, { allowInlineImage: true }) ? token.href : ''
+    // Reserved alts belong to each node's own `hm_*` tokenizer, which is registered
+    // only when that node is enabled; naming a disabled type here blanks the document.
     return {
       type: 'image',
-      attrs: { src: token.href || '', alt }
+      attrs: { src: href, alt }
     }
   },
 
@@ -77,20 +79,30 @@ export const Image = Node.create<ImageOptions>({
 
   addAttributes() {
     return {
-      keyId: {
-        default: null
-      },
+      keyId: keyIdAttribute(),
+      // A captioned image parses from its `<figure>`, so every layout attribute
+      // has to read the inner `<img>` it was rendered onto — the same reader
+      // `width`/`height`/`src` already use. Without it a wrapped image comes
+      // back centred after a copy/paste.
       margin: {
-        default: this.options.margin
+        default: this.options.margin,
+        parseHTML: (element) =>
+          mediaElementFrom(element, 'img')?.getAttribute('margin') ?? this.options.margin
       },
       clear: {
-        default: this.options.clear
+        default: this.options.clear,
+        parseHTML: (element) =>
+          mediaElementFrom(element, 'img')?.getAttribute('clear') ?? this.options.clear
       },
       float: {
-        default: this.options.float
+        default: this.options.float,
+        parseHTML: (element) =>
+          mediaElementFrom(element, 'img')?.getAttribute('float') ?? this.options.float
       },
       display: {
-        default: this.options.display
+        default: this.options.display,
+        parseHTML: (element) =>
+          mediaElementFrom(element, 'img')?.getAttribute('display') ?? this.options.display
       },
       width: {
         default: this.options.width,
@@ -199,19 +211,23 @@ export const Image = Node.create<ImageOptions>({
           height?: number | null
         }) =>
         ({ tr, dispatch }: { tr: Transaction; dispatch?: (tr: Transaction) => void }) => {
-          if (dispatch) {
-            tr.doc.descendants((node, pos) => {
-              if (node.type.name === this.name && node.attrs.keyId === keyId) {
+          // The scan runs even without dispatch so `editor.can()` reports a miss
+          // instead of always answering true.
+          let found = false
+          tr.doc.descendants((node, pos) => {
+            if (node.type.name === this.name && node.attrs.keyId === keyId) {
+              found = true
+              if (dispatch) {
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
                   width: width !== undefined ? width : node.attrs.width,
                   height: height !== undefined ? height : node.attrs.height
                 })
-                return false
               }
-            })
-          }
-          return true
+              return false
+            }
+          })
+          return found
         }
     }
   },

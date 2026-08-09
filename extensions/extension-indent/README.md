@@ -101,7 +101,7 @@ Indent.configure({
 
 ## Multiline selections
 
-Selected ranges split into visual lines using `doc.textBetween(from, to, '\n')`. Every line must match `allowedIndentContexts`; otherwise the command returns `false` and the document is unchanged. Lines indent and outdent at their starts, even when the selection begins or ends mid-line — select-all included.
+Every non-empty textblock the selection covers is one line. A block the selection only touches at a boundary — the caret landing on its first position — is not covered and is left alone. Every covered line must match `allowedIndentContexts`; otherwise the command returns `false` and the document is unchanged. Lines indent and outdent at their starts, even when the selection begins or ends mid-line — select-all included.
 
 ## Outdent at the caret
 
@@ -110,13 +110,27 @@ With an empty selection, `outdent()` removes:
 - the line's leading `indentChars` when the caret sits at the start of an indented line, or
 - one `indentChars` immediately before the caret elsewhere — undoes a just-inserted tab without moving to column 0.
 
+## Persistence
+
+Indentation is literal characters in the text, not a node attribute, so it persists only where the text does.
+
+`editor.getJSON()` and Yjs collaborative state round-trip it with no extra option.
+
+`editor.getHTML()` does not: HTML parsing collapses whitespace runs and strips the leading one, so `setContent(savedHtml)` or `new Editor({ content: savedHtml })` returns the paragraph unindented. Pass `parseOptions: { preserveWhitespace: true }` or `'full'` to keep it — either value preserves the whitespace run; `'full'` additionally preserves newlines, which literal indentation does not need.
+
+Copy and paste inside the same editor keeps the indent, because ProseMirror reads the whitespace back from its own `data-pm-slice` attribute. Pasting into another app loses it.
+
 ## TypeScript
 
 Exports (all named): `Indent`, `IndentOptions`, `IndentContextRule`. Configure with `Indent.configure({ indentChars, allowedIndentContexts })`.
 
-## Family
+## Part of docs.plus
 
-Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+
+- Website: [docs.plus](https://docs.plus)
+- Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)
+- Sibling extensions: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md)
 
 ## Contributing
 

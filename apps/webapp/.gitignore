@@ -11,6 +11,8 @@
 # next.js
 /.next/
 /out/
+# Observed alongside .next; large and regenerable. Ignored so it cannot be staged.
+.next-stale-*
 
 # production
 /build

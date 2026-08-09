@@ -37,7 +37,7 @@ if (import.meta.main) {
 
   for (const { dir, hasUnit } of selected) {
     if (gates) {
-      const note = hasUnit ? 'Jest + clean-room Cypress' : 'clean-room Cypress'
+      const note = hasUnit ? 'unit + clean-room Cypress' : 'clean-room Cypress'
       process.stdout.write(
         `extensions/${dir}\t${hasUnit ? '1' : '0'}\t@docs.plus/${dir} (${note})\n`
       )

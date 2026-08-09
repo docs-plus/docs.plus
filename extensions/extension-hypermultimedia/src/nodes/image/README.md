@@ -103,14 +103,18 @@ audio also expose a Download action.
 Two clipboard paths, both handled by `HyperImagePastePlugin` (wired automatically):
 
 - **Image URL as plain text** → inserts an `image` node directly. `data:` URLs follow `allowBase64`.
-- **Image file** (screenshot, copied image) → the plugin calls `preventDefault()` and dispatches a `CustomEvent('editorFileUpload')` on `document` with `{ file, editor }` in `detail`. The host uploads (or creates a blob URL) and inserts the node itself:
+- **Image file** (screenshot, copied image) → the plugin calls `preventDefault()` and dispatches one `CustomEvent('editorFileUpload')` on `document` with `{ files, editor }` in `detail`, carrying every image on the clipboard. The host uploads (or creates a blob URL) and inserts the nodes itself:
 
 ```js
 document.addEventListener('editorFileUpload', (event) => {
-  const { file, editor } = event.detail
-  if (!file?.type.startsWith('image/')) return
-  const objectUrl = URL.createObjectURL(file)
-  editor.commands.setImage({ src: objectUrl, alt: file.name })
+  const { files, editor } = event.detail
+  for (const file of files) {
+    const objectUrl = URL.createObjectURL(file)
+    editor.commands.setImage({ src: objectUrl, alt: file.name })
+    // setImage leaves a NodeSelection on the new node; collapse past it or the
+    // next insert replaces it.
+    editor.commands.setTextSelection(editor.state.doc.content.size)
+  }
 })
 ```
 

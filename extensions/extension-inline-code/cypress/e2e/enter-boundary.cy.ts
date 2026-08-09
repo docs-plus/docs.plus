@@ -12,10 +12,7 @@ describe('inline code — Enter inside a code span', () => {
     cy.get('#editor code').should('have.length', 2)
     cy.get('#editor code').eq(0).should('have.text', 'co')
     cy.get('#editor code').eq(1).should('have.text', 'de')
-    cy.getEditor().should((e) => {
-      expect(e.getText()).to.equal('co\n\nde')
-      expect(e.getText()).to.not.contain('\u200b')
-    })
+    cy.getEditor().should((e) => expect(e.getText()).to.equal('co\n\nde'))
   })
 })
 

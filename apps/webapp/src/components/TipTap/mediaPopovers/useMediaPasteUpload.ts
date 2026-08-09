@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { uploadMediaFile } from './uploadMediaFile'
 
 interface EditorFileUploadEventDetail {
-  file: File
+  files: File[]
   editor: Editor
 }
 
@@ -21,10 +21,13 @@ export function useMediaPasteUpload(editor: Editor | null | undefined): void {
 
     const handleEditorFileUpload = (event: Event) => {
       if (!(event instanceof CustomEvent)) return
-      const { file, editor: eventEditor } = event.detail as EditorFileUploadEventDetail
-      if (eventEditor === editor && file && docMetadata) {
-        void uploadMediaFile(editor, file, docMetadata)
-      }
+      const { files, editor: eventEditor } = event.detail as EditorFileUploadEventDetail
+      if (eventEditor !== editor || !files?.length || !docMetadata) return
+      // Sequential: uploadMediaFile awaits image decoding before it places a
+      // placeholder, so parallel uploads would insert in decode order.
+      void (async () => {
+        for (const file of files) await uploadMediaFile(editor, file, docMetadata)
+      })()
     }
 
     document.addEventListener('editorFileUpload', handleEditorFileUpload)

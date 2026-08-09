@@ -8,7 +8,8 @@ This document defines how the `@docs.plus/extension-*` package family is version
 | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Doctrine                   | **Strict lockstep, Tiptap-style** — all 5 publishable extensions share one major                            |
 | Major tracks               | The **docs.plus product line** (`1.x` = 2023 product, `2.x` = alpha v2)                                     |
-| Current phase              | **Phase 1 — Cutover.** Each extension ships its first `2.0.0` independently                                 |
+| Current phase              | **Phase 1 — Cutover.** Each extension ships its `2.0.0` independently                                       |
+| npm state                  | 3 of 5 already published under older lines; 2 never published — see [Phase 1](#phase-1--cutover-current)    |
 | Trigger to flip to Phase 2 | **Trigger D** — see [Trigger D](#trigger-d--when-strict-lockstep-activates)                                 |
 | Publish gate               | **Release when ready** — see [Release Readiness](#release-readiness); stable only, no pre-release dist-tags |
 
@@ -36,20 +37,34 @@ The five publishable packages:
 
 **Goal:** get all five extensions to `2.0.0` on npm, each on its own schedule.
 
+**Starting state.** `extension-hyperlink`, `extension-hypermultimedia`, and `extension-indent` already serve an older version as `latest`; for those three, `2.0.0` moves `latest` forward. `extension-inline-code` and `extension-placeholder` have never been published, so `2.0.0` is their first release of any version. The [cutover tracker](.cursor/docs/extension-version-cutover.md) holds the per-package numbers and is the file to update as each one ships.
+
 **Rules during Phase 1:**
 
 1. Each extension's `package.json` `version` is bumped to `2.0.0` independently when its breaking changes are ready.
 2. Each ships per the existing per-package runbook in the `release-extensions` skill: `bun publish --tag latest --otp <code>` → `git tag <pkg>@2.0.0` → `gh release create ...`.
 3. Each carries its own `[2.0.0]` `CHANGELOG.md` entry following the [CHANGELOG style guide](#changelog-style-guide).
 4. Each must have the publishable-package scaffolding before its first `2.0.0` ship. See [Per-package readiness checklist](#per-package-readiness-checklist).
-5. **The CI lockstep guard is not implemented.** No workflow enforces version alignment during Phase 1, so no PR is blocked for non-aligned versions during cutover. See [CI Guard](#ci-guard).
+5. **No CI guard enforces version alignment.** The workflow has never been written, so no PR is blocked for non-aligned versions during cutover. See [CI Guard](#ci-guard).
 
 **Order of cutover:**
 
-1. `extension-hyperlink@2.0.0` — first, this week. Already prepared.
+1. `extension-hyperlink@2.0.0` — first.
 2. The other four — over coming windows, no fixed schedule, in whatever order maturity allows.
 
-**Honest disclosure.** The `extension-hyperlink@4.3.0` mispublish is being unpublished within npm's 72-hour window (`npm unpublish` requires `<72h after publish AND no public dependents`). If that window closes first, fall back to `npm deprecate`. The `[2.0.0]` CHANGELOG already discloses this; future cutover entries follow the same honesty norm.
+All five already carry `"version": "2.0.0"` in `package.json` and a `## [2.0.0]` CHANGELOG entry. What still gates each ship is the [readiness checklist](#per-package-readiness-checklist), not the version bump.
+
+**Honest disclosure.** `@docs.plus/extension-hyperlink@4.3.0` was published to npm by mistake on 2026-04-19, on a semver line the package never had. npm's unpublish window is 72 hours, so it closed on 2026-04-22: `4.3.0` cannot be removed. It **is already deprecated**, but with npm's generic string — the registry returns `"deprecated": "this package has been deprecated"`, which tells an installer nothing about what to use instead.
+
+That still matters after `2.0.0` ships, because `4.3.0` outranks every other published version by semver and stays at the top of the registry's version list even once `latest` points at `2.0.0`. Re-running `npm deprecate` overwrites the message, so the remaining action is to replace the generic one:
+
+```bash
+npm deprecate '@docs.plus/extension-hyperlink@4.3.0' 'Mispublished by mistake — not a real release. Install 2.x instead.'
+```
+
+Verify with `npm view '@docs.plus/extension-hyperlink@4.3.0' deprecated`. `npm deprecate` is a registry operation, not package management, so the Bun-only rule does not apply; it is a write, so npm 2FA may ask for `--otp`. Run it from the maintainer laptop with the npm login used to publish.
+
+The `[2.0.0]` CHANGELOG entry is the consumer-facing disclosure and must state the same outcome. Future cutover entries follow the same honesty norm.
 
 ## Trigger D — When Strict Lockstep Activates
 
@@ -68,29 +83,33 @@ Until the switch-flip commit lands, the CI guard does not exist and nothing is b
 
 ### The release script — `bun run release:family`
 
-The script orchestrates the five-package OTP rhythm and batches the post-publish work. It is a Bun script in `scripts/release-family.ts`; the implementation is deferred until Phase 2 is imminent, but the spec below is the contract.
+The script orchestrates the five-package OTP rhythm and batches the post-publish work. It is implemented as the Bun script [`scripts/release-family.ts`](scripts/release-family.ts) and wired as the root script `release:family`; the sections below describe what it does today.
+
+It reads the package list from [`scripts/publishable-extensions.ts`](scripts/publishable-extensions.ts) — the same SSOT the test gates use — and takes the target version from the packages themselves. Flags: `--dry-run` (run every check, print the plan, never publish or tag), `--allow-noop`, `--generate-noop-changelogs`, `--help`. There is no dist-tag flag; every publish goes to `latest` (see [Release Readiness](#release-readiness)).
 
 #### Pre-flight (all checks before any OTP)
 
-The script halts with a clear error message if any of these fail:
+Every check runs before any prompt. Failures are collected and reported together, not one per run:
 
-1. **Lockstep:** every `extensions/extension-*/package.json` has the same `version` (the target version).
-2. **CHANGELOG entry:** each package's `CHANGELOG.md` contains a `## [<target-version>]` section.
-3. **Build freshness:** each package's `dist/` exists and `mtime` is newer than its `src/`. (Or: the script runs `bun run build` per package as part of preflight.)
-4. **Per-package preflight:** each package's `prepublishOnly` script (delegated to `@docs.plus/release-tooling`'s `release-preflight` bin) passes — asserts `bun/*` user-agent, no `catalog:` leaks in built bundles, dist artifacts derived from the consumer's `exports` map all present.
-5. **Git state:** working tree is clean; HEAD matches `origin/main`; no unpushed commits.
-6. **Identity:** `npm whoami` matches the expected user; `git config user.email` matches.
-7. **Tag collision:** none of the planned tags `<pkg>@<target-version>` already exist locally or on the remote.
-8. **No-op intentionality:** for any package whose `dist/` is byte-identical to its previously published version (`npm view <pkg>@<prev> dist.tarball`), require an explicit `--allow-noop` flag. (No-op releases are expected — see [No-op releases](#no-op-releases) — but should be intentional.)
+1. **Lockstep:** every publishable package's `package.json` carries the same `version`. That version is the target.
+2. **CHANGELOG entry:** each package's `CHANGELOG.md` contains a `## [<target-version>]` heading.
+3. **Build freshness:** each package has a non-empty `dist/`, and no file under `src/` is newer than the newest file under `dist/`. The script never builds — a stale `dist/` is an error to fix, not something it repairs.
+4. **Per-package preflight:** each package's `prepublishOnly` is `bunx release-preflight` (delegated to `@docs.plus/release-tooling`) and passes — asserts `bun/*` user-agent, no `catalog:` leaks in built bundles, dist artifacts derived from the consumer's `exports` map all present.
+5. **Git state:** working tree is clean; HEAD matches `origin/main`.
+6. **Identity:** `npm whoami` returns a user; `git config user.email` is set.
+7. **Tag collision:** none of the planned tags `<pkg>@<target-version>` already exist locally or on the remote. One exception keeps a resumed run from tripping over its own tags: a local tag that points at `HEAD` **and** whose version is already on npm was written by the previous run, so it is accepted. Both conditions must hold, or a genuine re-release would be masked. A tag on the remote is always an error — tags are pushed only after the whole publish loop, so a mid-loop failure never leaves one there.
+8. **No-op intentionality:** the previous version is the last entry of `npm view <pkg> versions` other than the target, and `git diff '<pkg>@<prev>'..HEAD -- extensions/<pkg>/src/` decides. An empty diff marks a no-op and requires an explicit `--allow-noop` flag. A package with no published versions, or with no local git tag for its previous version, is skipped by this check. (No-op releases are expected — see [No-op releases](#no-op-releases) — but should be intentional.)
 
 If anything fails, **no OTP is requested** and the script exits non-zero.
 
 #### Publish loop
 
-For each package, in alphabetical order (no inter-extension deps to topologically order today):
+Packages run in the order declared by `scripts/publishable-extensions.ts`; there are no inter-extension deps to topologically order today. Before the loop, the script prints the target and asks for a `y/N` confirmation — skipped under `--dry-run`, which stops short of every publish, tag, and push.
 
-1. Call `npm view <pkg>@<target-version>` to detect "already published" (the resume case after a mid-stream failure). If already published, skip and move to the next package.
-2. Prompt for OTP.
+For each package:
+
+1. Call `npm view <pkg>@<target-version>` to detect "already published" (the resume case after a mid-stream failure). If already published, skip the publish and create the local tag if it is missing.
+2. Prompt for OTP. Input must be 6–8 digits.
 3. Run `bun publish --tag latest --otp <code>`.
 4. Run `git tag '<pkg>@<target-version>'`.
 
@@ -98,9 +117,9 @@ On `bun publish` failure: halt immediately, do not retry (would burn an OTP), pr
 
 #### Post-publish (batched)
 
-1. `git push origin --tags` (one call, all five new tags).
-2. For each package, `gh release create '<pkg>@<target-version>' --notes <slice from CHANGELOG.md>` using the existing `awk` slice from the `release-extensions` skill.
-3. Print summary: 5 npm URLs, 5 GitHub release URLs.
+1. `git push origin <tag> <tag> …` — one call with the explicit tag list. Never `git push --tags` (AGENTS.md §Release Safety).
+2. For each package, `gh release create '<pkg>@<target-version>' --title '<pkg>@<target-version>' --notes-file <slice from CHANGELOG.md>`. The script slices the entry itself and guards each release with `gh release view`, so a resumed run does not fail on releases that already exist. The `awk` slice in the `release-extensions` skill is the equivalent for the manual Phase 1 runbook.
+3. Print summary: target version, published count, skipped count, and one npm URL per package.
 
 The existing `discord-release.yml` workflow fires per release event, so the team gets five Discord embeds in ~30 seconds. This is accepted noise; each embed carries its own changelog and install hint, and the cadence (a few times per year) does not warrant inventing an umbrella-release format. See [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella).
 
@@ -122,7 +141,7 @@ When a package has no behavioral changes since its previous release but ships in
 Aligned to docs.plus <version> family release. No behavioral changes since <prev-version>.
 ```
 
-The script generates this verbatim during preflight check #2 (CHANGELOG entry) for any package missing an entry where the git diff `<prev-tag>..HEAD -- extensions/<pkg>/src/` is empty. The maintainer commits the auto-generated entries before re-running the script.
+`bun run release:family --generate-noop-changelogs` writes this entry verbatim for every package the no-op detection finds (git diff `<prev-tag>..HEAD -- extensions/<pkg>/src/` empty) and then exits without publishing. The maintainer reviews and commits the generated entries, then re-runs the script; preflight check #2 verifies they exist. The flag refuses to run while lockstep is violated, since the target version would be ambiguous.
 
 ## CHANGELOG Style Guide
 
@@ -176,7 +195,7 @@ Published entries use the shorthand `### Breaking` (same meaning as `Breaking Ch
 
 ## CI Guard
 
-**Not implemented.** No `.github/workflows/lockstep-guard.yml` file exists in this repo, and no PR is blocked for non-aligned extension versions today. Building it is part of the Trigger D switch-flip commit, not a separate step; the spec below is the contract that commit must satisfy.
+**The guard has never been written.** Nothing in `.github/workflows/` checks extension version alignment, and no PR is blocked for non-aligned versions today. The [Trigger D](#trigger-d--when-strict-lockstep-activates) switch-flip commit must author the workflow from scratch — it is part of that commit, not a separate step. The spec below is the contract that commit must satisfy.
 
 **Location:** `.github/workflows/lockstep-guard.yml` — not implemented; the Trigger D commit creates it.
 
@@ -192,11 +211,11 @@ See RELEASE_POLICY.md "Versioning Doctrine".
 
 **Bypass:** add the label `lockstep-bypass` to the PR. Reserved for the rare hotfix that legitimately ships outside the family — should be near-zero in practice.
 
-**Phase 1 behavior:** no guard workflow exists, so nothing enforces lockstep and no PR is blocked. The Trigger D switch-flip commit creates the workflow already active (`if: true`) — there is no earlier dormant/`if: false` state to flip. No retroactive enforcement, no PR breakage during cutover.
+**Activation:** the Trigger D commit creates the workflow already active (`if: true`) — there is no earlier dormant/`if: false` state to flip. No retroactive enforcement, no PR breakage during cutover.
 
 ## Per-package Readiness Checklist
 
-Before any extension ships its first `2.0.0` (and joins the eventual lockstep family), it needs the publishable-package scaffolding:
+Before any extension ships its `2.0.0` (and joins the eventual lockstep family), it needs the publishable-package scaffolding. The checklist applies to all five, including the three that already have older versions on npm — an existing npm listing is not evidence that the current scaffolding is in place:
 
 - [ ] `LICENSE` in `.gitignore` (root `LICENSE` is the single source of truth; `prepack` regenerates it before each pack)
 - [ ] `"@docs.plus/release-tooling": "workspace:*"` in `devDependencies`

@@ -64,6 +64,57 @@ describe('Markdown import/export — hyperlink mark', () => {
     })
   })
 
+  describe('renderMarkdown security + escaping', () => {
+    // Export is the last gate: a hostile mark can reach the doc without passing
+    // parseHTML or parseMarkdown — Yjs replay, a foreign addMark, or a schema
+    // migration — so insert the mark from JSON rather than from markup.
+    DANGEROUS.forEach((href) => {
+      it(`blanks ${href} on export when the mark bypassed the import gates`, () => {
+        cy.getEditor().then((editor) => {
+          editor.commands.insertContent({
+            type: 'text',
+            text: 'click',
+            marks: [{ type: 'hyperlink', attrs: { href } }]
+          })
+        })
+        cy.getMarkdown().should('include', '[click]()')
+        cy.getMarkdown().should('not.include', href)
+      })
+    })
+
+    // A mark contributes only the slices around `renderChildren()`, so the label
+    // cannot be escaped from `renderMarkdown`. Balanced brackets need no escape;
+    // pin that here so nobody re-adds a replace that would corrupt the
+    // placeholder and blank the link syntax entirely.
+    it('round-trips balanced brackets in the label without escaping', () => {
+      cy.setEditorContent('<p><a href="https://example.com/x">a [b] c</a></p>')
+      cy.getMarkdown().should('include', '[a [b] c](https://example.com/x)')
+      cy.getMarkdown().then((md) => {
+        cy.setMarkdown(md)
+        cy.get('#editor a[href="https://example.com/x"]').should('have.text', 'a [b] c')
+      })
+    })
+
+    it('keeps the link when the label holds an unbalanced bracket', () => {
+      cy.setEditorContent('<p><a href="https://example.com/y">a [b c</a></p>')
+      cy.getMarkdown().then((md) => {
+        cy.setMarkdown(md)
+        cy.get('#editor a[href="https://example.com/y"]').should('exist')
+      })
+    })
+
+    it('percent-encodes whitespace in the href so marked keeps the link', () => {
+      cy.getEditor().then((editor) => {
+        editor.commands.insertContent({
+          type: 'text',
+          text: 'spaced',
+          marks: [{ type: 'hyperlink', attrs: { href: 'https://example.com/a b' } }]
+        })
+      })
+      cy.getMarkdown().should('include', '(https://example.com/a%20b)')
+    })
+  })
+
   describe('markdown input rule (typing)', () => {
     it('canonicalizes [email](user@example.com) typed inline', () => {
       cy.getEditor().then((editor) => {
@@ -71,6 +122,43 @@ describe('Markdown import/export — hyperlink mark', () => {
       })
       cy.realType('[Write us](user@example.com) ')
       cy.get('#editor a[href="mailto:user@example.com"]').should('exist')
+    })
+  })
+})
+
+describe('HTML round-trip — hyperlink mark', () => {
+  beforeEach(() => {
+    cy.visitPlayground()
+    cy.setEditorContent('<p>Visit example today.</p>')
+    cy.selectText('example')
+  })
+
+  it('round-trips href and label through getHTML() → setContent()', () => {
+    cy.getEditor().then((editor) => {
+      editor.commands.setHyperlink({ href: 'https://example.com' })
+      editor.commands.setContent(editor.getHTML())
+    })
+    cy.get('#editor a[href="https://example.com"]').should('contain.text', 'example')
+  })
+
+  it('drops a stored target, so `_blank` cannot survive a copy/paste of the HTML', () => {
+    cy.getEditor().then((editor) => {
+      editor.commands.setHyperlink({ href: 'https://example.com', target: '_blank' })
+      const html = editor.getHTML()
+      expect(html).to.include('href="https://example.com"')
+      expect(html).to.not.include('target=')
+
+      editor.commands.setContent(html)
+      let found = false
+      let target: unknown
+      editor.state.doc.descendants((node) => {
+        const mark = node.marks.find((m) => m.type.name === 'hyperlink')
+        if (found || !mark) return
+        found = true
+        target = mark.attrs.target
+      })
+      expect(found, 'hyperlink mark survives HTML re-import').to.equal(true)
+      expect(target, 'target falls back to the configured default').to.equal(null)
     })
   })
 })

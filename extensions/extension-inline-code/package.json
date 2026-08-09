@@ -1,7 +1,7 @@
 {
   "name": "@docs.plus/extension-inline-code",
   "version": "2.0.0",
-  "description": "A Tiptap extension for inline code formatting",
+  "description": "Tiptap inline-code mark with stored-mark caret entry — no placeholder character enters the document",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -70,6 +70,7 @@
     "@docs.plus/playground": "workspace:*",
     "@docs.plus/release-tooling": "workspace:*",
     "@tiptap/core": "catalog:",
+    "@tiptap/markdown": "catalog:",
     "@tiptap/pm": "catalog:",
     "@tiptap/starter-kit": "catalog:",
     "cypress": "catalog:",

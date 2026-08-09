@@ -1,8 +1,6 @@
 import { EMBED_LAYOUT_ATTR_KEYS } from '../utils/embedKit'
 import { applyMediaLayoutToDom, styleLayoutFromAttrs } from '../utils/layoutStyle'
 
-export { EMBED_LAYOUT_ATTR_KEYS }
-
 const DEFAULT_LAYOUT_FALLBACK = { width: 640, height: 480 } as const
 export const IMAGE_LAYOUT_FALLBACK = { width: 320, height: 240 } as const
 export const AUDIO_LAYOUT_FALLBACK = { width: 450, height: 120 } as const

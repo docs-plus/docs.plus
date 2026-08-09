@@ -87,8 +87,8 @@ interface RunResult {
   stderr: string
 }
 
-// spawnSync with no shell: keeps secrets like the npm OTP off the shell command
-// line and out of `ps aux` argv visibility.
+// spawnSync with no shell: keeps the npm OTP off the shell command line and out
+// of shell history. The spawned `bun publish` still carries it in its own argv.
 function run(
   cmd: string,
   args: string[],
@@ -265,9 +265,9 @@ function checkPerPackagePreflight(packages: PackageInfo[]): PreflightResult {
   const errors: string[] = []
   for (const pkg of packages) {
     const pkgJson = JSON.parse(readFileSync(join(pkg.packagePath, 'package.json'), 'utf8'))
-    if (pkgJson.scripts?.prepublishOnly !== 'release-preflight') {
+    if (pkgJson.scripts?.prepublishOnly !== 'bunx release-preflight') {
       errors.push(
-        `${pkg.fullName}: package.json scripts.prepublishOnly must be "release-preflight" — see RELEASE_POLICY.md "Per-package readiness checklist"`
+        `${pkg.fullName}: package.json scripts.prepublishOnly must be "bunx release-preflight" — see RELEASE_POLICY.md "Per-package readiness checklist"`
       )
       continue
     }
@@ -322,10 +322,18 @@ function checkIdentity(): PreflightResult {
 function checkTagCollision(packages: PackageInfo[], targetVersion: string): PreflightResult {
   const errors: string[] = []
   const remoteTags = tryRun('git', ['ls-remote', '--tags', 'origin'])
+  const head = tryRun('git', ['rev-parse', 'HEAD'])
   for (const pkg of packages) {
     const tag = `${pkg.fullName}@${targetVersion}`
     const localExists = tryRun('git', ['tag', '-l', tag])
     if (localExists) {
+      // Resume case: a tag on HEAD whose version is already published was written
+      // by the previous run. Both conditions together, or a re-release is masked.
+      const tagCommit = tryRun('git', ['rev-list', '-n', '1', tag])
+      if (tagCommit && tagCommit === head && npmVersionExists(pkg.fullName, targetVersion)) {
+        ok(`Tag from a previous run; version already on npm: ${tag}`)
+        continue
+      }
       errors.push(`Local tag already exists: ${tag}`)
       continue
     }
@@ -549,7 +557,7 @@ function createGithubReleases(packages: PackageInfo[], targetVersion: string, dr
 async function main() {
   const args = parseArgs()
   process.stdout.write(`bun run release:family${args.dryRun ? ' --dry-run' : ''}\n`)
-  process.stdout.write(`tag: @${args.tag}${args.allowNoop ? '  --allow-noop' : ''}\n`)
+  process.stdout.write(`tag: @${RELEASE_TAG}${args.allowNoop ? '  --allow-noop' : ''}\n`)
 
   section('Discovering packages')
   const packages = loadAllPackages()
@@ -593,7 +601,7 @@ async function main() {
 
   if (!args.dryRun) {
     process.stdout.write(
-      `\nReady to publish ${packages.length} packages at ${targetVersion} to @${args.tag}.\n`
+      `\nReady to publish ${packages.length} packages at ${targetVersion} to @${RELEASE_TAG}.\n`
     )
     const answer = await prompt('Proceed? [y/N]: ')
     if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
@@ -611,7 +619,7 @@ async function main() {
 
   section('Summary')
   process.stdout.write(`  Target version: ${targetVersion}\n`)
-  process.stdout.write(`  Tag: @${args.tag}\n`)
+  process.stdout.write(`  Tag: @${RELEASE_TAG}\n`)
   process.stdout.write(`  Published: ${published.length}\n`)
   process.stdout.write(`  Skipped (already on npm): ${skipped.length}\n`)
   if (args.dryRun) {

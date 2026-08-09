@@ -34,7 +34,11 @@ export const MediaResizeControls = Extension.create<MediaResizeControlsOptions>(
       new Plugin({
         key: new PluginKey('MediaResizeControls'),
         view: () => ({
-          update: () => syncControlsToDoc(editor),
+          // PM calls this on every state update; a selection-only change moves no
+          // media, so skip the reposition + editor-wide orphan scan on keystrokes.
+          update: (view, prevState) => {
+            if (view.state.doc !== prevState.doc) syncControlsToDoc(editor)
+          },
           destroy: () => hideMediaResizeControls(editor)
         }),
         appendTransaction(transactions) {

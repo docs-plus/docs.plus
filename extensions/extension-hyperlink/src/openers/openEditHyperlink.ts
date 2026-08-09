@@ -1,13 +1,12 @@
 import { hideTooltip } from '@docs.plus/floating-tooltip'
 
+import { OFFSCREEN_COORD_PX } from '../constants'
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { EditHyperlinkOptions } from '../hyperlink'
 import editHyperlinkPopover from '../popovers/editHyperlinkPopover'
 import { getHyperlinkOptions } from './getHyperlinkOptions'
 import { findLiveEquivalentAnchor } from './liveAnchor'
 import { setActivePopoverOwner } from './popoverOwnership'
-
-const OFFSCREEN_COORD_PX = -9999
 
 /**
  * Open the edit popover anchored to a hyperlink. The prebuilt popover's

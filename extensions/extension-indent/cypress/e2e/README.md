@@ -9,7 +9,7 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 | `midline-selection.cy.ts` | Mid-word selection starts clamp to line starts; select-all indents eligible blocks                       |
 | `hardbreak-outdent.cy.ts` | Shift-Tab never deletes a hardBreak in place of indent characters                                        |
 | `blockquote-indent.cy.ts` | Default allowlist: blockquote paragraphs indent/outdent; headings are a no-op                            |
-| `codeblock-indent.cy.ts`  | codeBlock gating; embedded `\n` is not treated as a block separator                                      |
+| `codeblock-indent.cy.ts`  | codeBlock gating on both the caret and range-selection paths                                             |
 | `list-precedence.cy.ts`   | Sink/lift wins over literal indent; `?contexts=none` still sinks and lifts                               |
 | `enabled-option.cy.ts`    | `?enabled=off`: Tab inserts nothing and Shift-Tab strips nothing in an allowed context                   |
 

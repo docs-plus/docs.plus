@@ -17,6 +17,14 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
   reference is a larger surface). Re-clicking the trigger can toggle closed.
 - Optional `crossAxisShift: false` keeps end-aligned placements pinned to the
   reference’s end edge (toolbar overflow no longer slides left under `shift`).
+- `hide()` and `destroy()` are terminal once the popover has been shown:
+  `show()` no longer reopens a closed popover. Hiding releases ownership and nothing
+  re-adopted, so a re-shown popover stayed on screen while the controller
+  believed it was idle — `close()` could not reach it, the next `adopt()` did
+  not evict it (two popovers at once), subscribers were never told it had
+  remounted, and it survived `editor.destroy()` with `autoUpdate` observers
+  still bound. `show()` after `destroy()` also re-appended the removed root.
+  Build a new popover to reopen.
 
 ## [2.0.0] — 2026-06-12
 

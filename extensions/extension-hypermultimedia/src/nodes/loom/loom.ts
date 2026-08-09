@@ -10,6 +10,7 @@ import {
   resolveEmbedLayoutDimensions
 } from '../../utils/embedKit'
 import { createIframeEmbedNodeView, renderIframeEmbedHTML } from '../../utils/iframeEmbedNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildLoomEmbedUrl,
@@ -61,7 +62,7 @@ export const Loom = Node.create<LoomOptions>({
 
   addAttributes() {
     return {
-      keyId: { default: null },
+      keyId: keyIdAttribute(),
       src: {
         default: null,
         parseHTML: (element) => {

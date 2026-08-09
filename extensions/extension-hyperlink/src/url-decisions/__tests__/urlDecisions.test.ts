@@ -9,7 +9,7 @@ import { composeGate, createURLDecisions, type URLDecisions, type WriteResult } 
  * tells you exactly which boundary drifted.
  *
  * `forWrite` matrix: { text | href | match } × { gate | validate | shouldAutoLink }
- * `forRead`  matrix: { safe | unsafe } × { default-gate | composed-gate }
+ * `forRead`  matrix: { safe | unsafe } × { default-gate | composed-gate } → `navigable`
  */
 
 const ds = (overrides?: Parameters<typeof createURLDecisions>[0]): URLDecisions =>
@@ -101,20 +101,6 @@ describe('createURLDecisions', () => {
         'https://allowed.com'
       ])
     })
-
-    it('classifies the result type', () => {
-      expect(ds().forWrite({ kind: 'href', href: 'https://example.com' })[0].type).toBe('url')
-      expect(ds().forWrite({ kind: 'href', href: 'user@example.com' })[0].type).toBe('email')
-      expect(ds().forWrite({ kind: 'href', href: '+15551234567' })[0].type).toBe('phone')
-      expect(ds().forWrite({ kind: 'href', href: 'whatsapp://send?text=hi' })[0].type).toBe(
-        'special'
-      )
-    })
-
-    it('attaches catalog match for special URLs', () => {
-      const out = ds().forWrite({ kind: 'href', href: 'https://github.com/owner/repo' })
-      expect(out[0].special?.type).toBe('github')
-    })
   })
 
   describe('forWrite — kind: text (full extraction)', () => {
@@ -136,7 +122,6 @@ describe('createURLDecisions', () => {
     it('detects bare phones in single-token text', () => {
       const out = ds().forWrite({ kind: 'text', text: '+15551234567' })
       expect(out).toHaveLength(1)
-      expect(out[0].type).toBe('phone')
       expect(out[0].href).toBe('tel:+15551234567')
     })
 
@@ -200,7 +185,7 @@ describe('createURLDecisions', () => {
 
     it('IGNORES gate / validate / shouldAutoLink — detection only', () => {
       const decisions = createURLDecisions({
-        gate: () => false as never,
+        gate: (_href): _href is string => false,
         validate: () => false,
         shouldAutoLink: () => false
       })
@@ -209,17 +194,11 @@ describe('createURLDecisions', () => {
   })
 
   describe('forRead', () => {
-    it('marks safe + navigable for a plain https URL with the default gate', () => {
-      const out = ds().forRead('https://example.com')
-      expect(out).toEqual({
-        safe: true,
-        navigable: true,
-        href: 'https://example.com',
-        special: null
-      })
+    it('marks navigable for a plain https URL with the default gate', () => {
+      expect(ds().forRead('https://example.com')).toEqual({ navigable: true })
     })
 
-    it('marks unsafe + non-navigable for dangerous schemes', () => {
+    it('marks non-navigable for dangerous schemes', () => {
       for (const dangerous of [
         'javascript:alert(1)',
         'data:text/html,foo',
@@ -227,17 +206,13 @@ describe('createURLDecisions', () => {
         'file:///etc/passwd',
         'blob:http://example.com/abc'
       ]) {
-        const out = ds().forRead(dangerous)
-        expect(out.safe).toBe(false)
-        expect(out.navigable).toBe(false)
-        expect(out.special).toBeNull()
+        expect(ds().forRead(dangerous).navigable).toBe(false)
       }
     })
 
-    it('returns empty href and falsy flags for nullish inputs', () => {
+    it('marks non-navigable for nullish inputs', () => {
       for (const empty of [null, undefined, '']) {
-        const out = ds().forRead(empty)
-        expect(out).toEqual({ safe: false, navigable: false, href: '', special: null })
+        expect(ds().forRead(empty)).toEqual({ navigable: false })
       }
     })
 
@@ -245,23 +220,8 @@ describe('createURLDecisions', () => {
       const decisions = createURLDecisions({
         gate: composeGate({ isAllowedUri: (u) => u.includes('allowed.com') })
       })
-      const blocked = decisions.forRead('https://blocked.com')
-      expect(blocked.safe).toBe(true)
-      expect(blocked.navigable).toBe(false)
-
-      const allowed = decisions.forRead('https://allowed.com')
-      expect(allowed.safe).toBe(true)
-      expect(allowed.navigable).toBe(true)
-    })
-
-    it('attaches catalog match for special URLs', () => {
-      const out = ds().forRead('https://github.com/owner/repo')
-      expect(out.special?.type).toBe('github')
-    })
-
-    it('does NOT attach catalog match for unsafe hrefs (defense-in-depth)', () => {
-      const out = ds().forRead('javascript:alert(1)')
-      expect(out.special).toBeNull()
+      expect(decisions.forRead('https://blocked.com').navigable).toBe(false)
+      expect(decisions.forRead('https://allowed.com').navigable).toBe(true)
     })
   })
 })
@@ -279,14 +239,13 @@ describe('composeGate', () => {
   })
 
   it('threads context to isAllowedUri', () => {
-    let receivedCtx: {
-      defaultValidate: unknown
-      protocols: unknown
-      defaultProtocol: string
-    } | null = null
+    // Collected in an array, not a `let`: control-flow analysis cannot see a
+    // closure assignment and would narrow the variable back to `null`.
+    const seen: Array<{ defaultValidate: unknown; protocols: unknown; defaultProtocol: string }> =
+      []
     const gate = composeGate({
       isAllowedUri: (uri, ctx) => {
-        receivedCtx = ctx
+        seen.push(ctx)
         return uri.includes('ok')
       },
       defaultProtocol: 'http',
@@ -294,9 +253,9 @@ describe('composeGate', () => {
     })
     expect(gate('https://ok.com')).toBe(true)
     expect(gate('https://blocked.com')).toBe(false)
-    expect(receivedCtx).not.toBeNull()
-    expect(receivedCtx?.defaultProtocol).toBe('http')
-    expect(receivedCtx?.protocols).toEqual(['custom'])
-    expect(typeof receivedCtx?.defaultValidate).toBe('function')
+    expect(seen).toHaveLength(2)
+    expect(seen[0].defaultProtocol).toBe('http')
+    expect(seen[0].protocols).toEqual(['custom'])
+    expect(typeof seen[0].defaultValidate).toBe('function')
   })
 })

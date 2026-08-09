@@ -8,6 +8,7 @@ import { isValidVimeoUrl } from '../nodes/vimeo/helper'
 import { normalizeXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
 import { applyNodeAttributes } from '../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../utils/mediaUrl'
 import { closeToolbarPopover, openMediaPopover } from './menu'
 import { type MediaToolbarIconScope, resolveMediaToolbarIcon } from './resolveIcon'
 import type { MediaActionContext } from './types'
@@ -30,7 +31,12 @@ const REPLACE_URL_GUARDS: Record<
   x: { label: 'X post', resolve: normalizeXUrl }
 }
 
-const ANY_URL = { label: 'media', resolve: (url: string) => url }
+// Nodes without a provider guard (image/video/audio) still get the scheme gate,
+// widened for inline images so a pasted base64 src stays replaceable.
+const ANY_URL = {
+  label: 'media',
+  resolve: (url: string) => (isSafeMediaSrc(url, { allowInlineImage: true }) ? url : null)
+}
 
 /** Contract handed to a `replaceUrlPopover` factory. `nodePos` is a snapshot at open; `apply` re-validates, commits the normalized URL, and closes. */
 export interface ReplaceUrlPopoverOptions {

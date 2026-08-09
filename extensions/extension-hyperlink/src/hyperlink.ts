@@ -135,8 +135,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   keepOnSplit: false,
 
   // Markdown import/export lives with the mark itself (inert unless the host
-  // also loads a Markdown extension). Parsing applies the locked `hyperlink`
-  // mark name; the `[text](href)` escaping mirrors marked.js link tokens.
+  // also loads a Markdown extension). Parsing applies the locked `hyperlink` mark name.
   markdownTokenName: 'link',
 
   parseMarkdown: (token: MarkdownToken, helpers: MarkdownParseHelpers) => {
@@ -149,8 +148,13 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   },
 
   renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
-    const content = helpers.renderChildren(node).replace(/\]/g, '\\]')
-    const href = (node.attrs?.href || '').replace(/\)/g, '%29')
+    // Serialize is a write boundary too: blank an unsafe href (mirrors renderHTML)
+    // and percent-encode what marked.js cannot tokenise — its href grammar stops
+    // at whitespace and the first `)`. The label is untouchable from here: the
+    // serializer keeps only the slices around `renderChildren()`.
+    const content = helpers.renderChildren(node)
+    const raw = node.attrs?.href || ''
+    const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
     return `[${content}](${href})`
   },
 

@@ -46,6 +46,13 @@ function bindMediaElementLoad(
   controller: MediaLoadingController,
   isAlreadyReady: () => boolean
 ): () => void {
+  // A src-less element fires no load or error event, so the shell would sit on
+  // `pending` forever. Settle to `error` so Replace URL can repair the node.
+  if (!element.getAttribute('src')) {
+    controller.markError()
+    return () => {}
+  }
+
   if (isAlreadyReady()) {
     controller.markReady()
     return () => {}

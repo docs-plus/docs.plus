@@ -9,6 +9,8 @@ import {
   type HtmlMediaNodeConfig,
   renderHtmlMediaHTML
 } from '../../utils/htmlMediaNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import { inputRegex } from './helper'
 
@@ -26,7 +28,6 @@ export interface AudioOptions extends StyleLayoutOptions, NodeOptions {
   loop?: boolean
   muted?: boolean
   preload?: 'none' | 'metadata' | 'auto'
-  volume?: number
   src: string | null
 }
 
@@ -37,25 +38,15 @@ export type SetAudioOptions = {
   loop?: boolean
   muted?: boolean
   preload?: 'none' | 'metadata' | 'auto'
-  volume?: number
 } & StyleLayoutOptions
 
 /** `<audio>` element attrs; remount the node view when any change. */
-const AUDIO_REMOUNT_ATTR_KEYS = [
-  'src',
-  'controls',
-  'autoplay',
-  'loop',
-  'muted',
-  'preload',
-  'volume'
-] as const
+const AUDIO_REMOUNT_ATTR_KEYS = ['src', 'controls', 'autoplay', 'loop', 'muted', 'preload'] as const
 
 const AUDIO_MEDIA_CONFIG: HtmlMediaNodeConfig = {
   tag: 'audio',
   elementAttrKeys: AUDIO_REMOUNT_ATTR_KEYS,
-  layoutFallback: AUDIO_LAYOUT_FALLBACK,
-  isAlreadyReady: (media) => media.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+  layoutFallback: AUDIO_LAYOUT_FALLBACK
 }
 
 export const Audio = Node.create<AudioOptions>({
@@ -72,7 +63,6 @@ export const Audio = Node.create<AudioOptions>({
       loop: false,
       muted: false,
       preload: 'metadata',
-      volume: 1.0,
       margin: 'auto',
       clear: 'none',
       float: null,
@@ -93,11 +83,13 @@ export const Audio = Node.create<AudioOptions>({
 
   addAttributes() {
     return {
-      keyId: {
-        default: null
-      },
+      keyId: keyIdAttribute(),
       src: {
-        default: null
+        default: null,
+        parseHTML: (element) => {
+          const src = element.getAttribute('src')
+          return isSafeMediaSrc(src) ? src : null
+        }
       },
       controls: {
         default: this.options.controls
@@ -113,9 +105,6 @@ export const Audio = Node.create<AudioOptions>({
       },
       preload: {
         default: this.options.preload
-      },
-      volume: {
-        default: this.options.volume
       },
       ...layoutAttrDefaults(this.options),
       // Audio options omit dims; persist explicit nulls, not `undefined` defaults.

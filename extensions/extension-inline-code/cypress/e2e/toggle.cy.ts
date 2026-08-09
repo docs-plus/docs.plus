@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-// Selection toggle on/off + the B2 fix (collapsed-caret toggle-off). Driven via
+// Selection toggle on/off + collapsed-caret toggle-off. Driven via
 // the toggleInlineCode command — the toolbar button path. Backtick input rules
 // live in input-rule.cy.ts.
 
@@ -49,7 +49,7 @@ describe('inline code — toggle', () => {
     cy.getEditor().should((e) => expect(e.getHTML()).to.contain('<code>both</code>'))
   })
 
-  it('B2: toggling off from a collapsed caret clears code mode for the next char', () => {
+  it('toggling off from a collapsed caret clears code mode for the next char', () => {
     cy.setEditorContent('<p>code</p>')
     cy.selectText('code')
     cy.toggleInlineCode()

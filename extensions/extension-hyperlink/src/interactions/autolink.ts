@@ -102,11 +102,9 @@ export function createAutolinkInteraction(ctx: LinkContext): Plugin {
         if (!textBlock || !textBeforeWhitespace) continue
 
         const wordsBeforeWhitespace = tokenizeWords(textBeforeWhitespace)
-        if (wordsBeforeWhitespace.length <= 0) continue
+        if (!wordsBeforeWhitespace.length) continue
 
         const lastWordBeforeSpace = wordsBeforeWhitespace[wordsBeforeWhitespace.length - 1]
-        if (!lastWordBeforeSpace) continue
-
         const lastWordAndBlockOffset =
           textBlock.pos + textBeforeWhitespace.lastIndexOf(lastWordBeforeSpace)
 

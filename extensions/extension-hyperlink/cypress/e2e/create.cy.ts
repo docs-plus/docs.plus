@@ -190,6 +190,35 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
   })
 })
 
+// Own describe: the suite above selects `target` in its beforeEach, so an
+// `it()` added there would take the non-empty path and prove nothing.
+describe('createHyperlinkPopover — collapsed caret', () => {
+  beforeEach(() => {
+    cy.visitPlayground()
+    cy.setEditorContent('<p>Nothing is selected here.</p>')
+    cy.getEditor().then((editor) => {
+      editor.commands.focus('end')
+    })
+  })
+
+  it('inserts the typed URL as the link text when nothing is selected', () => {
+    cy.pressModK()
+    cy.get(INPUT).type('https://example.com{enter}')
+    cy.get(POPOVER).should('not.exist')
+    cy.editorFirstLinkHref().should('eq', 'https://example.com')
+    cy.get('#editor a').should('contain.text', 'https://example.com')
+  })
+
+  it('inserts nothing when the URL is rejected', () => {
+    cy.pressModK()
+    cy.get(INPUT).type('not a url{enter}')
+    cy.get(POPOVER).should('be.visible')
+    cy.get('#editor a').should('not.exist')
+    cy.get('#editor').should('contain.text', 'Nothing is selected here.')
+    cy.get('#editor').should('not.contain.text', 'not a url')
+  })
+})
+
 // Module scope: keeps top-level selector consts (POPOVER/INPUT/…) from
 // colliding with special-schemes.cy.ts under Cypress's shared TS project.
 export {}

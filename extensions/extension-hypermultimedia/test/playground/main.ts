@@ -68,23 +68,31 @@ window._getMarkdown = () => editor.getMarkdown()
 window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
 
 // Hosts handle `editorFileUpload`; playground inserts via blob URL (no backend).
+// Awaits each probe so multi-image pastes insert in clipboard order.
+const insertPastedImage = (file: File): Promise<void> =>
+  new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file)
+    const probe = new Image()
+    const insert = (dims?: { width: number; height: number }) => {
+      editor.commands.setImage({ src: objectUrl, alt: file.name || 'Pasted image', ...dims })
+      // `setImage` leaves a NodeSelection on the new image, so the next insert
+      // would replace it. Collapse past it before the next file.
+      editor.commands.setTextSelection(editor.state.doc.content.size)
+      resolve()
+    }
+    probe.onload = () => insert({ width: probe.naturalWidth, height: probe.naturalHeight })
+    probe.onerror = () => insert()
+    probe.src = objectUrl
+  })
+
 document.addEventListener('editorFileUpload', (event) => {
   if (!(event instanceof CustomEvent)) return
-  const { file, editor: eventEditor } = event.detail as { file?: File; editor?: Editor }
-  if (eventEditor !== editor || !file?.type.startsWith('image/')) return
+  const { files, editor: eventEditor } = event.detail as { files?: File[]; editor?: Editor }
+  if (eventEditor !== editor || !files?.length) return
 
-  const objectUrl = URL.createObjectURL(file)
-  const probe = new Image()
-  probe.onload = () => {
-    editor.commands.setImage({
-      src: objectUrl,
-      alt: file.name || 'Pasted image',
-      width: probe.naturalWidth,
-      height: probe.naturalHeight
-    })
-  }
-  probe.onerror = () => {
-    editor.commands.setImage({ src: objectUrl, alt: file.name || 'Pasted image' })
-  }
-  probe.src = objectUrl
+  void (async () => {
+    for (const file of files) {
+      if (file.type.startsWith('image/')) await insertPastedImage(file)
+    }
+  })()
 })

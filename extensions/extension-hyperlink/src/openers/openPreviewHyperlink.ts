@@ -7,11 +7,9 @@ import { getHyperlinkOptions } from './getHyperlinkOptions'
 import { setActivePopoverOwner } from './popoverOwnership'
 
 /**
- * Open the preview popover anchored to a hyperlink. Returns `false` when
- * the host opted out (factory returned `null`, e.g. mobile bottom sheets).
- * The click handler uses the return to gate caret placement — opting-out
- * hosts must never trigger `.focus()` (iOS Safari scrolls contenteditable
- * into view).
+ * Returns `false` when the host opted out (factory returned `null`, e.g. a
+ * mobile bottom sheet). The click handler gates caret placement on it —
+ * `.focus()` on an opting-out host makes iOS Safari scroll the editor.
  */
 export function openPreviewHyperlink(opts: PreviewHyperlinkOptions): boolean {
   const { editor } = opts

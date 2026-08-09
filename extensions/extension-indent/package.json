@@ -1,7 +1,7 @@
 {
   "name": "@docs.plus/extension-indent",
   "version": "2.0.0",
-  "description": "A Tiptap extension for managing text indentation in documents",
+  "description": "Tiptap extension for managing text indentation in documents",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

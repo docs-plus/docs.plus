@@ -4,13 +4,12 @@
 // touchend-to-popover).
 
 import { getMarkRange } from '@tiptap/core'
-import type { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 
 import { SAFE_WINDOW_FEATURES } from '../constants'
 import { getDefaultController } from '../floating-popover'
-import type { HyperlinkAttributes } from '../hyperlink'
+import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
 import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import type { LinkContext } from './types'
 
@@ -27,19 +26,6 @@ function findLinkFromEvent(
   return link
 }
 
-function getMarkAttrsAtPos(view: EditorView, pos: number, type: MarkType): HyperlinkAttributes {
-  const node = view.state.doc.nodeAt(pos)
-  const mark = node?.marks.find((m) => m.type === type)
-  return (mark?.attrs ?? {
-    href: null,
-    target: null,
-    rel: null,
-    class: null,
-    title: null,
-    image: null
-  }) as HyperlinkAttributes
-}
-
 /** Single navigation gate for every surface (readonly window.open, middle-click). */
 function isNavigable(href: string | null | undefined, ctx: LinkContext): href is string {
   return ctx.urls.forRead(href).navigable
@@ -54,12 +40,17 @@ function openPreviewPopoverFromClick(
   ctx: LinkContext,
   clickPos: number | undefined
 ): boolean {
-  const nodePos = view.posAtDOM(link, 0)
-  const attrs = getMarkAttrsAtPos(view, nodePos, ctx.type)
+  const opts = buildPreviewOptionsFromAnchor({
+    editor: ctx.editor,
+    link,
+    validate: ctx.validate,
+    // Synthesize from `forRead` so the popover's "Open" honours the same composed gate as click/aux.
+    isAllowedUri: (uri: string) => ctx.urls.forRead(uri).navigable
+  })
   // Use the stored attr; `link.href` resolves against `document.baseURI` and would leak the host origin.
-  const href = attrs.href ?? link.getAttribute('href')
+  const href = opts.attrs.href ?? link.getAttribute('href')
   // `||` not `??` — `link.target` is `''` when unset, and we want `_blank` (matches auxclick + intent).
-  const targetAttr = link.target || attrs.target || '_blank'
+  const targetAttr = link.target || opts.attrs.target || '_blank'
 
   if (!ctx.previewPopover) {
     if (!view.editable && isNavigable(href, ctx)) {
@@ -76,15 +67,7 @@ function openPreviewPopoverFromClick(
   // Route through the canonical opener (slot resolution + `'preview'` adopt).
   // Caret placement is gated on a successful mount: focusing the editor on
   // host opt-out scrolls the contenteditable into view on iOS Safari.
-  const mounted = openPreviewHyperlink({
-    editor: ctx.editor,
-    link,
-    nodePos,
-    attrs,
-    validate: ctx.validate,
-    // Synthesize from `forRead` so the popover's "Open" honours the same composed gate as click/aux.
-    isAllowedUri: (uri: string) => ctx.urls.forRead(uri).navigable
-  })
+  const mounted = openPreviewHyperlink(opts)
 
   if (!mounted) return true
 
@@ -103,7 +86,12 @@ function openPreviewPopoverFromClick(
           .run()
       }
     } else {
-      const pos = from === to ? clickPos : { from, to }
+      // A non-empty selection survives the click (capture-phase mousedown is swallowed),
+      // so restore it only when it overlaps the clicked link — otherwise edit/remove
+      // would target a stale range somewhere else in the document.
+      const clickedRange = getMarkRange(view.state.doc.resolve(clickPos), ctx.type)
+      const overlaps = !!clickedRange && from < clickedRange.to && to > clickedRange.from
+      const pos = from === to || !overlaps ? clickPos : { from, to }
       ctx.editor
         .chain()
         .focus(clickPos === 0 ? 'start' : clickPos)
@@ -144,8 +132,7 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
         if (!link) return
         event.preventDefault()
         event.stopPropagation()
-        const nodePos = editorView.posAtDOM(link, 0)
-        const attrs = getMarkAttrsAtPos(editorView, nodePos, ctx.type)
+        const { attrs } = buildPreviewOptionsFromAnchor({ editor: ctx.editor, link })
         const href = attrs.href ?? link.getAttribute('href')
         if (isNavigable(href, ctx)) {
           window.open(href, '_blank', SAFE_WINDOW_FEATURES)

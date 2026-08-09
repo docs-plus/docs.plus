@@ -46,10 +46,21 @@ export function actionButton(
   const iconMarkup = action.icon?.(ctx) ?? resolveMediaToolbarIcon(ctx, action.id, icons) ?? null
   const label = action.label(ctx)
 
+  // A label can carry a document-controlled attribute (the margin action reports
+  // a non-preset value verbatim), so it is written as text, never interpolated.
+  const labelSpan = (): HTMLSpanElement => {
+    const span = document.createElement('span')
+    span.textContent = label
+    return span
+  }
+
   if (variant === 'inline') {
     btn.className = 'media-toolbar__button' + (active ? ' media-toolbar__button--active' : '')
-    btn.innerHTML = iconMarkup ?? `<span>${label}</span>`
-    if (!iconMarkup) btn.classList.add('media-toolbar__button--text')
+    if (iconMarkup) btn.innerHTML = iconMarkup
+    else {
+      btn.append(labelSpan())
+      btn.classList.add('media-toolbar__button--text')
+    }
     btn.setAttribute('aria-label', label)
     // Icon-only buttons get the floating tooltip; text labels self-describe.
     if (iconMarkup) {
@@ -58,7 +69,8 @@ export function actionButton(
     }
   } else {
     btn.className = 'media-toolbar__menu-item' + (active ? ' media-toolbar__menu-item--active' : '')
-    btn.innerHTML = `${iconMarkup ?? ''}<span>${label}</span>`
+    if (iconMarkup) btn.innerHTML = iconMarkup
+    btn.append(labelSpan())
   }
   return btn
 }

@@ -29,13 +29,9 @@ export const TYPED_MEDIA_MARKDOWN_ALTS = [
 
 export type TypedMediaMarkdownAlt = (typeof TYPED_MEDIA_MARKDOWN_ALTS)[number]
 
-export function isTypedMediaMarkdownAlt(alt: string): alt is TypedMediaMarkdownAlt {
-  return (TYPED_MEDIA_MARKDOWN_ALTS as readonly string[]).includes(alt)
-}
-
 // Gate routing on the src so `![x](photo.png)` — an image whose alt collides with a
 // reserved literal — stays an image instead of round-tripping into a broken embed.
-export const TYPED_MEDIA_SRC_VALIDATORS: Record<TypedMediaMarkdownAlt, (url: string) => boolean> = {
+const TYPED_MEDIA_SRC_VALIDATORS: Record<TypedMediaMarkdownAlt, (url: string) => boolean> = {
   audio: isAudioUrl,
   video: isVideoUrl,
   youtube: isValidYoutubeUrl,

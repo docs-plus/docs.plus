@@ -12,7 +12,7 @@ type HyperlinkElements = {
   errorMessage: HTMLElement
 }
 
-const createHyperlinkElements = (): HyperlinkElements => {
+const createHyperlinkElements = (prefillHref: string): HyperlinkElements => {
   const root = createHTMLElement('div', { className: 'hyperlink-create-popover' })
   const buttonsWrapper = createHTMLElement('div', { className: 'buttons-wrapper' })
   const inputsWrapper = createHTMLElement('div', { className: 'inputs-wrapper' })
@@ -24,13 +24,14 @@ const createHyperlinkElements = (): HyperlinkElements => {
     name: 'hyperlink-url',
     placeholder: 'https://example.com',
     autocomplete: 'new-password',
-    spellcheck: false
+    spellcheck: false,
+    value: prefillHref
   })
 
   const button = createHTMLElement('button', {
     type: 'submit',
     textContent: 'Apply',
-    disabled: true
+    disabled: prefillHref.trim().length === 0
   })
 
   const errorMessage = createHTMLElement('div', {
@@ -53,6 +54,7 @@ const createHyperlinkElements = (): HyperlinkElements => {
 
 const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperlinkOptions) => {
   const { form, input, button, inputsWrapper, errorMessage } = elements
+  const { editor } = options
 
   const showError = () => {
     inputsWrapper.classList.add('error')
@@ -78,7 +80,7 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
     if (event.key === 'Escape') {
       event.preventDefault()
       getDefaultController().close()
-      options.editor.commands.focus()
+      editor.commands.focus()
     }
   })
 
@@ -95,19 +97,30 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
       return
     }
 
+    // Gate before the chain: `chain().run()` dispatches its `tr` even when a
+    // command returns false, so a rejected href must not reach the insert.
+    if (!editor.can().setHyperlink({ href: url })) {
+      showError()
+      return
+    }
+
     // Delegate to the canonical command — it normalizes, runs the composed
     // gate, and stamps `PREVENT_AUTOLINK_META`, so policy changes flow here.
-    const applied = options.editor.chain().setHyperlink({ href: url }).run()
-    if (!applied) {
+    const chain = editor.chain().setHyperlink({ href: url })
+    // With nothing selected the mark would only reach `storedMarks` and the
+    // document would not change, so give the link its own text.
+    if (editor.state.selection.empty) chain.insertContent({ type: 'text', text: url })
+    if (!chain.run()) {
       showError()
       return
     }
     getDefaultController().close()
+    editor.commands.focus()
   })
 }
 
 export default function createHyperlinkPopover(options: CreateHyperlinkOptions): HTMLElement {
-  const elements = createHyperlinkElements()
+  const elements = createHyperlinkElements(options.attributes?.href ?? '')
   setupEventListeners(elements, options)
   return elements.root
 }

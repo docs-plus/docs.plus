@@ -102,7 +102,7 @@ describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
     cy.nodeCount('youtube').should('eq', 1)
     roundTripHtml()
     cy.nodeCount('youtube').should('eq', 1)
-    cy.nodeAttr('youtube', 'src').should('include', 'dQw4w9WgXcQ')
+    cy.nodeAttr('youtube', 'src').should('eq', FIXTURES.youtube)
     cy.get('#editor iframe')
       .should('have.attr', 'src')
       .and('match', /youtube\.com|youtube-nocookie\.com/)
@@ -113,7 +113,7 @@ describe('HTML copy/paste round-trip (getHTML → setContent)', () => {
     cy.nodeCount('vimeo').should('eq', 1)
     roundTripHtml()
     cy.nodeCount('vimeo').should('eq', 1)
-    cy.nodeAttr('vimeo', 'src').should('include', '123456789')
+    cy.nodeAttr('vimeo', 'src').should('eq', FIXTURES.vimeo)
     cy.get('#editor iframe').should('have.attr', 'src').and('include', 'player.vimeo.com')
   })
 

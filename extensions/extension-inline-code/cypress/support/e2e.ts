@@ -9,10 +9,13 @@
 // Type-only: pulls the package's Commands augmentation (toggleInlineCode)
 // into the Cypress TS program.
 import type {} from '@docs.plus/extension-inline-code'
+import { registerPlaygroundMarkdownCommands } from '@docs.plus/playground/cypress/markdownCommands'
 import type { Editor } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
 
 import 'cypress-real-events'
+
+registerPlaygroundMarkdownCommands()
 
 declare global {
   interface Window {
@@ -103,7 +106,6 @@ type KeyModifiers = Partial<{ metaKey: boolean; ctrlKey: boolean; shiftKey: bool
 Cypress.Commands.add('pressKey', (key: string, modifiers: KeyModifiers = {}) => {
   const keyCodes: Record<string, number> = {
     ArrowRight: 39,
-    ArrowLeft: 37,
     Enter: 13,
     Backspace: 8
   }

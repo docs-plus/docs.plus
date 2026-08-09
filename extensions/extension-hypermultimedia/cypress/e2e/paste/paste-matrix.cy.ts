@@ -117,6 +117,17 @@ describe('paste-to-node matrix', () => {
     })
   })
 
+  // Regression: the handler used to `find()` the first image file and drop the
+  // rest, so a three-image paste inserted one node and discarded two silently.
+  it('pastes every image file on the clipboard, not just the first', () => {
+    cy.pasteImageFile(3)
+    cy.get('#editor .hypermultimedia--image__content img', { timeout: 5000 }).should(
+      'have.length',
+      3
+    )
+    cy.nodeCount('image').should('eq', 3)
+  })
+
   it('pastes Spotify "Copy embed" iframe code (plain text) into a spotify node', () => {
     const iframe =
       '<iframe src="https://open.spotify.com/embed/artist/5pKCCKE2ajJHZ9KAiaK11H?utm_source=generator&si=abc123" width="100%" height="352" allowfullscreen></iframe>'

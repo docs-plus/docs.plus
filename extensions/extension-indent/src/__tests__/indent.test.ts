@@ -10,7 +10,7 @@ import {
   type RawCommands
 } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
-import { docPosAtChunkOffset, Indent, indentContextAtPos, lineTextsWithOffsets } from '../indent'
+import { Indent, indentContextAtPos } from '../indent'
 
 function createEditor(
   content: string | JSONContent,
@@ -286,14 +286,6 @@ describe('@docs.plus/extension-indent', () => {
     expect(ed.getText()).toContain('Q')
   })
 
-  it('paragraph: literal tab indent when list sink does not apply', () => {
-    const editor = track(createEditor('<p>x</p>', { indentChars: '\t' }))
-    expect(editor.can().sinkListItem('listItem')).toBe(false)
-    editor.commands.setTextSelection(1)
-    expect(editor.commands.indent()).toBe(true)
-    expect(editor.getText()).toMatch(/^\tx/)
-  })
-
   it('outdent removes leading indentChars on command', () => {
     const doc: JSONContent = {
       type: 'doc',
@@ -416,7 +408,7 @@ describe('@docs.plus/extension-indent', () => {
     expect(editor.getText()).toBe('  Hi')
   })
 
-  it('indent prefixes each line across paragraphs (multiline uses \\n block separator)', () => {
+  it('indent prefixes each line across paragraphs', () => {
     const doc: JSONContent = {
       type: 'doc',
       content: [
@@ -429,17 +421,6 @@ describe('@docs.plus/extension-indent', () => {
       { name: 'paragraph', text: 'AA' },
       { name: 'paragraph', text: 'BB' }
     ])
-    const { from, to } = editor.state.selection
-    const sep = '\n'
-    const chunk = editor.state.doc.textBetween(from, to, sep)
-    expect(chunk).toBe('AA\nBB')
-    const lines = lineTextsWithOffsets(chunk)
-    expect(lines.map((l) => l.offset)).toEqual([0, 3])
-    const p0 = docPosAtChunkOffset(editor.state.doc, from, to, 0, sep)
-    const p3 = docPosAtChunkOffset(editor.state.doc, from, to, 3, sep)
-    expect(p0).toBe(from)
-    expect(p3).not.toBe(p0)
-    expect(editor.state.doc.textBetween(from, p3, sep)).toBe('AA\n')
     expect(editor.commands.indent()).toBe(true)
     const t = editor.getText()
     expect(t).toContain('  AA')

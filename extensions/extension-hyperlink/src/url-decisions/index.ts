@@ -10,17 +10,11 @@ import {
   normalizeHref,
   normalizeLinkifyHref
 } from '../utils/normalizeHref'
-import { getSpecialUrlInfo, type SpecialUrlInfo } from '../utils/specialUrls'
-import {
-  DANGEROUS_SCHEME_RE,
-  isSafeHref,
-  isStandardWebScheme,
-  validateURL
-} from '../utils/validateURL'
+import { isSafeHref } from '../utils/validateURL'
 
-// Re-exported for ergonomic single-import consumption.
-export { DANGEROUS_SCHEME_RE, isSafeHref, normalizeHref, validateURL }
-export type { LinkifyMatchLike, SpecialUrlInfo }
+// The gate default, re-exported so callers take it from the decision module
+// they already import rather than reaching into `utils/validateURL`.
+export { isSafeHref }
 
 /** Discriminated input to {@link URLDecisions.forWrite}. */
 export type WriteInput =
@@ -31,37 +25,22 @@ export type WriteInput =
   // `match` is a pre-detected linkify match (returns 0..1).
   | { kind: 'match'; match: LinkifyMatchLike }
 
-export type WriteResultType = 'url' | 'email' | 'phone' | 'special'
-
 export type WriteResult = {
   /** Canonical, gated, write-safe href ready to set on the mark. */
   href: string
-  /** Raw source value (`text.slice(start, end)`). */
-  value: string
   /** Source offset; `0` for `href`/`match` inputs. */
   start: number
   end: number
-  type: WriteResultType
-  /** Catalog match, or `null` for plain web URLs. */
-  special: SpecialUrlInfo | null
 }
 
 export type ReadDecision = {
-  /** Passes {@link isSafeHref} — safe to render. */
-  safe: boolean
   /** Passes the full gate (`isSafeHref` + `isAllowedUri`) — required before any `window.open`. */
   navigable: boolean
-  /** Echoed input, coerced to string. */
-  href: string
-  /** Catalog match; `null` when unsafe. */
-  special: SpecialUrlInfo | null
 }
 
 export type WriteOptions = {
   /** Per-call override of the controller's `validate`. */
   validate?: (url: string) => boolean
-  /** Per-call override of `shouldAutoLink`. Ignored for `kind: 'href'`. */
-  shouldAutoLink?: (uri: string) => boolean
 }
 
 export type URLDecisionsOptions = {
@@ -122,25 +101,6 @@ export function composeGate<P = unknown>(
   }
 }
 
-// `special` is hoisted by the caller so `getSpecialUrlInfo` runs once per write.
-const classifyMatch = (
-  match: LinkifyMatchLike,
-  href: string,
-  special: SpecialUrlInfo | null
-): WriteResultType => {
-  if (match.type === 'email') return 'email'
-  if (match.type === 'phone') return 'phone'
-  if (special && !isStandardWebScheme(href)) return 'special'
-  return 'url'
-}
-
-const classifyHref = (href: string, special: SpecialUrlInfo | null): WriteResultType => {
-  if (/^mailto:/i.test(href)) return 'email'
-  if (/^(tel|telprompt|sms|facetime|facetime-audio):/i.test(href)) return 'phone'
-  if (special && !isStandardWebScheme(href)) return 'special'
-  return 'url'
-}
-
 export function createURLDecisions(options: URLDecisionsOptions = {}): URLDecisions {
   const defaultProtocol = options.defaultProtocol ?? DEFAULT_PROTOCOL
   const gate = options.gate ?? isSafeHref
@@ -150,7 +110,7 @@ export function createURLDecisions(options: URLDecisionsOptions = {}): URLDecisi
     if (!gate(href)) return false
     const validate = opts?.validate ?? options.validate
     if (validate && !validate(href)) return false
-    const veto = opts?.shouldAutoLink ?? options.shouldAutoLink
+    const veto = options.shouldAutoLink
     if (veto && !veto(href)) return false
     return true
   }
@@ -166,68 +126,31 @@ export function createURLDecisions(options: URLDecisionsOptions = {}): URLDecisi
         if (!gate(href)) return []
         const validate = opts?.validate ?? options.validate
         if (validate && !validate(href)) return []
-        const special = getSpecialUrlInfo(href)
-        return [
-          {
-            href,
-            value: input.href,
-            start: 0,
-            end: input.href.length,
-            type: classifyHref(href, special),
-            special
-          }
-        ]
+        return [{ href, start: 0, end: input.href.length }]
       }
 
       if (input.kind === 'match') {
-        const { match } = input
-        const href = normalizeLinkifyHref(match, defaultProtocol)
+        const href = normalizeLinkifyHref(input.match, defaultProtocol)
         if (!passesAutoGates(href, opts)) return []
-        const special = getSpecialUrlInfo(href)
-        return [
-          {
-            href,
-            value: match.value,
-            start: 0,
-            end: match.value.length,
-            type: classifyMatch(match, href, special),
-            special
-          }
-        ]
+        return [{ href, start: 0, end: input.match.value.length }]
       }
 
       // kind === 'text' — full extraction.
       return findLinks(input.text)
         .filter((link) => link.isLink)
-        .map((link) => {
-          const href = normalizeLinkifyHref(link, defaultProtocol)
-          const special = getSpecialUrlInfo(href)
-          return {
-            href,
-            value: link.value,
-            start: link.start,
-            end: link.end,
-            type: classifyMatch(link, href, special),
-            special
-          }
-        })
+        .map((link) => ({
+          href: normalizeLinkifyHref(link, defaultProtocol),
+          start: link.start,
+          end: link.end
+        }))
         .filter((r) => passesAutoGates(r.href, opts))
     },
 
     forRead(rawHref) {
       const href = typeof rawHref === 'string' ? rawHref : ''
-      const safe = isSafeHref(href)
       // Defense-in-depth: a misconfigured `gate` that skips `isSafeHref`
-      // still can't make an unsafe href "navigable". When `safe` is
-      // false we short-circuit — both the gate and the special-info
-      // lookup are wasted work on an unrenderable href.
-      if (!safe) return { safe: false, navigable: false, href, special: null }
-      return {
-        safe: true,
-        navigable: gate(href),
-        href,
-        special: getSpecialUrlInfo(href)
-      }
+      // still can't make an unsafe href navigable.
+      return { navigable: isSafeHref(href) && gate(href) }
     },
 
     detect(text) {

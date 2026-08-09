@@ -55,6 +55,8 @@ The hint stays invisible until you add CSS — see [Styling](#styling).
 
 `showOnlyWhenEditable` is evaluated at render time, so `editor.setEditable()` updates the placeholder immediately.
 
+Inside the callback the editor has not committed the transaction yet — resolve `pos` against the supplied `doc`, never `editor.state.doc`.
+
 ## Styling
 
 The package ships no CSS — the resolved hint text lands in the node's `data-placeholder` attribute. Add a rule that renders it:
@@ -75,10 +77,12 @@ The `::before` hint is invisible to screen readers — label the editable elemen
 
 ## Differences from the built-in Placeholder
 
-- The `showOnlyCurrent`, `includeChildren`, and `dataAttribute` options are ignored — the attribute is always `data-placeholder`, and the behavior is inherently current-node-only.
-- A `placeholder` function returning `''` suppresses the empty classes entirely.
+- `showOnlyCurrent`, `includeChildren` and `dataAttribute` are not accepted — TypeScript rejects them. The attribute is always `data-placeholder`, and the behavior is inherently current-node-only.
+- A `placeholder` that resolves to `''` — string or function — suppresses the decoration entirely, including the empty classes (the built-in still emits them).
 - Empty ancestor wrappers also receive the empty class.
 - `hasAnchor` is always `true`.
+- A document-wide selection (⌘A / `AllSelection`), and any selection that resolves to document depth, hides the hint until the selection moves — the built-in keeps it.
+- The `placeholder` function is evaluated only when the document or the selection changes (the built-in re-evaluates on every editor update). If the text comes from outside the document — i18n, for example — force a refresh with `editor.view.dispatch(editor.state.tr.setSelection(editor.state.selection))` after the external change.
 
 ## Migrating from `@tiptap/extension-placeholder`
 
@@ -95,9 +99,13 @@ Drop the built-in extension and add this one with the same `placeholder` string 
 
 Exports: `Placeholder`, `PlaceholderOptions`, `PlaceholderRenderProps` (function-form `placeholder` callback).
 
-## Family
+## Part of docs.plus
 
-Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+
+- Website: [docs.plus](https://docs.plus)
+- Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)
+- Sibling extensions: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md)
 
 ## Contributing
 

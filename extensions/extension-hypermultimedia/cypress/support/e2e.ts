@@ -41,7 +41,7 @@ declare global {
       setEditorContent(html: string): Chainable<void>
       pastePlainText(text: string): Chainable<void>
       /** Paste a PNG file like a screenshot (fires editorFileUpload in the extension). */
-      pasteImageFile(): Chainable<void>
+      pasteImageFile(count?: number): Chainable<void>
       insertSizedImage(width: number, height: number): Chainable<void>
       prepareImageForResize(width: number, height: number): Chainable<void>
       activateImageGripper(): Chainable<void>
@@ -55,7 +55,7 @@ declare global {
         expected: number,
         tolerancePx?: number
       ): Chainable<void>
-      nodeAttr(typeName: string, attr: string): Chainable<string | null>
+      nodeAttr(typeName: string, attr: string): Chainable<string | number | null>
       expectToolbarFollowsAnchor(
         toolbarSelector: string,
         anchorSelector: string,
@@ -115,10 +115,13 @@ Cypress.Commands.add('getEditor', () => {
   return cy.window().its('_editor')
 })
 
+// Commands, not queries: this support file is evaluated more than once per run,
+// and `addQuery` throws on a repeat registration where `add` silently replaces.
+// A guaranteed-unique query name fails too, so renaming does not buy the retryable form.
 Cypress.Commands.add('nodeCount', (typeName: string) => {
   return cy.getEditor().then((editor) => {
     let count = 0
-    editor.state.doc.descendants((node) => {
+    editor.state.doc.descendants((node: PMNode) => {
       if (node.type.name === typeName) count += 1
     })
     return count
@@ -147,12 +150,13 @@ Cypress.Commands.add('pastePlainText', (text: string) => {
 export const TINY_PNG_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
-Cypress.Commands.add('pasteImageFile', () => {
+Cypress.Commands.add('pasteImageFile', (count = 1) => {
   cy.window().then(async (win) => {
     const blob = await Cypress.Blob.base64StringToBlob(TINY_PNG_BASE64, 'image/png')
-    const file = new win.File([blob], 'pasted.png', { type: 'image/png' })
     const dt = new win.DataTransfer()
-    dt.items.add(file)
+    for (let i = 0; i < count; i += 1) {
+      dt.items.add(new win.File([blob], `pasted-${i}.png`, { type: 'image/png' }))
+    }
     cy.get('#editor .ProseMirror').trigger('paste', {
       clipboardData: dt,
       bubbles: true,
@@ -211,15 +215,16 @@ Cypress.Commands.add(
   }
 )
 
+// Yields the raw attr value — several specs assert numbers (`should('eq', 640)`).
 Cypress.Commands.add('nodeAttr', (typeName: string, attr: string) => {
   return cy.getEditor().then((editor) => {
-    let value: string | null = null
+    let value: string | number | null = null
     editor.state.doc.descendants((node: PMNode) => {
       if (value !== null) return
       if (node.type.name === typeName) value = node.attrs[attr] ?? null
     })
-    // cy.wrap keeps the yielded subject `string | null` (a bare null return passes the editor through).
-    return cy.wrap<string | null>(value)
+    // `cy.wrap` is required: returning a bare `null` from `.then` yields the editor instead.
+    return cy.wrap<string | number | null>(value)
   })
 })
 

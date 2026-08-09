@@ -18,7 +18,7 @@ FAILED=0
 # ============================================
 # 1. Build TipTap Extensions (only if changed)
 # ============================================
-EXTENSIONS="extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code extension-placeholder"
+EXTENSIONS=$(bun scripts/publishable-extensions.ts) || exit 1
 NEEDS_BUILD=""
 NEEDS_FULL_BUILD=""
 

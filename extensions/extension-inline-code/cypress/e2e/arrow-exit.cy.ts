@@ -1,8 +1,7 @@
 /// <reference types="cypress" />
 
-// Reworked arrow exit: at the document end, ArrowRight clears the stored code
-// mark so the next char is plain — without inserting a space (the old behavior,
-// and core's `exitable` handler, would mutate the document).
+// At the document end, ArrowRight clears the stored code mark so the next char
+// is plain — with no space inserted (core's `exitable` handler inserts one).
 
 describe('inline code — arrow exit', () => {
   beforeEach(() => {
@@ -17,7 +16,7 @@ describe('inline code — arrow exit', () => {
     cy.getEditor().should((e) => expect(e.isActive('inlineCode')).to.equal(true))
     cy.pressKey('ArrowRight')
     cy.getEditor().should((e) => {
-      expect(e.isActive('inlineCode')).to.equal(false) // stored mark cleared
+      expect(e.isActive('inlineCode')).to.equal(false)
       expect(e.getText()).to.equal('code') // no space inserted
     })
   })

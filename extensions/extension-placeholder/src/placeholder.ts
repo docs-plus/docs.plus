@@ -39,7 +39,7 @@ function buildFromCursor(
   if ($anchor.depth === 0) return DecorationSet.empty
 
   const node = $anchor.parent
-  if (node.isLeaf || !isNodeEmpty(node)) return DecorationSet.empty
+  if (!node.type.isTextblock || !isNodeEmpty(node)) return DecorationSet.empty
 
   const pos = $anchor.before($anchor.depth)
   const parentName = $anchor.node($anchor.depth - 1).type.name
@@ -118,14 +118,6 @@ export const Placeholder = Extension.create<PlaceholderOptions>({
             // Decorations derive solely from doc + selection, so meta-only
             // transactions (collab pings, plugin meta) cannot change them.
             if (!tr.docChanged && !tr.selectionSet) return old
-
-            const cursorNode = newState.selection.$anchor.parent
-
-            // Fast path: cursor is in a non-empty node (the common typing case).
-            // Returning the singleton keeps identity when old was already empty.
-            if (!cursorNode.isLeaf && !isNodeEmpty(cursorNode)) {
-              return DecorationSet.empty
-            }
 
             return buildFromCursor(newState, editor, options)
           }

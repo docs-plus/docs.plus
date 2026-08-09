@@ -48,7 +48,7 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
     rel: 'noopener noreferrer',
     href: safeHref,
     innerText: href
-  }) as HTMLAnchorElement
+  })
 
   hrefAnchor.addEventListener('click', (event) => {
     event.preventDefault()

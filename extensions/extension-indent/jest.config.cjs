@@ -1,7 +1,4 @@
-/**
- * Self-contained Jest config for this package. Jest deps stay on the repo root only.
- * If a second library package adds Jest, consider extracting a shared preset again.
- */
+/** Self-contained on purpose: the Jest dev dependencies stay on the repo root only. */
 /** @type {import('jest').Config} */
 module.exports = {
   testEnvironment: 'jsdom',

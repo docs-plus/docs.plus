@@ -8,7 +8,7 @@ Clean-room Cypress E2E runs against the built `dist/` — the same bytes an npm 
 bun run test            # build, then Cypress headless
 bun run test:e2e        # Cypress headless against the current dist/ (run build first)
 bun run test:e2e:watch  # same, but opens the Cypress runner
-bun run playground      # playground only, http://127.0.0.1:5177
+bun run playground      # playground only, http://127.0.0.1:5177 (run build first)
 bun run docs:screenshots # regenerate README hero PNGs in assets/
 ```
 
@@ -34,6 +34,10 @@ bun run build    # tsup → dist/ (ESM + CJS + d.ts)
 bun run dev      # tsup --watch
 bun run typecheck
 ```
+
+**Fresh clone:** `dist/` is gitignored and `bun install` does not build it, so `bun run playground` and `bun run test:e2e` fail with a module-resolution error until a build runs. Run `bash scripts/build-extensions.sh` from the repo root once first, or `bun run build` here.
+
+**Restart the playground after a production build.** `bun run build` sets `NODE_ENV=production`, which turns on tsup's `clean` and empties `dist/` under a running `bun --hot` server. `bun run dev` (tsup --watch) does not clean, so it can rebuild while the playground runs.
 
 ESLint: from repo root, `bun run lint` (cascades into this package).
 

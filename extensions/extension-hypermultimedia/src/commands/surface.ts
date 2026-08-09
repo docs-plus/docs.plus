@@ -3,6 +3,7 @@
 // from its own node so this surface stays truthful instead of a parallel copy.
 
 import type { SetAudioOptions } from '../nodes/audio/audio'
+import type { SetImageOptions, UpdateImageDimensionsParams } from '../nodes/image/types'
 import type { SetLoomOptions } from '../nodes/loom/loom'
 import type { SetSoundCloudOptions } from '../nodes/soundcloud/soundcloud'
 import type { SetSpotifyOptions } from '../nodes/spotify/spotify'
@@ -10,7 +11,6 @@ import type { SetVideoOptions } from '../nodes/video/video'
 import type { SetVimeoOptions } from '../nodes/vimeo/vimeo'
 import type { AddXOptions } from '../nodes/x/x'
 import type { SetYoutubeVideoOptions } from '../nodes/youtube/youtube'
-import type { SetImageOptions, UpdateImageDimensionsParams } from '../types'
 
 /** Every public command the media nodes contribute, in one place. */
 export interface MediaPublicCommands<ReturnType> {

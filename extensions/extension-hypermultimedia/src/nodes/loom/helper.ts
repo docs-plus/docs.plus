@@ -1,6 +1,5 @@
-export const LOOM_REGEX = /https?:\/\/(www\.)?loom\.com\/(share|embed)\/[a-zA-Z0-9]+(?:\?[^\s]*)?/
-export const LOOM_REGEX_GLOBAL =
-  /https?:\/\/(www\.)?loom\.com\/(share|embed)\/[a-zA-Z0-9]+(?:\?[^\s]*)?/g
+const LOOM_REGEX = /https?:\/\/(www\.)?loom\.com\/(share|embed)\/[a-zA-Z0-9]+(?:\?[^\s]*)?/
+export const LOOM_REGEX_GLOBAL = new RegExp(LOOM_REGEX.source, 'g')
 
 export const isValidLoomUrl = (url: string): boolean => LOOM_REGEX.test(url)
 

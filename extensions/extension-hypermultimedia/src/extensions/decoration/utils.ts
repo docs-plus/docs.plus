@@ -8,7 +8,7 @@ import { resolveSpotifyLayoutMinHeight } from '../../nodes/spotify/embedOptions'
 import { fitDimensionsToBounds, getEditorContentWidth } from '../../utils/fitImageDimensions'
 import { PointerPosition, ResizeConstraints } from './types'
 
-export const DEFAULT_CONSTRAINTS: ResizeConstraints = {
+const DEFAULT_CONSTRAINTS: ResizeConstraints = {
   minWidth: 160,
   minHeight: 80
 }
@@ -71,7 +71,7 @@ export function calculateAspectRatioDimensions(
   return { width: newWidth, height: newHeight }
 }
 
-export function resolveResizeConstraints(editor: Editor): ResizeConstraints {
+function resolveResizeConstraints(editor: Editor): ResizeConstraints {
   const maxWidth = getEditorContentWidth(editor)
   return {
     ...DEFAULT_CONSTRAINTS,

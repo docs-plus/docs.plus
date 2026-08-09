@@ -2,10 +2,8 @@ export type Corner = 'topRight' | 'bottomLeft' | 'topLeft' | 'bottomRight'
 
 export interface MediaGripperInfo {
   from: number
-  to: number
-  nodeSize: number
-  childCount: number
-  keyId: string
+  /** Null for JSON/collab-sourced nodes that omit the attr; parsing always mints one. */
+  keyId: string | null
 }
 
 export interface ResizeState {

@@ -15,6 +15,7 @@ export {
 } from './loading'
 export type { SetAudioOptions } from './nodes/audio/audio'
 export { isImageUrl } from './nodes/image/helper'
+export type { SetImageOptions, UpdateImageDimensionsParams } from './nodes/image/types'
 export { isValidLoomUrl } from './nodes/loom/helper'
 export type { SetLoomOptions } from './nodes/loom/loom'
 export { isValidSoundCloudUrl } from './nodes/soundcloud/helper'
@@ -79,7 +80,6 @@ export {
   resolveMediaActions,
   viewOriginalMedia
 } from './toolbar'
-export type { SetImageOptions, UpdateImageDimensionsParams } from './types'
 export { detectMediaType, type MediaNodeType } from './utils/detectMediaType'
 export {
   fitDimensionsToBounds,

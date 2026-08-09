@@ -8,27 +8,7 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-### Fixed
-
-- Media toolbar `…` overflow menu toggles closed on a second click (outside
-  dismiss no longer races the trigger). Menu anchors to the toolbar bar with
-  `bottom-end` so it aligns to the toolbar’s right edge.
-- Overflow/submenu gap under the toolbar tightened (2px offset); cross-axis
-  `shift` disabled so the menu stays flush with the bar’s end edge.
-- Wrap left/right no longer overflows the editor column: floated media gets
-  `max-width: calc(100% - horizontal margins)` so pixel width + wrap gap stay
-  inside the parent.
-
-### Internal
-
-- Media layout CSS (live + export + image block) routes through one
-  `layoutStyle` module (`StyleLayoutOptions` / `mediaLayoutCss` /
-  `applyMediaLayoutToDom`); node options re-export the same type (no dual
-  layout contracts).
-- Toolbar popovers open via `openMediaPopover` (menu + Replace dialog); engine
-  dismiss/shift knobs stay inside that adapter.
-
-## [2.0.0] — 2026-06-16
+## [2.0.0] — 2026-08-07
 
 First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
 favor of Floating UI positioning, node type names are normalized to camelCase,
@@ -54,7 +34,6 @@ every media node gains an editable caption.
 ### Breaking
 
 - **No default export.** Import the named `HyperMultimediaKit` — the former `{ HyperMultimediaKit }` wrapper default was an undocumented runtime trap and is gone.
-
 - Node type names are camelCase: `Image→image`, `Video→video`, `Audio→audio`,
   `Youtube→youtube`, `Vimeo→vimeo`, `SoundCloud→soundcloud`, `Twitter→x`. Stored
   documents need the migration below.
@@ -76,6 +55,12 @@ every media node gains an editable caption.
   `transform` image attribute, and the unused exported image helper types
   (`ImageUrlValidator`, `ImageExtension`, `ImageUrlProtocol`, `ImageFloat`,
   `ImageClear`, `ImageDisplay`).
+- Removed the audio `volume` kit option and node attribute. `volume` is not an
+  HTML content attribute — it exists only as a property of `HTMLMediaElement` —
+  and the node rendered it with `setAttribute`, so `<audio volume="0.5">` was
+  ignored by every browser and the option never changed playback in any
+  published version. Set `HTMLMediaElement.volume` on the element directly if
+  you need it.
 
 ### Added
 
@@ -90,11 +75,16 @@ every media node gains an editable caption.
   predicate, is unchanged — it still excludes raw video/audio URLs so pasted
   `.mp4`/`.mp3` links stay links.
 - `caption` attribute and an editable `<figcaption>` on every media node. The
-  attribute is the source of truth and persists via collaboration, JSON, and
-  same-editor copy/paste; standalone-HTML `<figure>/<figcaption>` round-trip is
-  `image`-only by design.
+  attribute is the source of truth and persists via collaboration and JSON.
+  HTML serialization carries the caption for `image` only — which includes
+  clipboard copy/paste and the toolbar Copy action.
+- **`editorFileUpload` host contract.** Pasting image files dispatches one
+  `CustomEvent` on `document` with `{ files, editor }` in `detail`, carrying
+  every image on the clipboard so the host uploads and inserts them itself —
+  no base64 ever enters the document. One event per paste carries every image;
+  the host inserts them in clipboard order.
 - Built-in **loading shell** for images, video/audio, iframe embeds, and X
-  (`loadingShell` kit option; `dist/media-loading-shell.css`).
+  (`loadingShell` kit option; styles ship in `./styles.css`).
 - Base toolbar actions — inline: Align, wrap-margin presets, Caption,
   View original (↗ arrow-outward), Download (image/video/audio); overflow `…`:
   Replace URL, Copy, Delete.
@@ -137,6 +127,11 @@ every media node gains an editable caption.
   the popover engine — with `attachTooltip` / `hideTooltip` re-exported for
   custom `mediaToolbar` surfaces, and `.floating-tooltip` joins the
   styling-contract classes.
+- The bundled popover engine treats a popover as one-shot once opened: hiding
+  releases its ownership, so it is never re-shown. Toolbar menus, submenus and
+  the Replace URL dialog already build a fresh popover per open, so no toolbar
+  behaviour changes — the guarantee is that a dismissed menu cannot reappear
+  detached from the single-popover invariant.
 - Micro-motion: the media toolbar fades in on mount and fades out before removal
   (the exit is deferred past the fade), hover states fade, tooltips rise toward
   rest, and overflow/submenu popovers play both transitions and scale from the
@@ -230,7 +225,6 @@ every media node gains an editable caption.
   now actually suppresses the toolbar entrance animation and popover transition (the
   entrance rules out-specified both guards). The unused `.floating-popover-arrow` rules
   moved out of this package — the hyperlink bundle owns arrow skins.
-
 - `getHTML()` and clipboard copy no longer throw once a `video`/`audio` node
   exists (leaf-node content hole removed; bogus `contentDOM` dropped).
 - Resize drags commit to the node actually under the gripper — the drag-end
@@ -257,7 +251,7 @@ every media node gains an editable caption.
 - Static-HTML export prefers committed `width`/`height` over kit defaults.
 - The image markdown input rule requires the leading `!` (plain links no longer
   convert) and drops the global flag.
-- Loading shell `destroy()` detaches media `load`/`error` listeners; `markReady`/`markError` detach too. Error state keeps the overlay visible (ready-only hides it). `bindLoad: { element }` replaces paired `bindElement`/`isAlreadyReady`.
+- Loading shell `destroy()` detaches media `load`/`error` listeners; `markReady`/`markError` detach too. Error state keeps the overlay visible (ready-only hides it).
 - X embed: `mountXEmbed` reports failure; `loadXScript` times out and aborts when the node view is destroyed.
 - X loading shell tracks widget layout (`ResizeObserver`) and switches to fluid height after render so tall posts are not clipped.
 - X post embeds: wrapper width follows `maxwidth`; `data-x-theme` backgrounds and corner clip remove light/dark corner bleed after `widgets.js` paint.
@@ -301,6 +295,70 @@ every media node gains an editable caption.
   and loading shells cap at `max-width: 100%` while preserving committed
   width/height attrs via `aspect-ratio` (live editor; static HTML export still
   emits fixed pixel dimensions).
+- Media toolbar `…` overflow menu toggles closed on a second click (outside
+  dismiss no longer races the trigger). Menu anchors to the toolbar bar with
+  `bottom-end` so it aligns to the toolbar's right edge.
+- Overflow/submenu gap under the toolbar tightened (2px offset); cross-axis
+  `shift` disabled so the menu stays flush with the bar's end edge.
+- Wrap left/right no longer overflows the editor column: floated media gets
+  `max-width: calc(100% - horizontal margins)` so pixel width + wrap gap stay
+  inside the parent.
+- Toolbar button labels render as text instead of markup, so a media node whose
+  `margin` attribute carries HTML can no longer execute script when the toolbar
+  opens.
+- Pasting a copied media node mints a fresh `keyId` instead of reusing the
+  serialized one. Two nodes sharing an id resolved to the same first-match
+  `[data-key-id]`, so the resize gripper drove the original while sitting over
+  the copy.
+- A captioned image keeps `float`, `margin`, `clear` and `display` through an
+  HTML round-trip. It parses from its `<figure>`, and those four attributes were
+  read off that element instead of the inner `<img>`, so a wrapped image came
+  back centred after a copy/paste.
+- `video` and `audio` keep width, height and placement through an HTML
+  round-trip. The values were emitted only inside the wrapper's inline `style`,
+  which nothing parses back, so the node returned at schema defaults.
+- Every stored media `src` passes a scheme gate. `javascript:`, `data:`,
+  `vbscript:`, `file:` and `blob:` are rejected on `parseHTML` for the four
+  nodes that lacked a check, on markdown import, and in the Replace URL dialog.
+  The embed builders already refused to render such a URL, but the raw value
+  was persisted into the collaborative document.
+- Reserved markdown alts route only through each node's own tokenizer. The image
+  node's `parseMarkdown` also emitted `{ type: 'audio' }`, `{ type: 'youtube' }`
+  and so on, which have no schema node when the kit disabled them — Tiptap caught
+  the schema error and replaced the whole document with an empty one. Side effect:
+  marked-image shapes the tokenizer does not match (`![audio](url "title")`,
+  `![audio](<url>)`) now import as images.
+- YouTube and Vimeo store the page URL after an HTML round-trip, not the player
+  URL. `renderHTML` serializes the iframe widget URL and both nodes read it back
+  verbatim, so markdown export emitted the embed URL. With
+  `Youtube: { nocookie: true }` the round-trip was worse: the nocookie host is not
+  a watch host, so the next embed build produced an empty `src` and the video went
+  blank. Vimeo keeps the unlisted-video `?h=` token through the unwrap.
+- An X node ignores a literal `src` attribute on pasted `blockquote.twitter-tweet`
+  markup. Tiptap merges per-attribute reads over the parse rule's own result, and
+  `src` had no per-attribute reader, so the raw attribute overwrote the normalized
+  status URL. `renderHTML` now normalizes the value it emits as well, which also
+  covers documents persisted before the parse fix.
+- The `![alt](url)` image input rule no longer swallows the space that triggers
+  it. The trailing lookahead let the match end one character before the typed
+  text, so the rule inserted a duplicated `)` and left the `!` in the document.
+- `editor.can().updateImageDimensions({ keyId })` reports `false` when no image
+  carries that `keyId`. The command ran its scan only when dispatching, then
+  returned `true` unconditionally.
+- Hover controls in one editor no longer tear down another editor's media
+  toolbar. With no active target the teardown fell back to a `document`-wide
+  query for mounted bars; it is now scoped to the editor's own DOM.
+- The media toolbar no longer writes node attributes on a read-only editor. An
+  open toolbar survived `setEditable(false)`, and align, margin, size, theme and
+  Replace URL all still dispatched.
+- Layout attributes cannot inject extra CSS declarations into exported HTML.
+  `margin` is read verbatim off pasted elements and concatenated into the
+  wrapper's inline `style`; a value carrying `;`, `}` or `url(` is now dropped.
+  This also covers the server-side DOCX/ODT/HTML export path, which serializes
+  through the same `renderHTML`.
+- "View original" and the download fallback open only `http(s):`, `blob:` and
+  root-relative sources. The insert commands and collaborative sync can both put
+  a value in `src` that the parse-time scheme gate never saw.
 
 ### Removed
 
@@ -317,6 +375,12 @@ every media node gains an editable caption.
 - Clean-room Cypress E2E suite + Bun playground. The playground harness lives in
   the shared `@docs.plus/playground` package; `test/playground/` holds only
   `main.ts`. No change to the published package.
+- Media layout CSS (live + export + image block) routes through one
+  `layoutStyle` module (`StyleLayoutOptions` / `mediaLayoutCss` /
+  `applyMediaLayoutToDom`); node options re-export the same type (no dual
+  layout contracts).
+- Toolbar popovers open via `openMediaPopover` (menu + Replace dialog); engine
+  dismiss/shift knobs stay inside that adapter.
 
 ### Migrating from 1.x to 2.0
 
@@ -325,6 +389,68 @@ every media node gains an editable caption.
 - **Stored documents (external adopters)**: rewrite node `type` strings in JSON or Yjs exports — `Image`→`image`, `Video`→`video`, `Audio`→`audio`, `Youtube`→`youtube`, `Vimeo`→`vimeo`, `SoundCloud`→`soundcloud`, `Twitter`→`x`. Attr keys are unchanged except command renames (`setTwitter`→`setX`). See the [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) for the full mapping even if you do not run the CLI.
 - Replace removed `createFloatingToolbar`/`*Modal` usage with the built-in toolbar or the `mediaToolbar` factory.
 - **Recommended pairing with `@docs.plus/extension-hyperlink`** when both ship in one editor — configure `shouldAutoLink: (url) => !isMediaUrl(url)` so media URLs become nodes, not links.
+
+#### One-shot rename script
+
+Run this in your project root and review the diff. The patterns are anchored on
+purpose — a blanket `Twitter` → `X` replace would corrupt `twitter.com` hosts in
+URLs, parse rules, and the sanitizer allowlist.
+
+```bash
+rg -l "setTwitter|TwitterOptions|Twitter:" \
+  | xargs sed -i.bak \
+    -e 's/setTwitter/setX/g' \
+    -e 's/TwitterOptions/XOptions/g' \
+    -e 's/Twitter:/X:/g'
+```
+
+#### Code diff
+
+Import the named kit:
+
+```diff
+-import HyperMultimediaKit from '@docs.plus/extension-hypermultimedia'
++import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
+```
+
+Rename the kit config key:
+
+```diff
+ HyperMultimediaKit.configure({
+-  Twitter: { theme: 'dark' }
++  X: { theme: 'dark' }
+ })
+```
+
+Rename the insert command:
+
+```diff
+-editor.commands.setTwitter({ src: 'https://x.com/jack/status/20' })
++editor.commands.setX({ src: 'https://x.com/jack/status/20' })
+```
+
+Drop the tippy modal API. The toolbar is built in; pass `mediaToolbar` only to
+render your own surface:
+
+```diff
+-import { createFloatingToolbar, imageModal, youtubeModal, twitterModal } from '@docs.plus/extension-hypermultimedia'
+-
+ HyperMultimediaKit.configure({
+-  Image: { modal: imageModal },
+-  Youtube: { modal: youtubeModal },
+-  Twitter: { modal: twitterModal }
++  mediaToolbar: (options) => renderMobileSheet(options)
+ })
+```
+
+Drop the per-node toolbar option:
+
+```diff
+ HyperMultimediaKit.configure({
+-  Image: { toolbar: myImageToolbar }
++  Image: {}
+ })
+```
 
 ## Pre-2.0 release history
 

@@ -46,7 +46,7 @@ export const LOOM_EMBED_KIT_DEFAULTS: LoomEmbedKitOptions = {
   scrolling: 'no'
 }
 
-export const LOOM_IFRAME_DOM_ATTR_KEYS = ['scrolling', ...FULLSCREEN_IFRAME_DOM_ATTR_KEYS] as const
+const LOOM_IFRAME_DOM_ATTR_KEYS = ['scrolling', ...FULLSCREEN_IFRAME_DOM_ATTR_KEYS] as const
 
 export const LOOM_EMBED_ATTR_KEYS = [
   'src',

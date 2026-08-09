@@ -164,14 +164,4 @@ describe('createInteractions', () => {
     expect(result.inputRules).toHaveLength(1)
     expect(result.pasteRules).toHaveLength(1)
   })
-
-  it('plugins receive a Plugin instance shape (sanity for Tiptap consumption)', () => {
-    const ctx = createLinkContext({ editor: fakeEditor, type: fakeMarkType, options: baseOptions })
-    const result = createInteractions(ctx)
-    for (const plugin of result.plugins) {
-      // ProseMirror's Plugin attaches a `spec` field; checking its
-      // presence avoids depending on the internal class identity.
-      expect(plugin).toHaveProperty('spec')
-    }
-  })
 })

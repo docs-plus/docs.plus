@@ -15,7 +15,8 @@ import {
   resolveFullscreenIframeAttributes
 } from './embedKit'
 import { ignoreNodeViewSubtreeMutation } from './ignoreNodeViewMutation'
-import { createEmbedWrapperStyle, type StyleLayoutOptions } from './utils'
+import { mediaLayoutCss } from './layoutStyle'
+import type { StyleLayoutOptions } from './utils'
 
 export type IframeAttrs = Record<string, unknown>
 
@@ -229,15 +230,18 @@ export function renderIframeEmbedHTML<TOptions extends IframeEmbedNodeOptions>(
     height: HTMLAttributes.height ?? node.attrs.height
   })
 
-  const style = createEmbedWrapperStyle({
-    display: String(HTMLAttributes.display ?? node.attrs.display ?? 'block'),
-    height,
-    width,
-    float: (HTMLAttributes.float ?? node.attrs.float) as string | null,
-    clear: String(HTMLAttributes.clear ?? node.attrs.clear ?? 'none'),
-    margin: String(HTMLAttributes.margin ?? node.attrs.margin ?? 'auto'),
-    justifyContent: String(HTMLAttributes.justifyContent ?? node.attrs.justifyContent ?? 'start')
-  })
+  const style = mediaLayoutCss(
+    {
+      display: String(HTMLAttributes.display ?? node.attrs.display ?? 'block'),
+      height,
+      width,
+      float: (HTMLAttributes.float ?? node.attrs.float) as string | null,
+      clear: String(HTMLAttributes.clear ?? node.attrs.clear ?? 'none'),
+      margin: String(HTMLAttributes.margin ?? node.attrs.margin ?? 'auto'),
+      justifyContent: String(HTMLAttributes.justifyContent ?? node.attrs.justifyContent ?? 'start')
+    },
+    'export-embed'
+  )
 
   const iframeAttrs = config.resolveIframeAttributes(node.attrs, options, width, height)
   const { allowfullscreen, ...restIframeAttrs } = iframeAttrs

@@ -191,7 +191,7 @@ describe('buildHyperlinkCommands', () => {
   })
 
   // `satisfies` in `index.ts` is the compile-time guard for this surface;
-  // the list below is the runtime smoke that catches tree-shake or
+  // the key-set check below is the runtime smoke that catches tree-shake or
   // build-output drops that still typecheck.
   const expectedKeys = [
     'setHyperlink',
@@ -205,10 +205,6 @@ describe('buildHyperlinkCommands', () => {
     'unsetLink',
     'toggleLink'
   ] as const
-
-  it.each(expectedKeys)('exposes %s as a function factory', (name) => {
-    expect(typeof cmds[name]).toBe('function')
-  })
 
   it('does not leak any extra commands beyond the public surface', () => {
     expect(Object.keys(cmds).sort()).toEqual([...expectedKeys].sort())

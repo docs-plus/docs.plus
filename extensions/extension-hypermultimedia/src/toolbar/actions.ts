@@ -178,7 +178,6 @@ export const BASE_ACTIONS: MediaActionList = [
     id: 'replace',
     label: () => 'Replace URL',
     placement: 'overflow',
-    isVisible: (ctx) => Boolean(ctx.attrs.src),
     run: openReplaceUrlPopover
   },
   {

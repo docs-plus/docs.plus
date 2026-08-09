@@ -14,10 +14,13 @@ import {
   defineFullscreenIframeEmbedConfig,
   renderIframeEmbedHTML
 } from '../../utils/iframeEmbedNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildYoutubeEmbedUrl,
   parseYoutubeStartSeconds,
+  parseYoutubeVideoId,
   YOUTUBE_EMBED_ATTR_KEYS,
   YOUTUBE_PLAYER_KIT_DEFAULTS,
   type YoutubeEmbedColor,
@@ -68,8 +71,19 @@ export const Youtube = Node.create<YoutubeOptions>({
 
   addAttributes() {
     return {
-      keyId: { default: null },
-      src: { default: null },
+      keyId: keyIdAttribute(),
+      src: {
+        default: null,
+        parseHTML: (element) => {
+          const src = element.getAttribute('src')
+          if (!isSafeMediaSrc(src)) return null
+          // renderHTML emits the `/embed/` widget URL, so a plain read-back would
+          // store the player as the node's src. `nocookie` is worse: that host is
+          // not a watch host, so the next embed build would return an empty src.
+          const id = parseYoutubeVideoId(src.replace(/youtube-nocookie\.com/i, 'youtube.com'))
+          return id ? `https://www.youtube.com/watch?v=${id}` : src
+        }
+      },
       start: { default: 0 },
       caption: captionAttribute(),
       ...layoutAttrDefaults(this.options),

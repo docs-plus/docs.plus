@@ -1,10 +1,4 @@
-import { isImageUrl } from '../nodes/image/helper'
-import { isValidLoomUrl } from '../nodes/loom/helper'
-import { isValidSoundCloudUrl } from '../nodes/soundcloud/helper'
-import { isValidSpotifyUrl } from '../nodes/spotify/helper'
-import { isValidVimeoUrl } from '../nodes/vimeo/helper'
-import { isValidXUrl } from '../nodes/x/helper'
-import { isValidYoutubeUrl } from '../nodes/youtube/helper'
+import { detectMediaType } from './detectMediaType'
 
 /**
  * True if `url` is one this kit auto-converts to a media node on paste.
@@ -12,13 +6,8 @@ import { isValidYoutubeUrl } from '../nodes/youtube/helper'
  * URLs become nodes, not links: `Hyperlink.configure({ shouldAutoLink: (url)
  * => !isMediaUrl(url) })`. Resolves the paste precedence between the two.
  */
-// Deliberately excludes raw video/audio URLs (unlike detectMediaType) so pasted
-// `.mp4`/`.mp3` links stay links, not nodes.
-export const isMediaUrl = (url: string): boolean =>
-  isImageUrl(url) ||
-  isValidYoutubeUrl(url) ||
-  isValidVimeoUrl(url) ||
-  isValidSoundCloudUrl(url) ||
-  isValidSpotifyUrl(url) ||
-  isValidLoomUrl(url) ||
-  isValidXUrl(url)
+export const isMediaUrl = (url: string): boolean => {
+  const kind = detectMediaType(url)
+  // Raw video/audio URLs are excluded on purpose so pasted `.mp4`/`.mp3` stay links.
+  return kind !== null && kind !== 'video' && kind !== 'audio'
+}

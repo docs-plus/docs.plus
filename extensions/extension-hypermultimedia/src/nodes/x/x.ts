@@ -15,6 +15,7 @@ import {
   type EmbedNodeOptions
 } from '../../utils/embedKit'
 import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
 import { applyStyles, generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildXOEmbedParams,
@@ -73,11 +74,12 @@ export const X = Node.create<XOptions>({
 
   addAttributes() {
     return {
-      keyId: {
-        default: null
-      },
+      keyId: keyIdAttribute(),
       src: {
-        default: null
+        // Without a per-attribute parser Tiptap reads a literal `src=` off the
+        // blockquote and it overwrites whatever `getAttrs` normalized below.
+        default: null,
+        parseHTML: (element) => normalizeXUrl(element.getAttribute('src') ?? '')
       },
       maxwidth: {
         default: X_EMBED_DEFAULT_MAXWIDTH
@@ -109,7 +111,9 @@ export const X = Node.create<XOptions>({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const url = HTMLAttributes.src ?? node.attrs.src
+    // Documents persisted before the parse gate landed can still carry a hostile
+    // src, and collaborative attrs are never re-validated — gate the read too.
+    const url = normalizeXUrl(String(HTMLAttributes.src ?? node.attrs.src ?? '')) ?? ''
 
     // Serialize the standard twitter-tweet markup only; the per-node oEmbed and layout
     // attrs are runtime nodeView concerns and would be invalid attributes on <blockquote>.

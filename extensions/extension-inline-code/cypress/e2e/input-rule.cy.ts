@@ -48,6 +48,23 @@ describe('inline code — input rule', () => {
     })
   })
 
+  // Regression: `HardBreak.renderText()` is a newline, which `[^`]+` matches, so
+  // an unclosed backtick before Shift+Enter used to mark one code span across the
+  // break. The leading paragraph proves the replacement stayed inside seed's block.
+  it('leaves a backtick pair spanning a hard break alone', () => {
+    cy.setEditorContent('<p>Hello world</p><p>seed</p>')
+    cy.setCaretAfter('seed')
+    cy.typeInEditor('`foo ')
+    cy.pressKey('Enter', { shiftKey: true })
+    cy.typeInEditor('bar`')
+    cy.get('#editor code').should('not.exist')
+    cy.getEditor().should((e) => {
+      expect(e.getText()).to.contain('Hello world')
+      expect(e.getText()).to.contain('`foo ')
+      expect(e.getText()).to.contain('bar`')
+    })
+  })
+
   it('Backspace right after the rule restores the literal backticks', () => {
     cy.typeInEditor('`x`')
     cy.get('#editor code').should('have.text', 'x')

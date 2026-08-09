@@ -1,11 +1,14 @@
 // Package-level constants. `SAFE_WINDOW_FEATURES` is re-exported from
-// `utils/index.ts`; the other two stay module-internal.
+// `utils/index.ts`; the rest stay module-internal.
 
 /** Hyperlink mark name. Load-bearing: stored in every Yjs doc; renaming is breaking. */
 export const HYPERLINK_MARK_NAME = 'hyperlink' as const
 
 /** Tx meta stamped by every hyperlink write so `autolinkPlugin` skips the same tick. */
 export const PREVENT_AUTOLINK_META = 'preventAutolink' as const
+
+/** Bail-out rect returned by an opener's coords callback while `popover.hide()` is queued. */
+export const OFFSCREEN_COORD_PX = -9999
 
 /**
  * `window.open` features string for safe navigation — every

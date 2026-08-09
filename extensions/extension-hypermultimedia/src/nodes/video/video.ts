@@ -8,6 +8,8 @@ import {
   type HtmlMediaNodeConfig,
   renderHtmlMediaHTML
 } from '../../utils/htmlMediaNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import { inputRegex } from './helper'
 
@@ -52,8 +54,7 @@ const VIDEO_REMOUNT_ATTR_KEYS = [
 
 const VIDEO_MEDIA_CONFIG: HtmlMediaNodeConfig = {
   tag: 'video',
-  elementAttrKeys: VIDEO_REMOUNT_ATTR_KEYS,
-  isAlreadyReady: (media) => media.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+  elementAttrKeys: VIDEO_REMOUNT_ATTR_KEYS
 }
 
 export const Video = Node.create<VideoOptions>({
@@ -93,11 +94,13 @@ export const Video = Node.create<VideoOptions>({
 
   addAttributes() {
     return {
-      keyId: {
-        default: null
-      },
+      keyId: keyIdAttribute(),
       src: {
-        default: null
+        default: null,
+        parseHTML: (element) => {
+          const src = element.getAttribute('src')
+          return isSafeMediaSrc(src) ? src : null
+        }
       },
       controls: {
         default: this.options.controls

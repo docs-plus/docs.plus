@@ -10,12 +10,9 @@ import { createHyperlinkEngine } from './engine'
 import { canonicalCommands, editCommands, uiCommands } from './families'
 import type { HyperlinkRawCommands } from './surface'
 
-export { createHyperlinkEngine, type HyperlinkEngine, type HyperlinkEngineDeps } from './engine'
-export { canonicalCommands, editCommands, uiCommands } from './families'
 export type {
   EditHyperlinkAttributes,
   HyperlinkPublicCommands,
-  HyperlinkRawCommands,
   SetHyperlinkAttributes
 } from './surface'
 

@@ -50,9 +50,17 @@ type PopoverShellOptions = {
 
 export type PopoverOptions = PopoverAnchor & PopoverShellOptions
 
+/**
+ * One-shot once opened: hiding releases the controller's ownership and nothing
+ * re-adopts, so `show()` will not reopen it. Build a new popover instead — a
+ * re-shown one would sit outside the single-popover invariant, invisible to
+ * `close()` and never evicted by the next `adopt()`.
+ */
 export interface Popover {
   element: HTMLElement
+  /** No-op once the popover has been hidden or destroyed. */
   show: () => void
+  /** Terminal once shown. Before the first `show()` it no-ops and keeps ownership. */
   hide: () => void
   destroy: () => void
   isVisible: () => boolean
@@ -148,6 +156,7 @@ export function createPopover(options: PopoverOptions): Popover {
       : []
   const cleanups: (() => void)[] = []
   let visible = false
+  let terminated = false
   let autoUpdateCleanup: (() => void) | null = null
 
   const isOutsideDismissTarget = (target: Node | null): boolean => {
@@ -255,6 +264,7 @@ export function createPopover(options: PopoverOptions): Popover {
   const hide = (): void => {
     if (!visible) return
     visible = false
+    terminated = true
     autoUpdateCleanup?.()
     autoUpdateCleanup = null
     clearNavListeners()
@@ -274,9 +284,9 @@ export function createPopover(options: PopoverOptions): Popover {
   }
 
   const show = (): void => {
-    if (visible) return
-    // Re-show during an in-flight exit must not race the deferred removal.
-    cancelPendingRemoval()
+    // A removal is only ever armed after `terminated` is set, so this can never
+    // find one pending — the re-show/removal race is gone rather than guarded.
+    if (visible || terminated) return
     document.body.appendChild(root)
     visible = true
     autoUpdateCleanup = autoUpdate(reference, root, updatePosition)
@@ -312,6 +322,8 @@ export function createPopover(options: PopoverOptions): Popover {
 
   const destroy = (): void => {
     hide()
+    // `hide()` no-ops when the popover was never shown; destroying is terminal either way.
+    terminated = true
     // Teardown is immediate — destroy callers replace or unmount the surface.
     finishHide()
   }

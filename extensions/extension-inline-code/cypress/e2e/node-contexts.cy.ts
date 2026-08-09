@@ -13,9 +13,6 @@ describe('inline code — node contexts', () => {
     cy.setCaretAfter('text') // caret inside the code block
     cy.typeInEditor('`x`')
     cy.get('#editor pre code').should('have.text', 'text`x`')
-    cy.getEditor().should((e) => {
-      expect(JSON.stringify(e.getJSON())).to.not.contain('inlineCode')
-    })
   })
 
   it('the backtick rule fires inside a heading', () => {

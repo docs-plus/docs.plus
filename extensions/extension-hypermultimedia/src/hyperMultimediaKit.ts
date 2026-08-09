@@ -6,6 +6,7 @@ import { HYPER_MULTIMEDIA_KIT_EXTENSION_NAME } from './kitStorage'
 import type { MediaLoadingShellOption } from './loading'
 import { Audio, AudioOptions } from './nodes/audio/audio'
 import { Image } from './nodes/image/image'
+import type { ImageOptions } from './nodes/image/types'
 import { Loom, LoomOptions } from './nodes/loom/loom'
 import { SoundCloud, SoundCloudOptions } from './nodes/soundcloud/soundcloud'
 import { Spotify, SpotifyOptions } from './nodes/spotify/spotify'
@@ -16,7 +17,6 @@ import { Youtube, YoutubeOptions } from './nodes/youtube/youtube'
 import type { ReplaceUrlPopoverFactory } from './toolbar/replaceUrl'
 import type { MediaToolbarIconsResolver } from './toolbar/resolveIcon'
 import type { MediaActionContext, MediaActionsResolver, MediaToolbarFactory } from './toolbar/types'
-import type { ImageOptions } from './types'
 
 export interface HyperMultimediaKitOptions {
   Image: Partial<ImageOptions & { resizeGripper?: boolean }> | true | false
@@ -89,11 +89,9 @@ export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
     const extensions = []
     const resizableMedia: string[] = []
     const mediaNodeNames: string[] = []
-    let hasMediaNodes = false
 
     const addMediaExtension = (media: MediaExtension, mediaOptions: any) => {
       if (mediaOptions !== false) {
-        hasMediaNodes = true
         mediaNodeNames.push(media.name)
         extensions.push(media.configure(mediaOptions))
 
@@ -114,7 +112,7 @@ export const HyperMultimediaKit = Extension.create<HyperMultimediaKitOptions>({
     addMediaExtension(Loom, this.options.Loom)
     addMediaExtension(X, this.options.X)
 
-    if (hasMediaNodes) {
+    if (mediaNodeNames.length > 0) {
       if (resizableMedia.length > 0) {
         extensions.push(
           MediaResizeGripper.configure({

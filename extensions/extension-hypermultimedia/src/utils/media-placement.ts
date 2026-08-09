@@ -49,7 +49,7 @@ const isZeroLength = (value: string): boolean =>
   value === '0' || value === '0px' || value === '0in' || value === '0rem' || value === '0em'
 
 /** Left+right margin expression for `calc(100% - …)` — null when there is no horizontal inset. */
-export function horizontalMarginExpression(margin: string | null | undefined): string | null {
+function horizontalMarginExpression(margin: string | null | undefined): string | null {
   if (margin == null) return null
   const trimmed = margin.trim()
   if (!trimmed || isZeroLength(trimmed) || /\bauto\b/i.test(trimmed)) return null

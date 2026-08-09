@@ -10,12 +10,7 @@ export function findLiveEquivalentAnchor(
   if (typeof nodePos === 'number') {
     try {
       const { node } = editor.view.domAtPos(nodePos)
-      const element =
-        'closest' in node
-          ? (node as Element)
-          : 'parentElement' in node
-            ? (node.parentElement as Element | null)
-            : null
+      const element = 'closest' in node ? (node as Element) : node.parentElement
       const anchor = element?.closest<HTMLAnchorElement>('a')
       if (anchor && editor.view.dom.contains(anchor)) return anchor
     } catch {

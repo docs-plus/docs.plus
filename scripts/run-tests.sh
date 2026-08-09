@@ -157,9 +157,14 @@ if $RUN_EXTENSION_GATES; then
     for e in $EXT_ONLY; do ONLY_ARGS+=(--only "$e"); done
   fi
 
-  while IFS=$'\t' read -r ext_rel has_unit label; do
-    record_extension_gate "$label" "$ROOT_DIR/$ext_rel" "$has_unit"
-  done < <(bun "$ROOT_DIR/scripts/publishable-extensions.ts" "${ONLY_ARGS[@]}" --gates)
+  if ! GATE_LIST=$(bun "$ROOT_DIR/scripts/publishable-extensions.ts" "${ONLY_ARGS[@]}" --gates); then
+    EXTENSION_GATES_EXIT=1
+    echo -e "${RED}Could not resolve the extension gate list (EXT_ONLY='${EXT_ONLY:-}').${NC}"
+  else
+    while IFS=$'\t' read -r ext_rel has_unit label; do
+      record_extension_gate "$label" "$ROOT_DIR/$ext_rel" "$has_unit"
+    done <<< "$GATE_LIST"
+  fi
 
   if $RUN_WEBAPP_UNIT; then
     cd "$WEBAPP_DIR"

@@ -29,21 +29,21 @@ export function abortActiveGripperDrag(editor: Editor): void {
   activeDragByEditor.get(editor)?.()
 }
 
-export interface GripperBox {
+interface GripperBox {
   width: number
   height: number
   top: number
   left: number
 }
 
-export interface GripperDragContext {
+interface GripperDragContext {
   deltaX: number
   deltaY: number
   state: ResizeState
   clamp: HTMLElement
 }
 
-export type ComputeGripperBox = (ctx: GripperDragContext) => GripperBox
+type ComputeGripperBox = (ctx: GripperDragContext) => GripperBox
 
 function isLeftEdge(clamp: HTMLElement): boolean {
   return (
@@ -61,7 +61,7 @@ function isTopEdge(clamp: HTMLElement): boolean {
   )
 }
 
-export function clampGripperBox(
+function clampGripperBox(
   box: GripperBox,
   state: ResizeState,
   clamp: HTMLElement,
@@ -80,7 +80,7 @@ export function clampGripperBox(
   return { width: clamped.width, height: clamped.height, top, left }
 }
 
-export interface GripperDragConfig {
+interface GripperDragConfig {
   clamp: HTMLElement
   gripper: HTMLElement
   editor: Editor
@@ -88,7 +88,7 @@ export interface GripperDragConfig {
 }
 
 /** Pointer-capture class on the gripper widget during a drag — never mutate node-view DOM. */
-export function setGripperDragging(gripper: HTMLElement, dragging: boolean): void {
+function setGripperDragging(gripper: HTMLElement, dragging: boolean): void {
   gripper.classList.toggle('hypermultimedia__resize-gripper--dragging', dragging)
   document.documentElement.classList.toggle('hypermultimedia--resize-dragging', dragging)
 }

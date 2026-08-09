@@ -115,10 +115,7 @@ export const parseYoutubeVideoId = (url: string): string | null => {
 
     // Exact-host match only: `includes` would accept youtube.com.evil.example.
     if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
-      if (parsed.pathname.startsWith('/embed/')) {
-        return parsed.pathname.split('/')[2] ?? null
-      }
-      if (parsed.pathname.startsWith('/shorts/')) {
+      if (parsed.pathname.startsWith('/embed/') || parsed.pathname.startsWith('/shorts/')) {
         return parsed.pathname.split('/')[2] ?? null
       }
       const fromQuery = parsed.searchParams.get('v')

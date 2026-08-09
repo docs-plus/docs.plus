@@ -1,9 +1,7 @@
 /**
- * Headless slot-resolution tests for `openPreviewHyperlink`. Pure mock
- * editor shape — verifies the opener resolves
- * `popovers.previewHyperlink ?? prebuilt` and stays idle when the host
- * opts out (factory returns `null`). End-to-end mount + adopt is covered
- * by `cypress/e2e/preview-edit.cy.ts`.
+ * Slot resolution only (`popovers.previewHyperlink ?? prebuilt`) against a
+ * mock editor shape. End-to-end mount + adopt is covered by
+ * `cypress/e2e/preview-edit.cy.ts`.
  */
 import { describe, expect, it, mock } from 'bun:test'
 

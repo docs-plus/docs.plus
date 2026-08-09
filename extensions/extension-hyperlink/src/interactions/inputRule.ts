@@ -20,7 +20,10 @@ export function createMarkdownLinkInputRule(ctx: LinkContext): InputRule {
       const [decision] = ctx.urls.forWrite({ kind: 'href', href: url })
       if (!decision) return
 
-      tr.replaceWith(start, end, state.schema.text(linkText))
+      // `nodeAt(start)`, not `resolve(start).marks()` — the latter reads the node
+      // BEFORE the position and misses a mark toggled on at the `[`.
+      const carried = state.doc.nodeAt(start)?.marks.filter((m) => m.type !== ctx.type) ?? []
+      tr.replaceWith(start, end, state.schema.text(linkText, carried))
       tr.addMark(start, start + linkText.length, ctx.type.create({ href: decision.href }))
     }
   })

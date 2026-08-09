@@ -14,9 +14,12 @@ import {
   defineFullscreenIframeEmbedConfig,
   renderIframeEmbedHTML
 } from '../../utils/iframeEmbedNode'
+import { keyIdAttribute } from '../../utils/media-node-attrs'
+import { isSafeMediaSrc } from '../../utils/mediaUrl'
 import { generateShortId, type StyleLayoutOptions } from '../../utils/utils'
 import {
   buildVimeoEmbedUrl,
+  parseVimeoVideoRef,
   VIMEO_EMBED_ATTR_KEYS,
   VIMEO_PLAYER_KIT_DEFAULTS,
   type VimeoBylinePortrait,
@@ -65,8 +68,19 @@ export const Vimeo = Node.create<VimeoOptions>({
 
   addAttributes() {
     return {
-      keyId: { default: null },
-      src: { default: null },
+      keyId: keyIdAttribute(),
+      src: {
+        default: null,
+        parseHTML: (element) => {
+          const src = element.getAttribute('src')
+          if (!isSafeMediaSrc(src)) return null
+          // renderHTML emits the player.vimeo.com widget URL; unwrap it back to the
+          // page URL. `h` must survive — it is the unlisted-video access token.
+          const ref = parseVimeoVideoRef(src)
+          if (!ref) return src
+          return `https://vimeo.com/${ref.id}${ref.h ? `?h=${ref.h}` : ''}`
+        }
+      },
       start: { default: 0 },
       caption: captionAttribute(),
       ...layoutAttrDefaults(this.options),

@@ -99,6 +99,7 @@ export function mediaLayoutStyleProps(
         maxWidth: placement.maxWidth
       }
     case 'export-html':
+      // Attrs come first: a committed per-node width/height must beat the kit default.
       return {
         ...EMPTY_BAG,
         height: pixelOrNull(attrs.height) ?? pixelOrNull(defaults?.height),
@@ -125,9 +126,14 @@ export function mediaLayoutStyleProps(
   }
 }
 
+// `margin` and friends are read verbatim off pasted elements, so a value carrying
+// `;`, `}` or `url(` would inject extra declarations into the serialized style.
+// No `CSS.supports` here: renderHTML also runs under Node in the export pipeline.
+const CSS_INJECTION_RE = /[;}]|url\(/i
+
 export function formatMediaLayoutCss(props: LayoutStyleBag): string {
   return (Object.keys(CSS_PROP) as Array<keyof LayoutStyleBag>)
-    .filter((key) => props[key] != null)
+    .filter((key) => props[key] != null && !CSS_INJECTION_RE.test(String(props[key])))
     .map((key) => `${CSS_PROP[key]}:${props[key]};`)
     .join(' ')
 }

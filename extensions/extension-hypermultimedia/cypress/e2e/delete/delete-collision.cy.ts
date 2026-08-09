@@ -21,7 +21,11 @@ describe('delete-key collision between text editing and hover controls', () => {
     cy.getEditor().then((editor) => {
       editor.commands.focus(12)
     })
-    cy.get('#editor .ProseMirror').realPress('Backspace')
+    // `realPress` is a parent command: it fires a CDP key event at whatever the
+    // browser focuses and ignores any chained subject. Wait for focus to land,
+    // or the key goes to <body> and the assertions below race it.
+    cy.get('#editor .ProseMirror').should('have.focus')
+    cy.realPress('Backspace')
 
     cy.get('#editor .ProseMirror p').first().should('have.text', 'hello worl')
     cy.nodeCount('image').should('eq', 1)
@@ -45,7 +49,8 @@ describe('delete-key collision between text editing and hover controls', () => {
       // Caret at the start of the paragraph that follows the image.
       editor.commands.focus(imagePos + (node?.nodeSize ?? 1) + 1)
     })
-    cy.get('#editor .ProseMirror').realPress('Backspace')
+    cy.get('#editor .ProseMirror').should('have.focus')
+    cy.realPress('Backspace')
 
     // Upstream joinBackward deletes a leaf atom before the cut, so one
     // Backspace removes the image through the standard edit pipeline; the

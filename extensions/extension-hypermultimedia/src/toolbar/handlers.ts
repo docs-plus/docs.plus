@@ -25,9 +25,15 @@ export function canViewOriginal(ctx: MediaActionContext): boolean {
   return !isUploadedMedia(ctx)
 }
 
+/**
+ * Guards the `window.open` sink. Not `isSafeMediaSrc`: that rejects `blob:`, a
+ * legitimate src for uploaded media. Collab attrs are never re-validated.
+ */
+const isOpenableSrc = (src: string): boolean => /^(https?:|blob:|\/)/i.test(src)
+
 export function viewOriginalMedia(ctx: MediaActionContext): void {
   const src = String(ctx.attrs.src ?? '')
-  if (src) window.open(src, '_blank', 'noopener,noreferrer')
+  if (isOpenableSrc(src)) window.open(src, '_blank', 'noopener,noreferrer')
   ctx.close()
 }
 
@@ -93,7 +99,7 @@ export async function downloadMedia(ctx: MediaActionContext): Promise<void> {
     a.remove()
     URL.revokeObjectURL(objectUrl)
   } catch {
-    window.open(src, '_blank', 'noopener,noreferrer')
+    if (isOpenableSrc(src)) window.open(src, '_blank', 'noopener,noreferrer')
   }
   ctx.close()
 }

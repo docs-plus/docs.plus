@@ -1,6 +1,6 @@
 import { parseSpotifyEntity } from './embedOptions'
 
-export const SPOTIFY_URL_REGEX =
+const SPOTIFY_URL_REGEX =
   /^https?:\/\/(www\.)?open\.spotify\.com\/(embed\/)?(intl-[a-z-]+\/)?(track|album|playlist|artist|show|episode)\/[A-Za-z0-9]+(\?\S*)?$/i
 export const SPOTIFY_URL_REGEX_GLOBAL = new RegExp(SPOTIFY_URL_REGEX.source, 'gi')
 

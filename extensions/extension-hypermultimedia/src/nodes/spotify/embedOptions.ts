@@ -73,7 +73,7 @@ export const SPOTIFY_DEFAULT_WIDTH = 640
 /** Full-art player (album / playlist / artist / show / episode). */
 export const SPOTIFY_FULL_HEIGHT = 352
 /** Compact single-track player. */
-export const SPOTIFY_TRACK_HEIGHT = 152
+const SPOTIFY_TRACK_HEIGHT = 152
 
 /** Spotify's generator uses the compact height for tracks and the full-art height for everything else. */
 export const defaultSpotifyHeight = (type: SpotifyEntityType): number =>

@@ -112,7 +112,7 @@ function resolveMediaBox(target: HTMLElement): HTMLElement {
  * convert into the gripper's own `offsetParent` frame (its border via clientLeft/Top)
  * so drag math, which reads/writes `offset*`, stays in the same coordinate space.
  */
-export function positionResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
+function positionResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
   const parent = gripper.offsetParent as HTMLElement | null
   const parentRect = parent?.getBoundingClientRect()
   const box = resolveMediaBox(target).getBoundingClientRect()
@@ -126,14 +126,14 @@ export function positionResizeGripper(gripper: HTMLElement, target: HTMLElement)
   gripper.style.top = `${box.top - originTop}px`
 }
 
-export function activateResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
+function activateResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
   // `--active` flips display:none→block first: a hidden gripper has a null offsetParent
   // and zero-size rects, so positionResizeGripper must run while it is laid out.
   gripper.classList.add('hypermultimedia__resize-gripper--active')
   positionResizeGripper(gripper, target)
 }
 
-export function deactivateResizeGripper(gripper: HTMLElement): void {
+function deactivateResizeGripper(gripper: HTMLElement): void {
   gripper.classList.remove(
     'hypermultimedia__resize-gripper--active',
     'hypermultimedia__resize-gripper--dragging'
@@ -145,7 +145,7 @@ export function deactivateResizeGripper(gripper: HTMLElement): void {
 }
 
 /** Active grippers whose media sibling is gone (delete, cut, collab) must not linger in the DOM. */
-export function purgeOrphanedResizeControls(root: ParentNode = document): void {
+function purgeOrphanedResizeControls(root: ParentNode = document): void {
   root.querySelectorAll('.hypermultimedia__resize-gripper--active').forEach((node) => {
     if (!(node instanceof HTMLElement)) return
     const media = resolveMediaFromGripper(node, root)
@@ -210,7 +210,9 @@ export function hideMediaResizeControls(editor: Editor): void {
   cancelHoverHide(state)
   setPointerTracking(editor, state, false)
   if (gripper) deactivateResizeGripper(gripper)
-  closeMediaToolbar(state.activeTarget)
+  // Idle controls have no active target, and `closeMediaToolbar` then falls back
+  // to `document` — which would tear down another editor's mounted bar.
+  closeMediaToolbar(state.activeTarget ?? editor.view.dom)
   clearActiveState(state)
   setOutsideListeners(state, false)
   purgeOrphanedResizeControls(editor.view.dom)
@@ -310,7 +312,7 @@ export function resolveMediaNodePos(
 }
 
 /** Desktop hover or touch click — gripper + toolbar, or toolbar-only for X embeds. */
-export function showMediaResizeControls(editor: Editor, target: HTMLElement): boolean {
+function showMediaResizeControls(editor: Editor, target: HTMLElement): boolean {
   const state = getControlsState(editor)
   const nodeType = getMediaNodeType(target)
   if (!nodeType) return false
@@ -343,11 +345,11 @@ export function showMediaResizeControls(editor: Editor, target: HTMLElement): bo
   return true
 }
 
-export function lockMediaSelection(editor: Editor): void {
+function lockMediaSelection(editor: Editor): void {
   getControlsState(editor).selectionLocked = true
 }
 
-export function deleteActiveMediaNode(editor: Editor): boolean {
+function deleteActiveMediaNode(editor: Editor): boolean {
   const state = getControlsState(editor)
   const { activeTarget, activeNodePos, mediaResizing } = state
   if (!activeTarget || activeNodePos === null || mediaResizing || !editor.isEditable) {
@@ -362,7 +364,7 @@ export function deleteActiveMediaNode(editor: Editor): boolean {
   return true
 }
 
-export function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): boolean {
+function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): boolean {
   if (!isDeleteKey(event)) return false
   if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return false
   if (!getControlsState(editor).activeTarget) return false

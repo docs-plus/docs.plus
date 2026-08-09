@@ -35,9 +35,11 @@ Cypress.Commands.add('visitPlayground', (query = '') => {
 
 Cypress.Commands.add('getEditor', () => cy.window().its('_editor'))
 
+// Seed content stays out of the undo stack, so an undo spec can only revert the keypress
+// under test — no wall-clock wait against prosemirror-history's grouping delay.
 Cypress.Commands.add('setEditorContent', (html: string) => {
   cy.getEditor().then((editor) => {
-    editor.commands.setContent(html)
+    editor.chain().setMeta('addToHistory', false).setContent(html).run()
   })
 })
 

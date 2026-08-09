@@ -37,7 +37,7 @@
   "scripts": {
     "build": "NODE_ENV=production bunx tsup",
     "dev": "bunx tsup --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5173",
     "test:unit": "bun test src",
     "test:unit:watch": "bun test --watch src",

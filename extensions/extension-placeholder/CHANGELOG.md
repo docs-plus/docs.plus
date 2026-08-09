@@ -2,7 +2,7 @@
 
 All notable changes to `@docs.plus/extension-placeholder` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] — 2026-06-16
+## [2.0.0] — 2026-08-07
 
 ### Highlights
 
@@ -17,6 +17,7 @@ All notable changes to `@docs.plus/extension-placeholder` are documented here. T
 
 ### Fixed
 
+- A non-text selection no longer puts `data-placeholder` on a wrapper node. `$anchor.parent` is a textblock only for a text selection, so a `NodeSelection` on an empty paragraph inside a blockquote or list item resolved to the wrapper and painted the hint on it. The guard now tests `node.type.isTextblock`.
 - `editor.setEditable()` refreshes the placeholder at runtime. With `showOnlyWhenEditable: true`, toggling read-only left a stale placeholder (or failed to restore it on re-enable): the editability gate lived in the plugin's `apply`, which `setEditable` does not re-run. The gate moved to `props.decorations`, which `view.updateState` re-runs.
 
 ### Documentation

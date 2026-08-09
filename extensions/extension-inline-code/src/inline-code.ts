@@ -1,4 +1,4 @@
-import { Mark, markInputRule, markPasteRule, mergeAttributes } from '@tiptap/core'
+import { InputRule, Mark, markInputRule, markPasteRule, mergeAttributes } from '@tiptap/core'
 import { Selection } from '@tiptap/pm/state'
 
 export interface InlineCodeOptions {
@@ -59,6 +59,16 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
     return ['code', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
 
+  // Upstream `@tiptap/extension-code` parity. Without these a host that loads
+  // `@tiptap/markdown` serializes the marked text with no backticks, so every
+  // code span silently degrades to prose on export.
+  markdownTokenName: 'codespan',
+
+  parseMarkdown: (token, helpers) =>
+    helpers.applyMark('inlineCode', [{ type: 'text', text: token.text || '' }]),
+
+  renderMarkdown: (node, helpers) => `\`${helpers.renderChildren(node)}\``,
+
   // Entry rides ProseMirror stored marks: on a collapsed caret these seed the
   // mark for the next char without inserting a zero-width space into the doc.
   addCommands() {
@@ -95,16 +105,36 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
         ) {
           return false
         }
+        // `false` still dispatches `tr` — it only declines the keypress, so the
+        // browser keeps its native motion (in RTL, ArrowRight moves the caret).
         return editor.commands.command(({ tr, dispatch }) => {
           if (dispatch) dispatch(tr.removeStoredMark(this.type))
-          return true
+          return false
         })
       }
     }
   },
 
   addInputRules() {
-    return [markInputRule({ find: inputRegex, type: this.type })]
+    const rule = markInputRule({ find: inputRegex, type: this.type })
+    return [
+      new InputRule({
+        find: rule.find,
+        // `HardBreak.renderText()` yields a newline, which `[^`]+` matches, so
+        // a span would form across the break. A leaf with no `renderText` is
+        // worse: core falls back to the 6-character `%leaf%` for one position
+        // and the skewed range can land outside the block.
+        handler: (props) => {
+          const { from, to } = props.range
+          if (from < 0) return null
+          let spansInlineLeaf = false
+          props.state.doc.nodesBetween(from, to, (node) => {
+            if (node.isInline && !node.isText) spansInlineLeaf = true
+          })
+          return spansInlineLeaf ? null : rule.handler(props)
+        }
+      })
+    ]
   },
 
   addPasteRules() {

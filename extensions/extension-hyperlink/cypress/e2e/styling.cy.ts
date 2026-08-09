@@ -47,6 +47,25 @@ const ruleExists = (doc: Document, selector: string): boolean => {
   })
 }
 
+/** Concatenated text of every `:root` rule in the shipped sheet. */
+const rootRuleText = (doc: Document): string => {
+  const sheets = Array.from(doc.styleSheets) as CSSStyleSheet[]
+  return sheets
+    .flatMap((sheet) => {
+      try {
+        return Array.from(sheet.cssRules).filter(
+          (rule): rule is CSSStyleRule =>
+            rule.constructor.name === 'CSSStyleRule' &&
+            (rule as CSSStyleRule).selectorText === ':root'
+        )
+      } catch {
+        return []
+      }
+    })
+    .map((rule) => rule.cssText)
+    .join('\n')
+}
+
 describe('Default stylesheet — packaging, tokens, class contract', () => {
   beforeEach(() => {
     cy.visitPlayground()
@@ -70,12 +89,15 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
   })
 
   describe('--hl-* design tokens', () => {
-    DOCUMENTED_CSS_VARS.forEach((name) => {
-      it(`${name} resolves to a non-empty value on :root`, () => {
-        cy.document().then((doc) => {
-          const value = getComputedStyle(doc.documentElement).getPropertyValue(name).trim()
-          expect(value, `${name} should be defined`).to.not.equal('')
-        })
+    // Read the shipped `:root` rule text, not `getComputedStyle`: the playground
+    // injects nine of these tokens on `html[data-theme]`, which outranks `:root`
+    // and would keep the assertions green after they were deleted from the sheet.
+    it('declares every documented token on :root', () => {
+      cy.document().then((doc) => {
+        const rootText = rootRuleText(doc)
+        for (const name of DOCUMENTED_CSS_VARS) {
+          expect(rootText, `${name} should be declared on :root`).to.include(`${name}:`)
+        }
       })
     })
 
@@ -160,22 +182,8 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
     // (flaky across Electron versions).
     it('defines the core --hl-* color tokens with light-dark() on :root', () => {
       cy.document().then((doc) => {
-        const sheets = Array.from(doc.styleSheets) as CSSStyleSheet[]
-        const rootRules = sheets.flatMap((sheet) => {
-          try {
-            return Array.from(sheet.cssRules).filter(
-              (rule): rule is CSSStyleRule =>
-                rule.constructor.name === 'CSSStyleRule' &&
-                (rule as CSSStyleRule).selectorText === ':root'
-            )
-          } catch {
-            return []
-          }
-        })
-
-        expect(rootRules.length, ':root rule must exist').to.be.gte(1)
-
-        const rootText = rootRules.map((r) => r.cssText).join('\n')
+        const rootText = rootRuleText(doc)
+        expect(rootText, ':root rule must exist').to.not.equal('')
         for (const token of ['--hl-bg', '--hl-fg', '--hl-accent']) {
           expect(rootText).to.match(new RegExp(`${token}\\s*:\\s*light-dark\\(`))
         }

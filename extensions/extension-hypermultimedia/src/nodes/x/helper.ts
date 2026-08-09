@@ -66,7 +66,7 @@ function measureEmbedHeight(element: HTMLElement): number {
   )
 }
 
-export interface XEmbedHeightSyncOptions {
+interface XEmbedHeightSyncOptions {
   /** Reserved shell height before the widget reports a real size. */
   minHeight: number
   /** When true, host uses fluid/auto height and only min-height tracks growth. */
@@ -238,7 +238,7 @@ function whenTwttrReady(signal?: AbortSignal): Promise<Twttr> {
   })
 }
 
-export function loadXScript(signal?: AbortSignal): Promise<Twttr> {
+function loadXScript(signal?: AbortSignal): Promise<Twttr> {
   if (signal?.aborted) {
     return Promise.reject(new DOMException('Aborted', 'AbortError'))
   }
@@ -263,12 +263,12 @@ export function loadXScript(signal?: AbortSignal): Promise<Twttr> {
   })
 }
 
-export function sanitizeXEmbedHtml(html: string): string {
+function sanitizeXEmbedHtml(html: string): string {
   return HTMLSanitizer.sanitize(html, { hrefHosts: X_OEMBED_HREF_HOSTS })
 }
 
 /** Minimal blockquote widgets.js needs when oEmbed is empty or scrubbed away. */
-export function seedXEmbedMarkup(wrapper: HTMLElement, statusUrl: string): void {
+function seedXEmbedMarkup(wrapper: HTMLElement, statusUrl: string): void {
   if (hasRenderableXEmbed(wrapper)) return
 
   const url = normalizeXUrl(statusUrl)
@@ -284,7 +284,7 @@ export function seedXEmbedMarkup(wrapper: HTMLElement, statusUrl: string): void 
   wrapper.append(blockquote)
 }
 
-export async function fetchOEmbedHtml(
+async function fetchOEmbedHtml(
   params: Record<string, string | number>,
   signal?: AbortSignal
 ): Promise<string> {

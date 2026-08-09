@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
 // Stored-mark entry: a collapsed-caret toggle seeds the mark for the next typed
-// char with NO zero-width space in the document (the old ZWSP insertion is gone).
+// char with no zero-width space in the document.
 
 describe('inline code — stored-mark caret entry', () => {
   beforeEach(() => {
@@ -13,10 +13,7 @@ describe('inline code — stored-mark caret entry', () => {
     cy.getEditor().then((e) => e.chain().focus('end').toggleInlineCode().run())
     cy.typeInEditor('x')
     cy.get('#editor code').should('have.text', 'x')
-    cy.getEditor().should((e) => {
-      // getText() === 'x' (not 'x​') already proves no zero-width space leaked.
-      expect(e.getText()).to.equal('x')
-    })
+    cy.getEditor().should((e) => expect(e.getText()).to.equal('x')) // no zero-width space
   })
 
   it('toggle-on then off without typing leaves a clean, empty document', () => {

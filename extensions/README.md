@@ -38,7 +38,7 @@ Two axes, never one word for both jobs:
 
 ## Release policy
 
-[RELEASE_POLICY.md](../RELEASE_POLICY.md) — versioning, lockstep Phase 2, soak/promotion, CHANGELOG style.
+[RELEASE_POLICY.md](../RELEASE_POLICY.md) — versioning, lockstep Phase 2, release readiness, CHANGELOG style.
 
 Cutover tracker: [.cursor/docs/extension-version-cutover.md](../.cursor/docs/extension-version-cutover.md).
 
@@ -61,6 +61,16 @@ bash scripts/extension-preflight.sh
 ```
 
 Package list and gate metadata: `scripts/publishable-extensions.ts` (also imported by `release-family.ts`). CI sets `EXTENSION_DIST_READY=1` after `build-extensions` so Cypress skips per-package `pretest` rebuilds.
+
+To work on one extension, scope all three scripts with `EXT_ONLY` — space-separated directory names, the same variable CI passes per matrix job:
+
+```sh
+EXT_ONLY=extension-indent bash scripts/build-extensions.sh
+EXT_ONLY=extension-indent EXTENSION_DIST_READY=1 bash scripts/run-tests.sh --extensions
+EXT_ONLY=extension-indent bash scripts/extension-preflight.sh
+```
+
+`build-extensions.sh` builds `floating-popover` and `floating-tooltip` on every run, whatever `EXT_ONLY` holds, so hyperlink and hypermultimedia never miss the two packages they bundle. Separately, hypermultimedia's playground fixture imports `@docs.plus/extension-hyperlink`, so scope that pair together: `EXT_ONLY="extension-hyperlink extension-hypermultimedia"`.
 
 ## Announcements
 

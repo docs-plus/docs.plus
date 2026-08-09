@@ -25,6 +25,8 @@ bun add @docs.plus/extension-hypermultimedia
 
 Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
 
+Upgrading from `1.x`? Stored node types are renamed to camelCase and `Twitter` becomes `x` — see the [`1.x` → `2.0` migration guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md#migrating-from-1x-to-20).
+
 Co-install [`@docs.plus/extension-hyperlink`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink) when both marks and media share one editor — see [Paste precedence](#paste-precedence).
 
 ## Quickstart
@@ -33,11 +35,13 @@ One `HyperMultimediaKit.configure` call adds every node; pass an options object 
 
 ```ts
 import { Editor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 import '@docs.plus/extension-hypermultimedia/styles.css'
 
 new Editor({
   extensions: [
+    StarterKit,
     HyperMultimediaKit.configure({
       Image: { inline: true, allowBase64: true },
       Vimeo: { inline: true },
@@ -63,7 +67,7 @@ With `@tiptap/markdown` loaded, every media node round-trips through typed `![al
 | `loom`       | `![loom](src)`                                              |
 | `x`          | `![x](src)`                                                 |
 
-Reserved alts (`audio`, `video`, `youtube`, …) route to the matching node even when a GFM image token would otherwise create an `image` node. Provider URLs in `[label](url)` link syntax stay hyperlinks; only the typed `![…](url)` form creates embed nodes. Pasting a bare media URL uses extension paste handlers (embed node); a bare URL line in a `.md` file does not become an embed unless you use typed `![…](url)` syntax or paste the URL directly.
+Reserved alts (`audio`, `video`, `youtube`, …) route to the matching node instead of the `image` node a GFM image token would otherwise create. Routing needs two things: the node must be enabled in the kit, and the URL must validate for that node type — a recognized media file extension for `audio`/`video`, a provider URL for the embeds. A token that fails either check imports as a plain `image` node, so `![audio](https://files.example.com/podcast?id=42)` becomes an image. Provider URLs in `[label](url)` link syntax stay hyperlinks; only the typed `![…](url)` form creates embed nodes. Pasting a bare media URL uses extension paste handlers (embed node); a bare URL line in a `.md` file does not become an embed unless you use typed `![…](url)` syntax or paste the URL directly.
 
 Per-node markdown details: [Nodes](#nodes) → each node's README.
 
@@ -76,6 +80,7 @@ Kit-level options on `HyperMultimediaKit.configure({ … })`:
 | `Image`, `Audio`, `Video`, `Youtube`, `Vimeo`, `SoundCloud`, `Spotify`, `Loom`, `X` | enabled          | Per-node options object, `true`, or `false` to disable. Every node except `X` also accepts `resizeGripper: false`.                                 |
 | `mediaToolbar`                                                                      | built-in toolbar | Toolbar factory — return your own element, or `null` to render a host surface. See [Build your own toolbar](#build-your-own-toolbar).              |
 | `mediaActions`                                                                      | built-in actions | Rewrites the resolved toolbar action list per node. See [Customizing actions](#customizing-actions).                                               |
+| `mediaToolbarIcons`                                                                 | Material icons   | Swaps toolbar and menu SVG markup by icon key. See [Customizing actions](#customizing-actions).                                                    |
 | `replaceUrlPopover`                                                                 | built-in editor  | Replace URL dialog content factory — return your own element, or `null` to render a host surface. See [Customizing actions](#customizing-actions). |
 | `isUploadedMedia`                                                                   | `undefined`      | Marks image/video/audio nodes as host uploads so View original stays hidden for them. See [Customizing actions](#customizing-actions).             |
 | `loadingShell`                                                                      | `true`           | Loading overlay: `true` for the built-in shell, `false` for none, or a factory replacing the overlay UI. See [Loading shell](#loading-shell).      |
@@ -98,7 +103,7 @@ editor.commands.setX({ src: 'https://x.com/user/status/123' })
 editor.commands.setLoom({ src: 'https://www.loom.com/share/abcdef1234567890' })
 ```
 
-Every command also accepts layout options: `width`, `height`, `margin`, `float`, `clear`, `display`, `justifyContent`. Provider embeds accept the player options documented per node (for example YouTube `controls`, `start`, `modestbranding`) — see [Embeds](#embeds).
+Every command also accepts layout options: `width`, `height`, `margin`, `float`, `clear`, and `display`; `justifyContent` is accepted by every command except `setImage`, whose node has no such attribute. Provider embeds accept the player options documented per node (for example YouTube `controls`, `start`, `modestbranding`) — see [Embeds](#embeds).
 
 ## Styling
 
@@ -109,7 +114,7 @@ media toolbar, and node-specific X/Loom/Spotify embed styles:
 import '@docs.plus/extension-hypermultimedia/styles.css'
 ```
 
-Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the toolbar, loading shell, gripper, and caption follow the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and they flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. The X and Loom embed plates deliberately key on the node's `theme` attribute (the `X.theme` / `Loom.theme` kit options) instead, so they match what the embedded widget renders. Override any token to retheme:
+Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the toolbar, loading shell, gripper, and caption follow the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and they flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. The X embed plate deliberately keys on the node's `theme` attribute (the `X.theme` kit option) instead, so it matches what the embedded widget renders. Override any token to retheme:
 
 | Token                         | Description                                |
 | ----------------------------- | ------------------------------------------ |
@@ -341,7 +346,7 @@ HyperMultimediaKit.configure({
 })
 ```
 
-A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run(ctx), renderSubmenu?(ctx), dividerAfter? }`; built-in bricks omit `icon` — Material defaults resolve by `id` (and `align:<placement>` for alignment). Custom bricks omit `icon` too and supply SVG via `mediaToolbarIcons`, or set `icon` for a one-off override. `dividerAfter` renders a separator after the action (the margin button uses it).
+A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisible?(ctx), isActive?(ctx), run?(ctx), renderSubmenu?(ctx), dividerAfter? }`. `run` and `renderSubmenu` are mutually exclusive: when both are set, `renderSubmenu` wins and `run` never fires. Built-in bricks omit `icon` — Material defaults resolve by `id` (and `align:<placement>` for alignment). Custom bricks omit `icon` too and supply SVG via `mediaToolbarIcons`, or set `icon` for a one-off override. `dividerAfter` renders a separator after the action (the margin button uses it).
 
 `mediaToolbarIcons` swaps SVG markup without touching toolbar layout. Keys:
 
@@ -437,7 +442,7 @@ Adopting the skin? These class names are the stable styling contract:
 
 ### Caption
 
-Every media node view has an editable `<figcaption>`; the text is stored in the node's `caption` attribute, which is the source of truth — it persists through collaboration, JSON, and same-editor copy/paste. Two limits: markdown export keeps `![alt](src)` only, and standalone-HTML `<figure>/<figcaption>` round-trip (render **and** parse) is supported for `image` only. Video, audio, embeds, and X keep the editable caption and attribute but emit no `<figure>` in HTML, so re-importing exported HTML can't resurrect a caption as stray text.
+Every media node view has an editable `<figcaption>`; the text is stored in the node's `caption` attribute, which is the source of truth — it persists through collaboration and JSON. Two limits: markdown export keeps `![alt](src)` only, and HTML `<figure>/<figcaption>` round-trip (render **and** parse) is supported for `image` only. Video, audio, embeds, and X keep the editable caption and attribute but emit no `<figure>` in HTML, so every path that serializes to HTML — clipboard copy/paste and the toolbar Copy action — drops their caption, and re-importing exported HTML can't resurrect one as stray text.
 
 ## Resize
 
@@ -469,19 +474,25 @@ Hyperlink.configure({
 
 ## Image file paste (`editorFileUpload`)
 
-Pasting an image **file** (a screenshot, a copied image) never inserts base64 into the document. The paste handler calls `preventDefault()` and dispatches a `CustomEvent` named `editorFileUpload` on `document` with `{ file, editor }` in `detail` — the host decides where the bytes go (upload, blob URL, …) and inserts the node itself:
+Pasting an image **file** (a screenshot, a copied image) never inserts base64 into the document. The paste handler calls `preventDefault()` and dispatches one `CustomEvent` named `editorFileUpload` on `document` with `{ files, editor }` in `detail` — every image on the clipboard arrives in that one event, and the host decides where the bytes go (upload, blob URL, …) and inserts the nodes itself:
 
 ```ts
 import type { Editor } from '@tiptap/core'
 
 document.addEventListener('editorFileUpload', (event) => {
-  const { file, editor } = (event as CustomEvent<{ file: File; editor: Editor }>).detail
-  if (!file?.type.startsWith('image/')) return
+  const { files, editor } = (event as CustomEvent<{ files: File[]; editor: Editor }>).detail
 
-  const objectUrl = URL.createObjectURL(file) // or upload and use the remote URL
-  editor.commands.setImage({ src: objectUrl, alt: file.name })
+  for (const file of files) {
+    const objectUrl = URL.createObjectURL(file) // or upload and use the remote URL
+    editor.commands.setImage({ src: objectUrl, alt: file.name })
+    // `setImage` leaves a NodeSelection on the node it just inserted, so the
+    // next insert would replace it. Collapse past it between files.
+    editor.commands.setTextSelection(editor.state.doc.content.size)
+  }
 })
 ```
+
+If your handler awaits anything before inserting (an upload, an image decode), insert sequentially — otherwise the nodes land in completion order rather than clipboard order.
 
 Without a listener, pasted image files are dropped silently. Pasted image **URLs** (plain text) insert an `image` node directly; `data:` URLs follow the `allowBase64` option.
 
@@ -517,11 +528,15 @@ Embed URL parsing rejects invalid hosts before insert (`guards/invalid-urls` in 
 
 ## TypeScript
 
-Definitions ship in `dist/`. Main exports: `HyperMultimediaKit` (bundles all nine media nodes — enable, configure, or disable each via kit options; the nodes are not individually exported), `isMediaUrl` plus per-host validators (`isValidYoutubeUrl`, `isValidXUrl`, …), loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. Insert commands (`setImage`, `setX`, …) are typed on `editor.commands` through the bundled `MediaPublicCommands` augmentation, and their option types are exported (`SetImageOptions`, `UpdateImageDimensionsParams`, `SetVideoOptions`, `SetAudioOptions`, `SetYoutubeVideoOptions`, `SetVimeoOptions`, `SetSoundCloudOptions`, `SetSpotifyOptions`, `SetLoomOptions`, `AddXOptions`). Per-node embed options live under each node's module — see [Nodes](#nodes).
+Definitions ship in `dist/`. Main exports: `HyperMultimediaKit` (bundles all nine media nodes — enable, configure, or disable each via kit options; the nodes are not individually exported), `isMediaUrl` plus per-host validators (`isValidYoutubeUrl`, `isValidXUrl`, …), `detectMediaType(url)` and its `MediaNodeType` union — `detectMediaType` also resolves raw video/audio URLs, which `isMediaUrl` skips on purpose so pasted `.mp4`/`.mp3` links stay links — loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. Insert commands (`setImage`, `setX`, …) are typed on `editor.commands` through the bundled `MediaPublicCommands` augmentation, and their option types are exported (`SetImageOptions`, `UpdateImageDimensionsParams`, `SetVideoOptions`, `SetAudioOptions`, `SetYoutubeVideoOptions`, `SetVimeoOptions`, `SetSoundCloudOptions`, `SetSpotifyOptions`, `SetLoomOptions`, `AddXOptions`). Per-node embed options live under each node's module — see [Nodes](#nodes).
 
-## Family
+## Part of docs.plus
 
-Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+
+- Website: [docs.plus](https://docs.plus)
+- Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)
+- Sibling extensions and recommended pairings (e.g. with hyperlink): [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md)
 
 ## Contributing
 

@@ -20,7 +20,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
   })
   const linkTextInput = createHTMLElement('input', {
     type: 'text',
-    value: link?.innerText || '',
+    value: link.innerText || '',
     placeholder: 'Enter link text'
   })
   const textError = createHTMLElement('div', {

@@ -1,7 +1,7 @@
 import { hideTooltip } from '@docs.plus/floating-tooltip'
 import type { Editor } from '@tiptap/core'
 
-import { HYPERLINK_MARK_NAME } from '../constants'
+import { HYPERLINK_MARK_NAME, OFFSCREEN_COORD_PX } from '../constants'
 import { createPopover, getDefaultController } from '../floating-popover'
 import type { CreateHyperlinkOptions, HyperlinkAttributes } from '../hyperlink'
 import createHyperlinkPopover from '../popovers/createHyperlinkPopover'
@@ -9,7 +9,6 @@ import { getHyperlinkOptions } from './getHyperlinkOptions'
 import { setActivePopoverOwner } from './popoverOwnership'
 
 const INPUT_FOCUS_DELAY_MS = 100
-const OFFSCREEN_COORD_PX = -9999
 
 /**
  * Open the create-hyperlink popover anchored to the current selection.

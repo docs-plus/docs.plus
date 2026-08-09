@@ -5,10 +5,10 @@
 Clean-room Cypress E2E runs against the built `dist/` — the same bytes an npm consumer installs. `docs-playground` (from `@docs.plus/playground`) serves the page shell on port 5174; this package commits only the editor fixture (`test/playground/main.ts`) and a one-line `tsconfig.json`. The fixture also loads `@docs.plus/extension-hyperlink` from `dist/` so paste/autolink collision specs match production wiring.
 
 ```sh
-bun run test            # build, then Cypress headless
+bun run test            # build this package, then Cypress headless
 bun run test:e2e        # Cypress headless against the current dist/ (run build first)
 bun run test:e2e:watch  # same, but opens the Cypress runner
-bun run playground      # playground only, http://127.0.0.1:5174
+bun run playground      # playground only, http://127.0.0.1:5174 (run build first)
 bun run docs:screenshots # regenerate README gallery PNGs in assets/
 ```
 
@@ -55,6 +55,10 @@ bun run build    # tsup → dist/ (ESM + CJS + d.ts + styles.css)
 bun run dev      # tsup --watch
 bun run typecheck
 ```
+
+**Fresh clone:** `dist/` is gitignored and `bun install` does not build it, so `bun run playground` and `bun run test:e2e` fail with a module-resolution error until a build runs. `bun run build` inside this package is not enough — run `bash scripts/build-extensions.sh` from the repo root instead. This package bundles the private `@docs.plus/floating-popover` and `@docs.plus/floating-tooltip` packages, whose `exports` also point at a gitignored `dist/`, so a package-local build stops first with `Could not resolve "@docs.plus/floating-popover"`. The playground fixture (`test/playground/main.ts`) also imports `@docs.plus/extension-hyperlink`, and `pretest` builds only this package, so that sibling's `dist/` has to exist too. The root script builds all four.
+
+**Restart the playground after a production build.** `bun run build` sets `NODE_ENV=production`, which turns on tsup's `clean` and empties `dist/` under a running `bun --hot` server. `bun run dev` (tsup --watch) does not clean, so it can rebuild while the playground runs.
 
 ESLint: from repo root, `bun run lint` (cascades into this package).
 

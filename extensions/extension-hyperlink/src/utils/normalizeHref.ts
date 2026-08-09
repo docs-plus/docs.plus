@@ -4,6 +4,9 @@ import { isBarePhone } from './phone'
 
 const SCHEME_RE = /^([a-z][a-z0-9+.-]*):/i
 
+/** Fragment / query / absolute-path / dot-relative refs. `//host` is handled by `hasRealScheme`. */
+const RELATIVE_REF_RE = /^([#?/]|\.\.?\/)/
+
 /**
  * Distinguish `scheme:opaque` (real URL) from `host:port` (relative ref
  * the browser would mis-resolve). `SCHEME_RE` alone matches both
@@ -55,6 +58,9 @@ export const normalizeHref = (raw: string, defaultProtocol: string = DEFAULT_PRO
   if (email.ok) return email.href
 
   if (hasRealScheme(trimmed)) return trimmed
+  // Relative refs are legitimate stored hrefs (markdown import, migrations);
+  // promoting them yields `https://#intro`, which `new URL` rejects outright.
+  if (RELATIVE_REF_RE.test(trimmed)) return trimmed
   return `${defaultProtocol}://${trimmed}`
 }
 

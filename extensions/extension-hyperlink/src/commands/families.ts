@@ -3,9 +3,9 @@
 // aliases share the canonical references so policy changes flow through
 // both names.
 
-import { editHyperlinkCommand } from '../helpers/editHyperlink'
 import { openCreateHyperlink } from '../openers/openCreateHyperlink'
 import type { URLDecisions } from '../url-decisions'
+import { editHyperlinkCommand } from './editHyperlinkCommand'
 import type { HyperlinkEngine } from './engine'
 import type { HyperlinkRawCommands } from './surface'
 
@@ -39,9 +39,9 @@ type EditFamily = Pick<
 export function editCommands(deps: EditCommandsDeps): EditFamily {
   const base = { markName: deps.markName, urls: deps.urls, validate: deps.validate }
   return {
-    editHyperlink: (attrs) => editHyperlinkCommand({ ...attrs, ...base })(),
-    editHyperlinkText: (newText) => editHyperlinkCommand({ newText, ...base })(),
-    editHyperlinkHref: (newURL) => editHyperlinkCommand({ newURL, ...base })()
+    editHyperlink: (attrs) => editHyperlinkCommand({ ...attrs, ...base }),
+    editHyperlinkText: (newText) => editHyperlinkCommand({ newText, ...base }),
+    editHyperlinkHref: (newURL) => editHyperlinkCommand({ newURL, ...base })
   }
 }
 
@@ -49,9 +49,11 @@ type UIFamily = Pick<HyperlinkRawCommands, 'openCreateHyperlinkPopover'>
 
 export function uiCommands(): UIFamily {
   return {
+    // Opening UI is a side effect, so a dry run (`editor.can()`) must report
+    // availability without mounting a popover and evicting the open one.
     openCreateHyperlinkPopover:
       (attributes) =>
-      ({ editor }) =>
-        openCreateHyperlink(editor, attributes ?? {})
+      ({ editor, dispatch }) =>
+        dispatch ? openCreateHyperlink(editor, attributes ?? {}) : true
   }
 }

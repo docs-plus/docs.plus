@@ -19,7 +19,7 @@ describe('SoundCloud layout on narrow columns', () => {
     })
   })
 
-  it('does not shrink below the committed height after a small resize', () => {
+  it('keeps the widget floor when the column is wider than attrs.width', () => {
     cy.getEditor().then((editor) => {
       editor.commands.setSoundCloud({
         src: 'https://soundcloud.com/forss/flickermood',

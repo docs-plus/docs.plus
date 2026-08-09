@@ -13,7 +13,7 @@ import { createPasteHandlerInteraction } from './pasteHandler'
 import { createLinkifyPasteRule } from './pasteRule'
 import type { LinkContext } from './types'
 
-export { buildUrlDecisions, createLinkContext } from './createLinkContext'
+export { createLinkContext } from './createLinkContext'
 export type { LinkContext } from './types'
 
 export interface HyperlinkInteractions {

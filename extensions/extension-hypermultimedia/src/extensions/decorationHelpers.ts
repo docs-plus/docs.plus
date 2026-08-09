@@ -1,22 +1,11 @@
 import { Fragment, Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { EditorState, Transaction } from '@tiptap/pm/state'
+import { Transaction } from '@tiptap/pm/state'
 import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
 import { DecorationSet } from '@tiptap/pm/view'
 
 export const HIDE_RESIZE_GRIPPER_META = 'hideResizeGripper'
 
 export type BuildDecorationsFunction = (doc: ProseMirrorNode) => DecorationSet
-
-export type PluginStateApplyFunction = (tr: Transaction, old: DecorationSet) => DecorationSet
-
-export interface DecorationPluginState {
-  init: (config: any, instance: { doc: ProseMirrorNode }) => DecorationSet
-  apply: PluginStateApplyFunction
-}
-
-export interface DecorationPluginProps {
-  decorations: (state: EditorState) => DecorationSet
-}
 
 export function shouldHideResizeGripper(tr: Transaction): boolean {
   return tr.getMeta(HIDE_RESIZE_GRIPPER_META) === true
@@ -68,45 +57,4 @@ export function transactionAffectsTrackedNodes(
     if (rangeHasTrackedType(tr.docs[i], step.from, step.to, targetNodeTypes)) return true
   }
   return false
-}
-
-export function transactionAffectsTargetDecorations(
-  tr: Transaction,
-  targetNodeTypes: string[]
-): boolean {
-  if (tr.getMeta(HIDE_RESIZE_GRIPPER_META) !== undefined) return true
-  return transactionAffectsTrackedNodes(tr, targetNodeTypes)
-}
-
-/** Rebuilds when target media nodes are added/removed or gripper visibility meta changes; otherwise maps. */
-export function createOptimizedDecorationApply(
-  buildDecorationsFunc: BuildDecorationsFunction,
-  targetNodeTypes: string[]
-): PluginStateApplyFunction {
-  return function (tr: Transaction, old: DecorationSet): DecorationSet {
-    if (transactionAffectsTargetDecorations(tr, targetNodeTypes)) {
-      return buildDecorationsFunc(tr.doc)
-    }
-    return tr.docChanged ? old.map(tr.mapping, tr.doc) : old
-  }
-}
-
-export function createDecorationPluginState(
-  buildDecorationsFunc: BuildDecorationsFunction,
-  targetNodeTypes: string[]
-): DecorationPluginState {
-  return {
-    init(_, { doc }: { doc: ProseMirrorNode }): DecorationSet {
-      return buildDecorationsFunc(doc)
-    },
-    apply: createOptimizedDecorationApply(buildDecorationsFunc, targetNodeTypes)
-  }
-}
-
-export function createDecorationPluginProps(): DecorationPluginProps {
-  return {
-    decorations(state: EditorState): DecorationSet {
-      return (this as any).getState(state)
-    }
-  }
 }

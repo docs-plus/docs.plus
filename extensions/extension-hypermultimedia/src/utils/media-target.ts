@@ -82,10 +82,7 @@ export function getMediaNodeType(target: HTMLElement): string | null {
   return target.getAttribute('data-node-name')
 }
 
-/**
- * Single source of truth for media node-type classification.
- * `asset` = downloadable local media (image/audio/video); everything else is a provider embed.
- */
+/** `asset` = downloadable local media; everything else is a provider embed. */
 const ASSET_NODE_TYPES = new Set(['image', 'audio', 'video'])
 
 export type MediaKind = 'asset' | 'embed'
@@ -94,7 +91,6 @@ export function mediaKind(nodeType: string | null): MediaKind {
   return nodeType != null && ASSET_NODE_TYPES.has(nodeType) ? 'asset' : 'embed'
 }
 
-/** Downloadable local-asset kinds (image/audio/video). */
 export function isDownloadableMedia(nodeType: string | null): boolean {
   return mediaKind(nodeType) === 'asset'
 }

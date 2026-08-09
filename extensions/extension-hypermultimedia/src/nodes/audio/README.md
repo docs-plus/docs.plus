@@ -20,7 +20,7 @@ HyperMultimediaKit.configure({
 
 ## Kit options vs node attributes
 
-`HyperMultimediaKit.configure({ Audio: { controls: true, … } })` sets schema defaults on each inserted node. The node view and `renderHTML` read **node attrs** (`controls`, `autoplay`, `loop`, `muted`, `preload`, `volume`) — not live kit options after insert. Override per insert via `setAudio({ … })`.
+`HyperMultimediaKit.configure({ Audio: { controls: true, … } })` sets schema defaults on each inserted node. The node view and `renderHTML` read **node attrs** (`controls`, `autoplay`, `loop`, `muted`, `preload`) — not live kit options after insert. Override per insert via `setAudio({ … })`.
 
 ## Settings
 
@@ -95,21 +95,6 @@ Hints whether and how the audio should load when the page loads.
 HyperMultimediaKit.configure({
   Audio: {
     preload: 'auto'
-  }
-})
-```
-
-### volume
-
-Sets the playback volume.
-
-- Target: `Node`
-- Default: `1`
-
-```js
-HyperMultimediaKit.configure({
-  Audio: {
-    volume: 0.5
   }
 })
 ```

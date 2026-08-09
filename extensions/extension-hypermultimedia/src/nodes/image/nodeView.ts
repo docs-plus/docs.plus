@@ -11,8 +11,8 @@ import {
   syncImageNodeLayout,
   wrapMediaWithLoadingShell
 } from '../../loading'
-import type { ImageOptions } from '../../types'
 import { ignoreNodeViewSubtreeMutation } from '../../utils/ignoreNodeViewMutation'
+import type { ImageOptions } from './types'
 
 export function createImageNodeView(options: ImageOptions, editor: Editor) {
   return ({

@@ -15,7 +15,7 @@
 
 Tiptap mark for inline code (`` `code` ``).
 
-It mirrors Tiptap's built-in `Code` mark — backtick input and paste rules, `<code>` rendering, `Mod-e` — and keeps code-mode entry and exit out of the document: a collapsed caret enters through a ProseMirror stored mark, never a placeholder character, and `ArrowRight` at the document end exits without inserting a space.
+It mirrors Tiptap's built-in `Code` mark — backtick input and paste rules, `<code>` rendering, `Mod-e`, and Markdown round-trip through `@tiptap/markdown` — and keeps code-mode entry and exit out of the document: a collapsed caret enters through a ProseMirror stored mark, never a placeholder character, and `ArrowRight` at the document end exits without inserting a space.
 
 ## Install
 
@@ -23,7 +23,7 @@ It mirrors Tiptap's built-in `Code` mark — backtick input and paste rules, `<c
 bun add @docs.plus/extension-inline-code
 ```
 
-Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x). Also requires an engine with RegExp lookbehind — Chrome 62+, Firefox 78+, Safari and iOS Safari 16.4+ — because the backtick rules are module-scope regex literals.
 
 The `0.x` line was monorepo-internal and never published. Upgrading from `@tiptap/extension-code`? See [Migrating](#migrating-from-tiptapextension-code) and the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/CHANGELOG.md#migrating-from-tiptapextension-code-and-unpublished-0x).
 
@@ -65,7 +65,7 @@ InlineCode.configure({
 | `toggleInlineCode()` | Toggle the mark. |
 | `unsetInlineCode()`  | Remove the mark. |
 
-On a collapsed caret these seed a stored mark, so the next character you type is code — no placeholder character enters the document.
+On a collapsed caret, `setInlineCode()` and `toggleInlineCode()` turning it on seed a stored mark, so the next character you type is code — no placeholder character enters the document. `unsetInlineCode()` and toggling off clear that stored mark, so the next character is plain.
 
 ## Keyboard shortcuts
 
@@ -79,7 +79,7 @@ On a collapsed caret these seed a stored mark, so the next character you type is
 - `excludes: '_'` — applying inline code removes every other mark from the selection (bold, italic, links); code text never stacks other marks. Upstream `@tiptap/extension-code` parity.
 - StarterKit's `code` mark claims the same `<code>` tag and `Mod-e`. InlineCode registers at priority 101 and wins backtick input, paste, and `Mod-e`; because the marks exclude each other, `toggleInlineCode` over a `code` span **replaces** `code` with `inlineCode` — visually identical (both render `<code>`), but `isActive('code')` flips to `isActive('inlineCode')`. Keep the schema to a single `<code>` mark with `StarterKit.configure({ code: false })`.
 - `code: true` on the mark spec suppresses other extensions' input rules (typography, bold) inside code spans.
-- `Mod-e` is the only shortcut — `Mod-Shift-c` was removed in 2.0.0.
+- `Mod-e` is the only toggle chord — `Mod-Shift-c` was removed in 2.0.0.
 
 ## Migrating from `@tiptap/extension-code`
 
@@ -91,9 +91,13 @@ On a collapsed caret these seed a stored mark, so the next character you type is
 
 Exports (all named): `InlineCode`, `InlineCodeOptions`, `inputRegex`, `pasteRegex`. Commands: `setInlineCode`, `toggleInlineCode`, `unsetInlineCode`.
 
-## Family
+## Part of docs.plus
 
-Sibling packages: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md).
+This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+
+- Website: [docs.plus](https://docs.plus)
+- Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)
+- Sibling extensions: [extensions/README.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/README.md)
 
 ## Contributing
 

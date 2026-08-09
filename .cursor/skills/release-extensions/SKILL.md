@@ -48,7 +48,7 @@ bun publish --tag latest --otp <6-digit>
 - Release notes use the state-machine `awk` slice; the range form fails because both ends can match the same heading:
 
 ```bash
-awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<pkg>/CHANGELOG.md
+awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<pkg>/CHANGELOG.md
 ```
 
 - Announcement happens after npm publish:
@@ -65,7 +65,7 @@ awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions
 - Extensions are leaf packages; lockstep is policy, not graph-forced.
 - Rotating per-package cutover state lives in [`.cursor/docs/extension-version-cutover.md`](../../docs/extension-version-cutover.md) and is deleted with the lockstep switch-flip PR.
 - Family-release script invariants in `scripts/release-family.ts`:
-  - Use `spawnSync` helper calls, no shell strings, so OTP never lands in `ps aux` or shell history.
+  - Use `spawnSync` helper calls, no shell strings, so the OTP stays off the shell command line and out of shell history. The spawned `bun publish` still carries it in its own argv, so `ps` can read it for the life of that child.
   - GitHub release creation is idempotent across resumes: iterate `[...published, ...skipped]` and guard each with `gh release view <tag>`.
   - Push an explicit tag list only. Never run `git push --tags`.
 - CLI flags: `--dry-run`, `--allow-noop`, `--generate-noop-changelogs`, `--help`. Publishes always target the default `latest` tag; the former `--tag <next|latest>` flag was removed with the stable-only decision.
@@ -76,7 +76,7 @@ awk '/^## \[/{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions
   4. per-package `prepublishOnly`;
   5. clean working tree and `HEAD` matches `origin/main`;
   6. `npm whoami` and `git user.email`;
-  7. local and remote tag collisions;
+  7. local and remote tag collisions — except a local tag on `HEAD` whose version is already on npm, which a previous run wrote;
   8. no-op detection via `git diff <prevTag>..HEAD -- extensions/<pkg>/src/`.
 - CHANGELOG style guide:
   - Themed sections per major: Highlights, Breaking, Added, Changed, Fixed, Security, Removed, Documentation, Internal.

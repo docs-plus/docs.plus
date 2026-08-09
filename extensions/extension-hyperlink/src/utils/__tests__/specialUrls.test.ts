@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { getSpecialUrlInfo } from '../specialUrls'
+import { getSpecialUrlInfo, type SpecialUrlInfo } from '../specialUrls'
 
 /**
  * Pins the catalog in `specialUrls.ts` — a renamed type, dropped scheme, or
@@ -10,7 +10,7 @@ import { getSpecialUrlInfo } from '../specialUrls'
 
 type Case = {
   url: string
-  expected: { type: string; title: string; category: string }
+  expected: SpecialUrlInfo
 }
 
 const SCHEME_CASES: Case[] = [
