@@ -13,7 +13,7 @@
 #     (`app_deploy`, `has_observability`, `has_uptime_kuma`). Ordered:
 #     app → observability → uptime-kuma (fail-fast).
 #   - pull_request to main: quality gates + build verification only.
-#   - schedule (Sunday 00:00 UTC): security audit only.
+#   - schedule (Sunday 00:00 UTC): security audit + all five extension suites.
 #   - workflow_dispatch: manual run with `force_deploy` / `skip_quality_gates`.
 #
 # Architectural notes (decided 2026-05, see commit history):
@@ -34,7 +34,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Weekly security scan (Sunday 00:00 UTC)
+    # Weekly security scan + unfiltered extension suites (Sunday 00:00 UTC)
     - cron: '0 0 * * 0'
   workflow_dispatch:
     inputs:
@@ -127,9 +127,13 @@ jobs:
     timeout-minutes: 5
     needs: [triage]
     # Skip on `(build): observability` infra-only commits (skip_app_ci=true from
-    # triage) or when there's no app CI to run (schedule runs security only).
+    # triage). The weekly cron DOES run this — it is the only unfiltered
+    # full-matrix run, so a suite nobody touches still gets exercised. `triage`
+    # is skipped on schedule (it parses a commit message), hence `!cancelled()`
+    # and the empty-string outputs it leaves behind.
     if: |
-      github.event_name != 'schedule' &&
+      !cancelled() &&
+      needs.triage.result != 'failure' &&
       needs.triage.outputs.skip_app_ci != 'true'
     permissions:
       contents: read
@@ -148,7 +152,9 @@ jobs:
         env:
           # Fallback (NEW.md §7.4): no reliable diff base -> treat all five as changed.
           # Covers manual dispatch AND a first push / history rewrite (before == all-zeros SHA).
-          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event.before == '0000000000000000000000000000000000000000' }}
+          # `schedule` is deliberate, not a fallback: the weekly cron is the only
+          # automatic run that is not path-filtered, so it exercises all five.
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event.before == '0000000000000000000000000000000000000000' }}
           R_INDENT: ${{ steps.filter.outputs.extension-indent }}
           R_HYPERLINK: ${{ steps.filter.outputs.extension-hyperlink }}
           R_HMM: ${{ steps.filter.outputs.extension-hypermultimedia }}
