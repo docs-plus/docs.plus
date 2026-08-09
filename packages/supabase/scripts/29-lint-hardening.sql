@@ -216,6 +216,10 @@ DECLARE
         'fetch_mentioned_users', 'create_direct_message_channel',
         -- Workspace / presence
         'join_workspace', 'update_user_online_at',
+        -- Owned-documents member roster (Settings > Documents). Both are
+        -- SECURITY DEFINER and member-gate internally, so §5 above sweeps
+        -- away the grant their own script makes and only this list restores it.
+        'get_document_member_previews', 'get_document_members',
         -- Push subscriptions (per-user)
         'register_push_subscription', 'unregister_push_subscription',
         -- Admin-dashboard browser RPCs — bodies self-gate on is_admin;
