@@ -35,8 +35,8 @@ const focusMediaAnchor = (editor: Editor, anchor: MediaCommentAnchor): boolean =
   if (nodePos == null) return false
 
   // PM-managed NodeSelection renders the selection ring without a foreign DOM
-  // mutation (which would recreate the media node view) and without focusing the
-  // editor (which would pop the iOS keyboard).
+  // mutation, which would recreate the media node view. NodeSelection also does not
+  // focus the editor, which would pop the iOS keyboard.
   try {
     editor.view.dispatch(
       editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, nodePos))

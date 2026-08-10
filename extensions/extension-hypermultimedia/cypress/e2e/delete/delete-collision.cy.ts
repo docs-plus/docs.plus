@@ -53,9 +53,9 @@ describe('delete-key collision between text editing and hover controls', () => {
     cy.realPress('Backspace')
 
     // Upstream joinBackward deletes a leaf atom before the cut, so one
-    // Backspace removes the image through the standard edit pipeline; the
-    // surrounding paragraphs stay untouched and the caret stays a text cursor
-    // (no NodeSelection, no hover-controls involvement).
+    // Backspace removes the image through the standard edit pipeline.
+    // The surrounding paragraphs stay untouched and the caret stays a text
+    // cursor (no NodeSelection, no hover-controls involvement).
     cy.nodeCount('image').should('eq', 0)
     cy.get('#editor .ProseMirror p').first().should('have.text', 'hello world')
     cy.get('#editor .ProseMirror p').last().should('have.text', 'below')

@@ -3,10 +3,9 @@ import { describe, expect, it } from 'bun:test'
 import { DANGEROUS_SCHEME_RE, getURLScheme, isSafeHref, validateURL } from '../validateURL'
 
 /**
- * Pins `validateURL`, the gate every write boundary calls. linkifyjs alone
- * would wave through `https://googlecom` (no TLD) and reject
- * `whatsapp://send` (unknown scheme) — the helper exists to flip both
- * decisions.
+ * Pins `validateURL`, the gate every write boundary calls. `linkifyjs` alone
+ * would wave through `https://googlecom` (no TLD) and reject `whatsapp://send`
+ * (unknown scheme). The helper exists to flip both decisions.
  */
 describe('validateURL', () => {
   describe('rejects empty / whitespace input', () => {
@@ -45,10 +44,10 @@ describe('validateURL', () => {
     it('accepts IPv4 literal', () => {
       expect(validateURL('http://127.0.0.1')).toBe(true)
     })
-    // Bracketed IPv6 literals (`http://[::1]`) are not asserted here:
-    // `hasPlausibleHost` accepts them, but linkifyjs's URL matcher
-    // doesn't recognize the bracket form, so the assertion would pin
-    // a third-party quirk rather than our own contract.
+    // Bracketed IPv6 literals (`http://[::1]`) are not asserted here.
+    // `hasPlausibleHost` accepts them, but linkifyjs's URL matcher doesn't
+    // recognize the bracket form. The assertion would then pin a third-party
+    // quirk rather than our own contract.
   })
 
   describe('bare E.164 phone numbers', () => {

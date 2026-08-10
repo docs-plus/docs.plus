@@ -85,7 +85,7 @@ HyperMultimediaKit.configure({
 
 ## Resize
 
-Hover the image (desktop) or tap it (touch) to activate the gripper: four side handles resize one axis, four corner handles resize both (hold Shift to lock the aspect ratio). Sizes clamp to a minimum of 160×80 and to the editor content column. Committed `width` / `height` live on the node attributes, so resizes persist and sync through collaboration. Press Escape during a drag to cancel without committing.
+Hover the image (desktop) or tap it (touch) to activate the gripper. Four side handles resize one axis, and four corner handles resize both (hold Shift to lock the aspect ratio). Sizes clamp to a minimum of 160×80 and to the editor content column. Committed `width` / `height` live on the node attributes, so resizes persist and sync through collaboration. Press Escape during a drag to cancel without committing.
 
 ## Toolbar
 

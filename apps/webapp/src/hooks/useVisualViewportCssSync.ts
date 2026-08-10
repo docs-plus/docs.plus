@@ -51,8 +51,8 @@ export function useVisualViewportCssSync({
 
     const handleViewportScroll = () => {
       scheduleSync()
-      // Reset iOS's native layout-viewport scroll so the fixed shell stays glued to the visual
-      // viewport — document pad always, landing only while the mobile shell is pinned.
+      // Reset iOS's native layout-viewport scroll so the fixed shell stays glued to the
+      // visual viewport. Document pad always, landing only while the mobile shell is pinned.
       const pinnedShell = mode === 'document' || (mode === 'landing' && isHomeMobileLayout())
       if (!pinnedShell) return
 

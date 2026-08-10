@@ -28,8 +28,8 @@ describe('media loading shell', () => {
 
   // Regression: the loading overlay must not be an ARIA live-region inside the editor.
   // Focus-trap libraries (@floating-ui/react markOthers, aria-hidden) collect
-  // [aria-live],[role=status], walk up through .ProseMirror, and stamp `inert` across
-  // the doc — ProseMirror then recreates the node views, reloading the embed.
+  // [aria-live],[role=status], walk up through .ProseMirror, and stamp `inert`
+  // across the doc. ProseMirror then recreates the node views, reloading the embed.
   it('does not host an aria-live / role=status region inside the editor', () => {
     cy.getEditor().then((editor) => {
       editor.commands.setYoutubeVideo({ src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' })

@@ -77,7 +77,7 @@ export const STAGE_TIMEOUT_MS = {
 
 /**
  * Stages compose their own User-Agent around this rather than sharing one
- * string: `htmlScrape.ts` needs a compound UA for anti-bot allowlists, and
- * `handlers/reddit.ts` a plain identifier per Reddit's API guidelines.
+ * string. `htmlScrape.ts` needs a compound UA for anti-bot allowlists, and
+ * `handlers/reddit.ts` needs a plain identifier per Reddit's API guidelines.
  */
 export const BOT_USER_AGENT = 'DocsplusBot/1.0' as const

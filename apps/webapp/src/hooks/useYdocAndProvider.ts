@@ -18,10 +18,10 @@ import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
 /**
- * Collab provider status (store.settings.providerStatus):
- * saving → synced → saved (local edits, in-memory sync, DB persistence).
- * Terminal branches: offline, error, unauthenticated (auth-stop + no session).
- * Self-healing disconnects defer 'error' behind DISCONNECT_ERROR_GRACE_MS.
+ * Collab provider status (store.settings.providerStatus). The saving → synced → saved
+ * ladder covers local edits, in-memory sync, and DB persistence. Terminal branches are
+ * offline, error, and unauthenticated (auth-stop + no session). Self-healing disconnects
+ * defer 'error' behind DISCONNECT_ERROR_GRACE_MS.
  */
 
 type DeviceType = 'desktop' | 'mobile' | 'tablet'

@@ -13,8 +13,8 @@ export class HealthCheck {
   }
 
   // Counted at read time, like the /metrics providers. An inc/dec pair drifted
-  // both ways: onConnect runs before onAuthenticate, so a rejected token adds a
-  // connection that never disconnects, and a direct connection's unload fires
+  // both ways. onConnect runs before onAuthenticate, so a rejected token adds a
+  // connection that never disconnects. A direct connection's unload fires
   // onDisconnect with no matching onConnect, which could take the count negative.
   getWebsocketStatus() {
     const documents = this.server?.documents
@@ -89,9 +89,10 @@ export class HealthCheck {
       return { status: 'unhealthy', lastCheck: new Date(), error: 'Database extension not found' }
     }
 
-    // Presence-based: this extension only sees the Database extension object, not a
-    // live connection, so report 'configured' (wired — NOT a liveness claim, which
-    // would mask a DB outage). Real DB liveness is the worker + REST /health probes.
+    // Presence-based: this extension only sees the Database extension object, not
+    // a live connection. Report 'configured', meaning wired — NOT a liveness claim,
+    // which would mask a DB outage. Real DB liveness is the worker + REST /health
+    // probes.
     return {
       status: 'configured',
       lastCheck: new Date()

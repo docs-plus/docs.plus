@@ -11,9 +11,9 @@ interface CloseButtonProps {
   'aria-label'?: string
 }
 
-/** Hover and pressed fills come from daisyUI's own btn-ghost, which resolves to an
- * opaque base-300 — theme-tracked and identical on base-100 headers and base-200
- * clusters, so no per-ground override is needed. */
+/** Hover and pressed fills come from daisyUI's own btn-ghost. It resolves to an opaque
+ * base-300 — theme-tracked, and identical on base-100 headers and base-200 clusters.
+ * No per-ground override is needed. */
 const CloseButton = ({
   onClick,
   size = 'sm',

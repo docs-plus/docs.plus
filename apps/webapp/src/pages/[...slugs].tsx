@@ -43,8 +43,8 @@ const Document = ({
   useAddDeviceTypeHtmlClass(isMobile)
 
   // Zustand's initial state has no provider, so the skeleton is part of the SSR HTML
-  // and survives the dynamic-chunk load without a remount; it unmounts exactly when
-  // the real layout mounts (provider created) and returns on doc switch (provider destroyed).
+  // and survives the dynamic-chunk load without a remount. The skeleton unmounts exactly
+  // when the real layout mounts (provider created), and returns on doc switch (provider destroyed).
   const hasProvider = useStore((state) => Boolean(state.settings.hocuspocusProvider))
 
   // Blocked viewers short-circuit BEFORE SlugPageLoader/DocumentPage — no provider, no WS,

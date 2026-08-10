@@ -149,9 +149,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
 
   renderMarkdown: (node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) => {
     // Serialize is a write boundary too: blank an unsafe href (mirrors renderHTML)
-    // and percent-encode what marked.js cannot tokenise — its href grammar stops
-    // at whitespace and the first `)`. The label is untouchable from here: the
-    // serializer keeps only the slices around `renderChildren()`.
+    // and percent-encode what marked.js cannot tokenise. The marked.js href grammar
+    // stops at whitespace and the first `)`. The label is untouchable from here:
+    // the serializer keeps only the slices around `renderChildren()`.
     const content = helpers.renderChildren(node)
     const raw = node.attrs?.href || ''
     const href = (isSafeHref(raw) ? raw : '').replace(/\)/g, '%29').replace(/\s/g, '%20')
@@ -214,9 +214,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
       href: {
         default: null
       },
-      // `target` stays on the mark (Yjs back-compat) but `rendered: false` — emitting
-      // `<a target="_blank">` would let the browser bypass the click-handler guard and
-      // revive the historical `target="_blank"` phishing surface. Pinned by AGENTS.md.
+      // `target` stays on the mark (Yjs back-compat) but `rendered: false`.
+      // Emitting `<a target="_blank">` would let the browser bypass the click-handler
+      // guard and revive the historical `target="_blank"` phishing surface.
+      // Pinned by AGENTS.md.
       target: {
         default: this.options.HTMLAttributes.target,
         rendered: false
@@ -299,9 +300,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   }
 })
 
-// One `LinkContext` per editor — cached on `storage.context` and shared
-// across the four `add*` hooks so the URL Decisions pipeline (and its
-// validate / autolink / shouldAutoLink closures) are allocated once.
+// One `LinkContext` per editor, cached on `storage.context` and shared across
+// the four `add*` hooks. The URL Decisions pipeline (and its validate /
+// autolink / shouldAutoLink closures) are allocated once.
 function getContext(self: {
   editor: Editor
   type: MarkType

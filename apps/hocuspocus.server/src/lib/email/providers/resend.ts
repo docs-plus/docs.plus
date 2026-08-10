@@ -64,7 +64,7 @@ export const resendProvider: EmailProviderInterface = {
     try {
       // Verify by fetching domains (lightweight API call). Bun's fetch has no
       // default timeout and the worker awaits this at boot, ahead of its health
-      // listener and signal handlers — an unreachable API must not stall that.
+      // listener and signal handlers. An unreachable API must not stall the boot.
       const response = await fetch('https://api.resend.com/domains', {
         headers: { Authorization: `Bearer ${apiKey}` },
         signal: AbortSignal.timeout(10_000)

@@ -4,8 +4,8 @@ import { getDefaultController, type Popover } from '../floating-popover'
 
 // The popover controller is a process-wide singleton, so it can't tell which
 // editor owns the popover it holds. Track the `{ editor, popover }` pair so
-// the mark's `onDestroy` closes only the popover this editor opened — never
-// a sibling's, never one a host adopted by hand after ours closed.
+// the mark's `onDestroy` closes only the popover this editor opened. Never a
+// sibling's, never one a host adopted by hand after ours closed.
 let owned: { editor: Editor; popover: Popover } | null = null
 let unsubscribe: (() => void) | null = null
 
@@ -15,9 +15,9 @@ export function setActivePopoverOwner(editor: Editor, popover: Popover): void {
   watchForRelease()
 }
 
-// Clear ownership the moment the controller stops holding our popover
-// (outside click, Escape, replacement adopt) so stale ownership can never
-// close a popover we didn't open. Lazy: subscribed only while owning.
+// Clear ownership the moment the controller stops holding our popover (outside
+// click, Escape, replacement adopt). Stale ownership can then never close a
+// popover we didn't open. Lazy: subscribed only while owning.
 function watchForRelease(): void {
   if (unsubscribe) return
   unsubscribe = getDefaultController().subscribe((state) => {

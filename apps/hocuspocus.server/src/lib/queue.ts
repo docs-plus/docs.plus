@@ -20,7 +20,7 @@ import { withUniqueSlug } from './slug'
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
 // Upsert document metadata under a caller-chosen slug. The slug-collision retry
-// belongs to the caller, OUTSIDE the transaction: a P2002 aborts the Postgres
+// belongs to the caller, OUTSIDE the transaction. A P2002 aborts the Postgres
 // transaction, so a retry in here can only ever hit 25P02 and lose the save.
 async function upsertDocumentMetadata(
   tx: TransactionClient,
@@ -37,7 +37,7 @@ async function upsertDocumentMetadata(
     // A content persist must NOT own metadata: the anchor, the PUT and
     // createDocument all set more authoritative values than title=slug.
     // Overwriting reverted a user-set title on reload and could flip ownerId to
-    // the last flusher, so UPDATE is a no-op and CREATE is the no-row backstop.
+    // the last flusher. UPDATE is therefore a no-op, and CREATE is the no-row backstop.
     update: {},
     create: {
       documentId: params.documentId,
@@ -49,7 +49,7 @@ async function upsertDocumentMetadata(
       keywords: ''
     }
   })
-  // The row's slug, never the candidate: on the update branch the caller's
+  // The row's slug, never the candidate. On the update branch the caller's
   // candidate can name a slug that is not in the database, and it reaches
   // the new-document email's documentUrl.
   return row.slug
@@ -57,8 +57,8 @@ async function upsertDocumentMetadata(
 
 // Queue connection (non-blocking operations). Tight command timeout on the
 // producer only, so a slow-but-locked enqueue fails into the store hook's
-// direct-DB fallback in seconds (a hard Redis outage never reaches it — the
-// redlock aborts the store chain first). Never lower the shared 60s
+// direct-DB fallback in seconds. A hard Redis outage never reaches that fallback —
+// the redlock aborts the store chain first. Never lower the shared 60s
 // REDIS_COMMAND_TIMEOUT: it would race the workers' blocking bzpopmin.
 const redisClient = createRedisConnection({ ...bullmqConnectionOptions, commandTimeout: 5000 })
 const queueConnection = toBullMQConnection(redisClient)
@@ -92,8 +92,8 @@ export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents'
       type: 'exponential',
       delay: 2000
     },
-    // BullMQ job keys carry no TTL, so volatile-lru can never evict them:
-    // unbounded retention walks the shared Redis into OOM, which flips every
+    // BullMQ job keys carry no TTL, so volatile-lru can never evict them.
+    // Unbounded retention walks the shared Redis into OOM, which flips every
     // save onto the inline DB fallback. The DLQ keeps the recovery payloads.
     removeOnComplete: {
       count: 100,
@@ -107,7 +107,7 @@ export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents'
 })
 
 // Dead Letter Queue for permanently failed jobs. Nothing here expires on its
-// own: no worker completes a DLQ job, so removeOnComplete below never fires and
+// own. No worker completes a DLQ job, so removeOnComplete below never fires and
 // drainStoreDeadLetterQueue's job.remove() is the only thing that clears an entry.
 export const DeadLetterQueue = new Queue<DeadLetterJobData>('store-documents-dlq', {
   connection: queueConnection,
@@ -131,14 +131,14 @@ StoreDocumentQueue.on('error', (err: Error) => {
   captureUnknown(err)
 })
 
-// Claim-check: the raw Y.js buffer lives in its own TTL'd Redis key and the
-// job carries only the reference — multi-MB base64 strings never ride through
-// BullMQ's JSON serialization on the WS event loop or linger in job hashes.
+// Claim-check: the raw Y.js buffer lives in its own TTL'd Redis key and the job
+// carries only the reference. Multi-MB base64 strings never ride through BullMQ's
+// JSON serialization on the WS event loop or linger in job hashes.
 const STATE_KEY_PREFIX = 'store-doc-state:'
 // Covers the retry ladder (~30s) with wide margin. Accepted payload-less-DLQ
 // paths: a job waiting >TTL for its FIRST run (worker outage/backlog), and
-// volatile-lru evicting state keys under memory pressure (they are the only
-// TTL'd keys whose loss matters). The next debounced save supersedes either.
+// volatile-lru evicting state keys under memory pressure. Those state keys are
+// the only TTL'd keys whose loss matters. The next debounced save supersedes either.
 const STATE_KEY_TTL_SECONDS = 3600
 
 // Colon-free by contract: BullMQ reserves ':' as its Redis key separator and
@@ -193,20 +193,20 @@ export interface StoreDlqDrainResult {
   depth: number
 }
 
-// One hydrated slice per pass: an entry embeds up to DLQ_MAX_INLINE_STATE_BYTES
-// as base64, and hydrating a whole queue to read its data is the +428 MB
-// mistake refreshPendingStateKeyTtls exists to avoid.
+// One hydrated slice per pass. An entry embeds up to DLQ_MAX_INLINE_STATE_BYTES
+// as base64. Hydrating a whole queue to read its data is the +428 MB mistake
+// refreshPendingStateKeyTtls exists to avoid.
 const DLQ_DRAIN_BATCH = 50
 
 // DLQ states with no worker to move them. BullMQ appends 'paused' whenever
-// 'waiting' is present and applies the range per type, so both the count and
-// the slice below are wider than these three names suggest.
+// 'waiting' is present and applies the range per type. Both the count and the
+// slice below are therefore wider than these three names suggest.
 const DLQ_PARKED_STATES = ['waiting', 'delayed', 'prioritized'] as const
 
-// Past this age the entry's document may have been hard-purged, which erases
-// the metadata row and cascades the versions — so a replay reads as a first
-// save, recreates the document under the DLQ's owner and re-sends its creation
-// email. Nothing here can tell that from a first save genuinely lost.
+// Past this age the entry's document may have been hard-purged, which erases the
+// metadata row and cascades the versions. A replay then reads as a first save,
+// recreates the document under the DLQ's owner and re-sends its creation email.
+// Nothing here can tell that from a first save genuinely lost.
 const DELETE_RETENTION_MS = config.worker.deleteRetentionDays * 24 * 60 * 60 * 1000
 
 // deleteRetentionDays 0 disables the reaper, so no entry can go stale.
@@ -231,8 +231,8 @@ export async function drainStoreDeadLetterQueue({
   documentId?: string
 }): Promise<StoreDlqDrainResult> {
   const counts = await DeadLetterQueue.getJobCounts(...DLQ_PARKED_STATES)
-  // Filtered inside the same batch window, never by scanning further: BullMQ has
-  // no server-side predicate on job data, and hydrating past the batch to find one
+  // Filtered inside the same batch window, never by scanning further. BullMQ has
+  // no server-side predicate on job data. Hydrating past the batch to find one
   // document is the +428 MB mistake DLQ_DRAIN_BATCH exists to bound. An entry
   // parked past the window is invisible to a filtered pass.
   const jobs = (await DeadLetterQueue.getJobs([...DLQ_PARKED_STATES], 0, DLQ_DRAIN_BATCH - 1))
@@ -241,9 +241,9 @@ export async function drainStoreDeadLetterQueue({
   const documentIds = [...new Set(jobs.map((job) => job.data.documentName))]
 
   // The live path refuses a save on a soft-deleted document, so a replay must not
-  // resurrect one behind the operator's back. The newest row decides the rest:
-  // createdAt against failedAt is the only thing saying whether the payload is
-  // already superseded, and no row at all means the replay re-fires the email.
+  // resurrect one behind the operator's back. The newest row decides the rest.
+  // `createdAt` against `failedAt` is the only thing saying whether the payload is
+  // already superseded. No row at all means the replay re-fires the email.
   const [trashedRows, headRows] = await Promise.all([
     prisma.documentMetadata.findMany({
       where: { documentId: { in: documentIds }, deletedAt: { not: null } },
@@ -275,7 +275,7 @@ export async function drainStoreDeadLetterQueue({
         ? 'replay'
         : 'discard'
 
-    // Reported, never acted on: a later snapshot only carries what the saving
+    // Reported, never acted on. A later snapshot only carries what the saving
     // client held, so a stranded edit from another client can survive a newer
     // head. Auto-skipping on this would eat real recoveries. Scoped to 'replay'
     // because only a replay can mint the duplicate this warns about.
@@ -300,14 +300,14 @@ export async function drainStoreDeadLetterQueue({
 
     if (!apply) continue
 
-    // Every disposition ends in remove(): parking a refused entry is what let the
+    // Every disposition ends in remove(). Parking a refused entry is what let the
     // reaper age it into a replayable one and resurrect the document on a timer.
     // A trashed entry is no recovery candidate either — the live path (see above)
     // already refused that save while the document was in the trash.
     if (disposition === 'replay' && state) {
-      // Copied field by field, not spread: the DLQ carries `state` as base64
-      // and `commitMessage` as optional, while the producer takes a Buffer and
-      // a required string, and mints its own claim-check key from the new jobId.
+      // Copied field by field, not spread. The DLQ carries `state` as base64 and
+      // `commitMessage` as optional. The producer takes a Buffer and a required
+      // string, and mints its own claim-check key from the new jobId.
       await enqueueStoreDocument({
         jobId: buildStoreJobId(data.documentName, state),
         documentName: data.documentName,
@@ -328,7 +328,7 @@ export async function drainStoreDeadLetterQueue({
 }
 
 // ioredis buffers every queued command until exec(), so the EXPIREs go out in
-// chunks — one flat pipeline over a 50k backlog held +164 MB on its own.
+// chunks. One flat pipeline over a 50k backlog held +164 MB on its own.
 const TTL_REFRESH_CHUNK = 1000
 
 // A job can outlive the claim-check TTL in `wait` when the worker is down or
@@ -336,7 +336,7 @@ const TTL_REFRESH_CHUNK = 1000
 // entries. Re-arming pending jobs' key TTLs keeps any-length outages
 // recoverable while the TTL stays the volatile-lru OOM backstop.
 export async function refreshPendingStateKeyTtls(): Promise<number> {
-  // Ids off the list, never getJobs: hydrating every job hash just to read a key
+  // Ids off the list, never getJobs. Hydrating every job hash just to read a key
   // that enqueueStoreDocument derives from the job id cost +428 MB of WS heap at
   // a 50k backlog. Queue.pause() RENAMEs wait→paused, so the backlog this covers
   // answers to either name and only one of the two lists exists at a time.
@@ -360,8 +360,8 @@ export async function refreshPendingStateKeyTtls(): Promise<number> {
 }
 
 // Dequeue-liveness signal for the worker /health: a healthy worker bounds
-// oldest-waiting age near zero; a parked fetch loop (dead blocking client)
-// grows it forever with isRunning() still true. Retries back off in
+// oldest-waiting age near zero. A parked fetch loop (dead blocking client)
+// grows that age forever with isRunning() still true. Retries back off in
 // `delayed`, so this cannot false-positive on the retry ladder.
 export async function getStoreQueueOldestWaitingAgeMs(): Promise<number | null> {
   // Range [-1, -1] = the wait list's tail — BullMQ LPUSHes new jobs onto the
@@ -405,19 +405,19 @@ export const createDocumentWorker = () => {
         const startTime = Date.now()
         const context = data.context
 
-        // Decode + metadata strip run in this worker, never in the WS store
-        // hook — that is the CPU-heavy half of a save and it must stay off the
-        // event loop serving live connections.
+        // Decode + metadata strip run in this worker, never in the WS store hook.
+        // That work is the CPU-heavy half of a save and it must stay off the event
+        // loop serving live connections.
         rawState = await resolveJobState(data)
         const incoming = new Uint8Array(rawState)
 
         // READ COMMITTED + FOR UPDATE serializes appends but cannot stop two
-        // concurrent jobs computing the same nextVersion (no row exists on
-        // first creation; stale latest after the lock releases). The P2002 is
-        // expected and healed by retries — snapshots are cumulative full state.
+        // concurrent jobs computing the same nextVersion. No row exists on first
+        // creation; stale latest after the lock releases. The P2002 is expected
+        // and healed by retries — snapshots are cumulative full state.
         const baseSlug = context.slug || data.documentName
 
-        // The slug retry wraps the WHOLE transaction: a P2002 aborts the Postgres
+        // The slug retry wraps the WHOLE transaction. A P2002 aborts the Postgres
         // transaction, so retrying inside it only ever hit 25P02, and the next
         // debounce re-enqueued into the same dead end.
         const { savedDoc, createdSlug, isFirstCreation } = await withUniqueSlug(
@@ -425,9 +425,9 @@ export const createDocumentWorker = () => {
           (candidateSlug) =>
             prisma.$transaction(
               async (tx) => {
-                // FOR UPDATE lock on the latest row; ORDER BY version is served
-                // top-1 by the (documentId, version) unique index — id DESC had
-                // no supporting index and scanned every version of the document.
+                // FOR UPDATE lock on the latest row. ORDER BY version is served
+                // top-1 by the (documentId, version) unique index. ORDER BY id DESC
+                // had no supporting index and scanned every version of the document.
                 const existingDocs = await tx.$queryRaw<
                   { id: number; version: number; data: Buffer }[]
                 >`
@@ -522,8 +522,8 @@ export const createDocumentWorker = () => {
         }
 
         // Publish save confirmation (fire-and-forget, like the email above).
-        // The save is already committed and the claim-check key is deleted, so
-        // an awaited reject here would re-throw a durable save into a
+        // The save is already committed and the claim-check key is deleted. An
+        // awaited reject here would therefore re-throw a durable save into a
         // payload-less DLQ retry plus a false 'failed' metric.
         if (redisPublisher) {
           redisPublisher
@@ -547,16 +547,16 @@ export const createDocumentWorker = () => {
       } catch (err) {
         queueLogger.error({ err, jobId: job.id }, 'Error storing data for job')
 
-        // Final attempt → DLQ. attemptsMade counts PRIOR attempts inside the
-        // processor (BullMQ increments it in moveToFinished, after we throw),
-        // so the final of N attempts sees N-1 — hence the +1.
+        // Final attempt → DLQ. `attemptsMade` counts PRIOR attempts inside the
+        // processor (BullMQ increments it in moveToFinished, after we throw). The
+        // final of N attempts therefore sees N-1 — hence the +1.
         if (job.attemptsMade + 1 >= (job.opts.attempts || 5)) {
           queueLogger.error({ jobId: job.id }, 'Job exhausted all retries. Moving to DLQ')
           captureUnknown(err)
 
-          // Embed the recovery payload inline while the claim-check key is live,
-          // but only when it is small enough to be a safe DLQ resident (see
-          // DLQ_MAX_INLINE_STATE_BYTES); a large or outwaited-TTL state
+          // Embed the recovery payload inline while the claim-check key is live.
+          // Embed it only when it is small enough to be a safe DLQ resident (see
+          // DLQ_MAX_INLINE_STATE_BYTES). A large or outwaited-TTL state
           // dead-letters payload-less — the next debounced save supersedes it.
           let dlqState = data.state
           if (!dlqState) {
@@ -628,8 +628,8 @@ export const createDocumentWorker = () => {
 }
 
 // Stop the producer queues on shutdown. The shared ioredis connections aren't
-// released by close() (BullMQ owns them as shared) — the process exit reaps the
-// sockets — so this just flushes and detaches the queues.
+// released by close() (BullMQ owns them as shared). The process exit reaps the
+// sockets, so this just flushes and detaches the queues.
 export const closeQueues = async () => {
   await Promise.all([StoreDocumentQueue.close(), DeadLetterQueue.close()])
 }

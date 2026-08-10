@@ -79,8 +79,8 @@ describe('BYO popover factories — README public contract', () => {
 
     it('dismisses on Escape once focus is inside the toolbar', () => {
       // Escape is bound to the toolbar root, so it only fires when focus is
-      // inside — consumers focus their own content (the prebuilt popover
-      // auto-focuses its input for the same reason).
+      // inside. Consumers focus their own content; the prebuilt popover
+      // auto-focuses its input for the same reason.
       openByoCreateViaModK()
       cy.get(BYO_CLOSE).focus().realPress('Escape')
       cy.get(BYO_CREATE).should('not.exist')

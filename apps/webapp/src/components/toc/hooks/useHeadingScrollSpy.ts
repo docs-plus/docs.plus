@@ -223,7 +223,7 @@ function tocItemSelector(id: string): string {
   return `.toc__item[data-id="${id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`
 }
 
-/** Scroll the row link, not the whole `li` — parent items wrap a tall nested `ul`, so
+/** Scroll the row link, not the whole `li`. Parent items wrap a tall nested `ul`, so
  * `li.scrollIntoView` often keeps the top row (and focus rail) above the viewport. */
 function tocRowScrollTarget(id: string): Element | null {
   const li = document.querySelector(tocItemSelector(id))

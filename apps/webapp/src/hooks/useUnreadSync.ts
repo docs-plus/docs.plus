@@ -3,9 +3,9 @@ import { useChatStore, useStore } from '@stores'
 import { useLayoutEffect } from 'react'
 
 /**
- * Sync channel unread onto ProseMirror `.ha-chat-btn` widgets (CSS ::before).
- * TOC / header / bell use React UnreadBadge — they do not need this hook.
- * Call once at the app/document level.
+ * Sync channel unread onto ProseMirror `.ha-chat-btn` widgets (CSS ::before). TOC,
+ * header and bell use React UnreadBadge, so they do not need this hook. Call once at
+ * the app/document level.
  */
 export function useUnreadSync() {
   const channels = useChatStore((state) => state.channels)

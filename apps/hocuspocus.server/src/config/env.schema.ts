@@ -110,7 +110,7 @@ export const envSchema = z.object({
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
 
   // Email
-  // Read directly by lib/email/providers, not through config: EMAIL_PROVIDER
+  // Read directly by lib/email/providers, not through config. EMAIL_PROVIDER
   // picks the sender, otherwise the first configured of resend/sendgrid/smtp
   // wins — so a leftover RESEND_API_KEY beats working SMTP settings.
   EMAIL_PROVIDER: z.string().optional(),

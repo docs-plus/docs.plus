@@ -18,8 +18,8 @@ export function callRpc(supabase: AdminClient, rpcName: string, args?: Record<st
 }
 
 /**
- * A view stat's `document_slug` is lower(trim(documentId)) while documentId is
- * mixed-case, so both the match and the map key have to be lowercased or the join
+ * A view stat's `document_slug` is lower(trim(documentId)), while documentId is
+ * mixed-case. Both the match and the map key have to be lowercased, or the join
  * silently returns nothing.
  */
 async function metaMapForSlugs(
@@ -51,8 +51,8 @@ export async function getTopViewedDocuments(
     prisma,
     rows.map((d) => d.document_slug)
   )
-  // `slug` is the human URL segment; null when no metadata row resolves, so the
-  // UI can avoid linking to a path that would open an empty draft instead.
+  // `slug` is the human URL segment, and it is null when no metadata row resolves.
+  // The UI can then avoid linking to a path that would open an empty draft instead.
   const enriched = rows.map((d) => {
     const meta = metaMap.get(d.document_slug)
     return { ...d, title: meta?.title || d.document_slug, slug: meta?.slug ?? null }

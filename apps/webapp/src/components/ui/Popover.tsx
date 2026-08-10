@@ -97,7 +97,7 @@ const PopoverContext = React.createContext<ContextType>(null)
 /**
  * Elements a host keeps INSIDE the focus trap, so `FloatingFocusManager.markOthers()`
  * doesn't stamp `data-floating-ui-inert` on them. The pad editor region supplies its
- * ProseMirror root — that inert storm would otherwise make ProseMirror's DOMObserver
+ * ProseMirror root. That inert storm would otherwise make ProseMirror's DOMObserver
  * reconcile a wide range and recreate media node views (the embeds reload).
  */
 const PopoverInsideElementsContext = React.createContext<(() => Element[]) | null>(null)

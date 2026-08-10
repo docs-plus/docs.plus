@@ -28,12 +28,12 @@ const ToolbarMobile = () => {
   // Without this the toolbar renders pad controls under the chat and steals height.
   const padOwnsKeyboard = useChatStore(selectPadOwnsKeyboard)
 
-  // Keep format-button is-active / aria-pressed live: the pad editor doesn't re-render this tree
-  // on selection change, so without this the highlights go stale as the caret moves.
+  // Keep format-button is-active / aria-pressed live. The pad editor doesn't re-render this tree
+  // on selection change, so without this hook the highlights go stale as the caret moves.
   useReRenderOnEditorTransaction(editor)
 
   // The panel lifts by its own height purely in CSS (`-translate-y-full`), so no measured state is
-  // needed; these refs are read on demand below for the one-shot caret-scroll math.
+  // needed. These refs are read on demand below for the one-shot caret-scroll math.
   const mainRowRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 

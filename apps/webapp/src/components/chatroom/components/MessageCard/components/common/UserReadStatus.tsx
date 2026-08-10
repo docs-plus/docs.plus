@@ -42,8 +42,8 @@ export function UserReadStatus({ message, isOpen, avatarLoaderRepeat = 3, classN
     }
 
     fetchData()
-    // Fetch fires only when the menu opens; channelId / created_at are
-    // captured by closure at that moment and are stable for the lifetime
+    // Fetch fires only when the menu opens. The channelId and created_at values
+    // are captured by closure at that moment, and stay stable for the lifetime
     // of one open-cycle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])

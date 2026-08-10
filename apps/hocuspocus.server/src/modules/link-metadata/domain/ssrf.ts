@@ -1,17 +1,17 @@
 import { isSafeUrl, resolvesToPublicAddress } from '../../../lib/ssrf'
 
 // The predicate is a shared network-safety primitive (push endpoints need it
-// too), so it lives in lib/. safeFetch stays here: redirect-hop validation is
-// this module's own fetch policy.
+// too), so it lives in lib/. `safeFetch` stays here, because redirect-hop
+// validation is this module's own fetch policy.
 export { isSafeUrl }
 
 const MAX_REDIRECT_HOPS = 5
 
 /**
- * SSRF-aware fetch. Every hop is checked twice — the host string, then what it
- * resolves to — because a public name pointing at a private address passes the
- * string test. Throws on an unsafe hop or an exhausted budget; the caller's
- * catch turns that into a stage miss.
+ * SSRF-aware fetch. Every hop is checked twice: the host string, then what it
+ * resolves to. The second check is there because a public name pointing at a
+ * private address passes the string test. Throws on an unsafe hop or an
+ * exhausted budget; the caller's catch turns that into a stage miss.
  */
 export const safeFetch = async (url: string, init: RequestInit): Promise<Response> => {
   let current = url

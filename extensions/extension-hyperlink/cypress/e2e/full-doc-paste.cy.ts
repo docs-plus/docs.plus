@@ -60,9 +60,9 @@ const selectAllAndPasteFixture = (): void => {
 describe('full-document paste — select-all round trip', () => {
   beforeEach(() => {
     cy.visitPlayground()
-    // Stage 1 routes the fixture through the real external-paste pipeline so
-    // the paste rules linkify its bare URLs (setContent leaves them plain, and
-    // pasting byte-identical content gives the rules no changed range to scan).
+    // Stage 1 routes the fixture through the real external-paste pipeline, so
+    // the paste rules linkify its bare URLs. `setContent` leaves them plain, and
+    // pasting byte-identical content gives the rules no changed range to scan.
     // Stage 2 pastes the same HTML back over the linked doc — the round trip.
     selectAllAndPasteFixture()
     cy.get('#editor a').should('have.length', 3)

@@ -216,8 +216,8 @@ function useHoverMenu({
         crossAxis: false, // Prevent left-right flipping for consistent positioning
         fallbackAxisSideDirection: 'end',
         // Bumped from 5 to 10: with a tight padding, flip only fires when
-        // the menu extends >5px past the boundary. 10px makes flip more
-        // eager once the boundary is narrow (e.g., `.message-feed` only).
+        // the menu extends >5px past the boundary. A 10px padding makes flip
+        // more eager once the boundary is narrow (e.g., `.message-feed` only).
         padding: 10,
         ...(resolvedBoundary && { boundary: resolvedBoundary })
       }),
@@ -254,9 +254,9 @@ function useHoverMenu({
   }, [open])
 
   // IntersectionObserver, NOT getBoundingClientRect-on-scroll. The manual rect
-  // check read stale values before Virtuoso had measured items, and never
-  // refired on layout-only changes; both pinned `isInViewport` false, which
-  // gated `useHover.enabled` and silently killed the menu until a scroll.
+  // check read stale values before Virtuoso had measured items, and never refired
+  // on layout-only changes. Both faults pinned `isInViewport` false, which gated
+  // `useHover.enabled` and silently killed the menu until a scroll.
   useEffect(() => {
     const targets = resolveScrollTargets(scrollParent)
     if (!targets.length) {
@@ -269,9 +269,9 @@ function useHoverMenu({
       setIsInViewport(true)
       return
     }
-    // `threshold: [0, 0.5, 1]`, not a bare `0.5`: a single threshold only fires
-    // when the ratio *crosses* it, so a message mounting already 80% visible
-    // would never get a callback until the user scrolled.
+    // `threshold: [0, 0.5, 1]`, not a bare `0.5`. A single threshold only fires when
+    // the ratio *crosses* it. A message mounting already 80% visible would never get
+    // a callback until the user scrolled.
     const root = scrollContainer instanceof Element ? scrollContainer : null
     const observer = new IntersectionObserver(
       (entries) => {

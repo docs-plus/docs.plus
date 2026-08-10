@@ -53,8 +53,8 @@ const PRUNE_MAX_BATCHES = 10
 
 // Thins old autosave snapshots to one per document per day; each day's newest
 // row always survives. A name a person typed is exempt forever, but the names
-// the server mints for itself are not — so a pre-restore backup older than the
-// window is thinned away and that restore stops being undoable.
+// the server mints for itself are not. So a pre-restore backup older than the
+// window is thinned away, and that restore stops being undoable.
 async function pruneAutosaveVersions() {
   if (AUTOSAVE_RETENTION_DAYS <= 0) return
   try {
@@ -95,9 +95,9 @@ export function reapCutoff(retentionDays: number, now: number = Date.now()): Dat
 }
 
 // Reaps documents soft-deleted past the retention window. The per-doc purge
-// (RPC → editor media → driver row, in that order) is shared with the permanent-
-// delete endpoint via purgeDocumentFootprint; any step's failure throws and leaves
-// deletedAt set so this pass skips the doc and the next pass retries it.
+// (RPC → editor media → driver row, in that order) is shared with the
+// permanent-delete endpoint via purgeDocumentFootprint. Any step's failure throws
+// and leaves deletedAt set, so this pass skips the doc and the next pass retries it.
 async function reapSoftDeletedDocuments() {
   if (DELETE_RETENTION_DAYS <= 0) return
   const supabase = getServiceRoleClient()
@@ -109,8 +109,9 @@ async function reapSoftDeletedDocuments() {
     let totalPurged = 0
     for (let batch = 0; batch < PRUNE_MAX_BATCHES; batch++) {
       const cutoff = reapCutoff(DELETE_RETENTION_DAYS)
-      // Oldest tombstones first; a batch that all fails (poison) burns this pass and
-      // defers the remaining candidates to the next hourly run rather than starving them.
+      // Oldest tombstones first. A batch that all fails (poison) burns this pass
+      // and defers the remaining candidates to the next hourly run rather than
+      // starving them.
       const candidates = await prisma.documentMetadata.findMany({
         where: { deletedAt: { not: null, lt: cutoff } },
         orderBy: { deletedAt: 'asc' },
@@ -232,9 +233,9 @@ const stopWorkerMetricsSampling = startWorkerMetricsSampling()
 const healthApp = new Hono()
 
 // isRunning()/isPaused() are flags that stay green while BullMQ's fetch loop
-// is parked on a dead blocking connection (2026-07-14 outage) — oldest-waiting
-// age is the signal that actually tests dequeue-liveness. 120s = 12x the 10s
-// store debounce; retries back off in `delayed`, so they cannot trip this.
+// is parked on a dead blocking connection (2026-07-14 outage). Oldest-waiting
+// age is the signal that actually tests dequeue-liveness. The 120s is 12x the
+// 10s store debounce; retries back off in `delayed`, so they cannot trip this.
 const STORE_QUEUE_MAX_WAIT_AGE_MS = 120_000
 
 healthApp.get('/health', async (c) => {

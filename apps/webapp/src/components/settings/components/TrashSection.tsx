@@ -116,8 +116,8 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
     const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
     const idSet = new Set(ids)
     if (snapshot) {
-      // `total` is a global count replicated on every page (it feeds hasNextPage),
-      // so decrement each page by the count removed across ALL pages — never the
+      // `total` is a global count replicated on every page (it feeds hasNextPage).
+      // Decrement each page by the count removed across ALL pages. Never use the
       // per-page count, which would make the pages' totals diverge.
       const removedCount = snapshot.pages.reduce(
         (n, page) => n + page.docs.filter((d) => idSet.has(d.documentId)).length,
@@ -147,9 +147,9 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
       { documentId: doc.documentId },
       {
         onSuccess: () => {
-          // The doc is live again — refresh the main list (distinct key prefix)
-          // and settle trash: the offset-based getNextPageParam can't survive a
-          // row being filtered out, so invalidate to resync docs/total/hasNextPage.
+          // The doc is live again. Refresh the main list (distinct key prefix), then
+          // settle trash. The offset-based getNextPageParam can't survive a row being
+          // filtered out, so invalidate to resync docs/total/hasNextPage.
           queryClient.invalidateQueries({ queryKey: ['documents', userId] })
           queryClient.invalidateQueries({ queryKey: key })
           toast.Success('Document restored')

@@ -15,7 +15,7 @@
 
 Tiptap placeholder extension that shows hint text in empty nodes.
 
-Tiptap's built-in Placeholder rescans the whole document (`doc.descendants`) on every transaction. This one decorates only the empty node at the cursor plus its empty ancestor wrappers — O(depth), not O(document) — and drops in for the built-in, with a few [deliberate differences](#differences-from-the-built-in-placeholder).
+Tiptap's built-in Placeholder rescans the whole document (`doc.descendants`) on every transaction. This one decorates only the empty node at the cursor plus its empty ancestor wrappers — O(depth), not O(document). It drops in for the built-in, with a few [deliberate differences](#differences-from-the-built-in-placeholder).
 
 ## Install
 
@@ -101,7 +101,7 @@ Exports: `Placeholder`, `PlaceholderOptions`, `PlaceholderRenderProps` (function
 
 ## Part of docs.plus
 
-This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+This extension is built for and maintained by [docs.plus](https://docs.plus). docs.plus is a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
 
 - Website: [docs.plus](https://docs.plus)
 - Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)

@@ -42,8 +42,8 @@ export function formatHeadingSegment(entry: HeadingEntry): string {
 }
 
 /**
- * The schema is flat (`heading block*`), so hierarchy is implicit from level:
- * walk `precedingHeadings` (document order) in reverse and keep each heading
+ * The schema is flat (`heading block*`), so hierarchy is implicit from level.
+ * Walk `precedingHeadings` (document order) in reverse and keep each heading
  * shallower than the last kept one. `currentHeadingLevel` seeds that bound so
  * siblings at the cursor's own level are not mistaken for ancestors.
  */
@@ -84,9 +84,9 @@ export function resolveTailSegment(ctx: TailContext): string {
 }
 
 /**
- * Holds the node, not its text: `textContent` is read only after the ancestor
- * chain is picked, so the text-walk cost is paid for the ≤ 6 headings actually
- * rendered rather than every preceding heading in the document.
+ * Holds the node, not its text. `textContent` is read only after the ancestor
+ * chain is picked. The text-walk cost is therefore paid for the ≤ 6 headings
+ * actually rendered, not every preceding heading in the document.
  */
 interface HeadingRef {
   level: number

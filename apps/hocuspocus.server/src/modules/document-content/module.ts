@@ -34,8 +34,8 @@ export const init = (deps: InitDeps): InitResult => {
 
 /**
  * WS-process wiring — a deliberate second factory. Content injection has to run
- * where the live Y.Doc lives, so this module owns an app the collab process
- * serves on its internal listener alongside `/metrics`.
+ * where the live Y.Doc lives. This module owns an app the collab process serves
+ * on its internal listener alongside `/metrics`.
  */
 export const initWsApply = (deps: InitWsApplyDeps): InitWsApplyResult => {
   const applyContent = createApplyContent({

@@ -23,7 +23,7 @@ This file is intentionally not named `README.md` so the repository root `README.
   - `DEADMAN_WEBHOOK_URL` is required in `.env.observability` (missing value fails the deploy — no placeholder fallback)
   - Setup/update validates `prometheus.yml` with `promtool` before `up -d`, then restarts prometheus + grafana so mounted config edits load; failures notify Telegram
 - `workflows/runner-watchdog.yml`
-  - Every 30 min (GitHub-hosted): checks the repo's self-hosted runner status and notifies Telegram when a runner is offline **or when zero runners are registered** (GitHub auto-deregisters runners dead >14 days, so an empty list is the terminal failure state, not health)
+  - Every 30 min (GitHub-hosted): checks the repo's self-hosted runner status and notifies Telegram when a runner is offline **or when zero runners are registered**. GitHub auto-deregisters runners dead >14 days, so an empty list is the terminal failure state, not health
   - No-op until the `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` repo secrets are set
 
 ## Deployment trigger grammar (production)

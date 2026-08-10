@@ -14,10 +14,10 @@ const DRAG_THRESHOLD_SNAP_PX = 30
 const DRAG_THRESHOLD_CLOSE_PX = 80
 
 /**
- * Measures the column the panel lives in, not the window. On mobile that column is
- * the chat pane, which is a fraction of the shell — sizing against `innerHeight`
- * overshoots it and leaves the pane's header and composer no room on small phones.
- * Observes only while open, since iOS fires resize heavily during keyboard cycles.
+ * Measures the column the panel lives in, not the window. On mobile that column is the
+ * chat pane, which is a fraction of the shell. Sizing against `innerHeight` overshoots it
+ * and leaves the pane's header and composer no room on small phones. Observes only while
+ * open, since iOS fires resize heavily during keyboard cycles.
  */
 function useHostHeight(enabled: boolean, ref: RefObject<HTMLElement | null>) {
   const [height, setHeight] = useState(0)

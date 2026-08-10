@@ -38,8 +38,8 @@ const readJson = async (path: string): Promise<unknown | null> => {
 const raw = await readJson(resultsPath)
 
 // `bun pm audit` (not a command) prints help text, which parses as nothing. Any
-// non-object here means the audit did not run, and a gate that cannot see its
-// input must fail rather than report zero — that is how this gate died before.
+// non-object here means the audit did not run. A gate that cannot see its input must
+// fail rather than report zero, because that is how this gate died before.
 if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
   console.error(`::error::${resultsPath} is missing or not a JSON object — the audit did not run.`)
   process.exit(1)
@@ -69,9 +69,9 @@ const entryFor = (ghsa: string, pkg: string): AllowlistEntry | undefined =>
   (ghsa !== '' && Object.hasOwn(allowlist, ghsa) ? allowlist[ghsa] : undefined) ??
   (Object.hasOwn(allowlist, pkg) ? allowlist[pkg] : undefined)
 
-// An entry accepts only up to the severity it was reviewed at. Without this a
-// package waved through as "high" would silently absorb a future critical, which
-// makes a package key a permanent waiver rather than a reviewed exception.
+// An entry accepts only up to the severity it was reviewed at. Without this check a
+// package waved through as "high" would silently absorb a future critical. Silent
+// absorption would make a package key a permanent waiver rather than a reviewed exception.
 const acceptsSeverity = (entry: AllowlistEntry, severity: string): boolean => {
   const ceiling = SEVERITIES.indexOf(String(entry.severity ?? '').toLowerCase() as Severity)
   const found = SEVERITIES.indexOf(severity as Severity)
@@ -84,8 +84,8 @@ for (const [pkg, value] of Object.entries(report)) {
     if (!advisory || typeof advisory !== 'object') continue
     const severity = String(advisory.severity ?? '').toLowerCase()
     const ghsa = ghsaOf(advisory)
-    // A package key accepts every advisory in it. That is the only workable form
-    // for a dev-only package sitting at several majors at once, where a single
+    // A package key accepts every advisory in it. A package key is the only workable form
+    // for a dev-only package sitting at several majors at once. In that case a single
     // override would force one version onto consumers that cannot take it.
     const entry = entryFor(ghsa, pkg)
     if (entry && acceptsSeverity(entry, severity)) {

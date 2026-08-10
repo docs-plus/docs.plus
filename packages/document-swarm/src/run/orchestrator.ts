@@ -29,9 +29,10 @@ async function pace(page: import('playwright').Page, options: RunOptions): Promi
 }
 
 /**
- * Runs a Swarm Run: gate the host/target, load actors, launch Chromium, ramp one
- * isolated context per actor, loop assigned Swarm Scripts until duration/Ctrl+C, then
- * print the Swarm Report. Resolves to the process exit code (130 on interrupt).
+ * Runs a Swarm Run: gates the host and target, loads actors, launches Chromium, and
+ * ramps one isolated context per actor. It loops the assigned Swarm Scripts until the
+ * duration ends or Ctrl+C arrives, then prints the Swarm Report. Resolves to the
+ * process exit code (130 on interrupt).
  */
 export async function runSwarm(options: RunOptions): Promise<number> {
   // Safety gates run before a single browser launches.

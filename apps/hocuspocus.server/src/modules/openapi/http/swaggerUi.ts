@@ -3,7 +3,7 @@ import type { MiddlewareHandler } from 'hono'
 /**
  * Maintainer decision: Swagger UI is loaded from jsDelivr because bundling it
  * would mean a new dependency. Pinned to an exact version with SRI hashes taken
- * from those exact bytes — bump the version and the hashes together or the page
+ * from those exact bytes. Bump the version and the hashes together or the page
  * silently stops rendering.
  */
 const SWAGGER_UI_VERSION = '5.32.11'

@@ -21,7 +21,7 @@ export function HistoryRestoreModal({
   newerCount,
   onConfirm
 }: Props) {
-  // A date and time is what the sidebar shows; the version number appears nowhere
+  // A date and time is what the sidebar shows. The version number appears nowhere
   // a reader can see, so naming one here would point at nothing.
   const stamp = createdAt ? formatVersionDate(createdAt) : null
   const heading = stamp

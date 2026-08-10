@@ -1,8 +1,8 @@
 /**
- * Every ghost type is decided from auth.users alone. `no_public_profile` was
- * removed deliberately: handle_new_user creates the profile, so a login without one
- * means that trigger failed — a bug to fix, never an account to delete — and it was
- * the only check that needed a second full table read to reach a delete.
+ * Every ghost type is decided from auth.users alone. `no_public_profile` was removed
+ * deliberately, because handle_new_user creates the profile. A login without one
+ * means that trigger failed. That is a bug to fix, never an account to delete. It was
+ * also the only check that needed a second full table read to reach a delete.
  */
 
 import type { PrismaClient } from '@prisma/client'

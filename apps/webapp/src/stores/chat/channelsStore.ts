@@ -25,9 +25,9 @@ const channelsStore = immer<IChannelStore>((set) => ({
   setOrUpdateChannel: (channelId, channelData) => {
     set((state: any) => {
       const merged = { ...state.channels.get(channelId), ...channelData }
-      // Anon `channelMessageCountsUpsert` lands here with a conflated activity
-      // hint; clamp so the ProseMirror heading badge (syncHeadingWidgetUnread)
-      // matches the read-gated React badges while the user reads at tail.
+      // Anon `channelMessageCountsUpsert` lands here with a conflated activity hint.
+      // Clamp so the ProseMirror heading badge (syncHeadingWidgetUnread) matches the
+      // read-gated React badges while the user reads at tail.
       if (
         state.unreadSuppressedChannelId === channelId &&
         channelData &&
@@ -45,9 +45,9 @@ const channelsStore = immer<IChannelStore>((set) => ({
       if (!channel) return
 
       const merged = { ...channel, ...channelData, id: channel.id }
-      // Only clamp when the incoming row actually carries an unread bump;
-      // unrelated row updates (mute, name, member flags) must not zero
-      // an existing value just because suppression is on.
+      // Only clamp when the incoming row actually carries an unread bump.
+      // Unrelated row updates (mute, name, member flags) must not zero an
+      // existing value just because suppression is on.
       if (
         state.unreadSuppressedChannelId === channelId &&
         channelData &&

@@ -106,8 +106,8 @@ export function VersionTriggerBadge({ trigger }: { trigger?: VersionTrigger | nu
 }
 
 /**
- * Resolves ids through the profile map and renders nothing when none resolve —
- * `Avatar` invents a DiceBear face from a bare id, which would name a person we cannot.
+ * Resolves ids through the profile map. Renders nothing when none resolve, because
+ * `Avatar` invents a DiceBear face from a bare id and would name a person we cannot.
  */
 export function VersionAttribution({
   item,

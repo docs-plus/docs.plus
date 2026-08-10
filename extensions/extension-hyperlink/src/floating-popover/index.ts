@@ -1,5 +1,5 @@
 // The floating engine lives in `@docs.plus/floating-popover` — a private
-// workspace package bundled into this extension's dist (each consuming
+// workspace package bundled into this extension's dist. Each consuming
 // extension bundles its own controller instance; there is no cross-package
-// singleton). This shim keeps internal `../floating-popover` paths stable.
+// singleton. This shim keeps internal `../floating-popover` paths stable.
 export * from '@docs.plus/floating-popover'

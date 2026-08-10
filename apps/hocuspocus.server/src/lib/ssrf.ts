@@ -55,7 +55,7 @@ const isIpLiteral = (host: string): boolean =>
 
 /**
  * A hostname-string check. It rejects the address ranges above plus every
- * single-label name, which is the shape a container or LAN host takes; a
+ * single-label name, which is the shape a container or LAN host takes. A
  * registered name whose DNS points somewhere private still passes here, so
  * callers that actually connect must pair this with `resolvesToPublicAddress`.
  */
@@ -93,7 +93,7 @@ const rejectOnAbort = (signal: AbortSignal): Promise<never> =>
 
 /**
  * Resolve the host and refuse it if any answer is private. This is what stops
- * an ordinary registered domain pointing at 127.0.0.1; it is not a rebinding
+ * an ordinary registered domain pointing at 127.0.0.1. It is not a rebinding
  * defence, since `fetch` resolves again on its own — that risk stays accepted.
  */
 export const resolvesToPublicAddress = async (
@@ -115,8 +115,8 @@ export const resolvesToPublicAddress = async (
     return answers.length > 0 && answers.every(({ address }) => !isPrivateAddress(address))
   } catch {
     // `lookup` and `fetch` share one getaddrinfo, so a name this cannot resolve
-    // is a name fetch cannot reach either — there is no split where refusing
-    // here prevents a private connection, only one where it needs live DNS.
+    // is a name fetch cannot reach either. There is no split where refusing here
+    // prevents a private connection, only one where it needs live DNS.
     return true
   }
 }

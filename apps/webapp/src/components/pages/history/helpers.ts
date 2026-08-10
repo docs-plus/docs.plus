@@ -147,8 +147,8 @@ export const formatVersionDate = (date: Date | string) => {
 }
 
 /**
- * Versions saved after `version`, or null when the active version is not in the list —
- * a real state after row eviction, and one the caller must not report as "none".
+ * Versions saved after `version`. Null means the active version is not in the list, a
+ * real state after row eviction. The caller must not report that null as "none".
  */
 export const countVersionsAfter = (
   list: HistoryItem[],

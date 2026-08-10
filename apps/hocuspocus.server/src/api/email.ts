@@ -1,7 +1,7 @@
 /**
- * Email routes. There is no per-notification send endpoint: that mail takes the
- * queue path — Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ →
- * SMTP — and is delivered by the worker, never by a request to this router.
+ * Email routes. There is no per-notification send endpoint. That mail takes the
+ * queue path: Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ →
+ * SMTP. The worker delivers it, never a request to this router.
  */
 
 import {

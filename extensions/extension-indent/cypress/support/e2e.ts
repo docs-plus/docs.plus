@@ -35,8 +35,8 @@ Cypress.Commands.add('visitPlayground', (query = '') => {
 
 Cypress.Commands.add('getEditor', () => cy.window().its('_editor'))
 
-// Seed content stays out of the undo stack, so an undo spec can only revert the keypress
-// under test — no wall-clock wait against prosemirror-history's grouping delay.
+// Seed content stays out of the undo stack, so an undo spec can only revert the
+// keypress under test. No wall-clock wait against prosemirror-history's grouping delay.
 Cypress.Commands.add('setEditorContent', (html: string) => {
   cy.getEditor().then((editor) => {
     editor.chain().setMeta('addToHistory', false).setContent(html).run()
@@ -59,7 +59,7 @@ Cypress.Commands.add('setCaretInText', (text: string, offset = 0) => {
 })
 
 // Select from the START of the first textblock containing `firstText` to the
-// END of the last textblock containing `lastText` — full lines, so outdent
+// END of the last textblock containing `lastText`. Full lines, so outdent
 // sees leading indents the caller created via Tab.
 Cypress.Commands.add('selectAcross', (firstText: string, lastText: string) => {
   cy.getEditor().then((editor) => {

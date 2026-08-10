@@ -6,8 +6,8 @@ import { resolveUnreadCount } from '@utils/unreadDisplay'
 const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
 
 /**
- * Write capped unread onto ProseMirror `.ha-chat-btn` widgets (CSS ::before path).
- * Must stay Decoration.widget DOM — attribute writes are ignored by DOMObserver.
+ * Write capped unread onto ProseMirror `.ha-chat-btn` widgets (CSS ::before path). Must
+ * stay Decoration.widget DOM, because attribute writes are ignored by DOMObserver.
  * TOC/header use React UnreadBadge; both share `resolveUnreadCount`.
  */
 export function syncHeadingWidgetUnread(): void {

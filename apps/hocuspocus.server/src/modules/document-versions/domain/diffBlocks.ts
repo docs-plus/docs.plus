@@ -14,9 +14,9 @@ import { type BlockKey, matchBlocks } from './matchBlocks'
 let diffSchema: Schema | null = null
 const getDiffSchema = (): Schema => (diffSchema ??= getSchema(migrationExtensions))
 
-/** Positions, not characters: a block boundary costs two positions per newline,
- *  so the doubled window always covers the preview and never materialises a
- *  whole task list as a string. */
+/** Positions, not characters: a block boundary costs two positions per
+ *  newline. The doubled window always covers the preview and never
+ *  materialises a whole task list as a string. */
 const preview = (node: PMNode): string =>
   node
     .textBetween(0, Math.min(node.content.size, DIFF_PREVIEW_CHARS * 2 + 1), '\n')

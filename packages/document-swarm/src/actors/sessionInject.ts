@@ -58,8 +58,8 @@ async function signInActor(
 }
 
 /**
- * Signs the actor in server-side and injects the resulting Supabase session into the
- * browser context as the cookies @supabase/ssr expects on the target origin, so the
+ * Signs the actor in server-side, then injects the resulting Supabase session into the
+ * browser context as the cookies @supabase/ssr expects on the target origin. The
  * webapp's browser client loads authenticated as that Swarm Actor.
  */
 export async function applyActorSession(

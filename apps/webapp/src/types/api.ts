@@ -15,10 +15,9 @@ export type TMsgRow = Omit<Database['public']['Tables']['messages']['Row'], 'met
   replied_message_details?: {
     message: TMsgRow
     /**
-     * Author of the replied-to message. Nullable because the row may
-     * have been written optimistically before user-presence resolved
-     * (e.g. on cold reload), and because the original author may have
-     * been soft-deleted (`users.deleted_at`).
+     * Author of the replied-to message. Nullable because the row may have been written
+     * optimistically before user-presence resolved (e.g. on cold reload). It is also null
+     * when the original author has been soft-deleted (`users.deleted_at`).
      */
     user: Profile | null
   }

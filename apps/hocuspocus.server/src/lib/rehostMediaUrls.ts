@@ -2,10 +2,10 @@ import * as Y from 'yjs'
 
 const MEDIA_ROUTE_SEGMENT = '/api/plugins/hypermultimedia/'
 
-// The whole route, not `/hypermultimedia/` alone: that segment also occurs in
-// third-party paths, and `replace` keeps the origin, so a raw.githubusercontent
-// URL under `extension-hypermultimedia/assets/` had its last two segments swapped
-// for a prefix that does not exist. Bounded to URL-safe runs so a query ends it.
+// The whole route, not `/hypermultimedia/` alone. That segment also occurs in
+// third-party paths, and `replace` keeps the origin. A raw.githubusercontent URL
+// under `extension-hypermultimedia/assets/` therefore had its last two segments
+// swapped for a prefix that does not exist. Bounded to URL-safe runs so a query ends it.
 const MEDIA_URL_PATTERN = /\/api\/plugins\/hypermultimedia\/([^/?#"'\s\\]+)\/([^/?#"'\s\\]+)/g
 
 // A dot segment is traversal, never an id. S3's `copyObject` has no containment
@@ -109,10 +109,10 @@ const rehostNode = (
 }
 
 /**
- * Repoints a duplicated snapshot's media URLs at the copy's own storage prefix
- * and reports every object they named, so the caller copies exactly those and
- * nothing else. Mutating the decoded doc rather than rebuilding it keeps every
- * Yjs item identity, which a transformer round-trip would mint afresh.
+ * Repoints a duplicated snapshot's media URLs at the copy's own storage prefix. It
+ * reports every object they named, so the caller copies exactly those and nothing
+ * else. Mutating the decoded doc rather than rebuilding it keeps every Yjs item
+ * identity, which a transformer round-trip would mint afresh.
  */
 export const rehostMediaUrls = (data: Uint8Array, targetDocumentId: string): RehostedSnapshot => {
   // Yjs v1 writes attribute strings as literal UTF-8, so bytes without this

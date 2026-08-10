@@ -94,8 +94,9 @@ export const Spotify = Node.create<SpotifyOptions>({
       },
       caption: captionAttribute(),
       ...layoutAttrDefaults(this.options),
-      // Tiptap auto-reads (and merge-wins) a bare embed iframe's `width="100%"` over a
-      // parse rule's getAttrs → a 100px sliver; sanitize both dims to an integer or the default.
+      // Tiptap auto-reads (and merge-wins) a bare embed iframe's `width="100%"` over
+      // a parse rule's getAttrs → a 100px sliver. Sanitize both dims to an integer
+      // or the default.
       width: {
         default: this.options.width,
         parseHTML: (el) => integerPxAttr(el.getAttribute('width'))

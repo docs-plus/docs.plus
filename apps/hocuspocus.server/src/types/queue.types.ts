@@ -40,8 +40,8 @@ export interface StoreDocumentData {
   state?: string
   context: StoreDocumentContext
   commitMessage?: string
-  // Attribution resolved in the store hook, never re-derived from `context`:
-  // the hook is the only place that can tell an explicit null from an absent key.
+  // Attribution resolved in the store hook, never re-derived from `context`.
+  // The hook is the only place that can tell an explicit null from an absent key.
   trigger?: VersionTrigger
   triggeredBy?: string | null
   contributors?: string[]

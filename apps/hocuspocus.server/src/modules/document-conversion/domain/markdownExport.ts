@@ -18,7 +18,7 @@ const markdownExtensions: Extensions = [
   Highlight
 ]
 
-// Constructing a manager mutates the global `marked` singleton, and its tokenizers
+// Constructing a manager mutates the global `marked` singleton. Its tokenizers
 // accumulate rather than replace (+12 per construction with this set), so a
 // per-call manager leaks unboundedly. Lazy: the module has no side effects.
 let markdownManager: MarkdownManager | null = null

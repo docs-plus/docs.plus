@@ -22,7 +22,7 @@ import type {
 import { MAX_CONTENT_BYTES } from '../types'
 
 // A repeat of this 500 for the same document means the per-doc debouncer is
-// poisoned and every later store rejects instantly — retrying keeps mutating
+// poisoned, and every later store rejects instantly. Retrying keeps mutating
 // and broadcasting to live clients while never persisting.
 const PERSIST_FAILED_MESSAGE =
   'The change may already be visible to live collaborators but was not persisted. Verify with GET before retrying; a repeat means server-side persistence is wedged.'

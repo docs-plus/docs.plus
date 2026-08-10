@@ -7,9 +7,9 @@ import type {} from '@tiptap/starter-kit'
 const HISTORY_GROUP_GAP_MS = 700
 
 // Two-transaction autolink trigger (same shape as autolink.cy.ts), with a
-// real pause between the word and the trailing space so prosemirror-history
-// (newGroupDelay 500ms) records them as separate undo events — the space +
-// appended autolink mark form their own step, the way paused typing does.
+// real pause between the word and the trailing space. `prosemirror-history`
+// (newGroupDelay 500ms) then records the two transactions as separate undo
+// events. The space + appended autolink mark form their own step, the way paused typing does.
 const typeThenAutolink = (text: string): void => {
   cy.getEditor().then((editor) => {
     editor.chain().focus().insertContent(text).run()

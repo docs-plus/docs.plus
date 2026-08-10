@@ -124,7 +124,7 @@ export const Placeholder = Extension.create<PlaceholderOptions>({
         },
 
         props: {
-          // Gate editability here, not in apply: setEditable() refreshes props via
+          // Gate editability here, not in apply. `setEditable()` refreshes props via
           // view.updateState without dispatching a transaction, so the placeholder
           // toggles immediately when the editor flips to/from read-only.
           decorations(state: EditorState): DecorationSet | null {

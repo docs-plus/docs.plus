@@ -123,8 +123,8 @@ export function updateNodeDimensions(
   const { state, dispatch } = editor.view
   const { tr } = state
 
-  // A stale position must never throw (nodeAt RangeErrors past doc end) or resize a
-  // foreign node — resizable media nodes are the ones carrying keyId + width attrs.
+  // A stale position must never throw (nodeAt RangeErrors past doc end) or resize
+  // a foreign node. Resizable media nodes are the ones carrying keyId + width attrs.
   if (nodePos < 0 || nodePos > state.doc.content.size) return
   const nodeAtPos = state.doc.nodeAt(nodePos)
   if (!nodeAtPos || !('keyId' in nodeAtPos.attrs) || !('width' in nodeAtPos.attrs)) return

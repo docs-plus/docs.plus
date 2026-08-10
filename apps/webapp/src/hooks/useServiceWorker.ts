@@ -55,9 +55,9 @@ const useServiceWorker = () => {
         !reg.waiting &&
         reg.active === priorActive
       ) {
-        // Redundant only signals failure when nothing replaced the worker:
-        // back-to-back deploys can activate a successor before this callback
-        // runs, leaving installing/waiting null but a CHANGED active worker.
+        // Redundant only signals failure when nothing replaced the worker.
+        // Back-to-back deploys can activate a successor before this callback runs,
+        // leaving installing/waiting null but a CHANGED active worker.
         reportSwIssue('worker-redundant', sw.scriptURL)
       }
     }

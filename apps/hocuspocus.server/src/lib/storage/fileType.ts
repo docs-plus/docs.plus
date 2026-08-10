@@ -1,9 +1,9 @@
 import type { FileTypeCategory } from '../../types'
 
 /**
- * Extract file type category from MIME type
- * MIME types follow the pattern: type/subtype (e.g., "image/jpeg", "video/mp4")
- * This automatically handles ALL subtypes without maintaining a hardcoded list
+ * Extracts the file type category from a MIME type. MIME types follow the
+ * pattern: type/subtype (e.g., "image/jpeg", "video/mp4"). This handles every
+ * subtype without maintaining a hardcoded list.
  */
 export const extractFileType = (mimeType: string): FileTypeCategory => {
   if (!mimeType) return 'unknown'

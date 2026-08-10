@@ -50,8 +50,8 @@ describe('Worker Server - Integration Tests', () => {
       })
 
       // Recovered source throws at module import time in lib/queue.ts when no
-      // Redis config is present, so the failure surfaces on stderr (a thrown
-      // error trace), not stdout. Drain both streams before checking exit code.
+      // Redis config is present. The failure surfaces on stderr (a thrown error
+      // trace), not stdout. Drain both streams before checking exit code.
       const [stdout, stderr] = await Promise.all([
         new Response(proc.stdout).text(),
         new Response(proc.stderr).text()

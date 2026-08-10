@@ -1,8 +1,8 @@
 # Change attribution
 
 Per-range authorship on a version diff is **best-effort provenance, not an audit trail.** Treat it
-the way you would a `git blame` on a repository where everyone shares a push key: useful for "who
-was working here", never evidence of who wrote a line.
+the way you would a `git blame` on a repository where everyone shares a push key. It is useful for
+"who was working here", never evidence of who wrote a line.
 
 ## What is captured
 
@@ -12,13 +12,13 @@ that is where a clientID is bound to a user. Bindings live in `DocumentClientAut
 
 The binding stores a raw Supabase `sub`, never a name. Identity resolves at read time against
 `public.users`, so an anonymous editor who later signs up upgrades their whole history with no
-backfill — Supabase keeps the same `auth.users.id` across that conversion.
+backfill. Supabase keeps the same `auth.users.id` across that conversion.
 
 ## What the guard does, and does not, prove
 
 A clientID is bound only when the socket announced it through awareness, the connection carries a
 user, and the document is not a draft. That rules out the accidental mis-binding this guard exists
-for: a reconnecting client replays another user's structs, and a naive binder would credit them to
+for. A reconnecting client replays another user's structs, and a naive binder would credit them to
 the reconnector.
 
 It does not prove ownership, and cannot:

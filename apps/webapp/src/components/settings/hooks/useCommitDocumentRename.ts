@@ -8,8 +8,8 @@ import type { DocumentSortKey, DocumentsPage } from '../types'
 
 /**
  * Optimistic title patch shared by the list inline-rename and the grid rename dialog.
- * `commit` resolves to `false` when the trimmed title is empty or unchanged (no PUT sent),
- * so callers can close/exit without waiting; otherwise the mutation drives `isPending`.
+ * `commit` resolves to `false` when the trimmed title is empty or unchanged (no PUT
+ * sent), so callers can close/exit without waiting. Otherwise the mutation drives `isPending`.
  */
 const useCommitDocumentRename = (userId: string, searchQuery: string, sortKey: DocumentSortKey) => {
   const queryClient = useQueryClient()

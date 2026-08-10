@@ -38,9 +38,9 @@ const stampVersion = (context: VersionOpContext, stamp: VersionStamp): void => {
 
 /**
  * Deliberately asymmetric. A live edit landing between this flush and the
- * disconnect flush must mint an honest unnamed, unattributed row, so the name
- * goes but an explicit null stays. Clearing the force key would re-derive the
- * plain job id on that flush and mint a duplicate row.
+ * disconnect flush must mint an honest unnamed, unattributed row. The name goes
+ * but an explicit null stays. Clearing the force key would re-derive the plain
+ * job id on that flush and mint a duplicate row.
  */
 const consumeVersionStamp = (context: VersionOpContext): void => {
   delete context.versionName
@@ -51,7 +51,7 @@ const consumeVersionStamp = (context: VersionOpContext): void => {
 export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>): VersionOps => {
   const { hocuspocus, prisma, logger, stripSnapshotMetadata } = deps
 
-  // A faithful WS-shaped context, not hygiene: a defensively-rowless first save
+  // A faithful WS-shaped context, not hygiene. A defensively-rowless first save
   // reads `context.slug` unguarded in the worker, and `{}` would stamp the
   // 19-char documentId into the ops email link.
   const buildContext = (meta: DocumentContentMeta, documentId: string): VersionOpContext => ({
@@ -79,17 +79,17 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
       return { status: 'open-failed' }
     }
 
-    // The stamp lands only once the write is certain: `finally` flushes on every
-    // path, so a name set at open time would mint a named row for an op that
-    // bailed — and retention never prunes a named row.
+    // The stamp lands only once the write is certain. `finally` flushes on every
+    // path. A name set at open time would mint a named row for an op that bailed,
+    // and retention never prunes a named row.
     const commit: Commit = async (mutate) => {
       stampVersion(context, stamp)
       try {
         await connection.transact(mutate)
       } finally {
-        // Consume on the rejection path too: the `finally` disconnect below
-        // re-runs the store hooks against this same context object, and a
-        // surviving stamp mints a named, attributed row for an op that 500'd.
+        // Consume on the rejection path too. The `finally` disconnect below
+        // re-runs the store hooks against this same context object. A surviving
+        // stamp mints a named, attributed row for an op that 500'd.
         consumeVersionStamp(context)
       }
     }
@@ -102,8 +102,8 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
       return { status: 'persist-failed' }
     } finally {
       // A rejected store leaves the debouncer's execution uncleared, so
-      // disconnect() rejects too — a bare await would swap the crafted 500 for
-      // a generic one plus Sentry noise.
+      // disconnect() rejects too. A bare await would swap the crafted 500 for a
+      // generic one plus Sentry noise.
       await connection
         .disconnect()
         .catch((error) =>
@@ -161,15 +161,15 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
         { err: decoded.error, documentId, version: targetVersion },
         'Version snapshot decode failed'
       )
-      // Filed even though the caller gets a 422: the status is about the request,
+      // Filed even though the caller gets a 422. The status is about the request,
       // but the cause is a corrupt stored row that is now permanently unrestorable.
       captureUnknown(decoded.error, { extra: { documentId, version: targetVersion } })
       return { status: 'invalid-content', detail: 'stored version could not be decoded' }
     }
 
     // Caps off: these bytes are our own stored snapshot, and WS editing never
-    // enforced them, so a document that outgrew the API limit would otherwise
-    // have every one of its versions permanently unrestorable.
+    // enforced them. A document that outgrew the API limit would otherwise have
+    // every one of its versions permanently unrestorable.
     const encoded = encodeContent(decoded.json as unknown as TiptapDocJson, {
       requireTitleHeading: true,
       enforceSizeCaps: false
@@ -193,10 +193,10 @@ export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>)
         const live = connection.document
         if (!live) return { status: 'persist-failed' }
 
-        // Capture the live doc — unsaved debounce-window work included — and
-        // commit the backup before the restore exists, so a dead worker still
-        // leaves the pre-restore state recoverable. Those unsaved edits belong
-        // to the backup row, so drain the contributors onto it.
+        // Capture the live doc, unsaved debounce-window work included. Commit the
+        // backup before the restore exists, so a dead worker still leaves the
+        // pre-restore state recoverable. Those unsaved edits belong to the backup
+        // row, so drain the contributors onto it.
         const snapshot = stripSnapshotMetadata(Y.encodeStateAsUpdate(live))
         const backup = await appendBackupRow(prisma, {
           documentId,

@@ -116,9 +116,9 @@ const SignInForm = ({
       email: magicLinkEmail,
       options: {
         // Preserve the full return context (deep-link / open_heading_chat params)
-        // exactly like the OAuth path — magic-link users must land back where they were.
-        // returnTo (when set) already carries pathname+search; the OTP base ends in
-        // '/', so strip its leading slash to match the reconstructed-path format.
+        // exactly like the OAuth path. Magic-link users must land back where they were.
+        // The returnTo value (when set) already carries pathname+search. The OTP base
+        // ends in '/', so strip its leading slash to match the reconstructed-path format.
         emailRedirectTo:
           process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT +
           (returnTo ? returnTo.replace(/^\//, '') : redirectPathname + window.location.search)

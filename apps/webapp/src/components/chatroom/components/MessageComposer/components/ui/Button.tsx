@@ -37,8 +37,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     ref
   ) => {
     const isButtonActive = isActive || editor?.isActive(type || '')
-    // Click is wired unconditionally below (unlike the pad button, which gates on `onPress`): the hook's
-    // `preventDefault` on every click keeps the composer editor selection from being stolen.
+    // Click is wired unconditionally below, unlike the pad button, which gates on `onPress`.
+    // The hook's `preventDefault` on every click keeps the composer editor selection from being stolen.
     const { handleTouchEnd, handleClick } = useTouchPress(onPress, onClick)
 
     return (

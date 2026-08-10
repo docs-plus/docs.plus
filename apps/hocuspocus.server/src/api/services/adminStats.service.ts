@@ -355,7 +355,7 @@ export async function deleteDocument(prisma: PrismaClient, id: number, confirmSl
   if (!document) return { status: 'not_found' as const }
   if (confirmSlug !== document.slug) return { status: 'mismatch' as const }
 
-  // The documentId comes off the metadata row, never off the request: the hand-
+  // The documentId comes off the metadata row, never off the request. The hand-
   // rolled delete this replaces keyed the workspace on the human slug and erased
   // nothing. A throw here surfaces as a 500 instead of a false success.
   const { purged } = await purgeDocumentFootprint(prisma, getSupabaseClient(), {

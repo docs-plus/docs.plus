@@ -58,7 +58,7 @@ make dev-local
 
 URLs, sign-in notes, stop commands, and the full-Docker alternative (`make up-dev`) live in the [README Quick Start](README.md#-quick-start).
 
-Something off? Check your environment:
+If something is wrong, check your environment:
 
 ```bash
 bun run doctor
@@ -68,7 +68,7 @@ bun run doctor
 
 ### Project rules (and AI coding agents)
 
-The repo's durable conventions live in [`AGENTS.md`](AGENTS.md) — package manager, commit policy, code quality, test policy. Rules that apply to one area live in that area's `CLAUDE.md` (`apps/webapp/`, `apps/hocuspocus.server/`, `packages/supabase/`, `extensions/`, and a few nested ones); [`AGENTS.md`](AGENTS.md) §Filed by directory maps every section to its file. AI coding agents load these automatically by path — humans should skim the ones covering the area they are changing.
+The repo's durable conventions live in [`AGENTS.md`](AGENTS.md) — package manager, commit policy, code quality, test policy. Rules that apply to one area live in that area's `CLAUDE.md` (`apps/webapp/`, `apps/hocuspocus.server/`, `packages/supabase/`, `extensions/`, and a few nested ones). [`AGENTS.md`](AGENTS.md) §Filed by directory maps every section to its file. AI coding agents load these automatically by path — humans should skim the ones covering the area they are changing.
 
 `bun run check:agent-docs` verifies that every cross-reference between those files still resolves. It runs as part of `bun run check`.
 

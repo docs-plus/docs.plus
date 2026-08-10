@@ -10,9 +10,9 @@ export interface CaretUser {
   avatarUpdatedAt?: string | null
 }
 
-// One caret color per page load: multiple awareness writers each rolling
-// their own randomColor made the local caret flip colors on every
-// reconnect/effect and broadcast disagreeing user payloads back to back.
+// One caret color per page load. Multiple awareness writers each rolling their own
+// randomColor made the local caret flip colors on every reconnect/effect. Those
+// writers also broadcast disagreeing user payloads back to back.
 const caretColor = randomColor({ luminosity: 'light' })
 
 export const getCursorUser = (profile: Profile | null): CaretUser => {

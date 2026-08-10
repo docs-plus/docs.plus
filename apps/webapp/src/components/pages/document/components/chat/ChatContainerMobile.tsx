@@ -31,10 +31,10 @@ const ChatContainerMobile = () => {
   if (!headingId) return null
 
   return (
-    // True last-in-flow element — carries the safe-area inset so it stays reserved beneath
-    // whichever child renders last (Chatroom vs ComposerEmojiPanel are siblings; the composer
-    // alone can't know which is visually at the bottom). ChatPane reads `data-chat-pane-body`
-    // to fold this inset into its height clamp.
+    // True last-in-flow element. This element carries the safe-area inset, so the inset
+    // stays reserved beneath whichever child renders last. Chatroom and ComposerEmojiPanel
+    // are siblings, and the composer alone can't know which is visually at the bottom.
+    // ChatPane reads `data-chat-pane-body` to fold this inset into its height clamp.
     <div data-chat-pane-body className="flex h-full flex-col pb-[env(safe-area-inset-bottom,0px)]">
       <Chatroom variant="mobile" className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <Chatroom.MessageFeed showScrollToBottom />

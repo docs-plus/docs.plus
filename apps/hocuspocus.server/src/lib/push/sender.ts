@@ -145,8 +145,8 @@ export async function sendPushNotification(
     channel_id: request.channel_id
   })
 
-  // Send to all subscriptions, bucketing the outcome so the per-row state writes
-  // can be flushed as batched queries below instead of one UPDATE per send (N+1).
+  // Send to all subscriptions, bucketing the outcome. The per-row state writes can
+  // then be flushed as batched queries below, instead of one UPDATE per send (N+1).
   const successIds: string[] = []
   const invalidIds: string[] = []
   const failures: { id: string; failed_count: number; last_error: string }[] = []

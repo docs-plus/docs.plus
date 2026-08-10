@@ -12,9 +12,9 @@ const FLOATING = '.floating-popover'
 const FLOATING_VISIBLE = '.floating-popover.visible'
 
 // Tall enough that the playground's centered card overflows the 800px
-// viewport and the document scrolls. 80 paragraphs ≈ 2400px of doc
-// height — plenty of headroom on either side of the anchor for a
-// 200px scroll without pushing it off-screen.
+// viewport and the document scrolls. Those 80 paragraphs give ≈ 2400px of
+// doc height. That is plenty of headroom on either side of the anchor for a
+// 200px scroll without pushing the anchor off-screen.
 const buildLongDoc = (anchorHtml: string): string => {
   const filler = Array.from({ length: 40 }, (_, i) => `<p>Filler paragraph ${i + 1}.</p>`).join('')
   return `${filler}<p>Anchor: ${anchorHtml}</p>${filler}`
@@ -23,13 +23,13 @@ const buildLongDoc = (anchorHtml: string): string => {
 const SCROLL_PX = 200
 // Park the anchor mid-viewport (800px tall) before measuring. Cypress' default
 // `scrollBehavior: 'top'` leaves it at y≈0, where scrolling SCROLL_PX pushes it
-// off-screen — there `shift` clamps the popover to the top padding and `hide`
-// marks it hidden, which is correct engine behaviour but not 1-for-1 tracking.
+// off-screen. There `shift` clamps the popover to the top padding and `hide`
+// marks it hidden — correct engine behaviour, but not 1-for-1 tracking.
 const ANCHOR_VIEWPORT_TOP_PX = 400
-// Settle window for any open-time auto-scroll (input focus on the
-// create popover, ProseMirror scrollIntoView on selection set) BEFORE
-// taking the `before` measurement, so the deltas reflect just the
-// test's own scrollBy and not the popover's own startup choreography.
+// Settle window for any open-time auto-scroll (input focus on the create
+// popover, ProseMirror scrollIntoView on selection set), taken BEFORE the
+// `before` measurement. The deltas then reflect only the test's own scrollBy,
+// not the popover's own startup choreography.
 const SETTLE_MS = 200
 // autoUpdate scroll listener + floating-ui computePosition; headless Linux CI
 // needs more than one rAF tick.
@@ -104,9 +104,9 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
 
   it('create popover dismisses itself when a doc mutation invalidates the captured selection range', () => {
     // A remote op (Yjs) shrinking the doc puts the create popover's captured
-    // `from`/`to` out of range, and `coordsAtPos()` throws inside
-    // `computePosition`, where `autoUpdate` never catches it. `setContent`
-    // reproduces the same invalid-position reposition a remote op would.
+    // `from`/`to` out of range. Then `coordsAtPos()` throws inside
+    // `computePosition`, where `autoUpdate` never catches the error.
+    // `setContent` reproduces the same invalid-position reposition a remote op would.
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()
     cy.selectText('select-this-target-word')

@@ -13,8 +13,8 @@ let openSurfaces = 0
 
 /**
  * One marked history entry while any surface is open below `md`, so hardware back closes the
- * surface instead of leaving the document; X / scrim / drag flip `isOpen` and consume it here.
- * Boolean marker, same protocol as `useSettingsModal` and the composer emoji/link stores: pop
+ * surface instead of leaving the document. X / scrim / drag flip `isOpen` and consume it here.
+ * Boolean marker, same protocol as `useSettingsModal` and the composer emoji/link stores. Pop
  * only while our own marker is on top, so another surface's entry can never be popped by us.
  */
 export function useHistoryDismiss(isOpen: boolean, onDismiss: () => void): void {
@@ -38,8 +38,8 @@ export function useHistoryDismiss(isOpen: boolean, onDismiss: () => void): void 
     return () => {
       window.removeEventListener('popstate', onPopState)
       openSurfaces -= 1
-      // Deferred: React runs every cleanup before any effect, so a sibling opening in this same
-      // flush (TOC drawer -> filter sheet) has not adopted the entry yet.
+      // Deferred: React runs every cleanup before any effect. A sibling opening in this
+      // same flush (TOC drawer -> filter sheet) has not adopted the entry yet.
       queueMicrotask(() => {
         if (openSurfaces === 0 && markerIsLive()) window.history.back()
       })

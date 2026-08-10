@@ -118,7 +118,7 @@ describe('draft first-edit anchor (full stack)', () => {
     cy.request(`${REST}/documents/${slug}`).then((first) => {
       const documentId = first.body.data.documentId
       // Charset, not just length: lower(documentId) lands in workspaces.slug under a
-      // CHECK that rejects `_`, so a base64url "simplification" passes a length test
+      // CHECK that rejects `_`. A base64url "simplification" passes a length test
       // and breaks in production.
       expect(documentId, 'draft id').to.match(/^[0-9a-zA-Z]{19}$/)
 

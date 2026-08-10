@@ -90,10 +90,10 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
   }
 }
 
-// S3 `copyObject`'s local twin. Both ids and the file name come from a URL stored
-// in document content, so both paths resolve against the same root `get` serves
-// from and must land inside it — a `..` in either would write outside the media
-// tree. `false` means the source object is gone (its prefix was already purged).
+// S3 `copyObject`'s local twin. Both ids and the file name come from a URL stored in document
+// content, so both paths resolve against the same root `get` serves from. Both must land inside
+// that root: a `..` in either would write outside the media tree. `false` means the source object
+// is gone (its prefix was already purged).
 export const copyObject = async (
   sourceDocumentId: string,
   fileName: string,
@@ -105,7 +105,7 @@ export const copyObject = async (
   const contained = (candidate: string) => candidate.startsWith(root + path.sep)
 
   // A refusal is not an absence, so it throws rather than reporting a copy that
-  // never happened: the duplicate would otherwise land with URLs under a prefix
+  // never happened. The duplicate would otherwise land with URLs under a prefix
   // nothing ever wrote. The URL scan drops dot segments, so this stays a guard.
   if (!contained(sourcePath) || !contained(targetPath)) {
     storageLocalLogger.error(

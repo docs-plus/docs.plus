@@ -11,7 +11,7 @@ describe('preload="none" media', () => {
 
   // Regression: `preload: 'none'` fires none of load/loadeddata/canplay and holds
   // readyState at HAVE_NOTHING, so a readyState-only probe left the shell on
-  // `pending` — and `.hm-media-slot` is opacity 0 until ready/error, which hides
+  // `pending`. The `.hm-media-slot` is opacity 0 until ready/error, which hides
   // the player rather than merely dropping the spinner.
   it('reveals a video whose controls need no buffered data', () => {
     cy.getEditor().then((editor) => {

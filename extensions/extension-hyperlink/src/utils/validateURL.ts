@@ -21,9 +21,9 @@ export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
  */
 export const isSafeHref = (href: string | null | undefined): href is string => {
   if (typeof href !== 'string' || href.length === 0) return false
-  // Test a control-stripped copy: `new URL()` discards ASCII tab/LF/CR and
-  // C0 controls, so `java\tscript:` navigates as `javascript:` — embedded
-  // controls must not smuggle a dangerous scheme past the regex.
+  // Test a control-stripped copy. `new URL()` discards ASCII tab/LF/CR and C0
+  // controls, so `java\tscript:` navigates as `javascript:`. Embedded controls
+  // must not smuggle a dangerous scheme past the regex.
   // eslint-disable-next-line no-control-regex -- matching C0 controls is the point
   return !DANGEROUS_SCHEME_RE.test(href.replace(/[\u0000-\u0020]+/g, ''))
 }

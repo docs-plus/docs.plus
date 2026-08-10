@@ -44,8 +44,8 @@ Keep `ENABLE_SCHEMA_MIGRATION` on through the migration window plus a short grac
 
 Per document, every history row is planned: decode → rename → encode → round-trip → assert no legacy media types remain. If any row fails, the whole document is skipped — never partial history. One interactive transaction per document; `UPDATE` by `id`+`version` (optimistic lock); no `DELETE`/`INSERT`; only `data` bytes change.
 
-Webapp-only stored attrs (`paragraphStyle`, `toc-id` on tables and hyperlink marks, hyperlink `rel`/`class`/`title`) are registered in `migration-extensions.ts`, so re-encode preserves their stored values — ProseMirror silently drops attrs its schema does not know.
+Webapp-only stored attrs (`paragraphStyle`, `toc-id` on tables and hyperlink marks, hyperlink `rel`/`class`/`title`) are registered in `migration-extensions.ts`, so re-encode preserves their stored values. ProseMirror silently drops attrs its schema does not know.
 
 ## Memory ceiling
 
-Per document, the script loads every history row and holds all re-encoded buffers until one transaction commits — peak memory is O(versions × document size), each row a full snapshot. A single document with very deep history can exhaust process memory. The per-document transaction is the atomicity boundary, so this is deliberately not chunked. Migrate an unusually large document on its own with `--doc <id>` on a host with adequate memory.
+Per document, the script loads every history row and holds all re-encoded buffers until one transaction commits. Peak memory is O(versions × document size), each row a full snapshot. A single document with very deep history can exhaust process memory. The per-document transaction is the atomicity boundary, so this is deliberately not chunked. Migrate an unusually large document on its own with `--doc <id>` on a host with adequate memory.

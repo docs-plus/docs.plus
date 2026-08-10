@@ -14,10 +14,10 @@ export const bullmqConnectionOptions = {
   keepAlive: config.redis.keepAlive
 }
 
-// Worker (blocking bzpopmin) connections: commandTimeout races the block, and a
+// Worker (blocking bzpopmin) connections: commandTimeout races the block. A
 // retryStrategy that ever returns null permanently kills the consumer while
 // BullMQ parks its fetch loop silently and /health keeps reporting healthy
-// (2026-07-14 sleep-wake incident) — so retry forever, even in dev.
+// (2026-07-14 sleep-wake incident). The fix is to retry forever, even in dev.
 export const bullmqWorkerConnectionOptions = {
   ...bullmqConnectionOptions,
   commandTimeout: undefined,

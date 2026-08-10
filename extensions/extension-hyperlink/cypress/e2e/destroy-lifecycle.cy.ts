@@ -1,9 +1,9 @@
 /// <reference types="cypress" />
 
 /**
- * Editor-destroy lifecycle for the popover singleton: destroying the
- * editor that opened a popover tears it down (no leaked body-appended
- * DOM), while destroying an unrelated editor must leave it untouched.
+ * Editor-destroy lifecycle for the popover singleton. Destroying the editor
+ * that opened a popover tears it down, with no leaked body-appended DOM.
+ * Destroying an unrelated editor must leave the popover untouched.
  */
 
 const PREVIEW = '.hyperlink-preview-popover'
@@ -30,8 +30,8 @@ describe('destroy lifecycle — popover ownership', () => {
     cy.get(PREVIEW).should('be.visible')
 
     // Scratch editor wired with the same extension set (including this
-    // package's Hyperlink), so its destroy runs the mark's onDestroy hook
-    // — which must only close popovers the scratch editor itself opened.
+    // package's Hyperlink), so its destroy runs the mark's onDestroy hook.
+    // That hook must only close popovers the scratch editor itself opened.
     cy.window().then((win) => {
       const host = win.document.createElement('div')
       win.document.body.appendChild(host)
@@ -56,9 +56,9 @@ describe('destroy lifecycle — popover ownership', () => {
 
 /**
  * `createPopover` is public API, so a BYO consumer can drive show/hide directly.
- * Hiding releases controller ownership and nothing re-adopts, so re-showing
- * would leave a popover on screen that `close()` cannot see and the next
- * `adopt()` will not evict — two popovers at once. `hide()` is terminal instead.
+ * Hiding releases controller ownership and nothing re-adopts. Re-showing would
+ * leave a popover on screen that `close()` cannot see and the next `adopt()`
+ * will not evict — two popovers at once. `hide()` is terminal instead.
  */
 describe('popover one-shot contract', () => {
   beforeEach(() => {
@@ -94,10 +94,10 @@ describe('popover one-shot contract', () => {
     cy.get('.probe-popover-content').should('not.exist')
   })
 
-  // The reason for the contract: an orphan is invisible to the controller, so
-  // the next adopt() has no `previous` to evict and both stay on screen. Assert
-  // the count — controller state alone cannot fail here, since neither the old
-  // nor the new code re-adopts on show().
+  // The reason for the contract: an orphan is invisible to the controller. The
+  // next adopt() then has no `previous` to evict, and both stay on screen.
+  // Assert the count — controller state alone cannot fail here, since neither
+  // the old nor the new code re-adopts on show().
   it('cannot strand an orphan alongside the next popover', () => {
     cy.window().then((win) => {
       const first = openBarePopover(win)

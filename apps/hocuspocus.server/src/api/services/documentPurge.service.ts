@@ -7,10 +7,10 @@ import { documentsServiceLogger as purgeLogger } from '../../lib/logger'
 import { normalizeSlug } from '../../lib/slug'
 import { deleteDocumentMedia } from './media.service'
 
-// `permanent` deletes the row whether or not it is tombstoned, so it must be
-// spelled out: an optional cutoff would make an unguarded hard delete the arm a
-// caller reaches by forgetting a field. Callers that pass it have already gated
-// (owner plus soft-deleted, or admin slug confirmation).
+// `permanent` deletes the row whether or not it is tombstoned, so it must be spelled
+// out. An optional cutoff would make an unguarded hard delete the arm a caller reaches
+// by forgetting a field. Callers that pass it have already gated (owner plus
+// soft-deleted, or admin slug confirmation).
 export type PurgeScope = { retention: Date } | { permanent: true }
 
 export interface PurgeDocumentOptions {
@@ -20,7 +20,7 @@ export interface PurgeDocumentOptions {
 }
 
 // Contract order: Supabase RPC (chat media, analytics, workspace cascade), then
-// editor media (a store the RPC cannot reach), then the seal, then the driver row
+// editor media (a store the RPC cannot reach). Then the seal, then the driver row
 // LAST. Accepted failure: an RPC that lands before a throw leaves the doc hollow
 // but live and openable, and the caller retries.
 export async function purgeDocumentFootprint(
@@ -51,8 +51,8 @@ export async function purgeDocumentFootprint(
     timestamp: new Date().toISOString()
   })
 
-  // Row delete and epoch bump share a transaction: the delete frees the slug, and a
-  // draft opened in the gap would derive this document's id and let a stale
+  // Row delete and epoch bump share a transaction, because the delete frees the slug.
+  // A draft opened in the gap would derive this document's id, and let a stale
   // IndexedDB mirror sync the erased content back.
   const count = await prisma.$transaction(
     async (tx) => {
@@ -64,10 +64,10 @@ export async function purgeDocumentFootprint(
       })
       if (count === 0) return 0
 
-      // One key for the read, the derivation and the bump. `updateDocument` and the
-      // store worker can both persist an un-normalized slug, and `resolveDraftDocumentId`
-      // reads the epoch normalized — keying the bump off the raw slug lands it where
-      // nothing reads it, and the next visitor re-derives the erased id.
+      // One key for the read, the derivation and the bump. `updateDocument` and the store
+      // worker can both persist an un-normalized slug, and `resolveDraftDocumentId` reads
+      // the epoch normalized. Keying the bump off the raw slug lands it where nothing
+      // reads it, and the next visitor re-derives the erased id.
       const key = normalizeSlug(slug)
       const current =
         (await tx.documentSlugEpoch.findUnique({ where: { slug: key }, select: { epoch: true } }))
@@ -92,9 +92,9 @@ export async function purgeDocumentFootprint(
     },
     // The reaper is hourly and background, so both bounds favour finishing over
     // failing fast — the opposite of the save path's. Prisma's 2s/5s defaults are a
-    // deadline the bare deleteMany never had: the worst live document is 23 MB across
-    // 18 cascading version rows (max 119 versions), and a P2028 here is permanent,
-    // because the retry re-runs an already-erased footprint into the same wall.
+    // deadline the bare deleteMany never had. The worst live document is 23 MB across
+    // 18 cascading version rows (max 119 versions). A P2028 here is permanent, because
+    // the retry re-runs an already-erased footprint into the same wall.
     { maxWait: 10_000, timeout: 30_000 }
   )
   return { purged: count }

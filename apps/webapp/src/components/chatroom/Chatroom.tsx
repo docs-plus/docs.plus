@@ -20,7 +20,7 @@ const ChatRoom = ({
 
   // The four in-app deep-link entry points (BookmarkItem, hrefEventHandler,
   // NotificationItem, usePushNotifications) push `fetchMsgsFromId` into the
-  // store; shared links land with `?msg_id=` on first paint and no store
+  // store. Shared links land with `?msg_id=` on first paint and no store
   // value. Prop wins if a parent passes one explicitly.
   const urlMsgId =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('msg_id') : null

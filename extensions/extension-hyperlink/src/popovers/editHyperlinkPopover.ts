@@ -113,10 +113,10 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
     }
     if (hasErrors) return
 
-    // `editHyperlink` returns `false` on two paths: the URL fails the composed
-    // XSS + `isAllowedUri` gate (inline error, popover stays open), or the mark
-    // is gone at the stored selection (e.g. a collab peer removed the link) —
-    // then there is nothing left to edit, so close instead of blaming the URL.
+    // `editHyperlink` returns `false` on two paths. First, the URL fails the
+    // composed XSS + `isAllowedUri` gate (inline error, popover stays open).
+    // Second, the mark is gone at the stored selection (e.g. a collab peer removed
+    // the link). Then there is nothing left to edit, so close instead of blaming the URL.
     const markName = options.markName ?? HYPERLINK_MARK_NAME
     const ok = editor
       .chain()

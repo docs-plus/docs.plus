@@ -1,18 +1,18 @@
 /// <reference types="cypress" />
 
 // The unit tests only cover the 50+ scheme / domain-mapping catalog in
-// `specialUrls.ts`; this proves the editor emits the right `<a href>` for them
-// through the real write paths — autolink via `SPECIAL_SCHEME_REGEX_GLOBAL`,
-// the create popover via `normalizeHref` + `validateURL`.
+// `specialUrls.ts`. This spec proves the editor emits the right `<a href>` for
+// that catalog through the real write paths. Autolink goes via
+// `SPECIAL_SCHEME_REGEX_GLOBAL`; the create popover via `normalizeHref` + `validateURL`.
 
 const POPOVER = '.hyperlink-create-popover'
 const INPUT = `${POPOVER} input[name="hyperlink-url"]`
 const WRAPPER = `${POPOVER} .inputs-wrapper`
 
-// Mirrors the helper in `autolink.cy.ts`: insert the URL and the
-// trailing space in *separate* transactions so the autolink plugin sees
-// the whitespace-trigger boundary on its own tick (matches per-keystroke
-// typing more faithfully than a single atomic `insertContent`).
+// Mirrors the helper in `autolink.cy.ts`. Insert the URL and the trailing
+// space in *separate* transactions, so the autolink plugin sees the
+// whitespace-trigger boundary on its own tick. That matches per-keystroke
+// typing more faithfully than a single atomic `insertContent`.
 const typeThroughAutolink = (text: string): void => {
   cy.getEditor().then((editor) => {
     editor.chain().focus().insertContent(text).run()

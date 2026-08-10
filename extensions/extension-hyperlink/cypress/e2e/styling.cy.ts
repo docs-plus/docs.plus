@@ -1,8 +1,9 @@
 /// <reference types="cypress" />
 
-// Packaging regression net: proves the `./styles.css` subpath export actually
-// loads, the CSS ↔ JS class contract the README documents as public API holds
-// both ways, and color tokens use `light-dark()` so `color-scheme` flips them.
+// Packaging regression net. Proves the `./styles.css` subpath export actually
+// loads, and that the CSS ↔ JS class contract the README documents as public
+// API holds both ways. Also proves color tokens use `light-dark()`, so
+// `color-scheme` flips them.
 
 const DOCUMENTED_CSS_VARS = [
   '--hl-bg',
@@ -89,9 +90,10 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
   })
 
   describe('--hl-* design tokens', () => {
-    // Read the shipped `:root` rule text, not `getComputedStyle`: the playground
-    // injects nine of these tokens on `html[data-theme]`, which outranks `:root`
-    // and would keep the assertions green after they were deleted from the sheet.
+    // Read the shipped `:root` rule text, not `getComputedStyle`. The playground
+    // injects nine of these tokens on `html[data-theme]`, which outranks `:root`.
+    // That would keep the assertions green after the tokens were deleted from
+    // the sheet.
     it('declares every documented token on :root', () => {
       cy.document().then((doc) => {
         const rootText = rootRuleText(doc)
@@ -116,9 +118,10 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
   })
 
   describe('class contract (JS ↔ CSS)', () => {
-    // If the JS module renders classes that the CSS never styles, or the CSS
-    // styles classes the JS never renders, the "public styling surface"
-    // documented in the README is a lie. These tests keep both sides honest.
+    // The JS module may render classes that the CSS never styles. The CSS may
+    // style classes the JS never renders. In either case the "public styling
+    // surface" documented in the README is a lie. These tests keep both sides
+    // honest.
 
     it('create popover DOM uses only classes that exist in the stylesheet', () => {
       cy.setEditorContent('<p>Select this word</p>')

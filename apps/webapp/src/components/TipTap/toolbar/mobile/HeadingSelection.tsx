@@ -128,7 +128,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 }
 
 // NOT memoized on purpose: `centerLabel`/stepper-disabled read live editor state at render
-// (`isFirstBlockSelected`), which isn't in props — so it must re-render on every transaction via the
-// parent's `useReRenderOnEditorTransaction`. Memoizing leaves those stale when moving between two
-// same-level headings (state unchanged, but first-block-ness flips).
+// (`isFirstBlockSelected`), which isn't in props. HeadingSelection must therefore re-render on every
+// transaction via the parent's `useReRenderOnEditorTransaction`. Memoizing leaves those stale when
+// moving between two same-level headings (state unchanged, but first-block-ness flips).
 export default HeadingSelection

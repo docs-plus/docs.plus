@@ -96,7 +96,7 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
         if (!selection.empty) return false
         const { $from } = selection
         // At the very end of the document the default arrow can't move out of an
-        // inclusive code mark — clear the stored mark so the next char is plain.
+        // inclusive code mark. Clear the stored mark so the next char is plain.
         // No space is inserted (core's `exitable` handler would insert one).
         // `Selection.atEnd` also covers a last textblock nested in blockquote/list.
         if (

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 const TAKEOVER_MQ = '(max-width: 767px)'
 
 /**
- * Sole consumer of the takeover's history entry: pops it (if present) and resolves once the
- * traversal lands — callers that navigate next (sign-out) await this instead of guessing.
+ * Sole consumer of the takeover's history entry. Pops it (if present) and resolves once
+ * the traversal lands. Callers that navigate next (sign-out) await this instead of guessing.
  */
 export const consumeSettingsTakeoverEntry = (): Promise<void> => {
   if (!window.history.state?.settingsTakeover) return Promise.resolve()
@@ -16,8 +16,8 @@ export const consumeSettingsTakeoverEntry = (): Promise<void> => {
 
 /**
  * Open state for the Settings modal. Below `md` (the mobileTakeover breakpoint) an open
- * panel pushes one history entry so hardware/browser back closes the surface instead of
- * leaving the page (ComposerEmojiPanel precedent); X/Esc/scrim close consumes the entry.
+ * panel pushes one history entry, so hardware/browser back closes the surface instead of
+ * leaving the page (ComposerEmojiPanel precedent). X/Esc/scrim close consumes the entry.
  */
 export const useSettingsModal = (takeoverEnabled = true) => {
   const [isOpen, setIsOpen] = useState(false)

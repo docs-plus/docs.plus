@@ -1,10 +1,10 @@
 /**
- * Real-infra E2E for the Document Content API:
- * REST → the WS process's internal listener → openDirectConnection → transact →
- * BullMQ worker → Postgres, with a real collaboration client watching.
+ * Real-infra E2E for the Document Content API. The path is REST → the WS
+ * process's internal listener → openDirectConnection → transact → BullMQ worker →
+ * Postgres. A real collaboration client watches.
  *
- * Run as a standalone process (NOT `bun test`): BullMQ's worker run-loop does not
- * progress under the bun test runner, but works in a normal process (as in prod).
+ * Run as a standalone process, NOT `bun test`. BullMQ's worker run-loop does not
+ * progress under the bun test runner. It works in a normal process, as in prod.
  * Needs the `make dev-local` docker services (Postgres + Redis) and root .env.local.
  */
 import { TiptapTransformer } from '@hocuspocus/transformer'
@@ -177,8 +177,8 @@ const fragmentText = (ydoc: Y.Doc): string => {
 }
 
 // Resolved against the webapp because @hocuspocus/provider is a webapp
-// dependency, not a backend one — hoisting it for a test-only client would put
-// a client library in the server's dependency graph.
+// dependency, not a backend one. Hoisting the provider for a test-only client
+// would put a client library in the server's dependency graph.
 const providerModule = await import(
   Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
 )
@@ -381,9 +381,9 @@ try {
       })
     })
     // This is the one content surface on requireServiceRoleOrUser, so a failed
-    // service-role compare falls through to user verification: 401 against a live
-    // Supabase, 503 when it is unreachable, and CI points SUPABASE_URL at a closed
-    // port. Both are rejections — what matters is the write count below.
+    // service-role compare falls through to user verification. That gives 401 against
+    // a live Supabase, and 503 when Supabase is unreachable. CI points SUPABASE_URL at
+    // a closed port. Both are rejections — the write count below matters.
     check(
       post.status === 401 || post.status === 503,
       `POST with content and a wrong bearer was rejected (got ${post.status})`

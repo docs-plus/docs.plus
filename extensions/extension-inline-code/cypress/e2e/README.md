@@ -1,6 +1,6 @@
 # extension-inline-code E2E
 
-Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playground` (`docs-playground` on port 5176). Loads built `dist/` like an npm consumer. `?starterkitCode=on` re-enables StarterKit's `code` mark for the collision specs; `?trailingNode=off` lets a nested block sit at the absolute document end for the arrow-exit specs; `?markdown=on` loads `@tiptap/markdown` for the round-trip spec.
+Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playground` (`docs-playground` on port 5176). Loads built `dist/` like an npm consumer. `?starterkitCode=on` re-enables StarterKit's `code` mark for the collision specs. `?trailingNode=off` lets a nested block sit at the absolute document end for the arrow-exit specs. `?markdown=on` loads `@tiptap/markdown` for the round-trip spec.
 
 | Spec                         | What it proves                                                                                                                                                                                        |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

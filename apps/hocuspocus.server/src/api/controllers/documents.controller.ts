@@ -297,8 +297,8 @@ export const permanentDeleteDocument = async (c: AppContext): Promise<Response> 
 // body empties the whole trash; { ids } purges that selection. Returns the count.
 export const purgeTrash = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
-  // requireUser guarantees userId (401 upstream on a missing/invalid token) —
-  // trust it like every sibling handler; the service also guards the empty-all
+  // requireUser guarantees userId (401 upstream on a missing/invalid token), so
+  // trust it like every sibling handler. The service also guards the empty-all
   // query so a missing owner can never widen the scope.
   const requesterId = c.get('userId') as string
   const { ids } = getValidJson<TrashPurgeInput>(c)

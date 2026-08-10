@@ -144,8 +144,8 @@ function skipZeroWidthLeaves(doc: Node, pos: number): number {
 
 /**
  * One linear walk over the selected textblocks. Each line is targeted at its content start, so a
- * selection beginning mid-line still indents from the line start, and each line's text is read to
- * the block end so leading-indent checks see the full line. Empty blocks are not visual lines.
+ * selection beginning mid-line still indents from the line start. Each line's text is read to the
+ * block end, so leading-indent checks see the full line. Empty blocks are not visual lines.
  * Returns `false` if any line sits in a disallowed context.
  */
 function multilineLinesIfAllowed(
@@ -264,7 +264,7 @@ export const Indent = Extension.create<IndentOptions>({
               textBeforeCursor.length >= indentChars.length &&
               state.doc.textBetween(cursorPos - indentChars.length, cursorPos) === indentChars
             // At line start there is no text before the cursor, so look forward at
-            // the line's own leading indent (else Shift-Tab at line start is a no-op).
+            // the line's own leading indent. Otherwise Shift-Tab at line start is a no-op.
             const lineLeading = isAtLineStart ? state.doc.textBetween(lineStart, $cursor.end()) : ''
             const removeLeading =
               isAtLineStart &&

@@ -1,11 +1,11 @@
 /**
- * Real-infra E2E for the Document Versions API:
- * REST → the WS process's internal listener → openDirectConnection → transact →
- * BullMQ worker → Postgres, plus the stateless `history.revert` op, with real
+ * Real-infra E2E for the Document Versions API. The path is REST → the WS
+ * process's internal listener → openDirectConnection → transact → BullMQ worker →
+ * Postgres. It also covers the stateless `history.revert` op, with real
  * collaboration clients attached.
  *
- * Run as a standalone process (NOT `bun test`): BullMQ's worker run-loop does not
- * progress under the bun test runner, but works in a normal process (as in prod).
+ * Run as a standalone process, NOT `bun test`. BullMQ's worker run-loop does not
+ * progress under the bun test runner. It works in a normal process, as in prod.
  * Needs the `make dev-local` docker services (Postgres + Redis) and root .env.local.
  */
 import { OutgoingMessage } from '@hocuspocus/server'
@@ -205,8 +205,8 @@ const appendParagraph = (ydoc: Y.Doc, text: string): void => {
 }
 
 // Resolved against the webapp because @hocuspocus/provider is a webapp
-// dependency, not a backend one — hoisting it for a test-only client would put
-// a client library in the server's dependency graph.
+// dependency, not a backend one. Hoisting the provider for a test-only client
+// would put a client library in the server's dependency graph.
 const providerModule = await import(
   Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
 )
@@ -489,8 +489,8 @@ try {
   }
 
   // 3. The force pin: a checkpoint that changes nothing has the same bytes as
-  //    the autosave it follows, so only the widened job id keeps it off the
-  //    ten-second dedupe window.
+  //    the autosave it follows. Only the widened job id keeps that checkpoint
+  //    off the ten-second dedupe window.
   console.log('\n[3] a checkpoint byte-identical to a fresh autosave still lands')
   {
     const doc = await createDocument('force', { content: titleDoc('Force') })
@@ -498,8 +498,8 @@ try {
     check(session.synced, 'the collaborator synced before editing')
 
     // buildStoreJobId buckets by floor(now / 10s) and the store debounce is
-    // exactly 10s, so an edit made early in a bucket flushes at the same offset
-    // one bucket later — leaving the checkpoint most of that bucket to land in.
+    // exactly 10s. An edit made early in a bucket flushes at the same offset one
+    // bucket later. That leaves the checkpoint most of that bucket to land in.
     const offsetIntoBucket = Date.now() % 10_000
     if (offsetIntoBucket > 1_500) await sleep(10_000 - offsetIntoBucket + 600)
 
@@ -558,7 +558,7 @@ try {
     )
 
     // Pausing as well as closing: the durability claim is about nothing draining
-    // the queue, and a dev stack on the same Redis would otherwise drain it.
+    // the queue. A dev stack on the same Redis would otherwise drain the queue.
     await worker.close()
     await StoreDocumentQueue.pause()
 
@@ -774,8 +774,8 @@ try {
     )
     check((await droppedTotal('type-not-allowed')) === dropped + 1, 'the forgery was counted')
 
-    // The webapp reads `msg` before `type`, so an allowlisted type still carries a
-    // forged save confirmation unless the guard refuses any `msg` it did not name.
+    // The webapp reads `msg` before `type`, so a type-only allowlist still passes a
+    // forged save confirmation. The guard therefore refuses any `msg` it did not name.
     victim.stateless.length = 0
     dropped = await droppedTotal('type-not-allowed')
     attacker.provider.sendStateless(

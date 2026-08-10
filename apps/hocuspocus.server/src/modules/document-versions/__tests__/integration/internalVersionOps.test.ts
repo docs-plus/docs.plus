@@ -72,9 +72,9 @@ interface StoreCall {
   context: Record<string, unknown>
 }
 
-// One ordered log for both write kinds: the backup is a Prisma insert and the
-// restore is a Database store, so separate counters could not prove the order
-// the whole "a dead worker still leaves the pre-restore state" claim rests on.
+// One ordered log for both write kinds. The backup is a Prisma insert and the
+// restore is a Database store. Separate counters could not prove the order the
+// whole "a dead worker still leaves the pre-restore state" claim rests on.
 const events: string[] = []
 const stores: StoreCall[] = []
 const persisted = new Map<string, Uint8Array>()
@@ -440,7 +440,7 @@ describe('Internal version ops — wedged persistence', () => {
     })
 
     // Stop the store rejecting first. The debouncer never cleared the failed
-    // execution, so the document stays wedged on its own — leaving the store
+    // execution, so the document stays wedged on its own. Leaving the store
     // rejecting would let a healthy server pass this too.
     rejecting.delete(WEDGED_DOC)
     const storesBefore = stores.length

@@ -92,12 +92,12 @@ export const MessageCardProvider: React.FC<{
     <MessageCardContext.Provider value={value}>
       <div
         className={twMerge(
-          // `relative` + `before:` pseudo gives a 3px left-edge accent that
-          // fades in on hover with zero layout shift. Pairs with a 4% text-
-          // color bg overlay (theme-agnostic) — together they're at the
-          // Slack/Linear-equivalent contrast level rather than the previous
-          // ~2% which users couldn't perceive as a state change.
-          // `shrink-0` is load-bearing: the feed is a scrolling flex column, so the
+          // `relative` + `before:` pseudo gives a 3px left-edge accent that fades in
+          // on hover with zero layout shift. The accent pairs with a 4% text-color bg
+          // overlay (theme-agnostic). Together the accent and overlay reach the
+          // Slack/Linear-equivalent contrast level. The previous ~2% was too low for
+          // users to perceive as a state change.
+          // `shrink-0` is load-bearing: the feed is a scrolling flex column. The
           // browser shrinks children to fit instead of overflowing, which flattens
           // media tiles to a fraction of their height.
           'message-card group/msgcard chat msg_card rounded-field relative shrink-0',

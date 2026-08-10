@@ -96,11 +96,11 @@ export const createDraftDocument = async (prisma: PrismaClient, slug: string) =>
   }
 }
 
-// Anchor a draft's identity on the first real edit so a reload's slug lookup returns the
-// same documentId — the stable IndexedDB key and WS room name the client mirror restores
-// early edits from. Bots that open and never edit never reach here, so no empty rows.
-// P2002 = already anchored, or the slug was claimed by a concurrent first-open (that
-// writer wins the id race; we cede — ids are only derived for part of the population).
+// Anchor a draft's identity on the first real edit, so a reload's slug lookup returns the
+// same documentId. That id is the stable IndexedDB key and WS room name the client mirror
+// restores early edits from. Bots that open and never edit never reach here, so no empty
+// rows. P2002 = already anchored, or the slug was claimed by a concurrent first-open. That
+// writer wins the id race, and we cede; ids are only derived for part of the population.
 export const ensureDraftDocumentMetadata = async (
   prisma: PrismaClient,
   params: { documentId: string; slug: string; ownerId?: string | null; email?: string | null }
@@ -245,7 +245,7 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
 
     if (title || reqKeywords || description) {
       // to_tsquery (the `search` clauses) throws a 500 on operator punctuation
-      // like `C++` or `foo)`; reduce each token to bare word characters so bad
+      // like `C++` or `foo)`. Reduce each token to bare word characters, so bad
       // input returns no matches instead of crashing the endpoint.
       const searchTokens = [
         ...(title ? decodeURIComponent(title).split(' ') : []),
@@ -405,10 +405,10 @@ export const updateDocument = async (
     if (title !== undefined) updateData.title = title
     if (keywords !== undefined) updateData.keywords = keywords.join(',')
 
-    // On create the row does not exist yet and the `ownerId` below decides it, so an
-    // authed creator may set the locks in the same request. An open document may not:
-    // with no owner, resolvePrivateAccess answers sign-in-required to everyone, so a
-    // flip would seal the row against the world with nothing able to undo it.
+    // On create the row does not exist yet, and the `ownerId` below decides it. An authed
+    // creator may therefore set the locks in the same request. An open document may not.
+    // With no owner, resolvePrivateAccess answers sign-in-required to everyone, so a flip
+    // would seal the row against the world with nothing able to undo it.
     const ownerAfterWrite = existing ? existing.ownerId : (requesterId ?? null)
     const mayMutateAccess = ownerAfterWrite != null && ownerAfterWrite === requesterId
 
@@ -540,7 +540,7 @@ export type DuplicateDocumentResult =
   | { status: 'ok'; document: { documentId: string; slug: string; title: string } }
 
 // Strict-owner duplicate of the source's latest Yjs bytes — no history rebuild.
-// Media is RE-HOSTED, not shared: the snapshot is scanned first, exactly the
+// Media is RE-HOSTED, not shared. The snapshot is scanned first, then exactly the
 // objects it names are cloned under the copy's own prefix and its URLs repointed
 // there. FORWARD-ONLY — copies made before this still share their source's objects.
 export const duplicateDocument = async (
@@ -618,7 +618,7 @@ export const duplicateDocument = async (
           }
         })
 
-        // A source that has never been persisted has no bytes to copy; the copy is
+        // A source that has never been persisted has no bytes to copy. The copy is
         // then a fresh empty doc that hydrates on first open (same as any new doc).
         if (bytes) {
           await tx.documents.create({
@@ -659,10 +659,10 @@ export const duplicateDocument = async (
 export type PermanentDeleteResult =
   { status: 'forbidden' } | { status: 'not-deleted' } | { status: 'ok' }
 
-// Immediate footprint purge for a soft-deleted doc (Trash "Delete forever"),
-// sharing the reaper's purge. Refuses a live doc so it can't hard-delete an active
-// one; owner-checked before the deletedAt check so state never leaks to a non-owner;
-// a missing (already-purged) row resolves to ok (idempotent).
+// Immediate footprint purge for a soft-deleted doc (Trash "Delete forever"), sharing
+// the reaper's purge. Refuses a live doc so it can't hard-delete an active one.
+// Owner-checked before the deletedAt check, so state never leaks to a non-owner.
+// A missing (already-purged) row resolves to ok (idempotent).
 export const permanentlyDeleteDocument = async (
   prisma: PrismaClient,
   documentId: string,

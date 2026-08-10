@@ -58,9 +58,9 @@ export interface URLDecisions {
   /** Read-side gate for render + navigation. */
   forRead(href: string | null | undefined): ReadDecision
   /**
-   * Pure shape check — skips the gate stack on purpose so autolink's
-   * "is the existing link still link-shaped?" cleanup pass can't be
-   * weaponised by a tightened `isAllowedUri` policy.
+   * Pure shape check — skips the gate stack on purpose. That keeps a tightened
+   * `isAllowedUri` policy out of autolink's "is the existing link still
+   * link-shaped?" cleanup pass.
    */
   detect(text: string): boolean
 }

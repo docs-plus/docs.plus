@@ -10,8 +10,8 @@ const historyComparePluginKey = new PluginKey<DecorationSet>('historyCompare')
 
 /**
  * Paints the compare diff on the read-only history editor. Mounted once, by DesktopHistory.
- * The set lives in plugin state and moves by transaction metadata, so toggling compare
- * never reconfigures the editor — a reconfigure rebuilds node views and reloads embeds.
+ * The set lives in plugin state and moves by transaction metadata. Toggling compare therefore
+ * never reconfigures the editor. A reconfigure rebuilds node views and reloads embeds.
  */
 export const useHistoryCompareDecorations = () => {
   const editor = useStore((state) => state.editor)
@@ -78,8 +78,9 @@ export const useHistoryCompareDecorations = () => {
     }
 
     // `DecorationSet.create` NULLS entries in the array it is given (prosemirror-view
-    // `takeSpansForNode`) and only strips nulls on the call that made them, so it must
-    // never see the same array twice — `buildCompareDecorations` returns a fresh one.
+    // `takeSpansForNode`), and only strips nulls on the call that made them.
+    // `DecorationSet.create` must never see the same array twice, so
+    // `buildCompareDecorations` returns a fresh one.
     commit(DecorationSet.create(capturedDoc, result.decorations))
   }, [editor, compareMode, compareBaseItem, activeHistory])
 }

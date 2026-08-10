@@ -33,8 +33,8 @@ export const retentionCountdown = (deletedAtIso: string): RetentionCountdown | n
   return { days, text, warn: days <= 3 }
 }
 
-// Relative "Deleted X ago" for a trash row; falls back to an absolute date past the
-// retention window (a row that outlived the reaper — shouldn't happen, but safe).
+// Relative "Deleted X ago" for a trash row. Past the retention window `formatDeletedAgo`
+// falls back to an absolute date (a row that outlived the reaper — shouldn't happen, but safe).
 export const formatDeletedAgo = (deletedAtIso: string): string => {
   const then = new Date(deletedAtIso).getTime()
   if (Number.isNaN(then)) return 'Deleted'

@@ -65,9 +65,9 @@ describe('Markdown import/export — hyperlink mark', () => {
   })
 
   describe('renderMarkdown security + escaping', () => {
-    // Export is the last gate: a hostile mark can reach the doc without passing
-    // parseHTML or parseMarkdown — Yjs replay, a foreign addMark, or a schema
-    // migration — so insert the mark from JSON rather than from markup.
+    // Export is the last gate. A hostile mark can reach the doc without passing
+    // parseHTML or parseMarkdown: Yjs replay, a foreign addMark, or a schema
+    // migration. So this spec inserts the mark from JSON rather than from markup.
     DANGEROUS.forEach((href) => {
       it(`blanks ${href} on export when the mark bypassed the import gates`, () => {
         cy.getEditor().then((editor) => {

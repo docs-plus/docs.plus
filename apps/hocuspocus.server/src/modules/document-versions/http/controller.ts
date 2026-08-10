@@ -38,7 +38,7 @@ import type {
 import { BACKUP_FAILED_CODE, DRAFT_DOCUMENT_CODE, VERSION_BODY_BYTES } from '../types'
 
 // A repeat of this 500 for the same document means the per-doc debouncer is
-// poisoned and every later store rejects instantly — retrying keeps mutating
+// poisoned, and every later store rejects instantly. Retrying keeps mutating
 // and broadcasting to live clients while never persisting.
 const PERSIST_FAILED_MESSAGE =
   'The change may already be visible to live collaborators but was not persisted. Verify with GET before retrying; a repeat means server-side persistence is wedged.'
@@ -173,8 +173,8 @@ export const createGetVersionHandler =
 export type DiffControllerDeps = ListControllerDeps
 
 // Not a cache — a byte-identical pair is ordinary. A checkpoint deliberately
-// mints a named row whose content duplicates the row before it, and answering
-// that without decoding is why the block counts read zero rather than the truth.
+// mints a named row whose content duplicates the row before it. Answering that
+// without decoding is why the block counts read zero rather than the truth.
 const identicalDiff = (
   documentId: string,
   fromVersion: number,
@@ -243,8 +243,8 @@ export const createDiffHandler =
 
     const { before, after } = await findDiffRows(deps.prisma, documentId, version, base ?? null)
     if (!after) return fail(c, 404, 'NOT_FOUND', 'Version not found')
-    // A named base that has no row is a caller error; a first version that has no
-    // predecessor is not — that one reads as a whole document added.
+    // A named base that has no row is a caller error. A first version that has no
+    // predecessor is not a caller error, and it reads as a whole document added.
     if (base !== undefined && !before) return fail(c, 404, 'NOT_FOUND', 'Base version not found')
 
     if (before && Buffer.compare(before.data, after.data) === 0) {

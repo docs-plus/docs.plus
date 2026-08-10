@@ -47,9 +47,9 @@ export const userIdQuerySchema = z.object({
 })
 
 // Bulk Trash purge — omit `ids` to empty the whole trash; pass ids to purge a
-// selection. The `ids` path is capped at 500; the empty-all path is bounded only
-// by the owner's own trash size (small in practice — the 30-day reaper caps
-// growth). Both run sequentially — see purgeTrash for the synchronous-scale note.
+// selection. The `ids` path is capped at 500. The empty-all path is bounded only
+// by the owner's own trash size, small in practice because the 30-day reaper caps
+// growth. Both run sequentially — see purgeTrash for the synchronous-scale note.
 export const trashPurgeSchema = z.object({
   ids: z.array(z.string().min(1)).max(500).optional()
 })

@@ -14,8 +14,8 @@ type Params = {
 
 /**
  * Marks one person's blocks on the read-only history editor. The set lives in plugin
- * state and moves by transaction metadata, so switching person never reconfigures the
- * editor — a reconfigure rebuilds node views and reloads every media embed.
+ * state and moves by transaction metadata. Switching person therefore never reconfigures
+ * the editor. A reconfigure rebuilds node views and reloads every media embed.
  */
 export const useHistoryAuthorDecorations = ({
   ranges,

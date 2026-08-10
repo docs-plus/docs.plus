@@ -7,8 +7,8 @@ import { APP_NAME, APP_URL, COLORS, FONT_STACK, RADIUS, SPACING } from './tokens
 
 // Every avatar source is user-writable: `users.avatar_url` allows any
 // non-whitespace string, and `raw_user_meta_data.avatar_url` is unconstrained.
-// An unescaped quote would close `src=` and append attacker markup to a
-// DKIM-signed mail, so anything that is not an http(s) URL falls back to initials.
+// An unescaped quote would close `src=` and append attacker markup to a DKIM-signed
+// mail. Anything that is not an http(s) URL falls back to initials.
 const safeAvatarSrc = (value: string | undefined): string | undefined => {
   if (!value) return undefined
   try {

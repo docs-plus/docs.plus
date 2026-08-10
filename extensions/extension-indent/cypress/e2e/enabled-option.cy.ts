@@ -1,8 +1,8 @@
 /// <reference types="cypress" />
 
-// Pins the documented `enabled: false` escape hatch through the keymap on the shipped
-// dist: a host that disables the extension must not get literal indent characters from
-// Tab, and Shift-Tab must not strip existing leading indent. Jest owns the
+// Pins the documented `enabled: false` escape hatch through the keymap on the
+// shipped dist. A host that disables the extension must not get literal indent
+// characters from Tab, and Shift-Tab must not strip existing leading indent. Jest owns the
 // command-level `enabled` gates (indent()/outdent() return false, Tab stays unclaimed).
 
 describe('enabled: false — disabled extension must not touch the document', () => {

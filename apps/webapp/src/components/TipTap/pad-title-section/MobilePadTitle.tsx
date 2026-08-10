@@ -84,7 +84,8 @@ const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: (
   }
 
   // A `<label htmlFor>` toggles the drawer checkbox on click but isn't keyboard-operable on its
-  // own; role/tabIndex/keydown make it a real button (it opens the TOC — not "close sidebar").
+  // own. Adding role/tabIndex/keydown makes the label a real button (it opens the TOC — not
+  // "close sidebar").
   return (
     <label
       htmlFor="mobile_left_side_panel"

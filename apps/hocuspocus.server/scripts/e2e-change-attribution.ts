@@ -1,8 +1,8 @@
 /**
- * Real-infra E2E for change attribution: two signed-in collaborators and one
- * anonymous one on a single document, a reconnect that replays another editor's
- * offline bytes, and the version diff that has to name each block's author.
- * Standalone process (not `bun test`); needs `make dev-local` and root .env.local.
+ * Real-infra E2E for change attribution: two signed-in collaborators and one anonymous
+ * one on a single document. It also covers a reconnect that replays another editor's
+ * offline bytes, and the version diff that has to name each block's author. Standalone
+ * process (not `bun test`); needs `make dev-local` and root .env.local.
  */
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import { createClient } from '@supabase/supabase-js'
@@ -220,8 +220,8 @@ const encodeMissing = (source: Y.Doc, target: Y.Doc): Uint8Array =>
   Y.encodeStateAsUpdate(source, Y.encodeStateVector(target))
 
 // Resolved against the webapp because @hocuspocus/provider is a webapp
-// dependency, not a backend one — hoisting it for a test-only client would put
-// a client library in the server's dependency graph.
+// dependency, not a backend one. Hoisting the provider for a test-only client
+// would put a client library in the server's dependency graph.
 const providerModule = await import(
   Bun.resolveSync('@hocuspocus/provider', `${REPO_ROOT}apps/webapp`)
 )
@@ -451,9 +451,9 @@ const runSession = async (alpha: Actor, beta: Actor, anonymous: Actor): Promise<
     appendParagraph(reconnectDoc, BETA_RECONNECT)
   })
 
-  // Proves capture ran on the very update that carried the foreign bytes:
-  // without it, "nothing was bound" would pass for the boring reason that the
-  // guard bailed out before reading the update at all.
+  // Proves capture ran on the very update that carried the foreign bytes.
+  // Without that proof, "nothing was bound" would pass for the boring reason
+  // that the guard bailed out before reading the update at all.
   const reconnectBinding = await awaitBinding(doc.documentId, betaAgain.clientId)
   check(
     reconnectBinding?.userId === beta.id,

@@ -27,9 +27,9 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
 
       if (!ymetadata.get('needsInitialization')) return
 
-      // A never-persisted draft meets a fresh server default state on every
-      // reopen, whose needsInitialization=true can win the Y.Map merge over the
-      // IndexedDB mirror's false — never setContent (it REPLACES) over user text.
+      // A never-persisted draft meets a fresh server default state on every reopen.
+      // That state's needsInitialization=true can win the Y.Map merge over the
+      // IndexedDB mirror's false. Never setContent (it REPLACES) over user text.
       // Text, not node count: the editor pre-writes an empty heading scaffold.
       const fragmentText = provider.configuration.document
         .getXmlFragment('default')
@@ -41,13 +41,13 @@ const useInitializeNewDocument = ({ editor, provider }: UseInitializeNewDocument
       const heading = Array.isArray(slugs) ? (slugs.at(0) ?? 'Title') : 'Title'
       const defaultContent = Config.editor.getDefaultContent(heading)
 
-      // Seed outside undo history: the needsInitialization flip below lives in
+      // Seed outside undo history. The needsInitialization flip below lives in
       // Y.Map metadata (not undo scope), so undoing the seed would leave the
       // document permanently empty with no re-seed.
       editor.chain().setMeta('addToHistory', false).setContent(defaultContent).run()
       // Appended transactions (UniqueID id-stamping) reset ySync's addToHistory
-      // before the batch syncs to Yjs, so the seed still lands on the undo
-      // stack despite the meta — drop it outright.
+      // before the batch syncs to Yjs, so the seed still lands on the undo stack
+      // despite the meta. Drop the undo stack outright.
       yUndoPluginKey.getState(editor.state)?.undoManager.clear()
       ymetadata.set('needsInitialization', false)
       // Only a genuinely new document carries needsInitialization, so this

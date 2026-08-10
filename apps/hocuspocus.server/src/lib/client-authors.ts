@@ -47,13 +47,13 @@ export const recordClientAuthors = (prisma: PrismaClient, change: ClientAuthorCh
     const userId = change.context?.user?.sub
     if (typeof userId !== 'string' || userId.length === 0) return
 
-    // A draft is row-less by design until its first real edit clears the flag,
-    // so the foreign key has no target yet and every write here would fail.
+    // A draft is row-less by design until its first real edit clears the flag.
+    // The foreign key therefore has no target yet, and every write here would fail.
     if (change.document.getMap('metadata').get('isDraft')) return
 
     // Populated from the `added` list of awareness messages on this exact socket.
     // That rules out replayed sync structs — the accidental mis-binding this guard
-    // exists for — but it is NOT proof of ownership: y-protocols accepts whatever
+    // exists for — but it is NOT proof of ownership. `y-protocols` accepts whatever
     // clientID a socket announces, and Yjs authenticates no authorship at all.
     const announced = change.document.getClients(socket)
     if (announced.size === 0) return

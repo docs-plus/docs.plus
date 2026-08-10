@@ -302,9 +302,9 @@ export default function GhostAccountsAuditPage() {
 
   const ghosts = useMemo(() => ghostsData?.ghosts ?? [], [ghostsData?.ghosts])
 
-  // Anonymous sessions are managed on their own tab; the ghost table, bulk
-  // selection, and export must all operate on the same visible set or
-  // "Select All" + Delete would destroy anonymous accounts never shown.
+  // Anonymous sessions are managed on their own tab. The ghost table, bulk selection,
+  // and export must all operate on the same visible set. Otherwise "Select All" +
+  // Delete would destroy anonymous accounts never shown.
   const visibleGhosts = useMemo(
     () => ghosts.filter((g) => !g.ghost_type.includes('anonymous')),
     [ghosts]

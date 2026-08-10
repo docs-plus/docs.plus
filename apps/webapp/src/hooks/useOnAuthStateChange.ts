@@ -13,9 +13,9 @@ import { useCallback, useEffect } from 'react'
 let pkceFailureHandled = false
 
 // supabase-js auto-exchanges ?code= on load but swallows network failures
-// (Safari "Load failed"), stripping the URL only on success — the user is left
-// on a stale /?code= silently signed out. initialize() is idempotent and
-// resolves { error } instead of rejecting, so it is the highest catchable layer.
+// (Safari "Load failed"), and strips the URL only on success. The user is left
+// on a stale /?code=, silently signed out. The initialize() call is idempotent
+// and resolves { error } instead of rejecting, so it is the highest catchable layer.
 const reportPkceExchangeFailure = () => {
   if (pkceFailureHandled || !new URLSearchParams(window.location.search).has('code')) return
   pkceFailureHandled = true

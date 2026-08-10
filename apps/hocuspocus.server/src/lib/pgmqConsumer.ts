@@ -73,7 +73,7 @@ export function createPgmqConsumer<TPayload>(options: PgmqConsumerOptions<TPaylo
   let isShuttingDown = false
 
   // Empty-poll backoff: double the base interval up to a cap so an idle queue
-  // stops hammering the read RPC. consecutiveEmptyPolls resets on any non-empty
+  // stops hammering the read RPC. `consecutiveEmptyPolls` resets on any non-empty
   // poll, which drops the next delay straight back to the base.
   const BACKOFF_CAP_MS = Math.max(pollIntervalMs, 10_000)
   function nextDelayMs(): number {

@@ -45,7 +45,7 @@ cd docs.plus
 make dev-local
 ```
 
-One command bootstraps everything: env files from `.env.example`, dependencies, Postgres + Redis containers, local Supabase (schema and seed apply automatically), Prisma migrations, editor-extension builds — then starts the REST API, WebSocket server, worker, and webapp. The first run downloads Docker images and takes several minutes; after that it starts in seconds.
+One command bootstraps everything: env files from `.env.example`, dependencies, Postgres + Redis containers, local Supabase (schema and seed apply automatically), Prisma migrations, editor-extension builds. It then starts the REST API, WebSocket server, worker, and webapp. The first run downloads Docker images and takes several minutes; after that it starts in seconds.
 
 **URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Supabase Studio <http://127.0.0.1:54323> · local email inbox <http://127.0.0.1:54324>
 
@@ -99,7 +99,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 **Step 3: Apply schema and extensions** 📊
 
 - Activate **pg_cron** and **pgmq (Queues)** in the Dashboard's Integrations page
-- Run the SQL from `packages/supabase/scripts/` in numbered order via the SQL Editor (`00-bootstrap.sql` first — it creates the extensions and the `internal` schema the later scripts depend on)
+- Run the SQL from `packages/supabase/scripts/` in numbered order via the SQL Editor. Run `00-bootstrap.sql` first: it creates the extensions and the `internal` schema the later scripts depend on.
 
 **Step 4: Configure push notifications (optional)** 🔔
 
@@ -141,7 +141,7 @@ SELECT id, now() FROM auth.users WHERE email = 'your-admin@example.com';
 | `docker-compose.dev.yml`   | `.env.development` | Docker development (all services in containers)  |
 | `docker-compose.local.yml` | `.env.local`       | Local development (infra in Docker, apps native) |
 
-`make dev-local` creates both dev files on first run: `.env.development` from `.env.example`, then `.env.local` from it with localhost hostnames and `DATABASE_URL` applied (native apps can't resolve Docker service names). Both are gitignored — edit `.env.local` for local customizations like Google OAuth keys. Details live in the comments of [.env.example](.env.example).
+`make dev-local` creates both dev files on first run. It writes `.env.development` from `.env.example`, then `.env.local` from it with localhost hostnames and `DATABASE_URL` applied. Native apps can't resolve Docker service names. Both are gitignored — edit `.env.local` for local customizations like Google OAuth keys. Details live in the comments of [.env.example](.env.example).
 
 ## 🚀 Production Deployment
 

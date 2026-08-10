@@ -1,6 +1,6 @@
 # @docs.plus/floating-tooltip
 
-Framework-agnostic hover/focus tooltip for Tiptap / ProseMirror extension toolbars, built on [`@floating-ui/dom`](https://floating-ui.com/). Hoisted from `@docs.plus/extension-hypermultimedia` so multiple extensions ship the same tooltip behavior. The bubble/timer singleton is per consuming bundle — no cross-package singleton, same convention as the popover controller — so a host loading both extensions has one bubble per bundle; pair `attachTooltip` and `hideTooltip` from the same package.
+Framework-agnostic hover/focus tooltip for Tiptap / ProseMirror extension toolbars, built on [`@floating-ui/dom`](https://floating-ui.com/). Hoisted from `@docs.plus/extension-hypermultimedia` so multiple extensions ship the same tooltip behavior. The bubble/timer singleton is per consuming bundle — no cross-package singleton, same convention as the popover controller. A host loading both extensions therefore has one bubble per bundle. Pair `attachTooltip` and `hideTooltip` from the same package.
 
 ## Status
 
@@ -15,4 +15,4 @@ Deliberately built on raw `@floating-ui/dom` rather than `@docs.plus/floating-po
 
 ## Styling
 
-This package emits class names only (`.floating-tooltip`, visibility via the `visible` class). Consumers own the stylesheet — the two extensions ship one lockstep skin written as identical `light-dark()` literals, never per-package tokens: both bundles style this one global class, and cascade order would otherwise pick one bundle's tokens for every bubble.
+This package emits class names only (`.floating-tooltip`, visibility via the `visible` class). Consumers own the stylesheet. The two extensions ship one lockstep skin written as identical `light-dark()` literals, never per-package tokens. Both bundles style this one global class, and cascade order would otherwise pick one bundle's tokens for every bubble.

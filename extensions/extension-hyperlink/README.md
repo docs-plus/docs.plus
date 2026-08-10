@@ -15,7 +15,7 @@
 
 Tiptap hyperlink mark with optional prebuilt popovers for creating, previewing, and editing links.
 
-Beyond the mark itself, it covers the link behavior hosts usually hand-roll: autolink as you type (bare domains → `https://`, emails → `mailto:`, E.164 phones → `tel:`), markdown round-trip, a 50+ app-scheme catalog (`zoommtg:`, `vscode:`, `spotify:`, …), and a dangerous-scheme gate at every write boundary. The popovers and the stylesheet are both opt-in — bring your own UI and ship zero CSS from this package.
+Beyond the mark itself, it covers the link behavior hosts usually hand-roll. Autolink runs as you type: bare domains → `https://`, emails → `mailto:`, E.164 phones → `tel:`. The extension also covers markdown round-trip, a 50+ app-scheme catalog (`zoommtg:`, `vscode:`, `spotify:`, …), and a dangerous-scheme gate at every write boundary. The popovers and the stylesheet are both opt-in — bring your own UI and ship zero CSS from this package.
 
 ## Install
 
@@ -120,7 +120,7 @@ editor.getAttributes('hyperlink').href // read the current href
 
 ## Caveats
 
-- **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. Both marks sit at priority 1000, and Tiptap merges every extension's `addCommands()` into one flat map — so `setLink` / `unsetLink` / `toggleLink` resolve to whichever mark comes later in your `extensions` array, with no warning. Both also claim the `a[href]` parse rule, and ProseMirror applies only the first match: one mark takes every anchor and the other never parses. If upstream `link` wins, this extension's `isSafeHref` gate never runs on parsed or pasted HTML and its popovers never attach.
+- **`StarterKit.configure({ link: false })` is required, not stylistic.** StarterKit v3 bundles `@tiptap/extension-link` by default. Both marks sit at priority 1000, and Tiptap merges every extension's `addCommands()` into one flat map. `setLink` / `unsetLink` / `toggleLink` therefore resolve to whichever mark comes later in your `extensions` array, with no warning. Both also claim the `a[href]` parse rule, and ProseMirror applies only the first match: one mark takes every anchor and the other never parses. If upstream `link` wins, this extension's `isSafeHref` gate never runs on parsed or pasted HTML and its popovers never attach.
 
 ## Styling
 
@@ -212,7 +212,7 @@ Stable class names you can target:
 | `.search-icon`               | Leading icon inside an input group.                  |
 | `.error-message`             | Validation error text (shown with `.show`).          |
 
-Tooltips on the prebuilt popovers' icon buttons are shipped by the bundled `@docs.plus/floating-tooltip` — one body-appended bubble per bundle, shown on hover and keyboard focus, skinned in `styles.css` by a fixed literal block kept lockstep with extension-hypermultimedia.
+The bundled `@docs.plus/floating-tooltip` ships the tooltips on the prebuilt popovers' icon buttons. It appends one bubble per bundle to the body, and shows it on hover and keyboard focus. `styles.css` skins that bubble with a fixed literal block, kept lockstep with extension-hypermultimedia.
 
 ## Popovers
 
@@ -312,7 +312,7 @@ The three named openers open a popover from outside the click handler — keyboa
 | `openEditHyperlink(opts)`                  | `opts.link` (anchor el) | `popovers.editHyperlink`    |
 | `openCreateHyperlink(editor, attributes?)` | Current selection       | `popovers.createHyperlink`  |
 
-Each opener reads its slot from `Hyperlink.configure({ popovers })`, falls back to the prebuilt factory if the slot is empty, builds the content, and mounts via the controller. A factory returning `null` opts out (typical for mobile, where a bottom sheet replaces the popover); the opener then no-ops.
+Each opener reads its slot from `Hyperlink.configure({ popovers })`. It falls back to the prebuilt factory if the slot is empty, builds the content, and mounts via the controller. A factory returning `null` opts out (typical for mobile, where a bottom sheet replaces the popover); the opener then no-ops.
 
 `buildPreviewOptionsFromAnchor({ editor, link, nodePos?, validate?, isAllowedUri?, markName? })` recovers a full `PreviewHyperlinkOptions` from a live `<a>` node — no hand-rolled `posAtDOM` → `mark.attrs` lookup — so `openPreviewHyperlink(buildPreviewOptionsFromAnchor({ editor, link }))` is the canonical edit-popover → preview handoff.
 
@@ -322,7 +322,7 @@ For replacing a prebuilt popover, building a popover that isn't anchored to a hy
 
 ### Bring your own popover
 
-Three minimal factories matching the option shapes above, runnable as written. A factory supplies content only — the popover shell keeps its per-surface ARIA semantics (`role="toolbar"` for preview; `role="dialog"` named "Add link" / "Edit link" for create and edit), so BYO popovers stay accessible without extra wiring.
+Three minimal factories matching the option shapes above, runnable as written. A factory supplies content only. The popover shell keeps its per-surface ARIA semantics: `role="toolbar"` for preview; `role="dialog"` named "Add link" / "Edit link" for create and edit. BYO popovers therefore stay accessible without extra wiring.
 
 <details>
 <summary><b>Custom <code>previewHyperlink</code></b></summary>
@@ -490,7 +490,7 @@ Hyperlink.configure({ popovers: { editHyperlink } })
 
 ### Floating-popover primitive
 
-`createPopover(options)` is the primitive every opener calls under the hood — Floating-UI placement, scroll-stickiness, outside-click dismissal, keyboard navigation, and registration with the [UI controller](#ui-controller). Reach for it directly when you want a popover that participates in the singleton lifecycle but isn't anchored to a hyperlink.
+`createPopover(options)` is the primitive every opener calls internally — Floating-UI placement, scroll-stickiness, outside-click dismissal, keyboard navigation, and registration with the [UI controller](#ui-controller). Call it directly when you want a popover that participates in the singleton lifecycle but isn't anchored to a hyperlink.
 
 `PopoverOptions` is a discriminated union — exactly one of `referenceElement` or `coordinates` is required, enforced at compile time.
 
@@ -560,7 +560,7 @@ Every write path canonicalizes hrefs before storing them:
 - **Explicit schemes** pass through as typed: `http://`, `ftp://`, `whatsapp://`, `mailto:`.
 - **Protocol-relative URLs** stay as-is: `//example.com`.
 
-For any URL linkifyjs detects, the create popover, markdown input rule, autolink, and paste all produce the same `href`. Paste detection is linkifyjs-only, so a catalog app scheme such as `whatsapp://…` autolinks as you type but stays plain text when pasted — register the scheme through `protocols` and paste picks it up too.
+For any URL linkifyjs detects, the create popover, markdown input rule, autolink, and paste all produce the same `href`. Paste detection is linkifyjs-only. A catalog app scheme such as `whatsapp://…` therefore autolinks as you type, but stays plain text when pasted. Register the scheme through `protocols` and paste detects it too.
 
 Validation rejects scheme-prefixed typos with no real host: `https://googlecom` fails; `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
 
@@ -592,14 +592,14 @@ if (info) renderIcon(TYPE_TO_ICON[info.type])
 
 ## Security
 
-Dangerous schemes (`javascript:`, `data:`, `vbscript:`, `file:`, `blob:`) are blocked at every entry point. The gate tests a control-stripped copy of the href, so embedded tab / newline / control characters (`java\tscript:`, which browsers resolve as `javascript:`) can't smuggle a scheme past it.
+Dangerous schemes (`javascript:`, `data:`, `vbscript:`, `file:`, `blob:`) are blocked at every entry point. The gate tests a control-stripped copy of the href. Embedded tab / newline / control characters (`java\tscript:`, which browsers resolve as `javascript:`) therefore can't smuggle a scheme past it.
 
 - **Parse** — `parseHTML` strips matching `<a>` tags on document load and paste.
 - **Write** — input rule, paste rule, paste handler, autolink, and `setHyperlink` / `toggleHyperlink` / `editHyperlink` all route through the shared `isSafeHref` gate composed with the user's `isAllowedUri` policy.
 - **Serialize** — `renderHTML` re-checks `isSafeHref` and emits an empty `href` if a hostile mark ever lands in the doc (legacy migration, raw `addMark`, Yjs replay).
-- **Navigate** — primary click, middle-click (`auxclick`), touch, and the preview "Open" button short-circuit `window.open(…)` for unsafe hrefs and pass `'noopener,noreferrer'` so opened tabs cannot read `window.opener` or leak Referer.
+- **Navigate** — primary click, middle-click (`auxclick`), touch, and the preview "Open" button short-circuit `window.open(…)` for unsafe hrefs. They also pass `'noopener,noreferrer'`, so opened tabs cannot read `window.opener` or leak Referer.
 
-On the read side, the click handlers prefer the stored mark attribute over the DOM `link.href` property — a relative href injected via `setContent` won't resolve against the host page's origin.
+On the read side, the click handlers prefer the stored mark attribute over the DOM `link.href` property. A relative href injected via `setContent` therefore won't resolve against the host page's origin.
 
 `isSafeHref(href)` and `DANGEROUS_SCHEME_RE` are exported for custom popovers that need the same check; prefer `isSafeHref` (returns a TS type guard).
 
@@ -609,19 +609,19 @@ On the read side, the click handlers prefer the stored mark attribute over the D
 
 Definitions are bundled. Full public surface:
 
-- **Extension** — `Hyperlink` (default export) + `HyperlinkOptions`, `HyperlinkAttributes`, `HyperlinkStorage`, `HyperlinkPublicCommands`, `SetHyperlinkAttributes`, `EditHyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`. `HyperlinkAttributes` is generic — `HyperlinkAttributes<{ ariaLabel: string }>` extends the built-in `href` / `target` / `rel` / `class` / `title` / `image` keys with your own typed fields without losing the open-ended `Record<string, unknown>` index signature.
+- **Extension** — `Hyperlink` (default export) + `HyperlinkOptions`, `HyperlinkAttributes`, `HyperlinkStorage`, `HyperlinkPublicCommands`, `SetHyperlinkAttributes`, `EditHyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`. `HyperlinkAttributes` is generic. `HyperlinkAttributes<{ ariaLabel: string }>` extends the built-in `href` / `target` / `rel` / `class` / `title` / `image` keys with your own typed fields. The open-ended `Record<string, unknown>` index signature stays.
 - **Openers** — `openPreviewHyperlink`, `openEditHyperlink`, `openCreateHyperlink`, `buildPreviewOptionsFromAnchor` (+ `BuildPreviewOptionsFromAnchorArgs`). See [Openers](#openers).
 - **Popover factories** — `previewHyperlinkPopover`, `createHyperlinkPopover`, `editHyperlinkPopover`. Option types `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkOptions` are documented under [Popover-factory option shapes](#popover-factory-option-shapes).
 - **Floating-popover primitive** — `createPopover`, `DEFAULT_OFFSET`, types `Popover` / `PopoverOptions`. See [Floating-popover primitive](#floating-popover-primitive).
 - **Tooltip primitive** — `attachTooltip(target, label)` / `hideTooltip()`, re-exported from the bundled `@docs.plus/floating-tooltip`. The same hover/focus tooltip the prebuilt popovers put on their icon buttons — attach it to BYO popover buttons for parity. The bubble is per bundle: import both from the same package whose surface you are dismissing, or `hideTooltip()` leaves the other package's bubble on screen.
 - **UI controller** — `getDefaultController()`, types `PopoverController` / `PopoverKind` / `ControllerState` / `AdoptMetadata` / `VirtualCoordinates`. See [UI controller](#ui-controller).
 - **URL utilities** — `normalizeHref`, `getSpecialUrlInfo`, `validateURL`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, `SAFE_WINDOW_FEATURES`; types `SpecialUrlInfo`, `SpecialUrlType`, `LinkifyMatchLike`, `ValidateURLOptions`.
-- **DOM helpers** — `copyToClipboard(text, callback?)`, `createHTMLElement(tag, props?)`, and the SVG icon factories `Copy`, `LinkOff`, `Pencil` (+ their `IconProps` options) the prebuilt preview popover renders — reuse them in BYO popovers for visual parity.
+- **DOM helpers** — `copyToClipboard(text, callback?)`, `createHTMLElement(tag, props?)`, and the SVG icon factories `Copy`, `LinkOff`, `Pencil` (+ their `IconProps` options) the prebuilt preview popover renders. Reuse them in BYO popovers for visual parity.
 - **Linkify re-export** — `registerCustomProtocol` (passes through to [linkifyjs](https://linkify.js.org)).
 
 ## Part of docs.plus
 
-This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+This extension is built for and maintained by [docs.plus](https://docs.plus). docs.plus is a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
 
 - Website: [docs.plus](https://docs.plus)
 - Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)

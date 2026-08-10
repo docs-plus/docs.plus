@@ -5,7 +5,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 /**
  * Title-first document. `enforceH1Title` resets any level change on the first
- * node back to H1; `titlePasteHandler` promotes a non-heading first block on
+ * node back to H1. `titlePasteHandler` promotes a non-heading first block on
  * select-all paste, so a full-document paste can never drop the title.
  */
 export const TitleDocument = Node.create({

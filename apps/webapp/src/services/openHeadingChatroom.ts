@@ -30,11 +30,11 @@ export function exitDocEditModeForSheet(): void {
 }
 
 /**
- * Anchor a still-draft doc when its chatroom opens. Chat rows key on the
- * documentId (=workspaceId), which rotates on reload until the draft persists —
- * flipping isDraft fires the server first-edit anchor with the URL slug. Guarded
- * like useHandleDraftOnFocus: a set on a pre-sync (empty) ymetadata map is lost to
- * Yjs last-writer-wins; the isDraft check no-ops on an already-persisted doc.
+ * Anchor a still-draft doc when its chatroom opens. Chat rows key on the documentId
+ * (=workspaceId), which rotates on reload until the draft persists. Flipping isDraft
+ * fires the server first-edit anchor with the URL slug. Guarded like
+ * useHandleDraftOnFocus. A set on a pre-sync (empty) ymetadata map is lost to Yjs
+ * last-writer-wins, and the isDraft check no-ops on an already-persisted doc.
  */
 function anchorDraftForChatroom(): void {
   const { hocuspocusProvider, editor } = useStore.getState().settings

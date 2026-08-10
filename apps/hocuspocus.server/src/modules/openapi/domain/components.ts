@@ -3,9 +3,9 @@ import type { JsonSchema, OpenApiComponents, OpenApiResponse } from '../types'
 import { toJsonSchema } from './jsonSchema'
 
 /**
- * Three schemes, and two of them ride the same `Authorization: Bearer` header —
- * OpenAPI cannot express "same header, different credential", so they are named
- * apart and the descriptions carry the distinction.
+ * Three schemes, and two of them ride the same `Authorization: Bearer`
+ * header. OpenAPI cannot express "same header, different credential", so they
+ * are named apart and the descriptions carry the distinction.
  */
 const securitySchemes: OpenApiComponents['securitySchemes'] = {
   supabaseUserToken: {

@@ -10,19 +10,19 @@ historical Conventional Commits format. The project adheres to
 
 ## [2.0.0] — 2026-08-09
 
-First major release on the docs.plus alpha-v2 line. tippy.js is fully retired in
-favor of Floating UI positioning, node type names are normalized to camelCase,
-the Twitter node is rebranded to X, a Loom node is added, the media toolbar is
-rebuilt around a declarative action registry in the node's top-right corner, and
-every media node gains an editable caption.
+First major release on the docs.plus alpha-v2 line. The kit fully retires
+tippy.js and positions every surface with Floating UI. It renames node types to
+camelCase, renames the Twitter node to X, and adds a Loom node. The kit rebuilds
+the media toolbar around a declarative action registry, in the node's top-right
+corner. Every media node gains an editable caption.
 
 ### Highlights
 
 - **Floating UI engine.** Media toolbars and popovers render through
   `@docs.plus/floating-popover` (`@floating-ui/dom`) — tippy.js is gone.
 - **Top-right media toolbar.** A declarative action registry drives an overlay
-  inside the node: common actions inline, the rest behind a `…` overflow menu;
-  hosts swap the whole surface via the `mediaToolbar` factory slot (e.g. a
+  inside the node: common actions inline, the rest behind a `…` overflow menu.
+  Hosts swap the whole surface via the `mediaToolbar` factory slot (e.g. a
   mobile bottom-sheet).
 - **Editable captions** on every media node, stored in the `caption` attribute.
 - **camelCase node names** and an **X (formerly Twitter)** node following x.com
@@ -39,25 +39,25 @@ every media node gains an editable caption.
   documents need the migration below.
 - `Twitter`/`setTwitter`/`TwitterOptions` → `X`/`setX`/`XOptions`.
 - The media toolbar moved from a floating popover (placement buttons + margin
-  select) to a top-right overlay inside the node, driven by a declarative
-  action registry. Common actions render inline; Replace URL, copy, delete, and
-  node extras (X size/theme) live behind a `…` overflow menu; alignment options
+  select) to a top-right overlay inside the node. A declarative action registry
+  drives it. Common actions render inline. Replace URL, copy, delete, and
+  node extras (X size/theme) live behind a `…` overflow menu. Alignment options
   follow the wrap vocabulary (Left, Center, Right, Wrap left, Wrap right).
 - Removed the tippy modal API: `createFloatingToolbar`, `hideCurrentToolbar`, the
   `*Modal` exports (`imageModal`/`youtubeModal`/`twitterModal` + aliases), and
   the `modal` node option.
 - `tippy.js` removed as a dependency. Floating positioning comes from
   `@docs.plus/floating-popover`, a private workspace package bundled into `dist`
-  at build time — nothing extra to install; `@floating-ui/dom` is the package's
+  at build time — nothing extra to install. `@floating-ui/dom` is the package's
   only runtime dependency.
 - Removed the dead `ImageNodeOptions.toolbar` option and `ImageToolbarFunction`
-  type (superseded by the kit-level `mediaToolbar`/`mediaActions`), the dead
-  `transform` image attribute, and the unused exported image helper types
+  type, superseded by the kit-level `mediaToolbar`/`mediaActions`. Also removed
+  the dead `transform` image attribute and the unused exported image helper types
   (`ImageUrlValidator`, `ImageExtension`, `ImageUrlProtocol`, `ImageFloat`,
   `ImageClear`, `ImageDisplay`).
 - Removed the audio `volume` kit option and node attribute. `volume` is not an
-  HTML content attribute — it exists only as a property of `HTMLMediaElement` —
-  and the node rendered it with `setAttribute`, so `<audio volume="0.5">` was
+  HTML content attribute. It exists only as a property of `HTMLMediaElement`.
+  The node rendered it with `setAttribute`, so `<audio volume="0.5">` was
   ignored by every browser and the option never changed playback in any
   published version. Set `HTMLMediaElement.volume` on the element directly if
   you need it.
@@ -68,10 +68,10 @@ every media node gains an editable caption.
   render (`'image' | 'video' | 'audio' | 'youtube' | 'vimeo' | 'soundcloud' |
 'spotify' | 'loom' | 'x'`) or `null` for non-media, testing specific providers and images
   before the generic video/audio file-extension matchers. The new `isVideoUrl` /
-  `isAudioUrl` matchers, the existing per-node validators (`isImageUrl`,
-  `isValidYoutubeUrl`, `isValidVimeoUrl`, `isValidSoundCloudUrl`,
-  `isValidLoomUrl`, `isValidXUrl`), `parseYoutubeVideoId`, and the `MediaNodeType`
-  union are exported from the package root. `isMediaUrl`, the paste-autoconvert
+  `isAudioUrl` matchers are exported from the package root. So are the existing
+  per-node validators (`isImageUrl`, `isValidYoutubeUrl`, `isValidVimeoUrl`,
+  `isValidSoundCloudUrl`, `isValidLoomUrl`, `isValidXUrl`), `parseYoutubeVideoId`,
+  and the `MediaNodeType` union. `isMediaUrl`, the paste-autoconvert
   predicate, is unchanged — it still excludes raw video/audio URLs so pasted
   `.mp4`/`.mp3` links stay links.
 - `caption` attribute and an editable `<figcaption>` on every media node. The
@@ -79,9 +79,9 @@ every media node gains an editable caption.
   HTML serialization carries the caption for `image` only — which includes
   clipboard copy/paste and the toolbar Copy action.
 - **`editorFileUpload` host contract.** Pasting image files dispatches one
-  `CustomEvent` on `document` with `{ files, editor }` in `detail`, carrying
-  every image on the clipboard so the host uploads and inserts them itself —
-  no base64 ever enters the document. One event per paste carries every image;
+  `CustomEvent` on `document` with `{ files, editor }` in `detail`. The event
+  carries every image on the clipboard, so the host uploads and inserts them itself.
+  No base64 ever enters the document. One event per paste carries every image;
   the host inserts them in clipboard order.
 - Built-in **loading shell** for images, video/audio, iframe embeds, and X
   (`loadingShell` kit option; styles ship in `./styles.css`).
@@ -89,54 +89,54 @@ every media node gains an editable caption.
   View original (↗ arrow-outward), Download (image/video/audio); overflow `…`:
   Replace URL, Copy, Delete.
 - `right` placement — block-aligns a node to the right edge without text wrap
-  (Align offers Left, Center, Right, Wrap left, Wrap right) and round-trips
+  (Align offers Left, Center, Right, Wrap left, Wrap right). It round-trips
   through `getMediaPlacementAttrs` / `getCurrentMediaPlacement` as
   `margin: 0 0 0 auto`.
 - Margin control for wrap placements: choosing Wrap left/right adds a button
-  beside Align showing the current gap; it opens the presets (0"–1", default
+  beside Align showing the current gap. It opens the presets (0"–1", default
   1/2") in a floating-popover submenu, with a divider grouping the alignment
   section. Adds the optional `MediaAction.dividerAfter` flag.
 - Replace URL — a URL-editor dialog popover anchored to the media node (below
-  it, flipping above when space runs out) swaps the node's `src` in place,
-  preserving the node identity (`keyId`), caption, size, and placement instead
+  it, flipping above when space runs out) swaps the node's `src` in place. It
+  preserves the node identity (`keyId`), caption, size, and placement instead
   of delete-and-reinsert. Replacement is same-type only: each provider node
-  validates with its own canonical URL guard (a YouTube node accepts only
-  YouTube URLs, an X node normalizes to the canonical status URL), while
-  image/video/audio accept any non-empty URL, mirroring their insert commands.
-  The dialog content is a factory slot: the `replaceUrlPopover` kit option
-  returns custom content or `null` to render a host surface instead, and
+  validates with its own canonical URL guard. A YouTube node accepts only
+  YouTube URLs, and an X node normalizes to the canonical status URL. The
+  image, video and audio nodes accept any non-empty URL, mirroring their insert
+  commands. The dialog content is a factory slot: the `replaceUrlPopover` kit
+  option returns custom content or `null` to render a host surface instead.
   `createReplaceUrlPopover` / `openReplaceUrlPopover` (plus their option types)
   are exported for reuse.
 - `openToolbarPopover` / `closeToolbarPopover` exports — the positioned-popover
   building blocks the built-in toolbar uses, available to custom `mediaToolbar`
   surfaces. One popover at a time; outside-click and Escape dismissal built in.
 - `resolveMediaNodePos` export — resolves a media wrapper element to its
-  current document position, so custom toolbar actions re-resolve at action
+  current document position. Custom toolbar actions re-resolve at action
   time instead of trusting the open-time snapshot.
 - Hover controls track the node through collaborative edits: the toolbar,
   resize gripper, and Delete-key targeting follow position shifts from content
   inserted above the node.
-- Toolbar accessibility: the bar carries `aria-label="Media toolbar"`, toggle
-  actions and submenu items expose `aria-pressed`, Escape with focus inside the
-  toolbar dismisses it and refocuses the editor, and overflow/submenu popover
-  shells are intentionally role-neutral.
-- Icon-only toolbar buttons show a floating tooltip on hover and focus (shared
-  `role="tooltip"` bubble, 400ms delay, hidden on click so it never lingers
-  over an opening menu) in place of the native `title`. The tooltip ships from
-  the shared `@docs.plus/floating-tooltip` package — bundled into `dist` like
-  the popover engine — with `attachTooltip` / `hideTooltip` re-exported for
-  custom `mediaToolbar` surfaces, and `.floating-tooltip` joins the
-  styling-contract classes.
+- Toolbar accessibility: the bar carries `aria-label="Media toolbar"`, and
+  toggle actions and submenu items expose `aria-pressed`. Escape with focus
+  inside the toolbar dismisses it and refocuses the editor. Overflow/submenu
+  popover shells are intentionally role-neutral.
+- Icon-only toolbar buttons show a floating tooltip on hover and focus, in
+  place of the native `title`. The tooltip is a shared `role="tooltip"` bubble
+  with a 400ms delay, hidden on click so it never lingers over an opening menu.
+  The tooltip ships from the shared `@docs.plus/floating-tooltip` package,
+  bundled into `dist` like the popover engine. `attachTooltip` /
+  `hideTooltip` are re-exported for custom `mediaToolbar` surfaces, and
+  `.floating-tooltip` joins the styling-contract classes.
 - The bundled popover engine treats a popover as one-shot once opened: hiding
   releases its ownership, so it is never re-shown. Toolbar menus, submenus and
   the Replace URL dialog already build a fresh popover per open, so no toolbar
-  behaviour changes — the guarantee is that a dismissed menu cannot reappear
+  behaviour changes. The guarantee is that a dismissed menu cannot reappear
   detached from the single-popover invariant.
 - Micro-motion: the media toolbar fades in on mount and fades out before removal
-  (the exit is deferred past the fade), hover states fade, tooltips rise toward
-  rest, and overflow/submenu popovers play both transitions and scale from the
-  anchored side via a placement-derived `transform-origin`. Motion follows the
-  docs.plus language — 120ms `ease-out` enter, 80ms `ease-in` exit — all
+  (the exit is deferred past the fade). Hover states fade, and tooltips rise
+  toward rest. Overflow/submenu popovers play both transitions and scale from
+  the anchored side via a placement-derived `transform-origin`. Motion follows
+  the docs.plus language — 120ms `ease-out` enter, 80ms `ease-in` exit — all
   compositor-only (`transform`/`opacity`/color) and fully zeroed under
   `prefers-reduced-motion: reduce`.
 - `mediaActions` and `isUploadedMedia` kit options; exported `MediaAction` types,
@@ -179,9 +179,9 @@ every media node gains an editable caption.
   submenus. The inline align button reuses the `align:<placement>` icons, so a
   host supplies one icon per placement and never a dynamic resolver.
 - **`composeMediaActions` builder + `layoutMediaActions` sugar.** Rearrange
-  toolbar bricks by id — `add` / `move` / `replace` / `remove` /
-  `setPlacement` / `order` — or declare the inline and overflow rows by id,
-  instead of hand-splicing the `mediaActions` array. Both compose over the
+  toolbar bricks by id with `add` / `move` / `replace` / `remove` /
+  `setPlacement` / `order`. You can also declare the inline and overflow rows by
+  id, instead of hand-splicing the `mediaActions` array. Both compose over the
   existing `mediaActions` slot.
 
 ### Changed
@@ -194,54 +194,54 @@ every media node gains an editable caption.
 - Loom embed defaults include `scrolling: 'no'` to avoid iframe scrollbars at fixed heights.
 - The default media-toolbar skin aligns with the docs.plus floating-surface
   language: 10px shells (toolbar + menus, was 8px) with 8px inner controls
-  (was 6px) — lockstep with extension-hyperlink's radii — and a deeper two-layer
-  overlay shadow (`--hm-toolbar-shadow`). Consumers who retheme via the `--hm-*`
-  custom properties are unaffected; the lockstep `.floating-tooltip` block is
-  unchanged.
+  (was 6px). The radii are lockstep with extension-hyperlink's radii. The skin
+  also carries a deeper two-layer overlay shadow (`--hm-toolbar-shadow`).
+  Consumers who retheme via the `--hm-*` custom properties are unaffected; the
+  lockstep `.floating-tooltip` block is unchanged.
 - Built-in toolbar icons resolve from a single Material map in `resolveMediaToolbarIcon`
   (host `mediaToolbarIcons` override first). `MediaAction.icon` is optional — omit it
   on custom bricks and supply keys via `mediaToolbarIcons` instead.
 - The toolbar action list is now ordered purely by array position. The internal
-  numeric `order` field on `MediaAction` is removed; author bricks in display
+  numeric `order` field on `MediaAction` is removed. Author bricks in display
   order and arrange with the builder (X's "Post options" now anchors after
   Replace URL via a per-node recipe rather than `order: 45`).
 
 ### Fixed
 
 - `![alt](src)` markdown routing to media nodes is now gated on the src actually
-  validating for that node type, so an image whose alt text collides with a reserved
-  literal (`x`, `video`, `audio`, …) imports as an image instead of a permanently
-  broken embed. Trade-off: an `![audio]`/`![video]` whose URL has no recognized media
-  extension now imports as an image rather than a media node.
+  validating for that node type. As a result, an image whose alt text collides with
+  a reserved literal (`x`, `video`, `audio`, …) imports as an image. It no longer
+  imports as a permanently broken embed. Trade-off: an `![audio]`/`![video]` whose URL has no
+  recognized media extension now imports as an image rather than a media node.
 - Vimeo and X paste rules claim a URL pasted mid-sentence (previously they read the whole
-  pasted block and silently failed), and the Vimeo pattern keeps the full URL tail so the
+  pasted block and silently failed). The Vimeo pattern keeps the full URL tail, so the
   unlisted-video `?h=` param survives into the embed. `.webm` is no longer treated as an
   image extension — those URLs route to the video pipeline.
 - The media toolbar's Copy action no longer throws out of its clipboard fallback in
-  non-secure contexts, and Download routes HTTP error responses (404/expired signed URL)
+  non-secure contexts. Download routes HTTP error responses (404/expired signed URL)
   to the open-in-tab fallback instead of saving a corrupt file.
 - The shipped type definitions no longer augment the global `Window` with `twttr`
-  (a local accessor replaces the `declare global` block), and `prefers-reduced-motion`
+  (a local accessor replaces the `declare global` block). `prefers-reduced-motion`
   now actually suppresses the toolbar entrance animation and popover transition (the
   entrance rules out-specified both guards). The unused `.floating-popover-arrow` rules
   moved out of this package — the hyperlink bundle owns arrow skins.
 - `getHTML()` and clipboard copy no longer throw once a `video`/`audio` node
   exists (leaf-node content hole removed; bogus `contentDOM` dropped).
 - Resize drags commit to the node actually under the gripper — the drag-end
-  position is re-resolved from the DOM (keyId-first, type-guarded); listeners and
-  pointer capture release even if the commit throws; `updateNodeDimensions`
+  position is re-resolved from the DOM (keyId-first, type-guarded). Listeners and
+  pointer capture release even if the commit throws. `updateNodeDimensions`
   refuses non-media positions.
 - Gripper-resized `audio` no longer snaps back visually (`syncAudioNodeLayout`
   mirrors committed `width`/`height`).
 - The document-level delete-on-hover handler yields to real editing: Backspace/
-  Delete with a focused text caret edits text (bails on `TextSelection`), and
-  while editing a caption it edits the caption text instead of deleting the
-  whole media node.
+  Delete with a focused text caret edits text (bails on `TextSelection`). While
+  editing a caption it edits the caption text instead of deleting the whole
+  media node.
 - Caption text is trimmed on commit, matching the mobile sheet; a whitespace-only
   caption clears to `null`.
 - A visible caption no longer overflows onto the paragraph below the media. The
-  node-view wrapper drops its redundant fixed `height` (the loading shell and media
-  surface still carry the pixel size), so it grows to contain the caption.
+  node-view wrapper drops its redundant fixed `height`, so it grows to contain the
+  caption. The loading shell and media surface still carry the pixel size.
 - YouTube `ccLanguage` maps to the official `cc_lang_pref` param; YouTube URL
   detection uses exact host matching.
 - Pasted plain-text `data:image/...` URLs respect `allowBase64: false`.
@@ -260,7 +260,7 @@ every media node gains an editable caption.
   second toolbar — `openMediaToolbar` purges `[data-hm-closing]` siblings before
   append.
 - Resize gripper uses `setPointerCapture` so drags stay attached over iframes, outside the editor, and at constraint limits; drags also end on blur and `pointercancel`.
-- Loading shell dimensions stay in sync with gripper resize on iframe embeds and video; ready shells use a transparent background so gray placeholder does not show through.
+- Loading shell dimensions stay in sync with gripper resize on iframe embeds and video. Ready shells use a transparent background so gray placeholder does not show through.
 - Iframe embed resize writes pixel `style` width/height on the `<iframe>` (not only HTML attrs) so the player fills the gripper.
 - Image node view uses subtree `ignoreMutation` (not ignore-all).
 - Image insertion no longer appends a phantom empty image node (`priority: 1100`
@@ -273,24 +273,24 @@ every media node gains an editable caption.
 - Iframe embeds (YouTube, Vimeo, SoundCloud, Loom) set
   `referrerpolicy="strict-origin-when-cross-origin"` on the player iframe. Under a
   host page whose `Referrer-Policy` strips the cross-origin `Referer`, the provider
-  could not verify the embedding domain and rendered a "player configuration error"
-  instead of the video; the element-level policy sends the origin without relaxing
+  could not verify the embedding domain. It rendered a "player configuration error"
+  instead of the video. The element-level policy sends the origin without relaxing
   the page's global header.
 - Resize gripper overlays the visible media box exactly. The overlay widget was
   inheriting the host editor's content-flow margin, which shifted it off the media
-  box and desynced its drag coordinates; it now forces `margin: 0` and measures the
+  box and desynced its drag coordinates. It now forces `margin: 0` and measures the
   loading-shell host via `getBoundingClientRect`, so the selection box hugs the
   player and excludes the caption.
 - Media embeds (YouTube, Vimeo, SoundCloud, Loom, X) no longer reload when a
   focus-trap opens elsewhere in the editor — a Floating UI popover, a dialog. The
-  loading shell is no longer an `aria-live` / `role="status"` region: such a region
+  loading shell is no longer an `aria-live` / `role="status"` region. Such a region
   inside the editor makes focus-trap libraries stamp `inert` across the document,
   which ProseMirror reconciles by recreating the iframe node views. Iframe embeds
   are now leaf node views with no `contentDOM`, matching the other media nodes.
-- Caption editing no longer deletes the media node on the first typed character
-  when ProseMirror still held a `NodeSelection` on the node (click-to-lock, then
-  toolbar Caption). Focus now collapses that selection before input reaches the
-  editor.
+- Caption editing no longer deletes the media node on the first typed character.
+  The trigger was a `NodeSelection` that ProseMirror still held on the node
+  (click-to-lock, then toolbar Caption). Focus now collapses that selection before
+  input reaches the editor.
 - Media blocks no longer overflow the editor column on narrow viewports. Wrappers
   and loading shells cap at `max-width: 100%` while preserving committed
   width/height attrs via `aspect-ratio` (live editor; static HTML export still
@@ -309,21 +309,21 @@ every media node gains an editable caption.
   the copy.
 - A captioned image keeps `float`, `margin`, `clear` and `display` through an
   HTML round-trip. It parses from its `<figure>`, and those four attributes were
-  read off that element instead of the inner `<img>`, so a wrapped image came
-  back centred after a copy/paste.
+  read off that element instead of the inner `<img>`. As a result, a wrapped
+  image came back centred after a copy/paste.
 - `video` and `audio` keep width, height and placement through an HTML
   round-trip. The values were emitted only inside the wrapper's inline `style`,
   which nothing parses back, so the node returned at schema defaults.
 - Reserved markdown alts route only through each node's own tokenizer. The image
   node's `parseMarkdown` also emitted `{ type: 'audio' }`, `{ type: 'youtube' }`
-  and so on, which have no schema node when the kit disabled them — Tiptap caught
+  and so on, which have no schema node when the kit disabled them. Tiptap caught
   the schema error and replaced the whole document with an empty one. Side effect:
   marked-image shapes the tokenizer does not match (`![audio](url "title")`,
   `![audio](<url>)`) now import as images.
 - YouTube and Vimeo store the page URL after an HTML round-trip, not the player
   URL. `renderHTML` serializes the iframe widget URL and both nodes read it back
   verbatim, so markdown export emitted the embed URL. With
-  `Youtube: { nocookie: true }` the round-trip was worse: the nocookie host is not
+  `Youtube: { nocookie: true }` the round-trip was worse. The nocookie host is not
   a watch host, so the next embed build produced an empty `src` and the video went
   blank. Vimeo keeps the unlisted-video `?h=` token through the unwrap.
 - An X node ignores a literal `src` attribute on pasted `blockquote.twitter-tweet`
@@ -333,7 +333,7 @@ every media node gains an editable caption.
   covers documents persisted before the parse fix.
 - The `![alt](url)` image input rule no longer swallows the space that triggers
   it. The trailing lookahead let the match end one character before the typed
-  text, so the rule inserted a duplicated `)` and left the `!` in the document.
+  text. The rule therefore inserted a duplicated `)` and left the `!` in the document.
 - `editor.can().updateImageDimensions({ keyId })` reports `false` when no image
   carries that `keyId`. The command ran its scan only when dispatching, then
   returned `true` unconditionally.
@@ -347,18 +347,18 @@ every media node gains an editable caption.
 ### Security
 
 - **Toolbar button labels render as text, not markup.** A media node's `margin`
-  attribute is document-controlled and was reported verbatim inside the label, so
-  an attribute carrying HTML executed script the moment the toolbar opened.
+  attribute is document-controlled and was reported verbatim inside the label. An
+  attribute carrying HTML therefore executed script the moment the toolbar opened.
   Labels are written with `textContent`; a stored payload now renders as literal
   text.
 - **Dangerous schemes are refused where `src` enters the document.**
   `javascript:`, `data:`, `vbscript:`, `file:` and `blob:` are rejected at
-  `parseHTML` for the four nodes that lacked a check — `video`, `audio`, `vimeo`
-  and `youtube` — on markdown import, and in the Replace URL dialog. The last two
-  admit inline `data:image/*` payloads for the image node; SVG stays excluded
-  because it carries script. The embed builders already refused to render a bad
+  `parseHTML` for the four nodes that lacked a check: `video`, `audio`, `vimeo`
+  and `youtube`. They are also rejected on markdown import, and in the Replace URL
+  dialog. Markdown import and the Replace URL dialog admit inline `data:image/*`
+  payloads for the image node; SVG stays excluded because it carries script. The embed builders already refused to render a bad
   URL, but the raw value still reached the collaborative document. This is not a
-  whole-document guarantee: insert commands and collaborative sync write `src`
+  whole-document guarantee. Insert commands and collaborative sync write `src`
   without passing the gate, which is why the read side carries its own allowlist.
 - **Layout attributes cannot inject CSS declarations into exported HTML.**
   `margin` is read verbatim off pasted elements and concatenated into the
@@ -367,8 +367,8 @@ every media node gains an editable caption.
   the same `renderHTML`.
 - **"View original" and the download fallback open only `http(s):`, `blob:` and
   root-relative sources.** Insert commands and collaborative sync can both put a
-  value in `src` that the parse-time gate never saw, so the `window.open` sink
-  re-checks rather than trusting the stored value.
+  value in `src` that the parse-time gate never saw. The `window.open` sink
+  therefore re-checks rather than trusting the stored value.
 
 ### Removed
 
@@ -387,7 +387,7 @@ every media node gains an editable caption.
   `main.ts`. No change to the published package.
 - Media layout CSS (live + export + image block) routes through one
   `layoutStyle` module (`StyleLayoutOptions` / `mediaLayoutCss` /
-  `applyMediaLayoutToDom`); node options re-export the same type (no dual
+  `applyMediaLayoutToDom`). Node options re-export the same type (no dual
   layout contracts).
 - Toolbar popovers open via `openMediaPopover` (menu + Replace dialog); engine
   dismiss/shift knobs stay inside that adapter.
@@ -396,7 +396,7 @@ every media node gains an editable caption.
 
 - Config keys are unchanged except `Twitter` → `X`; update `setTwitter` → `setX`.
 - **Stored documents (docs.plus / Hocuspocus)**: run `bun run --filter @docs.plus/hocuspocus migrate:media-node-names` (fail-closed; preview with `:dry`) to rewrite legacy PascalCase node types. The on-load shim (`ENABLE_SCHEMA_MIGRATION`) covers stragglers.
-- **Stored documents (external adopters)**: rewrite node `type` strings in JSON or Yjs exports — `Image`→`image`, `Video`→`video`, `Audio`→`audio`, `Youtube`→`youtube`, `Vimeo`→`vimeo`, `SoundCloud`→`soundcloud`, `Twitter`→`x`. Attr keys are unchanged except command renames (`setTwitter`→`setX`). See the [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) for the full mapping even if you do not run the CLI.
+- **Stored documents (external adopters)**: rewrite node `type` strings in JSON or Yjs exports. The mappings are `Image`→`image`, `Video`→`video`, `Audio`→`audio`, `Youtube`→`youtube`, `Vimeo`→`vimeo`, `SoundCloud`→`soundcloud`, `Twitter`→`x`. Attr keys are unchanged except command renames (`setTwitter`→`setX`). See the [media-node-rename runbook](https://github.com/docs-plus/docs.plus/blob/main/apps/hocuspocus.server/docs/migrate-media-node-names.md) for the full mapping even if you do not run the CLI.
 - Replace removed `createFloatingToolbar`/`*Modal` usage with the built-in toolbar or the `mediaToolbar` factory.
 - **Recommended pairing with `@docs.plus/extension-hyperlink`** when both ship in one editor — configure `shouldAutoLink: (url) => !isMediaUrl(url)` so media URLs become nodes, not links.
 
@@ -439,7 +439,7 @@ Rename the insert command:
 +editor.commands.setX({ src: 'https://x.com/jack/status/20' })
 ```
 
-Drop the tippy modal API. The toolbar is built in; pass `mediaToolbar` only to
+Drop the tippy modal API. The toolbar is built in. Pass `mediaToolbar` only to
 render your own surface:
 
 ```diff

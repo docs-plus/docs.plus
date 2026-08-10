@@ -4,8 +4,8 @@ describe('resize undo/redo', () => {
   it('undo reverts both the width attr and the rendered size; redo re-applies them', () => {
     cy.visitPlayground()
     cy.prepareImageForResize(200, 150)
-    // PM history groups transactions landing within 500ms (newGroupDelay); settle so
-    // the resize commit is its own undo step instead of merging with the insert.
+    // PM history groups transactions landing within 500ms (newGroupDelay).
+    // Settle so the resize commit is its own undo step instead of merging with the insert.
     // eslint-disable-next-line cypress/no-unnecessary-waiting
     cy.wait(600)
     cy.dragResizeClamp('right', 60)

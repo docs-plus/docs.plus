@@ -1,6 +1,6 @@
 /**
  * Platform-wide aggregates and the user/channel directory. All of it runs through
- * the service_role client: the browser's anon-key client is RLS-scoped and
+ * the service_role client. The browser's anon-key client is RLS-scoped, and
  * email/push/email_queue are revoked from `authenticated`, so these counts cannot
  * be computed client-side.
  */

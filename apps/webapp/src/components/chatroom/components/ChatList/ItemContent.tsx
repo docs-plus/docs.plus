@@ -30,10 +30,10 @@ export type ItemContentProps = {
  * rather than throw inside `isDay`.
  */
 export const ItemContent = ({ index, data, prevData, context }: ItemContentProps) => {
-  // A notification chip between two same-author messages must break the
-  // group — otherwise the post-notification message would render compact
-  // (no avatar/header) and visually merge across the chip. Mirrors the
-  // grouped-projection rule for notification breaks.
+  // A notification chip between two same-author messages must break the group.
+  // Otherwise the post-notification message would render compact, with no avatar
+  // or header, and visually merge across the chip. Mirrors the grouped-projection
+  // rule for notification breaks.
   const samePrev =
     !!data &&
     isMessage(data) &&

@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 
 /**
- * Bulk-selection state for data tables. The exposed selection is always pruned
- * to the current `items`, so a filter change or refetch can't leave phantom ids
+ * Bulk-selection state for data tables. The exposed selection is always pruned to the
+ * current `items`. Pruning stops a filter change or refetch from leaving phantom ids
  * that a bulk action would act on. `getKey` extracts the key (defaults to id).
  */
 export function useBulkSelection<T>(

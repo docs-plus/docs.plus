@@ -78,8 +78,8 @@ const BottomSheet = () => {
   const content = useMemo((): React.ReactNode => {
     if (!activeSheet) return null
     // Single type-narrowing boundary: the registry's per-key signatures
-    // are precise (`SheetDataMap[K]`), but the indexed lookup widens
-    // back to the union — collapse it here so the renderers themselves
+    // are precise (`SheetDataMap[K]`), but the indexed lookup widens back
+    // to the union. Collapse the union here so the renderers themselves
     // stay strictly typed.
     const renderer = SHEET_CONTENT[activeSheet] as (data: SheetData) => React.ReactNode
     return renderer(sheetData)

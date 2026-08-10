@@ -45,9 +45,9 @@ function escapeRegExp(value: string): string {
 }
 
 // Match the heading by its leading text. Anchoring at the start with a whitespace/end
-// boundary is deliberate: HeadingActions appends widget buttons INSIDE the heading, so
-// its raw textContent is `"<label>\n   \n…"` — a `^label$` match never lands, and the
-// boundary still separates "Swarm Actor 1" from "Swarm Actor 10".
+// boundary is deliberate. HeadingActions appends widget buttons INSIDE the heading, so its
+// raw textContent is `"<label>\n   \n…"` and a `^label$` match never lands. The boundary
+// still separates "Swarm Actor 1" from "Swarm Actor 10".
 async function findHeadingTocId(page: Page, label: string): Promise<string | null> {
   const heading = page
     .locator(PAD_HEADING_SELECTOR)
@@ -90,8 +90,8 @@ async function ensureSectionHeading(page: Page, label: string): Promise<string> 
 }
 
 /**
- * Ensures the Write Target heading exists (creating it at doc end if missing) and
- * leaves the caret at the end of that heading, ready for a body line to be typed.
+ * Ensures the Write Target heading exists, creating it at doc end when missing. Leaves
+ * the caret at the end of that heading, ready for a body line to be typed.
  */
 export async function openWriteTarget(page: Page, target: WriteTarget): Promise<OpenedWriteTarget> {
   const tocId = await ensureSectionHeading(page, labelOf(target))

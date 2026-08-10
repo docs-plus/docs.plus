@@ -12,9 +12,9 @@ export const INITIAL_EPOCH = 1
 
 /**
  * Derive a draft's documentId from its slug, so two people opening the same new
- * slug at once land in one Yjs room instead of forking into two documents.
- * The epoch changes on purge; without it a reused slug would derive the erased
- * document's id and a stale IndexedDB mirror could sync its content back.
+ * slug at once land in one Yjs room. Otherwise they fork into two documents.
+ * The epoch changes on purge. Without it a reused slug would derive the erased
+ * document's id, and a stale IndexedDB mirror could sync its content back.
  */
 export function deriveDocumentId(normalizedSlug: string, epoch: number): string {
   const digest = createHash('sha256').update(`${normalizedSlug}#${epoch}`).digest()

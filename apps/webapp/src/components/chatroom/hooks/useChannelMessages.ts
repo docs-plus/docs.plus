@@ -95,10 +95,10 @@ export const useChannelMessages = ({
       newestSeqRef.current = seqs.length ? Math.max(...seqs) : null
       setHasMoreOlder(Boolean(win.has_more_before))
       dataIncludesTailRef.current = mediaOnly ? true : !win.has_more_after
-      // Virtuoso mounts in a later commit than the Provider's effect;
-      // when the RPC resolves before that mount lands, listRef.current
-      // is still null and `data.replace` silently no-ops via the `?.`.
-      // Poll via rAF until the imperative handle attaches, then apply.
+      // Virtuoso mounts in a later commit than the Provider's effect. When
+      // the RPC resolves before that mount lands, listRef.current is still
+      // null and `data.replace` silently no-ops via the `?.`. Poll via rAF
+      // until the imperative handle attaches, then apply.
       const apply = () => {
         if (cancelled) return
         const list = listRef.current
@@ -268,10 +268,10 @@ export const useChannelMessages = ({
         row
       })
     }
-    // `false` (no autoscroll) is required: the default at-bottom callback
-    // smooth-scrolls every page, because loadNewer fires inside
-    // LOAD_NEWER_PX_THRESHOLD and the post-append snap re-triggers it —
-    // a runaway scroll to tail. Pagination must keep the viewport anchored.
+    // `false` (no autoscroll) is required: the default at-bottom callback smooth-scrolls
+    // every page. That happens because loadNewer fires inside LOAD_NEWER_PX_THRESHOLD
+    // and the post-append snap re-triggers loadNewer. The result is a runaway scroll to
+    // tail. Pagination must keep the viewport anchored.
     listRef.current?.data.append(items, false)
     const seqs = items
       .filter(isMessage)
@@ -304,8 +304,8 @@ const tailLocation: ItemLocation = {
 }
 
 /**
- * Virtuoso's `ItemLocation` is index-based (`number | 'LAST'`), not id-based;
- * passing `'lastItem'` or `{ id }` silently no-ops and leaves Virtuoso in its
+ * Virtuoso's `ItemLocation` is index-based (`number | 'LAST'`), not id-based.
+ * Passing `'lastItem'` or `{ id }` silently no-ops and leaves Virtuoso in its
  * empty-placeholder state even after `data.replace` populates the store.
  */
 const resolveInitialLocation = (

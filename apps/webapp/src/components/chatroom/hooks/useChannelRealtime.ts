@@ -75,17 +75,17 @@ export const useChannelRealtime = ({
   const mountedRef = useRef(true)
   const pendingRafRef = useRef<number | null>(null)
   const catchUpInFlightRef = useRef(false)
-  // Upper bound on Virtuoso mount-wait. At 60fps this is ~5s — well past
-  // any realistic measure delay; past that the rAF poll would be spinning
-  // on a permanently-empty handle (error boundary, route flip, mobile
-  // tab background) and is safe to drop.
+  // Upper bound on Virtuoso mount-wait. At 60fps this is ~5s, well past any realistic
+  // measure delay. Past that limit the rAF poll would spin on a permanently-empty handle,
+  // so dropping the poll is safe. The handle stays empty when an error boundary trips,
+  // the route flips, or the mobile tab is backgrounded.
   const MAX_DRAIN_ATTEMPTS = 300
 
   const scheduleFlush = useCallback(() => {
     if (flushScheduledRef.current) return
     flushScheduledRef.current = true
     // Virtuoso's imperative handle may not be attached yet when the catchup
-    // RPC resolves on initial mount; without this poll, the SUBSCRIBED→
+    // RPC resolves on initial mount. Without this poll, the SUBSCRIBED→
     // fetch_messages_since→scheduleFlush→data.append chain runs against a
     // null `listRef.current` and every row is silently dropped via `?.`.
     let attempts = 0
@@ -103,10 +103,10 @@ export const useChannelRealtime = ({
         pendingRafRef.current = requestAnimationFrame(drain)
         return
       }
-      // Gate on the initial fetch_message_window setting newestSeqRef: arrivals
-      // captured before it resolves would append onto an empty list, survive
-      // data.replace, and land AFTER the window items — a reversed pagination
-      // block (newer at top, older at tail).
+      // Gate on the initial fetch_message_window setting newestSeqRef. Arrivals captured
+      // before that call resolves would append onto an empty list, survive data.replace,
+      // and land AFTER the window items. The result is a reversed pagination block,
+      // with newer at top and older at tail.
       if (newestSeqRef.current == null) {
         if (++attempts >= MAX_DRAIN_ATTEMPTS) {
           flushScheduledRef.current = false
@@ -163,19 +163,19 @@ export const useChannelRealtime = ({
             }
             continue
           }
-          // Pending-block fence: own optimistic sends sit at the tail as
-          // `pending` until their echo merges in place, so a peer arrival
-          // appended after them leaves the later echo stuck behind the peer —
-          // an out-of-order tail. Insert before the first pending item.
+          // Pending-block fence: own optimistic sends sit at the tail as `pending`
+          // until their echo merges in place. A peer arrival appended after them
+          // leaves the later echo stuck behind the peer, which is an out-of-order
+          // tail. Insert before the first pending item.
           const pendingIdx = listRef.current?.data.findIndex(
             (i: ChatItem) => isMessage(i) && i.status === 'pending'
           )
           if (typeof pendingIdx === 'number' && pendingIdx >= 0) {
             listRef.current?.data.insert([item], pendingIdx)
           } else {
-            // Always defer to `atBottom`: optimistic append in useSendMessage
-            // already moved the viewport when appropriate, so an own-echo
-            // arriving while scrolled up must not yank the reader back down.
+            // Always defer to `atBottom`: the optimistic append in useSendMessage
+            // already moved the viewport when needed. An own-echo arriving while
+            // scrolled up must not pull the reader back down.
             listRef.current?.data.append([item], ({ atBottom }) => (atBottom ? 'smooth' : false))
           }
           if (typeof item.seq === 'number') {
@@ -240,10 +240,10 @@ export const useChannelRealtime = ({
     }
 
     const catchUpInner = async () => {
-      // Wait for the initial fetch_message_window to set newestSeqRef: a fast
-      // SUBSCRIBED on a slow fetch would fall through with `since=0`, pull the
-      // whole channel history into arrivalBuffer, and tail-pile it after
-      // data.replace. Bounded so a stalled fetch can't hang here.
+      // Wait for the initial fetch_message_window to set newestSeqRef. A fast SUBSCRIBED
+      // on a slow fetch would fall through with `since=0`. That fall-through pulls the whole
+      // channel history into arrivalBuffer and piles it at the tail after data.replace.
+      // The wait is bounded so a stalled fetch can't hang here.
       let waitAttempts = 0
       while (newestSeqRef.current == null && mountedRef.current && waitAttempts < 100) {
         await new Promise((r) => setTimeout(r, 50))
@@ -315,10 +315,10 @@ export const useChannelRealtime = ({
           }
           arrivalBufferRef.current.set(row.id, item)
           if (!dataIncludesTailRef.current) detachedBufferRef.current.push(item)
-          // newestSeqRef is intentionally NOT bumped here: it tracks the LIST's
-          // max seq as loadNewer's `since` cursor, and arrivals routed to
-          // detachedBuffer (mid-channel mount) must not race ahead and disarm
-          // it. Drain updates the ref when items actually enter the list.
+          // newestSeqRef is intentionally NOT bumped here: it tracks the LIST's max seq
+          // as loadNewer's `since` cursor. Arrivals routed to detachedBuffer on a
+          // mid-channel mount must not race ahead and disarm that cursor. Drain updates
+          // the ref when items actually enter the list.
           scheduleFlush()
         }
       )

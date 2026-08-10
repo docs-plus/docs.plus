@@ -2,8 +2,8 @@
  * Real-infra E2E for the document store pipeline:
  * BullMQ (real Redis) → worker → Prisma transaction (real Postgres) → Yjs round-trip.
  *
- * Run as a standalone process (NOT `bun test`): BullMQ's worker run-loop does not
- * progress under the bun test runner, but works in a normal process (as in prod).
+ * Run as a standalone process, NOT `bun test`. BullMQ's worker run-loop does not
+ * progress under the bun test runner. It works in a normal process, as in prod.
  * Requires DATABASE_URL (test DB) + REDIS_HOST/REDIS_PORT + SUPABASE_URL/ANON (dummy ok).
  * Invoked by `make test-backend-e2e` and the backend-e2e CI job.
  */
@@ -98,8 +98,8 @@ const row2 = await waitForVersion(doc2, 2)
 check(!!row2 && row2.version === 2, 'second save increments to version 2')
 
 // 3. Claim-check enqueue (the WS store-hook path): state rides a TTL'd Redis
-// key, the job carries only the reference, and the worker strips the
-// transient metadata keys from the stored snapshot.
+// key, and the job carries only the reference. The worker strips the transient
+// metadata keys from the stored snapshot.
 const doc3 = `${PREFIX}-doc3`
 const ydoc3 = new Y.Doc()
 ydoc3.getText('content').insert(0, 'claim check')

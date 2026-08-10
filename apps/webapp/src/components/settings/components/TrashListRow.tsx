@@ -6,8 +6,8 @@ import { formatDeletedAgo, retentionCountdown } from '../utils/retention'
 
 // Warning ink for the small "N days left" tail: raw --color-warning is only
 // ~3.1:1 on the Paper ground (sub-AA for small text). Mix toward base-content to
-// clear AA as a **direct** color — an @theme <color> token would freeze the mix
-// against :root; a direct color re-resolves per theme (darker on light grounds,
+// clear AA as a **direct** color. An @theme <color> token would freeze the mix
+// against :root. A direct color re-resolves per theme (darker on light grounds,
 // lighter on dark), so it stays legible everywhere.
 const WARN_INK_CLASS =
   'text-[color:color-mix(in_oklch,var(--color-warning),var(--color-base-content)_30%)]'
@@ -23,9 +23,9 @@ interface TrashListRowProps {
 }
 
 /**
- * One soft-deleted document in Trash: a select checkbox, a "deleted X ago ·
- * N days left" countdown (amber in the final days), and — when nothing is
- * selected — inline Restore / Delete-forever quick actions.
+ * One soft-deleted document in Trash: a select checkbox and a "deleted X ago ·
+ * N days left" countdown (amber in the final days). Inline Restore / Delete-forever
+ * quick actions show only when nothing is selected.
  */
 function TrashListRow({
   doc,

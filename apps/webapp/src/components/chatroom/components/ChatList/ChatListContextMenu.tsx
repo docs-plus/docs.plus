@@ -28,9 +28,9 @@ const removeContextMenuActiveClass = () => {
 
 /**
  * Desktop right-click affordance restored on top of the Virtuoso feed.
- * Message identity is read back off the stamped `msgId` DOM property,
- * then looked up through `listRef.current.data.findIndex` so we stay on
- * the Virtuoso-owned data store without a parallel id->row map.
+ * Message identity is read back off the stamped `msgId` DOM property. The lookup then
+ * goes through `listRef.current.data.findIndex`, so the Virtuoso-owned data store stays
+ * the single source and no parallel id->row map is needed.
  */
 const ContextMenuReadStatus = ({ message }: { message: TMsgRow | null }) => {
   const { isOpen } = useContextMenuContext()

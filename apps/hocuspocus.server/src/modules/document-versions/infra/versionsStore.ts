@@ -107,7 +107,7 @@ export type DeleteVersionOutcome =
 
 /**
  * Non-head only. Deleting the head rewinds the cold-load base, and a hot room
- * would then flush its newer live state back as a phantom revert; the lock
+ * would then flush its newer live state back as a phantom revert. The lock
  * makes "is head" and the delete one decision.
  */
 export const deleteVersionRow = (
@@ -117,7 +117,7 @@ export const deleteVersionRow = (
 ): Promise<DeleteVersionOutcome> =>
   prisma.$transaction(async (tx): Promise<DeleteVersionOutcome> => {
     // One statement, so "is head" and the delete share a snapshot. Split across
-    // two statements the guard is defeated under READ COMMITTED: a row inserted
+    // two statements the guard is defeated under READ COMMITTED. A row inserted
     // between them is invisible to the first and deletable by the second.
     const deleted = await tx.$queryRaw<{ version: number }[]>`
       DELETE FROM "Documents"
@@ -149,7 +149,7 @@ export interface BackupRowParams {
 export type BackupRowOutcome = { ok: true; version: number } | { ok: false; error: unknown }
 
 /**
- * Merge with the locked head like both persistence paths do — a plain insert of
+ * Merge with the locked head like both persistence paths do. A plain insert of
  * the captured state would clobber an autosave that committed out of order. The
  * version comes out of the closure because the retry re-reads a newer head, so
  * a caller-side `head + 1` would name somebody else's row.
@@ -168,9 +168,9 @@ export const appendBackupRow = async (
         FOR UPDATE
       `
       const head = rows[0] ?? null
-      // Merge raw, then re-encode. mergeUpdates takes struct content from the
-      // older head and only unions delete sets, so a plain merge carries text
-      // deleted inside a surviving parent forward — and this row is named, so
+      // Merge raw, then re-encode. `mergeUpdates` takes struct content from the
+      // older head and only unions delete sets. A plain merge therefore carries
+      // text deleted inside a surviving parent forward. This row is named, so
       // retention never ages it out. Decoding into a gc:true doc drops it.
       let data = params.snapshot
       if (head) {
@@ -199,9 +199,9 @@ export const appendBackupRow = async (
   try {
     return { ok: true, version: await append() }
   } catch (error) {
-    // Re-merge on the (documentId, version) collision, never serve the winner:
-    // yielding here would leave the pre-restore state unsaved while the restore
-    // still lands, which is the one interleaving that loses a document.
+    // Re-merge on the (documentId, version) collision, never serve the winner.
+    // Yielding here would leave the pre-restore state unsaved while the restore
+    // still lands. That interleaving is the one that loses a document.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       try {
         return { ok: true, version: await append() }

@@ -30,9 +30,9 @@ import type { WatchVersionContentOptions } from './hooks/useVersionContent'
 
 /**
  * Only the two callbacks that close over the provider and documentId are injected.
- * Everything else reads the store directly: this module has no tests, so threading
- * twenty setters through a deps object bought no testability and made adding a store
- * field a four-file edit — which is how `setCompareMode` came to be missing.
+ * Everything else reads the store directly. This module has no tests, so threading
+ * twenty setters through a deps object bought no testability. It also made adding a
+ * store field a four-file edit, which is how `setCompareMode` came to be missing.
  */
 export type HistoryStatelessHandlerDeps = {
   requestSilentListRefresh: () => void
@@ -155,7 +155,7 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
   const failedVersion = store().pendingWatchVersion
 
   // Before the shared tail: a refused restore must not clear a watch the reader
-  // still has in flight, and it has no bearing on what the sidebar is showing.
+  // still has in flight. A refused restore also has no bearing on what the sidebar shows.
   if (failedType === 'history.revert') {
     // The fallback is load-bearing: three revert failures carry no reason — ops not
     // wired, missing room name, and a documentId mismatch that echoes the type back.
@@ -226,8 +226,8 @@ function handleHistoryRevert(payload: HistoryStatelessPayload) {
 function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatelessHandlerDeps) {
   const raw = payload.response as HistoryListWireResponse | null | undefined
 
-  // Read and clear first: any list response ends the silent window, or one lost reply
-  // latches the flag and every later failure is swallowed with the spinner up.
+  // Read and clear first: any list response ends the silent window. One lost reply
+  // otherwise latches the flag, and every later failure is swallowed with the spinner up.
   const silent = store().silentListRefresh
   if (silent) store().setSilentListRefresh(false)
 
@@ -301,7 +301,7 @@ function handleHistoryWatch(payload: HistoryStatelessPayload, deps: HistoryState
   const pendingCompare = store().pendingCompareVersion
 
   // Compare's A side rides the same watch channel, so it has to be claimed before
-  // the editor path — otherwise the base version replaces what the reader is viewing.
+  // the editor path. Otherwise the base version replaces what the reader is viewing.
   if (response != null && pendingCompare != null && pendingCompare === response.version) {
     store().setPendingCompareVersion(null)
     store().setCompareBaseItem(response)

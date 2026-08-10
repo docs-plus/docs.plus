@@ -94,8 +94,8 @@ export const migrationExtensions = [
   HyperMultimediaKit.configure({
     // Inline, matching the webapp (TipTap.tsx). Content expressions are only
     // evaluated by an explicit `.check()`, never by toYdoc/fromYdoc, so this is
-    // byte-identical on every transform path — it exists so a schema built from
-    // this set validates paragraph-wrapped images the way the editor does.
+    // byte-identical on every transform path. The inline setting exists so a schema
+    // built from this set validates paragraph-wrapped images the way the editor does.
     Image: { inline: true },
     Video: true,
     Audio: true,

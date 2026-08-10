@@ -21,10 +21,10 @@ function getTransporter(): nodemailer.Transporter | null {
 
   if (!host || !user || !pass) return null
 
-  // Nodemailer's own defaults are 2 minutes each, and the worker awaits
-  // verify() at boot before it binds /health or installs its SIGTERM handler —
-  // an unreachable mail host would otherwise sit in front of the deploy's 120s
-  // readiness wait. These bound every SMTP connect, not only the verify.
+  // Nodemailer's own defaults are 2 minutes each. The worker awaits verify() at
+  // boot before it binds /health or installs its SIGTERM handler. An unreachable
+  // mail host would otherwise sit in front of the deploy's 120s readiness wait.
+  // These bound every SMTP connect, not only the verify.
   transporter = nodemailer.createTransport({
     host,
     port: parseInt(process.env.SMTP_PORT || '587', 10),

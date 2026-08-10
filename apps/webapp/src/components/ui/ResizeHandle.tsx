@@ -34,8 +34,8 @@ const ResizeHandle = forwardRef<HTMLDivElement, ResizeHandleProps>(
           isVertical && [
             'top-0 h-full w-[var(--resize-sash-hit)] cursor-col-resize',
             'right-[calc(var(--resize-sash-hit)/-2)]',
-            // Anchor at the split and grow into the editor column — centered hairlines lose half
-            // their width under the TOC rail (z-42 over z-41) and read thinner than the chat sash.
+            // Anchor at the split and grow into the editor column. A centered hairline loses
+            // half its width under the TOC rail (z-42 over z-41), and reads thinner than the chat sash.
             'after:top-0 after:left-1/2 after:h-full after:w-px after:translate-x-0',
             active
               ? 'after:w-[var(--resize-sash-size)]'

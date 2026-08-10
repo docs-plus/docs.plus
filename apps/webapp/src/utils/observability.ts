@@ -5,8 +5,8 @@ import { DocumentFetchError } from './fetchDocument'
 type CaptureContext = Parameters<typeof Sentry.captureException>[1]
 
 // Total by construction: this runs inside catch blocks, and JSON.stringify would
-// throw on a circular structure — a DOM event, a Response, most SDK errors — at
-// the one boundary that must never throw.
+// throw on a circular structure at the one boundary that must never throw.
+// Circular examples: a DOM event, a Response, and most SDK errors.
 const describeUnknown = (error: unknown): string => {
   if (typeof error !== 'object' || error === null) return String(error)
   const { message, code, details } = error as Record<string, unknown>

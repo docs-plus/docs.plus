@@ -51,7 +51,7 @@ export interface ProfileLite {
 /**
  * The DirectConnection context an op opens with. Extends the shape `store()`
  * actually reads, so the four `version*` field names cannot drift out of the
- * hook that resolves them; the two extra fields are what a WS connection carries.
+ * hook that resolves them. The two extra fields are what a WS connection carries.
  */
 export interface VersionOpContext extends StoreDocumentContext {
   documentId: string
@@ -91,7 +91,7 @@ export type RevertOutcome =
 /**
  * Hop-only outcomes. `upstream-unauthorized` is separate from `unreachable`
  * because the likeliest cause is the two processes holding different
- * service-role keys, and a 503 would send operators after a dead network.
+ * service-role keys. A 503 would send operators after a dead network.
  */
 type HopFailure = { status: 'unreachable' } | { status: 'upstream-unauthorized' }
 
@@ -197,7 +197,7 @@ export type GetOwnerProfiles = (userIds: string[]) => Promise<ProfileLite[]>
 
 /**
  * Injected, never imported: a static `lib/queue` import boots two BullMQ queues
- * and a Redis socket at module scope, and this module's index is loaded by REST.
+ * and a Redis socket at module scope. This module's index is loaded by REST.
  */
 export type StripSnapshotMetadata = (state: Uint8Array) => Buffer<ArrayBuffer>
 

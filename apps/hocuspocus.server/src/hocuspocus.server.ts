@@ -44,13 +44,14 @@ import type { HistoryPayload } from './types/document.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
-// Bracket load/store hooks keyed by the Document object; WeakMap means an aborted
+// Bracket load/store hooks keyed by the Document object. WeakMap means an aborted
 // load that never reaches the `after` hook is GC'd instead of leaking a timer.
 const loadStartedAt = new WeakMap<object, number>()
 const storeStartedAt = new WeakMap<object, number>()
 
-// Anchor a draft's slug->documentId row exactly once per loaded doc; keyed by the
-// Document object so it GC's on unload (no manual cleanup, no unbounded growth).
+// Anchor a draft's slug->documentId row exactly once per loaded doc. The key is
+// the Document object, so the entry GC's on unload (no manual cleanup, no
+// unbounded growth).
 const draftMetadataEnsured = new WeakSet<object>()
 
 const HISTORY_FAILED = 'history_failed'
@@ -76,18 +77,18 @@ function sendHistoryResponse(
   )
 }
 
-// The ops need the Hocuspocus instance, which does not exist until the server is
-// constructed from a config that already captured this extension — hence a late
-// ref rather than a closure.
+// The ops need the Hocuspocus instance. That instance does not exist until the
+// server is constructed from a config that already captured this extension.
+// Hence a late ref rather than a closure.
 let versionOps: VersionOps | null = null
 
 const REVERT_TYPE = 'history.revert'
 const LIST_TYPE = 'history.list'
 
 // A revert runs six whole-document traversals on this event loop and appends a
-// permanent backup row, and unlike its REST twin it is reachable by any signed-in
-// client — including the anonymous session every visitor gets. `Throttle` only
-// covers onConnect, so the cooldown lives here.
+// permanent backup row. Unlike its REST twin, a revert is reachable by any
+// signed-in client — including the anonymous session every visitor gets.
+// `Throttle` only covers onConnect, so the cooldown lives here.
 const REVERT_COOLDOWN_MS = 2000
 const REVERT_COOLDOWN_MAX_KEYS = 10_000
 const lastRevertAt = new Map<string, number>()
@@ -128,7 +129,7 @@ async function handleHistoryRevert(
     sendHistoryResponse(connection, REVERT_TYPE, null, { error: HISTORY_FAILED, reason })
 
   // Both gates live here because a DirectConnection write never passes through
-  // MessageReceiver, where the readOnly drop is enforced: a viewer that reached
+  // MessageReceiver, where the readOnly drop is enforced. A viewer that reached
   // this op would otherwise rewrite the whole document with full privileges.
   const actorId: unknown = connection.context?.user?.sub
   if (typeof actorId !== 'string' || !actorId) return refuse('unauthorized')
@@ -224,15 +225,15 @@ const metricsExtension = {
   }
 }
 
-// The relay arm below mints one OutgoingMessage per connection and is reachable
-// with no credentials on any public room, so room size × burst rate is what
-// OOM-kills a replica. The only client traffic here is `docTitle`, a metadata
-// row that measures a few hundred bytes.
+// The relay arm below mints one OutgoingMessage per connection. The arm is
+// reachable with no credentials on any public room, so room size × burst rate
+// is what OOM-kills a replica. The only client traffic here is `docTitle`, a
+// metadata row that measures a few hundred bytes.
 const MAX_STATELESS_RELAY_BYTES = 64 * 1024
 
 // The relay has no authz, so a client-chosen envelope is a client-chosen server
-// event: the webapp follows `type:'private'` into a hard redirect and `msg` into a
-// "Saved" status it reads before any type. `docTitle` is the only envelope a
+// event. The webapp follows `type:'private'` into a hard redirect, and `msg` into
+// a "Saved" status it reads before any type. `docTitle` is the only envelope a
 // shipped client originates; every real server event broadcasts directly, not here.
 const RELAYABLE_STATELESS_TYPES = new Set(['docTitle'])
 
@@ -289,9 +290,10 @@ const statelessExtension = {
         return
       }
 
-      // Only the list is gated: `history.watch` reads one indexed row, and the
-      // client answers a refused watch by evicting that version and asking for
-      // the next one, so a cooldown there would walk it through its own list.
+      // Only the list is gated, because `history.watch` reads one indexed row.
+      // The client answers a refused watch by evicting that version and asking
+      // for the next one. A cooldown there would therefore walk the client
+      // through its own list.
       if (type === LIST_TYPE && listCoolingDown(connection, Date.now())) {
         sendHistoryResponse(connection, type, null, {
           error: HISTORY_FAILED,
@@ -371,9 +373,9 @@ const statelessExtension = {
 }
 
 // First-edit identity anchor: the instant isDraft flips false (real edit intent),
-// create the slug->documentId metadata row so a reload's slug lookup resolves to
-// the SAME documentId — the stable IndexedDB key + WS room name that let
-// the client mirror restore early edits before the debounced content store() lands.
+// create the slug->documentId metadata row. A reload's slug lookup then resolves
+// to the SAME documentId — the stable IndexedDB key + WS room name. The client
+// mirror restores early edits before the debounced content store() lands.
 // Bots that open and never edit keep isDraft and stay row-less (anti-empty-doc).
 const firstEditMetadataExtension = {
   async onChange({
@@ -387,9 +389,9 @@ const firstEditMetadataExtension = {
   }) {
     if (draftMetadataEnsured.has(document)) return
     if (document.getMap('metadata').get('isDraft')) return
-    // Resolve the slug BEFORE claiming the once-guard: a slugless edit (a raw WS
+    // Resolve the slug BEFORE claiming the once-guard. A slugless edit (a raw WS
     // client / dev token-parse edge — the webapp always sends one) must not poison
-    // the guard, or a later slug-bearing edit on this doc could never anchor.
+    // the guard. Otherwise a later slug-bearing edit on this doc could never anchor.
     const slug = context?.slug ?? ''
     if (!slug) return
     draftMetadataEnsured.add(document)
@@ -533,8 +535,8 @@ const serverConfig = {
 
 const server = new Server(serverConfig)
 
-// Read live counts at scrape time rather than tracking inc/dec, which would
-// drift up forever (a load that failed before unload; a connection rejected
+// Read live counts at scrape time rather than tracking inc/dec. Inc/dec tracking
+// would drift up forever (a load that failed before unload; a connection rejected
 // pre-auth whose onDisconnect never fires). Auth-rejected sockets never attach
 // to a document, so summing per-document connections counts only real ones.
 setActiveDocumentsProvider(() => server.hocuspocus.documents.size)
@@ -571,9 +573,9 @@ const documentVersionOps = documentVersions.initWsOps({
 })
 versionOps = documentVersionOps.ops
 
-// Hono's route() copies a sub-app's routes but not its notFound handler, so an
-// unknown internal path would fall to the framework default (plain text) unless
-// the house envelope is re-declared on the parent.
+// Hono's route() copies a sub-app's routes but not its notFound handler. An
+// unknown internal path would therefore fall to the framework default (plain
+// text) unless the house envelope is re-declared on the parent.
 const internalApp = new Hono()
 internalApp.route('/', contentApply.app)
 internalApp.route('/', documentVersionOps.app)
@@ -616,9 +618,10 @@ wsLogger.info({
   url: `http://localhost:${internalServer.port}/metrics`
 })
 
-// Producer-side because enqueue lives here: keeps stranded claim-check
-// payloads alive while their jobs wait out a worker outage (queue.ts
-// refreshPendingStateKeyTtls). 10 min against the 1h TTL leaves wide margin.
+// Producer-side because enqueue lives here. The refresh keeps stranded
+// claim-check payloads alive while their jobs wait out a worker outage (queue.ts
+// refreshPendingStateKeyTtls). A 10 min interval against the 1h TTL leaves wide
+// margin.
 const STATE_KEY_TTL_REFRESH_INTERVAL_MS = 10 * 60 * 1000
 const stateKeyTtlRefresh = setInterval(() => {
   refreshPendingStateKeyTtls()
@@ -629,8 +632,8 @@ const stateKeyTtlRefresh = setInterval(() => {
 }, STATE_KEY_TTL_REFRESH_INTERVAL_MS)
 
 // server.destroy() waits for every room to unload, so one wedged room holds it
-// past the 30s stop_grace_period and SIGKILL takes the queue drain, the DB close
-// and the Sentry flush with it. 25s leaves the tail room to finish.
+// past the 30s stop_grace_period. SIGKILL then takes the queue drain, the DB
+// close and the Sentry flush with it. The 25s leaves the tail room to finish.
 const SERVER_DESTROY_TIMEOUT_MS = 25_000
 
 const shutdown = async () => {
@@ -641,7 +644,7 @@ const shutdown = async () => {
     internalServer.stop()
 
     let destroyTimer: ReturnType<typeof setTimeout> | undefined
-    // A rejection is caught here, not rethrown: the outer catch flushes Sentry
+    // A rejection is caught here, not rethrown. The outer catch flushes Sentry
     // but skips the queue, DB and Redis close below — the tail this bound exists
     // to reach. A hang and a throw have to end the same way.
     const destroyFailed = await Promise.race([

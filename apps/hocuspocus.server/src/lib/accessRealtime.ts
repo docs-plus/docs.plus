@@ -11,7 +11,7 @@ export type DocumentAccessEvent = {
   readOnly?: boolean
   deleted?: boolean
   // Set only by purgeDocumentFootprint. A soft delete closes the room but must
-  // still flush: its Documents rows survive, so nothing can resurrect, and the
+  // still flush: its Documents rows survive, so nothing can resurrect. The
   // dropped window would be work Trash cannot restore.
   purged?: boolean
   ownerId: string | null
@@ -76,8 +76,8 @@ export function handleDocumentAccessEvent(
     document.broadcastStateless(JSON.stringify({ type: 'readOnly', state: readOnly }))
     // MessageReceiver reads this per message, so already-open sockets need it
     // too. On an ownerless document this marks every socket read-only while the
-    // client predicate keeps the editor live — the same divergence handshake
-    // already has, not a new one.
+    // client predicate keeps the editor live. That divergence is the same one
+    // the handshake already has, not a new one.
     for (const connection of document.getConnections()) {
       connection.readOnly = readOnly && connection.context?.user?.sub !== data.ownerId
     }

@@ -94,7 +94,7 @@ export const documentsPaths: OpenApiPaths = {
     }
   },
   // One template for three operations: OpenAPI forbids two paths that differ only
-  // in a parameter name, and this segment really is a slug on GET and an id on
+  // in a parameter name. This segment really is a slug on GET and an id on
   // PUT/DELETE. `docRef` names the union honestly.
   '/api/documents/{docRef}': {
     get: {

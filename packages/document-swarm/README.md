@@ -1,6 +1,6 @@
 # @docs.plus/document-swarm
 
-Internal CLI that drives N seeded users into a docs.plus document and has them collaborate — write prose, build task lists, draft an academy-style outline, and chat under headings. Two modes: **demo** (paced, watchable) and **stress** (concurrent load). Local and stage only; production is refused by design.
+Internal CLI that drives N seeded users into a docs.plus document and has them collaborate. They write prose, build task lists, draft an academy-style outline, and chat under headings. Two modes: **demo** (paced, watchable) and **stress** (concurrent load). Local and stage only; production is refused by design.
 
 Not published. Runs on Bun + Playwright.
 
@@ -58,7 +58,7 @@ The target must be public and editable; Private, Read-only, soft-deleted, or mis
 
 ## Swarm Report
 
-Every run ends with a summary (joins, scripts, chat messages, hard failures) and an exit code: **non-zero when any actor hard-failed** (never joined, or an unrecoverable error). Per-script hiccups are counted but do not fail the run.
+Every run ends with a summary (joins, scripts, chat messages, hard failures) and an exit code. The exit code is **non-zero when any actor hard-failed** (never joined, or an unrecoverable error). Per-script errors are counted but do not fail the run.
 
 ## Safety
 

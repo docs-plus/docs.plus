@@ -161,9 +161,9 @@ export const inferMessageMediaKindFromExtension = (fileName: string): MessageMed
 }
 
 export const resolveChatMediaMime = (file: File): string => {
-  // Strip MIME parameters — MediaRecorder tags voice notes `audio/webm;codecs=opus`,
-  // but the storage bucket allowlist + isChatMediaMimeAllowed match the bare type only,
-  // so the parameterized form is rejected on upload.
+  // Strip MIME parameters. MediaRecorder tags voice notes `audio/webm;codecs=opus`,
+  // but the storage bucket allowlist and isChatMediaMimeAllowed match the bare type
+  // only. The parameterized form is rejected on upload.
   const declared = file.type?.split(';')[0]?.trim().toLowerCase()
   if (declared) return declared
   const ext = extensionFromName(file.name)

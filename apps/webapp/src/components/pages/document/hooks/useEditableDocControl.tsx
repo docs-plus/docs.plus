@@ -36,8 +36,9 @@ const useEditableDocControl = () => {
     }
   }, [deviceDetect, editor, loading])
 
-  // Never tie isEditable === isKeyboardOpen: iOS often opens the keyboard before visualViewport
-  // fires `resize`, so FAB / focus can briefly have keyboard up while `isKeyboardOpen` is still false.
+  // Never tie isEditable === isKeyboardOpen. The keyboard on iOS often opens before
+  // visualViewport fires `resize`, so FAB / focus can briefly have keyboard up while
+  // `isKeyboardOpen` is still false.
   // Only exit edit mode when the keyboard actually closes (transition true → false).
   useEffect(() => {
     const prev = prevKeyboardOpenRef.current
@@ -47,7 +48,7 @@ const useEditableDocControl = () => {
     prevKeyboardOpenRef.current = isKeyboardOpen
   }, [isKeyboardOpen, setWorkspaceEditorSetting])
 
-  // The read-mode transition must flip the editor AND the DOM `contenteditable`: a stale
+  // The read-mode transition must flip the editor AND the DOM `contenteditable`. A stale
   // `contenteditable="true"` makes iOS Safari refocus and scroll-into-view on the next tap
   // (viewport jolt, then lost focus). False direction only — edit-mode entry is owned by call
   // sites and their 500ms grace; skipping the already-non-editable case leaves mount alone.

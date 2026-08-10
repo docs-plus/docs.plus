@@ -70,10 +70,10 @@ export interface FetchMetadataOptions {
 }
 
 /**
- * Hits the new GET /api/metadata endpoint on hocuspocus.server. The
- * backend never returns 5xx for upstream failures (always falls back to
- * a hostname+favicon shape), so non-ok responses here mean validation
- * (400) or rate-limit (429) — both cached as null to avoid hammering.
+ * Hits the new GET /api/metadata endpoint on hocuspocus.server. The backend
+ * never returns 5xx for upstream failures. It always falls back to a
+ * hostname+favicon shape. A non-ok response here therefore means validation
+ * (400) or rate-limit (429). Both are cached as null to avoid hammering.
  */
 export const fetchMetadata = async (
   href: string,

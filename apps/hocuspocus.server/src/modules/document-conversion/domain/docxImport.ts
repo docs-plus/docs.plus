@@ -27,8 +27,8 @@ const DOCX_STYLE_MAP = [
   'strike => s'
 ]
 
-// `error` has exactly one producer in mammoth — the image converter's recovery
-// path, which drops the element and records the throw — so an upload failure
+// `error` has exactly one producer in mammoth: the image converter's recovery
+// path. That path drops the element and records the throw, so an upload failure
 // costs one image and never the document.
 const toWarning = (message: { type: string; message: string }): ConversionWarning => ({
   code: message.type === 'error' ? 'media-placeholder-dropped' : 'unsupported-element',
@@ -59,8 +59,8 @@ export const importDocx = async (
       throw new Error(`Image ${index} (${image.contentType}) could not be uploaded: ${reason}`)
     }
     // The editor's image node only parses a URL whose path ends in an image
-    // extension, so an extension-less upload URL leaves an empty paragraph and
-    // no message — the exact silent drop this pipeline exists to prevent.
+    // extension. An extension-less upload URL therefore leaves an empty paragraph
+    // and no message, which is the exact silent drop this pipeline exists to prevent.
     if (!isImageUrl(src)) {
       throw new Error(`Image ${index} was dropped: ${src} is not a readable image URL.`)
     }

@@ -108,9 +108,9 @@ function resolveMediaBox(target: HTMLElement): HTMLElement {
 }
 
 /**
- * Overlay the visible media box. Both rects come from `getBoundingClientRect`, then
- * convert into the gripper's own `offsetParent` frame (its border via clientLeft/Top)
- * so drag math, which reads/writes `offset*`, stays in the same coordinate space.
+ * Overlay the visible media box. Both rects come from `getBoundingClientRect`, then convert
+ * into the gripper's own `offsetParent` frame (its border via clientLeft/Top). Drag math
+ * reads and writes `offset*`, so the conversion keeps it in one coordinate space.
  */
 function positionResizeGripper(gripper: HTMLElement, target: HTMLElement): void {
   const parent = gripper.offsetParent as HTMLElement | null
@@ -370,7 +370,7 @@ function handleMediaDeleteKey(editor: Editor, event: KeyboardEvent): boolean {
   if (!getControlsState(editor).activeTarget) return false
   if (isFormControlInMediaUI(document.activeElement)) return false
   if (isEditingMediaCaption(document.activeElement)) return false
-  // A focused caret in text must keep editing text — hover controls only own the
+  // A focused caret in text must keep editing text. Hover controls only own the
   // key when the node is selected or focus is outside the editor.
   if (editor.view.hasFocus() && editor.state.selection instanceof TextSelection) return false
   if (!deleteActiveMediaNode(editor)) return false

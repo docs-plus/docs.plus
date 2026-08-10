@@ -32,9 +32,9 @@ const stampVersion = (context: ApplyContext, version: VersionStamp): void => {
 
 /**
  * Deliberately asymmetric. A live edit landing between this flush and the
- * disconnect flush must mint an honest unnamed, unattributed row, so the name
- * goes but an explicit null stays. Clearing the force key would re-derive the
- * plain job id on that flush and mint a duplicate row.
+ * disconnect flush must mint an honest unnamed, unattributed row. The name goes
+ * but an explicit null stays. Clearing the force key would re-derive the plain
+ * job id on that flush and mint a duplicate row.
  */
 const consumeVersionStamp = (context: ApplyContext): void => {
   delete context.versionName
@@ -47,8 +47,8 @@ export type ApplyContent = (request: ApplyContentRequest) => Promise<ApplyOutcom
 /**
  * WS-process applier: the one path where injected content reaches a live Y.Doc.
  * `openDirectConnection` hardcodes an authenticated, writable connection and
- * never runs `onAuthenticate`, so metadata existence and the tombstone are
- * re-checked here rather than inherited from the REST pre-check.
+ * never runs `onAuthenticate`. Metadata existence and the tombstone are
+ * re-checked here, not inherited from the REST pre-check.
  */
 export const createApplyContent = (
   deps: Omit<InitWsApplyDeps, 'verifyServiceRole'>
@@ -80,7 +80,7 @@ export const createApplyContent = (
     const encoded = encodeContent(content, { requireTitleHeading: mode === 'replace' })
     if (!encoded.ok) return finish({ status: 'invalid-content', detail: encoded.detail })
 
-    // A faithful WS-shaped context, not hygiene: a defensively-rowless first save
+    // A faithful WS-shaped context, not hygiene. A defensively-rowless first save
     // reads `context.slug` unguarded in the worker, and `{}` would stamp the
     // 19-char documentId into the ops email link.
     const context: ApplyContext = {
@@ -107,17 +107,17 @@ export const createApplyContent = (
         return finish({ status: 'invalid-content', detail: TITLE_HEADING_DETAIL })
       }
 
-      // Stamped only once the apply is certain to run: `finally` disconnects on
-      // every path, and a rejected-content return would otherwise leave the name
-      // on the context for that flush to mint a row from.
+      // Stamped only once the apply is certain to run. `finally` disconnects on
+      // every path. A rejected-content return would otherwise leave the name on
+      // the context for that flush to mint a row from.
       if (version) stampVersion(context, version)
 
       try {
         await connection.transact((document) => applyContentToDoc(document, encoded.scratch, mode))
       } finally {
-        // Consume on the rejection path too: the `finally` disconnect below
-        // re-runs the store hooks against this same context object, and a
-        // surviving stamp mints a named row for an apply that 500'd.
+        // Consume on the rejection path too. The `finally` disconnect below
+        // re-runs the store hooks against this same context object. A surviving
+        // stamp mints a named row for an apply that 500'd.
         if (version) consumeVersionStamp(context)
       }
       return finish({ status: 'applied' })
@@ -127,7 +127,7 @@ export const createApplyContent = (
       return finish({ status: 'persist-failed' })
     } finally {
       // A rejected store leaves the debouncer's execution uncleared, so
-      // disconnect() rejects too — a bare await would swap the crafted
+      // disconnect() rejects too. A bare await would swap the crafted
       // persist-failed 500 for a generic onError 500 plus Sentry noise.
       await connection
         .disconnect()

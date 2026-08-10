@@ -9,12 +9,11 @@ const config: Config = {
   app: {
     profile: {
       // Path: `{userId}/avatar.png` inside the user_avatars bucket. The
-      // {userId} folder prefix encodes ownership — the bucket's RLS
-      // policies parse it via `(storage.foldername(name))[1]` and compare
-      // against `auth.uid()`, so storage writes only succeed when the
-      // path's first folder matches the caller's user id.
-      // The `?{avatarUpdatedAt}` query string busts the browser cache
-      // on every avatar change.
+      // {userId} folder prefix encodes ownership. The bucket's RLS policies
+      // parse it via `(storage.foldername(name))[1]` and compare against
+      // `auth.uid()`. A storage write therefore only succeeds when the path's
+      // first folder matches the caller's user id. The `?{avatarUpdatedAt}`
+      // query string busts the browser cache on every avatar change.
       getAvatarURL: (id: string, avatarUpdatedAt: string) => {
         return `${AVATARS_BUCKET_URL}/${id}/avatar.png?${avatarUpdatedAt}`
       },

@@ -17,7 +17,7 @@ export const useHistoryAuthorship = (): HistoryAuthorship => {
   const version = activeHistory?.version
   const data = activeHistory?.data
 
-  // Keyed on the bytes, not on the bindings: a `document:saved` silent refresh
+  // Keyed on the bytes, not on the bindings. A `document:saved` silent refresh
   // replaces `clientAuthors` while the tab is open, and re-running Y.applyUpdate
   // over a whole snapshot for that would be wasted work.
   const walk = useMemo(() => {
@@ -43,8 +43,8 @@ export const useHistoryAuthorship = (): HistoryAuthorship => {
   // render recomputes their block ranges and dispatches a transaction every render.
   //
   // Three arms, not two. A list row carries no `data`, so the gap between selecting
-  // a version and its watch landing is a loading window — reporting it as unaligned
-  // would show an authoritative zero-coverage roster for content we simply lack.
+  // a version and its watch landing is a loading window. Reporting that window as
+  // unaligned would show an authoritative zero-coverage roster for content we simply lack.
   return useMemo(() => {
     if (data == null) return { status: 'pending' }
     if (!walk || !roster) return { status: 'unaligned' }

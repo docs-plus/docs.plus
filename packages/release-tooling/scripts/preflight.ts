@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
  * Shared `prepublishOnly` guard ("prepublishOnly": "release-preflight"), driven by
- * the consuming package's own package.json. peerDependencies use the `catalog:`
- * protocol, which only `bun publish` resolves at pack time — `npm publish` ships
- * the literal string and breaks every install with `Invalid Version: catalog:`.
+ * the consuming package's own package.json. The peerDependencies entries use the
+ * `catalog:` protocol, which only `bun publish` resolves at pack time. `npm publish`
+ * ships the literal string and breaks every install with `Invalid Version: catalog:`.
  */
 
 import { existsSync, readFileSync } from 'node:fs'

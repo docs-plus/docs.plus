@@ -15,9 +15,9 @@ import * as S3Storage from '../../lib/storage/storage.s3'
 import { checkEnvBoolean } from '../../utils'
 
 // MUST stay a superset of the chat media allowlist (webapp chatMediaMime.ts
-// CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase scripts/12-buckets.sql) so "copy chat
-// media to document" can re-host any chat attachment — voice notes (audio/webm), heic/bmp,
-// mov/mkv, and office docs / archives (inserted as download links) included.
+// CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase scripts/12-buckets.sql). The superset lets
+// "copy chat media to document" re-host any chat attachment. Chat attachments include voice
+// notes (audio/webm), heic/bmp, mov/mkv, and office docs / archives (inserted as download links).
 const ALLOWED_MIME_TYPES = [
   // images
   'image/jpeg',
@@ -89,10 +89,10 @@ export const deleteDocumentMedia = async (documentId: string): Promise<void> => 
   await S3Storage.deleteByPrefix(documentId)
 }
 
-// Duplicate hook: re-hosts exactly the objects the copy's snapshot names, under
-// the copy's own prefix, so each document owns its media and no purge can strip a
-// copy. Bounded by what the document references, not by what the source prefix
-// holds — a node the author deleted is not resurrected under a new URL.
+// Duplicate hook: re-hosts exactly the objects the copy's snapshot names, under the
+// copy's own prefix. Each document then owns its media, and no purge can strip a copy.
+// Bounded by what the document references, not by what the source prefix holds — a node
+// the author deleted is not resurrected under a new URL.
 export const copyDocumentMedia = async (
   references: MediaReference[],
   targetDocumentId: string
@@ -110,10 +110,10 @@ export const copyDocumentMedia = async (
   const copyObject = toLocal ? localStorage.copyObject : S3Storage.copyObject
   let copied = 0
 
-  // `false` is the source object being genuinely absent — tolerated, because those
-  // URLs were already dead and refusing would make a document whose source was
-  // purged permanently un-duplicatable. A copy that FAILS throws instead, so the
-  // caller rolls the orphans back rather than landing a copy with an empty prefix.
+  // `false` is the source object being genuinely absent. The absence is tolerated,
+  // because those URLs were already dead, and refusing would make a document whose
+  // source was purged permanently un-duplicatable. A copy that FAILS throws instead, so
+  // the caller rolls the orphans back rather than landing a copy with an empty prefix.
   for (const reference of references) {
     if (await copyObject(reference.documentId, reference.fileName, targetDocumentId)) copied += 1
   }
@@ -130,8 +130,8 @@ export const copyDocumentMedia = async (
 const DEFAULT_MEDIA_MAX_FILE_SIZE = 10_485_760
 
 // A media cap under 1 MB is always a misconfigured env (a port/unit mix-up like
-// DO_STORAGE_MAX_FILE_SIZE=4000), which rejects every real upload as "0.00MB max";
-// floor to the default so a rebuild with a bad value can't brick uploads.
+// DO_STORAGE_MAX_FILE_SIZE=4000). Such a cap rejects every real upload as "0.00MB max".
+// Floor to the default so a rebuild with a bad value can't brick uploads.
 const MIN_PLAUSIBLE_MEDIA_MAX_FILE_SIZE = 1_048_576
 
 const resolveMediaMaxFileSize = (configured: number): number => {

@@ -95,8 +95,8 @@ function setGripperDragging(gripper: HTMLElement, dragging: boolean): void {
 
 /**
  * Keyed-widget DOM reuse keeps this gripper (and its decoration-time positions)
- * alive across edits above the node, so the doc position must be re-resolved
- * from the DOM at drag end — never trusted from `MediaGripperInfo.from`.
+ * alive across edits above the node. The doc position must therefore be
+ * re-resolved from the DOM at drag end. Never trust `MediaGripperInfo.from`.
  */
 function resolveDragTargetPos(editor: Editor, gripper: HTMLElement): number | null {
   const media = resolveMediaFromGripper(gripper, editor.view.dom)

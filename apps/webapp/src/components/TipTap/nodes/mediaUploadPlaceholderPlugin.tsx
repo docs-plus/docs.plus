@@ -97,9 +97,9 @@ export const findUploadPlaceholderPos = (state: EditorState, uploadId: string): 
 }
 
 /**
- * `hasCollaboration` is resolved per-editor by the node's addProseMirrorPlugins:
- * the collab position helpers read ySyncPluginKey state and throw when ySync is
- * absent (e.g. the /editor playground on plain UndoRedo).
+ * `hasCollaboration` is resolved per-editor by the node's addProseMirrorPlugins.
+ * Per-editor resolution is needed because the collab position helpers read ySyncPluginKey state
+ * and throw when ySync is absent (e.g. the /editor playground on plain UndoRedo).
  */
 export const createMediaUploadPlaceholderPlugin = (hasCollaboration: boolean) =>
   new Plugin<UploadPlaceholderState>({

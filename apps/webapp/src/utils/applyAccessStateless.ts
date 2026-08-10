@@ -36,9 +36,9 @@ export function applyAccessStateless(args: {
   }
 
   if (data.type !== 'private' || data.state !== true) return
-  // Prefer the event's ownerId — fresh at seal time — over store metadata,
-  // which can be stale for long-open tabs; the server's connection close is
-  // the enforcement either way, this only drives the redirect UX.
+  // Prefer the event's ownerId, fresh at seal time, over store metadata, which
+  // can be stale for long-open tabs. The server's connection close is the
+  // enforcement either way, and this only drives the redirect UX.
   const ownerId = data.ownerId !== undefined ? data.ownerId : metadata?.ownerId
   const profileId = authStore.getState().profile?.id
   if (ownerId && profileId === ownerId) return

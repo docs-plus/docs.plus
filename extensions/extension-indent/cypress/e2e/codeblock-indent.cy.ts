@@ -1,7 +1,8 @@
 /// <reference types="cypress" />
 
-// codeBlock is not an allowed indent context by default — the caret path and the multiline
-// path must both refuse it, including a selection spanning the block's embedded lines.
+// codeBlock is not an allowed indent context by default. The caret path and the
+// multiline path must both refuse codeBlock, including a selection spanning the
+// block's embedded lines.
 
 describe('code block indent gating', () => {
   beforeEach(() => {

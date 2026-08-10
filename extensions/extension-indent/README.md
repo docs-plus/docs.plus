@@ -15,7 +15,7 @@
 
 Tiptap extension for character-based indentation: Tab inserts `indentChars` (default two spaces) at the caret or at the start of each selected line, and Shift-Tab removes it.
 
-Tab already belongs to lists (sink/lift), tables (cell navigation), and the browser (focus). This extension resolves the key in one predictable order — list, table, then literal indent — and runs literal indent only in contexts you allowlist via [`allowedIndentContexts`](#allowedindentcontexts): paragraphs under `doc` or `blockquote` by default, with headings, code blocks, and every other textblock excluded until you add a rule.
+Tab already belongs to lists (sink/lift), tables (cell navigation), and the browser (focus). This extension resolves the key in one predictable order — list, table, then literal indent. It runs literal indent only in contexts you allowlist via [`allowedIndentContexts`](#allowedindentcontexts). The default allowlist is paragraphs under `doc` or `blockquote`. Headings, code blocks, and every other textblock are excluded until you add a rule.
 
 ## Install
 
@@ -65,11 +65,11 @@ Both respect `enabled` and the same `allowedIndentContexts` rules as the keyboar
 | `Tab`       | `sinkListItem` (`listItem` / `taskItem`) → `goToNextCell` (when a table extension is loaded) → `indent()` |
 | `Shift-Tab` | `liftListItem` → `goToPreviousCell` → `outdent()`                                                         |
 
-The extension registers at priority `25`, below the Tiptap default of `100`, so other extensions' own Tab handlers win first. When none of the three steps applies, the handler returns `false` and the keypress falls through to other extensions and the browser default — Tab focus navigation keeps working.
+The extension registers at priority `25`, below the Tiptap default of `100`, so other extensions' own Tab handlers win first. When none of the three steps applies, the handler returns `false` and the keypress falls through to other extensions and the browser default. Tab focus navigation keeps working.
 
 ## `allowedIndentContexts`
 
-Literal `indent()` / `outdent()` run only when the innermost textblock at the caret (or at each line of a selection) and its **immediate parent** match one of the rules. Each rule is `{ textblock: string, parent: string }` (Tiptap / ProseMirror `NodeType.name`).
+Literal `indent()` / `outdent()` run only when the innermost textblock at the caret and its **immediate parent** match one of the rules. For a selection, the same check runs at each line. Each rule is `{ textblock: string, parent: string }` (Tiptap / ProseMirror `NodeType.name`).
 
 The list is a full allowlist, not a merge: passing `allowedIndentContexts` to `configure()` replaces the default array, so list every pair you need.
 
@@ -126,7 +126,7 @@ Exports (all named): `Indent`, `IndentOptions`, `IndentContextRule`. Configure w
 
 ## Part of docs.plus
 
-This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+This extension is built for and maintained by [docs.plus](https://docs.plus). docs.plus is a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
 
 - Website: [docs.plus](https://docs.plus)
 - Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)

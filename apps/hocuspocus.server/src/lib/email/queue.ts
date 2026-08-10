@@ -35,8 +35,8 @@ export const EmailQueue = queueConnection
           age: 24 * 3600
         },
         // EmailDeadLetterQueue already holds the payload and the failure reason
-        // from the final attempt, so an unbounded failed set is a second copy in
-        // the Redis that also holds every claim-check payload. getFailedCount()
+        // from the final attempt. An unbounded failed set is therefore a second copy
+        // in the Redis that also holds every claim-check payload. `getFailedCount()`
         // below therefore reports a 200/7-day window, not a lifetime total.
         removeOnFail: {
           count: 200,

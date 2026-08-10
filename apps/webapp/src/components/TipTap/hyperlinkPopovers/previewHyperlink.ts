@@ -23,9 +23,9 @@ export const KEYBOARD_DISMISS_DELAY_MS = 50
 
 /**
  * Exists for edit-mode link taps. iOS releases the keyboard only when the
- * focused element blurs AND no selection range is left in the contenteditable,
- * and a synchronous blur is flaky against ProseMirror's same-tick selection
- * work. `activeElement` is blurred too — the tapped `<a>` can hold focus.
+ * focused element blurs AND no selection range is left in the contenteditable. A
+ * synchronous blur is flaky against ProseMirror's same-tick selection work.
+ * `activeElement` is blurred too — the tapped `<a>` can hold focus.
  */
 export const dismissSoftKeyboard = (editor: Editor): void => {
   const { to } = editor.state.selection
@@ -42,10 +42,10 @@ export const dismissSoftKeyboard = (editor: Editor): void => {
 }
 
 /**
- * Mobile opens the React `linkPreview` sheet and returns `null`, which the
- * extension's clickHandler reads as "no popover, just hide the toolbar" — that
- * bypass is what lets the sheet render through the app's own sheet pipeline
- * instead of the floating-popover machinery.
+ * Mobile opens the React `linkPreview` sheet and returns `null`. The extension's
+ * clickHandler reads `null` as "no popover, just hide the toolbar". That bypass
+ * lets the sheet render through the app's own sheet pipeline. The sheet never
+ * reaches the floating-popover machinery.
  */
 export default function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement | null {
   const { link, editor, nodePos, attrs } = options

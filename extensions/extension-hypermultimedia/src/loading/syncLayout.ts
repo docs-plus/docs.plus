@@ -91,9 +91,10 @@ export function syncMediaNodeLayout(options: SyncMediaNodeLayoutOptions): void {
   const dims =
     options.dims ??
     parseLayoutDimensions(options.attrs, options.fallback ?? DEFAULT_LAYOUT_FALLBACK)
-  // No fixed `height` on the wrapper: the loading shell + media surface carry the pixel
-  // height (syncResizableMediaLayout), so the wrapper grows to fit the caption below the
-  // media instead of clipping it into the following paragraph.
+  // No fixed `height` on the wrapper: the loading shell + media surface carry the
+  // pixel height (syncResizableMediaLayout). The wrapper then grows to fit the
+  // caption below the media, instead of clipping the caption into the following
+  // paragraph.
   applyMediaLayoutToDom(
     options.wrapper,
     styleLayoutFromAttrs(options.attrs),

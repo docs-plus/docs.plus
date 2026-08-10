@@ -87,7 +87,7 @@ export const useLinkMetadata = (
     })
     return () => controller.abort()
     // We intentionally only re-run when href changes. A status flip from
-    // 'loading' is driven by this effect itself; refiring on every state
+    // 'loading' is driven by this effect itself. Refiring on every state
     // change would cancel the in-flight fetch we just started.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [href])

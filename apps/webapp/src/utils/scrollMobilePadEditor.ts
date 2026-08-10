@@ -1,8 +1,8 @@
 /**
  * Mobile document pad: scroll targets inside `.editorWrapper` only.
- * Native `Element.scrollIntoView()` on iOS Safari often scrolls the layout viewport / wrong
- * ancestors alongside the editor, which fights `position: fixed` + visualViewport CSS vars and
- * can hide `.mobilePadTitleShell` or misplace the caret.
+ * Native `Element.scrollIntoView()` on iOS Safari often scrolls the layout viewport /
+ * wrong ancestors alongside the editor. That fights `position: fixed` + visualViewport
+ * CSS vars and can hide `.mobilePadTitleShell` or misplace the caret.
  */
 const EDITOR_WRAPPER_SEL = '.mobileLayoutRoot .editor.editorWrapper'
 

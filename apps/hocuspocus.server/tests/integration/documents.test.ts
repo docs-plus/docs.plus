@@ -376,12 +376,11 @@ describe('Documents API', () => {
   })
 
   describe('POST /api/documents', () => {
-    // The recovered source gates document creation behind requireUser: the
-    // caller becomes the owner. The middleware verifies a Supabase token before
-    // any validation or prisma write runs, so an unauthenticated request is
-    // rejected at the auth gate (401) regardless of body validity. There is no
-    // live Supabase to mint a verified user in this harness, so these tests
-    // assert the auth gate rather than the create path.
+    // The recovered source gates document creation behind requireUser: the caller becomes
+    // the owner. The middleware verifies a Supabase token before any validation or prisma
+    // write runs. An unauthenticated request is rejected at the auth gate (401), regardless
+    // of body validity. There is no live Supabase to mint a verified user in this harness,
+    // so these tests assert the auth gate, not the create path.
     test('should reject creation without authentication', async () => {
       mockPrisma.documentMetadata.create = async (data: any) => ({
         id: 1,

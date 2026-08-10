@@ -124,7 +124,7 @@ describe('encodeContent — schema coverage', () => {
 
 describe('encodeContent — structural validation', () => {
   // Node.fromJSON never checks content expressions, so each of these encodes and
-  // round-trips cleanly; the first browser to open the doc would delete the
+  // round-trips cleanly. The first browser to open the doc would delete the
   // subtree (y-tiptap) or hard-freeze on enableContentCheck.
   test('rejects a heading nested inside a paragraph', () => {
     const result = encodeReplace(
@@ -204,9 +204,9 @@ describe('encodeContent — toc-id identity stamping', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
 
-    // Read the ids back off the encoded document, not the mutated payload: an
+    // Read the ids back off the encoded document, not the mutated payload. An
     // extension set that stopped registering `toc-id` on table would drop the
-    // stamp at encode and a payload-side assertion would never notice.
+    // stamp at encode, and a payload-side assertion would never notice.
     const encoded = decode(result.scratch)
     const headingId = encoded.content[0].attrs['toc-id']
     const tableId = encoded.content[1].attrs['toc-id']

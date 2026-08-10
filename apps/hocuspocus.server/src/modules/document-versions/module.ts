@@ -37,8 +37,8 @@ export const init = (deps: InitDeps): InitResult => {
 
 /**
  * WS-process wiring. Checkpoints and restores have to run where the live Y.Doc
- * is, so the collaboration process serves this app on its internal listener and
- * the stateless history op calls the same `ops` directly.
+ * is, so the collaboration process serves this app on its internal listener. The
+ * stateless history op calls the same `ops` directly.
  */
 export const initWsOps = (deps: InitWsOpsDeps): InitWsOpsResult => {
   const ops = createVersionOps({

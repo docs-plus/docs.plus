@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import slugify from 'slugify'
 
 /**
- * Non-members (anon or signed-in) skip the write-side bootstrap per chatroom CLAUDE.md §Anonymous Chat Read Path
- * §Anonymous Chat Read Path: upsertChannel + joinChannel both 403 under RLS,
- * while the metadata RPC and message window stay readable on PUBLIC channels.
- * Join failures are swallowed so a lurker sees no error badge.
+ * Non-members (anon or signed-in) skip the write-side bootstrap. See chatroom
+ * CLAUDE.md §Anonymous Chat Read Path. upsertChannel + joinChannel both 403 under RLS,
+ * while the metadata RPC and message window stay readable on PUBLIC channels. Join
+ * failures are swallowed so a lurker sees no error badge.
  */
 export const useChannelMetadata = (channelId: string) => {
   const [error, setError] = useState<unknown>(null)
@@ -22,10 +22,10 @@ export const useChannelMetadata = (channelId: string) => {
     ;(async () => {
       try {
         const uid = useAuthStore.getState()?.profile?.id || ''
-        // Lazy channel row creation: a first-time visit to a heading chatroom
-        // must create the channel before joinChannel, because RLS on
-        // channel_members.insert requires the row to exist. Both INSERTs are
-        // member-gated at the RLS layer; others fail soft into read-only.
+        // Lazy channel row creation: a first-time visit to a heading chatroom must
+        // create the channel before joinChannel. RLS on channel_members.insert
+        // requires the row to exist. Both INSERTs are member-gated at the RLS layer;
+        // others fail soft into read-only.
         const channelExists =
           useChatStore.getState().workspaceSettings.channels.get(channelId) != null
         if (!channelExists && workspaceId && uid) {

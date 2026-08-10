@@ -16,8 +16,8 @@ async function startProduction() {
     console.log('🎯 Starting main application...')
     await import('../src/index')
   } catch (error: any) {
-    // Bun's $ throws a ShellError whose message is only "Failed with exit code N";
-    // the Prisma error code is in stderr, so matching on message never fired.
+    // Bun's $ throws a ShellError whose message is only "Failed with exit code N".
+    // The Prisma error code is in stderr, so matching on message never fired.
     const details = `${error.message}\n${error.stderr?.toString() ?? ''}`
     console.error('❌ Migration failed:', details)
 

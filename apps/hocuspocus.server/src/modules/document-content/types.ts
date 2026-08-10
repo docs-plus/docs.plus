@@ -45,7 +45,7 @@ export type ApplyOutcome =
 /**
  * Hop-only outcomes. `upstream-unauthorized` is separate from `unreachable`
  * because the likeliest cause is the two processes holding different
- * service-role keys, and a 503 would send operators after a dead network.
+ * service-role keys. A 503 would send operators after a dead network.
  */
 export type WsApplyOutcome =
   ApplyOutcome | { status: 'unreachable' } | { status: 'upstream-unauthorized' }
@@ -80,7 +80,7 @@ export type VersionTrigger = 'api' | 'checkpoint' | 'revert'
 /**
  * Attribution for the version row an apply mints. `forceKey` only widens the
  * store job id, so a named row cannot dedupe onto an unnamed one for the same
- * bytes; it is not attribution and never reaches the row.
+ * bytes. It is not attribution and never reaches the row.
  */
 export interface VersionStamp {
   name?: string

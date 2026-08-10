@@ -1,6 +1,6 @@
 // Slugs that resolve to a concrete page route (which Next.js matches before the
-// [...slugs] document catch-all) or to a Next.js system path — they can never be
-// document names. Guarded at both the homepage navigate and the document GSSP.
+// [...slugs] document catch-all) or to a Next.js system path. These slugs can never
+// be document names. Guarded at both the homepage navigate and the document GSSP.
 const RESERVED_SLUGS = new Set([
   'editor',
   'new',

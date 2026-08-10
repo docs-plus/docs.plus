@@ -41,7 +41,7 @@ Localized `open.spotify.com/intl-xx/...` links, already-`embed/` links, and `spo
 | `width`, `height`                                       | `640`, `352` (`152` for a `track`)       |
 | `margin`, `float`, `clear`, `display`, `justifyContent` | `auto`, `null`, `none`, `block`, `start` |
 
-The player is fixed-height: width fills the column (responsive, capped at `width`), and the committed height holds when the column shrinks rather than scaling away. The player's default height (`352` full art, `152` compact track) is also the resize floor — the gripper can enlarge the player but dragging below the default snaps back.
+The player is fixed-height: width fills the column (responsive, capped at `width`), and the committed height holds when the column shrinks rather than scaling away. The player's default height (`352` full art, `152` compact track) is also the resize floor. The gripper can enlarge the player, but dragging below the default snaps back.
 
 ## Embed options
 
@@ -58,7 +58,7 @@ The player is fixed-height: width fills the column (responsive, capped at `width
 | ----------------- | ------- |
 | `addPasteHandler` | `true`  |
 
-Pasting an `open.spotify.com` URL inserts a Spotify node (a track gets the compact height, everything else the full-art height). Pasting Spotify's **Copy embed** `<iframe>` code works too — as rich HTML or plain text — and the stored `src` is normalized back to the canonical share URL (the `?utm_source`/`&si=` params are dropped).
+Pasting an `open.spotify.com` URL inserts a Spotify node (a track gets the compact height, everything else the full-art height). Pasting Spotify's **Copy embed** `<iframe>` code works too, as rich HTML or plain text. The stored `src` is normalized back to the canonical share URL (the `?utm_source`/`&si=` params are dropped).
 
 ## Commands
 

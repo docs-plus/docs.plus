@@ -20,9 +20,9 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 - `hide()` and `destroy()` are terminal once the popover has been shown:
   `show()` no longer reopens a closed popover. Hiding releases ownership and nothing
   re-adopted, so a re-shown popover stayed on screen while the controller
-  believed it was idle — `close()` could not reach it, the next `adopt()` did
-  not evict it (two popovers at once), subscribers were never told it had
-  remounted, and it survived `editor.destroy()` with `autoUpdate` observers
+  believed it was idle. `close()` could not reach it. The next `adopt()` did
+  not evict it (two popovers at once). Subscribers were never told it had
+  remounted. It survived `editor.destroy()` with `autoUpdate` observers
   still bound. `show()` after `destroy()` also re-appended the removed root.
   Build a new popover to reopen.
 
@@ -34,7 +34,7 @@ Versioning follows [Semantic Versioning](https://semver.org/) and commits follow
 
 ### Changed
 
-- The popover shell no longer hardcodes `role="toolbar"`. ARIA has no popover role, so the surface must carry its content's role — pass the new optional `PopoverOptions.role` (`toolbar`, `dialog`, …); when omitted, the shell renders without a `role` attribute.
+- The popover shell no longer hardcodes `role="toolbar"`. ARIA has no popover role, so the surface must carry its content's role. Pass the new optional `PopoverOptions.role` (`toolbar`, `dialog`, …). When omitted, the shell renders without a `role` attribute.
 
 ### Fixed
 

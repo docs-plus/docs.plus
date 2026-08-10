@@ -16,8 +16,8 @@ import { purgeDocumentFootprint } from './documentPurge.service'
 const CACHE_TTL_MS = 5 * 60 * 1000
 
 // Hard cap on candidate documents scored in memory per refresh. A doc can only
-// be stale if it cleared the SQL prefilter, so this bounds the worst case
-// without dropping rows silently (we log when the cap is hit).
+// be stale if it cleared the SQL prefilter, so the cap bounds the worst case
+// without dropping rows silently. We log when the cap is hit.
 const MAX_STALE_CANDIDATES = 5000
 
 // Bound the parsed-structure cache so re-pagination is cheap without unbounded
@@ -152,9 +152,9 @@ interface CandidateRow {
 }
 
 /**
- * Fetch stale *candidates* — rows that could score > 0 given the cross-DB rule.
- * A doc is non-stale regardless of views unless it is edit-inactive (>30d) or
- * has <=1 version, so this prefilter is lossless and shrinks the scan in SQL.
+ * Fetch stale *candidates* — rows that could score > 0 given the cross-DB rule. A doc
+ * is non-stale regardless of views unless it is edit-inactive (>30d) or has <=1
+ * version. This prefilter is therefore lossless, and it shrinks the scan in SQL.
  */
 async function fetchStaleCandidates(prisma: PrismaClient): Promise<CandidateRow[]> {
   const rows = await prisma.$queryRaw<
@@ -501,9 +501,9 @@ export async function bulkDeleteStale(
 
   for (const doc of documents) {
     try {
-      // documentId comes off the metadata row, never off the caller's slug list:
-      // the hand-rolled delete this replaces keyed the workspace on the human slug
-      // and erased nothing. Per-document catch so one bad row cannot fail the batch.
+      // documentId comes off the metadata row, never off the caller's slug list. The
+      // hand-rolled delete this replaces keyed the workspace on the human slug and
+      // erased nothing. Per-document catch so one bad row cannot fail the batch.
       const { purged } = await purgeDocumentFootprint(prisma, supabase, {
         documentId: doc.documentId,
         slug: doc.slug,

@@ -45,9 +45,9 @@ describe('Autolink + paste — canonical href consistency', () => {
 
     it('emits tel:+E.164 for bare phone numbers (+4733378901)', () => {
       // E.164 phones are detected by the `findLinks` phone branch.
-      // linkifyjs has no phone matcher (issue #133, open since 2016)
-      // — without our explicit `isBarePhone` check, this autolink
-      // never fires and the user is left with raw text.
+      // `linkifyjs` has no phone matcher (issue #133, open since 2016).
+      // Without our explicit `isBarePhone` check, this autolink never
+      // fires and the user is left with raw text.
       typeThroughAutolink('+4733378901')
       cy.editorFirstLinkHref().should('eq', 'tel:+4733378901')
     })
@@ -67,9 +67,9 @@ describe('Autolink + paste — canonical href consistency', () => {
 
     it('strips trailing punctuation without eating linkifyjs scheme', () => {
       // `Visit google.com.` autolinks `google.com`, not `google.com.`.
-      // Pins both the trailing-punct strip and the invariant that the
-      // stored href keeps its scheme (would have been `https://google.com.`
-      // if the punct-strip ran on the scheme-prefixed href verbatim).
+      // Pins both the trailing-punct strip and the invariant that the stored
+      // href keeps its scheme. The href would have been `https://google.com.`
+      // if the punct-strip ran on the scheme-prefixed href verbatim.
       typeThroughAutolink('Visit google.com.')
       cy.editorFirstLinkHref().should('eq', 'https://google.com')
     })

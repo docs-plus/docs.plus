@@ -39,10 +39,10 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
   const copyButton = iconButton('copy', 'Copy link', Copy())
   const editButton = iconButton('edit', 'Edit link', Pencil())
 
-  // `noopener noreferrer` matches the Hyperlink default `HTMLAttributes`
-  // and is the belt to the click-handler's braces — if JS ever fails to
-  // attach (CSP, host strips listeners, factory throws), the browser's
-  // default `target="_blank"` navigation still cannot reach `window.opener`.
+  // `noopener noreferrer` matches the Hyperlink default `HTMLAttributes` and is
+  // the belt to the click-handler's braces. If JS ever fails to attach
+  // (CSP, host strips listeners, factory throws), the browser's default
+  // `target="_blank"` navigation still cannot reach `window.opener`.
   const hrefAnchor = createHTMLElement('a', {
     target: '_blank',
     rel: 'noopener noreferrer',

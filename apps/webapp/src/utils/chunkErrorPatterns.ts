@@ -1,7 +1,7 @@
 /**
- * Deploy-boundary chunk/module load-failure messages. Shared by the recovery
- * listener (reload once) and the error-report filter (drop as auto-recovered)
- * so the two never drift — a new pattern must recover AND stay out of reporting.
+ * Deploy-boundary chunk/module load-failure messages. Shared by the recovery listener
+ * (reload once) and the error-report filter (drop as auto-recovered), so the two never
+ * drift. A new pattern must recover AND stay out of reporting.
  */
 export const CHUNK_ERROR_PATTERNS: readonly RegExp[] = [
   /Loading chunk \d+ failed/i,

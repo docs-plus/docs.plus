@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 
 /**
- * On phones `(pointer: fine)` is false, so hover controls are gated off and the
+ * On phones `(pointer: fine)` is false, so hover controls are gated off. The
  * synthesized click after a tap is the ONLY way handleMediaClick can open the
  * toolbar + gripper. Every other spec hovers first, which would mask a
  * click-path regression; these drive touchstart → touchend → click, no mouseover.

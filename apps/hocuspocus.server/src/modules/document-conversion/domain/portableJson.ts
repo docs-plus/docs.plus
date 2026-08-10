@@ -7,10 +7,10 @@ interface Frame {
   target: JsonNode[]
 }
 
-// Every embed is an iframe or a player that DOCX, Markdown and ODT cannot
-// express; the `src` is the only part a reader can still follow. `image` is not
-// an embed, so it is left alone here — DOCX and Markdown keep it as a picture,
-// while odtExport degrades it to a link (ODF frames need a measured width).
+// Every embed is an iframe or a player that DOCX, Markdown and ODT cannot express.
+// The `src` is the only part a reader can still follow. `image` is not an embed,
+// so it is left alone here. DOCX and Markdown keep `image` as a picture, while
+// odtExport degrades it to a link (ODF frames need a measured width).
 const EMBED_NODE_TYPES = new Set([
   'youtube',
   'vimeo',

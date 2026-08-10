@@ -86,7 +86,7 @@ const renderText = (node: JsonNode): string => {
   return href.length > 0 ? anchor(href, xml) : xml
 }
 
-// ODF draws a picture through a sized frame; a remote image with no measured
+// ODF draws a picture through a sized frame. A remote image with no measured
 // width would render as an empty box, so the reader gets a link it can follow.
 const renderImage = (node: JsonNode): string => {
   const attrs = attrsOf(node)
@@ -191,7 +191,7 @@ const renderCell = (cell: JsonNode, colspan: number, rowspan: number): string =>
 
 /**
  * A merged cell only reads back correctly if every grid position it covers
- * holds a `covered-table-cell`, so `carry` tracks how many further rows each
+ * holds a `covered-table-cell`. `carry` tracks how many further rows each
  * column still owes one. The widest resulting row is the grid width.
  */
 const renderRows = (rows: JsonNode[]): { xml: string; width: number } => {

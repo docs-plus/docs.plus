@@ -46,9 +46,9 @@ const createParagraphNodeJson = (message: TMsgRow) => {
     }
   ]
 
-  // ProseMirror rejects empty text nodes (`schema.text('')` throws → "Invalid JSON
-  // content"), so only append the body when present — media-only messages (e.g. a
-  // voice note) carry no text.
+  // ProseMirror rejects empty text nodes: `schema.text('')` throws "Invalid JSON
+  // content". Append the body only when present, because media-only messages carry
+  // no text. A voice note is one example.
   if (messageContent) {
     newContent.push({
       type: TIPTAP_NODES.TEXT_TYPE,

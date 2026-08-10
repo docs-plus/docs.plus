@@ -146,8 +146,8 @@ export const modalPanelFrameClassName =
 export const modalPanelClassName = `flex max-h-[90vh] flex-col overflow-clip ${modalPanelFrameClassName}`
 
 /**
- * Mobile takeover arm (design-system.md §Elevation): below `md` the dialog card fills
- * the visual viewport (100dvh fallback where the vv var is unsynced) with no card frame.
+ * Mobile takeover arm (design-system.md §Elevation). Below `md` the dialog card fills
+ * the visual viewport with no card frame. The `100dvh` fallback covers an unsynced vv var.
  */
 export const modalPanelTakeoverClassName =
   'max-md:h-[var(--visual-viewport-height,100dvh)] max-md:max-h-none max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none max-md:pt-[env(safe-area-inset-top,0px)]'

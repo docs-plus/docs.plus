@@ -29,8 +29,9 @@ export const TYPED_MEDIA_MARKDOWN_ALTS = [
 
 export type TypedMediaMarkdownAlt = (typeof TYPED_MEDIA_MARKDOWN_ALTS)[number]
 
-// Gate routing on the src so `![x](photo.png)` — an image whose alt collides with a
-// reserved literal — stays an image instead of round-tripping into a broken embed.
+// Gate routing on the src. Then `![x](photo.png)`, an image whose alt collides
+// with a reserved literal, stays an image instead of round-tripping into a
+// broken embed.
 const TYPED_MEDIA_SRC_VALIDATORS: Record<TypedMediaMarkdownAlt, (url: string) => boolean> = {
   audio: isAudioUrl,
   video: isVideoUrl,

@@ -49,10 +49,10 @@ export const rateLimiter = (options: {
     const ip = realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
 
     try {
-      // The key holds nothing the caller writes. Keying it on User-Agent too gave
-      // a client that increments that header a fresh budget on every request, and
-      // minted one Redis key per distinct value in the same volatile keyspace the
-      // claim-check payloads live in.
+      // The key holds nothing the caller writes. Keying it on User-Agent too gave a
+      // client that increments that header a fresh budget on every request. That
+      // keying also minted one Redis key per distinct value, in the same volatile
+      // keyspace the claim-check payloads live in.
       const rateLimiterRes = await limiter.consume(ip, 1)
 
       c.header('X-RateLimit-Limit', points.toString())

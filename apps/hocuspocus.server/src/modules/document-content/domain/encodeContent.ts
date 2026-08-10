@@ -17,15 +17,15 @@ const MAX_DETAIL_CHARS = 500
 
 export const TITLE_HEADING_DETAIL = 'document content must start with a level-1 heading'
 
-// The webapp's UniqueID stamps toc-ids once per mount on the provider's first
-// synced transaction and never from remote updates, so content injected
-// mid-session would stay unaddressable: invisible to the TOC, heading chat,
-// folds and `?id=` deep links, and unhealable on a readOnly document.
+// The webapp's UniqueID stamps toc-ids once per mount, on the provider's first
+// synced transaction, and never from remote updates. Content injected mid-session
+// would therefore stay unaddressable: invisible to the TOC, heading chat, folds
+// and `?id=` deep links, and unhealable on a readOnly document.
 const tocIdGenerator = new ShortUniqueId()
 
 // Built lazily (the module has no top-level side effects). This is the only
-// server path that evaluates content expressions at all — toYdoc and fromYdoc
-// never do — so the shared extension set doubles as the validation schema.
+// server path that evaluates content expressions at all. `toYdoc` and `fromYdoc`
+// never do, so the shared extension set doubles as the validation schema.
 let validationSchema: Schema | null = null
 const getValidationSchema = (): Schema => {
   validationSchema ??= getSchema(migrationExtensions)
@@ -77,9 +77,9 @@ const boundAndStampIdentity = (
     if (typeof node.type === 'string' && TOC_ID_NODE_TYPES.has(node.type)) {
       const attrs = isRecord(node.attrs) ? node.attrs : {}
       const current = attrs[TOC_ID_ATTR]
-      // A duplicate the server ships is permanent: the webapp's dedupe branch is
-      // inert on a collaboration provider, so two headings would share one chat
-      // channel, one fold id and one comment anchor forever.
+      // A duplicate the server ships is permanent, because the webapp's dedupe
+      // branch is inert on a collaboration provider. Two headings would then share
+      // one chat channel, one fold id and one comment anchor forever.
       const id =
         typeof current === 'string' && current.length > 0 && !seenTocIds.has(current)
           ? current
@@ -91,8 +91,8 @@ const boundAndStampIdentity = (
 
     const children = node.content
     if (!Array.isArray(children)) continue
-    // Pushed in reverse so the LIFO stack pops siblings in document order —
-    // "first occurrence keeps the id" has to mean first as the reader sees it.
+    // Pushed in reverse so the LIFO stack pops siblings in document order. The
+    // rule "first occurrence keeps the id" has to mean first as the reader sees it.
     for (let i = children.length - 1; i >= 0; i -= 1) {
       const child = children[i]
       if (isRecord(child)) stack.push({ node: child, depth: depth + 1 })
@@ -112,9 +112,9 @@ export const encodeContent = (
     requireTitleHeading: boolean
     /**
      * Size caps bound a hostile REST payload. A restore replays bytes this
-     * server already accepted and stored, and live editing has no such cap, so
-     * enforcing them there makes a document permanently unrestorable once it
-     * outgrows them. Structural checks still run. Default on.
+     * server already accepted and stored, and live editing has no such
+     * cap. Enforcing them there makes a document permanently unrestorable once
+     * it outgrows them. Structural checks still run. Default on.
      */
     enforceSizeCaps?: boolean
   }
@@ -130,9 +130,9 @@ export const encodeContent = (
   }
 
   try {
-    // `toYdoc` uses Node.fromJSON, which never checks content expressions:
-    // heading-in-paragraph and taskItem-at-root encode and round-trip cleanly,
-    // then the first browser to open the doc deletes the subtree (y-tiptap) or
+    // `toYdoc` uses Node.fromJSON, which never checks content expressions.
+    // Heading-in-paragraph and taskItem-at-root encode and round-trip cleanly. The
+    // first browser to open the doc then deletes the subtree (y-tiptap) or
     // hard-freezes on enableContentCheck. `.check()` is the only gate for that.
     getValidationSchema().nodeFromJSON(payload).check()
     const scratch = TiptapTransformer.toYdoc(payload, 'default', migrationExtensions)

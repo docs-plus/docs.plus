@@ -10,10 +10,10 @@ const DEFAULT_MESSAGES: Record<MediaLoadingKind, string> = {
 export function createDefaultMediaLoadingShell(context: MediaLoadingShellContext): HTMLElement {
   const overlay = document.createElement('div')
   overlay.className = 'hm-loading-shell__overlay'
-  // No role="status"/aria-live: a persistent live-region inside the editor makes
-  // focus-trap libraries (e.g. Floating UI markOthers) treat it as a keep-target and
-  // recurse in, stamping `inert` across the doc — which ProseMirror reconciles by
-  // recreating the media node views (the embed reloads).
+  // No role="status"/aria-live inside the editor. A persistent live-region makes
+  // focus-trap libraries (e.g. Floating UI markOthers) treat the overlay as a
+  // keep-target and recurse in, stamping `inert` across the doc. ProseMirror
+  // reconciles the inert stamping by recreating the media node views (the embed reloads).
 
   const shimmer = document.createElement('div')
   shimmer.className = 'hm-loading-shell__shimmer'

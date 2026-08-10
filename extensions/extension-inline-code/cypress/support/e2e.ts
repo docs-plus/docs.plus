@@ -90,9 +90,9 @@ Cypress.Commands.add('toggleInlineCode', () => {
 })
 
 // Real typing (cypress-real-events) so the input-rule pipeline fires — cy.type()
-// does not drive it. Waits for focus instead of forcing it: callers focus via
-// Tiptap commands whose DOM focus lands in a rAF, and a forced .focus() can win
-// that race and reset the caret to the document start before realType runs.
+// does not drive it. Waits for focus instead of forcing it. Callers focus via
+// Tiptap commands whose DOM focus lands in a rAF. A forced .focus() can win the
+// race against that rAF and reset the caret to the document start before realType runs.
 Cypress.Commands.add('typeInEditor', (text: string) => {
   cy.get('#editor [contenteditable="true"]').should('have.focus')
   cy.realType(text)

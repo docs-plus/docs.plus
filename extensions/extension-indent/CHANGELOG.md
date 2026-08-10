@@ -10,7 +10,7 @@ First npm release since `0.1.1`. The major aligns the package with the docs.plus
 
 - **Tab / Shift-Tab precedence** — list sink/lift and table-cell navigation run before literal indent; `0.1.1` always inserted `indentChars` on Tab.
 - **`allowedIndentContexts` allowlist** — literal indent applies only in explicit `{ textblock, parent }` pairs (default: `paragraph` under `doc` or `blockquote`).
-- **Multiline-safe position math** — select-all and mid-word selections clamp to textblock boundaries; outdent no longer eats hard breaks.
+- **Multiline-safe position math** — select-all and mid-word selections clamp to textblock boundaries; outdent no longer deletes hard breaks.
 - **Jest matrix + clean-room Cypress** — `allowedIndentContexts` behavior table in Jest; real keypresses against built `dist/` on port 5175.
 
 ### Breaking
@@ -49,16 +49,16 @@ No action is needed for `allowedIndentContexts` becoming required on the resolve
 
 - Tab / Shift-Tab table-cell delegation never fired — `editor.can()` is now invoked, so `goToNextCell` / `goToPreviousCell` run when a table extension is present.
 - Shift-Tab with the caret at the very start of an indented line now removes the line's leading indent. It was a no-op: the `removeLeading` branch checked the text _before_ the caret, which is always empty at line start.
-- Outdent no longer deletes hard breaks (or other zero-width inline nodes) in place of indent characters — delete windows are verified against document text in both caret and multiline paths.
+- Outdent no longer deletes hard breaks (or other zero-width inline nodes) in place of indent characters. Delete windows are verified against document text in both caret and multiline paths.
 - Multiline operations start every line at its textblock start — mid-word selection starts no longer inject indent mid-word, and select-all (`AllSelection`) indents eligible blocks.
-- Multiline indent/outdent resolves line positions in one linear walk instead of a binary search per line, each probe of which re-measured the whole selection. Select-all + Tab over 4,000 paragraphs dropped from 3.3 s to 0.54 s; the extension's own scan is now 13 ms, and what remains is ProseMirror's view update for that many changed blocks.
-- `indent()` no longer reports success when the selection resolves no lines. A selection that only spans a block boundary, or a `NodeSelection` on a leaf block such as a horizontal rule, returned `true` without changing anything — Tab was claimed and dead, and `can().indent()` told host toolbars the command was available.
+- Multiline indent/outdent resolves line positions in one linear walk instead of a binary search per line, each probe of which re-measured the whole selection. Select-all + Tab over 4,000 paragraphs dropped from 3.3 s to 0.54 s. The extension's own scan is now 13 ms. What remains is ProseMirror's view update for that many changed blocks.
+- `indent()` no longer reports success when the selection resolves no lines. A selection that only spans a block boundary, or a `NodeSelection` on a leaf block such as a horizontal rule, returned `true` without changing anything. Tab was claimed and dead, and `can().indent()` told host toolbars the command was available.
 - `indentChars: ''` no longer claims Tab and Shift-Tab. Both commands dispatched an empty transaction and returned `true`, so the keypress never reached the browser's focus handling.
 - Multiline indent/outdent reads every range of the selection instead of the first alone. A table `CellSelection` exposes only its head cell on `from`/`to`, so the rest of the selected rectangle was skipped.
 
 ### Documentation
 
-- The README now states where indentation survives: `getJSON()` and collaborative state round-trip it, while `getHTML()` → `setContent()` needs `parseOptions: { preserveWhitespace: true }` or `'full'`, or the indent is parsed away.
+- The README now states where indentation survives. `getJSON()` and collaborative state round-trip it, while `getHTML()` → `setContent()` needs `parseOptions: { preserveWhitespace: true }` or `'full'`, or the indent is parsed away.
 
 ### Internal
 
@@ -67,4 +67,4 @@ No action is needed for `allowedIndentContexts` becoming required on the resolve
 
 ## [0.2.0]
 
-Internal milestone — never published to npm. Baseline before this changelog: literal indent/outdent gated by `allowedIndentContexts` (a `(textblock, parent)` allowlist), with Tab / Shift-Tab precedence delegating to list sink/lift and table-cell navigation before literal indent.
+Internal milestone — never published to npm. Baseline before this changelog: literal indent/outdent gated by `allowedIndentContexts` (a `(textblock, parent)` allowlist). That baseline also delegated Tab / Shift-Tab to list sink/lift and table-cell navigation before literal indent.

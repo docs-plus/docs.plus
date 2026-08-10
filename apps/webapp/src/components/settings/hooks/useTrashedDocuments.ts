@@ -30,8 +30,8 @@ async function fetchTrashPage(pageParam: number): Promise<DocumentsPage> {
 
 /**
  * The owner's soft-deleted documents, paginated. Mounts when Trash opens, so
- * `refetchOnMount: 'always'` keeps it fresh — a doc just deleted from the live
- * list is guaranteed to appear instead of a stale (possibly empty) cache.
+ * `refetchOnMount: 'always'` keeps it fresh. A doc just deleted from the live list is
+ * guaranteed to appear, instead of a stale (possibly empty) cache.
  */
 export function useTrashedDocuments(userId: string | undefined) {
   return useInfiniteQuery({

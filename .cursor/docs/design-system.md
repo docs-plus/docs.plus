@@ -11,13 +11,13 @@ auto-attaches a pointer here; the `design-system` skill in `.cursor/skills/` is 
 - **Tailwind CSS v4 + daisyUI 5** are the UI toolkit. Themes are declared with `@plugin 'daisyui/theme'`
   blocks in `src/styles/globals.scss`; there is **no `tailwind.config.js`** (Tailwind v4).
 - **Extend, never fork:** new design capability = a CSS variable on `:root` (+ per-theme overrides on
-  `[data-theme='docsplus-dark']` / `docsplus-dark-hc`), exposed to Tailwind through an `@theme` alias
+  `[data-theme='docsplus-dark']` / `docsplus-dark-hc`). That variable is exposed to Tailwind through an `@theme` alias
   (pattern: `--color-docsy`, `--color-media-*`). Components consume tokens — daisyUI semantic classes
-  (`base-*`, `primary`, `*-content`, `info/success/warning/error`) or `var(--…)` — never raw Tailwind
-  palette classes (`bg-gray-*`, `text-blue-500`) and never hex literals outside the token layer.
+  (`base-*`, `primary`, `*-content`, `info/success/warning/error`) or `var(--…)`. Components never use raw
+  Tailwind palette classes (`bg-gray-*`, `text-blue-500`), and never hex literals outside the token layer.
 - daisyUI component classes (`btn`, `input`, `select`, `menu`, `tab`, `collapse`, `badge`, `skeleton`)
-  are the first reach on daisyUI-backed surfaces; Tailwind utilities customize them; bespoke CSS is a
-  last resort and lives only under `src/styles/` (never colocated with components — see
+  are the first reach on daisyUI-backed surfaces. Tailwind utilities customize them. Bespoke CSS is a
+  last resort and lives only under `src/styles/`, never colocated with components (see
   `apps/webapp/CLAUDE.md` §TipTap Styling).
 - Vendor reference for daisyUI class names: <https://daisyui.com/llms.txt> (fetch on demand — the
   repo no longer vendors it). Floating UI behavior: `.cursor/rules/react-floating-ui.mdc`.
@@ -31,7 +31,7 @@ on `<html>` is applied by `stores/themeStore.ts`. `ThemePreference: light | dark
 graphite-light | graphite-dark | paper-light | paper-dark | system`; `ResolvedTheme` is the
 `docsplus[-*]` name stamped on the DOM. daisyUI sets `color-scheme` per theme, so dark styling
 resolves via CSS `light-dark()` — no companion attribute. The **Adding a theme** checklist at the end of this section is the
-canonical procedure — a new theme is a token set the app follows automatically.
+canonical procedure. A new theme is a token set the app follows automatically.
 
 |                                  | `docsplus` (light, default)                | `docsplus-dark`                             | `docsplus-dark-hc` (projector) |
 | -------------------------------- | ------------------------------------------ | ------------------------------------------- | ------------------------------ |
@@ -71,25 +71,25 @@ OKLCH-even ramps, WCAG-AA verified, **same shape tokens as the base** (radius 8/
 | media image / video / audio      | `#008d65` / `#833ddf` / `#e45b15`             | `#00c899` / `#b38aff` / `#fb9344`             | `#1f8254` / `#7c44c3` / `#d2600c`             | `#51bd85` / `#ad87ed` / `#ee9142`             |
 
 Each **dark** theme declares its own `--pad-well` (below base-100) + `--color-media-*` in a
-`[data-theme]` block and joins the shared dark semantic-override block (scrims / `--shadow-overlay` /
-sheet-lift, identical across dark themes). Each **light** theme declares only `--color-media-*` (well
+`[data-theme]` block. It also joins the shared dark semantic-override block (scrims /
+`--shadow-overlay` / sheet-lift, identical across dark themes). Each **light** theme declares only `--color-media-*` (well
 aliases base-200). Premium light themes use a soft off-white base-100 by design — a deliberate,
 opt-in departure from the base `docsplus` true-white doctrine.
 
-- Base light `docsplus` is **true-white paper on a cool-gray well**: the pre-recalibration
-  `#fafbfc/#edf0f5/#e5eaf1` trio read washed-out — the base light theme does not drift back toward
-  near-identical neutrals (premium light themes deliberately opt into a soft off-white instead).
+- Base light `docsplus` is **true-white paper on a cool-gray well**. The pre-recalibration
+  `#fafbfc/#edf0f5/#e5eaf1` trio read washed-out. The base light theme does not drift back toward
+  near-identical neutrals. Premium light themes deliberately opt into a soft off-white instead.
 - `--depth: 0`, `--noise: 0` in all themes: no daisyUI depth effects. Depth is borders + the
   elevation species below, never per-component gradients.
 - `_document.tsx` `theme-color` meta mirrors base-100 via `prefers-color-scheme` (`#ffffff` /
-  `#0b1220`) — it tracks OS light/dark only, so it can't reflect an in-app premium or HC choice
-  (pre-existing; keep the two literals in lockstep if a base base-100 changes).
+  `#0b1220`). It tracks OS light/dark only, so it can't reflect an in-app premium or HC choice. This
+  is pre-existing. Keep the two literals in lockstep if a base base-100 changes.
 
 ### Adding a theme
 
 A new theme is a token set the app follows automatically. **Dark-ness comes from the platform, not a
-custom attribute:** daisyUI emits `color-scheme: light|dark` on every theme, and the shared dark tokens
-are `light-dark(<light>, <dark>)` in `:root`/`@theme` — they resolve per theme's `color-scheme` with no
+custom attribute.** daisyUI emits `color-scheme: light|dark` on every theme, and the shared dark tokens
+are `light-dark(<light>, <dark>)` in `:root`/`@theme`. They resolve per theme's `color-scheme` with no
 theme-name list and no companion attribute. `applyThemeToDom` (`stores/themeConfig.ts`) writes only
 `data-theme`. So there are **no per-theme CSS dark-lists to extend** — just:
 
@@ -97,13 +97,13 @@ theme-name list and no companion attribute. `applyThemeToDom` (`stores/themeConf
    8/8/10 + `--size-*` + `--border:1px` + `--depth/--noise:0`; `default:false`, `prefersdark:false`;
    set `color-scheme` correctly (this is what drives `light-dark()`).
 2. **Config** (`stores/themeConfig.ts`): add to `ThemePreference` + `ResolvedTheme` and a
-   `PREFERENCE_TO_THEME` entry; for a **light** theme also add the resolved name to
+   `PREFERENCE_TO_THEME` entry. For a **light** theme also add the resolved name to
    `LIGHT_RESOLVED_THEMES` (the one "is-it-light" source — read by the emoji `Picker`). The FOUC script
    (`_document.tsx`) interpolates the map from here, so it never drifts.
 3. **Picker** (`AppearanceSection.tsx`): a `LIGHT_THEMES`/`DARK_THEMES` entry (`value`, `label`,
    `premium?`); the swatch derives its theme from `PREFERENCE_TO_THEME[value]`.
 4. **Per-theme values** (`globals.scss`) — only where a theme differs from the shared `light-dark()`
-   default: a **dark** theme adds `[data-theme] { --pad-well` (below base-100) `+ --color-media-* }`; a
+   default. A **dark** theme adds `[data-theme] { --pad-well` (below base-100) `+ --color-media-* }`. A
    **light** theme adds `[data-theme] { --color-media-* }` (`--pad-well` aliases base-200). Everything
    else (scrims / `--shadow-overlay` / sheet-lift / default well / default media) comes free from the
    `:root` `light-dark()` tokens.
@@ -157,7 +157,7 @@ Header/toolbar icons idle at `/70` (or `/60`) and darken on hover — attention 
 
 **The daisyUI shape tokens ARE the scale — and the control panel.** Radii are tuned from the
 theme blocks in `globals.scss` alone — every theme sets `--radius-*` 8/8/10 (maintainer taste:
-**8–10px, no more, no less**); every surface consumes the token classes, so a retune never touches
+**8–10px, no more, no less**). Every surface consumes the token classes, so a retune never touches
 components.
 
 | Token               | Value (today) | Consumed as                                                       | Species                                                                                                                                                        |
@@ -169,8 +169,8 @@ components.
 | micro               | 2–4px literal | bare `rounded` / px in prose SCSS                                 | **Prose/editor decorations only**: inline code, TOC accent bars, cursor labels, heading-filter marks. Never on panels or cards.                                |
 
 Banned: Tailwind literal radius classes on surfaces (`rounded-lg` / `rounded-xl` / `rounded-2xl` /
-`rounded-3xl` — swept to token classes 2026-07-07), new SCSS px radii ≥ 8px (use `var(--radius-*)`),
-and per-surface radius invention. Consume `rounded-selector|field|box|full` only (micro px radii stay
+`rounded-3xl` — swept to token classes 2026-07-07). Also banned: new SCSS px radii ≥ 8px (use
+`var(--radius-*)`), and per-surface radius invention. Consume `rounded-selector|field|box|full` only (micro px radii stay
 prose/editor-only).
 
 ## Elevation species
@@ -187,12 +187,12 @@ Depth encodes behavior. Every surface is exactly one species:
 
 New overlay surfaces pick an existing species and reuse its export — never a third radius/shadow stack.
 
-**Paint order** follows the species: docked surfaces ≤ `z-40`; the TOC↔editor sash (`z-[41]`) and
-TOC column (`z-[42]`) sit in the band above docked chat and below floating overlays so presence
-overhang clears the hairline without beating Dialog/Popover; the floating portal layer is `z-50`
-(`[data-floating-ui-portal]`, `globals.scss`); surfaces stacked _on_ a floating surface (nested
+**Paint order** follows the species. Docked surfaces are ≤ `z-40`. The TOC↔editor sash (`z-[41]`) and
+TOC column (`z-[42]`) sit in the band above docked chat and below floating overlays. That band lets
+presence overhang clear the hairline without beating Dialog/Popover. The floating portal layer is
+`z-50` (`[data-floating-ui-portal]`, `globals.scss`). Surfaces stacked _on_ a floating surface (nested
 dropdowns, toasts over modals) use `z-[60]`. Higher one-offs (`z-[9999]`, inline `zIndex`) are
-off-system scatter — converge onto these tiers whenever a file is touched, and never mint a new
+off-system scatter. Converge onto these tiers whenever a file is touched. Never mint a new
 tier to win a stacking fight (fix the portal / stacking context instead).
 
 ## State language
@@ -213,16 +213,17 @@ tier to win a stacking fight (fix the portal / stacking context instead).
 
 ## Color policy
 
-- **Brand hexes are allowed only for third-party identity**: social icons (`settings/utils/socialIcons.ts`,
-  ShareModal, Discord `#5865F2`, HomeFooter CTA), media-platform comment accents (YouTube `#FF0000`,
-  Vimeo, SoundCloud, Loom, Spotify in `utils/commentReferenceTheme.ts`), and the app logo SVG.
+- **Brand hexes are allowed only for third-party identity.** That covers social icons
+  (`settings/utils/socialIcons.ts`, ShareModal, Discord `#5865F2`, HomeFooter CTA). It also covers
+  media-platform comment accents (YouTube `#FF0000`, Vimeo, SoundCloud, Loom, Spotify in
+  `utils/commentReferenceTheme.ts`), and the app logo SVG.
 - **Media-anchored overlay ink is fixed black/white by design** (upload-progress scrims on media,
-  avatar-hover camera overlay, video/gallery letterbox `bg-black`): it sits on imagery, where black
+  avatar-hover camera overlay, video/gallery letterbox `bg-black`). It sits on imagery, where black
   scrim + white ink holds in both themes. Do not tokenize it into `neutral`/`base-content` grays.
 - Everything else goes through theme tokens. `dark:` variants paired with raw palette classes are a
   smell — a theme-tracked token (like the media trio) replaces both halves.
 - **Native `<audio>/<video>` control shells follow the browser/OS color scheme, not the site
-  theme** — verified: Chromium paints them from the UA scheme even when the element's computed
+  theme.** Verified: Chromium paints them from the UA scheme even when the element's computed
   `color-scheme` is `dark`. Do not chase this with CSS; the themes already declare `color-scheme`
   correctly (form controls do follow it). A themed custom player is the only real fix if it ever
   matters enough.
@@ -348,7 +349,7 @@ anchored (L1) — `components/toc/TocContextMenu.tsx` (panel from `components/ui
 | frame | `contextMenuPanelClassName` + `absolute z-40`; rows stock `MenuItem` + `ContextMenuRow`                                                                                                        |
 | rows  | Chat Room = primary, fold/focus/copy = default, Delete Section = danger + `Icons.info size=14 opacity-60`; source row `.context-menu-active { background: color-mix(primary 15%) !important }` |
 
-TOC unread badges are the React `UnreadBadge` only (see Form & primitive foundations); the ProseMirror CSS-attr badge path styles `.ha-chat-btn` only (see Pad shell → Heading action chips).
+TOC unread badges are the React `UnreadBadge` only (see Form & primitive foundations). The ProseMirror CSS-attr badge path styles `.ha-chat-btn` only (see Pad shell → Heading action chips).
 
 ## Menus & selects
 
@@ -389,7 +390,7 @@ anchored (L1) — `components/ui/HoverMenu.tsx`
 | item states         | bookmarked `Icons.bookmarkMinus text-info`; pending spinner `border-base-content/30 border-t-base-content/70 size-[18px] animate-spin rounded-full border-2`; disabled daisyUI btn-disabled                                                                           |
 | dropdown            | panel `bg-base-100 border-base-300 z-[60] rounded-box border shadow-xl` + ul `menu max-h-80 w-52 rounded-box !p-1`; danger `text-error`; copied `text-success`; downloading `pointer-events-none opacity-60`; auth-group divider `border-base-300 mt-1 border-t pt-1` |
 
-> Off-system: z-index scatter (bar z-50, chat override z-30, dropdown z-[60], context menus z-40); btn classes on a `<div>`; hand-rolled spinner; dropdown rows are raw daisyUI `menu` li>a, not `ContextMenuRow` — a third row language.
+> Off-system: z-index scatter (bar z-50, chat override z-30, dropdown z-[60], context menus z-40); btn classes on a `<div>`; hand-rolled spinner. Dropdown rows are raw daisyUI `menu` li>a, not `ContextMenuRow` — a third row language.
 
 ### ui/Select + ui/SearchableSelect — both
 
@@ -733,9 +734,9 @@ modal (L2) — `components/settings/SettingsPanel.tsx` (+ `components/settings/c
 
 > **Documents tab width (planned):** When `activeTab === 'documents'`, detail column uses `max-w-none w-full` instead of `max-w-2xl` so the My documents list can use modal width. Other tabs unchanged.
 
-> **Hub↔pane push (below `md`):** aside + detail stack as `max-md:absolute max-md:inset-0` layers inside the `relative overflow-clip` root and transition `transform` on the panel tier — pane parked at `translateX(100%)`, hub parallaxes to `translateX(-25%)`, `var(--motion-panel)` with `--motion-ease-enter`/`--motion-ease-exit` per direction; the parked layer goes `invisible` via a `visibility 0s var(--motion-panel)` delay (out of the focus/AT tree after the slide, no delay on the way in). Never a `hidden` display swap — that's a cut, not iOS-style navigation.
+> **Hub↔pane push (below `md`):** aside + detail stack as `max-md:absolute max-md:inset-0` layers inside the `relative overflow-clip` root, and transition `transform` on the panel tier. The pane parks at `translateX(100%)` and the hub parallaxes to `translateX(-25%)`. Timing is `var(--motion-panel)` with `--motion-ease-enter`/`--motion-ease-exit` per direction. The parked layer goes `invisible` via a `visibility 0s var(--motion-panel)` delay, so it leaves the focus/AT tree after the slide, with no delay on the way in. Never a `hidden` display swap — that's a cut, not iOS-style navigation.
 
-> **Open state + back-close:** every mount uses `useSettingsModal` (`components/settings/hooks/useSettingsModal.ts`) — below `md` an open panel owns one history entry so hardware/browser back closes the surface; X/Esc/scrim consume it, `useSignOut` consumes it before `location.assign`. Sign-out confirms via `openSignOutConfirm` (GlobalDialog, error-ghost confirm) — which requires the `<GlobalDialog />` mount on every settings host page (HomePage included).
+> **Open state + back-close:** every mount uses `useSettingsModal` (`components/settings/hooks/useSettingsModal.ts`). Below `md` an open panel owns one history entry, so hardware/browser back closes the surface. X/Esc/scrim consume it, and `useSignOut` consumes it before `location.assign`. Sign-out confirms via `openSignOutConfirm` (GlobalDialog, error-ghost confirm) — which requires the `<GlobalDialog />` mount on every settings host page (HomePage included).
 
 > Off-system: user-chip Avatar `shadow-sm` + avatar-upload `hover:shadow-md` one-off shadows; overlay raw `bg-black/40` + `text-white` (media-anchored scrim, intentional per doctrine).
 
@@ -1109,7 +1110,7 @@ content — sweep of `apps/webapp/src` (shims `styles/globals.scss`, `styles/_da
 | frame             | SCSS is hex-free outside globals.scss theme blocks and intentional cases (\_print.scss `#fff`, \_blocks.scss white-bg attribute matchers); all floating SCSS shadows on `var(--shadow-overlay)`                                                                                                   |
 | third-party shims | react-tag-input `--rti-*` → base/primary/error/radius-field (see DocumentSettingsPanel); em-emoji-picker + react-modal-sheet skins (see Floating overlays / Mobile layer); daisyUI vendor patches: `.skeleton` radius 0.25rem unless `rounded-*` present, reduced-motion kills drawer transitions |
 
-> Off-system: one-off token-tinted shadows — `.toc-drag-card` `0 8px 24px`, `.Popover` `0 2px 4px`, mobile toolbar upward shadows, crinkle-fold paper shadows (\_heading-fold.scss), `.error-message` micro shadow; ring-as-shadow idioms `0 0 0 1px color-mix(primary 44%/22%)`; sub-token px radii (2–6px) scattered in SCSS (chat pre/inline-code 6px/3px, TOC 4–6px, cursor label 3px, heading-filter 2px) — no micro-radius token exists; the type stack is tokenized as `--font-sans` (`globals.scss` `:root`; consumed by the universal reset and the hyperlink back-button — fixed 2026-07-06); intentional brand escapes (ShareModal/HomeFooter/EditorToolbar Discord, socialIcons palette, DocsPlusIcon fills, commentReferenceTheme platform hexes) are cataloged on their components.
+> Off-system: one-off token-tinted shadows — `.toc-drag-card` `0 8px 24px`, `.Popover` `0 2px 4px`, mobile toolbar upward shadows, crinkle-fold paper shadows (\_heading-fold.scss), `.error-message` micro shadow. Ring-as-shadow idioms `0 0 0 1px color-mix(primary 44%/22%)`. Sub-token px radii (2–6px) scattered in SCSS (chat pre/inline-code 6px/3px, TOC 4–6px, cursor label 3px, heading-filter 2px) — no micro-radius token exists. The type stack is tokenized as `--font-sans` (`globals.scss` `:root`; consumed by the universal reset and the hyperlink back-button — fixed 2026-07-06). Intentional brand escapes (ShareModal/HomeFooter/EditorToolbar Discord, socialIcons palette, DocsPlusIcon fills, commentReferenceTheme platform hexes) are cataloged on their components.
 
 ## Do / Never
 

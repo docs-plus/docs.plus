@@ -10,7 +10,7 @@ import {
 
 export { contentQuerySchema, documentIdParamSchema } from '../../document-content/http/schema'
 
-// Bounded by the column, not by taste: `Documents.version` is int4, and an
+// Bounded by the column, not by taste: `Documents.version` is int4. An
 // out-of-range value would reach Prisma and surface as a "persistence is
 // wedged" 500 instead of the 400 a typo'd version number deserves.
 export const versionParamSchema = z.object({
@@ -35,7 +35,7 @@ export const listQuerySchema = z.object({
 })
 
 /** Omitted means "the version before this one". Whether `base` is older than the
- *  version it is compared against is checked in the handler: the two halves are
+ *  version it is compared against is checked in the handler. The two halves are
  *  validated separately, so no schema can see both. */
 export const diffQuerySchema = z.object({
   base: z.coerce.number().int().positive().max(MAX_VERSION_NUMBER).optional()

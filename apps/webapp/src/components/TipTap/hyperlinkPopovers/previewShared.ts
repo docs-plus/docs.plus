@@ -19,7 +19,7 @@ import type { InternalDocumentLink } from './types'
 
 /**
  * The extension ships no icon catalog (bundle size), so the webapp picks the
- * Lucide icon per `type`. `Partial` is deliberate: domain-catalog types
+ * Lucide icon per `type`. `Partial` is deliberate. Domain-catalog types
  * (`meet`, web `github`/`notion`, …) are omitted because the favicon path
  * always wins for `https://` URLs and a static icon would never render.
  */

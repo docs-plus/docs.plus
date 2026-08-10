@@ -1,8 +1,8 @@
 /// <reference types="cypress" />
 
-// The `blob:` fixture deliberately embeds no `https://` substring: once the
-// markdown input rule rejects the outer dangerous href, autolink would
-// linkify the inner URL on the trailing-space tick and defeat the assertion.
+// The `blob:` fixture deliberately embeds no `https://` substring. Once the
+// markdown input rule rejects the outer dangerous href, autolink would linkify
+// the inner URL on the trailing-space tick and defeat the assertion.
 // These cases assert scheme blocking, not URL embedding.
 const DANGEROUS = [
   'javascript:alert(1)',
@@ -27,9 +27,9 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
   })
 
   describe('control characters embedded in the scheme', () => {
-    // `&#9;` / `&#10;` decode to TAB / LF inside the attribute value;
-    // browsers strip ASCII controls when resolving URLs, so without the
-    // control-stripped `isSafeHref` check these navigate as `javascript:`.
+    // `&#9;` / `&#10;` decode to TAB / LF inside the attribute value.
+    // Browsers strip ASCII controls when resolving URLs, so without the
+    // control-stripped `isSafeHref` check these hrefs navigate as `javascript:`.
     const SMUGGLED = [
       { label: 'TAB (&#9;)', anchor: '<a href="java&#9;script:alert(1)">x</a>' },
       { label: 'LF (&#10;)', anchor: '<a href="java&#10;script:alert(1)">x</a>' }
@@ -73,7 +73,7 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
   })
 
   describe('click handler window.open guard', () => {
-    // parseHTML strips dangerous anchors, so to exercise the click-handler guard
+    // parseHTML strips dangerous anchors. To exercise the click-handler guard,
     // we inject a raw anchor directly into the editor DOM (simulating a third-
     // party plugin that bypassed the schema). The guard must still refuse to
     // open it even though it is now a live <a>.

@@ -33,9 +33,9 @@ export function HistoryAuthorsBody() {
   const [selection, setSelection] = useState<string | null>(null)
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
-  // Keyed on the version, not just `editor`: the editor identity is stable across
+  // Keyed on the version, not just `editor`. The editor identity is stable across
   // content changes, and `applyHistoryItemToEditor` runs synchronously in the stateless
-  // handler before React re-renders, so the version is what actually tracks the doc.
+  // handler before React re-renders. The version is what actually tracks the doc.
   const ranges = useMemo(
     () =>
       editor && authorship.status === 'ready'

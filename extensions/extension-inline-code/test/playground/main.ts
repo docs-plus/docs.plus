@@ -17,7 +17,7 @@ const params = new URLSearchParams(window.location.search)
 // higher priority wins the collision (see README).
 const starterkitCode = params.get('starterkitCode') === 'on'
 // `?trailingNode=off` drops StarterKit's trailing paragraph so a nested last
-// textblock (blockquote/list) can sit at the absolute document end — the
+// textblock (blockquote/list) can sit at the absolute document end. The
 // arrow-exit specs need that trap to be constructible.
 const trailingNode = params.get('trailingNode') !== 'off'
 // `?markdown=on` loads @tiptap/markdown for the round-trip spec. Off by default:

@@ -6,7 +6,7 @@ export const UNRECORDED_KEY = 'unrecorded'
 
 /**
  * Groups blocks by the people whose text sits in them. A block counts for every key
- * present in it, so per-person counts sum above `knownCount` — two writers in one
+ * present in it, so per-person counts sum above `knownCount`. Two writers in one
  * paragraph is one block each, not half a block each.
  */
 export const buildAuthorRoster = (
@@ -23,8 +23,8 @@ export const buildAuthorRoster = (
 
   blockClientIds.forEach((clientIds, index) => {
     // A key claims a block once. One person's two clientIDs in the same block, or
-    // two anonymous clients, must not push the index twice — the row would
-    // double-count and Previous/Next would stop on the block twice.
+    // two anonymous clients, must not push the index twice. The row would
+    // double-count, and Previous/Next would stop on the block twice.
     const keys = new Set<string>()
     for (const clientId of clientIds) {
       const binding = byClientId.get(clientId)

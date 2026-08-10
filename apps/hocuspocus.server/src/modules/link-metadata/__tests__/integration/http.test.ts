@@ -4,10 +4,10 @@ import pino from 'pino'
 
 import { init } from '../../module'
 
-// Wire shape that tests assert against. Kept independent of the production
-// types because the discriminated union (success: true vs false) collapses
-// to `never` when intersected, and toBe() narrows expected values from the
-// receiver's type. `success: boolean` here is intentional.
+// Wire shape that tests assert against. Kept independent of the production types
+// because the discriminated union (success: true vs false) collapses to `never`
+// when intersected. `toBe()` narrows expected values from the receiver's type.
+// `success: boolean` here is intentional.
 interface WireBody {
   success?: boolean
   message?: string

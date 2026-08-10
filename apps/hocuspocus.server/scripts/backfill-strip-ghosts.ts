@@ -27,7 +27,7 @@ interface Candidate {
   idempotent: boolean
 }
 
-// Yjs leaves a shared root generic until a typed getter upgrades it, so name the
+// Yjs leaves a shared root generic until a typed getter upgrades it. So name the
 // two roots the app defines before reading every root back as JSON.
 const visibleState = (update: Uint8Array): string => {
   const doc = new Y.Doc()
@@ -43,7 +43,7 @@ const visibleState = (update: Uint8Array): string => {
 }
 
 // Decoding into a gc:true doc swaps deleted items' content for a tombstone, so
-// re-encoding drops the prose. mergeUpdates cannot: it unions delete sets but
+// re-encoding drops the prose. `mergeUpdates` cannot: it unions delete sets but
 // keeps the older side's struct content verbatim.
 const compact = (update: Uint8Array): Buffer => {
   const doc = new Y.Doc()
@@ -211,7 +211,7 @@ console.log('\nApplying')
 let written = 0
 let skipped = 0
 for (const c of candidates) {
-  // Guard on the bytes we actually inspected: a row deleted by the reaper or
+  // Guard on the bytes we actually inspected. A row deleted by the reaper or
   // rewritten by an earlier pass must be left alone, not overwritten blind.
   const affected = await prisma.$executeRaw`
     UPDATE "Documents" SET data = ${c.after}
@@ -231,8 +231,8 @@ for (const c of candidates) {
   written += 1
 
   // Stop on the first row whose visible text moved. One bad re-encode means the
-  // comparator or the strip is wrong for this corpus, and the remaining rows
-  // would inherit the same fault — 35 more rewrites is not a better outcome.
+  // comparator or the strip is wrong for this corpus. The remaining rows would
+  // inherit the same fault, and 35 more rewrites is not a better outcome.
   if (!ok) {
     console.log('\n✗ Read-back diverged. Halting before any further row is rewritten.')
     break

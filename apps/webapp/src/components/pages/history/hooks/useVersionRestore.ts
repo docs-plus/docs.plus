@@ -30,7 +30,7 @@ export const useVersionRestore = () => {
   }, [])
 
   // The ack and every refusal clear `loadingHistory`, so its falling edge is the
-  // one signal that reaches this hook — the outcome itself is owned by the handler.
+  // one signal that reaches this hook. The outcome itself is owned by the handler.
   useEffect(() => {
     if (!restoring || loadingHistory) return
     clearTimer()
@@ -39,9 +39,9 @@ export const useVersionRestore = () => {
 
   useEffect(() => clearTimer, [clearTimer])
 
-  // `activeHistory` still names the PREVIOUS version while a watch is in flight, so
-  // restoring here would replace the document for everyone with a version the reader
-  // did not ask for. It also keeps the 30s timeout from being cancelled by the
+  // `activeHistory` still names the PREVIOUS version while a watch is in flight.
+  // Restoring here would replace the document for everyone with a version the reader
+  // did not ask for. `canRestore` also keeps the 30s timeout from being cancelled by the
   // incoming watch clearing the shared `loadingHistory` flag.
   const canRestore = pendingWatchVersion == null && !restoring
 
@@ -60,7 +60,7 @@ export const useVersionRestore = () => {
     if (restoring) return
 
     // A frame sent on a closed socket is QUEUED by the provider and flushed on
-    // reconnect, so an unguarded click can replace the document minutes later
+    // reconnect. An unguarded click can therefore replace the document minutes later
     // against content that has moved on, with nobody watching.
     if (!hocuspocusProvider || isProviderDisconnected(providerStatus)) {
       toast.Error('You are not connected to this document. Reconnect, then try again.')

@@ -57,7 +57,7 @@ describe('inline code — toggle', () => {
     cy.setCaretAfter('code') // collapsed caret at the right edge of the mark
     cy.toggleInlineCode()
     // Original bug: removeMark over an empty range was a no-op, so code mode
-    // stuck. toggleMark clears the stored mark, so the next char would be plain.
+    // stuck. `toggleMark` clears the stored mark, so the next char would be plain.
     cy.getEditor().should((e) => expect(e.isActive('inlineCode')).to.equal(false))
   })
 })

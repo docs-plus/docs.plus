@@ -67,8 +67,8 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
         : null
 
     return () => {
-      // Tear down only the IndexedDB connection, not the Y.Doc: StrictMode's
-      // double-mount reuses the memoized doc, so destroying it here rebinds the
+      // Tear down only the IndexedDB connection, not the Y.Doc. StrictMode's
+      // double-mount reuses the memoized doc, so destroying the doc here rebinds the
       // editor to a dead doc and silently kills Yjs undo. The doc is GC'd on unmount.
       persistence?.destroy()
     }

@@ -9,9 +9,9 @@ type TJoin2WorkspaceParams = {
 }
 
 /**
- * Join the current authenticated user to a workspace
- * @param workspaceId - The ID of the workspace to join
- * @returns A promise that resolves to a boolean indicating if the operation was successful
+ * Join the current authenticated user to a workspace.
+ * @param workspaceId - The ID of the workspace to join.
+ * @returns Whether the join succeeded.
  */
 export const joinWorkspace = async (
   arg: TJoin2WorkspaceParams

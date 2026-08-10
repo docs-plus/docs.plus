@@ -19,7 +19,7 @@ const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
 const INLINE_IMAGE_DATA_RE = /^data:image\/(?!svg\+xml)/i
 
 /**
- * Scheme gate for every stored media `src`: embed builders refuse to render a bad
+ * Scheme gate for every stored media `src`. Embed builders refuse to render a bad
  * URL, but the raw value still lands in the collaborative document and `window.open`.
  * `allowInlineImage` opts a path into base64 images; `Image.allowBase64` still decides.
  */
@@ -29,8 +29,8 @@ export const isSafeMediaSrc = (
 ): src is string => {
   if (typeof src !== 'string' || src.length === 0) return false
   if (allowInlineImage && INLINE_IMAGE_DATA_RE.test(src)) return true
-  // Test a control-stripped copy: the URL parser drops ASCII tab/LF/CR, so
-  // `java\tscript:` would otherwise smuggle a dangerous scheme past the regex.
+  // Test a control-stripped copy. The URL parser drops ASCII tab/LF/CR.
+  // So `java\tscript:` would otherwise smuggle a dangerous scheme past the regex.
   // eslint-disable-next-line no-control-regex -- matching C0 controls is the point
   return !DANGEROUS_SCHEME_RE.test(src.replace(/[\u0000-\u0020]+/g, ''))
 }

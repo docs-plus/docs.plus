@@ -15,7 +15,7 @@
 
 Tiptap extension for embedding media in the editor: images, audio, video, and provider embeds (YouTube, Vimeo, SoundCloud, Spotify, X, Loom).
 
-One kit call configures all nine nodes. Each media node gets a hover toolbar in its top-right corner, drag-to-resize, an editable caption, and a loading shell; toolbar popovers position through [`@docs.plus/floating-popover`](https://github.com/docs-plus/docs.plus/tree/main/packages/floating-popover) (Floating UI, bundled into `dist`) — no tippy.js.
+One kit call configures all nine nodes. Each media node gets a hover toolbar in its top-right corner, drag-to-resize, an editable caption, and a loading shell. Toolbar popovers position through [`@docs.plus/floating-popover`](https://github.com/docs-plus/docs.plus/tree/main/packages/floating-popover) (Floating UI, bundled into `dist`) — no tippy.js.
 
 ## Install
 
@@ -67,7 +67,7 @@ With `@tiptap/markdown` loaded, every media node round-trips through typed `![al
 | `loom`       | `![loom](src)`                                              |
 | `x`          | `![x](src)`                                                 |
 
-Reserved alts (`audio`, `video`, `youtube`, …) route to the matching node instead of the `image` node a GFM image token would otherwise create. Routing needs two things: the node must be enabled in the kit, and the URL must validate for that node type — a recognized media file extension for `audio`/`video`, a provider URL for the embeds. A token that fails either check imports as a plain `image` node, so `![audio](https://files.example.com/podcast?id=42)` becomes an image. Provider URLs in `[label](url)` link syntax stay hyperlinks; only the typed `![…](url)` form creates embed nodes. Pasting a bare media URL uses extension paste handlers (embed node); a bare URL line in a `.md` file does not become an embed unless you use typed `![…](url)` syntax or paste the URL directly.
+Reserved alts (`audio`, `video`, `youtube`, …) route to the matching node. A GFM image token would otherwise create an `image` node. Routing needs two things. The node must be enabled in the kit, and the URL must validate for that node type. Validation means a recognized media file extension for `audio`/`video`, and a provider URL for the embeds. A token that fails either check imports as a plain `image` node, so `![audio](https://files.example.com/podcast?id=42)` becomes an image. Provider URLs in `[label](url)` link syntax stay hyperlinks; only the typed `![…](url)` form creates embed nodes. Pasting a bare media URL uses extension paste handlers (embed node). A bare URL line in a `.md` file does not become an embed unless you use typed `![…](url)` syntax or paste the URL directly.
 
 Per-node markdown details: [Nodes](#nodes) → each node's README.
 
@@ -103,18 +103,18 @@ editor.commands.setX({ src: 'https://x.com/user/status/123' })
 editor.commands.setLoom({ src: 'https://www.loom.com/share/abcdef1234567890' })
 ```
 
-Every command also accepts layout options: `width`, `height`, `margin`, `float`, `clear`, and `display`; `justifyContent` is accepted by every command except `setImage`, whose node has no such attribute. Provider embeds accept the player options documented per node (for example YouTube `controls`, `start`, `modestbranding`) — see [Embeds](#embeds).
+Every command also accepts layout options: `width`, `height`, `margin`, `float`, `clear`, and `display`. `justifyContent` is accepted by every command except `setImage`, whose node has no such attribute. Provider embeds accept the player options documented per node (for example YouTube `controls`, `start`, `modestbranding`) — see [Embeds](#embeds).
 
 ## Styling
 
-Import the single shipped stylesheet — it bundles the resize gripper, loading shell,
+Import the single shipped stylesheet. It bundles the resize gripper, loading shell,
 media toolbar, and node-specific X/Loom/Spotify embed styles:
 
 ```ts
 import '@docs.plus/extension-hypermultimedia/styles.css'
 ```
 
-Every visual token is a `--hm-*` CSS custom property declared with `light-dark()`, so the toolbar, loading shell, gripper, and caption follow the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and they flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. The X embed plate deliberately keys on the node's `theme` attribute (the `X.theme` kit option) instead, so it matches what the embedded widget renders. Override any token to retheme:
+Every visual token is a `--hm-*` CSS custom property. Each is declared with `light-dark()`, so the toolbar, loading shell, gripper, and caption follow the nearest ancestor's `color-scheme`. Toggle `color-scheme: light | dark` on `<html>` (or any ancestor) and they flip with it; with the default `color-scheme: normal` they follow the OS `prefers-color-scheme`. The X embed plate deliberately keys on the node's `theme` attribute (the `X.theme` kit option) instead, so it matches what the embedded widget renders. Override any token to retheme:
 
 | Token                         | Description                                |
 | ----------------------------- | ------------------------------------------ |
@@ -162,7 +162,7 @@ The shimmer and spinner animations are disabled under `prefers-reduced-motion: r
 
 ### Gallery
 
-Each node type in the kit — local asset files (image, video, audio) and public provider embeds. Pairs follow your system light/dark preference. Gallery captures center each node (`margin: 0 auto`), wait for the loading shell to clear, hover for toolbar + gripper (X: toolbar only), then screenshot at a consistent width (480px embeds, 332px image). X embeds use a per-node `theme` (`light` / `dark`) so the tweet card matches the playground; set it on insert or from the toolbar Post options menu.
+Each node type in the kit — local asset files (image, video, audio) and public provider embeds. Pairs follow your system light/dark preference. Gallery captures center each node (`margin: 0 auto`) and wait for the loading shell to clear. They then hover for toolbar + gripper (X: toolbar only) and screenshot at a consistent width (480px embeds, 332px image). X embeds use a per-node `theme` (`light` / `dark`) so the tweet card matches the playground. Set it on insert or from the toolbar Post options menu.
 
 <details>
 <summary><strong>Image</strong> — local file</summary>
@@ -277,7 +277,7 @@ Each node type in the kit — local asset files (image, video, audio) and public
 Provider embeds resolve options in two layers: kit defaults (`HyperMultimediaKit.configure({ Youtube: { … } })`) and node attributes written at insert (`setYoutubeVideo({ … })`) — node attributes win. Query names follow each provider's embed API; the full option tables live in the node READMEs.
 
 - **YouTube** maps camelCase options to the official iframe params (`ccLanguage` → `cc_lang_pref`, `disableKBcontrols` → `disablekb`, …). Paste extracts `start` from `?t=`, `?start=`, or `#t=`; `loop: 1` auto-sets `playlist` to the video id; `nocookie: true` embeds from `youtube-nocookie.com`.
-- **X** sizes through oEmbed `maxwidth` presets — Compact (280), Standard (400, default), Wide (550) — plus a light/dark theme, both switchable from the toolbar's Post options; X has no drag-resize. `hide_media`, `hide_thread`, `lang`, and `dnt` ship as kit defaults and per-node attrs.
+- **X** sizes through oEmbed `maxwidth` presets — Compact (280), Standard (400, default), Wide (550) — plus a light/dark theme, both switchable from the toolbar's Post options. X has no drag-resize. `hide_media`, `hide_thread`, `lang`, and `dnt` ship as kit defaults and per-node attrs.
 - **Vimeo**, **SoundCloud**, and **Loom** follow the same two-layer pattern with their own params (`start_time`, the SoundCloud widget params, `hide_title`, …).
 - **Spotify** builds `open.spotify.com/embed/{type}/{id}` from any track, album, playlist, artist, show, or episode URL (or its "Copy embed" `<iframe>` code); `theme: 1` switches the player to light. It is fixed-height, so it pins its height on narrow columns instead of drag-scaling like the video embeds.
 
@@ -298,21 +298,21 @@ Hover a media node (desktop) or tap it (touch) and a toolbar appears at the node
 | Post options (size, theme) | overflow  | x                                                                       |
 
 Alignment places the node Left, Center, Right, Wrap left, or Wrap right. The wrap
-placements add a margin button beside Align — it shows the current gap and opens
-the presets (0"–1", 1/2" default) in a popover — separated from the remaining
-actions by a divider.
+placements add a margin button beside Align, separated from the remaining actions
+by a divider. The margin button shows the current gap and opens the presets
+(0"–1", 1/2" default) in a popover.
 
-Replace URL, in the `…` overflow menu, opens a URL editor in a dialog popover
-anchored to the node — below it, flipping above when space runs out. Confirming swaps the node's `src` in
-place — same node, caption, size, and placement — and validates against the
-node's own provider, so a YouTube node only accepts another YouTube URL; it
-never morphs the node type.
+Replace URL sits in the `…` overflow menu. It opens a URL editor in a dialog
+popover anchored to the node — below it, flipping above when space runs out.
+Confirming swaps the node's `src` in place — same node, caption, size, and
+placement. It validates against the node's own provider, so a YouTube node only
+accepts another YouTube URL. It never changes the node type.
 
 ### Customizing actions
 
 Three kit hooks, in order of reach.
 
-`mediaActions` rewrites the resolved action list per node. Each button is a brick with a stable `id`; `placement` picks the row (inline bar vs `…` overflow), and array order is final within each row. `composeMediaActions` is an immutable lego-style builder so you rearrange by id instead of splicing arrays:
+`mediaActions` rewrites the resolved action list per node. Each button is a brick with a stable `id`. `placement` picks the row (inline bar vs `…` overflow), and array order is final within each row. `composeMediaActions` is an immutable lego-style builder. Rearrange by id instead of splicing arrays:
 
 ```ts
 import { composeMediaActions } from '@docs.plus/extension-hypermultimedia'
@@ -331,7 +331,7 @@ HyperMultimediaKit.configure({
 })
 ```
 
-Builder verbs: `add(action, { before | after })` (inserts, or moves if the id exists), `move`, `replace`, `remove`, `setPlacement` / `toInline` / `toOverflow`, `order(ids)`, `has`, `result`.
+Builder verbs: `add(action, { before | after })`, `move`, `replace`, `remove`, `setPlacement` / `toInline` / `toOverflow`, `order(ids)`, `has`, `result`. `add` inserts, or moves if the id exists.
 
 For pure rearrangement, `layoutMediaActions` is declarative sugar — list ids per row; unlisted known actions keep their placement and append after:
 
@@ -359,16 +359,16 @@ A `MediaAction` is `{ id, label, icon?, placement: 'inline' | 'overflow', isVisi
 Return `null`/`undefined` to keep the built-in Material icon; return markup to override.
 
 `replaceUrlPopover` swaps the Replace URL dialog's content. The factory receives
-`ReplaceUrlPopoverOptions` — `{ editor, nodeType, nodePos, src, validate, apply, close }`,
-where `validate` returns an error message or `null` and `apply` commits the
-normalized URL and closes — and returns the element to mount, or `null` to render
+`ReplaceUrlPopoverOptions` — `{ editor, nodeType, nodePos, src, validate, apply, close }`.
+`validate` returns an error message or `null`, and `apply` commits the normalized
+URL and closes. The factory returns the element to mount, or `null` to render
 a host surface instead (the webapp opens a bottom-sheet on mobile). The built-in
 content (`createReplaceUrlPopover`) and the action's open path
 (`openReplaceUrlPopover`) are exported for reuse.
 
 `mediaToolbar` replaces the toolbar element outright — see [Build your own toolbar](#build-your-own-toolbar).
 
-`isUploadedMedia` marks which image/video/audio nodes are host uploads, so View original stays hidden for them (it always shows for provider embeds):
+`isUploadedMedia` marks which image/video/audio nodes are host uploads, so View original stays hidden for them. View original always shows for provider embeds:
 
 ```ts
 HyperMultimediaKit.configure({
@@ -378,14 +378,14 @@ HyperMultimediaKit.configure({
 
 ### Build your own toolbar
 
-The `mediaToolbar` factory owns the whole surface. It receives `MediaToolbarOptions` — `{ target, editor, nodeType, nodePos }` — and returns the element to mount, or `null` to render a host surface elsewhere (the webapp returns `null` on mobile and opens a bottom-sheet).
+The `mediaToolbar` factory owns the whole surface. It receives `MediaToolbarOptions` — `{ target, editor, nodeType, nodePos }`. It returns the element to mount, or `null` to render a host surface elsewhere. The webapp returns `null` on mobile and opens a bottom-sheet.
 
 The mounted element is stamped `data-hm-toolbar`, so reuse on re-hover and removal on dismissal are handled for you — no class required. Positioning inside the media wrapper is yours; add the `.media-toolbar` class to adopt the built-in top-right skin.
 
 Two rules for action handlers:
 
 - **Re-resolve the position.** `nodePos` is a snapshot at open; edits above the node shift it. Call `resolveMediaNodePos(editor.view, target, nodeType)` at action time.
-- **Use the popover helpers** for anchored menus: `openToolbarPopover(trigger, body, kind)` toggles a menu popover (second click on the same kind closes); pass `{ positionReference }` to align against a larger surface (e.g. the toolbar bar). Prefer `openMediaPopover({ kind, content, trigger, variant })` for new call sites — it owns dismiss/shift knobs and also powers the Replace URL dialog. Outside-click and Escape dismissal are built in; `closeToolbarPopover()` closes it.
+- **Use the popover helpers** for anchored menus: `openToolbarPopover(trigger, body, kind)` toggles a menu popover (second click on the same kind closes). Pass `{ positionReference }` to align against a larger surface (e.g. the toolbar bar). Prefer `openMediaPopover({ kind, content, trigger, variant })` for new call sites — it owns dismiss/shift knobs and also powers the Replace URL dialog. Outside-click and Escape dismissal are built in; `closeToolbarPopover()` closes it.
 
 `attachTooltip(myButton, 'Do thing')` gives a custom button the built-in hover/focus tooltip, re-exported from the bundled `@docs.plus/floating-tooltip`; it returns a detach function for surfaces that re-render in place.
 
@@ -424,7 +424,7 @@ HyperMultimediaKit.configure({
 })
 ```
 
-`createMediaToolbar`, `resolveMediaActions`, the `MediaAction` types, the action handlers (`viewOriginalMedia`, `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`, `isDownloadable`), and the tooltip helpers (`attachTooltip`, `hideTooltip`) are exported so a custom surface can reuse the built-in behavior.
+`createMediaToolbar`, `resolveMediaActions`, and the `MediaAction` types are exported. So are the action handlers (`viewOriginalMedia`, `downloadMedia`, `copyMediaNode`, `removeMediaNode`, `canViewOriginal`, `isDownloadable`) and the tooltip helpers (`attachTooltip`, `hideTooltip`). A custom surface can reuse the built-in behavior.
 
 Adopting the skin? These class names are the stable styling contract:
 
@@ -442,11 +442,11 @@ Adopting the skin? These class names are the stable styling contract:
 
 ### Caption
 
-Every media node view has an editable `<figcaption>`; the text is stored in the node's `caption` attribute, which is the source of truth — it persists through collaboration and JSON. Two limits: markdown export keeps `![alt](src)` only, and HTML `<figure>/<figcaption>` round-trip (render **and** parse) is supported for `image` only. Video, audio, embeds, and X keep the editable caption and attribute but emit no `<figure>` in HTML, so every path that serializes to HTML — clipboard copy/paste and the toolbar Copy action — drops their caption, and re-importing exported HTML can't resurrect one as stray text.
+Every media node view has an editable `<figcaption>`. The text is stored in the node's `caption` attribute, which is the source of truth — it persists through collaboration and JSON. Two limits: markdown export keeps `![alt](src)` only, and HTML `<figure>/<figcaption>` round-trip (render **and** parse) is supported for `image` only. Video, audio, embeds, and X keep the editable caption and attribute, but they emit no `<figure>` in HTML. Every path that serializes to HTML therefore drops their caption: clipboard copy/paste and the toolbar Copy action. Re-importing exported HTML cannot bring a caption back as stray text.
 
 ## Resize
 
-Hover a media node (desktop) or tap it (touch) to activate the gripper: side handles resize one axis, corner handles resize both (hold Shift to lock the aspect ratio). Sizes clamp to the editor content column; committed `width`/`height` live on the node attributes, so resizes persist and sync through collaboration. Escape cancels a drag without committing. X embeds size through toolbar presets instead — see [Embeds](#embeds).
+Hover a media node (desktop) or tap it (touch) to activate the gripper. Side handles resize one axis, and corner handles resize both (hold Shift to lock the aspect ratio). Sizes clamp to the editor content column; committed `width`/`height` live on the node attributes, so resizes persist and sync through collaboration. Escape cancels a drag without committing. X embeds size through toolbar presets instead — see [Embeds](#embeds).
 
 Backspace/Delete removes the hovered media node — unless the caret is in text or a caption, which keep normal editing.
 
@@ -460,7 +460,7 @@ Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })
 
 Two tradeoffs to know:
 
-- Paste claims are per provider under this recipe: YouTube, SoundCloud, and Spotify only claim a URL that is the entire pasted block, while Loom, Vimeo, and X claim their URL anywhere in the pasted text. A media URL _typed_ mid-sentence gets neither a media node nor an autolink — the veto applies to hyperlink's paste-linkify and typed autolink alike. Explicit linking (Mod-K / `setHyperlink`) still works — that path skips `shouldAutoLink`.
+- Paste claims are per provider under this recipe. YouTube, SoundCloud, and Spotify only claim a URL that is the entire pasted block. Loom, Vimeo, and X claim their URL anywhere in the pasted text. A media URL _typed_ mid-sentence gets neither a media node nor an autolink — the veto applies to hyperlink's paste-linkify and typed autolink alike. Explicit linking (Mod-K / `setHyperlink`) still works — that path skips `shouldAutoLink`.
 - `isMediaUrl` matches every provider regardless of kit configuration, so a host that disables providers vetoes URLs nothing will claim. Compose the veto from the per-provider validators for only the providers you enable:
 
 ```ts
@@ -474,7 +474,7 @@ Hyperlink.configure({
 
 ## Image file paste (`editorFileUpload`)
 
-Pasting an image **file** (a screenshot, a copied image) never inserts base64 into the document. The paste handler calls `preventDefault()` and dispatches one `CustomEvent` named `editorFileUpload` on `document` with `{ files, editor }` in `detail` — every image on the clipboard arrives in that one event, and the host decides where the bytes go (upload, blob URL, …) and inserts the nodes itself:
+Pasting an image **file** (a screenshot, a copied image) never inserts base64 into the document. The paste handler calls `preventDefault()` and dispatches one `CustomEvent` named `editorFileUpload` on `document` with `{ files, editor }` in `detail`. Every image on the clipboard arrives in that one event. The host decides where the bytes go (upload, blob URL, …). The host inserts the nodes itself:
 
 ```ts
 import type { Editor } from '@tiptap/core'
@@ -492,7 +492,7 @@ document.addEventListener('editorFileUpload', (event) => {
 })
 ```
 
-If your handler awaits anything before inserting (an upload, an image decode), insert sequentially — otherwise the nodes land in completion order rather than clipboard order.
+If your handler awaits anything before inserting (an upload, an image decode), insert sequentially. Otherwise the nodes land in completion order rather than clipboard order.
 
 Without a listener, pasted image files are dropped silently. Pasted image **URLs** (plain text) insert an `image` node directly; `data:` URLs follow the `allowBase64` option.
 
@@ -516,7 +516,7 @@ Advanced: `createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`, and typ
 
 ## Migrating from 1.x
 
-2.0.0 renames node types to camelCase and rebrands Twitter to X. See the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md) for the full breaking-change list.
+Version 2.0.0 renames node types to camelCase and rebrands Twitter to X. See the [CHANGELOG](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md) for the full breaking-change list.
 
 **docs.plus / Hocuspocus:** `bun run --filter @docs.plus/hocuspocus migrate:media-node-names` (preview with `:dry`).
 
@@ -528,11 +528,11 @@ Embed URL parsing rejects invalid hosts before insert (`guards/invalid-urls` in 
 
 ## TypeScript
 
-Definitions ship in `dist/`. Main exports: `HyperMultimediaKit` (bundles all nine media nodes — enable, configure, or disable each via kit options; the nodes are not individually exported), `isMediaUrl` plus per-host validators (`isValidYoutubeUrl`, `isValidXUrl`, …), `detectMediaType(url)` and its `MediaNodeType` union — `detectMediaType` also resolves raw video/audio URLs, which `isMediaUrl` skips on purpose so pasted `.mp4`/`.mp3` links stay links — loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. Insert commands (`setImage`, `setX`, …) are typed on `editor.commands` through the bundled `MediaPublicCommands` augmentation, and their option types are exported (`SetImageOptions`, `UpdateImageDimensionsParams`, `SetVideoOptions`, `SetAudioOptions`, `SetYoutubeVideoOptions`, `SetVimeoOptions`, `SetSoundCloudOptions`, `SetSpotifyOptions`, `SetLoomOptions`, `AddXOptions`). Per-node embed options live under each node's module — see [Nodes](#nodes).
+Definitions ship in `dist/`. Main exports: `HyperMultimediaKit`, `isMediaUrl` plus per-host validators (`isValidYoutubeUrl`, `isValidXUrl`, …), and `detectMediaType(url)` with its `MediaNodeType` union. The package also exports loading-shell helpers (`createDefaultMediaLoadingShell`, `wrapMediaWithLoadingShell`), toolbar helpers (`resolveMediaNodePos`, `openToolbarPopover`, `closeToolbarPopover`, `createReplaceUrlPopover`, `openReplaceUrlPopover`), toolbar types (`MediaActionContext`, `MediaAction`), and kit options types. `HyperMultimediaKit` bundles all nine media nodes — enable, configure, or disable each via kit options. The nodes are not individually exported. `detectMediaType` also resolves raw video/audio URLs, which `isMediaUrl` skips on purpose so pasted `.mp4`/`.mp3` links stay links. Insert commands (`setImage`, `setX`, …) are typed on `editor.commands` through the bundled `MediaPublicCommands` augmentation. Their option types are exported: `SetImageOptions`, `UpdateImageDimensionsParams`, `SetVideoOptions`, `SetAudioOptions`, `SetYoutubeVideoOptions`, `SetVimeoOptions`, `SetSoundCloudOptions`, `SetSpotifyOptions`, `SetLoomOptions`, `AddXOptions`. Per-node embed options live under each node's module — see [Nodes](#nodes).
 
 ## Part of docs.plus
 
-This extension is built for and maintained by [docs.plus](https://docs.plus) — a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
+This extension is built for and maintained by [docs.plus](https://docs.plus). docs.plus is a free, real-time collaboration tool that lets communities organize knowledge hierarchically, with a chat thread on every heading. docs.plus runs these packages from source in production, so every release is exercised there before it reaches npm.
 
 - Website: [docs.plus](https://docs.plus)
 - Project README: [docs-plus/docs.plus](https://github.com/docs-plus/docs.plus#readme)

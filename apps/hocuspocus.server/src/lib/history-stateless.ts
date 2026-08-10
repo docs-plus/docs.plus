@@ -29,7 +29,7 @@ export type HistoryListResult = {
   versions: HistoryVersionMeta[]
   latestSnapshot: HistorySnapshot | null
   /**
-   * Uid -> profile side table rather than a profile per row: this list is
+   * Uid -> profile side table rather than a profile per row. This list is
    * unpaginated and a handful of authors repeat across every version of a doc.
    */
   profiles: Record<string, ProfileLite>
@@ -47,7 +47,7 @@ const distinctUserIds = (rows: HistoryVersionMeta[]): string[] => {
 }
 
 // Attribution is decoration on the payload the whole sidebar is built from, so
-// a profile-service outage degrades to bare uids; a throw here would surface as
+// a profile-service outage degrades to bare uids. A throw here would surface as
 // history_failed and blank the client's list.
 const resolveProfiles = async (userIds: string[]): Promise<Record<string, ProfileLite>> => {
   if (userIds.length === 0) return {}
@@ -101,9 +101,9 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
   switch (type) {
     case 'history.list': {
       // Latest is the newest row, so query 2 does not depend on query 1's version.
-      // Both order by version alone: the (documentId, version) unique index serves
-      // it in one step, and it keeps the list head and latestSnapshot on the same
-      // row when an out-of-order commit makes createdAt disagree.
+      // Both order by version alone. The (documentId, version) unique index serves it
+      // in one step. Version order also keeps the list head and latestSnapshot on the
+      // same row when an out-of-order commit makes createdAt disagree.
       // Bindings run beside the transaction, not after it: two round trips, not three.
       const [[rows, full], clientAuthors] = await Promise.all([
         prisma.$transaction([

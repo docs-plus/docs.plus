@@ -38,7 +38,7 @@ describe('inline code — input rule', () => {
 
   // Regression: the prefix guard must stay a lookbehind. With the old in-match
   // capture, a prefix char equal to the content char made markInputRule find the
-  // wrong range — typing x`x` collapsed all four chars to one code-marked "x".
+  // wrong range. Typing x`x` then collapsed all four chars to one code-marked "x".
   it('keeps a prefix char equal to the code content intact (x`x`)', () => {
     cy.typeInEditor('x`x`')
     cy.get('#editor code').should('have.text', 'x')

@@ -33,7 +33,7 @@ Spec scope — 16 files — lives in [cypress/e2e/README.md](./cypress/e2e/READM
 
 `touch-tap.cy.ts` pins the synthetic layer. iOS Safari's caret/keyboard races, tap-delay heuristics, and auto-scroll cannot be reproduced with synthetic events — verify on hardware, iOS Safari and Android Chrome both:
 
-1. Tap a link in an editable doc — the preview popover opens; no navigation, no keyboard, no scroll jump (caret suppression on link taps is webapp-owned: `iosCaretFixPlugin` early-returns on link targets).
+1. Tap a link in an editable doc — the preview popover opens; no navigation, no keyboard, no scroll jump. Caret suppression on link taps is webapp-owned: `iosCaretFixPlugin` early-returns on link targets.
 2. Dismiss the popover, then tap plain text — the caret lands at the tap point and the keyboard opens.
 3. Tap a link in a read-only doc — the link opens in a new tab.
 

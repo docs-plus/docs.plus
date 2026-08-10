@@ -18,8 +18,8 @@ export function buildOptimizedDecorations(
       key: gripperInfo.keyId || `gripper-${gripperInfo.from}`
     }
     // Lazy `toDOM`: prosemirror-view only reuses a keyed widget whose previous
-    // `toDOM` has no parentNode, so an eagerly built element rebuilds every
-    // gripper — 9 elements and 8 listeners per node — on every decoration pass.
+    // `toDOM` has no parentNode. An eagerly built element therefore rebuilds every
+    // gripper on every decoration pass — 9 elements and 8 listeners per node.
     return Decoration.widget(
       gripperInfo.from,
       () => createMediaResizeGripper(gripperInfo, editor),

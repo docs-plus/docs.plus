@@ -190,8 +190,8 @@ describe('buildHyperlinkCommands', () => {
     }
   })
 
-  // `satisfies` in `index.ts` is the compile-time guard for this surface;
-  // the key-set check below is the runtime smoke that catches tree-shake or
+  // `satisfies` in `index.ts` is the compile-time guard for this surface.
+  // The key-set check below is the runtime smoke that catches tree-shake or
   // build-output drops that still typecheck.
   const expectedKeys = [
     'setHyperlink',

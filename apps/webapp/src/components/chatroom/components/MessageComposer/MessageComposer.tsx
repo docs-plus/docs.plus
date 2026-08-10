@@ -184,8 +184,9 @@ const MessageComposer = ({
       const { isOpen, close } = useComposerEmojiPanelStore.getState()
       if (!isOpen) return
       // Landing back ON our own entry (not off it) means some other surface's back()
-      // consumed an entry pushed on top of ours (e.g. useHistoryDismiss closing an
-      // unrelated sheet) — not a user gesture aimed at this panel. Ignore it.
+      // consumed an entry pushed on top of ours. One example is useHistoryDismiss
+      // closing an unrelated sheet. That is not a user gesture aimed at this panel,
+      // so ignore it.
       if ((window.history.state as { composerEmojiPanel?: true } | null)?.composerEmojiPanel) return
       close()
       editor.commands.focus()

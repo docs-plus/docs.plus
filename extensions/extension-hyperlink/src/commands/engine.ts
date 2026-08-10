@@ -1,6 +1,6 @@
 // Returns composable Tiptap `Command` thunks acting on the shared `tr`, so
 // callers can chain `extendMarkRange` etc. without a nested
-// `editor.chain().run()` — that produced "Applying a mismatched transaction".
+// `editor.chain().run()`. The nested form produced "Applying a mismatched transaction".
 
 import type { Command, CommandProps } from '@tiptap/core'
 

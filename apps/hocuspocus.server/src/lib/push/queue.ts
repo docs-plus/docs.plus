@@ -42,8 +42,8 @@ export const pushQueue = queueConnection
           age: 24 * 3600
         },
         // pushDeadLetterQueue already holds the payload and the failure reason
-        // from the final attempt, so an unbounded failed set is a second copy in
-        // the Redis that also holds every claim-check payload. getFailedCount()
+        // from the final attempt. An unbounded failed set is therefore a second copy
+        // in the Redis that also holds every claim-check payload. `getFailedCount()`
         // below therefore reports a 200/7-day window, not a lifetime total.
         removeOnFail: {
           count: 200,
@@ -160,10 +160,10 @@ export function createPushWorker(): Worker<PushJobData> | null {
               })
           }
 
-          // Unconditional, like the email twin: a batch where every subscription
-          // failed on a non-404/410 status carries no `error`, so an `&& error`
-          // guard completed the job and left jobs_total{status="failed"} and the
-          // DLQ flat while every push for that user was dropped.
+          // Unconditional, like the email twin. A batch where every subscription
+          // failed on a non-404/410 status carries no `error`. An `&& error`
+          // guard therefore completed the job and left jobs_total{status="failed"}
+          // and the DLQ flat while every push for that user was dropped.
           if (!result.success) {
             throw new Error(result.error || 'Failed to send push notification')
           }

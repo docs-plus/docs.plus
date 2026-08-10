@@ -66,7 +66,7 @@ const useMapDocumentAndWorkspace = (docMetadata: DocMetadata): UseMapDocumentAnd
       setError(null)
       try {
         // The workspace row is written server-side by join_workspace (SECURITY
-        // DEFINER, via useJoinWorkspace). PostgREST cannot write it: `on_conflict`
+        // DEFINER, via useJoinWorkspace). PostgREST cannot write it. `on_conflict`
         // and `select` both pull workspaces_member_select onto the new row, and the
         // caller is not a member yet, so the insert always 403s. See CLAUDE.md.
         const channels = await fetchChannels(docMetadata.documentId, profile?.id)

@@ -15,8 +15,8 @@ const nestedType = (item: Y.Item): Y.AbstractType<unknown> | null => {
 
 /**
  * Every clientID still holding live content anywhere under one root item.
- * Attribute items count — a task checkbox toggle lives in `_map`, not in text —
- * but volatile keys do not, or the toc-id rewriter outranks the real author.
+ * Attribute items count: a task checkbox toggle lives in `_map`, not in
+ * text. Volatile keys do not, or the toc-id rewriter outranks the real author.
  */
 const clientIdsUnder = (rootItem: Y.Item): number[] => {
   const clients = new Set<number>()
@@ -41,7 +41,7 @@ const clientIdsUnder = (rootItem: Y.Item): number[] => {
 
 /**
  * Returns one clientID list per top-level block of `afterDoc`, or null when the
- * live Y root items do not align with it — misattributing block i to block j's
+ * live Y root items do not align with it. Misattributing block i to block j's
  * author is worse than no attribution.
  */
 export const collectBlockClientIds = (

@@ -28,9 +28,9 @@ export const getGoogleFaviconUrl = (url: string, size: 32 | 64 = 32): string | u
 }
 
 /**
- * Image URLs are gated to http(s) only — a hostile metadata source could
- * otherwise smuggle a `data:` or `javascript:` URL into the icon slot, which is
- * rendered into an `<img src>` downstream.
+ * Image URLs are gated to http(s) only. A hostile metadata source could otherwise
+ * smuggle a `data:` or `javascript:` URL into the icon slot. That slot is rendered
+ * into an `<img src>` downstream.
  */
 export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => {
   const str = (val: unknown): string | undefined =>

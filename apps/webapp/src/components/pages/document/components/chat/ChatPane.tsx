@@ -27,9 +27,9 @@ const ChatPane = () => {
 
   /**
    * Height is written to the DOM, never held in React state. iOS rewrites
-   * `--visual-viewport-height` in a burst on every keyboard step, and a state write
-   * per step would re-render this whole subtree — `ChatContainerMobile` is not
-   * memoized — and thrash Virtuoso's measurement mid-animation.
+   * `--visual-viewport-height` in a burst on every keyboard step. A state write per
+   * step would re-render this whole subtree, because `ChatContainerMobile` is not
+   * memoized, and would thrash Virtuoso's measurement mid-animation.
    */
   useEffect(() => {
     const el = ref.current

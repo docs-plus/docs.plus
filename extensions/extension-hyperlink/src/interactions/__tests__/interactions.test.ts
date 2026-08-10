@@ -147,8 +147,8 @@ describe('createInteractions', () => {
 
   it('returns zero plugins when ALL three options are disabled — input/paste rules still register', () => {
     // Sanity check: a host that disables every plugin still wants the
-    // markdown input rule and the linkify paste rule (those are
-    // separate configuration knobs, not gated by the same options).
+    // markdown input rule and the linkify paste rule. Those two rules are
+    // separate configuration knobs, not gated by the same options.
     const ctx = createLinkContext({
       editor: fakeEditor,
       type: fakeMarkType,

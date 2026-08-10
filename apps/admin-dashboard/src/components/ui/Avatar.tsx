@@ -63,9 +63,9 @@ export interface AvatarProps {
 }
 
 /**
- * Resolves an avatar through a storage → src → initial-letter fallback chain:
- * a custom upload (userId + avatarUpdatedAt) builds the storage bucket URL, else
- * `src` (the OAuth avatar_url), else a colored initial. Mirrors the webapp.
+ * Resolves an avatar through a storage → src → initial-letter fallback chain. A custom
+ * upload (userId + avatarUpdatedAt) builds the storage bucket URL. Otherwise it uses
+ * `src` (the OAuth avatar_url), and falls back to a colored initial. Mirrors the webapp.
  */
 export function Avatar({
   userId,

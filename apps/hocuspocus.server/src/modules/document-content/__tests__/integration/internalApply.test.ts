@@ -233,8 +233,8 @@ describe('Internal content apply — cold document', () => {
 
     expect(response.status).toBe(422)
     // Emptiness is only knowable once the document is open, so the release
-    // disconnect still flushes — but it flushes the unchanged document, and
-    // production's store() skips a draft outright.
+    // disconnect still flushes. The disconnect flushes the unchanged document,
+    // and production's store() skips a draft outright.
     for (const call of storeCalls) {
       expect(decodeState(call.state).json.content).toHaveLength(0)
     }
@@ -292,8 +292,8 @@ describe('Internal content apply — wedged persistence', () => {
     expect(firstBody.error.message).toContain('wedged')
 
     // Stop the store rejecting before the second call. The debouncer never
-    // cleared the failed execution, so the document stays wedged on its own —
-    // leaving the store rejecting would let a healthy server pass this too.
+    // cleared the failed execution, so the document stays wedged on its own.
+    // Leaving the store rejecting would let a healthy server pass this too.
     rejectingDocuments.delete(WEDGED_DOC)
     const storeCallsBefore = storeCalls.length
 

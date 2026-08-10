@@ -60,10 +60,10 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Generic fetch wrapper with error handling and authentication.
- * System-wide aggregates and the user/channel directory must route through the
- * admin-gated service_role API: the browser's anon-key client is RLS-scoped
- * (`email`, `push_subscriptions`, `email_queue` are revoked from `authenticated`).
+ * Generic fetch wrapper with error handling and authentication. System-wide
+ * aggregates and the user/channel directory must route through the admin-gated
+ * service_role API. The browser's anon-key client is RLS-scoped: `email`,
+ * `push_subscriptions`, and `email_queue` are revoked from `authenticated`.
  */
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const accessToken = await getAccessToken()

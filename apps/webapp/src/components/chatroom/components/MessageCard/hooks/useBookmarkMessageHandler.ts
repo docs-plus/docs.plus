@@ -7,12 +7,11 @@ import { TMsgRow } from '@types'
 import { useCallback } from 'react'
 
 /**
- * `toggle_message_bookmark` writes to the separate `message_bookmarks`
- * table, so realtime postgres_changes on `messages` doesn't fire (and
- * the bookmark fields are per-user anyway — a single message row can't
- * carry them). We patch the Virtuoso row in place from the RPC's
- * `{ action, bookmark_id }` response so the BookmarkIndicator and the
- * tinted-bg in MessageCardContext flip instantly.
+ * `toggle_message_bookmark` writes to the separate `message_bookmarks` table,
+ * so realtime postgres_changes on `messages` doesn't fire. The bookmark fields
+ * are per-user anyway, and a single message row can't carry them. We patch the
+ * Virtuoso row in place from the RPC's `{ action, bookmark_id }` response, so
+ * the BookmarkIndicator and the tinted-bg in MessageCardContext flip instantly.
  */
 export const useBookmarkMessageHandler = () => {
   const { listRef } = useChatroomContext()

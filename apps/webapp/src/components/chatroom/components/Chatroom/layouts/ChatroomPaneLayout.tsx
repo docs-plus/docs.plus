@@ -16,9 +16,9 @@ type Props = {
  * At 44px this is also the smallest size an assistive technology can reach.
  */
 const ChatPaneGrabber = () => {
-  // The stored mode, not the rendered one: while the emoji panel promotes the pane to
-  // `expanded` the promotion overrides any write, so a grabber driven by the derived
-  // value labels itself "Collapse chat" and then moves nothing. Hidden instead.
+  // The stored mode, not the rendered one. While the emoji panel promotes the pane to
+  // `expanded`, the promotion overrides any write. A grabber driven by the derived value
+  // therefore labels itself "Collapse chat" and then moves nothing. Hidden instead.
   const storedMode = useChatStore((state) => state.chatRoom.paneMode)
   const renderedMode = useChatPaneMode()
   const setPaneMode = useChatStore((state) => state.setPaneMode)

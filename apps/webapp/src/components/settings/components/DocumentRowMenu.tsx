@@ -233,8 +233,8 @@ function RowMenuPopoverPanel(props: DocumentRowMenuProps) {
 }
 
 /**
- * In-tree (not portaled): the settings modal's focus trap and outside-press dismiss must
- * treat the sheet as inside; the full-screen blurred overlay is the fixed containing block.
+ * In-tree, not portaled. The settings modal's focus trap and outside-press dismiss must
+ * treat the sheet as inside. The full-screen blurred overlay is the fixed containing block.
  */
 function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void }) {
   const { onClose } = props
@@ -245,8 +245,8 @@ function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void 
     sheetRef.current?.focus()
   }, [])
 
-  // Capture-phase Escape closes the sheet before the settings modal's own dismiss sees it —
-  // but never while a GlobalDialog confirm (Private ON, delete) is stacked above the sheet.
+  // Capture-phase Escape closes the sheet before the settings modal's own dismiss sees it.
+  // Never close while a GlobalDialog confirm (Private ON, delete) is stacked above the sheet.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return

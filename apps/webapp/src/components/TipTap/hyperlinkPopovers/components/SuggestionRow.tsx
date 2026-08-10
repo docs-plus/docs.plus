@@ -32,7 +32,7 @@ export const SuggestionRow = memo(function SuggestionRow({
       data-suggestion-kind={suggestion.kind}
       onMouseEnter={onMouseEnter}
       onMouseDown={(e) => {
-        // Prevent the URL input from losing focus on row click; the
+        // Prevent the URL input from losing focus on row click. The
         // mousedown default would blur the input and tear down the
         // popover before onClick fires on desktop.
         e.preventDefault()

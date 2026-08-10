@@ -23,7 +23,7 @@ const asTitleHeading = (node: JsonNode): JsonNode => ({
 })
 
 // A promoted paragraph keeps its words but neither its styling nor its
-// paragraph-only attrs: bold or highlighted runs inside a title heading read as
+// paragraph-only attrs. Bold or highlighted runs inside a title heading read as
 // damage, not as intent.
 const promotedHeading = (node: JsonNode): JsonNode => ({
   type: 'heading',

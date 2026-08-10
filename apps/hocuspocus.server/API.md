@@ -5,7 +5,7 @@
 
 The REST API runs from `src/index.ts` on a Hono app. This document covers the HTTP surface only. For the three-process architecture and environment variables, see [Readme.md](./Readme.md) and [ENV.md](./ENV.md). For the WebSocket protocol, see [WebSocket API](#websocket-api).
 
-**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`). Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge — publishing them is a routing decision, not a code change.
+**Machine-readable spec.** The same surface is published as OpenAPI 3.1 at `GET /openapi.json`, with Swagger UI at `GET /docs` (`src/modules/openapi/`). Request schemas are generated from the live zod schemas, so they cannot drift from validation. Traefik routes only `/api` and `/health`, so both paths are reachable in local and internal environments but **not** on the public edge. Publishing them is a routing decision, not a code change.
 
 ## Contents
 
@@ -41,9 +41,9 @@ Three schemes apply, by route group:
 
 Service-role checks use a constant-time compare (`verifyServiceRole` in `src/lib/auth.ts`). When `SUPABASE_SERVICE_ROLE_KEY` is unset they fail closed in **every** environment, non-production included. Admin routes verify the JWT with Supabase, then require a matching row in `admin_users` (`src/api/middleware/adminAuth.ts`); failures return `401` (no/invalid token) or `403` (not an admin).
 
-**List owner filter (shipped):** When `ownerId` is present on `GET /api/documents`, the caller must send a valid `token` header and `ownerId` must equal the JWT subject (`sub`). Missing token → `401`; mismatched `ownerId` → `403`.
+**List owner filter (shipped):** When `ownerId` is present on `GET /api/documents`, the caller must send a valid `token` header. `ownerId` must equal the JWT subject (`sub`). Missing token → `401`; mismatched `ownerId` → `403`.
 
-**Unauthenticated fleet list:** `GET /api/documents` without `ownerId` returns **public rows only** — `isPrivate: true` rows are clamped out for any unverified caller or owner-less list (both the page query and its `total` count). This closes anonymous `?title=` enumeration of private titles/descriptions. Owner-scoped calls (`ownerId === token.sub`) are unaffected and still see the owner's private docs. The webapp Settings → Documents UI always sends `ownerId` + token and never uses the fleet path.
+**Unauthenticated fleet list:** `GET /api/documents` without `ownerId` returns **public rows only**. `isPrivate: true` rows are clamped out for any unverified caller or owner-less list (both the page query and its `total` count). This closes anonymous `?title=` enumeration of private titles/descriptions. Owner-scoped calls (`ownerId === token.sub`) are unaffected and still see the owner's private docs. The webapp Settings → Documents UI always sends `ownerId` + token and never uses the fleet path.
 
 ## Response envelope
 
@@ -178,7 +178,7 @@ Two further fields are accepted **only** under the service-role key: `content` (
 
 Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`).
 
-Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open — anyone, signed in or not, may set `title` / `description` / `keywords` — but its locks cannot move, because a document with no owner has nobody to be private for; those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request.
+Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open: anyone, signed in or not, may set `title` / `description` / `keywords`. But its locks cannot move, because a document with no owner has nobody to be private for. Those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request.
 
 ### DELETE /api/documents/:documentId
 
@@ -190,7 +190,7 @@ Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`.
 
 ### POST /api/documents/:documentId/duplicate
 
-Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix and the snapshot's URLs repointed there, so each document owns its media and purging one never strips the other. Non-owner → `403`; soft-deleted source → `404`.
+Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix, and the snapshot's URLs are repointed there. Each document therefore owns its media, and purging one never strips the other. Non-owner → `403`; soft-deleted source → `404`.
 
 ### DELETE /api/documents/:documentId/permanent
 
@@ -210,23 +210,23 @@ Bulk restore (owner-only). Body `{ ids: string[] }` (1–500). Returns `{ restor
 
 ## Document content
 
-Read and write a document's body from a server-side integration. Writes reach live collaborators in real time: the REST process forwards them to the collaboration process, which applies them to the in-memory Y.Doc through the same pipeline a browser edit uses. Module: `src/modules/document-content/`.
+Read and write a document's body from a server-side integration. Writes reach live collaborators in real time. The REST process forwards them to the collaboration process, which applies them to the in-memory Y.Doc through the same pipeline a browser edit uses. Module: `src/modules/document-content/`.
 
 All three surfaces are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`). A user JWT gets `401`.
 
 ### Identifying a document
 
-Content routes address documents by **`documentId`** — the 19-character id that is also the collaboration room name and the snapshot key. Never by slug: the slug read never 404s, it synthesizes a draft and mints a fresh `documentId` on every call, so an automation trusting it would address a room no client will ever join.
+Content routes address documents by **`documentId`** — the 19-character id that is also the collaboration room name and the snapshot key. Never by slug. The slug read never 404s: it synthesizes a draft and mints a fresh `documentId` on every call. So an automation trusting it would address a room no client will ever join.
 
 Resolve a slug once with `GET /api/documents/:docName` and keep the `documentId` from the response. A synthesized draft carries no `id` or `createdAt` — that absence is how you detect a mistyped slug.
 
-**Private documents are not discoverable this way.** The slug read enforces the owner-only private gate and does not honor the service-role key, and `GET /api/documents?ownerId=` needs that owner's JWT. Capture `documentId` from the create response; for a pre-existing private document it has to come out of band (the owner's own slug read, or an operator reading `DocumentMetadata`).
+**Private documents are not discoverable this way.** The slug read enforces the owner-only private gate and does not honor the service-role key, and `GET /api/documents?ownerId=` needs that owner's JWT. Capture `documentId` from the create response. For a pre-existing private document it has to come out of band (the owner's own slug read, or an operator reading `DocumentMetadata`).
 
 ### Content contract
 
-- **Documents are title-first.** The first node must be a level-1 `heading`. A heading-less `replace` or create payload is rejected with `422`; the editor would otherwise synthesize a title on first open and persist a heading you never wrote.
+- **Documents are title-first.** The first node must be a level-1 `heading`. A heading-less `replace` or create payload is rejected with `422`. The editor would otherwise synthesize a title on first open and persist a heading you never wrote.
 - **Image nodes are inline.** Wrap them in a `paragraph` or `heading`. A top-level `image` is `422`.
-- **Headings and tables carry a `toc-id`.** The server assigns one where it is missing or duplicated within the payload. That id is the identity a heading's chat thread, fold state, and `?id=` deep link hang off — round-trip the toc-ids from `GET` through a `replace` to keep them stable.
+- **Headings and tables carry a `toc-id`.** The server assigns one where it is missing or duplicated within the payload. That id is the identity a heading's chat thread, fold state, and `?id=` deep link hang off. Round-trip the toc-ids from `GET` through a `replace` to keep them stable.
 - **Unregistered attributes are dropped at encode.** ProseMirror keeps only attributes the server's extension set declares; anything else is discarded silently. `GET` returns what was stored, not what was sent.
 - **The first editable browser open may normalize the document**, so a `GET` after someone opens it can differ from what you wrote.
 
@@ -273,7 +273,7 @@ A document with metadata but no snapshot row yet returns `version: 0` with `{ "t
 
 **Staleness.** This is the persisted head, so it can trail a document people are actively editing by the store debounce — 10 s idle, 60 s maximum. There is no live read.
 
-**Trust boundary.** Content is stored and returned verbatim; the server never sanitizes it. docs.plus renders it safely through its extension render gates plus CSP, but a consumer rendering this JSON with its own renderer must apply its own URL-scheme allowlist.
+**Trust boundary.** Content is stored and returned verbatim; the server never sanitizes it. docs.plus renders it safely through its extension render gates plus CSP. But a consumer rendering this JSON with its own renderer must apply its own URL-scheme allowlist.
 
 ### PATCH /api/documents/:documentId/content
 
@@ -297,7 +297,7 @@ Applies content to the document. Query: `mode` = `replace` (default) or `append`
 
 `replace` swaps the whole body; `append` adds the payload's top-level nodes after the existing ones. Appending into an empty document makes the payload the document's first node, so the title-first rule applies there too.
 
-**Naming a write is permanent history.** A `commitMessage` becomes the version row's name, and autosave retention never thins a named row — see [Document versions](#document-versions). Name the writes a person would want to find again, and leave a bulk import's chunks unnamed: a named 500-chunk run leaves 500 rows nothing will ever prune.
+**Naming a write is permanent history.** A `commitMessage` becomes the version row's name, and autosave retention never thins a named row — see [Document versions](#document-versions). Name the writes a person would want to find again, and leave a bulk import's chunks unnamed. A named 500-chunk run leaves 500 rows nothing will ever prune.
 
 Live and cold documents take the same path. If collaborators have the document open, they see the change immediately without reconnecting. If nobody has it open, it loads, applies, persists, and unloads.
 
@@ -305,9 +305,9 @@ Live and cold documents take the same path. If collaborators have the document o
 
 **Concurrency** is CRDT last-writer-wins; there is no checksum or `If-Match` guard. Across replicas, `replace` guarantees removal of _persisted_ content — concurrent unsynced edits on another replica may survive as a union or be superseded by CRDT order. Both are safe; neither corrupts.
 
-**Retries.** `replace` is idempotent. `append` is at-least-once under a `503` or timeout — `GET` and verify before retrying one. A single persist-failed `500` is retriable with `mode=replace`. A _repeated_ persist-failed `500` for the same document means server-side persistence is wedged for it until the collaboration process restarts: stop retrying and alert an operator, because further attempts keep mutating and broadcasting to live clients while never persisting. The operator signal is `document_content_apply_total{outcome="error"}` on the collaboration process's metrics endpoint.
+**Retries.** `replace` is idempotent. `append` is at-least-once under a `503` or timeout — `GET` and verify before retrying one. A single persist-failed `500` is retriable with `mode=replace`. A _repeated_ persist-failed `500` for the same document means server-side persistence is wedged for it until the collaboration process restarts. Stop retrying and alert an operator, because further attempts keep mutating and broadcasting to live clients while never persisting. The operator signal is `document_content_apply_total{outcome="error"}` on the collaboration process's metrics endpoint.
 
-**Batching imports.** Every `PATCH` persists a full document version. Prefer one `replace` or a few large appends over many small ones: a 500-chunk import stores roughly 500 cumulative snapshots, which survive until autosave retention thins unnamed versions to one per document per day (`DOC_AUTOSAVE_RETENTION_DAYS`). Many small appends also run into the global rate limiter.
+**Batching imports.** Every `PATCH` persists a full document version. Prefer one `replace` or a few large appends over many small ones. A 500-chunk import stores roughly 500 cumulative snapshots, which survive until autosave retention thins unnamed versions to one per document per day (`DOC_AUTOSAVE_RETENTION_DAYS`). Many small appends also run into the global rate limiter.
 
 ### Create with content
 
@@ -375,13 +375,13 @@ Read, compare, name, delete, and restore a document's history. Module: `src/modu
 
 All six are service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`); a user JWT gets `401`. They address documents by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
 
-Reads and the delete run straight off Postgres in the REST process. The checkpoint and the restore need the live Y.Doc, so REST forwards them to the collaboration process over the same internal hop the content applier uses.
+Reads and the delete run straight off Postgres in the REST process. The checkpoint and the restore need the live Y.Doc. So REST forwards them to the collaboration process over the same internal hop the content applier uses.
 
 ### Every save is already a version
 
-The collaboration server persists a full snapshot per debounced save — 10 s after typing stops, 60 s at the latest — so rows accumulate whether or not anyone asks for them. There is no versioning schedule to configure: that debounce envelope is the granularity, and it is the same window the [content read](#get-apidocumentsdocumentidcontent) can trail by.
+The collaboration server persists a full snapshot per debounced save — 10 s after typing stops, 60 s at the latest. So rows accumulate whether or not anyone asks for them. There is no versioning schedule to configure: that debounce envelope is the granularity, and it is the same window the [content read](#get-apidocumentsdocumentidcontent) can trail by.
 
-A checkpoint therefore creates no history that would otherwise be missing. What it adds is a **name**, and the name is what the retention sweep keys off: unnamed rows older than `DOC_AUTOSAVE_RETENTION_DAYS` (default 30) are thinned to one per document per day, while a row named by a person is never pruned. Spend names on the moments a person would want to find again.
+A checkpoint therefore creates no history that would otherwise be missing. What it adds is a **name**, and the name is what the retention sweep keys off. Unnamed rows older than `DOC_AUTOSAVE_RETENTION_DAYS` (default 30) are thinned to one per document per day, while a row named by a person is never pruned. Spend names on the moments a person would want to find again.
 
 Names the server mints for itself are the exception — see [`trigger`](#get-apidocumentsdocumentidversions). They read like any other named row but the sweep thins them, so a restore older than the retention window stops being undoable.
 
@@ -433,7 +433,7 @@ Metadata for the document's versions, newest first. No snapshot bytes — read t
 }
 ```
 
-`total` counts every row for the document and is read in the same transaction as the page, so it cannot describe a different history than the rows beside it.
+`total` counts every row for the document. It is read in the same transaction as the page, so it cannot describe a different history than the rows beside it.
 
 | Field          | Meaning                                                                                                                                                   |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -446,9 +446,9 @@ Metadata for the document's versions, newest first. No snapshot bytes — read t
 
 Profiles are the `public.users` columns the history sidebar renders, snake_case as that table spells them. Attribution is decoration: when the profile lookup fails, `triggeredBy` falls back to `null` and unresolvable ids drop out of `contributors` rather than failing the request. An id that resolves to no profile disappears the same way.
 
-`triggeredBy` on a `websocket` row is the collaborator whose edit flushed the debounce window; on a `checkpoint` or `revert` row it is whoever asked for the operation. Both REST write routes leave it `null` — the service key is nobody, and only the editor's own in-app revert carries a real account.
+`triggeredBy` on a `websocket` row is the collaborator whose edit flushed the debounce window. On a `checkpoint` or `revert` row it is whoever asked for the operation. Both REST write routes leave it `null` — the service key is nobody, and only the editor's own in-app revert carries a real account.
 
-`contributors` is best-effort and per-replica: it is the set of accounts whose updates reached **this** collaboration replica since its previous save, so a room split across replicas records each replica's own set. Anonymous editors are stored in the column — they carry a Supabase `sub` like anyone else — but resolve to no profile and so never appear in the rendered list. Read the column's length as a floor on the rendered one, never as its equal.
+`contributors` is best-effort and per-replica. It is the set of accounts whose updates reached **this** collaboration replica since its previous save. So a room split across replicas records each replica's own set. Anonymous editors are stored in the column: they carry a Supabase `sub` like anyone else. But they resolve to no profile, so they never appear in the rendered list. Read the column's length as a floor on the rendered one, never as its equal.
 
 The server names some rows itself, and their `trigger` is what tells them apart from a name a person typed. `Before restore of version N` carries `revert-backup` and `Schema migration` carries `schema-migration`; both list like any other named version, but retention thins them once they pass the window. `Restored version N` carries `revert` — a person asked for it, so it survives retention like a checkpoint.
 
@@ -460,7 +460,7 @@ Names the next stored version.
 { "name": "Before the board review" }
 ```
 
-`name` is required, trimmed, and 1–200 characters. The document's body is untouched: the checkpoint opens the document, commits an empty transaction to trigger one immediate save, and lets that save carry the name.
+`name` is required, trimmed, and 1–200 characters. The document's body is untouched. The checkpoint opens the document, commits an empty transaction to trigger one immediate save, and lets that save carry the name.
 
 ```json
 {
@@ -469,11 +469,11 @@ Names the next stored version.
 }
 ```
 
-**A `200` means the save pipeline was triggered, not that a row exists.** The row is written by the worker; when its transaction commits, the worker publishes `doc:<documentId>:saved` on Redis and the collaboration process re-broadcasts it into the room as a `document:saved` stateless message. That broadcast is the signal the row landed. A REST caller gets no such push — poll `GET …/versions` for the name if you need certainty.
+**A `200` means the save pipeline was triggered, not that a row exists.** The row is written by the worker. When its transaction commits, the worker publishes `doc:<documentId>:saved` on Redis, and the collaboration process re-broadcasts it into the room as a `document:saved` stateless message. That broadcast is the signal the row landed. A REST caller gets no such push — poll `GET …/versions` for the name if you need certainty.
 
-One gap to know about: when the enqueue fails and the collaboration process falls back to saving directly to Postgres, the row still lands but nothing publishes `doc:*:saved`, so the room never sees a confirmation for it. That is pre-existing behavior of the fallback, not specific to checkpoints.
+One gap to know about: when the enqueue fails, the collaboration process falls back to saving directly to Postgres. The row still lands, but nothing publishes `doc:*:saved`, so the room never sees a confirmation for it. That is pre-existing behavior of the fallback, not specific to checkpoints.
 
-**A checkpoint always lands, even when the bytes have not changed.** The store pipeline deduplicates saves of identical content within a ten-second window, so a checkpoint taken right after an autosave would otherwise be swallowed by it and lose the name. A checkpoint widens its own job id with a random key to stay off that dedupe, which means naming an unchanged document produces a named row whose content duplicates the row before it. That is the intent — the name is the point.
+**A checkpoint always lands, even when the bytes have not changed.** The store pipeline deduplicates saves of identical content within a ten-second window. A checkpoint taken right after an autosave would otherwise be swallowed by it and lose the name. A checkpoint widens its own job id with a random key to stay off that dedupe. So naming an unchanged document produces a named row whose content duplicates the row before it. That is the intent — the name is the point.
 
 ### GET /api/documents/:documentId/versions/:version
 
@@ -501,7 +501,7 @@ Which top-level blocks differ between two versions, and whose text sits in them 
 | ------ | ---- | ------------------------- | -------------------------------- |
 | `base` | int  | the nearest version below | The older side of the comparison |
 
-The default is the greatest version below `:version`, which is not always `:version - 1` — retention and `DELETE` leave gaps. A `base` at or above `:version` is a `400`, and that check runs before the document is looked up — so it answers `400` rather than `404` even for a document that does not exist. A `base` naming a version that does not exist is a `404`; an omitted `base` on a document's oldest version is not, and comes back as `fromVersion: 0` with the whole document read as `added`.
+The default is the greatest version below `:version`, which is not always `:version - 1` — retention and `DELETE` leave gaps. A `base` at or above `:version` is a `400`. That check runs before the document is looked up, so it answers `400` rather than `404` even for a document that does not exist. A `base` naming a version that does not exist is a `404`. An omitted `base` on a document's oldest version is not, and comes back as `fromVersion: 0` with the whole document read as `added`.
 
 ```json
 {
@@ -551,17 +551,17 @@ Comparison is over whole top-level blocks of decoded ProseMirror content, not ov
 { "clientId": 3728007124, "user": { "id": "1b9d…", "display_name": "Ada" }, "anonymous": false }
 ```
 
-`user` carries the same [`public.users` columns](#get-apidocumentsdocumentidversions) the history sidebar renders, or `null` when the binding exists but no profile resolved. `anonymous` records that the account was anonymous when the clientID was bound; identity is joined at read time, so an anonymous editor who later signs up gets their real name here across their whole history, with no backfill.
+`user` carries the same [`public.users` columns](#get-apidocumentsdocumentidversions) the history sidebar renders, or `null` when the binding exists but no profile resolved. `anonymous` records that the account was anonymous when the clientID was bound. Identity is joined at read time. So an anonymous editor who later signs up gets their real name here across their whole history, with no backfill.
 
-A clientID that appears in `changes[].clientIds` but not in `authors` is unattributed. Bindings exist only for edits made after attribution capture shipped, so on an older document `authors` is `[]` while `clientIds` stays populated — that is how a caller tells "unknown writer" apart from "nobody attributed".
+A clientID that appears in `changes[].clientIds` but not in `authors` is unattributed. Bindings exist only for edits made after attribution capture shipped, so on an older document `authors` is `[]` while `clientIds` stays populated. That is how a caller tells "unknown writer" apart from "nobody attributed".
 
-**The diff answers who wrote the text currently in this block. It does not answer who made this change, and it does not answer who deleted this.** `removed` blocks carry no authorship, and no server setting changes that. Yjs records no deleter: `createDeleteSetFromStructStore` keys the delete set by the clientID that _created_ each deleted item, and each entry stores only a clock and a length (yjs 13.6.31). Disabling garbage collection would keep the removed text and the name of whoever wrote it, and would still name nobody as the remover.
+**The diff answers who wrote the text currently in this block. It does not answer who made this change, and it does not answer who deleted this.** `removed` blocks carry no authorship, and no server setting changes that. Yjs records no deleter. `createDeleteSetFromStructStore` keys the delete set by the clientID that _created_ each deleted item, and each entry stores only a clock and a length (yjs 13.6.31). Disabling garbage collection would keep the removed text and the name of whoever wrote it, and would still name nobody as the remover.
 
-**Server-side writes leave content with no bindable author.** A binding is recorded only when a live socket announces the clientID it writes under (`src/lib/client-authors.ts`). Restore, import, and `PATCH /content` apply through a direct connection that has no socket, and `applyContentToDoc` clones every node, so the new items carry the server document's own clientID. After any of those operations the affected blocks return `clientIds` with no matching `authors` entry. Read that as an unknown writer, never as a wrong one. The version's `trigger` field names which operation did it.
+**Server-side writes leave content with no bindable author.** A binding is recorded only when a live socket announces the clientID it writes under (`src/lib/client-authors.ts`). Restore, import, and `PATCH /content` apply through a direct connection that has no socket, and `applyContentToDoc` clones every node. The new items therefore carry the server document's own clientID. After any of those operations the affected blocks return `clientIds` with no matching `authors` entry. Read that as an unknown writer, never as a wrong one. The version's `trigger` field names which operation did it.
 
-**clientID bindings are a first-claim record, not an audit trail.** Yjs clientIDs are asserted by the client. The server records the account that first claimed one on a live socket and never overwrites it, so a legitimate editor cannot be displaced by a later forger — but the row is not proof of authorship, and nothing built on it should imply that it is.
+**clientID bindings are a first-claim record, not an audit trail.** Yjs clientIDs are asserted by the client. The server records the account that first claimed one on a live socket and never overwrites it. So a legitimate editor cannot be displaced by a later forger. But the row is not proof of authorship, and nothing built on it should imply that it is.
 
-**Identical versions.** A checkpoint of an unchanged document mints a named row whose content duplicates the row before it. Diffing that pair returns `200` with `changes: []` and both block counts `0`: the bytes are compared without decoding either side, so the counts are never taken. Zero here means not counted, not empty.
+**Identical versions.** A checkpoint of an unchanged document mints a named row whose content duplicates the row before it. Diffing that pair returns `200` with `changes: []` and both block counts `0`. The bytes are compared without decoding either side, so the counts are never taken. Zero here means not counted, not empty.
 
 Neither `503` nor `413` can come back from this route. It reads straight off Postgres and never touches the collaboration process, and a `GET` carries no body to overrun.
 
@@ -573,7 +573,7 @@ Deletes one version permanently.
 { "success": true, "data": { "documentId": "kR4pZ2mQ7tY1nB8xW3v", "version": 7, "deleted": true } }
 ```
 
-**The newest version cannot be deleted** — `409 CONFLICT`. It is the base a cold load reads, so removing it rewinds the document to an older snapshot; worse, a room still open would then flush its newer live state back over that older base as a revert nobody asked for. Checking "is this the head" and deleting happen under one row lock, so the answer cannot go stale between the two.
+**The newest version cannot be deleted** — `409 CONFLICT`. It is the base a cold load reads, so removing it rewinds the document to an older snapshot. Worse, a room still open would then flush its newer live state back over that older base as a revert nobody asked for. Checking "is this the head" and deleting happen under one row lock, so the answer cannot go stale between the two.
 
 To drop the current state, restore an earlier version instead: that moves history forward rather than truncating it.
 
@@ -602,9 +602,9 @@ So a restore **appends** two versions and never rewinds the counter. Undoing one
 
 `backupVersion` is `number | null`. Null means the collaboration process's reply could not be read, not that no backup was taken — the row exists either way. A history UI should render the absence rather than reporting "no backup".
 
-**When the backup cannot be committed, nothing is restored.** The `500` says so explicitly and the document is unchanged; that ordering is deliberate, so a worker that dies mid-operation still leaves the pre-restore state recoverable.
+**When the backup cannot be committed, nothing is restored.** The `500` says so explicitly and the document is unchanged. That ordering is deliberate, so a worker that dies mid-operation still leaves the pre-restore state recoverable.
 
-**When persistence is wedged**, the backup is already committed and the replacement may already be visible to live collaborators without ever reaching the database. That is the persist-failed `500`, and it carries the same rule as [`PATCH /content`](#patch-apidocumentsdocumentidcontent): verify with `GET` before retrying, and treat a repeat for the same document as persistence being wedged for it until the collaboration process restarts.
+**When persistence is wedged**, the backup is already committed and the replacement may already be visible to live collaborators without ever reaching the database. That is the persist-failed `500`, and it carries the same rule as [`PATCH /content`](#patch-apidocumentsdocumentidcontent). Verify with `GET` before retrying, and treat a repeat for the same document as persistence being wedged for it until the collaboration process restarts.
 
 The editor's in-app revert runs the same operation over the collaboration server's stateless channel instead of this route. That path requires an authenticated, writable connection, which is why it can attribute the resulting rows to a person and this one cannot.
 
@@ -623,7 +623,7 @@ The editor's in-app revert runs the same operation over the collaboration server
 | `500`  | `INTERNAL_SERVER_ERROR` | Snapshot decode failure on read; the document could not be opened; the pre-restore backup failed; the save failed; or the REST and collaboration processes holding different service-role keys, which the message names explicitly                                     |
 | `503`  | `SERVICE_UNAVAILABLE`   | The collaboration process is unreachable or did not answer within 30 s. Only the checkpoint and the restore hop, so no read route can return this                                                                                                                      |
 
-`DRAFT_DOCUMENT` is specific to these routes. It shares the `422` status with invalid content so a caller that only reads the status still behaves correctly, and carries its own code so one can be told from the other.
+`DRAFT_DOCUMENT` is specific to these routes. It shares the `422` status with invalid content, so a caller that only reads the status still behaves correctly. It also carries its own code, so one can be told from the other.
 
 ### Internal version endpoints
 
@@ -640,9 +640,9 @@ Turn a document into a file, or a file into document content. Module: `src/modul
 
 The asymmetry is deliberate: nothing reads ODT back, and a legacy `.doc` is refused rather than guessed at.
 
-Both routes take either the service-role key (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`) or a Supabase user token (`token: <jwt>`, or the same JWT as a bearer), and address the document by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
+Both routes take either the service-role key (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`) or a Supabase user token (`token: <jwt>`, or the same JWT as a bearer). They address the document by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
 
-**A token is required whatever the document's privacy.** Both routes fall back to `requireUser`, not `optionalUser`, so a call with no credential is a `401` even on a public document. That is the rule a browser caller gets wrong most often — send the Supabase access token in the `token` header on every request, public documents included.
+**A token is required whatever the document's privacy.** Both routes fall back to `requireUser`, not `optionalUser`, so a call with no credential is a `401` even on a public document. That is the rule a browser caller gets wrong most often. Send the Supabase access token in the `token` header on every request, public documents included.
 
 **Access matrix.** The service-role key passes every row. A user token runs the same private-document predicate as the WebSocket gate and `GET /api/documents/:slug` (`resolvePrivateAccess` in `src/lib/privateAccess.ts`) — one rule, three surfaces.
 
@@ -656,13 +656,13 @@ Both routes take either the service-role key (`Authorization: Bearer <SUPABASE_S
 
 The privacy rule runs first, so a document that is both private and locked answers with the privacy outcome. Import gates on write access because a locked document's readers can never apply what it returns, and the conversion costs real CPU either way. The `readOnly` rule is the one the WebSocket handshake enforces: the owner keeps edit rights, everyone else is refused.
 
-**Import writes no content.** It returns Tiptap JSON and leaves the document untouched; the caller applies it with [`PATCH /content`](#patch-apidocumentsdocumentidcontent), which enforces the read-only lock on the write itself — import enforces it on admission. It is not side-effect free, though: images embedded in the uploaded file are re-hosted to object storage before the JSON returns, so a caller that discards the response leaves those objects behind. Read the [fidelity contract](#fidelity-contract) before converting anything you cannot re-create.
+**Import writes no content.** It returns Tiptap JSON and leaves the document untouched. The caller applies it with [`PATCH /content`](#patch-apidocumentsdocumentidcontent), which enforces the read-only lock on the write itself. Import enforces it on admission. It is not side-effect free, though: images embedded in the uploaded file are re-hosted to object storage before the JSON returns. So a caller that discards the response leaves those objects behind. Read the [fidelity contract](#fidelity-contract) before converting anything you cannot re-create.
 
 ### GET /api/documents/:documentId/export
 
 Renders the document to a file. Query: `format` = `docx` (default), `md`, or `odt`.
 
-The `200` body is the raw file, not the house envelope; errors still carry it. `Content-Disposition` is `attachment` with the slugified title, falling back to the slug and then the `documentId`, so a title that slugifies to nothing — all emoji — cannot produce a bare `.docx`.
+The `200` body is the raw file, not the house envelope; errors still carry it. `Content-Disposition` is `attachment` with the slugified title. It falls back to the slug and then the `documentId`, so a title that slugifies to nothing — all emoji — cannot produce a bare `.docx`.
 
 **Staleness.** Export reads the persisted head, the same snapshot `GET /content` serves, so it trails an actively edited document by the store debounce — 10 s idle, 60 s maximum.
 
@@ -680,11 +680,11 @@ Body is `multipart/form-data` with field name **`documentFile`** (not `file`, an
 | `D0 CF 11 E0` | legacy OLE2 `.doc` → `415`, re-save as `.docx`            |
 | anything else | Markdown, if it decodes as strict UTF-8 — otherwise `422` |
 
-The strict decode is Markdown's real gate; a BOM is stripped, so a Windows-written `.md` keeps its opening `#` instead of importing as one long paragraph.
+The strict decode is Markdown's real gate. A BOM is stripped, so a Windows-written `.md` keeps its opening `#` instead of importing as one long paragraph.
 
 > **Any non-`.docx` zip lands on the Word error.** ODT is a zip, so re-importing your own ODT export returns `422 The upload could not be read as a Word document`. That is the sniff working, not a mis-detected file — ODT import does not exist.
 
-**Three different `413`s.** Any upload over 10 MiB (`MAX_IMPORT_BYTES`, matching the pad's media cap) is refused on size, and a `.docx` whose ZIP directory declares more than 40 MiB unpacked is refused before the converter opens it — a zip bounds its compressed size, never its inflated one, and 200 KiB of deflated padding reaches 200 MiB. Markdown is additionally capped at 65 536 characters, because `marked` parses in quadratic time — 64 KiB takes ~0.6 s, 954 KiB blocks the event loop for ~144 s. That cap rejects; it never truncates, since half a document is worse than a refused one. Convert the file to `.docx` to get past it.
+**Three different `413`s.** Any upload over 10 MiB (`MAX_IMPORT_BYTES`, matching the pad's media cap) is refused on size. A `.docx` whose ZIP directory declares more than 40 MiB unpacked is refused before the converter opens it. A zip bounds its compressed size, never its inflated one, and 200 KiB of deflated padding reaches 200 MiB. Markdown is additionally capped at 65 536 characters, because `marked` parses in quadratic time — 64 KiB takes ~0.6 s, 954 KiB blocks the event loop for ~144 s. That cap rejects; it never truncates, since half a document is worse than a refused one. Convert the file to `.docx` to get past it.
 
 Images embedded in a Word file are re-hosted through [the media route](#post-apipluginshypermultimediadocumentid) so the result carries URLs the editor can parse instead of `data:` payloads. This needs `PUBLIC_RESTAPI_URL` — see [ENV.md](./ENV.md#public-origin). Without it, every image becomes a warning and the text still imports.
 
@@ -699,11 +699,11 @@ Images embedded in a Word file are re-hosted through [the media route](#post-api
 }
 ```
 
-The result always opens on a level-1 heading, so it satisfies `PATCH`'s title-first rule: an existing first heading is forced to level 1, a first paragraph is promoted to one (losing its marks), and a document with no usable opening text gets a heading synthesized from the slug. Each of the last two reports a warning — a paragraph silently becoming the document title is a change the caller has to see.
+The result always opens on a level-1 heading, so it satisfies `PATCH`'s title-first rule. An existing first heading is forced to level 1. A first paragraph is promoted to one (losing its marks). A document with no usable opening text gets a heading synthesized from the slug. Each of the last two reports a warning — a paragraph silently becoming the document title is a change the caller has to see.
 
 ### Fidelity contract
 
-Conversion is lossy in named ways. Import reports what it changed through `warnings`; export has no warning channel — a downloaded file is the only evidence — so the table below is the contract.
+Conversion is lossy in named ways. Import reports what it changed through `warnings`. Export has no warning channel — a downloaded file is the only evidence — so the table below is the contract.
 
 **What export drops**
 
@@ -714,11 +714,11 @@ Conversion is lossy in named ways. Import reports what it changed through `warni
 | Highlight                                                                                           | **dropped**              | `==text==`         | kept                   |
 | In-progress upload placeholders                                                                     | removed                  | removed            | removed                |
 
-DOCX is the one format whose converter fetches: it downloads every `<img src>` to embed the bytes, and `src` is ordinary pad content, so only images on this server's own media origin (`PUBLIC_RESTAPI_URL`) are kept — a third-party or unreachable one is dropped rather than fetched, and with no `PUBLIC_RESTAPI_URL` set no image is embedded at all. An embed becomes a paragraph holding its caption, or its URL when it has no caption. ODF draws a picture through a measured frame, and a remote image has no measured width, so ODT gives the reader a link it can follow rather than an empty box.
+DOCX is the one format whose converter fetches: it downloads every `<img src>` to embed the bytes. `src` is ordinary pad content, so only images on this server's own media origin (`PUBLIC_RESTAPI_URL`) are kept. A third-party or unreachable one is dropped rather than fetched, and with no `PUBLIC_RESTAPI_URL` set no image is embedded at all. An embed becomes a paragraph holding its caption, or its URL when it has no caption. ODF draws a picture through a measured frame. A remote image has no measured width, so ODT gives the reader a link it can follow rather than an empty box.
 
-**What a DOCX round trip loses.** Export to `.docx` and import it back and the following do not survive: underline, blockquote (flattens to a paragraph), code block (flattens to a paragraph), horizontal rules, and table header cells (demote to normal cells). Word's own `Title`, `Subtitle` and `Quote` styles are mapped on the way in, so a file authored in Word fares better than one that made this round trip.
+**What a DOCX round trip loses.** Export to `.docx` and import it back, and the following do not survive: underline, blockquote, code block, horizontal rules, and table header cells. Blockquote and code block each flatten to a paragraph, and table header cells demote to normal cells. Word's own `Title`, `Subtitle` and `Quote` styles are mapped on the way in. So a file authored in Word fares better than one that made this round trip.
 
-> **No export format carries `toc-id`.** That id is the identity a heading's chat channel, fold state and `?id=` deep link hang off. Imported content has none, so applying it with `mode=replace` re-keys every heading in the document and orphans all three, permanently — re-editing does not bring them back. **Default to `mode=append`** and reserve `replace` for a document whose heading identities nobody depends on yet. An appended import brings its own title heading with it, and the title-first check only looks at the document's first node, so drop or demote `content[0]` unless you want a second title heading in the middle of the document.
+> **No export format carries `toc-id`.** That id is the identity a heading's chat channel, fold state and `?id=` deep link hang off. Imported content has none, so applying it with `mode=replace` re-keys every heading in the document and orphans all three, permanently. Re-editing does not bring them back. **Default to `mode=append`** and reserve `replace` for a document whose heading identities nobody depends on yet. An appended import brings its own title heading with it, and the title-first check only looks at the document's first node. Drop or demote `content[0]` unless you want a second title heading in the middle of the document.
 
 **Warning codes**
 
@@ -894,7 +894,7 @@ Base path `/api/admin` (`src/api/routers/admin.router.ts`). Every route requires
 
 ## Push notifications
 
-There is **no HTTP push endpoint** — `/api/push` was removed. Push delivery runs through pgmq the same way email does: a Supabase trigger enqueues to pgmq, the worker polls it and delivers via BullMQ and the Web Push API. Devices register through Supabase RPCs:
+There is **no HTTP push endpoint** — `/api/push` was removed. Push delivery runs through pgmq the same way email does. A Supabase trigger enqueues to pgmq, and the worker polls it and delivers via BullMQ and the Web Push API. Devices register through Supabase RPCs:
 
 ```javascript
 await supabase.rpc('register_push_subscription', {
@@ -935,7 +935,7 @@ The document `name` is the room id (Prisma `documentId`); the server never trust
 
 ### Private documents
 
-**Breaking change (shipped):** `isPrivate` now allows the **owner only** (`user.sub === ownerId`). Anonymous and signed-in non-owners are rejected — previously any signed-in (non-anonymous) user could connect. Ownerless-private rooms (`ownerId: null`) reject everyone until owner backfill. When the metadata lookup **fails**, the server can no longer determine privacy, so it **fails closed** (rejects) instead of admitting the connection as public; a successful public-doc lookup still connects without auth. The decision is a pure resolver (`src/lib/wsAccess.ts`) with a matrix unit test.
+**Breaking change (shipped):** `isPrivate` now allows the **owner only** (`user.sub === ownerId`). Anonymous and signed-in non-owners are rejected — previously any signed-in (non-anonymous) user could connect. Ownerless-private rooms (`ownerId: null`) reject everyone until owner backfill. When the metadata lookup **fails**, the server can no longer determine privacy, so it **fails closed** (rejects) instead of admitting the connection as public. A successful public-doc lookup still connects without auth. The decision is a pure resolver (`src/lib/wsAccess.ts`) with a matrix unit test.
 
 **Read-only:** When `readOnly` is true and the connector is not the owner, the connection is marked read-only on the write path (existing behavior).
 

@@ -43,9 +43,9 @@ describe('chatMediaMime parity', () => {
 })
 
 describe('resolveChatMediaMime', () => {
-  // MediaRecorder tags voice notes `audio/webm;codecs=opus`; the storage bucket
-  // allowlist matches the bare type only, so the parameter must be stripped or
-  // the upload is rejected ("mime type audio/webm;codecs=opus … not supported").
+  // MediaRecorder tags voice notes `audio/webm;codecs=opus`. The storage bucket
+  // allowlist matches the bare type only, so the parameter must be stripped.
+  // Otherwise the upload is rejected ("mime type audio/webm;codecs=opus … not supported").
   it('strips MIME parameters so codec-tagged voice notes match the allowlist', () => {
     const voiceNote = fakeFile('audio/webm;codecs=opus', 'voice-1782237320394.webm')
     expect(resolveChatMediaMime(voiceNote)).toBe('audio/webm')

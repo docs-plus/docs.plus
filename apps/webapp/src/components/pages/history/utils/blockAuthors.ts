@@ -4,8 +4,8 @@ import * as Y from 'yjs'
 /**
  * Kept in lockstep with `VOLATILE_BLOCK_ATTRS` in
  * `apps/hocuspocus.server/src/modules/document-versions/types.ts`. The webapp cannot
- * import from that package, so this copy is deliberate — drift silently changes who
- * a block is attributed to, because the toc-id rewriter would outrank the real writer.
+ * import from that package, so this copy is deliberate. Drift silently changes who a
+ * block is attributed to, because the toc-id rewriter would outrank the real writer.
  */
 const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id'])
 
@@ -39,7 +39,7 @@ const clientIdsUnder = (rootItem: Y.Item): number[] => {
 
 /**
  * One clientID list per top-level block, or null when the live Y roots do not align
- * with the decoded document — marking block i with block j's writer is worse than
+ * with the decoded document. Marking block i with block j's writer is worse than
  * showing nothing, and a shifted mark raises no error of its own.
  */
 export const collectBlockClientIds = (

@@ -38,8 +38,8 @@ const generateDefaultState = () => {
 
 const healthCheck = new HealthCheck()
 
-// A rebuilt CRDT has fresh item identities: serving it without persisting lets
-// a returning client (IndexedDB cache of a previous rebuild) merge two
+// A rebuilt CRDT has fresh item identities. Serving that CRDT without persisting
+// lets a returning client (IndexedDB cache of a previous rebuild) merge two
 // independent rebuilds and duplicate the document. Exactly one rebuild may
 // ever exist — the FOR UPDATE re-read makes concurrent replicas agree on it.
 async function persistMigratedSnapshot(
@@ -184,7 +184,7 @@ const configureExtensions = () => {
           captureUnknown(err)
           // Never $disconnect() the shared pool here — one document's transient
           // fetch error would tear the pool out from under every concurrent
-          // query. pg evicts broken clients per-connection on its own.
+          // query. `pg` evicts broken clients per-connection on its own.
           throw err
         }
       },
@@ -195,7 +195,7 @@ const configureExtensions = () => {
 
         // The worker's first-save branch cannot tell a resurrection from a
         // genuine new document, so the flush is dropped here instead. Covers
-        // what is not yet enqueued only: a job already in `wait` when the seal
+        // what is not yet enqueued only. A job already in `wait` when the seal
         // lands still reaches that branch, a window as wide as queue latency.
         if (isRoomSealed(document)) {
           dbLogger.info({ documentName }, 'Dropped store for a sealed (deleted) room')
@@ -204,7 +204,7 @@ const configureExtensions = () => {
 
         // Metadata rides the live doc — read it O(1). Decoding the snapshot
         // here (the old path) rebuilt the whole CRDT on the WS event loop and
-        // stalled every connection on the instance; the worker strips the
+        // stalled every connection on the instance. The worker strips the
         // metadata keys off the snapshot instead.
         const meta = document.getMap('metadata')
 
@@ -218,8 +218,8 @@ const configureExtensions = () => {
         } else {
           const commitMessageValue = meta.get('commitMessage')
           commitMessage = typeof commitMessageValue === 'string' ? commitMessageValue : ''
-          // Consume the one-shot restore label: left on the live doc it would
-          // stamp every later autosave as a named checkpoint (exempt from
+          // Consume the one-shot restore label. Left on the live doc, the label
+          // would stamp every later autosave as a named checkpoint (exempt from
           // pruning) until page reload. Runs before enqueue so the queue-down
           // fallback consumes it too; server-origin deletes don't re-trigger saves.
           if (commitMessage) meta.delete('commitMessage')
@@ -256,7 +256,7 @@ const configureExtensions = () => {
           // Redis outage never reaches here — extension-redis aborts the
           // store chain first and persistence pauses until Redis returns.
           try {
-            // Everything here is inside the try, metric and logger included: a
+            // Everything here is inside the try, metric and logger included. A
             // throw from any of them escapes store() and wedges the debouncer
             // exactly like a failed save would.
             documentPersistFallbackTotal.inc()
@@ -266,7 +266,7 @@ const configureExtensions = () => {
             // Use transaction with FOR UPDATE lock to prevent race conditions.
             // Multiple Hocuspocus instances may hit this fallback simultaneously
             // (redlock can lapse mid-store), so merge with the locked head like
-            // the worker does — a plain insert of divergent state would clobber.
+            // the worker does. A plain insert of divergent state would clobber.
             const saveMergedVersion = () =>
               prisma.$transaction(async (tx) => {
                 const existingDocs = await tx.$queryRaw<{ version: number; data: Buffer }[]>`
@@ -278,9 +278,9 @@ const configureExtensions = () => {
                 `
                 const existingDoc = existingDocs[0] ?? null
                 // Merge RAW, strip the RESULT: mergeUpdates takes struct content
-                // from the older head and only unions delete sets, so stripping
-                // first leaves text deleted inside a surviving parent in the row
-                // forever. The strip's decode is what garbage-collects it.
+                // from the older head and only unions delete sets. Stripping first
+                // therefore leaves text deleted inside a surviving parent in the
+                // row forever. The strip's decode is what garbage-collects it.
                 const versionData = existingDoc
                   ? stripSnapshotMetadata(
                       Y.mergeUpdates([
@@ -307,8 +307,8 @@ const configureExtensions = () => {
               await saveMergedVersion()
             } catch (raceErr) {
               // FOR UPDATE can't stop two concurrent fallbacks computing the
-              // same nextVersion under READ COMMITTED; on the (documentId,
-              // version) collision re-run ONCE so the now-newer head re-merges
+              // same nextVersion under READ COMMITTED. On the (documentId,
+              // version) collision re-run ONCE, so the now-newer head re-merges
               // this delta forward. Re-merge, never serve-the-winner — the
               // latter would drop this instance's edits. Worker retries alike.
               if (
@@ -343,12 +343,12 @@ const configureExtensions = () => {
             dbLogger.info({ documentName }, 'Document saved via fallback (direct DB)')
           } catch (dbErr) {
             // Never rethrow. Hocuspocus's debouncer caches the rejected promise
-            // under onStoreDocument-<docName> for the process lifetime, so this
-            // room would stop saving AND stop unloading, and its stuck Y.Doc
-            // would hold up the shutdown flush of every other room.
-            // This block is the last line of defence, so it gets its own guard:
-            // a throw from the metric, the logger or the Sentry client here has
-            // nothing left to catch it and would wedge the room it is reporting.
+            // under onStoreDocument-<docName> for the process lifetime. This room
+            // would then stop saving AND stop unloading, and its stuck Y.Doc would
+            // hold up the shutdown flush of every other room. This block is the
+            // last line of defence, so it gets its own guard. A throw from the
+            // metric, the logger or the Sentry client here has nothing left to
+            // catch it. Such a throw would wedge the room it is reporting.
             try {
               documentStoreRejectionsTotal.inc({ reason: 'fallback-save-failed' })
               dbLogger.error(
@@ -400,7 +400,7 @@ export default () => {
     async onRequest(data: any) {
       const { request, response } = data
 
-      // Apart from the liveness routes below, which always answer 200: the
+      // Gated, apart from the liveness routes below, which always answer 200. The
       // rolling deploy retires the live replicas on this answer, and a replica
       // that cannot reach Postgres cannot load a document. Redis is reported but
       // not gated — store() falls back to a direct DB write when the queue is down.

@@ -9,10 +9,8 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 /**
- * Production-ready Prisma Client with connection pooling managed by PrismaPg.
- *
- * The adapter creates and owns the pg Pool internally using its own bundled `pg`
- * version, avoiding cross-version serialization issues when the top-level `pg`
+ * The adapter creates and owns the pg Pool internally, using its own bundled `pg`
+ * version. That avoids cross-version serialization issues when the top-level `pg`
  * diverges from what the adapter was built against.
  */
 

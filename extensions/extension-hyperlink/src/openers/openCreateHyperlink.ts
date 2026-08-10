@@ -33,9 +33,9 @@ export function openCreateHyperlink(
 
   const { from, to } = editor.state.selection
 
-  // Deferred input focus, owned by the popover lifecycle: `onShow` arms it and
-  // `onHide` (fired on every teardown path — outside-click, Escape, editor
-  // destroy) clears it, so it can never fire `focus()` on a detached node.
+  // Deferred input focus, owned by the popover lifecycle. `onShow` arms the timer
+  // and `onHide` clears it, so the timer can never fire `focus()` on a detached
+  // node. `onHide` fires on every teardown path: outside-click, Escape, editor destroy.
   let focusTimer: ReturnType<typeof setTimeout> | null = null
 
   // `popover` is forward-referenced inside the coords callback so the
@@ -45,7 +45,7 @@ export function openCreateHyperlink(
     coordinates: {
       getBoundingClientRect: () => {
         // Remote collab ops (Yjs) can shrink the doc and make `from`/`to`
-        // out-of-range — `coordsAtPos` throws, so dismiss (microtask-deferred;
+        // out-of-range. Then `coordsAtPos` throws, so dismiss (microtask-deferred;
         // the off-screen rect bridges the gap until teardown).
         try {
           const start = editor.view.coordsAtPos(from)

@@ -16,7 +16,7 @@ const jobIdFor = (documentName: string, state: Uint8Array) =>
   `doc-${documentName.replaceAll(':', '_')}-${state.byteLength}-${Bun.hash(state).toString(36)}`
 
 // Armed by the wedge test to drive the store hook down its fallback path and
-// then out the far side; null everywhere else so the other suites see a queue
+// then out the far side. Null everywhere else, so the other suites see a queue
 // and a database that behave.
 let enqueueFailure: Error | null = null
 let transactionFailure: Error | null = null
@@ -190,8 +190,8 @@ describe('store hook — a failed save must not wedge the debouncer', () => {
     transactionFailure = new Error('database unavailable')
 
     // Hocuspocus caches the store promise per document and never clears a
-    // rejected one, so throwing here would stop this room saving — and unloading
-    // — for the process lifetime.
+    // rejected one. Throwing here would stop this room saving — and unloading —
+    // for the process lifetime.
     expect(await store(liveDoc(), {})).toBeUndefined()
     expect(await rejectionsFor('fallback-save-failed')).toBe(before + 1)
 

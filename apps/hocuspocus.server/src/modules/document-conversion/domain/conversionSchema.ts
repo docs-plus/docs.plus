@@ -17,16 +17,16 @@ const renderExtensions: Extensions = [
   Highlight
 ]
 
-// StarterKit's `link` and Hyperlink both claim `a[href]` and neither declares a
-// priority, so StarterKit wins and imported links land on a mark the editor
-// cannot edit. Storage keeps `link` — stored documents still contain it.
+// StarterKit's `link` and Hyperlink both claim `a[href]`, and neither declares a
+// priority. StarterKit therefore wins, and imported links land on a mark the
+// editor cannot edit. Storage keeps `link` — stored documents still contain it.
 const parseExtensions: Extensions = renderExtensions.map((extension) =>
   extension.name === 'starterKit' ? extension.configure({ link: false }) : extension
 )
 
 // Built lazily: the module must have no top-level side effects. Nodes are bound
-// to the schema that made them, so these two and `encodeContent`'s validation
-// schema only ever hand each other JSON — never a live `PMNode`.
+// to the schema that made them. These two schemas and `encodeContent`'s validation
+// schema only ever hand each other JSON, never a live `PMNode`.
 let renderSchema: Schema | null = null
 let parseSchema: Schema | null = null
 

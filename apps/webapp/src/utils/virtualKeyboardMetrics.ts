@@ -35,7 +35,7 @@ export function applyVirtualKeyboardToStore(): void {
     peakVisualViewportHeightPx = Math.max(vvh, winH, layoutH)
   }
 
-  // iOS: layout viewport can sit at scrollY > 0 while vv.height is already shrunk; infer a
+  // iOS: layout viewport can sit at scrollY > 0 while vv.height is already shrunk. Infer a
   // taller “full” band so peak − vvh still detects the keyboard (matches double-tap → FAB races).
   const scrollY = window.scrollY
   if (scrollY > 8) {

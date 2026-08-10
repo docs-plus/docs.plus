@@ -32,7 +32,7 @@ function isNavigable(href: string | null | undefined, ctx: LinkContext): href is
 }
 
 // `null` from the popover slot is the host opt-out signal (mobile bottom
-// sheet); with no slot configured at all, a read-only editor falls back to
+// sheet). With no slot configured at all, a read-only editor falls back to
 // a gated `window.open`.
 function openPreviewPopoverFromClick(
   view: EditorView,
@@ -87,8 +87,8 @@ function openPreviewPopoverFromClick(
       }
     } else {
       // A non-empty selection survives the click (capture-phase mousedown is swallowed),
-      // so restore it only when it overlaps the clicked link — otherwise edit/remove
-      // would target a stale range somewhere else in the document.
+      // so restore the selection only when it overlaps the clicked link. Otherwise
+      // edit/remove would target a stale range somewhere else in the document.
       const clickedRange = getMarkRange(view.state.doc.resolve(clickPos), ctx.type)
       const overlaps = !!clickedRange && from < clickedRange.to && to > clickedRange.from
       const pos = from === to || !overlaps ? clickPos : { from, to }
@@ -107,9 +107,10 @@ export function createClickHandlerInteraction(ctx: LinkContext): Plugin {
   return new Plugin({
     key: new PluginKey('hyperlinkClickHandler'),
 
-    // Three capture-phase listeners (mousedown / click / auxclick) intercept ProseMirror's
-    // default link-handling so we own the click semantics, prevent default navigation
-    // (tabnabbing, `javascript:`), and route middle-click through the navigation gate.
+    // Three capture-phase listeners (mousedown / click / auxclick) intercept
+    // ProseMirror's default link-handling. The listeners own the click semantics,
+    // prevent default navigation (tabnabbing, `javascript:`), and route
+    // middle-click through the navigation gate.
     view(editorView) {
       const preventMouseDown = (event: MouseEvent) => {
         if (event.button !== 0) return

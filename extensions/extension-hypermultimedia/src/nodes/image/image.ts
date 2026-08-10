@@ -42,7 +42,7 @@ export const Image = Node.create<ImageOptions>({
     // exists for, and the HTML parse rule stays the authority on that policy.
     const href = isSafeMediaSrc(token.href, { allowInlineImage: true }) ? token.href : ''
     // Reserved alts belong to each node's own `hm_*` tokenizer, which is registered
-    // only when that node is enabled; naming a disabled type here blanks the document.
+    // only when that node is enabled. Naming a disabled type here blanks the document.
     return {
       type: 'image',
       attrs: { src: href, alt }
@@ -81,9 +81,9 @@ export const Image = Node.create<ImageOptions>({
     return {
       keyId: keyIdAttribute(),
       // A captioned image parses from its `<figure>`, so every layout attribute
-      // has to read the inner `<img>` it was rendered onto — the same reader
-      // `width`/`height`/`src` already use. Without it a wrapped image comes
-      // back centred after a copy/paste.
+      // has to read the inner `<img>` it was rendered onto. That is the same
+      // reader `width`/`height`/`src` already use. Without that reader a wrapped
+      // image comes back centred after a copy/paste.
       margin: {
         default: this.options.margin,
         parseHTML: (element) =>

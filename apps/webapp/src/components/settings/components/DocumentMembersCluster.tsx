@@ -16,8 +16,8 @@ interface DocumentMembersClusterProps {
 
 /**
  * Inline avatar cluster on a document row/tile — the trigger for the roster popover.
- * Solo documents (owner only) show nothing; the button is a sibling of the row's nav
- * button and stops propagation so opening the roster never navigates the row.
+ * Solo documents (owner only) show nothing. The button is a sibling of the row's nav
+ * button and stops propagation, so opening the roster never navigates the row.
  */
 function DocumentMembersCluster({
   workspaceId,

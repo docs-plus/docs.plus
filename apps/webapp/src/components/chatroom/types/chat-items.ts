@@ -19,9 +19,9 @@ export type MessageRowUserDetails = {
 export type MessageRow = Database['public']['Tables']['messages']['Row'] & {
   user_details?: MessageRowUserDetails | null
   /** Computed per-caller via LEFT JOIN message_bookmarks in the window RPCs.
-   *  Absent on postgres_changes payloads — bookmarks live in a separate
+   *  Absent on postgres_changes payloads: bookmarks live in a separate
    *  per-user table, so a realtime UPDATE on `messages` carries no bookmark
-   *  state; `useBookmarkMessageHandler` patches these fields on toggle. */
+   *  state. `useBookmarkMessageHandler` patches these fields on toggle. */
   is_bookmarked?: boolean | null
   bookmark_id?: number | null
 }

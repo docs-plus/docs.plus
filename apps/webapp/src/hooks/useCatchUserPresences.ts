@@ -48,9 +48,9 @@ export const useCatchUserPresences = (enabled = true) => {
     // Skip subscriptions if offline (prevents retry spam)
     if (!navigator.onLine) return
 
-    // Resubscribing (channel switch, sign-in, online reconnect) — drop the
-    // previous channel's presence so stale ONLINE entries from the old
-    // subscription don't survive into the new socket's state.
+    // Resubscribing (channel switch, sign-in, online reconnect). Drop the previous
+    // channel's presence, so stale ONLINE entries from the old subscription don't
+    // survive into the new socket's state.
     clearUsersPresence()
     clearAllPresenceShareTimers()
 

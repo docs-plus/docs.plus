@@ -70,7 +70,7 @@ cypress:run:coverage tool + subcommand + modifier
 - Scopes: `backend`, `webapp`, `traefik`, plus `infra` and `swarm` as grouped families.
 - Modifiers: `ci` (clean-room build with stub env).
 
-> **Grouped-family members.** `infra-*` members are reserved verbs (`infra-up`, `infra-down`, `infra-logs`). `swarm-*` members are the document-swarm run modes (`swarm-demo`, `swarm-stress`) rather than verbs — they mirror the `@docs.plus/document-swarm run --mode demo|stress` CLI, and are the one grouped family whose members are modes. Actor provisioning stays a Bun script (`bun run --filter @docs.plus/document-swarm provision`), not a Make target.
+> **Grouped-family members.** `infra-*` members are reserved verbs (`infra-up`, `infra-down`, `infra-logs`). `swarm-*` members are the document-swarm run modes (`swarm-demo`, `swarm-stress`) rather than verbs. They mirror the `@docs.plus/document-swarm run --mode demo|stress` CLI, and are the one grouped family whose members are modes. Actor provisioning stays a Bun script (`bun run --filter @docs.plus/document-swarm provision`), not a Make target.
 
 **Examples:**
 
@@ -91,7 +91,7 @@ Six rules. Together they prevent the `scripts/archive/` graveyard from refilling
 
 1. **Case & form.** Kebab-case. Verb-first when the script does an action (`run-tests.sh`, `release-family.ts`, `migrate-nested-to-flat.ts`, `update-packages.sh`). Bare nouns are permitted when the script _is_ the named thing (`doctor.ts`, `preflight.ts`).
 2. **Extension policy.** `.ts` for new scripts — Bun runs them natively and TypeScript catches typos at compile time. `.sh` only when the script is genuinely shell-only (Docker compose orchestration, `psql` invocation, native CLI glue). `.mjs` reserved for JS-tooling configs already wired into a JS toolchain (e.g. `generate-icons.mjs`). No `.bash` or `.zsh` (portability).
-3. **Lifecycle/upstream-named files.** Husky hook filenames (`pre-commit.sh`, `pre-push.sh`, `commit-msg.sh`, `post-merge.sh`) keep their upstream-mandated names. These are _not_ in scope for this rule — they're upstream contracts. Note: the _npm script keys_ `prepack` and `prepublishOnly` are upstream-mandated names too, but their _implementations_ live in `@docs.plus/release-tooling` (one shared copy across the monorepo); they are not per-package script files.
+3. **Lifecycle/upstream-named files.** Husky hook filenames (`pre-commit.sh`, `pre-push.sh`, `commit-msg.sh`, `post-merge.sh`) keep their upstream-mandated names. These are _not_ in scope for this rule — they're upstream contracts. Note: the _npm script keys_ `prepack` and `prepublishOnly` are upstream-mandated names too, but their _implementations_ live in `@docs.plus/release-tooling` (one shared copy across the monorepo). They are not per-package script files.
 4. **Path policy.** Repo-wide concerns live in `scripts/`. Workspace-local concerns live in `packages/<pkg>/scripts/` or `packages/<pkg>/src/scripts/` when the script needs the package's TypeScript source paths. Subdirectories (`scripts/hooks/`, `scripts/traefik/`) only when 3+ related files cluster naturally.
 5. **Banned filename traps.** `validate-*` (use `check-*` or fold into `bun run check`), `*-emergency*`, `fix-production-*`, `temp-*`, `quick-*`, `wip-*`, `final-*`, `v2-*`, date prefixes (`2026-04-rollback.sh`), author prefixes. These are exactly the names that filled `scripts/archive/`.
 6. **Archive policy.** When a script becomes one-shot or retired, prefer deletion — `git log` is the historical record. Move it to `scripts/archive/<original-name>` only if it documents a real operation worth preserving outside git history (failed deploys, schema-migration playbooks). `scripts/archive/` does not currently exist; if it is ever repopulated, add a README there recording why each survivor stays.
@@ -154,7 +154,7 @@ For npm/Bun script keys: `:all`, `:full`, `:everything`, `:complete`, `:local`. 
 
 ## Documented exceptions and corner cases
 
-Five deliberate corner cases. The first three depart from the bare-canonical rule; the last two are codified elsewhere in this doc and listed here so an agent finds the full set in one place.
+Five deliberate corner cases. The first three depart from the bare-canonical rule. The last two are codified elsewhere in this doc and listed here so an agent finds the full set in one place.
 
 - **`@docs.plus/hocuspocus` has no bare `dev`.** It's a service trio (`dev:rest`, `dev:ws`, `dev:worker`) with no single "most-frequent local-dev case." The orchestrator for "all three at once" is `make dev-backend`.
 - **Webapp `start` runtime asymmetry.** Bare `start` runs on Node (`next start`-style standalone preview); `start:prod` and `start:stage` run on Bun as container/process-manager entry points. Container env comes from compose `environment:`, not from a script-level `dotenv`. This is the one place runtime choice is encoded in a modifier, and it is deliberate.
@@ -296,7 +296,7 @@ If your new package legitimately needs a verb / scope / modifier not in the clos
 The loader must match the runtime, not aesthetics:
 
 - **Node-binary scripts** (`next dev`, `next build`, `next start`, `supabase`) wrap with `dotenv -e <path> -- <command>`. Smallest portable shim that gets vars into Node's `process.env` before the binary loads.
-- **Bun-only scripts** (`bun --watch src/...`, `bun src/scripts/...`, `bun x prisma ...`) use `bun --env-file=<path> <subcommand>`. Bun's native flag loads vars into `process.env` and is inherited by `Bun.spawn` and `child_process` children alike. Forcing `dotenv-cli` into a Bun-only workspace just to chase uniformity adds a devDep that has to be hoisted into that workspace's `node_modules/.bin`; if the symlink is missing the script dies with `bash: dotenv: command not found`.
+- **Bun-only scripts** (`bun --watch src/...`, `bun src/scripts/...`, `bun x prisma ...`) use `bun --env-file=<path> <subcommand>`. Bun's native flag loads vars into `process.env` and is inherited by `Bun.spawn` and `child_process` children alike. Forcing `dotenv-cli` into a Bun-only workspace only for uniformity adds a devDep. That devDep has to be hoisted into that workspace's `node_modules/.bin`. If the symlink is missing, the script dies with `bash: dotenv: command not found`.
 - Today: `webapp`, `admin-dashboard`, `supabase_back` use `dotenv -e -- next|supabase` (Node binaries); `hocuspocus.server` uses `bun --env-file=...` (Bun binary).
 
 ## One runner per concern

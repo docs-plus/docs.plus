@@ -47,7 +47,7 @@ Every workspace under `packages/` is exactly one of five types. Each type has a 
 - **Publishable library** (npm-published `@docs.plus/*`). Required: `build`, `dev`, `lint`, `lint:fix`, `prepack`, `prepublishOnly` (+ `test` if any tests exist). Today: all `extension-*` packages.
 - **Internal library** (consumed only by other workspaces). Forbidden: `build`, `prepack`, `dev`, `start`. Today: eslint-config, email-templates.
 
-When adding a new package, follow §"Adding a new package" in the rule doc — pick the type, copy a same-type package's script block, and wire env loading to match the runtime.
+When adding a new package, follow §"Adding a new package" in the rule doc. Pick the type, copy a same-type package's script block, and wire env loading to match the runtime.
 
 ## When to stop and read the full doc
 
