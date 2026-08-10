@@ -16,7 +16,7 @@ Review all changes, group them by intent, and produce Conventional Commit messag
 Before drafting anything, learn what this repo actually accepts:
 
 - Read `scripts/hooks/commit-msg.sh`, `.husky/commit-msg`, `commitlint.config.*`, or `package.json` `commitlint` block — note the regex and any non-conventional shapes (e.g. deploy triggers like `(build): front`).
-- `git log --oneline -50` to detect: capitalization after the colon, scope style (`feat(webapp)` vs `feat:`), body habits, and whether the repo's local hooks inject trailers (`Made-with: …`, `Generated-by: …`) — those are repo policy, leave them alone.
+- `git log --oneline -50` to detect: capitalization after the colon, scope style (`feat(webapp)` vs `feat:`), body habits, and whether the repo's local hooks inject trailers (`Made-with: …`, `Generated-by: …`). Those trailers are repo policy, so leave them alone.
 - If the hook rejects the Conventional `!` breaking-change marker (regex without an `!` slot — common), use the `BREAKING CHANGE:` footer only. Never `feat!:` / `feat(scope)!:` until Step 0 confirms the regex accepts it.
 - If the repo defines extra shapes (e.g. `^\(build\):.*` deploy trigger), accept them as first-class. Don't force everything into Conventional.
 
@@ -70,9 +70,9 @@ Default is fast: current conversation + working-tree diff + `AGENTS.md` + every 
 
    If 0 sessions score Strong, **escalate to fallback (below) immediately** — don't waste tokens reading Weak ones.
 
-5. **Read survivors selectively** — user-message slices and final tool-call summaries only. Skip the agent's exploratory monologue, abandoned approaches, and code-reading rabbit holes.
+5. **Read survivors selectively** — user-message slices and final tool-call summaries only. Skip the agent's exploratory monologue, abandoned approaches, and code-reading that produced nothing useful.
 
-6. **The "why" is the user's stated brief, not the agent's narrative.** Reconcile brief vs diff: if they disagree (user said "refactor", diff adds new endpoints = `feat`), flag the mismatch in the report rather than parroting the user's framing.
+6. **The "why" is the user's stated brief, not the agent's narrative.** Check the brief against the diff. If they disagree (user said "refactor", diff adds new endpoints = `feat`), flag the mismatch in the report rather than repeating the user's framing.
 
 ### Tier 2 fallback (used freely, not "only when archaeology fails")
 
@@ -133,12 +133,13 @@ Pick the most specific shared thing the change touches. The scope should help a 
 ### Subject line — quality bar
 
 - Imperative mood: `add`, `fix`, `remove` — never `added`, `fixed`, `updated`, `adding`
-- ≤ 50 characters when possible, **editorial cap 72** (hooks often allow up to 100 — go past 72 only when wrapping makes the subject worse)
+- ≤ 50 characters when possible, **editorial cap 72** (hooks often allow up to 100 — go past 72 only when wrapping makes the subject worse). Never drop `a`, `an`, or `the` to fit.
 - No trailing period
 - Match the project's capitalization convention after the colon (from Step 0)
 - Atomic — if the summary needs "and", it's two commits
 - Don't restate the filename when the scope already says it
 - **No plan or brainstorm jargon** in subjects or bodies — not `v1`, `v2`, `phase 1`, `MVP`, or session shorthand like "green doc". Write what shipped in product terms (`reshape chat composer for mobile density`, not `composer v1`). Real version paths in code (`/rest/v1/`, schema types) are fine when the change is literally about them.
+- A subject is a title, so the 25-word sentence cap in [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard) does not reach it. `(build):` deploy triggers are exempt from Simplified English.
 
 ### Body — only when needed
 
@@ -155,9 +156,10 @@ Pick the most specific shared thing the change touches. The scope should help a 
 
 **Body rules:**
 
+- The body is prose, so [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard) governs it
 - Wrap at 72 chars
 - Bullets use `-`, not `*`
-- Issue refs at the end. Use `Closes #N` **only** on the commit that actually fixes the issue (usually the last in the group); other commits in the same PR use `Refs #N` so GitHub doesn't close on the first-merged commit.
+- Issue refs at the end. Use `Closes #N` **only** on the commit that actually fixes the issue, usually the last in the group. Other commits in the same PR use `Refs #N`, so GitHub doesn't close on the first-merged commit.
 - Breaking changes: `BREAKING CHANGE: <description>` footer. Use the `!` subject marker only if Step 0 confirmed the hook accepts it.
 
 ### Strictly forbidden
@@ -190,7 +192,7 @@ git log --oneline -20
 
 - Default scope follows the user's ask: "review my staged changes" → skip unstaged; "review changes" → both.
 - If there's nothing to commit, stop and tell the user.
-- If the diff includes anything that looks like a secret or machine-local file — `**/.env*`, `**/credentials*.json`, `**/service-account*.json`, `**/*.pem`, `**/*.key`, `**/id_rsa*`, `**/*.p12`, `**/*.pfx`, `**/*.kubeconfig`, or paths normally listed in `.gitignore` that slipped in — **exclude them from every group** and flag them so the user can decide. Do **not** substring-match `*token*` / `*secret*` (false-positives on `tokenizer.ts`, `secretRotation.test.ts`).
+- Watch the diff for anything that looks like a secret or machine-local file. The shapes to catch are `**/.env*`, `**/credentials*.json`, `**/service-account*.json`, `**/*.pem`, `**/*.key`, `**/id_rsa*`, `**/*.p12`, `**/*.pfx`, `**/*.kubeconfig`, or paths normally listed in `.gitignore` that slipped in. If the diff includes one, **exclude it from every group** and flag it so the user can decide. Do **not** substring-match `*token*` / `*secret*` (false-positives on `tokenizer.ts`, `secretRotation.test.ts`).
 
 ### 2. Propose
 
@@ -261,7 +263,7 @@ For each approved group, in order:
    )"
    ```
 
-3. **If a pre-commit hook auto-modifies files**, run `git diff --name-only` to see what it touched, re-stage those files, then amend — but **only** when all of: (a) you created the commit in this session, (b) `git status` still shows "Your branch is ahead" (not pushed), (c) it's the most recent commit. Otherwise create a follow-up commit.
+3. **If a pre-commit hook auto-modifies files**, run `git diff --name-only` to see what it touched, then re-stage those files. Amend **only** when all three hold. (a) You created the commit in this session. (b) `git status` still shows "Your branch is ahead" (not pushed). (c) It's the most recent commit. Otherwise create a follow-up commit.
 4. **If a hook rejects the commit**, fix the underlying issue and create a **new** commit — never amend, never `--no-verify`, never `--no-gpg-sign`.
 
 ### 4. Self-check before reporting "done"

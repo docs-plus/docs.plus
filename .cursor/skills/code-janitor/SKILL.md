@@ -5,11 +5,11 @@ description: Reviews, cleans up, and verifies code as production-ready in a fold
 
 # Code Janitor 🧹
 
-Tactical, principle-driven cleanup pipeline that adapts to any workspace and ends with an industry-standard production-ready verdict. Reviews a folder/package (or the current git changes) in five ordered chains — Simplification → Abstraction → Readability → Documentation → Production-Readiness Sweep — with one supervisor granting the flag at the end. Phase A auto-detects the workspace's package manager, scripts, monorepo layout, agent-instructions doc, and adjacent skills, so the same skill works in a Bun/pnpm/yarn/npm repo, a single-package or workspaces layout, with or without a sibling commit-review skill.
+Tactical, principle-driven cleanup pipeline that adapts to any workspace and ends with an industry-standard production-ready verdict. Reviews a folder/package (or the current git changes) in five ordered chains: Simplification → Abstraction → Readability → Documentation → Production-Readiness Sweep. One supervisor grants the flag at the end. Phase A auto-detects the workspace's package manager, scripts, monorepo layout, agent-instructions doc, and adjacent skills. The same skill therefore works in a Bun/pnpm/yarn/npm repo, a single-package or workspaces layout, with or without a sibling commit-review skill.
 
 > **Autonomous by default; opt-in review.** Auto-applies edits, prints one terse line per file. Pass `--review` to gate every file or `--with-tests` to run unit tests. The skill always stops on its own for the six gated edit types (see § Constraints) regardless of flags.
 >
-> **Senior-level scope.** Performs real cleanup — rename exported symbols, fix typos in identifiers and i18n keys, split overgrown files, move files, bump dep versions — when the new shape is materially better. Algorithm rewrites and net-new dependencies remain forbidden.
+> **Senior-level scope.** Performs real cleanup when the new shape is materially better. That means renaming exported symbols, fixing typos in identifiers and i18n keys, splitting overgrown files, moving files, and bumping dep versions. Algorithm rewrites and net-new dependencies remain forbidden.
 >
 > **Multiple goals, one flag.** Chains 1–4 polish (simpler, better-bounded, readable, documented). Chain 5 sweeps for bugs, performance regressions, weak typing, dead code, security issues, and missing test coverage — absorbing `/simplify` and `/review` into the pipeline. The supervisor grants the **industry-standard production-ready flag** only when every chain is green and no `BLOCK`-severity finding survives.
 
@@ -46,7 +46,7 @@ Six edit types stop the skill regardless of flags:
 ### Default behavior
 
 - **Autonomous.** Apply edits silently with one-line status. Stop only on the six gated edit types, on diff-sanity violations, or when the hesitation gate fires.
-- **Hesitation gate.** Stop and ask only when there's no clear, cohesive decision: grouping is a coin-flip, or a principle conflict can't be broken by the resolution ladder. Routine progress = no prompt.
+- **Hesitation gate.** Stop and ask only when there's no clear, cohesive decision. Two cases: grouping has two equally good options, or the resolution ladder can't break a principle conflict. Routine progress = no prompt.
 
 ## Pipeline
 
@@ -101,9 +101,9 @@ Before scope discovery, detect the workspace toolchain and conventions. Cache th
    - **unit-test**: `test:unit` → `test` (only if Jest/Vitest config detected; never E2E runners like Cypress/Playwright)
    - If a gate has no resolvable command → mark that gate `skipped` and proceed.
 3. **Monorepo layout** — read `package.json` `"workspaces"` or `pnpm-workspace.yaml` to identify package roots (commonly `packages/*`, `apps/*`, `libs/*`). Single-package repos skip per-package scoping in Chain 0.
-4. **Agent-instructions docs** — read **all** that exist, not the first hit: root `AGENTS.md`, root `CLAUDE.md`, every `CLAUDE.md` and `AGENTS.md` on the directory path of each file in scope (a repo may file directory-scoped rules there — docs.plus does), `.cursor/rules/*.mdc`, `.github/copilot-instructions.md`, top-of-`README.md`. Stopping at the first hit silently skips the rules that govern the files you are about to edit. Treat their durable rules as workspace facts in conflict resolution.
+4. **Agent-instructions docs** — read **all** that exist, not the first hit. Read root `AGENTS.md`, root `CLAUDE.md`, every `CLAUDE.md` and `AGENTS.md` on the directory path of each file in scope, `.cursor/rules/*.mdc`, .github/copilot-instructions.md, and top-of-`README.md`. A repo may file directory-scoped rules in those path-level docs, and docs.plus does. Stopping at the first hit silently skips the rules that govern the files you are about to edit. Treat their durable rules as workspace facts in conflict resolution.
 5. **Adjacent skills** — list skills under `.cursor/skills/`, `.agents/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note any skill whose name matches `*commit*` (for Phase D handoff) and any architecture/refactor skill (e.g. [`improve-codebase-architecture`](../../../.agents/skills/improve-codebase-architecture/SKILL.md), to which algorithm changes are deferred).
-6. **Generated/excluded paths** — start with the universal list (`node_modules/`, `dist/`, `build/`, `out/`, `.next/`, `.nuxt/`, `coverage/`, `.turbo/`, `.cache/`, `__snapshots__/`, `*.lock`, `*.lockb`) and append any path the workspace's `.gitignore` flags as build/state output. Also exclude any path the agent-instructions doc lists as off-limits (e.g. notes folders, hook state files).
+6. **Generated/excluded paths** — start with the universal list (`node_modules/`, `dist/`, `build/`, `out/`, `.next/`, `.nuxt/`, `coverage/`, `.turbo/`, `.cache/`, `__snapshots__/`, `*.lock`, `*.lockb`). Then append any path the workspace's `.gitignore` flags as build/state output. Also exclude any path the agent-instructions doc lists as off-limits (e.g. notes folders, hook state files).
 7. **Skills-output dir** — choose `docs/skills-output/` if `docs/` exists, else `.skills-output/` at repo root. Ensure it's in `.gitignore`; add the entry if missing.
 
 ### A.1 — Scope discovery
@@ -126,24 +126,24 @@ The stash is for audit reference only; **never restore from it automatically**.
 For the in-scope files, build groups using this resolution order:
 
 1. **Semantic intent** — preferred when a diff exists. Read each file's diff, infer one or more themes (e.g. _"auth hardening"_, _"payment-flow refactor"_, _"i18n cleanup"_). Cross-reference with `git log --oneline -20` for commit themes. If the bootstrap detected an agent-transcripts directory for the host tool (e.g. `~/.cursor/projects/<workspace>/agent-transcripts/`, `~/.claude/projects/`), use semantic search over recent transcripts to surface prior decisions touching these files. If no such directory exists, skip this input.
-2. **Feature/concern** — when no diff exists, use `SemanticSearch` over the in-scope files to cluster by domain concept (e.g. a "user-creation flow" cluster might span an entry-point handler, a validator, a persistence helper, and tests).
-3. **Architectural layer — last resort** — if intent and concern can't yield coherent clusters, group by directory (e.g. handlers, models, utils, helpers, tests, docs) and surface this fallback explicitly to the user.
+2. **Feature/concern** — when no diff exists, use `SemanticSearch` over the in-scope files to cluster by domain concept. For example, a "user-creation flow" cluster might span an entry-point handler, a validator, a persistence helper, and tests.
+3. **Architectural layer — last resort** — use this when intent and concern can't yield coherent clusters. Group by directory (e.g. handlers, models, utils, helpers, tests, docs), and surface this fallback explicitly to the user.
 
 Each group's source attribution **must** be shown (e.g. _"derived from git diff + 2 prior transcripts"_) so the user can audit the reasoning.
 
 ### Dependency tree
 
-For every file in a group, run an import/export trace to find **related files** — files importing or imported by the group's files, even if out of scope. Mark each as **primary** (the group will edit it) or **related** (read-only context for the group's sub-agent). If the same file is primary in two groups, collapse those groups or assign editing rights to the group with the stronger semantic claim — never let two groups edit one file.
+For every file in a group, run an import/export trace to find **related files**. A related file imports one of the group's files, or is imported by one, even if out of scope. Mark each as **primary** (the group will edit it) or **related** (read-only context for the group's sub-agent). If the same file is primary in two groups, collapse those groups or assign editing rights to the group with the stronger semantic claim. Never let two groups edit one file.
 
 ### Auto-proceed (Surface 1)
 
-Render Surface 1 (one-line group summary) and proceed immediately to Phase B. **Only stop and ask** when the grouping is genuinely ambiguous — e.g. the in-scope files split equally between two themes with no diff or transcript to break the tie, or a file plausibly belongs to two groups and the editing-owner pick is a coin-flip. Otherwise, just go.
+Render Surface 1 (one-line group summary) and proceed immediately to Phase B. **Only stop and ask** when the grouping is genuinely ambiguous. For example, the in-scope files split equally between two themes with no diff or transcript to break the tie. Or a file plausibly belongs to two groups, and neither group has the stronger semantic claim. Otherwise, just go.
 
 ## Phase B — Per-group execution
 
 Groups run sequentially; the next group's read-only triage is pipelined in the background (`explore` sub-agent). Edits are always sequential — no parallel writing.
 
-For each group: run Chain 0, then load all files into one sub-agent and plan Chains 1 → 4 as a single conceptual pass (cross-file principles like DRY and naming consistency need the whole-group view), then apply the resulting edit plan file-by-file. After application, run Chain 5 (three parallel read-only reviewers) on the post-edit state; their findings feed a second per-file pass under the same auto-apply / forced-approval / surface classification. Each chain's settled edits are inputs to later chains; no chain revisits a settled one.
+For each group: run Chain 0, then load all files into one sub-agent and plan Chains 1 → 4 as a single conceptual pass. Cross-file principles like DRY and naming consistency need the whole-group view. Then apply the resulting edit plan file-by-file. After application, run Chain 5 (three parallel read-only reviewers) on the post-edit state. Their findings feed a second per-file pass under the same auto-apply / forced-approval / surface classification. Each chain's settled edits are inputs to later chains; no chain revisits a settled one.
 
 ### Chain 0 — Tooling pass
 
@@ -198,9 +198,9 @@ Order matters. **Internal precedence:** YAGNI overrides DRY (deletion beats cons
 
 ### Chain 4 — Documentation
 
-**Voice — senior technical writer:** active, present-tense, lead with the verb, no "this method" / "this function", never restate the signature. Canonical voice rules live in the [`tech-writer`](../tech-writer/SKILL.md) skill — invoke it whenever Chain 4 work needs more than the table below (e.g. file-header rewrites, README touch-ups inside the in-scope group).
+**Voice — senior technical writer:** active, present-tense, lead with the verb, no "this method" / "this function", never restate the signature. Canonical voice rules and the [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard) house standard live in the [`tech-writer`](../tech-writer/SKILL.md) skill. Invoke it whenever Chain 4 work needs more than the table below, for example file-header rewrites or README touch-ups inside the in-scope group.
 
-**Published-library caveat** — for any package the workspace publishes (npm/pnpm/Cargo/PyPI/etc.), JSDoc on exported symbols ships into consumers' installs (for TypeScript, into the bundled `.d.ts`). Verbose preambles measurably bloat install size (often >5% of the typings bundle). Treat any package whose `package.json` has no `"private": true` flag, or that the agent-instructions doc identifies as published, under this caveat: file headers 1–2 lines, per-symbol blocks 1–3 lines, point at `README.md` for option semantics. Preserve only the _why_. Internal/private packages may use longer prose at the author's discretion.
+**Published-library caveat** — for any package the workspace publishes (npm/pnpm/Cargo/PyPI/etc.), JSDoc on exported symbols ships into consumers' installs (for TypeScript, into the bundled `.d.ts`). Verbose preambles measurably bloat install size (often >5% of the typings bundle). Treat any package whose `package.json` has no `"private": true` flag under this caveat, and any package the agent-instructions doc identifies as published. The caveat: file headers 1–2 lines, per-symbol blocks 1–3 lines, point at `README.md` for option semantics. Preserve only the _why_. Internal/private packages may use longer prose at the author's discretion.
 
 | Step | Principle                             | Action                                                                                                                                                      |
 | ---- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -246,7 +246,7 @@ A group can run this section twice: once after Chains 1–4 plan, then again aft
 
 **Forced approval:** stop on any of the six gated edit types in § Constraints. The prompt shows the change plus every dependent edit as one atomic unit (the discipline rule). If dependents can't be enumerated, skip and surface as INFO.
 
-**`--review` mode:** prompt on every file. The per-file prompt lists each proposed edit by its chain step — `1.1 DRY`, `3.3 WNW`, `4.5 SSL` for Chains 1–4; `5.Q`, `5.P`, `5.B` for Chain 5 (Quality / Performance / Bugs · Security · Tests). Reply `y` (apply all), `select <ids>`, `skip-file`, or `abort`.
+**`--review` mode:** prompt on every file. The per-file prompt lists each proposed edit by its chain step — `1.1 DRY`, `3.3 WNW`, `4.5 SSL` for Chains 1–4. It lists `5.Q`, `5.P`, `5.B` for Chain 5 (Quality / Performance / Bugs · Security · Tests). Reply `y` (apply all), `select <ids>`, `skip-file`, or `abort`.
 
 ### Group validation gates
 
@@ -265,7 +265,7 @@ After all groups complete Phase B, dispatch **one fresh `code-reviewer` sub-agen
 
 1. **Correctness** — re-run diff sanity check, the resolved typecheck and lint commands; verify no runtime behavior change; cross-reference § Constraints (Forbidden) against the diff.
 2. **Principle-Adherence** — re-read against Chains 1–4. Catches cross-group misses neither per-group agent could see: duplications across groups, naming inconsistency, doc-voice drift, KISS regressions from overzealous Chain 2 work.
-3. **Production-Readiness** — re-aggregates Chain 5 findings across groups; catches **cross-group production-readiness misses** that no single group's Chain 5 could see (a perf regression that surfaces only when two groups' edits combine, a duplicated bug pattern, a security boundary weakened by edits in two places). Confirms every Chain 5 INFO finding is correctly classified (no real `BLOCK`-severity bug or vulnerability slipped into INFO). Standing checks: published-package doc bloat for any package without `"private": true`, i18n key safety, generated-file bypass attempts, new debug loggers, TODO/FIXME/XXX/HACK comments. **Owns the industry-standard production-ready flag** — granted only when this checklist is green and no surviving `BLOCK`-severity finding exists.
+3. **Production-Readiness** — re-aggregates Chain 5 findings across groups. Catches **cross-group production-readiness misses** that no single group's Chain 5 could see. Examples: a perf regression that surfaces only when two groups' edits combine, a duplicated bug pattern, a security boundary weakened by edits in two places. Confirms every Chain 5 INFO finding is correctly classified (no real `BLOCK`-severity bug or vulnerability slipped into INFO). Standing checks: published-package doc bloat for any package without `"private": true`, i18n key safety, generated-file bypass attempts, new debug loggers, TODO/FIXME/XXX/HACK comments. **Owns the industry-standard production-ready flag** — granted only when this checklist is green and no surviving `BLOCK`-severity finding exists.
 
 The supervisor returns a list of findings; each is `severity` (`BLOCK` | `FIX` | `INFO`), `scope` (group id, `cross-group`, or `global`), and a one-line summary with evidence.
 
@@ -274,8 +274,8 @@ The supervisor returns a list of findings; each is `severity` (`BLOCK` | `FIX` |
 - **PASS / PASS-WITH-NOTES** (all green, or only INFO) → industry-standard production-ready flag **granted**, proceed to Phase D.
 - **FIX** → dispatch a fresh `generalPurpose` fix-pass agent scoped to the offending group(s) or `cross-group` (never reuse a prior agent's context). Re-supervise after each fix-pass.
 - **BLOCK** (behavior change, Forbidden violation, surviving test regression, surviving Chain 5 BLOCK finding) — **two paths depending on origin**:
-  - _Janitor introduced it_ (e.g. Chain 5 Apply-class fix subtly altered semantics, or a Chain 3 rename broke a test) → fix-pass agent **reverts the offending edit only** (not the whole group). Re-supervise.
-  - _Pre-existing in the codebase_ (real bug or vulnerability the reviewer found in code untouched by janitor) → no auto-fix possible without violating Forbidden #1. Flag stays **WITHHELD**; the disk report lists the BLOCK finding under "Chain 5 surfaced findings" with severity `BLOCK` and the user resolves manually. Re-running janitor on the same diff will hit the same wall — the user must fix the bug separately.
+  - _Janitor introduced it_ → fix-pass agent **reverts the offending edit only** (not the whole group). Example causes: a Chain 5 Apply-class fix subtly altered semantics, or a Chain 3 rename broke a test. Re-supervise.
+  - _Pre-existing in the codebase_ (real bug or vulnerability the reviewer found in code untouched by janitor) → no auto-fix possible without violating Forbidden #1. Flag stays **WITHHELD**; the disk report lists the BLOCK finding under "Chain 5 surfaced findings" with severity `BLOCK` and the user resolves manually. Re-running janitor on the same diff reaches the same WITHHELD verdict. The user must fix the bug separately.
 
   No global revert in either case. The group is marked at risk in the disk report.
 
@@ -289,7 +289,7 @@ The supervisor returns a list of findings; each is `severity` (`BLOCK` | `FIX` |
 
 ## Phase D — Summary + handoff
 
-Save the full **Surface 6 (final summary)** to `<skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md` (path from A.0; directory already in `.gitignore`). The disk report follows the [`tech-writer`](../tech-writer/SKILL.md) **Report / status / summary** spine. Print only the **one-line chat summary** (see Surface 6 below) — never paste the full report into chat.
+Save the full **Surface 6 (final summary)** to `<skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md` (path from A.0; directory already in `.gitignore`). The disk report follows the [`tech-writer`](../tech-writer/SKILL.md) **Report / status / summary** spine and the [Simplified English](../tech-writer/SKILL.md#simplified-english-house-standard) house standard. Print only the **one-line chat summary** (see Surface 6 below) — never paste the full report into chat.
 
 Then hand off automatically:
 
@@ -343,7 +343,7 @@ On a forced-approval edit (export rename, i18n-key rename, file move, split, pub
 G<n>/F<m>: <basename> — STOP: <edit type> on <symbol>. Apply? [y/skip/abort]
 ```
 
-In `--review` mode, expand each file's status into its proposed-edit list (one row per edit, prefixed with the chain step like `1.1 DRY` or `3.3 WNW`) and wait for `y / select <ids> / skip-file / abort`.
+In `--review` mode, expand each file's status into its proposed-edit list. Each row is one edit, prefixed with the chain step like `1.1 DRY` or `3.3 WNW`. Then wait for `y / select <ids> / skip-file / abort`.
 
 ### Surface 4 — Phase B validation (only printed on failure)
 

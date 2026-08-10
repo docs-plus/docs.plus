@@ -22,14 +22,15 @@ If guidance overlaps, project policy in `AGENTS.md` and `.cursor/docs/` wins; `.
 
 ## Hard invariants (do not violate)
 
-These are the rules that bite hardest if missed. Full context in [AGENTS.md](AGENTS.md).
+These rules cause the most damage when an agent misses them. Full context in [AGENTS.md](AGENTS.md).
 
-- **Bun only.** Never `npm`, `yarn`, `pnpm`, `npx` — including the install commands in published extension READMEs/CHANGELOGs (plain `bun add <pkg>`, never `npm install` or `@next` soak lines; see the [release-extensions](.cursor/skills/release-extensions/SKILL.md) skill §Extension Package Contract). Lockfile is `bun.lock`.
+- **Bun only.** Never `npm`, `yarn`, `pnpm`, `npx` — including the install commands in published extension READMEs/CHANGELOGs. Use the plain `bun add <pkg>` line, never `npm install` or `@next` soak lines. See the [release-extensions](.cursor/skills/release-extensions/SKILL.md) skill §Extension Package Contract. Lockfile is `bun.lock`.
 - **No commits unless asked.** No `git add`, `git commit`, `git push`, `git stash`, or `--amend` inside plan execution. End multi-task plans at a "Review checkpoint".
 - **Stay in the current worktree.** Do not switch execution to another path or parallel checkout.
 - **Never hand-edit generated files:** `apps/webapp/src/types/supabase.ts` (Supabase CLI output) and `packages/supabase/seed.sql`. After any SQL change run `bun run --filter @docs.plus/supabase_back types` and include the regenerated file in the same change — full rules in [packages/supabase/CLAUDE.md](packages/supabase/CLAUDE.md).
 - **Tests are opt-in, not default.** Do not add tests unless asked, pinning a real regression, or covering dense branching logic. Prefer Cypress E2E over unit. Never write the banned shapes listed in [AGENTS.md](AGENTS.md) §Test Policy.
-- **Prose routes through the `tech-writer` skill.** README, CHANGELOG, reports, post-mortems, PR descriptions, JSDoc.
+- **Simplified English is mandatory.** Short sentences; one name per thing. It binds chat replies, reports, code comments, commit bodies, and every document, for every agent and subagent. The obligation and its subagent-dispatch clause live in [AGENTS.md](AGENTS.md) §Simplified English Mandate. The rules and the exempt surfaces live in [tech-writer](.cursor/skills/tech-writer/SKILL.md#simplified-english-house-standard).
+- **Prose routes through the [`tech-writer`](.cursor/skills/tech-writer/SKILL.md) skill,** including its [Simplified English](.cursor/skills/tech-writer/SKILL.md#simplified-english-house-standard) standard and the surfaces it exempts. README, CHANGELOG, reports, post-mortems, PR descriptions, JSDoc.
 - **JSDoc/comments ≤ 4 lines, why-not-what.** No section banners. No restating signatures.
 
 ### Settled — do not re-propose
@@ -41,11 +42,11 @@ Each was decided, and in most cases built and reverted. If you want to change on
 - **Collab storage design.** Delta storage, Yjs V2 encoding, content-addressed rows, time partitioning, and blobs-to-object-storage were each measured against the real corpus and rejected, 2026-07-27. New numbers required. See [apps/hocuspocus.server/CLAUDE.md](apps/hocuspocus.server/CLAUDE.md).
 - **Dark mode mechanism.** `color-scheme` + `light-dark()` + semantic tokens, settled 2026-07-09. Never reintroduce a theming `data-mode` attribute or a `dark:`-enumerating `@custom-variant` — both were built and deleted. The unrelated `data-mode` on chat message cards is live and correct.
 - **TOC presence overhang.** Rendering presence beyond the TOC column edge was evaluated and rejected; the `overflow: visible` hack breaks column scrolling. See [apps/webapp/CLAUDE.md](apps/webapp/CLAUDE.md) §TOC And Heading Actions.
-- **The `mattpocock-skills` marketplace plugin.** Installed 2026-08-07, then disabled the same day: it exposes 25 skills, 21 of which already exist in `.agents/skills`, so every one of those names resolved twice with different instructions. The plugin also only works in Claude Code, while `.agents/skills` is tracked in git and symlinked into `.cursor/skills`, which is the only reason these skills exist in Cursor at all. Refresh the tracked copies instead — see §Skills — project-local. Do not re-enable the plugin; do not add it to the committed `.claude/settings.json`.
+- **The `mattpocock-skills` marketplace plugin.** Installed 2026-08-07, then disabled the same day, because it exposes 25 skills, and 21 of them already exist in `.agents/skills`. So every one of those names resolved twice, with different instructions. The plugin also only works in Claude Code. In contrast, `.agents/skills` is tracked in git and symlinked into `.cursor/skills`. That is the only reason these skills exist in Cursor at all. Refresh the tracked copies instead — see §Skills — project-local. Do not re-enable the plugin; do not add it to the committed `.claude/settings.json`.
 
 ## Cursor rules — `.cursor/rules/`
 
-Reference material that auto-attaches in Cursor. In Claude Code, open the relevant file when the matching surface is touched.
+Reference material that auto-attaches in Cursor. In Claude Code, open the relevant file when you touch the matching surface.
 
 - [design-system.mdc](.cursor/rules/design-system.mdc) — design-system pointer + cardinal rules for all webapp UI work; source of truth is [.cursor/docs/design-system.md](.cursor/docs/design-system.md).
 - [react-floating-ui.mdc](.cursor/rules/react-floating-ui.mdc) — React 19.2 + `@floating-ui/react` 0.27 conventions and pitfalls.
@@ -55,7 +56,7 @@ Reference material that auto-attaches in Cursor. In Claude Code, open the releva
 
 ## Long-form policy — `.cursor/docs/`
 
-- [design-system.md](.cursor/docs/design-system.md) — source of truth for the webapp visual language (daisyUI/Tailwind tokens, themes, elevation species, state recipes, component catalog) that `design-system.mdc` and the `design-system` skill point at.
+- [design-system.md](.cursor/docs/design-system.md) — source of truth for the webapp visual language: daisyUI/Tailwind tokens, themes, elevation species, state recipes, and the component catalog. `design-system.mdc` and the `design-system` skill point at it.
 - [scripts-naming-convention.md](.cursor/docs/scripts-naming-convention.md) — timeless source of truth that `scripts-naming.mdc` points at.
 
 ## Skills — project-local
@@ -65,6 +66,6 @@ Every skill's name and trigger description is already loaded in each session —
 - **`.cursor/skills/`** — docs.plus-specific skills, symlinked as `.claude/skills` so Claude Code loads them.
 - **`.agents/skills/`** — [mattpocock/skills](https://github.com/mattpocock/skills), installed via `bunx skills@latest add mattpocock/skills`; lockfile `skills-lock.json`. Run [setup-matt-pocock-skills](.agents/skills/setup-matt-pocock-skills/SKILL.md) once to wire issue tracker, triage labels, and domain docs.
 
-Refresh the upstream set with `bunx skills@latest update -p -y` — it rewrites the tracked files in place through `skills-lock.json`, so the diff is reviewable. This is the only supported way to take new upstream content: installing the same skills as a Claude Code plugin duplicates every name and loses Cursor, which is why that route is settled above. The CLI prints `npx` in its hints; ignore it, Bun only. It cannot update `tiptap`, which predates `skillPath` tracking and is a vendored [ueberdosis](https://github.com/ueberdosis/tiptap) copy living as a real directory in `.cursor/skills/` — refresh that one deliberately, never as part of a sweep.
+Refresh the upstream set with `bunx skills@latest update -p -y` — it rewrites the tracked files in place through `skills-lock.json`, so the diff is reviewable. This is the only supported way to take new upstream content. Installing the same skills as a Claude Code plugin duplicates every name and loses Cursor. That is why the plugin route is settled above. The CLI prints `npx` in its hints; ignore it, Bun only. The CLI cannot update `tiptap`. That skill predates `skillPath` tracking, and it is a vendored [ueberdosis](https://github.com/ueberdosis/tiptap) copy living as a real directory in `.cursor/skills/`. Refresh that one deliberately, never as part of a sweep.
 
 Skills never create branches or worktrees and never commit — they operate in the current directory and branch.

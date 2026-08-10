@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
     "buildkite@claude-plugins-official": true
-  }
+  },
+  "outputStyle": "docsplus-simplified-english"
 }
