@@ -107,6 +107,11 @@ export const mediaServiceLogger = logger.child(
   { level: envLevel(process.env.MEDIA_SERVICE_LOG_LEVEL, baseLevel) }
 )
 
+export const conversionLogger = logger.child(
+  { module: 'document-conversion' },
+  { level: envLevel(process.env.CONVERSION_LOG_LEVEL, baseLevel) }
+)
+
 // Storage
 export const storageLocalLogger = logger.child(
   { module: 'storage-local' },

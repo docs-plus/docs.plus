@@ -40,8 +40,8 @@ export const httpRequestsTotal = new Counter({
 })
 
 // Live count derived at scrape time, not inc/dec: onConnect fires pre-auth but
-// onDisconnect only fires for sockets that finished auth, so a rejection storm
-// would drift an inc/dec gauge upward forever.
+// onDisconnect only fires for sockets that finished auth. A rejection storm would
+// therefore drift an inc/dec gauge upward forever.
 let activeConnectionsProvider: (() => number) | null = null
 export const setActiveConnectionsProvider = (fn: () => number): void => {
   activeConnectionsProvider = fn
@@ -62,8 +62,8 @@ export const wsConnectionsTotal = new Counter({
   registers: [register]
 })
 
-// Labelled so the fail-closed deny is visible too: a metadata lookup that throws
-// (wedged pool, Postgres outage) denies every handshake, and without a counter on
+// Labelled so the fail-closed deny is visible too. A metadata lookup that throws
+// (wedged pool, Postgres outage) denies every handshake. Without a counter on
 // that arm the rejection ratio the alert reads FALLS while the outage runs.
 export const wsAuthRejectionsTotal = new Counter({
   name: 'ws_auth_rejections_total',
@@ -113,7 +113,7 @@ export const documentLoadDuration = new Histogram({
 })
 
 // Hocuspocus store-hook OVERHEAD (Y.Doc decode + base64 encode + BullMQ enqueue),
-// NOT DB write latency — the real Postgres write runs async in the worker and is
+// NOT DB write latency. The real Postgres write runs async in the worker and is
 // measured by job_duration_seconds{queue=store-documents}. Only the queue-down
 // fallback path includes a direct write.
 export const documentPersistDuration = new Histogram({
@@ -131,9 +131,9 @@ export const documentPersistFallbackTotal = new Counter({
   registers: [register]
 })
 
-// A rejection out of the store hook poisons Hocuspocus's debouncer for the
-// process lifetime — that room then never saves and never unloads — so the hook
-// gives up instead. This counter is the only remaining trace that it happened.
+// A rejection out of the store hook poisons Hocuspocus's debouncer for the process
+// lifetime. That room then never saves and never unloads. The hook therefore gives up
+// instead. This counter is the only remaining trace that it happened.
 export const documentStoreRejectionsTotal = new Counter({
   name: 'document_store_rejections_total',
   help: 'Document saves the store hook abandoned rather than rethrow, by reason',
@@ -141,8 +141,18 @@ export const documentStoreRejectionsTotal = new Counter({
   registers: [register]
 })
 
+// A DOCX export that loses every image still returns 200 with a readable file,
+// so a misconfigured media origin is invisible without this. Alert on a drop
+// rate near 1, not on any drop: refusing hostile bytes is the feature working.
+export const documentExportImagesDroppedTotal = new Counter({
+  name: 'document_export_images_dropped_total',
+  help: 'Images removed from a document export rather than embedded, by reason',
+  labelNames: ['reason'] as const,
+  registers: [register]
+})
+
 // Stateless relays refused before broadcast. `oversized` is an anonymous client
-// probing the amplifier that OOM-killed replicas before the budget existed;
+// probing the amplifier that OOM-killed replicas before the budget existed.
 // `type-not-allowed` and `broadcast-frame` are someone trying to mint the access
 // events the webapp obeys. Different alarms, so the reason has to be countable.
 export const statelessRelayDroppedTotal = new Counter({

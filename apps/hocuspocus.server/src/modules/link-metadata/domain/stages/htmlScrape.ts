@@ -1,3 +1,4 @@
+import { readCappedBody } from '../../../../lib/readCappedBody'
 import { safeFetch } from '../ssrf'
 import { BOT_USER_AGENT, type Scraper, STAGE_TIMEOUT_MS, type StageResult } from '../types'
 
@@ -52,42 +53,6 @@ const decodeBody = (bytes: Uint8Array, contentType: string | null): string => {
   }
 }
 
-/** Content-Length is client-controlled, so the cap is enforced on the stream.
- *  Aborting the shared controller stops the fetch itself rather than draining
- *  bytes that will never be read. */
-const readCappedBody = async (
-  response: Response,
-  controller: AbortController
-): Promise<Uint8Array | null> => {
-  if (!response.body) return new Uint8Array(await response.arrayBuffer())
-
-  const reader = response.body.getReader()
-  const chunks: Uint8Array[] = []
-  let total = 0
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      total += value.byteLength
-      if (total > MAX_BODY_BYTES) {
-        controller.abort()
-        return null
-      }
-      chunks.push(value)
-    }
-  } finally {
-    reader.releaseLock()
-  }
-
-  const out = new Uint8Array(total)
-  let offset = 0
-  for (const chunk of chunks) {
-    out.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return out
-}
-
 /**
  * `safeFetch` re-runs the SSRF host check on every redirect hop, so a public URL
  * cannot bounce to an internal host. The compound UA is deliberate: sites that
@@ -131,7 +96,7 @@ export const runHtmlScrape = async (
       }
     }
 
-    const buf = await readCappedBody(response, controller)
+    const buf = await readCappedBody(response, controller, MAX_BODY_BYTES)
     if (!buf) return null
 
     const html = decodeBody(buf, contentType)

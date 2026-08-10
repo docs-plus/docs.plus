@@ -16,7 +16,7 @@ import { verifyServiceRole } from './lib/auth'
 import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
-import { logger, restApiLogger } from './lib/logger'
+import { conversionLogger, logger, restApiLogger } from './lib/logger'
 import { httpMetricsMiddleware, metricsContentType, metricsText } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
@@ -92,7 +92,7 @@ const documentVersionsModule = documentVersions.init({
 app.route('/api/documents', documentVersionsModule.router)
 const documentConversionModule = documentConversion.init({
   prisma,
-  logger: logger.child({ module: 'document-conversion' }),
+  logger: conversionLogger,
   // `PUBLIC_RESTAPI_URL`, never a request header: this is persisted into document
   // content, and `X-Forwarded-Host` is client-settable. Unset drops imported
   // images with a warning rather than storing an origin nobody can resolve.
@@ -136,10 +136,10 @@ pushGateway.initialize(false).catch((err) => {
   captureUnknown(err)
 })
 
-// Start server. Bun's 10 s default closed the socket mid-duplicate while the
-// handler ran on, so a slow copy reported failure over a copy that completed and
-// a retry stacked a second one. 60 s covers the bounded media copy a duplicate
-// does — the objects its snapshot names, sequentially, inside the request.
+// Bun's 10 s default closed the socket mid-duplicate while the handler ran on. A
+// slow copy then reported failure over a copy that completed, and a retry stacked
+// a second one. The 60 s budget covers the bounded media copy a duplicate does —
+// the objects its snapshot names, sequentially, inside the request.
 const server = Bun.serve({
   fetch: app.fetch,
   port: config.app.port,
@@ -160,9 +160,9 @@ restApiLogger.info({
   }
 })
 
-// Bun's stop() also waits on idle keep-alive sockets, and Traefik holds those,
-// so this budget is spent on most retirements rather than only on a slow
-// request. 10s covers an export's realistic tail and still leaves 20s of the
+// Bun's stop() also waits on idle keep-alive sockets, and Traefik holds those.
+// The drain budget is therefore spent on most retirements, not only on a slow
+// request. The 10s covers an export's realistic tail and still leaves 20s of the
 // 30s stop_grace_period for the DB close and the 2s Sentry flush below.
 const DRAIN_TIMEOUT_MS = 10_000
 
@@ -171,8 +171,8 @@ const shutdown = async () => {
 
   try {
     // Stop accepting new requests, then wait for the in-flight ones. A bare
-    // stop() drops that promise, so an export or import — work that holds no
-    // pooled Prisma client to delay the tail — was cut on every rolling deploy.
+    // stop() drops that promise. An export or import was therefore cut on every
+    // rolling deploy — work that holds no pooled Prisma client to delay the tail.
     let drainTimer: ReturnType<typeof setTimeout> | undefined
     await Promise.race([
       server.stop(),

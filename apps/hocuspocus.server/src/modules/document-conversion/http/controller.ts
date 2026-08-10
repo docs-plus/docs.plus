@@ -16,7 +16,12 @@ import { exportOdt } from '../domain/odtExport'
 import { zipInflateSize } from '../domain/zipInflateSize'
 import { createImageUpload } from '../infra/imageUpload'
 import type { ExportFormat, ImportFormat, TiptapDocJson } from '../types'
-import { MAX_IMPORT_BYTES, MAX_INFLATED_IMPORT_BYTES, MAX_MARKDOWN_CHARS } from '../types'
+import {
+  MAX_IMPORT_BYTES,
+  MAX_INFLATED_IMPORT_BYTES,
+  MAX_MARKDOWN_CHARS,
+  startsWith
+} from '../types'
 
 interface ConversionMeta {
   slug: string
@@ -37,7 +42,7 @@ const findConversionMeta = (
     select: { slug: true, ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }
   })
 
-/** Read gate. The service-role key passes unconditionally; a user answers to the
+/** Read gate. The service-role key passes unconditionally. A user answers to the
  *  predicate the WS gate and the slug read already share, so one privacy rule
  *  covers every surface. */
 const denyRead = (c: Context, meta: ConversionMeta): Response | null => {
@@ -73,7 +78,7 @@ const EXPORT_MEDIA_TYPES: Record<ExportFormat, string> = {
   odt: 'application/vnd.oasis.opendocument.text'
 }
 
-// Strict slugify emits `[a-z0-9-]` or nothing at all — an all-emoji title would
+// Strict slugify emits `[a-z0-9-]` or nothing at all. An all-emoji title would
 // otherwise degenerate to `filename=".docx"`, and only slugified text is safe to
 // interpolate into the header.
 const exportFilename = (
@@ -170,11 +175,8 @@ const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0]
 
 type UploadKind = ImportFormat | 'legacy-doc'
 
-const startsWith = (bytes: Uint8Array, magic: number[]): boolean =>
-  magic.every((byte, index) => bytes[index] === byte)
-
 // Extensions and declared MIME types both lie often enough that the container is
-// the only honest signal: OOXML is a zip, and OLE2 is a real `.doc`. Markdown has
+// the only honest signal. OOXML is a zip, and OLE2 is a real `.doc`. Markdown has
 // no magic, so it is the residue — the strict decode below is its real gate.
 const sniffUpload = (bytes: Uint8Array): UploadKind => {
   if (startsWith(bytes, ZIP_MAGIC)) return 'docx'
@@ -182,9 +184,9 @@ const sniffUpload = (bytes: Uint8Array): UploadKind => {
   return 'md'
 }
 
-// `fatal` is what rejects a binary upload that fell through the sniff, and the
-// default BOM handling strips the U+FEFF a Windows editor writes — kept, it hides
-// the opening `#` and the whole file imports as one promoted paragraph.
+// `fatal` is what rejects a binary upload that fell through the sniff. The default
+// BOM handling strips the U+FEFF a Windows editor writes. A kept U+FEFF hides the
+// opening `#`, and the whole file imports as one promoted paragraph.
 const decodeUtf8 = (bytes: Uint8Array): string | null => {
   try {
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes)

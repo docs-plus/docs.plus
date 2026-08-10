@@ -3,9 +3,9 @@ import HTMLtoDOCX from '@turbodocx/html-to-docx'
 import type { TiptapDocJson } from '../types'
 import { renderDocumentHtml } from './documentHtml'
 
-// XML 1.0 forbids control characters outright — not even a numeric entity is
-// legal — and xmlbuilder2 throws on one, which turned a single pasted character
-// into a permanent 500 on every DOCX export of that document.
+// XML 1.0 forbids control characters outright, and not even a numeric entity is
+// legal. `xmlbuilder2` throws on one control character. That throw turned a single
+// pasted character into a permanent 500 on every DOCX export of that document.
 // eslint-disable-next-line no-control-regex -- matching them is the whole point
 const XML_CONTROL_CHARS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g
 
@@ -23,16 +23,16 @@ const DOCTYPE = /^\s*<!doctype[^>]*>/i
 
 /**
  * `title` is written twice on purpose: into the HTML `<title>` and into the DOCX
- * core properties, which is what Word's File > Info pane and desktop search read.
- * The converter returns a Buffer only where `global.Buffer` exists — Bun and Node
- * both do, so the other two arms of its union are unreachable here.
+ * core properties. Word's File > Info pane and desktop search read the DOCX
+ * copy. The converter returns a Buffer only where `global.Buffer` exists — Bun
+ * and Node both do, so the other two arms of its union are unreachable here.
  */
 export const exportDocx = async (
   doc: TiptapDocJson,
   title: string,
   mediaBaseUrl: string | null
 ): Promise<Buffer> => {
-  const html = renderDocumentHtml(doc, title, mediaBaseUrl)
+  const html = (await renderDocumentHtml(doc, title, mediaBaseUrl))
     .replace(DOCTYPE, '')
     .replace(XML_CONTROL_CHARS, '')
   const output = await HTMLtoDOCX(html, null, { title: toCorePropertyTitle(title) })

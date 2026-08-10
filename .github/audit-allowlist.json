@@ -29,5 +29,15 @@
     "severity": "high",
     "reason": "Build-time only: terser-webpack-plugin and workbox-build under next-pwa, which serialise our own bundle config during the webapp build. Majors 4 and 6 coexist.",
     "reviewed": "2026-07-28"
+  },
+  "GHSA-w3rx-r6r6-pgpr": {
+    "severity": "high",
+    "reason": "Runtime, not dev-only — the only such entry here, so it is neutralised in our code rather than out of reach. Reaches us solely through @turbodocx/html-to-docx, which inlines image-size into its own bundle, so an override or patch changes nothing it runs; first_patched_version is null and the <= 2.0.2 range covers every published version. DOCX export now sniffs magic bytes and inlines only png or jpeg, so the ICNS parser is never handed input — see apps/hocuspocus.server/CLAUDE.md §HTTP Modules. Held at high so a rescore to critical still fails.",
+    "reviewed": "2026-08-09"
+  },
+  "GHSA-5p2g-fcmc-qvqq": {
+    "severity": "high",
+    "reason": "Same dependency and same mitigation as GHSA-w3rx-r6r6-pgpr — the JXL and HEIF parsers rather than ICNS. Sniffing at upload would not have covered this one: image/heic and image/heif are deliberately allowed there, so HEIF has to be dropped at the export boundary rather than declared safe. Drop both entries together.",
+    "reviewed": "2026-08-09"
   }
 }
