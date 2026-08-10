@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 /**
  * Integrity gate for the agent rule files. Run: bun scripts/check-agent-docs.ts
- * Exists because the 2026-08-03 AGENTS.md split moved 53 sections into per-directory files, and a
- * section reference or relative link that silently stops resolving makes a rule unreachable.
+ * Exists because the 2026-08-03 AGENTS.md split moved 53 sections into per-directory
+ * files. A section reference or relative link that silently stops resolving makes a rule
+ * unreachable.
  */
 
 import { existsSync, readFileSync } from 'fs'
@@ -28,12 +29,17 @@ const HEADING_SOURCES = [
   'extensions/extension-hyperlink/AGENTS.md',
   '.cursor/docs/design-system.md',
   '.cursor/docs/scripts-naming-convention.md',
-  '.cursor/skills/release-extensions/SKILL.md'
+  '.cursor/skills/code-janitor/SKILL.md',
+  '.cursor/skills/commit-review/SKILL.md',
+  '.cursor/skills/design-system/SKILL.md',
+  '.cursor/skills/release-extensions/SKILL.md',
+  '.cursor/skills/tech-writer/SKILL.md',
+  '.cursor/skills/tiptap/SKILL.md'
 ]
 
 const REFERRER_TYPES = /\.(md|mdc|ts|tsx|js|mjs|cjs|sh|sql|ya?ml)$/
 const SECTION_REF = /§([A-Za-z][\w'-]*(?:\s+(?:\([^)]*\)|[A-Za-z][\w'-]*))*)/g
-const MD_LINK = /\]\(([^)\s]+?)(?:#[^)\s]*)?\)/g
+const MD_LINK = /\]\(([^)\s#]+)(?:#([^)\s]*))?\)/g
 const BACKTICK = /`([^`\n]+)`/g
 const PATH_EXT_WHITELIST = new Set([
   'ts',
@@ -126,26 +132,55 @@ const LINK_SOURCES = [
   ])
 ].filter((f) => existsSync(resolve(ROOT, f)))
 
+/**
+ * GitHub's heading slug: lowercase, drop punctuation, one hyphen per space. The slug keeps repeated
+ * hyphens, so `## Phase 1 — Cutover (current)` anchors as `#phase-1--cutover-current`.
+ */
+const slug = (heading: string) =>
+  heading
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s/g, '-')
+
+const anchorCache = new Map<string, Set<string>>()
+const anchorsOf = (absPath: string) => {
+  let slugs = anchorCache.get(absPath)
+  if (!slugs) {
+    slugs = new Set<string>()
+    for (const line of read(absPath).split('\n')) {
+      const m = /^#{1,6}\s+(.+?)\s*$/.exec(line)
+      if (m) slugs.add(slug(m[1]))
+    }
+    anchorCache.set(absPath, slugs)
+  }
+  return slugs
+}
+
 for (const file of LINK_SOURCES) {
   const here = dirname(file)
   read(file)
     .split('\n')
     .forEach((line, i) => {
-      for (const m of line.matchAll(MD_LINK)) {
-        const target = m[1]
-        if (/^(https?:|mailto:|#)/.test(target)) continue
+      for (const [, target, fragment] of line.matchAll(MD_LINK)) {
+        if (/^(https?:|mailto:)/.test(target)) continue
+        const abs = resolve(ROOT, here, target)
+        // Rule files now cite a section by anchor, not by path. An unchecked fragment lets a
+        // retitled heading break every inbound link.
         if (target.startsWith('/'))
           failures.push(`${file}:${i + 1}  ${target} — root-absolute, use a relative path`)
-        else if (!existsSync(resolve(ROOT, here, target)))
-          failures.push(`${file}:${i + 1}  ${target} — broken link`)
+        else if (!existsSync(abs)) failures.push(`${file}:${i + 1}  ${target} — broken link`)
+        else if (fragment && /\.mdc?$/.test(target) && !anchorsOf(abs).has(fragment.toLowerCase()))
+          failures.push(`${file}:${i + 1}  ${target}#${fragment} — anchor resolves to no heading`)
       }
     })
 }
 
 /**
- * A backticked token that contains a `/` and ends in a known file extension reads as a repo path.
- * It resolves if it exists at its literal location, or as a tracked file's trailing path segment —
- * docs abbreviate by dropping leading directories (`utils/clientMessageId.ts`), never a middle one.
+ * A backticked token that contains a `/` and ends in a known file extension reads as a
+ * repo path. It resolves if it exists at its literal location, or as a tracked file's
+ * trailing path segment. Docs abbreviate by dropping leading directories
+ * (`utils/clientMessageId.ts`), never a middle one.
  */
 const looksLikePath = (token: string) => {
   if (!/^[\w./-]+$/.test(token)) return false
@@ -167,8 +202,9 @@ for (const file of LINK_SOURCES) {
   read(file)
     .split('\n')
     .forEach((line, i) => {
-      // Scoped to the line, not the section: one "was removed" anywhere under a heading used to
-      // exempt every path below it — 25% of all path tokens, hiding 9 broken ones.
+      // Scoped to the line, not the section. One "was removed" anywhere under a heading used
+      // to exempt every path below it. The section-scoped exemption covered 25% of all path
+      // tokens and hid 9 broken ones.
       if (NON_EXISTENCE_MARKER.test(line)) return
       for (const m of line.matchAll(BACKTICK)) {
         const token = m[1].replace(/:\d+(-\d+)?$/, '')
