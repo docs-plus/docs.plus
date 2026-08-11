@@ -21,9 +21,9 @@ docs.plus is a free, real-time collaboration tool built on open-source technolog
 **Tech Stack:**
 
 - **Runtime**: 🚀 Bun 1.3.7+
-- **Frontend**: ⚛️ Next.js 15/16, React 19, TipTap 3, Tailwind CSS 4
-- **Backend**: 🔧 Hono, Hocuspocus (Y.js), BullMQ, Prisma ORM
-- **Database**: 🐘 PostgreSQL 17, 🔴 Redis
+- **Frontend**: ⚛️ Next.js (`apps/webapp` on `15.5.21`, `apps/admin-dashboard` on `^16.2.12`), React 19, Tiptap 3, Tailwind CSS 4
+- **Backend**: 🔧 Hono, Hocuspocus (Yjs), BullMQ, Prisma ORM
+- **Database**: 🐘 PostgreSQL 17 for the Prisma database in local and dev, 🐘 PostgreSQL 15 for local Supabase, 🔴 Redis
 - **Infrastructure**: 🐳 Docker Compose, Supabase
 - **Real-time**: 🔌 WebSocket (Hocuspocus), Supabase Realtime
 
@@ -32,8 +32,11 @@ docs.plus is a free, real-time collaboration tool built on open-source technolog
 - 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
   - ⚠️ **macOS Silicon users:** Docker Desktop has IO performance issues. Use [OrbStack](https://orbstack.dev/) instead (drop-in replacement, faster, lighter).
 - 🚀 **Bun** >=1.3.7 - [Install](https://bun.sh/docs/installation)
-- 📦 **Node.js** >=24.11 - [Install](https://nodejs.org/) (Next.js and tooling binaries run on Node)
+- 📦 **Node.js** >=24.11.0 - [Install](https://nodejs.org/) (Next.js and tooling binaries run on Node)
+- 🔨 **GNU Make** - every command below starts with `make`. macOS installs it with `xcode-select --install`; most Linux distributions ship it in a build-tools package.
+- 🌱 **Git** - [Install](https://git-scm.com/downloads)
 - 🪟 **Windows:** use WSL2 — the dev workflow relies on `make` and `bash`
+- 🚫 **Bun only:** never run npm, yarn, pnpm or npx in this repo. `bun.lock` is the only lockfile. Never commit `package-lock.json`, `yarn.lock` or `pnpm-lock.yaml`.
 
 No global Supabase CLI needed — the repo pins it as a workspace dependency.
 
@@ -45,7 +48,9 @@ cd docs.plus
 make dev-local
 ```
 
-One command bootstraps everything: env files from `.env.example`, dependencies, Postgres + Redis containers, local Supabase (schema and seed apply automatically), Prisma migrations, editor-extension builds. It then starts the REST API, WebSocket server, worker, and webapp. The first run downloads Docker images and takes several minutes; after that it starts in seconds.
+One command bootstraps everything: env files from `.env.example`, dependencies, Postgres + Redis containers, local Supabase (schema and seed apply automatically), Prisma migrations, editor-extension builds. It then starts the REST API, WebSocket server, worker, and webapp. The first run downloads Docker images and takes several minutes. Later runs start in seconds.
+
+If the first run stops, see [Development Setup](CONTRIBUTING.md#-development-setup) in the contributing guide. It owns the environment health check and what to do when a check fails.
 
 **URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Supabase Studio <http://127.0.0.1:54323> · local email inbox <http://127.0.0.1:54324>
 
@@ -53,7 +58,9 @@ One command bootstraps everything: env files from `.env.example`, dependencies, 
 
 **Stop:** `Ctrl+C` stops the app processes · `make infra-down` stops Postgres/Redis · `bun --filter @docs.plus/supabase_back stop` stops Supabase
 
-**Reset the local database:** `bun --filter @docs.plus/supabase_back reset`
+**Reset the local Supabase database:** `bun --filter @docs.plus/supabase_back reset`
+
+The local stack runs two databases. That command resets the Supabase database on port 54322 only. The Prisma database `docsplus` runs in the container `docsy-postgres-local` on port 5432, and it survives the reset.
 
 <details>
 <summary><strong>🐳 Alternative: full Docker (`make up-dev`)</strong></summary>
@@ -63,7 +70,10 @@ All services in containers instead of native processes:
 ```bash
 cp .env.example .env.development
 make up-dev
+bun --filter @docs.plus/supabase_back start
 ```
+
+`make up-dev` starts no Supabase. The containers read `SUPABASE_URL: http://host.docker.internal:54321` from the host, so the third command supplies it. That command also opens Supabase Studio at <http://127.0.0.1:54323>.
 
 **URLs:** webapp <http://localhost:3000> · API <http://localhost:4000> · WS `ws://localhost:4001` · Studio <http://127.0.0.1:54323>
 
@@ -141,53 +151,9 @@ SELECT id, now() FROM auth.users WHERE email = 'your-admin@example.com';
 | `docker-compose.dev.yml`   | `.env.development` | Docker development (all services in containers)  |
 | `docker-compose.local.yml` | `.env.local`       | Local development (infra in Docker, apps native) |
 
+Two more compose files sit outside this table. `make run-prod-backend` layers `docker-compose.backend-local.override.yml` over the production file with `.env.local`. `docker-compose.observability.yml` runs on the production droplet only.
+
 `make dev-local` creates both dev files on first run. It writes `.env.development` from `.env.example`, then `.env.local` from it with localhost hostnames and `DATABASE_URL` applied. Native apps can't resolve Docker service names. Both are gitignored — edit `.env.local` for local customizations like Google OAuth keys. Details live in the comments of [.env.example](.env.example).
-
-## 🚀 Production Deployment
-
-Production-ready setup for **mid-level scale deployments** (small-medium teams, moderate traffic).
-
-**Architecture:** 🏗️
-
-- 📈 Horizontal scaling: REST API (2), WebSocket (2), Worker (2), Webapp (2)
-- 🔀 Traefik v3 reverse proxy with automatic SSL (Let's Encrypt) and load balancing
-- ⚡ Resource limits, health checks, and zero-downtime blue-green deploys
-- 📊 Production-optimized logging and connection pooling
-
-### Setup
-
-1. **⚙️ Configure Environment**
-
-   ```bash
-   cp .env.example .env.production
-   ```
-
-   Update: database credentials, JWT secret, Supabase URLs, storage credentials, CORS origins.
-
-2. **🔨 Build & Deploy**
-
-   ```bash
-   make build
-   make up-prod
-   ```
-
-3. **📈 Scaling**
-   Adjust replicas in `.env.production`:
-
-   ```bash
-   REST_REPLICAS=2
-   WS_REPLICAS=3
-   WORKER_REPLICAS=2
-   WEBAPP_REPLICAS=2
-   ```
-
-**Production Recommendations:** 💡
-
-- 🗄️ Use managed database (AWS RDS, DigitalOcean, Supabase Cloud)
-- 🔒 Configure SSL/TLS certificates
-- 📊 Set up monitoring (Prometheus, Grafana)
-- 💾 Implement database backups
-- 🔐 Secure all secrets and credentials
 
 ## 📖 Command Reference
 
@@ -210,6 +176,7 @@ make build-dev         # Development images
 # Other Bun entrypoints
 bun run dev                                          # Webapp only
 bun run dev:admin                                    # Admin dashboard
+bun run doctor                                       # Environment health check
 
 # Management
 make down              # Stop services (auto-detects env)
@@ -218,43 +185,66 @@ make ps                # Container status
 make clean             # Cleanup + delete volumes (DATA LOSS)
 ```
 
-Run `make help` for the complete Make surface; `bun run` (no args) for all root scripts.
-
-## 🔌 TipTap extensions
-
-Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. Each ships on npm under `@docs.plus`:
-
-```sh
-bun add @docs.plus/extension-hyperlink
-```
-
-| Package                                                              | Description                                                            |
-| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`extension-hyperlink`](extensions/extension-hyperlink/)             | Hyperlink mark, autolink, popovers, URL safety                         |
-| [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Images, audio, video, and embeds (YouTube, Vimeo, SoundCloud, Loom, X) |
-| [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with context allowlist                  |
-| [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                             |
-| [`extension-placeholder`](extensions/extension-placeholder/)         | O(1) cursor-based empty-node placeholder                               |
-
-Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
+`make help` lists the day-to-day surface, not every target. It omits `run-prod-backend`, `observability-up`, `observability-down`, `observability-logs` and `observability-pull`. The four `observability-*` targets run on the production droplet. `run-prod-backend` runs the production backend images locally against `.env.local`. Run `bun run` with no arguments for all root scripts.
 
 ## 📁 Project Structure
 
 ```
 docs.plus/
 ├── apps/
-│   ├── webapp/              # 🌐 Next.js frontend
-│   ├── hocuspocus.server/   # ⚡ REST API, WebSocket, Workers
-│   └── admin-dashboard/     # 🖥️ Admin panel
+│   ├── webapp/                  # 🌐 Next.js frontend
+│   │   ├── src/
+│   │   │   ├── components/      # React components
+│   │   │   ├── api/             # API clients
+│   │   │   ├── hooks/           # React hooks
+│   │   │   ├── stores/          # State management
+│   │   │   └── utils/           # Utility functions
+│   │   └── cypress/             # E2E tests
+│   ├── hocuspocus.server/       # ⚡ REST API, WebSocket, Workers
+│   │   ├── src/
+│   │   │   ├── api/             # REST API routes & controllers
+│   │   │   ├── lib/             # Shared libraries (email, push, etc.)
+│   │   │   ├── middleware/      # Hono middleware
+│   │   │   └── config/          # Configuration & env schemas
+│   │   └── prisma/              # Prisma schema & migrations
+│   └── admin-dashboard/         # 🖥️ Admin interface (Next.js)
 ├── extensions/
-│   └── extension-*/         # 🔌 Five publishable @docs.plus TipTap packages
+│   └── extension-*/             # 🔌 Five publishable @docs.plus Tiptap packages
 ├── packages/
-│   └── supabase/            # 🗄️ Database schema, seed, migrations
-├── docker-compose.dev.yml   # 🐳 Development orchestration
-├── docker-compose.prod.yml  # 🚀 Production orchestration
-├── Makefile                 # 🛠️ Build & deployment commands
-└── .env.example             # ⚙️ Environment template
+│   ├── document-swarm/          # 🐝 Multi-user demo and load CLI (Playwright)
+│   ├── email-templates/         # ✉️ Email templates and rendering
+│   ├── eslint-config/           # 🧹 Shared ESLint configuration
+│   ├── floating-popover/        # 🎈 Popover lifecycle engine
+│   ├── floating-tooltip/        # 💬 Hover/focus tooltip primitive
+│   ├── playground/              # 🧪 Clean-room Cypress harness
+│   ├── release-tooling/         # 📦 Shared prepack and publish guards
+│   └── supabase/                # 🗄️ Database schema, seed, migrations
+├── .github/workflows/           # 🔄 CI/CD pipelines
+├── docker-compose.dev.yml       # 🐳 Development orchestration
+├── docker-compose.prod.yml      # 🚀 Production orchestration
+├── Makefile                     # 🛠️ Build & deployment commands
+└── .env.example                 # ⚙️ Environment template
 ```
+
+Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.md` and each area's `CLAUDE.md`.
+
+## 🔌 Tiptap Extensions
+
+Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. Not every package is on npm yet, and a published version can lag this source, so check the status tracker before you pin one.
+
+```sh
+bun add @docs.plus/extension-hyperlink
+```
+
+| Package                                                              | Description                                                                                   |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`extension-hyperlink`](extensions/extension-hyperlink/)             | Hyperlink mark, autolink, optional prebuilt popovers, dangerous-scheme gate                   |
+| [`extension-hypermultimedia`](extensions/extension-hypermultimedia/) | Nine media nodes: image, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X, Loom           |
+| [`extension-indent`](extensions/extension-indent/)                   | Tab / Shift-Tab literal indent with a context allowlist                                       |
+| [`extension-inline-code`](extensions/extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                                                    |
+| [`extension-placeholder`](extensions/extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length |
+
+Install notes, recommended pairings, and contributing: [extensions/README.md](extensions/README.md). Per-package npm status: [extension-version-cutover.md](.cursor/docs/extension-version-cutover.md). Release policy: [RELEASE_POLICY.md](RELEASE_POLICY.md).
 
 ## 🤝 Contributing
 
@@ -263,8 +253,54 @@ PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
 **First contribution? Start here:**
 
 - Pick an issue labeled [good first issue](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) or [help wanted](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22).
-- Confirm your setup with `bun run check` before opening a PR.
+- Run the quality gate before opening a PR — the commands are in [CONTRIBUTING.md](CONTRIBUTING.md#-code-style).
 - Use our issue and PR templates to speed up review.
+
+## 🚀 Production Deployment
+
+Production-ready setup for **mid-level scale deployments** (small-medium teams, moderate traffic).
+
+**Architecture:** 🏗️
+
+- 📈 Horizontal scaling: REST API (2), WebSocket (2), Worker (2), Webapp (2), Admin Dashboard (1)
+- 🔀 Traefik v3 reverse proxy with automatic SSL (Let's Encrypt) and load balancing
+- ⚡ Resource limits, health checks, and zero-downtime blue-green deploys
+- 📊 Production-optimized logging and connection pooling
+
+### Setup
+
+1. **⚙️ Configure Environment**
+
+   ```bash
+   cp .env.example .env.production
+   ```
+
+   Update: database credentials, JWT secret, Supabase URLs, storage credentials, CORS origins.
+
+2. **🔨 Build & Deploy**
+
+   ```bash
+   make build
+   make up-prod
+   ```
+
+3. **📈 Scaling**
+   No compose file reads a replica environment variable. Two Make targets apply fixed counts:
+
+   ```bash
+   make scale-webapp        # webapp=3
+   make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
+   ```
+
+   For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
+
+**Production Recommendations:** 💡
+
+- 🗄️ Use managed database (AWS RDS, DigitalOcean, Supabase Cloud)
+- 🔒 Configure SSL/TLS certificates
+- 📊 Set up monitoring (Prometheus, Grafana)
+- 💾 Implement database backups
+- 🔐 Secure all secrets and credentials
 
 ## 🎨 Badges
 
