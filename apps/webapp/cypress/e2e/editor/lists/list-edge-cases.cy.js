@@ -158,8 +158,8 @@ describe('List Edge Cases', () => {
     cy.putPosCaretInHeading(4, 'S4-H4', 'end')
     cy.realPress('Enter')
     cy.get('.docy_editor > .tiptap.ProseMirror').realType('deep list item')
-    cy.get('[aria-label="Lists"]').click()
-    cy.get('[data-testid="toolbar-orderedList"]').click()
+    cy.get('[data-testid="toolbar-lists"]').click()
+    cy.get('[data-testid="toolbar-ordered-list"]').click()
 
     cy.get('.docy_editor .tiptap.ProseMirror ol li').should('contain', 'deep list item')
     cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length.gte', 1)

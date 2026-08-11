@@ -11,6 +11,8 @@ export interface ToolbarSelectItem {
   label: string
   icon: IconType
   action: () => void
+  /** Kebab-case, like every other toolbar id. `value` is a Tiptap node name. */
+  testId: string
 }
 
 interface ToolbarSelectProps {
@@ -20,6 +22,8 @@ interface ToolbarSelectProps {
   /** Trigger's accessible name — reuse the same string passed to `tooltip`. */
   'aria-label'?: string
   fallbackIcon: IconType
+  /** Specs select the trigger by this, never by its user-facing label. */
+  testId: string
 }
 
 const ToolbarSelectPanel = ({ items, editor }: { items: ToolbarSelectItem[]; editor: Editor }) => {
@@ -37,7 +41,7 @@ const ToolbarSelectPanel = ({ items, editor }: { items: ToolbarSelectItem[]; edi
             type="button"
             role="menuitemradio"
             aria-checked={active}
-            data-testid={`toolbar-${item.value}`}
+            data-testid={item.testId}
             className={twMerge(
               'hover:bg-base-200 flex items-center gap-2 px-3 py-1.5 text-sm transition-colors',
               active && 'text-primary'
@@ -60,7 +64,8 @@ const ToolbarSelect = ({
   items,
   tooltip,
   'aria-label': ariaLabel,
-  fallbackIcon: FallbackIcon
+  fallbackIcon: FallbackIcon,
+  testId
 }: ToolbarSelectProps) => {
   const activeItem = items.find((item) => editor.isActive(item.value))
   const TriggerIcon = activeItem?.icon ?? FallbackIcon
@@ -73,6 +78,7 @@ const ToolbarSelect = ({
             isActive={!!activeItem}
             tooltip={tooltip}
             aria-label={ariaLabel}
+            data-testid={testId}
             shape={null}
             className="gap-0.5 px-1.5">
             <TriggerIcon size={16} className="stroke-currentColor fill-none" />

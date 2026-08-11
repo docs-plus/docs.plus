@@ -200,24 +200,28 @@ const EditorToolbar = () => {
           fallbackIcon={Icons.bulletList}
           tooltip="Lists"
           aria-label="Lists"
+          testId="toolbar-lists"
           items={[
             {
               value: 'bulletList',
               label: 'Bullet List',
               icon: Icons.bulletList,
-              action: () => editor.chain().focus().toggleBulletList().run()
+              action: () => editor.chain().focus().toggleBulletList().run(),
+              testId: 'toolbar-bullet-list'
             },
             {
               value: 'orderedList',
               label: 'Ordered List',
               icon: Icons.orderedList,
-              action: () => editor.chain().focus().toggleOrderedList().run()
+              action: () => editor.chain().focus().toggleOrderedList().run(),
+              testId: 'toolbar-ordered-list'
             },
             {
               value: 'taskList',
               label: 'Task List',
               icon: Icons.taskList,
-              action: () => editor.chain().focus().toggleTaskList().run()
+              action: () => editor.chain().focus().toggleTaskList().run(),
+              testId: 'toolbar-task-list'
             }
           ]}
         />
@@ -241,18 +245,21 @@ const EditorToolbar = () => {
           fallbackIcon={Icons.code}
           tooltip="Code"
           aria-label="Code"
+          testId="toolbar-code"
           items={[
             {
               value: 'codeBlock',
               label: 'Code Block',
               icon: Icons.codeBlock,
-              action: () => editor.chain().focus().toggleCodeBlock().run()
+              action: () => editor.chain().focus().toggleCodeBlock().run(),
+              testId: 'toolbar-code-block'
             },
             {
               value: 'inlineCode',
               label: 'Inline Code',
               icon: Icons.code,
-              action: () => editor.chain().focus().toggleInlineCode().run()
+              action: () => editor.chain().focus().toggleInlineCode().run(),
+              testId: 'toolbar-inline-code'
             }
           ]}
         />
