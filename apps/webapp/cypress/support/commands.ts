@@ -68,8 +68,7 @@ export const TEST_TITLE = {
 /**
  * StarterKit's `trailingNode` appends an empty heading whenever the document
  * ends in another block, because `heading block*` makes heading the default
- * type. The TOC and Markdown export both drop it, so only raw DOM counts see
- * it. Pass this to `.should()` to keep the assertion retrying.
+ * type. The TOC and Markdown export both drop it, so only raw DOM counts see it.
  */
 export const haveNamedHeadingCount =
   (count: number) =>
@@ -461,10 +460,8 @@ Cypress.Commands.add(
     }
     cy.get('.docy_editor > .tiptap.ProseMirror').should('be.visible')
     if (clearDoc) {
-      cy.get('.docy_editor > .tiptap.ProseMirror')
-        .click()
-        .realPress(['Meta', 'a', 'Backspace'])
-        .wait(100)
+      cy.clearEditor()
+      cy.wait(100)
     }
   }
 )
