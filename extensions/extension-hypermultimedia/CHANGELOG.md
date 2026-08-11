@@ -8,7 +8,7 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-09
+## [2.0.0] — 2026-08-11
 
 First major release on the docs.plus alpha-v2 line. The kit fully retires
 tippy.js and positions every surface with Floating UI. It renames node types to

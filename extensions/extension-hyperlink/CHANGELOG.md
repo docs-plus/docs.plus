@@ -10,7 +10,7 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-09
+## [2.0.0] — 2026-08-11
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface. The option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
 
@@ -520,4 +520,4 @@ Open an issue at <https://github.com/docs-plus/docs.plus/issues> with the labels
 
 ## Pre-`2.0` history
 
-The full `1.x` release notes plus the internal milestones between `1.5.2` and `2.0.0` were archived to `docs/HISTORY.md`, since removed from the tracked tree. Those milestones are the monorepo migration, build rewrite, popover + XSS overhaul, contract tightening, and the mispublished `4.3.0`. Recover it from git history if you need it. Everything user-facing from that stretch is rolled up into the [2.0.0](#200--2026-08-09) entry above.
+The full `1.x` release notes plus the internal milestones between `1.5.2` and `2.0.0` were archived to `docs/HISTORY.md`, since removed from the tracked tree. Those milestones are the monorepo migration, build rewrite, popover + XSS overhaul, contract tightening, and the mispublished `4.3.0`. Recover it from git history if you need it. Everything user-facing from that stretch is rolled up into the [2.0.0](#200--2026-08-11) entry above.
