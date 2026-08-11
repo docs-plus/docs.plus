@@ -115,7 +115,7 @@ function setRangePosition(
   }
 }
 
-function headingRank(element: Element): number | null {
+function headingLevel(element: Element): number | null {
   return /^H[1-6]$/.test(element.tagName) ? Number(element.tagName.slice(1)) : null
 }
 
@@ -124,12 +124,14 @@ function headingRank(element: Element): number | null {
  * follow it rather than any descendants. Scoping by descent finds nothing.
  */
 function blocksOwnedBy(heading: Element): Element[] {
-  const rank = headingRank(heading) ?? 1
+  const level = headingLevel(heading)
+  if (level === null) return []
+
   const owned: Element[] = []
 
   for (let node = heading.nextElementSibling; node; node = node.nextElementSibling) {
-    const rankHere = headingRank(node)
-    if (rankHere !== null && rankHere <= rank) break
+    const levelHere = headingLevel(node)
+    if (levelHere !== null && levelHere <= level) break
     owned.push(node)
   }
 
@@ -165,15 +167,15 @@ function findElement({ editor, section, heading, paragraph }: FindElementArgs): 
 
   if (heading) {
     const headings = scope.filter(
-      (node) => headingRank(node) !== null && node.hasAttribute('data-toc-id')
+      (node) => headingLevel(node) !== null && node.hasAttribute('data-toc-id')
     )
     let foundHeading: Element | undefined
 
     if (typeof heading === 'object') {
       const { level, title } = heading
       foundHeading = headings.find((h) => {
-        const rank = headingRank(h) ?? 0
-        return (!level || rank === level) && (!title || h.textContent?.includes(title))
+        const found = headingLevel(h)
+        return (!level || found === level) && (!title || h.textContent?.includes(title))
       })
     } else if (typeof heading === 'number') {
       foundHeading = headings[heading - 1] as Element | undefined
