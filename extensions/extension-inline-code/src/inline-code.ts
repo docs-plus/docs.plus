@@ -7,7 +7,7 @@ export interface InlineCodeOptions {
 
 /**
  * Backtick-delimited inline code (`` `code` ``). `inputRegex` is end-anchored and
- * non-global: a global flag drifts the input-rule plugin's `lastIndex` and throws
+ * non-global: a global flag moves the input-rule plugin's `lastIndex` and throws
  * "Position out of range". `pasteRegex` keeps the global flag to scan a paste. The
  * prefix guard is a lookbehind — an in-match prefix char gets eaten or mismarked.
  */
