@@ -56,8 +56,8 @@ describe('Collaboration Heading Sync (Flat Schema)', () => {
     cy.get('.docy_editor > .tiptap.ProseMirror').type(' Updated')
     cy.wait(300)
 
-    // Verify the update. `contain` on a multi-element subject asserts every
-    // element holds the text, so scope to the one heading that changed.
+    // `contain` on a multi-element subject asserts every element holds the
+    // text, so scope to the one heading that changed.
     cy.contains('h2[data-toc-id]', 'Alpha Updated').should('exist')
 
     // Structure should be intact

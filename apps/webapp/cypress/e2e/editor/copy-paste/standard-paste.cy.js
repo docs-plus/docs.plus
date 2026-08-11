@@ -22,22 +22,25 @@ describe('Standard Paste (Flat Schema)', () => {
     cy.get('h1[data-toc-id]').should('contain', 'Paste Test')
     cy.get('h2[data-toc-id]').should('contain', 'Sub Heading')
 
-    // Select all and copy
-    cy.get('.docy_editor > .tiptap.ProseMirror').click()
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'a'])
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'c'])
-    cy.wait(200)
+    // Meta+c does not reach the OS clipboard under headless Electron, so carry
+    // the copy in a DataTransfer. handlePaste and the HTML parse path still run.
+    cy.window().then((win) => cy.wrap(win._editor.getHTML()).as('copiedHtml'))
 
-    // Clear and paste
     cy.clearEditor()
     cy.wait(200)
-    cy.get('.docy_editor > .tiptap.ProseMirror').click()
-    cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Meta', 'v'])
+
+    cy.get('@copiedHtml').then((copiedHtml) => {
+      cy.get('.docy_editor > .tiptap.ProseMirror').click()
+      cy.pasteWithMimeTypes({
+        'text/html': copiedHtml,
+        'text/plain': 'Paste Test\n\nSub Heading\n\nSome content\n\nA paragraph'
+      })
+    })
     cy.wait(500)
 
     // Verify structure preserved
     cy.get('h1[data-toc-id]').should('exist')
-    cy.get('h2[data-toc-id]').should('contain', 'Sub Heading')
+    cy.contains('h2[data-toc-id]', 'Sub Heading').should('exist')
     cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', 'Some content')
   })
 
