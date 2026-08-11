@@ -1,112 +1,58 @@
 {
   "durations": [
-    {
-      "spec": "cypress/e2e/editor/formatting/extended-marks.cy.js",
-      "duration": 4699
-    },
-    {
-      "spec": "cypress/e2e/editor/heading/heading-toggle-toolbar.cy.js",
-      "duration": 6132
-    },
-    {
-      "spec": "cypress/e2e/editor/hyperlink/hyperlink-autolink.cy.js",
-      "duration": 29359
-    },
-    {
-      "spec": "cypress/e2e/editor/hyperlink/hyperlink-create.cy.js",
-      "duration": 18741
-    },
-    {
-      "spec": "cypress/e2e/editor/hyperlink/hyperlink-markdown.cy.js",
-      "duration": 20931
-    },
-    {
-      "spec": "cypress/e2e/editor/hyperlink/hyperlink-paste.cy.js",
-      "duration": 9940
-    },
-    {
-      "spec": "cypress/e2e/editor/hyperlink/hyperlink-picker.cy.js",
-      "duration": 19785
-    },
-    {
-      "spec": "cypress/e2e/editor/hyperlink/hyperlink-preview-edit.cy.js",
-      "duration": 21618
-    },
-    {
-      "spec": "cypress/e2e/editor/indent/indent-code-list.cy.js",
-      "duration": 1645
-    },
-    {
-      "spec": "cypress/e2e/editor/indent/indent-lists.cy.js",
-      "duration": 8174
-    },
-    {
-      "spec": "cypress/e2e/editor/indent/indent-multiline.cy.js",
-      "duration": 2477
-    },
-    {
-      "spec": "cypress/e2e/editor/indent/indent-table.cy.js",
-      "duration": 2813
-    },
-    {
-      "spec": "cypress/e2e/editor/keyboard-action-flow/select-all-and-empty-doc.cy.js",
-      "duration": 29663
-    },
-    {
-      "spec": "cypress/e2e/editor/lists/combined-lists.cy.js",
-      "duration": 22392
-    },
-    {
-      "spec": "cypress/e2e/editor/markdown/markdown-export.cy.js",
-      "duration": 20009
-    },
-    {
-      "spec": "cypress/e2e/editor/markdown/markdown-media.cy.js",
-      "duration": 13066
-    },
-    {
-      "spec": "cypress/e2e/editor/toc/toc-render-and-drag.cy.js",
-      "duration": 5564
-    },
-    {
-      "spec": "filter/filter-apply-and-restore.cy.",
-      "duration": 276
-    },
-    {
-      "spec": "formatting/combined-formatting.cy.j",
-      "duration": 106
-    },
-    {
-      "spec": "formatting/strike.cy.js",
-      "duration": 201
-    },
-    {
-      "spec": "heading/heading-toggle-toolbar.cy.j",
-      "duration": 215
-    },
-    {
-      "spec": "hyperlink/hyperlink-markdown.cy.js",
-      "duration": 185
-    },
-    {
-      "spec": "indent/indent-code-list.cy.js",
-      "duration": 184
-    },
-    {
-      "spec": "indent/indent-table.cy.js",
-      "duration": 187
-    },
-    {
-      "spec": "lists/ordered-list.cy.js",
-      "duration": 187
-    },
-    {
-      "spec": "markdown/markdown-media.cy.js",
-      "duration": 225
-    },
-    {
-      "spec": "user-behavior/editing-flows.cy.js",
-      "duration": 187
-    }
+    { "spec": "chatroom/attachments.cy.ts", "duration": 74000 },
+    { "spec": "chatroom/open-unread.cy.ts", "duration": 4000 },
+    { "spec": "chatroom/send-and-retry.cy.ts", "duration": 10000 },
+    { "spec": "editor/copy-paste/standard-paste.cy.js", "duration": 4000 },
+    { "spec": "editor/heading/heading-fold-unfold.cy.js", "duration": 4000 },
+    { "spec": "editor/formatting/bold.cy.js", "duration": 8000 },
+    { "spec": "editor/formatting/italic.cy.js", "duration": 8000 },
+    { "spec": "editor/indent/indent-paragraph-and-gates.cy.js", "duration": 3000 },
+    { "spec": "editor/markdown/markdown-paste.cy.js", "duration": 25000 },
+    { "spec": "editor/hyperlink/hyperlink-edge-cases.cy.js", "duration": 23000 },
+    { "spec": "editor/hyperlink/hyperlink-preview-edit.cy.js", "duration": 20000 },
+    { "spec": "editor/lists/combined-lists.cy.js", "duration": 22000 },
+    { "spec": "editor/lists/task-list-alignment.cy.js", "duration": 4000 },
+    { "spec": "editor/user-behavior/keyboard-shortcuts.cy.js", "duration": 14000 },
+    { "spec": "chatroom/deep-link.cy.ts", "duration": 11000 },
+    { "spec": "chatroom/reply-jump-in-window.cy.ts", "duration": 10000 },
+    { "spec": "document/draft-first-edit-anchor.cy.ts", "duration": 3000 },
+    { "spec": "editor/filter/filter-apply-and-restore.cy.js", "duration": 11000 },
+    { "spec": "editor/heading/heading-toggle-toolbar.cy.js", "duration": 6000 },
+    { "spec": "editor/formatting/combined-formatting.cy.js", "duration": 14000 },
+    { "spec": "editor/formatting/strike.cy.js", "duration": 7000 },
+    { "spec": "editor/hyperlink/hyperlink-markdown.cy.js", "duration": 20000 },
+    { "spec": "editor/indent/indent-code-list.cy.js", "duration": 1000 },
+    { "spec": "editor/indent/indent-table.cy.js", "duration": 3000 },
+    { "spec": "editor/user-behavior/toolbar-shortcut-parity.cy.js", "duration": 8000 },
+    { "spec": "editor/markdown/markdown-round-trip.cy.js", "duration": 27000 },
+    { "spec": "editor/lists/list-clipboard-combinations.cy.js", "duration": 29000 },
+    { "spec": "editor/lists/task-list.cy.js", "duration": 12000 },
+    { "spec": "chatroom/jump-to-present.cy.ts", "duration": 11000 },
+    { "spec": "chatroom/reply-jump-out-of-window.cy.ts", "duration": 10000 },
+    { "spec": "editor/collaboration/collab-heading-sync.cy.js", "duration": 4000 },
+    { "spec": "editor/filter/filter-mobile-sheet.cy.js", "duration": 5000 },
+    { "spec": "editor/formatting/extended-marks.cy.js", "duration": 4000 },
+    { "spec": "editor/formatting/underline.cy.js", "duration": 8000 },
+    { "spec": "editor/keyboard-action-flow/select-all-and-empty-doc.cy.js", "duration": 29000 },
+    { "spec": "editor/indent/indent-lists.cy.js", "duration": 8000 },
+    { "spec": "editor/lists/list-edge-cases.cy.js", "duration": 19000 },
+    { "spec": "editor/markdown/markdown-export.cy.js", "duration": 21000 },
+    { "spec": "editor/hyperlink/hyperlink-autolink.cy.js", "duration": 29000 },
+    { "spec": "editor/hyperlink/hyperlink-paste.cy.js", "duration": 9000 },
+    { "spec": "editor/toc/toc-render-and-drag.cy.js", "duration": 5000 },
+    { "spec": "chatroom/long-press-reaction.cy.ts", "duration": 11000 },
+    { "spec": "chatroom/scroll-and-prepend.cy.ts", "duration": 10000 },
+    { "spec": "editor/filter/filter-or-and-mode.cy.js", "duration": 6000 },
+    { "spec": "editor/copy-paste/full-doc-paste.cy.js", "duration": 5000 },
+    { "spec": "editor/heading/heading-create-input-rules.cy.js", "duration": 6000 },
+    { "spec": "editor/formatting/highlight.cy.js", "duration": 8000 },
+    { "spec": "editor/indent/indent-multiline.cy.js", "duration": 2000 },
+    { "spec": "editor/markdown/markdown-media.cy.js", "duration": 12000 },
+    { "spec": "editor/hyperlink/hyperlink-create.cy.js", "duration": 18000 },
+    { "spec": "editor/hyperlink/hyperlink-picker.cy.js", "duration": 20000 },
+    { "spec": "editor/user-behavior/editing-flows.cy.js", "duration": 31000 },
+    { "spec": "editor/lists/bullet-list.cy.js", "duration": 16000 },
+    { "spec": "editor/lists/ordered-list.cy.js", "duration": 14000 }
   ]
 }

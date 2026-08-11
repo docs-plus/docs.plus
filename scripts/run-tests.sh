@@ -9,10 +9,11 @@
 #   bun run test                      # unit + E2E, report saved to Notes/
 #   bun run test:unit                 # unit only, report saved to Notes/
 #   bun run test:e2e                  # E2E only, report saved to Notes/
-#   sh scripts/run-tests.sh           # same as `bun run test`
-#   sh scripts/run-tests.sh --unit         # unit only
-#   sh scripts/run-tests.sh --extensions   # extension release gates only (CI; set EXTENSION_DIST_READY=1 after build-extensions)
-#   sh scripts/run-tests.sh --e2e     # E2E only
+#   bash scripts/run-tests.sh         # same as `bun run test`
+#   bash scripts/run-tests.sh --unit       # unit only
+#   bash scripts/run-tests.sh --extensions # extension release gates only (CI; set EXTENSION_DIST_READY=1 after build-extensions)
+#   bash scripts/run-tests.sh --e2e   # E2E only
+#   (bash, not sh — the result parsing uses process substitution)
 #
 #   CYPRESS_PARALLEL=N bun run test:e2e   # control E2E worker count
 #
@@ -444,10 +445,19 @@ if $RUN_E2E; then
   # A spec glob narrower than the tree drops specs silently, and the totals then
   # report a denominator that hides them. Editor-only globbing hid 10 specs for
   # two months, so compare against the tree and fail the run on any shortfall.
+  # Mirrors excludeSpecPattern in apps/webapp/cypress.config.ts — Cypress skips
+  # those, so counting them here would fail the run for specs it never ran.
   DISCOVERED_SPECS=$(find "$WEBAPP_DIR/cypress/e2e" \
-    \( -name '*.cy.js' -o -name '*.cy.ts' \) -type f 2>/dev/null | wc -l | tr -d ' ')
-  if [ "$TOTAL_SPECS" -ne "$DISCOVERED_SPECS" ]; then
+    \( -name '*.cy.js' -o -name '*.cy.ts' \) -type f \
+    -not -path '*manual-browser-test*' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$DISCOVERED_SPECS" -eq 0 ]; then
+    echo -e "  ${RED}✗ Found no spec files under ${WEBAPP_DIR}/cypress/e2e${NC}"
+    echo "  E2E found no spec files under ${WEBAPP_DIR}/cypress/e2e" >> "$REPORT"
+    E2E_EXIT=1
+    echo ""
+  elif [ "$TOTAL_SPECS" -lt "$DISCOVERED_SPECS" ]; then
     echo -e "  ${RED}✗ Spec coverage gap: ran ${TOTAL_SPECS} of ${DISCOVERED_SPECS} spec files${NC}"
+    echo -e "  ${DIM}  A narrowed --spec glob or a crashed worker both look like this.${NC}"
     echo "  E2E coverage gap: ran ${TOTAL_SPECS} of ${DISCOVERED_SPECS} spec files" >> "$REPORT"
     E2E_EXIT=1
     echo ""
@@ -502,23 +512,35 @@ if $RUN_E2E; then
   # ── Auto-update timings.json for load balancing ──────────────────────────
   TIMINGS_FILE="$WEBAPP_DIR/cypress/timings.json"
   TIMINGS_TMP=$(mktemp)
+  # Cypress wraps long names in its summary table, and the parser reads only the
+  # first line. cypress-split then matches nothing and every spec weighs the
+  # same, so resolve each truncated prefix back to a real spec path.
+  SPEC_PATHS=$(cd "$WEBAPP_DIR" && find cypress/e2e \
+    \( -name '*.cy.js' -o -name '*.cy.ts' \) -type f | sed 's|^cypress/e2e/||')
   echo '{"durations":[' > "$TIMINGS_TMP"
   FIRST_ENTRY=true
   for i in "${!WORKER_EXITS[@]}"; do
     while IFS='|' read -r st sp du te pa fa pe sk; do
       [ -z "$sp" ] && continue
+      # Cypress prints zero-padded durations (00:08), and bash reads a leading
+      # zero as octal, so `08` aborts the arithmetic and the timing lands as 0.
+      # Every spec then weighs the same and the split stops balancing. Force base 10.
       dur_ms=0
       if echo "$du" | grep -q ':'; then
         mins=$(echo "$du" | cut -d: -f1)
         secs=$(echo "$du" | cut -d: -f2)
-        dur_ms=$(( (mins * 60 + secs) * 1000 ))
+        dur_ms=$(( (10#$mins * 60 + 10#$secs) * 1000 ))
       elif echo "$du" | grep -q 'ms'; then
         dur_ms=$(echo "$du" | tr -dc '0-9')
       else
         dur_secs=$(echo "$du" | tr -dc '0-9')
-        dur_ms=$((dur_secs * 1000))
+        dur_ms=$(( 10#${dur_secs:-0} * 1000 ))
       fi
       spec_clean=$(echo "$sp" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+      if ! echo "$spec_clean" | grep -qE '\.cy\.(js|ts)$'; then
+        spec_full=$(echo "$SPEC_PATHS" | grep -F -m1 -- "$spec_clean" || true)
+        [ -n "$spec_full" ] && spec_clean="$spec_full"
+      fi
       if [ "$FIRST_ENTRY" = true ]; then
         FIRST_ENTRY=false
       else
