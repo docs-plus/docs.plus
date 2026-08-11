@@ -65,6 +65,19 @@ export const TEST_TITLE = {
     'This is a Very Long Title That Should Test the Maximum Length Limits of the Title Field in Various Scenarios'
 }
 
+/**
+ * StarterKit's `trailingNode` appends an empty heading whenever the document
+ * ends in another block, because `heading block*` makes heading the default
+ * type. The TOC and Markdown export both drop it, so only raw DOM counts see
+ * it. Pass this to `.should()` to keep the assertion retrying.
+ */
+export const haveNamedHeadingCount =
+  (count: number) =>
+  ($headings: JQuery<HTMLElement>): void => {
+    const named = $headings.toArray().filter((el) => (el.textContent ?? '').trim() !== '')
+    expect(named, 'headings with text').to.have.length(count)
+  }
+
 function generatePredictableText(sentenceCount: number): string {
   const generateSentence = (index: number) =>
     `This is test sentence number ${index + 1} with predictable content.`
@@ -457,10 +470,14 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add('clearEditor', () => {
-  cy.get('.docy_editor > .tiptap.ProseMirror')
-    .scrollIntoView()
-    .click({ force: true })
-    .realPress(['Meta', 'a', 'Backspace'])
+  // realPress is a parent command, so a chained subject is discarded and the key
+  // lands on whatever holds focus. Gate on focus, then press. Select-all and
+  // delete are two presses: one chord of all three keys selects nothing.
+  cy.get('.docy_editor > .tiptap.ProseMirror').scrollIntoView()
+  cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
+  cy.get('.docy_editor > .tiptap.ProseMirror').should('have.focus')
+  cy.realPress(['Meta', 'a'])
+  cy.realPress('Backspace')
 })
 
 Cypress.Commands.add('pasteAsPlainText', (text: string) => {

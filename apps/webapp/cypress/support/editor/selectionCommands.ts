@@ -115,8 +115,37 @@ function setRangePosition(
   }
 }
 
+function headingRank(element: Element): number | null {
+  return /^H[1-6]$/.test(element.tagName) ? Number(element.tagName.slice(1)) : null
+}
+
+/**
+ * The document schema is `heading block*`, so a heading owns the siblings that
+ * follow it rather than any descendants. Scoping by descent finds nothing.
+ */
+function blocksOwnedBy(heading: Element): Element[] {
+  const rank = headingRank(heading) ?? 1
+  const owned: Element[] = []
+
+  for (let node = heading.nextElementSibling; node; node = node.nextElementSibling) {
+    const rankHere = headingRank(node)
+    if (rankHere !== null && rankHere <= rank) break
+    owned.push(node)
+  }
+
+  return owned
+}
+
+function paragraphsIn(scope: Element[]): Element[] {
+  return scope.flatMap((node) => [
+    ...(node.matches('p') ? [node] : []),
+    ...Array.from(node.querySelectorAll('p'))
+  ])
+}
+
 function findElement({ editor, section, heading, paragraph }: FindElementArgs): Element {
   let element: Element = editor
+  let scope: Element[] = Array.from(editor.children)
 
   if (section) {
     const sections = Array.from(editor.querySelectorAll('h1[data-toc-id]'))
@@ -131,19 +160,20 @@ function findElement({ editor, section, heading, paragraph }: FindElementArgs): 
 
     if (!foundSection) throw new Error(`Section not found: ${JSON.stringify(section)}`)
     element = foundSection
+    scope = blocksOwnedBy(foundSection)
   }
 
   if (heading) {
-    const headings = Array.from(
-      element.querySelectorAll(':is(h1, h2, h3, h4, h5, h6)[data-toc-id]')
+    const headings = scope.filter(
+      (node) => headingRank(node) !== null && node.hasAttribute('data-toc-id')
     )
     let foundHeading: Element | undefined
 
     if (typeof heading === 'object') {
       const { level, title } = heading
       foundHeading = headings.find((h) => {
-        const headingLevel = parseInt(h.tagName.replace('H', '') || '0')
-        return (!level || headingLevel === level) && (!title || h.textContent?.includes(title))
+        const rank = headingRank(h) ?? 0
+        return (!level || rank === level) && (!title || h.textContent?.includes(title))
       })
     } else if (typeof heading === 'number') {
       foundHeading = headings[heading - 1] as Element | undefined
@@ -151,10 +181,11 @@ function findElement({ editor, section, heading, paragraph }: FindElementArgs): 
 
     if (!foundHeading) throw new Error(`Heading not found: ${JSON.stringify(heading)}`)
     element = foundHeading
+    scope = blocksOwnedBy(foundHeading)
   }
 
   if (paragraph) {
-    const paragraphs = Array.from(element.querySelectorAll('p'))
+    const paragraphs = paragraphsIn(scope)
     let foundParagraph: Element | undefined
 
     if (typeof paragraph === 'object') {

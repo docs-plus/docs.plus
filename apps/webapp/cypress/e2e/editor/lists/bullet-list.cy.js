@@ -64,7 +64,8 @@ describe('Bullet List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Click the bullet list button in the toolbar
-      cy.get('[data-testid="toolbar-bullet-list"]').click()
+      cy.get('[aria-label="Lists"]').click()
+      cy.get('[data-testid="toolbar-bulletList"]').click()
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('First item in bullet list')

@@ -6,7 +6,7 @@
  * These simulate how users actually interact with the editor.
  */
 
-import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
+import { TEST_TITLE, TEST_CONTENT, haveNamedHeadingCount } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
 describe('User Editing Flows', { testIsolation: false }, () => {
@@ -141,7 +141,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should now be a separate H1 section
-      cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 2)
+      cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should(haveNamedHeadingCount(2))
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -216,7 +216,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Click on heading title and type
-      cy.get('h1[data-toc-id]').click()
+      cy.get('h1[data-toc-id]').first().click()
       cy.realPress('End')
       cy.realType(' Extended')
       cy.wait(100)
@@ -251,7 +251,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Verify 3 sections
-      cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 3)
+      cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should(haveNamedHeadingCount(3))
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -292,7 +292,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Type in empty heading
-      cy.get('h1[data-toc-id]').click()
+      cy.get('h1[data-toc-id]').first().click()
       cy.realType('New Title')
       cy.wait(100)
 

@@ -267,35 +267,34 @@ if $RUN_E2E; then
     echo ""
   } >> "$REPORT"
 
-  E2E_EDITOR_EXIT=0
-  E2E_COMMANDS_EXIT=0
+  E2E_WORKER_EXIT=0
 
-  # ── Editor E2E tests — split across parallel workers ──────────────────────
-  echo -e "${BOLD}  Running editor E2E tests (${CYPRESS_PARALLEL} workers, with baseUrl)...${NC}"
+  # ── Webapp E2E tests — split across parallel workers ──────────────────────
+  echo -e "${BOLD}  Running webapp E2E tests (${CYPRESS_PARALLEL} workers, with baseUrl)...${NC}"
   echo ""
 
-  EDITOR_PIDS=()
-  EDITOR_EXITS=()
-  EDITOR_START_EPOCHS=()
-  EDITOR_END_EPOCHS=()
-  EDITOR_LOGS_DIR="$REPORT_DIR/.e2e-logs-${TIMESTAMP}"
-  mkdir -p "$EDITOR_LOGS_DIR"
+  WORKER_PIDS=()
+  WORKER_EXITS=()
+  WORKER_START_EPOCHS=()
+  WORKER_END_EPOCHS=()
+  WORKER_LOGS_DIR="$REPORT_DIR/.e2e-logs-${TIMESTAMP}"
+  mkdir -p "$WORKER_LOGS_DIR"
 
-  EDITOR_WALL_START=$(date +%s)
+  WORKER_WALL_START=$(date +%s)
 
   for i in $(seq 0 $((CYPRESS_PARALLEL - 1))); do
-    EDITOR_START_EPOCHS+=("$(date +%s)")
+    WORKER_START_EPOCHS+=("$(date +%s)")
     SPLIT="$CYPRESS_PARALLEL" SPLIT_INDEX="$i" SPLIT_FILE="cypress/timings.json" \
     bunx cypress run \
       --project "$WEBAPP_DIR" \
       --browser electron \
       --config "baseUrl=${BASE_URL}" \
-      --spec "$WEBAPP_DIR/cypress/e2e/editor/**/*.cy.{js,ts}" \
-      > "$EDITOR_LOGS_DIR/worker-${i}.log" 2>&1 &
-    EDITOR_PIDS+=($!)
-    EDITOR_EXITS+=(-)
-    EDITOR_END_EPOCHS+=(0)
-    echo -e "    ${BLUE}Worker $((i + 1))/${CYPRESS_PARALLEL} started (PID ${EDITOR_PIDS[$i]})${NC}"
+      --spec "$WEBAPP_DIR/cypress/e2e/**/*.cy.{js,ts}" \
+      > "$WORKER_LOGS_DIR/worker-${i}.log" 2>&1 &
+    WORKER_PIDS+=($!)
+    WORKER_EXITS+=(-)
+    WORKER_END_EPOCHS+=(0)
+    echo -e "    ${BLUE}Worker $((i + 1))/${CYPRESS_PARALLEL} started (PID ${WORKER_PIDS[$i]})${NC}"
   done
 
   echo ""
@@ -307,29 +306,29 @@ if $RUN_E2E; then
     WORKERS_REMAINING=0
     STATUS_LINE=""
 
-    for i in "${!EDITOR_PIDS[@]}"; do
-      if [ "${EDITOR_EXITS[$i]}" != "-" ]; then
+    for i in "${!WORKER_PIDS[@]}"; do
+      if [ "${WORKER_EXITS[$i]}" != "-" ]; then
         continue
       fi
 
-      if ! kill -0 "${EDITOR_PIDS[$i]}" 2>/dev/null; then
-        wait "${EDITOR_PIDS[$i]}" 2>/dev/null
-        EDITOR_EXITS[$i]=$?
-        EDITOR_END_EPOCHS[$i]=$(date +%s)
-        cat "$EDITOR_LOGS_DIR/worker-${i}.log" >> "$REPORT"
+      if ! kill -0 "${WORKER_PIDS[$i]}" 2>/dev/null; then
+        wait "${WORKER_PIDS[$i]}" 2>/dev/null
+        WORKER_EXITS[$i]=$?
+        WORKER_END_EPOCHS[$i]=$(date +%s)
+        cat "$WORKER_LOGS_DIR/worker-${i}.log" >> "$REPORT"
 
-        local_dur=$(( EDITOR_END_EPOCHS[i] - EDITOR_START_EPOCHS[i] ))
+        local_dur=$(( WORKER_END_EPOCHS[i] - WORKER_START_EPOCHS[i] ))
         local_dur_fmt=$(fmt_duration $local_dur)
 
-        if [ "${EDITOR_EXITS[$i]}" -eq 0 ]; then
+        if [ "${WORKER_EXITS[$i]}" -eq 0 ]; then
           echo -e "    ${GREEN}✓ Worker $((i + 1)) passed${NC} ${DIM}(${local_dur_fmt})${NC}"
         else
-          echo -e "    ${RED}✗ Worker $((i + 1)) FAILED (exit ${EDITOR_EXITS[$i]})${NC} ${DIM}(${local_dur_fmt})${NC}"
-          E2E_EDITOR_EXIT=1
+          echo -e "    ${RED}✗ Worker $((i + 1)) FAILED (exit ${WORKER_EXITS[$i]})${NC} ${DIM}(${local_dur_fmt})${NC}"
+          E2E_WORKER_EXIT=1
         fi
       else
         WORKERS_REMAINING=$((WORKERS_REMAINING + 1))
-        LAST_SPEC=$(grep -oE '[^ ]+\.cy\.(js|ts)' "$EDITOR_LOGS_DIR/worker-${i}.log" 2>/dev/null | tail -1 || true)
+        LAST_SPEC=$(grep -oE '[^ ]+\.cy\.(js|ts)' "$WORKER_LOGS_DIR/worker-${i}.log" 2>/dev/null | tail -1 || true)
         if [ -n "$LAST_SPEC" ]; then
           LAST_SPEC=" → $(basename "$LAST_SPEC")"
         fi
@@ -338,49 +337,18 @@ if $RUN_E2E; then
     done
 
     if [ $WORKERS_REMAINING -gt 0 ]; then
-      ELAPSED=$(( $(date +%s) - EDITOR_WALL_START ))
+      ELAPSED=$(( $(date +%s) - WORKER_WALL_START ))
       echo -e "    ${YELLOW}⏳ ${WORKERS_REMAINING} running (${ELAPSED}s elapsed): ${STATUS_LINE}${NC}"
     fi
   done
 
-  EDITOR_WALL_END=$(date +%s)
-  EDITOR_WALL_SECS=$(( EDITOR_WALL_END - EDITOR_WALL_START ))
-
-  # ── Command E2E tests — run separately (typically few specs) ──────────────
-  echo ""
-  echo -e "${BOLD}  Running command E2E tests (no baseUrl)...${NC}"
-
-  CMD_START=$(date +%s)
-  CMD_LOG="$EDITOR_LOGS_DIR/commands.log"
-
-  if bunx cypress run \
-    --project "$WEBAPP_DIR" \
-    --browser electron \
-    --spec "$WEBAPP_DIR/cypress/e2e/cypress-commands/**/*.cy.{js,ts}" \
-    > "$CMD_LOG" 2>&1; then
-    E2E_COMMANDS_EXIT=0
-  else
-    E2E_COMMANDS_EXIT=$?
-  fi
-
-  CMD_END=$(date +%s)
-  CMD_SECS=$(( CMD_END - CMD_START ))
-  cat "$CMD_LOG" >> "$REPORT"
-
-  if [ $E2E_COMMANDS_EXIT -eq 0 ]; then
-    echo -e "    ${GREEN}✓ Command tests passed${NC} ${DIM}($(fmt_duration $CMD_SECS))${NC}"
-  else
-    echo -e "    ${RED}✗ Command tests FAILED (exit ${E2E_COMMANDS_EXIT})${NC} ${DIM}($(fmt_duration $CMD_SECS))${NC}"
-  fi
+  WORKER_WALL_END=$(date +%s)
+  WORKER_WALL_SECS=$(( WORKER_WALL_END - WORKER_WALL_START ))
 
   E2E_END_EPOCH=$(date +%s)
   E2E_TOTAL_SECS=$(( E2E_END_EPOCH - E2E_START_EPOCH ))
 
-  if [ $E2E_EDITOR_EXIT -eq 0 ] && [ $E2E_COMMANDS_EXIT -eq 0 ]; then
-    E2E_EXIT=0
-  else
-    E2E_EXIT=1
-  fi
+  E2E_EXIT=$E2E_WORKER_EXIT
 
   {
     echo ""
@@ -415,9 +383,9 @@ if $RUN_E2E; then
   SLOWEST_WORKER_SECS=0
   FASTEST_WORKER_SECS=999999
 
-  for i in "${!EDITOR_EXITS[@]}"; do
+  for i in "${!WORKER_EXITS[@]}"; do
     W_NUM=$((i + 1))
-    W_DUR=$(( EDITOR_END_EPOCHS[i] - EDITOR_START_EPOCHS[i] ))
+    W_DUR=$(( WORKER_END_EPOCHS[i] - WORKER_START_EPOCHS[i] ))
     TOTAL_WORKER_SECS=$(( TOTAL_WORKER_SECS + W_DUR ))
     [ $W_DUR -gt $SLOWEST_WORKER_SECS ] && SLOWEST_WORKER_SECS=$W_DUR
     [ $W_DUR -lt $FASTEST_WORKER_SECS ] && FASTEST_WORKER_SECS=$W_DUR
@@ -439,10 +407,10 @@ if $RUN_E2E; then
       TOTAL_FAILED=$((TOTAL_FAILED + fa_num))
       TOTAL_PENDING=$((TOTAL_PENDING + pe_num))
       TOTAL_SKIPPED=$((TOTAL_SKIPPED + sk_num))
-    done < <(parse_cypress_results "$EDITOR_LOGS_DIR/worker-${i}.log")
+    done < <(parse_cypress_results "$WORKER_LOGS_DIR/worker-${i}.log")
     TOTAL_SPECS=$((TOTAL_SPECS + W_SPECS))
 
-    if [ "${EDITOR_EXITS[$i]}" -eq 0 ]; then
+    if [ "${WORKER_EXITS[$i]}" -eq 0 ]; then
       W_STATUS="${GREEN}  ✓   ${NC}"
     else
       W_STATUS="${RED}  ✗   ${NC}"
@@ -451,35 +419,6 @@ if $RUN_E2E; then
     printf "  │   %d    │%b│  %3d  │  %4d  │  %4d   │ %8s │\n" \
       "$W_NUM" "$W_STATUS" "$W_SPECS" "$W_PASS" "$W_FAIL" "$W_DUR_FMT"
   done
-
-  # Add command tests row
-  CMD_SPECS=0; CMD_PASS=0; CMD_FAIL=0
-  while IFS='|' read -r st sp du te pa fa pe sk; do
-    CMD_SPECS=$((CMD_SPECS + 1))
-    te_num=$(echo "$te" | tr -d '[:space:]-'); [ -z "$te_num" ] && te_num=0
-    pa_num=$(echo "$pa" | tr -d '[:space:]-'); [ -z "$pa_num" ] && pa_num=0
-    fa_num=$(echo "$fa" | tr -d '[:space:]-'); [ -z "$fa_num" ] && fa_num=0
-    pe_num=$(echo "$pe" | tr -d '[:space:]-'); [ -z "$pe_num" ] && pe_num=0
-    sk_num=$(echo "$sk" | tr -d '[:space:]-'); [ -z "$sk_num" ] && sk_num=0
-    TOTAL_TESTS=$((TOTAL_TESTS + te_num))
-    CMD_PASS=$((CMD_PASS + pa_num))
-    CMD_FAIL=$((CMD_FAIL + fa_num))
-    TOTAL_PASSED=$((TOTAL_PASSED + pa_num))
-    TOTAL_FAILED=$((TOTAL_FAILED + fa_num))
-    TOTAL_PENDING=$((TOTAL_PENDING + pe_num))
-    TOTAL_SKIPPED=$((TOTAL_SKIPPED + sk_num))
-  done < <(parse_cypress_results "$CMD_LOG")
-  TOTAL_SPECS=$((TOTAL_SPECS + CMD_SPECS))
-
-  if [ $E2E_COMMANDS_EXIT -eq 0 ]; then
-    CMD_STATUS="${GREEN}  ✓   ${NC}"
-  else
-    CMD_STATUS="${RED}  ✗   ${NC}"
-  fi
-
-  echo -e "  ├────────┼────────┼───────┼────────┼─────────┼──────────┤"
-  printf "  │  cmds  │%b│  %3d  │  %4d  │  %4d   │ %8s │\n" \
-    "$CMD_STATUS" "$CMD_SPECS" "$CMD_PASS" "$CMD_FAIL" "$(fmt_duration $CMD_SECS)"
 
   echo -e "  └────────┴────────┴───────┴────────┴─────────┴──────────┘"
   echo ""
@@ -502,16 +441,27 @@ if $RUN_E2E; then
   fi
   echo ""
 
+  # A spec glob narrower than the tree drops specs silently, and the totals then
+  # report a denominator that hides them. Editor-only globbing hid 10 specs for
+  # two months, so compare against the tree and fail the run on any shortfall.
+  DISCOVERED_SPECS=$(find "$WEBAPP_DIR/cypress/e2e" \
+    \( -name '*.cy.js' -o -name '*.cy.ts' \) -type f 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$TOTAL_SPECS" -ne "$DISCOVERED_SPECS" ]; then
+    echo -e "  ${RED}✗ Spec coverage gap: ran ${TOTAL_SPECS} of ${DISCOVERED_SPECS} spec files${NC}"
+    echo "  E2E coverage gap: ran ${TOTAL_SPECS} of ${DISCOVERED_SPECS} spec files" >> "$REPORT"
+    E2E_EXIT=1
+    echo ""
+  fi
+
   # ── Timing statistics ──────────────────────────────────────────────────
   echo -e "${BOLD}  Timing${NC}"
   echo -e "    Wall clock:          ${CYAN}$(fmt_duration $E2E_TOTAL_SECS)${NC}"
-  echo -e "    Editor tests:        $(fmt_duration $EDITOR_WALL_SECS)"
-  echo -e "    Command tests:       $(fmt_duration $CMD_SECS)"
+  echo -e "    Worker pass:         $(fmt_duration $WORKER_WALL_SECS)"
   echo -e "    Slowest worker:      $(fmt_duration $SLOWEST_WORKER_SECS)"
   echo -e "    Fastest worker:      $(fmt_duration $FASTEST_WORKER_SECS)"
   echo -e "    Combined CPU time:   $(fmt_duration $TOTAL_WORKER_SECS)"
-  if [ $EDITOR_WALL_SECS -gt 0 ]; then
-    SPEEDUP=$(awk "BEGIN { printf \"%.1fx\", $TOTAL_WORKER_SECS / $EDITOR_WALL_SECS }")
+  if [ $WORKER_WALL_SECS -gt 0 ]; then
+    SPEEDUP=$(awk "BEGIN { printf \"%.1fx\", $TOTAL_WORKER_SECS / $WORKER_WALL_SECS }")
     echo -e "    Parallelism factor:  ${CYAN}${SPEEDUP}${NC} ${DIM}(effective speedup vs sequential)${NC}"
   fi
   echo ""
@@ -520,25 +470,25 @@ if $RUN_E2E; then
   if [ $TOTAL_FAILED -gt 0 ]; then
     echo -e "${BOLD}  Failed Specs${NC}"
     echo ""
-    for i in "${!EDITOR_EXITS[@]}"; do
-      if [ "${EDITOR_EXITS[$i]}" != "0" ] && [ "${EDITOR_EXITS[$i]}" != "-" ]; then
+    for i in "${!WORKER_EXITS[@]}"; do
+      if [ "${WORKER_EXITS[$i]}" != "0" ] && [ "${WORKER_EXITS[$i]}" != "-" ]; then
         while IFS='|' read -r st sp du te pa fa pe sk; do
           fa_num=$(echo "$fa" | tr -d '[:space:]-'); [ -z "$fa_num" ] && fa_num=0
           if [ "$fa_num" -gt 0 ] 2>/dev/null; then
             echo -e "    ${RED}✗${NC} ${sp} ${DIM}(${fa_num} failed, worker $((i + 1)))${NC}"
           fi
-        done < <(parse_cypress_results "$EDITOR_LOGS_DIR/worker-${i}.log")
+        done < <(parse_cypress_results "$WORKER_LOGS_DIR/worker-${i}.log")
       fi
     done
     echo ""
 
     echo -e "${BOLD}  Failure Details${NC}"
     echo ""
-    for i in "${!EDITOR_EXITS[@]}"; do
-      if [ "${EDITOR_EXITS[$i]}" != "0" ] && [ "${EDITOR_EXITS[$i]}" != "-" ]; then
+    for i in "${!WORKER_EXITS[@]}"; do
+      if [ "${WORKER_EXITS[$i]}" != "0" ] && [ "${WORKER_EXITS[$i]}" != "-" ]; then
         # Extract the failing test names and their errors
         grep -B 1 -A 3 'AssertionError\|CypressError\|Error:.*Timed out' \
-          "$EDITOR_LOGS_DIR/worker-${i}.log" 2>/dev/null | while IFS= read -r eline; do
+          "$WORKER_LOGS_DIR/worker-${i}.log" 2>/dev/null | while IFS= read -r eline; do
           echo -e "    ${DIM}W$((i + 1))${NC} $eline"
         done | head -30
         echo ""
@@ -546,7 +496,7 @@ if $RUN_E2E; then
     done
   fi
 
-  echo -e "  ${DIM}Worker logs: ${EDITOR_LOGS_DIR}/${NC}"
+  echo -e "  ${DIM}Worker logs: ${WORKER_LOGS_DIR}/${NC}"
   echo ""
 
   # ── Auto-update timings.json for load balancing ──────────────────────────
@@ -554,7 +504,7 @@ if $RUN_E2E; then
   TIMINGS_TMP=$(mktemp)
   echo '{"durations":[' > "$TIMINGS_TMP"
   FIRST_ENTRY=true
-  for i in "${!EDITOR_EXITS[@]}"; do
+  for i in "${!WORKER_EXITS[@]}"; do
     while IFS='|' read -r st sp du te pa fa pe sk; do
       [ -z "$sp" ] && continue
       dur_ms=0
@@ -575,7 +525,7 @@ if $RUN_E2E; then
         echo ',' >> "$TIMINGS_TMP"
       fi
       printf '{"spec":"%s","duration":%d}' "$spec_clean" "$dur_ms" >> "$TIMINGS_TMP"
-    done < <(parse_cypress_results "$EDITOR_LOGS_DIR/worker-${i}.log")
+    done < <(parse_cypress_results "$WORKER_LOGS_DIR/worker-${i}.log")
   done
   echo '' >> "$TIMINGS_TMP"
   echo ']}' >> "$TIMINGS_TMP"

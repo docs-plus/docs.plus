@@ -8,6 +8,10 @@ const PARAGRAPH_TEXT = 'Apply hyperlink and comment on this target word.'
 const TARGET_START = PARAGRAPH_TEXT.indexOf(TARGET_TEXT)
 const TARGET_END = TARGET_START + TARGET_TEXT.length
 
+const POPOVER = '[data-testid="hyperlink-create-popover"]'
+const URL_INPUT = `${POPOVER} [data-testid="hyperlink-editor-url"]`
+const SUBMIT_BTN = `${POPOVER} [data-testid="hyperlink-editor-submit"]`
+
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,
   sections: [section('Shortcut Parity Section', [paragraph(PARAGRAPH_TEXT)])]
@@ -34,11 +38,9 @@ describe('Toolbar/Shortcut Parity', () => {
     selectTargetText()
     cy.get('[data-testid="toolbar-hyperlink"]').click()
 
-    cy.get('.hyperlink-create-popover').should('be.visible')
-    cy.get('.hyperlink-create-popover input[name="hyperlink-url"]')
-      .clear()
-      .type('https://example.com')
-    cy.get('.hyperlink-create-popover button[type="submit"]').click()
+    cy.get(POPOVER).should('be.visible')
+    cy.get(URL_INPUT).clear().type('https://example.com')
+    cy.get(SUBMIT_BTN).click()
 
     cy.get('.docy_editor a')
       .contains(TARGET_TEXT)
@@ -50,11 +52,9 @@ describe('Toolbar/Shortcut Parity', () => {
     selectTargetText()
     cy.get('.docy_editor').realPress(['Meta', 'k'])
 
-    cy.get('.hyperlink-create-popover').should('be.visible')
-    cy.get('.hyperlink-create-popover input[name="hyperlink-url"]')
-      .clear()
-      .type('https://example.org')
-    cy.get('.hyperlink-create-popover button[type="submit"]').click()
+    cy.get(POPOVER).should('be.visible')
+    cy.get(URL_INPUT).clear().type('https://example.org')
+    cy.get(SUBMIT_BTN).click()
 
     cy.get('.docy_editor a')
       .contains(TARGET_TEXT)

@@ -1,4 +1,5 @@
 import { section, heading, paragraph } from '../../../fixtures/docMaker'
+import { haveNamedHeadingCount } from '../../../support/commands'
 
 describe('Collaboration Heading Sync (Flat Schema)', () => {
   beforeEach(() => {
@@ -29,6 +30,10 @@ describe('Collaboration Heading Sync (Flat Schema)', () => {
   })
 
   it('should maintain document structure after heading operations', () => {
+    // persist: true keeps one IndexedDB room for the whole spec, and its bytes
+    // merge back over setContent. Clear first or the previous test's headings stay.
+    cy.clearEditor()
+
     const doc = {
       sections: [
         section('Sync Test', [
@@ -51,11 +56,12 @@ describe('Collaboration Heading Sync (Flat Schema)', () => {
     cy.get('.docy_editor > .tiptap.ProseMirror').type(' Updated')
     cy.wait(300)
 
-    // Verify the update
-    cy.get('h2[data-toc-id]').should('contain', 'Alpha Updated')
+    // Verify the update. `contain` on a multi-element subject asserts every
+    // element holds the text, so scope to the one heading that changed.
+    cy.contains('h2[data-toc-id]', 'Alpha Updated').should('exist')
 
     // Structure should be intact
-    cy.get('h1[data-toc-id]').should('have.length', 1)
+    cy.get('h1[data-toc-id]').should(haveNamedHeadingCount(1))
     cy.get('h2[data-toc-id]').should('have.length', 2)
     cy.get('h3[data-toc-id]').should('have.length', 1)
   })

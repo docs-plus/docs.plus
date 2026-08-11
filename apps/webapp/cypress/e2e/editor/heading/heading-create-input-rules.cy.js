@@ -1,5 +1,7 @@
 /* eslint-disable no-undef */
 
+import { haveNamedHeadingCount } from '../../../support/commands'
+
 describe('Heading Input Rules (Flat Schema)', () => {
   beforeEach(() => {
     cy.visitEditor({ docName: 'heading-input-rules-test', persist: true })
@@ -34,7 +36,7 @@ describe('Heading Input Rules (Flat Schema)', () => {
     editor.type('Test Document{enter}')
     editor.type('####### Not A Heading')
 
-    cy.get('h1[data-toc-id]').should('have.length', 1)
+    cy.get('h1[data-toc-id]').should(haveNamedHeadingCount(1))
     cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', '####### Not A Heading')
   })
 

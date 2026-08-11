@@ -37,6 +37,7 @@ const ToolbarSelectPanel = ({ items, editor }: { items: ToolbarSelectItem[]; edi
             type="button"
             role="menuitemradio"
             aria-checked={active}
+            data-testid={`toolbar-${item.value}`}
             className={twMerge(
               'hover:bg-base-200 flex items-center gap-2 px-3 py-1.5 text-sm transition-colors',
               active && 'text-primary'

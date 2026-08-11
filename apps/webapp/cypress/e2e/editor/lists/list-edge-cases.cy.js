@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 
 import { heading, paragraph, section } from '../../../fixtures/docMaker'
-import { TEST_TITLE } from '../../../support/commands'
+import { TEST_TITLE, haveNamedHeadingCount } from '../../../support/commands'
 
 const SimpleDocument = {
   documentName: TEST_TITLE.HelloDocy,
@@ -15,11 +15,11 @@ const DeepHierarchyDocument = {
     section('Section 2', [heading(3, 'S2-H3', [paragraph('leaf 2')])]),
     section('Section 3', [heading(2, 'S3-H2', [heading(5, 'S3-H5', [paragraph('leaf 3')])])]),
     section('Section 4', [
-      heading(2, 'S4-H2', [heading(3, 'S4-H3', [heading(7, 'S4-H7', [paragraph('deep leaf')])])])
+      heading(2, 'S4-H2', [heading(3, 'S4-H3', [heading(4, 'S4-H4', [paragraph('deep leaf')])])])
     ]),
     section('Section 5', [heading(4, 'S5-H4', [paragraph('leaf 5')])]),
-    section('Section 6', [heading(2, 'S6-H2', [heading(8, 'S6-H8', [paragraph('leaf 6')])])]),
-    section('Section 7', [heading(9, 'S7-H9', [paragraph('leaf 7')])])
+    section('Section 6', [heading(2, 'S6-H2', [heading(6, 'S6-H6', [paragraph('leaf 6')])])]),
+    section('Section 7', [heading(6, 'S7-H6', [paragraph('leaf 7')])])
   ]
 }
 
@@ -153,12 +153,13 @@ describe('List Edge Cases', () => {
     cy.createDocument(DeepHierarchyDocument)
     cy.wait(300)
 
-    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 7)
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should(haveNamedHeadingCount(7))
 
-    cy.putPosCaretInHeading(7, 'S4-H7', 'end')
+    cy.putPosCaretInHeading(4, 'S4-H4', 'end')
     cy.realPress('Enter')
     cy.get('.docy_editor > .tiptap.ProseMirror').realType('deep list item')
-    cy.get('[data-testid="toolbar-ordered-list"]').click()
+    cy.get('[aria-label="Lists"]').click()
+    cy.get('[data-testid="toolbar-orderedList"]').click()
 
     cy.get('.docy_editor .tiptap.ProseMirror ol li').should('contain', 'deep list item')
     cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length.gte', 1)

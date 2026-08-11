@@ -1,4 +1,5 @@
 import { section, heading, paragraph } from '../../../fixtures/docMaker'
+import { haveNamedHeadingCount } from '../../../support/commands'
 
 describe('Full Document Paste (Flat Schema)', () => {
   beforeEach(() => {
@@ -63,7 +64,7 @@ describe('Full Document Paste (Flat Schema)', () => {
     cy.wait(500)
 
     // BC-1: Title must remain H1
-    cy.get('h1[data-toc-id]').should('have.length', 1)
+    cy.get('h1[data-toc-id]').should(haveNamedHeadingCount(1))
     cy.get('h1[data-toc-id]').should('contain', 'Original Title')
   })
 })

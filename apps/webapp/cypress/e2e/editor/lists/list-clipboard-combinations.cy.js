@@ -14,6 +14,10 @@ const ORDERED_ITEMS = `${ROOT} > ol > li`
 const TASK_ITEMS_TOP = `${ROOT} > ul[data-type="taskList"] > li`
 const TASK_ITEMS_ALL = `${ROOT} ul[data-type="taskList"] li`
 
+const POPOVER = '[data-testid="hyperlink-create-popover"]'
+const URL_INPUT = `${POPOVER} [data-testid="hyperlink-editor-url"]`
+const SUBMIT_BTN = `${POPOVER} [data-testid="hyperlink-editor-submit"]`
+
 const selectItemRange = (startText, endText = startText) =>
   cy.createSelection({
     startSection: 1,
@@ -144,9 +148,9 @@ const applyFormattingAndHyperlink = (itemText, shortcuts, href) => {
   // Use the real hyperlink command path so tests validate the same behavior users trigger.
   selectItemRange(itemText)
   cy.get('.docy_editor').realPress(['Meta', 'k'])
-  cy.get('.hyperlink-create-popover').should('be.visible')
-  cy.get('.hyperlink-create-popover input[name="hyperlink-url"]').clear().type(href)
-  cy.get('.hyperlink-create-popover button[type="submit"]').click()
+  cy.get(POPOVER).should('be.visible')
+  cy.get(URL_INPUT).clear().type(href)
+  cy.get(SUBMIT_BTN).click()
 }
 
 const pasteSliceAtListEnd = (itemSelector, aliasName) => {
@@ -200,7 +204,7 @@ describe('List Clipboard Combinations', () => {
     const items = [
       'ALPHA bold-link item',
       'BETA italic-underline-link item',
-      'GAMMA strike-highlight-code-link item',
+      'GAMMA strike-highlight-link item',
       'TAIL destination item'
     ]
 
@@ -215,12 +219,13 @@ describe('List Clipboard Combinations', () => {
       ],
       'https://beta.example'
     )
+    // The code mark declares excludes: '_', so it strips every other mark on its
+    // run. A code item cannot also carry strike, highlight or a link.
     applyFormattingAndHyperlink(
       items[2],
       [
         ['Meta', 'Shift', 's'],
-        ['Meta', 'Shift', 'h'],
-        ['Meta', 'e']
+        ['Meta', 'Shift', 'h']
       ],
       'https://gamma.example'
     )
@@ -243,7 +248,6 @@ describe('List Clipboard Combinations', () => {
     cy.get(`${ROOT} u`).filter(':contains("BETA")').should('have.length', 2)
     cy.get(`${ROOT} s`).filter(':contains("GAMMA")').should('have.length', 2)
     cy.get(`${ROOT} mark`).filter(':contains("GAMMA")').should('have.length', 2)
-    cy.get(`${ROOT} code`).filter(':contains("GAMMA")').should('have.length', 2)
   })
 
   it('cuts several ordered items with mixed formatting + links and pastes them back into the list', () => {
