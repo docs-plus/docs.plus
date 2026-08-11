@@ -76,14 +76,31 @@ describe('Markdown Paste Detection', () => {
       cy.get('.docy_editor ul li').should('have.length.at.least', 1)
     })
 
-    it('does not trigger for a single bold word (weight=2, below threshold)', () => {
+    it('does not trigger for a lone heading (weight=5, below threshold)', () => {
       focusEndOfFirstParagraph()
 
-      cy.pasteAsPlainText('This has **one** bold word only.')
+      // Bold cannot prove this: Tiptap's own bold paste rule converts `**x**`
+      // whether or not the Markdown plugin runs. Heading has no paste rule, so
+      // a surviving literal `##` is proof the plugin declined.
+      cy.pasteAsPlainText('## Not enough signal')
       cy.wait(300)
 
-      cy.get('.docy_editor strong').should('not.exist')
-      cy.get('.docy_editor').should('contain.text', '**one**')
+      cy.get('.docy_editor h2').should('not.exist')
+      cy.get('.docy_editor').should('contain.text', '## Not enough signal')
+    })
+
+    it('does not trigger for terminal YAML with a document separator', () => {
+      focusEndOfFirstParagraph()
+
+      // `listItem` plus `thematicBreak` must stay under THRESHOLD. At a rule
+      // weight of 3 this pasted as lists and an <hr>, and `Best,\nName\n---`
+      // became a setext <h2> that the flat schema then gave a data-toc-id.
+      cy.pasteAsPlainText('- name: web\n- name: db\n\n---\n\n- name: cache')
+      cy.wait(300)
+
+      cy.get('.docy_editor ul').should('not.exist')
+      cy.get('.docy_editor hr').should('not.exist')
+      cy.get('.docy_editor').should('contain.text', '- name: web')
     })
   })
 
@@ -109,7 +126,9 @@ describe('Markdown Paste Detection', () => {
       ])
       cy.wait(300)
 
-      cy.get('.docy_editor h2').should('not.contain.text', 'Heading from VS Code')
+      // `cy.get` fails before the assertion when no h2 exists, so assert absence.
+      cy.get('.docy_editor h2').should('not.exist')
+      cy.get('.docy_editor').should('contain.text', '## Heading from VS Code')
     })
 
     it('treats macOS shell HTML wrapper as plain text and detects markdown', () => {

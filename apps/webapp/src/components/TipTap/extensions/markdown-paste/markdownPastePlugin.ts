@@ -54,6 +54,10 @@ const SIGNALS = [
   { pattern: /!\[([^\]]*)\]\([^\s)]+\)/g, weight: 5, name: 'image' },
   { pattern: /^(?:[-*+]|\d+\.)\s+\S/gm, weight: 3, name: 'listItem' },
   { pattern: /^>\s+\S/gm, weight: 3, name: 'blockquote' },
+  // A rule is also an email signature, a YAML fence and a note divider.
+  // At weight 2 it cannot tip `listItem` or `blockquote` on its own, so it
+  // needs a 5-point partner: a heading, a link, an image or a fence.
+  { pattern: /^(?:---|\*\*\*|___)[ \t]*$/gm, weight: 2, name: 'thematicBreak' },
   { pattern: /\*\*[^*]+\*\*/g, weight: 2, name: 'bold' },
   { pattern: /`[^`]+`/g, weight: 2, name: 'inlineCode' }
 ] as const

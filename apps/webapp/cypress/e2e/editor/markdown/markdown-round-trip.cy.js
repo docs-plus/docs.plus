@@ -168,7 +168,9 @@ describe('Markdown Round-Trip Fidelity', () => {
     it('heading nodes get valid toc-id after Markdown paste', () => {
       focusEndOfFirstParagraph()
 
-      cy.pasteAsPlainText('## Pasted Heading\n\nSome paragraph text.')
+      // A lone heading scores below THRESHOLD by design. This spec covers
+      // heading fidelity once detection fires, so paste unambiguous Markdown.
+      cy.pasteAsPlainText('## Pasted Heading\n\nSome paragraph text.\n\n---\n')
       cy.wait(300)
 
       cy.get('.docy_editor h2[data-toc-id]')
@@ -187,7 +189,10 @@ describe('Markdown Round-Trip Fidelity', () => {
         '',
         '### Level 3',
         '',
-        'Para under 3'
+        'Para under 3',
+        '',
+        '---',
+        ''
       ].join('\n')
 
       cy.pasteAsPlainText(markdown)
