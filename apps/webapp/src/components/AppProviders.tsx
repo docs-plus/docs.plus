@@ -45,11 +45,12 @@ export default function AppProviders({
 
   useEffect(() => {
     if (!router.isReady || !documentShell) return
-    eventsHub(router)
+    const stop = eventsHub(router)
 
     performMaintenanceCleanup().catch(() => {
       // Silently fail - cleanup is best-effort
     })
+    return stop
   }, [router, router.isReady, documentShell])
 
   return null

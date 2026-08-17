@@ -9,7 +9,6 @@ type TChatRoom = {
   headingPath: Array<any>
   headingId?: string
   documentId?: string
-  open: boolean
   /** Read only on mobile. Desktop sizes its docked panel from `panelHeight`. */
   paneMode: ChatPaneMode
   panelHeight: number
@@ -30,7 +29,6 @@ interface IChatroomStore {
     fetchMsgsFromId?: string
   ) => void
   updateChatRoom: (key: keyof TChatRoom, value: any) => void
-  openChatRoom: () => void
   destroyChatRoom: () => void
   setPaneMode: (mode: ChatPaneMode) => void
   setOrUpdateChatPanelHeight: (height: number) => void
@@ -43,7 +41,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     headingId: undefined,
     documentId: undefined,
     headingPath: [],
-    open: false,
     paneMode: 'closed',
     panelHeight: 410,
     replyMessageMemory: undefined,
@@ -87,12 +84,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     })
   },
 
-  openChatRoom: () => {
-    set((state) => {
-      state.chatRoom.open = true
-    })
-  },
-
   setPaneMode: (mode) => {
     set((state) => {
       state.chatRoom.paneMode = mode
@@ -120,7 +111,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         headingId: undefined,
         documentId: undefined,
         headingPath: [],
-        open: false,
         // Unlike panelHeight, the mode does not survive: closing unmounts the
         // chat subtree, so there is no geometry left to remember.
         paneMode: 'closed',

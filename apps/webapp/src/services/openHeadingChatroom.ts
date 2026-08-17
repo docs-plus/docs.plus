@@ -94,17 +94,14 @@ function scheduleOpenHeadingChatroomPane({
   fetchMsgsFromId,
   onPaneOpen
 }: ScheduleOpenHeadingChatroomParams): void {
-  setTimeout(() => {
-    if (workspaceId) {
-      const chat = useChatStore.getState()
-      chat.setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
-      chat.openChatRoom()
-      // Only seed the mode on a fresh open; switching headings must not yank a
-      // reader who is deliberately holding `half`.
-      if (chat.chatRoom.paneMode === 'closed') chat.setPaneMode('expanded')
-    }
-    onPaneOpen?.()
-  }, 200)
+  if (workspaceId) {
+    const chat = useChatStore.getState()
+    chat.setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
+    // Only seed the mode on a fresh open; switching headings must not yank a
+    // reader who is deliberately holding `half`.
+    if (chat.chatRoom.paneMode === 'closed') chat.setPaneMode('expanded')
+  }
+  onPaneOpen?.()
 }
 
 export type OpenHeadingChatroomParams = {
@@ -128,7 +125,7 @@ export function openHeadingChatroom({
 }: OpenHeadingChatroomParams): void {
   const { workspaceId } = useStore.getState().settings
   const chatStore = useChatStore.getState()
-  const { headingId: openedHeadingId, open: chatOpen } = chatStore.chatRoom
+  const { headingId: openedHeadingId, paneMode: openedMode } = chatStore.chatRoom
   const user = useAuthStore.getState().profile
 
   // Persist a draft the moment its chat opens (before the comment-intent early
@@ -137,7 +134,7 @@ export function openHeadingChatroom({
 
   chatStore.switchChatRoom(headingId)
 
-  const sheetBase = { headingId, workspaceId, user }
+  const paneOpen = { headingId, workspaceId, user }
 
   if (intent === 'comment') {
     if (!anchor) return
@@ -150,17 +147,17 @@ export function openHeadingChatroom({
     })
     exitDocEditModeForSheet()
 
-    if (headingId === openedHeadingId && chatOpen) {
+    if (headingId === openedHeadingId && openedMode !== 'closed') {
       focusChatComposerWithRetry()
       return
     }
 
-    scheduleOpenHeadingChatroomPane({ ...sheetBase, onPaneOpen: focusChatComposerWithRetry })
+    scheduleOpenHeadingChatroomPane({ ...paneOpen, onPaneOpen: focusChatComposerWithRetry })
     return
   }
 
   scheduleOpenHeadingChatroomPane({
-    ...sheetBase,
+    ...paneOpen,
     fetchMsgsFromId,
     onPaneOpen: scroll2Heading ? () => scrollToHeading(headingId) : undefined
   })
