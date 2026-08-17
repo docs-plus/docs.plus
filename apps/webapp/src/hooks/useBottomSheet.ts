@@ -16,6 +16,8 @@ export const useBottomSheet = () => {
 
   const openDocumentSettings = useCallback(() => openSheet('documentSettings'), [openSheet])
 
+  const openHistoryCompare = useCallback(() => openSheet('historyCompare'), [openSheet])
+
   const close = useCallback(() => closeSheet(), [closeSheet])
 
   const isOpen = useMemo(() => !!activeSheet, [activeSheet])
@@ -25,6 +27,7 @@ export const useBottomSheet = () => {
     openFilters,
     openBookmarks,
     openDocumentSettings,
+    openHistoryCompare,
     close,
     activeSheet,
     sheetState,

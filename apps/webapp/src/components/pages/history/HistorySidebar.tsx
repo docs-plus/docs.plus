@@ -3,17 +3,15 @@ import CloseButton from '@components/ui/CloseButton'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { HistoryAuthorsBody } from './components/HistoryAuthorsBody'
 import { HistorySidebarBody } from './components/HistorySidebarBody'
-import { groupSessionsByDay } from './helpers'
 import { useHistoryCompare } from './hooks/useHistoryCompare'
-import { useHistorySidebarCollapse } from './hooks/useHistorySidebarCollapse'
+import { useHistorySidebarRows } from './hooks/useHistorySidebarRows'
 import { useVersionContent } from './hooks/useVersionContent'
 import { HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD } from './types'
-import { buildHistorySidebarRows } from './utils/sidebarRows'
 
 function SidebarHeader({ count, onClose }: { count: number; onClose?: () => void }) {
   return (
@@ -22,12 +20,6 @@ function SidebarHeader({ count, onClose }: { count: number; onClose?: () => void
         <h2 className="text-base-content text-base font-semibold sm:text-lg">Version History</h2>
         <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
           {count} version{count !== 1 ? 's' : ''}
-        </p>
-        {/* Mirrors DOC_AUTOSAVE_RETENTION_DAYS (hocuspocus env.schema.ts). The prune
-            exempts named versions forever, so the second sentence is scoped to autosaves. */}
-        <p className="text-base-content/60 mt-0.5 text-xs">
-          We keep every version for 30 days. After that we keep one automatic version per day. Named
-          versions are kept.
         </p>
       </div>
       {onClose && (
@@ -80,28 +72,11 @@ const HistorySidebar = ({
   variant?: 'desktop' | 'mobile'
 }) => {
   const loadingHistory = useStore((state) => state.loadingHistory)
-  const activeHistory = useStore((state) => state.activeHistory)
-  const historyList = useStore((state) => state.historyList)
   const { watchVersionContent } = useVersionContent()
   const { compareMode, selectCompareBase } = useHistoryCompare()
   const [tab, setTab] = useState<HistoryTab>('Versions')
-
-  const activeVersion = (activeHistory ?? historyList[0])?.version ?? 0
-
-  const groupedByDay = useMemo(
-    () => (historyList.length > 0 ? groupSessionsByDay(historyList) : {}),
-    [historyList]
-  )
-
-  const { openDays, expandedSessions, toggleDay, toggleSession } = useHistorySidebarCollapse(
-    groupedByDay,
-    activeVersion
-  )
-
-  const rows = useMemo(
-    () => buildHistorySidebarRows(groupedByDay, openDays, expandedSessions),
-    [groupedByDay, openDays, expandedSessions]
-  )
+  const { historyList, activeVersion, rows, openDays, toggleDay, toggleSession } =
+    useHistorySidebarRows()
 
   if (loadingHistory && historyList.length === 0) return <SidebarLoader />
 
@@ -125,8 +100,8 @@ const HistorySidebar = ({
 
   return (
     <SidebarFrame className={className} count={historyList.length} onClose={onClose}>
-      {/* Desktop only: the mobile route mounts no decoration plugin, so selecting a
-          person there would paint nothing — worse than not offering the tab. */}
+      {/* Desktop only: Authors needs a roster that does not fit the mobile drawer.
+          Compare marks now mount on mobile; this tab stays desktop until designed. */}
       {variant === 'desktop' && (
         <PanelTabBar
           tabs={HISTORY_TABS}
@@ -149,9 +124,9 @@ const HistorySidebar = ({
           onToggleDay={toggleDay}
           onToggleSession={toggleSession}
           onSelectVersion={(version) => {
-            // In compare mode a row click reassigns A. The list stays open — the reader
-            // is picking a comparison, not navigating away.
-            if (compareMode) {
+            // Desktop compare: a row click reassigns A. Mobile compare picks A in the
+            // sheet; this drawer always watches B.
+            if (variant === 'desktop' && compareMode) {
               selectCompareBase(version)
               return
             }

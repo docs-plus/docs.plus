@@ -7,6 +7,7 @@ import MobileHistory from '@components/pages/history/mobile/MobileHistory'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import ToolbarMobile from '@components/TipTap/toolbar/mobile/ToolbarMobile'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
+import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useHashRouter } from '@hooks/useHashRouter'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
@@ -30,43 +31,49 @@ const MobileLayout = () => {
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   const { isHistoryView } = useHashRouter()
+  const { close: closeSheet } = useBottomSheet()
   useVirtualKeyboard()
   useVisualViewportCssSyncOnFocus(Boolean(isMobile && !isHistoryView))
 
   useEffect(() => {
+    closeSheet()
     if (isHistoryView) destroyChatRoomForHistory()
-  }, [isHistoryView])
-
-  if (isHistoryView) return <MobileHistory />
+  }, [isHistoryView, closeSheet])
 
   return (
     <>
-      <div className={`mobileLayoutRoot tiptap flex w-full flex-col ${deviceClass}`}>
-        <div className="mobileLayoutMain flex min-h-0 min-w-0 flex-1 flex-col">
-          {/* Opacity only — no transforms next to the sticky/visualViewport machinery. */}
-          <div className="mobilePadTitleShell bg-base-100 sticky top-0 z-20 w-full shrink-0 motion-safe:animate-[doc-content-in_220ms_ease-out_both]">
-            <MobilePadTitle />
+      {isHistoryView ? (
+        <MobileHistory />
+      ) : (
+        <>
+          <div className={`mobileLayoutRoot tiptap flex w-full flex-col ${deviceClass}`}>
+            <div className="mobileLayoutMain flex min-h-0 min-w-0 flex-1 flex-col">
+              {/* Opacity only — no transforms next to the sticky/visualViewport machinery. */}
+              <div className="mobilePadTitleShell bg-base-100 sticky top-0 z-20 w-full shrink-0 motion-safe:animate-[doc-content-in_220ms_ease-out_both]">
+                <MobilePadTitle />
+              </div>
+              <MobileLeftSidePanel />
+              <MobileEditor />
+              <EditFAB />
+            </div>
+            <div className="mobileToolbarBottom bg-base-100 z-20 w-full shrink-0">
+              <ToolbarMobile />
+            </div>
+            {/*
+              Last child on purpose: the pane reserves real height so the document can scroll
+              to its end above it, and DOM order keeps the pad toolbar from ever rendering
+              below the chat during the open transition.
+            */}
+            <ChatPane />
           </div>
-          <MobileLeftSidePanel />
-          <MobileEditor />
-          <EditFAB />
-        </div>
-        <div className="mobileToolbarBottom bg-base-100 z-20 w-full shrink-0">
-          <ToolbarMobile />
-        </div>
-        {/*
-          Last child on purpose: the pane reserves real height so the document can scroll
-          to its end above it, and DOM order keeps the pad toolbar from ever rendering
-          below the chat during the open transition.
-        */}
-        <ChatPane />
-      </div>
+          <ComposerLinkDialogHost />
+        </>
+      )}
       {/*
         The remaining sheets stay portaled to the body. Only the chat needed to reserve
         layout height, and react-modal-sheet positions by transform, which cannot.
       */}
       <BottomSheet />
-      <ComposerLinkDialogHost />
     </>
   )
 }

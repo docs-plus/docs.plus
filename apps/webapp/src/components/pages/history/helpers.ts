@@ -146,6 +146,36 @@ export const formatVersionDate = (date: Date | string) => {
   }
 }
 
+const isSameCalendarDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate()
+
+function formatCompareDay(date: Date): string {
+  const now = new Date()
+  return date.toLocaleDateString(navigator.language, {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  })
+}
+
+/** Visible pair for the compare strip. Same day keeps times only. Cross-day adds a short date. */
+export function formatCompareRange(from: Date | string, to: Date | string) {
+  const a = new Date(from)
+  const b = new Date(to)
+  const includeDate = !isSameCalendarDay(a, b)
+  const fromTime = formatTime(a)
+  const toTime = formatTime(b)
+  const fromStamp = formatVersionDate(a)
+  const toStamp = formatVersionDate(b)
+  return {
+    fromLabel: includeDate ? `${formatCompareDay(a)}, ${fromTime}` : fromTime,
+    toLabel: includeDate ? `${formatCompareDay(b)}, ${toTime}` : toTime,
+    ariaLabel: `Comparing ${fromStamp.date} at ${fromStamp.time} to ${toStamp.date} at ${toStamp.time}`
+  }
+}
+
 /**
  * Versions saved after `version`. Null means the active version is not in the list, a
  * real state after row eviction. The caller must not report that null as "none".

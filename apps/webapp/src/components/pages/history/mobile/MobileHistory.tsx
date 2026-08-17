@@ -1,8 +1,15 @@
-import { ModalDrawer, useModalDrawerClose } from '@components/ui/ModalDrawer'
+import {
+  ModalDrawer,
+  type ModalDrawerHandle,
+  useModalDrawerClose
+} from '@components/ui/ModalDrawer'
+import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
+import { useCallback, useRef } from 'react'
 
 import { HistoryEditorContent } from '../HistoryEditorContent'
 import HistorySidebar from '../HistorySidebar'
+import { useHistoryCompareDecorations } from '../hooks/useHistoryCompareDecorations'
 import { useHistoryEditor } from '../hooks/useHistoryEditor'
 import Toolbar from './Toolbar'
 
@@ -19,23 +26,27 @@ function MobileHistorySidebar() {
   )
 }
 
-const MobileLeftSidePanel = () => (
-  <ModalDrawer modalId="mobile_history_panel" position="right">
-    <MobileHistorySidebar />
-  </ModalDrawer>
-)
-
 const MobileHistory = () => {
+  const drawerRef = useRef<ModalDrawerHandle>(null)
+  const { openHistoryCompare } = useBottomSheet()
   useHistoryEditor()
+  useHistoryCompareDecorations()
   useVisualViewportCssSyncOnFocus(true)
+
+  const openCompareSheet = useCallback(() => {
+    drawerRef.current?.uncheck()
+    openHistoryCompare()
+  }, [openHistoryCompare])
 
   return (
     <div className="mobileLayoutRoot pad tiptap history_editor border-base-300 flex min-h-0 w-full flex-col overflow-hidden border-solid">
-      <Toolbar />
+      <Toolbar onOpenCompareSheet={openCompareSheet} />
       <div className="min-h-0 flex-1 overflow-hidden">
         <HistoryEditorContent variant="mobile" />
       </div>
-      <MobileLeftSidePanel />
+      <ModalDrawer ref={drawerRef} modalId="mobile_history_panel" position="right">
+        <MobileHistorySidebar />
+      </ModalDrawer>
     </div>
   )
 }

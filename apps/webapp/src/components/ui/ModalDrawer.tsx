@@ -42,7 +42,12 @@ export function useModalDrawerClose(): () => void {
   return context.close
 }
 
-export const ModalDrawer = forwardRef<unknown, ModalDrawerProps>(
+export type ModalDrawerHandle = {
+  check: () => void
+  uncheck: () => void
+}
+
+export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
   (
     {
       modalId = 'left_to_right_modal',

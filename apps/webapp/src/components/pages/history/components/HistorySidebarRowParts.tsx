@@ -7,7 +7,7 @@ import { AvatarStack } from '@components/ui/AvatarStack'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
-import type { HistoryItem, HistoryProfile, VersionTrigger } from '@types'
+import type { HistoryItem, HistoryProfile, HistoryProfileMap, VersionTrigger } from '@types'
 import { resolveDisplayName } from '@utils/avatarFace'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -16,16 +16,18 @@ import { formatRelativeTime, formatTime } from '../helpers'
 
 export function CopyVersionLinkButton({
   version,
+  createdAt,
   isActiveRow,
   inlineInRow,
   className
 }: {
   version: number
+  createdAt: string
   isActiveRow: boolean
   inlineInRow?: boolean
   className?: string
 }) {
-  const copyTitle = copyVersionLinkTitle(version)
+  const copyTitle = copyVersionLinkTitle(createdAt)
   return (
     <Button
       type="button"
@@ -105,6 +107,82 @@ export function VersionTriggerBadge({ trigger }: { trigger?: VersionTrigger | nu
   return <span className="badge badge-ghost badge-xs shrink-0">{label}</span>
 }
 
+function peopleFromItem(item: HistoryItem, profiles: HistoryProfileMap): HistoryProfile[] {
+  const contributors = (item.contributors ?? [])
+    .map((id) => profiles[id])
+    .filter((profile): profile is HistoryProfile => Boolean(profile))
+  if (contributors.length > 0) return contributors
+  const actor = item.triggeredBy ? profiles[item.triggeredBy] : undefined
+  return actor ? [actor] : []
+}
+
+/** Unique resolved faces, first-seen order. Never invents a face from a bare id. */
+export function peopleFromHistoryItems(
+  items: HistoryItem[],
+  profiles: HistoryProfileMap
+): HistoryProfile[] {
+  const seen = new Set<string>()
+  const people: HistoryProfile[] = []
+  for (const item of items) {
+    for (const person of peopleFromItem(item, profiles)) {
+      if (seen.has(person.id)) continue
+      seen.add(person.id)
+      people.push(person)
+    }
+  }
+  return people
+}
+
+export function PeopleAttribution({
+  people,
+  inline,
+  active,
+  showName = true
+}: {
+  people: HistoryProfile[]
+  inline?: boolean
+  active?: boolean
+  showName?: boolean
+}) {
+  if (people.length === 0) return null
+  const solo = people.length === 1 ? people[0] : null
+  const soloName = solo ? (resolveDisplayName(solo) ?? 'Anonymous') : null
+
+  return (
+    <span className={twMerge('flex min-w-0 items-center gap-1.5', inline ? 'min-w-0' : 'mt-1')}>
+      {solo ? (
+        <Avatar
+          face={solo}
+          size="xs"
+          clickable={false}
+          className="shrink-0"
+          tooltip={showName ? undefined : (soloName ?? undefined)}
+          tooltipPlacement="left"
+        />
+      ) : (
+        <AvatarStack
+          users={people}
+          size="xs"
+          surface="paper"
+          maxDisplay={MAX_ATTRIBUTION_FACES}
+          clickable={false}
+          tooltipPlacement="left"
+          className="shrink-0"
+        />
+      )}
+      {solo && showName && (
+        <span
+          className={twMerge(
+            'truncate text-xs',
+            active ? 'text-primary/70' : 'text-base-content/60'
+          )}>
+          {soloName}
+        </span>
+      )}
+    </span>
+  )
+}
+
 /**
  * Resolves ids through the profile map. Renders nothing when none resolve, because
  * `Avatar` invents a DiceBear face from a bare id and would name a person we cannot.
@@ -119,45 +197,8 @@ export function VersionAttribution({
   active?: boolean
 }) {
   const profiles = useStore((state) => state.profiles)
-
-  const people = useMemo(() => {
-    const contributors = (item.contributors ?? [])
-      .map((id) => profiles[id])
-      .filter((profile): profile is HistoryProfile => Boolean(profile))
-    if (contributors.length > 0) return contributors
-    const actor = item.triggeredBy ? profiles[item.triggeredBy] : undefined
-    return actor ? [actor] : []
-  }, [item.contributors, item.triggeredBy, profiles])
-
-  if (people.length === 0) return null
-  const solo = people.length === 1 ? people[0] : null
-
-  return (
-    <span className={twMerge('flex min-w-0 items-center gap-1.5', inline ? 'min-w-0' : 'mt-1')}>
-      {solo ? (
-        <Avatar face={solo} size="xs" clickable={false} className="shrink-0" />
-      ) : (
-        <AvatarStack
-          users={people}
-          size="xs"
-          surface="paper"
-          maxDisplay={MAX_ATTRIBUTION_FACES}
-          clickable={false}
-          tooltipPlacement="left"
-          className="shrink-0"
-        />
-      )}
-      {solo && (
-        <span
-          className={twMerge(
-            'truncate text-xs',
-            active ? 'text-primary/70' : 'text-base-content/60'
-          )}>
-          {resolveDisplayName(solo) ?? 'Anonymous'}
-        </span>
-      )}
-    </span>
-  )
+  const people = useMemo(() => peopleFromHistoryItems([item], profiles), [item, profiles])
+  return <PeopleAttribution people={people} inline={inline} active={active} />
 }
 
 export function VersionSummary({

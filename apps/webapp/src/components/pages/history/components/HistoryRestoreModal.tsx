@@ -6,7 +6,6 @@ import { formatVersionDate } from '../helpers'
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  version: number | undefined
   createdAt: string | undefined
   /** Versions saved after this one, or null when the active version is not in the list. */
   newerCount: number | null
@@ -16,7 +15,6 @@ type Props = {
 export function HistoryRestoreModal({
   open,
   onOpenChange,
-  version,
   createdAt,
   newerCount,
   onConfirm
@@ -26,7 +24,7 @@ export function HistoryRestoreModal({
   const stamp = createdAt ? formatVersionDate(createdAt) : null
   const heading = stamp
     ? `Restore the version from ${stamp.date}, ${stamp.time}?`
-    : `Restore version ${version}?`
+    : 'Restore this version?'
 
   return (
     <Modal open={open} onOpenChange={onOpenChange}>

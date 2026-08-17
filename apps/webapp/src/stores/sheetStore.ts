@@ -12,6 +12,7 @@ export type SheetType =
   | 'linkEditor'
   | 'mediaControls'
   | 'mediaInsert'
+  | 'historyCompare'
   | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
 
@@ -67,6 +68,8 @@ export interface SheetDataMap {
   mediaInsert: {
     editor: Editor
   }
+  /** Mobile history compare picker. A is chosen here; B stays the viewed version. */
+  historyCompare: Record<string, never>
 }
 
 export type SheetData = SheetDataMap[keyof SheetDataMap]

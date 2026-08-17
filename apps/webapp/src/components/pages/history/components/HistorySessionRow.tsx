@@ -1,5 +1,7 @@
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
+import { useStore } from '@stores'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { formatRelativeTime, formatTime, sessionContainsVersion } from '../helpers'
@@ -9,6 +11,8 @@ import {
   CopyVersionLinkButton,
   HistoryLatestBadge,
   HistoryTimelineDot,
+  PeopleAttribution,
+  peopleFromHistoryItems,
   VersionAttribution,
   VersionTriggerBadge
 } from './HistorySidebarRowParts'
@@ -19,7 +23,8 @@ export function HistorySessionRow({
   activeVersion,
   latestVersion,
   onToggleSession,
-  onSelectVersion
+  onSelectVersion,
+  comparePick = false
 }: {
   session: VersionSession
   expanded: boolean
@@ -27,9 +32,15 @@ export function HistorySessionRow({
   latestVersion: number
   onToggleSession: (sessionId: string) => void
   onSelectVersion: (version: number) => void
+  comparePick?: boolean
 }) {
   const isActive = sessionContainsVersion(session, activeVersion)
   const isLatestSession = session.isLatest
+  const profiles = useStore((state) => state.profiles)
+  const people = useMemo(
+    () => peopleFromHistoryItems(session.versions, profiles),
+    [session.versions, profiles]
+  )
 
   return (
     <div
@@ -68,9 +79,11 @@ export function HistorySessionRow({
               'text-base-content/50 mt-0.5 text-xs',
               isActive && 'text-primary/70'
             )}>
-            {session.versions.length} changes · {formatRelativeTime(session.endTime)}
+            {formatRelativeTime(session.endTime)}
           </p>
         </div>
+
+        <PeopleAttribution people={people} inline active={isActive} showName={false} />
 
         {expanded ? (
           <Icons.chevronUp className="text-base-content/50 shrink-0" size={16} />
@@ -85,10 +98,11 @@ export function HistorySessionRow({
           <ul
             className="mt-1 list-none space-y-0.5 p-0"
             role="list"
-            aria-label={`${session.versions.length} revisions in this session`}>
+            aria-label={`${session.versions.length} versions in this session`}>
             {session.versions.map((version) => {
               const isCurrentActive = version.version === activeVersion
               const isLatest = version.version === latestVersion
+              const pickBlocked = comparePick && isCurrentActive
 
               return (
                 <li
@@ -102,6 +116,8 @@ export function HistorySessionRow({
                     onClick={() => onSelectVersion(version.version)}
                     variant="ghost"
                     size="sm"
+                    disabled={pickBlocked}
+                    aria-label={pickBlocked ? 'This is the version you are viewing' : undefined}
                     className="h-auto min-h-10 min-w-0 flex-1 items-center justify-start gap-2 rounded-none border-0 px-2.5 py-2 text-left shadow-none hover:bg-transparent active:bg-transparent">
                     <HistoryTimelineDot active={isCurrentActive} className="size-1.5 shrink-0" />
                     <span className="min-w-0 flex-1">
@@ -132,11 +148,14 @@ export function HistorySessionRow({
                       )}
                     </span>
                   </Button>
-                  <CopyVersionLinkButton
-                    version={version.version}
-                    isActiveRow={isCurrentActive}
-                    inlineInRow
-                  />
+                  {!comparePick && (
+                    <CopyVersionLinkButton
+                      version={version.version}
+                      createdAt={version.createdAt}
+                      isActiveRow={isCurrentActive}
+                      inlineInRow
+                    />
+                  )}
                 </li>
               )
             })}

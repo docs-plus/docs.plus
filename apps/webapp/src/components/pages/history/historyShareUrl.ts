@@ -2,6 +2,8 @@ import * as toast from '@components/toast'
 import type { HistoryItem } from '@types'
 import { copyToClipboard } from '@utils/clipboard'
 
+import { formatVersionDate } from './helpers'
+
 const HISTORY_ROUTE = 'history'
 const VERSION_QUERY = 'version'
 
@@ -126,16 +128,17 @@ export function resolveHistoryListTargetVersion(
   return { targetVersion: parsed.version, invalidDeepLink: false }
 }
 
-/** Tooltip and `aria-label` for copy-version-link controls (parallel to restore: “…to version N”). */
-export function copyVersionLinkTitle(version: number): string {
-  return `Copy link to version ${version}`
+/** Tooltip and `aria-label`. Uses the same clock the list shows. The URL still carries the id. */
+export function copyVersionLinkTitle(createdAt: string): string {
+  const { date, time } = formatVersionDate(createdAt)
+  return `Copy link to the version from ${date} at ${time}`
 }
 
 export async function copyHistoryVersionLinkToClipboard(version: number): Promise<void> {
   const url = buildHistoryShareUrl(version)
   const ok = await copyToClipboard(url)
   if (ok) {
-    toast.Success(`Link to version ${version} copied`)
+    toast.Success('Link copied')
   } else {
     toast.Error("Couldn't copy link")
   }

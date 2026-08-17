@@ -8,15 +8,18 @@ export function HistorySingleVersionRow({
   version,
   activeVersion,
   latestVersion,
-  onSelectVersion
+  onSelectVersion,
+  comparePick = false
 }: {
   version: HistoryItem
   activeVersion: number
   latestVersion: number
   onSelectVersion: (version: number) => void
+  comparePick?: boolean
 }) {
   const isCurrentActive = version.version === activeVersion
   const isLatest = version.version === latestVersion
+  const pickBlocked = comparePick && isCurrentActive
 
   return (
     <div
@@ -30,6 +33,8 @@ export function HistorySingleVersionRow({
       <Button
         onClick={() => onSelectVersion(version.version)}
         variant="ghost"
+        disabled={pickBlocked}
+        aria-label={pickBlocked ? 'This is the version you are viewing' : undefined}
         className="h-auto min-h-11 min-w-0 flex-1 items-center justify-start gap-2.5 rounded-none border-0 px-3 py-2.5 text-left shadow-none hover:bg-transparent active:bg-transparent">
         <HistoryTimelineDot active={isCurrentActive} className="size-2 shrink-0" />
         <VersionSummary
@@ -39,7 +44,14 @@ export function HistorySingleVersionRow({
           titleClassName="text-sm"
         />
       </Button>
-      <CopyVersionLinkButton version={version.version} isActiveRow={isCurrentActive} inlineInRow />
+      {!comparePick && (
+        <CopyVersionLinkButton
+          version={version.version}
+          createdAt={version.createdAt}
+          isActiveRow={isCurrentActive}
+          inlineInRow
+        />
+      )}
     </div>
   )
 }

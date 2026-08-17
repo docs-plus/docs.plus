@@ -35,6 +35,18 @@ export const useHistoryCompare = () => {
     [activeHistory?.version, documentId, hocuspocusProvider, setPendingCompareVersion]
   )
 
+  /** Mobile picker: turn compare on and watch A. No-ops when A is the viewed version. */
+  const enterCompare = useCallback(
+    (version: number) => {
+      if (!hocuspocusProvider) return false
+      if (activeHistory?.version === version) return false
+      setCompareMode(true)
+      selectCompareBase(version)
+      return true
+    },
+    [activeHistory?.version, hocuspocusProvider, selectCompareBase, setCompareMode]
+  )
+
   const exitCompare = useCallback(() => {
     setCompareMode(false)
     setCompareBaseItem(null)
@@ -56,6 +68,7 @@ export const useHistoryCompare = () => {
     compareBaseItem,
     canCompare,
     toggleCompare,
+    enterCompare,
     selectCompareBase,
     exitCompare
   }

@@ -17,6 +17,7 @@ export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: History
   const { requestedVersion } = useHashRouter()
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const virtuosoRef = useRef<VirtuosoHandle>(null)
+  const listRootRef = useRef<HTMLDivElement>(null)
   const scrollGateRef = useRef<{ documentId: string | undefined; done: boolean }>({
     documentId: undefined,
     done: false
@@ -39,8 +40,8 @@ export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: History
       return
     }
 
-    document
-      .querySelector(`[data-history-sidebar-row-index="${index}"]`)
+    listRootRef.current
+      ?.querySelector(`[data-history-sidebar-row-index="${index}"]`)
       ?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
   }, [documentId, virtualize, requestedVersion, rowHandlers.activeVersion, rows])
 
@@ -65,6 +66,7 @@ export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: History
 
   return (
     <ScrollArea
+      ref={listRootRef}
       className="min-h-0 flex-1 !pt-0"
       scrollbarSize="thin"
       hideScrollbar

@@ -138,6 +138,9 @@ export function HistoryAuthorsBody() {
   return (
     <div className="space-y-3 px-3 py-3">
       <p className="text-base-content/60 text-xs">
+        This list shows whose text is still here. The Versions list shows who saved.
+      </p>
+      <p className="text-base-content/60 text-xs">
         {`${roster.knownCount} of ${parts(roster.totalCount)} ${roster.knownCount === 1 ? 'has' : 'have'} text from a known person.`}
       </p>
 

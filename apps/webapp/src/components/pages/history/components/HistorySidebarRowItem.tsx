@@ -14,7 +14,8 @@ export function HistorySidebarRowItem({
   openDays,
   onToggleDay,
   onToggleSession,
-  onSelectVersion
+  onSelectVersion,
+  comparePick
 }: HistorySidebarRowItemProps) {
   switch (row.kind) {
     case 'day-header':
@@ -44,6 +45,7 @@ export function HistorySidebarRowItem({
             activeVersion={activeVersion}
             latestVersion={latestVersion}
             onSelectVersion={onSelectVersion}
+            comparePick={comparePick}
           />
         </div>
       )
@@ -58,6 +60,7 @@ export function HistorySidebarRowItem({
             latestVersion={latestVersion}
             onToggleSession={onToggleSession}
             onSelectVersion={onSelectVersion}
+            comparePick={comparePick}
           />
         </div>
       )

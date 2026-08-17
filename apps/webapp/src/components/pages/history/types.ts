@@ -47,4 +47,6 @@ export type HistorySidebarRowHandlers = {
   onToggleDay: (dayKey: string) => void
   onToggleSession: (sessionId: string) => void
   onSelectVersion: (version: number) => void
+  /** Compare picker: hide copy-link and block the viewed version. */
+  comparePick?: boolean
 }

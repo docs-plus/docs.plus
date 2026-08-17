@@ -10,7 +10,7 @@ import { useStore } from '@stores'
 
 import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
 import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionBlock'
-import { countVersionsAfter, formatTime } from '../helpers'
+import { countVersionsAfter, formatCompareRange } from '../helpers'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useHistoryCompare } from '../hooks/useHistoryCompare'
 import { useVersionRestore } from '../hooks/useVersionRestore'
@@ -25,7 +25,11 @@ const Toolbar = () => {
     useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, toggleCompare, exitCompare } =
     useHistoryCompare()
-  const copyLinkLabel = versionInfo ? copyVersionLinkTitle(versionInfo.version) : null
+  const copyLinkLabel = versionInfo ? copyVersionLinkTitle(versionInfo.createdAt) : null
+  const compareRange =
+    compareMode && compareBaseItem && activeHistory
+      ? formatCompareRange(compareBaseItem.createdAt, activeHistory.createdAt)
+      : null
 
   return (
     <>
@@ -39,7 +43,6 @@ const Toolbar = () => {
         </ToolbarButton>
         <div className="ml-auto flex min-w-0 items-center justify-end">
           <HistoryToolbarVersionBlock
-            variant="desktop"
             versionInfo={versionInfo}
             onRequestRestore={requestRestore}
             restoring={restoring}
@@ -62,49 +65,49 @@ const Toolbar = () => {
             </ToolbarButton>
           )}
           <ToolbarButton
+            shape={null}
+            className="gap-1 px-2"
             onClick={toggleCompare}
             isActive={compareMode}
             disabled={!canCompare && !compareMode}
-            aria-label={compareMode ? 'Hide what changed' : 'Show what changed'}
+            aria-label={compareMode ? 'Hide changes' : 'Show what changed'}
             tooltip={
               compareMode
-                ? 'Hide what changed'
+                ? 'Hide changes'
                 : 'Show what changed in this version. Edits that only changed formatting show nothing, and very large differences are shown as one block.'
             }>
             <Icons.splitVertical size={ICON_SIZE} />
+            <span>Changes</span>
           </ToolbarButton>
         </div>
 
-        {compareMode && compareBaseItem && activeHistory ? (
-          <div className="text-base-content/60 flex min-w-0 shrink-0 items-center gap-2 text-sm">
-            <span className="truncate">
-              <span className="text-base-content font-medium">
-                {formatTime(compareBaseItem.createdAt)}
-              </span>
+        {compareRange && (
+          <div className="text-base-content/60 flex min-w-0 shrink items-center gap-2 text-sm">
+            <span
+              className="min-w-0 truncate whitespace-nowrap tabular-nums"
+              aria-label={compareRange.ariaLabel}>
+              <span className="text-base-content font-medium">{compareRange.fromLabel}</span>
               <span aria-hidden className="text-base-content/50 mx-1.5">
                 →
               </span>
-              <span className="text-base-content font-medium">
-                {formatTime(activeHistory.createdAt)}
-              </span>
+              <span className="text-base-content font-medium">{compareRange.toLabel}</span>
             </span>
-            <Button variant="ghost" size="xs" onClick={exitCompare}>
-              Exit
+            <Button
+              variant="ghost"
+              size="xs"
+              className="shrink-0"
+              onClick={exitCompare}
+              aria-label="Hide changes"
+              tooltip="Hide changes">
+              Hide changes
             </Button>
           </div>
-        ) : (
-          activeHistory && (
-            <div className="text-base-content/60 shrink-0 text-sm">
-              {`Version ${activeHistory.version} of ${historyList.length}`}
-            </div>
-          )
         )}
       </div>
 
       <HistoryRestoreModal
         open={restoreOpen}
         onOpenChange={setRestoreOpen}
-        version={activeHistory?.version}
         createdAt={activeHistory?.createdAt}
         newerCount={countVersionsAfter(historyList, activeHistory?.version)}
         onConfirm={confirmRestore}

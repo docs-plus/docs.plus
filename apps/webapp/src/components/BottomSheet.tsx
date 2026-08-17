@@ -1,6 +1,7 @@
 import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
 import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
 import FilterSheet from '@components/pages/document/components/FilterSheet'
+import HistoryCompareSheet from '@components/pages/history/mobile/HistoryCompareSheet'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { type SheetData, type SheetDataMap, type SheetType, useSheetStore } from '@stores'
 import { useMemo } from 'react'
@@ -26,7 +27,8 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   linkPreview: (data) => <LinkPreviewSheet data={data} />,
   linkEditor: (data) => <LinkEditorSheet data={data} />,
   mediaControls: (data) => <MediaControlsSheet data={data} />,
-  mediaInsert: (data) => <MediaInsertSheet data={data} />
+  mediaInsert: (data) => <MediaInsertSheet data={data} />,
+  historyCompare: () => <HistoryCompareSheet />
 }
 
 const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
@@ -62,6 +64,10 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   mediaInsert: {
     id: 'media_insert_sheet',
     detent: 'content'
+  },
+  historyCompare: {
+    id: 'history_compare_sheet',
+    detent: 'default'
   }
 }
 
