@@ -390,6 +390,11 @@
         color-mix(in oklch, black 8%, transparent),
         color-mix(in oklch, black 40%, transparent)
       );
+  /* Bottom-anchored lift (mobile toolbar + chat pane). Same two layers the toolbar
+     already used — not a new value. */
+  --shadow-lift-up:
+    0 -4px 6px -1px color-mix(in oklch, var(--color-base-content) 10%, transparent),
+    0 -2px 4px -1px color-mix(in oklch, var(--color-base-content) 6%, transparent);
   /* Panel sash (TOC + chatroom) — VS Code-style: divider at idle, primary accent on hover/drag. */
   --resize-sash-hit: 8px;
   --resize-sash-size: 4px;

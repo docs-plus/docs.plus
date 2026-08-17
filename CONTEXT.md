@@ -32,6 +32,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Split ratio** — the fraction of the pad shell the chat pane occupies in half mode. Always a fraction, never a pixel height, so a keyboard that shrinks the shell preserves the split instead of breaking it.
 - **Document floor** — the height the document keeps in every pane mode, so its last section is always reachable. The chat pane can never cover it, which is why no mode collapses the document to zero.
 - **Pane floor** — the chat pane's minimum height, the sum of its non-shrinkable furniture: grabber, header, feed padding, composer. Measure it; an estimate that omits the feed's own padding pushes the composer off-screen.
+- **Pane shell measure** — the live pad-shell height, the height the pad header reserves, and the chat pane's bottom safe-area inset. The Chat pane and its grabber both size from this measure. Not a constant.
 
 ## Presence awareness
 

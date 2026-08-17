@@ -2,7 +2,8 @@
 import {
   CHAT_PANE_DOC_FLOOR_PX,
   CHAT_PANE_FLOOR_PX,
-  resolveChatPaneHeight
+  resolveChatPaneHeight,
+  snapChatPaneMode
 } from './chatPaneGeometry'
 
 /** Measured height of the pad header the pane sits below. */
@@ -40,8 +41,8 @@ describe('resolveChatPaneHeight', () => {
   })
 
   it('raises a too-small half to the pane floor rather than hiding the composer', () => {
-    // iPhone SE with the keyboard up: the ratio wants 166, below the 184 furniture sum.
-    expect(resolveChatPaneHeight({ shellHeight: 331, reservedHeight: TITLE, mode: 'half' })).toBe(
+    // Short shell: the ratio wants 150, below the furniture floor.
+    expect(resolveChatPaneHeight({ shellHeight: 300, reservedHeight: TITLE, mode: 'half' })).toBe(
       CHAT_PANE_FLOOR_PX
     )
   })
@@ -60,5 +61,19 @@ describe('resolveChatPaneHeight', () => {
     })
     const without = resolveChatPaneHeight({ shellHeight: 844, reservedHeight: 0, mode: 'expanded' })
     expect(without - withHeader).toBe(TITLE)
+  })
+})
+
+describe('snapChatPaneMode', () => {
+  it('closes when the drag ends well below half', () => {
+    expect(snapChatPaneMode({ height: 300, halfHeight: 422, expandedHeight: 687 })).toBe('closed')
+  })
+
+  it('settles to half below the midpoint', () => {
+    expect(snapChatPaneMode({ height: 500, halfHeight: 422, expandedHeight: 687 })).toBe('half')
+  })
+
+  it('settles to expanded at or above the midpoint', () => {
+    expect(snapChatPaneMode({ height: 555, halfHeight: 422, expandedHeight: 687 })).toBe('expanded')
   })
 })

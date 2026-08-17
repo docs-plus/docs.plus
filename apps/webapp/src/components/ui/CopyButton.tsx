@@ -13,6 +13,8 @@ export interface CopyButtonProps extends UseCopyToClipboardOptions {
   text: string
   /** Button size */
   size?: CopyButtonSize
+  /** Overrides the size→glyph map (`sm` is 16). Docked pad controls pass 20. */
+  iconSize?: number
   /** Button variant */
   variant?: CopyButtonVariant
   /** Custom icon to show (default: LuCopy) */
@@ -54,6 +56,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
     {
       text,
       size = 'sm',
+      iconSize,
       variant = 'ghost',
       icon: Icon = Icons.copy,
       successIcon: SuccessIcon = Icons.check,
@@ -85,7 +88,8 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       onClick?.(text)
     }, [copy, text, onClick])
 
-    const { btn: btnSize, icon: iconSize, gap } = sizeConfig[size]
+    const { btn: btnSize, icon: defaultIconSize, gap } = sizeConfig[size]
+    const resolvedIconSize = iconSize ?? defaultIconSize
 
     // Icon-only shapes (square/circle) never show labels — only icon animation
     const isIconOnly = square || circle
@@ -96,6 +100,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       <button
         ref={ref}
         type="button"
+        aria-label={tooltip || (typeof currentLabel === 'string' && currentLabel) || 'Copy'}
         onClick={handleClick}
         disabled={copying}
         className={twMerge(
@@ -109,16 +114,16 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
         )}>
         <span className="relative inline-flex items-center justify-center">
           <Icon
-            size={iconSize}
+            size={resolvedIconSize}
             className={twMerge(
-              'transition-all duration-200',
+              'stroke-[1.75] transition-all duration-200',
               copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
             )}
           />
           <SuccessIcon
-            size={iconSize}
+            size={resolvedIconSize}
             className={twMerge(
-              'text-success absolute transition-all duration-200',
+              'text-success absolute stroke-[1.75] transition-all duration-200',
               copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
             )}
           />

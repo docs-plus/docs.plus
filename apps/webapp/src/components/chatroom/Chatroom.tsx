@@ -28,9 +28,9 @@ const ChatRoom = ({
 
   return (
     <div className={`chatroom chatroom--${variant} ${className}`}>
-      {/* Provider wraps the layout, not the reverse: the mobile ChatroomPaneLayout
-          renders a header (MediaFilterToggle, Breadcrumb) that consumes useChatroomContext
-          as a sibling of {children}, so nesting the provider inside left it context-less. */}
+      {/* Provider wraps the layout, not the reverse. The pane header
+          (breadcrumb + share/notify/close) consumes useChatroomContext
+          as a sibling of {children}. Nesting the provider inside left it context-less. */}
       <ChatroomProvider
         channelId={chatRoom?.headingId}
         variant={variant}

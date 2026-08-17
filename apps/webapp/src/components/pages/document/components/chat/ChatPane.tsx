@@ -1,17 +1,52 @@
+import { useChatPaneGrabber } from '@components/chatroom/hooks/useChatPaneGrabber'
+import { useChatPaneHistory } from '@components/chatroom/hooks/useChatPaneHistory'
 import { useChatPaneMode } from '@components/chatroom/hooks/useChatPaneMode'
-import { resolveChatPaneHeight } from '@components/chatroom/utils/chatPaneGeometry'
+import {
+  readChatPaneShell,
+  resolveChatPaneHeight
+} from '@components/chatroom/utils/chatPaneGeometry'
 import { useChatStore } from '@stores'
 import { MOTION_PANEL_MS, prefersReducedMotion } from '@utils/motion'
 import { useEffect, useRef } from 'react'
 
 import ChatContainerMobile from './ChatContainerMobile'
 
-/** Pad header the pane sits below; its height is reserved for the document floor. */
-const PAD_HEADER_SELECTOR = '.mobilePadTitleShell'
+const ChatPaneGrabber = () => {
+  const storedMode = useChatStore((state) => state.chatRoom.paneMode)
+  const grabber = useChatPaneGrabber(storedMode === 'half' ? 'half' : 'expanded')
 
-/** The pane's true bottom edge — carries the safe-area inset regardless of whether
- *  the composer or the emoji panel is the last visible child (see ChatContainerMobile). */
-const PANE_BODY_SELECTOR = '[data-chat-pane-body]'
+  if (storedMode === 'closed') return null
+
+  return (
+    <div
+      role="slider"
+      tabIndex={0}
+      data-chat-pane-grabber
+      aria-label="Resize chat"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={storedMode === 'expanded' ? 100 : 50}
+      aria-valuetext={storedMode === 'expanded' ? 'Expanded' : 'Half'}
+      onPointerDown={grabber.onPointerDown}
+      onPointerMove={grabber.onPointerMove}
+      onPointerUp={grabber.onPointerUp}
+      onPointerCancel={grabber.onPointerUp}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowUp' || event.key === 'Home') {
+          event.preventDefault()
+          useChatStore.getState().setPaneMode('expanded')
+          return
+        }
+        if (event.key === 'ArrowDown' || event.key === 'End') {
+          event.preventDefault()
+          useChatStore.getState().setPaneMode('half')
+        }
+      }}
+      className="focus-visible:ring-primary/30 flex h-5 w-full shrink-0 cursor-grab touch-none items-center justify-center focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing">
+      <span className="bg-base-300 h-1 w-[30px] rounded-full" aria-hidden />
+    </div>
+  )
+}
 
 /**
  * Chat as a flex child of the pad shell, sized to a fraction of it. The shell tracks
@@ -24,6 +59,15 @@ const ChatPane = () => {
   const ref = useRef<HTMLElement>(null)
 
   const isOpen = paneMode !== 'closed' && Boolean(headingId)
+  useChatPaneHistory(isOpen)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const frame = requestAnimationFrame(() => {
+      ref.current?.querySelector<HTMLElement>('[data-chat-pane-grabber]')?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [isOpen])
 
   /**
    * Height is written to the DOM, never held in React state. iOS rewrites
@@ -37,17 +81,10 @@ const ChatPane = () => {
     if (!isOpen || !el || !shell) return
 
     const apply = () => {
-      const header = shell.querySelector<HTMLElement>(PAD_HEADER_SELECTOR)
-      // `paddingBottom` resolves `env(safe-area-inset-bottom)` to a real px value
-      // (unlike a CSS custom property, which would read back the literal env() text).
-      const body = el.querySelector<HTMLElement>(PANE_BODY_SELECTOR)
-      const safeAreaInsetBottom = body ? parseFloat(getComputedStyle(body).paddingBottom) || 0 : 0
-      el.style.height = `${resolveChatPaneHeight({
-        shellHeight: shell.clientHeight,
-        reservedHeight: header?.offsetHeight ?? 0,
-        safeAreaInsetBottom,
-        mode: paneMode
-      })}px`
+      if (el.dataset.chatPaneDragging === 'true') return
+      const measure = readChatPaneShell(el)
+      if (!measure) return
+      el.style.height = `${resolveChatPaneHeight({ ...measure, mode: paneMode })}px`
     }
 
     // `observe` fires an initial callback, so the first height needs no separate read.
@@ -70,6 +107,7 @@ const ChatPane = () => {
         height: 0,
         transition: prefersReducedMotion() ? undefined : `height ${MOTION_PANEL_MS}ms ease-out`
       }}>
+      <ChatPaneGrabber />
       <ChatContainerMobile />
     </section>
   )

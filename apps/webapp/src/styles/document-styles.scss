@@ -648,9 +648,11 @@ $pad-toolbar-height: 38px;
 }
 
 /* ---------------------------------------------------------------------------
-   react-modal-sheet — theme-aware so sheets (chatroom, notifications, filters,
-   emoji picker) respect light/dark/dark-hc. Backdrop uses `--modal-scrim`
-   (black-based; see globals.scss) — flat, no blur. Dialogs add blur-sm on top.
+   react-modal-sheet is theme-aware. Sheets are notifications, filters,
+   bookmarks, document settings, link, media, history compare, and
+   message reaction. Chat is the pane. Composer emoji is inline.
+   Backdrop uses `--modal-scrim` (black-based; see globals.scss) —
+   flat, no blur. Dialogs add blur-sm on top.
    --------------------------------------------------------------------------- */
 .react-modal-sheet-container {
   background-color: var(--color-base-100) !important;
@@ -672,6 +674,8 @@ $pad-toolbar-height: 38px;
 
   .react-modal-sheet-drag-indicator {
     width: 30px !important;
+    height: 4px !important;
+    border-radius: 999px !important;
     background-color: var(--color-base-300) !important;
   }
 }

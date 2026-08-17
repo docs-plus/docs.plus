@@ -8,6 +8,7 @@ import { twMerge } from 'tailwind-merge'
 type Props = {
   className?: string
   size?: ButtonSize
+  iconSize?: number
 }
 
 const notificationConfig = {
@@ -25,7 +26,7 @@ const notificationConfig = {
   }
 }
 
-export const NotificationToggle = ({ className, size = 'sm' }: Props) => {
+export const NotificationToggle = ({ className, size = 'sm', iconSize }: Props) => {
   // Anon viewers can't subscribe/mute notifications — there's no
   // channel_members row for them. Hide the toggle entirely rather than
   // showing a button that 401s on click.
@@ -46,11 +47,11 @@ export const NotificationToggle = ({ className, size = 'sm' }: Props) => {
       onClick={handleToggle}
       title={config.label}
       className={twMerge(
-        'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
+        'text-base-content/70 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
         className
       )}
       aria-label={`Notifications: ${config.label}`}>
-      <Icon size={size === 'xs' ? 14 : 16} />
+      <Icon size={iconSize ?? (size === 'xs' ? 14 : 16)} className="stroke-[1.75]" />
     </Button>
   )
 }

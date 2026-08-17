@@ -7,6 +7,7 @@ import { twMerge } from 'tailwind-merge'
 type Props = {
   className?: string
   size?: CopyButtonSize
+  iconSize?: number
   successMessage?: string
   errorMessage?: string
 }
@@ -14,6 +15,7 @@ type Props = {
 export const ShareButton = ({
   className,
   size = 'sm',
+  iconSize,
   successMessage = 'Chatroom URL copied',
   errorMessage = 'Failed to copy URL'
 }: Props) => {
@@ -32,11 +34,12 @@ export const ShareButton = ({
     <CopyButton
       text={chatRoomUrl}
       size={size}
+      iconSize={iconSize}
       variant="ghost"
       square
       icon={Icons.link}
       className={twMerge(
-        'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
+        'text-base-content/70 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
         className
       )}
       tooltip="Copy link"

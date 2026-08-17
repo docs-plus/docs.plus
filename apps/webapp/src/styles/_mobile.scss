@@ -69,6 +69,9 @@ html.m_mobile #__next {
     > .chatPane {
       flex-shrink: 0;
       min-height: 0;
+      // Same bottom-anchored lift as the mobile toolbar — the top seam must read
+      // against the document. Token lives in globals.scss.
+      box-shadow: var(--shadow-lift-up);
     }
   }
 
@@ -186,7 +189,7 @@ html.m_mobile #__next {
           pointer-events: auto !important;
         }
 
-        // Docked tab: rounded left, flush to margin — same surface language as desktop .ha-chat-btn
+        // Docked tab: 32×32, rounded left, flush to margin. Plugin still stamps size-11.
         .ha-single.ha-chat-btn {
           $ha-tab-h: 2rem;
 
@@ -194,28 +197,31 @@ html.m_mobile #__next {
           flex-direction: row;
           align-items: center;
           justify-content: center;
-          gap: 0.5rem;
-          width: auto;
+          gap: 0.25rem;
+          width: $ha-tab-h !important;
           min-width: $ha-tab-h;
-          height: $ha-tab-h;
+          height: $ha-tab-h !important;
           min-height: $ha-tab-h !important;
-          padding: 0 0.625rem;
+          padding: 0;
           background-color: var(--color-base-100) !important;
           color: var(--color-primary) !important;
           border: 1px solid var(--color-base-300) !important;
           border-radius: calc($ha-tab-h / 4) 0 0 calc($ha-tab-h / 4) !important;
           box-shadow: none;
 
+          &.size-11,
           &.size-12 {
-            width: auto;
-            height: $ha-tab-h;
+            width: $ha-tab-h !important;
+            height: $ha-tab-h !important;
+            min-height: $ha-tab-h !important;
           }
 
           svg.chatLeft {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             flex-shrink: 0;
-            fill: currentColor;
+            fill: none;
+            stroke: currentColor;
             color: inherit;
           }
 
@@ -228,7 +234,8 @@ html.m_mobile #__next {
           }
 
           &[data-unread-count]:not([data-unread-count='']) {
-            padding-left: 0.5rem;
+            width: auto !important;
+            padding: 0 0.375rem 0 0.5rem;
 
             &::before {
               content: attr(data-unread-count);
