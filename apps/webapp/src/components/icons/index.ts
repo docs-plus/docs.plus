@@ -10,6 +10,6 @@
  */
 
 export { DocsPlusIcon } from './DocsPlusIcon'
-export { AddCommentSVG, ChatLeftSVG } from './prosemirror-icons'
+export { AddCommentSVG, ChatLeftSVG, ChatOutlineSVG } from './prosemirror-icons'
 export type { IconName } from './registry'
 export { Icons } from './registry'

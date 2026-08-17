@@ -310,7 +310,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
           setIsSheetOpen(true)
         }}
         className="text-base-content/50 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-11 min-w-11 items-center justify-center transition-colors md:hidden">
-        <LuEllipsisVertical size={18} />
+        <LuEllipsisVertical size={20} className="stroke-[1.75]" />
       </button>
       {isSheetOpen && <RowMenuActionSheet {...props} onClose={() => setIsSheetOpen(false)} />}
 

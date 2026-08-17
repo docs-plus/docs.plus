@@ -38,7 +38,7 @@ const FormatSelection = ({
           aria-label="Bold"
           aria-pressed={editor.isActive('bold')}
           className={FORMAT_BTN}>
-          <Icons.bold size={24} />
+          <Icons.bold size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor.chain().focus().toggleItalic().run()}
@@ -47,7 +47,7 @@ const FormatSelection = ({
           aria-label="Italic"
           aria-pressed={editor.isActive('italic')}
           className={FORMAT_BTN}>
-          <Icons.italic size={24} />
+          <Icons.italic size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor.chain().focus().toggleUnderline().run()}
@@ -56,7 +56,7 @@ const FormatSelection = ({
           aria-label="Underline"
           aria-pressed={editor.isActive('underline')}
           className={FORMAT_BTN}>
-          <Icons.underline size={24} />
+          <Icons.underline size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor.chain().focus().toggleStrike().run()}
@@ -65,7 +65,7 @@ const FormatSelection = ({
           aria-label="Strikethrough"
           aria-pressed={editor.isActive('strike')}
           className={FORMAT_BTN}>
-          <Icons.strikethrough size={24} />
+          <Icons.strikethrough size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor.chain().focus().toggleHighlight().run()}
@@ -74,7 +74,7 @@ const FormatSelection = ({
           aria-label="Highlight"
           aria-pressed={editor.isActive('highlight')}
           className={FORMAT_BTN}>
-          <Icons.highlight size={22} />
+          <Icons.highlight size={20} className="stroke-[1.75]" />
         </ToolbarButton>
       </div>
       <div className="flex items-center justify-between">
@@ -85,7 +85,7 @@ const FormatSelection = ({
           aria-label="Task list"
           aria-pressed={editor.isActive('taskList')}
           className={FORMAT_BTN}>
-          <Icons.taskList size={24} />
+          <Icons.taskList size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor.chain().focus().toggleBulletList().run()}
@@ -94,7 +94,7 @@ const FormatSelection = ({
           aria-label="Bulleted list"
           aria-pressed={editor.isActive('bulletList')}
           className={FORMAT_BTN}>
-          <Icons.bulletList size={24} />
+          <Icons.bulletList size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor.chain().focus().toggleOrderedList().run()}
@@ -103,14 +103,14 @@ const FormatSelection = ({
           aria-label="Numbered list"
           aria-pressed={editor.isActive('orderedList')}
           className={FORMAT_BTN}>
-          <Icons.orderedList size={24} />
+          <Icons.orderedList size={20} className="stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarDivider className="h-6" />
         <ToolbarButton
           onPress={() => clearFormatting(editor)}
           aria-label="Clear formatting"
           className={FORMAT_BTN}>
-          <Icons.clearFormatting size={24} />
+          <Icons.clearFormatting size={20} className="stroke-[1.75]" />
         </ToolbarButton>
       </div>
     </div>

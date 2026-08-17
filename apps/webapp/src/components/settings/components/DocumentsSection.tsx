@@ -407,6 +407,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                     size="sm"
                     variant="ghost"
                     startIcon={LuTrash2}
+                    iconSize={20}
                     aria-label="Trash"
                     className="text-base-content/60 hover:text-base-content min-h-11 min-w-11 shrink-0 sm:min-h-9 sm:min-w-0 sm:px-3"
                     onClick={() => setShowTrash(true)}>
@@ -425,7 +426,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                           ? 'btn-primary'
                           : 'btn-ghost border-base-300 text-base-content/60 border'
                       }`}>
-                      <LuList size={16} />
+                      <LuList size={20} className="stroke-[1.75]" />
                     </button>
                     <button
                       type="button"
@@ -438,7 +439,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                           ? 'btn-primary'
                           : 'btn-ghost border-base-300 text-base-content/60 border'
                       }`}>
-                      <LuLayoutGrid size={16} />
+                      <LuLayoutGrid size={20} className="stroke-[1.75]" />
                     </button>
                   </div>
                 </div>

@@ -24,8 +24,9 @@ function getCaretRect(editor: Editor): DOMRect {
   return { left, top, x: left, y: top } as DOMRect
 }
 
-export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
+export const EmojiButton = ({ className, size, ...props }: Props) => {
   const { editor, isMobile } = useMessageComposer()
+  const glyph = size ?? (isMobile ? 20 : 18)
   const openEmojiPicker = useChatStore((s) => s.openEmojiPicker)
   const closeEmojiPicker = useChatStore((s) => s.closeEmojiPicker)
   const isDesktopComposerPickerOpen = useChatStore((s) =>
@@ -87,7 +88,7 @@ export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
       aria-expanded={isActive}
       {...props}>
       <Icon
-        size={size}
+        size={glyph}
         className={twMerge(
           'pointer-events-none shrink-0 stroke-[1.75]',
           isActive && 'text-primary'

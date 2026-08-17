@@ -77,8 +77,9 @@ const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: (
       <ToolbarButton
         onPress={onDone}
         aria-label="Done editing"
-        className="text-primary min-h-11 min-w-11 touch-manipulation">
-        <Icons.check size={28} />
+        className="text-primary touch-manipulation"
+        size="sm">
+        <Icons.check size={20} className="stroke-[1.75]" />
       </ToolbarButton>
     )
   }
@@ -98,8 +99,8 @@ const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: (
           e.currentTarget.click()
         }
       }}
-      className="btn btn-ghost btn-square min-h-11 min-w-11 touch-manipulation">
-      <Icons.menu size={28} className="text-base-content" />
+      className="btn btn-ghost btn-square btn-sm touch-manipulation">
+      <Icons.menu size={20} className="text-base-content/70 stroke-[1.75]" />
     </label>
   )
 }
@@ -136,14 +137,18 @@ const NotificationButton = () => {
   return (
     <Button
       variant="ghost"
-      className="relative min-h-11 min-w-11 p-2"
+      size="sm"
+      shape="square"
+      className="relative"
       onClick={openNotifications}
       aria-label="Notifications"
       tooltip="Notifications"
       tooltipPlacement="bottom">
       <Icons.notificationsActive
-        size={24}
-        className={unreadCount > 0 ? 'text-primary' : 'text-base-content/70'}
+        size={20}
+        className={
+          unreadCount > 0 ? 'text-primary stroke-[1.75]' : 'text-base-content/70 stroke-[1.75]'
+        }
       />
       <UnreadBadge
         count={unreadCount}
@@ -164,16 +169,18 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
           editor={editor}
           type="undo"
           aria-label="Undo"
-          className="min-h-11 min-w-11 touch-manipulation">
-          <Icons.undo size={24} />
+          className="touch-manipulation"
+          size="sm">
+          <Icons.undo size={20} className="text-base-content/70 stroke-[1.75]" />
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor?.commands.redo()}
           editor={editor}
           type="redo"
           aria-label="Redo"
-          className="min-h-11 min-w-11 touch-manipulation">
-          <Icons.redo size={24} />
+          className="touch-manipulation"
+          size="sm">
+          <Icons.redo size={20} className="text-base-content/70 stroke-[1.75]" />
         </ToolbarButton>
       </div>
       <div className="divider divider-horizontal mx-2" />

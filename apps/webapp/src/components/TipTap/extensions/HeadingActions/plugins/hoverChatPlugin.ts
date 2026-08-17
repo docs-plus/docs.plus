@@ -1,4 +1,4 @@
-import { AddCommentSVG, ChatLeftSVG } from '@icons'
+import { AddCommentSVG, ChatLeftSVG, ChatOutlineSVG } from '@icons'
 import { buildTextCommentAnchor, publishDocumentComment } from '@services/commentAnchor'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -35,11 +35,14 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
     msUserSelect: 'none'
   })
 
-  button.innerHTML = ChatLeftSVG({
-    size: 20,
-    className: 'chatLeft',
-    fill: 'currentColor'
-  })
+  const isMobile = Boolean(document.querySelector('.mobileLayoutRoot.m_mobile'))
+  button.innerHTML = isMobile
+    ? ChatOutlineSVG({ size: 20, className: 'chatLeft' })
+    : ChatLeftSVG({
+        size: 20,
+        className: 'chatLeft',
+        fill: 'currentColor'
+      })
 
   button.addEventListener('click', (e: Event) => {
     e.preventDefault()

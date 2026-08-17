@@ -13,8 +13,8 @@ const Chip = ({ text }: { text: string }) => (
       type="button"
       onClick={() => PubSub.publish(REMOVE_FILTER, { slug: text })}
       aria-label={`Remove filter: ${text}`}
-      className="inline-flex size-11 min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-70 hover:opacity-100">
-      <Icons.close size={14} />
+      className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-70 hover:opacity-100">
+      <Icons.close size={20} className="stroke-[1.75]" />
     </button>
   </span>
 )

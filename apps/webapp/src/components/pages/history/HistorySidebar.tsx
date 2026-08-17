@@ -26,6 +26,7 @@ function SidebarHeader({ count, onClose }: { count: number; onClose?: () => void
         <CloseButton
           onClick={onClose}
           size="sm"
+          iconSize={20}
           aria-label="Close history"
           className="-mt-1 -mr-1 shrink-0"
         />

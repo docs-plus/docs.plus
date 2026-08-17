@@ -15,7 +15,7 @@ import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useHistoryCompare } from '../hooks/useHistoryCompare'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
-const ICON_SIZE = 24
+const ICON_SIZE = 20
 
 const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => {
   const activeHistory = useStore((state) => state.activeHistory)
@@ -45,12 +45,12 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
     <header className="bg-base-100 sticky top-0 left-0 z-30 w-full shrink-0">
       <div className="border-base-300 flex min-h-12 w-full items-center border-b px-2">
         <ToolbarButton
-          className="min-h-11 min-w-11 shrink-0 touch-manipulation"
+          className="shrink-0 touch-manipulation"
           onClick={() => clearHistoryHash()}
           aria-label="Back to Editor"
           tooltip="Back to the Editor"
           tooltipPlacement="right">
-          <Icons.back size={ICON_SIZE} className="stroke-[1.75]" />
+          <Icons.back size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
         </ToolbarButton>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
@@ -65,15 +65,15 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
         <div className="flex shrink-0 items-center">
           {versionInfo && copyLinkLabel && (
             <ToolbarButton
-              className="min-h-11 min-w-11 shrink-0 touch-manipulation"
+              className="shrink-0 touch-manipulation"
               onClick={() => void copyHistoryVersionLinkToClipboard(versionInfo.version)}
               tooltip={copyLinkLabel}
               aria-label={copyLinkLabel}>
-              <Icons.link size={ICON_SIZE} className="stroke-[1.75]" />
+              <Icons.link size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
             </ToolbarButton>
           )}
           <ToolbarButton
-            className="min-h-11 min-w-11 shrink-0 touch-manipulation"
+            className="shrink-0 touch-manipulation"
             onClick={() => {
               if (compareMode) {
                 hideChanges()
@@ -89,7 +89,10 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
                 ? 'Hide changes'
                 : 'Show what changed in this version. Edits that only changed formatting show nothing, and very large differences are shown as one block.'
             }>
-            <Icons.splitVertical size={ICON_SIZE} className="stroke-[1.75]" />
+            <Icons.splitVertical
+              size={ICON_SIZE}
+              className={compareMode ? 'stroke-[1.75]' : 'text-base-content/70 stroke-[1.75]'}
+            />
           </ToolbarButton>
 
           {compareSheetOpen ? (
@@ -97,15 +100,15 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
               type="button"
               disabled
               aria-label="Open version history"
-              className="btn btn-sm btn-ghost btn-square min-h-11 min-w-11 shrink-0 touch-manipulation">
-              <Icons.menu size={ICON_SIZE} className="stroke-[1.75]" />
+              className="btn btn-sm btn-ghost btn-square shrink-0 touch-manipulation">
+              <Icons.menu size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
             </button>
           ) : (
             <label
               htmlFor="mobile_history_panel"
               aria-label="Open version history"
-              className="btn btn-sm btn-ghost btn-square drawer-button min-h-11 min-w-11 shrink-0 touch-manipulation">
-              <Icons.menu size={ICON_SIZE} className="stroke-[1.75]" />
+              className="btn btn-sm btn-ghost btn-square drawer-button shrink-0 touch-manipulation">
+              <Icons.menu size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
             </label>
           )}
         </div>

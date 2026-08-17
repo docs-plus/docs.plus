@@ -14,6 +14,25 @@ interface StringIconProps {
   className?: string
 }
 
+/** Outline chat bubble — mobile heading tab. Matches Lucide `Icons.chatroom`. */
+export const ChatOutlineSVG = ({ size = 20, className = '' }: Omit<StringIconProps, 'fill'>) => `
+    <svg
+      class="${className}"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      viewBox="0 0 24 24"
+      width="${size}"
+      height="${size}"
+      xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      <path d="M13 8H7"></path>
+      <path d="M17 12H7"></path>
+    </svg>
+`
+
 /** Filled chat bubble with text lines — used in heading hover decorations. */
 export const ChatLeftSVG = ({
   size = 24,

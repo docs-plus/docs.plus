@@ -79,7 +79,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
         aria-label="Settings navigation">
         <div className="border-base-300 flex items-center justify-between border-b p-4 md:hidden">
           <h2 className="text-base-content text-base font-semibold">Settings</h2>
-          <CloseButton onClick={handleClose} aria-label="Close settings" />
+          <CloseButton onClick={handleClose} iconSize={20} aria-label="Close settings" />
         </div>
 
         <ScrollArea className="min-h-0 flex-1 overscroll-contain p-4 sm:p-6" scrollbarSize="thin">
@@ -192,7 +192,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
             className="md:hidden"
           />
           <h2 className="text-base-content flex-1 text-base font-semibold">{activeLabel}</h2>
-          <CloseButton onClick={handleClose} aria-label="Close settings" />
+          <CloseButton onClick={handleClose} iconSize={20} aria-label="Close settings" />
         </div>
 
         <ScrollArea

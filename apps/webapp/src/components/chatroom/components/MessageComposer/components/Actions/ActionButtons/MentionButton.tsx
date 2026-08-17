@@ -40,8 +40,9 @@ type Props = React.ComponentProps<typeof Button> & {
   size?: number
 }
 
-export const MentionButton = ({ className, size = 18, ...props }: Props) => {
+export const MentionButton = ({ className, size, ...props }: Props) => {
   const { editor, isMobile } = useMessageComposer()
+  const glyph = size ?? (isMobile ? 20 : 18)
   const isActive = useSyncExternalStore(subscribeMentionPopup, getMentionPickerActive, () => false)
 
   const onPress = useCallback(
@@ -86,7 +87,7 @@ export const MentionButton = ({ className, size = 18, ...props }: Props) => {
       aria-expanded={isActive}
       {...props}>
       <Icons.mention
-        size={size}
+        size={glyph}
         className={twMerge(
           'pointer-events-none shrink-0 stroke-[1.75]',
           isActive && 'text-primary'

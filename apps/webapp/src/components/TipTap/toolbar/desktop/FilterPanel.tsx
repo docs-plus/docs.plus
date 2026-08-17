@@ -169,7 +169,7 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
       popoverHeader={
         <div className="flex items-center justify-between px-3 pt-2.5">
           <h2 className="text-base-content text-sm font-semibold">Filter</h2>
-          <CloseButton onClick={handleClose} size="sm" aria-label="Close filter" />
+          <CloseButton onClick={handleClose} size="sm" iconSize={20} aria-label="Close filter" />
         </div>
       }>
       <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
@@ -211,8 +211,8 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
               type="button"
               aria-label="Clear search"
               onClick={clearForm}
-              className="text-base-content/40 hover:text-base-content inline-flex size-11 min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center">
-              <Icons.close size={14} />
+              className="text-base-content/40 hover:text-base-content inline-flex size-8 shrink-0 cursor-pointer items-center justify-center">
+              <Icons.close size={20} className="stroke-[1.75]" />
             </button>
           )}
         </label>

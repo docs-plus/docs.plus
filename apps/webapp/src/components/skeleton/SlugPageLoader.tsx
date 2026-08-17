@@ -78,30 +78,36 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
   </div>
 )
 
-// Geometry mirrors MobilePadTitle's sticky header (56px — size-10 controls) and
+// Geometry mirrors MobilePadTitle's sticky header (~61px) and
 // the m_mobile `.editor.editorWrapper` padding (12px 0 20px 16px).
-const MobileSkeleton = () => (
+const MobileSkeleton = ({ isAuthed }: { isAuthed: boolean }) => (
   <>
     <header className="bg-base-100 w-full shrink-0">
-      <div className="border-base-300 flex h-14 min-h-12 w-full flex-col justify-center border-b px-2 py-2">
+      <div className="border-base-300 flex min-h-[61px] w-full flex-col justify-center border-b px-2 py-2">
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1">
-            <div className="skeleton size-9 rounded" />
+            <div className="skeleton size-8 rounded" />
             <div className="skeleton ml-1 h-6 w-40 rounded" />
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <div className="skeleton size-10 rounded-full" />
-            <div className="skeleton size-10 rounded-full" />
+            {isAuthed ? (
+              <>
+                <div className="skeleton size-8 rounded" />
+                <div className="skeleton size-10 rounded-full" />
+              </>
+            ) : (
+              <div className="skeleton rounded-field h-8 w-16" />
+            )}
           </div>
         </div>
       </div>
     </header>
 
-    <div className="min-h-0 flex-1 overflow-hidden pt-3 pr-4 pb-5 pl-4">
+    <div className="min-h-0 flex-1 overflow-hidden pt-3 pr-0 pb-5 pl-4">
       <EditorContentSkeleton />
     </div>
 
-    <div className="skeleton fixed right-6 bottom-8 z-20 size-16 rounded-full" />
+    <div className="skeleton fixed right-6 bottom-[calc(2rem+env(safe-area-inset-bottom,0px))] z-20 size-16 rounded-full" />
   </>
 )
 
@@ -118,7 +124,7 @@ export const SlugPageLoader = ({
     <div className="bg-base-200 flex h-dvh w-full flex-col overflow-hidden">
       <div aria-hidden="true" className="flex h-full min-h-0 flex-1 flex-col">
         {isMobile ? (
-          <MobileSkeleton />
+          <MobileSkeleton isAuthed={isAuthed} />
         ) : (
           <DesktopSkeleton tocWidth={tocWidth} isAuthed={isAuthed} />
         )}

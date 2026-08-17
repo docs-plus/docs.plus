@@ -8,7 +8,7 @@ import { useComposerEmojiPanelStore } from '../../stores/composerEmojiPanelStore
 
 const EXPANDED_MAX_PX = 480
 const EXPANDED_RATIO = 0.7
-const HANDLE_HEIGHT_PX = 20
+const HANDLE_HEIGHT_PX = 44
 
 const DRAG_THRESHOLD_SNAP_PX = 30
 const DRAG_THRESHOLD_CLOSE_PX = 80
@@ -107,7 +107,7 @@ export const ComposerEmojiPanel = () => {
               onPanEnd={handlePanEnd}
               onClick={handleHandleClick}
               role="button"
-              tabIndex={-1}
+              tabIndex={0}
               aria-label="Resize emoji panel"
               style={{ height: HANDLE_HEIGHT_PX, touchAction: 'none', cursor: 'grab' }}>
               <span className="bg-base-300 h-1 w-[30px] rounded-full" />

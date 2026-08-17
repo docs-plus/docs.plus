@@ -25,10 +25,10 @@ function TocModalIconButton({
     <Button
       aria-label={ariaLabel}
       variant="ghost"
-      size="md"
+      size="sm"
       shape="square"
-      iconSize={18}
-      className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 min-h-11 min-w-11 focus-visible:ring-2 focus-visible:outline-none"
+      iconSize={20}
+      className="text-base-content/70 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
       onClick={onClick}
       startIcon={startIcon}
     />
@@ -82,8 +82,8 @@ const TocModal = () => {
             <CloseButton
               aria-label="Close sidebar"
               onClick={() => closeModal?.()}
-              size="md"
-              className="min-h-11 min-w-11"
+              size="sm"
+              iconSize={20}
             />
           </div>
         </header>

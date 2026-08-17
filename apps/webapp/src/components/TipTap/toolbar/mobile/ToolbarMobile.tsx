@@ -101,7 +101,7 @@ const ToolbarMobile = () => {
             e.stopPropagation()
             editor.chain().focus().openCreateHyperlinkPopover().run()
           }}>
-          <Icons.link size={24} />
+          <Icons.link size={20} className="stroke-[1.75]" />
         </ToolbarButton>
 
         <ToolbarButton
@@ -114,7 +114,7 @@ const ToolbarMobile = () => {
             dismissSoftKeyboard(editor)
             useSheetStore.getState().openSheet('mediaInsert', { editor })
           }}>
-          <Icons.image size={24} />
+          <Icons.image size={20} className="stroke-[1.75]" />
         </ToolbarButton>
 
         <ToolbarButton
@@ -124,7 +124,7 @@ const ToolbarMobile = () => {
             e.stopPropagation()
             createComment(editor)
           }}>
-          <Icons.comment size={24} />
+          <Icons.comment size={20} className="stroke-[1.75]" />
         </ToolbarButton>
 
         <ToolbarButton
@@ -134,7 +134,7 @@ const ToolbarMobile = () => {
           isActive={isFormatSelectionVisible}
           className={MAIN_ROW_BTN}
           onPress={toggleFormatSelection}>
-          <Icons.textFormat size={26} />
+          <Icons.textFormat size={20} className="stroke-[1.75]" />
         </ToolbarButton>
       </div>
     </div>

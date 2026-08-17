@@ -25,6 +25,7 @@ const EditFAB = () => {
   return (
     <Button
       type="button"
+      aria-label="Edit document"
       onTouchEnd={(e) => {
         e.preventDefault()
         e.stopPropagation()

@@ -297,7 +297,7 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
             onClick={onBack}
             aria-label="Back to documents"
             className="text-base-content/60 hover:bg-base-200 hover:text-base-content rounded-field inline-flex size-8 items-center justify-center transition-colors">
-            <LuArrowLeft size={18} />
+            <LuArrowLeft size={20} className="stroke-[1.75]" />
           </button>
           <h3 className="text-base-content font-medium">Trash</h3>
           <span className="flex-1" />

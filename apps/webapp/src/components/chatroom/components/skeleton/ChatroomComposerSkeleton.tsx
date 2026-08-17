@@ -28,19 +28,19 @@ export const ChatroomComposerSkeleton = ({ variant = 'desktop', className }: Pro
             isDesktop ? 'gap-1.5 px-2.5 py-1.5' : 'min-h-11 gap-1 px-3 py-2'
           )}>
           <div
-            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-10')}
+            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-11')}
           />
           <div
             className={twMerge(
               'skeleton rounded-field flex-1',
-              isDesktop ? 'h-7' : 'h-10 min-h-10'
+              isDesktop ? 'h-7' : 'h-11 min-h-11'
             )}
           />
           <div
-            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-10')}
+            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-11')}
           />
           <div
-            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-10')}
+            className={twMerge('skeleton rounded-field shrink-0', isDesktop ? 'size-7' : 'size-11')}
           />
         </div>
       </div>
