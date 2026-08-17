@@ -1,6 +1,6 @@
 # 📚 docs.plus
 
-[![Version](https://img.shields.io/github/v/tag/docs-plus/docs.plus?label=version&color=green)](https://github.com/docs-plus/docs.plus/releases)
+[![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-5%20on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.com/invite/25JPG38J59)
@@ -230,7 +230,7 @@ Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.m
 
 ## 🔌 Tiptap Extensions
 
-Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. Not every package is on npm yet, and a published version can lag this source, so check the status tracker before you pin one.
+Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All five are published on npm at `2.0.0`. A published version can still lag this source, so check the status tracker before you pin one.
 
 ```sh
 bun add @docs.plus/extension-hyperlink
