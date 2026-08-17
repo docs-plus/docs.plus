@@ -13,6 +13,7 @@ export type SheetType =
   | 'mediaControls'
   | 'mediaInsert'
   | 'historyCompare'
+  | 'messageReaction'
   | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
 
@@ -70,6 +71,8 @@ export interface SheetDataMap {
   }
   /** Mobile history compare picker. A is chosen here; B stays the viewed version. */
   historyCompare: Record<string, never>
+  /** Mobile reaction picker. Selection reads `emojiPicker` in the chat store. */
+  messageReaction: Record<string, never>
 }
 
 export type SheetData = SheetDataMap[keyof SheetDataMap]

@@ -20,14 +20,11 @@ export function isComposerEmojiOverlayOpen(): boolean {
   )
 }
 
-/** Close mobile inline panel and desktop composer emoji picker (not reaction picker). */
+/** Close the inline panel and any emoji picker, including the reaction picker. */
 export function dismissComposerEmojiOverlays(): void {
   stopComposerVoiceRecording()
   useComposerEmojiPanelStore.getState().close()
-  const chat = useChatStore.getState()
-  if (isComposerInsertEmojiPickerOpen(chat.emojiPicker)) {
-    chat.closeEmojiPicker()
-  }
+  useChatStore.getState().closeEmojiPicker()
 }
 
 export function dismissComposerOverlaysBeforeMention(): void {

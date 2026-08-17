@@ -1,5 +1,6 @@
 import { emojiReaction } from '@api'
 import { QuickReactionMenu } from '@components/chatroom/components/MessageCard/components/MessageLongPressMenu/components/QuickReactionMenu'
+import { modalBackdropClassName } from '@components/ui/Dialog'
 import { TMsgRow } from '@types'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -119,8 +120,6 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
   }, [isMenuEnterAnimationActive])
 
   const handleEmojiReaction = (nativeEmoji: string) => {
-    console.log(`Reacted with ${nativeEmoji}`)
-    // TODO: Add actual reaction logic here
     emojiReaction(message, nativeEmoji)
   }
 
@@ -145,10 +144,8 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
           createPortal(
             <div
               ref={menuOverlayRef}
-              className="fixed inset-0 z-50 overflow-auto transition-opacity duration-200 ease-out"
+              className={`fixed inset-0 z-50 overflow-auto transition-opacity duration-200 ease-out ${modalBackdropClassName}`}
               style={{
-                backdropFilter: 'blur(6px)',
-                backgroundColor: 'color-mix(in oklch, var(--color-base-content) 20%, transparent)',
                 opacity: isMenuEnterAnimationActive ? 1 : 0
               }}
               onClick={closeLongPressMenu}>

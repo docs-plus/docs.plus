@@ -21,7 +21,7 @@ interface ComposerEmojiPanelState {
   open: (editor?: Editor | null) => void
   expand: () => void
   collapse: () => void
-  close: () => void
+  close: (opts?: { consumeHistory?: boolean }) => void
 }
 
 export const useComposerEmojiPanelStore = create<ComposerEmojiPanelState>((set, get) => ({
@@ -48,10 +48,11 @@ export const useComposerEmojiPanelStore = create<ComposerEmojiPanelState>((set, 
   },
   expand: () => set({ mode: 'expanded' }),
   collapse: () => set({ mode: 'peek' }),
-  close: () => {
+  close: (opts) => {
     set({ isOpen: false, mode: 'peek' })
-    // Pop our entry iff we are still at it; the resulting popstate is a
-    // no-op for the MessageComposer listener (isOpen is already false).
+    // Pane teardown consumes the stack itself; a second back() here would
+    // pop the document. Default stays: pop iff we are still on our entry.
+    if (opts?.consumeHistory === false) return
     const state = typeof window !== 'undefined' ? window.history.state : null
     if ((state as PanelHistoryState | null)?.composerEmojiPanel) window.history.back()
   }

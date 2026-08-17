@@ -1,4 +1,5 @@
 import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
+import MessageReactionSheet from '@components/pages/document/components/chat/MessageReactionSheet'
 import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
 import FilterSheet from '@components/pages/document/components/FilterSheet'
 import HistoryCompareSheet from '@components/pages/history/mobile/HistoryCompareSheet'
@@ -28,7 +29,8 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   linkEditor: (data) => <LinkEditorSheet data={data} />,
   mediaControls: (data) => <MediaControlsSheet data={data} />,
   mediaInsert: (data) => <MediaInsertSheet data={data} />,
-  historyCompare: () => <HistoryCompareSheet />
+  historyCompare: () => <HistoryCompareSheet />,
+  messageReaction: () => <MessageReactionSheet />
 }
 
 const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
@@ -68,6 +70,10 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   historyCompare: {
     id: 'history_compare_sheet',
     detent: 'default'
+  },
+  messageReaction: {
+    id: 'message_reaction_sheet',
+    detent: 'content'
   }
 }
 
@@ -105,7 +111,7 @@ const BottomSheet = () => {
     <div className="bottom-sheet-container relative">
       <Sheet
         avoidKeyboard
-        className="bottom-sheet !z-10"
+        className="bottom-sheet !z-50"
         isOpen={!!activeSheet}
         onClose={closeSheet}
         onOpenStart={handleOpenStart}
