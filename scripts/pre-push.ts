@@ -6,7 +6,8 @@
  *   bun run pre-push
  *
  * Skips Prettier --check: pre-commit lint-staged already formats staged files.
- * CI still runs full `bun run check` (includes format).
+ * CI lint job runs lint + format + lint:styles. Typecheck is a second job.
+ * For the full local replica of the prod gates, run `bun run check:ci`.
  */
 
 import { $ } from 'bun'

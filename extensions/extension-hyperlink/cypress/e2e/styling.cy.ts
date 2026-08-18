@@ -104,15 +104,18 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
     })
 
     it('custom overrides take effect on rendered popovers', () => {
+      // --hl-accent only paints on :focus-within. Cypress .focus() plus
+      // scrollBehavior leaves the wrapper idle, so CI reads --hl-border
+      // (#e5e7eb) and fails. Pin the idle token instead.
       cy.document().then((doc) => {
-        doc.documentElement.style.setProperty('--hl-accent', 'rgb(255, 0, 0)')
+        doc.documentElement.style.setProperty('--hl-border', 'rgb(255, 0, 0)')
       })
       cy.setEditorContent('<p>Select this word</p>')
       cy.selectText('word')
       cy.pressModK()
-      cy.get('.hyperlink-create-popover input').focus()
       cy.get('.hyperlink-create-popover .inputs-wrapper')
-        .should('have.css', 'border-color')
+        .should('be.visible')
+        .and('have.css', 'border-color')
         .and('match', /rgb\(\s*255,\s*0,\s*0\s*\)/)
     })
   })

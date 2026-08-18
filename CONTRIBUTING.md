@@ -187,6 +187,12 @@ bun run pre-push
 
 That script runs `bun run check:push` and no build. The git hook itself also runs the selective extension, admin-dashboard and webapp builds, so the hook takes minutes.
 
+For the same quality gates GitHub Actions runs, call this before you push (opt-in; not the hook):
+
+```bash
+bun run check:ci
+```
+
 Trigger the other two hooks by hand. Run both from inside the repository, because each wrapper resolves the repository root with `git rev-parse --show-toplevel` and exits 1 when it cannot.
 
 ```bash
@@ -209,20 +215,21 @@ sh .husky/commit-msg /tmp/commit-msg.txt
 
 Full naming convention: [.cursor/docs/scripts-naming-convention.md](./.cursor/docs/scripts-naming-convention.md). Quick reference:
 
-| Command                    | Use case                                                                     |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| `bun run check`            | Full report: lint + lint:styles + format + typecheck + check:agent-docs      |
-| `bun run check:push`       | Pre-push gate: lint + lint:styles + typecheck (no format)                    |
-| `bun run check:fix`        | Auto-fix all: ESLint + Stylelint + Prettier (in that order)                  |
-| `bun run lint`             | ESLint report                                                                |
-| `bun run lint:fix`         | ESLint --fix                                                                 |
-| `bun run lint:styles`      | Stylelint report                                                             |
-| `bun run lint:styles:fix`  | Stylelint --fix                                                              |
-| `bun run format`           | Prettier --check                                                             |
-| `bun run format:fix`       | Prettier --write                                                             |
-| `bun run typecheck`        | tsc --noEmit (report only — no fix)                                          |
-| `bun run lint-staged`      | Staged-file lint/format, run by the `pre-commit` hook                        |
-| `bun run check:agent-docs` | Cross-reference check across `AGENTS.md`, `CONTEXT.md` and every `CLAUDE.md` |
+| Command                    | Use case                                                                      |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `bun run check`            | Full local report: lint + lint:styles + format + typecheck + check:agent-docs |
+| `bun run check:ci`         | Local replica of the prod quality gates. Run this before you push.            |
+| `bun run check:push`       | Pre-push hook: lint + lint:styles + typecheck (no format)                     |
+| `bun run check:fix`        | Auto-fix all: ESLint + Stylelint + Prettier (in that order)                   |
+| `bun run lint`             | ESLint report                                                                 |
+| `bun run lint:fix`         | ESLint --fix                                                                  |
+| `bun run lint:styles`      | Stylelint report                                                              |
+| `bun run lint:styles:fix`  | Stylelint --fix                                                               |
+| `bun run format`           | Prettier --check                                                              |
+| `bun run format:fix`       | Prettier --write                                                              |
+| `bun run typecheck`        | tsc --noEmit (report only — no fix)                                           |
+| `bun run lint-staged`      | Staged-file lint/format, run by the `pre-commit` hook                         |
+| `bun run check:agent-docs` | Cross-reference check across `AGENTS.md`, `CONTEXT.md` and every `CLAUDE.md`  |
 
 ## 🧪 Testing
 
@@ -354,20 +361,12 @@ A merged contribution ships under the repository license, MIT. Read [LICENSE](LI
 3. **Run checks** before opening a pull request:
 
    ```bash
-   bun run check
+   bun run check:ci
    ```
 
-   Or individually:
+   That command is the local replica of the prod quality gates. It prints pass / fail / skip for each gate.
 
-   ```bash
-   bun run lint
-   bun run lint:styles
-   bun run format
-   bun run typecheck
-   bun run check:agent-docs
-   ```
-
-   Pre-push runs `bun run check:push` (lint + lint:styles + typecheck; no full-repo Prettier). CI runs `bun run lint`, `bun run format` and `bun run lint:styles` in one job, and `bun run typecheck` in a second job. CI runs `check:agent-docs` in no workflow, so run `bun run check` locally before you open a pull request.
+   `bun run check` still covers `check:agent-docs`, which CI does not run. Pre-push stays `bun run check:push` (lint + lint:styles + typecheck; no full-repo Prettier). CI runs `bun run lint`, `bun run format` and `bun run lint:styles` in one job, and `bun run typecheck` in a second job.
 
 4. **Test locally**:
    - Start the local stack
@@ -393,7 +392,7 @@ A merged contribution ships under the repository license, MIT. Read [LICENSE](LI
 
 3. **Pull request checklist**:
    - [ ] Code follows style guidelines
-   - [ ] `bun run check` passes
+   - [ ] `bun run check:ci` passes
    - [ ] Every test I added passes
    - [ ] Documentation updated (if needed)
    - [ ] No console errors/warnings
