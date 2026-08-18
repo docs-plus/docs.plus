@@ -502,6 +502,7 @@
     "@babel/plugin-transform-modules-systemjs": "^7.29.7",
     "@metascraper/helpers": "5.50.6",
     "axios": "^1.18.1",
+    "deepmerge-ts": "8.0.1",
     "defu": "^6.1.7",
     "dompurify": "^3.4.12",
     "fast-uri": "^3.1.5",
@@ -2263,7 +2264,7 @@
 
     "deepmerge": ["deepmerge@4.3.1", "", {}, "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A=="],
 
-    "deepmerge-ts": ["deepmerge-ts@7.1.5", "", {}, "sha512-HOJkrhaYsweh+W+e74Yn7YStZOilkoPb6fycpwNLKzSPtruFs48nYis0zy5yJz1+ktUhHxoRDJ27RQAWLIJVJw=="],
+    "deepmerge-ts": ["deepmerge-ts@8.0.1", "", {}, "sha512-szCXE7YLCvLKR9bFPJcvsezOShdalctSvrgN/LM/QGUEPZQajwjmsMObZ6/DuANT5lxzM/wtO8Feubwdkz8myA=="],
 
     "default-require-extensions": ["default-require-extensions@3.0.1", "", { "dependencies": { "strip-bom": "^4.0.0" } }, "sha512-eXTJmRbm2TIt9MgWTsOH1wEuhew6XGZcMeGKCtLedIg/NCsg1iBePXkceTdK4Fii7pzmN9tGsZhKzZ4h7O/fxw=="],
 
