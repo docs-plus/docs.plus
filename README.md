@@ -304,17 +304,19 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
 
 ## 🎨 Badges
 
-Using docs.plus? Add a badge to your README and link back.
+Add a badge to your README and link it to [docs.plus](https://docs.plus).
 
 ### Variants
 
-| Style         | Preview                                                                 | File                               |
-| ------------- | ----------------------------------------------------------------------- | ---------------------------------- |
-| Default       | ![docs.plus](https://docs.plus/badges/badge-docsplus.svg)               | `badge-docsplus.svg`               |
-| Light         | ![docs.plus](https://docs.plus/badges/badge-docsplus-light.svg)         | `badge-docsplus-light.svg`         |
-| Dark          | ![docs.plus](https://docs.plus/badges/badge-docsplus-dark.svg)          | `badge-docsplus-dark.svg`          |
-| Flat-square   | ![docs.plus](https://docs.plus/badges/badge-docsplus-flat-square.svg)   | `badge-docsplus-flat-square.svg`   |
-| For-the-badge | ![docs.plus](https://docs.plus/badges/badge-docsplus-for-the-badge.svg) | `badge-docsplus-for-the-badge.svg` |
+| Style         | Size      | Preview                                                                  | File                               |
+| ------------- | --------- | ------------------------------------------------------------------------ | ---------------------------------- |
+| Default       | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus.svg)               | `badge-docsplus.svg`               |
+| Light         | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus-light.svg)         | `badge-docsplus-light.svg`         |
+| Dark          | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus-dark.svg)          | `badge-docsplus-dark.svg`          |
+| Flat-square   | 85×20     | ![docs.plus](apps/webapp/public/badges/badge-docsplus-flat-square.svg)   | `badge-docsplus-flat-square.svg`   |
+| For-the-badge | 130.25×28 | ![docs.plus](apps/webapp/public/badges/badge-docsplus-for-the-badge.svg) | `badge-docsplus-for-the-badge.svg` |
+
+Light and dark match the default.
 
 ### Usage
 
@@ -324,7 +326,7 @@ Using docs.plus? Add a badge to your README and link back.
 [![docs.plus](https://docs.plus/badges/badge-docsplus.svg)](https://docs.plus)
 ```
 
-**HTML** — auto light/dark switching for GitHub READMEs:
+**HTML:**
 
 ```html
 <a href="https://docs.plus">
@@ -337,7 +339,7 @@ Using docs.plus? Add a badge to your README and link back.
 </a>
 ```
 
-Swap the filename for any variant in the table above.
+Set `height="28"` on `badge-docsplus-for-the-badge.svg`.
 
 ## 📄 License
 
