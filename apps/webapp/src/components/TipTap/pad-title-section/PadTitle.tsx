@@ -16,6 +16,7 @@ import { DocsPlusIcon } from '@icons'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
+import { useThemeStore } from '@stores'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import React, { useState } from 'react'
@@ -43,6 +44,8 @@ const NotificationPanel = dynamic(
 
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)
+  const themePreference = useThemeStore((state) => state.preference)
+  const setThemePreference = useThemeStore((state) => state.setPreference)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
   const [isShareModalOpen, setShareModalOpen] = useState(false)
@@ -86,8 +89,9 @@ const PadTitle = () => {
             Share
           </Button>
 
-          {/* History button - authenticated users only */}
-          {user && (
+          {/* History is read-only for everyone. The server refuses `history.revert`
+              for a visitor (hocuspocus.server.ts), so reading a version is safe. */}
+          {
             <Button
               variant="ghost"
               shape="circle"
@@ -96,7 +100,7 @@ const PadTitle = () => {
               tooltipPlacement="bottom">
               <Icons.history size={20} className="text-base-content/70" />
             </Button>
-          )}
+          }
 
           {/* Notifications - authenticated users only */}
           {isAuthServiceAvailable && user && (
@@ -133,9 +137,33 @@ const PadTitle = () => {
                   <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
                 </Button>
               ) : (
-                <Button variant="neutral" onClick={() => setProfileModalOpen(true)}>
-                  Sign in
-                </Button>
+                <>
+                  {/* A signed-out reader cannot open Settings, so the theme
+                      choice would be unreachable. Cycles light, dark, system. */}
+                  <Button
+                    variant="ghost"
+                    shape="circle"
+                    onClick={() => {
+                      const order = ['light', 'dark', 'system'] as const
+                      const next =
+                        order[(order.indexOf(themePreference as never) + 1) % order.length]
+                      setThemePreference(next)
+                    }}
+                    tooltip={`Theme: ${themePreference}`}
+                    tooltipPlacement="bottom"
+                    aria-label={`Theme: ${themePreference}. Click to change.`}>
+                    {themePreference === 'dark' ? (
+                      <Icons.moon size={20} />
+                    ) : themePreference === 'system' ? (
+                      <Icons.monitor size={20} />
+                    ) : (
+                      <Icons.sun size={20} />
+                    )}
+                  </Button>
+                  <Button variant="neutral" onClick={() => setProfileModalOpen(true)}>
+                    Sign in
+                  </Button>
+                </>
               )}
             </>
           )}

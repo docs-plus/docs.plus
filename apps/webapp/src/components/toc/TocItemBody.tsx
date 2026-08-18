@@ -5,6 +5,7 @@ import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { memo, type MouseEvent, type ReactNode, useCallback, useState } from 'react'
+import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
 
 import { tocActions } from './hooks'
@@ -149,7 +150,7 @@ function TocItemBodyComponent({
         isActive={isActive}
         isFocused={isFocused}
         onTitleClick={handleClick}
-        titleHref={`?${item.id}`}
+        titleHref={`?h=${slugify((item.textContent || '').toLowerCase().trim())}&id=${item.id}`}
         leading={leading}
         trail={
           <TocRowTrail

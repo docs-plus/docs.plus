@@ -136,22 +136,21 @@ const buildDesktopPopover = (
     editor.chain().focus().unsetHyperlink().run()
   })
 
+  // Edit and Remove write to the document, so a read-only reader must not be
+  // offered them. Same gate the media toolbar already uses (mediaResizeControls).
+  const editControls = editor.view.editable ? [editButton, removeButton] : []
+
   // Internal (same-document) links render a named destination chip and run
   // in place; no external metadata fetch. Copy still yields the canonical URL.
   const internalLink = classifyInternalDocumentLink(href, window.location.pathname)
   if (internalLink) {
     popover.classList.add('is-internal')
-    popover.append(
-      createInternalLinkChip(internalLink, editor),
-      copyButton,
-      editButton,
-      removeButton
-    )
+    popover.append(createInternalLinkChip(internalLink, editor), copyButton, ...editControls)
     return { element: popover, flush: () => {} }
   }
 
   const metadataContainer = createHTMLElement('div', { className: 'metadata' })
   const { flush } = renderMetadataInto(metadataContainer, ctx)
-  popover.append(metadataContainer, copyButton, editButton, removeButton)
+  popover.append(metadataContainer, copyButton, ...editControls)
   return { element: popover, flush }
 }
