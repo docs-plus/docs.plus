@@ -21,7 +21,7 @@ const SIGN_UP_TRACKED_KEY = 'docsplus.signUpTrackedUserId'
  */
 export const trackSignUpOnce = (session: Session | null): void => {
   const user = session?.user
-  if (!user || user.is_anonymous) return
+  if (!user) return
   const createdAt = Date.parse(user.created_at ?? '')
   if (!Number.isFinite(createdAt) || Date.now() - createdAt >= 5 * 60_000) return
   try {

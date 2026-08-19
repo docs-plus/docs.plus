@@ -8,7 +8,7 @@ import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
 import { captureUnknown } from '@utils/observability'
-import { getRoutePolicy } from '@utils/routePolicy'
+import { getRoutePolicy, isDocumentAsPath } from '@utils/routePolicy'
 import { MotionConfig } from 'motion/react'
 import type { NextWebVitalsMetric } from 'next/app'
 import dynamic from 'next/dynamic'
@@ -34,13 +34,6 @@ function loadDocumentStyles() {
   void import('../styles/document-styles.scss').then(
     () => import('../styles/editor-extensions.scss')
   )
-}
-
-function isDocumentAsPath(asPath: string): boolean {
-  const path = asPath.split(/[?#]/)[0] || '/'
-  if (path === '/' || path === '') return false
-  if (path.startsWith('/auth/')) return false
-  return true
 }
 
 const Header = () => {

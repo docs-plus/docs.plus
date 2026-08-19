@@ -1,5 +1,4 @@
 import * as toast from '@components/toast'
-import { ensureAnonymousSession } from '@utils/ensureAnonymousSession'
 import { sanitizeDocumentSlug } from '@utils/sanitizeDocumentSlug'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
@@ -28,7 +27,6 @@ export function useNavigateToDocument() {
       prefetchDocumentShell()
       const slug = sanitizeDocumentSlug(name)
       try {
-        await ensureAnonymousSession()
         await router.push(`/${slug}`)
       } catch (err) {
         console.warn('Failed to open document:', err)

@@ -37,7 +37,7 @@ export default function AppProviders({
   useVisualViewportCssSync({ mode: policy.viewportMode })
 
   useServiceWorker()
-  useOnAuthStateChange({ deferAnonymousAuth: policy.deferAnonymousAuth })
+  useOnAuthStateChange()
   useCatchUserPresences(documentShell)
   useBroadcastListener(documentShell)
   useHandleUserStatus(documentShell)

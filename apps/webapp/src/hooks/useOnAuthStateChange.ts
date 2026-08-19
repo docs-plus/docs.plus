@@ -5,7 +5,6 @@ import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@types'
 import { trackSignUpOnce } from '@utils/analytics'
-import { ensureAnonymousSession, resetAnonymousSessionGate } from '@utils/ensureAnonymousSession'
 import { captureUnknown, setObservabilityUser } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect } from 'react'
@@ -29,11 +28,7 @@ const reportPkceExchangeFailure = () => {
   })
 }
 
-interface UseOnAuthStateChangeOptions {
-  deferAnonymousAuth: boolean
-}
-
-export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChangeOptions) => {
+export const useOnAuthStateChange = () => {
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
 
@@ -51,18 +46,6 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
     },
     [getUserByIdRequest, setLoading]
   )
-
-  const bootstrapAnonymousSession = useCallback(async () => {
-    try {
-      await ensureAnonymousSession()
-      if (!useAuthStore.getState().profile) {
-        setLoading(false)
-      }
-    } catch (err) {
-      console.warn('Anonymous sign-in error:', err)
-      setLoading(false)
-    }
-  }, [setLoading])
 
   useEffect(() => {
     if (!navigator.onLine) {
@@ -84,37 +67,20 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
         setObservabilityUser(session?.user?.id ?? null)
       }
 
-      if (event === 'INITIAL_SESSION') {
-        if (!session?.user) {
-          if (deferAnonymousAuth) {
-            setLoading(false)
-            return
-          }
-          bootstrapAnonymousSession()
-          return
-        }
-      }
       if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
           setLoading(false)
           return
         }
-        const isAnonymous = session?.user?.is_anonymous || false
-        useAuthStore.getState().setSession(session?.user || null, isAnonymous)
-        setObservabilityUser(session?.user?.id ?? null)
-
-        if (session?.user && !isAnonymous) {
-          getUserProfile(session.user)
-        } else {
-          setLoading(false)
-        }
+        useAuthStore.getState().setSession(session.user)
+        setObservabilityUser(session.user.id)
+        getUserProfile(session.user)
       }
       if (event === 'SIGNED_OUT') {
         setObservabilityUser(null)
-        useAuthStore.getState().setSession(null, false)
+        useAuthStore.getState().setSession(null)
         useAuthStore.getState().setProfile(null)
         setLoading(false)
-        resetAnonymousSessionGate()
       }
     })
 
@@ -128,5 +94,5 @@ export const useOnAuthStateChange = ({ deferAnonymousAuth }: UseOnAuthStateChang
       data.subscription.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [bootstrapAnonymousSession, deferAnonymousAuth, getUserProfile, setLoading])
+  }, [getUserProfile, setLoading])
 }
