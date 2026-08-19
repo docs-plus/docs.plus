@@ -177,16 +177,17 @@ tmp/
 # Supabase Studio scratch (user-local snippets)
 packages/supabase/snippets/
 
-# Sensitive documentation (contains env templates)
-QUICKSTART.md
-DEPLOYMENT.md
-ENV_SETUP.md
-DOCS_SUMMARY.md
+# Sensitive documentation (contains env templates). Anchored to the root on
+# purpose: unanchored, these match at any depth, and `core.ignorecase=true` on
+# macOS made `QUICKSTART.md` swallow `docs/api/quickstart.md` silently.
+/QUICKSTART.md
+/DEPLOYMENT.md
+/ENV_SETUP.md
+/DOCS_SUMMARY.md
 
-# Root documentation (plans, brainstorms, local notes, skill output)
-/docs/
-
-docs/skills-output/
+# /docs/ is tracked reader documentation, and it is public by design. Local
+# material — plans, reviews, notes, skill output — lives in Notes/ instead, which
+# is ignored above. Do not put anything private under docs/.
 
 # .cursor/skills/ is a machine-local mirror — symlinks into .agents/skills and the
 # Cursor plugin cache. Track only the docs.plus-specific skills; ignore the mirror.
