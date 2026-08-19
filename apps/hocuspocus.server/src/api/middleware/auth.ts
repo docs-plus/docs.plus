@@ -45,8 +45,8 @@ export async function requireUser(c: Context, next: Next) {
   }
 }
 
-/** Service-role first — the key is not a JWT and would fail `requireUser`. Sets
- *  `serviceRole` so handlers can gate the privileged fields on it. */
+/** Service-role first — the key names no user, so `requireUser` resolves nobody
+ *  from it. Sets `serviceRole` so handlers can gate the privileged fields on it. */
 export async function requireServiceRoleOrUser(c: Context, next: Next) {
   if (verifyServiceRole(c.req.header('Authorization'))) {
     c.set('serviceRole', true)

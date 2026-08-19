@@ -28,14 +28,14 @@ The REST API runs from `src/index.ts` on a Hono app. This document covers the HT
 
 Three schemes apply, by route group:
 
-| Scheme                                | Used by                                                                                                                                                                                                                                    | Header                                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`                                                                                  | —                                                   |
-| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                     | `token: <jwt>`                                      |
-| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`)                                     | `token: <jwt>`                                      |
-| Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                         | `token: <jwt>` or the service-role bearer           |
-| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, and the `content` / `ownerId` fields on `POST /api/documents` | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
-| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                             | `Authorization: Bearer <jwt>`                       |
+| Scheme                                | Used by                                                                                                                                                                                                                                                                                                                                                                             | Header                                              |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`                                                                                                                                                                         | —                                                   |
+| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                                                                                                                              | `token: <jwt>`                                      |
+| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `token: <jwt>`                                      |
+| Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                  | `token: <jwt>` or the service-role bearer           |
+| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, and the `content` / `ownerId` fields on `POST /api/documents`                                                                                                                                          | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
+| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                                                                                                                                      | `Authorization: Bearer <jwt>`                       |
 
 > **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalUser` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
 
@@ -56,7 +56,7 @@ The canonical error shape is defined by `getErrorResponse` in `src/lib/errors.ts
 }
 ```
 
-`error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`, `STORAGE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set.
+`error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set. `AUTH_UNAVAILABLE` (503) sits outside this set: the auth middleware returns it, not an `AppError`, when Supabase token verification is unreachable.
 
 The documents controller emits this envelope on error and `{ "success": true, "data": ... }` on success.
 
@@ -144,7 +144,7 @@ List rows include `readOnly`, `isPrivate`, `createdAt`, and `updatedAt`.
 
 ### GET /api/documents/:docName
 
-Fetch one document by slug. When no row matches, returns a synthesized draft (`createDraftDocument`) rather than `404`.
+Fetch one document by slug. When no row matches, returns a synthesized draft (`createDraftDocument`) rather than `404`. A soft-deleted row is the one `404` case. Synthesizing a draft there would mint a new `documentId` under a still-unique slug, and the two would collide on persist.
 
 | Param    | Type           | Description                           |
 | -------- | -------------- | ------------------------------------- |
@@ -152,13 +152,15 @@ Fetch one document by slug. When no row matches, returns a synthesized draft (`c
 
 **Auth (shipped — owner-scoped private):** `optionalUser` attaches the caller (owner identity is `token.sub`, never the `userId` query param), and the controller applies:
 
-| Document                 | Viewer                    | Result                                                                       |
-| ------------------------ | ------------------------- | ---------------------------------------------------------------------------- |
-| Public                   | anyone                    | `200` — full metadata                                                        |
-| Private                  | no token or anonymous JWT | `403` — `{ access: 'sign-in-required' }`                                     |
-| Private                  | signed-in non-owner       | `403` — `{ access: 'denied' }`                                               |
-| Private                  | owner (`sub === ownerId`) | `200` — full metadata                                                        |
-| Private, `ownerId: null` | any signed-in user        | `403` — `{ access: 'sign-in-required' }` (sign-in wall until owner backfill) |
+| Document                 | Viewer                                | Result                                                                       |
+| ------------------------ | ------------------------------------- | ---------------------------------------------------------------------------- |
+| Soft-deleted             | anyone                                | `404` — never the draft path                                                 |
+| Public                   | anyone                                | `200` — full metadata                                                        |
+| Private                  | token sent, Supabase auth unreachable | `503` — `AUTH_UNAVAILABLE`, checked before the rows below                    |
+| Private                  | no token or anonymous JWT             | `403` — `{ access: 'sign-in-required' }`                                     |
+| Private                  | signed-in non-owner                   | `403` — `{ access: 'denied' }`                                               |
+| Private                  | owner (`sub === ownerId`)             | `200` — full metadata                                                        |
+| Private, `ownerId: null` | any signed-in user                    | `403` — `{ access: 'sign-in-required' }` (sign-in wall until owner backfill) |
 
 The `403` body is `{ success: false, error: { code: 'FORBIDDEN', message }, access }`; the top-level `access` hint drives the webapp private gate's CTA. Draft slugs (no DB row) are unchanged — synthesized draft, never treated as private.
 
@@ -176,9 +178,9 @@ Two further fields are accepted **only** under the service-role key: `content` (
 
 ### PUT /api/documents/:docId
 
-Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`).
+Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`), `slug` (`string`). `slug` sets the row's slug only when this call creates the row. It is ignored on every update and never renames a live document.
 
-Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open: anyone, signed in or not, may set `title` / `description` / `keywords`. But its locks cannot move, because a document with no owner has nobody to be private for. Those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request.
+Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open: anyone, signed in or not, may set `title` / `description` / `keywords`. But its locks cannot move, because a document with no owner has nobody to be private for. Those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request. A soft-deleted document is `404`.
 
 ### DELETE /api/documents/:documentId
 
@@ -226,7 +228,10 @@ Resolve a slug once with `GET /api/documents/:docName` and keep the `documentId`
 
 - **Documents are title-first.** The first node must be a level-1 `heading`. A heading-less `replace` or create payload is rejected with `422`. The editor would otherwise synthesize a title on first open and persist a heading you never wrote.
 - **Image nodes are inline.** Wrap them in a `paragraph` or `heading`. A top-level `image` is `422`.
-- **Headings and tables carry a `toc-id`.** The server assigns one where it is missing or duplicated within the payload. That id is the identity a heading's chat thread, fold state, and `?id=` deep link hang off. Round-trip the toc-ids from `GET` through a `replace` to keep them stable.
+- **The root `content` array is flat.** A heading holds inline text only and never nests the blocks that follow it.
+- **A section is a caller-side rule.** A heading's section is the run of following root siblings, up to the next heading whose `level` is the same or smaller. Nested subsections fall inside it. Compute it from a `GET`; the server has no section concept.
+- **Headings and tables carry a `toc-id`.** The server assigns one where it is missing or duplicated within the payload. That id is the identity a heading's chat thread, fold state, and `?id=` deep link hang off. Round-trip the toc-ids from `GET` through a `replace` to keep them stable. A paragraph carries no `toc-id`, so it is not addressable.
+- **On `append`, a duplicate `toc-id` is permanent.** The de-duplication covers one payload: the server never reads the live document's ids. So an id you send that a heading already owns is kept as sent. Both headings then share one chat thread, one fold and one `?id=` anchor. The first occurrence in document order owns the address, and the second is unaddressable. Omit `toc-id` and let the server mint one, or `GET` first and avoid ids already in use. `replace` cannot collide this way, because it clears the fragment before it writes.
 - **Unregistered attributes are dropped at encode.** ProseMirror keeps only attributes the server's extension set declares; anything else is discarded silently. `GET` returns what was stored, not what was sent.
 - **The first editable browser open may normalize the document**, so a `GET` after someone opens it can differ from what you wrote.
 
@@ -305,7 +310,9 @@ Live and cold documents take the same path. If collaborators have the document o
 
 **Concurrency** is CRDT last-writer-wins; there is no checksum or `If-Match` guard. Across replicas, `replace` guarantees removal of _persisted_ content — concurrent unsynced edits on another replica may survive as a union or be superseded by CRDT order. Both are safe; neither corrupts.
 
-**Retries.** `replace` is idempotent. `append` is at-least-once under a `503` or timeout — `GET` and verify before retrying one. A single persist-failed `500` is retriable with `mode=replace`. A _repeated_ persist-failed `500` for the same document means server-side persistence is wedged for it until the collaboration process restarts. Stop retrying and alert an operator, because further attempts keep mutating and broadcasting to live clients while never persisting. The operator signal is `document_content_apply_total{outcome="error"}` on the collaboration process's metrics endpoint.
+**Verifying a write.** A `200` means the payload reached the live document and its save was handed off for persistence. Your own write flushes at once, not on the store debounce. So the 10 s / 60 s figures in the **Staleness** note above describe browser edits, never your verification wait. Confirm a write by comparing the content `GET /api/documents/:documentId/content?format=json` returns.
+
+**Retries.** `replace` is idempotent. `append` is at-least-once under a `503` or timeout — `GET` and verify before retrying one. A retried `append` that carries `toc-id`s plants each one a second time — see [Content contract](#content-contract). A single persist-failed `500` is retriable with `mode=replace`. A _repeated_ persist-failed `500` for the same document means server-side persistence is wedged for it until the collaboration process restarts. Stop retrying and alert an operator, because further attempts keep mutating and broadcasting to live clients while never persisting. The operator signal is `document_content_apply_total{outcome="error"}` on the collaboration process's metrics endpoint.
 
 **Batching imports.** Every `PATCH` persists a full document version. Prefer one `replace` or a few large appends over many small ones. A 500-chunk import stores roughly 500 cumulative snapshots, which survive until autosave retention thins unnamed versions to one per document per day (`DOC_AUTOSAVE_RETENTION_DAYS`). Many small appends also run into the global rate limiter.
 
@@ -688,6 +695,8 @@ The strict decode is Markdown's real gate. A BOM is stripped, so a Windows-writt
 
 Images embedded in a Word file are re-hosted through [the media route](#post-apipluginshypermultimediadocumentid) so the result carries URLs the editor can parse instead of `data:` payloads. This needs `PUBLIC_RESTAPI_URL` — see [ENV.md](./ENV.md#public-origin). Without it, every image becomes a warning and the text still imports.
 
+**One Markdown shape still does not compose with `PATCH`.** A provider address written as an image — `![youtube](https://youtu.be/…)`, and the same for `vimeo`, `video` and `audio` — parses to a block embed sitting inside a paragraph, which `PATCH /content` refuses with `422 Invalid content for node paragraph`. Move that node to the root of the payload before you apply it, or write the address as a plain link. Every other shape composes: an image alone, in a list item, or in a blockquote all round trip.
+
 ```json
 {
   "success": true,
@@ -707,16 +716,20 @@ Conversion is lossy in named ways. Import reports what it changed through `warni
 
 **What export drops**
 
-| Content                                                                                             | DOCX                     | Markdown           | ODT                    |
-| --------------------------------------------------------------------------------------------------- | ------------------------ | ------------------ | ---------------------- |
-| The eight media embeds (`youtube`, `vimeo`, `loom`, `x`, `spotify`, `soundcloud`, `video`, `audio`) | link to the source       | link to the source | link to the source     |
-| Images                                                                                              | picture, own origin only | `![alt](src)`      | **link to the source** |
-| Highlight                                                                                           | **dropped**              | `==text==`         | kept                   |
-| In-progress upload placeholders                                                                     | removed                  | removed            | removed                |
+| Content                                                                                             | DOCX                                | Markdown           | ODT                    |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------ | ---------------------- |
+| The eight media embeds (`youtube`, `vimeo`, `loom`, `x`, `spotify`, `soundcloud`, `video`, `audio`) | link to the source                  | link to the source | link to the source     |
+| Images                                                                                              | picture — own origin, PNG/JPEG only | `![alt](src)`      | **link to the source** |
+| Highlight                                                                                           | **dropped**                         | `==text==`         | kept                   |
+| In-progress upload placeholders                                                                     | removed                             | removed            | removed                |
 
 DOCX is the one format whose converter fetches: it downloads every `<img src>` to embed the bytes. `src` is ordinary pad content, so only images on this server's own media origin (`PUBLIC_RESTAPI_URL`) are kept. A third-party or unreachable one is dropped rather than fetched, and with no `PUBLIC_RESTAPI_URL` set no image is embedded at all. An embed becomes a paragraph holding its caption, or its URL when it has no caption. ODF draws a picture through a measured frame. A remote image has no measured width, so ODT gives the reader a link it can follow rather than an empty box.
 
+The origin filter is not the last gate. A second filter sniffs the fetched bytes and keeps only PNG and JPEG, so a same-origin GIF, WebP or SVG is dropped as well. A redirect is refused rather than followed, because following one leaves the origin already checked. The run is budgeted at 128 images, 8 MiB inlined, 5 s per image and 30 s in total. Anything past the budget is removed. Both filters are security boundaries, not gaps. The origin check stops SSRF. The byte sniff keeps crafted headers away from the bundled `image-size` parsers, which loop forever on them.
+
 **What a DOCX round trip loses.** Export to `.docx` and import it back, and the following do not survive: underline, blockquote, code block, horizontal rules, and table header cells. Blockquote and code block each flatten to a paragraph, and table header cells demote to normal cells. Word's own `Title`, `Subtitle` and `Quote` styles are mapped on the way in. So a file authored in Word fares better than one that made this round trip.
+
+**Markdown keeps the media and never its placement.** The two shapes are in the table above: an image exports as `![alt](src)`, an embed as a link. Everything else the node holds is dropped — `width`, `height`, `float`, `margin`, `display`, `clear`, and provider flags such as SoundCloud's `visual`. An image also loses its `title` and its caption. An embed's caption survives, as the link text. Import cannot restore any of it. Export to `.docx`, or apply Tiptap JSON through `PATCH /api/documents/:documentId/content`, when placement matters.
 
 > **No export format carries `toc-id`.** That id is the identity a heading's chat channel, fold state and `?id=` deep link hang off. Imported content has none, so applying it with `mode=replace` re-keys every heading in the document and orphans all three, permanently. Re-editing does not bring them back. **Default to `mode=append`** and reserve `replace` for a document whose heading identities nobody depends on yet. An appended import brings its own title heading with it, and the title-first check only looks at the document's first node. Drop or demote `content[0]` unless you want a second title heading in the middle of the document.
 
@@ -743,6 +756,7 @@ An empty `warnings` array means a clean import.
 | `422`  | `UNPROCESSABLE_ENTITY`   | Import of a file that is neither a zip nor UTF-8 text, or one too damaged for its converter to open. Retrying will not fix it  |
 | `429`  | `RATE_LIMIT_EXCEEDED`    | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting) |
 | `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                  |
+| `503`  | `AUTH_UNAVAILABLE`       | Supabase token verification was unreachable                                                                                    |
 
 ## Media
 
@@ -752,9 +766,11 @@ Base path `/api/plugins/hypermultimedia` (`src/api/routers/hypermultimedia.route
 
 Upload one media file. Body is `multipart/form-data` with field name **`mediaFile`** (not `file`).
 
-Allowed MIME types: `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`, `video/mp4`, `video/webm`, `video/ogg`, `audio/mpeg`, `audio/ogg`, `audio/wav`, `application/pdf`. Max size is `DO_STORAGE_MAX_FILE_SIZE` (default 10 MB; see [ENV.md](./ENV.md)).
+Allowed MIME types, 34 in all (source of truth: `src/schemas/hypermultimedia.schema.ts` `ALLOWED_MIME_TYPES`): `image/jpeg`, `image/jpg`, `image/png`, `image/gif`, `image/webp`, `image/bmp`, `image/heic`, `image/heif`, `image/svg+xml`, `video/mp4`, `video/webm`, `video/quicktime`, `video/ogg`, `video/x-matroska`, `audio/mpeg`, `audio/webm`, `audio/wav`, `audio/ogg`, `audio/mp4`, `audio/aac`, `audio/flac`, `audio/opus`, `application/pdf`, `text/plain`, `text/csv`, `text/markdown`, `application/json`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `application/zip`. The list is a superset of the chat media allowlist, so any chat attachment can be re-hosted into a document. Max size is `DO_STORAGE_MAX_FILE_SIZE` (default 10 MB; see [ENV.md](./ENV.md)).
 
 Returns `201`. Shape depends on the backend (`type: "s3"` or local), including `fileType`, `fileName`, and `fileAddress`. Oversized files return `413` (`PAYLOAD_TOO_LARGE`); disallowed types return `415` (`UNSUPPORTED_MEDIA_TYPE`).
+
+A missing or invalid token is `401`. A body more than 1 MiB over that cap is refused with `413` before the handler runs. The document row is then checked before the file's bytes are examined: a missing or soft-deleted document is `404`. A private document the caller does not own is `403`, carrying the same top-level `access` hint the slug read returns. A `readOnly` document the caller does not own is `403` too.
 
 ### GET /api/plugins/hypermultimedia/:documentId/:mediaId
 
@@ -780,7 +796,7 @@ Errors (`400`) use this module's own shape — top-level `code` and `message`, n
 
 ## Email
 
-Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → SMTP. **The `/api/email/send` endpoint was removed.** The endpoints below are internal triggers and webhooks; all except `unsubscribe` require the service-role key.
+Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → SMTP. **The `/api/email/send` endpoint was removed.** The endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `health`, `status` and both `unsubscribe` routes need no credential.
 
 ### POST /api/email/send-generic
 
@@ -816,7 +832,9 @@ RFC 8058 `List-Unsubscribe-Post` handler for mail clients. Returns JSON (`{ "suc
 
 ## Admin
 
-Base path `/api/admin` (`src/api/routers/admin.router.ts`). Every route requires a valid Supabase JWT for a user present in `admin_users`. Endpoints below are grouped as in the router.
+Base path `/api/admin` (`src/api/routers/admin.router.ts`). Every route requires a valid Supabase JWT for a user present in `admin_users`. The tables below list the routes the dashboard uses most, grouped as in the router. `GET /openapi.json` is the complete list.
+
+Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-storage/summary` report the Supabase **chat** media bucket, not editor media.
 
 **Dashboard & users**
 
@@ -911,7 +929,7 @@ await supabase.rpc('unregister_push_subscription', { p_device_id: 'unique-device
 
 ## Rate limiting
 
-A global limiter (`src/middleware/index.ts`) applies to every non-`OPTIONS` request except `/health` and `/health/*`. It is keyed on client IP + User-Agent and backed by Redis; **when Redis is unavailable, rate limiting is disabled** (requests pass). Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip the limiter.
+A global limiter (`src/middleware/index.ts`) applies to every non-`OPTIONS` request except `/health` and `/health/*`. It is keyed on client IP alone and backed by Redis; **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip the limiter.
 
 The single limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. There is no separate per-role tier in the REST middleware.
 
