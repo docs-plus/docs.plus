@@ -62,6 +62,17 @@ If the first run stops, see [Development Setup](CONTRIBUTING.md#-development-set
 
 The local stack runs two databases. That command resets the Supabase database on port 54322 only. The Prisma database `docsplus` runs in the container `docsy-postgres-local` on port 5432, and it survives the reset.
 
+## 📖 Documentation
+
+Full documentation lives in [`docs/`](docs/README.md).
+
+| I want to                      | Read                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| Run docs.plus on my own server | [Self-hosting](docs/self-hosting/README.md) → [Install](docs/self-hosting/install.md) |
+| Call the API from my code      | [API overview](docs/api/README.md) → [Quickstart](docs/api/quickstart.md)             |
+| Change the code                | [CONTRIBUTING.md](CONTRIBUTING.md)                                                    |
+| Understand a past decision     | [Decision records](docs/README.md#decision-records)                                   |
+
 <details>
 <summary><strong>🐳 Alternative: full Docker (`make up-dev`)</strong></summary>
 
@@ -258,49 +269,20 @@ PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
 
 ## 🚀 Production Deployment
 
-Production-ready setup for **mid-level scale deployments** (small-medium teams, moderate traffic).
+**Read [Self-hosting](docs/self-hosting/README.md) first, then follow [Install](docs/self-hosting/install.md).** That is the full path, and it covers four steps this page used to omit: creating the external Docker network, running the migration as its own step, editing the five hard-coded Traefik hostnames, and the three template values that are wrong for a server.
 
-**Architecture:** 🏗️
+You must supply your own PostgreSQL, Supabase project, object storage, email sender, and domain. The compose file provides none of them.
 
-- 📈 Horizontal scaling: REST API (2), WebSocket (2), Worker (2), Webapp (2), Admin Dashboard (1)
-- 🔀 Traefik v3 reverse proxy with automatic SSL (Let's Encrypt) and load balancing
-- ⚡ Resource limits, health checks, and zero-downtime blue-green deploys
-- 📊 Production-optimized logging and connection pooling
+**Architecture:** Traefik v3 terminates TLS with Let's Encrypt and load-balances. The REST API, collaboration server, worker, and webapp each run two replicas; the admin dashboard runs one. Deploys are best-effort rolling, not true zero-downtime.
 
-### Setup
+**Scaling.** No compose file reads a replica environment variable. Two Make targets apply fixed counts:
 
-1. **⚙️ Configure Environment**
+```bash
+make scale-webapp        # webapp=3
+make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
+```
 
-   ```bash
-   cp .env.example .env.production
-   ```
-
-   Update: database credentials, JWT secret, Supabase URLs, storage credentials, CORS origins.
-
-2. **🔨 Build & Deploy**
-
-   ```bash
-   make build
-   make up-prod
-   ```
-
-3. **📈 Scaling**
-   No compose file reads a replica environment variable. Two Make targets apply fixed counts:
-
-   ```bash
-   make scale-webapp        # webapp=3
-   make scale-hocuspocus    # rest-api=3, hocuspocus-server=5, hocuspocus-worker=3
-   ```
-
-   For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
-
-**Production Recommendations:** 💡
-
-- 🗄️ Use managed database (AWS RDS, DigitalOcean, Supabase Cloud)
-- 🔒 Configure SSL/TLS certificates
-- 📊 Set up monitoring (Prometheus, Grafana)
-- 💾 Implement database backups
-- 🔐 Secure all secrets and credentials
+For any other count, edit `deploy.replicas` in `docker-compose.prod.yml`.
 
 ## 🎨 Badges
 
@@ -351,6 +333,8 @@ MIT License - See [LICENSE](LICENSE)
 - 🐦 **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
 - 🐙 **GitHub**: [docs.plus](https://github.com/docs-plus/docs.plus)
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
+- Privacy: <https://docs.plus/privacy>
+- Terms: <https://docs.plus/terms>
 
 ---
 

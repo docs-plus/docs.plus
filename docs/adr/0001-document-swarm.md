@@ -1,0 +1,3 @@
+# Document swarm: Playwright multi-actor bot
+
+We need paced Demo collaboration and Stress load against real pads without hitting production. The swarm lives in `@docs.plus/document-swarm`, drives isolated Playwright browser contexts as seeded Swarm Actors (session inject via Supabase service role — not Google One Tap), and only opens public non-Read-only Swarm Targets on allowlisted local/stage hosts. Demo defaults low contention + until-stopped; Stress defaults higher contention, duration, and a Swarm Report exit code. Rejected: anon-only actors (no chat/presence ownership), Cypress-as-swarm, API-only Stress (wrong fidelity), and unscoped prod URLs.
