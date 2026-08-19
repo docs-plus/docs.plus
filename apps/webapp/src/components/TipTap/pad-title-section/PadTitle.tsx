@@ -91,16 +91,15 @@ const PadTitle = () => {
 
           {/* History is read-only for everyone. The server refuses `history.revert`
               for a visitor (hocuspocus.server.ts), so reading a version is safe. */}
-          {
-            <Button
-              variant="ghost"
-              shape="circle"
-              onClick={() => (window.location.hash = 'history')}
-              tooltip="History"
-              tooltipPlacement="bottom">
-              <Icons.history size={20} className="text-base-content/70" />
-            </Button>
-          }
+          <Button
+            variant="ghost"
+            shape="circle"
+            onClick={() => (window.location.hash = 'history')}
+            tooltip="History"
+            tooltipPlacement="bottom"
+            aria-label="History">
+            <Icons.history size={20} className="text-base-content/70" />
+          </Button>
 
           {/* Notifications - authenticated users only */}
           {isAuthServiceAvailable && user && (
