@@ -1,7 +1,6 @@
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
-import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -18,7 +17,6 @@ type Props = {
 }
 
 export const Breadcrumb = ({ className }: Props) => {
-  const { query } = useRouter()
   const { variant } = useChatroomContext()
   const updateChatRoom = useChatStore((state) => state.updateChatRoom)
   const { headingId } = useChatStore((state) => state.chatRoom)
@@ -34,13 +32,12 @@ export const Breadcrumb = ({ className }: Props) => {
     if (!editor || !headingId || providerSyncing || editor.isDestroyed) return
     if (headingId === workspaceId) return
 
-    const docSlug = String(query.slugs?.at(0) ?? '')
-    const headingAddress = resolveHeadingBreadcrumbs(editor, headingId, docSlug)
+    const headingAddress = resolveHeadingBreadcrumbs(editor, headingId)
     if (!headingAddress) return
 
     updateChatRoom('headingPath', headingAddress)
     setHeadingPath(headingAddress)
-  }, [headingId, editor, providerSyncing, loading, workspaceId, query, updateChatRoom])
+  }, [headingId, editor, providerSyncing, loading, workspaceId, updateChatRoom])
 
   const openChatContainerHandler = useCallback(
     (e: React.MouseEvent, heading: HeadingBreadcrumbItem) => {

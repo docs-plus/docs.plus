@@ -8,6 +8,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Block style** — the outline role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.
 - **Subtitle** — a paragraph style, not a heading. It is not a TOC heading.
 - **HeadingScale** — visual size by rank inside a section. Distinct from Block style. The same heading level can look larger or smaller depending on the section.
+- **Heading slug trail** (`?h=`) — outline ancestry from the target heading up through each parent to Title. Not a join of every heading before the target. `id=` is the resolver.
 
 ## Document access
 

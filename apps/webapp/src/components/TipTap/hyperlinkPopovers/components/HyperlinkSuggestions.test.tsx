@@ -6,8 +6,8 @@ import type { BookmarkSuggestion, HeadingSuggestion } from '../types'
 import { HyperlinkSuggestions } from './HyperlinkSuggestions'
 
 const headings: HeadingSuggestion[] = [
-  { kind: 'heading', id: 'h1', title: 'Intro', level: 1, breadcrumb: ['intro'] },
-  { kind: 'heading', id: 'h2', title: 'Setup', level: 2, breadcrumb: ['intro', 'setup'] }
+  { kind: 'heading', id: 'h1', title: 'Intro', level: 1 },
+  { kind: 'heading', id: 'h2', title: 'Setup', level: 2 }
 ]
 
 const bookmarks: BookmarkSuggestion[] = [
