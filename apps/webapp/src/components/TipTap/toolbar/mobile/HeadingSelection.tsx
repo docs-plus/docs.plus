@@ -44,7 +44,11 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   return (
     <div
-      className={`headingSelection join rounded-field border-base-300 min-h-11 border${style.kind === 'normal' ? '' : 'is-active'}`}
+      className={
+        style.kind === 'normal'
+          ? 'headingSelection join rounded-field border-base-300 min-h-11 border'
+          : 'headingSelection join rounded-field border-base-300 is-active min-h-11 border'
+      }
       role="group"
       aria-label="Heading level">
       <ToolbarButton
