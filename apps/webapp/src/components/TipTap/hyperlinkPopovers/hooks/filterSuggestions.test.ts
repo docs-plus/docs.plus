@@ -5,22 +5,19 @@ const headings = [
     kind: 'heading' as const,
     id: 'h1',
     title: 'Setup Guide',
-    level: 1 as const,
-    breadcrumb: ['setup-guide']
+    level: 1 as const
   },
   {
     kind: 'heading' as const,
     id: 'h2',
     title: 'Setup Helpers',
-    level: 2 as const,
-    breadcrumb: ['setup-guide', 'setup-helpers']
+    level: 2 as const
   },
   {
     kind: 'heading' as const,
     id: 'h3',
     title: 'Run tests',
-    level: 1 as const,
-    breadcrumb: ['run-tests']
+    level: 1 as const
   }
 ]
 
@@ -79,8 +76,7 @@ describe('filterSuggestions', () => {
           kind: 'heading' as const,
           id: 'h4',
           title: 'New setup notes',
-          level: 1 as const,
-          breadcrumb: ['x']
+          level: 1 as const
         }
       ],
       bookmarks: []

@@ -12,8 +12,6 @@ export interface HeadingSuggestion {
   id: string
   title: string
   level: HeadingLevel
-  /** Slug ancestors (inclusive); drives indent + future deep-link. */
-  breadcrumb: string[]
 }
 
 export interface BookmarkSuggestion {

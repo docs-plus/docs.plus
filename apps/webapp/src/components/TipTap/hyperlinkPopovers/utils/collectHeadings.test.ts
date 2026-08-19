@@ -39,29 +39,13 @@ describe('collectHeadings', () => {
     expect(collectHeadings(editor)).toHaveLength(1)
   })
 
-  it('builds a breadcrumb of slug ancestors for each heading', () => {
+  it('emits headings in document order, including later H1s', () => {
     const editor = makeEditor([
       { type: TIPTAP_NODES.HEADING_TYPE, text: 'Intro', level: 1, tocId: 'a' },
       { type: TIPTAP_NODES.HEADING_TYPE, text: 'Setup', level: 2, tocId: 'b' },
       { type: TIPTAP_NODES.HEADING_TYPE, text: 'Run Tests', level: 3, tocId: 'c' },
       { type: TIPTAP_NODES.HEADING_TYPE, text: 'Conclusion', level: 1, tocId: 'd' }
     ])
-    const out = collectHeadings(editor)
-    expect(out.map((h) => h.breadcrumb)).toEqual([
-      ['intro'],
-      ['intro', 'setup'],
-      ['intro', 'setup', 'run-tests'],
-      ['conclusion']
-    ])
-  })
-
-  it('truncates breadcrumb when level decreases', () => {
-    const editor = makeEditor([
-      { type: TIPTAP_NODES.HEADING_TYPE, text: 'A', level: 1, tocId: 'a' },
-      { type: TIPTAP_NODES.HEADING_TYPE, text: 'B', level: 3, tocId: 'b' },
-      { type: TIPTAP_NODES.HEADING_TYPE, text: 'C', level: 2, tocId: 'c' }
-    ])
-    const out = collectHeadings(editor)
-    expect(out[2]).toMatchObject({ id: 'c', breadcrumb: ['a', 'c'] })
+    expect(collectHeadings(editor).map((h) => h.id)).toEqual(['a', 'b', 'c', 'd'])
   })
 })

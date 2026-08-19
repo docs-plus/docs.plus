@@ -1,9 +1,9 @@
 import { CHAT_OPEN } from '@services/eventsHub'
 import type { Editor } from '@tiptap/react'
-import { TIPTAP_NODES } from '@types'
+import { headingSlug } from '@utils/headingSlugTrail'
+import { buildHeadingHref } from '@utils/link-helpers'
 import { scrollToHeading as scrollPadHeading } from '@utils/scrollToHeading'
 import PubSub from 'pubsub-js'
-import slugify from 'slugify'
 
 export type NavigateToHeadingOptions = {
   openChat?: boolean
@@ -19,23 +19,7 @@ export function navigateToHeading(
   const { openChat = false, updateUrl = true } = options
 
   if (updateUrl) {
-    const doc = editor.state.doc
-    const breadcrumb: string[] = []
-
-    for (let i = 0; i < doc.content.childCount; i++) {
-      const child = doc.content.child(i)
-
-      if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
-
-      breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
-
-      if ((child.attrs['toc-id'] as string) === headingId) break
-    }
-
-    const url = new URL(window.location.href)
-    url.searchParams.set('h', breadcrumb.join('>'))
-    url.searchParams.set('id', headingId)
-    window.history.replaceState({}, '', url)
+    window.history.replaceState({}, '', buildHeadingHref(editor, headingId))
   }
 
   scrollPadHeading(headingId, { behavior: 'smooth', block: 'start' })
@@ -64,7 +48,7 @@ export function navigateToDocTitle(options: {
   if (!workspaceId) return
 
   const url = new URL(window.location.href)
-  url.searchParams.set('h', slugify(title.toLowerCase().trim()))
+  url.searchParams.set('h', headingSlug(title))
   url.searchParams.set('id', workspaceId)
   window.history.replaceState({}, '', url)
 

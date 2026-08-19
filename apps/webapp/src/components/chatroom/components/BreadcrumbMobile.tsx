@@ -1,13 +1,11 @@
 import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
-import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 
 import { type HeadingBreadcrumbItem, resolveHeadingBreadcrumbs } from '../utils/buildHeadingPath'
 import { ChatroomBreadcrumbSkeleton } from './skeleton'
 
 const BreadcrumbMobile = () => {
-  const { query } = useRouter()
   const updateChatRoom = useChatStore((state) => state.updateChatRoom)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const [headingPath, setHeadingPath] = useState<HeadingBreadcrumbItem[]>([])
@@ -22,13 +20,12 @@ const BreadcrumbMobile = () => {
     if (!editor || providerSyncing || !headingId) return
     if (workspaceId === headingId) return
 
-    const docSlug = String(query.slugs?.at(0) ?? '')
-    const headingAddress = resolveHeadingBreadcrumbs(editor, headingId, docSlug)
+    const headingAddress = resolveHeadingBreadcrumbs(editor, headingId)
     if (!headingAddress) return
 
     updateChatRoom('headingPath', headingAddress)
     setHeadingPath(headingAddress)
-  }, [headingId, editor, providerSyncing, loading, workspaceId, query, updateChatRoom])
+  }, [headingId, editor, providerSyncing, loading, workspaceId, updateChatRoom])
 
   if (workspaceId === headingId) {
     return (
