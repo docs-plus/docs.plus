@@ -42,7 +42,8 @@ const ownedLifecycle = (
     '401': { $ref: '#/components/responses/Unauthorized' },
     '403': { $ref: '#/components/responses/Forbidden' },
     '404': { $ref: '#/components/responses/NotFound' },
-    '429': rateLimitedRef
+    '429': rateLimitedRef,
+    '503': { $ref: '#/components/responses/ServiceUnavailable' }
   }
 })
 
@@ -89,7 +90,8 @@ export const documentsPaths: OpenApiPaths = {
         '409': { $ref: '#/components/responses/Conflict' },
         '413': { $ref: '#/components/responses/PayloadTooLarge' },
         '422': { $ref: '#/components/responses/UnprocessableEntity' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
   },
@@ -135,7 +137,8 @@ export const documentsPaths: OpenApiPaths = {
           }
         },
         '404': { $ref: '#/components/responses/NotFound' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     },
     put: {
@@ -152,6 +155,8 @@ export const documentsPaths: OpenApiPaths = {
           $ref: '#/components/schemas/DocumentSummary'
         }),
         '400': { $ref: '#/components/responses/ZodValidationError' },
+        '403': { $ref: '#/components/responses/Forbidden' },
+        '404': { $ref: '#/components/responses/NotFound' },
         '429': rateLimitedRef
       }
     },
@@ -170,7 +175,8 @@ export const documentsPaths: OpenApiPaths = {
         }),
         '401': { $ref: '#/components/responses/Unauthorized' },
         '403': { $ref: '#/components/responses/Forbidden' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
   },
@@ -203,7 +209,8 @@ export const documentsPaths: OpenApiPaths = {
         '400': { $ref: '#/components/responses/ValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
         '403': { $ref: '#/components/responses/Forbidden' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
   },
@@ -224,7 +231,8 @@ export const documentsPaths: OpenApiPaths = {
         }),
         '400': { $ref: '#/components/responses/ZodValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
   },
@@ -244,7 +252,8 @@ export const documentsPaths: OpenApiPaths = {
         }),
         '400': { $ref: '#/components/responses/ZodValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
   }

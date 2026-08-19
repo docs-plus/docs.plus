@@ -259,7 +259,7 @@ const legacyResponse = (description: string): OpenApiResponse =>
 
 const rateLimited: OpenApiResponse = {
   description:
-    'Global limiter tripped: `RATE_LIMIT_MAX` requests (default 100) per 15-minute window, keyed on client IP + User-Agent.',
+    'Global limiter tripped: `RATE_LIMIT_MAX` requests (default 100) per 15-minute window, keyed on client IP.',
   headers: {
     'Retry-After': { description: 'Seconds until retry.', schema: { type: 'integer' } },
     'X-RateLimit-Limit': { schema: { type: 'integer' } },

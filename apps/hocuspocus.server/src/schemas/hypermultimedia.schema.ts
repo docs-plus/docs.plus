@@ -23,3 +23,48 @@ export const mediaIdParamSchema = z.object({
 
 export type DocumentIdParam = z.infer<typeof documentIdParamSchema>
 export type MediaIdParam = z.infer<typeof mediaIdParamSchema>
+
+// MUST stay a superset of the chat media allowlist (webapp chatMediaMime.ts
+// CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase scripts/12-buckets.sql). The superset lets
+// "copy chat media to document" re-host any chat attachment. Chat attachments include voice
+// notes (audio/webm), heic/bmp, mov/mkv, and office docs / archives (inserted as download links).
+export const ALLOWED_MIME_TYPES = [
+  // images
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
+  'image/svg+xml',
+  // video
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/ogg',
+  'video/x-matroska',
+  // audio
+  'audio/mpeg',
+  'audio/webm',
+  'audio/wav',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/aac',
+  'audio/flac',
+  'audio/opus',
+  // documents + archives
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'text/markdown',
+  'application/json',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/zip'
+]

@@ -12,52 +12,8 @@ import type { MediaReference } from '../../lib/rehostMediaUrls'
 import { extractFileType } from '../../lib/storage/fileType'
 import * as localStorage from '../../lib/storage/storage.local'
 import * as S3Storage from '../../lib/storage/storage.s3'
+import { ALLOWED_MIME_TYPES } from '../../schemas/hypermultimedia.schema'
 import { checkEnvBoolean } from '../../utils'
-
-// MUST stay a superset of the chat media allowlist (webapp chatMediaMime.ts
-// CHAT_MEDIA_ALLOWED_MIME_TYPES + packages/supabase scripts/12-buckets.sql). The superset lets
-// "copy chat media to document" re-host any chat attachment. Chat attachments include voice
-// notes (audio/webm), heic/bmp, mov/mkv, and office docs / archives (inserted as download links).
-const ALLOWED_MIME_TYPES = [
-  // images
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/bmp',
-  'image/heic',
-  'image/heif',
-  'image/svg+xml',
-  // video
-  'video/mp4',
-  'video/webm',
-  'video/quicktime',
-  'video/ogg',
-  'video/x-matroska',
-  // audio
-  'audio/mpeg',
-  'audio/webm',
-  'audio/wav',
-  'audio/ogg',
-  'audio/mp4',
-  'audio/aac',
-  'audio/flac',
-  'audio/opus',
-  // documents + archives
-  'application/pdf',
-  'text/plain',
-  'text/csv',
-  'text/markdown',
-  'application/json',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/zip'
-]
 
 export const getMedia = async (documentId: string, mediaId: string, c: Context) => {
   if (checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {

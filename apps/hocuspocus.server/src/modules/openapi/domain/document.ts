@@ -20,7 +20,7 @@ const DESCRIPTION = `REST surface of \`@docs.plus/hocuspocus\`. The collaboratio
 
 **Error envelope.** The canonical shape is \`ErrorEnvelope\`; \`error.details\` appears only when \`NODE_ENV=development\`. Several handlers still return ad-hoc shapes: \`LegacyError\` (email handlers, admin middleware, media-upload guards) and \`LinkMetadataError\` (top-level \`code\`/\`message\`). Wiring \`getErrorResponse\` everywhere is a separate task; the variants are documented as-is rather than smoothed over.
 
-**Rate limiting.** A global limiter covers every non-\`OPTIONS\` request except \`/health\` and \`/health/*\`: \`RATE_LIMIT_MAX\` requests (default 100) per 15-minute window, keyed on client IP + User-Agent, backed by Redis. When Redis is unavailable the limiter is disabled and requests pass. Requests with neither \`x-forwarded-for\` nor \`x-real-ip\` skip it. Every response carries \`X-RateLimit-Limit\`, \`X-RateLimit-Remaining\` and \`X-RateLimit-Reset\`.
+**Rate limiting.** A global limiter covers every non-\`OPTIONS\` request except \`/health\` and \`/health/*\`: \`RATE_LIMIT_MAX\` requests (default 100) per 15-minute window, keyed on client IP, backed by Redis. When Redis is unavailable the limiter is disabled and requests pass. Requests with neither \`x-forwarded-for\` nor \`x-real-ip\` skip it. Every response carries \`X-RateLimit-Limit\`, \`X-RateLimit-Remaining\` and \`X-RateLimit-Reset\`.
 
 **Push notifications** have no HTTP endpoint beyond \`GET /health/push\`. Delivery runs through pgmq and devices register through the \`register_push_subscription\` / \`unregister_push_subscription\` Supabase RPCs.
 

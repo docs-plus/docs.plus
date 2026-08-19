@@ -1,4 +1,5 @@
 import {
+  ALLOWED_MIME_TYPES,
   documentIdParamSchema,
   mediaIdParamSchema
 } from '../../../../schemas/hypermultimedia.schema'
@@ -7,22 +8,6 @@ import { rateLimitedRef } from '../components'
 import { toParameters } from '../jsonSchema'
 
 const tags = ['Media']
-
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml',
-  'video/mp4',
-  'video/webm',
-  'video/ogg',
-  'audio/mpeg',
-  'audio/ogg',
-  'audio/wav',
-  'application/pdf'
-]
 
 export const mediaPaths: OpenApiPaths = {
   '/api/plugins/hypermultimedia/{documentId}': {
@@ -76,14 +61,43 @@ export const mediaPaths: OpenApiPaths = {
           }
         },
         '401': { $ref: '#/components/responses/Unauthorized' },
-        '413': { $ref: '#/components/responses/PayloadTooLarge' },
+        // `access` is optional here, unlike the slug read: the read-only arm
+        // returns a plain envelope, and only the privacy arm carries the hint.
+        '403': {
+          description:
+            'Private document and the caller is not its owner, or the document is read-only and the caller is not its owner.',
+          content: {
+            'application/json': {
+              schema: {
+                allOf: [
+                  { $ref: '#/components/schemas/ErrorEnvelope' },
+                  {
+                    type: 'object',
+                    properties: {
+                      access: { type: 'string', enum: ['sign-in-required', 'denied'] }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        '404': { $ref: '#/components/responses/NotFound' },
+        '413': {
+          description:
+            'Body exceeds `DO_STORAGE_MAX_FILE_SIZE` (default 10 MB) plus a 1 MiB margin for the multipart envelope. This is the media cap, not the 5 MiB content cap.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
+          }
+        },
         '415': {
           description: 'Disallowed MIME type.',
           content: {
             'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } }
           }
         },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
   },

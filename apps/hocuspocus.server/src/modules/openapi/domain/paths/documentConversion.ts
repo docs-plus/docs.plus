@@ -32,7 +32,8 @@ const conversionErrors = {
   '403': { $ref: '#/components/responses/Forbidden' },
   '404': { $ref: '#/components/responses/NotFound' },
   '429': rateLimitedRef,
-  '500': { $ref: '#/components/responses/InternalError' }
+  '500': { $ref: '#/components/responses/InternalError' },
+  '503': { $ref: '#/components/responses/ServiceUnavailable' }
 }
 
 const importResult: JsonSchema = {
