@@ -6,10 +6,12 @@ import TextInput from '@components/ui/TextInput'
 import { useAsyncRequest } from '@hooks/useAsyncRequest'
 import { Provider } from '@supabase/supabase-js'
 import { useMutation } from '@tanstack/react-query'
+import { browserSupportsPasskeys, toPasskeyOutcome } from '@utils/passkey'
 import { supabaseClient } from '@utils/supabase'
-import { useState } from 'react'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { FcGoogle } from 'react-icons/fc'
-import { LuMail, LuSparkles } from 'react-icons/lu'
+import { LuKeyRound, LuMail, LuSparkles } from 'react-icons/lu'
 
 interface SignInFormProps {
   /** Visual variant - 'card' adds border/padding, 'inline' has none */
@@ -34,12 +36,17 @@ const SignInForm = ({
   className = '',
   returnTo
 }: SignInFormProps) => {
+  const router = useRouter()
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [highlightEmailInput, setHighlightEmailInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
   const [emailSent, setEmailSent] = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
+  const [showPasskey, setShowPasskey] = useState(false)
+
+  useEffect(() => setShowPasskey(browserSupportsPasskeys()), [])
 
   const {
     loading: googleLoading,
@@ -108,20 +115,17 @@ const SignInForm = ({
     setLoading(true)
     setBtnSubmitText('Sending magic link')
 
-    const pathname = window.location.pathname.split('/')
-    pathname.shift()
-    const redirectPathname = pathname.join('/')
+    // Preserve the full return context (deep-link / open_heading_chat params) exactly
+    // like the OAuth path above. The env is an optional base override; without it we
+    // use this origin, so a build that misses the arg cannot send "undefined" to Auth.
+    const redirectBase =
+      process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT || window.location.origin
+    const returnPath = returnTo ?? window.location.pathname + window.location.search
 
     const { error } = await supabaseClient.auth.signInWithOtp({
       email: magicLinkEmail,
       options: {
-        // Preserve the full return context (deep-link / open_heading_chat params)
-        // exactly like the OAuth path. Magic-link users must land back where they were.
-        // The returnTo value (when set) already carries pathname+search. The OTP base
-        // ends in '/', so strip its leading slash to match the reconstructed-path format.
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT +
-          (returnTo ? returnTo.replace(/^\//, '') : redirectPathname + window.location.search)
+        emailRedirectTo: new URL(returnPath, redirectBase).href
       }
     })
 
@@ -135,7 +139,25 @@ const SignInForm = ({
     setEmailSent(true)
   }
 
-  const isAnyLoading = isPending || loading || googleLoading
+  // onAuthStateChange deliberately ignores SIGNED_IN, so the session that
+  // signInWithPasskey returns never reaches the profile fetch on its own.
+  // Reloading is the same escape hatch Google One Tap uses.
+  const handlePasskeySignIn = async () => {
+    setPasskeyLoading(true)
+    try {
+      const { error } = await supabaseClient.auth.signInWithPasskey()
+      if (!error) {
+        router.reload()
+        return
+      }
+      const outcome = toPasskeyOutcome(error, 'Could not sign in with a passkey.')
+      if (outcome.status === 'error') toast.Error(outcome.message)
+    } finally {
+      setPasskeyLoading(false)
+    }
+  }
+
+  const isAnyLoading = isPending || loading || googleLoading || passkeyLoading
 
   const containerClasses = variant === 'card' ? 'bg-base-100 rounded-box p-5 shadow-lg sm:p-6' : ''
 
@@ -161,6 +183,17 @@ const SignInForm = ({
             startIcon={<FcGoogle className="size-5" />}>
             Continue with Google
           </Button>
+
+          {showPasskey && (
+            <Button
+              className="btn btn-block border-base-300 bg-base-100 text-base-content hover:border-base-300 hover:bg-base-200 rounded-box h-11 border font-semibold transition-colors sm:h-12"
+              onClick={handlePasskeySignIn}
+              loading={passkeyLoading}
+              disabled={isAnyLoading}
+              startIcon={<LuKeyRound className="text-primary size-5" />}>
+              Continue with a passkey
+            </Button>
+          )}
 
           <div className="divider text-base-content/40 text-xs sm:text-sm">OR</div>
 

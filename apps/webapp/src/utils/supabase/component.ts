@@ -13,6 +13,11 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Passkeys are an experimental Auth API and every method throws without this
+      // opt-in. Browser only — no server factory runs a WebAuthn ceremony.
+      auth: {
+        experimental: { passkey: true }
+      },
       realtime: {
         // Disable automatic reconnection when offline to prevent spam
         // Reconnection will happen when browser comes back online

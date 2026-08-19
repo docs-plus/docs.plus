@@ -6,8 +6,7 @@ export interface IAuthStore {
   session: any | null
   profile: TProfile | null
   loading: boolean
-  isAnonymous: boolean
-  setSession: (session: any, isAnonymous?: boolean) => void
+  setSession: (session: any) => void
   setProfile: (profile: TProfile | null) => void
   setLoading: (loading: boolean) => void
 }
@@ -16,8 +15,7 @@ const authStore = create<IAuthStore>((set) => ({
   session: null,
   profile: null,
   loading: true,
-  isAnonymous: false,
-  setSession: (session, isAnonymous = false) => set({ session, isAnonymous, loading: false }),
+  setSession: (session) => set({ session, loading: false }),
   setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading })
 }))

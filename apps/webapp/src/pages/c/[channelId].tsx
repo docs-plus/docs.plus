@@ -11,7 +11,7 @@ function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null)
     full_name: 'Tester'
   } as ReturnType<typeof useAuthStore.getState>['profile']
   useAuthStore.getState().setProfile(e2eProfile)
-  useAuthStore.getState().setSession({ user: { id: 'user-1' } }, false)
+  useAuthStore.getState().setSession({ user: { id: 'user-1' } })
 
   void supabaseClient.auth.setSession({
     access_token: 'e2e-access-token',

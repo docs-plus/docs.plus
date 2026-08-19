@@ -113,7 +113,6 @@ interface DocumentsSectionProps {
 
 const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const userId = useAuthStore((state) => state.profile?.id)
-  const isAnonymous = useAuthStore((state) => state.isAnonymous)
 
   const sortLabelId = useId()
 
@@ -180,7 +179,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     // The menu's optimistic patch keys on the exact same 4-tuple (via makeDocumentsKey);
     // feed the DEBOUNCED searchQuery here, never inputValue, or the patch no-ops.
     queryKey: makeDocumentsKey(userId ?? '', searchQuery, sortKey),
-    enabled: !!userId && !isAnonymous,
+    enabled: !!userId,
     staleTime: 30_000,
     initialPageParam: 0,
     queryFn: ({ pageParam }) => fetchMyDocumentsPage(userId!, pageParam, searchQuery, sortKey),
@@ -193,7 +192,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const docs = data?.pages.flatMap((p) => p.docs) ?? []
   const total = data?.pages[0]?.total ?? 0
 
-  const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId && !isAnonymous)
+  const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId)
 
   const queryClient = useQueryClient()
   const { deleteDocument, restoreDocument } = useDeleteDocument()
@@ -324,7 +323,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     restoreDocument({ documentId }, { onError: () => toast.Error('Couldn’t restore document') })
   }
 
-  if (!userId || isAnonymous) {
+  if (!userId) {
     return (
       <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:flex max-md:min-h-full max-md:flex-col">
         <SettingsCard className="max-md:flex max-md:flex-1 max-md:flex-col max-md:justify-center max-md:rounded-none max-md:border-0 max-md:bg-transparent">

@@ -2,6 +2,7 @@ import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import { LuShield } from 'react-icons/lu'
 
+import PasskeysCard from './PasskeysCard'
 import SettingsCard from './SettingsCard'
 
 const SecuritySection = () => {
@@ -28,6 +29,8 @@ const SecuritySection = () => {
           disabled
         />
       </SettingsCard>
+
+      <PasskeysCard />
     </div>
   )
 }
