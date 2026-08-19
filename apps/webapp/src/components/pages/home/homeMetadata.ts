@@ -17,7 +17,7 @@ export const HOME_OG_IMAGE = `${SITE_ORIGIN}/icons/android-chrome-512x512.png`
 export const HOME_OG_IMAGE_ALT = 'docs.plus logo'
 
 /** Paths allowed in `sitemap.xml` (user docs stay `noindex`). */
-export const INDEXABLE_PATHS = ['/'] as const
+export const INDEXABLE_PATHS = ['/', '/privacy', '/terms'] as const
 
 export function buildHomeWebSiteJsonLd(): Record<string, string> {
   return {
@@ -32,10 +32,11 @@ export function buildHomeWebSiteJsonLd(): Record<string, string> {
 export function buildSitemapXml(): string {
   const entries = INDEXABLE_PATHS.map((path) => {
     const loc = path === '/' ? HOME_CANONICAL_URL : `${SITE_ORIGIN}${path}`
+    const priority = path === '/' ? '1.0' : '0.4'
     return `  <url>
     <loc>${loc}</loc>
     <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <priority>${priority}</priority>
   </url>`
   })
 
