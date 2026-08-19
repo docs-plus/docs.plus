@@ -10,11 +10,11 @@
 #   - Dynamic routing: Docker labels (below)
 #
 # Rolling-Deploy Strategy (best-effort, NOT true zero-downtime):
-#   Traefik only routes to HEALTHY containers, but a changed image tag alters
-#   the compose config hash, so the deploy's scale-up RECREATES the old
-#   containers — each service has a brief no-healthy-backend window until the
-#   new replicas pass health checks. retry@file on idempotent routers masks
-#   the resulting connection errors for clients.
+#   Traefik only routes to HEALTHY containers. Prod deploy uses
+#   `up --no-recreate --scale` so a DEPLOY_TAG change does not recreate the
+#   serving replicas. A plain `up --scale` without `--no-recreate` still
+#   recreates old containers and takes the fleet to zero. retry@file on
+#   idempotent routers masks connection errors during the hand-off.
 #
 # Usage:
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
@@ -476,6 +476,10 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_SUPABASE_WS_URL: ${NEXT_PUBLIC_SUPABASE_WS_URL}
+        # Next inlines NEXT_PUBLIC_* at build time, so a runtime-only value never
+        # reaches the client bundle. Both must be build args.
+        NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT: ${NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT:-}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
         NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
         NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
@@ -500,6 +504,7 @@ services:
       # NEXT_PUBLIC vars for runtime
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
       NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
       NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
