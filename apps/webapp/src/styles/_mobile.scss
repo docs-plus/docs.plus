@@ -312,6 +312,12 @@ html.m_mobile #__next {
 }
 
 .headingSelection {
+  color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+
+  .headingSelection__step {
+    border-left: 1px solid var(--color-base-300);
+  }
+
   &.is-active {
     background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
     color: var(--color-primary);
@@ -319,22 +325,13 @@ html.m_mobile #__next {
     border-color: transparent;
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-primary) 44%, transparent);
 
-    // The inner segmented steppers tint to primary in lockstep with the ring.
-    .headingSelection__seg {
-      border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
-    }
-
-    .headingSelection__plus {
-      border-left-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
-    }
-
-    .headingSelection__label,
-    .headingSelection__seg button:not(:disabled) {
+    button:not(:disabled),
+    .headingSelection__label:disabled {
       color: var(--color-primary);
     }
+  }
 
-    button:disabled {
-      color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-    }
+  button:disabled {
+    color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   }
 }

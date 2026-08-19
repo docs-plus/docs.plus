@@ -1,4 +1,4 @@
-import type { JSONContent, MarkdownRendererHelpers } from '@tiptap/core'
+import type { Editor, JSONContent, MarkdownRendererHelpers } from '@tiptap/core'
 import { Node } from '@tiptap/core'
 import { Fragment, Slice } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -79,3 +79,7 @@ export const TitleDocument = Node.create({
     ]
   }
 })
+
+/** Title is the first top-level node (`TitleDocument` is heading then blocks). */
+export const isTitleSelected = (editor: Editor): boolean =>
+  editor.state.selection.$from.before(1) === 0

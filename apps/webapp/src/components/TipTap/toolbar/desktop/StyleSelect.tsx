@@ -1,4 +1,9 @@
-import { setParagraphStyle } from '@components/TipTap/extensions/paragraph-style/commands'
+import {
+  applyBlockStyle,
+  type BlockStyle,
+  isHeadingLevel,
+  readBlockStyle
+} from '@components/TipTap/block-style/blockStyle'
 import Select from '@components/ui/Select'
 import { Tooltip } from '@components/ui/Tooltip'
 import { Icons } from '@icons'
@@ -28,37 +33,41 @@ const BODY_STYLE_OPTIONS = [
   { value: '6', label: 'Heading 6' }
 ]
 
-const StyleSelect = ({ editor }: StyleSelectProps) => {
-  const { $from } = editor.state.selection
-  const isFirstBlock = $from.before(1) === 0
-
-  let currentValue = 'p'
-  if (editor.isActive('paragraph', { paragraphStyle: 'subtitle' })) {
-    currentValue = 'subtitle'
-  } else {
-    for (let i = 1; i <= 6; i++) {
-      if (editor.isActive('heading', { level: i })) {
-        currentValue = String(i)
-        break
-      }
+const selectValue = (style: Exclude<BlockStyle, { kind: 'title' }>): string => {
+  switch (style.kind) {
+    case 'subtitle':
+      return 'subtitle'
+    case 'heading':
+      return String(style.level)
+    case 'normal':
+      return 'p'
+    default: {
+      const _exhaustive: never = style
+      return _exhaustive
     }
   }
+}
+
+const StyleSelect = ({ editor }: StyleSelectProps) => {
+  const style = readBlockStyle(editor)
 
   const handleChange = useCallback(
     (value: string) => {
       if (value === 'p') {
-        setParagraphStyle(editor, 'normal')
-      } else if (value === 'subtitle') {
-        setParagraphStyle(editor, 'subtitle')
-      } else {
-        const level = +value as 1 | 2 | 3 | 4 | 5 | 6
-        editor.chain().focus().setHeading({ level }).run()
+        applyBlockStyle(editor, { kind: 'normal' })
+        return
       }
+      if (value === 'subtitle') {
+        applyBlockStyle(editor, { kind: 'subtitle' })
+        return
+      }
+      const level = Number(value)
+      if (isHeadingLevel(level)) applyBlockStyle(editor, { kind: 'heading', level })
     },
     [editor]
   )
 
-  if (isFirstBlock) {
+  if (style.kind === 'title') {
     return (
       <div className={SELECT_SLOT_CLASS}>
         <Tooltip title="Document name — always the first line" placement="bottom">
@@ -84,13 +93,13 @@ const StyleSelect = ({ editor }: StyleSelectProps) => {
     <div className={SELECT_SLOT_CLASS}>
       <Tooltip title="Styles (⌘+⌥+[1-6])" placement="bottom">
         <Select
-          value={currentValue}
+          value={selectValue(style)}
           onChange={handleChange}
           options={BODY_STYLE_OPTIONS}
           ghost
           size="sm"
           wrapperClassName="w-full min-w-0 max-w-full"
-          className={twMerge('min-w-0', currentValue !== 'p' && 'is-active')}
+          className={twMerge('min-w-0', style.kind !== 'normal' && 'is-active')}
         />
       </Tooltip>
     </div>

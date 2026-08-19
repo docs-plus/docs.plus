@@ -28,6 +28,7 @@ bun run migrate:nested-to-flat
 - `attrs['toc-id']` renders as `data-toc-id`.
 - Shared heading utilities live in `TipTap/extensions/shared/`: `computeSection`, `moveSection`, `canMapDecorations`, `transactionAffectsNodeType`, `matchSections`.
 - Section reorder is TOC-only via `useTocDrag` / `moveHeading` + `moveSection`. There is no in-editor heading drag handle extension.
+- Toolbar **Block style** (Title / Subtitle / H1–H6 / Normal) is outline role. Read and apply it through `TipTap/block-style/blockStyle`. Do not treat the H number as font size — that is HeadingScale. Names: [CONTEXT.md](../../../../../CONTEXT.md) §Pad outline.
 
 ### HeadingScale
 

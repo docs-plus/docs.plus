@@ -1,6 +1,14 @@
 import type { CommandProps } from '@tiptap/core'
 import Paragraph from '@tiptap/extension-paragraph'
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    paragraphStyle: {
+      setParagraphStyle: (style: 'normal' | 'subtitle') => ReturnType
+    }
+  }
+}
+
 export const ParagraphStyle = Paragraph.extend({
   name: 'paragraph',
 
