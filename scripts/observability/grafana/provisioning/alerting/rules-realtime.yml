@@ -100,6 +100,7 @@ groups:
           severity: critical
         annotations:
           summary: No document has been persisted for 10m while WS connections are open. The store hook is not running — a rejected store promise wedges the debouncer for the process lifetime, so this does not self-heal. Restart hocuspocus-server and read its logs.
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#persistence-stopped-while-users-are-connected'
         data:
           - refId: A
             relativeTimeRange: { from: 900, to: 0 }
@@ -143,6 +144,7 @@ groups:
           severity: critical
         annotations:
           summary: 'The store hook rejected a document save (reason={{ $labels.reason }}). Those edits are gone once the room unloads. Check hocuspocus-server logs and the Postgres/queue health for the same window.'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#document-saves-rejected'
         data:
           - refId: A
             relativeTimeRange: { from: 900, to: 0 }
