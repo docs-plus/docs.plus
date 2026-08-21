@@ -1,19 +1,15 @@
 /**
- * Reads a response body under a hard byte cap.
- *
- * Content-Length is whatever the peer chose to declare, so the cap is enforced on
- * the stream. Aborting the caller's controller stops the transfer itself rather
- * than draining bytes nobody will read. Returns `null` when the cap is passed.
+ * Reads a response body under a hard byte cap. Content-Length is whatever the peer
+ * chose to declare, so the cap is enforced on the stream. Aborting the caller's
+ * controller stops the transfer rather than draining bytes nobody will read.
+ * Returns `null` when the cap is passed or the response carries no body.
  */
 export const readCappedBody = async (
   response: Response,
   controller: AbortController,
   cap: number
-): Promise<Uint8Array | null> => {
-  if (!response.body) {
-    const body = new Uint8Array(await response.arrayBuffer())
-    return body.byteLength > cap ? null : body
-  }
+): Promise<Buffer | null> => {
+  if (!response.body) return null
 
   const reader = response.body.getReader()
   const chunks: Uint8Array[] = []
@@ -33,11 +29,5 @@ export const readCappedBody = async (
     reader.releaseLock()
   }
 
-  const out = new Uint8Array(total)
-  let offset = 0
-  for (const chunk of chunks) {
-    out.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return out
+  return Buffer.concat(chunks, total)
 }

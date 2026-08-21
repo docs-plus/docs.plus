@@ -50,13 +50,17 @@ const fetchInlineable = async (url: string, cap: number): Promise<string | null>
     const response = await fetch(url, { redirect: 'error', signal: controller.signal })
     if (!response.ok) return drop(`status ${response.status}`)
 
+    // readCappedBody answers null for a bodyless response too, so the cap is not the
+    // only thing that reaches the line below.
+    if (!response.body) return drop('empty response body')
+
     const bytes = await readCappedBody(response, controller, cap)
     if (!bytes) return drop('larger than the per-image cap')
 
     const mime = isSafeImageSignature(bytes)
     if (!mime) return drop('not a png or jpeg')
 
-    return `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`
+    return `data:${mime};base64,${bytes.toString('base64')}`
   } catch (error) {
     return drop(error instanceof Error ? error.message : 'fetch failed')
   } finally {
@@ -83,8 +87,7 @@ export const inlineExportImages = async (images: ForeignImage[]): Promise<void> 
     // Bytes alone cannot end the run — a failed fetch charges nothing, so the
     // remainder stays positive forever once nothing more fits and every later
     // image still dials out. `inlined` caps what reaches the HTML string and
-    // `fetched.size` caps sockets, which a run of failures would otherwise leave
-    // unbounded because a failure inlines nothing.
+    // `fetched.size` caps the sockets a run of failures would leave unbounded.
     const spent =
       inlined >= MAX_EXPORT_IMAGES || fetched.size >= MAX_EXPORT_IMAGES || Date.now() > deadline
     if (!spent && !fetched.has(src)) {
