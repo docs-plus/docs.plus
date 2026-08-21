@@ -18,7 +18,7 @@ export const safeFetch = async (url: string, init: RequestInit): Promise<Respons
   for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
     if (!isSafeUrl(current)) throw new Error('SSRF: unsafe redirect target')
     if (!(await resolvesToPublicAddress(current, init.signal)))
-      throw new Error('SSRF: host resolves to a private address')
+      throw new Error('SSRF: host did not resolve to a public address')
 
     const response = await fetch(current, { ...init, redirect: 'manual' })
     if (response.status < 300 || response.status >= 400) return response

@@ -92,9 +92,9 @@ const rejectOnAbort = (signal: AbortSignal): Promise<never> =>
   })
 
 /**
- * Resolve the host and refuse it if any answer is private. This is what stops
- * an ordinary registered domain pointing at 127.0.0.1. It is not a rebinding
- * defence, since `fetch` resolves again on its own — that risk stays accepted.
+ * Resolve the host and allow it only if every answer is public. This is what
+ * stops an ordinary registered domain pointing at 127.0.0.1. It is not a
+ * rebinding defence, since `fetch` resolves again on its own — risk accepted.
  */
 export const resolvesToPublicAddress = async (
   rawUrl: string,
@@ -114,9 +114,10 @@ export const resolvesToPublicAddress = async (
     const answers = await (signal ? Promise.race([resolving, rejectOnAbort(signal)]) : resolving)
     return answers.length > 0 && answers.every(({ address }) => !isPrivateAddress(address))
   } catch {
-    // `lookup` and `fetch` share one getaddrinfo, so a name this cannot resolve
-    // is a name fetch cannot reach either. There is no split where refusing here
-    // prevents a private connection, only one where it needs live DNS.
-    return true
+    // Fail closed. A resolver error is not proof the name is public, and
+    // EAI_AGAIN is transient by definition, so trusting it admits under load the
+    // exact fetch this check exists to refuse. The cost is that a DNS blip also
+    // refuses a public host; every caller treats that as an ordinary miss.
+    return false
   }
 }
