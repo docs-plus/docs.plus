@@ -1,8 +1,6 @@
 /**
- * Replays store dead-letter entries through the normal save path and clears
- * them. Dry-run by default; `--apply` writes. Only run `--apply` while the store
- * worker is consuming. The replay puts the payload back behind a 1 h claim-check
- * key. A stalled worker then loses bytes the DLQ was holding without a TTL.
+ * Replays store dead-letter entries through the normal save path. Dry-run by default; `--apply`
+ * only while the worker consumes, or the replay parks the payload behind a 1 h claim-check key.
  * Run:  bun --env-file=../../.env.local scripts/drain-store-dlq.ts [--apply]
  * Prod: docker compose -p docsplus -f docker-compose.prod.yml --env-file .env.production \
  *         exec -w /app/apps/hocuspocus.server hocuspocus-worker \
@@ -47,7 +45,8 @@ if (result.entries.length === 0) {
     )
   }
   console.log(
-    `\n  replay ${result.replayed} · discard ${result.discarded} · skip (in trash) ${result.skipped}`
+    `\n  replay ${result.replayed} · discard ${result.discarded} · skip (in trash) ${result.skipped}` +
+      ` · unresolved ${result.unresolved}`
   )
   if (result.entries.some((e) => e.headSupersedes)) {
     console.log(
