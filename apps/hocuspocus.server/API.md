@@ -192,7 +192,7 @@ Clear `deletedAt` (owner-only). Idempotent; non-owner → `403`.
 
 ### POST /api/documents/:documentId/duplicate
 
-Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix, and the snapshot's URLs are repointed there. Each document therefore owns its media, and purging one never strips the other. Non-owner → `403`; soft-deleted source → `404`.
+Copy the source's latest Yjs bytes into a fresh owner-owned doc (owner-only). Slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own storage prefix, and the snapshot's URLs are repointed there. Each document therefore owns its media, and purging one never strips the other. The copy runs inside the request, so a source naming more than 32 media objects is refused up front → `413`. Non-owner → `403`; soft-deleted source → `404`.
 
 ### DELETE /api/documents/:documentId/permanent
 
