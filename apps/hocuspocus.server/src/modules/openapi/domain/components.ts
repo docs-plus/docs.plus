@@ -251,7 +251,7 @@ const jsonResponse = (description: string, ref: string): OpenApiResponse => ({
   content: { 'application/json': { schema: { $ref: ref } } }
 })
 
-const envelopeResponse = (description: string): OpenApiResponse =>
+export const envelopeResponse = (description: string): OpenApiResponse =>
   jsonResponse(description, '#/components/schemas/ErrorEnvelope')
 
 const legacyResponse = (description: string): OpenApiResponse =>

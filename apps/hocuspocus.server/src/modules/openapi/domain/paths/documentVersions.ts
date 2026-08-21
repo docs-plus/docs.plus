@@ -7,7 +7,7 @@ import {
   versionParamSchema
 } from '../../../document-versions/http/schema'
 import type { OpenApiPaths, OpenApiResponse } from '../../types'
-import { rateLimitedRef } from '../components'
+import { envelopeResponse, rateLimitedRef } from '../components'
 import { dataEnvelope, toJsonSchema, toParameters } from '../jsonSchema'
 
 const tags = ['Document versions']
@@ -38,11 +38,6 @@ const opaqueData = dataEnvelope({ type: 'object', additionalProperties: true })
 const okResponse = (description: string): OpenApiResponse => ({
   description,
   content: { 'application/json': { schema: opaqueData } }
-})
-
-const envelopeResponse = (description: string): OpenApiResponse => ({
-  description,
-  content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
 })
 
 // Every `zValidator` on these routes passes `houseEnvelopeHook`, so a rejected
