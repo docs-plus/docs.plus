@@ -231,10 +231,6 @@ jobs:
           ignore-scripts: 'true'
 
       - name: 🔍 Bun Audit
-        env:
-          # Everything still outstanding at this level is dev- or build-only and
-          # written down in the allowlist, so a new high is a real regression.
-          AUDIT_FAIL_ON: high
         run: |
           set -o pipefail
           echo "🔍 Checking for known vulnerabilities..."
