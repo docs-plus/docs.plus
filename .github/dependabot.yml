@@ -4,7 +4,8 @@ version: 2
 updates:
   # Every third-party action is SHA-pinned; this is what bumps the pins.
   # `directory: /` reads .github/workflows only, so the composite actions under
-  # .github/actions each need their own entry, hence the glob.
+  # .github/actions each need their own entry, hence the glob. It covers all
+  # three: build-extensions, setup-bun and setup-cypress each hold an action.yml.
   - package-ecosystem: 'github-actions'
     directories:
       - '/'
@@ -15,10 +16,15 @@ updates:
       prefix: 'chore(deps)'
     open-pull-requests-limit: 5
 
-  # `bun.lock` sits at the repo root, so this entry targets the root manifest.
-  # Confirm on the first PR that it also reaches the workspace members.
+  # One `bun.lock`, at the root. The workspace members are listed explicitly
+  # rather than relying on the root entry to traverse into them. Confirm the
+  # coverage on the first PR — nobody has watched a run yet.
   - package-ecosystem: 'bun'
-    directory: '/'
+    directories:
+      - '/'
+      - '/apps/*'
+      - '/extensions/*'
+      - '/packages/*'
     schedule:
       interval: 'monthly'
     commit-message:
