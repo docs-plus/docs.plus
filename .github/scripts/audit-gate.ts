@@ -2,7 +2,6 @@
  * Fails CI on unreviewed vulnerabilities from `bun audit --json`.
  *
  * Run: bun .github/scripts/audit-gate.ts <audit-results.json> [allowlist.json]
- * Threshold via AUDIT_FAIL_ON (critical | high | moderate | low), default critical.
  */
 const SEVERITIES = ['critical', 'high', 'moderate', 'low'] as const
 type Severity = (typeof SEVERITIES)[number]
@@ -114,12 +113,9 @@ const counts = Object.fromEntries(SEVERITIES.map((s) => [s, countBy(s)])) as Rec
   number
 >
 
-const failOn = (process.env.AUDIT_FAIL_ON ?? 'critical').toLowerCase() as Severity
-const threshold = SEVERITIES.indexOf(failOn)
-if (threshold < 0) {
-  console.error(`::error::AUDIT_FAIL_ON must be one of ${SEVERITIES.join(', ')} (got "${failOn}")`)
-  process.exit(1)
-}
+// Everything still allowlisted at this level is dev- or build-only, so a new high is real.
+const FAIL_ON: Severity = 'high'
+const threshold = SEVERITIES.indexOf(FAIL_ON)
 
 const blocking = active.filter((a) => SEVERITIES.indexOf(a.severity) <= threshold)
 
@@ -151,10 +147,10 @@ if (unclassified.length > 0) {
 
 if (blocking.length > 0) {
   console.error(
-    `::error::${blocking.length} unreviewed advisory(ies) at or above "${failOn}". ` +
+    `::error::${blocking.length} unreviewed advisory(ies) at or above "${FAIL_ON}". ` +
       `Fix the dependency, or add the GHSA to ${allowlistPath} with a reason.`
   )
   process.exit(1)
 }
 
-console.log(`No unreviewed advisories at or above "${failOn}".`)
+console.log(`No unreviewed advisories at or above "${FAIL_ON}".`)

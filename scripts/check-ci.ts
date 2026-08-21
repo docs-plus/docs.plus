@@ -195,7 +195,7 @@ if (listed.exitCode !== 0) {
   if (code !== 0) failed = true
 }
 
-console.log('\n── security (AUDIT_FAIL_ON=high)')
+console.log('\n── security (bun audit, fails on high)')
 const auditJson = resolve(tmpdir(), `docsplus-audit-${process.pid}.json`)
 try {
   const auditCapture = Bun.spawn(['bun', 'audit', '--json'], {
@@ -204,11 +204,13 @@ try {
     stderr: 'ignore'
   })
   await auditCapture.exited
-  const auditCode = await run(
-    ['bun', '.github/scripts/audit-gate.ts', auditJson, '.github/audit-allowlist.json'],
-    { env: { AUDIT_FAIL_ON: 'high' } }
-  )
-  record('security', auditCode === 0 ? 'pass' : 'fail', 'AUDIT_FAIL_ON=high')
+  const auditCode = await run([
+    'bun',
+    '.github/scripts/audit-gate.ts',
+    auditJson,
+    '.github/audit-allowlist.json'
+  ])
+  record('security', auditCode === 0 ? 'pass' : 'fail', 'fails on high')
   if (auditCode !== 0) failed = true
 } finally {
   try {
