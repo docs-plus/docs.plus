@@ -57,8 +57,8 @@ describe('Hypermultimedia API (Direct Route)', () => {
   describe('POST /api/plugins/hypermultimedia/:documentId', () => {
     // Upload is gated by requireUser: it is a write, so it needs a verified
     // Supabase user. With no live Supabase to mint one in this harness, these
-    // tests assert the auth gate. The storage path itself is covered end-to-end
-    // by tests/unit/storage.local.test.ts and tests/unit/storage.s3.test.ts.
+    // tests assert the auth gate. The storage path itself is covered by
+    // tests/unit/storage.local.test.ts; the S3 arm has no runtime coverage.
     test('rejects an upload with no token', async () => {
       const file = createTestFile('test-image.jpg', 'image/jpeg', 2048)
       const response = await testServer.upload('/api/plugins/hypermultimedia/test-doc-123', file)
