@@ -19,6 +19,10 @@ const GATE_COPY: Record<PrivateGateVariant, { title: string; body: string }> = {
   'access-denied': {
     title: 'You don’t have access to this document',
     body: 'Only the owner can open it.'
+  },
+  'check-unavailable': {
+    title: 'We couldn’t check this document',
+    body: 'The server could not verify your access right now. Try again in a moment.'
   }
 }
 
@@ -68,6 +72,17 @@ const PrivateDocumentGate = ({
               className="mt-6 min-h-12"
               onClick={() => openInlineSignInDialog({ returnTo: router.asPath })}>
               Sign in
+            </Button>
+          ) : variant === 'check-unavailable' ? (
+            // The server never decided access, so retrying the same URL is the only
+            // gesture that can help. Signing in would not change the answer.
+            <Button
+              type="button"
+              variant="primary"
+              shape="block"
+              className="mt-6 min-h-12"
+              onClick={() => router.reload()}>
+              Try again
             </Button>
           ) : (
             <Button

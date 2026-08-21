@@ -22,15 +22,26 @@ interface DocumentWithClientId extends DocumentData {
   docClientId: string
 }
 
+interface DocumentFetchErrorOptions {
+  status?: number
+  originalError?: Error
+  access?: string
+  code?: string
+}
+
 export class DocumentFetchError extends Error {
-  constructor(
-    message: string,
-    public status?: number,
-    public originalError?: Error,
-    public access?: string
-  ) {
+  status?: number
+  originalError?: Error
+  access?: string
+  code?: string
+
+  constructor(message: string, options: DocumentFetchErrorOptions = {}) {
     super(message)
     this.name = 'DocumentFetchError'
+    this.status = options.status
+    this.originalError = options.originalError
+    this.access = options.access
+    this.code = options.code
   }
 }
 
@@ -73,20 +84,23 @@ export async function fetchDocument(
     }).finally(() => clearTimeout(timeoutId))
 
     if (!response.ok) {
-      // Private-doc 403 carries a top-level `access` hint the slug gate maps to a CTA variant.
+      // Read the body once: the private-doc 403 carries a top-level `access` hint the
+      // slug gate maps to a CTA variant, and `error.code` tells a degraded backend
+      // (AUTH_UNAVAILABLE) apart from a Traefik 503, whose HTML body carries no code.
+      const body = await response.json().catch(() => null)
+      const code = typeof body?.error?.code === 'string' ? body.error.code : undefined
+
       if (response.status === 403) {
-        let access: string | undefined
-        try {
-          access = (await response.json())?.access
-        } catch {
-          access = undefined
-        }
-        throw new DocumentFetchError('Document is private', 403, undefined, access)
+        throw new DocumentFetchError('Document is private', {
+          status: 403,
+          access: body?.access,
+          code
+        })
       }
-      throw new DocumentFetchError(
-        `Failed to fetch document: ${response.statusText}`,
-        response.status
-      )
+      throw new DocumentFetchError(`Failed to fetch document: ${response.statusText}`, {
+        status: response.status,
+        code
+      })
     }
 
     const responseData: DocumentResponse = await response.json()
@@ -112,10 +126,8 @@ export async function fetchDocument(
       throw error
     }
 
-    throw new DocumentFetchError(
-      'Network error while fetching document',
-      undefined,
-      error instanceof Error ? error : new Error(String(error))
-    )
+    throw new DocumentFetchError('Network error while fetching document', {
+      originalError: error instanceof Error ? error : new Error(String(error))
+    })
   }
 }
