@@ -100,11 +100,8 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
 
   switch (type) {
     case 'history.list': {
-      // Latest is the newest row, so query 2 does not depend on query 1's version.
-      // Both order by version alone. The (documentId, version) unique index serves it
-      // in one step. Version order also keeps the list head and latestSnapshot on the
-      // same row when an out-of-order commit makes createdAt disagree.
-      // Bindings run beside the transaction, not after it: two round trips, not three.
+      // Version order, not createdAt: an out-of-order commit would otherwise leave the
+      // list head and latestSnapshot on different rows. Neither query needs the other's row.
       const [[rows, full], clientAuthors] = await Promise.all([
         prisma.$transaction([
           prisma.documents.findMany({

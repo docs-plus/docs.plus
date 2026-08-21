@@ -342,13 +342,10 @@ const configureExtensions = () => {
 
             dbLogger.info({ documentName }, 'Document saved via fallback (direct DB)')
           } catch (dbErr) {
-            // Never rethrow. Hocuspocus's debouncer caches the rejected promise
-            // under onStoreDocument-<docName> for the process lifetime. This room
-            // would then stop saving AND stop unloading, and its stuck Y.Doc would
-            // hold up the shutdown flush of every other room. This block is the
-            // last line of defence, so it gets its own guard. A throw from the
-            // metric, the logger or the Sentry client here has nothing left to
-            // catch it. Such a throw would wedge the room it is reporting.
+            // Never rethrow. Hocuspocus's debouncer caches the rejected promise under
+            // onStoreDocument-<docName> for the process lifetime, so this room stops saving
+            // AND unloading, and its stuck Y.Doc holds up every other room's flush. The inner
+            // try is here because a throw from the metric, logger or Sentry wedges it the same way.
             try {
               documentStoreRejectionsTotal.inc({ reason: 'fallback-save-failed' })
               dbLogger.error(

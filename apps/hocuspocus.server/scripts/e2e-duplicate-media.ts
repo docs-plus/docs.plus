@@ -1,10 +1,7 @@
 /**
- * Real-infra check for the duplicate ↔ purge media contract. A duplicate re-hosts the
- * objects its snapshot NAMES under its own prefix and repoints those URLs. Purging the
- * source then erases the source's media and leaves the copy whole. Direct service calls
- * against a real Prisma, the real Supabase purge RPC and real local storage — no HTTP,
- * no WS, no worker, no Auth. Standalone process (not `bun test`); needs
- * `make dev-local` and root .env.local.
+ * Real-infra check for the duplicate ↔ purge media contract: a duplicate re-hosts only
+ * the objects its snapshot names, and purging the source leaves the copy whole.
+ * Run: bun run test:e2e:duplicate-media (needs `make dev-local` and root .env.local).
  */
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import { readdir, rm } from 'fs/promises'
