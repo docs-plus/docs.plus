@@ -32,6 +32,7 @@ The full route-by-route contract is [`apps/hocuspocus.server/API.md`](../apps/ho
 | [SECURITY.md](../SECURITY.md)                                     | How to report a vulnerability. Do not open a public issue for one |
 | [CONTEXT.md](../CONTEXT.md)                                       | The domain glossary: what each term in this project means         |
 | [apps/hocuspocus.server/ENV.md](../apps/hocuspocus.server/ENV.md) | Every backend environment variable, its type, and its default     |
+| [RUNBOOK-backend.md](RUNBOOK-backend.md)                          | What to do when a backend alert pages you                         |
 
 ## Decision records
 
