@@ -15,6 +15,7 @@ groups:
           severity: critical
         annotations:
           summary: 'Container {{ $labels.name }} is using >90% of its cgroup memory limit for 5m (OOM risk)'
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#ws-container-out-of-memory'
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
