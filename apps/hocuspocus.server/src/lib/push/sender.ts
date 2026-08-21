@@ -7,7 +7,7 @@ import type {
   PushSubscription
 } from '../../types/push.types'
 import { pushLogger } from '../logger'
-import { isSafeUrl } from '../ssrf'
+import { isSafeUrl, resolvesToPublicAddress } from '../ssrf'
 import { getServiceRoleClient } from '../supabase'
 
 let vapidConfigured = false
@@ -154,12 +154,23 @@ export async function sendPushNotification(
   const results = await Promise.allSettled(
     subscriptions.map(async (sub: PushSubscription) => {
       // The endpoint is subscriber-written and the SQL that stores it validates
-      // nothing, so this is the one outbound target a caller chooses. Deactivate
-      // rather than record the failure: last_error is readable by its own
-      // subscriber, which would turn a refused host into a port-scan oracle.
+      // nothing, so this is the one outbound target a caller chooses. A bad URL
+      // string can never recover, so deactivate, and record no detail:
+      // last_error is subscriber-readable and would become a port-scan oracle.
       if (!isSafeUrl(sub.push_credentials.endpoint)) {
         invalidIds.push(sub.id)
         pushLogger.warn({ subscription_id: sub.id }, 'Refused an unsafe push endpoint')
+        return { success: false, id: sub.id, error: 'Unsafe endpoint' }
+      }
+      // A private DNS answer and a resolver blip are the same value here, so this
+      // refuses one send and charges nothing. Push endpoints are a handful of shared
+      // hosts, so one resolver problem refuses every subscription at once, and
+      // failed_count >= 5 is what the cleanup job deactivates a real device on.
+      if (!(await resolvesToPublicAddress(sub.push_credentials.endpoint))) {
+        pushLogger.warn(
+          { subscription_id: sub.id },
+          'Push endpoint did not resolve to a public address'
+        )
         return { success: false, id: sub.id, error: 'Unsafe endpoint' }
       }
       try {

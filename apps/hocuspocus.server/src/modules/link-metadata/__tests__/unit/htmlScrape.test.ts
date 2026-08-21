@@ -101,7 +101,8 @@ describe('runHtmlScrape', () => {
       status: 200,
       url: 'https://final.example.com/x',
       headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
-      arrayBuffer: async () => body.buffer
+      // readCappedBody reads the stream, so the stub needs a real one.
+      body: new Response(body).body
     }
     fetchSpy.mockResolvedValue(fakeResponse as unknown as Response)
 
@@ -113,7 +114,7 @@ describe('runHtmlScrape', () => {
       }
     }
 
-    await runHtmlScrape('https://short.example.com/redirect', scraper, undefined)
+    await runHtmlScrape('https://example.com/redirect', scraper, undefined)
     expect(receivedUrl).toBe('https://final.example.com/x')
   })
 
