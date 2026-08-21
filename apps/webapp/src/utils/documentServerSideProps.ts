@@ -4,7 +4,7 @@ import { logger } from '@utils/logger'
 import { captureGsspDocumentError } from '@utils/observability'
 import { isReservedSlug } from '@utils/reservedSlugs'
 import { createClient } from '@utils/supabase/server-props'
-import { toPrivateGateVariant } from '@utils/toPrivateGateVariant'
+import { isAuthUnavailable, toPrivateGateVariant } from '@utils/toPrivateGateVariant'
 import { type GetServerSidePropsContext } from 'next'
 
 import { getDeviceInfo } from './getDeviceInfo'
@@ -75,17 +75,27 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       }
     }
   } catch (error: unknown) {
+    const fetchError = error instanceof DocumentFetchError ? error : null
+
+    // A private doc answers 503 AUTH_UNAVAILABLE while the backend cannot verify tokens.
+    // A Traefik 503 (every replica pulled from the pool) carries no code, so it stays a
+    // real error with a Sentry issue.
+    const authUnavailable = fetchError != null && isAuthUnavailable(fetchError)
+    if (authUnavailable) {
+      logger.warn('[getServerSideProps] auth verification unavailable', { documentSlug })
+    }
+
     // Private docs return 403 with an `access` hint — render the gate, never /500.
     // Blocked viewers get no description/ownerProfile/keywords in props (docMetadata: null).
-    if (error instanceof DocumentFetchError && error.status === 403) {
-      const gateVariant = toPrivateGateVariant({
-        access: error.access,
-        hasSession: Boolean(session)
-      })
-
+    if (fetchError?.status === 403 || authUnavailable) {
       return {
         props: {
-          gateVariant,
+          gateVariant: toPrivateGateVariant({
+            access: fetchError?.access,
+            status: fetchError?.status,
+            code: fetchError?.code,
+            hasSession: Boolean(session)
+          }),
           slug: documentSlug ?? null,
           gateTitle: null,
           docMetadata: null,
