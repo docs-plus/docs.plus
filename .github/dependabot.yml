@@ -1,0 +1,40 @@
+# Dependabot does not do security updates for the `bun` ecosystem, only version
+# updates. `bun audit` in prod.docs.plus.yml stays the detector for advisories.
+version: 2
+updates:
+  # Every third-party action is SHA-pinned; this is what bumps the pins.
+  # `directory: /` reads .github/workflows only, so the composite actions under
+  # .github/actions each need their own entry, hence the glob.
+  - package-ecosystem: 'github-actions'
+    directories:
+      - '/'
+      - '/.github/actions/*'
+    schedule:
+      interval: 'monthly'
+    commit-message:
+      prefix: 'chore(deps)'
+    open-pull-requests-limit: 5
+
+  # `bun.lock` sits at the repo root, so this entry targets the root manifest.
+  # Confirm on the first PR that it also reaches the workspace members.
+  - package-ecosystem: 'bun'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+    commit-message:
+      prefix: 'chore(deps)'
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: 'development'
+    ignore:
+      # Exact-pinned on purpose: these parse untrusted input, and the pin is the
+      # boundary. Bump them by hand, with the verification the pin's note names.
+      - dependency-name: '@turbodocx/html-to-docx'
+      - dependency-name: 'mammoth'
+      - dependency-name: 'linkedom'
+      # The metascraper family is pinned to 5.50.6 because 5.51.1 crashes REST
+      # startup on Bun. AGENTS.md holds the exit condition.
+      - dependency-name: 'metascraper'
+      - dependency-name: 'metascraper-*'
+      - dependency-name: '@metascraper/*'
