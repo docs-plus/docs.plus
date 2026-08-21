@@ -51,15 +51,23 @@ model DocumentMetadata {
   @@index([deletedAt])
 }
 
-// Counts how many times a slug's document has been purged. A draft's documentId is
-// derived from the slug, so without this a reused slug would derive the purged
-// document's id and a stale IndexedDB mirror could resurrect erased content.
+// Counts how many times a slug's document has been purged, so a reused slug cannot
+// derive the purged document's id.
 // No @default: "no row" already means INITIAL_EPOCH, so a writer that omits the
 // column would silently mint that same state instead of failing.
 model DocumentSlugEpoch {
   slug      String   @id
   epoch     Int
   updatedAt DateTime @updatedAt
+}
+
+// The durable record that a documentId was purged. Without it a no-row lookup in
+// onAuthenticate cannot tell "purged" from "never existed", so a tab that missed
+// the close frame reconnects and syncs erased content back up. No relation to
+// DocumentMetadata: a cascade would drop the tombstone with the row it outlives.
+model DocumentPurgeTombstone {
+  documentId String   @id
+  purgedAt   DateTime @default(now())
 }
 
 // Names the author behind a Yjs clientID so a version diff can attribute blocks.
