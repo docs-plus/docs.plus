@@ -109,7 +109,7 @@ const AppearanceSection = () => {
     const forward = e.key === 'ArrowDown' || e.key === 'ArrowRight'
     const i = NAV_ORDER.indexOf(value)
     const next = NAV_ORDER[(i + (forward ? 1 : NAV_ORDER.length - 1)) % NAV_ORDER.length]
-    setPreference(next)
+    setPreference(next, { motion: false })
     groupRef.current?.querySelector<HTMLButtonElement>(`[data-theme-radio="${next}"]`)?.focus()
   }
 
