@@ -179,8 +179,9 @@ export interface StoreDlqEntry {
   headSupersedes: boolean
   failureReason?: string
   failedAt?: string
-  /** `discard` also covers a payload too old to replay — see isPastDeleteRetention. */
-  disposition: 'replay' | 'discard' | 'skip-trashed'
+  /** `discard` covers a payload-less entry, a tombstoned document, and a payload
+   * too old to replay. `unresolved` is the one state that is left in the queue. */
+  disposition: 'replay' | 'discard' | 'skip-trashed' | 'unresolved'
 }
 
 export interface StoreDlqDrainResult {
@@ -189,6 +190,8 @@ export interface StoreDlqDrainResult {
   discarded: number
   /** Trashed entries — removed on apply, not parked: the live path refused those saves. */
   skipped: number
+  /** Left in the queue for an operator: no metadata row and no purge tombstone. */
+  unresolved: number
   /** The whole parked queue, never the `documentId`-filtered slice. */
   depth: number
 }
@@ -244,18 +247,28 @@ export async function drainStoreDeadLetterQueue({
   // resurrect one behind the operator's back. The newest row decides the rest.
   // `createdAt` against `failedAt` is the only thing saying whether the payload is
   // already superseded. No row at all means the replay re-fires the email.
-  const [trashedRows, headRows] = await Promise.all([
+  const [metadataRows, headRows, tombstoneRows] = await Promise.all([
     prisma.documentMetadata.findMany({
-      where: { documentId: { in: documentIds }, deletedAt: { not: null } },
-      select: { documentId: true }
+      where: { documentId: { in: documentIds } },
+      select: { documentId: true, deletedAt: true }
     }),
     prisma.documents.groupBy({
       by: ['documentId'],
       where: { documentId: { in: documentIds } },
       _max: { version: true, createdAt: true }
+    }),
+    // The purge writes this row, so it is the positive signal. An absent metadata
+    // row is not one: three save paths reach a document that never anchored.
+    prisma.documentPurgeTombstone.findMany({
+      where: { documentId: { in: documentIds } },
+      select: { documentId: true }
     })
   ])
-  const trashed = new Set(trashedRows.map((row) => row.documentId))
+  const trashed = new Set(
+    metadataRows.filter((row) => row.deletedAt !== null).map((row) => row.documentId)
+  )
+  const known = new Set(metadataRows.map((row) => row.documentId))
+  const purged = new Set(tombstoneRows.map((row) => row.documentId))
   const heads = new Map(headRows.map((row) => [row.documentId, row._max]))
 
   const result: StoreDlqDrainResult = {
@@ -263,17 +276,24 @@ export async function drainStoreDeadLetterQueue({
     replayed: 0,
     discarded: 0,
     skipped: 0,
+    unresolved: 0,
     depth: Object.values(counts).reduce((sum, n) => sum + n, 0)
   }
 
   for (const job of jobs) {
     const data = job.data
     const state = data.state ? Buffer.from(data.state, 'base64') : null
-    const disposition: StoreDlqEntry['disposition'] = trashed.has(data.documentName)
-      ? 'skip-trashed'
-      : state && !isPastDeleteRetention(data.failedAt)
-        ? 'replay'
-        : 'discard'
+    // A live row is the newest fact, so it decides ahead of the tombstone. Only the
+    // tombstone proves a purge — an absent row does not, because the eager anchor
+    // skips a slugless edit, cedes on P2002, and swallows its own write failure.
+    // That residue is a state this cannot read, so it is not destroyed.
+    let disposition: StoreDlqEntry['disposition']
+    if (trashed.has(data.documentName)) disposition = 'skip-trashed'
+    else if (!state) disposition = 'discard'
+    else if (known.has(data.documentName))
+      disposition = isPastDeleteRetention(data.failedAt) ? 'discard' : 'replay'
+    else if (purged.has(data.documentName)) disposition = 'discard'
+    else disposition = 'unresolved'
 
     // Reported, never acted on. A later snapshot only carries what the saving
     // client held, so a stranded edit from another client can survive a newer
@@ -297,11 +317,17 @@ export async function drainStoreDeadLetterQueue({
     if (disposition === 'replay') result.replayed += 1
     if (disposition === 'discard') result.discarded += 1
     if (disposition === 'skip-trashed') result.skipped += 1
+    if (disposition === 'unresolved') result.unresolved += 1
 
     if (!apply) continue
 
-    // Every disposition ends in remove(). Parking a refused entry is what let the
-    // reaper age it into a replayable one and resurrect the document on a timer.
+    // The one entry that survives the pass: it may hold a real save, and nothing here
+    // says otherwise. If the document later anchors its metadata row, the next drain
+    // resolves it to a replay. Every other case is the operator's call.
+    if (disposition === 'unresolved') continue
+
+    // Every remaining disposition ends in remove(). Parking a refused entry is what
+    // let the reaper age it into a replayable one and resurrect the document on a timer.
     // A trashed entry is no recovery candidate either — the live path (see above)
     // already refused that save while the document was in the trash.
     if (disposition === 'replay' && state) {
