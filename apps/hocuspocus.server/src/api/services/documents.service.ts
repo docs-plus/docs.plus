@@ -16,13 +16,10 @@ import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
+import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../schemas/hypermultimedia.schema'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 import { purgeDocumentFootprint } from './documentPurge.service'
-import {
-  copyDocumentMedia,
-  deleteDocumentMedia,
-  MAX_DUPLICATE_MEDIA_OBJECTS
-} from './media.service'
+import { copyDocumentMedia, deleteDocumentMedia } from './media.service'
 
 const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
 

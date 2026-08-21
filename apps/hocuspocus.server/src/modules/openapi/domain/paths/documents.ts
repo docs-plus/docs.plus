@@ -6,8 +6,9 @@ import {
   updateDocumentMetadataSchema,
   userIdQuerySchema
 } from '../../../../schemas/document.schema'
+import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
 import type { JsonSchema, OpenApiOperation, OpenApiPaths, SecurityRequirement } from '../../types'
-import { rateLimitedRef } from '../components'
+import { envelopeResponse, rateLimitedRef } from '../components'
 import { dataEnvelope, pathParam, toJsonSchema, toParameters } from '../jsonSchema'
 
 const tags = ['Documents']
@@ -29,7 +30,8 @@ const okEnvelope = (description: string, data: JsonSchema) => ({
 const ownedLifecycle = (
   operationId: string,
   summary: string,
-  description: string
+  description: string,
+  extraResponses: Record<string, unknown> = {}
 ): OpenApiOperation => ({
   operationId,
   summary,
@@ -43,7 +45,8 @@ const ownedLifecycle = (
     '403': { $ref: '#/components/responses/Forbidden' },
     '404': { $ref: '#/components/responses/NotFound' },
     '429': rateLimitedRef,
-    '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    '503': { $ref: '#/components/responses/ServiceUnavailable' },
+    ...extraResponses
   }
 })
 
@@ -191,7 +194,12 @@ export const documentsPaths: OpenApiPaths = {
     post: ownedLifecycle(
       'duplicateDocument',
       'Duplicate a document',
-      "Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is `<title> (copy)`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. A soft-deleted source is a 404."
+      `Owner-only. Copies the source's latest Yjs bytes into a fresh owner-owned document; the slug is \`<title> (copy)\`, uniquified. Media is cloned, not shared: the source's objects are copied under the copy's own prefix and the snapshot's URLs repointed there, so purging either document leaves the other intact. Capped at ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. A soft-deleted source is a 404.`,
+      {
+        '413': envelopeResponse(
+          `The source's snapshot names more than ${MAX_DUPLICATE_MEDIA_OBJECTS} media objects. Each one is copied inside the request, so the count is refused up front rather than left to time out.`
+        )
+      }
     )
   },
   '/api/documents/{documentId}/permanent': {
