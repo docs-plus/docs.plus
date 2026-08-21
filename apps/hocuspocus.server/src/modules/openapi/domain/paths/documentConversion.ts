@@ -5,8 +5,8 @@ import {
   MAX_INFLATED_IMPORT_BYTES,
   MAX_MARKDOWN_CHARS
 } from '../../../document-conversion/types'
-import type { JsonSchema, OpenApiPaths, OpenApiResponse, SecurityRequirement } from '../../types'
-import { rateLimitedRef } from '../components'
+import type { JsonSchema, OpenApiPaths, SecurityRequirement } from '../../types'
+import { envelopeResponse, rateLimitedRef } from '../components'
 import { dataEnvelope, toParameters } from '../jsonSchema'
 
 const tags = ['Document content']
@@ -20,11 +20,6 @@ const documentIdParam = toParameters(documentIdParamSchema, 'path', {
 })
 
 const binary: JsonSchema = { type: 'string', format: 'binary' }
-
-const envelopeResponse = (description: string): OpenApiResponse => ({
-  description,
-  content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
-})
 
 const conversionErrors = {
   '400': { $ref: '#/components/responses/ValidationError' },
