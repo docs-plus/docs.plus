@@ -131,7 +131,7 @@ as a color-swap inside a shared structure (see `--pad-sheet-shadow`).
 | `--info-ink` | `color-mix(info, base-content 42%)` | same (adapts) | Info hue readable as **text ink** on light `bg-info/10` (plain `info` fails AA there); mix adapts per theme — darkens on light, lifts on dark. Used by the filter chip. (No `--color-*` prefix: it is not a daisyUI utility color — consume via `text-[var(--info-ink)]`.) |
 | `--font-sans` | `Helvetica, Arial, sans-serif` | same | The app type stack (universal reset + one-off SCSS consumers). No other font stacks. |
 | `--focus-ring-soft` | `2px solid` primary 45% mix | same (primary swaps per theme) | The SCSS focus-ring formula — consume via `outline: var(--focus-ring-soft); outline-offset: 1px`. |
-| Motion (`_entry.scss` + `utils/motion.ts`) | `--motion-overlay-in/out 120/80ms`, `--motion-panel 200ms`, `--motion-region 220ms`, enter ease-out / exit ease-in | same | Tiers + PRM rules in `apps/webapp/CLAUDE.md` §Motion System — the JS mirror updates in lockstep. |
+| Motion (`_entry.scss` + `utils/motion.ts`) | `--motion-overlay-in/out 120/80ms`, `--motion-panel 200ms`, `--motion-region 220ms`, enter ease-out / exit ease-in | same | Tiers + PRM rules in `apps/webapp/CLAUDE.md` §Motion System — the JS mirror updates in lockstep. User theme writes use a root View Transition at `--motion-panel`. |
 
 ## Ink ladder
 
