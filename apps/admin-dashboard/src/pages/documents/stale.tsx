@@ -108,7 +108,9 @@ export default function StaleDocumentsPage() {
           `Deleted "${result.deletedDocuments[0]?.title || result.deletedDocuments[0]?.slug}"`
         )
       } else {
-        toast.error('Failed to delete document')
+        // The service refuses a slug that is no longer stale and says so per
+        // document. Without this the operator sees a bare failure and retries.
+        toast.error(result.failedDocuments?.[0]?.error || 'Failed to delete document')
       }
       setPreviewSlug(null)
       queryClient.invalidateQueries({ queryKey: ['admin', 'stale-documents'] })
