@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/webapp",
-  "version": "2.0.0-beta.103",
+  "version": "2.0.0",
   "private": true,
   "browserslist": "> 1%",
   "scripts": {

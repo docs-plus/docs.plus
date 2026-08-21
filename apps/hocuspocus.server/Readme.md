@@ -6,13 +6,13 @@ Backend for docs.plus: a REST API, a real-time collaboration server, and a backg
 
 The package ships three independent entry points. Each is its own process and scales separately.
 
-| Process   | Default port    | Entry                      | Role                                                                          |
-| --------- | --------------- | -------------------------- | ----------------------------------------------------------------------------- |
-| REST API  | `4000`          | `src/index.ts`             | Hono HTTP app: documents, media, link metadata, email triggers, admin, health |
-| WebSocket | `4001`          | `src/hocuspocus.server.ts` | Hocuspocus/Y.js collaboration; JWT-authenticated rooms                        |
-| Worker    | `4002` (health) | `src/hocuspocus.worker.ts` | Consumes pgmq and runs BullMQ jobs (email, push); idempotency-log cleanup     |
+| Process   | Default port    | Entry                      | Role                                                                                            |
+| --------- | --------------- | -------------------------- | ----------------------------------------------------------------------------------------------- |
+| REST API  | `4000`          | `src/index.ts`             | Hono HTTP app: documents, media, link metadata, email triggers, admin, health                   |
+| WebSocket | `4001`          | `src/hocuspocus.server.ts` | Hocuspocus/Y.js collaboration; JWT-authenticated rooms                                          |
+| Worker    | `4002` (health) | `src/hocuspocus.worker.ts` | Persists `store-documents`; consumes pgmq; runs email and push BullMQ jobs; hourly prune/reaper |
 
-The REST API initializes the email and push gateways in queue-only mode, so it can run as multiple replicas without spawning duplicate workers. The worker process owns job execution. Email and push notifications flow Supabase → pgmq → worker → BullMQ → SMTP / Web Push; there are no `/api/email/send` or `/api/push` HTTP endpoints.
+The REST API initializes the email and push gateways in queue-only mode, so it can run as multiple replicas without spawning duplicate workers. The worker process owns job execution, including the store-document persist path. Email and push notifications flow Supabase → pgmq → worker → BullMQ → SMTP / Web Push. There is no `/api/email/send` or `/api/push` HTTP endpoint. `POST /api/email/send-generic` is service-role only.
 
 The WebSocket process also serves an internal HTTP listener on `4003`. It carries `/metrics` and the service-role endpoints that need the live Y.Doc — content apply, version checkpoint, and version restore. It is never Traefik-routed; the REST process reaches it over `HOCUSPOCUS_INTERNAL_URL`.
 
@@ -108,6 +108,7 @@ See `src/modules/link-metadata/README.md` for the full boundary rules and extrac
 ## Documentation
 
 - `GET /docs` — Swagger UI, served by the REST process; `GET /openapi.json` for the raw OpenAPI 3.1 document. Request schemas are generated from the live zod schemas. Neither path is Traefik-routed, so they are local/internal only.
+- [CHANGELOG.md](./CHANGELOG.md) — operator and API notes for this package
 - [API.md](./API.md) — REST endpoints, auth, and response shapes
 - [ENV.md](./ENV.md) — environment variables (authoritative source: `src/config/env.schema.ts`)
 - [root README](../../README.md) — monorepo setup

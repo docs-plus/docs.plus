@@ -2,10 +2,11 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| latest  | :white_check_mark: |
-| < 1.0   | :x:                |
+| Version                     | Supported          |
+| --------------------------- | ------------------ |
+| 2.0.0 (webapp + hocuspocus) | :white_check_mark: |
+| latest (npm extensions)     | :white_check_mark: |
+| < 1.0                       | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -17,7 +18,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 Instead, please report security vulnerabilities by emailing:
 
-📧 **security@docs.plus**
+📧 **<security@docs.plus>**
 
 ### What to Include
 

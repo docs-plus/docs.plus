@@ -4,14 +4,14 @@ This document defines how the `@docs.plus/extension-*` package family is version
 
 ## Status
 
-| Field                      | Value                                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Doctrine                   | **Strict lockstep, Tiptap-style** — all 5 publishable extensions share one major                            |
-| Major tracks               | The **docs.plus product line** (`1.x` = 2023 product, `2.x` = alpha v2)                                     |
-| Current phase              | **Phase 1 — Cutover.** Each extension ships its `2.0.0` independently                                       |
-| npm state                  | 3 of 5 already published under older lines; 2 never published — see [Phase 1](#phase-1--cutover-current)    |
-| Trigger to flip to Phase 2 | **Trigger D** — see [Trigger D](#trigger-d--when-strict-lockstep-activates)                                 |
-| Publish gate               | **Release when ready** — see [Release Readiness](#release-readiness); stable only, no pre-release dist-tags |
+| Field                      | Value                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Doctrine                   | **Strict lockstep, Tiptap-style** — all 5 publishable extensions share one major                                         |
+| Major tracks               | The **docs.plus product line** (`1.x` = Etherpad, `2.x` = Next.js pad)                                                   |
+| Current phase              | **Phase 1 — Cutover.** Each extension ships its `2.0.0` independently                                                    |
+| npm state                  | **All 5 published at `2.0.0` on 2026-08-11**, each serving it as npm `latest` — see [Phase 1](#phase-1--cutover-current) |
+| Trigger to flip to Phase 2 | **Trigger D** — see [Trigger D](#trigger-d--when-strict-lockstep-activates)                                              |
+| Publish gate               | **Release when ready** — see [Release Readiness](#release-readiness); stable only, no pre-release dist-tags              |
 
 The five publishable packages:
 
@@ -21,7 +21,23 @@ The five publishable packages:
 - `@docs.plus/extension-inline-code`
 - `@docs.plus/extension-placeholder`
 
-`@docs.plus/webapp` and `@docs.plus/hocuspocus.server` consume these via `workspace:*` and have their own independent version lines. They are **not** part of the lockstep family.
+`@docs.plus/webapp` and `@docs.plus/hocuspocus` consume these via `workspace:*` and have their own independent version lines. They are **not** part of the lockstep family.
+
+## Product
+
+**Tag.** The product tag is `v2.0.0`. It is not a package tag.
+
+**Versions.** `@docs.plus/webapp` and `@docs.plus/hocuspocus` share `2.0.0`. Admin stays `1.0.0`.
+
+**Git.** Push one tag: `git push origin v2.0.0`. Never `git push --tags`.
+
+**GitHub.** The Release body is a slice of [`CHANGELOG.md`](CHANGELOG.md). This Release is Latest.
+
+**npm.** Extension `latest` does not change. The five `@docs.plus/extension-*` packages already serve `2.0.0`.
+
+**Deploy.** Do not add a `(build):` commit for the version string. The version string is not shown in the UI. The next ordinary deploy applies it.
+
+**Changelogs.** The product changelog is [`CHANGELOG.md`](CHANGELOG.md). The hocuspocus changelog is [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md).
 
 ## Versioning Doctrine
 
@@ -54,9 +70,9 @@ The five publishable packages:
 
 All five already carry `"version": "2.0.0"` in `package.json` and a `## [2.0.0]` CHANGELOG entry. What still gates each ship is the [readiness checklist](#per-package-readiness-checklist), not the version bump.
 
-**Honest disclosure.** `@docs.plus/extension-hyperlink@4.3.0` was published to npm by mistake on 2026-04-19, on a semver line the package never had. npm's unpublish window is 72 hours, so it closed on 2026-04-22: `4.3.0` cannot be removed. It **is already deprecated**, but with npm's generic string — the registry returns `"deprecated": "this package has been deprecated"`, which tells an installer nothing about what to use instead.
+**Honest disclosure.** `@docs.plus/extension-hyperlink@4.3.0` was published to npm by mistake on 2026-04-19, on a semver line the package never had. npm's unpublish window is 72 hours, so it closed on 2026-04-22: `4.3.0` cannot be removed. It **is deprecated with a message that names the replacement** (done 2026-08-11): the registry returns `"deprecated": "Mispublished by mistake — not a real release. Install 2.x instead."`, replacing npm's generic `"this package has been deprecated"`, which told an installer nothing.
 
-That still matters after `2.0.0` ships, because `4.3.0` outranks every other published version by semver. It stays at the top of the registry's version list even once `latest` points at `2.0.0`. Re-running `npm deprecate` overwrites the message, so the remaining action is to replace the generic one:
+This still matters now that `2.0.0` has shipped, because `4.3.0` outranks every other published version by semver. It sits at the top of the registry's version list even though `latest` points at `2.0.0`. Re-running `npm deprecate` overwrites the message, which is how it was set — repeat this if the wording ever needs to change:
 
 ```bash
 npm deprecate '@docs.plus/extension-hyperlink@4.3.0' 'Mispublished by mistake — not a real release. Install 2.x instead.'
