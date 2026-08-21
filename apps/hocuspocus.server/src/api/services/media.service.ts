@@ -45,6 +45,12 @@ export const deleteDocumentMedia = async (documentId: string): Promise<void> => 
   await S3Storage.deleteByPrefix(documentId)
 }
 
+// The copy runs inside the request and Bun's idleTimeout closes the socket without
+// stopping the handler, so N is the only bound on the object-store writes one caller
+// can drive. At 32 objects x the 10 MB upload cap, the 100-request limiter tops out
+// near 32 GB per IP per 15 min. The richest real document here names 17 objects.
+export const MAX_DUPLICATE_MEDIA_OBJECTS = 32
+
 // Duplicate hook: re-hosts exactly the objects the copy's snapshot names, under the
 // copy's own prefix. Each document then owns its media, and no purge can strip a copy.
 // Bounded by what the document references, not by what the source prefix holds — a node

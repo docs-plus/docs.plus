@@ -8,6 +8,7 @@ import {
   handlePrismaError,
   InternalServerError,
   NotFoundError,
+  PayloadTooLargeError,
   ValidationError
 } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
@@ -17,7 +18,11 @@ import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 import { purgeDocumentFootprint } from './documentPurge.service'
-import { copyDocumentMedia, deleteDocumentMedia } from './media.service'
+import {
+  copyDocumentMedia,
+  deleteDocumentMedia,
+  MAX_DUPLICATE_MEDIA_OBJECTS
+} from './media.service'
 
 const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
 
@@ -97,10 +102,9 @@ export const createDraftDocument = async (prisma: PrismaClient, slug: string) =>
 }
 
 // Anchor a draft's identity on the first real edit, so a reload's slug lookup returns the
-// same documentId. That id is the stable IndexedDB key and WS room name the client mirror
-// restores early edits from. Bots that open and never edit never reach here, so no empty
-// rows. P2002 = already anchored, or the slug was claimed by a concurrent first-open. That
-// writer wins the id race, and we cede; ids are only derived for part of the population.
+// same documentId — the stable IndexedDB key and WS room name the client mirror restores
+// early edits from. Bots that open and never edit never reach here, so no empty rows.
+// P2002 = already anchored, or a concurrent first-open won the slug, and we cede.
 export const ensureDraftDocumentMetadata = async (
   prisma: PrismaClient,
   params: { documentId: string; slug: string; ownerId?: string | null; email?: string | null }
@@ -583,6 +587,13 @@ export const duplicateDocument = async (
     // leaves only orphans, which the catch removes.
     const rehosted = bytes ? rehostMediaUrls(bytes, documentId) : null
     if (rehosted?.data) {
+      // Refused before a single object is written, so nothing needs rolling back.
+      if (rehosted.references.length > MAX_DUPLICATE_MEDIA_OBJECTS) {
+        throw new PayloadTooLargeError(
+          `This document references ${rehosted.references.length} media objects, ` +
+            `over the ${MAX_DUPLICATE_MEDIA_OBJECTS} a duplicate may copy`
+        )
+      }
       try {
         await copyDocumentMedia(rehosted.references, documentId)
       } catch (error) {
