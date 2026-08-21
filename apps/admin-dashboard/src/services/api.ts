@@ -527,7 +527,9 @@ export async function bulkDeleteStaleDocuments(
   failed: number
   workspacesDeleted: number
   deletedDocuments: { slug: string; title: string | null }[]
-  failedDocuments: { slug: string; error: string }[]
+  // Absent on a dry run, so the guard at the call site has to be real rather
+  // than decorative.
+  failedDocuments?: { slug: string; error: string }[]
 }> {
   return fetchApi('/api/admin/documents/stale/bulk-delete', {
     method: 'POST',
