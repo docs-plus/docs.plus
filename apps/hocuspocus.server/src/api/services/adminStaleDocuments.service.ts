@@ -228,6 +228,10 @@ async function scoreCandidates(rows: CandidateRow[]): Promise<ScoredStaleDoc[]> 
   })
 }
 
+// The one staleness test. The list endpoint and the bulk purge share it so the
+// set a caller can see and the set it can erase cannot drift apart.
+const isStale = (doc: ScoredStaleDoc): boolean => doc.stale_score > 0
+
 // Cache the scored stale set (the cross-DB heavy step) so pagination and
 // repeat loads within the TTL avoid re-scanning Prisma + Supabase.
 let scoredCache: { data: ScoredStaleDoc[]; expiresAt: number } | null = null
@@ -365,7 +369,7 @@ export async function listStale(
   const { page, limit, minScore, sortBy, sortDir } = params
 
   const scored = await getScoredStaleDocs(prisma)
-  const filtered = scored.filter((d) => d.stale_score >= minScore && d.stale_score > 0)
+  const filtered = scored.filter((d) => isStale(d) && d.stale_score >= minScore)
 
   const sortKey = sortBy as keyof ScoredStaleDoc
   filtered.sort((a, b) => {
@@ -481,22 +485,40 @@ export async function bulkDeleteStale(
   slugs: string[],
   dryRun: boolean
 ): Promise<BulkDeleteStaleResult> {
+  // The purge is permanent, so staleness is re-asserted here rather than trusted
+  // from the caller's list. The caches are dropped first because that list is the
+  // thing under suspicion — a slug the client read minutes ago may be live now.
+  invalidateStaleCaches()
+  const staleSlugs = new Set((await getScoredStaleDocs(prisma)).filter(isStale).map((d) => d.slug))
+
   const documents = await prisma.documentMetadata.findMany({
-    where: { slug: { in: slugs } },
+    where: { slug: { in: slugs.filter((slug) => staleSlugs.has(slug)) } },
     select: { slug: true, title: true, documentId: true }
   })
+
+  // Everything the caller named that this pass will not touch, with its reason.
+  const purgeable = new Set(documents.map((d) => d.slug))
+  const failed: { slug: string; error: string }[] = slugs
+    .filter((slug) => !purgeable.has(slug))
+    .map((slug) => ({ slug, error: 'Document is not currently stale' }))
+  if (failed.length > 0) {
+    adminLogger.warn(
+      { refused: failed.length, requested: slugs.length },
+      'Bulk stale delete refused slugs that are not in the current stale set'
+    )
+  }
 
   if (dryRun) {
     return {
       dryRun: true,
       documentsFound: documents.length,
-      documents: documents.map((d) => ({ slug: d.slug, title: d.title }))
+      documents: documents.map((d) => ({ slug: d.slug, title: d.title })),
+      failedDocuments: failed
     }
   }
 
   let workspacesDeleted = 0
   const deleted: { slug: string; title: string | null }[] = []
-  const failed: { slug: string; error: string }[] = []
   const supabase = getSupabaseClient()
 
   for (const doc of documents) {

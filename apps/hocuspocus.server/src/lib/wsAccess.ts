@@ -9,7 +9,8 @@ export function resolveWsAccess(a: {
   ownerId: string | null
   user: { sub?: string; is_anonymous?: boolean } | null
   lookupFailed: boolean
-  /** Soft-deleted docs are sealed so the store worker cannot resurrect them. */
+  /** True for a soft delete and for a purge tombstone: both must deny, so the store
+   *  worker and a stale client mirror cannot resurrect the document. */
   deleted: boolean
 }): WsAccess {
   if (a.lookupFailed || a.deleted) return 'deny'

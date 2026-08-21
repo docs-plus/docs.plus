@@ -31,6 +31,21 @@ export async function purgeDocumentFootprint(
   if (!documentId) return { purged: 0 }
   if (!supabase) throw new Error('Supabase service-role client unavailable')
 
+  // A retention scope is asserted here as well as on the row delete below, because
+  // the RPC and the media delete run first and neither can be undone. This is a
+  // check, not a lock: a Restore landing after this read still loses its chat,
+  // analytics and editor media, and the row delete then matches nothing.
+  if ('retention' in scope) {
+    const current = await prisma.documentMetadata.findUnique({
+      where: { documentId },
+      select: { deletedAt: true }
+    })
+    if (!current?.deletedAt || current.deletedAt >= scope.retention) {
+      purgeLogger.warn({ documentId, slug }, 'Purge refused — document is no longer past retention')
+      return { purged: 0 }
+    }
+  }
+
   const { error } = await supabase.rpc('purge_document_footprint', {
     p_document_id: documentId,
     p_slug: slug
@@ -51,9 +66,9 @@ export async function purgeDocumentFootprint(
     timestamp: new Date().toISOString()
   })
 
-  // Row delete and epoch bump share a transaction, because the delete frees the slug.
-  // A draft opened in the gap would derive this document's id, and let a stale
-  // IndexedDB mirror sync the erased content back.
+  // Row delete, tombstone and epoch bump share a transaction, because the delete frees
+  // the slug. A draft opened in the gap would derive this document's id, and let a
+  // stale IndexedDB mirror sync the erased content back.
   const count = await prisma.$transaction(
     async (tx) => {
       const { count } = await tx.documentMetadata.deleteMany({
@@ -63,6 +78,16 @@ export async function purgeDocumentFootprint(
         }
       })
       if (count === 0) return 0
+
+      // Above the derived-id check on purpose: a random-id document takes the warn
+      // return below, and it is just as resurrectable by a client already holding the
+      // id. The epoch only guards a re-derivation from the slug. `update: {}` keeps the
+      // first purge's timestamp instead of failing the transaction on a repeat.
+      await tx.documentPurgeTombstone.upsert({
+        where: { documentId },
+        create: { documentId },
+        update: {}
+      })
 
       // One key for the read, the derivation and the bump. `updateDocument` and the store
       // worker can both persist an un-normalized slug, and `resolveDraftDocumentId` reads
@@ -90,11 +115,10 @@ export async function purgeDocumentFootprint(
       })
       return count
     },
-    // The reaper is hourly and background, so both bounds favour finishing over
-    // failing fast — the opposite of the save path's. Prisma's 2s/5s defaults are a
-    // deadline the bare deleteMany never had. The worst live document is 23 MB across
-    // 18 cascading version rows (max 119 versions). A P2028 here is permanent, because
-    // the retry re-runs an already-erased footprint into the same wall.
+    // The reaper is hourly and background, so both bounds favour finishing over failing
+    // fast — the opposite of the save path's. Prisma's 2s/5s defaults are a deadline the
+    // bare deleteMany never had, and the worst live document is 23 MB across 18 cascading
+    // version rows. A P2028 re-runs an already-erased footprint into the same wall.
     { maxWait: 10_000, timeout: 30_000 }
   )
   return { purged: count }
