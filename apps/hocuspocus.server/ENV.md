@@ -48,8 +48,8 @@ These have no default and fail startup if missing.
 
 The collaboration process serves one internal listener carrying both `/metrics` and the service-role content-apply endpoint. Never expose it through Traefik.
 
-- **`HOCUSPOCUS_INTERNAL_HTTP_PORT`** — moving it off `4003` also requires editing `scripts/observability/prometheus/prometheus.yml` (the scrape target port), and Prometheus only picks that file up after `docker restart docsplus-prometheus`. Compose ignores mounted-config content changes.
-- **`HOCUSPOCUS_INTERNAL_HTTP_HOST`** — `0.0.0.0` matches the bind this listener has always used. **Do not tighten the default.** Prometheus scrapes the port cross-container by DNS discovery, and no alert fires on a target that simply stops reporting. A loopback default would therefore silently kill every collaboration-process metric the moment the Compose env went missing. On a host-run dev machine set `127.0.0.1` yourself. The endpoint mutates documents, and the service-role key shipped in `.env.example` is the world-known Supabase demo JWT, not a secret.
+- **`HOCUSPOCUS_INTERNAL_HTTP_PORT`** — moving it off `4003` also requires editing `scripts/observability/prometheus/prometheus.yml` (the scrape target port). The observability job restarts Prometheus after `up -d`. A plain `compose up -d` still ignores mounted-config content.
+- **`HOCUSPOCUS_INTERNAL_HTTP_HOST`** — `0.0.0.0` matches the bind this listener has always used. **Do not tighten the default.** Prometheus scrapes the port cross-container by DNS discovery. `infra-target-down` pages when the `hocuspocus-server` scrape target is `up==0`. A loopback default would still kill every collaboration-process metric the moment the Compose env went missing. On a host-run dev machine set `127.0.0.1` yourself. The endpoint mutates documents, and the service-role key shipped in `.env.example` is the world-known Supabase demo JWT, not a secret.
 - **`HOCUSPOCUS_INTERNAL_URL`** — where the REST process forwards content applies. Compose sets `http://hocuspocus-server:4003`.
 
 ## Security
@@ -69,6 +69,7 @@ Redis is optional; features degrade gracefully without it (rate limiting is disa
 | `REDIS`                 | boolean | `false`     |                                                                                                                                   |
 | `REDIS_HOST`            | string  | `localhost` | If unset at runtime, `getRedisClient()` returns `null` (Redis disabled)                                                           |
 | `REDIS_PORT`            | number  | `6379`      |                                                                                                                                   |
+| `REDIS_DB`              | number  | `0`         | Logical Redis database index                                                                                                      |
 | `REDIS_TLS`             | boolean | `false`     |                                                                                                                                   |
 | `REDIS_CONNECT_TIMEOUT` | number  | `30000`     |                                                                                                                                   |
 | `REDIS_COMMAND_TIMEOUT` | number  | `60000`     | Producer-only connections override this with 5s in `lib/queue.ts`; the blocking worker connections set no command timeout at all. |
