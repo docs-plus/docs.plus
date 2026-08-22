@@ -104,7 +104,7 @@ jobs:
       app_deploy: ${{ steps.t.outputs.app_deploy }}
       skip_app_ci: ${{ steps.t.outputs.skip_app_ci }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 🧭 Parse trigger
         id: t
         env:
@@ -141,10 +141,10 @@ jobs:
       changed_extensions: ${{ steps.assemble.outputs.list }}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - id: filter
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           filters: .github/filters/extensions.yaml
 
@@ -198,7 +198,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -223,7 +223,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -247,7 +247,7 @@ jobs:
 
       - name: 📤 Upload Audit Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-audit-${{ github.sha }}
           path: |
@@ -285,7 +285,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-bun
       - uses: ./.github/actions/build-extensions
         with:
@@ -317,7 +317,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -375,7 +375,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -435,7 +435,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout Code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
 
