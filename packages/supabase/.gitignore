@@ -1,6 +1,6 @@
 # Supabase
 .branches
-.temp
+/.temp/
 .env
 
 node_modules
