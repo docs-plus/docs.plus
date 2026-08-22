@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -80,7 +80,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -110,7 +110,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -136,7 +136,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -162,7 +162,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
@@ -207,7 +207,7 @@ jobs:
 
     steps:
       - name: 📦 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
