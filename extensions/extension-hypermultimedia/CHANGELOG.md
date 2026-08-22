@@ -8,6 +8,13 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Iframe embeds no longer set `allowfullscreen` when `allow` already includes
+  `fullscreen`. Chrome treats `allow` as the winner and warned on Vimeo, Loom,
+  and Spotify. YouTube still emits `allowfullscreen` because its `allow` list
+  does not include fullscreen.
+
 ## [2.0.0] — 2026-08-11
 
 First major release on the docs.plus alpha-v2 line. The kit fully retires

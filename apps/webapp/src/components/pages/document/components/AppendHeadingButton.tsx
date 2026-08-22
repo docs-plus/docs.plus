@@ -51,8 +51,7 @@ const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
 const AppendHeadingButton = ({ className }: { className: string }) => {
   const editor = useStore((state) => state.settings.editor.instance)
   const isMobile = useStore((state) => state.settings.editor.isMobile)
-
-  const { close: closeModal } = isMobile ? useModal() || {} : {}
+  const closeModal = useModal()?.close
 
   const appendHeadingToEnd = useCallback(() => {
     if (!editor) return

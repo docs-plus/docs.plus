@@ -103,19 +103,29 @@ export function resolveEmbedLayoutDimensions(
   return fitLayoutToEditorColumn(editor, width, height)
 }
 
+/** Chrome warns if `allow` already names fullscreen and `allowfullscreen` is also set. */
+function allowPolicyIncludesFullscreen(allow: string): boolean {
+  return allow.split(';').some((directive) => {
+    const feature = directive.trim().split(/\s+/, 1)[0]?.toLowerCase()
+    return feature === 'fullscreen'
+  })
+}
+
 export function resolveFullscreenIframeAttributes(
   attrs: Record<string, unknown>,
   options: FullscreenIframeKitOptions,
   width: number,
   height: number
 ): Record<string, string | number | boolean> {
+  const allow = String(resolveEmbedOption(attrs, options, 'allow') ?? options.allow)
+  const wantFullscreen = Boolean(
+    resolveEmbedOption(attrs, options, 'allowfullscreen') ?? options.allowfullscreen
+  )
   return {
     width,
     height,
-    allow: String(resolveEmbedOption(attrs, options, 'allow') ?? options.allow),
+    allow,
     frameborder: Number(resolveEmbedOption(attrs, options, 'frameborder') ?? options.frameborder),
-    allowfullscreen: Boolean(
-      resolveEmbedOption(attrs, options, 'allowfullscreen') ?? options.allowfullscreen
-    )
+    allowfullscreen: wantFullscreen && !allowPolicyIncludesFullscreen(allow)
   }
 }
