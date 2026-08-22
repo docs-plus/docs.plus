@@ -24,13 +24,10 @@ interface ModalContextType {
 }
 
 export const ModalContext = createContext<ModalContextType | null>(null)
+
+/** Optional close handle. Shared TOC rows call this on desktop, where no drawer exists. */
 export const useModal = () => {
-  const context = useContext(ModalContext)
-  if (!context) {
-    console.warn('useModal must be used within a ModalDrawer')
-    return
-  }
-  return context
+  return useContext(ModalContext)
 }
 
 /** Drawer children only — throws when `ModalContext` is missing (no silent `undefined`). */

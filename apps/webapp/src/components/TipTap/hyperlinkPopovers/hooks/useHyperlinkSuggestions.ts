@@ -1,5 +1,5 @@
 import { getUserBookmarks } from '@api'
-import { useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { useQuery } from '@tanstack/react-query'
 import { type TBookmarkWithMessage } from '@types'
 import { logger } from '@utils/logger'
@@ -23,6 +23,9 @@ export function useHyperlinkSuggestions({
   disabled = false
 }: UseHyperlinkSuggestionsArgs): UseHyperlinkSuggestionsResult {
   const workspaceId = useStore((state) => state.settings.workspaceId)
+  // Bookmarks are per person, so the reader's id belongs in the cache key. Without
+  // it a background sign-in keeps serving the anonymous (empty) result.
+  const userId = useAuthStore((state) => state.profile?.id)
   const [headings, setHeadings] = useState<HeadingSuggestion[]>([])
 
   // Headings are O(doc) to collect; skip the walk while the desktop picker is collapsed.
@@ -47,7 +50,7 @@ export function useHyperlinkSuggestions({
   const queriesEnabled = Boolean(workspaceId) && !disabled
 
   const active = useQuery({
-    queryKey: ['hl-bookmarks', workspaceId, 'active'],
+    queryKey: ['hl-bookmarks', workspaceId, userId, 'active'],
     queryFn: async () => {
       const { data, error } = await getUserBookmarks({ workspaceId, archived: false })
       if (error) {
@@ -63,7 +66,7 @@ export function useHyperlinkSuggestions({
   })
 
   const archived = useQuery({
-    queryKey: ['hl-bookmarks', workspaceId, 'archived'],
+    queryKey: ['hl-bookmarks', workspaceId, userId, 'archived'],
     queryFn: async () => {
       const { data, error } = await getUserBookmarks({ workspaceId, archived: true })
       if (error) {
