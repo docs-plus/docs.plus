@@ -69,7 +69,7 @@
     "bullmq": "^5.79.0",
     "hono": "^4.12.32",
     "ioredis": "^5.11.1",
-    "isbot": "^5.1.43",
+    "isbot": "^5.2.1",
     "linkedom": "0.18.13",
     "mammoth": "1.12.0",
     "metascraper": "5.50.6",
