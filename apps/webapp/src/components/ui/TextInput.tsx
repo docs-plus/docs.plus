@@ -23,7 +23,7 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   endIcon?: IconType | ReactNode
   /** Size of icons (default based on input size) */
   iconSize?: number
-  /** Additional class for the label text (inside-label pattern) */
+  /** Extra class on the label text (inside and above). */
   labelClassName?: string
   /** Helper text displayed below the input */
   helperText?: string
@@ -147,7 +147,9 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         <div className={twMerge('form-control w-full', wrapperClassName)}>
           {label && (
             <label htmlFor={id} className="label">
-              <span className="label-text text-base-content">{label}</span>
+              <span className={twMerge('label-text text-base-content', labelClassName)}>
+                {label}
+              </span>
             </label>
           )}
           {hasIcons ? (

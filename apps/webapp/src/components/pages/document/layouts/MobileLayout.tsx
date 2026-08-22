@@ -1,4 +1,3 @@
-import BottomSheet from '@components/BottomSheet'
 import { ComposerLinkDialogHost } from '@components/chatroom/components/MessageComposer/components/ComposerLinkDialog'
 import ChatPane from '@components/pages/document/components/chat/ChatPane'
 import EditFAB from '@components/pages/document/components/EditFAB'
@@ -69,11 +68,6 @@ const MobileLayout = () => {
           <ComposerLinkDialogHost />
         </>
       )}
-      {/*
-        The remaining sheets stay portaled to the body. Only the chat needed to reserve
-        layout height, and react-modal-sheet positions by transform, which cannot.
-      */}
-      <BottomSheet />
     </>
   )
 }

@@ -1,3 +1,4 @@
+import SignInSheet from '@components/auth/SignInSheet'
 import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
 import MessageReactionSheet from '@components/pages/document/components/chat/MessageReactionSheet'
 import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
@@ -30,7 +31,8 @@ const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   mediaControls: (data) => <MediaControlsSheet data={data} />,
   mediaInsert: (data) => <MediaInsertSheet data={data} />,
   historyCompare: () => <HistoryCompareSheet />,
-  messageReaction: () => <MessageReactionSheet />
+  messageReaction: () => <MessageReactionSheet />,
+  signIn: (data) => <SignInSheet data={data} />
 }
 
 const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
@@ -73,6 +75,10 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   },
   messageReaction: {
     id: 'message_reaction_sheet',
+    detent: 'content'
+  },
+  signIn: {
+    id: 'sign_in_sheet',
     detent: 'content'
   }
 }

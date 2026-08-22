@@ -1,9 +1,13 @@
+import {
+  announceSignedInProfile,
+  applySignedInProfile
+} from '@components/auth/applySignedInProfile'
+import * as toast from '@components/toast'
 import { supabaseClient } from '@utils/supabase'
 // Type-only import backed by @types/google-one-tap (the runtime ships no types).
 // One Tap runtime is Google's GSI script loaded via next/script below — not the
 // google-one-tap npm package, which clobbers window.onload and dies on SPA nav.
 import type { CredentialResponse, PromptMomentNotification } from 'google-one-tap'
-import { useRouter } from 'next/router'
 import Script from 'next/script'
 import { useCallback, useEffect, useRef } from 'react'
 
@@ -26,7 +30,6 @@ const POLL_INTERVAL_MS = 200
 
 const GoogleOneTapAuth = () => {
   const supabase = supabaseClient
-  const router = useRouter()
   const isInitialized = useRef(false)
   const nonceRef = useRef<string | null>(null)
 
@@ -38,22 +41,25 @@ const GoogleOneTapAuth = () => {
           return
         }
 
-        const { error } = await supabase.auth.signInWithIdToken({
+        const { data, error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
           nonce: nonceRef.current
         })
 
         if (error) throw error
+        if (!data.user) return
 
-        // TODO: Replace router.reload() with reactive auth state update
-        // Many components depend on profile auth state, so we reload for now
-        router.reload()
+        // Acknowledge before the profile round trip — the sign-in already earned
+        // the feedback, and gating it on a fetch just adds dead air.
+        toast.Success('Signed in')
+
+        announceSignedInProfile(await applySignedInProfile(data.user))
       } catch (error) {
         console.error('Google One Tap login failed:', error)
       }
     },
-    [supabase.auth, router]
+    [supabase.auth]
   )
 
   const initializeGoogleOneTap = useCallback(async () => {

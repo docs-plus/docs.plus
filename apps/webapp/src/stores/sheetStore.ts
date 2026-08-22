@@ -14,6 +14,7 @@ export type SheetType =
   | 'mediaInsert'
   | 'historyCompare'
   | 'messageReaction'
+  | 'signIn'
   | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
 
@@ -73,6 +74,10 @@ export interface SheetDataMap {
   historyCompare: Record<string, never>
   /** Mobile reaction picker. Selection reads `emojiPicker` in the chat store. */
   messageReaction: Record<string, never>
+  /** Phone sign-in. Desktop still uses GlobalDialog. */
+  signIn: {
+    returnTo?: string
+  }
 }
 
 export type SheetData = SheetDataMap[keyof SheetDataMap]

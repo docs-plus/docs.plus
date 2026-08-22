@@ -1,9 +1,7 @@
-import { getUserById } from '@api'
+import { applySignedInProfile } from '@components/auth/applySignedInProfile'
 import * as toast from '@components/toast'
-import { useApi } from '@hooks/useApi'
 import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
-import type { Profile } from '@types'
 import { trackSignUpOnce } from '@utils/analytics'
 import { captureUnknown, setObservabilityUser } from '@utils/observability'
 import { supabaseClient } from '@utils/supabase'
@@ -30,21 +28,13 @@ const reportPkceExchangeFailure = () => {
 
 export const useOnAuthStateChange = () => {
   const setLoading = useAuthStore((state) => state.setLoading)
-  const { request: getUserByIdRequest } = useApi(getUserById, null, false)
 
   const getUserProfile = useCallback(
     async (user: User) => {
-      const { data, error } = await getUserByIdRequest(user.id)
-      if (error) throw error
-      if (!data) {
-        console.warn('No public.users row for authenticated user; signing out.')
-        await supabaseClient.auth.signOut()
-        return
-      }
-      useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' } as Profile)
+      await applySignedInProfile(user)
       setLoading(false)
     },
-    [getUserByIdRequest, setLoading]
+    [setLoading]
   )
 
   useEffect(() => {
@@ -67,6 +57,11 @@ export const useOnAuthStateChange = () => {
         setObservabilityUser(session?.user?.id ?? null)
       }
 
+      // SIGNED_IN stays out of this branch. auth-js re-emits it on every tab focus
+      // (_recoverAndRefresh) and across tabs, and on a PKCE return it arrives beside
+      // INITIAL_SESSION for the same session. An identity guard cannot separate those:
+      // the second event lands before the first fetch resolves, so both see a null
+      // profile and both fetch. Sign-in calls hydrate at their own call site instead.
       if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
           setLoading(false)
@@ -84,15 +79,11 @@ export const useOnAuthStateChange = () => {
       }
     })
 
-    const handleOffline = () => {
-      data.subscription.unsubscribe()
-    }
-
-    window.addEventListener('offline', handleOffline)
-
+    // No `offline` unsubscribe here. It used to tear the subscription down for
+    // good — nothing re-subscribed on `online` — so one blip left the app deaf to
+    // every later auth event. A full reload used to hide that; it no longer does.
     return () => {
       data.subscription.unsubscribe()
-      window.removeEventListener('offline', handleOffline)
     }
   }, [getUserProfile, setLoading])
 }
