@@ -4,11 +4,11 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
-import Loading from '@components/ui/Loading'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
+import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
@@ -36,9 +36,6 @@ function HomeFlexSpacer({ compact }: { compact: boolean }) {
   )
 }
 
-const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {
-  loading: () => <Loading />
-})
 const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
   loading: () => <SettingsPanelSkeleton />
 })
@@ -52,7 +49,6 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
   const [displayHostname, setDisplayHostname] = useState(hostname)
   const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
-  const [isSignInOpen, setIsSignInOpen] = useState(false)
   const { navigateToDocument, isLoading } = useNavigateToDocument()
   useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
   const keyboardCompact = useStore((state) => state.isKeyboardOpen)
@@ -108,7 +104,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                 <Button
                   shape="circle"
                   className="btn-soft btn-primary size-11 border-0 sm:size-12"
-                  onClick={() => setIsSignInOpen(true)}
+                  onClick={() => openInlineSignInDialog()}
                   aria-label="Sign in"
                   tooltip="Sign in"
                   tooltipPlacement="bottom">
@@ -184,14 +180,6 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
       {/* Settings confirms (rename/trash/private) dispatch here; without this mount they render nothing on `/`. */}
       <GlobalDialog />
-
-      {isAuthServiceAvailable && !user && (
-        <Modal open={isSignInOpen} onOpenChange={setIsSignInOpen}>
-          <ModalContent size="sm" aria-label="Sign in" className="overflow-hidden p-0">
-            <SignInForm variant="card" showHeader onClose={() => setIsSignInOpen(false)} />
-          </ModalContent>
-        </Modal>
-      )}
     </>
   )
 }

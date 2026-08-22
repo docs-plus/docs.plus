@@ -12,6 +12,7 @@ import {
 import { MOTION_DIALOG_IN_MS, MOTION_DIALOG_OUT_MS, prefersReducedMotion } from '@utils/motion'
 import * as React from 'react'
 import { useId } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface ModalProps {
   open: boolean
@@ -72,13 +73,29 @@ export function Modal({
   return <ModalContext.Provider value={modal}>{children}</ModalContext.Provider>
 }
 
+type ModalAlign = 'center' | 'top'
+
 type Props = {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
-  align?: 'center' | 'top'
+  align?: ModalAlign
   mobileTakeover?: boolean
   className?: string
   children: React.ReactNode
 } & Omit<React.HTMLProps<HTMLDivElement>, 'size'>
+
+function overlayAlignClass(align: ModalAlign, mobileTakeover: boolean): string {
+  const takeoverPad = mobileTakeover ? 'max-md:p-0' : ''
+  switch (align) {
+    case 'top':
+      return twMerge('items-start p-4 pt-[max(env(safe-area-inset-top,1rem),1rem)]', takeoverPad)
+    case 'center':
+      return twMerge('items-center p-4', takeoverPad)
+    default: {
+      const _exhaustive: never = align
+      return _exhaustive
+    }
+  }
+}
 
 export function ModalHeading({
   children,
@@ -214,18 +231,20 @@ export const ModalContent = function ModalContent({
         style={backdropStyles}
         lockScroll>
         <div
-          className={`fixed inset-0 flex justify-center p-4 ${mobileTakeover ? 'max-md:p-0' : ''} ${
-            align === 'top'
-              ? 'items-start pt-[max(env(safe-area-inset-top,1rem),1rem)]'
-              : 'items-center'
-          }`}>
+          className={twMerge(
+            'fixed inset-0 flex justify-center',
+            overlayAlignClass(align, mobileTakeover)
+          )}>
           <FloatingFocusManager context={context}>
             <div
               ref={ref}
               style={cardStyles}
-              className={`${sizeClasses[size]} ${modalPanelClassName} ${
-                mobileTakeover ? modalPanelTakeoverClassName : ''
-              } ${className}`}
+              className={twMerge(
+                sizeClasses[size],
+                modalPanelClassName,
+                mobileTakeover && modalPanelTakeoverClassName,
+                className
+              )}
               aria-label={ariaLabel}
               aria-labelledby={ariaLabel ? undefined : labelledBy}
               aria-describedby={describedBy}

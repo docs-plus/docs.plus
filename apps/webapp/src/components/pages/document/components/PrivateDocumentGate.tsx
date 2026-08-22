@@ -3,9 +3,11 @@ import { modalPanelFrameClassName } from '@components/ui/Dialog'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { DocsPlusIcon, Icons } from '@icons'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
+import { supabaseClient } from '@utils/supabase'
 import { type PrivateGateVariant, toPrivateGateVariant } from '@utils/toPrivateGateVariant'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export type { PrivateGateVariant }
@@ -41,6 +43,29 @@ const PrivateDocumentGate = ({
   const copy = GATE_COPY[variant]
   const context = title ? `${title} · docs.plus/${slug}` : `docs.plus/${slug}`
   const goHome = () => router.push('/')
+  const reaskedRef = useRef(false)
+
+  // OAuth and the magic link return through a full page load, so
+  // getServerSideProps ran before the browser exchanged `?code=`. The Google
+  // popup hydrates this tab on SIGNED_IN with no reload. Either way this prop
+  // can be stale. Re-ask the server — never decide access here (SR-1).
+  useEffect(() => {
+    if (variant !== 'sign-in-required') return
+
+    const { data } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      if ((event !== 'INITIAL_SESSION' && event !== 'SIGNED_IN') || !session?.user) return
+      if (reaskedRef.current) return
+      reaskedRef.current = true
+      // Non-shallow, so getServerSideProps re-runs with the new auth cookie.
+      // `shallow: true` would skip it and silently do nothing. The fragment-free
+      // form keeps `onlyAHashChange` from swallowing a `#history` deep link.
+      router.replace(window.location.pathname + window.location.search, undefined, {
+        scroll: false
+      })
+    })
+
+    return () => data.subscription.unsubscribe()
+  }, [variant, router])
 
   return (
     <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-[var(--pad-well)] px-4 py-8">

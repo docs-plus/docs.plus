@@ -3,6 +3,7 @@ import '../styles/shell.scss'
 import '@config'
 
 import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
+import BottomSheet from '@components/BottomSheet'
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
@@ -119,6 +120,7 @@ export default function MyApp({
           <Component {...pageProps} />
         </AppQueryClientRoot>
         <Toaster />
+        <BottomSheet />
       </MotionConfig>
     </div>
   )

@@ -1,4 +1,3 @@
-import SignInForm from '@components/auth/SignInForm'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
@@ -14,6 +13,7 @@ import { Icons } from '@icons'
 import { releasePadEditMode } from '@services/openHeadingChatroom'
 import { useAuthStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
+import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import dynamic from 'next/dynamic'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -359,7 +359,10 @@ const MobilePadTitle = () => {
               <PrivateIndicator />
               <ReadOnlyIndicator />
               {user && <NotificationButton />}
-              <UserProfileButton user={user} onProfileClick={handleProfileOpen} />
+              <UserProfileButton
+                user={user}
+                onProfileClick={user ? handleProfileOpen : () => openInlineSignInDialog()}
+              />
             </div>
           </div>
 
@@ -369,21 +372,13 @@ const MobilePadTitle = () => {
         </div>
       </header>
 
-      <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-        <ModalContent
-          size={user ? '4xl' : 'md'}
-          mobileTakeover={!!user}
-          aria-label={user ? 'Settings' : 'Sign in'}
-          className="p-0">
-          {user ? (
+      {user && (
+        <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
+          <ModalContent size="4xl" mobileTakeover aria-label="Settings" className="p-0">
             <SettingsPanel onClose={() => setProfileModalOpen(false)} />
-          ) : (
-            <div className="w-full p-6 sm:p-8">
-              <SignInForm variant="inline" />
-            </div>
-          )}
-        </ModalContent>
-      </Modal>
+          </ModalContent>
+        </Modal>
+      )}
     </>
   )
 }

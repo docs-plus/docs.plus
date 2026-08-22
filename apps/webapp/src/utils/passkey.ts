@@ -44,3 +44,85 @@ export function toPasskeyOutcome(error: unknown, fallback: string): PasskeyOutco
 export function browserSupportsPasskeys(): boolean {
   return typeof window !== 'undefined' && typeof window.PublicKeyCredential === 'function'
 }
+
+/** Autofill needs conditional mediation, which Safari 16 and older Chrome lack. */
+export async function browserSupportsPasskeyAutofill(): Promise<boolean> {
+  if (!browserSupportsPasskeys()) return false
+  const api = window.PublicKeyCredential as typeof PublicKeyCredential & {
+    isConditionalMediationAvailable?: () => Promise<boolean>
+  }
+  if (typeof api.isConditionalMediationAvailable !== 'function') return false
+  try {
+    return await api.isConditionalMediationAvailable()
+  } catch {
+    return false
+  }
+}
+
+const fromBase64Url = (value: string): ArrayBuffer => {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/')
+  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes.buffer
+}
+
+const toBase64Url = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+/** Auth does not export these converters. Prefer the native WebAuthn JSON bridge. */
+export function toCredentialRequestOptions(
+  serverOptions: Record<string, unknown>
+): PublicKeyCredentialRequestOptions {
+  const api = window.PublicKeyCredential as typeof PublicKeyCredential & {
+    parseRequestOptionsFromJSON?: (o: unknown) => PublicKeyCredentialRequestOptions
+  }
+  if (typeof api.parseRequestOptionsFromJSON === 'function') {
+    return api.parseRequestOptionsFromJSON(serverOptions)
+  }
+
+  const { challenge, allowCredentials, ...rest } = serverOptions as {
+    challenge: string
+    allowCredentials?: { id: string; transports?: string[] }[]
+  }
+  return {
+    ...rest,
+    challenge: fromBase64Url(challenge),
+    ...(allowCredentials?.length
+      ? {
+          allowCredentials: allowCredentials.map((credential) => ({
+            ...credential,
+            id: fromBase64Url(credential.id),
+            type: 'public-key' as const
+          }))
+        }
+      : {})
+  } as PublicKeyCredentialRequestOptions
+}
+
+export function toAuthenticationResponse(
+  credential: PublicKeyCredential
+): AuthenticationResponseJSON {
+  if (typeof credential.toJSON === 'function') {
+    return credential.toJSON() as AuthenticationResponseJSON
+  }
+
+  const response = credential.response as AuthenticatorAssertionResponse
+  return {
+    id: credential.id,
+    rawId: toBase64Url(credential.rawId),
+    type: credential.type,
+    authenticatorAttachment: credential.authenticatorAttachment ?? undefined,
+    clientExtensionResults: credential.getClientExtensionResults(),
+    response: {
+      clientDataJSON: toBase64Url(response.clientDataJSON),
+      authenticatorData: toBase64Url(response.authenticatorData),
+      signature: toBase64Url(response.signature),
+      userHandle: response.userHandle ? toBase64Url(response.userHandle) : undefined
+    }
+  } as AuthenticationResponseJSON
+}

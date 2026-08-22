@@ -1,4 +1,3 @@
-import SignInForm from '@components/auth/SignInForm'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
@@ -17,6 +16,7 @@ import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
 import { useThemeStore } from '@stores'
+import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import React, { useState } from 'react'
@@ -159,7 +159,7 @@ const PadTitle = () => {
                       <Icons.sun size={20} />
                     )}
                   </Button>
-                  <Button variant="neutral" onClick={() => setProfileModalOpen(true)}>
+                  <Button variant="neutral" onClick={() => openInlineSignInDialog()}>
                     Sign in
                   </Button>
                 </>
@@ -176,22 +176,13 @@ const PadTitle = () => {
         </ModalContent>
       </Modal>
 
-      {/* Profile Modal */}
-      <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-        <ModalContent
-          size={user ? '5xl' : 'md'}
-          mobileTakeover={!!user}
-          aria-label={user ? 'Settings' : 'Sign in'}
-          className="p-0">
-          {user ? (
+      {user && (
+        <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
+          <ModalContent size="5xl" mobileTakeover aria-label="Settings" className="p-0">
             <SettingsPanel onClose={() => setProfileModalOpen(false)} />
-          ) : (
-            <div className="w-full p-6 sm:p-8">
-              <SignInForm variant="inline" />
-            </div>
-          )}
-        </ModalContent>
-      </Modal>
+          </ModalContent>
+        </Modal>
+      )}
     </>
   )
 }
