@@ -177,6 +177,10 @@ tmp/
 # Supabase Studio scratch (user-local snippets)
 packages/supabase/snippets/
 
+# Supabase CLI local cache (edge runtime secrets bundle). Gitignored already
+# under packages/supabase/.gitignore; anchored here so root tools see it.
+/packages/supabase/.temp/
+
 # Sensitive documentation (contains env templates). Anchored to the root on
 # purpose: unanchored, these match at any depth, and `core.ignorecase=true` on
 # macOS made `QUICKSTART.md` swallow `docs/api/quickstart.md` silently.

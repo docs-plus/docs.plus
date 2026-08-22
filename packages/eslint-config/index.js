@@ -18,6 +18,9 @@ export default [
       // never expanded, so a literal `~` directory of vendored sources appears
       // wherever the command ran. Gitignored, but ESLint does not read that.
       '**/~/**',
+      // Supabase CLI writes a minified edge-runtime bundle under `.temp`.
+      // Gitignored, but ESLint does not read that — same class as `~/`.
+      '**/.temp/**',
       '**/.claude/worktrees/**',
       '**/dist/**',
       '**/build/**',
