@@ -38,7 +38,9 @@ export const useNotificationToggle = () => {
     }).then(({ data }) => {
       setNotificationState((data as NotificationState) ?? 'MENTIONS')
     })
-  }, [chatRoom?.headingId, fetchNotifState])
+    // `user?.id` is a dependency because this state is per person. A background
+    // sign-in would otherwise leave the anonymous answer on screen.
+  }, [chatRoom?.headingId, fetchNotifState, user?.id])
 
   const handleToggle = useCallback(async () => {
     if (!chatRoom?.headingId || !user?.id) return

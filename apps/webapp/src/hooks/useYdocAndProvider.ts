@@ -47,6 +47,10 @@ const useYdocAndProvider = ({
   const authStoppedRef = useRef(false)
   const authRearmTimerRef = useRef<NodeJS.Timeout | null>(null)
   const authRearmCountRef = useRef(0)
+  // The server decides readOnly once, inside onAuthenticate. A visitor who signs
+  // in on a live anonymous socket therefore keeps anonymous scope until it reopens.
+  const connectedWithSessionRef = useRef(false)
+  const rescopePendingRef = useRef(false)
   const errorGraceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const collabReportedRef = useRef(new Set<string>())
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
@@ -84,6 +88,7 @@ const useYdocAndProvider = ({
             'WS token: getSession() failed twice, connecting anonymously',
             error.message
           )
+        connectedWithSessionRef.current = Boolean(data.session?.user)
         return JSON.stringify({
           accessToken: data.session?.access_token ?? (error ? '' : (accessToken ?? '')),
           slug,
@@ -134,6 +139,16 @@ const useYdocAndProvider = ({
       },
       onDisconnect: (data) => {
         isSyncedRef.current = false
+
+        // Reconnect from here, not back-to-back with disconnect(): connect()
+        // early-returns while the status is still Connected, which would strand
+        // the editor offline. Returning skips the status writes, so this
+        // deliberate close cannot arm a false 'error' timer.
+        if (rescopePendingRef.current) {
+          rescopePendingRef.current = false
+          providerRef.current?.connect()
+          return
+        }
 
         if (authStoppedRef.current) return
 
@@ -227,6 +242,8 @@ const useYdocAndProvider = ({
       isSyncedRef.current = false
       authStoppedRef.current = false
       authRearmCountRef.current = 0
+      connectedWithSessionRef.current = false
+      rescopePendingRef.current = false
       collabReported.clear()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -235,9 +252,18 @@ const useYdocAndProvider = ({
   useEffect(() => {
     const { data } = supabaseClient.auth.onAuthStateChange((event) => {
       if (event !== 'TOKEN_REFRESHED' && event !== 'SIGNED_IN') return
-      if (!authStoppedRef.current) return
-      authRearmCountRef.current = 0
-      providerRef.current?.connect()
+
+      if (authStoppedRef.current) {
+        authRearmCountRef.current = 0
+        providerRef.current?.connect()
+        return
+      }
+
+      // A healthy socket opened anonymously must reopen to pick up the new scope.
+      if (event === 'SIGNED_IN' && !connectedWithSessionRef.current) {
+        rescopePendingRef.current = true
+        providerRef.current?.disconnect()
+      }
     })
     return () => data.subscription.unsubscribe()
   }, [])
