@@ -30,12 +30,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "catalog:",
-    "eslint-config-next": "^16.2.12",
-    "postcss": "^8.5.15",
+    "eslint-config-next": "^16.3.1",
+    "postcss": "^8.5.26",
     "sass": "^1.101.0",
     "typescript": "catalog:"
   }
