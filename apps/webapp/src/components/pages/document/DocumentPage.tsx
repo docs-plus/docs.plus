@@ -51,7 +51,7 @@ const DocumentPage = ({
   if (!provider) return <HeadSeo />
 
   return (
-    <GoogleOneTapLayout>
+    <GoogleOneTapLayout enabled={!isMobile}>
       <HeadSeo />
       <DocumentLayouts isMobile={isMobile} provider={provider} />
       <GlobalDialog />
