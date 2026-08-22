@@ -67,7 +67,7 @@
     "@virtuoso.dev/message-list": "^1.17.0",
     "daisyui": "catalog:",
     "date-fns": "catalog:",
-    "dexie": "^4.4.4",
+    "dexie": "^4.4.5",
     "dompurify": "^3.4.11",
     "dotenv-cli": "catalog:",
     "emoji-mart": "^5.6.0",
