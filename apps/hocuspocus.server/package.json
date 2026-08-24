@@ -50,7 +50,7 @@
     "@hocuspocus/extension-throttle": "catalog:",
     "@hocuspocus/server": "catalog:",
     "@hocuspocus/transformer": "catalog:",
-    "@hono/zod-validator": "^0.8.0",
+    "@hono/zod-validator": "^0.9.0",
     "@prisma/adapter-pg": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "@sentry/bun": "^10.61.0",

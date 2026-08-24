@@ -92,7 +92,7 @@
         "@hocuspocus/extension-throttle": "catalog:",
         "@hocuspocus/server": "catalog:",
         "@hocuspocus/transformer": "catalog:",
-        "@hono/zod-validator": "^0.8.0",
+        "@hono/zod-validator": "^0.9.0",
         "@prisma/adapter-pg": "^6.19.3",
         "@prisma/client": "^6.19.3",
         "@sentry/bun": "^10.61.0",
@@ -1117,7 +1117,7 @@
 
     "@hocuspocus/transformer": ["@hocuspocus/transformer@3.4.4", "", { "dependencies": { "@tiptap/starter-kit": "^3.0.1" }, "peerDependencies": { "@tiptap/core": "^3.0.1", "@tiptap/pm": "^3.0.1", "y-prosemirror": "^1.2.1", "yjs": "^13.6.8" } }, "sha512-X0EJ863LV97YbL5m8WTt4NDSC6uHi6ZCq/teIH5aholdjdhdTmFrzMemdhha/ZqPUZyaKhOoAmZzwR55HZLPpQ=="],
 
-    "@hono/zod-validator": ["@hono/zod-validator@0.8.0", "", { "peerDependencies": { "hono": ">=4.10.0", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-5uS4S1/LKtZQYvD4BtpPUFkOv8d1wNxHHrChm26buMiEYc1FrHWvDUaKVBwkiVtvSExHSpLGDvcnpI2Copyj9w=="],
+    "@hono/zod-validator": ["@hono/zod-validator@0.9.0", "", { "peerDependencies": { "hono": ">=4.11.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-n0ZSXmCiHVIp4Y5wlOOyZCeTd/rsawA/qW1cipB8QOYKZ9N8Tk0nZUZCXho9cu374AN4JpDNKioNKBJ/W+LBug=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.1", "", {}, "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA=="],
 
