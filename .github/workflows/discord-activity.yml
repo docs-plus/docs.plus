@@ -6,6 +6,7 @@ on:
 
 jobs:
   notify:
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -129,6 +130,9 @@ jobs:
       # flags: 4 == SUPPRESS_EMBEDS — keeps the message compact (no GitHub
       # link previews stacking under every commit).
       # ----------------------------------------------------------------------
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
       - id: trig
         # A malformed `(build): …` subject makes the tokenizer exit non-zero; the
         # script still writes `triggered=false` first, so don't fail this notify-only
@@ -139,7 +143,14 @@ jobs:
         run: bash .github/scripts/parse-build-trigger.sh
       - name: Post to Discord (smart split)
         if: steps.trig.outputs.triggered != 'true'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::warning::DISCORD_WEBHOOK is empty; skip post"
+            exit 0
+          fi
+
           HEADER="🚀 **Push** to \`${{ env.REF }}\` by \`${{ github.actor }}\`
           📦 \`${{ github.repository }}\` · 📝 ${{ env.COUNT }} commits · 🔗 [View Diff](${{ env.COMPARE }})
 
@@ -155,7 +166,7 @@ jobs:
             local message="$1"
             curl -sS -H "Content-Type: application/json" \
                  -d "{\"content\": $(printf '%s' "$message" | jq -Rs .), \"flags\": 4}" \
-                 "${{ secrets.DISCORD_WEBHOOK }}"
+                 "$DISCORD_WEBHOOK"
             sleep 1
           }
 
