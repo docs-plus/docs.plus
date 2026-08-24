@@ -1,9 +1,9 @@
 import type { PrismaClient } from '@prisma/client'
 import type { Context, MiddlewareHandler } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
-import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { Logger } from 'pino'
 
+import { fail, ok } from '../../../http/envelope'
 import { captureUnknown } from '../../../lib/instrument'
 import { emptyContent, readContent } from '../domain/readContent'
 import { findDocumentMeta, findHeadRow } from '../infra/contentStore'
@@ -26,27 +26,6 @@ import { MAX_CONTENT_BYTES } from '../types'
 // and broadcasting to live clients while never persisting.
 const PERSIST_FAILED_MESSAGE =
   'The change may already be visible to live collaborators but was not persisted. Verify with GET before retrying; a repeat means server-side persistence is wedged.'
-
-/** House envelope, hand-rolled so 4xx stays out of the Sentry-capturing error path. */
-export const ok = (c: Context, data: unknown): Response => c.json({ success: true, data })
-
-export const fail = (
-  c: Context,
-  status: ContentfulStatusCode,
-  code: string,
-  message: string
-): Response => c.json({ success: false, error: { message, code } }, status)
-
-export const validationFailed = (c: Context, message: string): Response =>
-  fail(c, 400, 'VALIDATION_ERROR', message)
-
-// The hook argument is required: without it @hono/zod-validator emits its own
-// body shape and the caller's discriminated union silently swallows it.
-export const houseEnvelopeHook = (
-  result: { success: boolean },
-  c: Context
-): Response | undefined =>
-  result.success ? undefined : validationFailed(c, 'Request validation failed')
 
 export const payloadTooLarge = (c: Context): Response =>
   fail(c, 413, 'PAYLOAD_TOO_LARGE', `Content exceeds the ${MAX_CONTENT_BYTES}-byte limit`)

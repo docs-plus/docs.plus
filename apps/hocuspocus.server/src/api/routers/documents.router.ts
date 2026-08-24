@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
+import { houseEnvelopeHook } from '../../http/envelope'
 import { contentBodyLimit } from '../../modules/document-content'
 import {
   createDocumentSchema,
@@ -20,14 +21,14 @@ const documents = new Hono()
 documents.get(
   '/:docName',
   optionalUser,
-  zValidator('query', userIdQuerySchema),
+  zValidator('query', userIdQuerySchema, houseEnvelopeHook),
   documentsController.getDocumentBySlug
 )
 
 documents.get(
   '/',
   optionalUser,
-  zValidator('query', documentQuerySchema),
+  zValidator('query', documentQuerySchema, houseEnvelopeHook),
   documentsController.listDocuments
 )
 
@@ -35,14 +36,14 @@ documents.post(
   '/',
   requireServiceRoleOrUser,
   contentBodyLimit(),
-  zValidator('json', createDocumentSchema),
+  zValidator('json', createDocumentSchema, houseEnvelopeHook),
   documentsController.createDocument
 )
 
 documents.put(
   '/:docId',
   optionalUser,
-  zValidator('json', updateDocumentMetadataSchema),
+  zValidator('json', updateDocumentMetadataSchema, houseEnvelopeHook),
   documentsController.updateDocument
 )
 
@@ -52,13 +53,13 @@ documents.put(
 documents.post(
   '/trash/purge',
   requireUser,
-  zValidator('json', trashPurgeSchema),
+  zValidator('json', trashPurgeSchema, houseEnvelopeHook),
   documentsController.purgeTrash
 )
 documents.post(
   '/trash/restore',
   requireUser,
-  zValidator('json', trashRestoreSchema),
+  zValidator('json', trashRestoreSchema, houseEnvelopeHook),
   documentsController.restoreTrash
 )
 

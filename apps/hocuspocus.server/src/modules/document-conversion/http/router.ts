@@ -5,7 +5,7 @@ import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
 import { requireServiceRoleOrUser } from '../../../api/middleware/auth'
-import { fail, houseEnvelopeHook } from '../../document-content/http/controller'
+import { fail, houseEnvelopeHook } from '../../../http/envelope'
 import { documentIdParamSchema } from '../../document-content/http/schema'
 import { MAX_IMPORT_BYTES } from '../types'
 import { createGetExportHandler, createPostImportHandler } from './controller'
