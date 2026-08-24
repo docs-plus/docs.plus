@@ -4,7 +4,15 @@
  * Install, infra, migrate, extension dist — then Make starts the processes.
  */
 
-import { copyFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import {
+  copyFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from 'fs'
 import { createConnection } from 'net'
 import { dirname, resolve } from 'path'
 
@@ -280,6 +288,18 @@ async function ensureExtensionDists(): Promise<void> {
   }
 }
 
+function discardProductionNext(appDir: string): void {
+  const dest = resolve(ROOT, appDir, '.next')
+  if (
+    !existsSync(resolve(dest, 'BUILD_ID')) &&
+    !existsSync(resolve(dest, 'prerender-manifest.json'))
+  ) {
+    return
+  }
+  rmSync(dest, { recursive: true, force: true })
+  note(`Removed leftover production ${appDir}/.next`)
+}
+
 async function main() {
   const t0 = performance.now()
   console.log('docs.plus preflight')
@@ -291,6 +311,8 @@ async function main() {
   await ensureSupabase()
   await ensurePrisma()
   await ensureExtensionDists()
+  discardProductionNext('apps/webapp')
+  discardProductionNext('apps/admin-dashboard')
 
   console.log(
     `✓ ready (${Math.round(performance.now() - t0)}ms)  open http://localhost:3000 (Next shifts to the next free port if 3000 is busy — see WEBAPP log)  api :4000  studio :54323\n`
