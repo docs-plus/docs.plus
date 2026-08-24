@@ -229,6 +229,7 @@ function newestMtime(dir: string): number {
           const mtime = statSync(full).mtimeMs
           if (mtime > newest) newest = mtime
         } catch {
+          // file vanished mid-walk
         }
       }
     }
