@@ -1,9 +1,4 @@
-/**
- * Skeleton loader for FilterPanel's dynamic import. Mirrors the compact resting
- * layout (slim header + one search field) — chips/mode only appear with active
- * filters, which never exist during this first paint.
- */
-
+/** Chips/mode only appear with active filters, which never exist on first paint. */
 export const FilterSkeleton = () => {
   return (
     <div className="bg-base-100 flex w-full flex-col">

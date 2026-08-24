@@ -42,7 +42,6 @@ Cypress.Commands.add('setEditorContent', (html: string) => {
   })
 })
 
-// Caret into the start of the nth top-level block.
 Cypress.Commands.add('caretInBlock', (index: number) => {
   cy.getEditor().then((editor) => {
     let pos: number | undefined
@@ -54,7 +53,6 @@ Cypress.Commands.add('caretInBlock', (index: number) => {
   })
 })
 
-// Caret into the first empty textblock anywhere in the doc (handles nesting).
 Cypress.Commands.add('caretInEmptyTextblock', () => {
   cy.getEditor().then((editor) => {
     let pos: number | undefined

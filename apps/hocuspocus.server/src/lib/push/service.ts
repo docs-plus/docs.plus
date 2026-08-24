@@ -21,7 +21,6 @@ export class PushGatewayService extends NotificationGatewayBase {
       label: 'Push',
       logger: pushLogger,
       configure: () => {
-        // VAPID is needed for both queueing and sending
         if (!configureVapid()) {
           pushLogger.warn('Push Gateway running without VAPID - notifications will fail')
         }
@@ -31,7 +30,6 @@ export class PushGatewayService extends NotificationGatewayBase {
     })
   }
 
-  /** Queues if Redis is available, otherwise sends synchronously. */
   async sendNotification(request: PushNotificationRequest): Promise<PushSendResult> {
     if (!isVapidConfigured()) {
       return {

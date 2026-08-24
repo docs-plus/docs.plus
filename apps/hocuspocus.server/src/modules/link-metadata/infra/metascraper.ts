@@ -11,11 +11,6 @@ import url from 'metascraper-url'
 
 import type { Scraper } from '../domain/types'
 
-/**
- * Implements the `Scraper` port using metascraper + 9 plugins. The
- * instance is built once per `init()` call and held in closure (see
- * boundary rule 6: no module-level singletons).
- */
 export const createMetascraper = (): Scraper => {
   const scraper = metascraper([
     title(),

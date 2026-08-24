@@ -6,7 +6,6 @@ type SheetFooterProps = {
   className?: string
 }
 
-/** Shared sticky bottom shell for mobile sheet action rows. */
 export function SheetFooter({ children, className }: SheetFooterProps) {
   return (
     <footer

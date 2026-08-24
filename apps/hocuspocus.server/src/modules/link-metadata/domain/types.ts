@@ -38,22 +38,13 @@ export interface ErrorResponse {
   code: 'INVALID_URL' | 'BLOCKED_URL'
 }
 
-/** Stage output: either a full success payload or null (no match / failed). */
 export type StageResult = Omit<MetadataResponse, 'cached' | 'fetched_at'> | null
 
-/**
- * Inline port: the only thing domain code knows about caching.
- * `infra/redisCache.ts` is the production implementation; tests pass an in-memory fake.
- */
 export interface Cache {
   get(key: string): Promise<StageResult | null>
   set(key: string, value: StageResult, ttlSeconds: number): Promise<void>
 }
 
-/**
- * Inline port: the only thing domain code knows about HTML scraping.
- * `infra/metascraper.ts` is the production implementation.
- */
 export interface Scraper {
   scrape(input: { html: string; url: string }): Promise<{
     title?: string

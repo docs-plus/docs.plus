@@ -4,10 +4,9 @@ import { useSyncExternalStore } from 'react'
 import type { ActivePopover } from './types'
 
 /**
- * One-line bus between the desktop popover entries (called from outside
- * any React tree by Tiptap) and the `HyperlinkPopoverPortal`. React
- * canon — `useSyncExternalStore` over a module-level value; no zustand
- * dep, no Context wrapper, no test-reset bridge.
+ * Bus from desktop popover entries (called outside React) to
+ * `HyperlinkPopoverPortal`. Module value + `useSyncExternalStore`; no
+ * zustand or Context.
  */
 
 let active: ActivePopover | null = null

@@ -21,21 +21,15 @@ import { useOverlayTransition } from './useOverlayTransition'
 const canHover = typeof window !== 'undefined' ? window.matchMedia('(hover: hover)').matches : true
 
 interface TooltipProps {
-  /** Tooltip content */
   title: ReactNode
-  /** Trigger element — must accept ref */
+  /** Trigger must accept a ref. */
   children: ReactNode
-  /** Floating UI placement */
   placement?: Placement
-  /** Delay before showing (ms) */
   showDelay?: number
-  /** Delay before hiding (ms) */
   hideDelay?: number
-  /** Extra class on the tooltip bubble */
   className?: string
-  /** Controlled open state (pass `false` to force-close, `undefined` for uncontrolled) */
+  /** `false` force-closes; omit for uncontrolled. */
   open?: boolean
-  /** Callback for controlled open changes */
   onOpenChange?: (open: boolean) => void
 }
 

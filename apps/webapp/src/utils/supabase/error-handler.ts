@@ -32,7 +32,6 @@ export const isConnectionRefusedError = (error: any): boolean => {
   )
 }
 
-/** Pass the result as the `fetch` option of a Supabase client. */
 export const createSupabaseFetch = () => {
   return async (url: RequestInfo | URL, options: RequestInit = {}) => {
     try {

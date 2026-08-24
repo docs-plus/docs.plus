@@ -1,8 +1,5 @@
 import { type Editor, TIPTAP_NODES } from '@types'
 
-/**
- * Recursively converts a content item to flat ProseMirror nodes
- */
 function contentToProseMirror(item: any): any[] {
   if (!item || !item.type) return []
 
@@ -70,9 +67,6 @@ function contentToProseMirror(item: any): any[] {
   return []
 }
 
-/**
- * Converts a section to flat ProseMirror nodes (H1 + body blocks)
- */
 function sectionToProseMirror(section: any): any[] {
   const nodes: any[] = [
     {
@@ -98,10 +92,6 @@ function sectionToProseMirror(section: any): any[] {
   return nodes
 }
 
-/**
- * Fast document creation using direct insertContent.
- * Generates flat heading + block sequences (no nesting).
- */
 export const createDocumentFromStructure = ({ editor }: { editor: Editor }) => {
   return (structure: any) => {
     if (!editor || !editor.commands) return false

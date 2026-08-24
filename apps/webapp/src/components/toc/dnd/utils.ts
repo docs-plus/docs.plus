@@ -113,7 +113,6 @@ export function findDropTarget({
 
   if (!closest) return { id: null, position: null, rect: null, level: 1, indicatorY: null }
 
-  // Apply hysteresis - keep current target unless new one is significantly closer
   const shouldSwitch =
     currentDropTarget.id !== closest.id &&
     (closest.dist < currentDist - TARGET_HYSTERESIS || currentDist === Infinity)

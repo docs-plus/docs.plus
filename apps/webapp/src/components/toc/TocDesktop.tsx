@@ -134,7 +134,6 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
             <div className="toc-drag-wrapper">
               <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />
 
-              {/* Drag card - matches source element size */}
               <div
                 ref={overlayRef}
                 className="toc-drag-card"

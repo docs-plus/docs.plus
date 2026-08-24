@@ -15,10 +15,7 @@ interface UseTableParamsOptions {
   defaultSortDirection?: SortDirection
 }
 
-/**
- * Hook to manage table state (page, search, sort) via URL params
- * This enables bookmarking, sharing, and browser back/forward navigation
- */
+/** Table page/search/sort lives in the URL so bookmark, share, and back/forward work. */
 export function useTableParams(options: UseTableParamsOptions = {}) {
   const router = useRouter()
   const { defaultSortKey = null, defaultSortDirection = 'desc' } = options

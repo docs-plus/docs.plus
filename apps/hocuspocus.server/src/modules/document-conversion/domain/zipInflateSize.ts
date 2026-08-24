@@ -29,11 +29,9 @@ const payloadStart = (zip: Buffer, localAt: number): number | null => {
 }
 
 /**
- * How much the container actually inflates to, measured entry by entry and
- * abandoned as soon as it passes `budget`. Declared sizes are not evidence: a
- * bomb states whatever it likes, and only the real inflate can contradict it.
- * `null` means the container could not be read, leaving the verdict to the
- * converter — a merely unusual zip is not refused on this evidence.
+ * Measured inflate, not declared size — a bomb states whatever it likes.
+ * Abandoned as soon as the running total passes `budget`. `null` means the
+ * container could not be read, so the converter gives the verdict instead.
  */
 export const zipInflateSize = (zip: Buffer, budget: number): number | null => {
   const eocd = zip.length >= EOCD_BYTES ? findEocd(zip) : null

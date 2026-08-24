@@ -1,7 +1,3 @@
-// Paste-over-selection — pasting a single URL with a non-empty
-// selection wraps the selection in a hyperlink mark instead of
-// replacing it.
-
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { find } from 'linkifyjs'
 

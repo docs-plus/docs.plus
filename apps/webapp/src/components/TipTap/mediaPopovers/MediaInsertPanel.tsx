@@ -8,7 +8,6 @@ import MediaUploadDropzone from './MediaUploadDropzone'
 import MediaUrlField from './MediaUrlField'
 import { useMediaInsert } from './useMediaInsert'
 
-/** Desktop media-insert popover body: tabbed Embed/Upload over the headless `useMediaInsert`. */
 const MediaInsertPanel = () => {
   const editor = useStore((state) => state.settings.editor.instance)
   const { close } = usePopoverState()

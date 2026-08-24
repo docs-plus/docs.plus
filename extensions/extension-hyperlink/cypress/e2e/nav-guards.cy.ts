@@ -1,10 +1,5 @@
 /// <reference types="cypress" />
 
-// Read-side counterpart to `xss-guards.cy.ts` (which covers the write side).
-// Two surfaces no other spec reaches. Without the `auxclick` handler,
-// middle-click bypasses the capture-phase primary-click guard and opens the
-// raw `<a href>`. The other surface is the read-only `window.open` fallback.
-
 const SAFE_HREF = 'https://example.com/'
 const SAFE_FEATURES = 'noopener,noreferrer'
 
@@ -143,9 +138,6 @@ describe('Navigation guards — read-only click fallback (no preview popover)', 
   })
 
   it('refuses to open an injected javascript: anchor on primary click in read-only mode', () => {
-    // parseHTML strips dangerous hrefs on load. So synthesize a tampered
-    // anchor (same pattern as the auxclick cases above), and confirm the
-    // fallback's isNavigable gate still refuses navigation.
     cy.setEditorContent('<p>x</p>')
     cy.get('#editor p').then(($p) => {
       const a = document.createElement('a')

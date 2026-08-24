@@ -57,11 +57,10 @@ export const useOnAuthStateChange = () => {
         setObservabilityUser(session?.user?.id ?? null)
       }
 
-      // SIGNED_IN stays out of this branch. auth-js re-emits it on every tab focus
-      // (_recoverAndRefresh) and across tabs, and on a PKCE return it arrives beside
-      // INITIAL_SESSION for the same session. An identity guard cannot separate those:
-      // the second event lands before the first fetch resolves, so both see a null
-      // profile and both fetch. Sign-in calls hydrate at their own call site instead.
+      // SIGNED_IN stays out of this branch. auth-js re-emits it on tab focus
+      // and beside INITIAL_SESSION on PKCE return. An identity guard cannot
+      // separate those: both see a null profile and both fetch. Sign-in
+      // hydrates at its own call site instead.
       if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
           setLoading(false)

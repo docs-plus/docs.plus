@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 
-const DOUBLE_TAP_DELAY = 300 // ms
+const DOUBLE_TAP_DELAY = 300
 
 const useDoubleTap = (onDoubleTap: () => void) => {
   const lastTapTime = useRef<number>(0)

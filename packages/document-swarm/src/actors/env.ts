@@ -1,4 +1,3 @@
-/** Reads a required process env var; points operators at the repo-root env file. */
 export function requireEnv(name: string): string {
   const value = process.env[name]
   if (!value) {

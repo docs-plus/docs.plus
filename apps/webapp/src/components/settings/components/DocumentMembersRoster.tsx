@@ -20,10 +20,7 @@ const nameOf = (m: DocumentRosterMember) =>
 const seenAfterJoin = (joined: string, lastVisit: string) =>
   Math.abs(new Date(lastVisit).getTime() - new Date(joined).getTime()) >= 60_000
 
-/**
- * Roster popover panel — lazy-fetches on open (it only mounts inside PopoverContent).
- * Two-line rows: avatar + name (+ "You"), then join date and optional last-seen.
- */
+/** Lazy-fetches on open — the host only mounts inside PopoverContent. */
 function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRosterProps) {
   const { data: members, isLoading, isError, refetch } = useDocumentRoster(workspaceId)
 

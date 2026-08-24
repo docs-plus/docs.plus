@@ -1,18 +1,8 @@
 #!/bin/sh
 
-# Validate commit message format
-# Supports:
-#   1. Conventional commits: type(scope): message
-#   2. Deploy triggers: (build): front/back keywords
-
 commit_msg=$(cat "$1")
 
-# Pattern 1: Conventional commits
-# feat(webapp): add dark mode
 conventional="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,100}"
-
-# Pattern 2: Deploy trigger format
-# (build): front back
 deploy_trigger="^\(build\):.*"
 
 if echo "$commit_msg" | grep -qE "$conventional"; then

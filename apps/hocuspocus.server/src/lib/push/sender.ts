@@ -134,7 +134,6 @@ export async function sendPushNotification(
     return { success: true, sent: 0, total: 0 }
   }
 
-  // Build payload for service worker
   const pushPayload = JSON.stringify({
     notification_id: request.notification_id,
     type: request.type,

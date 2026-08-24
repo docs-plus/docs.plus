@@ -28,7 +28,6 @@ export const navItems: NavItem[] = [
   { href: '/system', label: 'System', icon: LuActivity }
 ]
 
-// Grouped separately in the sidebar.
 export const auditItems: NavItem[] = [
   { href: '/audit/notifications', label: 'Notification Audit', icon: LuShieldAlert },
   { href: '/audit/ghost-accounts', label: 'Ghost Accounts', icon: LuGhost }

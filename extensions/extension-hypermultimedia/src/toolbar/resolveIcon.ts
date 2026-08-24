@@ -8,20 +8,18 @@ type BuiltinIconKey =
 
 type PlacementIconKey = `align:${MediaPlacementId}`
 
-/** A built-in slot, an `align:<placement>` slot, or a custom action id from `mediaActions`. */
 export type MediaToolbarIconKey = BuiltinIconKey | PlacementIconKey | (string & {})
 
-/** Everything a host needs to pick an icon — the key encodes the dynamic part. */
 export interface MediaToolbarIconContext {
   key: MediaToolbarIconKey
   nodeType: string
 }
 
-/** Host hook: return SVG markup for a slot, or nullish to keep the built-in icon. */
+/** Return SVG markup, or nullish to keep the built-in icon. */
 export type MediaToolbarIconsResolver = (ctx: MediaToolbarIconContext) => string | null | undefined
 
 export type MediaToolbarIconScope = Pick<MediaActionContext, 'editor' | 'nodeType'> & {
-  /** Required for the inline align button (`align:<placement>`). */
+  /** Required for `align:<placement>`. */
   attrs?: Record<string, unknown>
 }
 

@@ -18,11 +18,9 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
   const dismissMenuAndKeyboard = useCallback(() => {
     if (!editor) return
 
-    // Collapse selection to cursor position (closes bubble menu)
     const { to } = editor.state.selection
     editor.chain().setTextSelection(to).run()
 
-    // Blur editor to close keyboard (native behavior after cut/copy)
     setTimeout(() => {
       editor.view.dom.blur()
     }, 50)
@@ -64,13 +62,12 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
 
       setCopied(true)
 
-      // Close menu and keyboard, but keep selection and scroll position
       setTimeout(() => {
         setCopied(false)
         editor.view.dom.blur()
       }, 600)
     } catch {
-      // Silent fail
+      // clipboard API unavailable — menu still closes
     }
   }, [editor])
 
@@ -80,10 +77,8 @@ const useClipboard = (editor: Editor | null | undefined): UseClipboardReturn => 
     const editorWrapper = editor.view.dom.closest('.editorWrapper') as HTMLElement
     const scrollTop = editorWrapper?.scrollTop ?? 0
 
-    // Focus editor first (synchronous - keeps user gesture context)
     editor.commands.focus()
 
-    // Try clipboard API with immediate promise handling (preserves user gesture)
     navigator.clipboard
       .readText()
       .then((text) => {

@@ -1,8 +1,7 @@
 /**
- * Platform-wide aggregates and the user/channel directory. All of it runs through
- * the service_role client. The browser's anon-key client is RLS-scoped, and
- * email/push/email_queue are revoked from `authenticated`, so these counts cannot
- * be computed client-side.
+ * Runs through the service_role client. The browser anon-key is RLS-scoped,
+ * and email/push/email_queue are revoked from `authenticated`, so these
+ * counts cannot be computed client-side.
  */
 
 import { adminLogger } from '../../lib/logger'

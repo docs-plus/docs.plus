@@ -6,19 +6,13 @@ import CloseButton from './CloseButton'
 export type PanelHeaderVariant = 'default' | 'primary' | 'info' | 'warning' | 'error' | 'success'
 
 interface PanelHeaderProps {
-  /** The icon component to display */
   icon?: IconType
-  /** Main title text */
   title: string
-  /** Optional description text below title */
   description?: string
-  /** Color variant for the icon background */
   variant?: PanelHeaderVariant
-  /** Called when close button is clicked. If omitted, no close button is shown. */
+  /** Omit to hide the close button. */
   onClose?: () => void
-  /** Additional content to render after the close button */
   actions?: ReactNode
-  /** Additional className for the container */
   className?: string
 }
 

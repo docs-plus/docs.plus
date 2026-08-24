@@ -22,7 +22,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
 }
 
 export default function ChannelsPage() {
-  // URL-synced table state
   const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
     defaultSortKey: 'last_activity_at',
     defaultSortDirection: 'desc'
@@ -33,7 +32,6 @@ export default function ChannelsPage() {
     queryFn: () => fetchChannels(page, sortKey || undefined, sortDirection, search || undefined)
   })
 
-  // Real-time subscription to channels table
   const handleRealtimeChange = useCallback(() => {
     refetch()
   }, [refetch])
@@ -141,7 +139,6 @@ export default function ChannelsPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* Search */}
           <SearchInput
             placeholder="Search channels by name..."
             value={search}
@@ -149,7 +146,6 @@ export default function ChannelsPage() {
             className="max-w-md"
           />
 
-          {/* Table */}
           <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}

@@ -21,7 +21,6 @@ export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
 
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6">
-      {/* Header */}
       <PanelHeader
         icon={Icons.trash}
         title="Delete Message"
@@ -29,13 +28,11 @@ export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
         variant="error"
       />
 
-      {/* Content */}
       <p className="text-base-content/70 text-sm">
         Are you sure you want to delete this message? This will permanently remove it from the
         conversation.
       </p>
 
-      {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="ghost" onClick={closeDialog}>
           Cancel

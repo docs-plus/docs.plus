@@ -39,9 +39,8 @@ const embedToParagraph = (node: JsonNode): JsonNode => {
 }
 
 /**
- * Rewrites what only the editor can render so the export formats never meet it.
- * Returns a new tree; iterative by the same rule as `encodeContent` — an
- * explicit stack, never recursion, so deep input cannot overflow the walk.
+ * Iterative by the same rule as `encodeContent` — an explicit stack, never
+ * recursion, so deep input cannot overflow the walk.
  */
 export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson => {
   const content: JsonNode[] = []

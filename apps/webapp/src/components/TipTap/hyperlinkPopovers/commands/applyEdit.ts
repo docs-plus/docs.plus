@@ -5,13 +5,13 @@ import type { ApplyHyperlinkArgs, ApplyHyperlinkCommandOpts } from '../types'
 
 interface ApplyEditDeps {
   editor: Editor
-  /** Defaults to `'hyperlink'` (the schema mark name; locked by every stored Yjs doc). */
+  /** Schema mark name; locked by every stored Yjs doc. */
   markName?: string
-  /** Optional explicit mark position for surfaces that do not move selection before opening. */
+  /** For surfaces that do not move selection before opening. */
   nodePos?: number
 }
 
-/** Apply an edit result. Falls through to `editHyperlinkHref` when no text is provided so the rendered link text isn't touched needlessly. Smaller-than-`EditHyperlinkOptions` deps shape so this is reusable from `LinkPreviewSheet` (which only carries an editor). */
+/** No text → `editHyperlinkHref` so the rendered link text is not rewritten. */
 export function applyEdit(
   deps: ApplyEditDeps,
   { href, text }: ApplyHyperlinkArgs,

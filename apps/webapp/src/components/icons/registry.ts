@@ -115,7 +115,6 @@ import {
  * `bIcon`). Lucide (`react-icons/lu`) throughout; Font Awesome only for brands Lucide lacks.
  */
 export const Icons = {
-  // Text Formatting
   bold: LuBold,
   italic: LuItalic,
   underline: LuUnderline,
@@ -125,12 +124,10 @@ export const Icons = {
   textColor: LuBaseline,
   textFormat: LuType,
 
-  // Lists
   orderedList: LuListOrdered,
   bulletList: LuList,
   taskList: LuListChecks,
 
-  // Insert / Rich Content
   link: LuLink,
   unlink: LuLink2Off,
   heading: LuHash,
@@ -143,7 +140,6 @@ export const Icons = {
   zoomIn: LuZoomIn,
   zoomOut: LuZoomOut,
 
-  // Editor Actions
   undo: LuUndo2,
   redo: LuRedo2,
   print: LuPrinter,
@@ -169,7 +165,6 @@ export const Icons = {
   splitVertical: LuSquareSplitVertical,
   externalLink: LuExternalLink,
 
-  // Navigation
   back: LuArrowLeft,
   menu: LuMenu,
   close: LuX,
@@ -180,7 +175,6 @@ export const Icons = {
   chevronLeft: LuChevronLeft,
   logIn: LuLogIn,
 
-  // Communication
   share: LuUsers,
   user: LuUser,
   notifications: LuBell,
@@ -192,14 +186,12 @@ export const Icons = {
   play: LuPlay,
   maximize2: LuMaximize2,
 
-  // Media / Lifestyle
   calendar: LuCalendar,
   mapPin: LuMapPin,
   mic: LuMic,
   music: LuMusic,
   tv: LuTv,
 
-  // TOC
   crosshair: LuCrosshair,
   foldVertical: LuFoldVertical,
   unfoldVertical: LuUnfoldVertical,
@@ -212,7 +204,6 @@ export const Icons = {
   pin: LuPin,
   pinOff: LuPinOff,
 
-  // Status
   cloud: LuCloud,
   cloudOff: LuCloudOff,
   cloudUpload: LuCloudUpload,
@@ -226,12 +217,10 @@ export const Icons = {
   checkDouble: LuCheckCheck,
   lock: LuLock,
 
-  // Code
   code: LuCode,
   codeBlock: LuSquareCode,
   blockquote: LuTextQuote,
 
-  // Misc
   emoji: LuSmile,
   emojiAdd: LuSmilePlus,
   keyboard: LuKeyboard,
@@ -246,7 +235,6 @@ export const Icons = {
   shareNative: LuShare2,
   userPlus: LuUserPlus,
 
-  // Brand
   discord: FaDiscord,
   github: FaGithub
 } as const satisfies Record<string, IconType>

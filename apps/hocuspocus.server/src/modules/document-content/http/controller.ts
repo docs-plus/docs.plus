@@ -51,7 +51,6 @@ export const houseEnvelopeHook = (
 export const payloadTooLarge = (c: Context): Response =>
   fail(c, 413, 'PAYLOAD_TOO_LARGE', `Content exceeds the ${MAX_CONTENT_BYTES}-byte limit`)
 
-/** Shared by every content-bearing route — one cap, one envelope. */
 export const contentBodyLimit = (maxSize: number = MAX_CONTENT_BYTES): MiddlewareHandler =>
   bodyLimit({ maxSize, onError: payloadTooLarge })
 

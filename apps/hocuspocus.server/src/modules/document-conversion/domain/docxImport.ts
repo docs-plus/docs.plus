@@ -36,9 +36,9 @@ const toWarning = (message: { type: string; message: string }): ConversionWarnin
 })
 
 /**
- * Word to Tiptap JSON. Nothing here touches the document: the caller owns
- * persistence and the read-only lock stays with `PATCH /content`. Embedded
- * images are the one side effect — `uploadImage` rehosts them to storage.
+ * Nothing here touches the document: the caller owns persistence and the
+ * read-only lock stays with `PATCH /content`. Embedded images are the one
+ * side effect — `uploadImage` rehosts them to storage.
  */
 export const importDocx = async (
   buffer: Buffer,

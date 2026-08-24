@@ -10,8 +10,6 @@ interface HighlightedMessageCardProps {
 
 export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMessageCardProps>(
   ({ messageElement, messageBounds, isVisible, className }, ref) => {
-    // Don't render if we don't have both the element and bounds
-
     if (!messageElement || !messageBounds) {
       return null
     }

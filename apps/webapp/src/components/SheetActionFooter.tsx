@@ -9,7 +9,6 @@ type SheetActionFooterProps = {
   submitTestId?: string
 }
 
-/** Form footer: optional back (left) + primary submit (flex-1). */
 export function SheetActionFooter({
   primaryLabel = 'Apply',
   primaryDisabled = false,

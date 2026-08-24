@@ -23,7 +23,6 @@ function createEditor(
   })
 }
 
-/** Select from start of first block’s text to end of last (doc order). */
 function selectAcrossBlocks(editor: Editor, blocks: Array<{ name: string; text: string }>) {
   const first = blocks[0]
   const last = blocks[blocks.length - 1]

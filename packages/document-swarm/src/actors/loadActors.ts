@@ -1,6 +1,6 @@
 import type { ActorRecord } from '../types.ts'
 
-/** Reads the actors file, returning null when it does not exist yet (so provision can grow it). */
+/** Returns null when the file is missing so provision can grow it. */
 export async function readActorsFile(actorsFile: string): Promise<ActorRecord[] | null> {
   const file = Bun.file(actorsFile)
   if (!(await file.exists())) return null
@@ -14,7 +14,6 @@ export async function readActorsFile(actorsFile: string): Promise<ActorRecord[] 
   return parsed as ActorRecord[]
 }
 
-/** Loads the first `count` Swarm Actors for a run; errors if the file is missing or the pool is too small. */
 export async function loadActors(actorsFile: string, count: number): Promise<ActorRecord[]> {
   const actors = await readActorsFile(actorsFile)
   if (!actors) {

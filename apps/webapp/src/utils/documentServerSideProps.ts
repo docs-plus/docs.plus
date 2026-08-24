@@ -31,7 +31,6 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
   let session: Session | null = null
 
   try {
-    // Verify user authentication (server-validated); on timeout degrade to public access
     let user = null
     let userError = null
     try {

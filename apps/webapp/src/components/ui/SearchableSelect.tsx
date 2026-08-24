@@ -23,36 +23,23 @@ export interface SearchableSelectOption {
   value: string
   label: string
   description?: string
-  /** Custom searchable text (if not provided, searches label, value, and description) */
+  /** Extra search haystack; default is label + value + description. */
   searchText?: string
 }
 
 export interface SearchableSelectProps {
-  /** Selected value */
   value: string
-  /** Callback when value changes */
   onChange: (value: string) => void
-  /** Options to display */
   options: SearchableSelectOption[]
-  /** Placeholder text when no value selected */
   placeholder?: string
-  /** Search input placeholder */
   searchPlaceholder?: string
-  /** Label for the select */
   label?: string
-  /** Helper text below the select */
   helperText?: string
-  /** Disabled state */
   disabled?: boolean
-  /** Size variant — matches DaisyUI select sizes */
   size?: SelectSize
-  /** Additional className for trigger button */
   className?: string
-  /** Additional wrapper class */
   wrapperClassName?: string
-  /** Maximum height of dropdown list (not including search) */
   maxHeight?: number
-  /** Empty state message */
   emptyMessage?: string
 }
 

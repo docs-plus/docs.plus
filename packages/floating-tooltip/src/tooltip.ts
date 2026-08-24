@@ -44,13 +44,12 @@ async function show(target: HTMLElement, label: string): Promise<void> {
   el.classList.add(VISIBLE_CLASS)
 }
 
-/** Hide the shared tooltip bubble and cancel any pending show. */
 export function hideTooltip(): void {
   cancelShow()
   bubble?.classList.remove(VISIBLE_CLASS)
 }
 
-/** Show `label` above `target` after a short hover/focus delay. Returns a detach function for surfaces that re-render in place. */
+/** Returns a detach function for surfaces that re-render in place. */
 export function attachTooltip(target: HTMLElement, label: string): () => void {
   const schedule = (): void => {
     cancelShow()

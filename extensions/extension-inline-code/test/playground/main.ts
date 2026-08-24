@@ -1,5 +1,3 @@
-/** Cypress clean-room for @docs.plus/extension-inline-code (shipped dist). */
-
 import { InlineCode } from '@docs.plus/extension-inline-code'
 import { setupPlayground } from '@docs.plus/playground/setup'
 import { Editor } from '@tiptap/core'

@@ -32,14 +32,12 @@ export type WriteTarget = {
   readonly __brand: 'WriteTarget'
 }
 
-/** Per-turn handle for a Swarm Script — no RunOptions, report, or heading labels. */
 export type ScriptContext = {
   page: Page
   actor: ActorRecord
   writeTarget: WriteTarget
 }
 
-/** Counters a script may return; the Swarm Run folds them into the Swarm Report. */
 export type ScriptOutcome = {
   chatSent?: number
 }

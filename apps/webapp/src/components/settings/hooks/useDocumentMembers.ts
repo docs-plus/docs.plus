@@ -14,13 +14,9 @@ export interface DocumentMembersEntry {
 }
 
 /**
- * Batch member previews for a whole visible page of owned documents in one RPC.
- * Keyed by the page's slugs; React Query hashes the key by value, so the raw
- * `docs.map(d => d.slug)` is stable without memoization.
- *
- * `enabled` carries the caller's signed-in state: the RPC is revoked from `anon`,
- * so a call made before any session exists 403s. No default, so a caller cannot
- * silently reinstate the unguarded call.
+ * Batch member previews for a page of owned docs. `enabled` is required: the RPC
+ * is revoked from `anon`, so an unguarded call 403s. React Query hashes slugs by
+ * value, so `docs.map` needs no memo.
  */
 export function useDocumentMembers(slugs: string[], enabled: boolean) {
   return useQuery({

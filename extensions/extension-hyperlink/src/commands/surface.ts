@@ -1,7 +1,5 @@
-// Single source of truth for the hyperlink command surface.
-// `HyperlinkPublicCommands<R>` declares both the Tiptap module
-// augmentation and the runtime contract via the mapped
-// `HyperlinkRawCommands` type below — drift is a compile error.
+// `HyperlinkPublicCommands` is both the Tiptap module augmentation and the
+// runtime contract — drift between them is a compile error.
 
 import type { CommandProps } from '@tiptap/core'
 
@@ -24,9 +22,8 @@ export type EditHyperlinkAttributes = {
 export interface HyperlinkPublicCommands<ReturnType> {
   /** Write the hyperlink mark; returns `false` when `href` is missing or fails the gate. See README → Commands. */
   setHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
-  /** Remove the hyperlink mark from the current selection. */
   unsetHyperlink: () => ReturnType
-  /** Toggle the hyperlink mark; same gates as `setHyperlink`. */
+  /** Toggle; same gates as `setHyperlink`. */
   toggleHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
   /** Open the create popover (configured `popovers.createHyperlink` or the prebuilt fallback); no-op only when the factory returns `null`. See README → Commands. */
   openCreateHyperlinkPopover: (attributes?: Partial<HyperlinkAttributes>) => ReturnType

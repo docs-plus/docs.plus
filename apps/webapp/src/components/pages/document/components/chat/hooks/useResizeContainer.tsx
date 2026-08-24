@@ -1,10 +1,6 @@
 import { useChatStore, useStore } from '@stores'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-/**
- * Design System Panel Constraints
- * @see Notes/Design_System_Global_v2.md
- */
 const CHAT_MIN_HEIGHT = 320
 const CHAT_MAX_HEIGHT = 1200
 const CHAT_DEFAULT_HEIGHT = 410
@@ -31,7 +27,7 @@ const useResizeContainer = () => {
       }
       setOrUpdateChatPanelHeight(Math.min(maxHeight, CHAT_DEFAULT_HEIGHT))
     } catch {
-      // Ignore localStorage errors
+      // private-mode / quota — keep the default height
     }
   }, [setOrUpdateChatPanelHeight])
 
@@ -39,7 +35,7 @@ const useResizeContainer = () => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, String(storeHeight))
     } catch {
-      // Ignore localStorage errors
+      // private-mode / quota — height stays in memory
     }
   }, [storeHeight])
 
@@ -60,7 +56,6 @@ const useResizeContainer = () => {
       document.body.style.userSelect = 'none'
       document.body.style.cursor = 'row-resize'
 
-      // Disable editor during resize to prevent interference
       const wasEditable = Boolean(editor?.isEditable)
       if (wasEditable) editor?.setEditable(false)
 
@@ -83,8 +78,6 @@ const useResizeContainer = () => {
       const stopDrag = () => {
         setIsResizing(false)
         window.dispatchEvent(new CustomEvent('chat-panel-resize-end'))
-        // Single store commit at the end of drag — drives localStorage
-        // persistence, useEffect mirrors, and the one Virtuoso re-measure.
         setOrUpdateChatPanelHeight(lastHeight)
         // Re-enable only if this drag disabled it — never flip a
         // read-only document editable.

@@ -7,15 +7,10 @@ const MAX_CHUNK_SIZE = 3180
 
 export type CookieChunk = { name: string; value: string }
 
-/** Encodes session JSON the way @supabase/ssr stores auth-token cookie values. */
 export function encodeSessionCookieValue(sessionJson: string): string {
   return `${BASE64_PREFIX}${Buffer.from(sessionJson, 'utf8').toString('base64url')}`
 }
 
-/**
- * Exact port of @supabase/ssr createChunks: splits on encodeURIComponent length at
- * unicode boundaries; a value that fits is written as a single cookie named exactly `key`.
- */
 export function createChunks(key: string, value: string): CookieChunk[] {
   let encodedValue = encodeURIComponent(value)
   if (encodedValue.length <= MAX_CHUNK_SIZE) return [{ name: key, value }]

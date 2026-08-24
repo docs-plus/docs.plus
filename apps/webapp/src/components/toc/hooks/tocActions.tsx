@@ -72,7 +72,7 @@ export const tocActions = {
     })
   },
 
-  /** Outline-row navigate — URL ± optional CHAT_OPEN. Never sets focusEditor. */
+  /** Never sets focusEditor. */
   navigateToHeading(
     headingId: string,
     options?: { openChat?: boolean; updateUrl?: boolean }
@@ -82,7 +82,6 @@ export const tocActions = {
     navigateToHeadingAction(editor, headingId, options)
   },
 
-  /** Doc-title header navigate — URL ± optional CHAT_OPEN for the workspace channel. */
   navigateToDocTitle(options: { openChat?: boolean }): void {
     const { workspaceId, metadata } = useStore.getState().settings
     navigateToDocTitleAction({

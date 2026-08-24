@@ -14,15 +14,6 @@ type Props = {
   className?: string
 }
 
-/**
- * Chatroom toolbar — sticky header for the chat panel.
- *
- * Design System:
- * - Surface: bg-base-100 (primary canvas)
- * - Border: border-b border-base-300
- * - Layout: flex row, items centered, gap-2
- * - Padding: px-3 py-1.5 (compact but touchable)
- */
 const ChatroomToolbar = ({ children, className }: Props) => {
   return (
     <div

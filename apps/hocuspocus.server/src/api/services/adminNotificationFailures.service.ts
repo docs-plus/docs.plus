@@ -1,9 +1,3 @@
-/**
- * Admin Notification-Failures Service — bulk-disable logic for failed push
- * subscriptions. Read-only notification metrics stay inline as thin RPC wrappers
- * in the controller; only the result-shaping disable op lives here.
- */
-
 import { getSupabaseClient } from '../utils/supabase'
 
 type AdminClient = NonNullable<ReturnType<typeof getSupabaseClient>>

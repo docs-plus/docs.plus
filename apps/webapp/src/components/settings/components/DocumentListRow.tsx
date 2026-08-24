@@ -17,7 +17,6 @@ interface DocumentListRowProps {
   sortKey: DocumentSortKey
   members?: DocumentMembersEntry
   onOpenDocument?: () => void
-  /** Roving-tabindex plumbing owned by DocumentsSection. */
   index: number
   isActive: boolean
   onActivate: (index: number) => void

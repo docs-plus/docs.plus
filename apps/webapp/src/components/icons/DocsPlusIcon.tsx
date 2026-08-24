@@ -1,13 +1,3 @@
-/**
- * docs.plus brand logo icon.
- *
- * This is the ONLY custom SVG icon that cannot be replaced by a standard icon
- * library (Lucide, react-icons). It contains brand-specific gradients and paths
- * that define the product identity.
- *
- * All other UI icons must use Lucide (`react-icons/lu`) per the design system §3.5.
- */
-
 interface DocsPlusIconProps {
   size?: number
   className?: string

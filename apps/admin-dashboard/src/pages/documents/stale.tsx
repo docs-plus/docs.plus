@@ -38,7 +38,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-// Stale score to badge color mapping (industry-standard categories)
 function getScoreBadge(score: number, reason: string) {
   if (score >= 100) {
     return <span className="badge badge-error badge-sm gap-1">🔴 {reason}</span>
@@ -65,13 +64,11 @@ export default function StaleDocumentsPage() {
   const [previewSlug, setPreviewSlug] = useState<string | null>(null)
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
 
-  // Fetch summary stats
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['admin', 'stale-documents', 'summary'],
     queryFn: fetchStaleDocumentsSummary
   })
 
-  // Fetch stale documents list
   const {
     data: staleData,
     isLoading,
@@ -87,7 +84,6 @@ export default function StaleDocumentsPage() {
       })
   })
 
-  // Bulk selection - use slug as key since StaleDocument doesn't have id
   const {
     selectedItems,
     count: selectedCount,
@@ -99,7 +95,6 @@ export default function StaleDocumentsPage() {
     clearSelection
   } = useBulkSelection(staleData?.data || [], (doc) => doc.slug)
 
-  // Single delete mutation
   const deleteMutation = useMutation({
     mutationFn: (slug: string) => bulkDeleteStaleDocuments([slug]),
     onSuccess: (result) => {
@@ -120,7 +115,6 @@ export default function StaleDocumentsPage() {
     }
   })
 
-  // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: (slugs: string[]) => bulkDeleteStaleDocuments(slugs),
     onSuccess: (result) => {
@@ -306,13 +300,11 @@ export default function StaleDocumentsPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* Back link */}
           <Link href="/documents" className="btn btn-ghost btn-sm gap-2">
             <LuArrowLeft className="h-4 w-4" />
             Back to Documents
           </Link>
 
-          {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
             <StatCard
               title="Total Stale"
@@ -352,7 +344,6 @@ export default function StaleDocumentsPage() {
             />
           </div>
 
-          {/* Bulk Action Bar */}
           <BulkActionBar count={selectedCount} onClear={clearSelection}>
             {confirmBulkDelete ? (
               <>
@@ -395,7 +386,6 @@ export default function StaleDocumentsPage() {
             )}
           </BulkActionBar>
 
-          {/* How We Detect Stale Documents - Collapsible Info */}
           <div className="collapse-arrow bg-base-200/50 border-base-300 collapse border">
             <input type="checkbox" />
             <div className="collapse-title flex items-center gap-2 text-sm font-medium">
@@ -457,7 +447,6 @@ export default function StaleDocumentsPage() {
             </div>
           </div>
 
-          {/* Legend */}
           <div className="text-base-content/60 flex flex-wrap items-center gap-4 text-sm">
             <span className="font-medium">Legend:</span>
             <span>🔴 Truly Abandoned</span>
@@ -469,7 +458,6 @@ export default function StaleDocumentsPage() {
             </span>
           </div>
 
-          {/* Table */}
           <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
@@ -492,7 +480,6 @@ export default function StaleDocumentsPage() {
           </div>
         </div>
 
-        {/* Preview Modal */}
         <StalePreviewModal
           isOpen={!!previewSlug}
           slug={previewSlug}

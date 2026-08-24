@@ -7,7 +7,7 @@ import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
 import { useCallback, useEffect } from 'react'
 
 const MOBILE_BREAKPOINT = 768
-const SCROLL_MARGIN = 100 // Extra margin for comfortable visibility
+const SCROLL_MARGIN = 100
 // One follow-up after keyboard animation; multiple delays felt like extra “nudges” vs double-tap.
 const MOBILE_CARET_SCROLL_RETRY_MS = 300
 
@@ -172,7 +172,6 @@ export const useEnableEditor = () => {
   }
 }
 
-/** Use this in components that render the editor. */
 export const useEditorFocusScroll = () => {
   const editor = useStore((state) => state.settings.editor.instance)
 

@@ -51,7 +51,6 @@ export async function fetchDocument(
 ): Promise<DocumentWithClientId | null> {
   if (!slug?.trim()) return null
 
-  // Use server URL for SSR, client URL for browser
   const isServer = typeof window === 'undefined'
   const apiBaseUrl = isServer
     ? process.env.SERVER_RESTAPI_URL || process.env.NEXT_PUBLIC_RESTAPI_URL
@@ -73,9 +72,8 @@ export async function fetchDocument(
       headers.token = session.access_token
     }
 
-    // Add timeout to prevent hanging requests
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     const response = await fetch(url, {
       headers,
@@ -109,7 +107,6 @@ export async function fetchDocument(
 
     const { data } = responseData
 
-    // Validate required fields
     if (!data.documentId || typeof data.isPrivate !== 'boolean') {
       throw new DocumentFetchError('Invalid document data received')
     }

@@ -15,24 +15,19 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const theme = useUIStore((state) => state.theme)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  // Apply theme to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
   return (
     <div className="bg-base-100 flex min-h-screen">
-      {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar />
       </div>
 
-      {/* Mobile Menu */}
       <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-      {/* Main Content */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile Header */}
         <div className="border-base-300 bg-base-100 flex items-center justify-between border-b p-4 lg:hidden">
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -44,7 +39,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <ThemeToggle />
         </div>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>

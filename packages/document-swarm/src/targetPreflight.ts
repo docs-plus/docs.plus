@@ -1,7 +1,4 @@
-/**
- * Swarm Target preflight: confirm the target document exists, is public, and is
- * editable before the swarm opens a single browser context against it.
- */
+/** Confirms the target exists, is public, and is editable before any browser opens. */
 
 export class SwarmTargetRefusedError extends Error {}
 
@@ -48,7 +45,6 @@ function extractSlug(targetUrl: URL): string {
   return slug
 }
 
-/** GETs `{api}/documents/{slug}`; refuses missing, private, read-only, or soft-deleted targets. */
 export async function preflightSwarmTarget(rawUrl: string): Promise<SwarmTargetPreflightResult> {
   const targetUrl = new URL(rawUrl)
   const slug = extractSlug(targetUrl)

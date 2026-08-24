@@ -8,7 +8,6 @@ import {
 } from '../../utils/embedKit'
 import { fitLayoutToEditorColumn } from '../../utils/fitImageDimensions'
 
-/** Embeddable Spotify entities — the `{type}` segment of an `open.spotify.com` URL. */
 export type SpotifyEntityType = 'track' | 'album' | 'playlist' | 'artist' | 'show' | 'episode'
 
 export const SPOTIFY_ENTITY_TYPES = [
@@ -28,11 +27,6 @@ const SPOTIFY_ID = /^[A-Za-z0-9]+$/
 const isSpotifyEntityType = (value: string): value is SpotifyEntityType =>
   (SPOTIFY_ENTITY_TYPES as readonly string[]).includes(value)
 
-/**
- * Resolve a Spotify share URL or `spotify:` URI to its `{ type, id }`, or null.
- * Accepts `open.spotify.com/{type}/{id}`, localized `intl-xx`, already-`embed`
- * paths, and `spotify:type:id` URIs; rejects every other host (exact match).
- */
 export const parseSpotifyEntity = (
   input: string
 ): { type: SpotifyEntityType; id: string } | null => {
@@ -60,22 +54,17 @@ export const parseSpotifyEntity = (
   }
 }
 
-/** Canonical share URL for an entity — the stored `src`, without `/embed` or query. */
 export const canonicalSpotifyUrl = (entity: { type: SpotifyEntityType; id: string }): string =>
   `https://open.spotify.com/${entity.type}/${entity.id}`
 
 export interface SpotifyEmbedKitOptions extends FullscreenIframeKitOptions {
-  /** `0` dark / `1` light. Unset uses Spotify's default (dark). */
   theme?: SpotifyTheme
 }
 
 export const SPOTIFY_DEFAULT_WIDTH = 640
-/** Full-art player (album / playlist / artist / show / episode). */
 export const SPOTIFY_FULL_HEIGHT = 352
-/** Compact single-track player. */
 const SPOTIFY_TRACK_HEIGHT = 152
 
-/** Spotify's generator uses the compact height for tracks and the full-art height for everything else. */
 export const defaultSpotifyHeight = (type: SpotifyEntityType): number =>
   type === 'track' ? SPOTIFY_TRACK_HEIGHT : SPOTIFY_FULL_HEIGHT
 

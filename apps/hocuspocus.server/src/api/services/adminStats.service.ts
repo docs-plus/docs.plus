@@ -1,8 +1,3 @@
-/**
- * Admin Stats Service — Prisma aggregation + Supabase enrichment for the
- * dashboard, document list/CRUD, and admin-role management.
- */
-
 import type { PrismaClient } from '@prisma/client'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'

@@ -1,10 +1,9 @@
 import type { Workspace } from '@stores'
 
 /**
- * Who may write title, description and keywords. An owned document answers only to
- * its owner; an ownerless one is open to everyone, signed in or not. The backend
- * enforces the same rule, and `PUT /api/documents/:docId` 403s a non-owner on an
- * owned row. This exists to keep the affordance off screen, not as the control.
+ * Who may write title, description and keywords. An owned document answers
+ * only to its owner; an ownerless one is open to everyone. The PUT 403s a
+ * non-owner. This keeps the affordance off screen, not as the control.
  */
 export const canEditDocumentMetadata = (settings: Workspace, profileId?: string): boolean => {
   // The store seeds `metadata` with an undefined documentId and fills it after the

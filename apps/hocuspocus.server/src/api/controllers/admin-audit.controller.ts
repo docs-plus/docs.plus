@@ -1,9 +1,3 @@
-/**
- * Admin audit handlers: stale documents, media storage, failed notifications,
- * ghost accounts. Read-only notification metrics and the DLQ read stay inline as
- * thin RPC/Redis wrappers rather than gaining a service of their own.
- */
-
 import { Queue } from 'bullmq'
 
 import { adminLogger } from '../../lib/logger'
@@ -16,8 +10,6 @@ import * as mediaStorage from '../services/adminMediaStorage.service'
 import * as notificationFailures from '../services/adminNotificationFailures.service'
 import * as stale from '../services/adminStaleDocuments.service'
 import { getSupabaseClient } from '../utils/supabase'
-
-// Stale documents audit
 
 export async function getStaleDocumentsSummary(c: AppContext) {
   try {
@@ -77,8 +69,6 @@ export async function bulkDeleteStaleDocuments(c: AppContext) {
   }
 }
 
-// Media storage audit
-
 export async function getMediaStorageSummary(c: AppContext) {
   const supabase = getSupabaseClient()
   if (!supabase) return c.json({ error: 'Supabase not configured' }, 500)
@@ -118,8 +108,6 @@ export async function listMediaStorage(c: AppContext) {
     pagination: result.pagination
   })
 }
-
-// Failed notifications audit
 
 export async function getNotificationHealth(c: AppContext) {
   try {
@@ -308,8 +296,6 @@ export async function getDeadLetterQueueContents(c: AppContext) {
   }
 }
 
-// Ghost accounts audit
-
 export async function getGhostAccounts(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()
@@ -382,7 +368,6 @@ export async function deleteGhostAccount(c: AppContext) {
   }
 }
 
-/** Bulk smart-delete, capped at 50 ids by the router schema. */
 export async function bulkDeleteGhostAccounts(c: AppContext) {
   try {
     const adminAuth = getSupabaseClient()

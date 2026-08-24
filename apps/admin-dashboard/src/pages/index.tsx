@@ -72,19 +72,16 @@ const messageTypeColumns = [
 export default function OverviewPage() {
   const { documentStats, supabaseStats, loading, refetch, isRefetching } = useDashboardStats()
 
-  // Document Views Analytics
   const [viewsDays, setViewsDays] = useState(30)
   const { data: viewsSummary, isLoading: viewsSummaryLoading } = useViewsSummary()
   const { data: topDocuments, isLoading: topDocsLoading } = useTopViewedDocuments(5, viewsDays)
   const { data: viewsTrend, isLoading: trendLoading } = useViewsTrend(viewsDays)
 
-  // User Retention Analytics (Phase 8)
   const { data: retentionMetrics, isLoading: retentionLoading } = useRetentionMetrics()
   const { data: lifecycleSegments, isLoading: lifecycleLoading } = useUserLifecycleSegments()
   const { data: dauTrend, isLoading: dauTrendLoading } = useDauTrend(viewsDays)
   const { data: signupsTrend, isLoading: signupsTrendLoading } = useSignupsTrend(viewsDays)
 
-  // Engagement
   const { data: messageTypes, isLoading: messageTypesLoading } = useMessageTypeDistribution()
 
   return (
@@ -102,7 +99,6 @@ export default function OverviewPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* Main Stats */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total Users"
@@ -148,7 +144,6 @@ export default function OverviewPage() {
             />
           </div>
 
-          {/* Secondary Stats */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Online Now"
@@ -179,7 +174,6 @@ export default function OverviewPage() {
             />
           </div>
 
-          {/* Document Stats Card */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h2 className="mb-4 text-lg font-semibold">Document Statistics</h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -235,7 +229,6 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          {/* User Retention Section (Phase 8) */}
           <CollapsibleSection
             title="User Retention & Engagement"
             icon={<LuUsers className="h-5 w-5" />}
@@ -252,14 +245,11 @@ export default function OverviewPage() {
                 ))}
               </div>
             }>
-            {/* DAU/WAU/MAU Cards */}
             <ChartErrorBoundary fallbackHeight={120}>
               <RetentionCards data={retentionMetrics} loading={retentionLoading} />
             </ChartErrorBoundary>
 
-            {/* DAU Trend + User Lifecycle */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* DAU Trend Chart */}
               <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
                 {/* online_at is a single last-seen timestamp, so this is a
                     last-seen-by-day distribution, not a true DAU time series. */}
@@ -272,7 +262,6 @@ export default function OverviewPage() {
                 </ChartErrorBoundary>
               </div>
 
-              {/* User Lifecycle Segments */}
               <div className="bg-base-100 rounded-box border-base-300 border p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <LuUserCheck className="text-primary h-5 w-5" />
@@ -283,7 +272,6 @@ export default function OverviewPage() {
                 </ChartErrorBoundary>
               </div>
 
-              {/* Signups per Day */}
               <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-3">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <LuUserPlus className="text-primary h-5 w-5" />
@@ -300,7 +288,6 @@ export default function OverviewPage() {
             </div>
           </CollapsibleSection>
 
-          {/* Engagement Section */}
           <CollapsibleSection
             title="Engagement"
             icon={<LuMessageSquare className="h-5 w-5" />}
@@ -320,19 +307,15 @@ export default function OverviewPage() {
             </div>
           </CollapsibleSection>
 
-          {/* Document Views Analytics Section */}
           <CollapsibleSection
             title="Document Views Analytics"
             icon={<LuEye className="h-5 w-5" />}
             defaultOpen={true}>
-            {/* Views Summary Cards */}
             <ChartErrorBoundary fallbackHeight={120}>
               <ViewsSummaryCards data={viewsSummary} loading={viewsSummaryLoading} />
             </ChartErrorBoundary>
 
-            {/* Charts Row */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* Views Trend Chart */}
               <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <LuEye className="text-primary h-5 w-5" />
@@ -343,7 +326,6 @@ export default function OverviewPage() {
                 </ChartErrorBoundary>
               </div>
 
-              {/* Top Viewed Documents */}
               <div className="bg-base-100 rounded-box border-base-300 border p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
                   <LuFileText className="text-primary h-5 w-5" />
@@ -359,7 +341,6 @@ export default function OverviewPage() {
               </div>
             </div>
 
-            {/* Device & User Type Breakdown */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="bg-base-100 rounded-box border-base-300 border p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">

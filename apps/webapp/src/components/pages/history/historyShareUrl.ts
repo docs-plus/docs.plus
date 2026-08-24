@@ -78,12 +78,10 @@ export function replaceHistoryHashVersion(version: number | null): void {
   updateAppUrl('replace', url)
 }
 
-/** Clear `#history…` and return to the editor URL (pathname + search only). */
 export function clearHistoryHash(): void {
   replaceHistoryHashVersion(null)
 }
 
-/** If the URL is `#history?…`, collapse to `#history` only (no query). No-op if not in history or already plain. */
 export function normalizeToPlainHistoryHash(): void {
   const p = parseHistoryHash(window.location.hash)
   if (!p.isHistory) return

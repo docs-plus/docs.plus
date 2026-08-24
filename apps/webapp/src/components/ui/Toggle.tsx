@@ -6,15 +6,10 @@ export type ToggleVariant =
   'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'info'
 
 export interface ToggleProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> {
-  /** Label text for the toggle */
   label?: string
-  /** Size of the toggle */
   size?: ToggleSize
-  /** Color variant of the toggle */
   variant?: ToggleVariant
-  /** Helper text displayed below the toggle */
   helperText?: string
-  /** Additional wrapper class */
   wrapperClassName?: string
 }
 

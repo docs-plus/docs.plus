@@ -11,7 +11,6 @@ export function createReportCounters(): SwarmReportCounters {
   }
 }
 
-/** Folds a Script Outcome into the Swarm Report counters. */
 export function foldScriptOutcome(
   report: SwarmReportCounters,
   outcome: ScriptOutcome | void
@@ -29,7 +28,6 @@ export function reportExitCode(report: SwarmReportCounters): number {
   return report.hardFailures > 0 ? 1 : 0
 }
 
-/** End-of-run operator summary — the Swarm Report. */
 export function printSwarmReport(
   report: SwarmReportCounters,
   options: RunOptions,

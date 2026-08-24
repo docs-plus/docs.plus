@@ -4,7 +4,6 @@ import { verifySupabaseTokenOutcome } from '../../lib/auth'
 import { adminLogger } from '../../lib/logger'
 import { getSupabaseClient } from '../utils/supabase'
 
-/** Require a verified Supabase user that is also present in `admin_users`. */
 export async function adminAuthMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization')
 

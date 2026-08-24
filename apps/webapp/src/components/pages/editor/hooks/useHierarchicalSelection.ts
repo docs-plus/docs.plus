@@ -66,7 +66,6 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
         selection?.removeAllRanges()
         selection?.addRange(range)
 
-        // Update Tiptap's internal selection state
         setTimeout(() => {
           editor.commands.focus()
         }, 0)
@@ -84,7 +83,6 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
       if (!editor) return false
 
       try {
-        // Handle both direct HTMLElements and array-like objects (Cypress)
         const element =
           domElement instanceof HTMLElement ? domElement : (domElement as ArrayLike<HTMLElement>)[0]
 
@@ -100,7 +98,6 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
         selection?.removeAllRanges()
         selection?.addRange(range)
 
-        // Update Tiptap's internal selection state
         setTimeout(() => {
           editor.commands.focus()
         }, 0)

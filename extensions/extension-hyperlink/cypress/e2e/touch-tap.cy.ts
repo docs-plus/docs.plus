@@ -58,7 +58,6 @@ describe('Touch tap — editable doc with the prebuilt preview popover', () => {
   it('opens the preview popover through the full trusted touch sequence (realTouch)', () => {
     cy.get('#editor a').realTouch()
     cy.get(PREVIEW).should('be.visible')
-    // The tap must never leave the playground page.
     cy.location('href').should('contain', '127.0.0.1:5173')
   })
 })

@@ -159,7 +159,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen
     const setIsOpen = onOpenChange || setInternalIsOpen
 
-    // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
     // Populated by each MenuItem's useListItem() — not DOM position — so
     // wrapper components (TocContextMenu, ContextMenuItems, …) don't break it.
     const listItemsRef = useRef<Array<HTMLLIElement | null>>([])
@@ -304,7 +303,6 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
 
-    // Placed after every hook to comply with the Rules of Hooks
     if (!parentRef?.current && externalIsOpen === undefined) return null
 
     if (!isMounted) return null

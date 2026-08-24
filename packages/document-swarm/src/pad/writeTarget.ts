@@ -89,10 +89,6 @@ async function ensureSectionHeading(page: Page, label: string): Promise<string> 
   return created
 }
 
-/**
- * Ensures the Write Target heading exists, creating it at doc end when missing. Leaves
- * the caret at the end of that heading, ready for a body line to be typed.
- */
 export async function openWriteTarget(page: Page, target: WriteTarget): Promise<OpenedWriteTarget> {
   const tocId = await ensureSectionHeading(page, labelOf(target))
 

@@ -6,10 +6,6 @@ export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'
 
 export type EmailStatus = 'pending' | 'processing' | 'sent' | 'failed' | 'skipped'
 
-/**
- * Notification email request payload
- * Sent from Supabase to the email gateway
- */
 export interface NotificationEmailRequest {
   queue_id: string
 
@@ -50,9 +46,6 @@ export interface EmailResult {
   deduplicated?: boolean // True if this was an idempotent skip
 }
 
-/**
- * Email job data for BullMQ queue
- */
 export interface EmailJobData {
   type: 'notification' | 'generic' | 'digest'
   payload: NotificationEmailRequest | GenericEmailRequest | DigestEmailRequest
@@ -60,19 +53,13 @@ export interface EmailJobData {
   created_at: string
 }
 
-/**
- * Email Dead Letter Queue job data
- */
 export interface EmailDLQData extends EmailJobData {
   originalJobId?: string
   failureReason: string
   failedAt: string
 }
 
-/**
- * Digest email request (for daily/weekly summaries)
- * Notifications are grouped by document → channel
- */
+// Digest notifications grouped by document → channel
 export interface DigestEmailRequest {
   to: string
   recipient_name: string
@@ -83,9 +70,6 @@ export interface DigestEmailRequest {
   period_end: string
 }
 
-/**
- * Document/Workspace in a digest
- */
 export interface DigestDocument {
   name: string
   slug: string
@@ -124,9 +108,6 @@ export interface EmailStatusCallback {
   error_message?: string
 }
 
-/**
- * Bounce event from email provider webhook
- */
 export type BounceType = 'hard' | 'soft' | 'complaint'
 
 export interface EmailBounceEvent {

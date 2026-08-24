@@ -5,15 +5,14 @@ import type { EditorState, Transaction } from '@tiptap/pm/state'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-/** Arguments passed to the `placeholder` callback when it is a function. */
 export interface PlaceholderRenderProps {
   editor: Editor
   node: ProseMirrorNode
   pos: number
   hasAnchor: boolean
-  /** Parent node type name (e.g. 'doc', 'listItem', 'blockquote'). Safe during apply(). */
+  /** Parent type name. Safe during apply(). */
   parentName: string
-  /** Doc that `pos` resolves against. Use this — `editor.state.doc` is stale during apply(). */
+  /** Use this — `editor.state.doc` is stale during apply(). */
   doc: ProseMirrorNode
 }
 
@@ -63,7 +62,6 @@ function buildFromCursor(
     })
   ]
 
-  // Propagate empty class to ancestor wrappers (list items, blockquotes, etc.)
   for (let d = $anchor.depth - 1; d >= 1; d--) {
     const ancestor = $anchor.node(d)
     if (!isNodeEmpty(ancestor)) break

@@ -4,7 +4,6 @@ import type { ApplyMode } from '../types'
 import { CONTENT_APPLY_ORIGIN } from '../types'
 
 /**
- * Transplant the scratch fragment into the live document as one atomic update.
  * Only `isDraft` and `needsInitialization` are touched. `store()` refuses to
  * persist a draft, and the empty-title-heading recipe would otherwise be
  * overwritten by the webapp's starter template on first open.

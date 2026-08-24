@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Run prepublishOnly on all five publishable extensions (CI extension-tests job).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 export npm_config_user_agent="bun/${BUN_VERSION:-1.3.14}"
 
-# Build --only args from EXT_ONLY (space-separated dir names; empty = all five).
 ONLY_ARGS=()
 if [ -n "${EXT_ONLY:-}" ]; then
   for e in $EXT_ONLY; do ONLY_ARGS+=(--only "$e"); done
@@ -17,15 +15,10 @@ while read -r dir; do
   bun run --filter "@docs.plus/${dir}" prepublishOnly
 done <<< "$list"
 
-# Both consumers style the one global .floating-tooltip class; the skins must
-# stay byte-identical or cascade order decides which bundle wins (AGENTS.md
-# §Shared Library Config). Unconditional on purpose: both sides are source
-# files present in any checkout, so scoping a run to one package never makes
-# drift acceptable — and the old `EXT_ONLY` guard meant CI, which always scopes
-# to a single matrix entry, never ran this at all.
-#
-# Fails CLOSED on an empty extraction: renaming either anchor would otherwise
-# make `diff` compare two empty streams and report lockstep on drifted files.
+# Both packages style one global `.floating-tooltip`; skins must stay byte-identical
+# or cascade order picks a winner (AGENTS.md §Shared Library Config). Always run:
+# CI scopes EXT_ONLY to one matrix entry, so an EXT_ONLY guard never checked this.
+# Fail closed on an empty extract — otherwise `diff` of two empties reports lockstep.
 assert_lockstep() {
   local label=$1 left=$2 right=$3 where=$4
   if [ -z "$left" ] || [ -z "$right" ]; then

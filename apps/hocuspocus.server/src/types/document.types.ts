@@ -1,4 +1,3 @@
-// Document metadata interface
 export interface DocumentMetadata {
   id: number
   slug: string
@@ -14,7 +13,6 @@ export interface DocumentMetadata {
   updatedAt: Date
 }
 
-// Create document parameters
 export interface CreateDocumentParams {
   slug: string
   title: string
@@ -24,7 +22,6 @@ export interface CreateDocumentParams {
   email?: string
 }
 
-// Update document parameters
 export interface UpdateDocumentParams {
   title?: string
   description?: string
@@ -38,7 +35,6 @@ export interface UpdateDocumentParams {
 // Allowlisted list sort keys — mapped to a fixed Prisma orderBy in the service.
 export type DocumentSortKey = 'updatedAt_desc' | 'createdAt_desc' | 'title_asc' | 'title_desc'
 
-// Search documents parameters
 export interface SearchDocumentsParams {
   title?: string
   keywords?: string
@@ -53,7 +49,6 @@ export interface SearchDocumentsParams {
   offset: number
 }
 
-// History payload for version control
 export interface HistoryPayload {
   type: string
   documentId: string

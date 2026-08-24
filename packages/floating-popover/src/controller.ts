@@ -1,7 +1,4 @@
-// Extension-agnostic single-popover lifecycle owner. `adopt` takes
-// ownership of a built popover (destroying the previous owner), `close`
-// hides + idles, `reposition` re-anchors, `subscribe` observes
-// idle ↔ mounted transitions.
+// Single-popover lifecycle: `adopt` destroys the previous owner; `close` hides + idles.
 
 export type PopoverKind = 'preview' | 'edit' | 'create' | (string & {})
 
@@ -17,9 +14,7 @@ export interface ManagedPopover {
 }
 
 export type AdoptMetadata = {
-  /** The popover's root element — what subscribers attach focus rings, scroll-freezes, or DOM observers to. */
   element: HTMLElement
-  /** The anchor the popover is glued to — `null` for virtual-coords popovers (e.g. selection-anchored create). */
   referenceElement: HTMLElement | null
 }
 

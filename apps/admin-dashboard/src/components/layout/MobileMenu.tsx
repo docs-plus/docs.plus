@@ -29,12 +29,9 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />
 
-      {/* Menu */}
       <aside className="bg-base-200 fixed inset-y-0 left-0 z-50 flex w-64 flex-col lg:hidden">
-        {/* Header */}
         <div className="border-base-300 flex items-center justify-between border-b p-4">
           <Link href="/" className="flex items-center gap-2" onClick={handleNavClick}>
             <LuLayoutDashboard className="text-primary h-6 w-6" />
@@ -46,7 +43,6 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           {navItems.map((item) => {
             const isActive = router.pathname === item.href
@@ -70,15 +66,12 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           })}
         </nav>
 
-        {/* Footer */}
         <div className="border-base-300 space-y-2 border-t p-4">
-          {/* Theme Toggle */}
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-base-content/60 text-sm">Theme</span>
             <ThemeToggle />
           </div>
 
-          {/* Sign Out */}
           <button
             onClick={handleSignOut}
             className="hover:bg-base-300 text-base-content flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors">

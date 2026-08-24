@@ -48,7 +48,6 @@ const amazon: IconEntry = { pack: 'fa', key: 'FaAmazon', color: '#ff9900' }
  * same entry so the dynamic import resolves to the same module + key.
  */
 export const SOCIAL_ICONS: Record<string, IconEntry> = {
-  // Social networks
   'facebook.com': facebook,
   'fb.com': facebook,
   'instagram.com': instagram,
@@ -70,7 +69,6 @@ export const SOCIAL_ICONS: Record<string, IconEntry> = {
   'vk.com': { pack: 'fa', key: 'FaVk', color: '#4c75a3' },
   'clubhouse.com': { pack: 'si', key: 'SiClubhouse', color: '#f2e6d9' },
 
-  // Messaging
   'whatsapp.com': whatsapp,
   'wa.me': whatsapp,
   'telegram.org': telegram,
@@ -89,7 +87,6 @@ export const SOCIAL_ICONS: Record<string, IconEntry> = {
   'weixin.qq.com': weixin,
   'matrix.org': { pack: 'si', key: 'SiMatrix', color: '#000000' },
 
-  // Video & streaming
   'youtube.com': youtube,
   'youtu.be': youtube,
   'twitch.tv': { pack: 'fa', key: 'FaTwitch', color: '#9146ff' },
@@ -97,7 +94,6 @@ export const SOCIAL_ICONS: Record<string, IconEntry> = {
   'tiktok.com': tiktok,
   'vm.tiktok.com': tiktok,
 
-  // Music & audio
   'spotify.com': spotify,
   'open.spotify.com': spotify,
   'music.apple.com': apple,
@@ -107,7 +103,6 @@ export const SOCIAL_ICONS: Record<string, IconEntry> = {
   'last.fm': lastfm,
   'lastfm.com': lastfm,
 
-  // Developer & tech
   'github.com': github,
   'gitlab.com': { pack: 'fa', key: 'FaGitlab', color: '#fc6d26' },
   'bitbucket.org': { pack: 'fa', key: 'FaBitbucket', color: '#0052cc' },
@@ -124,25 +119,21 @@ export const SOCIAL_ICONS: Record<string, IconEntry> = {
   'notion.site': notion,
   'trello.com': { pack: 'fa', key: 'FaTrello', color: '#0052cc' },
 
-  // Blogging & publishing
   'medium.com': { pack: 'fa', key: 'FaMedium', color: '#000000' },
   'substack.com': { pack: 'si', key: 'SiSubstack', color: '#ff6719' },
 
-  // Design & photography
   'dribbble.com': { pack: 'fa', key: 'FaDribbble', color: '#ea4c89' },
   'behance.net': behance,
   'be.net': behance,
   'flickr.com': flickr,
   'flic.kr': flickr,
 
-  // Creator economy & funding
   'patreon.com': { pack: 'fa', key: 'FaPatreon', color: '#ff424d' },
   'ko-fi.com': { pack: 'si', key: 'SiKofi', color: '#ff5e5b' },
   'buymeacoffee.com': { pack: 'si', key: 'SiBuymeacoffee', color: '#ffdd00' },
   'gumroad.com': { pack: 'si', key: 'SiGumroad', color: '#ff90e8' },
   'kickstarter.com': { pack: 'fa', key: 'FaKickstarter', color: '#05ce78' },
 
-  // Freelance & marketplace
   'fiverr.com': { pack: 'si', key: 'SiFiverr', color: '#1dbf73' },
   'upwork.com': { pack: 'si', key: 'SiUpwork', color: '#14a800' },
   'etsy.com': { pack: 'fa', key: 'FaEtsy', color: '#f16521' },
@@ -154,26 +145,20 @@ export const SOCIAL_ICONS: Record<string, IconEntry> = {
   'amazon.in': amazon,
   'amzn.to': amazon,
 
-  // Payments
   'paypal.com': paypal,
   'paypal.me': paypal,
   'stripe.com': { pack: 'fa', key: 'FaStripe', color: '#6772e5' },
 
-  // Scheduling & productivity
   'calendly.com': { pack: 'si', key: 'SiCalendly', color: '#006bff' },
 
-  // Link-in-bio & profiles
   'linktr.ee': { pack: 'si', key: 'SiLinktree', color: '#39e09b' },
   'bento.me': { pack: 'si', key: 'SiBento', color: '#ff6347' },
 
-  // Gaming
   'store.steampowered.com': { pack: 'fa', key: 'FaSteam', color: '#00adee' },
   'steamcommunity.com': { pack: 'fa', key: 'FaSteam', color: '#00adee' },
 
-  // Books & knowledge
   'goodreads.com': { pack: 'fa', key: 'FaGoodreads', color: '#553b08' },
 
-  // News & discovery
   'producthunt.com': { pack: 'fa', key: 'FaProductHunt', color: '#da552f' },
   'news.ycombinator.com': { pack: 'fa', key: 'FaHackerNews', color: '#f0652f' }
 }

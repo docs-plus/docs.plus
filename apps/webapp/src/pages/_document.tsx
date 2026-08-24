@@ -44,7 +44,6 @@ export default function Document() {
   return (
     <Html lang="en" data-theme="docsplus">
       <Head>
-        {/* Character encoding - must be first */}
         <meta charSet="utf-8" />
 
         {PRECONNECT_ORIGINS.map((origin) => (
@@ -59,11 +58,9 @@ export default function Document() {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={APP_NAME} />
 
-        {/* Android Chrome PWA */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content={APP_NAME} />
 
-        {/* Theme color - browser chrome, status bar, task switcher */}
         <meta
           name="theme-color"
           content={THEME_COLOR_LIGHT}
@@ -84,7 +81,6 @@ export default function Document() {
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
 
-        {/* Safari pinned tab icon (monochrome SVG) */}
         <link rel="mask-icon" href="/icons/logo.svg" color={THEME_COLOR_LIGHT} />
 
         <meta name="format-detection" content="telephone=no" />
@@ -101,7 +97,6 @@ export default function Document() {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <body>
-        {/* Pre-hydration theme boot — see THEME_BOOT_SCRIPT above (next-themes/GitHub approach). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <Main />
         <NextScript />

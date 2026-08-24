@@ -32,7 +32,6 @@ const originOf = (value: string): string | null => {
 }
 
 /**
- * The HTML the DOCX converter reads — the only export built from markup.
  * `charset` is load-bearing: the converter reads the declared encoding and
  * mangles non-ASCII text without it.
  */

@@ -54,7 +54,6 @@ async function listActorUsersByEmail(admin: SupabaseClient): Promise<Map<string,
 
 type EnsureOutcome = 'created' | 'adopted'
 
-/** Creates the actor, or adopts an existing auth user and resets its password/metadata to the deterministic values. */
 async function ensureActor(
   admin: SupabaseClient,
   index: number,
@@ -91,9 +90,8 @@ async function ensureActor(
 }
 
 /**
- * Creates/reuses Swarm Actors via the Supabase Admin API and writes the actors file.
- * Idempotent: `--force` ignores the file and re-syncs 1..count; otherwise a larger
- * existing pool is preserved and only the shortfall up to count is provisioned.
+ * Idempotent Admin API provision. `--force` re-syncs 1..count; otherwise a
+ * larger existing pool is kept and only the shortfall is created.
  */
 export async function provision(options: ProvisionOptions): Promise<void> {
   const { count, actorsFile, force } = options

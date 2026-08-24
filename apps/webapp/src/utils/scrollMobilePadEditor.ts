@@ -10,9 +10,6 @@ export function isMobileDocumentPadLayout(): boolean {
   return typeof document !== 'undefined' && document.querySelector('.mobileLayoutRoot') !== null
 }
 
-/**
- * Scroll `element` within the pad editor wrapper. Returns true if handled (caller skips native scrollIntoView).
- */
 export function scrollElementInMobilePadEditor(
   element: Element,
   options: { block?: 'start' | 'nearest'; behavior?: ScrollBehavior } = {}

@@ -16,7 +16,6 @@ export interface MediaUploadDropzoneProps {
 const isAcceptedMedia = (file: File): boolean =>
   ACCEPTED_PREFIXES.some((prefix) => file.type.startsWith(prefix))
 
-/** File dropzone with hover / invalid-file states (image, video, audio). */
 const MediaUploadDropzone = ({ onFile }: MediaUploadDropzoneProps) => {
   const inputId = useId()
   const [isDragOver, setIsDragOver] = useState(false)

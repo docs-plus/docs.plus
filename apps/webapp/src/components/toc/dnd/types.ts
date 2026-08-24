@@ -1,8 +1,5 @@
 import type { TocItem } from '@types'
 
-/**
- * Flattened representation of a TOC item for drag-and-drop
- */
 export interface FlattenedTocItem {
   id: string
   item: TocItem
@@ -11,9 +8,6 @@ export interface FlattenedTocItem {
   index: number
 }
 
-/**
- * Drop target state
- */
 export interface DropTarget {
   id: string | null
   position: 'before' | 'after' | null
@@ -22,14 +16,11 @@ export interface DropTarget {
   indicatorY: number | null
 }
 
-/**
- * Configuration for level snapping
- */
 export interface SnapConfig {
-  stepSize: number // pixels per level step
-  maxSteps: number // maximum steps in either direction (±3)
-  minLevel: number // H1
-  maxLevel: number // H6 (or H10)
+  stepSize: number
+  maxSteps: number
+  minLevel: number
+  maxLevel: number
 }
 
 export const DEFAULT_SNAP_CONFIG: SnapConfig = {
@@ -39,6 +30,6 @@ export const DEFAULT_SNAP_CONFIG: SnapConfig = {
   maxLevel: 6
 }
 
-// Hysteresis constants to prevent flickering during drag
-export const TARGET_HYSTERESIS = 10 // px - must be this much closer to switch targets
-export const INDICATOR_Y_HYSTERESIS = 8 // px - don't jump indicator if within this threshold
+// Hysteresis so the drop target / indicator do not flicker mid-drag.
+export const TARGET_HYSTERESIS = 10 // px closer before switching targets
+export const INDICATOR_Y_HYSTERESIS = 8 // px — keep prior Y if within this

@@ -1,7 +1,4 @@
-/**
- * Cypress clean-room for @docs.plus/extension-placeholder (shipped dist). Query params:
- * `?editable=false`, `?showOnlyWhenEditable=false`, `?placeholder=fn|empty`, `?nodeClass=custom`.
- */
+/** Query params: `?editable=false`, `?showOnlyWhenEditable=false`, `?placeholder=fn|empty`, `?nodeClass=custom`. */
 
 import { Placeholder, type PlaceholderRenderProps } from '@docs.plus/extension-placeholder'
 import { setupPlayground } from '@docs.plus/playground/setup'

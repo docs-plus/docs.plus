@@ -5,7 +5,6 @@ export function isAuthUnavailable(args: { status?: number; code?: string }): boo
   return args.status === 503 && args.code === 'AUTH_UNAVAILABLE'
 }
 
-/** Map REST `access` hint (+ status, code, session) to the PrivateDocumentGate CTA variant. */
 export function toPrivateGateVariant(args: {
   access?: string | null
   status?: number

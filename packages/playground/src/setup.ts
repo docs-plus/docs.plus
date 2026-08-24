@@ -7,11 +7,8 @@ export interface PlaygroundTokens {
 }
 
 export interface PlaygroundConfig {
-  /** Page <title> and the card heading. */
   title: string
-  /** Repo path appended to the GitHub footer link, e.g. `extension-hyperlink`. */
   github: string
-  /** Per-theme CSS custom properties the extension's own styles consume. */
   tokens?: PlaygroundTokens
 }
 

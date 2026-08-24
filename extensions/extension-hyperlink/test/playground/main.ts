@@ -1,9 +1,3 @@
-/**
- * Cypress clean-room: shipped dist; `?popover=custom` wires BYO popovers on
- * `window._byo`; `?popover=none` drops both factories; `?readonly=on` locks
- * the editor after mount.
- */
-
 import '@docs.plus/extension-hyperlink/styles.css'
 
 import * as HyperlinkModule from '@docs.plus/extension-hyperlink'

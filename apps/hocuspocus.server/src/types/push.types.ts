@@ -1,6 +1,3 @@
-/**
- * Push notification request payload from Supabase trigger
- */
 export interface PushNotificationRequest {
   user_id: string
   notification_id: string
@@ -13,9 +10,6 @@ export interface PushNotificationRequest {
   channel_id?: string
 }
 
-/**
- * Push subscription from database
- */
 export interface PushSubscription {
   id: string
   user_id: string
@@ -58,18 +52,12 @@ export interface PushGatewayHealth {
   sent_last_hour: number
 }
 
-/**
- * Push job data for BullMQ queue
- */
 export interface PushJobData {
   type: 'notification'
   payload: PushNotificationRequest
   created_at: string
 }
 
-/**
- * Push Dead Letter Queue job data
- */
 export interface PushDLQData extends PushJobData {
   originalJobId?: string
   failureReason: string

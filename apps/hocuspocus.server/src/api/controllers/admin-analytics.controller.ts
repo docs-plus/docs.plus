@@ -1,8 +1,3 @@
-/**
- * Admin analytics handlers. Pure RPC reads are registered through the `rpcRoute`
- * table below; handlers with enrichment or extra validation stay bespoke.
- */
-
 import { adminLogger } from '../../lib/logger'
 import type { AppContext } from '../../types/hono.types'
 import * as analytics from '../services/adminAnalytics.service'
@@ -16,7 +11,6 @@ interface RpcRouteConfig {
   errMsg: string
 }
 
-/** Build a handler for a pure Supabase RPC read; variance is data, not control flow. */
 function rpcRoute(config: RpcRouteConfig) {
   return async (c: AppContext) => {
     try {

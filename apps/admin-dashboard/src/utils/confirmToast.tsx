@@ -4,12 +4,10 @@ import toast from 'react-hot-toast'
 interface ConfirmToastOptions {
   title: ReactNode
   body: ReactNode
-  /** daisyUI button modifier for the confirm action (defaults to destructive). */
   confirmClass?: string
   onConfirm: () => void
 }
 
-/** Inline confirm-then-act toast (10s). Confirm runs onConfirm then dismisses. */
 export function confirmToast({
   title,
   body,

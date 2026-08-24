@@ -1,30 +1,20 @@
-/**
- * Special URL schemes and well-known domains the extension classifies
- * for the preview popover.
- *
- * Catalog source: https://github.com/bhagyas/app-urls
- */
+/** Catalog of app schemes and well-known domains. Source: https://github.com/bhagyas/app-urls */
 
 /**
- * String-literal union so consumers can declare a
- * `Partial<Record<SpecialUrlType, …>>` icon map with exhaustive
- * autocomplete — type-only, zero runtime bytes. Naming convention lives
- * in this package's AGENTS.md.
+ * Type-only union for consumer icon maps (`Partial<Record<SpecialUrlType, …>>`).
+ * Zero runtime bytes. Naming convention is in this package's AGENTS.md.
  */
 export type SpecialUrlType =
-  // Communication
   | 'email'
   | 'phone'
   | 'sms'
   | 'facetime'
   | 'facetime-audio'
-  // Messaging
   | 'whatsapp'
   | 'telegram'
   | 'discord'
   | 'skype'
   | 'slack'
-  // Social networks
   | 'twitter'
   | 'facebook'
   | 'instagram'
@@ -32,12 +22,10 @@ export type SpecialUrlType =
   | 'snapchat'
   | 'reddit'
   | 'tiktok'
-  // Video conferencing
   | 'zoom'
   | 'teams'
   | 'webex'
   | 'meet'
-  // Apple
   | 'calendar'
   | 'reminders'
   | 'contacts'
@@ -48,19 +36,16 @@ export type SpecialUrlType =
   | 'photos'
   | 'shortcuts'
   | 'app-store'
-  // Dev / productivity
   | 'github'
   | 'gitlab'
   | 'vscode'
   | 'notion'
   | 'obsidian'
   | 'figma'
-  // Entertainment
   | 'youtube'
   | 'spotify'
   | 'netflix'
   | 'twitch'
-  // Shopping / other
   | 'amazon'
   | 'uber'
   | 'lyft'
@@ -79,7 +64,6 @@ export type SpecialUrlInfo = {
     | 'other'
 }
 
-// Communication & Phone
 const COMMUNICATION_URLS: Record<string, SpecialUrlInfo> = {
   'mailto:': { type: 'email', title: 'Email', category: 'communication' },
   'tel:': { type: 'phone', title: 'Phone', category: 'communication' },
@@ -93,7 +77,6 @@ const COMMUNICATION_URLS: Record<string, SpecialUrlInfo> = {
   }
 }
 
-// Social Media & Messaging
 const SOCIAL_URLS: Record<string, SpecialUrlInfo> = {
   'whatsapp:': { type: 'whatsapp', title: 'WhatsApp', category: 'social' },
   'tg:': { type: 'telegram', title: 'Telegram', category: 'social' },
@@ -109,7 +92,6 @@ const SOCIAL_URLS: Record<string, SpecialUrlInfo> = {
   'tiktok:': { type: 'tiktok', title: 'TikTok', category: 'social' }
 }
 
-// Video Conferencing & Meeting
 const MEETING_URLS: Record<string, SpecialUrlInfo> = {
   'zoommtg:': { type: 'zoom', title: 'Zoom Meeting', category: 'communication' },
   'zoomus:': { type: 'zoom', title: 'Zoom', category: 'communication' },
@@ -117,7 +99,6 @@ const MEETING_URLS: Record<string, SpecialUrlInfo> = {
   'webex:': { type: 'webex', title: 'Cisco Webex', category: 'communication' }
 }
 
-// Apple Apps
 const APPLE_URLS: Record<string, SpecialUrlInfo> = {
   'calshow:': { type: 'calendar', title: 'Calendar', category: 'apple' },
   'x-apple-calevent:': { type: 'calendar', title: 'Calendar Event', category: 'apple' },
@@ -133,7 +114,6 @@ const APPLE_URLS: Record<string, SpecialUrlInfo> = {
   'itms-apps:': { type: 'app-store', title: 'App Store', category: 'apple' }
 }
 
-// Development & Productivity
 const PRODUCTIVITY_URLS: Record<string, SpecialUrlInfo> = {
   'github:': { type: 'github', title: 'GitHub', category: 'development' },
   'gitlab:': { type: 'gitlab', title: 'GitLab', category: 'development' },
@@ -143,7 +123,6 @@ const PRODUCTIVITY_URLS: Record<string, SpecialUrlInfo> = {
   'figma:': { type: 'figma', title: 'Figma', category: 'development' }
 }
 
-// Entertainment & Media
 const ENTERTAINMENT_URLS: Record<string, SpecialUrlInfo> = {
   'youtube:': { type: 'youtube', title: 'YouTube', category: 'entertainment' },
   'spotify:': { type: 'spotify', title: 'Spotify', category: 'entertainment' },
@@ -151,7 +130,6 @@ const ENTERTAINMENT_URLS: Record<string, SpecialUrlInfo> = {
   'twitch:': { type: 'twitch', title: 'Twitch', category: 'entertainment' }
 }
 
-// Shopping & Commerce
 const SHOPPING_URLS: Record<string, SpecialUrlInfo> = {
   'amazon:': { type: 'amazon', title: 'Amazon', category: 'shopping' },
   'uber:': { type: 'uber', title: 'Uber', category: 'other' },
@@ -168,7 +146,6 @@ const ALL_SPECIAL_URLS = {
   ...SHOPPING_URLS
 }
 
-// Domain-based detection for short links and well-known web URLs.
 const DOMAIN_MAPPINGS: Record<string, SpecialUrlInfo> = {
   'wa.me': { type: 'whatsapp', title: 'WhatsApp', category: 'social' },
   't.me': { type: 'telegram', title: 'Telegram', category: 'social' },
@@ -193,10 +170,8 @@ const DOMAIN_MAPPINGS: Record<string, SpecialUrlInfo> = {
 }
 
 /**
- * Classify `url` against the catalog (scheme prefix or host suffix).
- * Returns `null` for plain web URLs — the consumer should fall back to
- * a generic favicon. Mapping `type`/`category` to an icon is the
- * consumer's job; the extension stays brand-neutral on purpose.
+ * Classify `url` against the catalog. `null` means a plain web URL (favicon).
+ * Icon mapping is the consumer's job; this package stays brand-neutral.
  */
 export const getSpecialUrlInfo = (url: string): SpecialUrlInfo | null => {
   const lowerUrl = url.toLowerCase()

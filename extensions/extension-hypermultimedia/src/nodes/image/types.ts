@@ -13,7 +13,6 @@ export interface ImageNodeOptions {
 
 export interface ImageOptions extends ImageLayoutOptions, ImageNodeOptions {
   allowBase64: boolean
-  /** Render as inline element instead of block */
   inline: boolean
 }
 

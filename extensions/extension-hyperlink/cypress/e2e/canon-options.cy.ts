@@ -16,8 +16,6 @@ describe('canon options — enableClickSelection + exitable', () => {
       cy.getEditor().then((editor) => {
         const { from, to } = editor.state.selection
         const text = editor.state.doc.textBetween(from, to)
-        // The whole anchor text — not the caret position the legacy
-        // click-handler would have left behind.
         expect(text).to.equal('Example')
       })
     })
@@ -33,7 +31,6 @@ describe('canon options — enableClickSelection + exitable', () => {
       cy.setEditorContent('<p><a href="https://example.com">link</a></p>')
 
       cy.getEditor().then((editor) => {
-        // Place caret at the right edge of the link mark.
         const docEnd = editor.state.doc.content.size
         editor
           .chain()
@@ -57,8 +54,6 @@ describe('canon options — enableClickSelection + exitable', () => {
         editor.chain().insertContent('X').run()
       })
 
-      // The original `<a>` keeps its inner text; the trailing `X` lives
-      // outside the anchor — the plain-text mark exit worked.
       cy.get('#editor a').should('have.text', 'link')
       cy.get('#editor p').should('contain.text', 'linkX')
     })

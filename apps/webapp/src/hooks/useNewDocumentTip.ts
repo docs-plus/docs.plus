@@ -8,17 +8,12 @@ interface UseNewDocumentTipProps {
   provider: HocuspocusProvider | null
 }
 
-/**
- * Shows a one-time tip about new.docs.plus shortcut
- * when user creates their first new document
- */
 const useNewDocumentTip = ({ provider }: UseNewDocumentTipProps): void => {
   const hasShownRef = useRef(false)
 
   useEffect(() => {
     if (!provider || hasShownRef.current) return
 
-    // Check if user has already seen this tip
     const hasSeenTip = localStorage.getItem(TIP_SHOWN_KEY)
     if (hasSeenTip) return
 
@@ -36,14 +31,13 @@ const useNewDocumentTip = ({ provider }: UseNewDocumentTipProps): void => {
             position: 'bottom-center'
           })
 
-          // Mark as shown
           localStorage.setItem(TIP_SHOWN_KEY, 'true')
         }, 2000)
       }
     }
 
-    // Check immediately and also listen for sync
     checkAndShowTip()
+    // ymetadata may arrive after first paint.
     provider.on('synced', checkAndShowTip)
 
     return () => {

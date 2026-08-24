@@ -1,9 +1,5 @@
-// Pure functions, no React and no side effects — safe from hooks, service-worker
-// helpers, or anywhere else.
-
 /**
- * Detect if the device is an iPad, including iPadOS 13+ which spoofs as Mac.
- * Macs have maxTouchPoints === 0; iPads have 5+.
+ * iPadOS 13+ spoofs as Mac. Macs have maxTouchPoints === 0; iPads have 5+.
  */
 export function isIPadDevice(): boolean {
   if (typeof window === 'undefined') return false
@@ -39,7 +35,6 @@ export function getIOSVersion(): number | null {
 
   const ua = navigator.userAgent
 
-  // iPhone / iPod — version is in the UA
   const match = ua.match(/OS (\d+)_(\d+)/)
   if (match) {
     return parseFloat(`${match[1]}.${match[2]}`)

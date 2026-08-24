@@ -1,11 +1,8 @@
-/** Admin dashboard core: statistics, document CRUD, and admin-role management. */
-
 import { adminLogger } from '../../lib/logger'
 import type { AppContext } from '../../types/hono.types'
 import * as stats from '../services/adminStats.service'
 import { getSupabaseClient } from '../utils/supabase'
 
-// Re-export split controllers (barrel pattern — router import stays unchanged)
 export * from './admin-analytics.controller'
 export * from './admin-audit.controller'
 export * from './admin-stats.controller'
@@ -27,8 +24,6 @@ export async function getDocumentStats(c: AppContext) {
     return c.json({ error: 'Failed to fetch document statistics' }, 500)
   }
 }
-
-// Document CRUD
 
 export async function listDocuments(c: AppContext) {
   try {
@@ -119,8 +114,6 @@ export async function getUserDocumentCounts(c: AppContext) {
     return c.json({ error: 'Failed to fetch user document counts' }, 500)
   }
 }
-
-// Admin role management
 
 export async function toggleAdminRole(c: AppContext) {
   try {

@@ -1,8 +1,3 @@
-// Pointer interaction — owns every click/touch surface that opens
-// the preview popover or routes navigation through the safety gate
-// (mousedown swallow, click-to-popover, middle-click new-tab,
-// touchend-to-popover).
-
 import { getMarkRange } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
@@ -26,7 +21,6 @@ function findLinkFromEvent(
   return link
 }
 
-/** Single navigation gate for every surface (readonly window.open, middle-click). */
 function isNavigable(href: string | null | undefined, ctx: LinkContext): href is string {
   return ctx.urls.forRead(href).navigable
 }
@@ -64,9 +58,8 @@ function openPreviewPopoverFromClick(
     return true
   }
 
-  // Route through the canonical opener (slot resolution + `'preview'` adopt).
-  // Caret placement is gated on a successful mount: focusing the editor on
-  // host opt-out scrolls the contenteditable into view on iOS Safari.
+  // Caret placement waits for a successful mount: focusing on host opt-out
+  // scrolls the contenteditable into view on iOS Safari.
   const mounted = openPreviewHyperlink(opts)
 
   if (!mounted) return true

@@ -5,12 +5,8 @@ import { isBarePhone } from './phone'
 import { getSpecialUrlInfo } from './specialUrls'
 
 /**
- * Schemes blocked at every write boundary: `javascript:` / `vbscript:`
- * (script execution), `data:` (arbitrary HTML), `file:` (local FS),
- * `blob:` (in-page memory; never legitimate in stored content).
- *
- * Twin of `extension-hypermultimedia`'s copy. Adding a scheme to one and not
- * the other opens a hole in the twin, so preflight diffs them byte-for-byte.
+ * Blocked schemes: `javascript:`/`vbscript:` (script), `data:`, `file:`, `blob:`.
+ * Twin of hypermultimedia's copy — preflight diffs them byte-for-byte.
  */
 export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
 
@@ -48,10 +44,8 @@ const isRecognizedSpecialScheme = (url: string): boolean => {
 }
 
 /**
- * linkifyjs accepts any `scheme://host` string, so typos like
- * `https://googlecom` pass its own validation. For http(s)/ftp additionally
- * require a dotted host (any TLD, IDN and punycode included), `localhost`,
- * or an IP literal. Non-standard schemes skip this gate.
+ * linkifyjs accepts any `scheme://host`, so `https://googlecom` passes.
+ * Web schemes also need a dotted host, `localhost`, or an IP literal.
  */
 const hasPlausibleHost = (url: string): boolean => {
   let parsed: URL
@@ -117,7 +111,7 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
   }
 }
 
-/** Lowercased scheme component of `url`, or `null` if it has no `:`. Module-internal; exported for unit tests only. */
+/** Module-internal; exported for unit tests only. */
 export const getURLScheme = (url: string): string | null => {
   if (!url.trim()) return null
 
@@ -127,7 +121,7 @@ export const getURLScheme = (url: string): string | null => {
   return url.substring(0, colonIndex).toLowerCase()
 }
 
-/** Single http/https/ftp/ftps predicate — keeps `validateURL` and `url-decisions` on one policy. Module-internal. */
+/** One http/https/ftp/ftps predicate so `validateURL` and `url-decisions` share a policy. */
 const isStandardWebScheme = (url: string): boolean => {
   const scheme = getURLScheme(url)
   return scheme !== null && STANDARD_WEB_SCHEMES.has(scheme)

@@ -1,4 +1,4 @@
-/** Cypress clean-room for @docs.plus/extension-indent (shipped dist). `?contexts=none` disables literal indent; `?enabled=off` disables the extension. */
+/** `?contexts=none` disables literal indent; `?enabled=off` disables the extension. */
 
 import { Indent } from '@docs.plus/extension-indent'
 import { setupPlayground } from '@docs.plus/playground/setup'

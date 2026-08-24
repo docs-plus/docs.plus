@@ -15,7 +15,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(`${request.nextUrl.protocol}//${mainHost}/${randomSlug}`, 307)
   }
 
-  // Handle auth error redirects (from OAuth providers)
   if (searchParams.has('error') && searchParams.has('error_code')) {
     const errorUrl = new URL('/auth/error', request.url)
     const errorDescription = searchParams.get('error_description')

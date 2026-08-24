@@ -22,9 +22,8 @@ const CENTRAL_HEADER_BYTES = 46
 const EOCD_BYTES = 22
 
 /**
- * Writes a ZIP container with the two methods ODF needs — stored and raw
- * deflate. No ZIP64, no data descriptors: sizes are known before the header is
- * written because every part is already in memory.
+ * Stored and raw deflate only. No ZIP64, no data descriptors: sizes are known
+ * before the header is written because every part is already in memory.
  */
 export const createZip = (entries: ZipEntry[]): Buffer => {
   const locals: Buffer[] = []

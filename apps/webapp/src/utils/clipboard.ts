@@ -11,7 +11,6 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
       return true
     } catch (err) {
       logger.debug('Clipboard API failed', { error: err })
-      // Fall through to legacy method
     }
   }
 

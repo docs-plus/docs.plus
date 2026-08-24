@@ -1,5 +1,3 @@
-// pages/api/updateUserStatus.ts
-
 import createClient from '@utils/supabase/api'
 import { type NextApiRequest, type NextApiResponse } from 'next'
 interface UpdateUserStatusRequestBody {
@@ -34,6 +32,6 @@ async function updateSupabaseUserStatus(userId: string, status: string, supabase
     }
   } catch (error) {
     console.error('Supabase error:', error)
-    throw error // Re-throw to be caught in the handler
+    throw error
   }
 }

@@ -39,12 +39,9 @@ export const useHistoryAuthorship = (): HistoryAuthorship => {
     [walk, clientAuthors]
   )
 
-  // Memoized because callers put this value in dependency arrays: a fresh object per
-  // render recomputes their block ranges and dispatches a transaction every render.
-  //
-  // Three arms, not two. A list row carries no `data`, so the gap between selecting
-  // a version and its watch landing is a loading window. Reporting that window as
-  // unaligned would show an authoritative zero-coverage roster for content we simply lack.
+  // Fresh object per render would recompute block ranges and dispatch every render.
+  // Three arms: a list row has no `data` until watch lands. Calling that gap
+  // unaligned would show a zero-coverage roster for content we simply lack.
   return useMemo(() => {
     if (data == null) return { status: 'pending' }
     if (!walk || !roster) return { status: 'unaligned' }

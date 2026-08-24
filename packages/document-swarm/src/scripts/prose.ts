@@ -2,7 +2,6 @@ import { pressEnter, toggleBold, toggleItalic, typeText } from '../pad/actions.t
 import { openWriteTarget } from '../pad/writeTarget.ts'
 import type { SwarmScript } from '../types.ts'
 
-/** Types a short paragraph under the actor's Write Target with one bold and one italic run. */
 export const proseScript: SwarmScript = {
   name: 'prose',
   run: async (ctx) => {

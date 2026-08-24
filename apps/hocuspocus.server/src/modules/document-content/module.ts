@@ -14,7 +14,6 @@ export interface InitWsApplyResult {
   app: Hono
 }
 
-/** REST-process wiring: public content routes that forward applies over the internal hop. */
 export const init = (deps: InitDeps): InitResult => {
   const wsApply = createWsApplyClient({
     baseUrl: deps.wsApplyBaseUrl,
@@ -32,11 +31,7 @@ export const init = (deps: InitDeps): InitResult => {
   }
 }
 
-/**
- * WS-process wiring — a deliberate second factory. Content injection has to run
- * where the live Y.Doc lives. This module owns an app the collab process serves
- * on its internal listener alongside `/metrics`.
- */
+/** Content injection has to run where the live Y.Doc is; the collab process serves this app. */
 export const initWsApply = (deps: InitWsApplyDeps): InitWsApplyResult => {
   const applyContent = createApplyContent({
     hocuspocus: deps.hocuspocus,

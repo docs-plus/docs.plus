@@ -21,9 +21,6 @@ interface StalePreviewModalProps {
   isDeleting: boolean
 }
 
-/**
- * Preview modal for stale documents - shows content preview and deletion impact
- */
 export function StalePreviewModal({
   isOpen,
   slug,
@@ -56,7 +53,6 @@ export function StalePreviewModal({
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-lg">
-        {/* Header */}
         <div className="border-base-300 flex items-start gap-4 border-b pb-4">
           <div className="bg-warning/10 rounded-xl p-3">
             <LuEye className="text-warning h-6 w-6" />
@@ -74,7 +70,6 @@ export function StalePreviewModal({
           </div>
         ) : preview ? (
           <div className="space-y-5 py-5">
-            {/* Document Info */}
             <div className="card bg-base-200 border-base-300 border">
               <div className="card-body gap-3 p-4">
                 <h4 className="line-clamp-1 text-base font-semibold">
@@ -135,7 +130,6 @@ export function StalePreviewModal({
               </div>
             </div>
 
-            {/* Content Preview */}
             <div>
               <label className="label pb-1">
                 <span className="label-text text-sm font-medium">Content Preview</span>
@@ -147,7 +141,6 @@ export function StalePreviewModal({
               </div>
             </div>
 
-            {/* Deletion Impact */}
             {hasWorkspace && (
               <div className="alert bg-warning/10 border-warning/20 text-warning-content border">
                 <LuTriangleAlert className="text-warning h-5 w-5 shrink-0" />
@@ -168,7 +161,6 @@ export function StalePreviewModal({
               </div>
             )}
 
-            {/* Confirmation Input */}
             <div className="form-control">
               <label className="label pb-1">
                 <span className="label-text text-sm">
@@ -196,7 +188,6 @@ export function StalePreviewModal({
           </div>
         )}
 
-        {/* Actions */}
         <div className="border-base-300 flex gap-3 border-t pt-4">
           <button
             type="button"

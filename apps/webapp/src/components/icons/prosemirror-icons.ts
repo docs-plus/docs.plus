@@ -1,12 +1,4 @@
-/**
- * String-template SVG icons for ProseMirror / Tiptap plugins.
- *
- * These icons return raw HTML strings (not JSX) because they're injected into
- * the DOM via `element.innerHTML` in ProseMirror widget factories — outside of
- * the React tree.
- *
- * All other UI icons must use Lucide (`react-icons/lu`) per the design system §3.5.
- */
+/** Raw HTML strings for ProseMirror `innerHTML` widgets — not React. */
 
 interface StringIconProps {
   size?: number

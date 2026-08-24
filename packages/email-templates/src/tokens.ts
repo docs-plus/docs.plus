@@ -1,14 +1,8 @@
-/**
- * Shared by ALL email templates — notification emails and the Supabase auth
- * emails (magic-link, change-email) alike. Aligned with the docs.plus design
- * system (Notes/Design_System_Global_v2.md §3.1).
- * ⚠️ Email clients ignore CSS variables. All values must be hardcoded hex.
- */
+/** Email clients ignore CSS variables — every value here is hardcoded hex. */
 
 export const APP_NAME = 'docs.plus'
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://docs.plus'
 
-// Hex equivalents of the DaisyUI docsplus theme tokens.
 export const COLORS = {
   primary: '#1a73e8', // --color-primary (docs blue)
   primaryLight: '#e8f0fe', // light blue bg (cards, highlights)

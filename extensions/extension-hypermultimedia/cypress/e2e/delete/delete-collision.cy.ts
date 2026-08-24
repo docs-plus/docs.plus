@@ -13,11 +13,9 @@ describe('delete-key collision between text editing and hover controls', () => {
     cy.insertSizedImage(200, 150)
     cy.nodeCount('image').should('eq', 1)
 
-    // Arm the hover controls on the image…
     cy.get('#editor img').trigger('mouseover', { force: true })
     cy.get('#editor .hypermultimedia__resize-gripper--active').should('exist')
 
-    // …while the focused caret sits at the end of "hello world".
     cy.getEditor().then((editor) => {
       editor.commands.focus(12)
     })
@@ -33,7 +31,6 @@ describe('delete-key collision between text editing and hover controls', () => {
 
   it('Backspace at the start of the paragraph after an image deletes only the image, keeping the text intact', () => {
     cy.getEditor().then((editor) => {
-      // Place the image between the two paragraphs.
       editor.commands.focus(13)
     })
     cy.insertSizedImage(200, 150)
@@ -46,7 +43,6 @@ describe('delete-key collision between text editing and hover controls', () => {
       })
       expect(imagePos).to.be.greaterThan(-1)
       const node = editor.state.doc.nodeAt(imagePos)
-      // Caret at the start of the paragraph that follows the image.
       editor.commands.focus(imagePos + (node?.nodeSize ?? 1) + 1)
     })
     cy.get('#editor .ProseMirror').should('have.focus')

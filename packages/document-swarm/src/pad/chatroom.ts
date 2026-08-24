@@ -35,11 +35,10 @@ async function waitForComposer(page: Page): Promise<void> {
 async function sendChatMessage(page: Page, text: string): Promise<void> {
   await page.locator(COMPOSER_PROSEMIRROR_SELECTOR).first().click()
   await typeText(page, text)
-  await pressEnter(page) // Enter submits the composer message
+  await pressEnter(page)
   await page.waitForTimeout(300)
 }
 
-/** Sends each line through the heading composer; returns how many were sent. */
 export async function sendChatLines(page: Page, lines: string[]): Promise<number> {
   await waitForComposer(page)
   let sent = 0

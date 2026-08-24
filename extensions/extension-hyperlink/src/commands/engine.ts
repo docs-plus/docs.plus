@@ -14,11 +14,8 @@ export interface HyperlinkEngineDeps {
 }
 
 export interface HyperlinkEngine {
-  /** Write the mark at the current selection. Honors the URL Decisions gate. */
   set(attributes: SetHyperlinkAttributes): Command
-  /** Remove the mark at the current selection (extends empty mark range). */
   unset(): Command
-  /** Unset when active, set otherwise. Same gate stack as `set`. */
   toggle(attributes: SetHyperlinkAttributes): Command
 }
 

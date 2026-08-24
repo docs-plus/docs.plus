@@ -119,8 +119,6 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
           const tr = state.tr.addMark(1, state.doc.content.size, markType.create({ href }))
           editor.view.dispatch(tr)
           const html = editor.getHTML()
-          // The anchor must render with an empty `href` attribute, not
-          // the dangerous URL — `<a href="">tainted</a>` is the contract.
           expect(html).to.match(/<a\s[^>]*href=""/)
           expect(html).not.to.include(href)
         })
@@ -142,10 +140,6 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
         const tamperedAnchor = w.document.createElement('a')
         tamperedAnchor.setAttribute('href', 'javascript:alert(1)')
 
-        // Construct the popover directly with a tampered href stored in
-        // `attrs` — the path validated marks come through. The popover
-        // must still refuse `window.open` because `isSafeHref` blanks
-        // dangerous schemes before any navigation.
         const preview = w._hyperlink.previewHyperlinkPopover({
           editor: w._editor,
           link: tamperedAnchor,

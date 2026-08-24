@@ -3,36 +3,22 @@ import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface TypingTextItem {
-  /** The text content to type */
   text: string
-  /** Optional icon to display before text */
   icon?: ReactNode
-  /** Optional className for this specific item (e.g., text color) */
   className?: string
 }
 
 export interface TypingTextProps {
-  /** Array of texts or text items to cycle through */
   texts: (string | TypingTextItem)[]
-  /** Typing speed in ms per character */
   typingSpeed?: number
-  /** Deleting speed in ms per character */
   deletingSpeed?: number
-  /** Delay before starting to delete (ms) */
   delayAfterTyping?: number
-  /** Delay before typing next text (ms) */
   delayBeforeTyping?: number
-  /** Show blinking cursor */
   showCursor?: boolean
-  /** Cursor character */
   cursor?: string
-  /** Additional className for container */
   className?: string
-  /** Cursor className */
   cursorClassName?: string
-  /** Loop through texts infinitely */
   loop?: boolean
-  /** Minimum width to prevent layout shift (e.g., '120px', '8rem') */
   minWidth?: string
 }
 

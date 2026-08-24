@@ -1,8 +1,4 @@
-/**
- * eta (https://eta.js.org) compiles each `.eta` file in /templates/ to a cached JS
- * function on first render. Helpers reach templates as `it.h`; every body template
- * renders first and is then wrapped by base.eta.
- */
+/** eta compiles each `.eta` on first render. Helpers are `it.h`; bodies wrap in base.eta. */
 
 import { Eta } from 'eta'
 import { dirname, join } from 'path'
@@ -126,7 +122,7 @@ export function renderNewDocumentEmail(params: {
   return renderWithLayout('new-document', params, footerHtml)
 }
 
-/** A standalone HTML page, not an email — so no base layout. */
+/** Standalone HTML page — no email base layout. */
 export function renderUnsubscribePage(params: {
   success: boolean
   title: string

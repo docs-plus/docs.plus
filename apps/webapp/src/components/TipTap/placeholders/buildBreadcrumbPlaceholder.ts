@@ -3,7 +3,6 @@ import type { PlaceholderRenderProps } from '@docs.plus/extension-placeholder'
 export type BreadcrumbScope = 'top-level' | 'all-blocks'
 
 export interface BreadcrumbPlaceholderOptions {
-  /** Where the breadcrumb should appear. Default: 'top-level'. */
   scope?: BreadcrumbScope
 }
 
@@ -163,7 +162,6 @@ export function buildBreadcrumbPlaceholder(
   const chainRefs = buildAncestorChain(precedingRefs, isHeading ? (headingLevel ?? null) : null)
   const tail = resolveTailSegment({ nodeName, headingLevel, isSubtitle })
 
-  // Materialize textContent only for the (≤ 6) headings we actually render.
   const segments = chainRefs.map((ref) =>
     formatHeadingSegment({ level: ref.level, text: ref.node.textContent })
   )

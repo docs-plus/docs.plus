@@ -22,7 +22,6 @@ export const authUnavailableResponse = (c: Context) =>
     503
   )
 
-/** Require a verified Supabase user. Sets `user`/`userId` for downstream handlers. */
 export async function requireUser(c: Context, next: Next) {
   const token = extractToken(c)
   if (!token) return unauthorized(c, 'Authentication required')

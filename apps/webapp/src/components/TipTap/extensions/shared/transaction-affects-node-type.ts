@@ -2,14 +2,9 @@ import type { Transaction } from '@tiptap/pm/state'
 import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
 
 /**
- * O(k) check — inspects only the changed ranges, not the whole document.
- *
- * Returns true when the transaction inserted or deleted nodes of the given type.
- * Use as a broader (but still cheap) fast path after `canMapDecorations` fails:
- *
- *   if (canMapDecorations(tr, ...)) return prev.map(...)   // strict O(1)
- *   if (!transactionAffectsNodeType(tr, 'heading')) return prev.map(...)  // broader O(k)
- *   return fullRebuild(...)   // rare: heading structure actually changed
+ * O(k) over changed ranges, not the whole doc. Cheap path after
+ * `canMapDecorations` fails: map if this type was not inserted or deleted;
+ * rebuild only when that type's structure actually changed.
  */
 export function transactionAffectsNodeType(tr: Transaction, typeName: string): boolean {
   for (const step of tr.steps) {

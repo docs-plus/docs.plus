@@ -102,19 +102,15 @@ const boundAndStampIdentity = (
   return { ok: true }
 }
 
-/**
- * Payload JSON → scratch Y.Doc, fail-closed. Never throws: every rejection is
- * `invalid-content`, and nothing is written before it returns.
- */
+/** Never throws: every rejection is `invalid-content`. */
 export const encodeContent = (
   payload: TiptapDocJson,
   options: {
     requireTitleHeading: boolean
     /**
-     * Size caps bound a hostile REST payload. A restore replays bytes this
-     * server already accepted and stored, and live editing has no such
-     * cap. Enforcing them there makes a document permanently unrestorable once
-     * it outgrows them. Structural checks still run. Default on.
+     * Off for restore: those bytes were already stored, and live editing has
+     * no cap. Enforcing them there would make an oversized document unrestorable.
+     * Structural checks still run. Default on.
      */
     enforceSizeCaps?: boolean
   }

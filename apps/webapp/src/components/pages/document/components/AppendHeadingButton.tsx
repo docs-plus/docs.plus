@@ -7,13 +7,11 @@ import { TIPTAP_NODES } from '@types'
 import { scrollToHeading } from '@utils/scrollToHeading'
 import React, { useCallback } from 'react'
 
-// Constants for timing and positioning
 const SCROLL_DELAY_MS = 150
 const FOCUS_DELAY_MS = 200
 const CONTENT_POSITION_OFFSET = 2
 const SEARCH_RANGE_BUFFER = 10
 
-// Helper function to handle post-insertion actions
 const handlePostInsertionActions = async (editor: any, selectionPos: number): Promise<void> => {
   try {
     await new Promise((resolve) => setTimeout(resolve, SCROLL_DELAY_MS))
@@ -32,7 +30,6 @@ const handlePostInsertionActions = async (editor: any, selectionPos: number): Pr
   }
 }
 
-// Helper function to find the newly inserted heading
 const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
   let headingId: string | null = null
   const searchStart = Math.max(0, insertPosition - SEARCH_RANGE_BUFFER)
@@ -81,7 +78,6 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     useStore.getState().setWorkspaceEditorSetting('isEditable', true)
     editor?.setEditable(true)
 
-    // Handle post-insertion actions
     handlePostInsertionActions(editor, selectionPos)
   }, [editor, isMobile, closeModal])
 

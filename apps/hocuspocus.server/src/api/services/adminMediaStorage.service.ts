@@ -1,7 +1,5 @@
 /**
- * Admin media storage — fleet quota audit for the chat media bucket.
- *
- * One paged fleet RPC read per list/export request; summary is derived from that fleet
+ * One paged fleet RPC read per list/export; summary is derived from that fleet
  * (SQL summary RPC only when the fleet is empty, for quota_bytes).
  */
 

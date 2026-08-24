@@ -1,8 +1,6 @@
 /**
- * File-based email templates powered by eta: `.eta` files in /templates/, compiled
- * to JS functions on first use and cached. Supabase auth templates (magic-link,
- * change-email-address) use Go template syntax, live in
- * apps/hocuspocus.server/templates/, and are NOT managed by this engine.
+ * eta templates in /templates/. Supabase auth templates use Go syntax and live
+ * in apps/hocuspocus.server/templates/ — this engine does not manage them.
  */
 
 export {

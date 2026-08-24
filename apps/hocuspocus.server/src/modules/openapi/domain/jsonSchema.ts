@@ -43,7 +43,6 @@ export const pathParam = (
   schema: JsonSchema = { type: 'string' }
 ): OpenApiParameter => ({ name, in: 'path', required: true, description, schema })
 
-/** The `{ success: true, data }` shape the documents controller emits. */
 export const dataEnvelope = (data: JsonSchema): JsonSchema => ({
   type: 'object',
   properties: { success: { type: 'boolean', const: true }, data },

@@ -3,7 +3,7 @@ import type { DocumentMetadata, PrismaClient } from '@prisma/client'
 import type { Logger } from 'pino'
 import type * as Y from 'yjs'
 
-/** Tiptap document JSON as it arrives on the wire. Real validation is the encode step. */
+/** Real validation is the encode step. */
 export interface TiptapDocJson {
   type: 'doc'
   content: Record<string, unknown>[]
@@ -12,14 +12,12 @@ export interface TiptapDocJson {
 export type ApplyMode = 'replace' | 'append'
 export type ReadFormat = 'json' | 'text'
 
-/** Narrows the untyped JSON this module walks; shared by the domain and hop layers. */
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
 /** Yjs transaction origin for API-applied content, so client plugins can tell it apart. */
 export const CONTENT_APPLY_ORIGIN = 'document-content-api'
 
-/** Byte cap on every content-bearing request body (PATCH and POST alike). */
 export const MAX_CONTENT_BYTES = 5 * 1024 * 1024
 // Bytes do not bound encode cost — node count does (250k empty nodes block the
 // shared WS event loop ~232ms; 5 MiB of paragraph text costs ~20ms). Depth is
@@ -38,7 +36,6 @@ export type ApplyOutcome =
   | { status: 'applied' }
   | { status: 'not-found' }
   | { status: 'invalid-content'; detail: string }
-  /** The document could not be opened; nothing was applied or broadcast. */
   | { status: 'open-failed' }
   | { status: 'persist-failed' }
 
@@ -68,7 +65,6 @@ export interface ApplyRequest {
   documentId: string
   mode: ApplyMode
   content: TiptapDocJson
-  /** Names the version row this apply mints; absent leaves the row unnamed. */
   commitMessage?: string
   requestId?: string
   payloadBytes?: number
@@ -110,7 +106,6 @@ export interface ApplyContext {
   versionForceKey?: string
 }
 
-/** Wire shapes for the two public content routes. */
 export interface ContentApplyResponseData {
   documentId: string
   mode: ApplyMode

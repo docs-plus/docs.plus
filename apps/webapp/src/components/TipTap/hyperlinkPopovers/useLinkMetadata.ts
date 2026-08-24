@@ -37,16 +37,13 @@ const toLinkMetadata = (data: MetadataResponse): LinkMetadata => ({
   oembed: data.oembed ? { thumbnail: data.oembed.thumbnail } : undefined
 })
 
-/** Build a `LinkMetadata` from L1 mark attrs (title + optional image). */
 const fromMarkAttrs = (title: string, image: string | undefined): LinkMetadata => ({
   title,
   image: image ? { url: image } : undefined
 })
 
 export interface UseLinkMetadataOptions {
-  /** L1 cache hint: title persisted on the Tiptap mark. */
   initialTitle?: string
-  /** L1 cache hint: image persisted on the Tiptap mark. */
   initialImage?: string
 }
 

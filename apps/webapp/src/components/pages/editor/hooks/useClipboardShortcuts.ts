@@ -17,12 +17,10 @@ export const useClipboardShortcuts = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
-        // Let the default copy happen, but also trigger our button
         setTimeout(() => triggerCopyButton(), 0)
       }
 
       if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
-        // Let the default paste happen, but also trigger our button
         setTimeout(() => triggerPasteButton(), 0)
       }
     }

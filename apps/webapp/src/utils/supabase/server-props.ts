@@ -24,11 +24,10 @@ export function createClient({ req, res }: GetServerSidePropsContext) {
           )
         }
       },
-      // Add timeout to prevent hanging requests
       global: {
         fetch: async (url, options = {}) => {
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+          const timeoutId = setTimeout(() => controller.abort(), 5000)
 
           try {
             return await supabaseFetch(url, {

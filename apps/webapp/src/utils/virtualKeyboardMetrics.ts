@@ -17,9 +17,6 @@ export function resetVirtualKeyboardSessionBaseline(): void {
   lastKeyboardOpen = null
 }
 
-/**
- * Single source of truth for `isKeyboardOpen` / `keyboardHeight` (used by the hook + nudge).
- */
 export function applyVirtualKeyboardToStore(): void {
   const vv = window.visualViewport
   if (!vv) return

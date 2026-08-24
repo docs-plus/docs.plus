@@ -1,12 +1,3 @@
-/**
- * SendGrid Provider
- *
- * Enterprise-grade email delivery platform.
- * https://sendgrid.com
- *
- * Required env: SENDGRID_API_KEY
- */
-
 import { emailLogger } from '../../logger'
 import type { EmailMessage, EmailProviderInterface, SendResult } from './types'
 

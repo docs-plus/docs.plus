@@ -24,11 +24,10 @@ export default function createClient(req: NextApiRequest, res: NextApiResponse) 
           )
         }
       },
-      // Add timeout to prevent hanging requests during compilation/runtime
       global: {
         fetch: async (url, options = {}) => {
           const controller = new AbortController()
-          // 10s timeout for API routes (longer than server-props since API routes might do more work)
+          // 10s — longer than server-props 5s; API routes can do more work.
           const timeoutId = setTimeout(() => controller.abort(), 10000)
 
           try {

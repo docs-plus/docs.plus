@@ -2,7 +2,6 @@ import type { Page } from 'playwright'
 
 import { PAD_EDITOR_EDITABLE_SELECTOR, PAD_HEADING_SELECTOR } from './actions.ts'
 
-/** Thrown when the pad never becomes editable — gate, sync failure, or timeout. */
 export class SwarmPadError extends Error {}
 
 export type WaitForPadOptions = { timeoutMs?: number }
@@ -13,11 +12,6 @@ export type WaitForPadOptions = { timeoutMs?: number }
 const GATE_PRIVATE_TITLE = 'This document is private'
 const GATE_DENIED_TITLE = /have access to this document/i
 
-/**
- * Resolves once the collaborative editor is mounted and editable, past the SSR
- * skeleton and provider sync. Throws `SwarmPadError` if the Swarm Target shows a
- * Private/access gate or never becomes ready within the timeout.
- */
 export async function waitForPad(page: Page, options: WaitForPadOptions = {}): Promise<void> {
   const timeout = options.timeoutMs ?? 30_000
   const editor = page.locator(PAD_EDITOR_EDITABLE_SELECTOR)

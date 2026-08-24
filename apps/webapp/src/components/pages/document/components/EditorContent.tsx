@@ -21,13 +21,10 @@ const EditorContent = ({ className }: { className?: string }) => {
   // Entry fade plays once on mount; the flag keeps it from replaying on re-render.
   const [entryFadeDone, setEntryFadeDone] = useState(false)
 
-  // Clipboard/file uploads dispatched by the image extension's paste plugin.
   useMediaPasteUpload(editor)
 
-  // Auto-scroll caret into view on any focus (direct tap, etc.)
   useEditorFocusScroll()
 
-  // Double-tap: enable editor and focus (caret already at tap position via iOS fix)
   const handleDoubleTap = useDoubleTap(
     useCallback(() => {
       if (!isKeyboardOpen) {

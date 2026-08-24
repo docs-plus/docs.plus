@@ -3,7 +3,6 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-/** Matches brainstorm: body H1 visual cap and H4 fallback floor. */
 const MAX_SIZE = 20
 const MIN_SIZE = 12
 
@@ -30,7 +29,6 @@ function collectTopLevelHeadings(doc: PMNode): HeadingEntry[] {
   return headings
 }
 
-/** Structural fingerprint: heading levels in document order (top-level blocks only). */
 function computeHeadingFingerprint(doc: PMNode): string {
   return collectTopLevelHeadings(doc)
     .map((h) => h.level)

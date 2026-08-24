@@ -44,7 +44,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-// Status indicator component
 function StatusBadge({
   status
 }: {
@@ -67,7 +66,6 @@ function StatusBadge({
   )
 }
 
-// Get queue status color and label
 function getQueueStatus(pipeline: PushPipelineStats | null): {
   status: 'ok' | 'warning' | 'error'
   label: string
@@ -89,7 +87,6 @@ function getQueueStatus(pipeline: PushPipelineStats | null): {
   }
 }
 
-// Push Pipeline Flow Visualization
 function PushPipelineFlow({
   pipeline,
   gatewayHealth
@@ -181,7 +178,6 @@ function PushPipelineFlow({
   )
 }
 
-// Failed Subscriptions Table
 function FailedSubscriptionsTable({ subscriptions }: { subscriptions: PushSubscriptionDetail[] }) {
   if (subscriptions.length === 0) {
     return (
@@ -228,7 +224,6 @@ function FailedSubscriptionsTable({ subscriptions }: { subscriptions: PushSubscr
   )
 }
 
-// Recent Push Activity Table
 function RecentActivityTable({ subscriptions }: { subscriptions: PushSubscriptionDetail[] }) {
   if (subscriptions.length === 0) {
     return (
@@ -312,7 +307,6 @@ export default function NotificationsPage() {
     queryFn: fetchEmailStats
   })
 
-  // Push debugging queries
   const {
     data: pushGatewayHealth,
     isLoading: gatewayLoading,
@@ -399,9 +393,7 @@ export default function NotificationsPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* Gateway Health Cards */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* Push Gateway Health */}
             <div className="bg-base-100 rounded-box border-base-300 flex items-center justify-between border p-4">
               <div className="flex items-center gap-3">
                 <div
@@ -422,7 +414,6 @@ export default function NotificationsPage() {
               <StatusBadge status={pushGatewayHealth?.status || 'down'} />
             </div>
 
-            {/* Email Gateway Health */}
             <div className="bg-base-100 rounded-box border-base-300 flex items-center justify-between border p-4">
               <div className="flex items-center gap-3">
                 <div
@@ -445,13 +436,11 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Push Pipeline Visualization */}
           <PushPipelineFlow
             pipeline={pipelineStats || null}
             gatewayHealth={pushGatewayHealth || null}
           />
 
-          {/* Main Notification Stats */}
           <div>
             <h2 className="mb-4 text-lg font-semibold">In-App Notifications</h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -481,7 +470,6 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Notification by Type */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h2 className="mb-4 text-lg font-semibold">By Type</h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
@@ -502,7 +490,6 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Push Notifications */}
           <div>
             <h2 className="mb-4 text-lg font-semibold">Push Notifications</h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -536,10 +523,8 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Push Subscription Analytics */}
           <PushSubscriptionStats />
 
-          {/* Email Notifications */}
           <div>
             <h2 className="mb-4 text-lg font-semibold">Email Queue</h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -570,7 +555,6 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {/* Debug Section - Collapsible */}
           <div className="bg-base-100 rounded-box border-base-300 border">
             <button
               onClick={() => setDebugExpanded(!debugExpanded)}
@@ -589,7 +573,6 @@ export default function NotificationsPage() {
 
             {debugExpanded && (
               <div className="space-y-6 border-t p-5">
-                {/* Pipeline Config Details */}
                 <CollapsibleSection title="Pipeline Configuration" defaultOpen>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
@@ -631,14 +614,12 @@ export default function NotificationsPage() {
                   </div>
                 </CollapsibleSection>
 
-                {/* Failed Subscriptions */}
                 <CollapsibleSection
                   title={`Failed Subscriptions (${failedSubs?.length ?? 0})`}
                   defaultOpen={false}>
                   <FailedSubscriptionsTable subscriptions={failedSubs || []} />
                 </CollapsibleSection>
 
-                {/* Recent Activity */}
                 <CollapsibleSection
                   title={`Recent Push Activity (${recentActivity?.length ?? 0})`}
                   defaultOpen={false}>

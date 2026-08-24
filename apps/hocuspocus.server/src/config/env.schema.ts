@@ -38,7 +38,6 @@ const commaSeparatedList = z
   )
 
 export const envSchema = z.object({
-  // Core Application
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   APP_NAME: z.string().default('hocuspocus'),
   APP_PORT: numericString('4000'),
@@ -57,10 +56,8 @@ export const envSchema = z.object({
   // drop imported images, never guess an origin nobody can resolve.
   PUBLIC_RESTAPI_URL: z.string().optional(),
 
-  // Database (Required)
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
-  // Redis (Optional - features degrade gracefully without it)
   REDIS: booleanString,
   REDIS_HOST: z.string().optional().default('localhost'),
   REDIS_PORT: numericString('6379'),
@@ -71,16 +68,13 @@ export const envSchema = z.object({
   REDIS_KEEPALIVE: numericString('30000'),
   REDIS_MAX_RETRIES: numericString('10'),
 
-  // Supabase (Required for auth and realtime features)
   SUPABASE_URL: z.string().min(1, 'SUPABASE_URL is required'),
   SUPABASE_ANON_KEY: z.string().min(1, 'SUPABASE_ANON_KEY is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
-  // Security
   ALLOWED_ORIGINS: commaSeparatedList,
   RATE_LIMIT_MAX: numericString('100'),
 
-  // Hocuspocus Logger
   HOCUSPOCUS_LOGGER: booleanString,
   HOCUSPOCUS_LOGGER_ON_CONNECT: booleanString,
   HOCUSPOCUS_LOGGER_ON_DISCONNECT: booleanString,
@@ -92,14 +86,12 @@ export const envSchema = z.object({
   HOCUSPOCUS_LOGGER_ON_DESTROY: booleanString,
   HOCUSPOCUS_LOGGER_ON_CONFIGURE: booleanString,
 
-  // Hocuspocus Throttle
   HOCUSPOCUS_THROTTLE: booleanString,
   HOCUSPOCUS_THROTTLE_ATTEMPTS: numericString('10'),
   // @hocuspocus/extension-throttle treats banTime as MINUTES (banTime * 60 * 1000),
   // so keep this small — 60000 here would ban an IP for ~41.7 days.
   HOCUSPOCUS_THROTTLE_BANTIME: numericString('1'),
 
-  // Storage
   PERSIST_TO_LOCAL_STORAGE: booleanString,
   LOCAL_STORAGE_PATH: z.string().default('./temp'),
   DO_STORAGE_ENDPOINT: z.string().optional().default(''),
@@ -109,7 +101,6 @@ export const envSchema = z.object({
   DO_STORAGE_SECRET_ACCESS_KEY: z.string().optional().default(''),
   DO_STORAGE_MAX_FILE_SIZE: positiveByteString('10485760'),
 
-  // Email
   // Read directly by lib/email/providers, not through config. EMAIL_PROVIDER
   // picks the sender, otherwise the first configured of resend/sendgrid/smtp
   // wins — so a leftover RESEND_API_KEY beats working SMTP settings.
@@ -126,34 +117,28 @@ export const envSchema = z.object({
   NEW_DOCUMENT_NOTIFICATION_EMAILS: commaSeparatedList,
   APP_URL: z.string().default('https://docs.plus'),
 
-  // Email Gateway
   EMAIL_WORKER_CONCURRENCY: numericString('3'),
   EMAIL_RATE_LIMIT_MAX: numericString('50'),
   EMAIL_RATE_LIMIT_DURATION: numericString('60000'),
 
-  // Push Notifications (VAPID)
   VAPID_PUBLIC_KEY: z.string().optional().default(''),
   VAPID_PRIVATE_KEY: z.string().optional().default(''),
   VAPID_SUBJECT: z.string().default('mailto:support@docs.plus'),
 
-  // Push Gateway
   PUSH_WORKER_CONCURRENCY: numericString('5'),
   PUSH_RATE_LIMIT_MAX: numericString('100'),
   PUSH_RATE_LIMIT_DURATION: numericString('60000'),
 
-  // BullMQ
   BULLMQ_CONCURRENCY: numericString('5'),
   BULLMQ_RATE_LIMIT_MAX: numericString('300'),
   BULLMQ_RATE_LIMIT_DURATION: numericString('1000'),
 
-  // Database Pool
   DB_POOL_SIZE: numericString('10'),
   DB_IDLE_TIMEOUT: numericString('300000'),
   DB_CONNECT_TIMEOUT: numericString('10000'),
   DB_STATEMENT_TIMEOUT: numericString('60000'),
   DB_QUERY_TIMEOUT: numericString('60000'),
 
-  // Worker
   WORKER_ERROR_THRESHOLD: numericString('10'),
   WORKER_ERROR_WINDOW_MS: numericString('60000'),
   WORKER_SHUTDOWN_TIMEOUT_MS: numericString('120000'),
@@ -166,7 +151,6 @@ export const envSchema = z.object({
   // disables the reaper entirely.
   DOC_DELETE_RETENTION_DAYS: numericString('30'),
 
-  // Logging
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info')
 })
 

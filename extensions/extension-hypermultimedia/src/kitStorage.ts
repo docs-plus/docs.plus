@@ -7,13 +7,11 @@ import type { MediaActionContext, MediaActionsResolver, MediaToolbarFactory } fr
 
 export const HYPER_MULTIMEDIA_KIT_EXTENSION_NAME = 'HyperMultimediaKit'
 
-/** Single source of truth for the kit's storage shape — read via `getKitStorage`. */
 export interface HyperMultimediaKitStorage {
   mediaToolbar?: MediaToolbarFactory
   /** Matches the real stored value (`boolean | factory`), not a bare boolean. */
   loadingShell?: MediaLoadingShellOption
   mediaActions?: MediaActionsResolver
-  /** Swap toolbar/menu SVG markup by icon key without replacing toolbar factories. */
   mediaToolbarIcons?: MediaToolbarIconsResolver
   replaceUrlPopover?: ReplaceUrlPopoverFactory
   isUploadedMedia?: (ctx: MediaActionContext) => boolean

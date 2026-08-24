@@ -12,10 +12,9 @@ const markerIsLive = (): boolean =>
 let openSurfaces = 0
 
 /**
- * One marked history entry while any surface is open below `md`, so hardware back closes the
- * surface instead of leaving the document. X / scrim / drag flip `isOpen` and consume it here.
- * Boolean marker, same protocol as `useSettingsModal` and the composer emoji/link stores. Pop
- * only while our own marker is on top, so another surface's entry can never be popped by us.
+ * One marked history entry while any surface is open below `md`, so hardware
+ * back closes the surface instead of leaving the document. Same boolean
+ * marker as `useSettingsModal`. Pop only while our own marker is on top.
  */
 export function useHistoryDismiss(isOpen: boolean, onDismiss: () => void): void {
   const onDismissRef = useRef(onDismiss)

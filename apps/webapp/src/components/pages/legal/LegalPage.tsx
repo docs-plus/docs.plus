@@ -13,7 +13,6 @@ import { LEGAL_UPDATED, PRIVACY_PATH, TERMS_PATH } from './legalMetadata'
 interface LegalPageProps {
   title: string
   description: string
-  /** Route path, used for the canonical URL. */
   path: string
   children: ReactNode
 }

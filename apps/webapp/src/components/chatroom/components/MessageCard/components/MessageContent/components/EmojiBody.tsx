@@ -13,7 +13,6 @@ export const EmojiBody = () => {
   const contentIsOnlyEmoji = useMemo(() => {
     const result = isOnlyEmoji(message?.content || '')
     if (result && message?.content) {
-      // If it's emoji-only content, prepare the emoji array
       const emojis = splitEmojis(message.content)
       setEmojiArray(emojis || [])
     }

@@ -20,7 +20,6 @@ const preloadImageDimensions = (src: string): Promise<{ width: number; height: n
     img.src = src
   })
 
-/** Headless media-insert form (tab, URL, detection, submit) shared by the desktop panel and mobile sheet. */
 export function useMediaInsert(
   editor: Editor | null,
   { onInserted }: { onInserted: () => void }

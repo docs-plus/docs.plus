@@ -1,7 +1,3 @@
-// Linkify paste mark rule — auto-marks bare URLs found anywhere
-// inside pasted text. Distinct from `pasteHandler` (paste-over-selection):
-// this fires for plain paste-into-doc.
-
 import { markPasteRule, type PasteRule } from '@tiptap/core'
 import { find } from 'linkifyjs'
 

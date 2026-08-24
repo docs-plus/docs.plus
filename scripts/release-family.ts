@@ -1,9 +1,7 @@
 #!/usr/bin/env bun
 /**
- * Coordinates a lockstep release of all publishable `@docs.plus/extension-*`
- * packages; RELEASE_POLICY.md owns the doctrine, phase rules, and contract.
- * This is the Phase 2 release path — during Phase 1 cutover it correctly fails
- * the lockstep preflight, which `--dry-run` can verify today. Flags: `--help`.
+ * Lockstep release of publishable `@docs.plus/extension-*`.
+ * Doctrine: RELEASE_POLICY.md. `--help` lists flags.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -231,7 +229,6 @@ function newestMtime(dir: string): number {
           const mtime = statSync(full).mtimeMs
           if (mtime > newest) newest = mtime
         } catch {
-          // ignore
         }
       }
     }
@@ -387,7 +384,6 @@ function checkNoopIntentionality(
   }
 }
 
-// No-op CHANGELOG generation — see RELEASE_POLICY.md Decision 3.
 function generateNoopChangelogEntries(packages: PackageInfo[], targetVersion: string): void {
   section('Generating no-op CHANGELOG entries')
   const today = new Date().toISOString().slice(0, 10)

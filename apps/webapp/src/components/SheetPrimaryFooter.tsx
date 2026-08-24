@@ -7,7 +7,6 @@ type SheetPrimaryFooterProps = {
   testId?: string
 }
 
-/** Sticky footer with a single full-width primary action (non-form sheets). */
 export function SheetPrimaryFooter({
   label,
   onClick,

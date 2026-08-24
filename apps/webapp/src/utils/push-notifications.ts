@@ -1,5 +1,3 @@
-// Web Push subscriptions, persisted in the Supabase push_subscriptions table.
-
 import { supabaseClient } from '@utils/supabase'
 
 import { getDevicePlatform } from './platform'
@@ -125,7 +123,6 @@ function isIOSSimulator(): boolean {
   )
 }
 
-/** Every failure path throws a typed `PushError` rather than returning null. */
 export async function registerPushSubscription(): Promise<string | null> {
   if (!isPushSupported()) {
     throw new PushError('NOT_SUPPORTED', 'Push notifications not supported in this browser', false)
@@ -148,7 +145,6 @@ export async function registerPushSubscription(): Promise<string | null> {
   }
 
   if (Notification.permission === 'default') {
-    // Shows the browser/iOS permission dialog.
     const result = await Notification.requestPermission()
 
     if (result === 'denied') {
@@ -172,7 +168,6 @@ export async function registerPushSubscription(): Promise<string | null> {
     }
   }
 
-  // Get service worker registration with multiple fallback strategies for iOS
   const getRegistration = async (): Promise<ServiceWorkerRegistration> => {
     const existing = await navigator.serviceWorker.getRegistration()
     if (existing) {
@@ -209,7 +204,7 @@ export async function registerPushSubscription(): Promise<string | null> {
         return newReg
       }
     } catch {
-      // Manual registration failed, try fallback
+      // fall through to navigator.serviceWorker.ready
     }
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -230,7 +225,6 @@ export async function registerPushSubscription(): Promise<string | null> {
     throw new PushError('SERVICE_WORKER_FAILED', 'Service worker not active', true)
   }
 
-  // Subscribe to push (with retry for iOS timing issues)
   let subscription: PushSubscription | null = null
   let lastError: Error | null = null
 
@@ -338,7 +332,6 @@ function clearSubscriptionTimestamp(): void {
   localStorage.removeItem(SUBSCRIPTION_TIMESTAMP_KEY)
 }
 
-/** Shared by the register and refresh paths. */
 async function saveSubscriptionToDatabase(subscription: PushSubscription): Promise<void> {
   const { error } = await supabaseClient.rpc('register_push_subscription', {
     p_device_id: getDeviceId(),
@@ -360,7 +353,6 @@ async function saveSubscriptionToDatabase(subscription: PushSubscription): Promi
   markSubscriptionFresh()
 }
 
-/** Call on app startup. */
 export async function refreshSubscriptionIfNeeded(): Promise<
   'fresh' | 'refreshed' | 'failed' | 'not_subscribed'
 > {
@@ -410,9 +402,7 @@ export function onPermissionChange(
       status = permStatus
       status.addEventListener('change', handleChange)
     })
-    .catch(() => {
-      // Permissions API not supported - no-op
-    })
+    .catch(() => {})
 
   return () => {
     status?.removeEventListener('change', handleChange)

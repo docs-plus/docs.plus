@@ -89,7 +89,6 @@ function PushFailureBreakdown({
     )
   }
 
-  // Aggregate by category for the bar chart
   const byCategory = data.reduce<Record<string, { count: number; users: number }>>((acc, row) => {
     if (!acc[row.error_category]) acc[row.error_category] = { count: 0, users: 0 }
     acc[row.error_category].count += row.failure_count
@@ -108,7 +107,6 @@ function PushFailureBreakdown({
 
   return (
     <div className="space-y-4">
-      {/* Horizontal bar chart */}
       <div className="space-y-2">
         {sortedCategories.map(([category, { count, users }]) => {
           const pct = totalFailures > 0 ? Math.round((count / totalFailures) * 100) : 0
@@ -136,7 +134,6 @@ function PushFailureBreakdown({
         })}
       </div>
 
-      {/* Platform breakdown pills */}
       <div className="flex items-center gap-2 pt-2">
         <span className="text-base-content/60 text-sm font-medium">By Platform:</span>
         {Object.entries(byPlatform).map(([platform, count]) => (
@@ -658,7 +655,6 @@ export default function NotificationAuditPage() {
   const failedSubsCount = health?.push.failed_subscriptions ?? 0
   const hardBounces = health?.email.hard_bounces ?? 0
 
-  // Determine if there's a VAPID/auth issue (UNAUTHORIZED errors present)
   const hasAuthIssue = useMemo(() => {
     return pushFailures?.some((f) => f.error_category === 'UNAUTHORIZED') ?? false
   }, [pushFailures])
@@ -688,7 +684,6 @@ export default function NotificationAuditPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* VAPID Auth Alert */}
           {hasAuthIssue && (
             <div className="alert alert-error">
               <LuShieldAlert className="h-5 w-5" />
@@ -702,7 +697,6 @@ export default function NotificationAuditPage() {
             </div>
           )}
 
-          {/* Health Cards */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <StatCard
               title="Push Delivery Rate"
@@ -738,7 +732,6 @@ export default function NotificationAuditPage() {
             />
           </div>
 
-          {/* Push Failures */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Push Failures by Category</h2>
@@ -751,7 +744,6 @@ export default function NotificationAuditPage() {
             <PushFailureBreakdown data={pushFailures} isLoading={pushFailuresLoading} />
           </div>
 
-          {/* Email Failures */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h2 className="mb-4 text-lg font-semibold">Email Failures</h2>
             <EmailFailureBreakdown data={emailFailures} isLoading={emailFailuresLoading} />

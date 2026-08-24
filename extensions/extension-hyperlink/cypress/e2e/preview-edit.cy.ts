@@ -21,9 +21,6 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
       cy.get(PREVIEW)
         .should('be.visible')
         .within(() => {
-          // The preview reads the stored mark attr (not `link.href`), so
-          // the displayed URL is exactly what we stored — no trailing
-          // slash, no origin leakage.
           cy.get('a').invoke('attr', 'href').should('eq', 'https://example.com')
           cy.get('button.copy').should('exist')
           cy.get('button.edit').should('exist')
@@ -101,7 +98,7 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
     it('shows a validation error when the URL is invalid', () => {
       cy.get(URL_INPUT).clear().type('not a url')
       cy.get(APPLY).click()
-      cy.get(EDIT).should('be.visible') // remains open
+      cy.get(EDIT).should('be.visible')
       cy.get(`${EDIT} .href-wrapper`).should('have.class', 'error')
       cy.get('#editor a').should('have.attr', 'href', 'https://example.com')
     })
@@ -213,8 +210,6 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
     })
 
     it('popover shells carry per-surface roles and accessible names', () => {
-      // Pins the a11y contract: the shell takes its content's role —
-      // the preview is a row of actions, create/edit are named dialogs.
       cy.get('#editor a').click()
       cy.get('.floating-popover').should('have.attr', 'role', 'toolbar')
       cy.get(`${PREVIEW} .edit`).click()

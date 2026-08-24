@@ -1,10 +1,9 @@
 import { z } from 'zod'
 
 /**
- * Shape-level only — the real gate is the encode step, which checks content
- * expressions against the authoring schema. Kept import-light on purpose:
- * `src/schemas/document.schema.ts` imports this file, so pulling the
- * transformer in here would drag Tiptap into every consumer of that module.
+ * Shape-level only — encode checks content expressions. Import-light on
+ * purpose: `src/schemas/document.schema.ts` imports this file, so pulling
+ * the transformer in here would drag Tiptap into every consumer.
  */
 export const tiptapDocSchema = z.object({
   type: z.literal('doc'),
@@ -24,7 +23,6 @@ export const patchQuerySchema = z.object({
   mode: z.enum(['replace', 'append']).default('replace')
 })
 
-/** Names the version row the apply mints; the trimmed value is the stored `commitMessage`. */
 const commitMessageSchema = z.string().trim().min(1).max(200)
 
 export const patchBodySchema = z.object({

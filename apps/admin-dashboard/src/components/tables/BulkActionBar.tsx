@@ -4,13 +4,9 @@ import { LuX } from 'react-icons/lu'
 interface BulkActionBarProps {
   count: number
   onClear: () => void
-  children: ReactNode // Action buttons
+  children: ReactNode
 }
 
-/**
- * Floating bar that appears when items are selected for bulk actions
- * Displays selection count and action buttons
- */
 export function BulkActionBar({ count, onClear, children }: BulkActionBarProps) {
   if (count === 0) return null
 

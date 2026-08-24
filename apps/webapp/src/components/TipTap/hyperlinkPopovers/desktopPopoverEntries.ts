@@ -71,14 +71,12 @@ const buildEditProps = (opts: EditHyperlinkOptions): ActivePopover['props'] => (
   onClose: () => dismiss(opts.editor)
 })
 
-/** Desktop adapter for `popovers.createHyperlink`: empty host registered in the bus and returned to the extension's floating controller for positioning. */
 export function createHyperlinkDesktop(opts: CreateHyperlinkOptions): HTMLElement {
   const host = buildHost('hyperlink-create-popover')
   setActivePopover({ kind: 'create', host, props: buildCreateProps(opts) })
   return host
 }
 
-/** Mirror of `createHyperlinkDesktop` for the edit slot. */
 export function editHyperlinkDesktop(opts: EditHyperlinkOptions): HTMLElement {
   const host = buildHost('hyperlink-edit-popover')
   setActivePopover({ kind: 'edit', host, props: buildEditProps(opts) })

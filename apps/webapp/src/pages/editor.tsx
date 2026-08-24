@@ -79,7 +79,6 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
     window._editor = editor
     window._createDocumentFromStructure = createDocumentFromStructure({ editor })
 
-    // Expose heading move for Cypress tests
     window._moveHeading = (sourceId, targetId, position, newLevel) => {
       return moveHeadingSection({
         editor,
@@ -90,7 +89,6 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       })
     }
 
-    // Expose Markdown helpers for Cypress tests
     window._getMarkdown = () => editor.getMarkdown()
     window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
 

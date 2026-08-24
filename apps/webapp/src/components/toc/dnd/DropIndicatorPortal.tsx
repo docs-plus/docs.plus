@@ -6,10 +6,6 @@ interface DropIndicatorPortalProps {
   width: number
 }
 
-/**
- * Renders a drop indicator line via portal to ensure visibility
- * above DragOverlay and other elements
- */
 export function DropIndicatorPortal({ indicatorY, left, width }: DropIndicatorPortalProps) {
   return createPortal(
     <div

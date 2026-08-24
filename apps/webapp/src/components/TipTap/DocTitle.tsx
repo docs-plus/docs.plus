@@ -129,14 +129,12 @@ const DocTitle = ({ className }: { className?: string }) => {
       charCount += nodeLength
     }
 
-    // If we can't find exact spot, place the caret at the end
     const fallbackRange = document.createRange()
     fallbackRange.selectNodeContents(currentTarget)
     fallbackRange.collapse(false)
     newSelection.addRange(fallbackRange)
   }, [])
 
-  // Update title from hocuspocus provider, through stateless event (websocket)
   useEffect(() => {
     if (!hocuspocusProvider) return
 

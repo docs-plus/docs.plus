@@ -190,7 +190,6 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
   }
 }
 
-// Allowlisted sort keys → Prisma orderBy field + direction (mirrors admin SORT_FIELD_MAP).
 const SORT_FIELD_MAP: Record<
   string,
   { field: 'updatedAt' | 'createdAt' | 'title'; dir: 'asc' | 'desc' }

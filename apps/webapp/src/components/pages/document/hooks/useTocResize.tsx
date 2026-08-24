@@ -75,7 +75,7 @@ export const useTocResize = () => {
     try {
       localStorage.setItem(TOC_WIDTH_STORAGE_KEY, String(tocWidth))
     } catch {
-      // Ignore localStorage errors
+      // private-mode / quota — width stays in memory
     }
   }, [tocWidth])
 

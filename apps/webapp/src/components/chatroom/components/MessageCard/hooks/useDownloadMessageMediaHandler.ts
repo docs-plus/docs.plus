@@ -3,7 +3,6 @@ import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths
 import type { TMsgRow } from '@types'
 import { useCallback, useRef, useState } from 'react'
 
-/** Downloads every attachment on a message (single file or batch); guards re-entry. */
 export const useDownloadMessageMediaHandler = () => {
   const [downloading, setDownloading] = useState(false)
   const inFlightRef = useRef(false)

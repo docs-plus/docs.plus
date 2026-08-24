@@ -24,7 +24,6 @@ const BATCH_SIZE = 50
 const VISIBILITY_TIMEOUT = 60 // Seconds before message becomes visible again
 
 interface EmailQueuePayload {
-  // Individual notification fields
   queue_id?: string
   to?: string
   recipient_name?: string
@@ -37,7 +36,7 @@ interface EmailQueuePayload {
   channel_id?: string | null
   document_slug?: string | null
   enqueued_at: string
-  // Digest-specific fields (set by compile_digest_emails)
+  // Set by compile_digest_emails; absent on a single-notification payload.
   type?: 'digest'
   recipient_email?: string
   frequency?: string
@@ -76,10 +75,6 @@ async function updateEmailStatus(
   }
 }
 
-/**
- * Build DigestDocument[] hierarchy from flat notification list.
- * Groups by workspace (document) → channel → notifications.
- */
 function buildDigestDocuments(
   notifications: DigestRawNotification[],
   appUrl: string

@@ -24,7 +24,6 @@ documents.get(
   documentsController.getDocumentBySlug
 )
 
-// List documents with search — optionalUser attaches the caller when a token is present.
 documents.get(
   '/',
   optionalUser,
@@ -32,9 +31,6 @@ documents.get(
   documentsController.listDocuments
 )
 
-// Create new document — authenticated; the caller becomes the owner. A
-// service-role caller may additionally seed `content` and set `ownerId`, so the
-// body is capped before parse like every other content-bearing route.
 documents.post(
   '/',
   requireServiceRoleOrUser,
@@ -43,8 +39,6 @@ documents.post(
   documentsController.createDocument
 )
 
-// Update document metadata — title/description are collaborative; the readOnly
-// lock is owner-gated in the service (optionalUser attaches the caller if known).
 documents.put(
   '/:docId',
   optionalUser,
@@ -77,11 +71,8 @@ documents.delete('/:documentId/permanent', requireUser, documentsController.perm
 // on retry (a missing row is treated as already deleted).
 documents.delete('/:documentId', requireUser, documentsController.deleteDocument)
 
-// Restore a soft-deleted document — owner-only (requireUser); clears deletedAt.
 documents.post('/:documentId/restore', requireUser, documentsController.restoreDocument)
 
-// Duplicate a document — owner-only (requireUser); copies latest bytes into a
-// fresh doc owned by the caller. Media is shared, not cloned.
 documents.post('/:documentId/duplicate', requireUser, documentsController.duplicateDocument)
 
 export default documents

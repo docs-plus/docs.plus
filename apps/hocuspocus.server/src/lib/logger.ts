@@ -53,7 +53,6 @@ export const logger = pino({
 
 /** Every child level is env-overridable; the envLevel(...) second arg is its default. */
 
-// Core Infrastructure
 export const httpLogger = logger.child(
   { module: 'http' },
   { level: envLevel(process.env.HTTP_LOG_LEVEL, baseLevel) }
@@ -74,7 +73,6 @@ export const queueLogger = logger.child(
   { level: envLevel(process.env.QUEUE_LOG_LEVEL, baseLevel) }
 )
 
-// Servers
 export const restApiLogger = logger.child(
   { service: 'rest-api' },
   { level: envLevel(process.env.REST_LOG_LEVEL, 'error') } // default: only errors
@@ -90,13 +88,11 @@ export const workerLogger = logger.child(
   { level: envLevel(process.env.WORKER_LOG_LEVEL, baseLevel) }
 )
 
-// Controllers
 export const documentsControllerLogger = logger.child(
   { module: 'documents-controller' },
   { level: envLevel(process.env.DOCUMENTS_CONTROLLER_LOG_LEVEL, baseLevel) }
 )
 
-// Services
 export const documentsServiceLogger = logger.child(
   { module: 'documents-service' },
   { level: envLevel(process.env.DOCUMENTS_SERVICE_LOG_LEVEL, baseLevel) }
@@ -112,7 +108,6 @@ export const conversionLogger = logger.child(
   { level: envLevel(process.env.CONVERSION_LOG_LEVEL, baseLevel) }
 )
 
-// Storage
 export const storageLocalLogger = logger.child(
   { module: 'storage-local' },
   { level: envLevel(process.env.STORAGE_LOCAL_LOG_LEVEL, baseLevel) }
@@ -123,25 +118,21 @@ export const storageS3Logger = logger.child(
   { level: envLevel(process.env.STORAGE_S3_LOG_LEVEL, baseLevel) }
 )
 
-// Security & Auth
 export const jwtLogger = logger.child(
   { module: 'jwt' },
   { level: envLevel(process.env.JWT_LOG_LEVEL, baseLevel) }
 )
 
-// Email
 export const emailLogger = logger.child(
   { module: 'email' },
   { level: envLevel(process.env.EMAIL_LOG_LEVEL, baseLevel) }
 )
 
-// Push Notifications
 export const pushLogger = logger.child(
   { module: 'push' },
   { level: envLevel(process.env.PUSH_LOG_LEVEL, baseLevel) }
 )
 
-// Admin Dashboard
 export const adminLogger = logger.child(
   { module: 'admin' },
   { level: envLevel(process.env.ADMIN_LOG_LEVEL, baseLevel) }

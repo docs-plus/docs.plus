@@ -3,18 +3,14 @@ import { copyToClipboard as copyToClipboardUtil } from '@utils/clipboard'
 import { useCallback, useRef, useState } from 'react'
 
 export interface UseCopyToClipboardOptions {
-  /** Duration in ms to show "copied" state (default: 2000) */
   resetDelay?: number
-  /** Toast message on success (set to null to disable toast) */
   successMessage?: string | null
-  /** Toast message on error (set to null to disable toast) */
   errorMessage?: string | null
   onSuccess?: () => void
   onError?: (error: Error) => void
 }
 
 export interface UseCopyToClipboardReturn {
-  /** True for `resetDelay` ms after a successful copy, for inline button feedback. */
   copied: boolean
   copying: boolean
   copy: (text: string) => Promise<boolean>

@@ -9,7 +9,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-// Disable static generation - this page uses useRouter
 export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
@@ -61,7 +60,6 @@ export default function UnsubscribePage() {
         }
       )
 
-      // The API might return HTML for GET requests, but we'll try JSON first
       const contentType = response.headers.get('content-type')
 
       if (contentType?.includes('application/json')) {
@@ -69,8 +67,6 @@ export default function UnsubscribePage() {
         setResult(data)
         setState(data.success ? 'success' : 'error')
       } else {
-        // API returned HTML, which means it processed via GET
-        // Call POST for programmatic access
         const postResponse = await fetch(
           `${apiUrl}/api/email/unsubscribe?token=${encodeURIComponent(token)}`,
           {

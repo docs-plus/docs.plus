@@ -429,7 +429,6 @@ export default function GhostAccountsAuditPage() {
     )
   }, [visibleGhosts])
 
-  // Non-anonymous ghost types for the filter dropdown
   const ghostTypeOptions = useMemo(
     () =>
       Object.entries(GHOST_TYPE_CONFIG)
@@ -465,7 +464,6 @@ export default function GhostAccountsAuditPage() {
           </ul>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard
             title="Total Ghosts"
@@ -525,10 +523,8 @@ export default function GhostAccountsAuditPage() {
           </div>
         </div>
 
-        {/* Ghost Accounts Tab */}
         {activeTab === 'ghosts' && (
           <div className="space-y-4">
-            {/* Filters */}
             <div className="bg-base-100 rounded-box border-base-300 flex flex-wrap items-center gap-3 border p-3">
               <select
                 className="select select-bordered select-sm"
@@ -557,7 +553,6 @@ export default function GhostAccountsAuditPage() {
               <span className="text-base-content/60 text-sm">{ghostsData?.total ?? 0} results</span>
             </div>
 
-            {/* Bulk Actions */}
             <BulkActionBar count={selectedCount} onClear={clearSelection}>
               <button
                 className="btn btn-error btn-sm gap-1"
@@ -586,7 +581,6 @@ export default function GhostAccountsAuditPage() {
               />
             </div>
 
-            {/* Safety Notice */}
             <div className="alert">
               <LuBan className="h-5 w-5 shrink-0" />
               <div>
@@ -601,7 +595,6 @@ export default function GhostAccountsAuditPage() {
           </div>
         )}
 
-        {/* Anonymous Sessions Tab */}
         {activeTab === 'anonymous' && (
           <AnonymousSessionsPanel
             summary={summaryData}
@@ -611,7 +604,6 @@ export default function GhostAccountsAuditPage() {
           />
         )}
 
-        {/* Type Breakdown (always visible) */}
         {summaryData && !summaryLoading && (
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h3 className="mb-4 text-lg font-semibold">Ghost Type Breakdown</h3>
@@ -647,7 +639,6 @@ export default function GhostAccountsAuditPage() {
           </div>
         )}
 
-        {/* Public Users Health */}
         {summaryData?.public_users && !summaryLoading && (
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h3 className="mb-4 text-lg font-semibold">Public Users Health</h3>

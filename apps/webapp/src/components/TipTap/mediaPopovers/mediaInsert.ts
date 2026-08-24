@@ -6,13 +6,11 @@ import { MdAudiotrack, MdOutlineImage } from 'react-icons/md'
 
 import type { MediaInsertEntry, MediaTab } from './types'
 
-/** The two insert modes, rendered by the shared PanelTabBar. */
 export const MEDIA_INSERT_TABS: readonly PanelTabOption<MediaTab>[] = [
   { label: 'Embed URL' },
   { label: 'Upload' }
 ]
 
-/** Single source mapping each detected node type to its label, icon, and kit command. */
 export const MEDIA_INSERT_REGISTRY: Record<MediaNodeType, MediaInsertEntry> = {
   image: {
     label: 'Picture',

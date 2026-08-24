@@ -6,23 +6,14 @@ export type TextareaColor =
   'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> {
-  /** Label text for the textarea */
   label?: string
-  /** Position of the label: 'above' or 'floating' */
   labelPosition?: 'above' | 'floating'
-  /** Size of the textarea */
   size?: TextareaSize
-  /** Color variant of the textarea */
   color?: TextareaColor
-  /** Whether to use ghost style (no border) */
   ghost?: boolean
-  /** Helper text displayed below the textarea */
   helperText?: string
-  /** Error state - shows error styling */
   error?: boolean
-  /** Success state - shows success styling */
   success?: boolean
-  /** Additional wrapper class */
   wrapperClassName?: string
 }
 
@@ -39,7 +30,6 @@ const buildTextareaClasses = (
     classes.push(`textarea-${size}`)
   }
 
-  // Priority: error > success > color
   if (error) {
     classes.push('textarea-error')
   } else if (success) {

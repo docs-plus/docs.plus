@@ -79,7 +79,6 @@ export default function SystemPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* Overview Stats */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <StatCard
               title="Services Healthy"
@@ -109,7 +108,6 @@ export default function SystemPage() {
             />
           </div>
 
-          {/* Service Status */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h2 className="mb-4 text-lg font-semibold">Service Status</h2>
             <div className="space-y-3">
@@ -149,7 +147,6 @@ export default function SystemPage() {
             </div>
           </div>
 
-          {/* Table Sizes */}
           <div className="bg-base-100 rounded-box border-base-300 border p-5">
             <h2 className="mb-4 text-lg font-semibold">Database Tables</h2>
             <div className="overflow-x-auto">
@@ -187,7 +184,6 @@ export default function SystemPage() {
             </div>
           </div>
 
-          {/* Last Updated */}
           <div className="text-base-content/60 text-center text-sm">
             <LuClock className="mr-1 inline h-4 w-4" />
             Last checked: {services?.[0]?.lastCheck ? formatTime(services[0].lastCheck) : '-'}

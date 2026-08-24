@@ -1,9 +1,3 @@
-/**
- * FeedAlbumLayout + FeedColumnWidth — geometry and column contract for feed albums.
- * Paths/MIME/insert stay in messageMediaPaths; tile packing in chatMediaVisualLayout
- * (+ feedAlbumProportionLayout / feedAlbumRowPacker).
- */
-
 export const CHAT_MEDIA_FEED_MAX_WIDTH_PX = 400
 export const CHAT_MEDIA_FEED_MAX_WIDTH_MOBILE_PX = 560
 /** Desktop host ceiling — keep in lockstep with CHAT_MEDIA_FEED_MAX_WIDTH_PX. */
@@ -30,7 +24,6 @@ export type FeedLayoutOptions = {
   widthClass: string
 }
 
-/** Pure cap policy — desktop vs mobile single vs mobile mosaic. */
 export function resolveFeedLayoutOptions(
   variant: FeedLayoutVariant,
   visualCount: number

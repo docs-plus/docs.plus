@@ -6,7 +6,7 @@ import type { SwarmScript } from '../types.ts'
 type OutlineBlock =
   { kind: 'heading'; level: 2 | 3; text: string } | { kind: 'paragraph'; text: string }
 
-/** Parses the fixture outline into heading/paragraph blocks (not fed to a markdown importer). */
+/** Not a markdown importer — heading/paragraph blocks only. */
 function parseOutline(markdown: string): OutlineBlock[] {
   const blocks: OutlineBlock[] = []
   for (const rawLine of markdown.split('\n')) {
@@ -31,7 +31,6 @@ async function loadAcademyOutline(): Promise<OutlineBlock[]> {
   return parseOutline(fixture)
 }
 
-/** Types a research outline (H2/H3 + paragraphs) sourced from `fixtures/academy.md`. */
 export const academyScript: SwarmScript = {
   name: 'academy',
   run: async (ctx) => {

@@ -34,7 +34,6 @@ const LEGACY_KEYS: Record<string, IconName> = {
 }
 
 interface IconProps {
-  /** Legacy string key or canonical registry name */
   type: string
   fill?: string
   size?: number

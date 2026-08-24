@@ -15,8 +15,8 @@ interface ModalDrawerProps {
   contentClassName?: string
   children: React.ReactNode
   onModalStateChange?: (isOpen: boolean) => void
-  width?: number // This will represent a percentage (e.g. 80 -> "80%")
-  position?: 'left' | 'right' // new prop
+  width?: number
+  position?: 'left' | 'right'
 }
 
 interface ModalContextType {
@@ -45,18 +45,7 @@ export type ModalDrawerHandle = {
 }
 
 export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
-  (
-    {
-      modalId = 'left_to_right_modal',
-      // className,
-      children,
-      onModalStateChange,
-      // contentClassName,
-      // width = 80, // default to 80%
-      position = 'left' // default to left
-    },
-    ref
-  ) => {
+  ({ modalId = 'left_to_right_modal', children, onModalStateChange, position = 'left' }, ref) => {
     const checkboxRef = React.useRef<HTMLInputElement>(null)
     const [isOpen, setIsOpen] = useState(false)
 

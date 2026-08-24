@@ -48,7 +48,6 @@ type DocumentRow = Document & { documentId?: string }
 const viewKey = (doc: DocumentRow) => doc.documentId?.toLowerCase() ?? ''
 
 export default function DocumentsPage() {
-  // URL-synced table state
   const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
     defaultSortKey: 'updatedAt',
     defaultSortDirection: 'desc'
@@ -73,26 +72,22 @@ export default function DocumentsPage() {
     queryFn: fetchDocumentStats
   })
 
-  // Fetch stale documents summary for the audit button badge
   const { data: staleSummary } = useQuery({
     queryKey: ['admin', 'stale-documents', 'summary'],
     queryFn: fetchStaleDocumentsSummary
   })
 
-  // Get analytics keys for batch trend fetch
   const docKeys = useMemo(() => {
     const rows: DocumentRow[] = data?.data ?? []
     return rows.map(viewKey).filter(Boolean)
   }, [data?.data])
 
-  // Fetch sparkline trends for current page
   const { data: trends } = useQuery({
     queryKey: ['admin', 'documents', 'trends', docKeys],
     queryFn: () => fetchBatchDocumentTrends(docKeys, 7),
     enabled: docKeys.length > 0
   })
 
-  // Mutation for updating document flags
   const updateMutation = useMutation({
     mutationFn: ({
       id,
@@ -114,7 +109,6 @@ export default function DocumentsPage() {
     onSettled: () => setUpdatingId(null)
   })
 
-  // Mutation for deleting documents (with confirmSlug)
   const deleteMutation = useMutation({
     mutationFn: ({ id, confirmSlug }: { id: string; confirmSlug: string }) =>
       deleteDocument(id, confirmSlug),
@@ -341,7 +335,6 @@ export default function DocumentsPage() {
         />
 
         <div className="space-y-6 p-6">
-          {/* Quick Actions */}
           <div className="flex items-center gap-2">
             <Link href="/documents/stale" className="btn btn-ghost btn-sm gap-2">
               <LuFileWarning className="h-4 w-4" />
@@ -352,7 +345,6 @@ export default function DocumentsPage() {
             </Link>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <StatCard
               title="Total Documents"
@@ -379,7 +371,6 @@ export default function DocumentsPage() {
             />
           </div>
 
-          {/* Search */}
           <SearchInput
             placeholder="Search documents by title, slug, or owner..."
             value={search}
@@ -387,7 +378,6 @@ export default function DocumentsPage() {
             className="max-w-md"
           />
 
-          {/* Table */}
           <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
@@ -410,7 +400,6 @@ export default function DocumentsPage() {
           </div>
         </div>
 
-        {/* Delete confirmation modal */}
         <DeleteModal
           isOpen={!!deleteTarget}
           doc={deleteTarget}

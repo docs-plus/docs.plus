@@ -13,9 +13,8 @@ const authHeaders = async (): Promise<Record<string, string>> => {
 }
 
 /**
- * Soft-delete (DELETE) + restore (POST /restore) + permanent purge
- * (DELETE /permanent) for an owned document. Optimistic cache patches live in
- * the component; this hook only fires the calls and surfaces isPending.
+ * Owner-gated delete / restore / purge calls. Optimistic cache patches live
+ * in the component; this hook only fires the requests and surfaces isPending.
  */
 const useDeleteDocument = () => {
   const deletion = useMutation<void, Error, { documentId: string }>({

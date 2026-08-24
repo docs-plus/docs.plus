@@ -1,8 +1,3 @@
-/**
- * Email gateway pipeline:
- * Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ → SMTP
- */
-
 export type {
   BounceType,
   DigestChannel,
@@ -20,9 +15,22 @@ export type {
   NotificationEmailRequest,
   NotificationType
 } from '../../types/email.types'
+export { sendNewDocumentNotification } from './document-notification'
+export {
+  getEmailQueueConsumerHealth,
+  startEmailQueueConsumer,
+  stopEmailQueueConsumer
+} from './pgmqConsumer'
 export type { EmailMessage, EmailProvider, SendResult } from './providers'
-
-// HTML templates (from shared package)
+export { getProviderStatus, isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
+export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
+export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
+export { emailGateway, EmailGatewayService } from './service'
+export {
+  buildDigestEmailText,
+  buildNewDocumentEmailText,
+  buildNotificationEmailText
+} from './templates'
 export type { UnsubscribeLinks } from '@docs.plus/email-templates'
 export {
   buildListUnsubscribeHeaders,
@@ -32,26 +40,3 @@ export {
   renderNotificationEmail,
   renderUnsubscribePage
 } from '@docs.plus/email-templates'
-
-// Plain-text builders (local)
-export { getProviderStatus, isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
-export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
-export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
-export {
-  buildDigestEmailText,
-  buildNewDocumentEmailText,
-  buildNotificationEmailText
-} from './templates'
-
-// Service (main entry point)
-export { emailGateway, EmailGatewayService } from './service'
-
-// pgmq Consumer - polls Supabase queue
-export {
-  getEmailQueueConsumerHealth,
-  startEmailQueueConsumer,
-  stopEmailQueueConsumer
-} from './pgmqConsumer'
-
-// Legacy
-export { sendNewDocumentNotification } from './document-notification'

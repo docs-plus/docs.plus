@@ -1,9 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { LongPressEventType, useLongPress } from 'use-long-press'
 
-/**
- * Handles long press interaction events and visual feedback
- */
 export const useLongPressInteraction = () => {
   const [isMessagePressed, setIsMessagePressed] = useState(false)
   const [isLongPressCompleted, setIsLongPressCompleted] = useState(false)
@@ -12,9 +9,9 @@ export const useLongPressInteraction = () => {
 
   const handleLongPressStart = useCallback((event: any) => {
     setIsMessagePressed(true)
-    setIsLongPressCompleted(false) // Reset completion state
+    setIsLongPressCompleted(false)
     const messageCardElement = event.target.closest('.msg_card') as HTMLElement
-    messageCardElementRef.current = messageCardElement // Store reference
+    messageCardElementRef.current = messageCardElement
 
     if (messageCardElement) {
       const messageBubble = messageCardElement.querySelector('.chat-bubble') as HTMLElement
@@ -27,12 +24,12 @@ export const useLongPressInteraction = () => {
 
   const handleLongPressFinish = useCallback((_event: any) => {
     setIsMessagePressed(false)
-    setIsLongPressCompleted(true) // Mark as completed - buttons become active
+    setIsLongPressCompleted(true)
   }, [])
 
   const handleLongPressCancel = useCallback((event: any) => {
     setIsMessagePressed(false)
-    setIsLongPressCompleted(false) // Reset on cancel
+    setIsLongPressCompleted(false)
     console.info('Long press cancelled')
 
     // Use stored reference first, fallback to closest
@@ -45,7 +42,7 @@ export const useLongPressInteraction = () => {
       }
     }
 
-    messageCardElementRef.current = null // Clear reference
+    messageCardElementRef.current = null
   }, [])
 
   const handleActivation = useCallback((event: any) => {

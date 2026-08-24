@@ -1,12 +1,3 @@
-/**
- * Resend Provider
- *
- * Modern email API with excellent deliverability.
- * https://resend.com
- *
- * Required env: RESEND_API_KEY
- */
-
 import { emailLogger } from '../../logger'
 import type { EmailMessage, EmailProviderInterface, SendResult } from './types'
 

@@ -1,8 +1,4 @@
-// Hyperlink command façade — composes canonical / edit / UI families
-// over a shared engine + URL Decisions pipeline. The `satisfies` clause
-// in `buildHyperlinkCommands` pins the runtime shape against
-// `HyperlinkPublicCommands` (surface.ts) so adding a public command
-// without implementing it is a compile error.
+// `satisfies HyperlinkRawCommands` so a new public command without an impl is a compile error.
 
 import type { HyperlinkOptions } from '../hyperlink'
 import type { URLDecisions } from '../url-decisions'
@@ -22,7 +18,6 @@ export interface BuildHyperlinkCommandsCtx {
   urls: URLDecisions
 }
 
-/** Compose every command family into the Tiptap-shaped command map. */
 export function buildHyperlinkCommands(ctx: BuildHyperlinkCommandsCtx): HyperlinkRawCommands {
   const engine = createHyperlinkEngine({ markName: ctx.markName, urls: ctx.urls })
   return {

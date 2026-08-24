@@ -1,10 +1,3 @@
-/**
- * SMTP Provider
- *
- * Built-in email provider using Nodemailer.
- * Supports any SMTP server (Gmail, Outlook, custom, etc.)
- */
-
 import nodemailer from 'nodemailer'
 
 import { emailLogger } from '../../logger'

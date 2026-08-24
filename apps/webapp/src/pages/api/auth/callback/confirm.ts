@@ -3,18 +3,15 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { parse } from 'querystring'
 import { URL } from 'url'
 
-// Type definition for query parameters
 type TQuery = {
   code?: string
   next?: string
   open_heading_chat?: string
-  // OAuth google
   error?: string
   error_code?: string
   error_description?: string
 }
 
-// Function to validate URL path
 const isValidPath = (path: string): boolean => {
   const regex = /^\/[a-zA-Z0-9/_-]*$/
   return regex.test(path)
@@ -34,13 +31,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (error) {
       console.error('OAuth error:', { error, error_code, error_description })
 
-      // Construct error page URL
       const errorUrl = new URL(
         '/auth/error',
         `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`
       )
 
-      // Add error parameters
       errorUrl.searchParams.append('error', String(error))
       if (error_description) {
         errorUrl.searchParams.append('error_description', String(error_description))
@@ -68,20 +63,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Validate and sanitize the next URL
     const baseUrl = next && isValidPath(next) ? next : '/'
 
-    // Create a URL object from the base URL
     const url = new URL(
       baseUrl,
       `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`
     )
 
-    // Append the search parameter if it exists and is a valid string
     if (open_heading_chat) {
       url.searchParams.append('open_heading_chat', String(open_heading_chat))
     }
-    // Redirect to the modified URL
     res.redirect(url.toString())
   } catch (error) {
     console.error('Error in API handler:', error)

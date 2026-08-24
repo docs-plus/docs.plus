@@ -16,7 +16,6 @@ type SheetLayoutProps = {
   bodyClassName?: string
 }
 
-/** Mobile bottom sheet shell: title header, scrollable body, optional sticky footer. */
 export function SheetLayout({
   title,
   children,

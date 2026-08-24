@@ -2,7 +2,6 @@ import { useRouter } from 'next/router'
 
 import { useAdminAuth } from '@/hooks/useAdminAuth'
 
-// Pages that don't require auth
 const publicPages = ['/login', '/unauthorized']
 
 interface AuthGuardProps {
@@ -13,12 +12,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter()
   const { loading, isAdmin } = useAdminAuth()
 
-  // Public pages don't need auth - render immediately
   if (publicPages.includes(router.pathname)) {
     return <>{children}</>
   }
 
-  // Show loading spinner while checking auth
   if (loading) {
     return (
       <div className="bg-base-200 flex min-h-screen items-center justify-center">

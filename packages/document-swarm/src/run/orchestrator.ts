@@ -28,14 +28,7 @@ async function pace(page: import('playwright').Page, options: RunOptions): Promi
   await page.waitForTimeout(min + Math.floor(Math.random() * (max - min)))
 }
 
-/**
- * Runs a Swarm Run: gates the host and target, loads actors, launches Chromium, and
- * ramps one isolated context per actor. It loops the assigned Swarm Scripts until the
- * duration ends or Ctrl+C arrives, then prints the Swarm Report. Resolves to the
- * process exit code (130 on interrupt).
- */
 export async function runSwarm(options: RunOptions): Promise<number> {
-  // Safety gates run before a single browser launches.
   const hostKind = assertAllowedSwarmHost(options.url, options.users, options.force)
   const target = await preflightSwarmTarget(options.url)
   const actors = await loadActors(options.actorsFile, options.users)

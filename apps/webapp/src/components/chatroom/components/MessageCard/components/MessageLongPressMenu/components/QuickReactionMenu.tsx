@@ -35,7 +35,6 @@ const QUICK_REACTIONS: EmojiReaction[] = [
   { id: 'sob', label: 'Sob', native: '😭' }
 ]
 
-/** Shared tap animation for reaction buttons. */
 const TAP_ANIMATION = {
   scale: 0.96,
   backgroundColor: 'color-mix(in oklch, var(--color-base-content) 15%, transparent)',

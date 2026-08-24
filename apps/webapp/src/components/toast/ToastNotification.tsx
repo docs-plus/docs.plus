@@ -4,13 +4,9 @@ import { twMerge } from 'tailwind-merge'
 export type ToastVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
 
 export interface ToastNotificationOptions extends ToastOptions {
-  /** Toast variant for indicator color */
   variant?: ToastVariant
-  /** Additional CSS classes */
   className?: string
-  /** Action button label */
   actionLabel?: string
-  /** Action button callback */
   onAction?: () => void
 }
 

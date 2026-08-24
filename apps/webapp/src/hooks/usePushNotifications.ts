@@ -59,9 +59,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
         if (subscribed) {
           const refreshResult = await refreshSubscriptionIfNeeded()
-          if (refreshResult === 'refreshed') {
-            // Subscription was refreshed successfully
-          } else if (refreshResult === 'failed') {
+          if (refreshResult === 'failed') {
             // Refresh failed, but don't show error to user - subscription might still work
           }
         }
@@ -94,7 +92,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     return unsubscribe
   }, [isSupported])
 
-  // Listen for notification clicks from service worker
   useEffect(() => {
     if (!isSupported) return
 
@@ -145,7 +142,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
               scroll2Heading: true
             })
           } else {
-            // Fallback to URL navigation for non-chat notifications
             const currentUrl = window.location.pathname + window.location.search
             if (url !== currentUrl) {
               window.location.href = url
@@ -240,7 +236,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     }
   }, [isSupported])
 
-  // Called manually, e.g. from the settings page.
   const refreshSubscription = useCallback(async (): Promise<void> => {
     if (!isSupported || !isSubscribed) return
 

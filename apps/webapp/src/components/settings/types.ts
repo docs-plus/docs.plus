@@ -23,9 +23,7 @@ export interface OwnedDocument {
 export type DocumentsPage = { docs: OwnedDocument[]; total: number }
 
 export interface SettingsPanelProps {
-  /** Initial active tab */
   defaultTab?: TabType
-  /** Callback to close the modal */
   onClose?: () => void
 }
 

@@ -1,7 +1,6 @@
 import { buildSitemapXml } from '@components/pages/home/homeMetadata'
 import { GetServerSideProps } from 'next'
 
-/** Serves `/sitemap.xml` — indexable routes only (see `INDEXABLE_PATHS`). */
 export default function Sitemap() {
   return null
 }
