@@ -23,6 +23,10 @@ docs.plus is a real-time collaborative editor. A document is a tree of headings,
 
 The full route-by-route contract is [`apps/hocuspocus.server/API.md`](../apps/hocuspocus.server/API.md). The pages above cover the parts you need first, and link to it for the rest.
 
+## The public demo
+
+[https://docs.plus/demo](https://docs.plus/demo) is docs.plus running, not a picture of it. [DEMO.md](DEMO.md) is the Markdown source of that page.
+
 ## Elsewhere in this repository
 
 | Page                                                              | Answers                                                           |
