@@ -43,6 +43,9 @@ Each was decided, and in most cases built and reverted. If you want to change on
 - **Dark mode mechanism.** `color-scheme` + `light-dark()` + semantic tokens, settled 2026-07-09. Never reintroduce a theming `data-mode` attribute or a `dark:`-enumerating `@custom-variant` — both were built and deleted. The unrelated `data-mode` on chat message cards is live and correct.
 - **TOC presence overhang.** Rendering presence beyond the TOC column edge was evaluated and rejected; the `overflow: visible` hack breaks column scrolling. See [apps/webapp/CLAUDE.md](apps/webapp/CLAUDE.md) §TOC And Heading Actions.
 - **The `mattpocock-skills` marketplace plugin.** Installed 2026-08-07, then disabled the same day, because it exposes 25 skills, and 21 of them already exist in `.agents/skills`. So every one of those names resolved twice, with different instructions. The plugin also only works in Claude Code. In contrast, `.agents/skills` is tracked in git and symlinked into `.cursor/skills`. That is the only reason these skills exist in Cursor at all. Refresh the tracked copies instead — see §Skills — project-local. Do not re-enable the plugin; do not add it to the committed `.claude/settings.json`.
+- **Title write.** One client module `apps/webapp/src/utils/titleWrite.ts`. Adapters stay adapters. Do not merge Title write with Access mutation. Do not invent a workspace package for the tag strip. Do not fold first-heading admission into this module. See `CONTEXT.md` §Pad outline.
+- **House envelope home.** `apps/hocuspocus.server/src/http/envelope.ts` owns `ok` / `fail` / `houseEnvelopeHook`. Do not force the hook onto link-metadata. See [apps/hocuspocus.server/CLAUDE.md](apps/hocuspocus.server/CLAUDE.md) §HTTP Modules.
+- **Collab session helpers.** Auth and disconnect predicates live in `apps/webapp/src/hooks/collabSession.ts`. Do not rewrite `HocuspocusProvider` construction. Do not re-export those helpers from `@utils`.
 
 ## Cursor rules — `.cursor/rules/`
 
