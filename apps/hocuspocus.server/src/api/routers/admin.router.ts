@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
+import { houseEnvelopeHook } from '../../http/envelope'
 import {
   auditEmailBouncesQuerySchema,
   auditFailedSubsQuerySchema,
@@ -51,13 +52,13 @@ admin.get('/documents/stats', adminController.getDocumentStats)
 
 admin.get(
   '/documents',
-  zValidator('query', listDocumentsQuerySchema),
+  zValidator('query', listDocumentsQuerySchema, houseEnvelopeHook),
   adminController.listDocuments
 )
 
 admin.patch(
   '/documents/:id',
-  zValidator('json', updateDocumentSchema),
+  zValidator('json', updateDocumentSchema, houseEnvelopeHook),
   adminController.updateDocument
 )
 
@@ -65,7 +66,7 @@ admin.get('/documents/:id/deletion-impact', adminController.getDocumentDeletionI
 
 admin.delete(
   '/documents/:id',
-  zValidator('json', deleteDocumentSchema),
+  zValidator('json', deleteDocumentSchema, houseEnvelopeHook),
   adminController.deleteDocument
 )
 
@@ -75,13 +76,13 @@ admin.get('/stats/views', adminController.getViewsSummary)
 
 admin.get(
   '/stats/views/top',
-  zValidator('query', paginationQuerySchema),
+  zValidator('query', paginationQuerySchema, houseEnvelopeHook),
   adminController.getTopViewedDocuments
 )
 
 admin.get(
   '/stats/views/trend',
-  zValidator('query', trendQuerySchema),
+  zValidator('query', trendQuerySchema, houseEnvelopeHook),
   adminController.getViewsTrend
 )
 
@@ -89,7 +90,7 @@ admin.get('/documents/:slug/views', adminController.getDocumentViewStats)
 
 admin.get(
   '/stats/views/batch-trends',
-  zValidator('query', batchTrendsQuerySchema),
+  zValidator('query', batchTrendsQuerySchema, houseEnvelopeHook),
   adminController.getBatchDocumentTrends
 )
 
@@ -99,35 +100,39 @@ admin.get('/stats/retention', adminController.getRetentionMetrics)
 
 admin.get('/stats/user-lifecycle', adminController.getUserLifecycleSegments)
 
-admin.get('/stats/dau-trend', zValidator('query', daysQuerySchema), adminController.getDauTrend)
+admin.get(
+  '/stats/dau-trend',
+  zValidator('query', daysQuerySchema, houseEnvelopeHook),
+  adminController.getDauTrend
+)
 
 admin.get(
   '/stats/signups-trend',
-  zValidator('query', daysQuerySchema),
+  zValidator('query', daysQuerySchema, houseEnvelopeHook),
   adminController.getSignupsTrend
 )
 
 admin.get(
   '/stats/activity-heatmap',
-  zValidator('query', daysQuerySchema),
+  zValidator('query', daysQuerySchema, houseEnvelopeHook),
   adminController.getActivityByHour
 )
 
 admin.get(
   '/stats/top-active-documents',
-  zValidator('query', paginationQuerySchema),
+  zValidator('query', paginationQuerySchema, houseEnvelopeHook),
   adminController.getTopActiveDocuments
 )
 
 admin.get(
   '/stats/communication',
-  zValidator('query', daysQuerySchema),
+  zValidator('query', daysQuerySchema, houseEnvelopeHook),
   adminController.getCommunicationStats
 )
 
 admin.get(
   '/stats/message-types',
-  zValidator('query', daysQuerySchema),
+  zValidator('query', daysQuerySchema, houseEnvelopeHook),
   adminController.getMessageTypeDistribution
 )
 
@@ -139,7 +144,7 @@ admin.get('/documents/stale/summary', adminController.getStaleDocumentsSummary)
 
 admin.get(
   '/documents/stale',
-  zValidator('query', staleDocumentsQuerySchema),
+  zValidator('query', staleDocumentsQuerySchema, houseEnvelopeHook),
   adminController.listStaleDocuments
 )
 
@@ -147,7 +152,7 @@ admin.get('/documents/:slug/preview', adminController.getDocumentPreview)
 
 admin.post(
   '/documents/stale/bulk-delete',
-  zValidator('json', bulkDeleteSchema),
+  zValidator('json', bulkDeleteSchema, houseEnvelopeHook),
   adminController.bulkDeleteStaleDocuments
 )
 
@@ -157,7 +162,7 @@ admin.get('/audit/media-storage/summary', adminController.getMediaStorageSummary
 
 admin.get(
   '/audit/media-storage',
-  zValidator('query', mediaStorageQuerySchema),
+  zValidator('query', mediaStorageQuerySchema, houseEnvelopeHook),
   adminController.listMediaStorage
 )
 
@@ -171,19 +176,19 @@ admin.get('/audit/notifications/email-failures', adminController.getEmailFailure
 
 admin.get(
   '/audit/notifications/failed-subscriptions',
-  zValidator('query', auditFailedSubsQuerySchema),
+  zValidator('query', auditFailedSubsQuerySchema, houseEnvelopeHook),
   adminController.getFailedPushSubscriptions
 )
 
 admin.get(
   '/audit/notifications/email-bounces',
-  zValidator('query', auditEmailBouncesQuerySchema),
+  zValidator('query', auditEmailBouncesQuerySchema, houseEnvelopeHook),
   adminController.getEmailBounces
 )
 
 admin.post(
   '/audit/notifications/disable-failed',
-  zValidator('json', disableFailedSubsSchema),
+  zValidator('json', disableFailedSubsSchema, houseEnvelopeHook),
   adminController.disableFailedSubscriptions
 )
 
@@ -193,7 +198,7 @@ admin.get('/audit/notifications/dlq', adminController.getDeadLetterQueueContents
 
 admin.get(
   '/audit/ghost-accounts',
-  zValidator('query', ghostAccountsQuerySchema),
+  zValidator('query', ghostAccountsQuerySchema, houseEnvelopeHook),
   adminController.getGhostAccounts
 )
 
@@ -205,19 +210,19 @@ admin.delete('/audit/ghost-accounts/:id', adminController.deleteGhostAccount)
 
 admin.post(
   '/audit/ghost-accounts/bulk-delete',
-  zValidator('json', ghostBulkDeleteSchema),
+  zValidator('json', ghostBulkDeleteSchema, houseEnvelopeHook),
   adminController.bulkDeleteGhostAccounts
 )
 
 admin.post(
   '/audit/ghost-accounts/resend-confirmation',
-  zValidator('json', ghostResendSchema),
+  zValidator('json', ghostResendSchema, houseEnvelopeHook),
   adminController.resendGhostConfirmation
 )
 
 admin.post(
   '/audit/ghost-accounts/cleanup-anonymous',
-  zValidator('json', ghostCleanupAnonymousSchema),
+  zValidator('json', ghostCleanupAnonymousSchema, houseEnvelopeHook),
   adminController.cleanupAnonymousSessions
 )
 

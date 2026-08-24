@@ -13,6 +13,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
+import { houseEnvelopeHook } from '../http/envelope'
 import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
@@ -25,69 +26,77 @@ import {
 
 const emailRouter = new Hono()
 
-emailRouter.post('/send-generic', zValidator('json', sendGenericEmailSchema), async (c) => {
-  const authHeader = c.req.header('Authorization')
-  if (!verifyServiceRole(authHeader)) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
-
-  try {
-    const payload = c.req.valid('json')
-
-    const result = await emailGateway.sendGenericEmail({
-      to: [payload.to],
-      subject: payload.subject,
-      html: payload.html,
-      text: payload.text,
-      reply_to: payload.replyTo
-    })
-
-    if (result.success) {
-      return c.json({ success: true, message_id: result.message_id })
+emailRouter.post(
+  '/send-generic',
+  zValidator('json', sendGenericEmailSchema, houseEnvelopeHook),
+  async (c) => {
+    const authHeader = c.req.header('Authorization')
+    if (!verifyServiceRole(authHeader)) {
+      return c.json({ error: 'Unauthorized' }, 401)
     }
 
-    return c.json({ success: false, error: result.error }, 500)
-  } catch (err) {
-    emailLogger.error({ err }, 'Error processing generic email request')
-    return c.json({ error: 'Internal server error' }, 500)
+    try {
+      const payload = c.req.valid('json')
+
+      const result = await emailGateway.sendGenericEmail({
+        to: [payload.to],
+        subject: payload.subject,
+        html: payload.html,
+        text: payload.text,
+        reply_to: payload.replyTo
+      })
+
+      if (result.success) {
+        return c.json({ success: true, message_id: result.message_id })
+      }
+
+      return c.json({ success: false, error: result.error }, 500)
+    } catch (err) {
+      emailLogger.error({ err }, 'Error processing generic email request')
+      return c.json({ error: 'Internal server error' }, 500)
+    }
   }
-})
+)
 
 /** Called by the Supabase cron job, not by the app. */
-emailRouter.post('/send-digest', zValidator('json', sendDigestEmailSchema), async (c) => {
-  const authHeader = c.req.header('Authorization')
-  if (!verifyServiceRole(authHeader)) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
-
-  try {
-    const payload = c.req.valid('json')
-
-    const result = await emailGateway.sendDigestEmail({
-      to: payload.to,
-      recipient_name: payload.user_name || 'User',
-      recipient_id: 'api-request', // Not a real user, just API call
-      frequency: payload.frequency,
-      documents: payload.documents.map((doc) => ({
-        name: doc.title || doc.slug,
-        slug: doc.slug,
-        url: `${process.env.APP_URL || 'https://docs.plus'}/${doc.slug}`,
-        channels: [] // Simplified - no channel breakdown for API-triggered digests
-      })),
-      period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      period_end: new Date().toISOString()
-    })
-
-    if (result.success) {
-      return c.json({ success: true, message_id: result.message_id })
+emailRouter.post(
+  '/send-digest',
+  zValidator('json', sendDigestEmailSchema, houseEnvelopeHook),
+  async (c) => {
+    const authHeader = c.req.header('Authorization')
+    if (!verifyServiceRole(authHeader)) {
+      return c.json({ error: 'Unauthorized' }, 401)
     }
 
-    return c.json({ success: false, error: result.error }, 500)
-  } catch (err) {
-    emailLogger.error({ err }, 'Error processing digest email request')
-    return c.json({ error: 'Internal server error' }, 500)
+    try {
+      const payload = c.req.valid('json')
+
+      const result = await emailGateway.sendDigestEmail({
+        to: payload.to,
+        recipient_name: payload.user_name || 'User',
+        recipient_id: 'api-request', // Not a real user, just API call
+        frequency: payload.frequency,
+        documents: payload.documents.map((doc) => ({
+          name: doc.title || doc.slug,
+          slug: doc.slug,
+          url: `${process.env.APP_URL || 'https://docs.plus'}/${doc.slug}`,
+          channels: [] // Simplified - no channel breakdown for API-triggered digests
+        })),
+        period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        period_end: new Date().toISOString()
+      })
+
+      if (result.success) {
+        return c.json({ success: true, message_id: result.message_id })
+      }
+
+      return c.json({ success: false, error: result.error }, 500)
+    } catch (err) {
+      emailLogger.error({ err }, 'Error processing digest email request')
+      return c.json({ error: 'Internal server error' }, 500)
+    }
   }
-})
+)
 
 emailRouter.get('/health', async (c) => {
   try {
@@ -107,7 +116,7 @@ emailRouter.get('/status', (c) => {
 })
 
 /** A hard bounce auto-disables email for that user, inside the RPC. */
-emailRouter.post('/bounce', zValidator('json', emailBounceSchema), async (c) => {
+emailRouter.post('/bounce', zValidator('json', emailBounceSchema, houseEnvelopeHook), async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
     return c.json({ error: 'Unauthorized' }, 401)
@@ -356,7 +365,7 @@ emailRouter.get('/unsubscribe', async (c) => {
  */
 emailRouter.post(
   '/unsubscribe',
-  zValidator('query', z.object({ token: z.string().min(1) })),
+  zValidator('query', z.object({ token: z.string().min(1) }), houseEnvelopeHook),
   async (c) => {
     const { token } = c.req.valid('query')
 

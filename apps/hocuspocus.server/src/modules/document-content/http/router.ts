@@ -3,13 +3,13 @@ import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
+import { houseEnvelopeHook } from '../../../http/envelope'
 import type { WsApplyClient } from '../infra/wsApplyClient'
 import type { VerifyServiceRole } from '../types'
 import {
   contentBodyLimit,
   createGetContentHandler,
   createPatchContentHandler,
-  houseEnvelopeHook,
   requireServiceRole
 } from './controller'
 import {

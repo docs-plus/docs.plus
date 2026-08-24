@@ -3,7 +3,8 @@ import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
-import { houseEnvelopeHook, requireServiceRole } from '../../document-content/http/controller'
+import { houseEnvelopeHook } from '../../../http/envelope'
+import { requireServiceRole } from '../../document-content/http/controller'
 import type { WsVersionsClient } from '../infra/wsVersionsClient'
 import type { GetOwnerProfiles, VerifyServiceRole } from '../types'
 import {

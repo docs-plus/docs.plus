@@ -3,10 +3,10 @@ import type { Context, MiddlewareHandler } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { Logger } from 'pino'
 
+import { fail, ok } from '../../../http/envelope'
 import { type ClientAuthorBinding, resolveClientAuthors } from '../../../lib/client-authors'
 import { captureUnknown } from '../../../lib/instrument'
 import { readContent } from '../../document-content/domain/readContent'
-import { fail, ok } from '../../document-content/http/controller'
 import { findDocumentMeta } from '../../document-content/infra/contentStore'
 import { diffBlocks } from '../domain/diffBlocks'
 import {

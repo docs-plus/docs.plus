@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 
+import { houseEnvelopeHook } from '../../http/envelope'
 import { documentIdParamSchema, mediaIdParamSchema } from '../../schemas/hypermultimedia.schema'
 import * as documentsController from '../controllers/documents.controller'
 import { requireUser } from '../middleware/auth'
@@ -22,7 +23,7 @@ const uploadBodyLimit = bodyLimit({
 // Public read: media renders inside public documents for anonymous viewers.
 hypermultimedia.get(
   '/:documentId/:mediaId',
-  zValidator('param', mediaIdParamSchema),
+  zValidator('param', mediaIdParamSchema, houseEnvelopeHook),
   documentsController.getMedia
 )
 
@@ -31,7 +32,7 @@ hypermultimedia.post(
   '/:documentId',
   requireUser,
   uploadBodyLimit,
-  zValidator('param', documentIdParamSchema),
+  zValidator('param', documentIdParamSchema, houseEnvelopeHook),
   documentsController.uploadMedia
 )
 

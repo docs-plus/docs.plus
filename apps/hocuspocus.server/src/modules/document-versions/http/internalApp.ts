@@ -4,8 +4,9 @@ import { HTTPException } from 'hono/http-exception'
 import { requestId } from 'hono/request-id'
 import type { Logger } from 'pino'
 
+import { fail, houseEnvelopeHook } from '../../../http/envelope'
 import { captureUnknown } from '../../../lib/instrument'
-import { fail, houseEnvelopeHook, requireServiceRole } from '../../document-content/http/controller'
+import { requireServiceRole } from '../../document-content/http/controller'
 import type { VerifyServiceRole, VersionOps } from '../types'
 import {
   createInternalCheckpointHandler,
