@@ -42,9 +42,8 @@ const findConversionMeta = (
     select: { slug: true, ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }
   })
 
-/** Read gate. The service-role key passes unconditionally. A user answers to the
- *  predicate the WS gate and the slug read already share, so one privacy rule
- *  covers every surface. */
+/** Service-role passes. A user answers the same predicate as the WS gate and
+ *  the slug read, so one privacy rule covers every surface. */
 const denyRead = (c: Context, meta: ConversionMeta): Response | null => {
   if (c.get('serviceRole')) return null
 
@@ -60,9 +59,8 @@ const denyRead = (c: Context, meta: ConversionMeta): Response | null => {
   return null
 }
 
-/** Write gate: read access plus the admin lock the WS handshake enforces. A locked
- *  document's non-owners cannot apply a conversion, so refuse before spending the
- *  CPU on one. */
+/** Read access plus the admin lock. Refuse a locked document's non-owners
+ *  before spending the CPU on a conversion. */
 const denyWrite = (c: Context, meta: ConversionMeta): Response | null => {
   const denied = denyRead(c, meta)
   if (denied) return denied
@@ -207,10 +205,9 @@ export interface ImportControllerDeps {
 }
 
 /**
- * Word or Markdown to Tiptap JSON. No database write and no content mutation —
- * the caller applies the result through `PATCH /content`. Admission still costs
- * write access, because a locked document's readers can never apply the result.
- * Embedded images are rehosted to object storage.
+ * No database write and no content mutation — the caller applies the result
+ * through `PATCH /content`. Admission still costs write access, because a
+ * locked document's readers can never apply the result.
  */
 export const createPostImportHandler =
   (deps: ImportControllerDeps) =>

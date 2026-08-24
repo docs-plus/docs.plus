@@ -9,10 +9,9 @@ import { useEffect } from 'react'
 const historyComparePluginKey = new PluginKey<DecorationSet>('historyCompare')
 
 /**
- * Paints the compare diff on the read-only history editor. Mounted once per
- * history shell (DesktopHistory and MobileHistory).
- * The set lives in plugin state and moves by transaction metadata. Toggling compare therefore
- * never reconfigures the editor. A reconfigure rebuilds node views and reloads embeds.
+ * Compare marks live in plugin state and move by transaction metadata.
+ * Toggling compare therefore never reconfigures the editor.
+ * A reconfigure rebuilds node views and reloads embeds.
  */
 export const useHistoryCompareDecorations = () => {
   const editor = useStore((state) => state.editor)

@@ -39,7 +39,6 @@ export interface HyperMultimediaKitOptions {
    * shimmer shell; `false` = off; pass a factory to replace the overlay UI only.
    */
   loadingShell?: MediaLoadingShellOption
-  /** Customize/extend/reorder the built-in toolbar actions per node. */
   mediaActions?: MediaActionsResolver
   /**
    * Swap toolbar/menu SVG markup by icon key (`caption`, `more`, `align:center`,

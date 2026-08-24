@@ -1,7 +1,3 @@
-/**
- * Syncs VisualViewport geometry to root CSS custom properties for the mobile shell
- * (`_mobile.scss`) and `globals.scss` (`--vh`).
- */
 export function syncVisualViewportToCssVars(root: HTMLElement = document.documentElement): void {
   const vv = window.visualViewport
   if (!vv) return

@@ -13,7 +13,6 @@ export function useBulkSelection<T>(
 
   const validIds = useMemo(() => new Set(items.map(getKey)), [items, getKey])
 
-  // Phantom-free view of the selection — ids no longer present in `items` drop out.
   const selectedIds = useMemo(
     () => new Set([...rawSelectedIds].filter((id) => validIds.has(id))),
     [rawSelectedIds, validIds]

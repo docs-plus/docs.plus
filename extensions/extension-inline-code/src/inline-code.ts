@@ -6,10 +6,9 @@ export interface InlineCodeOptions {
 }
 
 /**
- * Backtick-delimited inline code (`` `code` ``). `inputRegex` is end-anchored and
- * non-global: a global flag moves the input-rule plugin's `lastIndex` and throws
- * "Position out of range". `pasteRegex` keeps the global flag to scan a paste. The
- * prefix guard is a lookbehind — an in-match prefix char gets eaten or mismarked.
+ * `inputRegex` is end-anchored and non-global: a global flag moves the input-rule
+ * plugin's `lastIndex` and throws "Position out of range". `pasteRegex` stays
+ * global to scan a paste. Prefix guard is a lookbehind — an in-match prefix gets eaten.
  */
 export const inputRegex = /(?<=^|[^`])`([^`]+)`(?!`)$/
 export const pasteRegex = /(?<=^|[^`])`([^`]+)`(?!`)/g
@@ -17,7 +16,6 @@ export const pasteRegex = /(?<=^|[^`])`([^`]+)`(?!`)/g
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     inlineCode: {
-      /** Apply the inline-code mark (collapsed caret → stored mark, no inserted char). */
       setInlineCode: () => ReturnType
       toggleInlineCode: () => ReturnType
       unsetInlineCode: () => ReturnType

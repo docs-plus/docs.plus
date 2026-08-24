@@ -15,7 +15,6 @@ interface TocLevelPickerProps {
   level: number
   /** `preview` = decorative hover chip only; `drag` = overlay tracks projected level. */
   mode?: 'preview' | 'drag'
-  /** Drag overlay — highlights the level the row would snap to. */
   projectedLevel?: number
   className?: string
 }

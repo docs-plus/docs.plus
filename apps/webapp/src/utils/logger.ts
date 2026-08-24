@@ -55,7 +55,6 @@ class Logger {
     }
   }
 
-  /** JSON output, shaped for log-aggregation tools. */
   structured(level: LogLevel, message: string, _context?: LogContext): void {
     if (!this.shouldLog(level)) return
 

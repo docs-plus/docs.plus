@@ -1,8 +1,5 @@
 /// <reference types="cypress" />
 
-// Round-trip invariant: paste linkifies each bare URL exactly once with a
-// canonical https:// href and never stacks a second mark on a linked run.
-
 import type { Editor } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
 
@@ -14,7 +11,6 @@ const FIXTURE_HTML = [
   '<p>Closing line mentioning www.github.com near the end.</p>'
 ].join('')
 
-/** Text runs that must carry a hyperlink mark → the canonical stored href. */
 const EXPECTED_LINKS: Record<string, string> = {
   'google.com': 'https://google.com',
   'example link': 'https://example.com',

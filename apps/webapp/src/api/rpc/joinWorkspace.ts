@@ -8,11 +8,6 @@ type TJoin2WorkspaceParams = {
   workspaceId: string
 }
 
-/**
- * Join the current authenticated user to a workspace.
- * @param workspaceId - The ID of the workspace to join.
- * @returns Whether the join succeeded.
- */
 export const joinWorkspace = async (
   arg: TJoin2WorkspaceParams
 ): Promise<PostgrestResponse<TJoin2WorkspaceReturn>> => {

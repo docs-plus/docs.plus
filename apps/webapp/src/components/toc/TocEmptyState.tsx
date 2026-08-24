@@ -5,7 +5,6 @@ type TocEmptyStateProps = {
   className?: string
 }
 
-/** Shared empty outline copy for desktop pad TOC and mobile TocModal. */
 export function TocEmptyState({ className }: TocEmptyStateProps) {
   return (
     <div className={twMerge('px-4 pt-4 pb-6', className)}>

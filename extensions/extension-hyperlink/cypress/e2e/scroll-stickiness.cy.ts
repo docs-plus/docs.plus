@@ -1,10 +1,5 @@
 /// <reference types="cypress" />
 
-// The floating toolbar is `position: fixed`, so its reference must hand
-// floating-ui a `getBoundingClientRect` returning LIVE viewport coords on
-// every call. Virtual refs built from snapshotted coords froze the edit and
-// create popovers at their open-time position while the anchor scrolled away.
-
 const PREVIEW = '.hyperlink-preview-popover'
 const CREATE = '.hyperlink-create-popover'
 const EDIT = '.hyperlink-edit-popover'
@@ -65,8 +60,6 @@ const expectPopoverFollowsAnchor = (
           const anchorAfter = $a2[0].getBoundingClientRect().top
           const popDelta = popBefore - popAfter
           const anchorDelta = anchorBefore - anchorAfter
-          // Pre-fix: anchorDelta ≈ 200, popDelta ≈ 0 → diff ≈ 200 → fail.
-          // Post-fix: anchorDelta and popDelta both move the same amount.
           expect(
             popDelta,
             `popover Δtop (${popDelta.toFixed(1)}) should match anchor Δtop (${anchorDelta.toFixed(1)})`
@@ -83,8 +76,6 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
   })
 
   it('preview popover follows the link when the page scrolls (working baseline)', () => {
-    // The preview popover always used the live `<a>` as its reference — the
-    // working baseline the create / edit fixes were matched against.
     cy.setEditorContent(buildLongDoc('<a href="https://example.com">click me</a>'))
     cy.get('#editor a').scrollIntoView().click()
     cy.getVisibleFloatingPopover().find(PREVIEW).should('be.visible')
@@ -92,9 +83,6 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
   })
 
   it('edit popover follows the link when the page scrolls (regression: cached linkCoords)', () => {
-    // Repro of the original bug: open the preview, click "edit", scroll.
-    // Pre-fix, the edit popover was built from a `linkCoords` snapshot
-    // captured at click time and stayed glued to the viewport.
     cy.setEditorContent(buildLongDoc('<a href="https://example.com">click me</a>'))
     cy.get('#editor a').scrollIntoView().click()
     cy.get(`${PREVIEW} button.edit`).click()
@@ -117,15 +105,10 @@ describe('Popover scroll-stickiness — anchor-following on window scroll', () =
       win._editor.commands.setContent('<p>replaced</p>')
       win.scrollBy(0, SCROLL_PX)
     })
-    // Pre-fix: Cypress would already have failed on the unhandled
-    // rejection from `coordsAtPos`. Post-fix: the popover tears
-    // itself down — no phantom listeners, no focus trap on an
-    // invisible form, no popover lingering in the DOM.
     cy.get(FLOATING).should('not.exist')
   })
 
   it('create popover follows the selection when the page scrolls (regression: cached coordsAtPos)', () => {
-    // Pre-fix the create popover froze at its `coordsAtPos(from)` snapshot.
     // A selection has no DOM node, so the containing `<p>` proxies for it.
     cy.setEditorContent(buildLongDoc('select-this-target-word'))
     cy.contains('#editor p', 'select-this-target-word').scrollIntoView()

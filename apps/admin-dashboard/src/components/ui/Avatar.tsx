@@ -11,7 +11,6 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
   xl: 'w-12 h-12 text-lg'
 }
 
-// Consistent colors based on string hash
 const AVATAR_COLORS = [
   'bg-primary text-primary-content',
   'bg-secondary text-secondary-content',
@@ -44,21 +43,13 @@ function buildStorageUrl(userId: string, avatarUpdatedAt: string | number): stri
 }
 
 export interface AvatarProps {
-  /** User ID for constructing storage URL */
   userId?: string | null
-  /** Timestamp for cache-busting avatar URL */
   avatarUpdatedAt?: string | number | null
-  /** Direct image source URL (fallback if storage URL fails) */
   src?: string | null
-  /** Name for generating initial letter fallback */
   name?: string | null
-  /** Email for generating initial letter fallback (used if no name) */
   email?: string | null
-  /** Alt text for image */
   alt?: string
-  /** Preset size following design system */
   size?: AvatarSize
-  /** Additional classes for the container */
   className?: string
 }
 
@@ -77,7 +68,6 @@ export function Avatar({
   size = 'sm',
   className
 }: AvatarProps) {
-  // Track which sources have failed: 0 = trying storage, 1 = trying src, 2 = all failed
   const [failedSources, setFailedSources] = useState(0)
 
   const displayName = name || email?.split('@')[0] || null

@@ -1,9 +1,8 @@
 #!/usr/bin/env bun
 /**
- * Replays function/trigger/RPC SQL from packages/supabase/scripts (source of truth
- * for local db reset) into one migration. Excludes table DDL (01–08), RLS (13), lint
- * revokes (29), buckets, cron, demo seeds, and document-views partitions — prod
- * already has the schema. Push needs [db.migrations] enabled = true in config.toml.
+ * Replays scripts/ function/trigger/RPC SQL into one migration. Skips table DDL,
+ * RLS, lint revokes, buckets, cron, and seeds — prod already has that schema.
+ * Push needs [db.migrations] enabled = true in config.toml.
  */
 
 import { mkdir, readFile, writeFile } from 'fs/promises'

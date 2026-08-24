@@ -75,7 +75,6 @@ export const ensureTitleHeading = (
   }
 }
 
-/** The title the document ended up with, which is its opening heading's text. */
 export const titleHeadingText = (doc: TiptapDocJson): string => {
   const [first] = Array.isArray(doc.content) ? doc.content : []
   return isRecord(first) ? inlineText(first).trim() : ''

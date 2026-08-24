@@ -38,7 +38,6 @@ const handleTouchStart = (view: EditorView, event: TouchEvent): boolean => {
 }
 
 const handleTouchEnd = (_view: EditorView, _event: TouchEvent): boolean => {
-  // Just let the event propagate, click will handle the fix
   return false
 }
 
@@ -48,13 +47,11 @@ const handleClick = (view: EditorView, event: MouseEvent): boolean => {
     return false
   }
 
-  // Hyperlinks are owned by the hyperlink extension — leave them alone.
   if (isLinkTarget(event.target)) {
     lastTouchCoords = null
     return false
   }
 
-  // Use touchstart coordinates (more accurate on iOS)
   const coords = lastTouchCoords || { x: event.clientX, y: event.clientY }
 
   const pos = view.posAtCoords({ left: coords.x, top: coords.y })
@@ -85,7 +82,7 @@ const handleClick = (view: EditorView, event: MouseEvent): boolean => {
   })
 
   lastTouchCoords = null
-  return false // Let the event propagate normally
+  return false
 }
 
 export const IOSCaretFix = Extension.create({
@@ -117,5 +114,4 @@ export const IOSCaretFix = Extension.create({
   }
 })
 
-// Factory function for backwards compatibility
 export const createIOSCaretFixPlugin = () => IOSCaretFix

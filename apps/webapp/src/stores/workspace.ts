@@ -63,7 +63,6 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
     authorizedScope: null,
     joinedWorkspace: false
   },
-  // Update a single setting
   setWorkspaceSetting: (key, value) => {
     return set((state) => ({
       settings: { ...state.settings, [key]: value }
@@ -77,14 +76,12 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
     }))
   },
 
-  // Update multiple settings at once
   setWorkspaceEditorSettings: (settings) => {
     return set((state) => ({
       settings: { ...state.settings, editor: { ...state.settings.editor, ...settings } }
     }))
   },
 
-  // Update a single editor setting
   setWorkspaceEditorSetting(key, value) {
     return set((state) => ({
       settings: { ...state.settings, editor: { ...state.settings.editor, [key]: value } }

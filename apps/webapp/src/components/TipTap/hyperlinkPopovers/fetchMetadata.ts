@@ -1,6 +1,5 @@
 import { normalizeHref } from '@docs.plus/extension-hyperlink'
 
-/** Rich response shape returned by the new backend endpoint. */
 export interface MetadataResponse {
   success: true
   url: string
@@ -70,10 +69,9 @@ export interface FetchMetadataOptions {
 }
 
 /**
- * Hits the new GET /api/metadata endpoint on hocuspocus.server. The backend
- * never returns 5xx for upstream failures. It always falls back to a
- * hostname+favicon shape. A non-ok response here therefore means validation
- * (400) or rate-limit (429). Both are cached as null to avoid hammering.
+ * Backend never returns 5xx for upstream failures — it falls back to
+ * hostname+favicon. Non-ok here is validation (400) or rate-limit (429).
+ * Both are cached as null to avoid hammering.
  */
 export const fetchMetadata = async (
   href: string,

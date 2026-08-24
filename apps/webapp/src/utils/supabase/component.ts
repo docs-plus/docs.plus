@@ -2,10 +2,6 @@ import { createBrowserClient } from '@supabase/ssr'
 
 import { createSupabaseFetch } from './error-handler'
 
-/**
- * Create Supabase browser client with offline handling
- * Prevents unnecessary requests when offline
- */
 export function createClient() {
   const supabaseFetch = createSupabaseFetch()
 
@@ -19,12 +15,9 @@ export function createClient() {
         experimental: { passkey: true }
       },
       realtime: {
-        // Disable automatic reconnection when offline to prevent spam
-        // Reconnection will happen when browser comes back online
         params: {
-          eventsPerSecond: 30 // Limit event rate
+          eventsPerSecond: 30
         },
-        // Only reconnect if we're actually online
         reconnectAfterMs: (tries: number) => {
           if (!navigator.onLine) {
             return 60_000
@@ -32,10 +25,8 @@ export function createClient() {
           return Math.min(1000 * Math.pow(2, tries), 10000)
         }
       },
-      // Global fetch options to prevent requests when offline
       global: {
         fetch: async (url, options = {}) => {
-          // Skip requests if offline (prevents retry spam)
           if (!navigator.onLine) {
             return Promise.reject(new Error('Network offline'))
           }

@@ -11,7 +11,6 @@ import { dirname, resolve } from 'path'
 
 const ROOT = resolve(import.meta.dir, '..')
 
-/** Files whose headings a section reference may resolve against. */
 const HEADING_SOURCES = [
   'AGENTS.md',
   'CLAUDE.md',
@@ -121,7 +120,6 @@ for (const file of files) {
   })
 }
 
-/** Rule/prose files whose relative links and prose paths must resolve. */
 const LINK_SOURCES = [
   ...new Set([
     ...HEADING_SOURCES.filter((f) => f.endsWith('CLAUDE.md') || f.endsWith('SKILL.md')),
@@ -177,10 +175,8 @@ for (const file of LINK_SOURCES) {
 }
 
 /**
- * A backticked token that contains a `/` and ends in a known file extension reads as a
- * repo path. It resolves if it exists at its literal location, or as a tracked file's
- * trailing path segment. Docs abbreviate by dropping leading directories
- * (`utils/clientMessageId.ts`), never a middle one.
+ * Docs drop leading directories (`utils/clientMessageId.ts`), never a middle one.
+ * A `/` + known-extension token resolves at its literal path or as a tracked suffix.
  */
 const looksLikePath = (token: string) => {
   if (!/^[\w./-]+$/.test(token)) return false

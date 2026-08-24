@@ -32,16 +32,13 @@ const AuthErrorPage = () => {
   return (
     <div className="bg-base-200 flex min-h-[100dvh] items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Error card */}
         <div className="rounded-box bg-base-100 p-6 shadow-xl sm:p-8">
-          {/* Icon */}
           <div className="mb-6 flex justify-center">
             <div className="bg-error/10 flex size-16 items-center justify-center rounded-full">
               <LuCircleAlert size={32} className="text-error" />
             </div>
           </div>
 
-          {/* Title */}
           <h1 className="text-base-content mb-2 text-center text-2xl font-bold">
             Authentication Error
           </h1>
@@ -49,7 +46,6 @@ const AuthErrorPage = () => {
             Something went wrong during authentication.
           </p>
 
-          {/* Error details */}
           <div className="border-error/20 bg-error/5 rounded-box mb-6 space-y-3 border p-4">
             <div>
               <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
@@ -77,7 +73,6 @@ const AuthErrorPage = () => {
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               onClick={handleRetry}
@@ -92,7 +87,6 @@ const AuthErrorPage = () => {
           </div>
         </div>
 
-        {/* Help text */}
         <p className="text-base-content/60 mt-6 text-center text-sm">
           If this problem persists, please{' '}
           <a
@@ -111,5 +105,4 @@ const AuthErrorPage = () => {
 
 export default AuthErrorPage
 
-// Disable static generation - this page needs router query params at runtime
 export const getServerSideProps = () => ({ props: {} })

@@ -10,7 +10,6 @@ import { useCallback, useState } from 'react'
 
 export type { DocumentAccessField }
 
-/** Deep access-mutation module: confirm Private ON, pending, optimistic patch. */
 export function useDocumentAccessMutation(args: {
   documentId: string
   userId?: string

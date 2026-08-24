@@ -1,18 +1,12 @@
-/**
- * Core detection logic (isIPadDevice, isIOSDevice, getIOSVersion) lives in
- * `@utils/platform` — shared with push-notifications.ts.
- */
 import { getDevicePlatform, getIOSVersion, isIOSDevice } from '@utils/platform'
 import { useCallback, useEffect, useState } from 'react'
 
 export interface PlatformInfo {
   platform: 'ios' | 'android' | 'desktop'
   browser: 'safari' | 'chrome' | 'firefox' | 'edge' | 'other'
-  /** Running in standalone display mode. */
   isPWAInstalled: boolean
   canInstallPWA: boolean
   supportsPush: boolean
-  /** null when the device is not iOS. */
   iosVersion: number | null
   /** iOS 16.4+ — the first release with web push. */
   iosSupportsWebPush: boolean
@@ -70,7 +64,6 @@ function detectPlatform(): PlatformInfo {
 export function usePlatformDetection() {
   const [platformInfo, setPlatformInfo] = useState<PlatformInfo>(() => detectPlatform())
 
-  // Listen for display-mode changes (user installs PWA)
   useEffect(() => {
     if (typeof window === 'undefined') return
 

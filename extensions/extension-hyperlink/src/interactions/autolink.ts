@@ -1,7 +1,3 @@
-// Autolink interaction — bare URL text becomes a hyperlink mark
-// when the user types whitespace; marks whose text was mutated past
-// recognition get stripped.
-
 import {
   combineTransactionSteps,
   findChildrenInRange,

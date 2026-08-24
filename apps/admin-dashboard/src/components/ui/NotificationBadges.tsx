@@ -7,7 +7,6 @@ export interface NotificationBadgesProps {
   email?: boolean
 }
 
-// Single badge with tooltip
 function Badge({
   active,
   icon: Icon,
@@ -31,10 +30,6 @@ function Badge({
   )
 }
 
-/**
- * Compact notification subscription badges
- * Shows which notification channels a user has enabled
- */
 export function NotificationBadges({ web, ios, android, email }: NotificationBadgesProps) {
   const hasAny = web || ios || android || email
 

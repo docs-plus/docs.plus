@@ -1,8 +1,3 @@
-/**
- * Snapshot tests for each template + security / correctness assertions.
- * Run: cd packages/email-templates && bun test
- */
-
 import { describe, expect, it } from 'bun:test'
 
 import {
@@ -201,7 +196,6 @@ describe('renderUnsubscribePage', () => {
     expect(html).toContain('<!DOCTYPE html>')
     expect(html).toContain('Unsubscribed')
     expect(html).toContain('Done.')
-    // Success SVG uses green stroke
     expect(html).toContain('#10b981')
   })
 
@@ -209,7 +203,6 @@ describe('renderUnsubscribePage', () => {
     const html = renderUnsubscribePage({ success: false, title: 'Error', message: 'Expired.' })
     expect(html).toContain('Error')
     expect(html).toContain('Expired.')
-    // Error SVG uses red stroke
     expect(html).toContain('#ef4444')
   })
 

@@ -4,7 +4,7 @@ interface FocusedHeadingStore {
   focusedHeadingId: string | null
   isScrollLocked: boolean
   setFocusedHeadingId: (id: string | null) => void
-  /** Sets heading ID and temporarily locks scroll spy updates (for programmatic scrolls) */
+  /** Locks scroll spy while a programmatic scroll lands. */
   setFocusedHeadingWithLock: (id: string | null, lockDuration?: number) => void
 }
 

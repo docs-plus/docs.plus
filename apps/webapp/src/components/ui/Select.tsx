@@ -29,39 +29,23 @@ export interface SelectOption {
 }
 
 export interface SelectProps {
-  /** Selected value (controlled mode). Omit for uncontrolled. */
+  /** Omit for uncontrolled. */
   value?: string
-  /** Callback when value changes */
   onChange?: (value: string) => void
-  /** Options to display */
   options?: SelectOption[]
-  /** Label text for the select */
   label?: string
-  /** Position of the label: 'above' or 'floating' */
   labelPosition?: 'above' | 'floating'
-  /** Size of the select */
   size?: SelectSize
-  /** Color variant of the select */
   color?: SelectColor
-  /** Whether to use ghost style (no border) */
   ghost?: boolean
-  /** Placeholder text when no value selected */
   placeholder?: string
-  /** Helper text displayed below the select */
   helperText?: string
-  /** Error state */
   error?: boolean
-  /** Success state */
   success?: boolean
-  /** Disabled state */
   disabled?: boolean
-  /** Maximum height of the dropdown list */
   maxHeight?: number
-  /** HTML id attribute */
   id?: string
-  /** Additional wrapper class */
   wrapperClassName?: string
-  /** Additional class for the trigger */
   className?: string
 }
 
@@ -160,7 +144,6 @@ const Select = ({
       const selectedIdx = options.findIndex((o) => o.value === value)
       setHighlightedIndex(selectedIdx >= 0 ? selectedIdx : 0)
 
-      // Scroll selected item into view after render
       requestAnimationFrame(() => {
         if (listRef.current && selectedIdx >= 0) {
           const el = listRef.current.children[selectedIdx] as HTMLElement

@@ -10,7 +10,7 @@ type ApplyCreateOpts = CreateHyperlinkOptions & {
 const chainWithOptionalFocus = (editor: CreateHyperlinkOptions['editor'], focus: boolean) =>
   focus ? editor.chain().focus() : editor.chain()
 
-/** Apply a create result. text + empty selection → insertContent; text + selection → replaceSelectionWith; no text → setMark. Every branch stamps `preventAutolink` on the same chain so autolink doesn't re-mark our href. Closing the popover/sheet is the caller's job. */
+/** Every branch stamps `preventAutolink` so autolink does not re-mark this href. */
 export function applyCreate(
   opts: ApplyCreateOpts,
   { href, text }: ApplyHyperlinkArgs,

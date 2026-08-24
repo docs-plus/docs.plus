@@ -104,8 +104,6 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
       return
     }
 
-    // Delegate to the canonical command — it normalizes, runs the composed
-    // gate, and stamps `PREVENT_AUTOLINK_META`, so policy changes flow here.
     const chain = editor.chain().setHyperlink({ href: url })
     // With nothing selected the mark would only reach `storedMarks` and the
     // document would not change, so give the link its own text.

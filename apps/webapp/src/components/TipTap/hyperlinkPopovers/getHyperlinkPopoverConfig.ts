@@ -10,7 +10,6 @@ import { createHyperlinkMobile, editHyperlinkMobile } from './mobilePopoverEntri
 import previewHyperlink from './previewHyperlink'
 import type { HyperlinkSurface } from './types'
 
-/** Single popover wiring for pad + chat composers (desktop floating host vs mobile sheet). */
 export function getHyperlinkPopoverConfig(
   isMobile: boolean | undefined,
   surface: HyperlinkSurface = 'pad'

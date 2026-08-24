@@ -8,14 +8,12 @@ const EVENT_NAME = 'select:close-others'
  * and unique per instance (`useId()`) or an instance will close itself.
  */
 export function useSelectExclusion(id: string, isOpen: boolean, close: () => void) {
-  // Broadcast: "I just opened — everyone else close"
   useEffect(() => {
     if (isOpen) {
       document.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { id } }))
     }
   }, [isOpen, id])
 
-  // Listen: close myself if someone else opened
   useEffect(() => {
     const handler = (e: Event) => {
       const { detail } = e as CustomEvent<{ id: string }>

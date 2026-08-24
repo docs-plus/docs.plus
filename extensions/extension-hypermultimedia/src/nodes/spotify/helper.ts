@@ -8,7 +8,6 @@ export const SPOTIFY_URL_REGEX_GLOBAL = new RegExp(SPOTIFY_URL_REGEX.source, 'gi
 export const SPOTIFY_EMBED_IFRAME_REGEX =
   /<iframe[^>]*\bsrc=["']([^"']*open\.spotify\.com\/embed\/[^"']+)["'][^>]*>(?:\s*<\/iframe>)?/gi
 
-/** True for any URL or `spotify:` URI that resolves to an embeddable entity. */
 export const isValidSpotifyUrl = (url: string): boolean => parseSpotifyEntity(url) !== null
 
 export {

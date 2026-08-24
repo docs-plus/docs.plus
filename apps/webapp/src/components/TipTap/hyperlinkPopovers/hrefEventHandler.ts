@@ -29,10 +29,6 @@ export const navigateHref = (href: string, isAllowedUri?: (uri: string) => boole
   window.open(href, '_blank', SAFE_WINDOW_FEATURES)
 }
 
-/**
- * Curried adapter for imperative DOM listeners. `preventDefault` stops the
- * browser from also following the href.
- */
 export const hrefEventHandler =
   (href: string, isAllowedUri?: (uri: string) => boolean) =>
   (event: MouseEvent): void => {

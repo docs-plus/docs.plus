@@ -89,10 +89,6 @@ export type OpenMediaPopoverOptions = {
   toggle?: boolean
 }
 
-/**
- * Media toolbar popover adapter — owns toggle, menu offset/shift, and dismiss-ignore.
- * Callers pass content + kind + anchors only.
- */
 export function openMediaPopover(options: OpenMediaPopoverOptions): void {
   const {
     kind,

@@ -1,5 +1,3 @@
-// ESLint config for Next.js / React apps (extends base + adds React)
-// Used by: webapp, admin-dashboard
 import baseConfig from './index.js'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'

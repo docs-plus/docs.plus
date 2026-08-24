@@ -42,7 +42,6 @@ async function main(argv: string[]): Promise<number> {
       return 0
     case 'run':
       if (wantsHelp(rest)) return (console.log(USAGE), 0)
-      // runSwarm resolves to its exit code — non-zero when the Swarm Report has hard failures.
       return await runSwarm(parseRunOptions(rest))
     default:
       console.error(`Unknown command: "${subcommand}"\n\n${USAGE}`)

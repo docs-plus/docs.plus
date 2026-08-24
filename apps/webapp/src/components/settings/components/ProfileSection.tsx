@@ -125,7 +125,6 @@ const ProfileSection = () => {
 
   return (
     <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
-      {/* Profile Picture */}
       <SettingsCard>
         <div className="flex items-center gap-5">
           <div className="relative">
@@ -185,14 +184,12 @@ const ProfileSection = () => {
         </div>
       </SettingsCard>
 
-      {/* Account Info + Bio Combined */}
       <SettingsCard>
         <div className="mb-3 flex items-center gap-2">
           <LuUser size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Account Information</h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {/* Full Name */}
           <TextInput
             label="Full Name"
             labelPosition="floating"
@@ -201,7 +198,6 @@ const ProfileSection = () => {
             onChange={handleFullNameChange}
           />
 
-          {/* Username */}
           <TextInput
             label="Username"
             labelPosition="floating"
@@ -213,7 +209,6 @@ const ProfileSection = () => {
           />
         </div>
 
-        {/* Bio - Full width */}
         <div className="mt-4">
           <Textarea
             label="About"
@@ -226,7 +221,6 @@ const ProfileSection = () => {
         </div>
       </SettingsCard>
 
-      {/* Social Links */}
       <SettingsCard>
         <div className="mb-3">
           <div className="flex items-center gap-2">

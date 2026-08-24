@@ -69,10 +69,6 @@ const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconType>> = {
   amazon: Icons.externalLink
 }
 
-/**
- * Context shared by the desktop popover and the mobile sheet. Kept as a
- * plain record so each variant can pull only the fields it needs.
- */
 export interface PreviewContext {
   href: string
   editor: Editor
@@ -94,10 +90,6 @@ const createSvgIcon = (Icon: IconType, className = ''): HTMLElement => {
   })
 }
 
-/**
- * Favicon/special-icon + title-as-link, shared by the desktop popover and the
- * mobile sheet header (same DOM, different CSS).
- */
 export const createMetadataContent = (data: MetadataResponse | null, href: string): HTMLElement => {
   const specialInfo = getSpecialUrlInfo(href)
   const container = createHTMLElement('div', {
@@ -152,10 +144,6 @@ const createLoadingSkeleton = (): HTMLElement => {
   return skeleton
 }
 
-/**
- * Lets the caller flush the pending mark-attr write at the right moment in the
- * popover lifecycle — typically inside the `observeDetachment` callback.
- */
 export interface RenderHandle {
   flush: () => void
 }

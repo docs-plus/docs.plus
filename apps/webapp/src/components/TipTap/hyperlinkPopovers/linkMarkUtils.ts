@@ -69,7 +69,6 @@ export const writeLinkMetadataAttrs = (
   editor.view.dispatch(tr)
 }
 
-/** Visible anchor text from doc mark range; falls back to live DOM link text. */
 export const getHyperlinkDisplayText = (
   editor: Editor,
   nodePos: number,

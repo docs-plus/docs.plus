@@ -23,7 +23,6 @@ export async function checkDatabaseHealth(): Promise<{ status: string; latency: 
   }
 }
 
-/** Map a raw admin RPC row to a PushSubscriptionDetail. */
 function mapPushSubscriptionDetail(sub: Record<string, unknown>): PushSubscriptionDetail {
   return {
     id: sub.id as string,

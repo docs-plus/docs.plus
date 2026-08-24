@@ -9,10 +9,6 @@ interface SparklineProps {
   fillColor?: string
 }
 
-/**
- * Minimal sparkline chart for inline display
- * Shows trend without axes or labels
- */
 export function Sparkline({
   data,
   width = 60,
@@ -21,7 +17,6 @@ export function Sparkline({
   strokeColor = 'currentColor',
   fillColor
 }: SparklineProps) {
-  // Calculate points once, derive both paths
   const { linePath, areaPath } = useMemo(() => {
     if (!data.length) return { linePath: '', areaPath: '' }
 

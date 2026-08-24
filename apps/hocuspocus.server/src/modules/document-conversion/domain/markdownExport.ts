@@ -23,10 +23,8 @@ const markdownExtensions: Extensions = [
 // per-call manager leaks unboundedly. Lazy: the module has no side effects.
 let markdownManager: MarkdownManager | null = null
 
-/** Exported so `markdownImport` parses through this instance instead of a second one. */
 export const getMarkdownManager = (): MarkdownManager =>
   (markdownManager ??= new MarkdownManager({ extensions: markdownExtensions }))
 
-/** Shares `toPortableJson` with the HTML path so both exports see one document. */
 export const exportMarkdown = (doc: TiptapDocJson): string =>
   getMarkdownManager().serialize(toPortableJson(doc))

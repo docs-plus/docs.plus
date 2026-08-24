@@ -1,10 +1,9 @@
 import { immer } from 'zustand/middleware/immer'
 
 /**
- * Tail-suppression marker: while set, that channel's unread is clamped to 0 at the
- * write boundary (optimistic / channel row) and the read site (useUnreadCount). A
- * server bump racing ahead of the debounced advance_read_cursor then cannot flash a
- * phantom badge. Single-valued by design.
+ * Tail-suppression marker: while set, unread is clamped to 0 at the write
+ * boundary and the read site. A server bump racing the debounced
+ * advance_read_cursor then cannot flash a phantom badge. Single-valued.
  */
 export interface UnreadSuppressionState {
   unreadSuppressedChannelId: string | null

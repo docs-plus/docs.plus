@@ -1,4 +1,3 @@
-/** Geometry-true bones for the media-insert popover: tab bar + URL field + dropzone. */
 const MediaInsertPanelSkeleton = () => {
   return (
     <div className="flex w-full flex-col">

@@ -9,7 +9,6 @@ export interface BuildPreviewOptionsFromAnchorArgs {
   link: HTMLAnchorElement
   /** Prefer this ProseMirror position before falling back to DOM similarity. */
   nodePos?: number
-  /** Forwarded onto the returned options; usually the configured `validate` option. */
   validate?: (url: string) => boolean
   /** Preserve the host's composed navigation gate when rebuilding preview from edit/back. */
   isAllowedUri?: (uri: string) => boolean

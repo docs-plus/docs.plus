@@ -66,7 +66,6 @@ export const useAvatarUpload = () => {
       try {
         // AVIF (and other non-allowlisted types) pass `image/*` but the bucket rejects them.
         const uploadFile = await prepareAvatarFile(file, MAX_AVATAR_SIZE)
-        // Canonical storage path for getAvatarURL; content-type is the converted MIME.
         const filePath = `${user.id}/avatar.png`
         const bucketAddress = Config.app.profile.getAvatarURL(user.id, Date.now().toString())
 

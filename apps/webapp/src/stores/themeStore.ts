@@ -76,9 +76,7 @@ function transitionThemeToDom(
 }
 
 export interface ThemeStore {
-  /** Persisted in localStorage under `docsplus-theme`. */
   preference: ThemePreference
-  /** What is currently written to the DOM as `data-theme`. */
   resolvedTheme: ResolvedTheme
 
   setPreference: (preference: ThemePreference, opts?: { motion?: boolean }) => void

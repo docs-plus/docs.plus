@@ -1,7 +1,3 @@
-// Factory for `LinkContext` — the dependency bag every interaction
-// consumes. One seam, so input rule, paste rule, autolink, paste
-// handler, and click handler all share the same URL Decisions stack.
-
 import type { Editor } from '@tiptap/core'
 import type { MarkType } from '@tiptap/pm/model'
 

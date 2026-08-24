@@ -2,7 +2,6 @@ import { mkdirSync, renameSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import type { PluginConfigOptions, PluginEvents } from 'cypress/types/cypress'
 
-/** Flatten README-gallery `cy.screenshot()` output into tracked `assets/`. */
 export function flattenReadmeScreenshots(
   on: PluginEvents,
   config: PluginConfigOptions,

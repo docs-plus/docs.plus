@@ -14,7 +14,6 @@ import {
 
 import { fetchPushSubscriptionAnalytics } from '@/services/api'
 
-// Progress bar component for platform/health breakdown
 function ProgressBar({
   label,
   value,
@@ -47,7 +46,6 @@ function ProgressBar({
   )
 }
 
-// Stat card for lifecycle metrics
 function MiniStat({
   label,
   value,
@@ -102,7 +100,6 @@ export function PushSubscriptionStats() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Push Subscription Analytics</h2>
         <button
@@ -115,7 +112,6 @@ export function PushSubscriptionStats() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Platform Breakdown */}
         <div className="bg-base-100 rounded-box border-base-300 border p-4">
           <h3 className="mb-4 flex items-center gap-2 font-medium">
             <LuSmartphone className="h-4 w-4" />
@@ -159,7 +155,6 @@ export function PushSubscriptionStats() {
           </div>
         </div>
 
-        {/* Subscription Health */}
         <div className="bg-base-100 rounded-box border-base-300 border p-4">
           <h3 className="mb-4 flex items-center gap-2 font-medium">
             <LuShield className="h-4 w-4" />
@@ -200,7 +195,6 @@ export function PushSubscriptionStats() {
           )}
         </div>
 
-        {/* Lifecycle & Errors */}
         <div className="bg-base-100 rounded-box border-base-300 space-y-4 border p-4">
           <h3 className="flex items-center gap-2 font-medium">
             <LuTrendingUp className="h-4 w-4" />
@@ -211,7 +205,6 @@ export function PushSubscriptionStats() {
             <MiniStat label="Churned" value={analytics.lifecycle.churnedThisWeek} trend="down" />
           </div>
 
-          {/* Error Breakdown */}
           {analytics.errors.total > 0 && (
             <div className="border-t pt-4">
               <h4 className="text-base-content/70 mb-2 flex items-center gap-2 text-sm font-medium">

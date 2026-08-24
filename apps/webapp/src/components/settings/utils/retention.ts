@@ -7,7 +7,6 @@ export const DOC_DELETE_RETENTION_DAYS = 30
 
 const MS_PER_DAY = 86_400_000
 
-// Whole days until permanent removal, clamped at 0; null for an unparseable date.
 export const retentionDaysLeft = (
   deletedAtIso: string,
   retentionDays = DOC_DELETE_RETENTION_DAYS
@@ -25,7 +24,6 @@ export interface RetentionCountdown {
   warn: boolean
 }
 
-// "27 days left" / "Last day" / "Removing soon", with a warn flag for the tail.
 export const retentionCountdown = (deletedAtIso: string): RetentionCountdown | null => {
   const days = retentionDaysLeft(deletedAtIso)
   if (days === null) return null

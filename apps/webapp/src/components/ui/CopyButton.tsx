@@ -9,31 +9,19 @@ export type CopyButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 export type CopyButtonVariant = 'ghost' | 'outline' | 'soft' | 'primary'
 
 export interface CopyButtonProps extends UseCopyToClipboardOptions {
-  /** The text to copy to clipboard */
   text: string
-  /** Button size */
   size?: CopyButtonSize
   /** Overrides the size→glyph map (`sm` is 16). Docked pad controls pass 20. */
   iconSize?: number
-  /** Button variant */
   variant?: CopyButtonVariant
-  /** Custom icon to show (default: LuCopy) */
   icon?: IconType
-  /** Custom success icon (default: LuCheck) */
   successIcon?: IconType
-  /** Show label text alongside icon */
   label?: string
-  /** Show success label text when copied */
   successLabel?: string
-  /** Additional CSS classes */
   className?: string
-  /** Tooltip text */
   tooltip?: string
-  /** Whether to use circle shape (icon-only button) */
   circle?: boolean
-  /** Whether to use square shape (icon-only button in toolbars) */
   square?: boolean
-  /** Callback when copy button is clicked (receives the text) */
   onClick?: (text: string) => void
 }
 

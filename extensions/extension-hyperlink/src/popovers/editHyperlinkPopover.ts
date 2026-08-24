@@ -79,8 +79,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTM
     }
   })
 
-  // Back button — re-opens the preview popover for this popover's own
-  // options. `onBack` is an opt-in escape hatch (e.g. mobile sheet).
+  // `onBack` is an opt-in escape hatch (e.g. mobile sheet).
   backButton.addEventListener('click', () => {
     if (options.onBack) {
       options.onBack()

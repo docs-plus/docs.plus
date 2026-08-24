@@ -6,9 +6,8 @@ import { useCallback, useState } from 'react'
 import { useUsernameValidation } from './useUsernameValidation'
 
 interface SaveOptions {
-  /** Custom success toast message */
   successToast?: string
-  /** Skip username validation (e.g., when only links changed — avoids unnecessary API call) */
+  /** Skip username validation when only links changed — avoids an extra API call. */
   skipUsernameValidation?: boolean
 }
 

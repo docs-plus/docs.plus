@@ -20,7 +20,6 @@ const wrapStrayInlineNodes = (doc: TiptapDocJson): TiptapDocJson => {
     const next = children.map((child) => {
       const walked = normalize(child as Record<string, unknown>)
       const childType = typeof walked.type === 'string' ? schema.nodes[walked.type] : undefined
-      // A container that takes inline content keeps its children as they are.
       return childType?.isInline && type && !type.inlineContent
         ? { type: 'paragraph', content: [walked] }
         : walked
@@ -32,9 +31,9 @@ const wrapStrayInlineNodes = (doc: TiptapDocJson): TiptapDocJson => {
 }
 
 /**
- * Markdown to Tiptap JSON, through the export path's manager — a second one
- * mutates the global `marked` singleton. Callers gate on `MAX_MARKDOWN_CHARS`
- * first: `marked` parses in quadratic time and blocks the event loop.
+ * Parses through the export path's manager — a second one mutates the global
+ * `marked` singleton. Callers gate on `MAX_MARKDOWN_CHARS` first: `marked`
+ * parses in quadratic time and blocks the event loop.
  */
 export const importMarkdown = (markdown: string, fallbackTitle: string): ImportResult => {
   const parsed = getMarkdownManager().parse(markdown) as unknown as TiptapDocJson

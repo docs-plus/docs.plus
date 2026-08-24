@@ -15,7 +15,7 @@ export const rateLimiter = (options: {
   points: number
   duration: number // seconds
   keyPrefix?: string
-  blockDuration?: number // seconds, applied after the limit is exceeded
+  blockDuration?: number // seconds
 }) => {
   const { points, duration, keyPrefix = 'rl', blockDuration } = options
 
@@ -150,7 +150,7 @@ export const pinoLogger = () => {
 }
 
 export const setupMiddleware = (app: Hono) => {
-  // CORS - Must be first to handle preflight requests
+  // First so preflight OPTIONS gets CORS headers.
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim())
@@ -177,11 +177,10 @@ export const setupMiddleware = (app: Hono) => {
         'X-RateLimit-Reset',
         'Content-Disposition'
       ],
-      maxAge: 86400 // 24 hours
+      maxAge: 86400
     })
   )
 
-  // Security headers (after CORS)
   app.use(
     '*',
     secureHeaders({
@@ -201,7 +200,7 @@ export const setupMiddleware = (app: Hono) => {
   // Build the limiter ONCE (not per request) so the RateLimiterRedis instance is reused.
   const globalRateLimiter = rateLimiter({
     points: config.security.rateLimitMax,
-    duration: 15 * 60, // 15 minutes in seconds
+    duration: 15 * 60,
     keyPrefix: 'global'
   })
   app.use('*', async (c, next) => {

@@ -2,10 +2,8 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import * as Y from 'yjs'
 
 /**
- * Kept in lockstep with `VOLATILE_BLOCK_ATTRS` in
- * `apps/hocuspocus.server/src/modules/document-versions/types.ts`. The webapp cannot
- * import from that package, so this copy is deliberate. Drift silently changes who a
- * block is attributed to, because the toc-id rewriter would outrank the real writer.
+ * Lockstep copy of hocuspocus `VOLATILE_BLOCK_ATTRS` — this package cannot import
+ * that one. Drift lets the toc-id rewriter outrank the real writer.
  */
 const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id'])
 

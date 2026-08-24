@@ -2,13 +2,8 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import type { Transaction } from '@tiptap/pm/state'
 
 /**
- * Move a document section (from..to) to targetPos within a single transaction.
- *
- * Transaction ordering matters for correct ProseMirror mapping:
- * - Moving UP: insert at target first, then delete mapped source
- * - Moving DOWN: delete source first, then insert at mapped target
- *
- * All steps are in one transaction = single undo step.
+ * One transaction (one undo). Insert-then-delete when moving up;
+ * delete-then-insert when moving down so ProseMirror mapping stays valid.
  */
 export function moveSection(
   tr: Transaction,

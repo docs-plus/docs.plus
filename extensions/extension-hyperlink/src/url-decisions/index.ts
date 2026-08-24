@@ -1,8 +1,3 @@
-// Single source of truth for every URL decision the extension makes.
-// Composes the `utils/*` primitives (detect / normalize / gate) into
-// `forWrite` (every write boundary) and `forRead` (every navigation
-// surface) so drift becomes a compile error.
-
 import { findLinks } from '../utils/findLinks'
 import {
   DEFAULT_PROTOCOL,
@@ -12,8 +7,6 @@ import {
 } from '../utils/normalizeHref'
 import { isSafeHref } from '../utils/validateURL'
 
-// The gate default, re-exported so callers take it from the decision module
-// they already import rather than reaching into `utils/validateURL`.
 export { isSafeHref }
 
 /** Discriminated input to {@link URLDecisions.forWrite}. */
@@ -105,7 +98,6 @@ export function createURLDecisions(options: URLDecisionsOptions = {}): URLDecisi
   const defaultProtocol = options.defaultProtocol ?? DEFAULT_PROTOCOL
   const gate = options.gate ?? isSafeHref
 
-  /** Run the full gate stack used by autolink-flavored writes. */
   const passesAutoGates = (href: string, opts?: WriteOptions): boolean => {
     if (!gate(href)) return false
     const validate = opts?.validate ?? options.validate
@@ -135,7 +127,6 @@ export function createURLDecisions(options: URLDecisionsOptions = {}): URLDecisi
         return [{ href, start: 0, end: input.match.value.length }]
       }
 
-      // kind === 'text' — full extraction.
       return findLinks(input.text)
         .filter((link) => link.isLink)
         .map((link) => ({

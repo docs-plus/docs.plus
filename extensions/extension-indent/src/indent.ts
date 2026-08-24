@@ -48,13 +48,8 @@ function tryLiftListItem(editor: Editor): boolean {
   return false
 }
 
-/** Resolved textblock + its immediate block parent; used for indent/outdent gating. */
 export type IndentContext = { textblockName: string; parentName: string }
 
-/**
- * One allowed context for literal `indent` / `outdent`: a **textblock** type and its **immediate
- * parent's** type (TipTap / ProseMirror `type.name`, e.g. `paragraph` + `doc`).
- */
 export type IndentContextRule = {
   textblock: string
   parent: string
@@ -65,10 +60,7 @@ const defaultAllowedIndentContexts: IndentContextRule[] = [
   { textblock: 'paragraph', parent: 'blockquote' }
 ]
 
-/**
- * Innermost textblock at `pos` and its immediate block parent (`doc`, `listItem`, `blockquote`, …).
- * @internal exported for unit tests
- */
+/** @internal exported for unit tests */
 export function indentContextAtPos(doc: Node, pos: number): IndentContext | null {
   const $pos = doc.resolve(pos)
   for (let d = $pos.depth; d > 0; d--) {
@@ -130,7 +122,6 @@ function isCaretContextAllowed(state: EditorState, rules: IndentContextRule[]): 
   return isIndentContextAllowed(state, state.selection.from, rules)
 }
 
-/** A selected visual line: its full text from line start and resolved document start position. */
 type IndentLine = { text: string; pos: number }
 
 /** Outdent deletes by position, not by measured chars: hop zero-width leaves (e.g. hardBreak). */

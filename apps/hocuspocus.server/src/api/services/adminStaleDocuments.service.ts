@@ -51,7 +51,6 @@ function walkTiptapDoc(data: Buffer | Uint8Array | null, visit: (node: TiptapNod
   json.content.forEach(recurse)
 }
 
-/** Parse Y.js update bytes into structural counts via @hocuspocus/transformer. */
 function parseDocumentStructure(data: Buffer | Uint8Array | null): DocumentStructure {
   let headings = 0
   let paragraphs = 0
@@ -68,7 +67,6 @@ function parseDocumentStructure(data: Buffer | Uint8Array | null): DocumentStruc
 
 const structureCache = new Map<string, { structure: DocumentStructure; expiresAt: number }>()
 
-/** Multi-signal staleness scoring (edit + view activity). */
 export function computeStaleScore(
   views7d: number,
   views30d: number,
@@ -200,7 +198,6 @@ export interface ScoredStaleDoc extends Omit<CandidateRow, 'version_count'> {
   last_viewed_at: string | null
 }
 
-/** Score every candidate against Supabase view stats (cross-DB join in memory). */
 async function scoreCandidates(rows: CandidateRow[]): Promise<ScoredStaleDoc[]> {
   // document_view_stats.document_slug stores lower(trim(documentId)); key on the
   // lowercased documentId, not the human slug, or every join returns zero rows.
@@ -325,7 +322,6 @@ export interface StaleListResult {
   pagination: { page: number; limit: number; total: number; totalPages: number }
 }
 
-/** Fetch + cache the parsed structure for the page's documents only. */
 async function getStructures(
   prisma: PrismaClient,
   documentIds: string[]
@@ -419,7 +415,6 @@ export async function listStale(
   }
 }
 
-/** Owner summary (username/email) for the document-preview endpoint. */
 export async function fetchOwnerSummary(
   ownerId: string
 ): Promise<{ username: string | null; email: string | null } | null> {
@@ -434,7 +429,6 @@ export interface DeletionImpact {
   message_count: number
 }
 
-/** Workspace/channel/message counts for the document-preview deletion warning. */
 export async function fetchDocumentDeletionImpact(documentId: string): Promise<DeletionImpact> {
   const impact: DeletionImpact = { workspace_id: null, channel_count: 0, message_count: 0 }
   try {
@@ -496,7 +490,6 @@ export async function bulkDeleteStale(
     select: { slug: true, title: true, documentId: true }
   })
 
-  // Everything the caller named that this pass will not touch, with its reason.
   const purgeable = new Set(documents.map((d) => d.slug))
   const failed: { slug: string; error: string }[] = slugs
     .filter((slug) => !purgeable.has(slug))
@@ -551,7 +544,6 @@ export async function bulkDeleteStale(
   }
 }
 
-/** Extract a 500-char text preview from a stored document's latest version. */
 function parseContentPreview(data: Buffer | Uint8Array | null): string {
   const parts: string[] = []
   try {
@@ -575,7 +567,6 @@ export interface DocumentPreview {
   deletion_impact: DeletionImpact
 }
 
-/** Assemble the document-preview payload (content, owner, deletion impact). */
 export async function getDocumentPreview(
   prisma: PrismaClient,
   slug: string
@@ -614,7 +605,6 @@ export async function getDocumentPreview(
   }
 }
 
-/** Invalidate stale caches after a delete so counts/lists reflect removals. */
 export function invalidateStaleCaches(): void {
   scoredCache = null
   summaryCache = null

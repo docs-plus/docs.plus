@@ -491,8 +491,7 @@ export const createDocumentWorker = () => {
                   })
                 }
 
-                // Create new version (within transaction = atomic). Attribution is
-                // read top-level only: the serialized context carries a second copy
+                // Attribution is read top-level only: the serialized context carries a second copy
                 // whose explicit null the store hook has already resolved.
                 const doc = await tx.documents.create({
                   data: {
@@ -617,12 +616,10 @@ export const createDocumentWorker = () => {
         max: config.bullmq.rateLimitMax,
         duration: config.bullmq.rateLimitDuration
       },
-      // Lock settings for job ownership (prevents duplicate processing);
       // lockRenewTime must stay below lockDuration/2.
       lockDuration: 120000,
       lockRenewTime: 30000,
 
-      // A job is "stalled" if a worker dies mid-processing without releasing its lock.
       stalledInterval: 60000, // 30s was too aggressive
       maxStalledCount: 2 // After 2 stalls (2 min), consider it failed
     }

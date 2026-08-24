@@ -12,7 +12,6 @@ function pickChatLines(ctx: ScriptContext): string[] {
   return pool.slice(0, count)
 }
 
-/** Opens the Write Target's heading chat and sends 2–3 messages. */
 export const chatScript: SwarmScript = {
   name: 'chat',
   run: async (ctx): Promise<ScriptOutcome> => {

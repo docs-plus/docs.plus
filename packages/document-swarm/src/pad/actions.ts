@@ -11,12 +11,10 @@ export const PAD_HEADING_SELECTOR = `${PAD_EDITOR_SELECTOR} :is(h1, h2, h3, h4, 
 // the real beforeinput pipeline and makes a headed Demo run watchable.
 export const TYPE_DELAY_MS = 22
 
-/** Locates a heading by its ProseMirror UniqueID (`data-toc-id`). */
 export function headingByTocId(page: Page, tocId: string): Locator {
   return page.locator(`${PAD_EDITOR_SELECTOR} [data-toc-id="${tocId}"]`).first()
 }
 
-/** Click into the editable pad so subsequent keyboard actions land in ProseMirror. */
 export async function focusEditor(page: Page): Promise<void> {
   await page.locator(PAD_EDITOR_EDITABLE_SELECTOR).first().click()
 }
@@ -53,7 +51,6 @@ export async function moveCaretToDocEnd(page: Page): Promise<void> {
   await assertCollapsedSelection(page)
 }
 
-/** True when the editor selection is a caret (no range). Reads the live browser selection. */
 export async function selectionIsCollapsed(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const selection = (
@@ -74,7 +71,6 @@ export async function assertCollapsedSelection(page: Page): Promise<void> {
   )
 }
 
-/** Turns the current line into a checklist (`[] ` input rule) and types each item. */
 export async function insertTaskList(page: Page, items: string[]): Promise<void> {
   if (items.length === 0) return
   await typeText(page, '[] ')
@@ -84,7 +80,6 @@ export async function insertTaskList(page: Page, items: string[]): Promise<void>
   }
 }
 
-/** Small randomized pause so a headed run reads like a person, not a firehose. */
 export async function humanPause(page: Page, minMs = 120, maxMs = 420): Promise<void> {
   const span = Math.max(0, maxMs - minMs)
   await page.waitForTimeout(minMs + Math.floor(Math.random() * (span + 1)))

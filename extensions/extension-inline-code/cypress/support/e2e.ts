@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 /**
- * Support file for the extension-inline-code clean-room E2E suite.
  * Single file on purpose — Cypress 15's JIT loader silently skips
  * extensionless split imports.
  */
@@ -82,7 +81,6 @@ Cypress.Commands.add('setCaretAfter', (text: string) => {
   })
 })
 
-// Toolbar-equivalent path: clicking the inline-code button runs this command.
 Cypress.Commands.add('toggleInlineCode', () => {
   cy.getEditor().then((editor) => {
     editor.chain().focus().toggleInlineCode().run()

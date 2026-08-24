@@ -63,7 +63,6 @@ const ALL_TIMEZONES = getAllTimezones()
 
 // Friendly names for common timezones (searchable aliases)
 const TIMEZONE_ALIASES: Record<string, string> = {
-  // Middle East
   'Asia/Dubai': 'UAE, United Arab Emirates',
   'Asia/Riyadh': 'Saudi Arabia',
   'Asia/Qatar': 'Qatar',
@@ -74,7 +73,6 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'Asia/Jerusalem': 'Israel',
   'Asia/Amman': 'Jordan',
   'Asia/Beirut': 'Lebanon',
-  // Asia
   'Asia/Kolkata': 'India',
   'Asia/Shanghai': 'China',
   'Asia/Tokyo': 'Japan',
@@ -88,7 +86,6 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'Asia/Karachi': 'Pakistan',
   'Asia/Dhaka': 'Bangladesh',
   'Asia/Ho_Chi_Minh': 'Vietnam',
-  // Europe
   'Europe/London': 'UK, United Kingdom, Britain',
   'Europe/Paris': 'France',
   'Europe/Berlin': 'Germany',
@@ -109,7 +106,6 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'Europe/Moscow': 'Russia',
   'Europe/Dublin': 'Ireland',
   'Europe/Lisbon': 'Portugal',
-  // Americas
   'America/New_York': 'USA Eastern, New York',
   'America/Chicago': 'USA Central, Chicago',
   'America/Denver': 'USA Mountain, Denver',
@@ -122,13 +118,11 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'America/Lima': 'Peru',
   'America/Bogota': 'Colombia',
   'America/Santiago': 'Chile',
-  // Africa
   'Africa/Cairo': 'Egypt',
   'Africa/Lagos': 'Nigeria',
   'Africa/Johannesburg': 'South Africa',
   'Africa/Nairobi': 'Kenya',
   'Africa/Casablanca': 'Morocco',
-  // Oceania
   'Australia/Sydney': 'Australia Eastern',
   'Australia/Melbourne': 'Australia, Melbourne',
   'Australia/Perth': 'Australia Western',
@@ -142,7 +136,6 @@ const formatTimeDisplay = (time: string): string => {
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`
 }
 
-// Common time presets for quiet hours (every 30 min) — SelectOption format
 const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 48 }, (_, i) => {
   const hours = String(Math.floor(i / 2)).padStart(2, '0')
   const minutes = i % 2 === 0 ? '00' : '30'
@@ -427,7 +420,6 @@ const NotificationsSection = () => {
           <h2 className="text-base-content text-base font-semibold">Push Notifications</h2>
         </div>
 
-        {/* iOS Safari: show install-as-app guidance instead of toggle */}
         {isIOSBrowser ? (
           <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} />
         ) : (

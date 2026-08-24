@@ -18,10 +18,6 @@ export interface InitResult {
   router: Hono
 }
 
-/**
- * Public wiring. Builds adapters, wires pipeline stages together, returns
- * a router the host can mount. No top-level side effects (boundary rule 6).
- */
 export const init = (deps: InitDeps): InitResult => {
   const cache = createRedisCache(deps.redis)
   const scraper = createMetascraper()

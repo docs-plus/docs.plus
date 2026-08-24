@@ -3,11 +3,6 @@ import type Redis from 'ioredis'
 
 export type RedisClient = Redis
 
-/**
- * BullMQ-compatible connection type.
- * BullMQ and ioredis have slight type mismatches in their connection options
- * due to version differences in node_modules. This type bridges the gap.
- */
 export type BullMQConnection = ConnectionOptions
 
 /**

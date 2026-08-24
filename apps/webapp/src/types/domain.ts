@@ -1,11 +1,4 @@
-/**
- * Domain types - Core business entities
- * Types representing real-world concepts in the application
- */
-
 import { Database } from './supabase'
-
-// --- Link types ---
 
 export enum LinkType {
   Email = 'email',
@@ -27,8 +20,6 @@ export interface LinkItem {
   metadata?: LinkMetadata
 }
 
-// --- Profile types ---
-
 export interface ProfileData {
   bio?: string
   linkTree?: LinkItem[]
@@ -49,7 +40,6 @@ export type ProfileUpdate = Omit<
   profile_data?: ProfileData
 }
 
-// Channel types
 export type Channel =
   | (Database['public']['Tables']['channels']['Row'] & {
       member_count?: number
@@ -60,7 +50,6 @@ export type Channel =
     })
   | null
 
-// Notification types
 export type TNotification = {
   id: string
   type: string
@@ -88,5 +77,4 @@ export type TNotificationSummary = {
 
 export type TTab = 'Unread' | 'Mentions' | 'Read'
 
-// Bookmark tab labels — used by the bookmark panel UI and the chat-bookmark store.
 export type TBookmarkTab = 'in progress' | 'archive' | 'read'

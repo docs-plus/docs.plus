@@ -3,10 +3,8 @@ import { supabaseClient } from '@utils/supabase'
 import { useCallback, useRef } from 'react'
 
 /**
- * Debounced advance_read_cursor caller. Anon callers no-op per chatroom CLAUDE.md §Anonymous Chat Read Path
- * §Anonymous Chat Read Path; rows where `status !== 'sent'` are skipped
- * per §Optimistic Message Lifecycle. Reads uid from the auth store so we
- * don't issue an extra `/auth/v1/user` round-trip per chatroom mount.
+ * Debounced advance_read_cursor. Anon no-ops; skips `status !== 'sent'`.
+ * Reads uid from the auth store so we skip an extra `/auth/v1/user` call.
  */
 export const useReadCursor = (channelId: string) => {
   const lastAdvancedRef = useRef<number>(0)

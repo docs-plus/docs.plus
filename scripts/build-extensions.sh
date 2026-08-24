@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Build floating-popover + floating-tooltip + publishable extension dist/ trees (CI + local).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

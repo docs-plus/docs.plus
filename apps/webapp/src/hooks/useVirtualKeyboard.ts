@@ -8,16 +8,12 @@ import { useEffect, useRef } from 'react'
 export interface UseVirtualKeyboardOptions {
   /** When set, tracking runs only while this media query matches. */
   activeMq?: string
-  /** Reset global keyboard store when inactive or on unmount. */
   clearStoreOnDisable?: boolean
 }
 
 /**
- * Tracks virtual keyboard state for mobile devices.
- * Coalesces with requestAnimationFrame (same frame as layout) — no long debounce, so
- * ToolbarMobile mount and flex layout do not drift after rapid keyboard cycles.
- *
- * CRITICAL: This hook only tracks state - layout is handled by CSS + AppProviders.
+ * Tracks keyboard state only — layout is CSS + AppProviders.
+ * rAF coalesce, no long debounce, so ToolbarMobile does not drift.
  */
 const useVirtualKeyboard = (options: UseVirtualKeyboardOptions = {}) => {
   const { activeMq, clearStoreOnDisable = false } = options

@@ -1,8 +1,3 @@
-/**
- * Skeleton loader for DocumentSettingsPanel when dynamically loaded.
- * Matches the visual structure of the actual panel.
- */
-
 const AccordionSkeleton = () => (
   <div className="rounded-box border-base-300 border p-4">
     <div className="flex items-center gap-2">

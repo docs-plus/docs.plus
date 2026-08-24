@@ -228,7 +228,6 @@ export function createPopover(options: PopoverOptions): Popover {
 
     if (arrowEl && middlewareData.arrow) {
       const { x: ax, y: ay } = middlewareData.arrow
-      // Arrow pins to the side opposite the placement — the same mapping.
       const staticSide = ORIGIN_BY_SIDE[side]!
       arrowEl.className = `floating-popover-arrow floating-popover-arrow-${side}`
       Object.assign(arrowEl.style, {

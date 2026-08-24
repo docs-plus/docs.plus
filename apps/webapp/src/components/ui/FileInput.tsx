@@ -9,21 +9,13 @@ export interface FileInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'type' | 'size'
 > {
-  /** Label text for the file input */
   label?: string
-  /** Size of the file input */
   size?: FileInputSize
-  /** Color variant of the file input */
   color?: FileInputColor
-  /** Whether to use ghost style (no border) */
   ghost?: boolean
-  /** Helper text displayed below the file input */
   helperText?: string
-  /** Error state - shows error styling */
   error?: boolean
-  /** Success state - shows success styling */
   success?: boolean
-  /** Additional wrapper class */
   wrapperClassName?: string
 }
 
@@ -40,7 +32,6 @@ const buildFileInputClasses = (
     classes.push(`file-input-${size}`)
   }
 
-  // Priority: error > success > color
   if (error) {
     classes.push('file-input-error')
   } else if (success) {

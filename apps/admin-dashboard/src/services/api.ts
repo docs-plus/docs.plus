@@ -358,7 +358,6 @@ export async function fetchPushSubscriptionAnalytics(): Promise<PushSubscription
     if (p in platforms) platforms[p]++
   })
 
-  // Subscription health (based on updated_at)
   let fresh = 0,
     ok = 0,
     stale = 0,

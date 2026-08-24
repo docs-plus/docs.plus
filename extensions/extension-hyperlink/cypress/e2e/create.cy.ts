@@ -80,7 +80,7 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     it('rejects obviously invalid URLs with a visible error', () => {
       cy.pressModK()
       cy.get(INPUT).type('not a url{enter}')
-      cy.get(POPOVER).should('be.visible') // stays open
+      cy.get(POPOVER).should('be.visible')
       cy.get(WRAPPER).should('have.class', 'error')
       cy.get(ERROR).should('have.class', 'show').and('be.visible')
       cy.get('#editor a').should('not.exist')
@@ -126,9 +126,6 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     })
 
     it('emits tel:+E.164 when the user types a bare phone number', () => {
-      // Strict E.164: starts with `+`, 8–15 digits. The href is
-      // canonicalized (digits-only after the `+`) per RFC 3966 even
-      // when the user typed formatting.
       cy.pressModK()
       cy.get(INPUT).type('+4733378901{enter}')
       cy.editorFirstLinkHref().should('eq', 'tel:+4733378901')
@@ -141,9 +138,6 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
     })
 
     it('rejects bare numerics that lack the leading + (no false positive on 5551234567)', () => {
-      // A writing surface must NOT silently turn `5551234567` into a
-      // `tel:` link — too many false positives in prose. Only E.164
-      // (`+CCNSN`) is recognized.
       cy.pressModK()
       cy.get(INPUT).type('5551234567{enter}')
       cy.get(POPOVER).should('be.visible')

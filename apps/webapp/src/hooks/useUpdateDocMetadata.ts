@@ -30,7 +30,6 @@ const useUpdateDocMetadata = () => {
   >({
     mutationKey: ['updateDocumentMetadata'],
     mutationFn: async ({ title, description, keywords, documentId, readOnly, isPrivate, slug }) => {
-      // NOTE: This is a hack to get the correct URL in the build time
       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
 
       // Send only defined fields — a default readOnly=false would clobber an owner's lock.

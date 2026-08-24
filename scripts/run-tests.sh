@@ -1,29 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Editor Test Suite Runner
-# Runs unit tests (Jest) + per-package clean-room suites, plus webapp E2E
-# (Cypress), saving results to a report file. Extension order and gates come
-# from scripts/publishable-extensions.ts; webapp Jest follows when --unit/all.
-#
-# Usage:
-#   bun run test                      # unit + E2E, report saved to Notes/
-#   bun run test:unit                 # unit only, report saved to Notes/
-#   bun run test:e2e                  # E2E only, report saved to Notes/
-#   bash scripts/run-tests.sh         # same as `bun run test`
-#   bash scripts/run-tests.sh --unit       # unit only
-#   bash scripts/run-tests.sh --extensions # extension release gates only (CI; set EXTENSION_DIST_READY=1 after build-extensions)
-#   bash scripts/run-tests.sh --e2e   # E2E only
-#   (bash, not sh — the result parsing uses process substitution)
-#
-#   CYPRESS_PARALLEL=N bun run test:e2e   # control E2E worker count
-#
-# Prerequisites:
-#   - For E2E tests: dev server must be running (`make dev-local`)
-#   - Cypress is managed at the monorepo root (bunx cypress)
-#
-# Output:
-#   Notes/test-results-YYYY-MM-DD_HHMMSS.txt
-# =============================================================================
+# Unit + clean-room + webapp E2E. Gate order: scripts/publishable-extensions.ts.
+# Usage: bash scripts/run-tests.sh [--unit | --extensions | --e2e | all]
+# Needs bash (process substitution). E2E needs make dev-local. Report → Notes/.
 
 set -o pipefail
 
@@ -52,8 +30,6 @@ E2E_EXIT=0
 
 # Set by CI after scripts/build-extensions.sh — skips per-package pretest rebuilds.
 EXTENSION_DIST_READY="${EXTENSION_DIST_READY:-0}"
-
-# ─── Parse arguments ─────────────────────────────────────────────────────────
 
 case "${1:-all}" in
   --unit)  RUN_EXTENSION_GATES=true; RUN_WEBAPP_UNIT=true ;;
@@ -93,8 +69,6 @@ record_extension_gate() {
   echo ""
 }
 
-# ─── Preflight checks ────────────────────────────────────────────────────────
-
 mkdir -p "$REPORT_DIR"
 
 if $RUN_E2E; then
@@ -112,8 +86,6 @@ if $RUN_E2E; then
   fi
 fi
 
-# ─── Report header ───────────────────────────────────────────────────────────
-
 {
   echo "============================================================================="
   echo " TEST REPORT — docs.plus editor"
@@ -130,8 +102,6 @@ echo -e "${BOLD} docs.plus — Editor Test Suite${NC}"
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "  Report: ${BLUE}${REPORT}${NC}"
 echo ""
-
-# ─── Extension release gates + webapp Jest ───────────────────────────────────
 
 if $RUN_EXTENSION_GATES; then
   if $RUN_WEBAPP_UNIT; then
@@ -152,7 +122,6 @@ if $RUN_EXTENSION_GATES; then
 
   EXTENSION_GATES_EXIT=0
 
-  # Build --only args from EXT_ONLY (space-separated dir names; empty = all five).
   ONLY_ARGS=()
   if [ -n "${EXT_ONLY:-}" ]; then
     for e in $EXT_ONLY; do ONLY_ARGS+=(--only "$e"); done
@@ -193,15 +162,12 @@ if $RUN_EXTENSION_GATES; then
   echo ""
 fi
 
-# ─── Helper: parse Cypress "(Run Finished)" summary table ───────────────────
-# Cypress wraps long spec paths across 2 lines. The data line always has the
-# numbers; continuation lines only have the filename tail. We also parse the
-# totals line ("All specs passed!" / "N of N failed").
+# Cypress wraps long spec paths across 2 lines. The data line has the numbers;
+# continuation lines only have the filename tail. Also parse the totals line.
 # Outputs: STATUS|SPEC_NAME|DURATION|TESTS|PASSING|FAILING|PENDING|SKIPPED
 parse_cypress_results() {
   local logfile="$1"
 
-  # Extract only the table section, strip box-drawing chars, keep lines with numbers
   sed -n '/(Run Finished)/,/(All specs passed\|specs\? failed)/p' "$logfile" \
     | sed 's/[│┤├┌┐└┘─]//g' \
     | grep -E '(✔|✖).*[0-9]' \
@@ -213,7 +179,6 @@ parse_cypress_results() {
         local status spec duration tests passing failing pending skipped
         status=$(echo "$clean" | grep -oE '^(✔|✖)' || echo '?')
 
-        # Spec name: everything between status and first time/number field
         spec=$(echo "$clean" | sed 's/^[✔✖][ ]*//' | awk '{
           for(i=1;i<=NF;i++) {
             if($i ~ /^[0-9]+:[0-9]+$/ || $i ~ /^[0-9]+m?s$/) break
@@ -223,7 +188,7 @@ parse_cypress_results() {
 
         duration=$(echo "$clean" | grep -oE '[0-9]+:[0-9]+|[0-9]+m?s' | head -1)
 
-        # Last 5 fields are always: Tests Passing Failing Pending Skipped
+        # Last 5 fields: Tests Passing Failing Pending Skipped
         read -r tests passing failing pending skipped <<< "$(echo "$clean" | awk '{
           n=0
           for(i=1;i<=NF;i++) {
@@ -237,7 +202,6 @@ parse_cypress_results() {
       done
 }
 
-# ─── Helper: format seconds to human readable ──────────────────────────────
 fmt_duration() {
   local secs=$1
   if [ "$secs" -ge 60 ]; then
@@ -246,8 +210,6 @@ fmt_duration() {
     printf "%ds" "$secs"
   fi
 }
-
-# ─── E2E tests (Cypress) ─────────────────────────────────────────────────────
 
 if $RUN_E2E; then
   STEP="[2/2]"
@@ -270,7 +232,6 @@ if $RUN_E2E; then
 
   E2E_WORKER_EXIT=0
 
-  # ── Webapp E2E tests — split across parallel workers ──────────────────────
   echo -e "${BOLD}  Running webapp E2E tests (${CYPRESS_PARALLEL} workers, with baseUrl)...${NC}"
   echo ""
 
@@ -300,7 +261,6 @@ if $RUN_E2E; then
 
   echo ""
 
-  # ── Live progress monitor ───────────────────────────────────────────────
   WORKERS_REMAINING=$CYPRESS_PARALLEL
   while [ $WORKERS_REMAINING -gt 0 ]; do
     sleep 5
@@ -357,10 +317,6 @@ if $RUN_E2E; then
     echo ""
   } >> "$REPORT"
 
-  # ════════════════════════════════════════════════════════════════════════════
-  #  AGGREGATED RESULTS
-  # ════════════════════════════════════════════════════════════════════════════
-
   echo ""
   echo ""
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -368,7 +324,6 @@ if $RUN_E2E; then
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo ""
 
-  # ── Per-worker summary table ────────────────────────────────────────────
   echo -e "${BOLD}  Worker Summary${NC}"
   echo -e "  ┌────────┬────────┬───────┬────────┬─────────┬──────────┐"
   echo -e "  │ Worker │ Status │ Specs │ Passed │ Failed  │ Duration │"
@@ -424,7 +379,6 @@ if $RUN_E2E; then
   echo -e "  └────────┴────────┴───────┴────────┴─────────┴──────────┘"
   echo ""
 
-  # ── Aggregated totals ───────────────────────────────────────────────────
   echo -e "${BOLD}  Totals${NC}"
   echo -e "    Spec files:   ${CYAN}${TOTAL_SPECS}${NC}"
   echo -e "    Tests:        ${CYAN}${TOTAL_TESTS}${NC}"
@@ -442,11 +396,9 @@ if $RUN_E2E; then
   fi
   echo ""
 
-  # A spec glob narrower than the tree drops specs silently, and the totals then
-  # report a denominator that hides them. Editor-only globbing hid 10 specs for
-  # two months, so compare against the tree and fail the run on any shortfall.
-  # Mirrors excludeSpecPattern in apps/webapp/cypress.config.ts — Cypress skips
-  # those, so counting them here would fail the run for specs it never ran.
+  # A narrower spec glob drops files silently; totals then hide the shortfall.
+  # Editor-only globbing hid 10 specs for two months — compare against the tree.
+  # Skip `manual-browser-test` to match excludeSpecPattern in cypress.config.ts.
   DISCOVERED_SPECS=$(find "$WEBAPP_DIR/cypress/e2e" \
     \( -name '*.cy.js' -o -name '*.cy.ts' \) -type f \
     -not -path '*manual-browser-test*' 2>/dev/null | wc -l | tr -d ' ')
@@ -463,7 +415,6 @@ if $RUN_E2E; then
     echo ""
   fi
 
-  # ── Timing statistics ──────────────────────────────────────────────────
   echo -e "${BOLD}  Timing${NC}"
   echo -e "    Wall clock:          ${CYAN}$(fmt_duration $E2E_TOTAL_SECS)${NC}"
   echo -e "    Worker pass:         $(fmt_duration $WORKER_WALL_SECS)"
@@ -476,7 +427,6 @@ if $RUN_E2E; then
   fi
   echo ""
 
-  # ── Failed specs detail ─────────────────────────────────────────────────
   if [ $TOTAL_FAILED -gt 0 ]; then
     echo -e "${BOLD}  Failed Specs${NC}"
     echo ""
@@ -496,7 +446,6 @@ if $RUN_E2E; then
     echo ""
     for i in "${!WORKER_EXITS[@]}"; do
       if [ "${WORKER_EXITS[$i]}" != "0" ] && [ "${WORKER_EXITS[$i]}" != "-" ]; then
-        # Extract the failing test names and their errors
         grep -B 1 -A 3 'AssertionError\|CypressError\|Error:.*Timed out' \
           "$WORKER_LOGS_DIR/worker-${i}.log" 2>/dev/null | while IFS= read -r eline; do
           echo -e "    ${DIM}W$((i + 1))${NC} $eline"
@@ -509,7 +458,6 @@ if $RUN_E2E; then
   echo -e "  ${DIM}Worker logs: ${WORKER_LOGS_DIR}/${NC}"
   echo ""
 
-  # ── Auto-update timings.json for load balancing ──────────────────────────
   TIMINGS_FILE="$WEBAPP_DIR/cypress/timings.json"
   TIMINGS_TMP=$(mktemp)
   # Cypress wraps long names in its summary table, and the parser reads only the
@@ -561,8 +509,6 @@ if $RUN_E2E; then
 
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 fi
-
-# ─── Final Summary ────────────────────────────────────────────────────────────
 
 OVERALL_EXIT=0
 

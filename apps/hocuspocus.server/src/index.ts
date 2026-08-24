@@ -101,7 +101,6 @@ const documentConversionModule = documentConversion.init({
 app.route('/api/documents', documentConversionModule.router)
 app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
 app.route('/api/email', emailRouter)
-// /api/push removed — push notifications go through the pgmq consumer.
 app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
   redis: getRedisClient(),
@@ -124,8 +123,7 @@ app.onError((err, c) => {
   return c.json(getErrorResponse(err instanceof Error ? err : new Error(String(err))), status)
 })
 
-// Initialize gateways (queue-only mode - workers run in hocuspocus-worker)
-// This allows rest-api to scale to multiple replicas without duplicate workers
+// Queue-only here so rest-api replicas do not start duplicate workers.
 emailGateway.initialize(false).catch((err) => {
   restApiLogger.error({ err }, 'Failed to initialize email gateway')
   captureUnknown(err)

@@ -97,7 +97,6 @@ function flattenNode(node: PMNode): PMNode[] {
     const newContent: PMNode[] = []
     for (const child of node.content) {
       if (child.type === 'heading') {
-        // Heading inside a non-heading container: extract and flatten at this level
         newContent.push(...flattenHeading(child))
       } else {
         newContent.push({

@@ -7,7 +7,6 @@ import { isValidXUrl } from '../nodes/x/helper'
 import { isValidYoutubeUrl } from '../nodes/youtube/helper'
 import { isAudioUrl, isVideoUrl } from './mediaUrl'
 
-/** Every media node `.name`, the source of truth for which node a URL inserts. */
 export type MediaNodeType =
   'image' | 'video' | 'audio' | 'youtube' | 'vimeo' | 'soundcloud' | 'spotify' | 'loom' | 'x'
 

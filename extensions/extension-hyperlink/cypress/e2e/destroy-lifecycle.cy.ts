@@ -1,11 +1,5 @@
 /// <reference types="cypress" />
 
-/**
- * Editor-destroy lifecycle for the popover singleton. Destroying the editor
- * that opened a popover tears it down, with no leaked body-appended DOM.
- * Destroying an unrelated editor must leave the popover untouched.
- */
-
 const PREVIEW = '.hyperlink-preview-popover'
 const DOC = '<p>Visit <a href="https://example.com">Example</a> now.</p>'
 
@@ -54,12 +48,6 @@ describe('destroy lifecycle — popover ownership', () => {
   })
 })
 
-/**
- * `createPopover` is public API, so a BYO consumer can drive show/hide directly.
- * Hiding releases controller ownership and nothing re-adopts. Re-showing would
- * leave a popover on screen that `close()` cannot see and the next `adopt()`
- * will not evict — two popovers at once. `hide()` is terminal instead.
- */
 describe('popover one-shot contract', () => {
   beforeEach(() => {
     cy.visitPlayground()
@@ -134,8 +122,6 @@ describe('popover one-shot contract', () => {
     })
   })
 
-  // The terminal flag must not break the ordinary create -> show path, which is
-  // what every first-party opener does.
   it('still opens normally on a fresh popover', () => {
     cy.window().then((win) => {
       const popover = openBarePopover(win)

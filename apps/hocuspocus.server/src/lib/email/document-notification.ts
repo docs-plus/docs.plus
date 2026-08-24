@@ -1,10 +1,3 @@
-/**
- * Document Notification Emails
- *
- * Sends notification emails when new documents are created.
- * Uses the shared template system for consistent design.
- */
-
 import { renderNewDocumentEmail } from '@docs.plus/email-templates'
 
 import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
@@ -23,10 +16,7 @@ interface NewDocumentEmailParams {
   createdAt: Date
 }
 
-/**
- * Sends notification email when a new document is created
- * Only sends in production environment to avoid noise during development
- */
+/** Production only — skips in development so local first-saves do not mail. */
 export const sendNewDocumentNotification = async (
   params: NewDocumentEmailParams
 ): Promise<boolean> => {
@@ -42,7 +32,6 @@ export const sendNewDocumentNotification = async (
     return false
   }
 
-  // Parse comma-separated email list
   const recipients = notificationEmails
     .split(',')
     .map((email) => email.trim())

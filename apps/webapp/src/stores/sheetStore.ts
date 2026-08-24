@@ -12,7 +12,6 @@ export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
  */
 const SHEET_TRANSITION_DELAY_MS = 250
 
-/** Per-sheet contextual payload. */
 export interface SheetDataMap {
   notifications: Record<string, never>
   filters: Record<string, never>
@@ -43,10 +42,9 @@ export interface SheetDataMap {
     onBack?: () => void
   }
   /**
-   * Mobile media-controls sheet. The hypermultimedia kit's `mediaToolbar`
-   * factory returns `null` on mobile and opens this with a stable `keyId`
-   * so collab edits cannot stale the target node. Position resolves at apply
-   * time via `findMediaNodePosByKeyId`. No global reads.
+   * Mobile media-controls sheet. `mediaToolbar` returns null on mobile and
+   * opens this with a stable `keyId` so collab edits cannot stale the node.
+   * Position resolves at apply via `findMediaNodePosByKeyId`. No global reads.
    */
   mediaControls: {
     editor: Editor
@@ -76,7 +74,6 @@ interface PendingSheet {
 }
 
 interface SheetStore {
-  /** null = no sheet open. */
   activeSheet: SheetType
   sheetState: SheetState
   sheetData: SheetData
@@ -86,10 +83,6 @@ interface SheetStore {
   openSheet: <K extends keyof SheetDataMap>(sheet: K, data?: SheetDataMap[K]) => void
   closeSheet: () => void
   setSheetState: (state: SheetState) => void
-  /**
-   * Close the current sheet, then open a new one after the close animation.
-   * If no sheet is active, opens immediately.
-   */
   switchSheet: <K extends keyof SheetDataMap>(sheet: K, data?: SheetDataMap[K]) => void
   clearPendingSheet: () => void
 }
@@ -131,7 +124,6 @@ export const useSheetStore = create<SheetStore>()(
   }))
 )
 
-// Auto-open a pending sheet once the close animation has completed.
 useSheetStore.subscribe(
   (state) => state.sheetState,
   (sheetState, prevSheetState) => {

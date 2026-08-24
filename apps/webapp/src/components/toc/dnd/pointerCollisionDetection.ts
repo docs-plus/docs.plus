@@ -1,9 +1,5 @@
 import type { CollisionDetection, DroppableContainer } from '@dnd-kit/core'
 
-/**
- * Custom collision detection that uses pointer Y position
- * to find the closest droppable container
- */
 export const pointerYCollision: CollisionDetection = ({
   droppableRects,
   droppableContainers,
@@ -26,7 +22,6 @@ export const pointerYCollision: CollisionDetection = ({
     collisions.push({ id: String(container.id), container, distance })
   }
 
-  // Sort by distance (closest first)
   collisions.sort((a, b) => a.distance - b.distance)
 
   return collisions.map(({ id, container }) => ({
@@ -35,9 +30,6 @@ export const pointerYCollision: CollisionDetection = ({
   }))
 }
 
-/**
- * Determine if pointer is in top or bottom half of an element
- */
 export function getPointerPosition(
   pointerY: number,
   rect: { top: number; height: number },
@@ -46,7 +38,6 @@ export function getPointerPosition(
   const middle = rect.top + rect.height / 2
   const deadZone = 4 // px hysteresis to prevent flickering
 
-  // If we have a current position, require moving past dead zone to switch
   if (currentPosition) {
     if (currentPosition === 'before' && pointerY < middle + deadZone) return 'before'
     if (currentPosition === 'after' && pointerY > middle - deadZone) return 'after'

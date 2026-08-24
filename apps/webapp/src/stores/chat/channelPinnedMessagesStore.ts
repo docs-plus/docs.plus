@@ -1,6 +1,5 @@
 import { immer } from 'zustand/middleware/immer'
 
-// Define the state interface
 export interface ChannelPinnedMessagesState {
   pinnedMessages: Map<string, Map<string, any>>
   addChannelPinnedMessage: (channelId: string, message: any) => void
@@ -8,7 +7,6 @@ export interface ChannelPinnedMessagesState {
   bulkSetChannelPinnedMessages: (channelId: string, messages: any[]) => void
 }
 
-// Implement the store with immer and support for channelId
 const channelPinnedMessagesStore = immer<ChannelPinnedMessagesState>((set) => ({
   pinnedMessages: new Map(),
 

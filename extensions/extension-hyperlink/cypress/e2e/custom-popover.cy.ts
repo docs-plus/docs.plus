@@ -1,10 +1,5 @@
 /// <reference types="cypress" />
 
-// Pins the BYO factory contract the README's "Custom popover factories"
-// snippets rely on. The playground's `?popover=custom` mode records every
-// factory invocation on `window._byo`, so assertions target the live object
-// graph rather than the rendered DOM.
-
 const BYO_CREATE = '.byo-create-popover'
 const BYO_PREVIEW = '.byo-preview-popover'
 const BYO_CREATE_IN_CONTENT = `.floating-popover-content ${BYO_CREATE}`
@@ -104,7 +99,6 @@ describe('BYO popover factories — README public contract', () => {
         expect(opts.link.href).to.contain('example.com')
         expect(opts.attrs.href).to.equal('https://example.com')
         expect(typeof opts.nodePos).to.equal('number')
-        // Same reference-equality guarantee as the create factory.
         expect(opts.validate).to.equal(win._byo!.configuredValidate)
       })
     })
@@ -119,12 +113,8 @@ describe('BYO popover factories — README public contract', () => {
       expectByoVisible(BYO_PREVIEW)
       cy.get(BYO_REMOVE).click()
 
-      // `getDefaultController().close()` from the factory tears down the whole popover.
       cy.get('.floating-popover').should('not.exist')
 
-      // `editor.chain().unsetHyperlink().run()` strips the anchor, keeps the
-      // text, and — critically — clears the mark from the editor's doc
-      // state, not just the rendered DOM.
       cy.get('#editor a').should('not.exist')
       cy.get('#editor').should('contain.text', 'Example')
       cy.window().then((win) => {
@@ -139,10 +129,6 @@ describe('BYO popover factories — README public contract', () => {
 
   describe('exported helpers referenced by the README', () => {
     it('getDefaultController().reposition(ref) repositions the active popover', () => {
-      // README.md (under "Custom popover factories") promises:
-      //   "Popover content can control the floating popover via
-      //    getDefaultController().close() and getDefaultController().reposition(ref)".
-      // This pins the second half of that sentence.
       cy.setEditorContent('<p>Select this word.</p>')
       cy.selectText('word')
       openByoCreateViaModK()
@@ -185,9 +171,6 @@ describe('BYO popover factories — README public contract', () => {
     })
 
     it('DANGEROUS_SCHEME_RE tolerates case variance and leading whitespace', () => {
-      // The base positive/negative matrix is owned by `xss-guards.cy.ts`.
-      // This spec only pins the two tolerance rules that directly affect
-      // anyone building their own validator from the README example.
       cy.window().then((win) => {
         const re = win._hyperlink.DANGEROUS_SCHEME_RE
         expect(re.test('JavaScript:alert(1)'), 'case-insensitive').to.equal(true)

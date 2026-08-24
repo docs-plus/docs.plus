@@ -1,13 +1,9 @@
 import { z } from 'zod'
 
 /**
- * Request wire contract. Treat as published API: additive changes only
- * within v1; breaking changes mint a new path.
- *
- * The scheme guard rejects non-http(s) URLs at the HTTP edge so the
- * router's `INVALID_URL` error message stays honest. The pipeline's
- * SSRF guard would catch them anyway, but failing fast at validation
- * keeps the wire contract truthful and skips a pipeline allocation.
+ * Additive v1 contract. Scheme guard at the HTTP edge so INVALID_URL stays
+ * honest; SSRF would catch non-http(s) anyway, but validation skips a
+ * pipeline run.
  */
 export const metadataQuerySchema = z.object({
   url: z

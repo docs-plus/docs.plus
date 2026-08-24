@@ -27,7 +27,7 @@ import { getServiceRoleClient } from './lib/supabase'
 import { startWorkerMetricsSampling } from './lib/workerMetricsSampler'
 import { MACHINE_VERSION_TRIGGERS } from './types'
 
-const CLEANUP_INTERVAL_MS = config.worker.idempotencyCleanupIntervalMs // 1 hour default
+const CLEANUP_INTERVAL_MS = config.worker.idempotencyCleanupIntervalMs
 
 async function cleanupExpiredLogs() {
   try {
@@ -193,11 +193,9 @@ workerLogger.info({
   }
 })
 
-// Initialize email gateway with worker mode (processes email jobs)
 await emailGateway.initialize(true)
 workerLogger.info('📧 Email gateway worker initialized')
 
-// Initialize push gateway with worker mode (processes push jobs)
 await pushGateway.initialize(true)
 workerLogger.info('🔔 Push gateway worker initialized')
 
@@ -414,7 +412,7 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
-// Handle uncaught errors - DON'T exit for transient errors
+// Don't exit for transient errors
 process.on('uncaughtException', (err) => {
   workerLogger.error({ err }, '💥 Uncaught exception in worker')
   captureUnknown(err)

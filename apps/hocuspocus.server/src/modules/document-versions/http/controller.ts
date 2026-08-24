@@ -169,7 +169,6 @@ export const createGetVersionHandler =
     return ok(c, body)
   }
 
-/** Same three dependencies as the list route: Prisma plus the fail-soft profile hop. */
 export type DiffControllerDeps = ListControllerDeps
 
 // Not a cache — a byte-identical pair is ordinary. A checkpoint deliberately

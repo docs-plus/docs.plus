@@ -11,19 +11,18 @@ export interface MediaActionAnchor {
   after?: string
 }
 
-/** Immutable lego-style editor for the resolved action list — every method returns a new builder. */
 export interface MediaActionsBuilder {
-  /** Insert (or move, if the id already exists) a brick at the anchor. */
+  /** Insert, or move if the id already exists. */
   add(action: MediaAction, at?: MediaActionAnchor): MediaActionsBuilder
   remove(...ids: string[]): MediaActionsBuilder
-  /** Reposition an existing brick; no-op if the id is absent. */
+  /** No-op if the id is absent. */
   move(id: string, at: MediaActionAnchor): MediaActionsBuilder
-  /** Swap a brick's definition in place; no-op if the id is absent. */
+  /** No-op if the id is absent. */
   replace(id: string, action: MediaAction): MediaActionsBuilder
   setPlacement(id: string, placement: MediaActionPlacement): MediaActionsBuilder
   toInline(id: string): MediaActionsBuilder
   toOverflow(id: string): MediaActionsBuilder
-  /** Order listed ids first (in the given sequence); unlisted bricks keep their relative order after. */
+  /** Listed ids first; unlisted bricks keep their relative order after. */
   order(ids: string[]): MediaActionsBuilder
   has(id: string): boolean
   result(): MediaActionList
@@ -102,18 +101,16 @@ function make(list: MediaActionList): MediaActionsBuilder {
   }
 }
 
-/** Start a lego-style edit over a resolved action list (typically the `mediaActions` `defaults`). */
 export function composeMediaActions(actions: MediaActionList): MediaActionsBuilder {
   return make(actions.slice())
 }
 
-/** Declarative row layout by id; unlisted known actions keep their placement and append after. */
+/** Unlisted known actions keep their placement and append after. */
 export interface MediaToolbarLayout {
   inline?: string[]
   overflow?: string[]
 }
 
-/** Sugar: a `mediaActions` resolver that arranges the inline and overflow rows by id. */
 export function layoutMediaActions(
   layout: MediaToolbarLayout | ((ctx: { nodeType: string }) => MediaToolbarLayout)
 ): MediaActionsResolver {

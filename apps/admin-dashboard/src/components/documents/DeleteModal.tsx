@@ -20,16 +20,11 @@ interface DeleteModalProps {
   isDeleting: boolean
 }
 
-/**
- * Delete confirmation modal with document details and impact preview
- * Requires user to type the document slug to confirm deletion
- */
 export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: DeleteModalProps) {
   const [confirmInput, setConfirmInput] = useState('')
   const [impact, setImpact] = useState<DeletionImpact | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Fetch impact when modal opens
   useEffect(() => {
     if (isOpen && doc) {
       setConfirmInput('')
@@ -58,7 +53,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-md">
-        {/* Header */}
         <div className="border-base-300 flex items-start gap-4 border-b pb-4">
           <div className="bg-error/10 rounded-xl p-3">
             <LuTrash2 className="text-error h-6 w-6" />
@@ -78,10 +72,8 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
           </div>
         ) : (
           <div className="space-y-5 py-5">
-            {/* Document Card */}
             <div className="card bg-base-200 border-base-300 border">
               <div className="card-body gap-3 p-4">
-                {/* Title & Slug */}
                 <div>
                   <h4 className="line-clamp-1 text-base font-semibold">
                     {doc.title || 'Untitled Document'}
@@ -91,9 +83,7 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
                   </code>
                 </div>
 
-                {/* Meta Grid */}
                 <div className="border-base-300 grid grid-cols-2 gap-3 border-t pt-2">
-                  {/* Owner */}
                   <div className="flex items-center gap-2">
                     <div className="bg-base-300 rounded-lg p-1.5">
                       <LuUser className="text-base-content/60 h-3.5 w-3.5" />
@@ -108,7 +98,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
                     </div>
                   </div>
 
-                  {/* Versions */}
                   <div className="flex items-center gap-2">
                     <div className="bg-base-300 rounded-lg p-1.5">
                       <LuHistory className="text-base-content/60 h-3.5 w-3.5" />
@@ -121,7 +110,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
                     </div>
                   </div>
 
-                  {/* Channels */}
                   <div className="flex items-center gap-2">
                     <div className="bg-base-300 rounded-lg p-1.5">
                       <LuMessageSquare className="text-base-content/60 h-3.5 w-3.5" />
@@ -140,7 +128,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
                     </div>
                   </div>
 
-                  {/* Created */}
                   <div className="flex items-center gap-2">
                     <div className="bg-base-300 rounded-lg p-1.5">
                       <LuCalendar className="text-base-content/60 h-3.5 w-3.5" />
@@ -156,7 +143,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
               </div>
             </div>
 
-            {/* Warning Alert */}
             {impact?.workspace && (
               <div className="alert bg-warning/10 border-warning/20 text-warning-content border">
                 <LuTriangleAlert className="text-warning h-5 w-5 shrink-0" />
@@ -170,7 +156,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
               </div>
             )}
 
-            {/* Confirmation Input */}
             <div className="form-control">
               <label className="label pb-1">
                 <span className="label-text text-sm">
@@ -195,7 +180,6 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
           </div>
         )}
 
-        {/* Actions */}
         <div className="border-base-300 flex gap-3 border-t pt-4">
           <button
             type="button"

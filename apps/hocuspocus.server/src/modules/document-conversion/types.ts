@@ -5,7 +5,6 @@ export type { TiptapDocJson }
 export type ExportFormat = 'docx' | 'md' | 'odt'
 export type ImportFormat = 'docx' | 'md'
 
-/** Narrows the untyped JSON this module walks; shared by every domain stage. */
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 

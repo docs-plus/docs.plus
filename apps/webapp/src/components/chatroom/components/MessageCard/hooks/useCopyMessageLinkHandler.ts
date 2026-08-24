@@ -3,10 +3,6 @@ import { useStore } from '@stores'
 import { TMsgRow } from '@types'
 import { useCallback } from 'react'
 
-/**
- * Hook for copying message deep links to clipboard.
- * Uses the shared useCopyToClipboard hook for consistent UX.
- */
 export const useCopyMessageLinkHandler = () => {
   const { copy, copied, copying } = useCopyToClipboard({
     successMessage: 'Message link copied to clipboard'

@@ -38,23 +38,18 @@ const ANY_URL = {
   resolve: (url: string) => (isSafeMediaSrc(url, { allowInlineImage: true }) ? url : null)
 }
 
-/** Contract handed to a `replaceUrlPopover` factory. `nodePos` is a snapshot at open; `apply` re-validates, commits the normalized URL, and closes. */
 export interface ReplaceUrlPopoverOptions {
   editor: Editor
   nodeType: string
   nodePos: number
-  /** Current `src`, for prefilling the editor UI. */
   src: string
-  /** Error message for an invalid URL, `null` when it passes the node's guard. */
   validate: (url: string) => string | null
   apply: (url: string) => void
   close: () => void
 }
 
-/** Return the popover content, or `null` to opt out so the host renders its own surface. */
 export type ReplaceUrlPopoverFactory = (options: ReplaceUrlPopoverOptions) => HTMLElement | null
 
-/** Prebuilt popover content: prefilled URL field, Replace confirm, inline error. */
 export const createReplaceUrlPopover: ReplaceUrlPopoverFactory = (options) => {
   const body = document.createElement('div')
   body.className = 'media-toolbar__submenu'
@@ -106,7 +101,6 @@ export const createReplaceUrlPopover: ReplaceUrlPopoverFactory = (options) => {
   return body
 }
 
-/** Open the URL editor in a dialog popover anchored to the media node (bottom, flipping to top). A `replaceUrlPopover` factory returning `null` opts out entirely. */
 export function openReplaceUrlPopover(ctx: MediaActionContext): void {
   const factory = getKitStorage(ctx.editor).replaceUrlPopover ?? createReplaceUrlPopover
   const guard = REPLACE_URL_GUARDS[ctx.nodeType] ?? ANY_URL

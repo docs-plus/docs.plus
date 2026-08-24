@@ -2,9 +2,7 @@ import toast from 'react-hot-toast'
 import { twMerge } from 'tailwind-merge'
 
 export interface LoadingToastOptions {
-  /** Toast ID for programmatic dismissal */
   id?: string
-  /** Additional CSS classes */
   className?: string
 }
 
@@ -31,7 +29,7 @@ export const Loading = (content: React.ReactNode, options?: LoadingToastOptions)
     ),
     {
       id: options?.id,
-      duration: Infinity // Loading toasts persist until dismissed
+      duration: Infinity
     }
   )
 }

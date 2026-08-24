@@ -1,5 +1,3 @@
-/** Shared Cypress markdown helpers for extension clean-room playgrounds. */
-
 export type PlaygroundMarkdownWindow = {
   _editor?: { commands: { setContent: (json: unknown) => void } }
   _getMarkdown?: () => string
@@ -7,7 +5,7 @@ export type PlaygroundMarkdownWindow = {
 }
 
 export type RegisterMarkdownCommandsOptions = {
-  /** Webapp TitleDocument requires a top-level H1; prepend one when markdown omits it. */
+  /** TitleDocument requires a top-level H1; prepend one when markdown omits it. */
   ensureTitleDocumentH1?: boolean
 }
 

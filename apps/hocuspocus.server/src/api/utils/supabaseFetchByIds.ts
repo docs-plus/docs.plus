@@ -1,10 +1,5 @@
 import { supabaseRest } from './supabase'
 
-/**
- * Fetch PostgREST rows where `column` matches any of `ids`, returning the parsed
- * JSON array (or `[]` for empty ids / unconfigured client / non-array body).
- * Fetch and JSON errors propagate so each caller keeps its own try/catch + log.
- */
 export async function fetchByIds(
   table: string,
   column: string,

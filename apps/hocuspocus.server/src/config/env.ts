@@ -77,7 +77,6 @@ export const config = {
     rateLimitMax: env.RATE_LIMIT_MAX
   },
 
-  // Email (SMTP via Nodemailer)
   email: {
     fromEmail: env.EMAIL_FROM || env.SMTP_USER || 'noreply@docs.plus',
     fromName: env.SMTP_FROM_NAME,
@@ -97,7 +96,6 @@ export const config = {
     }
   },
 
-  // Push Notifications (VAPID for Web Push)
   push: {
     vapid: {
       publicKey: env.VAPID_PUBLIC_KEY,

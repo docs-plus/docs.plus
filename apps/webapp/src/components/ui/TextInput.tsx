@@ -7,35 +7,20 @@ export type InputColor =
   'neutral' | 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error'
 
 export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
-  /** Label text for the input */
   label?: string
-  /** Position of the label: 'inside' (inline), 'floating', or 'above' */
   labelPosition?: 'inside' | 'floating' | 'above'
-  /** Size of the input */
   size?: InputSize
-  /** Color variant of the input */
   color?: InputColor
-  /** Whether to use ghost style (no border) */
   ghost?: boolean
-  /** Icon component or element to display at the start */
   startIcon?: IconType | ReactNode
-  /** Icon component or element to display at the end */
   endIcon?: IconType | ReactNode
-  /** Size of icons (default based on input size) */
   iconSize?: number
-  /** Extra class on the label text (inside and above). */
   labelClassName?: string
-  /** Helper text displayed below the input */
   helperText?: string
-  /** Error state - shows error styling */
   error?: boolean
-  /** Success state - shows success styling */
   success?: boolean
-  /** Options for datalist autocomplete */
   datalist?: string[]
-  /** Additional wrapper class */
   wrapperClassName?: string
-  /** Additional class for the input container (the element with 'input' class) */
   containerClassName?: string
 }
 

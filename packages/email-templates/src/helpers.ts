@@ -1,7 +1,4 @@
-/**
- * Reusable HTML builders used inside eta templates via `it.h.*()`.
- * Each function returns an HTML string safe for raw injection (`<%~ %>`).
- */
+/** Helpers return HTML for raw `<%~ %>` injection. */
 
 import { APP_NAME, APP_URL, COLORS, FONT_STACK, RADIUS, SPACING } from './tokens'
 
@@ -152,7 +149,6 @@ export const templateHelpers = {
   footerLinks,
   truncate,
   escapeHtml,
-  // tokens available in templates
   COLORS,
   FONT_STACK,
   SPACING,

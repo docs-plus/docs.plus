@@ -1,9 +1,8 @@
 #!/usr/bin/env bun
 /**
- * Shared `prepack` hook ("prepack": "release-prepack") — never fork it into a
- * package's local `scripts/` (AGENTS.md "Shared Library Config"). Copies the root
- * `LICENSE` in so the tarball ships one, because the per-package copy is
- * `.gitignore`d. Symlinks fail (bun pack drops them) and hard links fail (they drift).
+ * Shared `prepack` hook. Copies root LICENSE into the tarball (per-package copy
+ * is gitignored). Do not fork into a package's local scripts/. Symlinks fail
+ * (bun pack drops them); hard links fail (they drift).
  */
 
 import { copyFileSync, existsSync } from 'node:fs'

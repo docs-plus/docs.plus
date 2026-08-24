@@ -14,7 +14,6 @@ import {
 import { ContextActionsMenu } from './components/ContextActionsMenu'
 import { HighlightedMessageCard } from './components/HighlightedMessageCard'
 
-// Context for passing hideMenu to child components
 const MessageLongPressMenuContext = createContext<{ hideMenu: () => void } | null>(null)
 
 export const useMessageLongPressMenu = () => {
@@ -31,7 +30,6 @@ type Props = {
 }
 
 export const MessageLongPressMenu = ({ children, message }: Props) => {
-  // Initialize hooks in correct order
   const { isLongPressMenuVisible, isMenuEnterAnimationActive, menuOverlayRef, showMenu, hideMenu } =
     useMenuVisibility()
 
@@ -69,7 +67,6 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
         const { rect, cardEl } = result
         setInitialPositions(rect)
 
-        // Reset the transform scale
         const chatBubble = cardEl?.querySelector('.chat-bubble') as HTMLElement
         if (cardEl && chatBubble) {
           chatBubble.style.transform = 'scale(1)'
@@ -91,13 +88,12 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
     ]
   )
 
-  // Set the activation callback
   setOnActivation(handleLongPressActivation)
 
   const closeLongPressMenu = useCallback(() => {
     hideMenu()
     clearHighlighting()
-    setLongPressCompleted(false) // Reset completion state when menu closes
+    setLongPressCompleted(false)
   }, [hideMenu, clearHighlighting, setLongPressCompleted])
 
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
@@ -113,7 +109,6 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
     }
   }, [])
 
-  // Trigger completion when menu animation becomes active
   useEffect(() => {
     if (isMenuEnterAnimationActive) setLongPressCompleted(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,13 +144,11 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
                 opacity: isMenuEnterAnimationActive ? 1 : 0
               }}
               onClick={closeLongPressMenu}>
-              {/* Highlighted Message Card - Fixed at original or adjusted position */}
               <HighlightedMessageCard
                 messageElement={highlightedMessageElement}
                 messageBounds={adjustedMessageBounds || originalMessageBounds}
                 isVisible={isMenuEnterAnimationActive}
               />
-              {/* Quick Reaction Menu - Above message */}
               <QuickReactionMenu
                 ref={quickReactionMenuRef}
                 position={quickReactionMenuPosition}
@@ -164,7 +157,6 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
                 onReactionSelect={handleEmojiReaction}
                 message={message}
               />
-              {/* Context Actions Menu - Below message */}
               <ContextActionsMenu
                 ref={contextActionsMenuRef}
                 position={contextMenuPosition}

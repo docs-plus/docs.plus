@@ -22,7 +22,6 @@ type TocRowTrailProps = {
   maxAvatars?: number
 }
 
-/** Heading Chat Surface end-slot: presence (optional) + chat / unread. */
 export function TocRowTrail({
   headingId,
   isActive,

@@ -28,8 +28,7 @@ const GATE_COPY: Record<PrivateGateVariant, { title: string; body: string }> = {
   }
 }
 
-// Brand-led access shell (Approach B): wordmark above card, one primary inside,
-// text escapes under the card. Mounts GlobalDialog because DocumentPage never loads.
+// Wordmark above card, one primary inside. Mounts GlobalDialog because DocumentPage never loads.
 const PrivateDocumentGate = ({
   variant,
   slug,

@@ -11,15 +11,15 @@ import { LuDownload, LuShare, LuSmartphone, LuSquarePlus, LuX } from 'react-icon
 import { twMerge } from 'tailwind-merge'
 
 const STORAGE_PREFIX = 'pwa-install'
-const DISMISSED_KEY = `${STORAGE_PREFIX}-dismissed` // 'permanent' | null
-const SNOOZED_UNTIL_KEY = `${STORAGE_PREFIX}-snoozed-until` // timestamp | null
-const PROMPT_COUNT_KEY = `${STORAGE_PREFIX}-prompt-count` // number
-const SESSION_COUNT_KEY = `${STORAGE_PREFIX}-session-count` // number
+const DISMISSED_KEY = `${STORAGE_PREFIX}-dismissed`
+const SNOOZED_UNTIL_KEY = `${STORAGE_PREFIX}-snoozed-until`
+const PROMPT_COUNT_KEY = `${STORAGE_PREFIX}-prompt-count`
+const SESSION_COUNT_KEY = `${STORAGE_PREFIX}-session-count`
 
 const SNOOZE_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_PROMPT_COUNT = 3
 const ENGAGEMENT_DELAY_MS = 30_000
-const MIN_SESSION_COUNT = 2 // Don't prompt on first visit
+const MIN_SESSION_COUNT = 2
 
 const SHOW_PWA_INSTALL_EVENT = 'show-pwa-install-prompt'
 
@@ -76,7 +76,6 @@ export function usePWAInstall() {
     }
   }, [isPWAInstalled])
 
-  // Trigger the deferred native install prompt (Android/Desktop)
   const install = useCallback(async (): Promise<boolean> => {
     if (!deferredPrompt) return false
 
@@ -96,12 +95,9 @@ export function usePWAInstall() {
   }, [deferredPrompt])
 
   return {
-    /** User can potentially install (native prompt available OR iOS not installed) */
     canInstall: deferredPrompt !== null || (platform === 'ios' && !isInstalled),
-    /** Native browser prompt is available (Android/Desktop only) */
     canNativeInstall: deferredPrompt !== null,
     isInstalled,
-    /** Trigger native install (returns true if accepted) */
     install,
     platform
   }
@@ -190,7 +186,6 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     if (!profile) return
     if (!isEligible()) return
 
-    // Track session count (incremented once per page load)
     const sessionKey = `${SESSION_COUNT_KEY}-tracked`
     if (!sessionStorage.getItem(sessionKey)) {
       const sessions = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10) + 1
@@ -240,7 +235,6 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
       className={twMerge(
         // Above docked chat / pad sash (z-50) — design-system above-floating tier
         'fixed right-4 bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] left-4 z-[60] mx-auto max-w-md',
-        // Slide-up animation
         'transition-[opacity,transform] duration-200 ease-out',
         shown ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
         className

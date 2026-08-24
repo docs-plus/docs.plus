@@ -27,7 +27,6 @@ const takeBufferedChannelId = (id: string): string | undefined => {
   return channelId
 }
 
-/** Prefer a non-empty incoming channelId; else consume any buffered sync channelId. */
 const resolveChannelId = (id: string, incoming?: string | null): string | null => {
   if (typeof incoming === 'string' && incoming.length > 0) {
     pendingSyncChannelIds.delete(id)
@@ -38,7 +37,6 @@ const resolveChannelId = (id: string, incoming?: string | null): string | null =
   return incoming ?? null
 }
 
-/** Presence rows minus self — pass `map.values()` or a channel list. */
 export function selectPresenceOthers(
   users: Iterable<Profile> | null | undefined,
   selfId: string | undefined | null
@@ -241,7 +239,6 @@ export type WorkspacePresenceListenerDeps = {
   onRequestPresenceSync?: (channel: RealtimeChannel) => void
 }
 
-/** Shared realtime presence + broadcast wiring for anon and authed workspace channels. */
 export const attachWorkspacePresenceListeners = (
   channel: RealtimeChannel,
   deps: WorkspacePresenceListenerDeps

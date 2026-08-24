@@ -4,11 +4,9 @@ import { LuFileText, LuRotateCcw, LuTrash2 } from 'react-icons/lu'
 import type { OwnedDocument } from '../types'
 import { formatDeletedAgo, retentionCountdown } from '../utils/retention'
 
-// Warning ink for the small "N days left" tail: raw --color-warning is only
-// ~3.1:1 on the Paper ground (sub-AA for small text). Mix toward base-content to
-// clear AA as a **direct** color. An @theme <color> token would freeze the mix
-// against :root. A direct color re-resolves per theme (darker on light grounds,
-// lighter on dark), so it stays legible everywhere.
+// Raw --color-warning is ~3.1:1 on Paper (sub-AA). Mix toward base-content as a
+// direct color so it re-resolves per theme. An @theme token would freeze the mix
+// against :root and fail on some grounds.
 const WARN_INK_CLASS =
   'text-[color:color-mix(in_oklch,var(--color-warning),var(--color-base-content)_30%)]'
 
@@ -22,11 +20,6 @@ interface TrashListRowProps {
   onDeleteForever: (doc: OwnedDocument) => void
 }
 
-/**
- * One soft-deleted document in Trash: a select checkbox and a "deleted X ago ·
- * N days left" countdown (amber in the final days). Inline Restore / Delete-forever
- * quick actions show only when nothing is selected.
- */
 function TrashListRow({
   doc,
   selected,

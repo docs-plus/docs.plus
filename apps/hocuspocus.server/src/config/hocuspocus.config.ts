@@ -144,7 +144,6 @@ const configureExtensions = () => {
 
           const rawState = doc?.data ?? generateDefaultState()
 
-          // On-load migration: convert old nested schema to flat on first open.
           // Controlled by ENABLE_SCHEMA_MIGRATION env var — remove after all docs migrated.
           if (doc?.data && checkEnvBoolean(process.env.ENABLE_SCHEMA_MIGRATION)) {
             try {
@@ -263,7 +262,6 @@ const configureExtensions = () => {
             dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
             captureDegraded('queue-fallback', err, { extra: { documentName } })
 
-            // Use transaction with FOR UPDATE lock to prevent race conditions.
             // Multiple Hocuspocus instances may hit this fallback simultaneously
             // (redlock can lapse mid-store), so merge with the locked head like
             // the worker does. A plain insert of divergent state would clobber.

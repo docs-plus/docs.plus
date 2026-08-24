@@ -16,7 +16,6 @@ export interface InitWsOpsResult {
   ops: VersionOps
 }
 
-/** REST-process wiring: reads served from Prisma, writes forwarded over the hop. */
 export const init = (deps: InitDeps): InitResult => {
   const wsVersions = createWsVersionsClient({
     baseUrl: deps.wsOpsBaseUrl,
@@ -36,8 +35,7 @@ export const init = (deps: InitDeps): InitResult => {
 }
 
 /**
- * WS-process wiring. Checkpoints and restores have to run where the live Y.Doc
- * is, so the collaboration process serves this app on its internal listener. The
+ * Checkpoints and restores have to run where the live Y.Doc is. The
  * stateless history op calls the same `ops` directly.
  */
 export const initWsOps = (deps: InitWsOpsDeps): InitWsOpsResult => {

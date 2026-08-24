@@ -8,9 +8,6 @@ export interface TocItem {
   open: boolean
 }
 
-/**
- * Context menu state for TOC
- */
 export interface TocContextMenuState {
   headingId: string | null
   isOpen: boolean

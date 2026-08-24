@@ -9,15 +9,10 @@ export interface CheckboxProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'type' | 'size'
 > {
-  /** Label text for the checkbox */
   label?: string
-  /** Size of the checkbox */
   size?: CheckboxSize
-  /** Color variant of the checkbox */
   color?: CheckboxColor
-  /** Helper text displayed below the checkbox */
   helperText?: string
-  /** Additional wrapper class */
   wrapperClassName?: string
 }
 

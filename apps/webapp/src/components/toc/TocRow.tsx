@@ -12,7 +12,6 @@ type TocRowProps = {
   /** Scroll-spy — daisyUI `menu-focus` when not also chat-open */
   isFocused?: boolean
   title: string
-  /** Desktop default min-h-8; pass min-h-11 on mobile */
   density?: 'desktop' | 'mobile'
   leading?: ReactNode
   trail?: ReactNode

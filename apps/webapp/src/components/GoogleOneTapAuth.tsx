@@ -11,10 +11,7 @@ import type { CredentialResponse, PromptMomentNotification } from 'google-one-ta
 import Script from 'next/script'
 import { useCallback, useEffect, useRef } from 'react'
 
-/**
- * Generates a cryptographic nonce for Google ID token sign-in.
- * Returns both the raw nonce (for Supabase) and hashed nonce (for Google).
- */
+/** Raw nonce for Supabase; SHA-256 hash for Google. */
 const generateNonce = async (): Promise<[string, string]> => {
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
   const encoder = new TextEncoder()

@@ -1,6 +1,3 @@
-// Markdown link input rule — `[text](url)` at the cursor becomes a
-// hyperlink mark over `text` with `url` (post-gate) as href.
-
 import { InputRule } from '@tiptap/core'
 
 import type { LinkContext } from './types'

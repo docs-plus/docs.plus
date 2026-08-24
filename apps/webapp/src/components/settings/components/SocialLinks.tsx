@@ -16,7 +16,6 @@ import SocialIcon from './SocialIcon'
 
 type ValidateLinkResult = { valid: true; type: LinkType } | { valid: false; error: string }
 
-/** Lowercase hostname, ensure protocol, strip trailing slash. */
 const normalizeUrl = (url: string): string => {
   try {
     const withProtocol = url.startsWith('http') ? url : `https://${url}`
@@ -31,7 +30,6 @@ const normalizeUrl = (url: string): string => {
   }
 }
 
-/** Bare hostname for a URL (no www., lowercased). */
 const extractDomain = (url: string): string | null => {
   try {
     const withProtocol = url.startsWith('http') ? url : `https://${url}`
@@ -59,14 +57,12 @@ const validateLink = (url: string): ValidateLinkResult => {
   return { valid: false, error: 'Invalid URL format!' }
 }
 
-/** Get the leading Lu* icon for non-social link types. */
 const getFallbackIcon = (link: LinkItem) => {
   if (link.type === LinkType.Email) return LuMail
   if (link.type === LinkType.Phone) return LuPhone
   return LuLink
 }
 
-/** Brand colour for known social domains; undefined otherwise. */
 const getLinkIconColor = (link: LinkItem): string | undefined => {
   if (link.type !== LinkType.Social) return undefined
   const domain = extractDomain(link.url)
@@ -186,7 +182,6 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
 
   return (
     <div className="space-y-3">
-      {/* Add link input */}
       <div className="flex gap-2">
         <TextInput
           label="Add URL, email, or phone"
@@ -209,12 +204,10 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
         />
       </div>
 
-      {/* Link limit hint */}
       {isAtLimit && (
         <p className="text-warning text-xs font-medium">Maximum of {MAX_LINKS} links reached.</p>
       )}
 
-      {/* Links list */}
       {links.length > 0 && (
         <div className="space-y-2">
           <p className="text-base-content/50 text-xs font-medium">
@@ -257,7 +250,6 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="min-w-0 flex-1">
                   <a
                     href={getFormattedHref(link)}
@@ -292,7 +284,6 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
         </div>
       )}
 
-      {/* Empty state — aligned with design system §5.6 */}
       {links.length === 0 && (
         <div className="border-base-300 rounded-box flex flex-col items-center justify-center border-2 border-dashed py-6 text-center">
           <div className="bg-base-200 mb-2 flex size-12 items-center justify-center rounded-full">

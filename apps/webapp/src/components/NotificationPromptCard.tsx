@@ -79,10 +79,8 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         localStorage.setItem(STORAGE_KEY, 'permanent')
         break
       case 'dismissed':
-        // User closed browser prompt - don't nag
         break
       case 'error':
-        // Server misconfiguration - don't spam user, just log
         console.error('Push notification setup failed')
         break
     }
@@ -142,9 +140,7 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
       )}>
       <div
         className={twMerge(
-          // Unified prompt card — matches PWAInstallPrompt
           'rounded-box flex flex-col gap-4 px-5 py-4',
-          // Theme-aware inverse surface (light-dark via color-scheme, no dark: variant)
           'surface-inverse',
           'shadow-xl',
           'border-base-300 border'

@@ -3,7 +3,6 @@ import { TIPTAP_NODES } from '@types'
 
 import type { HeadingLevel, HeadingSuggestion } from '../types'
 
-/** Walk the doc once; emit headings that have both `toc-id` and text. */
 export function collectHeadings(editor: Editor): HeadingSuggestion[] {
   const out: HeadingSuggestion[] = []
 

@@ -18,10 +18,8 @@ interface NodeOptions {
 }
 
 export interface VideoOptions extends StyleLayoutOptions, NodeOptions {
-  // Node attributes
   inline?: boolean
 
-  // Html attributes
   controls?: boolean
   autoplay?: boolean
   loop?: boolean

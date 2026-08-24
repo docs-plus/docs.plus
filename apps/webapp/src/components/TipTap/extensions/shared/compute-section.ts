@@ -1,14 +1,8 @@
 import type { Node as PMNode } from '@tiptap/pm/model'
 
 /**
- * Compute the section range for a heading: from headingPos to the start of
- * the next top-level heading with level <= headingLevel, or end of document.
- *
- * Section = heading + everything until next same-or-higher level.
- * Standard outliner behavior (Notion, Logseq, Roam).
- *
- * When the caller already knows the child index of the heading, pass
- * `startChildIndex` to skip the leading walk — O(k) fast path.
+ * Heading through the next same-or-higher top-level heading (or doc end).
+ * Pass `startChildIndex` when known to skip the leading walk.
  */
 export function computeSection(
   doc: PMNode,

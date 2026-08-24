@@ -1,31 +1,12 @@
 /**
- * @docs.plus/extension-hyperlink — default styles
- *
- * A minimal, framework-agnostic stylesheet for the prebuilt create/preview/edit
- * popovers. Every visual token is exposed as a `--hl-*` CSS custom property so
- * consumers can retheme without copy-pasting rules.
- *
- * Usage:
- *   import '@docs.plus/extension-hyperlink/styles.css'
- *
- * Theming:
- *   :root {
- *     --hl-accent: #2563eb;
- *     --hl-radius: 8px;
- *   }
- *
- * Customizing a specific rule is fine — class names are part of the public API
- * and are documented in the README.
+ * Prebuilt popover skin. Tokens are `--hl-*`; class names are public (see README).
+ * Theme with `light-dark()` against the nearest ancestor `color-scheme`.
  */
 
 /*
- * Theme tokens use `light-dark()` so the popover follows the nearest
- * ancestor's `color-scheme` — that means a consumer who toggles
- * `color-scheme: light | dark` on <html> (or an ancestor) flips the
- * popover automatically, and it no longer gets stuck in dark mode just
- * because the OS prefers dark. When `color-scheme` is `normal` (the
- * default), `light-dark()` falls back to `prefers-color-scheme`, which
- * preserves the previous OS-driven behavior for unopinionated hosts.
+ * `light-dark()` follows the nearest ancestor `color-scheme`. When that is
+ * `normal`, it falls back to `prefers-color-scheme` so unopinionated hosts
+ * keep OS-driven dark mode.
  */
 :root {
   --hl-bg: light-dark(#ffffff, #1f2937);
@@ -50,13 +31,7 @@
   --hl-transition: 120ms ease-out;
 }
 
-/* -------------------------------------------------------------------------
-   Floating popover shell (shared by all three popovers — preview / edit / create)
-   Positioning (fixed + top/left + z-index 9999) is inline from createPopover;
-   override stacking via `createPopover({ zIndex })`.
-   extension-hypermultimedia's media-toolbar.css carries a lockstep copy of
-   this shell — mirror edits there.
-   ------------------------------------------------------------------------- */
+/* Shared shell. Positioning is inline from createPopover (`zIndex` option). Lockstep copy in hypermultimedia media-toolbar.css. */
 .floating-popover {
   opacity: 0;
   transform: scale(0.96);
@@ -121,14 +96,7 @@
   z-index: 2;
 }
 
-/* -------------------------------------------------------------------------
-   Floating tooltip (icon buttons in the prebuilt popovers)
-   Behavior ships in the bundled @docs.plus/floating-tooltip; this skin is
-   the consumer's, lockstep with extension-hypermultimedia's media-toolbar.css.
-   Both extensions style this one global class, so the block uses identical
-   literals, never per-package tokens: with both bundles loaded, cascade
-   order would pick one package's tokens for every bubble.
-   ------------------------------------------------------------------------- */
+/* Tooltip skin. Lockstep literals with hypermultimedia media-toolbar.css — both style one global class. */
 .floating-tooltip {
   position: fixed;
   z-index: 10000;
@@ -152,9 +120,6 @@
   transform: translateY(0);
 }
 
-/* -------------------------------------------------------------------------
-   Popover shell — shared shape for create / preview / edit
-   ------------------------------------------------------------------------- */
 .hyperlink-create-popover,
 .hyperlink-preview-popover,
 .hyperlink-edit-popover {
@@ -181,7 +146,6 @@
   width: 100%;
 }
 
-/* Input groups (create + edit) */
 .hyperlink-create-popover .inputs-wrapper,
 .hyperlink-edit-popover .text-wrapper,
 .hyperlink-edit-popover .href-wrapper {
@@ -277,7 +241,6 @@
   min-width: 0;
 }
 
-/* Action buttons (create submit + edit back/apply) */
 .hyperlink-create-popover .buttons-wrapper,
 .hyperlink-edit-popover .buttons-wrapper {
   display: flex;
@@ -322,9 +285,6 @@
   outline-offset: 1px;
 }
 
-/* -------------------------------------------------------------------------
-   Preview popover (anchor + copy / edit / remove icon buttons)
-   ------------------------------------------------------------------------- */
 .hyperlink-preview-popover a {
   display: inline-block;
   max-width: 260px;

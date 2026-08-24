@@ -10,7 +10,6 @@ const Editor = () => {
 
   useEditableDocControl()
 
-  // IntersectionObserver-based scroll spy for TOC highlighting (mirrors DesktopEditor)
   useHeadingScrollSpy(editorWrapperRef)
 
   // ProseMirror `.ha-chat-btn` widgets (CSS ::before); TOC uses React UnreadBadge.

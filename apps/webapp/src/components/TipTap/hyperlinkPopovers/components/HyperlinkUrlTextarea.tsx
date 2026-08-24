@@ -20,7 +20,6 @@ export type HyperlinkUrlTextareaProps = {
   combobox?: HyperlinkUrlTextareaComboboxProps
 }
 
-/** Auto-growing URL field: strips whitespace on input and merges clean paste text. */
 export function HyperlinkUrlTextarea({
   value,
   onCommit,

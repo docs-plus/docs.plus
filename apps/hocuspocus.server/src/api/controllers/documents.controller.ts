@@ -1,8 +1,3 @@
-/**
- * Document CRUD handlers. Validation happens in the router via zValidator, so
- * everything here receives pre-validated data.
- */
-
 import { sendNewDocumentNotification } from '../../lib/email/document-notification'
 import { AppError, getErrorResponse } from '../../lib/errors'
 import { captureHttpError } from '../../lib/instrument'
@@ -293,8 +288,6 @@ export const permanentDeleteDocument = async (c: AppContext): Promise<Response> 
   }
 }
 
-// Bulk Trash purge — owner-scoped to the token subject (never a client id). Empty
-// body empties the whole trash; { ids } purges that selection. Returns the count.
 export const purgeTrash = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   // requireUser guarantees userId (401 upstream on a missing/invalid token), so
@@ -311,10 +304,9 @@ export const purgeTrash = async (c: AppContext): Promise<Response> => {
   }
 }
 
-// Bulk Trash restore — owner-scoped; { ids } required. Returns the count restored.
 export const restoreTrash = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
-  // requireUser guarantees userId; each id is owner-gated in the service loop.
+  // Owner-scoped; { ids } required. requireUser already set userId.
   const requesterId = c.get('userId') as string
   const { ids } = getValidJson<TrashRestoreInput>(c)
 

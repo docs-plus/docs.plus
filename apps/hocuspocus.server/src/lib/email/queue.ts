@@ -88,7 +88,6 @@ export function createEmailWorker() {
       emailLogger.info({ jobId: job.id, type: data.type }, 'Processing email job')
 
       try {
-        // Idempotency check: prevent duplicate sends on retry
         const existingSend = await prisma.emailSentLog.findUnique({
           where: { idempotencyKey }
         })
@@ -109,7 +108,6 @@ export function createEmailWorker() {
 
         // Record the successful send before returning so a retry dedupes
         if (result.success) {
-          // Get recipient (all email types have 'to')
           const recipient = Array.isArray(data.payload.to)
             ? data.payload.to[0] || 'unknown'
             : data.payload.to
@@ -179,7 +177,7 @@ export function createEmailWorker() {
           }
         }
 
-        throw err // Re-throw to trigger retry
+        throw err
       }
     },
     {
@@ -189,7 +187,6 @@ export function createEmailWorker() {
         max: config.email.gateway.rateLimitMax,
         duration: config.email.gateway.rateLimitDuration
       },
-      // Lock settings for job ownership (prevents duplicate processing across workers)
       lockDuration: 60000, // email sending is typically fast
       lockRenewTime: 15000,
       stalledInterval: 30000,
@@ -231,7 +228,7 @@ export async function queueEmail(data: EmailJobData, jobId?: string): Promise<st
   }
 
   const job = await EmailQueue.add('send-email', data, {
-    priority: data.type === 'notification' ? 1 : 2, // Notifications have higher priority
+    priority: data.type === 'notification' ? 1 : 2,
     ...(jobId ? { jobId } : {})
   })
 

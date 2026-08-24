@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-// Admin Document Schemas
 export const listDocumentsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).optional().default('1'),
   limit: z.string().regex(/^\d+$/).optional().default('20'),
@@ -21,7 +20,6 @@ export const deleteDocumentSchema = z.object({
   confirmSlug: z.string().min(1, 'Confirmation slug is required')
 })
 
-// Analytics Query Schemas
 export const paginationQuerySchema = z.object({
   limit: z.string().regex(/^\d+$/).optional().default('10'),
   days: z.string().regex(/^\d+$/).optional().default('7')
@@ -41,7 +39,6 @@ export const batchTrendsQuerySchema = z.object({
   days: z.string().regex(/^\d+$/).optional().default('7')
 })
 
-// Stale Documents Audit Schemas
 export const staleDocumentsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).optional().default('1'),
   limit: z.string().regex(/^\d+$/).optional().default('20'),
@@ -61,7 +58,6 @@ export const bulkDeleteSchema = z.object({
   dryRun: z.boolean().optional().default(false)
 })
 
-// Failed Notifications Audit Schemas
 export const auditFailedSubsQuerySchema = z.object({
   minFailures: z.string().regex(/^\d+$/).optional().default('1'),
   limit: z.string().regex(/^\d+$/).optional().default('100')
@@ -79,7 +75,6 @@ export const disableFailedSubsSchema = z.object({
   subscriptionIds: z.array(z.string().uuid()).max(500).optional()
 })
 
-// Ghost Accounts Audit Schemas
 export const ghostAccountsQuerySchema = z.object({
   minAgeDays: z.string().regex(/^\d+$/).optional().default('7'),
   ghostType: z
@@ -112,7 +107,6 @@ export const ghostCleanupAnonymousSchema = z.object({
   minAgeDays: z.number().int().min(30).default(90)
 })
 
-// Media Storage Audit
 export const workspaceMediaStorageStatSchema = z.object({
   workspace_id: z.string(),
   slug: z.string().nullable(),

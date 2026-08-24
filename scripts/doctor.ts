@@ -1,8 +1,4 @@
 #!/usr/bin/env bun
-/**
- * Health check for the docs.plus development environment.
- * Run: bun scripts/doctor.ts — exits 1 when any check fails, 0 otherwise.
- */
 
 import { $ } from 'bun'
 import { existsSync, readFileSync } from 'fs'
@@ -66,17 +62,17 @@ async function checkPort(port: number): Promise<boolean> {
 
     socket.on('connect', () => {
       socket.destroy()
-      resolve(true) // Port is in use (service running)
+      resolve(true)
     })
 
     socket.on('timeout', () => {
       socket.destroy()
-      resolve(false) // Port is free
+      resolve(false)
     })
 
     socket.on('error', () => {
       socket.destroy()
-      resolve(false) // Port is free
+      resolve(false)
     })
   })
 }

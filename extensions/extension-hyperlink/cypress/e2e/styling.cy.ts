@@ -1,10 +1,5 @@
 /// <reference types="cypress" />
 
-// Packaging regression net. Proves the `./styles.css` subpath export actually
-// loads, and that the CSS ↔ JS class contract the README documents as public
-// API holds both ways. Also proves color tokens use `light-dark()`, so
-// `color-scheme` flips them.
-
 const DOCUMENTED_CSS_VARS = [
   '--hl-bg',
   '--hl-fg',
@@ -48,7 +43,6 @@ const ruleExists = (doc: Document, selector: string): boolean => {
   })
 }
 
-/** Concatenated text of every `:root` rule in the shipped sheet. */
 const rootRuleText = (doc: Document): string => {
   const sheets = Array.from(doc.styleSheets) as CSSStyleSheet[]
   return sheets
@@ -121,11 +115,6 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
   })
 
   describe('class contract (JS ↔ CSS)', () => {
-    // The JS module may render classes that the CSS never styles. The CSS may
-    // style classes the JS never renders. In either case the "public styling
-    // surface" documented in the README is a lie. These tests keep both sides
-    // honest.
-
     it('create popover DOM uses only classes that exist in the stylesheet', () => {
       cy.setEditorContent('<p>Select this word</p>')
       cy.selectText('word')

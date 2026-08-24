@@ -5,7 +5,6 @@ export interface MediaLoadingShellContext {
   kind: MediaLoadingKind
   width: number
   height: number
-  /** Shown in the default shell, e.g. "YouTube", "X". */
   provider?: string
   message?: string
 }
@@ -25,7 +24,6 @@ export interface MediaLoadingBindLoadOptions {
 export interface MediaLoadingShellWrapOptions {
   /** Auto-settle via media element load/error; omit for manual (e.g. X oEmbed). */
   bindLoad?: MediaLoadingBindLoadOptions
-  /** When set, used instead of the generic responsive host sync on mount. */
   syncLoadingHost?: (el: HTMLElement, width: number, height: number) => void
 }
 

@@ -2,7 +2,6 @@ import { logger } from '../lib/logger'
 
 const healthLogger = logger.child({ extension: 'health' })
 
-// Health check extension for Hocuspocus
 export class HealthCheck {
   server: any
   extensions: any[]

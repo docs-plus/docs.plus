@@ -10,7 +10,6 @@ const SUPABASE_FETCH_TIMEOUT_MS = 10_000
 /**
  * PostgREST fetch with apikey + Authorization headers merged in (extra headers
  * win on conflict). Null when the service-role key is not configured.
- * @param path e.g. 'users?id=eq.123&select=id,email'
  */
 export async function supabaseRest(path: string, init?: RequestInit): Promise<Response | null> {
   const url = config.supabase.url

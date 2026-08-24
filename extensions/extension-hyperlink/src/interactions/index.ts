@@ -1,8 +1,3 @@
-// Interactions barrel — single composition point for everything the
-// extension binds into ProseMirror's lifecycle (input rules + paste
-// rules + plugins). All rules and plugins share one `LinkContext`
-// (so one URL Decisions instance, one options view).
-
 import type { InputRule, PasteRule } from '@tiptap/core'
 import type { Plugin } from '@tiptap/pm/state'
 
@@ -22,7 +17,6 @@ export interface HyperlinkInteractions {
   plugins: Plugin[]
 }
 
-/** Build every interaction from a single context; plugin gating (`autolink`, `openOnClick`, `linkOnPaste`) lives here. */
 export function createInteractions(ctx: LinkContext): HyperlinkInteractions {
   const plugins: Plugin[] = []
   if (ctx.options.autolink) plugins.push(createAutolinkInteraction(ctx))

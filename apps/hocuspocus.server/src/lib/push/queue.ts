@@ -86,7 +86,7 @@ export async function queuePush(data: PushJobData, jobId?: string): Promise<stri
 
   try {
     const job = await pushQueue.add('send-push', data, {
-      priority: 1, // High priority for push notifications
+      priority: 1,
       ...(jobId ? { jobId } : {})
     })
     pushLogger.debug({ jobId: job.id }, 'Push notification queued')
@@ -119,7 +119,6 @@ export function createPushWorker(): Worker<PushJobData> | null {
       pushLogger.debug({ jobId: job.id, type: job.data.type }, 'Processing push job')
 
       try {
-        // Idempotency check: prevent duplicate sends on retry
         const existingSend = await prisma.pushSentLog.findUnique({
           where: { idempotencyKey }
         })
@@ -189,7 +188,7 @@ export function createPushWorker(): Worker<PushJobData> | null {
           await pushDeadLetterQueue?.add('failed-push', dlqData)
         }
 
-        throw err // Re-throw to trigger retry
+        throw err
       }
     },
     {
@@ -199,7 +198,6 @@ export function createPushWorker(): Worker<PushJobData> | null {
         max: config.push.gateway.rateLimitMax,
         duration: config.push.gateway.rateLimitDuration
       },
-      // Lock settings for job ownership (prevents duplicate processing across workers)
       lockDuration: 30000, // push notifications are fast
       lockRenewTime: 10000,
       stalledInterval: 15000,

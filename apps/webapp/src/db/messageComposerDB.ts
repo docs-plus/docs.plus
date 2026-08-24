@@ -115,7 +115,6 @@ export async function clearComposerState(workspaceId: string, roomId: string): P
   }
 }
 
-// Walk memory fallback rows for a given workspace prefix.
 function* memoryRowsForWorkspace(workspaceId: string) {
   const prefix = `${workspaceId}::`
   for (const [key, row] of memory) {

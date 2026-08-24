@@ -1,7 +1,6 @@
 import { HOME_CANONICAL_URL } from '@components/pages/home/homeMetadata'
 import { GetServerSideProps } from 'next'
 
-/** Serves `/robots.txt` with env-aware sitemap URL. */
 export default function Robots() {
   return null
 }

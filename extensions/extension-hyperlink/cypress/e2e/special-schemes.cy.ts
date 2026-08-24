@@ -1,10 +1,5 @@
 /// <reference types="cypress" />
 
-// The unit tests only cover the 50+ scheme / domain-mapping catalog in
-// `specialUrls.ts`. This spec proves the editor emits the right `<a href>` for
-// that catalog through the real write paths. Autolink goes via
-// `SPECIAL_SCHEME_REGEX_GLOBAL`; the create popover via `normalizeHref` + `validateURL`.
-
 const POPOVER = '.hyperlink-create-popover'
 const INPUT = `${POPOVER} input[name="hyperlink-url"]`
 const WRAPPER = `${POPOVER} .inputs-wrapper`
@@ -67,8 +62,6 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
     }
 
     it('upgrades a bare wa.me/<phone> to https:// (matches create popover)', () => {
-      // Bare-domain inputs are normalized to https:// by `normalizeHref`
-      // — pinned here for deep-link domains too, not just generic web hosts.
       typeThroughAutolink('wa.me/15551234567')
       cy.editorFirstLinkHref().should('eq', 'https://wa.me/15551234567')
     })
@@ -103,9 +96,6 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
     })
 
     it('rejects an unregistered scheme (foo://bar)', () => {
-      // Defense-in-depth: only the catalog in `specialUrls.ts` should
-      // wave non-web schemes through. Anything else must trip the
-      // `inputs-wrapper.error` branch and not create an `<a>`.
       cy.pressModK()
       cy.get(INPUT).type('foo://bar{enter}')
       cy.get(POPOVER).should('be.visible')

@@ -3,11 +3,8 @@ import type { Transaction } from '@tiptap/pm/state'
 import { ReplaceStep } from '@tiptap/pm/transform'
 
 /**
- * Check if a transaction is safe for `DecorationSet.map()` on heading
- * node decorations.
- *
- * Returns true only for single-step content-only edits where `map()` is
- * guaranteed to produce correct decoration boundaries.
+ * True only for a single-step content-only edit where `DecorationSet.map()`
+ * keeps heading decoration boundaries correct.
  */
 export function canMapDecorations(tr: Transaction, oldDoc: PMNode): boolean {
   if (tr.steps.length !== 1) return false

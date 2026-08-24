@@ -1,10 +1,5 @@
 /// <reference types="cypress" />
 
-// Create popover, autolink and paste each stored a different href for the
-// same input before this spec existed. All three now route URL matches
-// through `normalizeLinkifyHref` and trust linkifyjs's canonical href for
-// non-URL matches (emails, etc.).
-
 // The word and its trailing space go in *separate* transactions so the
 // autolink plugin sees the whitespace boundary on its own tick. One atomic
 // `insertContent('google.com ')` still fires it, but masks regressions in
@@ -36,9 +31,6 @@ describe('Autolink + paste — canonical href consistency', () => {
     })
 
     it('emits mailto: for email matches (not https://user@...)', () => {
-      // Defense-in-depth: the helper must NOT run emails through the
-      // URL-normalization path. This would have been the regression
-      // mode when fixing the `findLinks` href-clobber bug.
       typeThroughAutolink('hello@example.com')
       cy.editorFirstLinkHref().should('eq', 'mailto:hello@example.com')
     })
@@ -77,10 +69,6 @@ describe('Autolink + paste — canonical href consistency', () => {
 
   describe('code mark', () => {
     it('does NOT autolink URLs typed inside an inline code mark', () => {
-      // Code-marked text is *content*, not a navigation target — a
-      // URL there must round-trip verbatim. Pins the v2.x autolink
-      // gate that consults `schema.marks.code` and skips ranges that
-      // already carry it. Mirrors @tiptap/extension-link v3 canon.
       cy.getEditor().then((editor) => {
         editor
           .chain()

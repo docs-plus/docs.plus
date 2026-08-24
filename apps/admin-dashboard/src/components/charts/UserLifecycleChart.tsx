@@ -51,7 +51,6 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
 
   return (
     <div className="space-y-4">
-      {/* Stacked bar */}
       <div className="bg-base-200 flex h-4 w-full overflow-hidden rounded-full">
         {!loading &&
           segments.map((segment) => (
@@ -64,7 +63,6 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
           ))}
       </div>
 
-      {/* Legend */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {segments.map((segment) => (
           <div key={segment.label} className="flex items-center gap-2">
@@ -86,7 +84,6 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
         ))}
       </div>
 
-      {/* Total */}
       {!loading && (
         <div className="text-base-content/60 text-center text-sm">
           Total Users: {total.toLocaleString()}

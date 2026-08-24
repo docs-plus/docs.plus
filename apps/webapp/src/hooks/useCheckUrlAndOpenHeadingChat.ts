@@ -6,11 +6,9 @@ import { useEffect, useRef } from 'react'
 
 type ChatDeepLink = { headingId: string; fetchMsgsFromId?: string }
 
-// Resolve a cold-load chat deep link from the URL into a room-open intent.
-// Canonical dialect is ?chatroom=&msg_id=; ?act=ch&c_id=&m_id= is the legacy
-// translator (kept so already-shared links keep working); ?open_heading_chat=
-// is the post-sign-in composer return. All are read-only opens — never gated on
-// auth, so a logged-out recipient opens a PUBLIC room.
+// Cold-load chat deep link → room-open intent. Canonical is ?chatroom=&msg_id=;
+// ?act=ch&c_id=&m_id= is the legacy translator; ?open_heading_chat= is the
+// post-sign-in composer return. Read-only opens — never gated on auth.
 const resolveChatDeepLink = (url: URL): ChatDeepLink | null => {
   const openHeadingChatId = url.searchParams.get('open_heading_chat')
   if (openHeadingChatId) return { headingId: openHeadingChatId }

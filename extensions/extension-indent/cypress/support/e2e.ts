@@ -1,7 +1,6 @@
 /// <reference types="cypress" />
 
 /**
- * Support file for the extension-indent clean-room E2E suite.
  * Single file on purpose — Cypress 15's JIT loader silently skips
  * extensionless split imports.
  */
@@ -43,7 +42,6 @@ Cypress.Commands.add('setEditorContent', (html: string) => {
   })
 })
 
-// Collapsed caret `offset` chars into the first text node containing `text`.
 Cypress.Commands.add('setCaretInText', (text: string, offset = 0) => {
   cy.getEditor().then((editor) => {
     let pos: number | undefined
@@ -58,9 +56,7 @@ Cypress.Commands.add('setCaretInText', (text: string, offset = 0) => {
   })
 })
 
-// Select from the START of the first textblock containing `firstText` to the
-// END of the last textblock containing `lastText`. Full lines, so outdent
-// sees leading indents the caller created via Tab.
+// Full-line selection so outdent sees leading indents created via Tab.
 Cypress.Commands.add('selectAcross', (firstText: string, lastText: string) => {
   cy.getEditor().then((editor) => {
     let from: number | undefined

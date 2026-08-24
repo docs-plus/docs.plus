@@ -12,7 +12,6 @@ type AdminClient = NonNullable<ReturnType<typeof getSupabaseClient>>
 
 const VIEWS_PAGE = 1000
 
-/** Invoke a Supabase RPC, with optional args. Returns the raw `{ data, error }`. */
 export function callRpc(supabase: AdminClient, rpcName: string, args?: Record<string, unknown>) {
   return args ? supabase.rpc(rpcName, args) : supabase.rpc(rpcName)
 }

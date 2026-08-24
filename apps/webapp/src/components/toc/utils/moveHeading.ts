@@ -1,7 +1,3 @@
-/**
- * Shared flat-schema section move — drag + Cypress/playground adapters.
- */
-
 import { computeSection, moveSection } from '@components/TipTap/extensions/shared'
 import type { Editor } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
@@ -50,7 +46,6 @@ export type MoveHeadingSectionArgs = {
   newLevel?: number
 }
 
-/** Core section move. Returns false when the move is invalid or dispatch fails. */
 export function moveHeadingSection({
   editor,
   sourceId,

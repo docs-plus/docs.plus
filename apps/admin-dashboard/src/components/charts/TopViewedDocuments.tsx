@@ -48,12 +48,10 @@ export function TopViewedDocuments({ data, loading, limit = 5 }: TopViewedDocume
       {displayData.map((doc, index) => {
         const row = (
           <>
-            {/* Rank */}
             <div className="bg-base-200 text-base-content/70 flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold">
               {index + 1}
             </div>
 
-            {/* Document info */}
             <div className="min-w-0 flex-1">
               <p className="group-hover:text-primary truncate font-medium transition-colors">
                 {doc.title || doc.document_slug}
@@ -70,7 +68,6 @@ export function TopViewedDocuments({ data, loading, limit = 5 }: TopViewedDocume
               </div>
             </div>
 
-            {/* Views badge */}
             <div className="badge badge-primary badge-outline">
               {(doc.views ?? 0).toLocaleString()}
             </div>

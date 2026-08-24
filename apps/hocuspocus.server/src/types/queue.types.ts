@@ -15,7 +15,6 @@ export interface StoreDocumentContext {
     sub?: string
     email?: string
     is_anonymous?: boolean
-    // Supabase user_metadata fields
     user_metadata?: {
       full_name?: string
       name?: string
@@ -31,7 +30,6 @@ export interface StoreDocumentContext {
   versionForceKey?: string
 }
 
-// BullMQ document storage job data
 export interface StoreDocumentData {
   documentName: string
   /** Redis claim-check key holding the raw Y.js state (preferred shape). */
@@ -47,7 +45,6 @@ export interface StoreDocumentData {
   contributors?: string[]
 }
 
-/** Resolved store-hook payload passed to `enqueueStoreDocument`. */
 export interface EnqueueStoreDocumentParams {
   jobId: string
   documentName: string
@@ -59,7 +56,6 @@ export interface EnqueueStoreDocumentParams {
   contributors?: string[]
 }
 
-// Dead letter queue data (for failed jobs)
 export interface DeadLetterJobData extends StoreDocumentData {
   originalJobId?: string
   failureReason?: string

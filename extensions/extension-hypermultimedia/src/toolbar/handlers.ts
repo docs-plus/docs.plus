@@ -4,12 +4,10 @@ import { getKitStorage } from '../kitStorage'
 import { isDownloadableMedia, mediaKind } from '../utils/media-target'
 import type { MediaActionContext } from './types'
 
-/** Downloadable local-asset kinds (image/audio/video); see `media-target.mediaKind`. */
 export function isDownloadable(nodeType: string): boolean {
   return isDownloadableMedia(nodeType)
 }
 
-/** Provider embeds (youtube/vimeo/soundcloud/loom/x) whose `src` is an external URL. */
 export function isEmbedNode(nodeType: string): boolean {
   return mediaKind(nodeType) === 'embed'
 }
@@ -18,7 +16,6 @@ export function isUploadedMedia(ctx: MediaActionContext): boolean {
   return getKitStorage(ctx.editor).isUploadedMedia?.(ctx) ?? false
 }
 
-/** View Original: embeds always; uploaded image/video/audio hidden. */
 export function canViewOriginal(ctx: MediaActionContext): boolean {
   if (!ctx.attrs.src) return false
   if (isEmbedNode(ctx.nodeType)) return true
@@ -104,7 +101,6 @@ export async function downloadMedia(ctx: MediaActionContext): Promise<void> {
   ctx.close()
 }
 
-/** Reveal + focus the inline caption editor (created by the node view). */
 export function focusCaption(ctx: MediaActionContext): void {
   const caption = ctx.wrapper.querySelector<HTMLElement>('.hm-caption')
   if (!caption) return

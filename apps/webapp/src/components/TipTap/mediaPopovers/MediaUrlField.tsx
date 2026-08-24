@@ -10,13 +10,10 @@ export interface MediaUrlFieldProps {
   value: string
   onChange: (value: string) => void
   onSubmit: () => void
-  /** Detected node type, or null while the field is empty. */
   detectedType: MediaNodeType | null
-  /** Insert is in-flight (image dimension preload). */
   loading?: boolean
 }
 
-/** URL entry with a live detected-type chip + Insert, over an inline preview. */
 const MediaUrlField = forwardRef<HTMLInputElement, MediaUrlFieldProps>(
   ({ value, onChange, onSubmit, detectedType, loading }, ref) => {
     const entry = detectedType ? MEDIA_INSERT_REGISTRY[detectedType] : null

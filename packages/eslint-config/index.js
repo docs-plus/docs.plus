@@ -1,6 +1,3 @@
-// Base ESLint config — TypeScript + Prettier, no framework plugins.
-// Used directly by: root, hocuspocus
-// Extended by: next.js (adds React), library.js (adds strictness)
 import js from '@eslint/js'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'

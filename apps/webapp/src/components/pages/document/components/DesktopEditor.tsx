@@ -51,7 +51,6 @@ const DesktopEditor = () => {
               </div>
             </Chatroom.Toolbar>
 
-            {/* v2 feed renders Virtuoso-backed ChatList internally. */}
             <Chatroom.MessageFeed showScrollToBottom={true} />
             <Chatroom.ChannelComposer className="w-full" />
           </Chatroom>

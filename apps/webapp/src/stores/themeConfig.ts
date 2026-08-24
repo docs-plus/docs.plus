@@ -2,7 +2,6 @@
 // store (client) and the pre-hydration FOUC script in `_document.tsx` (SSR). Keep it
 // free of `zustand`/React imports so `_document` can pull the data without bundling them.
 
-/** User preference — what they chose in Settings → Appearance. */
 export type ThemePreference =
   | 'light'
   | 'dark'
@@ -30,7 +29,6 @@ export const LIGHT_RESOLVED_THEMES = new Set<ResolvedTheme>([
   'docsplus-paper'
 ])
 
-/** True when the resolved theme is a light one. Dark = everything else (incl. HC). */
 export function isLightTheme(resolved: ResolvedTheme): boolean {
   return LIGHT_RESOLVED_THEMES.has(resolved)
 }
@@ -47,7 +45,6 @@ export const PREFERENCE_TO_THEME: Record<Exclude<ThemePreference, 'system'>, Res
   'paper-dark': 'docsplus-paper-dark'
 }
 
-/** Resolve a preference + OS setting into a concrete theme name. */
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {
   if (preference !== 'system') return PREFERENCE_TO_THEME[preference]
 

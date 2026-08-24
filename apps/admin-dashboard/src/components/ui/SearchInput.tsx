@@ -4,15 +4,11 @@ import { LuSearch, LuX } from 'react-icons/lu'
 interface SearchInputProps {
   placeholder?: string
   onSearch: (value: string) => void
-  value?: string // Controlled value (from URL params)
+  value?: string
   defaultValue?: string
   className?: string
 }
 
-/**
- * Search input with icon, clear button, and search button
- * Supports both controlled (value prop) and uncontrolled (defaultValue) modes
- */
 export function SearchInput({
   placeholder = 'Search...',
   onSearch,
@@ -22,7 +18,6 @@ export function SearchInput({
 }: SearchInputProps) {
   const [internalValue, setInternalValue] = useState(defaultValue)
 
-  // Sync internal value when controlled value changes (for URL params)
   useEffect(() => {
     if (controlledValue !== undefined) {
       setInternalValue(controlledValue)

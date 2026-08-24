@@ -43,7 +43,6 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
     port,
     db: config.redis.db, // logical DB (0 default; lets tests isolate)
 
-    // Connection settings (validated config is the single source of truth)
     lazyConnect: false,
     connectTimeout: config.redis.connectTimeout,
     keepAlive: config.redis.keepAlive,
@@ -75,7 +74,6 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
     enableAutoPipelining: true,
     autoPipeliningIgnoredCommands: ['ping'],
 
-    // Command timeout (increased for dev to avoid false timeouts during hot reload)
     commandTimeout: config.redis.commandTimeout,
 
     // On in dev and prod alike: without it, commands time out during reconnection.
@@ -171,7 +169,6 @@ export const getRedisClient = (): RedisClient | null => {
   return redis
 }
 
-// Wait for Redis client to be ready (with auto-connect, it should be connecting already)
 export const waitForRedisReady = async (
   client: RedisClient,
   timeoutMs = 10000

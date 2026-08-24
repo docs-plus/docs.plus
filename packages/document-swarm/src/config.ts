@@ -37,7 +37,6 @@ function parsePositiveInt(raw: string | undefined, flagName: string, fallback: n
   return value
 }
 
-/** Parses durations like `5m`, `30s`, `1h`, or a bare millisecond count. */
 export function parseDurationMs(value: string): number {
   const match = /^(\d+)(ms|s|m|h)?$/.exec(value.trim())
   if (!match)

@@ -23,7 +23,6 @@ export const ChatroomPanelLayout = ({ children }: Props) => {
         className="z-50"
       />
 
-      {/* Chat content */}
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
 
       {/* Portal target for the message hover menu — lives inside the

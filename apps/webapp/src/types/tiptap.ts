@@ -2,12 +2,10 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
 // Prefer library types from @tiptap/core and @tiptap/pm/* over anything declared here.
 
-/** PubSub topics for editor events crossing component boundaries. */
 export const TIPTAP_EVENTS = {
   NEW_HEADING_CREATED: 'newHeadingCreated'
 } as const
 
-/** Transaction meta keys that mark a transaction for special handling. */
 export const TRANSACTION_META = {
   RENDER_TOC: 'renderTOC',
   PASTE: 'paste',
@@ -62,8 +60,6 @@ export type TipTapNodeType = (typeof TIPTAP_NODES)[keyof typeof TIPTAP_NODES]
 export type HtmlEntityType = (typeof HTML_ENTITIES)[keyof typeof HTML_ENTITIES]
 export type TransactionMetaKey = (typeof TRANSACTION_META)[keyof typeof TRANSACTION_META]
 
-// Command augmentations removed — flat schema uses standard toggleHeading/setParagraph from StarterKit
-
 /** Loose on purpose for custom commands; new code should import Editor from '@tiptap/core'. */
 export type TipTapEditor = any
 
@@ -87,22 +83,14 @@ export interface NodePosition {
   childCount: number
 }
 
-/** Payload for the PubSub topics in TIPTAP_EVENTS. */
 export interface EditorEventData {
   headingId?: string | null
   open?: boolean
   [key: string]: any
 }
 
-// For decoration building, use ProseMirror types directly: DecorationSet from
-// '@tiptap/pm/view', Transaction from '@tiptap/pm/state', Node from '@tiptap/pm/model'.
-
 export interface HeadingNodeData extends NodePosition {
   headingId: string
   level: number
   node: ProseMirrorNode
 }
-
-// Plugin configurations import their types directly from TipTap/ProseMirror.
-
-// HeadingToggleEvent and FoldClickEventData removed — fold is now plugin-driven via HeadingFold

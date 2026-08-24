@@ -5,12 +5,10 @@ import type {
 } from '@supabase/supabase-js'
 import { useCallback, useEffect, useState } from 'react'
 
-// Define a generic type for the API function
 type ApiFunction<TData> = (
   ...args: any
 ) => Promise<PostgrestResponse<TData> | PostgrestSingleResponse<TData>>
 
-// Use generic types to make the hook flexible for different data and error types
 export const useApi = <TData = unknown, TError = PostgrestError>(
   apiFunc: ApiFunction<TData>,
   initialArgs?: any | null,
@@ -42,7 +40,6 @@ export const useApi = <TData = unknown, TError = PostgrestError>(
     [apiFunc]
   )
 
-  // Execute the request immediately if the immediate flag is true
   useEffect(() => {
     if (immediate && initialArgs !== undefined) {
       request(...initialArgs)

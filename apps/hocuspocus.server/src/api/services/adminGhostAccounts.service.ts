@@ -1,8 +1,7 @@
 /**
- * Every ghost type is decided from auth.users alone. `no_public_profile` was removed
- * deliberately, because handle_new_user creates the profile. A login without one
- * means that trigger failed. That is a bug to fix, never an account to delete. It was
- * also the only check that needed a second full table read to reach a delete.
+ * Ghost types come from auth.users alone. `no_public_profile` was removed:
+ * handle_new_user always creates the profile, so a login without one is a
+ * trigger bug, never an account to delete.
  */
 
 import type { PrismaClient } from '@prisma/client'
@@ -50,7 +49,6 @@ type AuthUser = {
 
 type AdminClient = NonNullable<ReturnType<typeof getSupabaseClient>>
 
-/** Page through auth.users up to MAX_AUTH_USERS, logging if the cap is reached. */
 async function fetchAllAuthUsers(client: AdminClient): Promise<AuthUser[]> {
   const allUsers: AuthUser[] = []
   let page = 1
@@ -214,7 +212,6 @@ export async function getGhostSummary(client: AdminClient): Promise<GhostSummary
   }
 }
 
-/** Stale anonymous users older than minAgeDays, reusing the paged auth fetch. */
 export async function fetchStaleAnonymous(
   client: AdminClient,
   minAgeDays: number
@@ -227,7 +224,6 @@ export async function fetchStaleAnonymous(
   })
 }
 
-/** Invalidate ghost caches after delete/cleanup so counts reflect removals. */
 export function invalidateGhostCaches(): void {
   ghostCache.clear()
 }
@@ -325,7 +321,6 @@ export interface BulkDeleteGhostResult {
   errors: string[]
 }
 
-/** Bulk smart-delete: soft-delete users with blocking messages, hard-delete the rest. */
 export async function bulkDeleteGhostAccounts(
   client: AdminClient,
   prisma: PrismaClient,

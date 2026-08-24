@@ -73,7 +73,6 @@ export interface VersionStamp {
 export type CheckpointOutcome =
   | { status: 'checkpointed' }
   | { status: 'not-found' }
-  /** A never-persisted document has no history to checkpoint. */
   | { status: 'draft-document' }
   | { status: 'open-failed' }
   | { status: 'persist-failed' }
@@ -84,7 +83,6 @@ export type RevertOutcome =
   | { status: 'invalid-content'; detail: string }
   | { status: 'draft-document' }
   | { status: 'open-failed' }
-  /** The pre-restore backup could not be committed, so nothing was restored. */
   | { status: 'backup-failed' }
   | { status: 'persist-failed' }
 
@@ -107,7 +105,6 @@ export type VersionOpFailure = Exclude<
   { status: 'checkpointed' } | { status: 'reverted' }
 >
 
-/** Machine vocabulary for the stateless WS reply. The first two are raised by the gate. */
 export type VersionFailureReason =
   | 'unauthorized'
   | 'read-only'
@@ -265,7 +262,6 @@ export interface DiffAuthor {
   clientId: number
   /** Null when the binding row exists but no public.users row resolved. */
   user: ProfileLite | null
-  /** The sub was anonymous at capture time. */
   anonymous: boolean
 }
 

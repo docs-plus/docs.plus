@@ -11,11 +11,7 @@ function buildWeightedPool(): SwarmScript[] {
   return pool
 }
 
-/**
- * Per-actor script source. Default is deterministic round-robin over SWARM_SCRIPTS
- * (offset by actor index so actors don't march in lockstep); Shuffle draws
- * weighted-at-random from SCRIPT_WEIGHTS.
- */
+/** Offset so actors do not lockstep; Shuffle draws from SCRIPT_WEIGHTS. */
 export function makeScriptPicker(options: RunOptions, offset = 0): () => SwarmScript {
   const fallback = SWARM_SCRIPTS[0]
   if (!fallback) throw new Error('No Swarm Scripts are registered.')

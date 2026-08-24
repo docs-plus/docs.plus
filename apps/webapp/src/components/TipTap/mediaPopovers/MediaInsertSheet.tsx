@@ -9,7 +9,6 @@ import MediaUploadDropzone from './MediaUploadDropzone'
 import MediaUrlField from './MediaUrlField'
 import { useMediaInsert } from './useMediaInsert'
 
-/** Mobile media-insert sheet: tabbed Embed/Upload over the headless `useMediaInsert`. */
 export default function MediaInsertSheet({ data }: { data: SheetDataMap['mediaInsert'] }) {
   const closeSheet = useSheetStore((s) => s.closeSheet)
   const { tab, setTab, url, setUrl, detectedType, inserting, submitUrl, submitFile } =

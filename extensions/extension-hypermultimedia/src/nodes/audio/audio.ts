@@ -19,10 +19,8 @@ interface NodeOptions {
 }
 
 export interface AudioOptions extends StyleLayoutOptions, NodeOptions {
-  // Node attributes
   inline?: boolean
 
-  // Html attributes
   controls?: boolean
   autoplay?: boolean
   loop?: boolean

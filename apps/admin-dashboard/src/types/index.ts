@@ -1,4 +1,3 @@
-// User types
 export interface User {
   id: string
   username: string | null
@@ -11,7 +10,6 @@ export interface User {
   online_at: string | null
 }
 
-// Document types
 export interface Document {
   id: string
   docId: string
@@ -32,7 +30,6 @@ export interface Document {
   views7d?: number
   uniqueUsers7d?: number
   viewsTotal?: number
-  // Sparkline trend data (7-day)
   viewsTrend?: number[]
 }
 
@@ -64,7 +61,6 @@ export interface DeletionImpact {
   } | null
 }
 
-// Channel types
 export interface Channel {
   id: string
   workspace_id: string | null
@@ -73,12 +69,10 @@ export interface Channel {
   member_count: number
   last_activity_at: string | null
   created_at: string
-  // Document info (from workspace)
   document_slug: string | null
   document_name: string | null
 }
 
-// Notification types
 export interface NotificationStats {
   total: number
   unread: number
@@ -104,7 +98,6 @@ export interface UserNotificationSubs {
   email: boolean
 }
 
-// System types
 export interface ServiceStatus {
   name: string
   status: 'healthy' | 'degraded' | 'down'
@@ -164,7 +157,6 @@ export interface EmailGatewayHealth {
   error?: string
 }
 
-// API Response types
 export type SortDirection = 'asc' | 'desc'
 
 export interface PaginatedResponse<T> {
@@ -177,7 +169,6 @@ export interface PaginatedResponse<T> {
   }
 }
 
-// Dashboard stats
 export interface DashboardDocumentStats {
   documents: DocumentStats
   refreshedAt: string
@@ -202,8 +193,6 @@ export interface SupabaseStats {
     unread: number
   }
 }
-
-// Document View Analytics Types
 
 export interface ViewsSummary {
   total_views: number
@@ -241,8 +230,6 @@ export interface ViewsTrendPoint {
   views: number
   unique_visitors: number
 }
-
-// User Retention Analytics Types
 
 export interface RetentionMetrics {
   dau: number
@@ -288,8 +275,6 @@ export interface MessageTypeDistribution {
   percentage: number
 }
 
-// Push Notification Debugging Types
-
 export interface PushSubscriptionDetail {
   id: string
   user_id: string
@@ -304,24 +289,18 @@ export interface PushSubscriptionDetail {
 }
 
 export interface PushPipelineStats {
-  // pgmq consumer status
   triggerConfigured: boolean
   consumerStatus?: 'idle' | 'healthy' | 'backlog' | 'critical'
-  // pgmq queue stats
   queueDepth: number
   oldestMessageAge?: number // seconds
   messagesProcessed: number
   messagesFailed: number
-  // Push subscription stats
   totalSubscriptions: number
   activeSubscriptions: number
   failedSubscriptions: number
-  // Recent activity
   lastPushSent: string | null
   lastPushError: string | null
 }
-
-// Push Subscription Analytics Types
 
 export interface PushSubscriptionAnalytics {
   platforms: {
@@ -342,14 +321,11 @@ export interface PushSubscriptionAnalytics {
     churnedThisWeek: number // became inactive
     total: number
   }
-  // Errors (from last_error field)
   errors: {
     total: number
     byType: Record<string, number>
   }
 }
-
-// Stale Documents Audit Types
 
 export interface DocumentStructure {
   headings: number
@@ -372,7 +348,6 @@ export interface StaleDocument {
   owner_email: string | null
   owner_avatar_url: string | null
   structure: DocumentStructure
-  // View analytics (industry-standard staleness detection)
   views_7d: number
   views_30d: number
 }
@@ -385,8 +360,6 @@ export interface StaleDocumentsSummary {
   low_engagement: number // Minimal activity
   recoverable_bytes: number
 }
-
-// Failed Notifications Audit Types
 
 export interface NotificationHealth {
   push: {
@@ -471,8 +444,6 @@ export interface DisableResult {
   subscription_ids: string[]
 }
 
-// Ghost Accounts Audit
-
 export type GhostType =
   | 'unconfirmed_magic_link'
   | 'abandoned_sso'
@@ -543,8 +514,6 @@ export interface GhostCleanupResult {
   failed: number
   remaining: number
 }
-
-// Stale Documents
 
 export interface StaleDocumentPreview {
   slug: string
