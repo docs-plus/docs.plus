@@ -4,14 +4,14 @@ import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
+import TextInput from '@components/ui/TextInput'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
-import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { releasePadEditMode } from '@services/openHeadingChatroom'
-import { useAuthStore, useStore } from '@stores'
+import { useAuthStore, useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import dynamic from 'next/dynamic'
@@ -130,7 +130,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
 }
 
 const NotificationButton = () => {
-  const { openNotifications } = useBottomSheet()
+  const openNotifications = () => useSheetStore.getState().openSheet('notifications')
   const workspaceId = useStore((state) => state.settings.workspaceId)
   const unreadCount = useNotificationCount({ workspaceId })
 
@@ -227,17 +227,11 @@ const TitleEditContent = () => {
 
   return (
     <div className="p-5">
-      <label
-        htmlFor="mobile-doc-title-input"
-        className="text-base-content mb-3 block text-base font-semibold">
-        Rename Document Title
-      </label>
-
-      <input
+      <TextInput
         ref={inputRef}
         id="mobile-doc-title-input"
-        type="text"
-        className="input input-bordered w-full"
+        label="Rename document"
+        labelPosition="above"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {

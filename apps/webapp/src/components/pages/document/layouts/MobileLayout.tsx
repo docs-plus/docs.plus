@@ -6,12 +6,11 @@ import MobileHistory from '@components/pages/history/mobile/MobileHistory'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import ToolbarMobile from '@components/TipTap/toolbar/mobile/ToolbarMobile'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
-import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useHashRouter } from '@hooks/useHashRouter'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
 import { destroyChatRoomForHistory } from '@services/openHeadingChatroom'
-import { useStore } from '@stores'
+import { useSheetStore, useStore } from '@stores'
 import { useEffect } from 'react'
 
 import MobileEditor from '../components/MobileEditor'
@@ -30,7 +29,7 @@ const MobileLayout = () => {
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   const { isHistoryView } = useHashRouter()
-  const { close: closeSheet } = useBottomSheet()
+  const closeSheet = useSheetStore((state) => state.closeSheet)
   useVirtualKeyboard()
   useVisualViewportCssSyncOnFocus(Boolean(isMobile && !isHistoryView))
 

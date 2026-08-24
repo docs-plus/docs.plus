@@ -3,9 +3,8 @@ import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { useModal } from '@components/ui/ModalDrawer'
 import { ScrollArea } from '@components/ui/ScrollArea'
-import { useBottomSheet } from '@hooks/useBottomSheet'
 import { DocsPlusIcon, Icons } from '@icons'
-import { useAuthStore, useStore } from '@stores'
+import { useAuthStore, useSheetStore, useStore } from '@stores'
 import Link from 'next/link'
 import { useCallback } from 'react'
 import type { IconType } from 'react-icons'
@@ -38,7 +37,7 @@ function TocModalIconButton({
 const TocModal = () => {
   const { close: closeModal } = useModal() || {}
   const user = useAuthStore((state) => state.profile)
-  const { openFilters, openBookmarks, openDocumentSettings } = useBottomSheet()
+  const openSheet = useSheetStore((state) => state.openSheet)
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
@@ -100,7 +99,7 @@ const TocModal = () => {
             <div className="relative">
               <TocModalIconButton
                 aria-label={hasActiveFilters ? 'Open filters (active)' : 'Open filters'}
-                onClick={() => openSheetFromToc(openFilters)}
+                onClick={() => openSheetFromToc(() => openSheet('filters'))}
                 startIcon={Icons.filter}
               />
               {hasActiveFilters && (
@@ -113,13 +112,13 @@ const TocModal = () => {
             </div>
             <TocModalIconButton
               aria-label="Document settings"
-              onClick={() => openSheetFromToc(openDocumentSettings)}
+              onClick={() => openSheetFromToc(() => openSheet('documentSettings'))}
               startIcon={Icons.settings}
             />
             {user && (
               <TocModalIconButton
                 aria-label="Bookmarks"
-                onClick={() => openSheetFromToc(openBookmarks)}
+                onClick={() => openSheetFromToc(() => openSheet('bookmarks'))}
                 startIcon={Icons.bookmark}
               />
             )}

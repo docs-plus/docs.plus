@@ -3,8 +3,8 @@ import {
   type ModalDrawerHandle,
   useModalDrawerClose
 } from '@components/ui/ModalDrawer'
-import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
+import { useSheetStore } from '@stores'
 import { useCallback, useRef } from 'react'
 
 import { HistoryEditorContent } from '../HistoryEditorContent'
@@ -28,15 +28,14 @@ function MobileHistorySidebar() {
 
 const MobileHistory = () => {
   const drawerRef = useRef<ModalDrawerHandle>(null)
-  const { openHistoryCompare } = useBottomSheet()
   useHistoryEditor()
   useHistoryCompareDecorations()
   useVisualViewportCssSyncOnFocus(true)
 
   const openCompareSheet = useCallback(() => {
     drawerRef.current?.uncheck()
-    openHistoryCompare()
-  }, [openHistoryCompare])
+    useSheetStore.getState().openSheet('historyCompare')
+  }, [])
 
   return (
     <div className="mobileLayoutRoot pad tiptap history_editor border-base-300 flex min-h-0 w-full flex-col overflow-hidden border-solid">

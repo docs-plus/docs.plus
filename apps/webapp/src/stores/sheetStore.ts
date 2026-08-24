@@ -3,19 +3,6 @@ import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 
-export type SheetType =
-  | 'notifications'
-  | 'filters'
-  | 'bookmarks'
-  | 'documentSettings'
-  | 'linkPreview'
-  | 'linkEditor'
-  | 'mediaControls'
-  | 'mediaInsert'
-  | 'historyCompare'
-  | 'messageReaction'
-  | 'signIn'
-  | null
 export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
 
 /**
@@ -81,9 +68,10 @@ export interface SheetDataMap {
 }
 
 export type SheetData = SheetDataMap[keyof SheetDataMap]
+export type SheetType = keyof SheetDataMap | null
 
 interface PendingSheet {
-  sheet: Exclude<SheetType, null>
+  sheet: keyof SheetDataMap
   data: SheetData
 }
 
@@ -95,15 +83,14 @@ interface SheetStore {
   /** Queued sheet that opens after the current one finishes closing. */
   pendingSheet: PendingSheet | null
 
-  openSheet: (sheet: Exclude<SheetType, null>, data?: SheetData) => void
+  openSheet: <K extends keyof SheetDataMap>(sheet: K, data?: SheetDataMap[K]) => void
   closeSheet: () => void
-  isSheetOpen: (sheet: string) => boolean
   setSheetState: (state: SheetState) => void
   /**
    * Close the current sheet, then open a new one after the close animation.
    * If no sheet is active, opens immediately.
    */
-  switchSheet: (sheet: Exclude<SheetType, null>, data?: SheetData) => void
+  switchSheet: <K extends keyof SheetDataMap>(sheet: K, data?: SheetDataMap[K]) => void
   clearPendingSheet: () => void
 }
 
@@ -116,10 +103,10 @@ export const useSheetStore = create<SheetStore>()(
 
     setSheetState: (state) => set({ sheetState: state }),
 
-    openSheet: (sheet, data = {} as SheetData) =>
+    openSheet: (sheet, data) =>
       set({
         activeSheet: sheet,
-        sheetData: data
+        sheetData: (data ?? {}) as SheetData
       }),
 
     closeSheet: () =>
@@ -128,9 +115,7 @@ export const useSheetStore = create<SheetStore>()(
         sheetData: {} as SheetData
       }),
 
-    isSheetOpen: (sheet) => get().activeSheet === sheet,
-
-    switchSheet: (sheet, data = {} as SheetData) => {
+    switchSheet: (sheet, data) => {
       const currentState = get()
 
       if (currentState.sheetState === 'closed') {
@@ -139,7 +124,7 @@ export const useSheetStore = create<SheetStore>()(
       }
 
       currentState.closeSheet()
-      set({ pendingSheet: { sheet, data } })
+      set({ pendingSheet: { sheet, data: (data ?? {}) as SheetData } })
     },
 
     clearPendingSheet: () => set({ pendingSheet: null })
