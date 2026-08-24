@@ -1,5 +1,5 @@
 import { SheetLayout } from '@components/SheetLayout'
-import { useBottomSheet } from '@hooks/useBottomSheet'
+import { useSheetStore } from '@stores'
 
 import { HistorySidebarBody } from '../components/HistorySidebarBody'
 import { useHistoryCompare } from '../hooks/useHistoryCompare'
@@ -7,7 +7,7 @@ import { useHistorySidebarRows } from '../hooks/useHistorySidebarRows'
 
 /** Mobile compare picker. Tap sets A and closes. The viewed version is not a pick. */
 export default function HistoryCompareSheet() {
-  const { close } = useBottomSheet()
+  const close = useSheetStore((state) => state.closeSheet)
   const { enterCompare } = useHistoryCompare()
   const { historyList, activeVersion, rows, openDays, toggleDay, toggleSession } =
     useHistorySidebarRows()

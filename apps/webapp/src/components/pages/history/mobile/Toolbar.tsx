@@ -5,9 +5,8 @@ import {
 } from '@components/pages/history/historyShareUrl'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Button from '@components/ui/Button'
-import { useBottomSheet } from '@hooks/useBottomSheet'
 import { Icons } from '@icons'
-import { useStore } from '@stores'
+import { useSheetStore, useStore } from '@stores'
 
 import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
 import { countVersionsAfter, formatCompareRange, formatVersionDate } from '../helpers'
@@ -24,8 +23,8 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
   const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore, restoring, canRestore } =
     useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, exitCompare } = useHistoryCompare()
-  const { close, activeSheet } = useBottomSheet()
-  const compareSheetOpen = activeSheet === 'historyCompare'
+  const close = useSheetStore((state) => state.closeSheet)
+  const compareSheetOpen = useSheetStore((state) => state.activeSheet === 'historyCompare')
   const compareRange =
     compareMode && compareBaseItem && activeHistory
       ? formatCompareRange(compareBaseItem.createdAt, activeHistory.createdAt)

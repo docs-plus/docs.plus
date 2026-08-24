@@ -1,85 +1,80 @@
 import SignInSheet from '@components/auth/SignInSheet'
-import BookmarkSheet from '@components/pages/document/components/BookmarkSheet'
+import { BookmarkPanel } from '@components/bookmarkPanel'
 import MessageReactionSheet from '@components/pages/document/components/chat/MessageReactionSheet'
-import DocumentSettingsSheet from '@components/pages/document/components/DocumentSettingsSheet'
-import FilterSheet from '@components/pages/document/components/FilterSheet'
 import HistoryCompareSheet from '@components/pages/history/mobile/HistoryCompareSheet'
+import DocumentSettingsPanel from '@components/TipTap/toolbar/desktop/DocumentSettingsPanel'
+import FilterPanel from '@components/TipTap/toolbar/desktop/FilterPanel'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
-import { type SheetData, type SheetDataMap, type SheetType, useSheetStore } from '@stores'
+import { type SheetData, type SheetDataMap, useSheetStore } from '@stores'
 import { useMemo } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
 
-import NotificationModal from './notificationPanel/mobile/NotificationModal'
+import { NotificationPanel } from './notificationPanel/desktop/NotificationPanel'
 import LinkEditorSheet from './TipTap/hyperlinkPopovers/LinkEditorSheet'
 import LinkPreviewSheet from './TipTap/hyperlinkPopovers/LinkPreviewSheet'
 import MediaControlsSheet from './TipTap/mediaPopovers/MediaControlsSheet'
 import MediaInsertSheet from './TipTap/mediaPopovers/MediaInsertSheet'
 
-// Each renderer receives its sheet's typed payload (`SheetDataMap[K]`) so content
-// components stay plain props-driven views. A new sheet needs an entry here plus a
-// SheetDataMap key in sheetStore.
+type SheetEntry<K extends keyof SheetDataMap> = {
+  render: (data: SheetDataMap[K]) => React.ReactNode
+} & Partial<SheetProps>
 
-type SheetRenderer<K extends Exclude<SheetType, null>> = (data: SheetDataMap[K]) => React.ReactNode
-
-const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
-  notifications: () => <NotificationModal />,
-  filters: () => <FilterSheet />,
-  bookmarks: () => <BookmarkSheet />,
-  documentSettings: () => <DocumentSettingsSheet />,
-  linkPreview: (data) => <LinkPreviewSheet data={data} />,
-  linkEditor: (data) => <LinkEditorSheet data={data} />,
-  mediaControls: (data) => <MediaControlsSheet data={data} />,
-  mediaInsert: (data) => <MediaInsertSheet data={data} />,
-  historyCompare: () => <HistoryCompareSheet />,
-  messageReaction: () => <MessageReactionSheet />,
-  signIn: (data) => <SignInSheet data={data} />
-}
-
-const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
+const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
   notifications: {
     id: 'notification_sheet',
-    detent: 'default'
+    detent: 'default',
+    render: () => <NotificationPanel variant="sheet" />
   },
   filters: {
     id: 'filter_sheet',
     detent: 'content',
-    snapPoints: [0, 0.5, 1]
+    snapPoints: [0, 0.5, 1],
+    render: () => <FilterPanel variant="sheet" />
   },
   bookmarks: {
     id: 'bookmark_sheet',
-    detent: 'default'
+    detent: 'default',
+    render: () => <BookmarkPanel variant="sheet" />
   },
   documentSettings: {
     id: 'document_settings_sheet',
-    detent: 'default'
+    detent: 'default',
+    render: () => <DocumentSettingsPanel variant="sheet" />
   },
   linkPreview: {
     id: 'link_preview_sheet',
-    detent: 'content'
+    detent: 'content',
+    render: (data) => <LinkPreviewSheet data={data} />
   },
   linkEditor: {
     id: 'link_editor_sheet',
-    detent: 'content'
+    detent: 'content',
+    render: (data) => <LinkEditorSheet data={data} />
   },
   mediaControls: {
     id: 'media_controls_sheet',
-    detent: 'content'
+    detent: 'content',
+    render: (data) => <MediaControlsSheet data={data} />
   },
   mediaInsert: {
     id: 'media_insert_sheet',
-    detent: 'content'
+    detent: 'content',
+    render: (data) => <MediaInsertSheet data={data} />
   },
   historyCompare: {
     id: 'history_compare_sheet',
-    detent: 'default'
+    detent: 'default',
+    render: () => <HistoryCompareSheet />
   },
   messageReaction: {
     id: 'message_reaction_sheet',
-    detent: 'content'
+    detent: 'content',
+    render: () => <MessageReactionSheet />
   },
   signIn: {
     id: 'sign_in_sheet',
-    detent: 'content'
+    detent: 'content',
+    render: (data) => <SignInSheet data={data} />
   }
 }
 
@@ -95,17 +90,14 @@ const BottomSheet = () => {
 
   const content = useMemo((): React.ReactNode => {
     if (!activeSheet) return null
-    // Single type-narrowing boundary: the registry's per-key signatures
-    // are precise (`SheetDataMap[K]`), but the indexed lookup widens back
-    // to the union. Collapse the union here so the renderers themselves
-    // stay strictly typed.
-    const renderer = SHEET_CONTENT[activeSheet] as (data: SheetData) => React.ReactNode
+    const renderer = SHEETS[activeSheet].render as (data: SheetData) => React.ReactNode
     return renderer(sheetData)
   }, [activeSheet, sheetData])
 
   const sheetProps = useMemo<Partial<SheetProps>>(() => {
     if (!activeSheet) return DEFAULT_SHEET_PROPS
-    return SHEET_PROPS[activeSheet] ?? DEFAULT_SHEET_PROPS
+    const { render: _render, ...props } = SHEETS[activeSheet]
+    return props
   }, [activeSheet])
 
   const handleOpenStart = () => setSheetState('opening')
@@ -114,24 +106,23 @@ const BottomSheet = () => {
   const handleCloseEnd = () => setSheetState('closed')
 
   return (
-    <div className="bottom-sheet-container relative">
-      <Sheet
-        avoidKeyboard
-        className="bottom-sheet !z-50"
-        isOpen={!!activeSheet}
-        onClose={closeSheet}
-        onOpenStart={handleOpenStart}
-        onOpenEnd={handleOpenEnd}
-        onCloseStart={handleCloseStart}
-        onCloseEnd={handleCloseEnd}
-        {...sheetProps}>
-        <Sheet.Container>
-          <Sheet.Header />
-          <Sheet.Content>{content}</Sheet.Content>
-        </Sheet.Container>
-        <Sheet.Backdrop onTap={closeSheet} />
-      </Sheet>
-    </div>
+    <Sheet
+      avoidKeyboard
+      className="bottom-sheet !z-50"
+      isOpen={!!activeSheet}
+      onClose={closeSheet}
+      onOpenStart={handleOpenStart}
+      onOpenEnd={handleOpenEnd}
+      onCloseStart={handleCloseStart}
+      onCloseEnd={handleCloseEnd}
+      {...sheetProps}>
+      <Sheet.Container>
+        {/* Empty Header mounts the library DragIndicator. Do not add a house grabber. */}
+        <Sheet.Header />
+        <Sheet.Content disableScroll>{content}</Sheet.Content>
+      </Sheet.Container>
+      <Sheet.Backdrop onTap={closeSheet} />
+    </Sheet>
   )
 }
 
