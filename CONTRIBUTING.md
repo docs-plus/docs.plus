@@ -176,7 +176,7 @@ Husky runs local quality gates before code reaches a remote branch.
 - Active hooks:
   - `pre-commit`: runs `bun run lint-staged` (staged-file lint and format checks, Prettier included)
   - `commit-msg`: validates commit message format
-  - `pre-push`: runs selective build checks, then always runs `bun run check:push` (lint + lint:styles + typecheck)
+  - `pre-push`: refuses the push if a Next development server is live, then runs `bun run check:ci`
   - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
 
 Run the push gate without pushing:
@@ -185,13 +185,7 @@ Run the push gate without pushing:
 bun run pre-push
 ```
 
-That script runs `bun run check:push` and no build. The git hook itself also runs the selective extension, admin-dashboard and webapp builds, so the hook takes minutes.
-
-For the same quality gates GitHub Actions runs, call this before you push (opt-in; not the hook):
-
-```bash
-bun run check:ci
-```
+That script runs the same husky hook: it stops if a Next development server is live, then runs `bun run check:ci`. The clean-room extension suites can take a long time.
 
 Trigger the other two hooks by hand. Run both from inside the repository, because each wrapper resolves the repository root with `git rev-parse --show-toplevel` and exits 1 when it cannot.
 
@@ -218,8 +212,8 @@ Full naming convention: [.cursor/docs/scripts-naming-convention.md](./.cursor/do
 | Command                    | Use case                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------- |
 | `bun run check`            | Full local report: lint + lint:styles + format + typecheck + check:agent-docs |
-| `bun run check:ci`         | Local replica of the prod quality gates. Run this before you push.            |
-| `bun run check:push`       | Pre-push hook: lint + lint:styles + typecheck (no format)                     |
+| `bun run check:ci`         | Local replica of the prod quality gates. Husky pre-push runs this.            |
+| `bun run check:push`       | Fast local gate: lint + lint:styles + typecheck (no format)                   |
 | `bun run check:fix`        | Auto-fix all: ESLint + Stylelint + Prettier (in that order)                   |
 | `bun run lint`             | ESLint report                                                                 |
 | `bun run lint:fix`         | ESLint --fix                                                                  |
@@ -366,7 +360,7 @@ A merged contribution ships under the repository license, MIT. Read [LICENSE](LI
 
    That command is the local replica of the prod quality gates. It prints pass / fail / skip for each gate.
 
-   `bun run check` still covers `check:agent-docs`, which CI does not run. Pre-push stays `bun run check:push` (lint + lint:styles + typecheck; no full-repo Prettier). CI runs `bun run lint`, `bun run format` and `bun run lint:styles` in one job, and `bun run typecheck` in a second job.
+   `bun run check` still covers `check:agent-docs`, which CI does not run. Husky pre-push runs `bun run check:ci`. `bun run check:push` is the fast local lint + styles + typecheck gate. CI runs `bun run lint`, `bun run format` and `bun run lint:styles` in one job, and `bun run typecheck` in a second job.
 
 4. **Test locally**:
    - Start the local stack

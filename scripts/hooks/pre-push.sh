@@ -3,141 +3,34 @@
 echo "🔍 Pre-push checks starting..."
 echo ""
 
-# Get changed files for selective builds — full unpushed range, not only the tip commit.
-CHANGED_FILES=""
-if git rev-parse origin/main >/dev/null 2>&1; then
-    CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || echo "")
-fi
-if [ -z "$CHANGED_FILES" ]; then
-    CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null || echo "")
-fi
-
-# Track overall status
-FAILED=0
-
-# ============================================
-# 1. Build TipTap Extensions (only if changed)
-# ============================================
-EXTENSIONS=$(bun scripts/publishable-extensions.ts) || exit 1
-NEEDS_BUILD=""
-NEEDS_FULL_BUILD=""
-
-# Shared dist inputs (mirror .github/filters/extensions.yaml dist subset)
-if echo "$CHANGED_FILES" | grep -qE '^(packages/floating-popover/|packages/floating-tooltip/|tsup\.base\.ts|tsconfig\.base\.json|scripts/build-extensions\.sh|scripts/publishable-extensions\.ts|bun\.lock)'; then
-    NEEDS_FULL_BUILD=1
-fi
-
-for ext in $EXTENSIONS; do
-    if echo "$CHANGED_FILES" | grep -q "extensions/${ext}/"; then
-        NEEDS_BUILD="$NEEDS_BUILD $ext"
-    fi
-done
-
-if [ -n "$NEEDS_FULL_BUILD" ]; then
-    echo "📦 Shared extension build inputs changed; running full extension build..."
-    if bash scripts/build-extensions.sh >/dev/null 2>&1; then
-        echo "  ✅ all extensions (floating + publishable)"
-    else
-        echo "  ❌ extension build failed"
-        FAILED=1
-    fi
-elif [ -n "$NEEDS_BUILD" ]; then
-    echo "📦 Building changed TipTap extensions..."
-    for ext in $NEEDS_BUILD; do
-        if bun run --filter "@docs.plus/${ext}" build >/dev/null 2>&1; then
-            echo "  ✅ ${ext}"
-        else
-            echo "  ❌ ${ext} build failed"
-            FAILED=1
-        fi
-    done
-else
-    echo "📦 No extension changes detected, skipping extension builds"
-fi
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Extension builds failed. Push aborted."
-    exit 1
-fi
-
-echo ""
-
-# ============================================
-# 2. Build Admin Dashboard (only if changed)
-# ============================================
-if echo "$CHANGED_FILES" | grep -q "apps/admin-dashboard/"; then
-    echo "📦 Building admin-dashboard..."
-    # Use bun workspace filter with build:ci script (same as CI)
-    if NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
-       NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-key \
-       NEXT_PUBLIC_API_URL=http://localhost:3003 \
-       NEXT_PUBLIC_APP_URL=http://localhost:3000 \
-       bun run --filter @docs.plus/admin-dashboard build:ci >/dev/null 2>&1; then
-        echo "  ✅ admin-dashboard build OK"
-    else
-        echo "  ❌ admin-dashboard build failed"
-        FAILED=1
-    fi
-else
-    echo "📦 No admin-dashboard changes detected, skipping build"
-fi
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Admin dashboard build failed. Push aborted."
-    exit 1
-fi
-
-echo ""
-
-# ============================================
-# 3. Build Webapp (only if changed)
-# ============================================
-if echo "$CHANGED_FILES" | grep -q "apps/webapp/"; then
-    echo "📦 Building webapp..."
-    # Use bun workspace filter with build:ci script (same as CI)
-    if NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
-       NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-key \
-       bun run --filter @docs.plus/webapp build:ci >/dev/null 2>&1; then
-        echo "  ✅ webapp build OK"
-    else
-        echo "  ❌ webapp build failed"
-        FAILED=1
-    fi
-else
-    echo "📦 No webapp changes detected, skipping build"
-fi
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Webapp build failed. Push aborted."
-    exit 1
-fi
-
-echo ""
-
-# ============================================
-# 4. Root quality gate for ALL pushes
-# ============================================
-REMOTE_NAME="$1"
-echo "🧪 Running mandatory root quality gate for push to ${REMOTE_NAME:-unknown}: bun run check:push"
-
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$REPO_ROOT" ]; then
     echo "❌ Could not resolve repository root. Push aborted."
     exit 1
 fi
 
-if (cd "$REPO_ROOT" && bun run check:push); then
-    echo "  ✅ bun run check:push passed"
-else
-    echo "  ❌ bun run check:push failed"
+# check:ci skips webapp build:ci when a Next development server is live.
+# A green skip is not the GitHub job. A live server plus a production
+# build also corrupts .next.
+if ps -ax -o command= | grep -E '[n]ext (dev|start)' >/dev/null; then
+    echo "❌ A Next development server is running."
+    echo "   Stop the webapp development server, then push again."
+    echo "   After the push: rm -rf apps/webapp/.next and restart it."
     echo ""
-    echo "❌ Root quality checks failed. Push aborted."
+    echo "❌ Push aborted."
     exit 1
 fi
 
-echo ""
-echo "🚀 All pre-push checks passed. Proceeding with push."
+REMOTE_NAME="$1"
+echo "🧪 Running bun run check:ci for push to ${REMOTE_NAME:-unknown}"
+echo "   This is the local replica of the prod quality gates."
 
+if (cd "$REPO_ROOT" && bun run check:ci); then
+    echo ""
+    echo "🚀 bun run check:ci passed. Proceeding with push."
+    exit 0
+fi
+
+echo ""
+echo "❌ bun run check:ci failed. Push aborted."
+exit 1

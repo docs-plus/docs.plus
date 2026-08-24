@@ -3,8 +3,8 @@
  * =========================
  * Runs on staged files during pre-commit hook.
  *
- * Prettier writes here; pre-push runs check:push (no full-repo format re-check).
- * CI runs bun run check which includes prettier --check.
+ * Prettier writes here; husky pre-push runs check:ci (includes format).
+ * CI lint job runs bun run lint, bun run format, and bun run lint:styles.
  */
 
 module.exports = {

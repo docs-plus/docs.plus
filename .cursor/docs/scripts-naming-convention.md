@@ -174,8 +174,8 @@ Five deliberate corner cases. The first three depart from the bare-canonical rul
 ### Aggregates
 
 - `check` = `lint && lint:styles && format && typecheck && check:agent-docs`. Full local report. CI does not run this aggregate (`check:agent-docs` is local-only).
-- `check:push` = `lint && lint:styles && typecheck`. Pre-push hook gate (Prettier already runs on staged files via `lint-staged`).
-- `check:ci` = `scripts/check-ci.ts`. Local replica of the prod quality gates. Path-filters extension Cypress the same way as `.github/filters/extensions.yaml`. Does not replace `check:push`.
+- `check:push` = `lint && lint:styles && typecheck`. Fast local gate (Prettier already runs on staged files via `lint-staged`).
+- `check:ci` = `scripts/check-ci.ts`. Local replica of the prod quality gates. Path-filters extension Cypress the same way as `.github/filters/extensions.yaml`. Husky pre-push runs this.
 - `check:fix` = `lint:fix && lint:styles:fix && format:fix`.
 
 ### Tests

@@ -1,11 +1,8 @@
 #!/usr/bin/env bun
 /**
- * Local replica of the prod quality gates (`prod.docs.plus.yml` stage 1–2).
- * Run: bun run check:ci
- *
- * Prints a per-gate pass / fail / skip verdict. Exit 1 if any run gate fails.
- * Skipped gates are named so a green run never implies CI jobs this command
- * did not execute.
+ * Local replica of the prod quality gates. Husky pre-push runs this.
+ * Stop the Next development server first — a production build corrupts a live .next.
+ * Skipped gates are named so a green run never implies CI jobs this command did not execute.
  */
 
 import { $ } from 'bun'
@@ -216,7 +213,6 @@ try {
   try {
     unlinkSync(auditJson)
   } catch {
-    /* temp file */
   }
 }
 
