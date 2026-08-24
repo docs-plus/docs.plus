@@ -4,6 +4,7 @@ import FilterBar from '@components/TipTap/pad-title-section/FilterBar'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { usePopoverState } from '@components/ui/Popover'
+import TextInput from '@components/ui/TextInput'
 import Toggle from '@components/ui/Toggle'
 import { useDismissPanel } from '@hooks/useDismissPanel'
 import { Icons } from '@icons'
@@ -14,7 +15,6 @@ import { appendFilterSegment, setFilterMode } from '@utils/filterRoute'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { FilterSuggestions } from './FilterSuggestions'
 import { type FilterTypeaheadMatch, searchFilterSections } from './filterTypeahead'
@@ -173,49 +173,48 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
         </div>
       }>
       <div className="flex flex-col gap-2.5 px-3 pt-1 pb-3">
-        <label className="input flex w-full items-center gap-2">
-          <Icons.search size={16} className="text-base-content/50 shrink-0" />
-          <input
-            id="filterSearchBox"
-            type="text"
-            role="combobox"
-            aria-label="Find in document"
-            aria-expanded={showSuggestions}
-            aria-controls={SUGGESTIONS_ID}
-            aria-autocomplete="list"
-            aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
-            autoComplete="off"
-            value={filterInput}
-            onChange={(e) => {
-              setFilterInput(e.target.value)
-              setActiveIndex(-1)
-              setIsOpen(true)
-            }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsOpen(true)}
-            onBlur={() => setIsOpen(false)}
-            placeholder="Find in document..."
-            className="text-base-content placeholder:text-base-content/40 grow bg-transparent text-sm focus:outline-none"
-          />
+        <TextInput
+          id="filterSearchBox"
+          role="combobox"
+          aria-label="Find in document"
+          aria-expanded={showSuggestions}
+          aria-controls={SUGGESTIONS_ID}
+          aria-autocomplete="list"
+          aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+          autoComplete="off"
+          value={filterInput}
+          onChange={(e) => {
+            setFilterInput(e.target.value)
+            setActiveIndex(-1)
+            setIsOpen(true)
+          }}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => setIsOpen(false)}
+          placeholder="Find in document..."
+          startIcon={<Icons.search size={16} className="text-base-content/50" />}
+          endIcon={
+            filterInput ? (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={clearForm}
+                className="text-base-content/40 hover:text-base-content inline-flex size-8 shrink-0 cursor-pointer items-center justify-center">
+                <Icons.close size={20} className="stroke-[1.75]" />
+              </button>
+            ) : undefined
+          }
+        />
+        {matchCountLabel ? (
           <span
             data-testid="filter-match-count"
             aria-live="polite"
-            className={twMerge(
-              'shrink-0 text-xs font-medium tabular-nums',
+            className={`px-1 text-xs font-medium tabular-nums ${
               suggestions.length > 0 ? 'text-primary' : 'text-base-content/40'
-            )}>
+            }`}>
             {matchCountLabel}
           </span>
-          {filterInput && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={clearForm}
-              className="text-base-content/40 hover:text-base-content inline-flex size-8 shrink-0 cursor-pointer items-center justify-center">
-              <Icons.close size={20} className="stroke-[1.75]" />
-            </button>
-          )}
-        </label>
+        ) : null}
 
         {showSuggestions && (
           <FilterSuggestions
@@ -247,8 +246,8 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
           <label
             htmlFor="filter-mode-and"
             className="flex cursor-pointer items-center justify-between gap-3 px-1 text-sm motion-safe:animate-[doc-region-in_160ms_ease-out_both]">
-            <span className="text-base-content/80">
-              Match all <span className="text-base-content/45">(AND)</span>
+            <span className="text-base-content">
+              Match all <span className="text-base-content/60">(AND)</span>
             </span>
             <Toggle
               id="filter-mode-and"

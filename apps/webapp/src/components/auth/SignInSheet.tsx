@@ -1,4 +1,6 @@
+import { SheetLayout } from '@components/SheetLayout'
 import { type SheetDataMap, useSheetStore } from '@stores'
+import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
 
 import SignInForm from './SignInForm'
 
@@ -7,8 +9,10 @@ export default function SignInSheet({ data }: { data: SheetDataMap['signIn'] }) 
   const closeSheet = useSheetStore((state) => state.closeSheet)
 
   return (
-    <div className="w-full px-5 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
-      <SignInForm returnTo={data.returnTo} onClose={closeSheet} />
-    </div>
+    <SheetLayout title="Sign in" onClose={closeSheet}>
+      <div className={`py-3 ${sheetBodyPadClassName}`}>
+        <SignInForm returnTo={data.returnTo} onClose={closeSheet} embedded />
+      </div>
+    </SheetLayout>
   )
 }

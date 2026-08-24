@@ -1,6 +1,7 @@
 import { PanelPopoverHeader } from '@components/PanelPopoverHeader'
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { TabbedPanelBody } from '@components/TabbedPanelBody'
+import { useDismissPanel } from '@hooks/useDismissPanel'
 import { useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 
@@ -20,6 +21,7 @@ export const NotificationPanel = ({ onClose, variant = 'popover' }: Notification
   const notificationTabs = useStore((state) => state.notificationTabs)
   const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
   const isSheet = variant === 'sheet'
+  const dismissPanel = useDismissPanel(variant)
   const markAllReadAction = <NotificationMarkAllReadButton />
 
   const { notifications, isLoading, isLoadingMore, hasMore, sentinelRef } =
@@ -31,6 +33,7 @@ export const NotificationPanel = ({ onClose, variant = 'popover' }: Notification
       title="Notifications"
       fillHeight
       bodyClassName="min-h-0 overflow-hidden"
+      onClose={isSheet ? (onClose ?? dismissPanel) : undefined}
       headerActions={markAllReadAction}
       popoverHeader={
         <PanelPopoverHeader

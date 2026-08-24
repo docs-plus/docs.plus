@@ -1,4 +1,5 @@
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
+import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
@@ -7,6 +8,7 @@ import { ScrollArea } from '@components/ui/ScrollArea'
 import Textarea from '@components/ui/Textarea'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
+import { useDismissPanel } from '@hooks/useDismissPanel'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
@@ -14,10 +16,10 @@ import { useAuthStore, useSheetStore, useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 import Image from 'next/image'
 import React, { useState } from 'react'
-import { TagsInput } from 'react-tag-input-component'
 
 import ToggleSection from '../ToggleSection'
 import ImportExportSection from './ImportExportSection'
+import { KeywordTagsField } from './KeywordTagsField'
 
 interface DocumentSettingsPanelProps {
   className?: string
@@ -31,7 +33,8 @@ const DocumentSettingsPanel = ({
   variant = 'popover'
 }: DocumentSettingsPanelProps) => {
   const popoverState = usePopoverState()
-  const handleClose = onClose || popoverState.close
+  const dismissPanel = useDismissPanel(variant)
+  const handleClose = onClose ?? (variant === 'sheet' ? dismissPanel : popoverState.close)
   const isSheet = variant === 'sheet'
   const user = useAuthStore((state) => state.profile)
   const editor = useStore((state) => state.settings.editor.instance)
@@ -158,32 +161,24 @@ const DocumentSettingsPanel = ({
                 rows={3}
               />
 
-              <div>
-                <label
-                  htmlFor="docKeywords"
-                  className="text-base-content mb-2 block text-sm font-medium">
-                  Keywords
-                </label>
-                <span className="documentKeywordInput">
-                  <TagsInput
-                    value={tags}
-                    onChange={handleTagsChange}
-                    name="tags"
-                    disabled={!canEditMetadata}
-                    placeHolder={canEditMetadata ? 'Type keyword...' : ''}
-                  />
-                </span>
-              </div>
+              <KeywordTagsField
+                value={tags}
+                onChange={handleTagsChange}
+                disabled={!canEditMetadata}
+                placeholder={canEditMetadata ? 'Type a keyword…' : ''}
+              />
 
-              <div className="flex justify-end pt-2">
-                <Button
-                  variant="primary"
-                  loading={isPending}
-                  disabled={!canEditMetadata}
-                  onClick={saveDescriptionHandler}>
-                  Save Changes
-                </Button>
-              </div>
+              {isSheet ? null : (
+                <div className="flex justify-end pt-2">
+                  <Button
+                    variant="primary"
+                    loading={isPending}
+                    disabled={!canEditMetadata}
+                    onClick={saveDescriptionHandler}>
+                    Save Changes
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -212,13 +207,23 @@ const DocumentSettingsPanel = ({
   return (
     <PanelSurfaceShell
       variant={variant}
-      title="Settings"
+      title="Document settings"
       fillHeight
       bodyClassName="min-h-0 overflow-hidden"
       className={className}
+      onClose={isSheet ? handleClose : undefined}
+      footer={
+        isSheet ? (
+          <SheetPrimaryFooter
+            label="Save"
+            onClick={saveDescriptionHandler}
+            disabled={!canEditMetadata || isPending}
+          />
+        ) : undefined
+      }
       popoverHeader={
         <div className="flex items-center justify-between">
-          <h2 className="text-base-content text-lg font-semibold">Settings</h2>
+          <h2 className="text-base-content text-lg font-semibold">Document settings</h2>
           <CloseButton onClick={handleClose} size="sm" />
         </div>
       }>

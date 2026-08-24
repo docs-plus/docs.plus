@@ -1,5 +1,8 @@
-import { SheetFooter } from '@components/SheetFooter'
 import { SheetLayout } from '@components/SheetLayout'
+import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
+import Button from '@components/ui/Button'
+import Select from '@components/ui/Select'
+import Textarea from '@components/ui/Textarea'
 import {
   canViewOriginal,
   copyMediaNode,
@@ -72,6 +75,7 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
   const { editor, keyId, nodeType } = data
   const closeSheet = useSheetStore((s) => s.closeSheet)
   const [current, setCurrent] = useState<Record<string, unknown>>({})
+  const [caption, setCaption] = useState('')
 
   useEffect(() => {
     const syncAttrs = () => {
@@ -80,7 +84,8 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
         closeSheet()
         return
       }
-      setCurrent(editor.state.doc.nodeAt(nodePos)?.attrs ?? {})
+      const attrs = editor.state.doc.nodeAt(nodePos)?.attrs ?? {}
+      setCurrent(attrs)
     }
 
     // Selection-only transactions can't move the node or change its attrs — skip the doc scan.
@@ -94,6 +99,12 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
       editor.off('transaction', onTransaction)
     }
   }, [editor, keyId, closeSheet])
+
+  useEffect(() => {
+    const nodePos = findMediaNodePosByKeyId(editor, keyId)
+    if (nodePos == null) return
+    setCaption(String(editor.state.doc.nodeAt(nodePos)?.attrs.caption ?? ''))
+  }, [editor, keyId])
 
   const currentMargin = String(current.margin ?? '0.5in')
   const activePlacement = getCurrentMediaPlacement(current)
@@ -124,16 +135,7 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
     <SheetLayout
       title={isXEmbed ? 'Post layout' : 'Media layout'}
       onClose={closeSheet}
-      footer={
-        <SheetFooter>
-          <button
-            type="button"
-            className="btn btn-primary min-h-12 w-full text-base font-semibold"
-            onClick={closeSheet}>
-            Done
-          </button>
-        </SheetFooter>
-      }>
+      footer={<SheetPrimaryFooter label="Done" onClick={closeSheet} />}>
       <div className={`flex flex-col gap-4 py-3 ${sheetBodyPadClassName}`}>
         {isXEmbed && (
           <>
@@ -141,13 +143,15 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
               <p className="text-base-content/70 mb-2 text-sm font-medium">Size</p>
               <div className="grid grid-cols-3 gap-2">
                 {X_EMBED_SIZE_OPTIONS.map(({ id, label, maxwidth }) => (
-                  <button
+                  <Button
                     key={id}
                     type="button"
-                    className={`btn btn-sm ${activeSize === id ? 'btn-primary' : 'btn-outline'}`}
+                    size="sm"
+                    variant="primary"
+                    btnStyle={activeSize === id ? undefined : 'outline'}
                     onClick={() => apply({ maxwidth })}>
                     {label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -156,98 +160,101 @@ export default function MediaControlsSheet({ data }: { data: SheetDataMap['media
               <p className="text-base-content/70 mb-2 text-sm font-medium">Theme</p>
               <div className="grid grid-cols-2 gap-2">
                 {X_EMBED_THEME_OPTIONS.map(({ id, label }) => (
-                  <button
+                  <Button
                     key={id}
                     type="button"
-                    className={`btn btn-sm ${activeTheme === id ? 'btn-primary' : 'btn-outline'}`}
+                    size="sm"
+                    variant="primary"
+                    btnStyle={activeTheme === id ? undefined : 'outline'}
                     onClick={() => apply({ theme: id })}>
                     {label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
           </>
         )}
 
-        <div>
-          <p className="text-base-content/70 mb-2 text-sm font-medium">Caption</p>
-          <textarea
-            className="textarea textarea-sm w-full"
-            rows={2}
-            placeholder="Add a caption…"
-            defaultValue={String(current.caption ?? '')}
-            onBlur={(e) => apply({ caption: e.target.value.trim() || null })}
-          />
-        </div>
+        <Textarea
+          label="Caption"
+          labelPosition="above"
+          size="sm"
+          rows={2}
+          placeholder="Add a caption…"
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          onBlur={() => apply({ caption: caption.trim() || null })}
+        />
 
         {showComment && (
-          <button type="button" className="btn btn-sm btn-primary w-full" onClick={runComment}>
+          <Button type="button" size="sm" variant="primary" shape="block" onClick={runComment}>
             Comment in chat
-          </button>
+          </Button>
         )}
 
         <div className="grid grid-cols-2 gap-2">
           {showViewOriginal && (
-            <button
+            <Button
               type="button"
-              className="btn btn-sm btn-outline"
+              size="sm"
+              variant="neutral"
+              btnStyle="outline"
               onClick={() => runAction(viewOriginalMedia)}>
               View original
-            </button>
+            </Button>
           )}
           {isDownloadable(nodeType) && (
-            <button
+            <Button
               type="button"
-              className="btn btn-sm btn-outline"
+              size="sm"
+              variant="neutral"
+              btnStyle="outline"
               onClick={() => runAction(downloadMedia)}>
               Download
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
-            className="btn btn-sm btn-outline"
+            size="sm"
+            variant="neutral"
+            btnStyle="outline"
             onClick={() => runAction(copyMediaNode)}>
             Copy
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn btn-sm btn-error btn-outline"
+            size="sm"
+            variant="error"
+            btnStyle="outline"
             onClick={() => runAction(removeMediaNode)}>
             Delete
-          </button>
+          </Button>
         </div>
 
         <div>
           <p className="text-base-content/70 mb-2 text-sm font-medium">Placement</p>
           <div className="grid grid-cols-2 gap-2">
             {MEDIA_PLACEMENT_OPTIONS.map(({ id, label }) => (
-              <button
+              <Button
                 key={id}
                 type="button"
-                className={`btn btn-sm ${activePlacement === id ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => {
-                  const attrs = getMediaPlacementAttrs(id, currentMargin)
-                  apply(attrs)
-                }}>
+                size="sm"
+                variant="primary"
+                btnStyle={activePlacement === id ? undefined : 'outline'}
+                onClick={() => apply(getMediaPlacementAttrs(id, currentMargin))}>
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
-        <div>
-          <p className="text-base-content/70 mb-2 text-sm font-medium">Margin</p>
-          <select
-            className="select select-sm w-full"
-            value={currentMargin}
-            onChange={(e) => apply({ margin: e.target.value })}>
-            {MEDIA_MARGIN_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Margin"
+          size="sm"
+          value={currentMargin}
+          onChange={(value) => apply({ margin: value })}
+          options={MEDIA_MARGIN_OPTIONS.map(({ value, label }) => ({ value, label }))}
+        />
       </div>
     </SheetLayout>
   )

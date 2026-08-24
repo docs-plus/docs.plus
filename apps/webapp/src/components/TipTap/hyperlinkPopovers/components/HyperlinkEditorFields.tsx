@@ -1,4 +1,5 @@
 import { Icons } from '@components/icons/registry'
+import TextInput from '@components/ui/TextInput'
 import type { ReactNode } from 'react'
 
 import type { HyperlinkEditorForm } from '../hooks/useHyperlinkEditorForm'
@@ -12,22 +13,18 @@ export function HyperlinkEditorTextField({ form }: FieldProps): ReactNode {
   if (isCreate) return null
 
   return (
-    <label className="input h-auto w-full min-w-0 items-start gap-2 py-1.5">
-      <span className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center opacity-60">
-        <Icons.textFormat size={18} aria-hidden />
-      </span>
-      <input
-        id={textInputId}
-        type="text"
-        placeholder="Link text"
-        value={text}
-        onChange={(event) => {
-          setText(event.target.value)
-          setTextTouched(true)
-        }}
-        data-testid="hyperlink-editor-text"
-      />
-    </label>
+    <TextInput
+      id={textInputId}
+      placeholder="Link text"
+      value={text}
+      startIcon={Icons.textFormat}
+      iconSize={18}
+      data-testid="hyperlink-editor-text"
+      onChange={(event) => {
+        setText(event.target.value)
+        setTextTouched(true)
+      }}
+    />
   )
 }
 

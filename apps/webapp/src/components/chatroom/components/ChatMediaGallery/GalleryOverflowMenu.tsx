@@ -251,13 +251,13 @@ export function GalleryOverflowMenu({ media, isMobile, overflowPrefix, overflowA
             <button
               type="button"
               aria-label="Dismiss media actions"
-              className="absolute inset-0 bg-black/50"
+              className="absolute inset-0 bg-[var(--modal-scrim)]"
               onClick={closeMenu}
             />
             <div
               role="menu"
               aria-label="Media actions"
-              className="rounded-t-box absolute inset-x-0 bottom-0 border border-b-0 border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-[var(--gallery-text-primary)] shadow-xl backdrop-blur-md motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
+              className="rounded-t-box absolute inset-x-0 bottom-0 border border-b-0 border-[var(--gallery-panel-border)] bg-[var(--gallery-panel-bg)] px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-[var(--gallery-text-primary)] shadow-xl motion-safe:animate-[doc-region-in_180ms_ease-out_both]">
               <div
                 className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--gallery-panel-border)]"
                 aria-hidden

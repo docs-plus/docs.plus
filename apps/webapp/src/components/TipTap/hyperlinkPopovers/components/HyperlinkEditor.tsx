@@ -19,6 +19,11 @@ export function HyperlinkEditor(props: HyperlinkEditorProps): ReactNode {
   }
 
   return (
-    <HyperlinkEditorMobileSheet form={form} onBack={props.onBack} onSubmit={form.handleSubmit} />
+    <HyperlinkEditorMobileSheet
+      form={form}
+      onBack={props.onBack}
+      onClose={props.onClose}
+      onSubmit={form.handleSubmit}
+    />
   )
 }

@@ -5,8 +5,8 @@ export const CHAT_PANE_DOC_FLOOR_PX = 96
 
 /**
  * 160px is measured furniture (grabber 20 + header 53 + feed pad 20 + composer 61 = 154,
- * plus margin). The grabber matches the sheet header (20px). Safe-area is measured at
- * runtime — see `safeAreaInsetBottom`.
+ * plus margin). The grabber is the pane's own `h-5` control, not the sheet DragIndicator.
+ * Safe-area is measured at runtime — see `safeAreaInsetBottom`.
  */
 export const CHAT_PANE_FLOOR_PX = 160
 
