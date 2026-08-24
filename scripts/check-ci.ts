@@ -213,6 +213,7 @@ try {
   try {
     unlinkSync(auditJson)
   } catch {
+    // temp file may already be gone
   }
 }
 
