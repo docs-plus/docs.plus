@@ -15,7 +15,8 @@ fi
 if ps -ax -o command= | grep -E '[n]ext (dev|start)' >/dev/null; then
     echo "❌ A Next development server is running."
     echo "   Stop the webapp development server, then push again."
-    echo "   After the push: rm -rf apps/webapp/.next and restart it."
+    echo "   After the push: restart the development server."
+    echo "   check:ci already removes the production .next after build:ci."
     echo ""
     echo "❌ Push aborted."
     exit 1

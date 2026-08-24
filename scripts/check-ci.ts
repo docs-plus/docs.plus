@@ -2,11 +2,12 @@
 /**
  * Local replica of the prod quality gates. Husky pre-push runs this.
  * Stop the Next development server first — a production build corrupts a live .next.
+ * After each build:ci run this script deletes that .next so the development server is not left poisoned.
  * Skipped gates are named so a green run never implies CI jobs this command did not execute.
  */
 
 import { $ } from 'bun'
-import { existsSync, lstatSync, unlinkSync } from 'fs'
+import { existsSync, lstatSync, rmSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 import { resolve } from 'path'
 
@@ -103,6 +104,12 @@ async function nextDevLive(): Promise<string | null> {
   if (/\bnext\s+(dev|start)\b/.test(text))
     return 'Next dest is live; a production build would corrupt that .next'
   return null
+}
+
+function discardNextBuild(appDir: string): void {
+  const dest = resolve(ROOT, appDir, '.next')
+  if (!existsSync(dest)) return
+  rmSync(dest, { recursive: true, force: true })
 }
 
 async function run(
@@ -283,24 +290,26 @@ if (destBlock) {
   record('webapp build:ci', 'skip', destBlock)
 } else if (failed) {
   record('webapp build:ci', 'skip', 'earlier gate failed')
-} else if (
-  !(await runGate('webapp build:ci', ['bun', 'run', '--filter', '@docs.plus/webapp', 'build:ci'], {
-    env: BUILD_CI_ENV
-  }))
-) {
-  failed = true
+} else {
+  const webappOk = await runGate(
+    'webapp build:ci',
+    ['bun', 'run', '--filter', '@docs.plus/webapp', 'build:ci'],
+    { env: BUILD_CI_ENV }
+  )
+  discardNextBuild('apps/webapp')
+  if (!webappOk) failed = true
 }
 
 if (failed) {
   record('admin build:ci', 'skip', 'earlier gate failed')
-} else if (
-  !(await runGate(
+} else {
+  const adminOk = await runGate(
     'admin build:ci',
     ['bun', 'run', '--filter', '@docs.plus/admin-dashboard', 'build:ci'],
     { env: BUILD_CI_ENV }
-  ))
-) {
-  failed = true
+  )
+  discardNextBuild('apps/admin-dashboard')
+  if (!adminOk) failed = true
 }
 
 record(
