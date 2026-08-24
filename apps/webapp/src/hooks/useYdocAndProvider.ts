@@ -1,6 +1,12 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { applyAccessStateless } from '@utils/applyAccessStateless'
+import { captureCollabIssueOnce } from '@utils/observability'
+import { supabaseClient } from '@utils/supabase'
+import { useEffect, useRef } from 'react'
+import { IndexeddbPersistence } from 'y-indexeddb'
+import * as Y from 'yjs'
+
 import {
   AUTH_REARM_DELAY_MS,
   authFailureToProviderStatus,
@@ -10,12 +16,7 @@ import {
   resolveAuthFailure,
   shouldFireFirstSyncTimeout,
   shouldRestoreSavedOnReconnect
-} from '@utils/collabProviderLifecycle'
-import { captureCollabIssueOnce } from '@utils/observability'
-import { supabaseClient } from '@utils/supabase'
-import { useEffect, useRef } from 'react'
-import { IndexeddbPersistence } from 'y-indexeddb'
-import * as Y from 'yjs'
+} from './collabSession'
 
 /**
  * Collab provider status. The saving → synced → saved ladder covers local
