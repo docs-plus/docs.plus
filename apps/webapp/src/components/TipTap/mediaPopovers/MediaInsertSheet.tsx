@@ -1,5 +1,5 @@
-import { SheetFooter } from '@components/SheetFooter'
 import { SheetLayout } from '@components/SheetLayout'
+import { SheetPrimaryFooter } from '@components/SheetPrimaryFooter'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { type SheetDataMap, useSheetStore } from '@stores'
 import { sheetBodyPadClassName } from '@utils/sheetBodyPadding'
@@ -19,16 +19,7 @@ export default function MediaInsertSheet({ data }: { data: SheetDataMap['mediaIn
     <SheetLayout
       title="Insert media"
       onClose={closeSheet}
-      footer={
-        <SheetFooter>
-          <button
-            type="button"
-            className="btn btn-primary min-h-12 w-full text-base font-semibold"
-            onClick={closeSheet}>
-            Done
-          </button>
-        </SheetFooter>
-      }>
+      footer={<SheetPrimaryFooter label="Done" onClick={closeSheet} />}>
       <div className="flex flex-col pb-3">
         <PanelTabBar tabs={MEDIA_INSERT_TABS} activeTab={tab} onSelect={setTab} />
         <div

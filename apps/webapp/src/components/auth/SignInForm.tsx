@@ -28,9 +28,11 @@ interface SignInFormProps {
   /** Post-auth return URL (pathname+search); when set the OAuth/magic-link redirect lands here. */
   returnTo?: string
   onClose: () => void
+  /** Sheet/dialog host already draws the title and close. */
+  embedded?: boolean
 }
 
-const SignInForm = ({ returnTo, onClose }: SignInFormProps) => {
+const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) => {
   const router = useRouter()
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -146,7 +148,7 @@ const SignInForm = ({ returnTo, onClose }: SignInFormProps) => {
     }
   }
 
-  const closeButton = (
+  const closeButton = embedded ? null : (
     <CloseButton onClick={onClose} className="-mr-1 min-h-11 min-w-11 md:min-h-8 md:min-w-8" />
   )
 
@@ -206,7 +208,7 @@ const SignInForm = ({ returnTo, onClose }: SignInFormProps) => {
   if (emailSent) {
     return (
       <>
-        <div className="mb-2 flex justify-end">{closeButton}</div>
+        {closeButton ? <div className="mb-2 flex justify-end">{closeButton}</div> : null}
         <div
           className="flex flex-col items-center justify-center py-2 text-center motion-safe:animate-[doc-region-in_200ms_ease-out_both]"
           role="status">
@@ -227,7 +229,7 @@ const SignInForm = ({ returnTo, onClose }: SignInFormProps) => {
   if (lastAccount) {
     return (
       <>
-        <div className="mb-1 flex justify-end">{closeButton}</div>
+        {closeButton ? <div className="mb-1 flex justify-end">{closeButton}</div> : null}
         <div className="flex flex-col items-center pb-5 text-center">
           <Avatar
             face={{
@@ -245,10 +247,10 @@ const SignInForm = ({ returnTo, onClose }: SignInFormProps) => {
           <h2 className="text-base-content text-2xl font-semibold tracking-tight">
             {lastAccount.name}
           </h2>
-          <p className="text-base-content/55 mt-1 text-sm">{lastAccount.email}</p>
+          <p className="text-base-content/60 mt-1 text-sm">{lastAccount.email}</p>
           <button
             type="button"
-            className="text-base-content/45 hover:text-base-content mt-1 min-h-11 text-sm"
+            className="text-base-content/60 hover:text-base-content mt-1 min-h-11 text-sm"
             onClick={useAnotherAccount}
             disabled={isAnyLoading}>
             Not you?
@@ -262,10 +264,12 @@ const SignInForm = ({ returnTo, onClose }: SignInFormProps) => {
 
   return (
     <>
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h2 className="text-base-content text-lg font-semibold">Sign in</h2>
-        {closeButton}
-      </div>
+      {embedded ? null : (
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-base-content text-lg font-semibold">Sign in</h2>
+          {closeButton}
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         {googleButton}
         {emailForm}

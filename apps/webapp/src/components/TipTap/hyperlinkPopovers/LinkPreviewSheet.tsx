@@ -92,8 +92,7 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
 
   return (
     <SheetLayout title="Link" onClose={closeSheet}>
-      <div
-        className={`flex flex-col py-3 pb-[max(1rem,env(safe-area-inset-bottom))] ${sheetBodyPadClassName}`}>
+      <div className={`flex flex-col py-3 ${sheetBodyPadClassName}`}>
         <div className="border-base-300 border-b pb-3">
           {internalLink ? (
             <InternalLinkChip link={internalLink} editor={editor} />

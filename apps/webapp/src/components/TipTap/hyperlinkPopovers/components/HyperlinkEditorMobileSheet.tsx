@@ -9,16 +9,18 @@ import { HyperlinkEditorFields } from './HyperlinkEditorFields'
 type Props = {
   form: HyperlinkEditorForm
   onBack?: () => void
+  onClose?: () => void
   onSubmit: (event: React.FormEvent) => void
 }
 
-export function HyperlinkEditorMobileSheet({ form, onBack, onSubmit }: Props): ReactNode {
+export function HyperlinkEditorMobileSheet({ form, onBack, onClose, onSubmit }: Props): ReactNode {
   const { sheetTitle, href } = form
 
   return (
     <form noValidate onSubmit={onSubmit} className="contents">
       <SheetLayout
         title={sheetTitle}
+        onClose={onClose}
         footer={
           <SheetActionFooter
             primaryDisabled={!href.trim()}

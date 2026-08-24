@@ -1,6 +1,7 @@
 import { PanelPopoverHeader } from '@components/PanelPopoverHeader'
 import { PanelSurfaceShell } from '@components/PanelSurfaceShell'
 import { TabbedPanelBody } from '@components/TabbedPanelBody'
+import { useDismissPanel } from '@hooks/useDismissPanel'
 import { useChatStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 
@@ -19,6 +20,7 @@ export const BookmarkPanel = ({ onClose, variant = 'popover' }: BookmarkPanelPro
   const bookmarkTabs = useChatStore((state) => state.bookmarkTabs)
   const setBookmarkActiveTab = useChatStore((state) => state.setBookmarkActiveTab)
   const isSheet = variant === 'sheet'
+  const dismissPanel = useDismissPanel(variant)
 
   const { bookmarks, isLoading, isLoadingMore, hasMore, sentinelRef } = useBookmarkPanelFeed()
 
@@ -28,6 +30,7 @@ export const BookmarkPanel = ({ onClose, variant = 'popover' }: BookmarkPanelPro
       title="Bookmarks"
       fillHeight
       bodyClassName="min-h-0 overflow-hidden"
+      onClose={isSheet ? (onClose ?? dismissPanel) : undefined}
       popoverHeader={<PanelPopoverHeader title="Bookmarks" onClose={onClose} showClose />}>
       <TabbedPanelBody
         variant={variant}

@@ -658,33 +658,6 @@ html:not(.m_mobile) {
   z-index: 50;
 }
 
-/* react-tag-input-component — theme through its CSS vars so dark mode holds
-   (default skin is white-on-white under dark themes). The lib re-declares its
-   defaults ON .rti--container, so ours must target the container, not inherit. */
-.documentKeywordInput .rti--container {
-  --rti-bg: var(--color-base-100);
-  --rti-border: var(--color-base-300);
-  --rti-main: var(--color-primary);
-  --rti-radius: var(--radius-field);
-  --rti-tag: var(--color-base-200);
-  --rti-tag-remove: var(--color-error);
-}
-
-.documentKeywordInput .rti--tag {
-  font-size: 14px;
-  color: var(--color-base-content);
-}
-
-.documentKeywordInput .rti--input {
-  font-size: 14px;
-  background: transparent;
-  color: var(--color-base-content);
-
-  &::placeholder {
-    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-  }
-}
-
 .collapse-title,
 :where(.collapse > input[type='radio']) {
   min-height: 3rem;
@@ -919,4 +892,24 @@ em-emoji-picker {
 /* stylelint-disable-next-line selector-type-no-unknown -- em-emoji is a custom element */
 em-emoji {
   background: transparent !important;
+}
+
+/* BottomSheet mounts on every route, including `/`. These cannot live in
+   document-styles (documentShell only). !important beats the library inline 8px / #ddd. */
+.react-modal-sheet-container {
+  background-color: var(--color-base-100) !important;
+  border-top-left-radius: var(--radius-box, 10px) !important;
+  border-top-right-radius: var(--radius-box, 10px) !important;
+}
+
+.react-modal-sheet-content {
+  background-color: var(--color-base-100) !important;
+}
+
+.react-modal-sheet-backdrop {
+  background: var(--modal-scrim) !important;
+}
+
+.react-modal-sheet-drag-indicator {
+  background-color: var(--color-base-300) !important;
 }
