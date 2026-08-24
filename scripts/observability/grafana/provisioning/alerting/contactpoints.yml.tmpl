@@ -11,6 +11,9 @@ contactPoints:
           # Grafana's native ${VAR} expansion mistypes numerics and fails provisioning.
           bottoken: '${TELEGRAM_BOT_TOKEN}'
           chatid: '${TELEGRAM_CHAT_ID}'
+          # HTML parse treats alert titles like "(<14d)" as tags and Telegram 400s
+          # the send. None keeps the default template as plain text.
+          parsemode: None
           message: |
             {{ template "default.message" . }}
   - orgId: 1
@@ -23,6 +26,7 @@ contactPoints:
           # The deploy render falls back to TELEGRAM_CHAT_ID when no warnings chat is set.
           bottoken: '${TELEGRAM_BOT_TOKEN}'
           chatid: '${TELEGRAM_WARNINGS_CHAT_ID}'
+          parsemode: None
           message: |
             {{ template "default.message" . }}
   - orgId: 1

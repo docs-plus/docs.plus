@@ -116,11 +116,13 @@ export default function MyApp({
           isMobileInitial={isMobileInitial}
           isAuthServiceAvailable={isAuthServiceAvailable}
         />
+        {/* BottomSheet hosts LinkEditorSheet → useQuery. Outside this provider
+            a phone link-edit throws and Next paints the client crash page. */}
         <AppQueryClientRoot queryClient={queryClient}>
           <Component {...pageProps} />
+          <Toaster />
+          <BottomSheet />
         </AppQueryClientRoot>
-        <Toaster />
-        <BottomSheet />
       </MotionConfig>
     </div>
   )

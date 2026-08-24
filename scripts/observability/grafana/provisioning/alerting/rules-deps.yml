@@ -86,7 +86,7 @@ groups:
               refId: C
 
       - uid: dep-tls-cert-expiry
-        title: TLS certificate expiring (<14d)
+        title: TLS certificate expiring within 14 days
         condition: C
         for: 1h
         noDataState: OK
@@ -94,15 +94,17 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: A TLS certificate expires within 14 days
+          summary: Newest TLS cert for {{ $labels.cn }} expires within 14 days
         data:
           - refId: A
             relativeTimeRange: { from: 3600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
+              # Traefik keeps leftover ACME certs after renew. min() pages those
+              # leftovers. max by cn is the cert that hostname actually presents.
               # 1209600 = 14 days in seconds.
-              expr: 'min(traefik_tls_certs_not_after) - time()'
+              expr: 'max by (cn) (traefik_tls_certs_not_after) - time()'
               instant: true
               intervalMs: 1000
               maxDataPoints: 43200
