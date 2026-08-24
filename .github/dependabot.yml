@@ -16,23 +16,26 @@ updates:
       prefix: 'chore(deps)'
     open-pull-requests-limit: 5
 
-  # One `bun.lock`, at the root. The workspace members are listed explicitly
-  # rather than relying on the root entry to traverse into them. Confirm the
-  # coverage on the first PR — nobody has watched a run yet.
+  # One `bun.lock` at the root. A per-workspace directory list opened a second
+  # PR per package that bumped package.json and left the lockfile stale, so
+  # `bun install --frozen-lockfile` failed. The root entry covers the workspace.
   - package-ecosystem: 'bun'
-    directories:
-      - '/'
-      - '/apps/*'
-      - '/extensions/*'
-      - '/packages/*'
+    directory: '/'
     schedule:
       interval: 'monthly'
     commit-message:
       prefix: 'chore(deps)'
     open-pull-requests-limit: 5
     groups:
+      # Majors stay ungrouped so each one is its own review. The 2026-08-22
+      # pile (#182) mixed Babel 8, TypeScript 7, Prisma 7, and Next 16.3.
       dev-dependencies:
         dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+        exclude-patterns:
+          - 'eslint-config-next'
     ignore:
       # Exact-pinned on purpose: these parse untrusted input, and the pin is the
       # boundary. Bump them by hand, with the verification the pin's note names.
@@ -44,3 +47,14 @@ updates:
       - dependency-name: 'metascraper'
       - dependency-name: 'metascraper-*'
       - dependency-name: '@metascraper/*'
+      # Parked majors. eslint-config-next 16.3 is issue #172. TypeScript 7,
+      # Prisma 7, and Babel 8 each need their own migration.
+      - dependency-name: 'eslint-config-next'
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'prisma'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@prisma/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@babel/*'
+        update-types: ['version-update:semver-major']
