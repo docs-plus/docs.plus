@@ -63,8 +63,8 @@ export default libraryConfig
 
 - `bun run lint` — `eslint . --max-warnings=0` (cascades into every package shim).
 - `bun run check` — local report: lint + styles + `prettier --check` + typecheck + `check:agent-docs`. CI does not run this aggregate.
-- `bun run check:ci` — local replica of the prod quality gates.
-- `bun run check:push` — pre-push hook: lint + styles + typecheck (no full-repo Prettier; commit hook already writes staged files).
+- `bun run check:ci` — local replica of the prod quality gates. Husky pre-push runs this.
+- `bun run check:push` — fast local gate: lint + styles + typecheck (no full-repo Prettier; commit hook already writes staged files).
 - Pre-commit `lint-staged` uses `--max-warnings=0` on staged files only.
 - Per-package `lint` scripts are intentionally omitted; run from repo root.
 
