@@ -1,6 +1,7 @@
 import * as toast from '@components/toast'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { type InfiniteData, useQueryClient } from '@tanstack/react-query'
+import { plainTitle } from '@utils/titleWrite'
 import { useCallback } from 'react'
 
 import { makeDocumentsKey } from '../documentsQueryKey'
@@ -22,8 +23,8 @@ const useCommitDocumentRename = (userId: string, searchQuery: string, sortKey: D
       nextTitle: string,
       options?: { onSettled?: () => void }
     ): Promise<boolean> => {
-      const trimmed = nextTitle.trim()
-      if (!trimmed || trimmed === (currentTitle ?? '')) return false
+      const trimmed = plainTitle(nextTitle.trim())
+      if (!trimmed || trimmed === plainTitle(currentTitle ?? '')) return false
 
       const key = makeDocumentsKey(userId, searchQuery, sortKey)
       // Cancel in-flight refetches or a focus refetch resolving after this patch reverts it.

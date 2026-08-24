@@ -14,6 +14,7 @@ import { releasePadEditMode } from '@services/openHeadingChatroom'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
+import { parseDocTitlePayload, plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
 import dynamic from 'next/dynamic'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -38,37 +39,6 @@ interface UserProfileButtonProps {
 interface UndoRedoButtonsProps {
   editor: Editor | null
   className?: string
-}
-
-interface StatelessPayloadEvent {
-  payload: string
-}
-
-interface DocTitleMessage {
-  type: 'docTitle'
-  state: {
-    title: string
-    [key: string]: unknown
-  }
-}
-
-interface MetadataMutationResponse {
-  title: string
-  [key: string]: unknown
-}
-
-const extractMetadataMutationResponse = (response: unknown): MetadataMutationResponse => {
-  if (
-    typeof response === 'object' &&
-    response !== null &&
-    'data' in response &&
-    typeof response.data === 'object' &&
-    response.data !== null
-  ) {
-    return response.data as MetadataMutationResponse
-  }
-
-  return response as MetadataMutationResponse
 }
 
 const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: () => void }) => {
@@ -199,15 +169,15 @@ const TitleEditContent = () => {
 
   // Populate + auto-select on mount (dialog just opened)
   useEffect(() => {
-    setValue(metadata?.title || '')
+    setValue(plainTitle(metadata?.title || ''))
     const timer = setTimeout(() => inputRef.current?.select(), 120)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSave = () => {
-    const trimmed = value.trim()
-    if (!trimmed || trimmed === metadata?.title) {
+    const trimmed = plainTitle(value.trim())
+    if (!trimmed || trimmed === plainTitle(metadata?.title ?? '')) {
       closeDialog()
       return
     }
@@ -216,9 +186,9 @@ const TitleEditContent = () => {
       { title: trimmed, documentId: metadata.documentId },
       {
         onSuccess: (responseData) => {
-          const updated = extractMetadataMutationResponse(responseData)
-          setWorkspaceSetting('metadata', { ...metadata, title: updated.title })
-          hocuspocusProvider?.sendStateless(JSON.stringify({ type: 'docTitle', state: updated }))
+          const next = plainTitle(responseData.title ?? '')
+          setWorkspaceSetting('metadata', { ...metadata, title: next })
+          sendDocTitleStateless(hocuspocusProvider, next)
           closeDialog()
         }
       }
@@ -291,15 +261,10 @@ const MobilePadTitle = () => {
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const handler = ({ payload }: StatelessPayloadEvent) => {
-      try {
-        const msg = JSON.parse(payload) as DocTitleMessage
-        if (msg.type === 'docTitle') {
-          setWorkspaceSetting('metadata', { ...metadataRef.current, title: msg.state.title })
-        }
-      } catch {
-        /* ignore malformed payloads */
-      }
+    const handler = ({ payload }: { payload: string }) => {
+      const next = parseDocTitlePayload(payload)
+      if (next === null) return
+      setWorkspaceSetting('metadata', { ...metadataRef.current, title: next })
     }
 
     hocuspocusProvider.on('stateless', handler)
@@ -343,7 +308,7 @@ const MobilePadTitle = () => {
                   className="min-w-0 flex-1 truncate text-left text-lg font-semibold"
                   aria-disabled={!canEditMetadata}
                   onClick={canEditMetadata ? handleTitleClick : undefined}>
-                  {metadata?.title || 'Untitled'}
+                  {plainTitle(metadata?.title || '') || 'Untitled'}
                 </button>
               )}
             </div>

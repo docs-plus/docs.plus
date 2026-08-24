@@ -8,39 +8,9 @@ import { IoCheckmarkCircle } from 'react-icons/io5'
 import { twMerge } from 'tailwind-merge'
 
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
+import { parseDocTitlePayload, plainTitle, sendDocTitleStateless } from '../../utils/titleWrite'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
-
-interface StatelessPayloadEvent {
-  payload: string
-}
-
-interface DocTitleMessage {
-  type: 'docTitle'
-  state: {
-    title: string
-    [key: string]: unknown
-  }
-}
-
-interface MetadataMutationResponse {
-  title: string
-  [key: string]: unknown
-}
-
-const extractMetadataMutationResponse = (response: unknown): MetadataMutationResponse => {
-  if (
-    typeof response === 'object' &&
-    response !== null &&
-    'data' in response &&
-    typeof response.data === 'object' &&
-    response.data !== null
-  ) {
-    return response.data as MetadataMutationResponse
-  }
-
-  return response as MetadataMutationResponse
-}
 
 const DocTitle = ({ className }: { className?: string }) => {
   const { isPending, isSuccess, mutate, data } = useUpdateDocMetadata()
@@ -55,12 +25,12 @@ const DocTitle = ({ className }: { className?: string }) => {
   const canEdit = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
 
   useEffect(() => {
-    if (docMetadata?.title) setTitle(docMetadata.title)
+    if (docMetadata?.title) setTitle(plainTitle(docMetadata.title))
   }, [docMetadata?.title])
 
   const saveData = useCallback(
     (e: React.FocusEvent<HTMLDivElement>) => {
-      const newTitle = e.target.innerText
+      const newTitle = plainTitle(e.target.innerText)
       if (newTitle === title) return
       setTitle(newTitle)
 
@@ -78,7 +48,7 @@ const DocTitle = ({ className }: { className?: string }) => {
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault()
     const text = e.clipboardData.getData('text/plain')
-    const sanitizedText = DOMPurify.sanitize(text)
+    const sanitizedText = plainTitle(text)
     const selection = window.getSelection()
 
     if (selection?.rangeCount) {
@@ -102,7 +72,10 @@ const DocTitle = ({ className }: { className?: string }) => {
       return tempRange.toString().length
     })()
 
-    const sanitizedContent = DOMPurify.sanitize(currentTarget.innerHTML)
+    const sanitizedContent = DOMPurify.sanitize(currentTarget.innerHTML, {
+      ALLOWED_TAGS: [],
+      ALLOWED_ATTR: []
+    })
     currentTarget.innerHTML = sanitizedContent
 
     const newSelection = window.getSelection()
@@ -138,24 +111,23 @@ const DocTitle = ({ className }: { className?: string }) => {
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const readOnlyStateHandler = ({ payload }: StatelessPayloadEvent) => {
-      const msg = JSON.parse(payload) as DocTitleMessage
-      if (msg.type === 'docTitle') {
-        setTitle(msg.state.title)
-        setWorkspaceSetting('metadata', { ...docMetadata, title: msg.state.title })
-      }
+    const docTitleHandler = ({ payload }: { payload: string }) => {
+      const next = parseDocTitlePayload(payload)
+      if (next === null) return
+      setTitle(next)
+      setWorkspaceSetting('metadata', { ...docMetadata, title: next })
     }
 
-    hocuspocusProvider.on('stateless', readOnlyStateHandler)
+    hocuspocusProvider.on('stateless', docTitleHandler)
 
-    return () => hocuspocusProvider.off('stateless', readOnlyStateHandler)
+    return () => hocuspocusProvider.off('stateless', docTitleHandler)
   }, [hocuspocusProvider, docMetadata, setWorkspaceSetting])
 
   useEffect(() => {
     if (isSuccess && data) {
-      const updated = extractMetadataMutationResponse(data)
-      setTitle(updated.title)
-      hocuspocusProvider?.sendStateless(JSON.stringify({ type: 'docTitle', state: updated }))
+      const next = plainTitle(data.title ?? '')
+      setTitle(next)
+      sendDocTitleStateless(hocuspocusProvider, next)
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
@@ -179,8 +151,8 @@ const DocTitle = ({ className }: { className?: string }) => {
         title={canEdit ? 'Rename' : 'Only the owner can rename this document'}
         placement="bottom">
         <div
-          dangerouslySetInnerHTML={{ __html: title || '' }}
           contentEditable={canEdit}
+          suppressContentEditableWarning
           className={twMerge(
             'truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium',
             canEdit && 'hover:border-base-300'
@@ -194,8 +166,9 @@ const DocTitle = ({ className }: { className?: string }) => {
             }
           }}
           onPaste={handlePaste}
-          onInput={handleInput}
-        />
+          onInput={handleInput}>
+          {title || ''}
+        </div>
       </Tooltip>
       <div
         className={`mx-2 flex size-4 items-center ${isPending || showSaved ? 'flex' : 'hidden'}`}>
