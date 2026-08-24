@@ -1,5 +1,5 @@
+import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
 import { Icons } from '@icons'
-import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { motion } from 'motion/react'
 import { forwardRef } from 'react'
@@ -48,7 +48,6 @@ const REACTION_BTN_CLASS =
 
 export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuProps>(
   ({ position, isVisible, isInteractive = true, onReactionSelect, className, message }, ref) => {
-    const { openEmojiPicker } = useChatStore()
     const { hideMenu } = useMessageLongPressMenu()
 
     const handleReactionClick = (reaction: EmojiReaction) => {
@@ -59,7 +58,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
 
     const handleMoreEmojisClick = () => {
       if (!isInteractive) return
-      openEmojiPicker({ top: 0, left: 0 }, 'reactToMessage', message, null)
+      openMessageReaction(message, { top: 0, left: 0 })
       hideMenu()
     }
 

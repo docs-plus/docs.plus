@@ -36,6 +36,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## Mobile pad split
 
 - **Chat pane** — the mobile chat surface as a layout participant in the pad shell, sized to its visible height so its composer stays reachable. Distinct from the desktop docked chat panel and from the retired mobile chat sheet; do not call it either.
+- **Reaction picker** — the surface that adds an emoji to a message. On a phone it is the `messageReaction` sheet. Distinct from the composer emoji panel. Not the Chat pane.
 - **Pane mode** — one of the chat pane's positions: closed, half, or expanded. Named after the sibling precedent `ComposerEmojiPanelMode`. Not "full", which would imply the pane can cover the document, and not "snap" or "detent", which belong to `react-modal-sheet` and UIKit.
 - **Split ratio** — the fraction of the pad shell the chat pane occupies in half mode. Always a fraction, never a pixel height, so a keyboard that shrinks the shell preserves the split instead of breaking it.
 - **Document floor** — the height the document keeps in every pane mode, so its last section is always reachable. The chat pane can never cover it, which is why no mode collapses the document to zero.

@@ -1,4 +1,5 @@
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
@@ -14,7 +15,6 @@ const AddReactionButton = ({ className: _className }: Props) => {
   const { message } = useMessageCardContext()
   const user = useAuthStore((state) => state.profile)
   const member = useChatStore((state) => state.channelMembers.get(message.channel_id))
-  const { openEmojiPicker } = useChatStore()
   // User can only react if they are a member of the channel
   const canUserReact = useMemo(() => user && member?.get(user?.id), [user, member])
 
@@ -22,16 +22,12 @@ const AddReactionButton = ({ className: _className }: Props) => {
     (event: React.MouseEvent) => {
       const coordinates = (event.target as HTMLElement).getBoundingClientRect()
       const pickerOpenPosition = calculateEmojiPickerPosition(coordinates)
-      openEmojiPicker(
-        {
-          top: pickerOpenPosition?.top || 0,
-          left: pickerOpenPosition?.left || 0
-        },
-        'reactToMessage',
-        message
-      )
+      openMessageReaction(message, {
+        top: pickerOpenPosition?.top || 0,
+        left: pickerOpenPosition?.left || 0
+      })
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [message]
   )
 
