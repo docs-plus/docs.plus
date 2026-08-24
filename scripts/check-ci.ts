@@ -42,6 +42,10 @@ const SUPABASE_STUB = {
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 }
 
+// Bun sets NODE_ENV=development on `bun run check:ci`. next build then
+// prerenders /404 without a Pages router and throws NextRouter was not mounted.
+const BUILD_CI_ENV = { ...SUPABASE_STUB, NODE_ENV: 'production' }
+
 type Verdict = 'pass' | 'fail' | 'skip'
 type Gate = { name: string; verdict: Verdict; note?: string }
 
@@ -281,7 +285,7 @@ if (destBlock) {
   record('webapp build:ci', 'skip', 'earlier gate failed')
 } else if (
   !(await runGate('webapp build:ci', ['bun', 'run', '--filter', '@docs.plus/webapp', 'build:ci'], {
-    env: SUPABASE_STUB
+    env: BUILD_CI_ENV
   }))
 ) {
   failed = true
@@ -293,7 +297,7 @@ if (failed) {
   !(await runGate(
     'admin build:ci',
     ['bun', 'run', '--filter', '@docs.plus/admin-dashboard', 'build:ci'],
-    { env: SUPABASE_STUB }
+    { env: BUILD_CI_ENV }
   ))
 ) {
   failed = true
