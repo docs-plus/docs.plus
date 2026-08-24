@@ -5,6 +5,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## Pad outline
 
 - **Title** — the first line of the document. Always a heading. Its Block style cannot change.
+- **Title write** — changing the document Title. Same persist and room relay for the pad and the Documents list. Stored Title is plain text, not HTML. Client home: `apps/webapp/src/utils/titleWrite.ts`.
 - **Block style** — the outline role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.
 - **Subtitle** — a paragraph style, not a heading. It is not a TOC heading.
 - **HeadingScale** — visual size by rank inside a section. Distinct from Block style. The same heading level can look larger or smaller depending on the section.

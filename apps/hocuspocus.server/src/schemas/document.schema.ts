@@ -4,8 +4,10 @@ import { z } from 'zod'
 // here never drags Tiptap or the transformer into this file's consumers.
 import { tiptapDocSchema } from '../modules/document-content/http/schema'
 
+const plainTitle = (title: string): string => title.replace(/<[^>]*>/g, '')
+
 export const createDocumentSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().transform(plainTitle).pipe(z.string().min(1, 'Title is required')),
   slug: z.string().min(1, 'Slug is required'),
   description: z.string().optional().default(''),
   keywords: z.array(z.string()).optional().default([]),
@@ -15,7 +17,7 @@ export const createDocumentSchema = z.object({
 })
 
 export const updateDocumentMetadataSchema = z.object({
-  title: z.string().optional(),
+  title: z.string().transform(plainTitle).optional(),
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   readOnly: z.boolean().optional(),

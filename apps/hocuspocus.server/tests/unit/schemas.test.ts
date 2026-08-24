@@ -110,6 +110,16 @@ describe('Document Schemas', () => {
       expect(result.success).toBe(true)
     })
 
+    test('should strip HTML tags from title', () => {
+      const result = updateDocumentMetadataSchema.safeParse({
+        title: '<img src=x onerror=alert(1)>Hello'
+      })
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.title).toBe('Hello')
+      }
+    })
+
     test('should validate readOnly as boolean', () => {
       const invalidData = {
         readOnly: 'yes'
