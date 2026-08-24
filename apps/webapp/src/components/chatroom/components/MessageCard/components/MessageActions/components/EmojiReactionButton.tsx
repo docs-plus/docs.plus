@@ -1,6 +1,7 @@
+import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
-import { useAuthStore, useChatStore } from '@stores'
+import { useAuthStore } from '@stores'
 import { useCallback, useRef } from 'react'
 
 import { calculateEmojiPickerPosition } from '../../../helpers'
@@ -13,7 +14,6 @@ type Props = {
 export const EmojiReactionButton = ({ className }: Props) => {
   const { message } = useMessageCardContext()
   const ref = useRef<HTMLButtonElement>(null)
-  const { openEmojiPicker } = useChatStore()
   const profile = useAuthStore((state) => state.profile)
 
   const openEmojiPickerHandler = useCallback(() => {
@@ -22,15 +22,11 @@ export const EmojiReactionButton = ({ className }: Props) => {
     if (!coordinates) return
 
     const pickerOpenPosition = calculateEmojiPickerPosition(coordinates)
-    openEmojiPicker(
-      {
-        top: pickerOpenPosition?.top || 0,
-        left: pickerOpenPosition?.left || 0
-      },
-      'reactToMessage',
-      message
-    )
-  }, [openEmojiPicker, message])
+    openMessageReaction(message, {
+      top: pickerOpenPosition?.top || 0,
+      left: pickerOpenPosition?.left || 0
+    })
+  }, [message])
 
   return (
     <Button

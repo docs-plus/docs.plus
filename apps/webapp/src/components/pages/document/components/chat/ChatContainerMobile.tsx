@@ -1,59 +1,20 @@
 import Chatroom from '@components/chatroom/Chatroom'
 import MsgComposer from '@components/chatroom/components/MessageComposer/MessageComposer'
 import { useComposerEmojiPanelStore } from '@components/chatroom/components/MessageComposer/stores/composerEmojiPanelStore'
-import { useChatStore, useSheetStore } from '@stores'
+import { closeMessageReaction } from '@components/chatroom/utils/messageReaction'
+import { useChatStore } from '@stores'
 import { useEffect } from 'react'
-
-/** Handoff: drop the emoji history entry so the sheet can own `historyDismiss`. */
-function closeComposerEmojiForReactionSheet(): void {
-  const emoji = useComposerEmojiPanelStore.getState()
-  if (!emoji.isOpen) return
-  emoji.close({ consumeHistory: false })
-  if ((window.history.state as { composerEmojiPanel?: true } | null)?.composerEmojiPanel) {
-    window.history.replaceState({ historyDismiss: true }, '')
-  }
-}
 
 const ChatContainerMobile = () => {
   const headingId = useChatStore((state) => state.chatRoom.headingId)
-  const isReactionOpen = useChatStore(
-    (s) => s.emojiPicker.isOpen && s.emojiPicker.eventType === 'reactToMessage'
-  )
 
   useEffect(() => {
     return () => {
       const paneClosed = useChatStore.getState().chatRoom.paneMode === 'closed'
       useComposerEmojiPanelStore.getState().close({ consumeHistory: !paneClosed })
-      useChatStore.getState().closeEmojiPicker()
-      if (!paneClosed && useSheetStore.getState().activeSheet === 'messageReaction') {
-        useSheetStore.getState().closeSheet()
-      }
+      closeMessageReaction()
     }
   }, [headingId])
-
-  useEffect(() => {
-    return useSheetStore.subscribe(
-      (s) => s.activeSheet,
-      (sheet, prev) => {
-        if (prev === 'messageReaction' && sheet !== 'messageReaction') {
-          useChatStore.getState().closeEmojiPicker()
-        }
-      }
-    )
-  }, [])
-
-  useEffect(() => {
-    if (isReactionOpen) {
-      closeComposerEmojiForReactionSheet()
-      if (useSheetStore.getState().activeSheet !== 'messageReaction') {
-        useSheetStore.getState().openSheet('messageReaction')
-      }
-      return
-    }
-    if (useSheetStore.getState().activeSheet === 'messageReaction') {
-      useSheetStore.getState().closeSheet()
-    }
-  }, [isReactionOpen])
 
   if (!headingId) return null
 

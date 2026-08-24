@@ -1,17 +1,15 @@
+import { closeMessageReaction } from '@components/chatroom/utils/messageReaction'
 import { useChatStore } from '@stores'
 import { useCallback, useEffect } from 'react'
 
 export const useCloseOnResize = () => {
-  const {
-    emojiPicker: { isOpen },
-    closeEmojiPicker
-  } = useChatStore()
+  const isOpen = useChatStore((state) => state.emojiPicker.isOpen)
 
   const handleResize = useCallback(() => {
     if (isOpen) {
-      closeEmojiPicker()
+      closeMessageReaction()
     }
-  }, [isOpen, closeEmojiPicker])
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return

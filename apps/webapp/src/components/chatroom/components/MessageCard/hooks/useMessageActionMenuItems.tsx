@@ -10,9 +10,10 @@ import { usePinMessageHandler } from '@components/chatroom/components/MessageCar
 import { useReplyInMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInMessageHandler'
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
+import { openMessageReaction } from '@components/chatroom/utils/messageReaction'
 import type { ContextMenuRowVariant } from '@components/ui/ContextMenu'
 import { Icons } from '@icons'
-import { useAuthStore, useChatStore } from '@stores'
+import { useAuthStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
 import React, { useMemo } from 'react'
@@ -38,7 +39,6 @@ export const useMessageActionMenuItems = (
 ) => {
   const { openDialog } = useChatroomContext()
   const { profile } = useAuthStore()
-  const { openEmojiPicker } = useChatStore()
   const { replyInMessageHandler } = useReplyInMessageHandler()
   const { copyMessageToDocHandler } = useCopyMessageToDocHandler()
   const { bookmarkMessageHandler } = useBookmarkMessageHandler()
@@ -70,14 +70,10 @@ export const useMessageActionMenuItems = (
           if (!e?.target) return
           const coordinates = (e.target as HTMLElement).getBoundingClientRect()
           const pickerOpenPosition = calculateEmojiPickerPosition(coordinates)
-          openEmojiPicker(
-            {
-              top: pickerOpenPosition?.top || 0,
-              left: pickerOpenPosition?.left || 0
-            },
-            'reactToMessage',
-            message
-          )
+          openMessageReaction(message, {
+            top: pickerOpenPosition?.top || 0,
+            left: pickerOpenPosition?.left || 0
+          })
         },
         display: true
       })
@@ -174,7 +170,6 @@ export const useMessageActionMenuItems = (
     pinMessageHandler,
     message,
     openDialog,
-    openEmojiPicker,
     replyInMessageHandler,
     replyInThreadHandler
   ])

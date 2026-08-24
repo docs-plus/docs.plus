@@ -1,3 +1,4 @@
+import { closeMessageReaction } from '@components/chatroom/utils/messageReaction'
 import { useChatStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 
@@ -24,7 +25,7 @@ export function isComposerEmojiOverlayOpen(): boolean {
 export function dismissComposerEmojiOverlays(): void {
   stopComposerVoiceRecording()
   useComposerEmojiPanelStore.getState().close()
-  useChatStore.getState().closeEmojiPicker()
+  closeMessageReaction()
 }
 
 export function dismissComposerOverlaysBeforeMention(): void {
