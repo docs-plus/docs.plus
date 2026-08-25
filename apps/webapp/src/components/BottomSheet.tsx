@@ -5,7 +5,7 @@ import HistoryCompareSheet from '@components/pages/history/mobile/HistoryCompare
 import DocumentSettingsPanel from '@components/TipTap/toolbar/desktop/DocumentSettingsPanel'
 import FilterPanel from '@components/TipTap/toolbar/desktop/FilterPanel'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
-import { type SheetData, type SheetDataMap, useSheetStore } from '@stores'
+import { type SheetData, type SheetDataMap, sheetTransitionHandlers, useSheetStore } from '@stores'
 import { useMemo } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
 
@@ -82,7 +82,6 @@ const DEFAULT_SHEET_PROPS: Partial<SheetProps> = { id: 'bottom_sheet' }
 
 const BottomSheet = () => {
   const { activeSheet, closeSheet, sheetData } = useSheetStore()
-  const setSheetState = useSheetStore((state) => state.setSheetState)
 
   // Every dismiss path (X, scrim, drag) already routes through closeSheet, whether
   // called here or from inside sheet content — see useHistoryDismiss.
@@ -100,22 +99,14 @@ const BottomSheet = () => {
     return props
   }, [activeSheet])
 
-  const handleOpenStart = () => setSheetState('opening')
-  const handleOpenEnd = () => setSheetState('open')
-  const handleCloseStart = () => setSheetState('closing')
-  const handleCloseEnd = () => setSheetState('closed')
-
   return (
     <Sheet
       avoidKeyboard
       className="bottom-sheet !z-50"
       isOpen={!!activeSheet}
       onClose={closeSheet}
-      onOpenStart={handleOpenStart}
-      onOpenEnd={handleOpenEnd}
-      onCloseStart={handleCloseStart}
-      onCloseEnd={handleCloseEnd}
-      {...sheetProps}>
+      {...sheetProps}
+      {...sheetTransitionHandlers}>
       <Sheet.Container>
         {/* Empty Header mounts the library DragIndicator. Do not add a house grabber. */}
         <Sheet.Header />

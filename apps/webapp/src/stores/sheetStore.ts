@@ -3,8 +3,6 @@ import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 
-export type SheetState = 'closed' | 'open' | 'opening' | 'closing'
-
 /**
  * Animation breather between `closeSheet` and the queued `openSheet`
  * triggered by `switchSheet`. Matches react-modal-sheet's default exit
@@ -68,33 +66,24 @@ export interface SheetDataMap {
 export type SheetData = SheetDataMap[keyof SheetDataMap]
 export type SheetType = keyof SheetDataMap | null
 
-interface PendingSheet {
-  sheet: keyof SheetDataMap
-  data: SheetData
-}
-
 interface SheetStore {
   activeSheet: SheetType
-  sheetState: SheetState
   sheetData: SheetData
-  /** Queued sheet that opens after the current one finishes closing. */
-  pendingSheet: PendingSheet | null
 
   openSheet: <K extends keyof SheetDataMap>(sheet: K, data?: SheetDataMap[K]) => void
   closeSheet: () => void
-  setSheetState: (state: SheetState) => void
   switchSheet: <K extends keyof SheetDataMap>(sheet: K, data?: SheetDataMap[K]) => void
-  clearPendingSheet: () => void
 }
+
+// Visibility and the queued open are mechanism for switchSheet alone. They
+// live here, not in the store, so no caller can read or write them.
+let isSheetVisible = false
+let queuedOpen: (() => void) | null = null
 
 export const useSheetStore = create<SheetStore>()(
   subscribeWithSelector((set, get) => ({
     activeSheet: null,
-    sheetState: 'closed',
     sheetData: {} as SheetData,
-    pendingSheet: null,
-
-    setSheetState: (state) => set({ sheetState: state }),
 
     openSheet: (sheet, data) =>
       set({
@@ -109,33 +98,30 @@ export const useSheetStore = create<SheetStore>()(
       }),
 
     switchSheet: (sheet, data) => {
-      const currentState = get()
+      const { openSheet, closeSheet } = get()
 
-      if (currentState.sheetState === 'closed') {
-        currentState.openSheet(sheet, data)
+      if (!isSheetVisible) {
+        openSheet(sheet, data)
         return
       }
 
-      currentState.closeSheet()
-      set({ pendingSheet: { sheet, data: (data ?? {}) as SheetData } })
-    },
-
-    clearPendingSheet: () => set({ pendingSheet: null })
+      closeSheet()
+      queuedOpen = () => openSheet(sheet, data)
+    }
   }))
 )
 
-useSheetStore.subscribe(
-  (state) => state.sheetState,
-  (sheetState, prevSheetState) => {
-    if (sheetState === 'closed' && prevSheetState === 'closing') {
-      const { pendingSheet, openSheet, clearPendingSheet } = useSheetStore.getState()
-      if (pendingSheet) {
-        // Let the DOM clean up before re-mounting a new sheet.
-        setTimeout(() => {
-          openSheet(pendingSheet.sheet, pendingSheet.data)
-          clearPendingSheet()
-        }, SHEET_TRANSITION_DELAY_MS)
-      }
-    }
+/** react-modal-sheet lifecycle seam: spread onto the Sheet. No other caller. */
+export const sheetTransitionHandlers = {
+  onOpenStart: () => {
+    isSheetVisible = true
+  },
+  onCloseEnd: () => {
+    isSheetVisible = false
+    const open = queuedOpen
+    if (!open) return
+    queuedOpen = null
+    // Let the DOM clean up before re-mounting a new sheet.
+    setTimeout(open, SHEET_TRANSITION_DELAY_MS)
   }
-)
+}
