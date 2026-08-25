@@ -14,7 +14,7 @@
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
 
-  "theme_color": "#2778ff",
+  "theme_color": "#ffffff",
   "background_color": "#ffffff",
 
   "prefer_related_applications": false,
@@ -64,32 +64,18 @@
 
   "screenshots": [
     {
-      "src": "/icons/screenshot1.jpg",
-      "type": "image/jpeg",
-      "sizes": "1244x1370",
+      "src": "/icons/screenshot-wide-1-outline.png",
+      "type": "image/png",
+      "sizes": "2560x1600",
       "form_factor": "wide",
-      "label": "docs.plus collaborative editor"
+      "label": "A chatroom on every heading"
     },
     {
-      "src": "/icons/screenshot2.jpg",
-      "type": "image/jpeg",
-      "sizes": "1244x1370",
-      "form_factor": "wide",
-      "label": "Real-time collaboration"
-    },
-    {
-      "src": "/icons/screenshot3.jpg",
-      "type": "image/jpeg",
-      "sizes": "1244x1370",
-      "form_factor": "wide",
-      "label": "Knowledge sharing"
-    },
-    {
-      "src": "/icons/screenshot1.jpg",
-      "type": "image/jpeg",
-      "sizes": "1244x1370",
+      "src": "/icons/screenshot-narrow-1-pad.png",
+      "type": "image/png",
+      "sizes": "824x1648",
       "form_factor": "narrow",
-      "label": "docs.plus mobile editor"
+      "label": "Read and discuss on a phone"
     }
   ],
 
