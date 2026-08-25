@@ -111,14 +111,7 @@ export default function UnsubscribePage() {
   return (
     <>
       <Head>
-        <title>
-          {state === 'loading'
-            ? 'Processing...'
-            : state === 'success'
-              ? 'Unsubscribed'
-              : 'Unsubscribe Failed'}{' '}
-          - docs.plus
-        </title>
+        <title>Unsubscribe — docs.plus</title>
         <meta name="robots" content="noindex" />
       </Head>
 
