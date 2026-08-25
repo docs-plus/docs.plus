@@ -183,7 +183,11 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
 
     const ownerProfile = doc.ownerId ? await getOwnerProfile(doc.ownerId) : null
 
-    return { ...doc, keywords, ownerProfile }
+    // The owner address stays in Postgres to track the Supabase profile. It never
+    // leaves on this route: a public slug read answers callers with no session.
+    const { email: _ownerEmail, ...publicDoc } = doc
+
+    return { ...publicDoc, keywords, ownerProfile }
   } catch (error) {
     documentsServiceLogger.error({ err: error, slug }, 'Error fetching document by slug')
     throw handlePrismaError(error)
