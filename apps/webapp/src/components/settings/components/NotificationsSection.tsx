@@ -412,6 +412,12 @@ const NotificationsSection = () => {
   const isPushBlocked = permission === 'denied'
   const isPushEnabled = isSubscribed && !isPushBlocked
 
+  // iOS keeps this switch in the Settings app, outside the browser.
+  const blockedDescription =
+    platform === 'ios'
+      ? 'Blocked. On iOS this setting lives in the Settings app, under docs.plus.'
+      : 'Blocked. This setting lives in the browser site settings, reached from the address bar.'
+
   return (
     <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       <SettingsCard>
@@ -429,7 +435,7 @@ const NotificationsSection = () => {
               label="Enable push notifications"
               description={
                 isPushBlocked
-                  ? 'Blocked by browser. Enable in browser settings.'
+                  ? blockedDescription
                   : isSupported
                     ? 'Get notified about mentions, replies, and reactions.'
                     : 'Push notifications are not supported in this browser.'

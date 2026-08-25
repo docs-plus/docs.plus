@@ -1,14 +1,15 @@
 import { getDevicePlatform, getIOSVersion, isIOSDevice } from '@utils/platform'
 import { useCallback, useEffect, useState } from 'react'
 
+const IOS_WEB_PUSH_MIN_VERSION = 16.4
+
 export interface PlatformInfo {
   platform: 'ios' | 'android' | 'desktop'
   browser: 'safari' | 'chrome' | 'firefox' | 'edge' | 'other'
   isPWAInstalled: boolean
   canInstallPWA: boolean
   supportsPush: boolean
-  iosVersion: number | null
-  /** iOS 16.4+ — the first release with web push. */
+  /** iOS can receive web push: 16.4 or later, and added to the Home Screen. */
   iosSupportsWebPush: boolean
 }
 
@@ -20,7 +21,6 @@ function detectPlatform(): PlatformInfo {
       isPWAInstalled: false,
       canInstallPWA: false,
       supportsPush: false,
-      iosVersion: null,
       iosSupportsWebPush: false
     }
   }
@@ -46,9 +46,15 @@ function detectPlatform(): PlatformInfo {
   const supportsPush =
     'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 
-  const isIOS = isIOSDevice()
-  const iosVersion = isIOS ? getIOSVersion() : null
-  const iosSupportsWebPush = iosVersion !== null && iosVersion >= 16.4
+  // iOS hides the push APIs until the web app is installed, so the feature test only
+  // answers there. Before install only the version can, and iPadOS freezes its user
+  // agent at a Mac version that reads as iOS 13 — so trust only a real iOS token.
+  const trustedIOSVersion = /OS \d+_\d+/.test(ua) ? getIOSVersion() : null
+  const iosSupportsWebPush =
+    isIOSDevice() &&
+    (isPWAInstalled
+      ? supportsPush
+      : trustedIOSVersion === null || trustedIOSVersion >= IOS_WEB_PUSH_MIN_VERSION)
 
   return {
     platform,
@@ -56,7 +62,6 @@ function detectPlatform(): PlatformInfo {
     isPWAInstalled,
     canInstallPWA,
     supportsPush,
-    iosVersion,
     iosSupportsWebPush
   }
 }
@@ -82,20 +87,12 @@ export function usePlatformDetection() {
     return () => mediaQuery.removeListener(handleChange)
   }, [])
 
-  const shouldShowIOSInstallPrompt = useCallback(() => {
-    return (
-      platformInfo.platform === 'ios' &&
-      !platformInfo.isPWAInstalled &&
-      platformInfo.iosSupportsWebPush
-    )
-  }, [platformInfo])
-
-  /** iOS Safari can never receive push — the PWA must be installed first. */
+  /** On iOS the push APIs alone are not enough — push arrives only in an installed web app. */
   const canReceivePush = useCallback(() => {
     if (!platformInfo.supportsPush) return false
 
     if (platformInfo.platform === 'ios') {
-      return platformInfo.isPWAInstalled && platformInfo.iosSupportsWebPush
+      return platformInfo.isPWAInstalled
     }
 
     return true
@@ -103,7 +100,6 @@ export function usePlatformDetection() {
 
   return {
     ...platformInfo,
-    shouldShowIOSInstallPrompt,
     canReceivePush
   }
 }
