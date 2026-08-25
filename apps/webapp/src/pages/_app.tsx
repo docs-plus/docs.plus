@@ -5,6 +5,12 @@ import '@config'
 import { AppQueryClientRoot } from '@components/AppQueryClientRoot'
 import BottomSheet from '@components/BottomSheet'
 import GoogleAnalytics from '@components/GoogleAnalytics'
+import {
+  HOME_OG_IMAGE,
+  HOME_OG_IMAGE_HEIGHT,
+  HOME_OG_IMAGE_WIDTH,
+  HOME_SITE_URL
+} from '@components/pages/home/homeMetadata'
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
@@ -52,6 +58,45 @@ const Header = () => {
   )
 }
 
+const DOCUMENT_OG_DESCRIPTION =
+  'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.'
+
+interface DocumentHeadMetadata {
+  title?: string
+  description?: string
+  slug?: string
+  isPrivate?: boolean
+}
+
+// The document shell is ssr:false, so a <Head> inside the page never reaches a social
+// crawler. These tags render from _app, outside that boundary, so the server response
+// carries them. HeadSeo still owns the client-side title on SPA navigation.
+const DocumentHead = ({ docMetadata }: { docMetadata: DocumentHeadMetadata }) => {
+  const title = docMetadata.title || 'docs.plus'
+  const description = docMetadata.description || DOCUMENT_OG_DESCRIPTION
+  const url = docMetadata.slug ? `${HOME_SITE_URL}/${docMetadata.slug}` : HOME_SITE_URL
+
+  return (
+    <Head>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta name="robots" content="noindex, nofollow" />
+
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:url" content={url} />
+      <meta property="og:image" content={HOME_OG_IMAGE} />
+      <meta property="og:image:width" content={HOME_OG_IMAGE_WIDTH} />
+      <meta property="og:image:height" content={HOME_OG_IMAGE_HEIGHT} />
+
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:url" content={url} />
+      <meta name="twitter:image" content={HOME_OG_IMAGE} />
+    </Head>
+  )
+}
+
 // Google's web-vitals → GA4 shape: CLS is unitless (x1000), the rest are ms.
 // Custom Next.js metrics are skipped — their hyphenated names are GA4-invalid.
 export function reportWebVitals(metric: NextWebVitalsMetric) {
@@ -67,6 +112,8 @@ export function reportWebVitals(metric: NextWebVitalsMetric) {
 interface AppPageProps {
   isMobile?: boolean
   isAuthServiceAvailable?: boolean
+  docMetadata?: DocumentHeadMetadata | null
+  gateVariant?: string | null
 }
 
 export default function MyApp({
@@ -91,6 +138,12 @@ export default function MyApp({
   const isMobileInitial = pageProps.isMobile || false
   const isAuthServiceAvailable = pageProps.isAuthServiceAvailable
   const documentShell = getRoutePolicy(router.pathname).documentShell
+  // A blocked viewer gets `docMetadata: null`, and a private doc resolves only for its
+  // owner — neither may put a title or description in the server response.
+  const documentHeadMetadata =
+    !pageProps.gateVariant && pageProps.docMetadata && !pageProps.docMetadata.isPrivate
+      ? pageProps.docMetadata
+      : null
 
   useEffect(() => {
     if (!documentShell) return
@@ -109,6 +162,7 @@ export default function MyApp({
     <div id="root">
       <MotionConfig reducedMotion="user">
         <Header />
+        {documentHeadMetadata && <DocumentHead docMetadata={documentHeadMetadata} />}
         <GoogleAnalytics />
         <NotificationPromptCard />
         <PWAInstallPrompt />
