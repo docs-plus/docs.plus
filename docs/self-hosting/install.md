@@ -49,7 +49,29 @@ Then edit it. [Configuration](configuration.md) explains the groups. The values 
 - `PERSIST_TO_LOCAL_STORAGE=false`. The template ships `true`, and that breaks uploads across two replicas.
 - `ACME_EMAIL` — your address, for Let's Encrypt. **This one is missing from the template.** Without it, certificate registration uses the maintainer's address.
 
-One template value is wrong. `NEXT_PUBLIC_RESTAPI_URL` ends in `/api/v1`, and no such route exists. Use `/api`.
+Both REST values end in `/api`. There is no `/api/v1` route. An older template carried one by mistake, so if your own `.env` still ends in `/api/v1`, correct it. The editor still opens with the wrong value, while every browser-side call fails.
+
+### Values that must name your host
+
+The template points every URL at `localhost`. Replace each of these with your own domain.
+
+| Value                      | Kind    | Points at                                                    |
+| -------------------------- | ------- | ------------------------------------------------------------ |
+| `NEXT_PUBLIC_PROVIDER_URL` | Build   | The collaboration socket, `wss://` on your backend domain    |
+| `NEXT_PUBLIC_RESTAPI_URL`  | Build   | The REST API the editor calls, ending in `/api`              |
+| `NEXT_PUBLIC_APP_URL`      | Build   | Your editor domain. Fills canonical and share metadata       |
+| `NEXT_PUBLIC_API_URL`      | Build   | The REST API base the admin dashboard calls                  |
+| `PUBLIC_RESTAPI_URL`       | Runtime | The REST API origin, with no `/api` suffix                   |
+| `ALLOWED_ORIGINS`          | Runtime | Your editor and admin origins. Empty falls back to `APP_URL` |
+| `APP_URL`                  | Runtime | Your editor domain, used in email links                      |
+
+`make build` bakes the four build values into the bundles, so changing one afterwards needs another build.
+
+Miss one and nothing complains. `NEXT_PUBLIC_PROVIDER_URL` and `NEXT_PUBLIC_RESTAPI_URL` keep the template's `localhost`, which is the visitor's own machine. Left empty, `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_API_URL` fall back to `https://docs.plus` and `https://prodback.docs.plus`. Your admin dashboard then calls the maintainer's backend.
+
+`NEXT_PUBLIC_ADMIN_URL` is the one to skip. It sits in `.env.example`, and nothing in the repository reads it.
+
+Next step: set all seven before `make build`. The Traefik host rules are a separate job, and step 4 covers them.
 
 ## 4. Point your domains at the server
 

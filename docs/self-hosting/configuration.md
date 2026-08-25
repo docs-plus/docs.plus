@@ -58,7 +58,7 @@ The template is written for local development, so three of its defaults are wron
 
 **`PERSIST_TO_LOCAL_STORAGE=true`** must become `false`. The REST API runs two replicas with no shared volume, so an upload lands in one container, is invisible to the other, and disappears on redeploy.
 
-**`NEXT_PUBLIC_RESTAPI_URL` ends in `/api/v1`.** No such route exists. Use `/api`. The neighbouring `SERVER_RESTAPI_URL` already gets this right, which is how the mistake survived.
+**`NEXT_PUBLIC_RESTAPI_URL` must end in `/api`.** There is no `/api/v1` route. An older template carried one, and the neighbouring `SERVER_RESTAPI_URL` was already correct, which is how the mistake survived unnoticed. Check your own `.env` if you copied an early template.
 
 **`ACME_EMAIL` is missing entirely.** Traefik falls back to the maintainer's address for Let's Encrypt registration. Add it.
 
