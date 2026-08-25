@@ -17,6 +17,7 @@ This file is intentionally not named `README.md` so the repository root `README.
 - `workflows/discord-activity.yml`
   - Push activity notifications to Discord
   - Omits `(build):` deploy-trigger commits from the list; a push that is only those commits does not post
+  - `workflow_dispatch` can post an older `before...after` SHA range (catch-up)
 - `workflows/observability.docs.plus.yml`
   - Server-only observability stack (Grafana + Loki + Alloy + Prometheus + GlitchTip)
   - Triggers: `workflow_call` (invoked by the prod orchestrator for deploy commits) and `workflow_dispatch` (`setup|update|restart|down` for manual ops)
