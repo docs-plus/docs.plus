@@ -12,6 +12,10 @@ import { getDeviceInfo } from './getDeviceInfo'
 const AUTH_TIMEOUT_MS = 5000
 
 export const documentServerSideProps = async (context: GetServerSidePropsContext) => {
+  // The document shell is client-rendered, so its `noindex` <Head> never reaches a
+  // crawler. Set it on every response here, redirects and 404s included.
+  context.res.setHeader('X-Robots-Tag', 'noindex, nofollow')
+
   const { query } = context
   const documentSlug = query.slugs?.at(0)
 
