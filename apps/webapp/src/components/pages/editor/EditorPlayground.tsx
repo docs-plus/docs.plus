@@ -1,0 +1,148 @@
+import Controllers from '@components/pages/editor/Controllers'
+import { createDocumentFromStructure } from '@components/pages/editor/helpers/createDocumentFromStructure'
+import { HyperlinkPopoverPortal } from '@components/TipTap/hyperlinkPopovers/HyperlinkPopoverPortal'
+import editorConfig from '@components/TipTap/TipTap'
+import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
+import { TocDesktop } from '@components/toc/TocDesktop'
+import { moveHeadingSection } from '@components/toc/utils/moveHeading'
+import { GlobalDialog } from '@components/ui/GlobalDialog'
+import { useStore } from '@stores'
+import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
+import { useEffect, useMemo } from 'react'
+import { IndexeddbPersistence } from 'y-indexeddb'
+import * as Y from 'yjs'
+
+export type EditorPlaygroundProps = {
+  localPersistence: boolean
+  docName: string
+}
+
+declare global {
+  interface Window {
+    _createDocumentFromStructure?: (structure: any) => boolean
+    _editor?: Editor
+    _moveHeading?: (
+      sourceId: string,
+      targetId: string,
+      position: 'before' | 'after',
+      newLevel?: number
+    ) => boolean
+    _getMarkdown?: () => string
+    _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
+    /** Cypress escape hatch: lets specs seed Zustand state (e.g. `workspaceId` to enable bookmark RPC). Playground-only — production routes never touch this. */
+    _store?: typeof useStore
+  }
+}
+
+const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) => {
+  // Owned here, not in the config factory: useEditor re-evaluates its options
+  // argument every render, which would leak a Y.Doc + open IndexedDB
+  // connection per render.
+  const localYdoc = useMemo(
+    () => (localPersistence ? new Y.Doc({ guid: docName }) : undefined),
+    [localPersistence, docName]
+  )
+
+  const editor = useEditor(
+    editorConfig({
+      provider: null,
+      spellcheck: false,
+      localYdoc,
+      docName
+    }),
+    []
+  )
+  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
+
+  useEffect(() => {
+    if (!localYdoc) return
+    // `::media-v2` invalidates IndexedDB caches holding pre-2.0 PascalCase
+    // media node bytes, forcing a one-time re-sync from the (migrating)
+    // server. A camelCase-only client binding stale bytes would throw
+    // "Unknown node type: Image" before the server transform runs.
+    const persistence =
+      typeof window.indexedDB !== 'undefined'
+        ? new IndexeddbPersistence(`${docName}::media-v2`, localYdoc)
+        : null
+
+    return () => {
+      // Tear down only the IndexedDB connection, not the Y.Doc. StrictMode's
+      // double-mount reuses the memoized doc, so destroying the doc here rebinds the
+      // editor to a dead doc and silently kills Yjs undo. The doc is GC'd on unmount.
+      persistence?.destroy()
+    }
+  }, [localYdoc, docName])
+
+  useEffect(() => {
+    if (!editor) return
+    window._editor = editor
+    window._createDocumentFromStructure = createDocumentFromStructure({ editor })
+
+    window._moveHeading = (sourceId, targetId, position, newLevel) => {
+      return moveHeadingSection({
+        editor,
+        sourceId,
+        targetId,
+        position,
+        newLevel
+      })
+    }
+
+    window._getMarkdown = () => editor.getMarkdown()
+    window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
+
+    // Expose the Zustand store so specs can seed slices the playground
+    // doesn't populate naturally (workspaceId, etc.).
+    window._store = useStore
+
+    setWorkspaceEditorSetting('instance', editor)
+    setWorkspaceEditorSetting('loading', false)
+    setWorkspaceEditorSetting('providerSyncing', false)
+
+    return () => {
+      delete window._editor
+      delete window._createDocumentFromStructure
+      delete window._moveHeading
+      delete window._getMarkdown
+      delete window._parseMarkdown
+      delete window._store
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor])
+
+  return (
+    <div className="flex h-screen flex-col overflow-hidden">
+      <div className="toolbars bg-base-100 w-full shrink-0">
+        <EditorToolbar />
+        <Controllers editor={editor} />
+      </div>
+
+      <div className="flex flex-1">
+        <aside className="tiptap__toc m_desktop border-base-300 bg-base-100 flex w-64 shrink-0 flex-col border-r !pt-0">
+          <div className="scrollbar-custom scrollbar-thin min-h-0 flex-1 overflow-y-auto p-2">
+            <TocDesktop />
+          </div>
+        </aside>
+
+        <main className="flex-1 overflow-auto">
+          <div className="pad tiptap history_editor flex flex-col border-solid">
+            <div className="editor relative flex size-full flex-row justify-around align-top">
+              <div className="mainWrapper relative flex w-full max-w-full flex-col align-top">
+                <div className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
+                  <TiptapEditor className={`tiptap__editor docy_editor relative`} editor={editor} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <HyperlinkPopoverPortal />
+
+      {/* Settings confirms (rename/trash/private/sign-out) dispatch here; without this mount they render nothing. */}
+      <GlobalDialog />
+    </div>
+  )
+}
+
+export default EditorPlayground
