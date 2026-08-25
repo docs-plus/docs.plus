@@ -6,15 +6,12 @@ import { nudgeVirtualKeyboardOpenFromVisualViewport } from '@utils/virtualKeyboa
 import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
 import { useCallback, useEffect } from 'react'
 
-const MOBILE_BREAKPOINT = 768
 const SCROLL_MARGIN = 100
 // One follow-up after keyboard animation; multiple delays felt like extra “nudges” vs double-tap.
 const MOBILE_CARET_SCROLL_RETRY_MS = 300
 
-const isMobile = (): boolean => {
-  if (typeof window === 'undefined') return false
-  return window.innerWidth <= MOBILE_BREAKPOINT
-}
+// The store signal, not a width: a phone in landscape is wider than the mobile breakpoint.
+const isMobile = (): boolean => Boolean(useStore.getState().settings.editor.isMobile)
 
 const getScrollContainer = (): HTMLElement | null => {
   return document.querySelector(
