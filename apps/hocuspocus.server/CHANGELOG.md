@@ -10,7 +10,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-21
+## [2.0.0] — 2026-08-24
 
 **First stable tag of hocuspocus after the Etherpad years and the `2.0.0-beta.*` line.** webapp and hocuspocus share `2.0.0`. Admin stays `1.0.0`. This package is private and is not published to npm.
 
@@ -18,16 +18,16 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 - **Persist is eventual.** Durable store waits 10 s idle, or 60 s while typing continues. The pad status chip is a 300 ms local timer. The version row is durable after the worker publishes `document:saved`.
 - **Private is owner-only.** REST slug read and the WebSocket room share `resolvePrivateAccess`. Anonymous or ownerless-private → `sign-in-required`. Signed-in non-owner → `denied`.
-- **Versions and restore.** List, read, checkpoint, restore, delete, and diff. The pad Restore button sends `history.revert`. Conversion writes no document content.
-- **Three processes, narrow public edge.** REST, collaboration, and the persist worker. Traefik publishes only `/api` and `/health`. OpenAPI stays inside the network.
-- **Draft identity.** A new slug derives `documentId` from the slug and epoch. First edit anchors the metadata row.
+- **Versions and restore.** The versions routes list, read, checkpoint, restore, delete, and diff a version. The pad Restore button sends `history.revert`. Conversion writes no document content.
+- **Three processes, narrow public edge.** REST, collaboration, and the persist worker. Traefik publishes `/api`, `/health`, and the collaboration `/websocket` route. OpenAPI and the internal listener stay inside the network.
+- **Draft identity.** A new slug derives `documentId` from the slug and epoch. The first edit anchors the metadata row.
 - **Service-role writes name the operation.** Content and version writes need the service-role bearer. Claim columns stay `null`. `trigger` carries the meaning.
 
 ### Breaking
 
 - Store pads as Hocuspocus/Yjs snapshots. Etherpad is gone from this package.
 - Run three processes: REST (`start:rest`), WebSocket (`start:ws`), and worker (`start:worker`).
-- Require the persist worker. Without it, store jobs sit in Redis and expire after one hour.
+- Require the persist worker. Without it, store jobs pile up in Redis and no version row is written. A job waiting in the queue keeps its payload, because the WebSocket process re-arms the key every 10 minutes.
 - Require the flat heading schema. Nested heading history must run `migrate:nested-to-flat` first.
 - Require camelCase media node names. Legacy PascalCase rows need `migrate:media-node-names`.
 - Gate Private to the owner only. Signed-in non-owners get `denied`.
@@ -61,7 +61,7 @@ bun run migrate:media-node-names
 
 Re-run `:dry` until it reports zero rows. Then turn `ENABLE_SCHEMA_MIGRATION` off.
 
-**Self-host / deploy.** Start worker, then WebSocket, then REST. All three must stay up. Apply Prisma with `bun run prisma:migrate:deploy` when schema changes ship.
+**Self-host / deploy.** Run `bun run prisma:migrate:deploy` first, and let it finish before any process starts. `DocumentPurgeTombstone` must exist, or every handshake that finds no metadata row is denied, which is the new-pad flow. Then start worker, then WebSocket, then REST. All three must stay up.
 
 **Private / ownership.** Do not expect a Private flip to mint an owner. Backfill `ownerId` before sealing ownerless rows.
 
@@ -72,6 +72,7 @@ Re-run `:dry` until it reports zero rows. Then turn `ENABLE_SCHEMA_MIGRATION` of
 - Add document REST: create, list, slug read, metadata, trash, restore, duplicate, and purge.
 - Add `GET` and `PATCH /api/documents/:documentId/content` with `mode=replace` or `append`.
 - Forward each PATCH to the collaboration process on the internal hop.
+- Serve `/metrics` and the internal service-role write endpoints on the collaboration process's own listener. It binds `HOCUSPOCUS_INTERNAL_HTTP_PORT` (default `4003`) and `HOCUSPOCUS_INTERNAL_HTTP_HOST` (default `0.0.0.0`). Traefik never routes it, and REST reaches it over `HOCUSPOCUS_INTERNAL_URL`.
 - Cap each content body at 5 MiB, 50 000 nodes, and 100 nesting levels.
 - Add versions REST: list, checkpoint, read, block diff, delete, and restore. Service-role only.
 - Add WebSocket ops `history.list`, `history.watch`, and `history.revert`.
@@ -84,19 +85,24 @@ Re-run `:dry` until it reports zero rows. Then turn `ENABLE_SCHEMA_MIGRATION` of
 - Cap imports at 10 MiB upload, 40 MiB inflated `.docx`, and 65 536 Markdown characters.
 - Report import `warnings` for title promotion, a synthesized title, dropped media, and unsupported elements.
 - Share `resolvePrivateAccess` and `resolveWsAccess` on REST and WebSocket.
-- Live-seal a room over Redis when Private, Deleted, or Read-only changes.
+- Live-seal a room over Redis when Private, Deleted, or Read-only changes. Deleted closes every connection. Private closes every non-owner. Read-only marks every non-owner socket read-only.
 - Enforce read-only on the write path. Non-owners get `connectionConfig.readOnly = true`.
 - Relay only `{ type: 'docTitle' }` on the default stateless arm, up to 64 KiB.
 - Derive a draft `documentId` from slug and purge epoch.
+- Record every purge in the `DocumentPurgeTombstone` table. The collaboration handshake now tells a purged document apart from one that never existed, and denies the purged one. That denial counts as `ws_auth_rejections_total{reason="purged"}`.
 - Add owner-only duplicate of the latest Yjs snapshot.
 - Add claim-check persist. The worker merges, strips, and then publishes `document:saved`.
 - Add operator DLQ drain that re-enqueues stranded saves through the merge path.
-- Add hourly autosave prune and a soft-delete reaper (`DOC_DELETE_RETENTION_DAYS`).
+- Add an hourly autosave prune job that thins old versions (`DOC_AUTOSAVE_RETENTION_DAYS`, default `30`). Add a soft-delete reaper (`DOC_DELETE_RETENTION_DAYS`, default `30`). Set either to `0` to turn it off.
 - Add `scripts/backfill-strip-ghosts.ts` to erase recoverable deleted text from old rows.
 - Add `document_store_rejections_total` so a swallowed fallback failure stays alertable.
+- Answer `503` with code `AUTH_UNAVAILABLE` when Supabase token verification is unreachable. The code is distinct from `SERVICE_UNAVAILABLE`, so a caller can tell an auth outage from any other one.
 - Serve OpenAPI 3.1 at `GET /openapi.json` and Swagger UI at `GET /docs`. Both stay off the public edge.
+- Expose REST health probes at `/health`, `/health/database`, `/health/redis`, `/health/supabase`, and `/health/push`. Each answers `200` when healthy and `503` when not.
 - Add collaboration readiness at `/health/ready` gated on Postgres.
-- Add admin media-storage audit, signups trend, and message-engagement stats.
+- Gate the persist worker's `/health` on dequeue liveness. The check fails once the oldest waiting store job passes `STORE_QUEUE_MAX_WAIT_AGE_MS` (`120_000` ms), so a parked fetch loop can no longer report healthy.
+- Serve one-click unsubscribe at `GET` and `POST /api/email/unsubscribe`. The `POST` arm is the RFC 8058 `List-Unsubscribe-Post` handler that mail clients call. The token is the only credential.
+- Add the admin media-storage audit and stats for the signups trend, communication, and message types.
 
 ### Changed
 
@@ -106,14 +112,15 @@ Re-run `:dry` until it reports zero rows. Then turn `ENABLE_SCHEMA_MIGRATION` of
 - Debounce durable store at 10 s idle, or 60 s while typing continues.
 - Move Yjs decode and metadata strip off the WebSocket loop into the worker.
 - Seal rooms on purge only. Soft-delete still flushes the close-time window.
-- Thin unnamed autosaves and machine triggers `revert-backup` and `schema-migration` under retention.
+- Thin unnamed autosave versions past `DOC_AUTOSAVE_RETENTION_DAYS` to one row per document per day. A name a person typed is exempt forever. The machine triggers `revert-backup` and `schema-migration` are not, so a very old restore stops being undoable.
 - Clamp private rows out of any list without a verified owner scope.
 - Return `404` for a soft-deleted slug. Never synthesize a draft under that slug.
 - Ignore Private and Read-only on an ownerless row. Title stays open.
 - Verify WebSocket identity with Supabase `getUser`. The room name is the Prisma `documentId`.
 - Route email and push through pgmq → worker → BullMQ. There is no public `/api/push`.
 - Stream media reads. Align the document media MIME allowlist with chat.
-- Put rate-limit `429` on the house envelope with code `RATE_LIMIT_EXCEEDED`.
+- Floor a `DO_STORAGE_MAX_FILE_SIZE` under 1 MB back to the 10 MB default, with a startup warning. A mis-set value can no longer brick pad media upload.
+- Put rate-limit `429` on the house envelope with code `RATE_LIMIT_EXCEEDED`. The one limit is `RATE_LIMIT_MAX` (default `100`) per 15-minute window. Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. A `429` adds `Retry-After`. Health routes are exempt.
 - Sample cron health every 60 s. Export queue, pgmq, and cron metrics from the worker.
 
 ### Fixed
@@ -122,16 +129,19 @@ Re-run `:dry` until it reports zero rows. Then turn `ENABLE_SCHEMA_MIGRATION` of
 - Merge raw then strip so deleted text inside a surviving parent does not return.
 - Re-arm claim-check TTLs so a worker outage does not strand payloads.
 - Remove soft-deleted DLQ entries instead of parking them for the reaper.
+- Give the store dead-letter drain an `unresolved` disposition. An entry with no metadata row and no purge tombstone stays in the queue for an operator instead of being discarded.
 - Stop a purged document from recreating via a close-time flush.
-- Rehost duplicate media under the copy prefix. Forward-only for older copies.
+- Rehost duplicate media under the copy prefix. Forward-only for older copies. The server answers `413` when a source snapshot names more than `MAX_DUPLICATE_MEDIA_OBJECTS` (`32`) objects.
 - Bump the slug epoch with the metadata delete so a purged slug cannot reuse the id.
+- Check the retention window before the reaper purge calls the Supabase RPC and deletes media. A document that is no longer past retention is refused.
+- Re-assert staleness inside the admin bulk stale delete. It runs the same predicate the stale list serves, so a slug that is no longer stale is reported back and left alone.
 - Measure `.docx` zip inflation under a budget.
 - Keep DOCX export image fetches on the media origin. Inline only PNG and JPEG.
 - Wrap stray inline nodes on Markdown import so the result composes with `PATCH /content`.
 - Key the rate limiter on client IP alone. A Redis store fault no longer 500s limited routes.
 - Require a verified user for media upload. Gate upload on privacy, soft-delete, and read-only.
 - Resolve outbound hosts before trusting them for link-metadata fetch.
-- Refuse push subscriptions that fail the shared outbound URL check.
+- Resolve a push endpoint host on every send, and treat a failed lookup as unsafe. That refusal charges nothing against the device, so one resolver problem cannot deactivate a live subscription.
 - Bound `history.list` per connection and `history.revert` per document.
 - Make the published OpenAPI document match the routes it documents.
 
@@ -153,14 +163,15 @@ Re-run `:dry` until it reports zero rows. Then turn `ENABLE_SCHEMA_MIGRATION` of
 - Keep the public contract in [API.md](./API.md) and [docs/api](../../docs/api).
 - Document environment variables in [ENV.md](./ENV.md).
 - Document the media-name migration in [migrate-media-node-names.md](./docs/migrate-media-node-names.md).
+- Add an operator runbook at [`docs/RUNBOOK-backend.md`](../../docs/RUNBOOK-backend.md). It covers four Grafana alerts, and each of those alerts links to it through a `runbook_url` annotation.
 
 ---
 
 ## Pre-`2.0` history
 
-This package shipped as `2.0.0-beta.103` with the webapp. There is no earlier hocuspocus changelog. Operator notes from the beta line land in this `2.0.0` entry.
+This package shipped as `2.0.0-beta.103` with the webapp. There is no earlier hocuspocus changelog. Operator notes from the beta line land in this `2.0.0` entry. The package descends from the `backend/` directory of the first commit, `5af33c42e`, dated 2022-09-20. It has used Hocuspocus with Prisma and Postgres since then.
 
 ---
 
 [Unreleased]: https://github.com/docs-plus/docs.plus/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/docs-plus/docs.plus/compare/v1.8.18...v2.0.0
+[2.0.0]: https://github.com/docs-plus/docs.plus/releases/tag/v2.0.0
