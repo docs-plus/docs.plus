@@ -65,6 +65,7 @@
     "hyperlink",
     "link",
     "autolink",
+    "link-preview",
     "rich-text-editor",
     "floating-ui",
     "url-validation",
