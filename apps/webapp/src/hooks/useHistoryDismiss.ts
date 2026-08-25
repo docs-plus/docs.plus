@@ -1,8 +1,14 @@
+import { useStore } from '@stores'
+import MobileDetect from 'mobile-detect'
 import { useEffect, useRef } from 'react'
 
-const DISMISS_MQ = '(max-width: 767px)'
-
 type HistoryDismissState = { historyDismiss?: true }
+
+// The store flag is unset outside the document shell, so fall back to the same
+// user-agent test the server runs. A narrow window is not the mobile shell.
+const isMobileSurface = (): boolean =>
+  useStore.getState().settings.editor.isMobile ??
+  Boolean(new MobileDetect(window.navigator.userAgent).mobile())
 
 const markerIsLive = (): boolean =>
   !!(window.history.state as HistoryDismissState | null)?.historyDismiss
@@ -12,7 +18,7 @@ const markerIsLive = (): boolean =>
 let openSurfaces = 0
 
 /**
- * One marked history entry while any surface is open below `md`, so hardware
+ * One marked history entry while any surface is open on mobile, so hardware
  * back closes the surface instead of leaving the document. Same boolean
  * marker as `useSettingsModal`. Pop only while our own marker is on top.
  */
@@ -21,7 +27,7 @@ export function useHistoryDismiss(isOpen: boolean, onDismiss: () => void): void 
   onDismissRef.current = onDismiss
 
   useEffect(() => {
-    if (!isOpen || !window.matchMedia(DISMISS_MQ).matches) return
+    if (!isOpen || !isMobileSurface()) return
 
     openSurfaces += 1
     if (!markerIsLive())
