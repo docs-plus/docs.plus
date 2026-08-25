@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>docs.plus — Get everyone on the same page</title>
+    <style>
+      html,
+      body {
+        width: 1280px;
+        height: 640px;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background: #f1f5fd;
+      }
+
+      .card {
+        position: relative;
+        box-sizing: border-box;
+        width: 1280px;
+        height: 640px;
+        overflow: hidden;
+        /* blue-white stock: the logo blue washed in low, the light corner blue high */
+        background:
+          radial-gradient(
+            700px 560px at 8% 22%,
+            rgba(255, 255, 255, 0.58),
+            rgba(255, 255, 255, 0) 68%
+          ),
+          radial-gradient(
+            640px 520px at 30% 112%,
+            rgba(38, 120, 255, 0.11),
+            rgba(38, 120, 255, 0) 62%
+          ),
+          radial-gradient(700px 460px at 98% 2%, rgba(26, 35, 126, 0.05), rgba(26, 35, 126, 0) 60%),
+          #f1f5fd;
+      }
+
+      /* ---------- the sheet: one page, tilted, running off three edges ---------- */
+      /* a second page under the first, so the stack reads as paper */
+      .back {
+        position: absolute;
+        left: 600px;
+        top: 84px;
+        width: 880px;
+        height: 690px;
+        border-radius: 24px;
+        background: #fafcff;
+        border: 1px solid rgba(17, 32, 66, 0.06);
+        box-shadow: 0 26px 52px -26px rgba(17, 32, 66, 0.26);
+        transform: rotate(1.4deg);
+      }
+
+      .sheet {
+        position: absolute;
+        left: 582px;
+        top: 78px;
+        width: 900px;
+        height: 700px;
+        overflow: hidden;
+        border-radius: 26px;
+        background: #ffffff;
+        border: 1px solid rgba(17, 32, 66, 0.06);
+        box-shadow:
+          0 48px 92px -30px rgba(17, 32, 66, 0.32),
+          0 12px 26px -12px rgba(17, 32, 66, 0.1);
+        transform: rotate(-2.6deg);
+      }
+
+      /* document chrome */
+      .bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 900px;
+        height: 104px;
+        border-bottom: 1px solid #eaf0f9;
+      }
+      .tab {
+        position: absolute;
+        top: 42px;
+        height: 18px;
+        border-radius: 9px;
+      }
+      .tab-1 {
+        left: 64px;
+        width: 190px;
+        background: #d7e1f1;
+      }
+      .tab-2 {
+        left: 274px;
+        width: 108px;
+        background: #e8eef8;
+      }
+      .tab-3 {
+        left: 402px;
+        width: 72px;
+        background: #f2f6fc;
+      }
+
+      /* the room is open: a quiet live chip on the far side of the bar */
+      .open {
+        position: absolute;
+        left: 520px;
+        top: 32px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        height: 40px;
+        border-radius: 20px;
+        background: rgba(55, 128, 84, 0.1);
+      }
+      .open i {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #378054;
+      }
+      .open u {
+        width: 58px;
+        height: 14px;
+        border-radius: 7px;
+        background: rgba(55, 128, 84, 0.38);
+      }
+
+      /* document body */
+      .head-bar {
+        position: absolute;
+        left: 64px;
+        top: 150px;
+        width: 420px;
+        height: 36px;
+        border-radius: 18px;
+        background: #101a2c;
+      }
+      .sub-bar {
+        position: absolute;
+        left: 64px;
+        top: 360px;
+        width: 270px;
+        height: 28px;
+        border-radius: 14px;
+        background: #3b4759;
+      }
+      .line {
+        position: absolute;
+        left: 64px;
+        height: 18px;
+        border-radius: 9px;
+        background: #e2e9f4;
+      }
+      .n1 {
+        top: 222px;
+        width: 700px;
+      }
+      .n2 {
+        top: 262px;
+        width: 656px;
+      }
+      .n3 {
+        top: 302px;
+        width: 690px;
+      }
+      .n4 {
+        top: 416px;
+        width: 686px;
+      }
+      .n5 {
+        top: 456px;
+        width: 700px;
+      }
+      .n6 {
+        top: 496px;
+        width: 620px;
+      }
+      .n8 {
+        top: 596px;
+        width: 560px;
+      }
+      /* A third heading, so the repetition is what proves "every heading",
+     not the words. One example reads as a comment; three read as a rule. */
+      .sub-bar-2 {
+        position: absolute;
+        left: 64px;
+        top: 496px;
+        width: 300px;
+        height: 28px;
+        border-radius: 14px;
+        background: #3b4759;
+      }
+
+      /* Every heading carries its own room, so each one wears its own count.
+     These are solid, not tinted: chat is the feature, so it has to be the
+     loudest thing on the sheet and survive the drop to 474px. */
+      .room {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 50px;
+        padding: 0 20px 0 17px;
+        border-radius: 25px;
+        background: #2678ff;
+        box-shadow: 0 10px 22px -8px rgba(38, 120, 255, 0.55);
+      }
+      .room i {
+        position: relative;
+        width: 26px;
+        height: 20px;
+        border-radius: 7px;
+        background: #fff;
+        flex: none;
+      }
+      .room i::after {
+        content: '';
+        position: absolute;
+        left: 4px;
+        bottom: -3px;
+        width: 8px;
+        height: 8px;
+        border-radius: 0 0 2px 0;
+        background: #fff;
+        transform: rotate(45deg);
+      }
+      .room b {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #fff;
+      }
+      /* Each room is centred on its own heading bar: bar centre minus half the
+     50px pill. The pill grew, so these moved with it. */
+      .room-1 {
+        left: 508px;
+        top: 143px;
+      }
+      .room-2 {
+        left: 358px;
+        top: 349px;
+      }
+      .room-3 {
+        left: 388px;
+        top: 485px;
+      }
+
+      /* two people hold a run of text, each in their own colour */
+      .pick {
+        position: absolute;
+        height: 34px;
+        border-radius: 9px;
+      }
+      .pick-ana {
+        left: 350px;
+        top: 214px;
+        width: 210px;
+        background: rgba(38, 120, 255, 0.16);
+      }
+      /* Ends on-canvas so its cursor can sit at the end of the run. At width 400
+     the run finished at x=1289 and the caret fell off the 1280px edge. */
+      .pick-lena-1 {
+        left: 300px;
+        top: 448px;
+        width: 258px;
+        background: rgba(202, 53, 64, 0.19);
+      }
+      .pick-lena-2 {
+        left: 64px;
+        top: 488px;
+        width: 300px;
+        background: rgba(202, 53, 64, 0.19);
+      }
+
+      /* a cursor is a caret plus the name of the person holding it */
+      .cursor {
+        position: absolute;
+        display: flex;
+        align-items: center;
+      }
+      .caret {
+        width: 7px;
+        height: 34px;
+        border-radius: 4px;
+        flex: none;
+      }
+      .name {
+        height: 30px;
+        margin-left: 4px;
+        padding: 0 11px;
+        border-radius: 8px;
+        border-top-left-radius: 3px;
+        display: flex;
+        align-items: center;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.004em;
+        color: #ffffff;
+        white-space: nowrap;
+      }
+      .cur-ana {
+        left: 560px;
+        top: 214px;
+      }
+      .cur-ana .caret,
+      .cur-ana .name {
+        background: #1a5fd0;
+      }
+
+      .cur-kofi {
+        left: 300px;
+        top: 254px;
+      }
+      .cur-kofi .caret,
+      .cur-kofi .name {
+        background: #378054;
+      }
+
+      .cur-ravi {
+        left: 150px;
+        top: 448px;
+      }
+      .cur-ravi .caret,
+      .cur-ravi .name {
+        background: #dc702f;
+      }
+      .cur-ravi .name {
+        color: #101a2c;
+      }
+
+      .cur-mei {
+        left: 500px;
+        top: 408px;
+      }
+      .cur-mei .caret,
+      .cur-mei .name {
+        background: #ddb13a;
+      }
+      .cur-mei .name {
+        color: #101a2c;
+      }
+
+      /* Sits at the end of Lena's own highlighted run, which also clears the
+     third chat pill. The old spot collided with it by 69x38px. */
+      .cur-lena {
+        left: 552px;
+        top: 444px;
+      }
+      .cur-lena .caret,
+      .cur-lena .name {
+        background: #ca3540;
+      }
+
+      /* ---------- the message ---------- */
+      /* 560px, not 470px. The sub-line went to 44px so it survives Slack's 360px
+     render, and at that size "For communities, teams," needs 486px or it
+     breaks to a third line and runs into the presence row below. */
+      .say {
+        position: absolute;
+        left: 72px;
+        top: 36px;
+        width: 560px;
+      }
+      .lockup {
+        position: relative;
+        height: 78px;
+        margin-bottom: 34px;
+      }
+      .wordmark {
+        position: absolute;
+        left: 68px;
+        top: 20px;
+        font-size: 38px;
+        line-height: 38px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        color: #101a2c;
+      }
+
+      /* ---------- the mark ---------- */
+      /* The main docs.plus icon, used as shipped. Height is set and width follows,
+     so the 0.7231 aspect cannot be squashed by the flex row. */
+      .mark {
+        position: absolute;
+        left: 0;
+        top: 2px;
+        height: 74px;
+        width: auto;
+        display: block;
+      }
+      h1 {
+        margin: 0;
+        font-size: 60px;
+        line-height: 1.06;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #101a2c;
+      }
+      /* 44px, not 34px. Slack renders the card at 360px wide, a 0.281 scale,
+     so 34px arrives at 9.6px and cannot be read. 44px arrives at 12.4px. */
+      .sub {
+        margin: 24px 0 0;
+        font-size: 44px;
+        line-height: 1.24;
+        font-weight: 450;
+        letter-spacing: -0.008em;
+        color: #5a6579;
+      }
+      .who {
+        color: #1a5fd0;
+        font-weight: 700;
+      }
+
+      /* ---------- the crowd: the stack is the loudest thing after the headline ---------- */
+      .presence {
+        position: absolute;
+        left: 76px;
+        top: 424px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .live {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        flex: none;
+        background: #378054;
+        box-shadow: 0 0 0 7px rgba(55, 128, 84, 0.15);
+      }
+      .presence p {
+        margin: 0;
+        font-size: 34px;
+        font-weight: 450;
+        letter-spacing: -0.004em;
+        color: #5a6579;
+        white-space: nowrap;
+      }
+      .presence b {
+        color: #101a2c;
+        font-weight: 700;
+      }
+
+      /* the stack runs off the paper and onto the sheet, so the two layers lock */
+      .crowd {
+        position: absolute;
+        left: 72px;
+        top: 496px;
+        display: flex;
+      }
+      /* Turned down on purpose. Cursors and avatar stacks are the stock visual of
+     every real-time editor, so they prove nothing this category does not already
+     assume. Presence supports the claim here; the chat rooms carry it. */
+      .face {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: #ffffff;
+        box-shadow:
+          0 0 0 5px #f1f5fd,
+          0 10px 20px -10px rgba(17, 32, 66, 0.3);
+      }
+      .face + .face {
+        margin-left: -13px;
+      }
+      .f-ana {
+        background: #1a5fd0;
+      }
+      .f-kofi {
+        background: #378054;
+      }
+      .f-mei {
+        background: #ddb13a;
+        color: #101a2c;
+      }
+      .f-ravi {
+        background: #dc702f;
+        color: #101a2c;
+      }
+      .f-lena {
+        background: #ca3540;
+      }
+      .more {
+        background: #dae3f2;
+        color: #3b4759;
+        font-size: 27px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="back"></div>
+
+      <div class="sheet">
+        <div class="bar">
+          <div class="tab tab-1"></div>
+          <div class="tab tab-2"></div>
+          <div class="tab tab-3"></div>
+          <div class="open">
+            <i></i>
+            <u></u>
+          </div>
+        </div>
+
+        <div class="head-bar"></div>
+        <div class="room room-1">
+          <i></i>
+          <b>12</b>
+        </div>
+        <div class="line n1"></div>
+        <div class="line n2"></div>
+        <div class="line n3"></div>
+
+        <div class="sub-bar"></div>
+        <div class="room room-2">
+          <i></i>
+          <b>5</b>
+        </div>
+        <div class="line n4"></div>
+        <div class="line n5"></div>
+
+        <div class="sub-bar-2"></div>
+        <div class="room room-3">
+          <i></i>
+          <b>8</b>
+        </div>
+        <div class="line n8"></div>
+
+        <div class="pick pick-ana"></div>
+        <div class="pick pick-lena-1"></div>
+
+        <div class="cursor cur-ana">
+          <div class="caret"></div>
+          <div class="name">Ana</div>
+        </div>
+        <div class="cursor cur-lena">
+          <div class="caret"></div>
+          <div class="name">Lena</div>
+        </div>
+      </div>
+
+      <div class="say">
+        <div class="lockup">
+          <img
+            class="mark"
+            src="data:image/svg+xml;base64,PCEtLSBUaGUgbWFpbiBkb2NzLnBsdXMgaWNvbiwgcGF0aCBkYXRhIHVuY2hhbmdlZCBmcm9tIGFwcHMvd2ViYXBwL3B1YmxpYy9pY29ucy9sb2dvLnN2Zy4KICAgICBPbmx5IHRoZSB2aWV3Qm94IGlzIHRpZ2h0ZW5lZCBvbnRvIHRoZSBwYWdlLCBzbyB0aGUgbWFyayBjYXJyaWVzIG5vIGRlYWQgcGFkZGluZy4gLS0+Cjxzdmcgd2lkdGg9IjE3NDAiIGhlaWdodD0iMjQwNiIgdmlld0JveD0iNDc2IDE0MSAxNzQwIDI0MDYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHBhdGggZD0iTTE1NjMuOTggMTQwLjg5MUg2MzguODMzQzU1MC4wMDYgMTQwLjg5MSA0NzYgMjE0Ljg5NyA0NzYgMzAzLjcyNFYyMzc5Ljc5QzQ3NiAyNDY4LjYyIDU1MC4wMDYgMjU0Mi42MyA2MzguODMzIDI1NDIuNjNIMjA1Mi40OEMyMTQxLjMxIDI1NDIuNjMgMjIxNS4zMSAyNDY4LjYyIDIyMTUuMzEgMjM3OS43OVY3OTUuOTAzTDE4MzQuMTQgNTIyLjA2MUwxNTYzLjk4IDE0MC44OTFaIiBmaWxsPSIjMjY3OEZGIi8+CiAgPHBhdGggZD0iTTE2MTIuMSA3NDcuNzgxTDIyMTUuMjkgMTM1OC40Vjc5NS45TDE2MTIuMSA3NDcuNzgxWiIgZmlsbD0idXJsKCNmb2xkU2hhZGUpIi8+CiAgPHBhdGggZD0iTTE1NjEuNjggMTQyLjU2NlY2MzQuNzQ1QzE1NjEuNjggNzIzLjU3MiAxNjM1LjY4IDc5Ny41NzggMTcyNC41MSA3OTcuNTc4SDIyMTIuOThMMTU2MS42OCAxNDIuNTY2WiIgZmlsbD0iIzhBQjVGRiIvPgogIDxwYXRoIGQ9Ik02MzguODMzIDE0MC44OTFDNTUwLjAwNiAxNDAuODkxIDQ3NiAyMTQuODk3IDQ3NiAzMDMuNzIzVjMxOC41MkM0NzYgMjI5LjY5MyA1NTAuMDA2IDE1NS42ODcgNjM4LjgzMyAxNTUuNjg3SDE1NjMuOThWMTQwLjg5MUg2MzguODMzWiIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4yIi8+CiAgPHBhdGggZD0iTTIwNTIuNDggMjUzMS41MUg2MzguODMzQzU1MC4wMDYgMjUzMS41MSA0NzYgMjQ1Ny41IDQ3NiAyMzY4LjY4VjIzODMuNDdDNDc2IDI0NzIuMyA1NTAuMDA2IDI1NDYuMzEgNjM4LjgzMyAyNTQ2LjMxSDIwNTIuNDhDMjE0MS4zMSAyNTQ2LjMxIDIyMTUuMzEgMjQ3Mi4zIDIyMTUuMzEgMjM4My40N1YyMzY4LjY4QzIyMTUuMjkgMjQ1Ny40OCAyMTQxLjI4IDI1MzEuNTEgMjA1Mi40OCAyNTMxLjUxWiIgZmlsbD0iIzFBMjM3RSIgZmlsbC1vcGFjaXR5PSIwLjIiLz4KICA8cGF0aCBkPSJNMTcyNi44MSA3OTUuODk5QzE2MzcuOTkgNzk1Ljg5OSAxNTYzLjk4IDcyMS44OTMgMTU2My45OCA2MzMuMDY2VjY0Ny44NjNDMTU2My45OCA3MzYuNjkgMTYzNy45OSA4MTAuNjk1IDE3MjYuODEgODEwLjY5NUgyMjE1LjI5Vjc5NS44OTlIMTcyNi44MVoiIGZpbGw9IiMxQTIzN0UiIGZpbGwtb3BhY2l0eT0iMC4xIi8+CiAgPHJlY3QgeD0iNzkwLjU3NCIgeT0iMTQ1My4xNCIgd2lkdGg9IjEwOTUuNjciIGhlaWdodD0iMjk1LjY3IiByeD0iMTI0LjMzOCIgZmlsbD0id2hpdGUiLz4KICA8cmVjdCB4PSIxNDg2LjI0IiB5PSIxMDUzLjE0IiB3aWR0aD0iMTA5NS42NyIgaGVpZ2h0PSIyOTUuNjciIHJ4PSIxMjQuMzM4IiB0cmFuc2Zvcm09InJvdGF0ZSg5MCAxNDg2LjI0IDEwNTMuMTQpIiBmaWxsPSJ3aGl0ZSIvPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJmb2xkU2hhZGUiIHgxPSIxOTEzLjciIHkxPSI4MDAuNzAzIiB4Mj0iMTkxMy43IiB5Mj0iMTM1Ni40NyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBzdG9wLWNvbG9yPSIjMUEyMzdFIiBzdG9wLW9wYWNpdHk9IjAuMiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxQTIzN0UiIHN0b3Atb3BhY2l0eT0iMC4wMiIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+Cjwvc3ZnPgo="
+            alt="" />
+          <span class="wordmark">docs.plus</span>
+        </div>
+        <h1>
+          Get everyone
+          <br />
+          on the same page
+        </h1>
+        <p class="sub">
+          For
+          <span class="who">communities</span>
+          , teams,
+          <br />
+          and classrooms.
+        </p>
+      </div>
+
+      <div class="presence">
+        <span class="live"></span>
+        <p>
+          <b>7 people</b>
+          here right now
+        </p>
+      </div>
+
+      <div class="crowd">
+        <div class="face f-ana">A</div>
+        <div class="face f-kofi">K</div>
+        <div class="face f-mei">M</div>
+        <div class="face f-ravi">R</div>
+        <div class="face f-lena">L</div>
+        <div class="face more">+2</div>
+      </div>
+    </div>
+  </body>
+</html>
