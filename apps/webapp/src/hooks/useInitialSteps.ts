@@ -1,36 +1,20 @@
 import { useStore } from '@stores'
+import { isIPadDevice } from '@utils/platform'
 import MobileDetect from 'mobile-detect'
-import { useEffect, useRef, useState } from 'react'
-
-const MOBILE_BREAKPOINT = 768
+import { useEffect, useState } from 'react'
 
 export const useInitialSteps = (isMobileInitial: boolean, enabled = true) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const [isClient, setIsClient] = useState(false)
-  const wasMobileRef = useRef(isMobileInitial)
 
   useEffect(() => {
     if (!enabled) return
 
     setIsClient(true)
 
-    setWorkspaceEditorSetting('isMobile', isMobileInitial)
-    wasMobileRef.current = isMobileInitial
-
-    const handleResize = () => {
-      const isMobileNow = window.innerWidth <= MOBILE_BREAKPOINT
-
-      if (isMobileNow !== wasMobileRef.current) {
-        window.location.reload()
-      }
-    }
-
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
+    // iPadOS sends a Macintosh user-agent, so the server gate cannot see the device.
+    setWorkspaceEditorSetting('isMobile', isMobileInitial || isIPadDevice())
   }, [enabled, isMobileInitial, setWorkspaceEditorSetting])
 
   useEffect(() => {
