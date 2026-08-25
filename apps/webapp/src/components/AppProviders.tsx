@@ -2,7 +2,7 @@
  * Router-dependent hooks that can't run during SSG.
  */
 
-import { performMaintenanceCleanup } from '@db/messageComposerDB'
+import { flushPendingWrites, performMaintenanceCleanup } from '@db/messageComposerDB'
 import { useBroadcastListener } from '@hooks/useBroadcastListener'
 import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
 import { useHandleUserStatus } from '@hooks/useHandleUserStatus'
@@ -52,6 +52,30 @@ export default function AppProviders({
     })
     return stop
   }, [router, router.isReady, documentShell])
+
+  // Mobile browsers often fire neither beforeunload nor unload. These two events are the
+  // last reliable moment to write a debounced chat draft to IndexedDB.
+  useEffect(() => {
+    const flushDrafts = () => {
+      try {
+        flushPendingWrites()
+      } catch {
+        // Losing one draft is better than breaking the page-hide path.
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') flushDrafts()
+    }
+
+    window.addEventListener('pagehide', flushDrafts)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('pagehide', flushDrafts)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   return null
 }
