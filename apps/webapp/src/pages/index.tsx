@@ -4,6 +4,9 @@ import {
   HOME_DESCRIPTION,
   HOME_OG_IMAGE,
   HOME_OG_IMAGE_ALT,
+  HOME_OG_IMAGE_HEIGHT,
+  HOME_OG_IMAGE_WIDTH,
+  HOME_SITE_URL,
   HOME_TITLE
 } from '@components/pages/home/homeMetadata'
 import HomePage from '@components/pages/home/HomePage'
@@ -18,6 +21,14 @@ interface HomeProps {
 
 function Home({ hostname, isAuthServiceAvailable }: HomeProps) {
   const webSiteJsonLd = buildHomeWebSiteJsonLd()
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'docs.plus',
+    url: HOME_CANONICAL_URL,
+    logo: `${HOME_SITE_URL}/icons/android-chrome-512x512.png`,
+    sameAs: ['https://github.com/docs-plus/docs.plus']
+  }
 
   return (
     <>
@@ -32,8 +43,8 @@ function Home({ hostname, isAuthServiceAvailable }: HomeProps) {
         <meta property="og:url" content={HOME_CANONICAL_URL} />
         <meta property="og:image" content={HOME_OG_IMAGE} />
         <meta property="og:image:alt" content={HOME_OG_IMAGE_ALT} />
-        <meta property="og:image:width" content="512" />
-        <meta property="og:image:height" content="512" />
+        <meta property="og:image:width" content={HOME_OG_IMAGE_WIDTH} />
+        <meta property="og:image:height" content={HOME_OG_IMAGE_HEIGHT} />
 
         <meta name="twitter:title" content={HOME_TITLE} />
         <meta name="twitter:description" content={HOME_DESCRIPTION} />
@@ -44,6 +55,10 @@ function Home({ hostname, isAuthServiceAvailable }: HomeProps) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
       </Head>
 

@@ -1,6 +1,6 @@
 const SITE_ORIGIN = (process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus').replace(/\/$/, '')
 
-/** Landing + document routes emit GA (`getRoutePolicy().analytics`). */
+/** Only the landing route emits GA (`getRoutePolicy().analytics`). */
 
 export const HOME_TITLE = 'docs.plus — Get everyone on the same page'
 
@@ -12,9 +12,14 @@ export const HOME_SITE_URL = SITE_ORIGIN
 /** Canonical landing URL — trailing slash matches sitemap `loc`. */
 export const HOME_CANONICAL_URL = `${SITE_ORIGIN}/`
 
-export const HOME_OG_IMAGE = `${SITE_ORIGIN}/icons/android-chrome-512x512.png`
+export const HOME_OG_IMAGE = `${SITE_ORIGIN}/icons/og-card-1280x640.png`
 
-export const HOME_OG_IMAGE_ALT = 'docs.plus logo'
+export const HOME_OG_IMAGE_ALT =
+  'docs.plus: a shared document with a chat count beside each section'
+
+export const HOME_OG_IMAGE_WIDTH = '1280'
+
+export const HOME_OG_IMAGE_HEIGHT = '640'
 
 /** Paths allowed in `sitemap.xml` (user docs stay `noindex`). */
 export const INDEXABLE_PATHS = ['/', '/privacy', '/terms'] as const
