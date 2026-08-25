@@ -1,6 +1,7 @@
 import Chatroom from '@components/chatroom/Chatroom'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { supabaseClient } from '@utils/supabase'
+import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
@@ -71,4 +72,14 @@ export default function E2EChatroomPage() {
       </Chatroom>
     </div>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  // Cypress-only chatroom harness. Ungated, every /c/<id> answers 200 with an
+  // empty page, which reads to a crawler as an unlimited soft 404.
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_E2E !== 'true') {
+    return { notFound: true }
+  }
+
+  return { props: {} }
 }
