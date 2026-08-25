@@ -12,7 +12,7 @@ docs.plus is a free, open-source tool for real-time collaborative documents. Eve
 <a href="https://docs.plus">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/editor-dark.png" />
-    <img alt="The docs.plus editor: document sheet with heading-based table of contents, each heading with its own chat" src=".github/assets/editor-light.png" />
+    <img alt="The docs.plus demo document: an outline of headings on the left, each with its own chat button, and the document sheet on the right" src=".github/assets/editor-light.png" />
   </picture>
 </a>
 
