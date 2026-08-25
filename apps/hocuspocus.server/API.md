@@ -172,13 +172,13 @@ Create a document.
 { "title": "My Document", "slug": "my-document", "description": "", "keywords": [] }
 ```
 
-`title` and `slug` are required; `description` defaults to `""`, `keywords` to `[]`. The slug is normalized via `slugify`; a 19-char `documentId` is generated.
+`title` and `slug` are required; `description` defaults to `""`, `keywords` to `[]`. The stored `title` is plain text. The schema strips HTML tags. The slug is normalized via `slugify`; a 19-char `documentId` is generated.
 
 Two further fields are accepted **only** under the service-role key: `content` (a Tiptap JSON document, seeded as version 1) and `ownerId` (a bare Supabase uid). A user JWT presenting either gets `403 FORBIDDEN` and nothing is written. See [Create with content](#create-with-content). Without them, behavior is unchanged for user-JWT callers.
 
 ### PUT /api/documents/:docId
 
-Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`), `slug` (`string`). `slug` sets the row's slug only when this call creates the row. It is ignored on every update and never renames a live document.
+Upsert document metadata by `documentId`. All fields optional: `title`, `description`, `keywords` (`string[]`), `readOnly` (`boolean`), `isPrivate` (`boolean`), `slug` (`string`). A stored `title` is plain text. The schema strips HTML tags. `slug` sets the row's slug only when this call creates the row. It is ignored on every update and never renames a live document.
 
 Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open: anyone, signed in or not, may set `title` / `description` / `keywords`. But its locks cannot move, because a document with no owner has nobody to be private for. Those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request. A soft-deleted document is `404`.
 

@@ -4,19 +4,19 @@ Rotating state for the five publishable `@docs.plus/extension-*` packages during
 
 ## npm publish status
 
-**Current `latest`** is the version npm serves today, before the cutover. The three `2.0.0` columns track the cutover itself. A `—` there means that step has not happened yet, not that the package is absent from npm.
+**Cutover complete — all five shipped 2026-08-11.** Every package publishes `2.0.0`, serves it as npm `latest`, and carries a git tag and a GitHub Release.
 
 | Package                                | Local `package.json` | Current `latest` | `2.0.0` on npm | `2.0.0` git tag | `2.0.0` GitHub Release |
 | -------------------------------------- | -------------------- | ---------------- | -------------- | --------------- | ---------------------- |
-| `@docs.plus/extension-hyperlink`       | 2.0.0                | 1.5.2            | —              | —               | —                      |
-| `@docs.plus/extension-hypermultimedia` | 2.0.0                | 1.4.0            | —              | —               | —                      |
-| `@docs.plus/extension-indent`          | 2.0.0                | 0.1.1            | —              | —               | —                      |
-| `@docs.plus/extension-inline-code`     | 2.0.0                | never published  | —              | —               | —                      |
-| `@docs.plus/extension-placeholder`     | 2.0.0                | never published  | —              | —               | —                      |
+| `@docs.plus/extension-hyperlink`       | 2.0.0                | 2.0.0            | ✅ 2026-08-11  | ✅              | ✅                     |
+| `@docs.plus/extension-hypermultimedia` | 2.0.0                | 2.0.0            | ✅ 2026-08-11  | ✅              | ✅                     |
+| `@docs.plus/extension-indent`          | 2.0.0                | 2.0.0            | ✅ 2026-08-11  | ✅              | ✅                     |
+| `@docs.plus/extension-inline-code`     | 2.0.0                | 2.0.0            | ✅ 2026-08-11  | ✅              | ✅                     |
+| `@docs.plus/extension-placeholder`     | 2.0.0                | 2.0.0            | ✅ 2026-08-11  | ✅              | ✅                     |
 
-Registry state verified 2026-08-07. `extension-hyperlink` also carries a stray `4.3.0`, published 2026-04-19 by mistake. `latest` points at `1.5.2`, not `4.3.0`. But `4.3.0` outranks every other published version by semver, so it sits at the top of the version list. It already carries npm's generic deprecation string; deprecation warns but never blocks an install, so the message is the only lever — see step 9.
+Registry state verified 2026-08-11 against `npm view`. `extension-hyperlink` still carries the stray `4.3.0`, published 2026-04-19 by mistake and unremovable — npm's 72-hour unpublish window closed 2026-04-22. It outranks `2.0.0` by semver, so it stays at the top of the version list. Its deprecation message now reads "Mispublished by mistake — not a real release. Install 2.x instead.", replacing npm's generic string. Deprecation warns at install but never blocks one, so the message was the only remaining lever.
 
-Update the table as each package ships: fill its three `2.0.0` columns and move `2.0.0` into **Current `latest`**. Publishes are stable-only (`latest`); there is no `@next` column to track and no promotion step.
+The table is now final for Phase 1. This file is deleted by the switch-flip PR that activates Phase 2 — see [Trigger D](../../RELEASE_POLICY.md#trigger-d--when-strict-lockstep-activates). The runbook below stays until then, because it is the record of how these five shipped.
 
 ## Phase 1 publish runbook (per package)
 
