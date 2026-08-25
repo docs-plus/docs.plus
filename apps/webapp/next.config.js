@@ -21,7 +21,13 @@ const withPWA = require('next-pwa')({
   disable: !isProduction,
   register: true,
   skipWaiting: false,
+  // next-pwa defaults this on, and reloads the page the moment the network returns.
+  // On a phone that costs the caret, the scroll spot and any unsent draft.
+  reloadOnOnline: false,
   runtimeCaching,
+  // Demo-document media and sample HTML that no page in src references. Precaching
+  // them costs every first visit ~6.7M. The leading "!" is next-pwa's own globby syntax.
+  publicExcludes: ['!demo-assets/**/*', '!external-html/**/*'],
   // Exclude files that don't exist in Next.js 15+
   buildExcludes: [/dynamic-css-manifest\.json$/, /middleware-manifest\.json$/],
   // Import custom service worker for push notifications
