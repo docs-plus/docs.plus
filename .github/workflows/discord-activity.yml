@@ -3,6 +3,16 @@ name: 'Discord: repo activity'
 on:
   push:
     branches: ['**']
+  workflow_dispatch:
+    inputs:
+      before:
+        description: 'Old tip SHA (exclusive)'
+        required: true
+        type: string
+      after:
+        description: 'New tip SHA (inclusive)'
+        required: true
+        type: string
 
 jobs:
   notify:
@@ -46,13 +56,30 @@ jobs:
         env:
           EVENT_JSON: ${{ toJSON(github.event) }}
           GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_BEFORE: ${{ inputs.before }}
+          DISPATCH_AFTER: ${{ inputs.after }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          REF=$(jq -r '.ref' <<< "$EVENT_JSON" | sed 's|refs/heads/||')
-          COMPARE=$(jq -r '.compare' <<< "$EVENT_JSON")
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.event.after }}"
-          ZERO_SHA="0000000000000000000000000000000000000000"
           REPO="${{ github.repository }}"
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          is_sha() { [[ "$1" =~ ^[0-9a-f]{7,40}$ ]]; }
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            BEFORE="$DISPATCH_BEFORE"
+            AFTER="$DISPATCH_AFTER"
+            if ! is_sha "$BEFORE" || ! is_sha "$AFTER"; then
+              echo "::error::before/after must be git SHAs"
+              exit 1
+            fi
+            REF="$REF_NAME"
+            COMPARE="https://github.com/${REPO}/compare/${BEFORE}...${AFTER}"
+          else
+            REF=$(jq -r '.ref' <<< "$EVENT_JSON" | sed 's|refs/heads/||')
+            COMPARE=$(jq -r '.compare' <<< "$EVENT_JSON")
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.event.after }}"
+          fi
 
           normalize_webhook() {
             jq '{
@@ -66,7 +93,22 @@ jobs:
             }' <<< "$EVENT_JSON"
           }
 
-          if [ "$BEFORE" = "$ZERO_SHA" ] || [ -z "$BEFORE" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            API_PAGES=$(gh api "repos/${REPO}/compare/${BEFORE}...${AFTER}" --paginate 2>/dev/null) || API_PAGES=""
+            if [ -z "$API_PAGES" ]; then
+              echo "::error::compare API failed for ${BEFORE}...${AFTER}"
+              exit 1
+            fi
+            COMMITS_JSON=$(jq -s '
+              [.[].commits[]?]
+              | unique_by(.sha)
+              | {commits: map({
+                  id: .sha,
+                  message: .commit.message,
+                  author: {name: (.commit.author.name // "unknown")}
+                })}
+            ' <<< "$API_PAGES")
+          elif [ "$BEFORE" = "$ZERO_SHA" ] || [ -z "$BEFORE" ]; then
             COMMITS_JSON=$(normalize_webhook)
           else
             API_PAGES=$(gh api "repos/${REPO}/compare/${BEFORE}...${AFTER}" --paginate 2>/dev/null) || API_PAGES=""
