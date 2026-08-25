@@ -1,3 +1,4 @@
+import { closeMessageReaction } from '@components/chatroom/utils/messageReaction'
 import data from '@emoji-mart/data/sets/14/native.json'
 import EmojiPicker from '@emoji-mart/react'
 import { isLightTheme, useChatStore, useThemeStore } from '@stores'
@@ -69,7 +70,7 @@ type Props = {
 }
 export const Picker = ({ emojiSelectHandler }: Props) => {
   const { variant } = useEmojiPanelContext()
-  const { closeEmojiPicker, emojiPicker } = useChatStore()
+  const { emojiPicker } = useChatStore()
   const resolvedTheme = useThemeStore((s) => s.resolvedTheme)
   const isDark = !isLightTheme(resolvedTheme)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -93,7 +94,9 @@ export const Picker = ({ emojiSelectHandler }: Props) => {
         set="native"
         theme={isDark ? 'dark' : 'light'}
         onClickOutside={() => {
-          if (emojiPicker.isOpen) closeEmojiPicker()
+          // Closes the reaction sheet too. Closing only the picker left the sheet
+          // open with no message selected, so the next tap wrote no reaction.
+          if (emojiPicker.isOpen) closeMessageReaction()
         }}
         onEmojiSelect={emojiSelectHandler}
       />
