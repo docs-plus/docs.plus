@@ -19,7 +19,8 @@ export function navigateToHeading(
   const { openChat = false, updateUrl = true } = options
 
   if (updateUrl) {
-    window.history.replaceState({}, '', buildHeadingHref(editor, headingId))
+    // Keep the current state object: open overlays park their dismiss marker on it.
+    window.history.replaceState(window.history.state, '', buildHeadingHref(editor, headingId))
   }
 
   scrollPadHeading(headingId, { behavior: 'smooth', block: 'start' })
@@ -50,7 +51,7 @@ export function navigateToDocTitle(options: {
   const url = new URL(window.location.href)
   url.searchParams.set('h', headingSlug(title))
   url.searchParams.set('id', workspaceId)
-  window.history.replaceState({}, '', url)
+  window.history.replaceState(window.history.state, '', url)
 
   if (openChat) {
     PubSub.publish(CHAT_OPEN, { headingId: workspaceId })
