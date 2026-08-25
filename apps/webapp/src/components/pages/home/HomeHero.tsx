@@ -44,6 +44,9 @@ export function HomeHero({ compact = false }: HomeHeroProps) {
             />
           </span>
         </p>
+        <p className="text-base-content/60 mt-2 text-sm sm:mt-3 sm:text-base">
+          Every heading has its own chatroom.
+        </p>
       </HomeCollapseRegion>
     </div>
   )

@@ -1,5 +1,7 @@
 # 📚 docs.plus
 
+docs.plus is a free, open-source tool for real-time collaborative documents. Every heading in a document has its own chatroom, so a discussion stays next to the section it is about. The table of contents shows who is in each chatroom and how many messages you have not read.
+
 [![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-5%20on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
@@ -13,8 +15,6 @@
     <img alt="The docs.plus editor: document sheet with heading-based table of contents, each heading with its own chat" src=".github/assets/editor-light.png" />
   </picture>
 </a>
-
-docs.plus is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
 
 **[Try it live at docs.plus →](https://docs.plus)**
 
