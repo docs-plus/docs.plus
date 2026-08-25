@@ -37,6 +37,9 @@ jobs:
       #   - GitHub push webhooks include at most 20 commits in
       #     github.event.commits. For larger pushes we load the full range
       #     via the compare API (repos/.../compare/before...after).
+      #   - Deploy-trigger subjects (`(build): …`) are dropped from the
+      #     list. Conventional `build(scope):` stays. A push that is only
+      #     triggers does not post.
       # ----------------------------------------------------------------------
       - name: Build commit summary (for push)
         id: build
@@ -86,6 +89,19 @@ jobs:
             fi
           fi
 
+          # Same prefix the deploy tokenizer treats as a trigger. Do not
+          # key the skip on head_commit alone — a mixed push would still
+          # print the `(build):` lines.
+          COMMITS_JSON=$(jq '
+            .commits |= map(select(
+              (.message // ""
+                | split("\n")[0]
+                | gsub("^\\s+|\\s+$"; "")
+                | startswith("(build)")
+                | not)
+            ))
+          ' <<< "$COMMITS_JSON")
+
           COUNT=$(jq -r '.commits | length' <<< "$COMMITS_JSON")
 
           REPO_URL="https://github.com/${REPO}"
@@ -125,29 +141,21 @@ jobs:
       #   Discord caps content at 2000 chars. We pack as many commit lines as
       #   fit under MAX_LEN (1900, leaving ~100 char buffer for trailing JSON
       #   and a bit of slack), then flush. The HEADER is only included in the
-      #   first chunk so subsequent chunks read as continuations.
+      #   first chunk. Later chunks are more numbered lines, with no marker.
       #
       # flags: 4 == SUPPRESS_EMBEDS — keeps the message compact (no GitHub
       # link previews stacking under every commit).
       # ----------------------------------------------------------------------
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 1
-      - id: trig
-        # A malformed `(build): …` subject makes the tokenizer exit non-zero; the
-        # script still writes `triggered=false` first, so don't fail this notify-only
-        # job on a commit-message typo (prod `triage` is the real red gate for that).
-        continue-on-error: true
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-        run: bash .github/scripts/parse-build-trigger.sh
       - name: Post to Discord (smart split)
-        if: steps.trig.outputs.triggered != 'true'
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           if [ -z "$DISCORD_WEBHOOK" ]; then
             echo "::warning::DISCORD_WEBHOOK is empty; skip post"
+            exit 0
+          fi
+          if [ "${COUNT:-0}" -eq 0 ]; then
+            echo "no non-trigger commits; skip post"
             exit 0
           fi
 
@@ -179,7 +187,7 @@ jobs:
               if [ $CHUNK_NUM -eq 1 ]; then
                 send_chunk "${HEADER}${CURRENT_CHUNK}"
               else
-                send_chunk $'*(continued)*\n'"${CURRENT_CHUNK}"
+                send_chunk "${CURRENT_CHUNK}"
               fi
 
               CHUNK_NUM=$((CHUNK_NUM + 1))
@@ -193,6 +201,6 @@ jobs:
             if [ $CHUNK_NUM -eq 1 ]; then
               send_chunk "${HEADER}${CURRENT_CHUNK}"
             else
-              send_chunk $'*(continued)*\n'"${CURRENT_CHUNK}"
+              send_chunk "${CURRENT_CHUNK}"
             fi
           fi
