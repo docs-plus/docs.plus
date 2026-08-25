@@ -27,10 +27,6 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
   loading: ({ error }) => (error ? <ChunkLoadError /> : null)
 })
 
-// Social crawlers ignore relative OG/meta URLs like "/icons/...", so these must be absolute.
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
-const DEFAULT_OG_IMAGE = `${SITE_URL}/icons/android-chrome-512x512.png`
-
 const Document = ({
   docMetadata,
   isMobile,
@@ -65,37 +61,10 @@ const Document = ({
     )
   }
 
-  const ogTitle = docMetadata?.title || 'docs.plus'
-  const ogDescription =
-    docMetadata?.description ||
-    'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.'
-  const ogUrl = docMetadata?.slug ? `${SITE_URL}/${docMetadata.slug}` : SITE_URL
-  const ogImage = DEFAULT_OG_IMAGE
-
+  // Title and OG tags live in _app.tsx. A <Head> here renders inside AppQueryClientRoot,
+  // whose document shell is ssr:false, so the server response would carry none of them.
   return (
     <>
-      {/*
-        These OG/Twitter tags must stay server-rendered: social crawlers do not run
-        JavaScript, and HeadSeo.tsx inside DocumentPage is ssr:false.
-      */}
-      <Head>
-        <title>{ogTitle}</title>
-        <meta name="description" content={ogDescription} />
-        <meta name="robots" content="noindex, follow" />
-
-        <meta property="og:title" content={ogTitle} />
-        <meta property="og:description" content={ogDescription} />
-        <meta property="og:url" content={ogUrl} />
-        <meta property="og:image" content={ogImage} />
-        <meta property="og:image:width" content="512" />
-        <meta property="og:image:height" content="512" />
-
-        <meta name="twitter:title" content={ogTitle} />
-        <meta name="twitter:description" content={ogDescription} />
-        <meta name="twitter:url" content={ogUrl} />
-        <meta name="twitter:image" content={ogImage} />
-      </Head>
-
       {!hasProvider && <SlugPageLoader isMobile={isMobile} isAuthed={Boolean(accessToken)} />}
 
       <DocumentPage
