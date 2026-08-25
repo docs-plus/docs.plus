@@ -184,7 +184,7 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 ### Collab Provider Status
 
 - `ProviderStatus` lives in `types/collab.ts`: `saved`/`synced`/`saving`/`error`/`offline`/`unauthenticated` — no fake `online` state.
-- Only `useYdocAndProvider` wires these three shared helpers: `@utils/providerCollabStatus.ts` holds predicates + `getNeedsAuthCopy()` — "Session expired" copy only when the auth store had a profile. `@utils/openInlineSignInDialog.tsx` is the one pad/document sign-in shell; do not fork through the profile modal. `@utils/collabProviderLifecycle.ts` holds auth/disconnect constants + pure helpers.
+- Only `useYdocAndProvider` wires these three shared helpers: `@utils/providerCollabStatus.ts` holds predicates + `getNeedsAuthCopy()` — "Session expired" copy only when the auth store had a profile. `@utils/openInlineSignInDialog.tsx` is the one pad/document sign-in shell; do not fork through the profile modal. `hooks/collabSession.ts` holds auth/disconnect constants + pure helpers; the hook is the React adapter. Do not re-export those helpers from `@utils`.
 - Pre-sync terminal states render `SyncErrorCard` (render condition and self-heal in §Slug Page Entry And Skeletons); post-sync auth-stops render the shared `SessionExpiredBanner` (document + history parity). Keep the pre-/post-sync split.
 - `ProviderSyncStatus` stays outside the editor (`role="status"` is OK there — never inside `.ProseMirror`, per §Editor Performance).
 
