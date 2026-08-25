@@ -38,6 +38,11 @@ html.m_mobile #__next {
     // Height tracks visual viewport - updated via JS on resize/scroll
     // Fallback to 100dvh (dynamic viewport height that adjusts for browser UI)
     height: var(--visual-viewport-height, 100dvh);
+    // Landscape on a notched phone puts the cutout on a side, so the side insets belong here.
+    // The global `* { box-sizing: border-box }` keeps the outer box on the JS-pinned width.
+    // The bottom inset is not here: ChatPane measures it from `data-chat-pane-body` at runtime.
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     display: flex;
     flex-direction: column;
     overflow: hidden;
