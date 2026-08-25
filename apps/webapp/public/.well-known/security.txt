@@ -1,0 +1,5 @@
+# Refresh Expires before it lapses, or scanners treat this file as stale.
+Contact: mailto:security@docs.plus
+Expires: 2027-08-01T00:00:00Z
+Policy: https://github.com/docs-plus/docs.plus/blob/main/SECURITY.md
+Preferred-Languages: en
