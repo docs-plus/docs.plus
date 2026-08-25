@@ -64,18 +64,32 @@
 
   "screenshots": [
     {
-      "src": "/icons/screenshot-wide-1-outline.png",
+      "src": "/icons/screenshot-wide-2-filter.png",
       "type": "image/png",
       "sizes": "2560x1600",
       "form_factor": "wide",
-      "label": "A chatroom on every heading"
+      "label": "See only the sections that match a word"
     },
     {
-      "src": "/icons/screenshot-narrow-1-pad.png",
+      "src": "/icons/screenshot-wide-3-outline.png",
+      "type": "image/png",
+      "sizes": "2560x1600",
+      "form_factor": "wide",
+      "label": "Find any section from the outline"
+    },
+    {
+      "src": "/icons/screenshot-narrow-2-outline.png",
       "type": "image/png",
       "sizes": "824x1648",
       "form_factor": "narrow",
-      "label": "Read and discuss on a phone"
+      "label": "Jump anywhere, and see what is unread"
+    },
+    {
+      "src": "/icons/screenshot-narrow-3-pad.png",
+      "type": "image/png",
+      "sizes": "824x1648",
+      "form_factor": "narrow",
+      "label": "A document on a phone, chat one tap away"
     }
   ],
 
