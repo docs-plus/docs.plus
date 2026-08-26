@@ -31,7 +31,15 @@ The five publishable packages:
 
 **Git.** Push one tag: `git push origin v2.0.0`. Never `git push --tags`.
 
-**GitHub.** The Release body is a slice of [`CHANGELOG.md`](CHANGELOG.md). This Release is Latest.
+**GitHub.** The Release body is **authored** from the [`CHANGELOG.md`](CHANGELOG.md) `[2.0.0]` entry, not
+sliced from it. A changelog is a record and an announcement is not, so one document served both jobs
+less well. Every claim in the body must trace to that entry or to mounted code. This Release is Latest.
+
+**Per-package Releases.** The five `@docs.plus/extension-*` GitHub Releases from 2026-08-11 were deleted
+on 2026-08-26, so the product Release is the only entry a visitor meets. **The five git tags stay**, because
+they pin the source that built each published npm version, and `release:family` preflight check 8 reads
+them. This supersedes [Decision: per-package releases over umbrella](#decision-per-package-releases-over-umbrella)
+for the Releases page only; per-package tags and npm publishing are unchanged.
 
 **npm.** Extension `latest` does not change. The five `@docs.plus/extension-*` packages already serve `2.0.0`.
 
