@@ -88,9 +88,21 @@
         height: 18px;
         border-radius: 9px;
       }
-      .tab-1 { left: 56px; width: 190px; background: #d7e1f1; }
-      .tab-2 { left: 266px; width: 108px; background: #e8eef8; }
-      .tab-3 { left: 394px; width: 72px; background: #f2f6fc; }
+      .tab-1 {
+        left: 56px;
+        width: 190px;
+        background: #d7e1f1;
+      }
+      .tab-2 {
+        left: 266px;
+        width: 108px;
+        background: #e8eef8;
+      }
+      .tab-3 {
+        left: 394px;
+        width: 72px;
+        background: #f2f6fc;
+      }
       .open {
         position: absolute;
         left: 508px;
@@ -103,8 +115,18 @@
         border-radius: 19px;
         background: rgba(55, 128, 84, 0.1);
       }
-      .open i { width: 13px; height: 13px; border-radius: 50%; background: #378054; }
-      .open u { width: 56px; height: 13px; border-radius: 7px; background: rgba(55, 128, 84, 0.36); }
+      .open i {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: #378054;
+      }
+      .open u {
+        width: 56px;
+        height: 13px;
+        border-radius: 7px;
+        background: rgba(55, 128, 84, 0.36);
+      }
 
       /* ---------- the outline ---------- */
       /* v2 proved "a chat on every heading" with blurred bars. v3 proves it with six
@@ -121,7 +143,10 @@
         letter-spacing: 0.15em;
         color: #929fb3;
       }
-      .col-head .chat-col { width: 96px; text-align: center; }
+      .col-head .chat-col {
+        width: 96px;
+        text-align: center;
+      }
 
       .row {
         position: absolute;
@@ -145,21 +170,36 @@
         flex: none;
       }
       /* One quiet row stops the column reading as a solid block of bold. */
-      .row.muted .label { font-weight: 500; color: #7c879a; }
+      .row.muted .label {
+        font-weight: 500;
+        color: #7c879a;
+      }
 
       /* Depth, drawn the way the real table of contents draws it: a 28px step per level
      plus a hairline rail down each nested run. A flat list of six rows reads as a menu;
      a tree reads as a document. */
-      .row.lvl1 { padding-left: 50px; }
-      .row.lvl2 { padding-left: 78px; }
+      .row.lvl1 {
+        padding-left: 50px;
+      }
+      .row.lvl2 {
+        padding-left: 78px;
+      }
       .rail {
         position: absolute;
         width: 2px;
         border-radius: 1px;
         background: #d9e2ef;
       }
-      .rail-1 { left: 84px; top: 252px; height: 264px; }
-      .rail-2 { left: 112px; top: 388px; height: 60px; }
+      .rail-1 {
+        left: 84px;
+        top: 252px;
+        height: 264px;
+      }
+      .rail-2 {
+        left: 112px;
+        top: 388px;
+        height: 60px;
+      }
 
       /* Dots, not a hairline: a 1px rule vanishes at 474px, dots survive as texture. */
       .leader {
@@ -212,14 +252,20 @@
       }
 
       /* ---------- the row someone is in right now ---------- */
-      .row.active { background: #e2ecff; }
+      .row.active {
+        background: #e2ecff;
+      }
       .row.active .pill {
         background: #14448f;
         box-shadow: 0 10px 22px -10px rgba(20, 68, 143, 0.55);
       }
       .row.active .pill i,
-      .row.active .pill i::after { background: #ffffff; }
-      .row.active .pill b { color: #ffffff; }
+      .row.active .pill i::after {
+        background: #ffffff;
+      }
+      .row.active .pill b {
+        color: #ffffff;
+      }
       .row.active .leader {
         background-image: radial-gradient(circle, #9dbdf0 3px, transparent 3.2px);
       }
@@ -256,7 +302,10 @@
         box-shadow: 0 0 0 5px rgba(55, 128, 84, 0.16);
       }
 
-      .pair { flex: none; display: flex; }
+      .pair {
+        flex: none;
+        display: flex;
+      }
       .pair span {
         width: 38px;
         height: 38px;
@@ -269,17 +318,31 @@
         color: #ffffff;
         box-shadow: 0 0 0 4px #f5f8fd;
       }
-      .pair span + span { margin-left: -11px; }
+      .pair span + span {
+        margin-left: -11px;
+      }
 
       /* Pitch 68: a 60px row plus an 8px gutter. The sixth is cut by the card edge on
      purpose, so the outline reads as longer than the card. The muted row is last, so
      the cut lands on the row that matters least. */
-      .r1 { top: 184px; }
-      .r2 { top: 252px; }
-      .r3 { top: 320px; }
-      .r4 { top: 388px; }
-      .r5 { top: 456px; }
-      .r6 { top: 524px; }
+      .r1 {
+        top: 184px;
+      }
+      .r2 {
+        top: 252px;
+      }
+      .r3 {
+        top: 320px;
+      }
+      .r4 {
+        top: 388px;
+      }
+      .r5 {
+        top: 456px;
+      }
+      .r6 {
+        top: 524px;
+      }
 
       /* ---------- the message ---------- */
       .say {
@@ -288,7 +351,11 @@
         top: 36px;
         width: 560px;
       }
-      .lockup { position: relative; height: 78px; margin-bottom: 34px; }
+      .lockup {
+        position: relative;
+        height: 78px;
+        margin-bottom: 34px;
+      }
       .wordmark {
         position: absolute;
         left: 68px;
@@ -301,7 +368,14 @@
       }
       /* The main docs.plus icon, used as shipped. Height is set and width follows,
      so the 0.7231 aspect cannot be squashed. */
-      .mark { position: absolute; left: 0; top: 2px; height: 74px; width: auto; display: block; }
+      .mark {
+        position: absolute;
+        left: 0;
+        top: 2px;
+        height: 74px;
+        width: auto;
+        display: block;
+      }
       h1 {
         margin: 0;
         font-size: 60px;
@@ -321,7 +395,10 @@
         letter-spacing: -0.008em;
         color: #5a6579;
       }
-      .who { color: #1a5fd0; font-weight: 700; }
+      .who {
+        color: #1a5fd0;
+        font-weight: 700;
+      }
 
       /* ---------- the crowd ---------- */
       .presence {
@@ -348,8 +425,16 @@
         color: #5a6579;
         white-space: nowrap;
       }
-      .presence b { color: #101a2c; font-weight: 700; }
-      .crowd { position: absolute; left: 72px; top: 496px; display: flex; }
+      .presence b {
+        color: #101a2c;
+        font-weight: 700;
+      }
+      .crowd {
+        position: absolute;
+        left: 72px;
+        top: 496px;
+        display: flex;
+      }
       .face {
         width: 76px;
         height: 76px;
@@ -365,13 +450,31 @@
           0 0 0 5px #f1f5fd,
           0 10px 20px -10px rgba(17, 32, 66, 0.3);
       }
-      .face + .face { margin-left: -13px; }
-      .f-ana { background: #1a5fd0; }
-      .f-kofi { background: #378054; }
-      .f-mei { background: #ddb13a; color: #101a2c; }
-      .f-ravi { background: #dc702f; color: #101a2c; }
-      .f-lena { background: #ca3540; }
-      .more { background: #dae3f2; color: #3b4759; font-size: 27px; }
+      .face + .face {
+        margin-left: -13px;
+      }
+      .f-ana {
+        background: #1a5fd0;
+      }
+      .f-kofi {
+        background: #378054;
+      }
+      .f-mei {
+        background: #ddb13a;
+        color: #101a2c;
+      }
+      .f-ravi {
+        background: #dc702f;
+        color: #101a2c;
+      }
+      .f-lena {
+        background: #ca3540;
+      }
+      .more {
+        background: #dae3f2;
+        color: #3b4759;
+        font-size: 27px;
+      }
     </style>
   </head>
   <body>
@@ -383,7 +486,10 @@
           <div class="tab tab-1"></div>
           <div class="tab tab-2"></div>
           <div class="tab tab-3"></div>
-          <div class="open"><i></i><u></u></div>
+          <div class="open">
+            <i></i>
+            <u></u>
+          </div>
         </div>
 
         <div class="col-head">
@@ -394,13 +500,19 @@
         <div class="row r1">
           <span class="label">Background</span>
           <span class="leader"></span>
-          <span class="pill"><i></i><b>3</b></span>
+          <span class="pill">
+            <i></i>
+            <b>3</b>
+          </span>
         </div>
 
         <div class="row r2 lvl1">
           <span class="label">Consultation</span>
           <span class="leader"></span>
-          <span class="pill"><i></i><b>17</b></span>
+          <span class="pill">
+            <i></i>
+            <b>17</b>
+          </span>
         </div>
 
         <div class="row r3 active lvl1">
@@ -409,26 +521,41 @@
           <span class="chip">Ana</span>
           <span class="dot"></span>
           <span class="leader"></span>
-          <span class="pill"><i></i><b>34</b></span>
+          <span class="pill">
+            <i></i>
+            <b>34</b>
+          </span>
         </div>
 
         <div class="row r4 lvl2">
           <span class="label">Roles</span>
           <span class="leader"></span>
-          <span class="pair"><span class="f-kofi">K</span><span class="f-mei">M</span></span>
-          <span class="pill"><i></i><b>9</b></span>
+          <span class="pair">
+            <span class="f-kofi">K</span>
+            <span class="f-mei">M</span>
+          </span>
+          <span class="pill">
+            <i></i>
+            <b>9</b>
+          </span>
         </div>
 
         <div class="row r5 lvl1">
           <span class="label">Open questions</span>
           <span class="leader"></span>
-          <span class="pill"><i></i><b>23</b></span>
+          <span class="pill">
+            <i></i>
+            <b>23</b>
+          </span>
         </div>
 
         <div class="row r6 muted">
           <span class="label">Next meeting</span>
           <span class="leader"></span>
-          <span class="pill"><i></i><b>5</b></span>
+          <span class="pill">
+            <i></i>
+            <b>5</b>
+          </span>
         </div>
         <span class="rail rail-1"></span>
         <span class="rail rail-2"></span>
@@ -457,7 +584,10 @@
 
       <div class="presence">
         <span class="live"></span>
-        <p><b>7 people</b> here right now</p>
+        <p>
+          <b>7 people</b>
+          here right now
+        </p>
       </div>
 
       <div class="crowd">
