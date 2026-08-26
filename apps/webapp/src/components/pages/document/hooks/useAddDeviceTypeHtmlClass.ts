@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 
 function useAddDeviceTypeHtmlClass(isMobile: boolean) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const htmlElement = document.documentElement
     const className = isMobile ? 'm_mobile' : 'm_desktop'
     htmlElement.classList.add(className)
