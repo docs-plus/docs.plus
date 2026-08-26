@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-| Version                     | Supported          |
-| --------------------------- | ------------------ |
-| 2.0.0 (webapp + hocuspocus) | :white_check_mark: |
-| latest (npm extensions)     | :white_check_mark: |
-| < 1.0                       | :x:                |
+| Version                   | Supported          |
+| ------------------------- | ------------------ |
+| 2.x (webapp + hocuspocus) | :white_check_mark: |
+| latest (npm extensions)   | :white_check_mark: |
+| < 1.0                     | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -87,7 +87,7 @@ If you're contributing to docs.plus, please follow these guidelines:
 ### Dependencies
 
 - Keep dependencies up to date
-- Run `bun pm audit` before submitting PRs
+- Run `bun audit` before submitting PRs
 - Review security advisories for dependencies
 
 ### Authentication

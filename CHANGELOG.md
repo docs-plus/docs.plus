@@ -10,7 +10,7 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-24
+## [2.0.0] — 2026-08-25
 
 **First stable product tag after the Etherpad years and the `2.0.0-beta.*` line.** This entry names the live docs.plus pad. The five `@docs.plus/extension-*` packages already shipped `2.0.0` on 2026-08-11. webapp and hocuspocus share `2.0.0`. Admin stays `1.0.0`.
 
@@ -110,6 +110,7 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 - Show the last account used on this browser when you sign in again. The form offers that person's avatar, name, email, and a `Continue as` button. Choose `Not you?` to forget the account. Signing out keeps it.
 - Add `/privacy` and `/terms`, linked from the home footer.
 - Serve `/sitemap.xml` and `/robots.txt`. Only the home page, `/privacy`, and `/terms` are listed. Every user document stays `noindex`.
+- Share a docs.plus link and the preview shows a real card, not the square app icon. The home page also carries `Organization` structured data.
 - Add Graphite and Paper themes beside Light, Dark, and High Contrast. System follows the base pair only.
 - Cycle Light, Dark, and System from the desktop pad header while signed out. The full theme picker lives in Settings, which needs a sign-in.
 - Install docs.plus as an app from the browser prompt. The installed app carries a New Document shortcut.
@@ -159,6 +160,7 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 - Reopen the collaboration socket after a sign-in on an open document. The pad picks up the new scope without a page reload.
 - Recover an open tab after a deploy removes the page asset it needs. docs.plus reloads the tab by itself, and stops after two tries in five minutes.
 - Evict a thinned history version and open the newest row instead of looping.
+- Put the mobile pad on iPad. Safari reports a Macintosh user-agent, so the shell used to stay on desktop.
 
 ### Removed
 
@@ -174,6 +176,7 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 - The OpenAPI page at `/docs` is not on the public edge.
 - Document `make dev-local` as the contributor first-run path in `README.md` and `CONTRIBUTING.md`.
 - Direct vulnerability reports to `security@docs.plus`. Do not open a public GitHub issue for one.
+- Serve `/.well-known/security.txt`, so a reporter finds the address without opening the repository.
 - Index the five npm extensions in `extensions/README.md`.
 
 ---
