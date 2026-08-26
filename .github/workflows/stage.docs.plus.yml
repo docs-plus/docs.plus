@@ -90,7 +90,7 @@ jobs:
       - name: 🔍 Bun Audit
         run: |
           echo "🔍 Checking for vulnerabilities..."
-          bun pm audit 2>&1 | tee audit-results.txt || true
+          bun audit 2>&1 | tee audit-results.txt || true
 
           CRITICAL=$(grep -ci "critical" audit-results.txt 2>/dev/null || echo "0")
           HIGH=$(grep -ci "high" audit-results.txt 2>/dev/null || echo "0")
