@@ -10,7 +10,7 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-25
+## [2.0.0] — 2026-08-26
 
 **First stable product tag after the Etherpad years and the `2.0.0-beta.*` line.** This entry names the live docs.plus pad. The five `@docs.plus/extension-*` packages already shipped `2.0.0` on 2026-08-11. webapp and hocuspocus share `2.0.0`. Admin stays `1.0.0`.
 

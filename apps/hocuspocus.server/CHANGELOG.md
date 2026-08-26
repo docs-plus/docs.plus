@@ -10,7 +10,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
-## [2.0.0] — 2026-08-25
+## [2.0.0] — 2026-08-26
 
 **First stable tag of hocuspocus after the Etherpad years and the `2.0.0-beta.*` line.** webapp and hocuspocus share `2.0.0`. Admin stays `1.0.0`. This package is private and is not published to npm.
 
