@@ -49,7 +49,7 @@ Then edit it. [Configuration](configuration.md) explains the groups. The values 
 - `PERSIST_TO_LOCAL_STORAGE=false`. The template ships `true`, and that breaks uploads across two replicas.
 - `ACME_EMAIL` — your address, for Let's Encrypt. **This one is missing from the template.** Without it, certificate registration uses the maintainer's address.
 
-Both REST values end in `/api`. There is no `/api/v1` route. An older template carried one by mistake, so if your own `.env` still ends in `/api/v1`, correct it. The editor still opens with the wrong value, while every browser-side call fails.
+`NEXT_PUBLIC_RESTAPI_URL` ends in `/api`. `PUBLIC_RESTAPI_URL` is the origin only, with no suffix — the table below says so. There is no `/api/v1` route. An older template carried one by mistake, so if your own `.env` still ends in `/api/v1`, correct it. The editor still opens with the wrong value, while every browser-side call fails.
 
 ### Values that must name your host
 
@@ -84,8 +84,8 @@ Then edit the five hard-coded hostname lines in `docker-compose.prod.yml`. Searc
 | 220  | `prodback.docs.plus` and `/api`       | The REST API             |
 | 226  | `prodback.docs.plus` and `/health`    | Health checks            |
 | 322  | `prodback.docs.plus` and `/websocket` | The collaboration socket |
-| 517  | `docs.plus` and two aliases           | The editor               |
-| 593  | `admin.docs.plus`                     | The admin dashboard      |
+| 522  | `docs.plus` and two aliases           | The editor               |
+| 598  | `admin.docs.plus`                     | The admin dashboard      |
 
 Next step: replace each with your own domain. No environment variable covers these, so skipping this step means nothing routes.
 
