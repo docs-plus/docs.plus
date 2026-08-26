@@ -5,6 +5,7 @@ import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDe
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import { useStore } from '@stores'
 import { documentServerSideProps } from '@utils/documentServerSideProps'
+import { isIPadDevice } from '@utils/platform'
 import { type GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
@@ -27,6 +28,12 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
   loading: ({ error }) => (error ? <ChunkLoadError /> : null)
 })
 
+function resolveDeviceType(isMobileDevice: boolean, deviceType?: 'desktop' | 'mobile' | 'tablet') {
+  if (!isMobileDevice) return 'desktop'
+  if (deviceType === 'mobile' || deviceType === 'tablet') return deviceType
+  return 'tablet'
+}
+
 const Document = ({
   docMetadata,
   isMobile,
@@ -36,7 +43,13 @@ const Document = ({
   slug,
   gateTitle
 }: any) => {
-  useAddDeviceTypeHtmlClass(isMobile)
+  // iPadOS sends a Macintosh user-agent, so the server prop reads desktop. The store
+  // write is an effect; `isIPadDevice` covers the first client paint so the html
+  // class and DocumentPage do not spend a frame on desktop.
+  const isMobileDevice =
+    useStore((state) => state.settings.editor.isMobile) ?? (isMobile || isIPadDevice())
+  const resolvedDeviceType = resolveDeviceType(isMobileDevice, deviceType)
+  useAddDeviceTypeHtmlClass(isMobileDevice)
 
   // Zustand's initial state has no provider, so the skeleton is part of the SSR HTML
   // and survives the dynamic-chunk load without a remount. The skeleton unmounts exactly
@@ -69,8 +82,8 @@ const Document = ({
 
       <DocumentPage
         docMetadata={docMetadata}
-        isMobile={isMobile}
-        deviceType={deviceType || (isMobile ? 'mobile' : 'desktop')}
+        isMobile={isMobileDevice}
+        deviceType={resolvedDeviceType}
         accessToken={accessToken}
       />
     </>
