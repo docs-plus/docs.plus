@@ -54,7 +54,7 @@ const html = `<!doctype html>
     <footer class="footer">
       <a id="playground-github" href="https://github.com/docs-plus/docs.plus" target="_blank" rel="noopener noreferrer">GitHub</a>
       ·
-      <a href="https://discord.gg/25JPG38J59" target="_blank" rel="noopener noreferrer">Discord</a>
+      <a href="https://discord.gg/2EmAjmgZ8" target="_blank" rel="noopener noreferrer">Discord</a>
     </footer>
     <script type="module" src="./main.ts"></script>
   </body>

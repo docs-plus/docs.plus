@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/npm/v/@docs.plus/extension-placeholder.svg?label=version)](https://www.npmjs.com/package/@docs.plus/extension-placeholder)
 [![Downloads](https://img.shields.io/npm/dm/@docs.plus/extension-placeholder.svg)](https://npmcharts.com/compare/@docs.plus/extension-placeholder)
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-placeholder.svg)](https://www.npmjs.com/package/@docs.plus/extension-placeholder)
-[![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/25JPG38J59)
+[![Discord](https://img.shields.io/badge/discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/2EmAjmgZ8)
 
 <p align="center">
   <picture>
