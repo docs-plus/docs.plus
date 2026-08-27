@@ -302,7 +302,7 @@ const EditorToolbar = () => {
 
         <div className="!ml-auto flex items-center gap-0.5">
           <ToolbarButton
-            onClick={() => window.open('https://discord.gg/25JPG38J59', '_blank')}
+            onClick={() => window.open('https://discord.gg/2EmAjmgZ8', '_blank')}
             tooltip="Join Discord Community"
             aria-label="Join Discord Community">
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />

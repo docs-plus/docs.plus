@@ -5,7 +5,7 @@ docs.plus is a free, open-source tool for real-time collaborative documents. Eve
 [![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-5%20on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.com/invite/25JPG38J59)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/2EmAjmgZ8)
 [![Supabase](https://img.shields.io/badge/Supabase-Powered-3ECF8E.svg?logo=supabase&logoColor=white)](https://supabase.com)
 [![Bun](https://img.shields.io/badge/Bun-Runtime-000000.svg?logo=bun&logoColor=white)](https://bun.sh)
 
@@ -329,7 +329,7 @@ MIT License - See [LICENSE](LICENSE)
 
 ## 💬 Support
 
-- 💬 **Discord**: [Join our server](https://discord.com/invite/25JPG38J59)
+- 💬 **Discord**: [Join our server](https://discord.gg/2EmAjmgZ8)
 - 🐦 **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
 - 🐙 **GitHub**: [docs.plus](https://github.com/docs-plus/docs.plus)
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)

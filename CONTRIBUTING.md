@@ -401,7 +401,7 @@ A merged contribution ships under the repository license, MIT. Read [LICENSE](LI
 
 ## 💡 Getting Help
 
-- 💬 **Discord**: [Join our server](https://discord.com/invite/25JPG38J59) for real-time help
+- 💬 **Discord**: [Join our server](https://discord.gg/2EmAjmgZ8) for real-time help
 - 🐛 **Issues**: [GitHub Issues](https://github.com/docs-plus/docs.plus/issues) for bug reports
 - 🔒 **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)

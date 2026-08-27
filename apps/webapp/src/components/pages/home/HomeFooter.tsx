@@ -31,7 +31,7 @@ export function HomeFooter() {
         <div className="bg-base-300 hidden h-6 w-px sm:block" role="presentation" />
 
         <a
-          href="https://discord.com/invite/25JPG38J59"
+          href="https://discord.gg/2EmAjmgZ8"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Discord community (opens in new tab)"
