@@ -28,6 +28,7 @@ runs:
   using: 'composite'
   steps:
     - name: 🥟 Setup Bun
+      id: setup-bun
       uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       with:
         bun-version: ${{ inputs.bun-version }}
@@ -42,11 +43,15 @@ runs:
           packages/*/node_modules
           apps/*/node_modules
           extensions/*/node_modules
+        # The resolved Bun version is part of the key because bun-version
+        # defaults to `latest`. Cached node_modules carry native addons built
+        # for one NODE_MODULE_VERSION, and --frozen-lockfile relinks rather
+        # than rebuilds them, so a Bun release would otherwise reuse an addon
+        # compiled by the previous Bun.
         key: ${{ runner.os }}-bun-${{ inputs.cache-version }}-${{
-          hashFiles('**/bun.lock') }}
+          steps.setup-bun.outputs.bun-version }}-${{ hashFiles('**/bun.lock') }}
         restore-keys: |
-          ${{ runner.os }}-bun-${{ inputs.cache-version }}-
-          ${{ runner.os }}-bun-
+          ${{ runner.os }}-bun-${{ inputs.cache-version }}-${{ steps.setup-bun.outputs.bun-version }}-
 
     - name: 📥 Install Dependencies
       shell: bash
