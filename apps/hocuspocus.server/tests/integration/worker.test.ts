@@ -5,10 +5,13 @@ describe('Worker Server - Integration Tests', () => {
   let workerProcess: Subprocess | null = null
   const WORKER_HEALTH_PORT = 3003
 
-  const checkWorkerHealth = async (retries = 10): Promise<boolean> => {
+  const checkWorkerHealth = async (
+    retries = 10,
+    port: number = WORKER_HEALTH_PORT
+  ): Promise<boolean> => {
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await fetch(`http://localhost:${WORKER_HEALTH_PORT}/health`, {
+        const response = await fetch(`http://localhost:${port}/health`, {
           signal: AbortSignal.timeout(1000)
         })
         if (response.ok) return true
@@ -22,7 +25,7 @@ describe('Worker Server - Integration Tests', () => {
   afterAll(async () => {
     if (workerProcess) {
       workerProcess.kill()
-      await Bun.sleep(1000) // Wait for cleanup
+      await workerProcess.exited
     }
   })
 
@@ -213,16 +216,19 @@ describe('Worker Server - Integration Tests', () => {
         cwd: process.cwd()
       })
 
-      // Wait for it to start
-      await Bun.sleep(2000)
+      // Poll for readiness instead of guessing. A fixed wait is both slower than
+      // the boot and, if the boot is slower than the guess, a false failure.
+      const ready = await checkWorkerHealth(20, 3004)
+      expect(ready).toBe(true)
 
       shutdownProc.kill('SIGTERM')
 
-      // Wait for graceful shutdown
-      await Bun.sleep(2000)
+      // Await the real exit. The old fixed 2s wait failed a correct process whose
+      // drain simply took longer. The test timeout below is the real bound.
+      const exitCode = await shutdownProc.exited
 
-      expect(shutdownProc.exitCode).not.toBe(null)
-      expect(shutdownProc.exitCode).toBe(0)
+      expect(exitCode).not.toBe(null)
+      expect(exitCode).toBe(0)
     }, 15000)
   })
 })
