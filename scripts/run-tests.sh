@@ -22,6 +22,12 @@ REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"
 BASE_URL="${BASE_URL:-http://localhost:3001}"
 CYPRESS_PARALLEL="${CYPRESS_PARALLEL:-4}"
 
+# Clean-room suites own unique ports (5173-5177), so they can run side by side.
+# Measured 2026-08-27 on Bun 1.4.0 with dist built: 209s serial, 89s parallel.
+# Each suite writes its own log and they merge in gate order, so $REPORT stays
+# parseable. Set EXTENSION_PARALLEL=0 to read output live while debugging one.
+EXTENSION_PARALLEL="${EXTENSION_PARALLEL:-1}"
+
 RUN_EXTENSION_GATES=false
 RUN_WEBAPP_UNIT=false
 RUN_E2E=false
@@ -43,6 +49,22 @@ case "${1:-all}" in
     ;;
 esac
 
+# One extension's gate command. The caller owns cwd, logging and exit handling,
+# so the serial and parallel paths cannot drift apart.
+extension_gate_cmd() {
+  local has_unit="$1"
+
+  if [ "$EXTENSION_DIST_READY" = "1" ]; then
+    if [ "$has_unit" = "1" ]; then
+      bun run test:unit && bun run test:e2e
+    else
+      bun run test:e2e
+    fi
+  else
+    bun run test
+  fi
+}
+
 record_extension_gate() {
   local label="$1"
   local dir="$2"
@@ -51,17 +73,7 @@ record_extension_gate() {
   cd "$dir"
   echo -e "${DIM}  → ${label}${NC}"
 
-  if ! {
-    if [ "$EXTENSION_DIST_READY" = "1" ]; then
-      if [ "$has_unit" = "1" ]; then
-        bun run test:unit && bun run test:e2e
-      else
-        bun run test:e2e
-      fi
-    else
-      bun run test
-    fi
-  } 2>&1 | tee -a "$REPORT"; then
+  if ! extension_gate_cmd "$has_unit" 2>&1 | tee -a "$REPORT"; then
     EXTENSION_GATES_EXIT=1
     echo ""
     echo -e "${RED}${label} release gate failed.${NC}"
@@ -130,6 +142,31 @@ if $RUN_EXTENSION_GATES; then
   if ! GATE_LIST=$(bun "$ROOT_DIR/scripts/publishable-extensions.ts" "${ONLY_ARGS[@]}" --gates); then
     EXTENSION_GATES_EXIT=1
     echo -e "${RED}Could not resolve the extension gate list (EXT_ONLY='${EXT_ONLY:-}').${NC}"
+  elif [ "$EXTENSION_PARALLEL" = "1" ] && [ "$(grep -c . <<< "$GATE_LIST")" -gt 1 ]; then
+    # One gate has nothing to overlap, and buffering would cost CI its live log.
+    # Prod runs one extension per matrix job (EXT_ONLY), so those keep streaming.
+    EXT_LOGS_DIR="$REPORT_DIR/.ext-logs-${TIMESTAMP}"
+    mkdir -p "$EXT_LOGS_DIR"
+    EXT_LABELS=(); EXT_PIDS=(); EXT_LOGS=()
+
+    while IFS=$'\t' read -r ext_rel has_unit label; do
+      ext_log="$EXT_LOGS_DIR/${label##*/}.log"
+      ( cd "$ROOT_DIR/$ext_rel" && extension_gate_cmd "$has_unit" ) > "$ext_log" 2>&1 &
+      EXT_PIDS+=("$!"); EXT_LABELS+=("$label"); EXT_LOGS+=("$ext_log")
+      echo -e "${DIM}  → ${label} started${NC}"
+    done <<< "$GATE_LIST"
+
+    # Reaped in gate order, so the report reads the same as a serial run.
+    for i in "${!EXT_PIDS[@]}"; do
+      if wait "${EXT_PIDS[$i]}"; then
+        echo -e "${GREEN}  ✔ ${EXT_LABELS[$i]}${NC}"
+      else
+        EXTENSION_GATES_EXIT=1
+        echo -e "${RED}  ✖ ${EXT_LABELS[$i]} release gate failed.${NC}"
+      fi
+      cat "${EXT_LOGS[$i]}" >> "$REPORT"
+    done
+    echo -e "  ${DIM}Extension logs: ${EXT_LOGS_DIR}/${NC}"
   else
     while IFS=$'\t' read -r ext_rel has_unit label; do
       record_extension_gate "$label" "$ROOT_DIR/$ext_rel" "$has_unit"
