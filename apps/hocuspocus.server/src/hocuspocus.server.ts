@@ -653,7 +653,10 @@ const stateKeyTtlRefresh = setInterval(() => {
 // close and the Sentry flush with it. The 25s leaves the tail room to finish.
 const SERVER_DESTROY_TIMEOUT_MS = 25_000
 
-const shutdown = async () => {
+// exitCode is 1 on a crash, so a crashed replica reports failure. Draining
+// cleanly then exiting 0 hid every crash from Docker's restart policy and from
+// `concurrently --kill-others-on-fail` in local development.
+const shutdown = async (exitCode = 0) => {
   wsLogger.info('Shutting down WebSocket server gracefully...')
 
   try {
@@ -696,7 +699,7 @@ const shutdown = async () => {
 
     wsLogger.info('✅ WebSocket server shutdown complete')
     await flushObservability()
-    process.exit(0)
+    process.exit(exitCode)
   } catch (err) {
     wsLogger.error({ err }, '❌ Error during shutdown')
     captureUnknown(err)
@@ -705,8 +708,9 @@ const shutdown = async () => {
   }
 }
 
-process.on('SIGINT', shutdown)
-process.on('SIGTERM', shutdown)
+// Wrapped: a bare handler receives the signal name, which would land in exitCode.
+process.on('SIGINT', () => void shutdown())
+process.on('SIGTERM', () => void shutdown())
 
 process.on('unhandledRejection', (reason) => {
   wsLogger.error({ err: reason }, 'Unhandled promise rejection')
@@ -715,5 +719,5 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', (err) => {
   wsLogger.error({ err }, 'Uncaught exception — shutting down')
   captureUnknown(err)
-  void shutdown()
+  void shutdown(1)
 })
