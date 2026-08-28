@@ -164,7 +164,10 @@ restApiLogger.info({
 // 30s stop_grace_period for the DB close and the 2s Sentry flush below.
 const DRAIN_TIMEOUT_MS = 10_000
 
-const shutdown = async () => {
+// exitCode is 1 on a crash. A crash that drained cleanly still exited 0, so
+// `concurrently --kill-others-on-fail` never fired and the rest of the dev stack
+// stayed up against a dead REST. Docker's restart policy reads the same code.
+const shutdown = async (exitCode = 0) => {
   restApiLogger.info('Shutting down REST API gracefully...')
 
   try {
@@ -187,7 +190,7 @@ const shutdown = async () => {
 
     restApiLogger.info('✅ REST API shutdown complete')
     await flushObservability()
-    process.exit(0)
+    process.exit(exitCode)
   } catch (err) {
     restApiLogger.error({ err }, '❌ Error during shutdown')
     captureUnknown(err)
@@ -196,8 +199,9 @@ const shutdown = async () => {
   }
 }
 
-process.on('SIGINT', shutdown)
-process.on('SIGTERM', shutdown)
+// Wrapped: a bare handler receives the signal name, which would land in exitCode.
+process.on('SIGINT', () => void shutdown())
+process.on('SIGTERM', () => void shutdown())
 
 process.on('unhandledRejection', (reason) => {
   restApiLogger.error({ err: reason }, 'Unhandled promise rejection')
@@ -206,5 +210,5 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', (err) => {
   restApiLogger.error({ err }, 'Uncaught exception — shutting down')
   captureUnknown(err)
-  void shutdown()
+  void shutdown(1)
 })

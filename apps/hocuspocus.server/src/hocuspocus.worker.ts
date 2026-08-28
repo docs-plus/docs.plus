@@ -350,7 +350,10 @@ const isFatalError = (err: Error | unknown): boolean => {
 }
 
 let isShuttingDown = false
-const shutdown = async () => {
+// exitCode is 1 on a crash — a fatal error or a breached error threshold. Both
+// paths drained cleanly and then exited 0, so BullMQ job loss looked like a
+// normal stop to Docker's restart policy and to --kill-others-on-fail.
+const shutdown = async (exitCode = 0) => {
   if (isShuttingDown) return
   isShuttingDown = true
 
@@ -400,7 +403,7 @@ const shutdown = async () => {
 
     workerLogger.info('✅ Worker shutdown complete')
     await flushObservability()
-    process.exit(0)
+    process.exit(exitCode)
   } catch (err) {
     workerLogger.error({ err }, '❌ Error during shutdown')
     captureUnknown(err)
@@ -409,8 +412,9 @@ const shutdown = async () => {
   }
 }
 
-process.on('SIGINT', shutdown)
-process.on('SIGTERM', shutdown)
+// Wrapped: a bare handler receives the signal name, which would land in exitCode.
+process.on('SIGINT', () => void shutdown())
+process.on('SIGTERM', () => void shutdown())
 
 // Don't exit for transient errors
 process.on('uncaughtException', (err) => {
@@ -419,7 +423,7 @@ process.on('uncaughtException', (err) => {
 
   if (isFatalError(err)) {
     workerLogger.error('Fatal error detected - shutting down')
-    shutdown()
+    void shutdown(1)
     return
   }
 
@@ -436,7 +440,7 @@ process.on('uncaughtException', (err) => {
       { errorCount, windowMs: ERROR_WINDOW_MS },
       'Error threshold exceeded - shutting down'
     )
-    shutdown()
+    void shutdown(1)
     return
   }
 
