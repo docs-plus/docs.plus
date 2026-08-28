@@ -1,8 +1,9 @@
 {
+  "$schema": "https://context7.com/schema/context7.json",
   "url": "https://context7.com/docs-plus/docs.plus",
   "public_key": "pk_KmFdMWTvuWipXy0xQa2lI",
   "projectTitle": "docs.plus",
-  "description": "Open-source real-time collaborative document editor where every heading has its own chatroom. Built on Next.js, Tiptap, ProseMirror, Yjs and Hocuspocus. Publishes five Tiptap 3 extensions on npm: extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code and extension-placeholder.",
+  "description": "Collaborative editor where every heading has its own chatroom. Tiptap, ProseMirror, Yjs, Hocuspocus. Ships 5 Tiptap 3 extensions: hyperlink, hypermultimedia, indent, inline-code, placeholder.",
   "folders": ["docs", "extensions", "apps/hocuspocus.server", "packages/supabase"],
   "excludeFolders": [
     ".cursor",
@@ -25,13 +26,18 @@
     "ATTRIBUTION.md"
   ],
   "rules": [
-    "Use Bun for every package operation. Run `bun add`, `bun run` and `bunx`. Never use npm, yarn, pnpm or npx, and never write `npm install` in an example.",
-    "Install any docs.plus Tiptap extension with `bun add @docs.plus/extension-<name>`. The five packages are extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code and extension-placeholder. All are at 2.0.0 and require @tiptap/core and @tiptap/pm at ^3.22.3.",
-    "Three StarterKit pairings are required, not stylistic. With extension-hyperlink set `StarterKit.configure({ link: false })`, because StarterKit v3 bundles its own link mark that claims the same commands and the same a[href] parse rule. With extension-inline-code set `StarterKit.configure({ code: false })`, because both marks render <code> and both bind Mod-e. With extension-placeholder remove the Tiptap built-in placeholder from the extensions array, because both register the name `placeholder`. The first two clashes are silent.",
-    "extension-hypermultimedia requires its own stylesheet to be imported, or media nodes render unstyled. extension-hyperlink ships an optional stylesheet. extension-indent, extension-inline-code and extension-placeholder ship no CSS, and extension-placeholder renders nothing at all until the host adds the CSS rule from its README.",
-    "A docs.plus document is a tree of headings, and one heading id serves the table of contents, the Heading Chatroom and the URL. Never write a heading id into a media node or into stored content; the id belongs to the heading.",
-    "Durable persistence is eventual, not instant. The collaboration server debounces a save for 10 seconds of idle time, or 60 seconds while typing continues, then a BullMQ worker writes the version row and publishes `document:saved`. The editor status chip is a local 300 ms timer and is not a durable acknowledgement.",
-    "Private is owner-only. A signed-in stranger is denied and an anonymous visitor is asked to sign in. An open document has no owner, so it cannot be made private. Do not describe Private as team sharing.",
-    "docs.plus has no AI features, no tracked changes and no page layout. Do not generate examples that imply any of them exist."
+    "Use Bun for every package operation: `bun add`, `bun run`, `bunx`. Never npm, yarn, pnpm or npx, and never write `npm install` in an example.",
+    "Install a docs.plus Tiptap extension with `bun add @docs.plus/extension-<name>`. The five are extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code and extension-placeholder.",
+    "All five docs.plus extensions are at 2.0.0 and need @tiptap/core and @tiptap/pm at ^3.22.3.",
+    "With extension-hyperlink set `StarterKit.configure({ link: false })`. StarterKit v3 bundles its own link mark claiming the same commands and the same a[href] parse rule. The clash is silent.",
+    "With extension-inline-code set `StarterKit.configure({ code: false })`. Both marks render <code> and both bind Mod-e. The clash is silent.",
+    "With extension-placeholder, remove the Tiptap built-in placeholder from the extensions array. Both register the name `placeholder`.",
+    "extension-hypermultimedia requires its own stylesheet, or media nodes render unstyled. extension-hyperlink ships an optional one.",
+    "extension-indent, extension-inline-code and extension-placeholder ship no CSS. extension-placeholder renders nothing until the host adds the CSS rule from its README.",
+    "A docs.plus document is a tree of headings. One heading id serves the table of contents, the Heading Chatroom and the URL. Never write a heading id into stored content.",
+    "Durable persistence is eventual. The collaboration server debounces a save for 10 seconds idle, or 60 seconds while typing continues.",
+    "A BullMQ worker writes the version row and publishes `document:saved`. The editor status chip is a local 300 ms timer, not a durable acknowledgement.",
+    "Private is owner-only. A signed-in stranger is denied and an anonymous visitor must sign in. An open document has no owner, so it cannot be made private.",
+    "docs.plus has no AI features, no tracked changes and no page layout. Do not generate examples implying any of them exist."
   ]
 }
