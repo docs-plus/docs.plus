@@ -1,7 +1,9 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/docs-plus/docs.plus",
+  "public_key": "pk_KmFdMWTvuWipXy0xQa2lI",
   "projectTitle": "docs.plus",
-  "description": "Open-source real-time collaborative documents where every heading has its own chatroom. Built on Next.js, Tiptap, ProseMirror, Yjs and Hocuspocus. Publishes five Tiptap 3 extensions on npm.",
+  "description": "Open-source real-time collaborative document editor where every heading has its own chatroom. Built on Next.js, Tiptap, ProseMirror, Yjs and Hocuspocus. Publishes five Tiptap 3 extensions on npm: extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code and extension-placeholder.",
   "folders": ["docs", "extensions", "apps/hocuspocus.server", "packages/supabase"],
   "excludeFolders": [
     ".cursor",
