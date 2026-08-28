@@ -283,13 +283,20 @@ if $RUN_E2E; then
 
   for i in $(seq 0 $((CYPRESS_PARALLEL - 1))); do
     WORKER_START_EPOCHS+=("$(date +%s)")
-    SPLIT="$CYPRESS_PARALLEL" SPLIT_INDEX="$i" SPLIT_FILE="cypress/timings.json" \
-    bunx cypress run \
-      --project "$WEBAPP_DIR" \
-      --browser electron \
-      --config "baseUrl=${BASE_URL}" \
-      --spec "$WEBAPP_DIR/cypress/e2e/**/*.cy.{js,ts}" \
-      > "$WORKER_LOGS_DIR/worker-${i}.log" 2>&1 &
+    # cypress-split resolves SPLIT_FILE by walking UP from the working directory
+    # and stopping at the git root, and it keys durations on
+    # path.relative(cwd, spec). Launched from the repo root it therefore probed
+    # <root>/cypress/timings.json, found nothing, and silently fell back to a
+    # spec-count split. Running from the webapp resolves the file and produces
+    # the `cypress/e2e/...` keys the write-back below stores.
+    ( cd "$WEBAPP_DIR" && \
+      SPLIT="$CYPRESS_PARALLEL" SPLIT_INDEX="$i" SPLIT_FILE="cypress/timings.json" \
+      bunx cypress run \
+        --project "$WEBAPP_DIR" \
+        --browser electron \
+        --config "baseUrl=${BASE_URL}" \
+        --spec "$WEBAPP_DIR/cypress/e2e/**/*.cy.{js,ts}" \
+    ) > "$WORKER_LOGS_DIR/worker-${i}.log" 2>&1 &
     WORKER_PIDS+=($!)
     WORKER_EXITS+=(-)
     WORKER_END_EPOCHS+=(0)
@@ -531,7 +538,10 @@ if $RUN_E2E; then
       else
         echo ',' >> "$TIMINGS_TMP"
       fi
-      printf '{"spec":"%s","duration":%d}' "$spec_clean" "$dur_ms" >> "$TIMINGS_TMP"
+      # Stored with the cypress/e2e/ prefix, because cypress-split looks the key
+      # up as path.relative(<webapp>, spec). The parse above strips the prefix so
+      # a truncated Cypress table name still resolves, so it is re-added here.
+      printf '{"spec":"cypress/e2e/%s","duration":%d}' "$spec_clean" "$dur_ms" >> "$TIMINGS_TMP"
     done < <(parse_cypress_results "$WORKER_LOGS_DIR/worker-${i}.log")
   done
   echo '' >> "$TIMINGS_TMP"
