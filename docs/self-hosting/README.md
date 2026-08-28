@@ -44,7 +44,7 @@ Two are optional. A Google OAuth client, if you want Google sign-in. And a Virtu
 ## Host prerequisites
 
 - Docker, with Compose v2
-- Bun 1.3.7 or newer
+- Bun 1.4.0 or newer
 - Node.js 24.11.0 or newer
 - GNU Make
 - Git

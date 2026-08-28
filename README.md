@@ -20,7 +20,7 @@ docs.plus is a free, open-source tool for real-time collaborative documents. Eve
 
 **Tech Stack:**
 
-- **Runtime**: 🚀 Bun 1.3.7+
+- **Runtime**: 🚀 Bun 1.4.0+
 - **Frontend**: ⚛️ Next.js (`apps/webapp` on `15.5.21`, `apps/admin-dashboard` on `^16.2.12`), React 19, Tiptap 3, Tailwind CSS 4
 - **Backend**: 🔧 Hono, Hocuspocus (Yjs), BullMQ, Prisma ORM
 - **Database**: 🐘 PostgreSQL 17 for the Prisma database in local and dev, 🐘 PostgreSQL 15 for local Supabase, 🔴 Redis
@@ -31,7 +31,7 @@ docs.plus is a free, open-source tool for real-time collaborative documents. Eve
 
 - 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
   - ⚠️ **macOS Silicon users:** Docker Desktop has IO performance issues. Use [OrbStack](https://orbstack.dev/) instead (drop-in replacement, faster, lighter).
-- 🚀 **Bun** >=1.3.7 - [Install](https://bun.sh/docs/installation)
+- 🚀 **Bun** >=1.4.0 - [Install](https://bun.sh/docs/installation)
 - 📦 **Node.js** >=24.11.0 - [Install](https://nodejs.org/) (Next.js and tooling binaries run on Node)
 - 🔨 **GNU Make** - every command below starts with `make`. macOS installs it with `xcode-select --install`; most Linux distributions ship it in a build-tools package.
 - 🌱 **Git** - [Install](https://git-scm.com/downloads)
