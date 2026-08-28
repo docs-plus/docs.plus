@@ -75,7 +75,7 @@ Each package has its own CONTRIBUTING.md — see
 [placeholder](./extension-placeholder/CONTRIBUTING.md). Hero or gallery PNGs: `bun run docs:screenshots`
 in the package (`cypress/docs/` → `assets/`).
 
-Monorepo development needs Node `>=24.11.0` and Bun `>=1.3.7`, the floors the root `package.json` sets.
+Monorepo development needs Node `>=24.11.0` and Bun `>=1.4.0`, the floors the root `package.json` sets.
 
 From the repo root:
 

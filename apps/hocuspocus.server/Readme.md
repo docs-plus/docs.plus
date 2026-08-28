@@ -20,7 +20,7 @@ Ports are configurable via `APP_PORT`, `HOCUSPOCUS_PORT`, `WORKER_HEALTH_PORT`, 
 
 ## Tech stack
 
-- **Runtime:** Bun (Node ≥ 24.11.0, Bun ≥ 1.3.7)
+- **Runtime:** Bun (Node ≥ 24.11.0, Bun ≥ 1.4.0)
 - **HTTP:** Hono (REST), Hocuspocus (WebSocket)
 - **Database:** PostgreSQL via Prisma (pg adapter)
 - **Cache / queue:** Redis via ioredis; pgmq (Postgres queue) feeding BullMQ
