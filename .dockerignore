@@ -88,5 +88,8 @@ docker-compose*.yml
 .dockerignore
 
 # Keys and certs (never in image)
-*.pem
-*.key
+# Recursive, not root-anchored. A bare `*.pem` matches only the context root,
+# so a nested key would still reach the build context. `**/` matches zero
+# directories too, so the root-level case stays covered.
+**/*.pem
+**/*.key

@@ -55,7 +55,6 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_GLITCHTIP_DSN
-ARG NEXT_PUBLIC_GIT_HASH
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -63,8 +62,7 @@ ENV NODE_ENV=production \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
-    NEXT_PUBLIC_GLITCHTIP_DSN=${NEXT_PUBLIC_GLITCHTIP_DSN} \
-    NEXT_PUBLIC_GIT_HASH=${NEXT_PUBLIC_GIT_HASH}
+    NEXT_PUBLIC_GLITCHTIP_DSN=${NEXT_PUBLIC_GLITCHTIP_DSN}
 
 COPY --from=deps /app/package.json ./
 COPY --from=deps /app/bun.lock* ./
@@ -76,6 +74,13 @@ COPY --from=deps /app/extensions ./extensions
 COPY apps/admin-dashboard ./apps/admin-dashboard
 
 RUN bun install --frozen-lockfile --ignore-scripts
+
+# Declared below the install, not above: an ENV enters a later RUN's cache key,
+# an unchanged COPY does not. Warm deploy 32946907649: the COPY above was CACHED,
+# yet this install still ran 28.1 s. It must stay above build:ci, because
+# instrumentation-client.ts reads NEXT_PUBLIC_GIT_HASH from the inlined bundle.
+ARG NEXT_PUBLIC_GIT_HASH
+ENV NEXT_PUBLIC_GIT_HASH=${NEXT_PUBLIC_GIT_HASH}
 
 WORKDIR /app/apps/admin-dashboard
 RUN bun run build:ci
