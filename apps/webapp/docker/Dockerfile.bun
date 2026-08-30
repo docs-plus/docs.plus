@@ -121,10 +121,11 @@ FROM base AS builder
 
 WORKDIR /app
 
-# Accept build args
+# Accept build args. GIT_HASH and NEXT_PUBLIC_GIT_HASH are declared further down,
+# immediately before the Next build, because they change on every deploy and would
+# otherwise invalidate the install below. BUILD_ID stays here: compose never passes
+# it (docker-compose.prod.yml webapp args), so it is a constant empty string.
 ARG BUILD_ID
-ARG GIT_HASH
-ARG NEXT_PUBLIC_GIT_HASH
 ARG NODE_ENV=production
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -148,8 +149,6 @@ ARG SENTRY_PROJECT
 
 ENV NEXT_TELEMETRY_DISABLED=1 \
   BUILD_ID=${BUILD_ID} \
-  GIT_HASH=${GIT_HASH} \
-  NEXT_PUBLIC_GIT_HASH=${NEXT_PUBLIC_GIT_HASH} \
   NODE_ENV=${NODE_ENV} \
   NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
   NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
@@ -188,6 +187,18 @@ COPY tsconfig.json ./
 
 ENV CYPRESS_INSTALL_BINARY=0
 RUN bun install --frozen-lockfile
+
+# Declared here, not above, because both change on every deploy. An ENV enters a
+# later RUN's cache key while an unchanged COPY does not, so placing them above
+# the install re-ran it on every build. Measured in warm deploy 32946907649: no
+# webapp source changed since the previous deploy, yet this install still ran
+# 158.8 s while the same install in two sibling stages was CACHED.
+# Next inlines NEXT_PUBLIC_GIT_HASH into the client bundle, so both must still be
+# set before `next build` below — instrumentation-client.ts reads it.
+ARG GIT_HASH
+ARG NEXT_PUBLIC_GIT_HASH
+ENV GIT_HASH=${GIT_HASH} \
+  NEXT_PUBLIC_GIT_HASH=${NEXT_PUBLIC_GIT_HASH}
 
 # Build Next.js app (bunx resolves next from root node_modules; "next build" is build:ci)
 WORKDIR /app/apps/webapp
