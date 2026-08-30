@@ -3,7 +3,7 @@
 # Multi-stage Dockerfile for Next.js webapp in monorepo
 # =============================================================================
 # Industry-standard build with:
-#   - BuildKit cache mounts for fast dependency installs
+#   - A BuildKit cache mount on Next's .next/cache (not on any dependency install)
 #   - Proper layer ordering for maximum cache hits
 #   - Minimal production image
 #

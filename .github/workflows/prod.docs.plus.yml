@@ -601,20 +601,28 @@ jobs:
         run: |
           echo "🔨 Building images with tag: ${DEPLOY_TAG}"
 
-          # hocuspocus-server and hocuspocus-worker share `docsplus-hocuspocus`;
-          # building both via compose with --no-cache duplicates context transfer
-          # and ties up the bake plan. Build via hocuspocus-server only; the
-          # worker reuses the resulting tag at `up` time.
+          # rest-api, hocuspocus-server and hocuspocus-worker share one build
+          # definition. Compose does NOT duplicate it: measured 2026-08-30,
+          # `build --no-cache rest-api hocuspocus-server` ran
+          # `bun install --frozen-lockfile` three times — one pass through the
+          # Dockerfile's three installs, not six. BuildKit shares the layers and
+          # only stamps a per-service label. rest-api is listed because it needs
+          # its own image name; the worker is not, because it reuses the
+          # `docsplus-hocuspocus` tag at `up` time.
           #
-          # --no-cache: required as long as the prod entrypoint script changes
-          # are layered late in the Dockerfile and we don't yet have stable
-          # layer ordering. If/when entrypoint COPY moves to the last layer,
-          # we can drop --no-cache and gain ~5 min per deploy.
+          # --no-cache is NOT an entrypoint-ordering workaround. Docker keys a
+          # COPY on file content, so the cache cannot serve a stale
+          # docker-entrypoint.sh, and the entrypoint already sits inside an early
+          # COPY. Whether the flag can be dropped is UNMEASURED — compare two
+          # deploys of the same commit, with and without it, before removing it.
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
             build --no-cache rest-api hocuspocus-server
 
+          # No --parallel: it is not a `docker compose build` flag in Compose v2
+          # (absent from `docker compose build --help`). Named services already
+          # build concurrently.
           docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
-            build --parallel webapp admin-dashboard
+            build webapp admin-dashboard
 
           echo "✅ Images built"
 
