@@ -56,7 +56,7 @@ RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Production runs its own install + generate; no need to generate in base.
 # -----------------------------------------------------------------------------
-# Production: same layout, fresh install in stage (no node_modules copy)
+# Production: same layout, fresh install in stage (no root node_modules copy)
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS production
 WORKDIR /app
