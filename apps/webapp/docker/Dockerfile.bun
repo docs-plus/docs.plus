@@ -71,10 +71,9 @@ COPY extensions/extension-indent ./extensions/extension-indent
 COPY extensions/extension-inline-code ./extensions/extension-inline-code
 COPY extensions/extension-placeholder ./extensions/extension-placeholder
 
-# Install all dependencies (Docker layer cache handles caching naturally)
-# Skip Cypress binary download to save time and network
-ENV CYPRESS_INSTALL_BINARY=0
-RUN bun install --frozen-lockfile
+# No install here on purpose. Nothing copies node_modules out of this stage —
+# build-extensions and builder each copy only manifests and source, then install
+# for themselves. An install here was pure cold-build cost.
 
 # ============================================================================
 # Stage 3: Build Extensions - Build extension packages first
@@ -179,14 +178,20 @@ COPY --from=build-extensions /app/packages ./packages
 COPY --from=build-extensions /app/extensions ./extensions
 COPY --from=deps /app/apps ./apps
 
-# Overwrite with context so we have latest webapp and shared config
-COPY apps/webapp ./apps/webapp
+# Overwrite with context so we have the latest shared config
 COPY packages/eslint-config ./packages/eslint-config
 COPY .prettierrc.json ./
 COPY tsconfig.json ./
 
 ENV CYPRESS_INSTALL_BINARY=0
 RUN bun install --frozen-lockfile
+
+# Below the install: source changes on nearly every deploy and the install never
+# reads it. The COPY --from=deps above already supplies apps/webapp/package.json,
+# so a manifest change still invalidates the install. COPY merges into the
+# existing directory, so apps/webapp/node_modules survives.
+# Never add --link here: it overrides the directory mode and defeats the merge.
+COPY apps/webapp ./apps/webapp
 
 # Declared here, not above, because both change on every deploy. An ENV enters a
 # later RUN's cache key while an unchanged COPY does not, so placing them above
@@ -202,12 +207,22 @@ ENV GIT_HASH=${GIT_HASH} \
 
 # Build Next.js app (bunx resolves next from root node_modules; "next build" is build:ci)
 WORKDIR /app/apps/webapp
-RUN bunx next build
+# The cache mount is the only lever on this step: the inlined git hash means the
+# layer can never be reused. Measured that the deploy's own
+# `builder prune --filter until=24h` leaves a mount intact, and deploy gaps are
+# median 2.2 h, so it is warm on about eight deploys in nine. The runner copies
+# only .next/standalone and .next/static, so nothing here reaches the image.
+RUN --mount=type=cache,target=/app/apps/webapp/.next/cache bunx next build
 
 # ============================================================================
 # Stage 5: Runner - Production runtime
 # ============================================================================
-FROM base AS runner
+# Not `FROM base`: base installs python3, make, g++ and nodejs for the build
+# stages, and the runner would inherit a compiler it never uses. This stage needs
+# only groupadd, useradd, rm, find and bun, all in oven/bun:1-slim, which also
+# ships ca-certificates. apps/admin-dashboard runs the same Next standalone shape
+# on the plain tag already.
+FROM oven/bun:1-slim AS runner
 
 WORKDIR /app
 
