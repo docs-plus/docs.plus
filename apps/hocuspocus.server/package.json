@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/hocuspocus",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Hocuspocus is a suite of tools to bring collaboration to your application. It's based on Y.js (by Kevin Jahns), which is amazing to sync and merge changes from clients in real-time. But you can also use it to build offline-first apps, and sync changes later. We'll make sure to resolve conflicts and keep everything in sync, always.",
   "main": "src/index.ts",
