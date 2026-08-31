@@ -10,6 +10,52 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-08-31
+
+**An operator release.** No route contract changes and no API surface changes. This entry
+names runtime behaviour, the image, and one test correction. webapp and hocuspocus share
+`2.0.1`. This package is private and is not published to npm.
+
+### Fixed
+
+- **A crashed process now exits `1`.** All three entrypoints routed `uncaughtException` into
+  `shutdown()`, whose success path ended at `process.exit(0)`, so a crash reported success.
+  Docker's restart policy and `concurrently --kill-others-on-fail` both key on the exit
+  code, so neither reacted. `shutdown()` now takes an exit code. The `SIGINT` and `SIGTERM`
+  handlers are wrapped, because a bare handler receives the signal name and it would land
+  in that parameter. A clean `SIGTERM` still exits `0`.
+
+### Changed
+
+- **The production image no longer stamps ownership with a recursive `chown`.** That
+  rewrites every inode, so Docker stored a second full copy of the tree — 1.91 GB in one
+  layer, and 125.3 s of every production build. `COPY --chown` writes ownership as each
+  layer lands. Only the media write path is stamped, because `storage.local.ts` resolves
+  `./temp/<plugin>` against the working directory the entrypoint sets. `node_modules` and
+  the generated Prisma client now stay root-owned and read-only to the runtime user.
+- **The production install is scoped with `--filter '@docs.plus/hocuspocus'`.** A bare root
+  install resolves every workspace member, so the image shipped two Next.js versions, four
+  `@next/swc` native binaries, `react-icons`, `@emoji-mart/data` and `typescript` — about
+  950 MB that REST, the collaboration server and the worker never import. The image is
+  961 MB on the production host, down from 5.67 GB.
+- **The Bun floor is `1.4.0`.**
+
+### Tests
+
+- `tests/integration/worker.test.ts` awaits real events instead of fixed sleeps. It held
+  5,500 ms of `Bun.sleep` in a file costing 5,733 ms. The shutdown case slept two seconds
+  and then asserted the exit code, so a correct process whose drain took longer failed.
+  It now awaits the subprocess exit and polls for readiness. The suite falls from 7,952 ms
+  to 3,117 ms at 578 pass and 0 fail. **The runtime is not the cause** — on the unchanged
+  tests Bun 1.3.14 took 7,256 ms and Bun 1.4.0 took 7,952 ms.
+
+### Notes
+
+- **The metascraper `5.50.6` pin stays.** An attempt to drop it failed deploy `33365858244`
+  in Backend E2E with `TypeError: require() async module` on Bun 1.4.0. Four separate local
+  checks passed before it shipped and every one was wrong. See `AGENTS.md` §Dependencies
+  for the list, and do not re-attempt the drop from a laptop.
+
 ## [2.0.0] — 2026-08-26
 
 **First stable tag of hocuspocus after the Etherpad years and the `2.0.0-beta.*` line.** webapp and hocuspocus share `2.0.0`. Admin stays `1.0.0`. This package is private and is not published to npm.
