@@ -35,8 +35,8 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "catalog:",
     "eslint-config-next": "^16.2.12",
-    "postcss": "^8.5.15",
-    "sass": "^1.101.0",
+    "postcss": "^8.5.26",
+    "sass": "^1.103.1",
     "typescript": "catalog:"
   }
 }
