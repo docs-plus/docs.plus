@@ -10,6 +10,57 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-08-31
+
+**A measurement release.** No new features and no user-facing change. This entry names
+runtime, build and test work, plus two defects found while measuring. The webapp and
+hocuspocus share `2.0.1`. Admin stays `1.0.0`.
+
+### Changed
+
+- Raise the Bun floor to `1.4.0` across `engines`, `bun-types`, and every document that
+  names it. CI and production already ran `1.4.0`, so this makes the repository say what
+  it runs.
+- Cut the backend image by scoping its production install to the backend closure. It was
+  installing the whole workspace, so it shipped two Next.js versions and four SWC binaries
+  that the REST, WebSocket and worker processes never import.
+- Stop stamping ownership with a recursive `chown` in the backend image. `COPY --chown`
+  writes ownership as each layer is written, instead of storing a second copy of the tree.
+- Stop the webapp runtime image inheriting the build toolchain. It carried a C++ compiler,
+  `python3` and a second JavaScript runtime it never used.
+- Declare per-deploy values below the install in the webapp and admin images, so a changing
+  git hash no longer invalidates the dependency install on every build.
+- Run the five clean-room extension suites concurrently in the local gate.
+
+### Fixed
+
+- Exit non-zero when a backend process crashes. All three entrypoints routed an uncaught
+  exception into a shutdown whose success path exited `0`, so a crash reported success and
+  nothing downstream reacted.
+- Restore the webapp Cypress duration split. It never loaded its timings file, so the
+  four-way split was balancing by file count rather than by recorded duration.
+- Await real events instead of fixed sleeps in the worker integration test. The shutdown
+  case slept two seconds and then asserted the exit code, so a correct process whose drain
+  took longer failed the test.
+- Make the `.dockerignore` secret patterns recursive. A root-anchored `*.pem` matched only
+  the context root, so a nested key still reached the build context.
+
+### Measured
+
+Verified on the production host in deploy `33367037524`.
+
+|                         | before  | after  |
+| ----------------------- | ------- | ------ |
+| Production Docker build | 997 s   | 683 s  |
+| webapp image            | 727 MB  | 332 MB |
+| backend image           | 5.67 GB | 961 MB |
+| Backend test suite      | 7.9 s   | 3.1 s  |
+| Extension test gate     | 209 s   | 88 s   |
+| Full local CI gate      | 290 s   | 163 s  |
+
+The build-cache work lands from the next deploy onward. This one was the first build with
+the new layer structure, so only 2 of 165 steps could be cached.
+
 ## [2.0.0] — 2026-08-26
 
 **First stable product tag after the Etherpad years and the `2.0.0-beta.*` line.** This entry names the live docs.plus pad. The five `@docs.plus/extension-*` packages already shipped `2.0.0` on 2026-08-11. webapp and hocuspocus share `2.0.0`. Admin stays `1.0.0`.
