@@ -35,6 +35,24 @@ The five publishable packages:
 sliced from it. A changelog is a record and an announcement is not, so one document served both jobs
 less well. Every claim in the body must trace to that entry or to mounted code. This Release is Latest.
 
+**Release body voice**, approved on `v2.0.1`. Open by telling readers whether anything changes for
+them — `v2.0.1` opened "Nothing changes for you as a writer or a reader." One emoji leads each
+section, never sprinkled inside sentences. Lead a bug with its **symptom**, not its fix: "a crashed
+backend was reporting success", not "added an exit code parameter". Keep every number and drop every
+implementation detail, because the CHANGELOG holds those and the body links to it. Small
+before-and-after tables beat prose for sizes and timings. Close on the most interesting finding rather
+than the biggest. Simplified English still applies; warm is not the same as long.
+
+**Before tagging, audit changelog coverage.** Every package whose `version` moved needs its own entry.
+On `v2.0.1` the product changelog was written and `apps/hocuspocus.server/CHANGELOG.md` was missed,
+because both share the product version. Prove which packages really changed with
+`git diff <prev-tag>..HEAD --name-only -- 'extensions/*/src/**'` — a README-only diff is not a release,
+and zero source files means no `release:family` run is needed. **Create the tag last**, after every
+commit including changelog fixes; if a commit lands later, delete and recreate the unpushed tag so it
+points at `HEAD`. Then `git push origin main` → `git push origin <tag>` → `gh release create`, in that
+order, because `gh` mints its own tag when the remote lacks one and **`gh release create` is not
+idempotent** — a second run errors instead of updating, so use `gh release edit` to amend.
+
 **Per-package Releases.** The five `@docs.plus/extension-*` GitHub Releases from 2026-08-11 were deleted
 on 2026-08-26, so the product Release is the only entry a visitor meets. **The five git tags stay**, because
 they pin the source that built each published npm version, and `release:family` preflight check 8 reads
