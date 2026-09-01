@@ -35,6 +35,33 @@ The trust boundary is therefore **write access**. Anyone who can edit a document
 that document's diff attributes. Since document privacy here is login-gated rather than
 membership-gated, that population is every signed-in user.
 
+## What the diff engine sees
+
+A separate limit, in the layer above. The version compare view diffs two documents with
+`prosemirror-changeset`, reached through `@tiptap/pm/changeset`. Its own documentation states the
+default: "The default is to just compare nodes by name and text by character, ignoring marks and
+attributes."
+
+So the default encoder is blind to three real edits. Text made bold, a link whose address changed
+while its words did not, and a heading moved from one level to another all report zero changes. A
+reader would see an unchanged document while the edit was really there.
+
+**This tree therefore passes its own encoder.** `ChangeSet.create` takes a `TokenEncoder` as its
+third argument, added in `prosemirror-changeset@2.3.0`, and
+`apps/webapp/src/components/pages/history/utils/diffTokenEncoder.ts` supplies one. It interns each
+distinct mark set to an integer, so a character carries its formatting into the comparison. Node
+tokens carry their attributes, minus `toc-id`, which the first browser open rewrites and which is
+therefore identity churn rather than an edit.
+
+Two things follow for anyone changing that file. Interning to integers is not a style choice: it
+keeps the library's cheap prefix and suffix trim alive, which a fresh object per character
+destroys. And the version is load-bearing — `@tiptap/pm` declares `prosemirror-changeset: "^2.3.0"`,
+so only the lockfile pins the version that carries the third argument.
+
+The block comparison on this side of the wire never had this blindness. `canonicalizeBlock` hashes
+each top-level block from its whole JSON, marks and attributes included, and strips only
+`VOLATILE_BLOCK_ATTRS`. Its granularity is a whole block rather than a character range.
+
 ## Failure mode
 
 Absence, never a wrong name. Where the guard cannot decide, it writes nothing and the range reads as
