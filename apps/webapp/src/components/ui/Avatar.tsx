@@ -2,8 +2,8 @@ import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
 import { userProfileDialogOpenConfig } from '@components/ui/dialogs/userProfileDialogOpenConfig'
 import { Tooltip } from '@components/ui/Tooltip'
 import Config from '@config'
-import { lorelei } from '@dicebear/collection'
-import { createAvatar } from '@dicebear/core'
+import { Avatar as DicebearAvatar, Style } from '@dicebear/core'
+import lorelei from '@dicebear/styles/lorelei.json' with { type: 'json' }
 import { Placement } from '@floating-ui/react'
 import { useStore } from '@stores'
 import { type FaceSource, resolveFace } from '@utils/avatarFace'
@@ -21,8 +21,11 @@ type AvatarImageSource = 'bucket' | 'remote' | 'fallback'
 
 const FALLBACK_SEED = 'avatar'
 
+// Style validates and clones the definition; reuse it so each seed skips a re-parse.
+const loreleiStyle = new Style(lorelei)
+
 const createFallbackAvatarUri = (seed: string): string => {
-  const svg = createAvatar(lorelei, { seed, backgroundType: ['solid'] }).toString()
+  const svg = new DicebearAvatar(loreleiStyle, { seed }).toString()
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
 

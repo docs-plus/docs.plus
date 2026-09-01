@@ -73,7 +73,7 @@
     "docs.plus"
   ],
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6",
+    "@floating-ui/dom": "^1.8.0",
     "linkifyjs": "^4.3.3"
   },
   "peerDependencies": {

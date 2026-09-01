@@ -9,7 +9,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "eta": "^3.5.0"
+    "eta": "^4.6.0"
   },
   "devDependencies": {
     "bun-types": "catalog:"

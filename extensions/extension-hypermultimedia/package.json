@@ -82,7 +82,7 @@
     "@tiptap/pm": "catalog:"
   },
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6"
+    "@floating-ui/dom": "^1.8.0"
   },
   "devDependencies": {
     "@docs.plus/extension-hyperlink": "workspace:*",

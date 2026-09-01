@@ -14,8 +14,8 @@ declare module 'hono' {
     user?: SupabaseUser
     /** Set by requireServiceRoleOrUser when the caller presented the service-role key. */
     serviceRole?: boolean
-    /** Set by hono's requestId middleware; absent on apps that don't mount it. */
-    requestId?: string
+    /** Set by hono's requestId middleware. Hono 4.13 types this as always present. */
+    requestId: string
     /** Set by optionalUser when a token was present but Supabase Auth was unreachable. */
     authUnavailable?: boolean
   }
