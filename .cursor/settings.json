@@ -11,6 +11,9 @@
     },
     "claude-plugins-official/code-simplifier": {
       "enabled": true
+    },
+    "prisma": {
+      "enabled": true
     }
   }
 }
