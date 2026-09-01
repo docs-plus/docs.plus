@@ -150,7 +150,7 @@ const pushHealth: JsonSchema = {
 const documentSummary: JsonSchema = {
   type: 'object',
   description:
-    'Document metadata row. Includes at least `documentId`, `slug`, `title`, `description`, `keywords`, `readOnly`, `isPrivate`, `createdAt`, `updatedAt`, plus the joined snake_case owner profile.',
+    'Document metadata row. Includes at least `documentId`, `slug`, `title`, `description`, `keywords`, `readOnly`, `isPrivate`, `createdAt`, `updatedAt`, plus the joined snake_case owner profile. Owner-scoped live lists also send `isFavorite`.',
   additionalProperties: true
 }
 

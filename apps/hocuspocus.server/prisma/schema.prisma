@@ -30,22 +30,23 @@ model Documents {
 }
 
 model DocumentMetadata {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique
   title       String?
   description String?
   keywords    String?
-  isPrivate   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  documentId  String   @unique
-  readOnly    Boolean  @default(false)
+  isPrivate   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  documentId  String    @unique
+  readOnly    Boolean   @default(false)
   ownerId     String?
   email       String?
   deletedAt   DateTime? // Soft-delete tombstone; the reaper purges the footprint after retention.
 
   documents     Documents[]
   clientAuthors DocumentClientAuthor[]
+  favorites     DocumentFavorite[]
 
   @@index([ownerId])
   @@index([deletedAt])
@@ -82,6 +83,17 @@ model DocumentClientAuthor {
   metadata    DocumentMetadata @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
 
   @@id([documentId, clientId])
+}
+
+// Soft-delete keeps the join so restore stays favorited. Purge cascade drops it.
+model DocumentFavorite {
+  userId     String
+  documentId String
+  createdAt  DateTime         @default(now())
+  metadata   DocumentMetadata @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
+
+  @@id([documentId, userId])
+  @@index([userId])
 }
 
 // ============================================================================

@@ -8,7 +8,7 @@ import { type InfiniteData, useInfiniteQuery, useQueryClient } from '@tanstack/r
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { supabaseClient } from '@utils/supabase'
 import debounce from 'lodash/debounce'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react-icons/lu'
 
 import { makeDocumentsKey } from '../documentsQueryKey'
@@ -508,23 +508,33 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   <ul
                     ref={listRef}
                     role="list"
-                    className="divide-base-300 divide-y"
-                    onKeyDown={handleListKeyDown}>
-                    {docs.map((doc, i) => (
-                      <DocumentListRow
-                        key={doc.documentId}
-                        doc={doc}
-                        userId={userId}
-                        searchQuery={searchQuery}
-                        sortKey={sortKey}
-                        members={membersMap?.get(membersKey(doc))}
-                        onOpenDocument={onOpenDocument}
-                        index={i}
-                        isActive={i === activeIndex}
-                        onActivate={setActiveIndex}
-                        onDelete={handleDelete}
-                      />
-                    ))}
+                    onKeyDown={handleListKeyDown}
+                    className="[&>li[data-doc-row]+li[data-doc-row]]:border-base-300 [&>li[data-doc-row]+li[data-doc-row]]:border-t">
+                    {docs.map((doc, i) => {
+                      const prev = i > 0 ? docs[i - 1] : undefined
+                      const showHairline = !!prev?.isFavorite && !doc.isFavorite
+                      return (
+                        <Fragment key={doc.documentId}>
+                          {showHairline ? (
+                            <li aria-hidden className="pointer-events-none my-3">
+                              <div className="border-base-300 border-t" />
+                            </li>
+                          ) : null}
+                          <DocumentListRow
+                            doc={doc}
+                            userId={userId}
+                            searchQuery={searchQuery}
+                            sortKey={sortKey}
+                            members={membersMap?.get(membersKey(doc))}
+                            onOpenDocument={onOpenDocument}
+                            index={i}
+                            isActive={i === activeIndex}
+                            onActivate={setActiveIndex}
+                            onDelete={handleDelete}
+                          />
+                        </Fragment>
+                      )
+                    })}
                   </ul>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">

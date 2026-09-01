@@ -1,6 +1,7 @@
 import {
   createDocumentSchema,
   documentQuerySchema,
+  setDocumentFavoriteSchema,
   trashPurgeSchema,
   trashRestoreSchema,
   updateDocumentMetadataSchema,
@@ -56,7 +57,7 @@ export const documentsPaths: OpenApiPaths = {
       operationId: 'listDocuments',
       summary: 'List or search documents',
       description:
-        "Full-text search when any of `title` / `keywords` / `description` is present, otherwise a plain list. Without a verified `ownerId === token.sub` requester, private rows are clamped out of both the page and `total`. `deleted=true` is the caller's own Trash and requires a token.",
+        "Full-text search when any of `title` / `keywords` / `description` is present, otherwise a plain list. Without a verified `ownerId === token.sub` requester, private rows are clamped out of both the page and `total`. `deleted=true` is the caller's own Trash and requires a token. An owner-scoped live list pins that user's Favorites first, then applies `sort`. Those rows include `isFavorite`. Trash and the public fleet do not.",
       tags,
       security: optionalUserSecurity,
       parameters: toParameters(documentQuerySchema, 'query', {
@@ -189,6 +190,34 @@ export const documentsPaths: OpenApiPaths = {
       'Restore a soft-deleted document',
       'Owner-only. Clears `deletedAt`. Idempotent.'
     )
+  },
+  '/api/documents/{documentId}/favorite': {
+    put: {
+      operationId: 'setDocumentFavorite',
+      summary: 'Favorite or unfavorite a document',
+      description:
+        'Owner-only. Writes a `DocumentFavorite` row for the token subject. Soft-deleted documents are 404. The join row survives a later soft-delete so restore stays favorited.',
+      tags,
+      security: requireUserSecurity,
+      parameters: [pathParam('documentId', 'The 19-character document id.')],
+      requestBody: jsonBody(toJsonSchema(setDocumentFavoriteSchema)),
+      responses: {
+        '200': okEnvelope('The new favorite state.', {
+          type: 'object',
+          properties: {
+            documentId: { type: 'string' },
+            isFavorite: { type: 'boolean' }
+          },
+          required: ['documentId', 'isFavorite']
+        }),
+        '400': { $ref: '#/components/responses/ZodValidationError' },
+        '401': { $ref: '#/components/responses/Unauthorized' },
+        '403': { $ref: '#/components/responses/Forbidden' },
+        '404': { $ref: '#/components/responses/NotFound' },
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+      }
+    }
   },
   '/api/documents/{documentId}/duplicate': {
     post: ownedLifecycle(

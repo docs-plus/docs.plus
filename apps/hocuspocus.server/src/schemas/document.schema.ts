@@ -61,8 +61,13 @@ export const trashRestoreSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(500)
 })
 
+export const setDocumentFavoriteSchema = z.object({
+  favorite: z.boolean()
+})
+
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>
 export type UpdateDocumentMetadataInput = z.infer<typeof updateDocumentMetadataSchema>
 export type DocumentQueryInput = z.infer<typeof documentQuerySchema>
 export type TrashPurgeInput = z.infer<typeof trashPurgeSchema>
 export type TrashRestoreInput = z.infer<typeof trashRestoreSchema>
+export type SetDocumentFavoriteInput = z.infer<typeof setDocumentFavoriteSchema>

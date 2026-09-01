@@ -19,12 +19,18 @@ import {
   LuLink,
   LuLock,
   LuPencilLine,
+  LuStar,
   LuTrash2
 } from 'react-icons/lu'
 
 import { makeDocumentsKey } from '../documentsQueryKey'
 import useDuplicateDocument from '../hooks/useDuplicateDocument'
+import useToggleDocumentFavorite from '../hooks/useToggleDocumentFavorite'
 import type { DocumentSortKey, DocumentsPage, OwnedDocument } from '../types'
+import {
+  insertAfterFavoritesInPages,
+  patchFavoriteInPages
+} from '../utils/reorderFavoritedDocuments'
 
 export interface DocumentRowMenuProps {
   documentId: string
@@ -32,6 +38,7 @@ export interface DocumentRowMenuProps {
   title: string | null
   isPrivate: boolean
   readOnly: boolean
+  isFavorite?: boolean
   userId: string
   searchQuery: string
   sortKey: DocumentSortKey
@@ -50,6 +57,7 @@ function RowMenuItems({
   title,
   isPrivate,
   readOnly,
+  isFavorite,
   userId,
   searchQuery,
   sortKey,
@@ -60,6 +68,7 @@ function RowMenuItems({
 }: DocumentRowMenuProps & { close: () => void; rowClassName?: string }) {
   const queryClient = useQueryClient()
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
+  const { toggleFavorite, isPending: isFavoriting } = useToggleDocumentFavorite()
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
     documentId,
     userId,
@@ -103,17 +112,11 @@ function RowMenuItems({
               title: copy.title,
               readOnly: false,
               isPrivate: false,
+              isFavorite: false,
               updatedAt: now,
               createdAt: now
             }
-            queryClient.setQueryData(key, {
-              ...snapshot,
-              pages: snapshot.pages.map((page, i) => ({
-                ...page,
-                total: page.total + 1,
-                docs: i === 0 ? [created, ...page.docs] : page.docs
-              }))
-            })
+            queryClient.setQueryData(key, insertAfterFavoritesInPages(snapshot, created))
           }
           toast.Success(`Copy of “${label}” created`, {
             id: toastId,
@@ -124,6 +127,26 @@ function RowMenuItems({
         onError: () => toast.Error('Couldn’t duplicate document', { id: toastId })
       }
     )
+  }
+
+  const runToggleFavorite = () => {
+    const next = !isFavorite
+    const key = makeDocumentsKey(userId, searchQuery, sortKey)
+
+    void queryClient.cancelQueries({ queryKey: key }).then(() => {
+      const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
+      if (snapshot) queryClient.setQueryData(key, patchFavoriteInPages(snapshot, documentId, next))
+
+      toggleFavorite(
+        { documentId, favorite: next },
+        {
+          onError: () => {
+            if (snapshot) queryClient.setQueryData(key, snapshot)
+            toast.Error('Couldn’t update favorite')
+          }
+        }
+      )
+    })
   }
 
   const copyLink = async () => {
@@ -162,6 +185,18 @@ function RowMenuItems({
         onClick={runDuplicate}>
         <ContextMenuRow icon={<LuCopy size={16} />} className={rowClassName}>
           Duplicate
+        </ContextMenuRow>
+      </button>
+
+      <button
+        type="button"
+        className="rounded-field group w-full text-left disabled:pointer-events-none disabled:opacity-60"
+        disabled={isFavoriting}
+        onClick={runToggleFavorite}>
+        <ContextMenuRow
+          icon={<LuStar size={16} className={isFavorite ? 'text-accent fill-accent' : undefined} />}
+          className={rowClassName}>
+          {isFavorite ? 'Unfavorite' : 'Favorite'}
         </ContextMenuRow>
       </button>
 

@@ -7,6 +7,7 @@ import { createDocumentWithContent } from '../../modules/document-content'
 import type {
   CreateDocumentInput,
   DocumentQueryInput,
+  SetDocumentFavoriteInput,
   TrashPurgeInput,
   TrashRestoreInput,
   UpdateDocumentMetadataInput
@@ -315,6 +316,36 @@ export const restoreTrash = async (c: AppContext): Promise<Response> => {
     return c.json({ success: true, data: result })
   } catch (error) {
     return handleError(c, error, { requesterId })
+  }
+}
+
+export const setDocumentFavorite = async (c: AppContext): Promise<Response> => {
+  const prisma = c.get('prisma')
+  const documentId = c.req.param('documentId')
+  if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
+  const requesterId = c.get('userId') as string
+  const { favorite } = getValidJson<SetDocumentFavoriteInput>(c)
+
+  try {
+    const result = await documentsService.setDocumentFavorite(
+      prisma,
+      documentId,
+      requesterId,
+      favorite
+    )
+    if (result.status === 'forbidden') return forbiddenResponse(c)
+    if (result.status === 'not-found') {
+      return c.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
+        404
+      )
+    }
+    return c.json({
+      success: true,
+      data: { documentId: result.documentId, isFavorite: result.isFavorite }
+    })
+  } catch (error) {
+    return handleError(c, error, { documentId })
   }
 }
 

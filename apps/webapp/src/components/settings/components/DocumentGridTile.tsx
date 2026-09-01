@@ -1,6 +1,6 @@
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
-import { LuEye, LuFileText, LuLock } from 'react-icons/lu'
+import { LuEye, LuFileText, LuLock, LuStar } from 'react-icons/lu'
 
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import type { DocumentSortKey, OwnedDocument } from '../types'
@@ -63,6 +63,11 @@ function DocumentGridTile({
         className="flex flex-col text-left focus-visible:outline-none">
         <span className="bg-base-200 rounded-t-box relative flex aspect-[4/3] items-center justify-center">
           <LuFileText size={32} className="text-base-content/40" />
+          {doc.isFavorite && (
+            <span className="absolute top-2 left-2">
+              <LuStar size={14} className="text-accent fill-accent" aria-label="Favorite" />
+            </span>
+          )}
           {(doc.isPrivate || doc.readOnly) && (
             <span className="text-base-content/50 absolute top-2 right-2 flex items-center gap-1">
               {doc.isPrivate && <LuLock size={14} aria-label="Private" />}
@@ -91,6 +96,7 @@ function DocumentGridTile({
           title={doc.title}
           isPrivate={doc.isPrivate}
           readOnly={doc.readOnly}
+          isFavorite={doc.isFavorite}
           userId={userId}
           searchQuery={searchQuery}
           sortKey={sortKey}

@@ -1,7 +1,7 @@
 import TextInput from '@components/ui/TextInput'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { LuEye, LuFileText, LuLock } from 'react-icons/lu'
+import { LuEye, LuFileText, LuLock, LuStar } from 'react-icons/lu'
 
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
@@ -102,7 +102,7 @@ function DocumentListRow({
 
   if (isRenaming) {
     return (
-      <li className="flex items-center gap-3 px-2 py-2">
+      <li data-doc-row className="flex items-center gap-3 px-2 py-2">
         <LuFileText size={18} className="text-base-content/40 shrink-0" />
         <TextInput
           ref={inputRef}
@@ -133,7 +133,7 @@ function DocumentListRow({
   }
 
   return (
-    <li className="hover:bg-base-200 flex items-center gap-1 pr-1 transition-colors">
+    <li data-doc-row className="hover:bg-base-200 flex items-center gap-1 pr-1 transition-colors">
       <button
         ref={buttonRef}
         type="button"
@@ -152,6 +152,13 @@ function DocumentListRow({
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="text-base-content truncate font-medium">{label}</span>
+            {doc.isFavorite && (
+              <LuStar
+                size={13}
+                className="text-accent fill-accent shrink-0"
+                aria-label="Favorite"
+              />
+            )}
             {doc.isPrivate && (
               <LuLock size={13} className="text-base-content/50 shrink-0" aria-label="Private" />
             )}
@@ -177,6 +184,7 @@ function DocumentListRow({
         title={doc.title}
         isPrivate={doc.isPrivate}
         readOnly={doc.readOnly}
+        isFavorite={doc.isFavorite}
         userId={userId}
         searchQuery={searchQuery}
         sortKey={sortKey}

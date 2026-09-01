@@ -38,6 +38,7 @@ mock.module('../../src/api/services/documentPurge.service', () => ({
 }))
 
 import { Hono } from 'hono'
+import { searchDocuments } from '../../src/api/services/documents.service'
 import documentsRouter from '../../src/api/routers/documents.router'
 import { config } from '../../src/config/env'
 import { TestServer, createMockPrisma, createMockRedis } from '../helpers/test-server'
@@ -178,6 +179,39 @@ describe('Documents API', () => {
         expect(response.status).toBe(200)
         expect(captured.orderBy).toEqual(expected)
       }
+    })
+
+    test('pins favorites first only on an owner live list', async () => {
+      let captured: { orderBy?: unknown } | undefined
+      mockPrisma.documentMetadata.findMany = async (args: { orderBy?: unknown }) => {
+        captured = args
+        return []
+      }
+      mockPrisma.documentMetadata.count = async () => 0
+
+      await searchDocuments(mockPrisma, {
+        ownerId: 'user-123',
+        requesterId: 'user-123',
+        limit: 10,
+        offset: 0
+      })
+      expect(captured?.orderBy).toEqual([{ favorites: { _count: 'desc' } }, { updatedAt: 'desc' }])
+
+      await searchDocuments(mockPrisma, {
+        ownerId: 'user-123',
+        requesterId: 'user-123',
+        deleted: true,
+        limit: 10,
+        offset: 0
+      })
+      expect(captured?.orderBy).toEqual({ deletedAt: 'desc' })
+
+      await searchDocuments(mockPrisma, {
+        sort: 'title_asc',
+        limit: 10,
+        offset: 0
+      })
+      expect(captured?.orderBy).toEqual({ title: 'asc' })
     })
 
     test('defaults to updatedAt_desc when sort is omitted', async () => {
@@ -1194,6 +1228,104 @@ describe('Documents API', () => {
       })
 
       expect(response.status).toBeGreaterThanOrEqual(400)
+    })
+  })
+
+  describe('PUT /api/documents/:documentId/favorite', () => {
+    test('rejects a missing token', async () => {
+      const response = await testServer.put('/api/documents/doc-1/favorite', { favorite: true })
+      const data = await response.json()
+      expect(response.status).toBe(401)
+      expect(data.error).toHaveProperty('code', 'UNAUTHORIZED')
+    })
+
+    test('rejects a missing favorite field', async () => {
+      const response = await testServer.put(
+        '/api/documents/doc-1/favorite',
+        {},
+        { token: 'valid-test-token' }
+      )
+      expect(response.status).toBe(400)
+    })
+
+    test('upserts when the owner favorites a live document', async () => {
+      let upserted: any
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'user-123',
+        deletedAt: null
+      })
+      mockPrisma.documentFavorite.upsert = async (args: any) => {
+        upserted = args
+        return args.create
+      }
+
+      const response = await testServer.put(
+        '/api/documents/doc-1/favorite',
+        { favorite: true },
+        { token: 'valid-test-token' }
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.data).toEqual({ documentId: 'doc-1', isFavorite: true })
+      expect(upserted.create).toEqual({ documentId: 'doc-1', userId: 'user-123' })
+    })
+
+    test('deletes the join row when the owner unfavorites', async () => {
+      let deleted: any
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'user-123',
+        deletedAt: null
+      })
+      mockPrisma.documentFavorite.deleteMany = async (args: any) => {
+        deleted = args
+        return { count: 1 }
+      }
+
+      const response = await testServer.put(
+        '/api/documents/doc-1/favorite',
+        { favorite: false },
+        { token: 'valid-test-token' }
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.data).toEqual({ documentId: 'doc-1', isFavorite: false })
+      expect(deleted.where).toEqual({ documentId: 'doc-1', userId: 'user-123' })
+    })
+
+    test('forbids a non-owner', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'other-user',
+        deletedAt: null
+      })
+
+      const response = await testServer.put(
+        '/api/documents/doc-1/favorite',
+        { favorite: true },
+        { token: 'valid-test-token' }
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(403)
+      expect(data.error).toHaveProperty('code', 'FORBIDDEN')
+    })
+
+    test('returns 404 for a missing or soft-deleted document', async () => {
+      mockPrisma.documentMetadata.findUnique = async () => ({
+        ownerId: 'user-123',
+        deletedAt: new Date()
+      })
+
+      const response = await testServer.put(
+        '/api/documents/doc-1/favorite',
+        { favorite: true },
+        { token: 'valid-test-token' }
+      )
+      const data = await response.json()
+
+      expect(response.status).toBe(404)
+      expect(data.error).toHaveProperty('code', 'NOT_FOUND')
     })
   })
 

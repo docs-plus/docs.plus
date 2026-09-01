@@ -115,6 +115,10 @@ export const createMockPrisma = (): Partial<PrismaClient> => {
       delete: async () => ({ id: 1 }),
       count: async () => 0
     },
+    documentFavorite: {
+      upsert: async (data: any) => ({ ...data.create }),
+      deleteMany: async () => ({ count: 0 })
+    },
     documents: {
       findFirst: async () => null,
       findUnique: async () => null,

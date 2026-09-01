@@ -6,6 +6,7 @@ import { contentBodyLimit } from '../../modules/document-content'
 import {
   createDocumentSchema,
   documentQuerySchema,
+  setDocumentFavoriteSchema,
   trashPurgeSchema,
   trashRestoreSchema,
   updateDocumentMetadataSchema,
@@ -75,5 +76,12 @@ documents.delete('/:documentId', requireUser, documentsController.deleteDocument
 documents.post('/:documentId/restore', requireUser, documentsController.restoreDocument)
 
 documents.post('/:documentId/duplicate', requireUser, documentsController.duplicateDocument)
+
+documents.put(
+  '/:documentId/favorite',
+  requireUser,
+  zValidator('json', setDocumentFavoriteSchema, houseEnvelopeHook),
+  documentsController.setDocumentFavorite
+)
 
 export default documents

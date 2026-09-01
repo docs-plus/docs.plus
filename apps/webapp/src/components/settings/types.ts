@@ -18,6 +18,8 @@ export interface OwnedDocument {
   createdAt: string
   // Populated only in the Trash view (soft-deleted rows); null/absent on live docs.
   deletedAt?: string | null
+  // Owner live list only. Favorites sit first; Trash omits the field.
+  isFavorite?: boolean
 }
 
 export type DocumentsPage = { docs: OwnedDocument[]; total: number }

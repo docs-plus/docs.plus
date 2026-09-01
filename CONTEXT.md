@@ -11,6 +11,10 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **HeadingScale** — visual size by rank inside a section. Distinct from Block style. The same heading level can look larger or smaller depending on the section.
 - **Heading slug trail** (`?h=`) — outline ancestry from the target heading up through each parent to Title. Not a join of every heading before the target. `id=` is the resolver.
 
+## Documents list
+
+- **Favorite** — a per-user mark that pins a document to the top of Settings → Documents. Stored as `DocumentFavorite` (`userId` + `documentId`). Owner-only. Soft-delete keeps the row; purge cascade drops it. Not **Bookmark** (chat messages and the hyperlink picker) and not **Pin** (channel messages).
+
 ## Document access
 
 - **Private** — only the owner may open the document (REST slug + WS room sealed).

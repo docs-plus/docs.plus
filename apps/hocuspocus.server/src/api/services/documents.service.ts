@@ -204,6 +204,34 @@ const SORT_FIELD_MAP: Record<
   title_desc: { field: 'title', dir: 'desc' }
 }
 
+const LIST_METADATA_SELECT = {
+  id: true,
+  slug: true,
+  title: true,
+  description: true,
+  documentId: true,
+  keywords: true,
+  ownerId: true,
+  readOnly: true,
+  isPrivate: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true
+} as const
+
+/** Owner live lists pin this user's favorites first. Trash and the fleet skip it. */
+function buildDocumentsOrderBy(args: {
+  deleted?: boolean
+  sort?: SearchDocumentsParams['sort']
+  favoritesFirst?: boolean
+}) {
+  const { field, dir } =
+    SORT_FIELD_MAP[args.sort ?? 'updatedAt_desc'] ?? SORT_FIELD_MAP.updatedAt_desc
+  const sortOrder = args.deleted ? { deletedAt: 'desc' as const } : { [field]: dir }
+  if (!args.favoritesFirst) return sortOrder
+  return [{ favorites: { _count: 'desc' as const } }, sortOrder]
+}
+
 export const searchDocuments = async (prisma: PrismaClient, params: SearchDocumentsParams) => {
   const {
     title,
@@ -229,11 +257,6 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     let docs
     let total
 
-    const { field: orderField, dir: orderDir } =
-      SORT_FIELD_MAP[sort ?? 'updatedAt_desc'] ?? SORT_FIELD_MAP.updatedAt_desc
-    // Trash is always newest-tombstone-first; the sort allowlist governs live lists only.
-    const orderBy = deleted ? { deletedAt: 'desc' as const } : { [orderField]: orderDir }
-
     // Live lists hide soft-deleted rows until the reaper purges them; the Trash
     // view inverts that to show only the caller's tombstoned docs.
     const deletedWhere = deleted ? { deletedAt: { not: null } } : { deletedAt: null }
@@ -246,6 +269,15 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     // Fleet clamp: an unverified caller or an owner-less list must not enumerate
     // private rows. Owner-scoped calls (ownerId === token.sub) are unaffected.
     const privacyWhere = !requesterId || !ownerId ? { isPrivate: false } : {}
+
+    const favoritesFirst = Boolean(requesterId && ownerId && requesterId === ownerId && !deleted)
+    const orderBy = buildDocumentsOrderBy({ deleted, sort, favoritesFirst })
+    const listSelect = favoritesFirst
+      ? {
+          ...LIST_METADATA_SELECT,
+          favorites: { where: { userId: requesterId }, select: { userId: true } }
+        }
+      : LIST_METADATA_SELECT
 
     if (title || reqKeywords || description) {
       // to_tsquery (the `search` clauses) throws a 500 on operator punctuation
@@ -277,20 +309,7 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
           skip: offset,
           take: limit,
           where: searchWhere,
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            description: true,
-            documentId: true,
-            keywords: true,
-            ownerId: true,
-            readOnly: true,
-            isPrivate: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true
-          },
+          select: listSelect,
           orderBy
         }),
         prisma.documentMetadata.count({ where: searchWhere })
@@ -303,43 +322,36 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
           skip: offset,
           take: limit,
           where: listWhere,
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            description: true,
-            documentId: true,
-            keywords: true,
-            ownerId: true,
-            readOnly: true,
-            isPrivate: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true
-          },
+          select: listSelect,
           orderBy
         }),
         prisma.documentMetadata.count({ where: listWhere })
       ])
     }
 
-    const formattedDocs = docs.map((doc: any) => ({
-      ...doc,
-      keywords: doc.keywords
-        ? doc.keywords
-            .split(',')
-            .map((k: string) => k.trim())
-            .filter(Boolean)
-        : []
-    }))
+    const formattedDocs = docs.map((doc) => {
+      const { favorites, keywords, ...rest } = doc as typeof doc & {
+        favorites?: { userId: string }[]
+      }
+      return {
+        ...rest,
+        ...(favoritesFirst ? { isFavorite: (favorites?.length ?? 0) > 0 } : {}),
+        keywords: keywords
+          ? keywords
+              .split(',')
+              .map((k) => k.trim())
+              .filter(Boolean)
+          : []
+      }
+    })
 
-    const ownerIds = formattedDocs.filter((doc: any) => doc.ownerId).map((doc: any) => doc.ownerId!)
+    const ownerIds = formattedDocs.filter((doc) => doc.ownerId).map((doc) => doc.ownerId!)
     const ownerProfiles = await getOwnerProfiles(ownerIds)
 
-    const docsWithOwners = formattedDocs.map((doc: any) => {
+    const docsWithOwners = formattedDocs.map((doc) => {
       if (!doc.ownerId) return doc
 
-      const ownerProfile = ownerProfiles.find((profile: any) => profile.id === doc.ownerId)
+      const ownerProfile = ownerProfiles.find((profile) => profile.id === doc.ownerId)
       if (!ownerProfile) return doc
 
       // snake_case mirrors `public.users` so the FE consumes the same
@@ -537,6 +549,49 @@ export const softDeleteDocument = (
 
 export const restoreDocument = (prisma: PrismaClient, documentId: string, requesterId?: string) =>
   setDeletedAt(prisma, documentId, requesterId, null)
+
+export type SetFavoriteResult =
+  | { status: 'ok'; documentId: string; isFavorite: boolean }
+  | { status: 'forbidden' }
+  | { status: 'not-found' }
+
+export const setDocumentFavorite = async (
+  prisma: PrismaClient,
+  documentId: string,
+  requesterId: string | undefined,
+  favorite: boolean
+): Promise<SetFavoriteResult> => {
+  if (!documentId || documentId.trim().length === 0) {
+    throw new ValidationError('Document ID is required and cannot be empty')
+  }
+
+  const existing = await prisma.documentMetadata.findUnique({
+    where: { documentId },
+    select: { ownerId: true, deletedAt: true }
+  })
+
+  if (!existing || existing.deletedAt) return { status: 'not-found' }
+  if (!requesterId || !isDocumentOwner(existing, requesterId)) return { status: 'forbidden' }
+
+  try {
+    if (favorite) {
+      await prisma.documentFavorite.upsert({
+        where: { documentId_userId: { documentId, userId: requesterId } },
+        create: { documentId, userId: requesterId },
+        update: {}
+      })
+    } else {
+      await prisma.documentFavorite.deleteMany({
+        where: { documentId, userId: requesterId }
+      })
+    }
+  } catch (error) {
+    documentsServiceLogger.error({ err: error, documentId }, 'Error setting document favorite')
+    throw handlePrismaError(error)
+  }
+
+  return { status: 'ok', documentId, isFavorite: favorite }
+}
 
 export type DuplicateDocumentResult =
   | { status: 'forbidden' }
