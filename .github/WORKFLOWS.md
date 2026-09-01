@@ -15,9 +15,15 @@ This file is intentionally not named `README.md` so the repository root `README.
   - Triggers: push to `dev`, PR to `dev`, and `workflow_dispatch`
   - Stages: quality gates → build verification → staging deploy
 - `workflows/discord-activity.yml`
-  - Push activity notifications to Discord
+  - Push activity notifications to the `#github` Discord channel via `DISCORD_GITHUB_WEBHOOK`
   - Omits `(build):` deploy-trigger commits from the list; a push that is only those commits does not post
   - `workflow_dispatch` can post an older `before...after` SHA range (catch-up)
+- `workflows/discord-github.yml`
+  - Issue and pull-request cards to the `#github` Discord channel, beside the push summaries
+  - Posts on `issues` (opened, reopened, labeled, closed) and `pull_request_target` (opened, ready_for_review, closed)
+  - `labeled` posts for `good first issue` and `help wanted` only; a closed-unmerged PR posts nothing
+  - Uses `pull_request_target` on purpose, so a fork pull request can read the webhook secret. It never checks out code, holds `permissions: {}`, and that is what keeps the trigger safe
+  - Shares `DISCORD_GITHUB_WEBHOOK` with `discord-activity.yml`; an empty secret warns and exits 0, a Discord rejection fails loudly
 - `workflows/observability.docs.plus.yml`
   - Server-only observability stack (Grafana + Loki + Alloy + Prometheus + GlitchTip)
   - Triggers: `workflow_call` (invoked by the prod orchestrator for deploy commits) and `workflow_dispatch` (`setup|update|restart|down` for manual ops)
