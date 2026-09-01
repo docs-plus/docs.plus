@@ -7,6 +7,13 @@
     box-decoration-break: clone;
   }
 
+  // Formatting-only edit: the words did not change, so a ground tint would read as
+  // rewritten text. An edge marks the block instead.
+  .history-diff-attr {
+    border-inline-start: 3px solid color-mix(in oklch, var(--color-success) 55%, transparent);
+    padding-inline-start: 0.5rem;
+  }
+
   del.history-diff-removed {
     background-color: color-mix(in oklch, var(--color-error) 18%, transparent);
     border-radius: 2px;

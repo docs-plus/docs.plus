@@ -10,6 +10,17 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ## [Unreleased]
 
+### Fixed
+
+- Show formatting edits in version compare. Bolding a word, changing a link's address, or
+  moving a heading from one level to another painted no highlight at all, so the reader saw
+  an unchanged document while the edit was really there. The diff now compares marks and
+  attributes as well as words. A formatting-only edit gets an edge on the block rather than
+  a background tint, because the words did not change.
+- Stop version compare drawing an empty strikethrough. A formatting edit reports a change
+  that holds no text, and the removed-text marker was rendered anyway, telling the reader a
+  word had gone when none had.
+
 ## [2.0.1] — 2026-08-31
 
 **A measurement release.** No new features and no user-facing change. This entry names
