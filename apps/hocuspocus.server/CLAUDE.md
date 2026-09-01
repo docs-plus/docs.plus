@@ -35,6 +35,8 @@ The storage design is settled and is not the thing to change: one full Yjs snaps
   - Do not justify the drop with `idx_scan=0`. The planner picks arbitrarily between identical indexes and a scratch replica chose the opposite one. The justification is that the two declarations were identical.
   - Keep that migration at exactly one statement. `DROP INDEX CONCURRENTLY` cannot run inside a transaction block, and Prisma's runner wraps a multi-statement file in one.
 
+- **`DocumentFavorite` is owner-only** (`userId` + `documentId`, next to `DocumentClientAuthor`). Soft-delete keeps the join so restore stays favorited. Purge cascade-drops it with `DocumentMetadata`. Toggle on a trashed doc is 404. Owner live `GET /documents?ownerId=token.sub` pins that user's Favorites first, then `sort`, and includes `isFavorite`. Trash and the fleet omit it. Not chat Bookmark and not message Pin.
+
 ## Runtime limits
 
 - **The REST server sets `idleTimeout: 60` explicitly** (`src/index.ts`). Bun's default is 10 s, and it closes the socket while the handler runs on to completion. A request that takes longer therefore reports failure over work that succeeded. Reproduced on Bun 1.3.14: the client failed at ~12 s with `request timed out after 10 seconds` and the duplicate still landed. `useDuplicateDocument.ts` has no dedupe, so a retry stacks a second full copy. The handler that reaches it is `duplicateDocument`, which copies every object its snapshot names, sequentially, inside the request. Bun caps this option at 255 s, so it is a ceiling, not a fix for an unbounded handler. A document whose media cannot be copied in 60 s still fails. The answer there is to move the copy off the request, not to raise the number.

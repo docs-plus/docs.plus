@@ -213,6 +213,13 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - **Access mutation path.** The owner changes flags via `isDocumentOwner` + `useDocumentAccessMutation` (Settings panel + Documents ⋮ share the hook). Live seal: REST publish → Redis `doc:{id}:access` (`accessRealtime`) → WS broadcast/close → client `applyAccessStateless`.
 - **Editing lock.** Client cannot edit when content-fork/`providerStatus` error, mirrored WS `authorizedScope === 'readonly'`, or metadata Read-only for a non-owner — `selectDocumentEditingLocked` / `useEditorEditableState` keep `authorizedScope` in the workspace store.
 
+### Documents list Favorites
+
+- Glossary: root [`CONTEXT.md`](../../CONTEXT.md) §Documents list. Owner-only. Not **Bookmark** (chat + hyperlink picker) and not **Pin** (channel messages).
+- ⋮ **Favorite** / **Unfavorite** after Duplicate, before the Private divider. The menu stays open. No toolbar star. No Favorites heading.
+- Owner live list pins Favorites first, then `sort`. Accent `LuStar` (`text-accent fill-accent`) after the list title and top-left on the grid preview. List hairline between the Favorite block and the rest. Trash and the fleet omit `isFavorite`.
+- Soft-delete keeps `DocumentFavorite`. Purge cascade-drops it. Later panel UX is [#221](https://github.com/docs-plus/docs.plus/issues/221), not this slice.
+
 ### Document Version History
 
 - Hocuspocus history uses stateless `history.list` / `history.watch`.
@@ -299,5 +306,6 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - Mark-as-read/remove/archive: optimistic tab badge + header count first, API in parallel. The exit micro-animation must show and tab/header badges must drop immediately, not after the API round-trip or a global loading lock. Notification `readDedupe` skips the double realtime decrement.
 - Notification store: `setNotifications` replaces (never prepends); the pagination effect must not depend on the `notifications` Map.
 - Bookmark tab badges come from `get_bookmark_stats`: **unread = non-archived + unmarked** (In Progress only); `get_user_bookmarks` is tab-scoped (`p_marked_as_read` / archived flags). Badge mutations use ±1 (`adjustBookmarkTabCount` / `decrementNotificationCounts`), never loaded list length.
+- Documents list **Favorite** is a different mark — do not reuse this panel or `message_bookmarks`.
 - The sheet `variant` dismisses on View via `closeSheet()`; `BookmarkItem` "View in chat" dispatches `CHAT_OPEN` only — no `closeSheet()` / `activeSheet` checks (`NotificationItem` parity). Feed modules: `useBookmarkPanelFeed`, `useNotificationPanelFeed`.
 - The mobile sheet variant adds swipe-between-tabs via `usePanelTabSwipe` wired into `TabbedPanelBody` (sheet-only; the desktop popover path stays `if (!isSheet) return body`). The gesture is finger-follow `translateX`, with commit past ~22%/48px, rubber-band at edges (no wrap), and scroll lock during the horizontal drag. It uses `transitionend` + fallback at `MOTION_PANEL_MS`, and reduced-motion skips transforms. Keep `key={activeTab}` stable (gate the fade by class, not key) so a mid-swipe horizontal lock never remounts the list.

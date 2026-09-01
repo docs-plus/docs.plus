@@ -10,6 +10,23 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ## [Unreleased]
 
+### Added
+
+- **Owner-only Favorite.** `PUT /api/documents/:documentId/favorite` accepts
+  `{ favorite: boolean }` and writes a `DocumentFavorite` join for `token.sub`
+  (`userId` + `documentId`). Migration `20260901100000_add_document_favorites` adds the
+  table. Soft-deleted documents are `404`. Soft-delete of the document keeps the join, so
+  restore stays favorited. Purge cascade-drops the row.
+- **Owner live lists pin Favorites first.** `GET /api/documents?ownerId=token.sub`
+  returns `isFavorite` and orders that user's Favorites first, then `sort`. Trash and the
+  public fleet omit both.
+
+### Documentation
+
+- Record the Favorite route and owner-list `isFavorite` in [API.md](./API.md). The
+  required-token list in [docs/api/authentication.md](../../docs/api/authentication.md)
+  now includes favorite and unfavorite.
+
 ## [2.0.1] — 2026-08-31
 
 **An operator release.** No route contract changes and no API surface changes. This entry

@@ -10,6 +10,15 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ## [Unreleased]
 
+### Added
+
+- Favorite owned documents from Settings → Documents. The ⋮ menu lists Favorite or
+  Unfavorite after Duplicate, before Private. Favorited documents sit at the top of the
+  list and the grid. The chosen sort still orders inside each group. A gold star mark
+  shows the state on the row and the tile while the menu is closed. There is no toolbar
+  star. Soft-delete keeps the mark, so a restored document stays favorited. Trash does
+  not list Favorites.
+
 ### Fixed
 
 - Show formatting edits in version compare. Bolding a word, changing a link's address, or
