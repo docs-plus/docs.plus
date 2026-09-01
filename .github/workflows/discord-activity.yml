@@ -190,10 +190,10 @@ jobs:
       # ----------------------------------------------------------------------
       - name: Post to Discord (smart split)
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_GITHUB_WEBHOOK: ${{ secrets.DISCORD_GITHUB_WEBHOOK }}
         run: |
-          if [ -z "$DISCORD_WEBHOOK" ]; then
-            echo "::warning::DISCORD_WEBHOOK is empty; skip post"
+          if [ -z "$DISCORD_GITHUB_WEBHOOK" ]; then
+            echo "::warning::DISCORD_GITHUB_WEBHOOK is empty; skip post"
             exit 0
           fi
           if [ "${COUNT:-0}" -eq 0 ]; then
@@ -216,7 +216,7 @@ jobs:
             local message="$1"
             curl -sS -H "Content-Type: application/json" \
                  -d "{\"content\": $(printf '%s' "$message" | jq -Rs .), \"flags\": 4}" \
-                 "$DISCORD_WEBHOOK"
+                 "$DISCORD_GITHUB_WEBHOOK"
             sleep 1
           }
 

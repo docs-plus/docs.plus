@@ -10,7 +10,9 @@ name: 'Discord: release announcement'
 #   human gate that triggers the announcement. This keeps NPM_TOKEN out of
 #   CI entirely.
 # - Sibling workflow: .github/workflows/discord-activity.yml posts per-push
-#   commit summaries to a different (commits) channel via DISCORD_WEBHOOK.
+#   commit summaries to #github via DISCORD_GITHUB_WEBHOOK, and
+#   .github/workflows/discord-github.yml posts issue and pull-request cards to
+#   that same channel and secret.
 #   The two workflows never overlap: push events vs release events are
 #   independent, and they target different webhooks / channels / audiences.
 #
@@ -135,11 +137,12 @@ jobs:
       # ----------------------------------------------------------------------
       - name: Post embed to Discord
         env:
-          # NOTE: deliberately a different secret from the push-activity
-          # workflow's DISCORD_WEBHOOK. Releases go to #releases (low-noise,
-          # user-facing); pushes go to the existing push channel (high-noise,
-          # team-facing). Naming convention: DISCORD_<qualifier>_WEBHOOK.
-          WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          # NOTE: deliberately a different secret from DISCORD_GITHUB_WEBHOOK.
+          # Releases go to #releases, which is low-noise and user-facing.
+          # Pushes, issues and pull requests all go to #github, which is
+          # high-noise and team-facing. The naming convention is one secret
+          # per channel: DISCORD_<CHANNEL>_WEBHOOK.
+          WEBHOOK: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
           PKG: ${{ steps.meta.outputs.pkg }}
           VERSION: ${{ steps.meta.outputs.version }}
           NAME: ${{ steps.meta.outputs.name }}
@@ -154,7 +157,7 @@ jobs:
           set -euo pipefail
 
           if [ -z "${WEBHOOK:-}" ]; then
-            echo "::error::DISCORD_RELEASE_WEBHOOK secret is not set. See .cursor/skills/release-extensions/SKILL.md for setup."
+            echo "::error::DISCORD_RELEASES_WEBHOOK secret is not set. See .cursor/skills/release-extensions/SKILL.md for setup."
             exit 1
           fi
 

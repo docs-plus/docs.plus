@@ -53,8 +53,8 @@ awk '/^## /{ if (found) exit; if (/^## \[<ver>\]/) found=1 } found' extensions/<
 
 - Announcement happens after npm publish:
   - GitHub Releases are the announcement gate.
-  - Discord push activity: `secrets.DISCORD_WEBHOOK` via `.github/workflows/discord-activity.yml`.
-  - Discord releases: `secrets.DISCORD_RELEASE_WEBHOOK` via `.github/workflows/discord-release.yml`. Reserve unqualified `DISCORD_WEBHOOK` for the original push channel.
+  - Discord `#github`: `secrets.DISCORD_GITHUB_WEBHOOK` via `.github/workflows/discord-activity.yml` (pushes) and `.github/workflows/discord-github.yml` (issues and pull requests).
+  - Discord `#releases`: `secrets.DISCORD_RELEASES_WEBHOOK` via `.github/workflows/discord-release.yml`. The convention is one secret per channel, `DISCORD_<CHANNEL>_WEBHOOK`.
   - Release embeds: install hint is `bun add <pkg>@<version>`. The workflow's pre-release branch (orange embeds, `@next` hints) is dormant, because releases are stable-only. Leave it in place, and do not exercise it. Do not hard-code per-package paths in the workflow.
 
 ### Extension Version Doctrine
