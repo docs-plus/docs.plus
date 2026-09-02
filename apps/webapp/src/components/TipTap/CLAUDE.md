@@ -20,6 +20,7 @@ bun run migrate:nested-to-flat
 ```
 
 - Invoking the script path from an arbitrary cwd can break Bun resolution of `yjs` for `@hocuspocus/transformer`.
+- **Settings Markdown replace writes natural picture size in the browser.** After `setContent`, `commitImportedImageSizes` loads unsized images and stamps `keyId` plus natural width and height. Do not call `fitLayoutToEditorColumn` at apply time. A load miss leaves attrs empty. The import JSON and a `PATCH` stay unsized. The server never fetches pictures.
 
 ### Heading Schema
 

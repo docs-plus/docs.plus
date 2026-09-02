@@ -448,7 +448,7 @@ The gear button opens Import & export. Four export rows sit there: Word `.docx`,
 
 An export is built from the last saved version, so a very recent edit may be missing from it.
 
-Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document, so this read-only page hides it — needs a document you can edit.
+Import takes `.docx` and `.md` only, up to 10,485,760 bytes, and Markdown stops at 65,536 characters. It replaces the whole document, so this read-only page hides it — needs a document you can edit. A Markdown replace keeps pictures at their natural size, and a lone video, audio, or embed URL becomes a player.
 
 Filtered to this section? [Show the whole document](/demo).
 

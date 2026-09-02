@@ -18,6 +18,10 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
   shows the state on the row and the tile while the menu is closed. There is no toolbar
   star. Soft-delete keeps the mark, so a restored document stays favorited. Trash does
   not list Favorites.
+- Keep playable media and picture size on Markdown replace. Settings → Import &
+  export turns a lone video, audio, or embed URL into a player, and writes each
+  picture's natural width and height. A labeled link and a filter link stay links.
+  Paste of a bare file address is unchanged.
 
 ### Fixed
 
