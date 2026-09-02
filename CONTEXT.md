@@ -26,6 +26,15 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Live seal** — REST publish → Redis `doc:{id}:access` → WS broadcast/close → client `applyAccessStateless`.
 - **Editing lock** — client cannot edit: content-fork error, `authorizedScope === 'readonly'`, or metadata Read-only for a non-owner (`selectDocumentEditingLocked`).
 
+## Document changes
+
+- **Section** — one heading and the top-level nodes that follow it, the unit the changes route reports on. Not the editor's decoration-based section, and not a Write Target.
+- **Preamble** — the synthetic Section before the first heading. Level 0, owns no heading, and never nests: at any other level it would parent the whole outline.
+- **Anchor** — the newest stored version at or before an instant. `since` and `until` each resolve to one, so a window is two Anchors, never two timestamps.
+- **Change window** — the version rows between the two Anchors. It supplies the version count, the triggers, and the contributors, and it is read separately from the section compare.
+- **Magnitude** — words added and removed for a changed Section, plus its block counts. Null when the edit moved formatting rather than words, while the status still says modified.
+- **Change digest** — the email that consumes this route. It runs in the worker process, which imports the compute factory by deep path instead of calling the route.
+
 ## Chat media gallery
 
 - **GallerySession** — pure playlist snapshot + index (`beginGallerySession` / `stepGallerySession` + `GALLERY_SESSION_CLOSED` in `gallerySession.ts`); the Zustand store clears transient handles around those calls.

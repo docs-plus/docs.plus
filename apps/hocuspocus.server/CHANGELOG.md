@@ -12,6 +12,25 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- **Markdown import keeps playable media.** A paragraph that is only a media
+  URL becomes that media node (`video`, `audio`, and the six embeds). A typed
+  `![youtube](url)` (and the same for the other block media nodes) is lifted
+  out of its paragraph so `PATCH /content` accepts the JSON. Filter links,
+  labeled links, and a media URL inside a list item stay links. Picture size
+  is still empty on the import JSON; Settings replace writes natural width
+  and height in the browser.
+- **What changed in a document, per heading section.**
+  `GET /api/documents/:documentId/changes?since&until&scope` compares the newest stored
+  snapshot at or before `since` with the newest at or before `until`. Service-role only.
+  `since` is required, `until` defaults to the moment the request is served, and `scope` is
+  `summary` (default) or `headings`. The `headings` scope adds the full outline tree,
+  unchanged headings included. Read-only: nothing is written and no live document loads.
+  Two fast paths answer without decoding a snapshot, when both ends resolve to the same
+  version row and when two rows hold identical bytes. `changed` comes from the section
+  statuses, never from the bytes, so a window that only spans the editor's first-open
+  `toc-id` stamping pass reports `changed: false`. A section's `magnitude` is null when the
+  edit changed formatting rather than words; its status still says `modified`. Attribution
+  is decoration, and a profile-lookup outage empties `contributors` rather than failing.
 - **Owner-only Favorite.** `PUT /api/documents/:documentId/favorite` accepts
   `{ favorite: boolean }` and writes a `DocumentFavorite` join for `token.sub`
   (`userId` + `documentId`). Migration `20260901100000_add_document_favorites` adds the
@@ -26,6 +45,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - Record the Favorite route and owner-list `isFavorite` in [API.md](./API.md). The
   required-token list in [docs/api/authentication.md](../../docs/api/authentication.md)
   now includes favorite and unfavorite.
+- Record Markdown import media in [API.md](./API.md). A lone media URL, or a
+  provider address written as an image, becomes a player node that `PATCH /content`
+  accepts. Picture size stays empty on that JSON.
 
 ## [2.0.1] — 2026-08-31
 

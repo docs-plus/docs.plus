@@ -22,6 +22,7 @@ import { getOwnerProfiles } from './lib/profiles'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
 import { setupMiddleware } from './middleware'
+import * as documentChanges from './modules/document-changes'
 import * as documentContent from './modules/document-content'
 import * as documentConversion from './modules/document-conversion'
 import * as documentVersions from './modules/document-versions'
@@ -90,6 +91,13 @@ const documentVersionsModule = documentVersions.init({
   getOwnerProfiles
 })
 app.route('/api/documents', documentVersionsModule.router)
+const documentChangesModule = documentChanges.init({
+  prisma,
+  logger: logger.child({ module: 'document-changes' }),
+  verifyServiceRole,
+  getOwnerProfiles
+})
+app.route('/api/documents', documentChangesModule.router)
 const documentConversionModule = documentConversion.init({
   prisma,
   logger: conversionLogger,

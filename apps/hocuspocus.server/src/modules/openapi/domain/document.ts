@@ -1,6 +1,7 @@
 import type { OpenApiDocument, OpenApiServer } from '../types'
 import { components } from './components'
 import { adminPaths } from './paths/admin'
+import { documentChangesPaths } from './paths/documentChanges'
 import { documentContentPaths } from './paths/documentContent'
 import { documentConversionPaths } from './paths/documentConversion'
 import { documentsPaths } from './paths/documents'
@@ -44,6 +45,11 @@ const TAGS = [
       "Read, compare, name, delete and restore a document's history. Service-role only. Every debounced save is already a version — there is no schedule to configure."
   },
   {
+    name: 'Document changes',
+    description:
+      'What changed in a document between two points in time, per heading section. Read-only and service-role only. Feeds the digest email.'
+  },
+  {
     name: 'Media',
     description: "Uploads and streaming for the editor's hypermultimedia extension."
   },
@@ -75,6 +81,7 @@ export const buildOpenApiDocument = (deps: BuildDeps): OpenApiDocument => ({
     ...documentsPaths,
     ...documentContentPaths,
     ...documentVersionsPaths,
+    ...documentChangesPaths,
     ...documentConversionPaths,
     ...mediaPaths,
     ...linkMetadataPaths,
