@@ -15,7 +15,6 @@ import type {
   ContentReadResponseData,
   ReadFormat,
   TiptapDocJson,
-  VerifyServiceRole,
   VersionStamp,
   WsApplyOutcome
 } from '../types'
@@ -32,16 +31,6 @@ export const payloadTooLarge = (c: Context): Response =>
 
 export const contentBodyLimit = (maxSize: number = MAX_CONTENT_BYTES): MiddlewareHandler =>
   bodyLimit({ maxSize, onError: payloadTooLarge })
-
-/** Content surfaces are service-role only; user JWTs never grant access. */
-export const requireServiceRole =
-  (verifyServiceRole: VerifyServiceRole): MiddlewareHandler =>
-  async (c, next) => {
-    if (!verifyServiceRole(c.req.header('Authorization'))) {
-      return fail(c, 401, 'UNAUTHORIZED', 'Service role authorization required')
-    }
-    await next()
-  }
 
 const applyOutcomeResponse = (
   c: Context,

@@ -1,5 +1,5 @@
+import { isRecord } from '../../../lib/isRecord'
 import type { TiptapDocJson } from '../types'
-import { isRecord } from '../types'
 
 type JsonNode = Record<string, unknown>
 interface Frame {

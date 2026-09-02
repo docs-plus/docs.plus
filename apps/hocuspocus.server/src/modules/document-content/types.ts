@@ -3,6 +3,10 @@ import type { DocumentMetadata, PrismaClient } from '@prisma/client'
 import type { Logger } from 'pino'
 import type * as Y from 'yjs'
 
+import type { VerifyServiceRole } from '../../http/serviceRole'
+
+export type { VerifyServiceRole }
+
 /** Real validation is the encode step. */
 export interface TiptapDocJson {
   type: 'doc'
@@ -11,9 +15,6 @@ export interface TiptapDocJson {
 
 export type ApplyMode = 'replace' | 'append'
 export type ReadFormat = 'json' | 'text'
-
-export const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
 
 /** Yjs transaction origin for API-applied content, so client plugins can tell it apart. */
 export const CONTENT_APPLY_ORIGIN = 'document-content-api'
@@ -117,8 +118,6 @@ export interface ContentReadResponseData {
   format: ReadFormat
   content: TiptapDocJson | string
 }
-
-export type VerifyServiceRole = (authHeader: string | undefined) => boolean
 
 export interface InitDeps {
   prisma: PrismaClient

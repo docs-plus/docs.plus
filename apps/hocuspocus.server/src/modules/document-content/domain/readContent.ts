@@ -1,38 +1,6 @@
+import { blockText } from '../../../lib/blockText'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
 import type { ReadFormat, ReadOutcome, TiptapDocJson } from '../types'
-import { isRecord } from '../types'
-
-/**
- * Block-level plain text, one line per textblock, in document order. Iterative
- * because a stored snapshot's depth is not bounded by the write-path caps.
- */
-const extractText = (json: Record<string, unknown>): string => {
-  const lines: string[] = []
-  const root = Array.isArray(json.content) ? json.content : []
-  const stack: unknown[] = [...root].reverse()
-
-  while (stack.length > 0) {
-    const node = stack.pop()
-    if (!isRecord(node)) continue
-    const children = node.content
-    if (!Array.isArray(children)) continue
-
-    if (children.some((child) => isRecord(child) && typeof child.text === 'string')) {
-      lines.push(
-        children
-          .map((child) => (isRecord(child) && typeof child.text === 'string' ? child.text : ''))
-          .join('')
-      )
-    }
-
-    for (let i = children.length - 1; i >= 0; i -= 1) {
-      const child = children[i]
-      if (isRecord(child) && Array.isArray(child.content)) stack.push(child)
-    }
-  }
-
-  return lines.join('\n')
-}
 
 /** Persisted snapshot bytes → Tiptap JSON or plain text. Corrupt bytes fail closed. */
 export const readContent = (data: Uint8Array | Buffer, format: ReadFormat): ReadOutcome => {
@@ -41,7 +9,9 @@ export const readContent = (data: Uint8Array | Buffer, format: ReadFormat): Read
   return {
     ok: true,
     content:
-      format === 'text' ? extractText(decoded.json) : (decoded.json as unknown as TiptapDocJson)
+      format === 'text'
+        ? blockText(Array.isArray(decoded.json.content) ? decoded.json.content : [], '\n')
+        : (decoded.json as unknown as TiptapDocJson)
   }
 }
 

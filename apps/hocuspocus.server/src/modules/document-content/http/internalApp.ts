@@ -5,11 +5,12 @@ import { requestId } from 'hono/request-id'
 import type { Logger } from 'pino'
 
 import { fail, houseEnvelopeHook } from '../../../http/envelope'
+import { requireServiceRole } from '../../../http/serviceRole'
 import { captureUnknown } from '../../../lib/instrument'
 import type { ApplyContent } from '../infra/hocuspocusApply'
 import type { VerifyServiceRole } from '../types'
 import { INTERNAL_BODY_HEADROOM_BYTES, MAX_CONTENT_BYTES } from '../types'
-import { contentBodyLimit, createInternalApplyHandler, requireServiceRole } from './controller'
+import { contentBodyLimit, createInternalApplyHandler } from './controller'
 import { documentIdParamSchema, internalApplyBodySchema } from './schema'
 
 export interface InternalAppDeps {

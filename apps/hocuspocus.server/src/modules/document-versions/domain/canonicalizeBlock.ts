@@ -1,7 +1,5 @@
+import { isRecord } from '../../../lib/isRecord'
 import { VOLATILE_BLOCK_ATTRS } from '../types'
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /** Sorted, null-free, volatile-free. Returns undefined when nothing survives so
  *  the caller drops the key: `{}` and absent must hash the same. */

@@ -6,6 +6,7 @@ import type { Logger } from 'pino'
 import { fail, ok } from '../../../http/envelope'
 import { type ClientAuthorBinding, resolveClientAuthors } from '../../../lib/client-authors'
 import { captureUnknown } from '../../../lib/instrument'
+import { distinctUserIds } from '../../../lib/profiles'
 import { readContent } from '../../document-content/domain/readContent'
 import { findDocumentMeta } from '../../document-content/infra/contentStore'
 import { diffBlocks } from '../domain/diffBlocks'
@@ -13,8 +14,7 @@ import {
   deleteVersionRow,
   findDiffRows,
   findVersionRow,
-  listVersionRows,
-  type VersionRow
+  listVersionRows
 } from '../infra/versionsStore'
 import type { WsVersionsClient } from '../infra/wsVersionsClient'
 import type {
@@ -81,15 +81,6 @@ const resolveProfiles = async (
     deps.logger.warn({ err: error, count: userIds.length }, 'Version attribution lookup failed')
     return new Map()
   }
-}
-
-const distinctUserIds = (rows: VersionRow[]): string[] => {
-  const ids = new Set<string>()
-  for (const row of rows) {
-    if (row.triggeredBy) ids.add(row.triggeredBy)
-    for (const contributor of row.contributors) if (contributor) ids.add(contributor)
-  }
-  return [...ids]
 }
 
 export const createListVersionsHandler =

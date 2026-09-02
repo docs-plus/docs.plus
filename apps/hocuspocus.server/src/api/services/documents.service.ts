@@ -13,6 +13,7 @@ import {
 } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
+import { getOwnerProfile, getOwnerProfiles } from '../../lib/profiles'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
 import { getServiceRoleClient } from '../../lib/supabase'
@@ -20,41 +21,6 @@ import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../schemas/hypermultimedia.schem
 import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 import { purgeDocumentFootprint } from './documentPurge.service'
 import { copyDocumentMedia, deleteDocumentMedia } from './media.service'
-
-const OWNER_PROFILE_COLUMNS = 'id, avatar_url, avatar_updated_at, full_name, display_name, status'
-
-export const getOwnerProfile = async (userId: string) => {
-  const supabase = getServiceRoleClient()
-  if (!supabase) return null
-  const { data, error } = await supabase
-    .from('users')
-    .select(OWNER_PROFILE_COLUMNS)
-    .eq('id', userId)
-    .maybeSingle()
-  if (error) {
-    documentsServiceLogger.warn({ err: error, userId }, 'Owner profile lookup failed')
-    return null
-  }
-  return data || null
-}
-
-export const getOwnerProfiles = async (userIds: string[]) => {
-  if (userIds.length === 0) return []
-  const supabase = getServiceRoleClient()
-  if (!supabase) return []
-  const { data, error } = await supabase
-    .from('users')
-    .select(OWNER_PROFILE_COLUMNS)
-    .in('id', userIds)
-  if (error) {
-    documentsServiceLogger.warn(
-      { err: error, count: userIds.length },
-      'Owner profiles lookup failed'
-    )
-    return []
-  }
-  return data || []
-}
 
 // Derived, so two people opening one new slug share a room instead of forking into
 // two documents. Random only where derivation cannot apply: an empty normalized slug,

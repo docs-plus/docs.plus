@@ -1,10 +1,9 @@
-import { getOwnerProfiles } from '../api/services/documents.service'
-import type { ProfileLite } from '../modules/document-versions'
 import type { VersionTrigger } from '../types'
 import type { HistoryPayload } from '../types/document.types'
 import type { ClientAuthorBinding } from './client-authors'
 import { wsLogger } from './logger'
 import { prisma } from './prisma'
+import { distinctUserIds, getOwnerProfiles, type ProfileLite } from './profiles'
 
 /** Metadata rows for the version sidebar (no Yjs payload). */
 export type HistoryVersionMeta = {
@@ -37,22 +36,13 @@ export type HistoryListResult = {
   clientAuthors: ClientAuthorBinding[]
 }
 
-const distinctUserIds = (rows: HistoryVersionMeta[]): string[] => {
-  const ids = new Set<string>()
-  for (const row of rows) {
-    if (row.triggeredBy) ids.add(row.triggeredBy)
-    for (const contributor of row.contributors) if (contributor) ids.add(contributor)
-  }
-  return [...ids]
-}
-
 // Attribution is decoration on the payload the whole sidebar is built from, so
 // a profile-service outage degrades to bare uids. A throw here would surface as
 // history_failed and blank the client's list.
 const resolveProfiles = async (userIds: string[]): Promise<Record<string, ProfileLite>> => {
   if (userIds.length === 0) return {}
   try {
-    const profiles = (await getOwnerProfiles(userIds)) as ProfileLite[]
+    const profiles = await getOwnerProfiles(userIds)
     return Object.fromEntries(profiles.map((profile) => [profile.id, profile]))
   } catch (error) {
     wsLogger.warn({ err: error, count: userIds.length }, 'History attribution lookup failed')

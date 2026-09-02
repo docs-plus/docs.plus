@@ -1,8 +1,8 @@
 import type { Logger } from 'pino'
 
 import { internalHop } from '../../../lib/internalHop'
+import { isRecord } from '../../../lib/isRecord'
 import type { ApplyRequest, WsApplyOutcome } from '../types'
-import { isRecord } from '../types'
 import { WS_APPLY_TIMEOUT_MS } from '../types'
 
 export type WsApplyClient = (request: ApplyRequest) => Promise<WsApplyOutcome>

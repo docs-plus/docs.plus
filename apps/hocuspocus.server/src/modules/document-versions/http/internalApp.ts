@@ -5,8 +5,8 @@ import { requestId } from 'hono/request-id'
 import type { Logger } from 'pino'
 
 import { fail, houseEnvelopeHook } from '../../../http/envelope'
+import { requireServiceRole } from '../../../http/serviceRole'
 import { captureUnknown } from '../../../lib/instrument'
-import { requireServiceRole } from '../../document-content/http/controller'
 import type { VerifyServiceRole, VersionOps } from '../types'
 import {
   createInternalCheckpointHandler,

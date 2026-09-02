@@ -1,10 +1,10 @@
+import { isRecord } from '../../../lib/isRecord'
 import type {
   ConversionWarning,
   TiptapDocJson,
   TitleHeadingBranch,
   TitleHeadingResult
 } from '../types'
-import { isRecord } from '../types'
 
 type JsonNode = Record<string, unknown>
 

@@ -4,14 +4,10 @@ import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
 import { houseEnvelopeHook } from '../../../http/envelope'
+import { requireServiceRole } from '../../../http/serviceRole'
 import type { WsApplyClient } from '../infra/wsApplyClient'
 import type { VerifyServiceRole } from '../types'
-import {
-  contentBodyLimit,
-  createGetContentHandler,
-  createPatchContentHandler,
-  requireServiceRole
-} from './controller'
+import { contentBodyLimit, createGetContentHandler, createPatchContentHandler } from './controller'
 import {
   contentQuerySchema,
   documentIdParamSchema,

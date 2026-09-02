@@ -7,12 +7,14 @@
 
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 import { InlineCode } from '@docs.plus/extension-inline-code'
+import { getSchema } from '@tiptap/core'
 import { Extension, Mark, Node } from '@tiptap/core'
 import Heading from '@tiptap/extension-heading'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+import type { Schema } from '@tiptap/pm/model'
 import { StarterKit } from '@tiptap/starter-kit'
 
 const MigrationHeading = Heading.extend({
@@ -111,3 +113,9 @@ export const migrationExtensions = [
   Highlight,
   StoredWebappAttrs
 ]
+
+// Built lazily so this module keeps no top-level side effects. One Schema for
+// the process: a ProseMirror node binds to the schema that made it, so two
+// memos over one list would mint nodes that are not interchangeable.
+let migrationSchema: Schema | null = null
+export const getMigrationSchema = (): Schema => (migrationSchema ??= getSchema(migrationExtensions))

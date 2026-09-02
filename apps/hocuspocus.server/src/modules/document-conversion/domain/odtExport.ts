@@ -1,5 +1,5 @@
+import { isRecord } from '../../../lib/isRecord'
 import type { TiptapDocJson } from '../types'
-import { isRecord } from '../types'
 import { toPortableJson } from './portableJson'
 import { createZip } from './zipWriter'
 

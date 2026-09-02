@@ -1,11 +1,9 @@
 import { TiptapTransformer } from '@hocuspocus/transformer'
-import { getSchema } from '@tiptap/core'
-import type { Schema } from '@tiptap/pm/model'
 import ShortUniqueId from 'short-unique-id'
 
-import { migrationExtensions } from '../../../lib/migration-extensions'
+import { isRecord } from '../../../lib/isRecord'
+import { getMigrationSchema, migrationExtensions } from '../../../lib/migration-extensions'
 import type { EncodeOutcome, TiptapDocJson } from '../types'
-import { isRecord } from '../types'
 import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES } from '../types'
 
 // UniqueID also stamps the hyperlink mark, but nothing reads a hyperlink's
@@ -22,15 +20,6 @@ export const TITLE_HEADING_DETAIL = 'document content must start with a level-1 
 // would therefore stay unaddressable: invisible to the TOC, heading chat, folds
 // and `?id=` deep links, and unhealable on a readOnly document.
 const tocIdGenerator = new ShortUniqueId()
-
-// Built lazily (the module has no top-level side effects). This is the only
-// server path that evaluates content expressions at all. `toYdoc` and `fromYdoc`
-// never do, so the shared extension set doubles as the validation schema.
-let validationSchema: Schema | null = null
-const getValidationSchema = (): Schema => {
-  validationSchema ??= getSchema(migrationExtensions)
-  return validationSchema
-}
 
 const boundedDetail = (error: unknown): string =>
   (error instanceof Error ? error.message : String(error)).slice(0, MAX_DETAIL_CHARS)
@@ -130,7 +119,7 @@ export const encodeContent = (
     // Heading-in-paragraph and taskItem-at-root encode and round-trip cleanly. The
     // first browser to open the doc then deletes the subtree (y-tiptap) or
     // hard-freezes on enableContentCheck. `.check()` is the only gate for that.
-    getValidationSchema().nodeFromJSON(payload).check()
+    getMigrationSchema().nodeFromJSON(payload).check()
     const scratch = TiptapTransformer.toYdoc(payload, 'default', migrationExtensions)
     if (TiptapTransformer.fromYdoc(scratch, 'default') == null) {
       return invalid('content did not survive a Yjs round-trip')

@@ -4,9 +4,10 @@ import { Hono } from 'hono'
 import type { Logger } from 'pino'
 
 import { houseEnvelopeHook } from '../../../http/envelope'
-import { requireServiceRole } from '../../document-content/http/controller'
+import type { VerifyServiceRole } from '../../../http/serviceRole'
+import { requireServiceRole } from '../../../http/serviceRole'
+import type { GetOwnerProfiles } from '../../../lib/profiles'
 import type { WsVersionsClient } from '../infra/wsVersionsClient'
-import type { GetOwnerProfiles, VerifyServiceRole } from '../types'
 import {
   createCheckpointHandler,
   createDeleteVersionHandler,

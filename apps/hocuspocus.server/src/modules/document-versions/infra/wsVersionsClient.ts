@@ -1,7 +1,7 @@
 import type { Logger } from 'pino'
 
 import { internalHop } from '../../../lib/internalHop'
-import { isRecord } from '../../document-content/types'
+import { isRecord } from '../../../lib/isRecord'
 import type { WsCheckpointOutcome, WsRevertOutcome } from '../types'
 import { BACKUP_FAILED_CODE, DRAFT_DOCUMENT_CODE, VERSION_OP_TIMEOUT_MS } from '../types'
 

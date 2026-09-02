@@ -2,11 +2,14 @@ import type { Hocuspocus } from '@hocuspocus/server'
 import type { PrismaClient } from '@prisma/client'
 import type { Logger } from 'pino'
 
+import type { VerifyServiceRole } from '../../http/serviceRole'
+import type { GetOwnerProfiles, ProfileLite } from '../../lib/profiles'
 import type { MachineVersionTrigger, StoreDocumentContext, VersionTrigger } from '../../types'
-import type { ReadFormat, TiptapDocJson, VerifyServiceRole } from '../document-content/types'
+import type { ReadFormat, TiptapDocJson } from '../document-content/types'
 
 // Re-exported so this stays the module's single type surface: the trigger
 // vocabulary is shared with the store hook, the rest with the content module.
+export type { GetOwnerProfiles, ProfileLite }
 export type { MachineVersionTrigger, ReadFormat, TiptapDocJson, VerifyServiceRole, VersionTrigger }
 
 /** Trimmed bound on a checkpoint name, matching the content API's row label. */
@@ -34,19 +37,6 @@ export const BACKUP_FAILED_CODE = 'BACKUP_FAILED'
 export const buildBackupName = (version: number): string => `Before restore of version ${version}`
 
 export const buildRestoredName = (version: number): string => `Restored version ${version}`
-
-/**
- * The `public.users` columns the history sidebar renders, snake_case preserved
- * to mirror the table. Supplied by the injected batch lookup, never selected here.
- */
-export interface ProfileLite {
-  id: string
-  avatar_url: string | null
-  avatar_updated_at: string | null
-  full_name: string | null
-  display_name: string | null
-  status: string | null
-}
 
 /**
  * The DirectConnection context an op opens with. Extends the shape `store()`
@@ -189,15 +179,6 @@ export interface VersionOps {
   ) => Promise<RevertOutcome>
 }
 
-/** Batch profile lookup. Contractually fail-soft: `[]` rather than a throw. */
-export type GetOwnerProfiles = (userIds: string[]) => Promise<ProfileLite[]>
-
-/**
- * Injected, never imported: a static `lib/queue` import boots two BullMQ queues
- * and a Redis socket at module scope. This module's index is loaded by REST.
- */
-export type StripSnapshotMetadata = (state: Uint8Array) => Buffer<ArrayBuffer>
-
 export interface InitDeps {
   prisma: PrismaClient
   logger: Logger
@@ -207,6 +188,12 @@ export interface InitDeps {
   wsOpsBaseUrl: string
   getOwnerProfiles: GetOwnerProfiles
 }
+
+/**
+ * Injected, never imported: a static `lib/queue` import boots two BullMQ queues
+ * and a Redis socket at module scope. This module's index is loaded by REST.
+ */
+export type StripSnapshotMetadata = (state: Uint8Array) => Buffer<ArrayBuffer>
 
 export interface InitWsOpsDeps {
   hocuspocus: Hocuspocus

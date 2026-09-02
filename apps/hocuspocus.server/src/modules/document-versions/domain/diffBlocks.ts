@@ -1,18 +1,12 @@
-import { getSchema } from '@tiptap/core'
-import type { Node as PMNode, Schema } from '@tiptap/pm/model'
+import type { Node as PMNode } from '@tiptap/pm/model'
 
-import { migrationExtensions } from '../../../lib/migration-extensions'
+import { getMigrationSchema } from '../../../lib/migration-extensions'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
 import type { BlockChange, BlockDiff, VersionSnapshot } from '../types'
 import { DIFF_PREVIEW_CHARS, MAX_DIFF_CHANGES } from '../types'
 import { collectBlockClientIds } from './blockAuthors'
 import { canonicalizeBlock } from './canonicalizeBlock'
 import { type BlockKey, matchBlocks } from './matchBlocks'
-
-// Built lazily: the module must have no top-level side effects, and every
-// snapshot on both sides of a diff is read through this one schema.
-let diffSchema: Schema | null = null
-const getDiffSchema = (): Schema => (diffSchema ??= getSchema(migrationExtensions))
 
 /** Positions, not characters: a block boundary costs two positions per
  *  newline. The doubled window always covers the preview and never
@@ -33,7 +27,7 @@ const decodeSide = (snapshot: VersionSnapshot): DecodedSide => {
   const decoded = ydocToPmJson(snapshot.data)
   if (!decoded.ok) throw decoded.error
 
-  const doc = getDiffSchema().nodeFromJSON(decoded.json)
+  const doc = getMigrationSchema().nodeFromJSON(decoded.json)
   const keys: BlockKey[] = []
   const starts: number[] = []
   let offset = 0

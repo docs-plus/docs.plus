@@ -196,9 +196,7 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
         })
       })
 
-      const ownerProfile = body.ownerId
-        ? await documentsService.getOwnerProfile(body.ownerId)
-        : null
+      const ownerProfile = body.ownerId ? await getOwnerProfile(body.ownerId) : null
       return c.json({ success: true, data: { ...created, ownerProfile } })
     }
 

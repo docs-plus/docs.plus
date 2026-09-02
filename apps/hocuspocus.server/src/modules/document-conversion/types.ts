@@ -5,9 +5,6 @@ export type { TiptapDocJson }
 export type ExportFormat = 'docx' | 'md' | 'odt'
 export type ImportFormat = 'docx' | 'md'
 
-export const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
-
 /** Extensions and declared MIME types lie, so both the import and export gates
  *  read the container's leading bytes instead. */
 export const startsWith = (bytes: Uint8Array, magic: number[]): boolean =>
