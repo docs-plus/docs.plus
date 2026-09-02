@@ -14,6 +14,7 @@ import { config } from './config/env'
 import HocuspocusConfig from './config/hocuspocus.config'
 import { clientAuthorsExtension } from './extensions/client-authors.extension'
 import { contributorsExtension } from './extensions/contributors.extension'
+import { decideStatelessRelay, MAX_STATELESS_RELAY_BYTES } from './extensions/statelessRelay'
 import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
@@ -33,7 +34,7 @@ import {
   ydocUpdateBytes
 } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
-import { closeQueues, refreshPendingStateKeyTtls, stripSnapshotMetadata } from './lib/queue'
+import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
 import { disconnectRedis } from './lib/redis'
 import { resolveWsAccess } from './lib/wsAccess'
 import * as documentContent from './modules/document-content'
@@ -225,18 +226,6 @@ const metricsExtension = {
   }
 }
 
-// The relay arm below mints one OutgoingMessage per connection. The arm is
-// reachable with no credentials on any public room, so room size × burst rate
-// is what OOM-kills a replica. The only client traffic here is `docTitle`, a
-// metadata row that measures a few hundred bytes.
-const MAX_STATELESS_RELAY_BYTES = 64 * 1024
-
-// The relay has no authz, so a client-chosen envelope is a client-chosen server
-// event. The webapp follows `type:'private'` into a hard redirect, and `msg` into
-// a "Saved" status it reads before any type. `docTitle` is the only envelope a
-// shipped client originates; every real server event broadcasts directly, not here.
-const RELAYABLE_STATELESS_TYPES = new Set(['docTitle'])
-
 const statelessExtension = {
   async onStateless({
     payload,
@@ -319,34 +308,24 @@ const statelessExtension = {
       return
     }
 
-    // Ahead of the stringify, so a refused payload is never serialised and an
-    // oversized forgery counts as a forgery instead of muddying the OOM signal.
-    // `msg` is refused outright: the named branches above own every legitimate one.
-    if (
-      parsedPayload.msg ||
-      !parsedPayload.type ||
-      !RELAYABLE_STATELESS_TYPES.has(parsedPayload.type)
-    ) {
-      statelessRelayDroppedTotal.inc({ reason: 'type-not-allowed' })
+    const verdict = decideStatelessRelay(parsedPayload)
+    if (!verdict.relay) {
+      statelessRelayDroppedTotal.inc({ reason: verdict.reason })
       wsLogger.warn(
-        { documentName: document.name, type: String(parsedPayload.type).slice(0, 64) },
-        'Refused stateless relay of a non-relayable envelope'
+        {
+          documentName: document.name,
+          // Attacker-controlled, and this arm exists to stop an amplifier.
+          type: String(parsedPayload.type).slice(0, 64),
+          ...(verdict.reason === 'oversized'
+            ? { relayBytes: verdict.bytes, limit: MAX_STATELESS_RELAY_BYTES }
+            : {})
+        },
+        'Refused stateless relay'
       )
       return
     }
 
-    const relay = JSON.stringify(parsedPayload)
-    const relayBytes = Buffer.byteLength(relay)
-    if (relayBytes > MAX_STATELESS_RELAY_BYTES) {
-      statelessRelayDroppedTotal.inc({ reason: 'oversized' })
-      wsLogger.warn(
-        { documentName: document.name, relayBytes, limit: MAX_STATELESS_RELAY_BYTES },
-        'Dropped oversized stateless relay payload'
-      )
-      return
-    }
-
-    document.broadcastStateless(relay)
+    document.broadcastStateless(verdict.body)
   },
 
   // Type 6 never reaches onStateless: MessageReceiver relays it to every room
@@ -585,8 +564,7 @@ const documentVersionOps = documentVersions.initWsOps({
   hocuspocus: server.hocuspocus,
   prisma,
   verifyServiceRole,
-  logger: wsLogger.child({ module: 'document-versions' }),
-  stripSnapshotMetadata
+  logger: wsLogger.child({ module: 'document-versions' })
 })
 versionOps = documentVersionOps.ops
 
