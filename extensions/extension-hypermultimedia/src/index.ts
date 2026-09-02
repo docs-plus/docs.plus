@@ -96,4 +96,4 @@ export {
   type MediaPlacementId
 } from './utils/media-placement'
 export { resolveMediaNodePos } from './utils/media-resize-controls'
-export { isAudioUrl, isVideoUrl } from './utils/mediaUrl'
+export { isAudioUrl, isSafeMediaSrc, isVideoUrl } from './utils/mediaUrl'

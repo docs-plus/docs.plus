@@ -2,6 +2,7 @@ import type { ImportResult, TiptapDocJson } from '../types'
 import { getParseSchema } from './conversionSchema'
 import { ensureTitleHeading, titleHeadingText, titleHeadingWarning } from './ensureTitleHeading'
 import { getMarkdownManager } from './markdownExport'
+import { promoteImportedMedia } from './promoteImportedMedia'
 
 /**
  * `marked` drops a lone image straight into a block container, but `image` is
@@ -37,7 +38,9 @@ const wrapStrayInlineNodes = (doc: TiptapDocJson): TiptapDocJson => {
  */
 export const importMarkdown = (markdown: string, fallbackTitle: string): ImportResult => {
   const parsed = getMarkdownManager().parse(markdown) as unknown as TiptapDocJson
-  const { doc, branch } = ensureTitleHeading(wrapStrayInlineNodes(parsed), fallbackTitle)
+  const wrapped = wrapStrayInlineNodes(parsed)
+  const promoted = promoteImportedMedia(wrapped)
+  const { doc, branch } = ensureTitleHeading(promoted, fallbackTitle)
   const title = titleHeadingText(doc) || fallbackTitle.trim()
   const warning = titleHeadingWarning(branch, title)
 

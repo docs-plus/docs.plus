@@ -8,6 +8,11 @@ historical Conventional Commits format. The project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Export `isSafeMediaSrc` from the package entry. Markdown import uses it to
+  refuse an unsafe URL before it mints a media node.
+
 ### Fixed
 
 - Iframe embeds no longer set `allowfullscreen` when `allow` already includes
