@@ -4,6 +4,7 @@ import * as Y from 'yjs'
 import { drainContributors } from '../../../lib/contributors'
 import { captureUnknown } from '../../../lib/instrument'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
+import { stripSnapshotMetadata } from '../../../lib/snapshotMetadata'
 import { applyContentToDoc } from '../../document-content/domain/applyContentToDoc'
 import { encodeContent } from '../../document-content/domain/encodeContent'
 import type { DocumentContentMeta } from '../../document-content/infra/contentStore'
@@ -49,7 +50,7 @@ const consumeVersionStamp = (context: VersionOpContext): void => {
 }
 
 export const createVersionOps = (deps: Omit<InitWsOpsDeps, 'verifyServiceRole'>): VersionOps => {
-  const { hocuspocus, prisma, logger, stripSnapshotMetadata } = deps
+  const { hocuspocus, prisma, logger } = deps
 
   // A faithful WS-shaped context, not hygiene. A defensively-rowless first save
   // reads `context.slug` unguarded in the worker, and `{}` would stamp the

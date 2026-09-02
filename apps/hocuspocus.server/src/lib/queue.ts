@@ -16,6 +16,7 @@ import {
   getRedisPublisher
 } from './redis'
 import { withUniqueSlug } from './slug'
+import { stripSnapshotMetadata } from './snapshotMetadata'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
@@ -394,17 +395,6 @@ export async function getStoreQueueOldestWaitingAgeMs(): Promise<number | null> 
   // head, so the tail is the oldest waiting job.
   const [oldest] = await StoreDocumentQueue.getJobs(['waiting'], -1, -1)
   return oldest ? Date.now() - oldest.timestamp : null
-}
-
-// Stored snapshots must not carry the transient metadata keys the client
-// stamps on the live doc (commitMessage rides the version row instead).
-export function stripSnapshotMetadata(state: Uint8Array) {
-  const ydoc = new Y.Doc()
-  Y.applyUpdate(ydoc, state instanceof Buffer ? new Uint8Array(state) : state)
-  const meta = ydoc.getMap('metadata')
-  meta.delete('commitMessage')
-  meta.delete('isDraft')
-  return Buffer.from(Y.encodeStateAsUpdate(ydoc))
 }
 
 async function resolveJobState(data: StoreDocumentData): Promise<Buffer> {

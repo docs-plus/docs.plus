@@ -120,19 +120,9 @@ prisma.documents.create = async (args: any) => {
   return { version: args.data.version }
 }
 
-const ops = createVersionOps({
-  hocuspocus,
-  prisma,
-  logger: silentLogger,
-  // The real one lives in lib/queue, which boots BullMQ and Redis at import.
-  stripSnapshotMetadata: (state) => {
-    const ydoc = new Y.Doc()
-    Y.applyUpdate(ydoc, new Uint8Array(state))
-    ydoc.getMap('metadata').delete('commitMessage')
-    ydoc.getMap('metadata').delete('isDraft')
-    return Buffer.from(Y.encodeStateAsUpdate(ydoc))
-  }
-})
+// The real strip runs here: it moved out of lib/queue, so importing it no
+// longer boots BullMQ and Redis, and the test stopped carrying a copy.
+const ops = createVersionOps({ hocuspocus, prisma, logger: silentLogger })
 
 const app = createInternalApp({
   verifyServiceRole: (header) => header === `Bearer ${SERVICE_KEY}`,

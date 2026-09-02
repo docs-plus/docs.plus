@@ -189,18 +189,11 @@ export interface InitDeps {
   getOwnerProfiles: GetOwnerProfiles
 }
 
-/**
- * Injected, never imported: a static `lib/queue` import boots two BullMQ queues
- * and a Redis socket at module scope. This module's index is loaded by REST.
- */
-export type StripSnapshotMetadata = (state: Uint8Array) => Buffer<ArrayBuffer>
-
 export interface InitWsOpsDeps {
   hocuspocus: Hocuspocus
   prisma: PrismaClient
   logger: Logger
   verifyServiceRole: VerifyServiceRole
-  stripSnapshotMetadata: StripSnapshotMetadata
 }
 
 /** Editor-regenerated identity attrs. Whatever this strips, the author walk must

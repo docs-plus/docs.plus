@@ -42,8 +42,7 @@ export const initWsOps = (deps: InitWsOpsDeps): InitWsOpsResult => {
   const ops = createVersionOps({
     hocuspocus: deps.hocuspocus,
     prisma: deps.prisma,
-    logger: deps.logger,
-    stripSnapshotMetadata: deps.stripSnapshotMetadata
+    logger: deps.logger
   })
 
   return {
