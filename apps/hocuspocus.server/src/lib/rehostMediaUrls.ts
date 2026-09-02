@@ -1,5 +1,7 @@
 import * as Y from 'yjs'
 
+import { isRecord } from './isRecord'
+
 const MEDIA_ROUTE_SEGMENT = '/api/plugins/hypermultimedia/'
 
 // The whole route, not `/hypermultimedia/` alone. That segment also occurs in
@@ -26,9 +28,6 @@ export interface RehostedSnapshot {
 }
 
 type Attrs = Record<string, unknown>
-
-const isPlainObject = (value: unknown): value is Attrs =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const rewriteValue = (
   value: string,
@@ -59,7 +58,7 @@ const rehostAttrs = (
     if (typeof value === 'string') {
       const next = rewriteValue(value, targetDocumentId, found)
       if (next !== null) (changed ??= {})[key] = next
-    } else if (isPlainObject(value)) {
+    } else if (isRecord(value)) {
       const nested = rehostAttrs(value, targetDocumentId, found)
       // Marks are replaced whole — `format` takes the complete attribute value.
       if (nested) (changed ??= {})[key] = { ...value, ...nested }
