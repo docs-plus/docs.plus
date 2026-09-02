@@ -40,6 +40,20 @@ This file is the operator and API changelog. The pad product lives in the [root 
   returns `isFavorite` and orders that user's Favorites first, then `sort`. Trash and the
   public fleet omit both.
 
+### Changed
+
+- **`test:e2e:duplicate-media` forces local storage from the package script.**
+  The storage backend is now picked once from validated config, which freezes at
+  import, so the script's own `process.env` assignment would land too late. Run
+  the script through `bun run test:e2e:duplicate-media`, never `bun` directly, or
+  its purge deletes by prefix from the bucket named by `DO_STORAGE_ENDPOINT`.
+
+### Fixed
+
+- **ODT export and portable JSON no longer read an array as a node.** The shared
+  `isRecord` guard accepted arrays, so a `content` array could reach a branch
+  meant for a node. No shipped document is known to have hit it.
+
 ### Documentation
 
 - Record the Favorite route and owner-list `isFavorite` in [API.md](./API.md). The
