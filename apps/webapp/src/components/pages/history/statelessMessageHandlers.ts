@@ -34,7 +34,7 @@ import type { WatchVersionContentOptions } from './hooks/useVersionContent'
  * twenty setters through a deps object bought no testability. It also made adding a
  * store field a four-file edit, which is how `setCompareMode` came to be missing.
  */
-export type HistoryStatelessHandlerDeps = {
+type HistoryStatelessHandlerDeps = {
   requestSilentListRefresh: () => void
   watchVersionContent: (version: number, options?: WatchVersionContentOptions) => void
 }

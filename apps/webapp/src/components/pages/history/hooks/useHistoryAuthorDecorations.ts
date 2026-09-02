@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 
 const historyAuthorsPluginKey = new PluginKey<DecorationSet>('historyAuthors')
 
-type Params = {
+type HistoryAuthorDecorationsParams = {
   ranges: { from: number; to: number }[] | null
   markedIndices: ReadonlySet<number>
   focusedIndex: number | null
@@ -22,7 +22,7 @@ export const useHistoryAuthorDecorations = ({
   markedIndices,
   focusedIndex,
   onBlockClick
-}: Params) => {
+}: HistoryAuthorDecorationsParams) => {
   const editor = useStore((state) => state.editor)
   const blockCountRef = useRef(0)
   const onBlockClickRef = useRef(onBlockClick)

@@ -1,11 +1,7 @@
 import type { Node as PMNode } from '@tiptap/pm/model'
 import * as Y from 'yjs'
 
-/**
- * Lockstep copy of hocuspocus `VOLATILE_BLOCK_ATTRS` — this package cannot import
- * that one. Drift lets the toc-id rewriter outrank the real writer.
- */
-const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id'])
+import { VOLATILE_BLOCK_ATTRS } from './diffTokenEncoder'
 
 /** Nested Y types hang off `content.type`; everything else is leaf content. */
 const nestedType = (item: Y.Item): Y.AbstractType<unknown> | null => {

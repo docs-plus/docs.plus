@@ -40,6 +40,11 @@ export type AuthorRoster = {
   totalCount: number
 }
 
+export type HistoryAuthorship =
+  | { status: 'pending' }
+  | { status: 'unaligned' }
+  | { status: 'ready'; roster: AuthorRoster; types: string[] }
+
 export type HistorySidebarRowHandlers = {
   activeVersion: number
   latestVersion: number

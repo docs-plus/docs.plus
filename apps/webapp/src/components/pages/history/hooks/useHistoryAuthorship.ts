@@ -1,14 +1,9 @@
 import { getCachedProsemirrorFromHistoryYdoc } from '@components/pages/history/historyDecodeCache'
-import type { AuthorRoster } from '@components/pages/history/types'
+import type { HistoryAuthorship } from '@components/pages/history/types'
 import { buildAuthorRoster } from '@components/pages/history/utils/authorRoster'
 import { collectBlockClientIds } from '@components/pages/history/utils/blockAuthors'
 import { useStore } from '@stores'
 import { useMemo } from 'react'
-
-export type HistoryAuthorship =
-  | { status: 'pending' }
-  | { status: 'unaligned' }
-  | { status: 'ready'; roster: AuthorRoster; types: string[] }
 
 export const useHistoryAuthorship = (): HistoryAuthorship => {
   const activeHistory = useStore((state) => state.activeHistory)

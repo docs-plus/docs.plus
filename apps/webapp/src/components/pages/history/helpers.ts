@@ -6,7 +6,7 @@ import type { GroupedByDay, VersionSession } from './types'
 
 const SESSION_GAP_MS = 2 * 60 * 1000
 
-export const getContentFromYdocObject = (content: string) => {
+const getContentFromYdocObject = (content: string) => {
   const ydoc = new Y.Doc()
   const update = Uint8Array.from(atob(content), (c) => c.charCodeAt(0))
   Y.applyUpdate(ydoc, update)
@@ -52,7 +52,7 @@ export const formatTime = (date: Date | string): string => {
   })
 }
 
-export const formatDateHeader = (date: Date | string): string => {
+const formatDateHeader = (date: Date | string): string => {
   const d = new Date(date)
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -70,7 +70,7 @@ export const formatDateHeader = (date: Date | string): string => {
   })
 }
 
-export const groupVersionsIntoSessions = (versions: HistoryItem[]): VersionSession[] => {
+const groupVersionsIntoSessions = (versions: HistoryItem[]): VersionSession[] => {
   if (versions.length === 0) return []
 
   const sorted = [...versions].sort(

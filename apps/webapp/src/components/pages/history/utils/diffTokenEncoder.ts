@@ -2,7 +2,8 @@ import type { Mark, Node as PMNode } from '@tiptap/pm/model'
 
 /**
  * Lockstep copy of hocuspocus `VOLATILE_BLOCK_ATTRS` — this package cannot import
- * that one. Drift makes the first-open toc-id rewrite read as a real edit.
+ * that one. Drift makes the first-open toc-id rewrite read as a real edit, and
+ * lets the toc-id rewriter outrank the real writer in `blockAuthors`.
  */
 export const VOLATILE_BLOCK_ATTRS: ReadonlySet<string> = new Set(['toc-id'])
 
