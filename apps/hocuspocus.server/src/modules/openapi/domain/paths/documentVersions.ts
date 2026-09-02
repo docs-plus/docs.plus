@@ -8,13 +8,10 @@ import {
 } from '../../../document-versions/http/schema'
 import type { OpenApiPaths, OpenApiResponse } from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
-import { dataEnvelope, toJsonSchema, toParameters } from '../jsonSchema'
+import { dataEnvelope, DOCUMENT_ID_NOTE, toJsonSchema, toParameters } from '../jsonSchema'
 
 const tags = ['Document versions']
 const security = [{ serviceRoleKey: [] }]
-
-const DOCUMENT_ID_NOTE =
-  'The 19-character id that is also the collaboration room name — never the slug. Resolve a slug once with `GET /api/documents/{docRef}` and keep the id.'
 
 const VERSION_NOTE =
   'Version number, monotonic per document from 1. Bounded by the int4 column, so an out-of-range value is a 400 rather than a database error. Gaps are normal — retention and `DELETE` both leave them.'

@@ -5,7 +5,7 @@ import {
 } from '../../../../schemas/hypermultimedia.schema'
 import type { OpenApiPaths } from '../../types'
 import { rateLimitedRef } from '../components'
-import { toParameters } from '../jsonSchema'
+import { DOCUMENT_ID_NOTE, toParameters } from '../jsonSchema'
 
 const tags = ['Media']
 
@@ -17,7 +17,7 @@ export const mediaPaths: OpenApiPaths = {
       description: `Backs the editor's hypermultimedia extension. Storage targets local disk when \`PERSIST_TO_LOCAL_STORAGE=true\`, otherwise S3-compatible. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}. Max size is \`DO_STORAGE_MAX_FILE_SIZE\` (default 10 MB).`,
       tags,
       security: [{ supabaseUserToken: [] }],
-      parameters: toParameters(documentIdParamSchema, 'path'),
+      parameters: toParameters(documentIdParamSchema, 'path', { documentId: DOCUMENT_ID_NOTE }),
       requestBody: {
         required: true,
         content: {
@@ -108,7 +108,7 @@ export const mediaPaths: OpenApiPaths = {
       description: 'Public read — media renders inside public documents for anonymous viewers.',
       tags,
       security: [{}],
-      parameters: toParameters(mediaIdParamSchema, 'path'),
+      parameters: toParameters(mediaIdParamSchema, 'path', { documentId: DOCUMENT_ID_NOTE }),
       responses: {
         '200': {
           description: 'The file, served with its own `Content-Type`.',

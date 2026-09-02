@@ -48,3 +48,7 @@ export const dataEnvelope = (data: JsonSchema): JsonSchema => ({
   properties: { success: { type: 'boolean', const: true }, data },
   required: ['success', 'data']
 })
+
+/** One sentence, four path files. The copies had already drifted apart. */
+export const DOCUMENT_ID_NOTE =
+  'The 19-character id that is also the collaboration room name — never the slug. Resolve a slug once with `GET /api/documents/{docRef}` and keep the id.'

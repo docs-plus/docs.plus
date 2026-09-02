@@ -6,14 +6,13 @@ import {
 } from '../../../document-content/http/schema'
 import type { OpenApiPaths } from '../../types'
 import { rateLimitedRef } from '../components'
-import { dataEnvelope, toJsonSchema, toParameters } from '../jsonSchema'
+import { dataEnvelope, DOCUMENT_ID_NOTE, toJsonSchema, toParameters } from '../jsonSchema'
 
 const tags = ['Document content']
 const security = [{ serviceRoleKey: [] }]
 
 const documentIdParam = toParameters(documentIdParamSchema, 'path', {
-  documentId:
-    'The 19-character id that is also the collaboration room name — never the slug. Resolve a slug once with `GET /api/documents/{docRef}` and keep the id.'
+  documentId: DOCUMENT_ID_NOTE
 })
 
 const contentErrors = {

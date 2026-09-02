@@ -7,7 +7,7 @@ import {
 } from '../../../document-conversion/types'
 import type { JsonSchema, OpenApiPaths, SecurityRequirement } from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
-import { dataEnvelope, toParameters } from '../jsonSchema'
+import { dataEnvelope, DOCUMENT_ID_NOTE, toParameters } from '../jsonSchema'
 
 const tags = ['Document content']
 
@@ -16,7 +16,7 @@ const tags = ['Document content']
 const security: SecurityRequirement[] = [{ supabaseUserToken: [] }, { serviceRoleKey: [] }]
 
 const documentIdParam = toParameters(documentIdParamSchema, 'path', {
-  documentId: 'The 19-character id that is also the collaboration room name — never the slug.'
+  documentId: DOCUMENT_ID_NOTE
 })
 
 const binary: JsonSchema = { type: 'string', format: 'binary' }
@@ -96,7 +96,7 @@ export const documentConversionPaths: OpenApiPaths = {
     post: {
       operationId: 'importDocument',
       summary: 'Convert an uploaded Word or Markdown file to document content',
-      description: `Reads a \`.docx\` or a Markdown file and returns Tiptap JSON. Takes the same credentials as export and gates on write access on top of them: a read-only document refuses everyone but its owner with a 403, since nobody else can apply the result and the conversion costs real CPU. **No database write and no content mutation** — apply the result with \`PATCH /api/documents/{documentId}/content\`, which enforces the read-only lock on the write itself. Markdown carries no \`toc-id\`, so applying it with \`mode=replace\` re-keys every heading and orphans that heading's chat channel, fold state and \`?id=\` links; prefer \`mode=append\`. Both formats arrive as \`multipart/form-data\` — there is no raw-body variant, so one field, one size limit and one sniff cover every upload. The bytes are identified by their container, not their extension or declared MIME type: a zip is \`.docx\`, and anything else must decode as UTF-8 text. Embedded Word images are rehosted through the media route, which is the one side effect: those objects are written to storage even though the document is not. When the server has no public media URL configured each image is reported as a \`media-placeholder-dropped\` warning and the text still imports. Capped at ${MAX_IMPORT_BYTES} bytes uploaded and ${MAX_INFLATED_IMPORT_BYTES} bytes unpacked, and Markdown additionally at ${MAX_MARKDOWN_CHARS} characters.`,
+      description: `Reads a \`.docx\` or a Markdown file and returns Tiptap JSON. Takes the same credentials as export and gates on write access on top of them: a read-only document refuses everyone but its owner with a 403, since nobody else can apply the result and the conversion costs real CPU. **No database write and no content mutation** — apply the result with \`PATCH /api/documents/{documentId}/content\`, which enforces the read-only lock on the write itself. A Markdown paragraph that is only a media URL, or a provider address written as an image, becomes the matching player node so the JSON composes with that PATCH. Picture width and height stay empty on this JSON; Settings replace writes natural size in the browser. Markdown carries no \`toc-id\`, so applying it with \`mode=replace\` re-keys every heading and orphans that heading's chat channel, fold state and \`?id=\` links; prefer \`mode=append\`. Both formats arrive as \`multipart/form-data\` — there is no raw-body variant, so one field, one size limit and one sniff cover every upload. The bytes are identified by their container, not their extension or declared MIME type: a zip is \`.docx\`, and anything else must decode as UTF-8 text. Embedded Word images are rehosted through the media route, which is the one side effect: those objects are written to storage even though the document is not. When the server has no public media URL configured each image is reported as a \`media-placeholder-dropped\` warning and the text still imports. Capped at ${MAX_IMPORT_BYTES} bytes uploaded and ${MAX_INFLATED_IMPORT_BYTES} bytes unpacked, and Markdown additionally at ${MAX_MARKDOWN_CHARS} characters.`,
       tags,
       security,
       parameters: documentIdParam,

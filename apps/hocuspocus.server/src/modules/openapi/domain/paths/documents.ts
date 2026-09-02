@@ -10,7 +10,13 @@ import {
 import { MAX_DUPLICATE_MEDIA_OBJECTS } from '../../../../schemas/hypermultimedia.schema'
 import type { JsonSchema, OpenApiOperation, OpenApiPaths, SecurityRequirement } from '../../types'
 import { envelopeResponse, rateLimitedRef } from '../components'
-import { dataEnvelope, pathParam, toJsonSchema, toParameters } from '../jsonSchema'
+import {
+  dataEnvelope,
+  DOCUMENT_ID_NOTE,
+  pathParam,
+  toJsonSchema,
+  toParameters
+} from '../jsonSchema'
 
 const tags = ['Documents']
 
@@ -39,7 +45,7 @@ const ownedLifecycle = (
   description,
   tags,
   security: requireUserSecurity,
-  parameters: [pathParam('documentId', 'The 19-character document id.')],
+  parameters: [pathParam('documentId', DOCUMENT_ID_NOTE)],
   responses: {
     '200': okEnvelope('Applied.', { type: 'object', additionalProperties: true }),
     '401': { $ref: '#/components/responses/Unauthorized' },
@@ -199,7 +205,7 @@ export const documentsPaths: OpenApiPaths = {
         'Owner-only. Writes a `DocumentFavorite` row for the token subject. Soft-deleted documents are 404. The join row survives a later soft-delete so restore stays favorited.',
       tags,
       security: requireUserSecurity,
-      parameters: [pathParam('documentId', 'The 19-character document id.')],
+      parameters: [pathParam('documentId', DOCUMENT_ID_NOTE)],
       requestBody: jsonBody(toJsonSchema(setDocumentFavoriteSchema)),
       responses: {
         '200': okEnvelope('The new favorite state.', {
