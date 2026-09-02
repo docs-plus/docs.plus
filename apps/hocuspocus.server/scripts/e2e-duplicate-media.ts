@@ -17,10 +17,10 @@ import { migrationExtensions } from '../src/lib/migration-extensions'
 import { prisma } from '../src/lib/prisma'
 import { getServiceRoleClient } from '../src/lib/supabase'
 
-// Forced, never inherited: with a real DO_STORAGE_ENDPOINT in .env.local the
-// purge below would delete-by-prefix against the live bucket. `media.service`
-// reads it at call time, so the assignment lands before use.
-process.env.PERSIST_TO_LOCAL_STORAGE = 'true'
+// `PERSIST_TO_LOCAL_STORAGE=true` is forced by the package script, not here: the
+// storage pick is read from validated config, which is frozen at import, so an
+// assignment in this file would land too late. Without it the purge below would
+// delete-by-prefix against the live bucket named by `DO_STORAGE_ENDPOINT`.
 
 const OWNER = 'e2e-dup-media-owner'
 const MEDIA_ROOT = './temp/hypermultimedia'

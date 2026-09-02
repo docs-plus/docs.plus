@@ -2,8 +2,10 @@ import { S3Client } from 'bun'
 import type { Context } from 'hono'
 import mime from 'mime'
 
+import type { StorageUploadResponse } from '../../types/storage.types'
 import { captureUnknown } from '../instrument'
 import { storageS3Logger } from '../logger'
+import { extractFileType } from './fileType'
 
 const s3Client = new S3Client({
   accessKeyId: process.env.DO_STORAGE_ACCESS_KEY_ID || '',
@@ -134,5 +136,30 @@ export const deleteByPrefix = async (documentId: string): Promise<void> => {
 
   if (deleted > 0) {
     storageS3Logger.info({ documentId, deleted }, 'Purged document editor media from S3')
+  }
+}
+
+/**
+ * The `MediaStore` shape: same arguments as the local adapter, so a caller never
+ * has to know which backend it holds. Naming and type extraction live here
+ * rather than in the caller, matching `storage.local.upload`.
+ */
+export const uploadFile = async (
+  documentId: string,
+  file: File
+): Promise<StorageUploadResponse> => {
+  const format = mime.getExtension(file.type) || 'bin'
+  const fileName = `${crypto.randomUUID()}.${format}`
+
+  storageS3Logger.debug({ documentId, fileName, fileSize: file.size }, 'Uploading to S3 storage')
+  await upload(documentId, fileName, new Uint8Array(await file.arrayBuffer()))
+  storageS3Logger.info({ documentId, fileName, fileSize: file.size }, 'File uploaded to S3 storage')
+
+  return {
+    type: 's3',
+    error: false,
+    fileType: extractFileType(file.type),
+    fileName,
+    fileAddress: `${documentId}/${fileName}`
   }
 }

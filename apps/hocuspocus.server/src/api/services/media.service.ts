@@ -1,5 +1,4 @@
 import type { Context } from 'hono'
-import mime from 'mime'
 
 import { config } from '../../config/env'
 import {
@@ -9,19 +8,11 @@ import {
 } from '../../lib/errors'
 import { mediaServiceLogger } from '../../lib/logger'
 import type { MediaReference } from '../../lib/rehostMediaUrls'
-import { extractFileType } from '../../lib/storage/fileType'
-import * as localStorage from '../../lib/storage/storage.local'
-import * as S3Storage from '../../lib/storage/storage.s3'
+import { getMediaStore } from '../../lib/storage/mediaStore'
 import { ALLOWED_MIME_TYPES } from '../../schemas/hypermultimedia.schema'
-import { checkEnvBoolean } from '../../utils'
 
-export const getMedia = async (documentId: string, mediaId: string, c: Context) => {
-  if (checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
-    return localStorage.get(documentId, mediaId, c)
-  }
-
-  return S3Storage.get(documentId, mediaId, c)
-}
+export const getMedia = async (documentId: string, mediaId: string, c: Context) =>
+  getMediaStore().get(documentId, mediaId, c)
 
 // Reaper hook: purges a document's editor (hypermultimedia) media, which the
 // Supabase footprint RPC never touches. No-op when storage is unconfigured;
@@ -29,12 +20,8 @@ export const getMedia = async (documentId: string, mediaId: string, c: Context) 
 export const deleteDocumentMedia = async (documentId: string): Promise<void> => {
   if (!documentId) return
 
-  if (checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
-    await localStorage.deleteByPrefix(documentId)
-    return
-  }
-
-  if (!process.env.DO_STORAGE_ENDPOINT) {
+  const store = getMediaStore()
+  if (!store.configured) {
     mediaServiceLogger.warn(
       { documentId },
       'Skipping editor-media purge — S3 storage not configured'
@@ -42,7 +29,7 @@ export const deleteDocumentMedia = async (documentId: string): Promise<void> => 
     return
   }
 
-  await S3Storage.deleteByPrefix(documentId)
+  await store.deleteByPrefix(documentId)
 }
 
 // Duplicate hook: re-hosts exactly the objects the copy's snapshot names, under the
@@ -55,15 +42,13 @@ export const copyDocumentMedia = async (
 ): Promise<number> => {
   if (references.length === 0 || !targetDocumentId) return 0
 
-  const toLocal = checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)
+  const store = getMediaStore()
   // Refuse rather than warn: with no storage the copy would keep its source's
   // URLs, which is the exact sharing this hook exists to prevent. Unreachable
   // when the snapshot names nothing — the caller skips the call entirely.
-  if (!toLocal && !process.env.DO_STORAGE_ENDPOINT) {
-    throw new InternalServerError('Storage service not configured')
-  }
+  if (!store.configured) throw new InternalServerError('Storage service not configured')
 
-  const copyObject = toLocal ? localStorage.copyObject : S3Storage.copyObject
+  const copyObject = store.copyObject
   let copied = 0
 
   // `false` is the source object being genuinely absent. The absence is tolerated,
@@ -127,50 +112,13 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
       )
     }
 
-    const canPersist2Local = checkEnvBoolean(process.env.PERSIST_TO_LOCAL_STORAGE)
-
-    if (canPersist2Local) {
-      mediaServiceLogger.debug(
-        { documentId, fileName: mediaFile.name },
-        'Uploading to local storage'
-      )
-      const result = await localStorage.upload(documentId, mediaFile)
-      mediaServiceLogger.info(
-        { documentId, fileAddress: result.fileAddress },
-        'File uploaded to local storage'
-      )
-      return result
-    }
-
-    if (!process.env.DO_STORAGE_ENDPOINT) {
+    const store = getMediaStore()
+    if (!store.configured) {
       mediaServiceLogger.error('No storage configured')
       throw new InternalServerError('Storage service not configured')
     }
 
-    const format = mime.getExtension(mediaFile.type) || 'bin'
-    const fileName = `${crypto.randomUUID()}.${format}`
-    const fileType = extractFileType(mediaFile.type)
-    const Key = `${documentId}/${fileName}`
-
-    mediaServiceLogger.debug(
-      { documentId, fileName, fileSize: mediaFile.size },
-      'Uploading to S3 storage'
-    )
-    const buffer = await mediaFile.arrayBuffer()
-    await S3Storage.upload(documentId, fileName, new Uint8Array(buffer))
-
-    mediaServiceLogger.info(
-      { documentId, fileName, fileSize: mediaFile.size },
-      'File uploaded to S3 storage'
-    )
-
-    return {
-      type: 's3',
-      error: false,
-      fileType,
-      fileName,
-      fileAddress: Key
-    }
+    return store.upload(documentId, mediaFile)
   } catch (error) {
     if (error instanceof PayloadTooLargeError || error instanceof UnsupportedMediaTypeError) {
       throw error
