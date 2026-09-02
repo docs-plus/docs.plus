@@ -1,8 +1,10 @@
+import { fail, ok } from '../../http/envelope'
 import { sendNewDocumentNotification } from '../../lib/email/document-notification'
 import { AppError, getErrorResponse } from '../../lib/errors'
 import { captureHttpError } from '../../lib/instrument'
 import { documentsControllerLogger } from '../../lib/logger'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
+import { getOwnerProfile } from '../../lib/profiles'
 import { createDocumentWithContent } from '../../modules/document-content'
 import type {
   CreateDocumentInput,
@@ -30,7 +32,8 @@ const handleError = (c: AppContext, error: unknown, context: Record<string, unkn
   )
 }
 
-// Private slug 403 with a top-level `access` hint the webapp gate reads to pick its CTA.
+// The one response the house envelope cannot build: a top-level `access` hint the
+// webapp gate reads to pick its CTA. Widening `fail` for one caller is the wrong trade.
 const privateGateResponse = (c: AppContext, access: 'sign-in-required' | 'denied') =>
   c.json(
     { success: false, error: { code: 'FORBIDDEN', message: 'This document is private' }, access },
@@ -40,13 +43,7 @@ const privateGateResponse = (c: AppContext, access: 'sign-in-required' | 'denied
 // Strict-owner 403 for lifecycle actions; returned directly (not thrown) so it
 // stays out of the 5xx Sentry path, mirroring the private-gate/list-owner checks.
 const forbiddenResponse = (c: AppContext) =>
-  c.json(
-    {
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'Only the owner can modify this document' }
-    },
-    403
-  )
+  fail(c, 403, 'FORBIDDEN', 'Only the owner can modify this document')
 
 export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
@@ -60,19 +57,13 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
     const doc = await documentsService.getDocumentBySlug(prisma, docName)
 
     if (!doc) {
-      return c.json({
-        success: true,
-        data: await documentsService.createDraftDocument(prisma, docName)
-      })
+      return ok(c, await documentsService.createDraftDocument(prisma, docName))
     }
 
     // Soft-deleted → hard 404 (never the draft path): drafting mints a NEW documentId under
     // this still-@unique slug, escaping every doc-scoped seal and colliding on persist.
     if (doc.deletedAt) {
-      return c.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
-        404
-      )
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
 
     if (doc.isPrivate) {
@@ -86,7 +77,7 @@ export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
       if (access !== 'allow') return privateGateResponse(c, access)
     }
 
-    return c.json({ success: true, data: doc })
+    return ok(c, doc)
   } catch (error) {
     return handleError(c, error, { docName })
   }
@@ -99,13 +90,10 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
 
   if (query.ownerId) {
     if (!requesterId) {
-      return c.json(
-        { success: false, error: { message: 'Authentication required', code: 'UNAUTHORIZED' } },
-        401
-      )
+      return fail(c, 401, 'UNAUTHORIZED', 'Authentication required')
     }
     if (query.ownerId !== requesterId) {
-      return c.json({ success: false, error: { message: 'Forbidden', code: 'FORBIDDEN' } }, 403)
+      return fail(c, 403, 'FORBIDDEN', 'Forbidden')
     }
   }
 
@@ -113,10 +101,7 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
   // owner-scope to the token subject (never a client-supplied ownerId).
   const wantsTrash = query.deleted === 'true'
   if (wantsTrash && !requesterId) {
-    return c.json(
-      { success: false, error: { message: 'Authentication required', code: 'UNAUTHORIZED' } },
-      401
-    )
+    return fail(c, 401, 'UNAUTHORIZED', 'Authentication required')
   }
 
   const limit = parseInt(query.limit || '10', 10)
@@ -135,7 +120,7 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
       offset
     })
 
-    return c.json({ success: true, data: result })
+    return ok(c, result)
   } catch (error) {
     return handleError(c, error)
   }
@@ -148,16 +133,7 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
   const serviceRole = c.get('serviceRole') === true
 
   if ((body.content || body.ownerId) && !serviceRole) {
-    return c.json(
-      {
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'content and ownerId require service-role authorization'
-        }
-      },
-      403
-    )
+    return fail(c, 403, 'FORBIDDEN', 'content and ownerId require service-role authorization')
   }
 
   try {
@@ -172,10 +148,7 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
       })
 
       if (outcome.status === 'invalid-content') {
-        return c.json(
-          { success: false, error: { code: 'UNPROCESSABLE_ENTITY', message: outcome.detail } },
-          422
-        )
+        return fail(c, 422, 'UNPROCESSABLE_ENTITY', outcome.detail)
       }
 
       const created = outcome.document
@@ -197,7 +170,7 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
       })
 
       const ownerProfile = body.ownerId ? await getOwnerProfile(body.ownerId) : null
-      return c.json({ success: true, data: { ...created, ownerProfile } })
+      return ok(c, { ...created, ownerProfile })
     }
 
     const doc = await documentsService.createDocument(prisma, {
@@ -209,7 +182,7 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
       email: user?.email
     })
 
-    return c.json({ success: true, data: doc })
+    return ok(c, doc)
   } catch (error) {
     return handleError(c, error, { slug: body.slug })
   }
@@ -224,7 +197,7 @@ export const updateDocument = async (c: AppContext): Promise<Response> => {
 
   try {
     const doc = await documentsService.updateDocument(prisma, docId, body, requesterId)
-    return c.json({ success: true, data: doc })
+    return ok(c, doc)
   } catch (error) {
     return handleError(c, error, { docId })
   }
@@ -239,7 +212,7 @@ export const deleteDocument = async (c: AppContext): Promise<Response> => {
   try {
     const result = await documentsService.softDeleteDocument(prisma, documentId, requesterId)
     if (!result.authorized) return forbiddenResponse(c)
-    return c.json({ success: true })
+    return ok(c, undefined)
   } catch (error) {
     return handleError(c, error, { documentId })
   }
@@ -254,7 +227,7 @@ export const restoreDocument = async (c: AppContext): Promise<Response> => {
   try {
     const result = await documentsService.restoreDocument(prisma, documentId, requesterId)
     if (!result.authorized) return forbiddenResponse(c)
-    return c.json({ success: true })
+    return ok(c, undefined)
   } catch (error) {
     return handleError(c, error, { documentId })
   }
@@ -270,18 +243,14 @@ export const permanentDeleteDocument = async (c: AppContext): Promise<Response> 
     const result = await documentsService.permanentlyDeleteDocument(prisma, documentId, requesterId)
     if (result.status === 'forbidden') return forbiddenResponse(c)
     if (result.status === 'not-deleted') {
-      return c.json(
-        {
-          success: false,
-          error: {
-            code: 'BAD_REQUEST',
-            message: 'Document must be deleted before it can be permanently removed'
-          }
-        },
-        400
+      return fail(
+        c,
+        400,
+        'BAD_REQUEST',
+        'Document must be deleted before it can be permanently removed'
       )
     }
-    return c.json({ success: true })
+    return ok(c, undefined)
   } catch (error) {
     return handleError(c, error, { documentId })
   }
@@ -297,7 +266,7 @@ export const purgeTrash = async (c: AppContext): Promise<Response> => {
 
   try {
     const result = await documentsService.purgeTrash(prisma, requesterId, ids)
-    return c.json({ success: true, data: result })
+    return ok(c, result)
   } catch (error) {
     return handleError(c, error, { requesterId })
   }
@@ -311,7 +280,7 @@ export const restoreTrash = async (c: AppContext): Promise<Response> => {
 
   try {
     const result = await documentsService.restoreTrash(prisma, requesterId, ids)
-    return c.json({ success: true, data: result })
+    return ok(c, result)
   } catch (error) {
     return handleError(c, error, { requesterId })
   }
@@ -333,15 +302,9 @@ export const setDocumentFavorite = async (c: AppContext): Promise<Response> => {
     )
     if (result.status === 'forbidden') return forbiddenResponse(c)
     if (result.status === 'not-found') {
-      return c.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
-        404
-      )
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
-    return c.json({
-      success: true,
-      data: { documentId: result.documentId, isFavorite: result.isFavorite }
-    })
+    return ok(c, { documentId: result.documentId, isFavorite: result.isFavorite })
   } catch (error) {
     return handleError(c, error, { documentId })
   }
@@ -363,12 +326,9 @@ export const duplicateDocument = async (c: AppContext): Promise<Response> => {
     )
     if (result.status === 'forbidden') return forbiddenResponse(c)
     if (result.status === 'not-found') {
-      return c.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
-        404
-      )
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
-    return c.json({ success: true, data: result.document })
+    return ok(c, result.document)
   } catch (error) {
     return handleError(c, error, { documentId })
   }
@@ -404,10 +364,7 @@ export const uploadMedia = async (c: AppContext): Promise<Response> => {
       select: { ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }
     })
     if (!meta || meta.deletedAt) {
-      return c.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
-        404
-      )
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
     }
     const access = resolvePrivateAccess({
       isPrivate: meta.isPrivate,
@@ -417,10 +374,7 @@ export const uploadMedia = async (c: AppContext): Promise<Response> => {
     })
     if (access !== 'allow') return privateGateResponse(c, access)
     if (meta.readOnly && userId !== meta.ownerId) {
-      return c.json(
-        { success: false, error: { code: 'FORBIDDEN', message: 'This document is read-only' } },
-        403
-      )
+      return fail(c, 403, 'FORBIDDEN', 'This document is read-only')
     }
 
     const formData = await c.req.formData()
