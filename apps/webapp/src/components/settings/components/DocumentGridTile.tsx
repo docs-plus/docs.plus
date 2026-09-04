@@ -75,7 +75,7 @@ function DocumentGridTile({
         }}
         className="flex flex-col text-left focus-visible:outline-none">
         <span className="rounded-t-box relative flex aspect-[4/3] items-end justify-center bg-[var(--pad-well)] px-3.5 pt-2.5">
-          <DocumentPreviewPaper preview={doc.preview} title={doc.title} variant="tile" />
+          <DocumentPreviewPaper preview={doc.preview} title={doc.title} />
           {doc.isFavorite && (
             <span className="absolute top-2 left-2 z-10">
               <LuStar size={14} className="text-accent fill-accent" aria-label="Favorite" />

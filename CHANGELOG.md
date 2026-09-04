@@ -22,9 +22,9 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
   export turns a lone video, audio, or embed URL into a player, and writes each
   picture's natural width and height. A labeled link and a filter link stay links.
   Paste of a bare file address is unchanged.
-- Paint a first-page paper on Settings → Documents grid, list, and Trash. The
-  paper paints stored DocumentGridPreview JSON in React. It is not a screenshot.
-  Empty paper shows “Empty document”.
+- Paint a first-page paper on Settings → Documents grid tiles. The paper paints
+  stored DocumentGridPreview JSON in React. It is not a screenshot. Empty paper
+  shows “Empty document”. List and Trash rows keep the document icon.
 - Sort Settings → Documents by Last opened. Opening an owned pad stamps Last
   opened. Last modified does not move. A document never opened shows
   “Never opened”.

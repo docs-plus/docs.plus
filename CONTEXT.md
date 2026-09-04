@@ -19,7 +19,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
   _Avoid_: public fleet (omits Favorite, DocumentGridPreview, and Last opened)
 - **Owner Trash list** — the owner's soft-deleted Documents. Includes DocumentGridPreview and Last opened. Omits Favorite. Same NULL fill as the Owner live list.
   _Avoid_: Owner live list
-- **DocumentGridPreview** — the first-page extract painted on Documents paper (grid, list thumb, Trash thumb). SQL NULL means never extracted. `{ heading: null, lines: [] }` means empty or a failed extract. The paper omits heading at paint when it equals Title.
+- **DocumentGridPreview** — the first-page extract painted on Documents grid paper. SQL NULL means never extracted. `{ heading: null, lines: [] }` means empty or a failed extract. The paper omits heading at paint when it equals Title. List and Trash rows paint `LuFileText`.
   _Avoid_: DocumentPreview (admin stale-doc shape), screenshot, thumbnail
 - **Last opened** — `DocumentMetadata.lastOpenedAt`, stamped when the owner opens the pad. Sort key `lastOpenedAt_desc`. Does not move Last modified. Owner lists only.
 - **Date buckets** — Today / Yesterday / Previous 7 days / Previous 30 days / Earlier / Never opened. Used on date sorts in Settings → Documents. Favorites stay unbucketed. Never opened is for a null sort timestamp (Last opened with no stamp).
