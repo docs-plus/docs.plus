@@ -1872,11 +1872,16 @@ stable
 security definer
 set search_path = public
 as $$
+    -- Counts immediate rows only. One digest marks one row per notification
+    -- 'sent', so counting every row made a 60-notification digest read as 60
+    -- emails. Since content_change is pinned to the digest branch, that would
+    -- burn an immediate-frequency user's allowance and drop their mentions.
     select coalesce(
         (select count(*) < p_max_per_day
          from public.email_queue
          where user_id = p_user_id
            and status = 'sent'
+           and email_type = 'immediate'
            and sent_at > now() - interval '24 hours'),
         true
     );
@@ -2079,6 +2084,14 @@ begin
         else
             return new;
     end case;
+
+    -- A privacy pin, not a rendering choice. The immediate consumer path has no
+    -- send-time privacy re-check. Quiet hours also returns without inserting a
+    -- row, and the 24-hour dedupe would then silence a whole day. Pinned between
+    -- the two on purpose: the case above returns for email_frequency = 'never'.
+    if new.type::text = 'content_change' then
+        queue_type := 'digest';
+    end if;
 
     -- Check quiet hours for immediate emails
     if queue_type = 'immediate' and coalesce((prefs->>'quiet_hours_enabled')::boolean, false) then
