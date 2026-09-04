@@ -253,3 +253,71 @@ comment on function public.get_document_members(text) is
 
 revoke execute on function public.get_document_members(text) from anon;
 grant execute on function public.get_document_members(text) to authenticated;
+
+-- The content-change subscription is workspace membership itself. There is no
+-- new table: content_email_muted_at holds the whole state, null means following.
+
+-- Mutes or unmutes content-change mail for the caller on one document.
+-- UPDATE-only: an upsert fires notify_on_workspace_join, which posts a
+-- "joined" chat message. updated_at is join_workspace's last-visit stamp and
+-- the roster renders it, so this never names that column.
+create or replace function public.set_document_follow(
+    p_document_id varchar(36),
+    p_follow boolean
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_user_id uuid := auth.uid();
+begin
+    if v_user_id is null then
+        raise exception 'unauthenticated' using errcode = '42501';
+    end if;
+    -- An explicit null would fall to the else arm and mute. Fail loudly
+    -- instead of stopping someone's mail without them asking.
+    if p_follow is null then
+        raise exception 'follow_must_be_boolean' using errcode = '22004';
+    end if;
+
+    update public.workspace_members
+       set content_email_muted_at = case when p_follow then null else timezone('utc', now()) end
+     where workspace_id = p_document_id
+       and member_id = v_user_id
+       and left_at is null;
+
+    return found;
+end;
+$$;
+
+comment on function public.set_document_follow(varchar, boolean) is
+'Sets the caller''s content-change follow state for one document. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id and workspaces.id, never the lowercased workspaces.slug. UPDATE-only, and never writes updated_at. Returns true when a membership row matched, false when the caller has no active membership.';
+
+-- Reads the same state back. Null means the caller has no active membership
+-- row, which is a different answer from "muted".
+create or replace function public.get_document_follow_state(p_document_id varchar(36))
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select wm.content_email_muted_at is null
+    from public.workspace_members wm
+    where wm.workspace_id = p_document_id
+      and wm.member_id = auth.uid()
+      and wm.left_at is null;
+$$;
+
+comment on function public.get_document_follow_state(varchar) is
+'Returns the caller''s content-change follow state for one document: true when following, false when muted, null when the caller has no active membership. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id, never the lowercased workspaces.slug that get_document_members takes.';
+
+-- Stated here like every other browser-facing function in this file. §5 of
+-- 29-lint-hardening sweeps it away on a local seed and §6 restores it, but the
+-- migration path never runs that sweep, so remote needs the grant written down.
+revoke execute on function public.set_document_follow(varchar, boolean) from anon;
+grant execute on function public.set_document_follow(varchar, boolean) to authenticated;
+revoke execute on function public.get_document_follow_state(varchar) from anon;
+grant execute on function public.get_document_follow_state(varchar) to authenticated;

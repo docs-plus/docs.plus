@@ -380,90 +380,6 @@ export type Database = {
         }
         Relationships: []
       }
-      document_views_2026_07: {
-        Row: {
-          device_type: string | null
-          document_slug: string
-          duration_ms: number | null
-          id: string
-          is_anonymous: boolean
-          is_authenticated: boolean
-          is_bounce: boolean | null
-          session_id: string
-          user_id: string | null
-          view_date: string
-          viewed_at: string
-        }
-        Insert: {
-          device_type?: string | null
-          document_slug: string
-          duration_ms?: number | null
-          id: string
-          is_anonymous?: boolean
-          is_authenticated?: boolean
-          is_bounce?: boolean | null
-          session_id: string
-          user_id?: string | null
-          view_date?: string
-          viewed_at?: string
-        }
-        Update: {
-          device_type?: string | null
-          document_slug?: string
-          duration_ms?: number | null
-          id?: string
-          is_anonymous?: boolean
-          is_authenticated?: boolean
-          is_bounce?: boolean | null
-          session_id?: string
-          user_id?: string | null
-          view_date?: string
-          viewed_at?: string
-        }
-        Relationships: []
-      }
-      document_views_2026_08: {
-        Row: {
-          device_type: string | null
-          document_slug: string
-          duration_ms: number | null
-          id: string
-          is_anonymous: boolean
-          is_authenticated: boolean
-          is_bounce: boolean | null
-          session_id: string
-          user_id: string | null
-          view_date: string
-          viewed_at: string
-        }
-        Insert: {
-          device_type?: string | null
-          document_slug: string
-          duration_ms?: number | null
-          id: string
-          is_anonymous?: boolean
-          is_authenticated?: boolean
-          is_bounce?: boolean | null
-          session_id: string
-          user_id?: string | null
-          view_date?: string
-          viewed_at?: string
-        }
-        Update: {
-          device_type?: string | null
-          document_slug?: string
-          duration_ms?: number | null
-          id?: string
-          is_anonymous?: boolean
-          is_authenticated?: boolean
-          is_bounce?: boolean | null
-          session_id?: string
-          user_id?: string | null
-          view_date?: string
-          viewed_at?: string
-        }
-        Relationships: []
-      }
       document_views_2026_09: {
         Row: {
           device_type: string | null
@@ -507,6 +423,90 @@ export type Database = {
         Relationships: []
       }
       document_views_2026_10: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_2026_11: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_2026_12: {
         Row: {
           device_type: string | null
           document_slug: string
@@ -1012,6 +1012,7 @@ export type Database = {
       }
       workspace_members: {
         Row: {
+          content_email_muted_at: string | null
           created_at: string
           id: string
           left_at: string | null
@@ -1020,6 +1021,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          content_email_muted_at?: string | null
           created_at?: string
           id?: string
           left_at?: string | null
@@ -1028,6 +1030,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          content_email_muted_at?: string | null
           created_at?: string
           id?: string
           left_at?: string | null
@@ -1325,6 +1328,10 @@ export type Database = {
           activity_date: string
         }[]
       }
+      get_document_follow_state: {
+        Args: { p_document_id: string }
+        Returns: boolean
+      }
       get_document_member_previews: {
         Args: { p_slugs: string[] }
         Returns: {
@@ -1574,6 +1581,16 @@ export type Database = {
       }
       message_counter_batch_worker: { Args: never; Returns: undefined }
       notifications_summary: { Args: { _workspace_id?: string }; Returns: Json }
+      notify_document_content_change: {
+        Args: {
+          p_action_url?: string
+          p_actor_id?: string
+          p_document_id: string
+          p_editor_ids?: string[]
+          p_only_user?: string
+        }
+        Returns: number
+      }
       process_document_views_queue: { Args: never; Returns: Json }
       process_email_queue: { Args: never; Returns: Json }
       process_unsubscribe: { Args: { p_token: string }; Returns: Json }
@@ -1602,6 +1619,10 @@ export type Database = {
       remove_reaction: {
         Args: { p_emoji: string; p_message_id: string }
         Returns: Json
+      }
+      set_document_follow: {
+        Args: { p_document_id: string; p_follow: boolean }
+        Returns: boolean
       }
       toggle_message_bookmark: { Args: { p_message_id: string }; Returns: Json }
       truncate_content: {
@@ -1666,6 +1687,7 @@ export type Database = {
         | "direct_message"
         | "invitation"
         | "system_alert"
+        | "content_change"
       notification_type:
         | "message"
         | "channel_invite"
@@ -1857,6 +1879,7 @@ export const Constants = {
         "direct_message",
         "invitation",
         "system_alert",
+        "content_change",
       ],
       notification_type: [
         "message",

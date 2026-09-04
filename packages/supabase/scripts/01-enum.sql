@@ -76,7 +76,8 @@ create type notification_category as enum (
     'channel_event',
     'direct_message',
     'invitation',
-    'system_alert'
+    'system_alert',
+    'content_change'
 );
 
 -- COMMENT ON TYPE notification_category IS 'Enumeration of different types of notifications in the application, categorizing the context and purpose of each notification.';
@@ -88,6 +89,7 @@ create type notification_category as enum (
 -- COMMENT ON ENUM LABEL notification_category.'direct_message' IS 'For new direct messages received from other users, distinguishing these from general channel communications.';
 -- COMMENT ON ENUM LABEL notification_category.'invitation' IS 'Sent when a user receives an invitation to join a channel, group, or event.';
 -- COMMENT ON ENUM LABEL notification_category.'system_alert' IS 'Related to system-wide updates or changes, such as maintenance notices, security alerts, or policy updates.';
+-- COMMENT ON ENUM LABEL notification_category.'content_change' IS 'Tells a document follower that the document content changed. It carries no message row, and no sender when the actor has no public.users row.';
 
 -- Define the notification preferences for channels
 create type public.channel_notification_state as enum (

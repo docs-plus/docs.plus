@@ -235,6 +235,13 @@ begin
     if v_notify_type = 'reaction' and not coalesce((v_prefs->>'push_reactions')::boolean, true) then
         return new;
     end if;
+    -- content_change is the only type here that defaults off. There is no
+    -- push UI toggle for it, so it must be opt-in. The three gates above
+    -- have no else, so without this gate it reaches the queue with no
+    -- per-type preference check.
+    if v_notify_type = 'content_change' and not coalesce((v_prefs->>'push_content_changes')::boolean, false) then
+        return new;
+    end if;
 
     -- Check if user has any active push subscriptions
     select exists(

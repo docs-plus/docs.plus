@@ -577,3 +577,123 @@ ALTER FUNCTION public.create_everyone_notifications() SECURITY DEFINER;
 ALTER FUNCTION public.create_regular_message_notifications() SECURITY DEFINER;
 ALTER FUNCTION public.create_reaction_notifications() SECURITY DEFINER;
 ALTER FUNCTION public.increment_unread_count_on_new_message() SECURITY DEFINER;
+
+
+-- Service-role fan-out for document content changes. It writes one
+-- content_change carrier per follower into public.notifications. The digest
+-- computes the real diff at send time, so extra carriers add no information.
+create or replace function public.notify_document_content_change(
+    p_document_id varchar(36),
+    p_editor_ids uuid[] default '{}',
+    p_only_user uuid default null,
+    p_actor_id uuid default null,
+    p_action_url text default null
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    -- A null inside the array makes `= any(...)` yield null, which rejects every
+    -- candidate and fans out to nobody. Every REST write path sends [null].
+    v_editor_ids uuid[] := array_remove(coalesce(p_editor_ids, '{}'::uuid[]), null::uuid);
+    v_sender_user_id uuid;
+    v_count integer := 0;
+begin
+    -- Ruled: a document no signed-in person has ever opened has no workspaces
+    -- row, notifies nobody, and this read path must not create that row.
+    if not exists (
+        select 1
+          from public.workspaces
+         where id = p_document_id
+           and deleted_at is null
+    ) then
+        return 0;
+    end if;
+
+    -- Same rule as the workspace guard above: this read path creates nothing.
+    -- A workspaces row implies a channels row, because join_workspace is the
+    -- only writer of workspaces and always follows it with a member insert,
+    -- whose trigger mints the channel. A null here means a broken document.
+    if not exists (select 1 from public.channels where id = p_document_id) then
+        return 0;
+    end if;
+
+    -- Insert a null sender, do not skip the row and do not abort the call.
+    -- A REST write has no acting person, and the FK would fail the insert.
+    v_sender_user_id := (select u.id from public.users u where u.id = p_actor_id);
+
+    with recipients as (
+        select wm.member_id as receiver_user_id
+          from public.workspace_members wm
+         where p_only_user is null
+           and wm.workspace_id = p_document_id
+           and wm.left_at is null
+           and wm.content_email_muted_at is null
+        union all
+        -- Membership is not required on this branch. An owner who opened the
+        -- document but never joined the workspace must still be reached. A
+        -- member who muted it, or who left it, is not: both arms read the mute
+        -- column the same way, and it only means anything while left_at is null.
+        select p_only_user
+         where p_only_user is not null
+           and exists (select 1 from public.users where id = p_only_user)
+           and not exists (
+               select 1
+                 from public.workspace_members wm
+                where wm.workspace_id = p_document_id
+                  and wm.member_id = p_only_user
+                  and (wm.content_email_muted_at is not null or wm.left_at is not null)
+           )
+    )
+    insert into public.notifications (
+        receiver_user_id,
+        sender_user_id,
+        type,
+        message_id,
+        channel_id,
+        message_preview,
+        action_url,
+        created_at
+    )
+    -- The window keys on an unread carrier, so reading one re-arms it and the
+    -- same person can be told again inside the same day.
+    select
+        r.receiver_user_id,
+        v_sender_user_id,
+        'content_change'::notification_category,
+        null::uuid,
+        p_document_id,
+        'Document content updated',
+        p_action_url,
+        timezone('utc', now())
+      from recipients r
+     -- One home for the self-suppression rule, rather than one copy per arm.
+     where not (r.receiver_user_id = any (v_editor_ids))
+       and not exists (
+         select 1
+           from public.notifications n
+          where n.receiver_user_id = r.receiver_user_id
+            and n.type = 'content_change'
+            and n.channel_id = p_document_id
+            and n.readed_at is null
+            and n.created_at > now() - interval '24 hours'
+     );
+
+    get diagnostics v_count = row_count;
+    return v_count;
+end;
+$$;
+
+comment on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text) is
+'Service-role only fan-out of document content changes. Inserts one content_change notification per eligible follower and returns the row count. Editors, members who muted the document, and anyone already holding an unread carrier from the last 24 hours are skipped. Writes nothing but notifications: it returns 0 when the document has no workspaces row or no channels row.';
+
+-- Server-side only: the hocuspocus worker fans out with the service_role key.
+-- The webapp must never call it, so the browser roles stay revoked here too.
+-- §5 of 29-lint-hardening revokes from public, anon and authenticated only,
+-- so the service_role grant below survives that sweep.
+revoke execute on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text)
+    from public, anon, authenticated;
+grant execute on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text)
+    to service_role;

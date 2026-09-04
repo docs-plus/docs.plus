@@ -220,6 +220,11 @@ DECLARE
         -- SECURITY DEFINER and member-gate internally, so §5 above sweeps
         -- away the grant their own script makes and only this list restores it.
         'get_document_member_previews', 'get_document_members',
+        -- Document content-change follow (issue #203). Both are SECURITY
+        -- DEFINER and gate on auth.uid() inside, so §5 above sweeps the grant
+        -- their own script makes and only this list restores it. The fan-out
+        -- RPC stays out: it is service_role-only.
+        'set_document_follow', 'get_document_follow_state',
         -- Push subscriptions (per-user)
         'register_push_subscription', 'unregister_push_subscription',
         -- Admin-dashboard browser RPCs — bodies self-gate on is_admin;

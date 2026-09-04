@@ -313,6 +313,11 @@ begin
             should_queue := coalesce((prefs->>'email_replies')::boolean, true);
         when 'reaction' then
             should_queue := coalesce((prefs->>'email_reactions')::boolean, false);
+        -- Named on purpose. Its push twin defaults off, so leaving this type on
+        -- the unnamed `else` would give one new value two accidental defaults.
+        -- Email is the channel this feature exists for, so it defaults on.
+        when 'content_change' then
+            should_queue := coalesce((prefs->>'email_content_changes')::boolean, true);
         else
             should_queue := true;
     end case;

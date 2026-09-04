@@ -6,6 +6,7 @@ create table public.workspace_members (
     workspace_id      varchar(36) not null references public.workspaces(id) on delete cascade, -- The ID of the workspace. If the workspace is deleted, associated member records are also deleted.
     member_id         uuid not null references public.users(id) on delete cascade, -- The ID of the workspace member (user). If the user is deleted, their membership records are also deleted.
     left_at           timestamp with time zone, -- Timestamp when the user left the workspace.
+    content_email_muted_at timestamp with time zone, -- Timestamp when the member muted content-change notifications for this document. Null means following, but only while left_at is also null.
     created_at        timestamp with time zone default timezone('utc', now()) not null, -- Timestamp when the membership record was created.
     updated_at        timestamp with time zone default timezone('utc', now()) -- Timestamp when the membership record was last updated.
 );
@@ -17,6 +18,7 @@ comment on column public.workspace_members.id is 'Unique identifier for this wor
 comment on column public.workspace_members.workspace_id is 'Reference to the workspace this membership belongs to';
 comment on column public.workspace_members.member_id is 'Reference to the user who is a member of the workspace';
 comment on column public.workspace_members.left_at is 'Timestamp when the user left this workspace, null if still active';
+comment on column public.workspace_members.content_email_muted_at is 'Timestamp when this member muted content-change notifications for this document. Null means this member follows the document, but only while left_at is also null. Never trust this column for privacy: it is a delivery preference, not an access control, and it grants and removes no read rights.';
 comment on column public.workspace_members.created_at is 'Timestamp when this membership record was created';
 comment on column public.workspace_members.updated_at is 'Timestamp when this membership record was last updated';
 
