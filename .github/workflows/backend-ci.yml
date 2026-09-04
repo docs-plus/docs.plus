@@ -113,3 +113,10 @@ jobs:
       - name: 🧪 Run real-infra E2E (change attribution)
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e:change-attribution
+
+      # Contributor names need a live Supabase client, and SUPABASE_URL is a
+      # closed port here, so those checks skip. Trigger counts read Postgres
+      # and still assert. A local run supplies the identity evidence.
+      - name: 🧪 Run real-infra E2E (document changes)
+        working-directory: apps/hocuspocus.server
+        run: bun run test:e2e:document-changes

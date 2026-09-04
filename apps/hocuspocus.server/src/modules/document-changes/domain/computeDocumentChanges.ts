@@ -54,9 +54,9 @@ const rollUp = (sections: SectionChange[], window: ChangeSummary): ChangeSummary
 }
 
 /**
- * Read-only compute over two stored snapshots. The digest worker is a separate
- * process, so it imports this factory by deep path rather than calling the route.
- * That deep import is why the deps here are a subset, with no auth middleware.
+ * Read-only compute over two stored snapshots. The deps are a subset with no auth
+ * middleware, so a separate process can import this factory by deep path instead
+ * of calling the route. Nothing does today; the digest worker is issue #201.
  */
 export const createComputeDocumentChanges = (deps: ComputeDeps): ComputeDocumentChanges => {
   const store = createChangesStore(deps.prisma)

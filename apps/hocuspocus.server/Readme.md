@@ -67,7 +67,7 @@ src/
 ├── hocuspocus.server.ts    # WebSocket entry (Hocuspocus)
 ├── hocuspocus.worker.ts    # Worker entry (pgmq + BullMQ)
 ├── api/                    # REST layer: routers, controllers, services, middleware, utils
-├── modules/                # Bounded modules (link-metadata, document-content, document-versions, document-conversion, openapi)
+├── modules/                # Bounded modules (link-metadata, document-content, document-versions, document-changes, document-conversion, openapi)
 ├── config/                 # env.schema.ts, hocuspocus.config
 ├── extensions/             # Hocuspocus extensions
 ├── lib/                    # email, push, storage, prisma, redis, queue, logger, errors
@@ -102,6 +102,8 @@ See `src/modules/link-metadata/README.md` for the full boundary rules and extrac
 `src/modules/document-content` follows the same rules with one documented extension: besides `init(deps): { router }` for the REST process, it exports a second factory `initWsApply(deps): { app }`. Content injection has to run where the live Y.Doc is, so the collaboration process mounts that app on its internal listener.
 
 `src/modules/document-versions` splits the same way for the same reason. `init(deps): { router }` serves the REST routes: the list, the single-version read and the delete are plain Prisma queries. `initWsOps(deps): { app, ops }` runs in the collaboration process, where naming a version and restoring one can reach the live Y.Doc. The `ops` half is handed to the stateless history handler so the editor's own revert drives the same code the REST route reaches over the hop. Two dependencies arrive by injection rather than import: the batch profile lookup, and the snapshot metadata stripper from `lib/queue`. Importing that module into a REST-loaded file would boot a second pair of BullMQ queues and a Redis socket in the REST process.
+
+`src/modules/document-changes` compares two stored snapshots over a time window and reports the result per heading section — see [API.md](./API.md#document-changes) for the window and pairing rules. It is the plain canonical module, with no `initWs*` split. It reads Postgres only and never needs the live Y.Doc, so `index.ts` exports `init` and `InitResult` alone. It consumes the `document-versions` primitives rather than copying them, `canonicalizeBlock` for the equality key and `matchBlocks` for the pairing.
 
 `src/modules/document-conversion` converts a document to `.docx`, Markdown or ODT and reads `.docx` and Markdown back — see [API.md](./API.md#document-conversion) for the fidelity contract. Every format starts from one shared stage, `toPortableJson`. It rewrites the nodes only the editor can render (media embeds become links, upload placeholders disappear) so no writer meets them. DOCX then goes through the shared HTML rendering, while Markdown and ODT are serialized straight from that tree.
 
