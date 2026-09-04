@@ -25,3 +25,9 @@ jobs:
           bun run lint
           bun run format
           bun run lint:styles
+
+      # The only workflow that runs this package. Its digest snapshot is the one
+      # check that a template whitespace change stays byte-identical, and such a
+      # regression reached a commit while no workflow ran it.
+      - name: 🧪 Email templates unit tests
+        run: bun run --filter @docs.plus/email-templates test

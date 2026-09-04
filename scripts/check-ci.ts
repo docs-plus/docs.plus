@@ -237,6 +237,20 @@ if (distMissing.length > 0) {
 
 if (!(await runGate('typecheck', ['bun', 'run', 'typecheck']))) failed = true
 
+// The digest snapshot lives here and nothing else runs it, so a template
+// whitespace change reached a commit once.
+if (
+  !(await runGate('email templates', [
+    'bun',
+    'run',
+    '--filter',
+    '@docs.plus/email-templates',
+    'test'
+  ]))
+) {
+  failed = true
+}
+
 if (
   !(await runGate('webapp Jest', ['bun', 'run', '--filter', '@docs.plus/webapp', 'test'], {
     env: SUPABASE_STUB
