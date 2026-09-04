@@ -238,15 +238,14 @@ if (distMissing.length > 0) {
 if (!(await runGate('typecheck', ['bun', 'run', 'typecheck']))) failed = true
 
 // The digest snapshot lives here and nothing else runs it, so a template
-// whitespace change reached a commit once.
+// whitespace change reached a commit once. Footer links read APP_URL at
+// import; root .env.local is localhost and must not reach this suite.
 if (
-  !(await runGate('email templates', [
-    'bun',
-    'run',
-    '--filter',
-    '@docs.plus/email-templates',
-    'test'
-  ]))
+  !(await runGate(
+    'email templates',
+    ['bun', 'run', '--filter', '@docs.plus/email-templates', 'test'],
+    { env: { APP_URL: 'https://docs.plus', NEXT_PUBLIC_APP_URL: 'https://docs.plus' } }
+  ))
 ) {
   failed = true
 }
