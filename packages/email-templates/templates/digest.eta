@@ -30,22 +30,57 @@
       </table>
     </td>
   </tr>
-
-  <% /* The count treats one content_changes block as one item, so it must render
-        one row. Guarded, so a legacy document with no block is unchanged. */ %>
-  <% if (doc.content_changes) { %>
+<% /* Unindented, with -%> slurping the newline: autoTrim is off for this
+      template, so an indented tag would emit a blank line and a legacy payload
+      would stop matching its stored snapshot. Measured against eta 4.6. */ -%>
+<% if (doc.content_changes) { -%>
   <tr>
     <td style="padding-bottom: <%= it.h.SPACING.md %>;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="background-color: <%= it.h.COLORS.background %>; border-radius: <%= it.h.RADIUS.md %>; border: 1px solid <%= it.h.COLORS.border %>; padding: <%= it.h.SPACING.md %>;">
             <span style="color: <%= it.h.COLORS.textMuted %>; font-size: 13px;">✏️ This document changed since <%= doc.content_changes.since.slice(0, 10) %>.</span>
+<% /* A block whose enrichment failed carries no sections, so guard the list. */ -%>
+<% if (doc.content_changes.sections && doc.content_changes.sections.length) { -%>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: <%= it.h.SPACING.sm %>;">
+<% doc.content_changes.sections.forEach(function(section) { -%>
+              <tr>
+                <td style="padding: <%= it.h.SPACING.sm %> 0; border-top: 1px solid <%= it.h.COLORS.border %>;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td valign="top">
+                        <p style="margin: 0; color: <%= it.h.COLORS.text %>; font-size: 13px; font-weight: 500;">
+                          <%= section.text %>
+                        </p>
+<% if (section.breadcrumb && section.breadcrumb.length) { -%>
+                        <p style="margin: <%= it.h.SPACING.xs %> 0 0; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; line-height: 1.4;">
+                          <%= section.breadcrumb.join(' > ') %>
+                        </p>
+<% } -%>
+                      </td>
+                      <td width="50" align="right" valign="middle">
+                        <a href="<%= section.url %>" style="color: <%= it.h.COLORS.primary %>; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+<% }) -%>
+<% if (doc.content_changes.moreCount) { -%>
+              <tr>
+                <td style="padding: <%= it.h.SPACING.sm %> 0; color: <%= it.h.COLORS.textLight %>; font-size: 11px; text-align: center;">
+                  +<%= doc.content_changes.moreCount %> more
+                </td>
+              </tr>
+<% } -%>
+            </table>
+<% } -%>
           </td>
         </tr>
       </table>
     </td>
   </tr>
-  <% } %>
+<% } -%>
 
   <!-- Channels -->
   <tr>

@@ -97,7 +97,13 @@ export function renderDigestEmail(params: {
     // structural typing let the extra property reach the template at runtime
     // while vanishing from the type, so the count and the renderer drifted
     // apart with no compiler error.
-    content_changes?: { document_id: string; since: string }
+    content_changes?: {
+      document_id: string
+      since: string
+      // Absent when enrichment failed, so the block degrades to the plain line.
+      sections?: Array<{ text: string; breadcrumb: string[]; url: string }>
+      moreCount?: number
+    }
   }>
   periodStart: string
   periodEnd: string
@@ -192,6 +198,9 @@ export function getEmailSubject(type: string, senderName: string): string {
       return `${name} sent a message`
     case 'channel_event':
       return `${name} made an announcement`
+    // A content change has no single sender, so this case names no person.
+    case 'content_change':
+      return 'A document you follow changed'
     default:
       return 'New notification'
   }

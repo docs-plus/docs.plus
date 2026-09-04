@@ -41,6 +41,7 @@ export function buildDigestDocuments(
     {
       name: string
       slug: string
+      workspaceId?: string
       contentChanges?: DigestContentChanges
       channels: Map<string, { name: string; id: string; notifications: DigestNotification[] }>
     }
@@ -53,6 +54,9 @@ export function buildDigestDocuments(
       workspaceMap.set(wsKey, {
         name: n.workspace_name || wsKey,
         slug: n.workspace_slug || wsKey,
+        // Null here is the `unknown` bucket, and enrichment must skip it: a
+        // lookup on a missing id throws and costs the digest every block.
+        workspaceId: n.workspace_id || undefined,
         channels: new Map()
       })
     }
@@ -102,6 +106,7 @@ export function buildDigestDocuments(
     name: ws.name,
     slug: ws.slug,
     url: `${appUrl}/${ws.slug}`,
+    ...(ws.workspaceId ? { workspace_id: ws.workspaceId } : {}),
     channels: Array.from(ws.channels.values()).map((ch): DigestChannel => ({
       name: ch.name,
       id: ch.id,
@@ -119,7 +124,10 @@ export function normaliseDigestFrequency(raw: string | undefined): 'daily' | 'we
 
 function withoutContentChanges(doc: DigestDocument): DigestDocument {
   if (!doc.content_changes) return doc
-  return { name: doc.name, slug: doc.slug, url: doc.url, channels: doc.channels }
+  // Rest, not an allow-list: the old shape silently dropped any field added to
+  // DigestDocument later, and this path keeps a document that still has chat.
+  const { content_changes, ...rest } = doc
+  return rest
 }
 
 /**

@@ -107,10 +107,23 @@ export function buildDigestEmailText(params: {
         })
         .join('\n\n')
 
-      // Mirrors the HTML row. The count treats one block as one item, so the
-      // plaintext must show it or the number and the body disagree.
-      const changedText = doc.content_changes
-        ? `  ✏️ This document changed since ${doc.content_changes.since.slice(0, 10)}.`
+      // Mirrors the HTML block. The count treats one block as one item, so the
+      // plaintext must show it or the number and the body disagree. "+N more"
+      // is byte-identical on both surfaces.
+      const changes = doc.content_changes
+      const sectionLines = (changes?.sections ?? []).map((section) => {
+        const trail = section.breadcrumb.length ? `${section.breadcrumb.join(' > ')} > ` : ''
+        return `    - ${trail}${section.text}: ${section.url}`
+      })
+      const moreLine = changes?.moreCount ? `    +${changes.moreCount} more` : ''
+      const changedText = changes
+        ? [
+            `  ✏️ This document changed since ${changes.since.slice(0, 10)}.`,
+            ...sectionLines,
+            moreLine
+          ]
+            .filter(Boolean)
+            .join('\n')
         : ''
       const body = [changedText, channelsText].filter(Boolean).join('\n')
       return `📄 ${doc.name}\n${body}`

@@ -1,6 +1,12 @@
 // Supported notification types (matches Supabase notifications.type)
 export type NotificationType =
-  'mention' | 'reply' | 'reaction' | 'message' | 'thread_message' | 'channel_event'
+  | 'mention'
+  | 'reply'
+  | 'reaction'
+  | 'message'
+  | 'thread_message'
+  | 'channel_event'
+  | 'content_change'
 
 export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'
 
@@ -74,20 +80,35 @@ export interface DigestDocument {
   name: string
   slug: string
   url: string
+  /** Exact-case documentId. Absent only for the synthetic `unknown` bucket. */
+  workspace_id?: string
   channels: DigestChannel[]
   /** Absent on every legacy payload; only a content_change carrier seeds it. */
   content_changes?: DigestContentChanges
 }
 
 /**
- * Minimal seed written by the digest consumer. Issue #201 renders the detail
- * (sections, magnitude, contributors) and extends this block.
+ * The consumer seeds document_id and since; enrichment adds the sections. A
+ * failed enrichment leaves the seed, so both halves stay optional.
  */
 export interface DigestContentChanges {
   /** Exact-case documentId, taken from the carrier's channel_id. */
   document_id: string
-  /** Earliest carrier time when one window holds several carriers. */
+  /** Earliest carrier time, or the resolved window start after enrichment. */
   since: string
+  /** Changed sections in document order, capped by the enrichment. */
+  sections?: DigestChangedSection[]
+  /** Sections the cap cut. Absent when nothing was cut. */
+  moreCount?: number
+}
+
+export interface DigestChangedSection {
+  /** Heading text. Compute already sanitised and capped it. */
+  text: string
+  /** The two deepest ancestor headings, outermost first. Empty at the root. */
+  breadcrumb: string[]
+  /** `${docUrl}?id=<tocId>`, or docUrl for the root and for a removed section. */
+  url: string
 }
 
 export interface DigestChannel {

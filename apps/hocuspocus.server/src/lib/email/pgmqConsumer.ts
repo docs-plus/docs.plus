@@ -6,7 +6,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { config } from '../../config/env'
+import { createComputeDocumentChanges } from '../../modules/document-changes/domain/computeDocumentChanges'
 import type {
+  DigestDocument,
   DigestEmailRequest,
   EmailStatus,
   NotificationEmailRequest,
@@ -17,6 +19,8 @@ import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
 import { prisma } from '../prisma'
+import { getOwnerProfiles } from '../profiles'
+import { type DigestDocumentMeta, enrichDigestDocuments } from './digestContentChanges'
 import {
   buildDigestDocuments,
   CONTENT_CHANGE_TYPE,
@@ -68,39 +72,99 @@ async function updateEmailStatus(
   }
 }
 
-/**
- * Supabase cannot decide this: isPrivate, ownerId and deletedAt live in Prisma,
- * and a document can turn private between the carrier insert and the send.
- */
-async function readVisibleContentChangeDocuments(
-  documentIds: string[],
-  recipientId: string
-): Promise<{ visible: Set<string>; readFailed: boolean }> {
-  if (documentIds.length === 0) return { visible: new Set(), readFailed: false }
-  if (!recipientId) return { visible: new Set(), readFailed: false }
+/** Building this only makes closures, so one set for the process is enough. */
+const computeDocumentChanges = createComputeDocumentChanges({
+  prisma,
+  logger: emailLogger,
+  getOwnerProfiles
+})
 
-  try {
-    const rows = await prisma.documentMetadata.findMany({
-      where: { documentId: { in: documentIds } },
-      select: { documentId: true, isPrivate: true, ownerId: true, deletedAt: true }
-    })
-    // One home for the audience rule. Re-deriving it here would let the two
-    // gates drift, and a privacy rule with two homes is one rule too many.
-    const visible = new Set(
-      rows
-        .filter((r) => {
-          const audience = resolveContentChangeAudience(r)
-          if (audience.kind === 'all') return true
-          return audience.kind === 'owner' && audience.onlyUser === recipientId
-        })
-        .map((r) => r.documentId)
-    )
-    return { visible, readFailed: false }
-  } catch (err) {
-    // Fail closed: a privacy question with no answer must not mail the document.
-    emailLogger.error({ err, recipientId }, 'Content-change privacy re-read failed')
-    return { visible: new Set(), readFailed: true }
+interface DigestMetadataRow {
+  documentId: string
+  title: string | null
+  slug: string
+  isPrivate: boolean
+  ownerId: string | null
+  deletedAt: Date | null
+}
+
+/**
+ * One read serves both gates. The rename needs a human title, and the privacy
+ * re-read needs the audience fields, and both are columns of the same row. Read
+ * per document, this was three queries per document on one table.
+ */
+function readDigestMetadataRows(documentIds: string[]): Promise<DigestMetadataRow[]> {
+  if (documentIds.length === 0) return Promise.resolve([])
+  return prisma.documentMetadata.findMany({
+    where: { documentId: { in: documentIds } },
+    select: {
+      documentId: true,
+      title: true,
+      slug: true,
+      isPrivate: true,
+      ownerId: true,
+      deletedAt: true
+    }
+  })
+}
+
+/**
+ * The rename writes a human title over the raw id, so it runs behind the same
+ * audience rule as the block. Without this a reader holding an old chat line
+ * would learn the title of a document that has since turned private.
+ */
+function visibleMetadata(
+  rows: DigestMetadataRow[],
+  recipientId: string
+): Map<string, DigestDocumentMeta> {
+  const visible = new Map<string, DigestDocumentMeta>()
+  for (const row of rows) {
+    const audience = resolveContentChangeAudience(row)
+    const maySee =
+      audience.kind === 'all' || (audience.kind === 'owner' && audience.onlyUser === recipientId)
+    if (maySee) visible.set(row.documentId, { title: row.title, slug: row.slug })
   }
+  return visible
+}
+
+interface WorkspaceMemberVisitRow {
+  updated_at: string | null
+  created_at: string | null
+}
+
+/**
+ * Last visit is coalesce(updated_at, created_at) — the expression the roster's
+ * get_document_members already shows, so the two never drift. Membership lives
+ * in Supabase, so Prisma cannot answer this.
+ */
+async function readDigestLastVisit(
+  client: SupabaseClient,
+  recipientId: string,
+  documentId: string
+): Promise<Date | null> {
+  if (!recipientId) return null
+
+  const { data, error } = await client
+    .from('workspace_members')
+    .select('updated_at, created_at')
+    .eq('member_id', recipientId)
+    // The exact-case documentId. workspace_slug is lower(documentId) and matches nothing here.
+    .eq('workspace_id', documentId)
+    .is('left_at', null)
+    .maybeSingle()
+
+  if (error) {
+    // No visit means the frequency window, so a failed read widens the window
+    // rather than costing the reader the block.
+    emailLogger.warn({ err: error, recipientId, documentId }, 'Digest last-visit read failed')
+    return null
+  }
+
+  const row = data as WorkspaceMemberVisitRow | null
+  const raw = row?.updated_at || row?.created_at
+  if (!raw) return null
+  const at = new Date(raw)
+  return Number.isNaN(at.getTime()) ? null : at
 }
 
 /**
@@ -114,15 +178,55 @@ async function processDigestMessage(
 ): Promise<boolean> {
   const appUrl = config.email.appUrl
 
+  const now = new Date()
+  const frequency = normaliseDigestFrequency(payload.frequency)
+  const recipientId = payload.recipient_id || ''
+
   try {
     const built = buildDigestDocuments(payload.notifications || [], appUrl)
     const queueIds = payload.queue_ids || []
 
-    const { visible, readFailed } = await readVisibleContentChangeDocuments(
-      built.flatMap((doc) => (doc.content_changes ? [doc.content_changes.document_id] : [])),
-      payload.recipient_id || ''
-    )
-    const documents = filterDigestDocuments(built, visible)
+    // One batched read for the whole message, filtered by the audience rule
+    // once. Both the rename and the block then read the same answer, so the
+    // rule cannot drift and a private title cannot reach the rename.
+    let metaById = new Map<string, DigestDocumentMeta>()
+    let metaReadFailed = false
+    try {
+      const ids = built.flatMap((doc) => (doc.workspace_id ? [doc.workspace_id] : []))
+      metaById = visibleMetadata(await readDigestMetadataRows(ids), recipientId)
+    } catch (err) {
+      emailLogger.error({ err, msgId }, 'Digest metadata read failed')
+      metaReadFailed = true
+    }
+
+    let enriched: DigestDocument[] = built
+    try {
+      enriched = await enrichDigestDocuments(built, {
+        computeChanges: computeDocumentChanges,
+        readMetadata: async (documentId: string) => metaById.get(documentId) ?? null,
+        readLastVisit: (reader, documentId) => readDigestLastVisit(client, reader, documentId),
+        logger: emailLogger,
+        appUrl,
+        recipientId,
+        frequency,
+        now,
+        retentionDays: config.worker.autosaveRetentionDays
+      })
+    } catch (err) {
+      // The section list is an extra, not the answer to a privacy question, so
+      // the digest still sends with the plain "changed since" line.
+      emailLogger.warn({ err, msgId }, 'Digest content-change enrichment failed')
+      enriched = built
+    }
+
+    // The same map answers the block gate: a document absent from it is one the
+    // reader may not see, whatever the carrier said.
+    const documents = filterDigestDocuments(enriched, new Set(metaById.keys()))
+
+    // Only a message carrying a block asks a privacy question, and only that
+    // message may defer. The id list covers every chat document too, so a bare
+    // `metaReadFailed` would hold a chat-only digest back for no reason.
+    const readFailed = metaReadFailed && built.some((doc) => doc.content_changes)
 
     // A failed re-read is not an answer, so it must not look like one. Writing
     // 'skipped' here acks the message, the carriers stay unread, and the 24-hour
@@ -147,10 +251,10 @@ async function processDigestMessage(
       to: payload.recipient_email!,
       recipient_name: payload.recipient_name || 'User',
       recipient_id: payload.recipient_id!,
-      frequency: normaliseDigestFrequency(payload.frequency),
+      frequency,
       documents,
-      period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      period_end: new Date().toISOString()
+      period_start: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+      period_end: now.toISOString()
     }
 
     const idempotencyJobId = deterministicJobId(
