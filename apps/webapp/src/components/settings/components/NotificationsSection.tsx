@@ -318,6 +318,7 @@ const NotificationsSection = () => {
     email_mentions: true,
     email_replies: true,
     email_reactions: false,
+    email_content_changes: true,
     email_frequency: 'daily'
   }))
   const [saving, setSaving] = useState(false)
@@ -600,6 +601,14 @@ const NotificationsSection = () => {
                 description="When someone reacts to your message"
                 checked={preferences.email_reactions ?? false}
                 onChange={(checked) => handlePreferenceChange('email_reactions', checked)}
+                disabled={saving}
+              />
+              <ToggleRow
+                id="email-content-changes"
+                label="Document changes"
+                description="When a document you follow is edited"
+                checked={preferences.email_content_changes ?? true}
+                onChange={(checked) => handlePreferenceChange('email_content_changes', checked)}
                 disabled={saving}
               />
 

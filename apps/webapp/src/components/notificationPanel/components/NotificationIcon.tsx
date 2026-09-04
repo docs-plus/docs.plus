@@ -13,6 +13,7 @@ const NotificationIcon = ({ type, size = 16 }: { type: string; size?: number }) 
     channel_event: { icon: <Icons.megaphone {...iconProps} />, label: 'Channel Event' },
     direct_message: { icon: <Icons.mail {...iconProps} />, label: 'Direct Message' },
     invitation: { icon: <Icons.share {...iconProps} />, label: 'Invitation' },
+    content_change: { icon: <Icons.pencil {...iconProps} />, label: 'Document change' },
     system_alert: { icon: <Icons.alert {...iconProps} />, label: 'System Alert' }
   }
 

@@ -58,6 +58,7 @@ export interface NotificationPreferences {
   email_mentions?: boolean
   email_replies?: boolean
   email_reactions?: boolean
+  email_content_changes?: boolean
   email_frequency?: 'immediate' | 'daily' | 'weekly' | 'never'
   // `null` is the "clear-on-re-enable" wire sentinel; the FE truthy-check
   // at the banner site hides JSON-null.

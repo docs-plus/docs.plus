@@ -18,6 +18,7 @@ import Image from 'next/image'
 import React, { useState } from 'react'
 
 import ToggleSection from '../ToggleSection'
+import { useDocumentFollow } from '../useDocumentFollow'
 import ImportExportSection from './ImportExportSection'
 import { KeywordTagsField } from './KeywordTagsField'
 
@@ -40,6 +41,7 @@ const DocumentSettingsPanel = ({
   const editor = useStore((state) => state.settings.editor.instance)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const docMetadata = useStore((state) => state.settings.metadata)
+  const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, user?.id))
 
@@ -57,6 +59,13 @@ const DocumentSettingsPanel = ({
   const readOnly = Boolean(docMetadata.readOnly)
   const isOwner = Boolean(user?.id && user.id === docMetadata?.ownerId)
   const identity = isAuthServiceAvailable ? docMetadata?.ownerProfile : undefined
+  const canFollow = Boolean(isAuthServiceAvailable && user?.id)
+  const { following, canToggle, toggle } = useDocumentFollow({
+    documentId: docMetadata.documentId,
+    // Membership, not sign-in. join_workspace writes the row the RPC matches,
+    // so a read before it lands answers null and paints a false "off".
+    enabled: canFollow && Boolean(joinedWorkspace)
+  })
 
   const saveDescriptionHandler = () => {
     mutate(
@@ -130,6 +139,17 @@ const DocumentSettingsPanel = ({
             <span className="badge badge-sm badge-soft">{readOnly ? 'Read-only' : 'Editable'}</span>
           </div>
         )}
+        {canFollow ? (
+          <ToggleSection
+            name="Follow"
+            description="Notify me when this document changes."
+            checked={following}
+            // `set_document_follow` is UPDATE-only, so it needs the membership row first.
+            disabled={!joinedWorkspace || !canToggle}
+            onChange={() => void toggle()}
+            className="min-h-11 py-2 sm:min-h-0"
+          />
+        ) : null}
       </div>
     </div>
   )

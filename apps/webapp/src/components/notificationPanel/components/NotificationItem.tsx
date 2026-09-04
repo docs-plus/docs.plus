@@ -3,10 +3,12 @@ import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useDismissPanel } from '@hooks/useDismissPanel'
+import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
 import { type PanelSurfaceVariant, type TNotification } from '@types'
 import { formatTimeAgo } from '@utils/formatTime'
+import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import { LuLink, LuTriangleAlert } from 'react-icons/lu'
 
@@ -16,6 +18,27 @@ import NotificationIcon from './NotificationIcon'
 
 const isSystemNotification = (notification: TNotification): boolean =>
   notification.type === 'system_alert' || !notification.sender?.id
+
+/** `action_url` is absolute, so it parses with no base and stays stable across hydration. */
+const actionUrlPathname = (actionUrl: string | null | undefined): string | null => {
+  if (!actionUrl) return null
+  try {
+    return new URL(actionUrl).pathname
+  } catch {
+    return null
+  }
+}
+
+/** A carrier row has no title column, so its only document identity is the link slug. */
+const documentNameFromActionUrl = (actionUrl: string | null | undefined): string => {
+  const slug = actionUrlPathname(actionUrl)?.split('/').filter(Boolean).pop()
+  if (!slug) return 'Document'
+  try {
+    return decodeURIComponent(slug)
+  } catch {
+    return slug
+  }
+}
 
 type NotificationItemProps = {
   notification: TNotification
@@ -30,8 +53,23 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const dismissPanel = useDismissPanel(variant)
+  const router = useRouter()
 
   const handleViewNotification = (notification: TNotification) => {
+    // First, because a sender-less carrier would otherwise be claimed by the
+    // system test below. A carrier does carry a sender when the editor is known.
+    if (notification.type === 'content_change') {
+      void markAsRead(notification)
+      dismissPanel()
+
+      // Compare the document segment, not the whole path: active filter terms
+      // live in later segments, and a bare push would drop the reader's filters.
+      const target = actionUrlPathname(notification.action_url)
+      const slugOf = (path: string) => path.split('/')[1] ?? ''
+      if (target && slugOf(target) !== slugOf(window.location.pathname)) void router.push(target)
+      return
+    }
+
     if (isSystemNotification(notification)) {
       void markAsRead(notification)
       dismissPanel()
@@ -55,6 +93,9 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
   }
 
   const handleCopyUrl = (notification: TNotification) => {
+    // A carrier has no message, so half a link opens nothing.
+    if (!notification.message_id || !notification.channel_id) return
+
     const newURL = new URL(location.href)
     newURL.searchParams.set('msg_id', notification.message_id)
     newURL.searchParams.set('chatroom', notification.channel_id)
@@ -70,7 +111,9 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
       })
   }
 
-  const isSystem = isSystemNotification(notification)
+  const isContentChange = notification.type === 'content_change'
+  const isSystem = isSystemNotification(notification) && !isContentChange
+  const hasSender = Boolean(notification.sender?.id)
 
   return (
     <PanelFeedItem exiting={exiting}>
@@ -79,8 +122,13 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
           <div className="bg-warning/15 text-warning flex size-8 items-center justify-center rounded-full">
             <LuTriangleAlert size={18} />
           </div>
-        ) : (
+        ) : hasSender ? (
           <Avatar face={notification.sender} clickable={false} size="sm" />
+        ) : (
+          // A sender-less carrier has no face, and Avatar would mint a fabricated one.
+          <div className="bg-base-300/40 text-base-content/70 flex size-8 items-center justify-center rounded-full">
+            <Icons.pencil size={18} />
+          </div>
         )}
       </div>
 
@@ -90,7 +138,11 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
             <p className="flex items-center gap-1.5 text-sm">
               <NotificationIcon type={notification.type} size={14} />
               <span className="text-base-content font-medium">
-                {isSystem ? 'System' : notification.sender?.display_name}
+                {isSystem
+                  ? 'System'
+                  : hasSender
+                    ? notification.sender?.display_name
+                    : documentNameFromActionUrl(notification.action_url)}
               </span>
             </p>
             <div className="flex w-full min-w-0 items-start gap-2">
@@ -100,7 +152,7 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
               </p>
             </div>
           </div>
-          {!isSystem && (
+          {!isSystem && !isContentChange && (
             <Button
               variant="ghost"
               size="sm"

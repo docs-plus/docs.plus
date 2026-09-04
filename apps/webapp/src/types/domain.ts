@@ -62,10 +62,14 @@ export type TNotification = {
     avatar_updated_at: string | null
   }
   readed_at: string | null
-  channel_id: string
+  channel_id: string | null
   created_at: string
-  message_id: string
+  message_id: string | null
   message_preview: string
+  /** Absolute link for carrier rows such as `content_change`; chat rows carry none.
+   *  Required, not optional: all three fetch RPCs select it, so an absent key
+   *  would mean a query forgot the column rather than a row without a link. */
+  action_url: string | null
 }
 
 export type TNotificationSummary = {
