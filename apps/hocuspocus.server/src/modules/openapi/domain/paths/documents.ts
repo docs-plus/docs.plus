@@ -63,7 +63,7 @@ export const documentsPaths: OpenApiPaths = {
       operationId: 'listDocuments',
       summary: 'List or search documents',
       description:
-        "Full-text search when any of `title` / `keywords` / `description` is present, otherwise a plain list. Without a verified `ownerId === token.sub` requester, private rows are clamped out of both the page and `total`. `deleted=true` is the caller's own Trash and requires a token. An owner-scoped live list pins that user's Favorites first, then applies `sort`. Those rows include `isFavorite`. Trash and the public fleet do not.",
+        "Full-text search when any of `title` / `keywords` / `description` is present, otherwise a plain list. Without a verified `ownerId === token.sub` requester, private rows are clamped out of both the page and `total`. `deleted=true` is the caller's own Trash and requires a token. An Owner live list pins that user's Favorites first, then applies `sort`. Those rows include `isFavorite`, `preview`, and `lastOpenedAt`. Owner Trash includes `preview` and `lastOpenedAt` and omits `isFavorite`. The public fleet omits all three.",
       tags,
       security: optionalUserSecurity,
       parameters: toParameters(documentQuerySchema, 'query', {
@@ -224,6 +224,13 @@ export const documentsPaths: OpenApiPaths = {
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     }
+  },
+  '/api/documents/{documentId}/opened': {
+    post: ownedLifecycle(
+      'touchDocumentOpened',
+      'Record that the owner opened a document',
+      'Owner-only. Sets `lastOpenedAt` with raw SQL so `@updatedAt` does not move. Soft-deleted documents are 404. Writes more than 30 seconds apart; a closer repeat is a no-op success.'
+    )
   },
   '/api/documents/{documentId}/duplicate': {
     post: ownedLifecycle(

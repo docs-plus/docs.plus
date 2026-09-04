@@ -8,13 +8,19 @@ import { type InfiniteData, useInfiniteQuery, useQueryClient } from '@tanstack/r
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { supabaseClient } from '@utils/supabase'
 import debounce from 'lodash/debounce'
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react-icons/lu'
 
 import { makeDocumentsKey } from '../documentsQueryKey'
 import useDeleteDocument from '../hooks/useDeleteDocument'
 import { useDocumentMembers } from '../hooks/useDocumentMembers'
 import type { DocumentSortKey, DocumentsPage, OwnedDocument } from '../types'
+import {
+  DOCUMENT_TIME_BUCKET_LABEL,
+  documentTimeBucket,
+  isDateSortKey,
+  timestampForSort
+} from '../utils/documentTimeBucket'
 import DocumentGridTile from './DocumentGridTile'
 import DocumentListRow from './DocumentListRow'
 import SettingsCard from './SettingsCard'
@@ -40,10 +46,47 @@ const ITEMS_PER_PAGE = 20
 // Sort labels map 1:1 to the backend `sort` enum; server-side only (client sort breaks Load more).
 const SORT_OPTIONS: SelectOption[] = [
   { value: 'updatedAt_desc', label: 'Last modified' },
+  { value: 'lastOpenedAt_desc', label: 'Last opened' },
   { value: 'createdAt_desc', label: 'Date created' },
   { value: 'title_asc', label: 'Name (A→Z)' },
   { value: 'title_desc', label: 'Name (Z→A)' }
 ]
+
+type DocumentsListItem =
+  | { kind: 'hairline' }
+  | { kind: 'bucket'; label: string; key: string }
+  | { kind: 'doc'; doc: OwnedDocument; index: number }
+
+const buildDocumentsListItems = (
+  docs: OwnedDocument[],
+  sortKey: DocumentSortKey
+): DocumentsListItem[] => {
+  const dateSort = isDateSortKey(sortKey)
+  const items: DocumentsListItem[] = []
+  let lastBucket: string | null = null
+
+  docs.forEach((doc, index) => {
+    const prev = index > 0 ? docs[index - 1] : undefined
+    const inFavoriteBlock = !!doc.isFavorite
+    if (prev?.isFavorite && !doc.isFavorite) {
+      items.push({ kind: 'hairline' })
+      lastBucket = null
+    }
+    if (dateSort && !inFavoriteBlock) {
+      const bucket = documentTimeBucket(timestampForSort(doc, sortKey))
+      if (bucket !== lastBucket) {
+        items.push({
+          kind: 'bucket',
+          label: DOCUMENT_TIME_BUCKET_LABEL[bucket],
+          key: `${bucket}-${index}`
+        })
+        lastBucket = bucket
+      }
+    }
+    items.push({ kind: 'doc', doc, index })
+  })
+  return items
+}
 
 const SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
 const VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
@@ -98,8 +141,11 @@ const DocumentsBodySkeleton = ({ viewMode }: { viewMode: DocumentViewMode }) =>
     <div className="divide-base-300 divide-y">
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="flex items-center gap-3 py-3">
-          <div className="skeleton size-[18px] shrink-0 rounded" />
-          <div className="skeleton rounded-field h-4 flex-1" />
+          <div className="skeleton size-10 shrink-0 rounded" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="skeleton rounded-field h-4 w-3/4" />
+            <div className="skeleton rounded-field h-3 w-16 sm:hidden" />
+          </div>
           <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
         </div>
       ))}
@@ -189,8 +235,9 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     }
   })
 
-  const docs = data?.pages.flatMap((p) => p.docs) ?? []
+  const docs = useMemo(() => data?.pages.flatMap((p) => p.docs) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
+  const listItems = useMemo(() => buildDocumentsListItems(docs, sortKey), [docs, sortKey])
 
   const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId)
 
@@ -202,8 +249,11 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => clearTimeout(dismissTimerRef.current ?? undefined), [])
 
-  // Roving tabindex: one tab stop per list row; arrows move the active row.
-  const listRef = useRef<HTMLUListElement>(null)
+  // Roving tabindex: one tab stop per row or tile; arrows move the active item.
+  const listRef = useRef<HTMLElement | null>(null)
+  const bindListRef = (el: HTMLElement | null) => {
+    listRef.current = el
+  }
   const [activeIndex, setActiveIndex] = useState(0)
   useEffect(() => {
     setActiveIndex((i) => (docs.length === 0 ? 0 : Math.min(i, docs.length - 1)))
@@ -212,10 +262,12 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   const focusRowAt = useCallback((index: number) => {
     const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>('[data-doc-row-button]')
     if (!buttons?.length) return
-    buttons[Math.max(0, Math.min(index, buttons.length - 1))]?.focus()
+    const next = Math.max(0, Math.min(index, buttons.length - 1))
+    setActiveIndex(next)
+    buttons[next]?.focus()
   }, [])
 
-  const handleListKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+  const handleListKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     // Only from a row nav button — never while the rename input (same <ul>) is focused.
     if (!(e.target as HTMLElement).matches('[data-doc-row-button]')) return
     if (e.key === 'ArrowDown') {
@@ -268,7 +320,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
       // The ⋮ trigger unmounts, so the section (not the closing menu) lands focus on the
       // adjacent row; 100ms clears floating-ui's 80ms return-focus race. Browser-pending.
-      if (keyboard && viewMode === 'list' && delIndex !== -1) {
+      if (keyboard && delIndex !== -1) {
         setTimeout(() => focusRowAt(delIndex), 100)
       }
 
@@ -397,7 +449,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   value={sortKey}
                   onChange={handleSortChange}
                   options={SORT_OPTIONS}
-                  wrapperClassName="min-w-0 flex-1 sm:w-40 sm:flex-none sm:shrink-0"
+                  wrapperClassName="min-w-0 flex-1 sm:w-44 sm:flex-none sm:shrink-0"
                   className="min-h-11 sm:min-h-8"
                 />
 
@@ -506,50 +558,86 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
                 {viewMode === 'list' ? (
                   <ul
-                    ref={listRef}
+                    ref={bindListRef}
                     role="list"
                     onKeyDown={handleListKeyDown}
                     className="[&>li[data-doc-row]+li[data-doc-row]]:border-base-300 [&>li[data-doc-row]+li[data-doc-row]]:border-t">
-                    {docs.map((doc, i) => {
-                      const prev = i > 0 ? docs[i - 1] : undefined
-                      const showHairline = !!prev?.isFavorite && !doc.isFavorite
+                    {listItems.map((item) => {
+                      if (item.kind === 'hairline') {
+                        return (
+                          <li key="favorites-end" aria-hidden className="pointer-events-none my-3">
+                            <div className="border-base-300 border-t" />
+                          </li>
+                        )
+                      }
+                      if (item.kind === 'bucket') {
+                        return (
+                          <li
+                            key={item.key}
+                            className="text-base-content/45 px-2 pt-4 pb-1 text-[10px] font-bold tracking-wider uppercase">
+                            {item.label}
+                          </li>
+                        )
+                      }
+                      const { doc, index } = item
                       return (
-                        <Fragment key={doc.documentId}>
-                          {showHairline ? (
-                            <li aria-hidden className="pointer-events-none my-3">
-                              <div className="border-base-300 border-t" />
-                            </li>
-                          ) : null}
-                          <DocumentListRow
-                            doc={doc}
-                            userId={userId}
-                            searchQuery={searchQuery}
-                            sortKey={sortKey}
-                            members={membersMap?.get(membersKey(doc))}
-                            onOpenDocument={onOpenDocument}
-                            index={i}
-                            isActive={i === activeIndex}
-                            onActivate={setActiveIndex}
-                            onDelete={handleDelete}
-                          />
-                        </Fragment>
+                        <DocumentListRow
+                          key={doc.documentId}
+                          doc={doc}
+                          userId={userId}
+                          searchQuery={searchQuery}
+                          sortKey={sortKey}
+                          members={membersMap?.get(membersKey(doc))}
+                          onOpenDocument={onOpenDocument}
+                          index={index}
+                          isActive={index === activeIndex}
+                          onActivate={setActiveIndex}
+                          onDelete={handleDelete}
+                        />
                       )
                     })}
                   </ul>
                 ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                    {docs.map((doc) => (
-                      <DocumentGridTile
-                        key={doc.documentId}
-                        doc={doc}
-                        userId={userId}
-                        searchQuery={searchQuery}
-                        sortKey={sortKey}
-                        members={membersMap?.get(membersKey(doc))}
-                        onOpenDocument={onOpenDocument}
-                        onDelete={handleDelete}
-                      />
-                    ))}
+                  <div
+                    ref={bindListRef}
+                    onKeyDown={handleListKeyDown}
+                    className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                    {listItems.map((item) => {
+                      if (item.kind === 'hairline') {
+                        return (
+                          <div
+                            key="favorites-end"
+                            aria-hidden
+                            className="border-base-300 col-span-2 my-1 border-t lg:col-span-3"
+                          />
+                        )
+                      }
+                      if (item.kind === 'bucket') {
+                        return (
+                          <div
+                            key={item.key}
+                            className="text-base-content/45 col-span-2 pt-2 text-[10px] font-bold tracking-wider uppercase lg:col-span-3">
+                            {item.label}
+                          </div>
+                        )
+                      }
+                      const { doc, index } = item
+                      return (
+                        <DocumentGridTile
+                          key={doc.documentId}
+                          doc={doc}
+                          userId={userId}
+                          searchQuery={searchQuery}
+                          sortKey={sortKey}
+                          members={membersMap?.get(membersKey(doc))}
+                          onOpenDocument={onOpenDocument}
+                          index={index}
+                          isActive={index === activeIndex}
+                          onActivate={setActiveIndex}
+                          onDelete={handleDelete}
+                        />
+                      )
+                    })}
                   </div>
                 )}
 

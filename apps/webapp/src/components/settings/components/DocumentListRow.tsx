@@ -1,13 +1,14 @@
 import TextInput from '@components/ui/TextInput'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { LuEye, LuFileText, LuLock, LuStar } from 'react-icons/lu'
+import { LuEye, LuLock, LuStar } from 'react-icons/lu'
 
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import type { DocumentSortKey, OwnedDocument } from '../types'
-import { formatShortDate } from '../utils/formatShortDate'
+import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
+import DocumentPreviewPaper from './DocumentPreviewPaper'
 import DocumentRowMenu from './DocumentRowMenu'
 
 interface DocumentListRowProps {
@@ -41,7 +42,7 @@ function DocumentListRow({
 }: DocumentListRowProps) {
   const router = useRouter()
   const label = doc.title ?? doc.slug
-  const date = formatShortDate(doc.updatedAt)
+  const date = documentListDate(doc, sortKey)
 
   const { commit } = useCommitDocumentRename(userId, searchQuery, sortKey)
   const [isRenaming, setIsRenaming] = useState(false)
@@ -103,7 +104,7 @@ function DocumentListRow({
   if (isRenaming) {
     return (
       <li data-doc-row className="flex items-center gap-3 px-2 py-2">
-        <LuFileText size={18} className="text-base-content/40 shrink-0" />
+        <DocumentPreviewPaper preview={doc.preview} title={doc.title} variant="row" />
         <TextInput
           ref={inputRef}
           size="sm"
@@ -148,7 +149,7 @@ function DocumentListRow({
           }
         }}
         className="rounded-field focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
-        <LuFileText size={18} className="text-base-content/40 shrink-0" />
+        <DocumentPreviewPaper preview={doc.preview} title={doc.title} variant="row" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="text-base-content truncate font-medium">{label}</span>
@@ -160,13 +161,13 @@ function DocumentListRow({
               />
             )}
             {doc.isPrivate && (
-              <LuLock size={13} className="text-base-content/50 shrink-0" aria-label="Private" />
+              <LuLock size={13} className="text-base-content/60 shrink-0" aria-label="Private" />
             )}
             {doc.readOnly && (
-              <LuEye size={13} className="text-base-content/50 shrink-0" aria-label="Read-only" />
+              <LuEye size={13} className="text-base-content/60 shrink-0" aria-label="Read-only" />
             )}
           </span>
-          <span className="text-base-content/50 text-xs sm:hidden">{date}</span>
+          <span className="text-base-content/60 text-xs sm:hidden">{date}</span>
         </span>
       </button>
 
@@ -176,7 +177,7 @@ function DocumentListRow({
         previews={members?.previews ?? []}
         tabIndex={-1}
       />
-      <span className="text-base-content/50 hidden shrink-0 text-xs sm:block">{date}</span>
+      <span className="text-base-content/60 hidden shrink-0 text-xs sm:block">{date}</span>
 
       <DocumentRowMenu
         documentId={doc.documentId}

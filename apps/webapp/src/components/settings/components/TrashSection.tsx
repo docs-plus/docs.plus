@@ -16,7 +16,7 @@ const TrashBodySkeleton = () => (
   <div className="divide-base-300 divide-y">
     {[0, 1, 2, 3].map((i) => (
       <div key={i} className="flex items-center gap-3 py-3">
-        <div className="skeleton size-[18px] shrink-0 rounded" />
+        <div className="skeleton size-10 shrink-0 rounded" />
         <div className="flex-1 space-y-2">
           <div className="skeleton rounded-field h-4 w-1/2" />
           <div className="skeleton rounded-field h-3 w-24" />

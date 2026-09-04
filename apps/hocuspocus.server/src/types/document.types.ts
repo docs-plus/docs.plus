@@ -33,7 +33,8 @@ export interface UpdateDocumentParams {
 }
 
 // Allowlisted list sort keys — mapped to a fixed Prisma orderBy in the service.
-export type DocumentSortKey = 'updatedAt_desc' | 'createdAt_desc' | 'title_asc' | 'title_desc'
+export type DocumentSortKey =
+  'updatedAt_desc' | 'createdAt_desc' | 'lastOpenedAt_desc' | 'title_asc' | 'title_desc'
 
 export interface SearchDocumentsParams {
   title?: string

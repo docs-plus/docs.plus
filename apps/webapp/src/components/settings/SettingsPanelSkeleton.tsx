@@ -40,7 +40,7 @@ export const DocumentsSkeleton = () => {
             <div className="skeleton rounded-field h-11 w-full" />
 
             <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
-              <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-40 sm:flex-none" />
+              <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-44 sm:flex-none" />
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                 <div className="skeleton rounded-field size-11 sm:h-8 sm:w-20" />
                 <div className="skeleton rounded-field h-11 w-[5.5rem] sm:h-8 sm:w-16" />
@@ -65,8 +65,11 @@ export const DocumentsSkeleton = () => {
               <div className="divide-base-300 divide-y">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex items-center gap-3 py-3">
-                    <div className="skeleton size-[18px] shrink-0 rounded" />
-                    <div className="skeleton rounded-field h-4 flex-1" />
+                    <div className="skeleton size-10 shrink-0 rounded" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="skeleton rounded-field h-4 w-3/4" />
+                      <div className="skeleton rounded-field h-3 w-16 sm:hidden" />
+                    </div>
                     <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
                   </div>
                 ))}

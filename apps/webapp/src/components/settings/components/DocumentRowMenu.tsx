@@ -106,6 +106,7 @@ function RowMenuItems({
           const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
           if (snapshot) {
             const now = new Date().toISOString()
+            // Omit `preview` so the paper stays blank until the next owner-list fill.
             const created: OwnedDocument = {
               documentId: copy.documentId,
               slug: copy.slug,
@@ -114,7 +115,8 @@ function RowMenuItems({
               isPrivate: false,
               isFavorite: false,
               updatedAt: now,
-              createdAt: now
+              createdAt: now,
+              lastOpenedAt: null
             }
             queryClient.setQueryData(key, insertAfterFavoritesInPages(snapshot, created))
           }
@@ -344,7 +346,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
           e.stopPropagation()
           setIsSheetOpen(true)
         }}
-        className="text-base-content/50 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-11 min-w-11 items-center justify-center transition-colors md:hidden">
+        className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-11 min-w-11 items-center justify-center transition-colors md:hidden">
         <LuEllipsisVertical size={20} className="stroke-[1.75]" />
       </button>
       {isSheetOpen && <RowMenuActionSheet {...props} onClose={() => setIsSheetOpen(false)} />}
@@ -356,7 +358,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
             aria-label={`Document actions for “${trigger}”`}
             tabIndex={props.triggerTabIndex}
             onClick={(e) => e.stopPropagation()}
-            className="text-base-content/50 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-9 min-w-9 items-center justify-center transition-colors max-md:hidden">
+            className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-9 min-w-9 items-center justify-center transition-colors max-md:hidden">
             <LuEllipsisVertical size={18} />
           </button>
         </PopoverTrigger>

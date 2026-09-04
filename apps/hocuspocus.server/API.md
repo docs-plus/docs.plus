@@ -15,27 +15,28 @@ The REST API runs from `src/index.ts` on a Hono app. This document covers the HT
 4. [Documents](#documents)
 5. [Document content](#document-content)
 6. [Document versions](#document-versions)
-7. [Document conversion](#document-conversion)
-8. [Media](#media)
-9. [Link metadata](#link-metadata)
-10. [Email](#email)
-11. [Admin](#admin)
-12. [Push notifications](#push-notifications)
-13. [Rate limiting](#rate-limiting)
-14. [WebSocket API](#websocket-api)
+7. [Document changes](#document-changes)
+8. [Document conversion](#document-conversion)
+9. [Media](#media)
+10. [Link metadata](#link-metadata)
+11. [Email](#email)
+12. [Admin](#admin)
+13. [Push notifications](#push-notifications)
+14. [Rate limiting](#rate-limiting)
+15. [WebSocket API](#websocket-api)
 
 ## Authentication
 
 Three schemes apply, by route group:
 
-| Scheme                                | Used by                                                                                                                                                                                                                                                                                                                                                                                              | Header                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`                                                                                                                                                                                          | —                                                   |
-| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                                                                                                                                               | `token: <jwt>`                                      |
-| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/favorite`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `token: <jwt>`                                      |
-| Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                   | `token: <jwt>` or the service-role bearer           |
-| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, and the `content` / `ownerId` fields on `POST /api/documents`                                                                                                                                                           | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
-| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                                                                                                                                                       | `Authorization: Bearer <jwt>`                       |
+| Scheme                                | Used by                                                                                                                                                                                                                                                                                                                                                                                                             | Header                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`                                                                                                                                                                                                         | —                                                   |
+| Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                                                                                                                                                              | `token: <jwt>`                                      |
+| Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/favorite`, `/:id/opened`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `token: <jwt>`                                      |
+| Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                                  | `token: <jwt>` or the service-role bearer           |
+| Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, `GET /api/documents/:documentId/changes`, and the `content` / `ownerId` fields on `POST /api/documents`                                                                                                                                | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
+| Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                                                                                                                                                                      | `Authorization: Bearer <jwt>`                       |
 
 > **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalUser` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
 
@@ -112,21 +113,21 @@ Base path `/api/documents` (`src/api/routers/documents.router.ts`). Success resp
 
 List or search documents. With any of `title`/`keywords`/`description`, runs a full-text search; otherwise lists all rows. Owner profiles (snake_case, mirroring `public.users`) are joined in.
 
-| Param         | Type   | Default          | Description                                                                |
-| ------------- | ------ | ---------------- | -------------------------------------------------------------------------- |
-| `title`       | string | —                | Search term (tokenized)                                                    |
-| `keywords`    | string | —                | Search term (tokenized)                                                    |
-| `description` | string | —                | Search term (tokenized)                                                    |
-| `ownerId`     | uuid   | —                | Filter by owner — **requires** `token` header; must match JWT `sub`        |
-| `sort`        | string | `updatedAt_desc` | Allowlisted: `updatedAt_desc`, `createdAt_desc`, `title_asc`, `title_desc` |
-| `limit`       | string | `10`             | Page size (1–100)                                                          |
-| `offset`      | string | `0`              | Pagination offset (≥ 0)                                                    |
+| Param         | Type   | Default          | Description                                                                                     |
+| ------------- | ------ | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `title`       | string | —                | Search term (tokenized)                                                                         |
+| `keywords`    | string | —                | Search term (tokenized)                                                                         |
+| `description` | string | —                | Search term (tokenized)                                                                         |
+| `ownerId`     | uuid   | —                | Filter by owner — **requires** `token` header; must match JWT `sub`                             |
+| `sort`        | string | `updatedAt_desc` | Allowlisted: `updatedAt_desc`, `createdAt_desc`, `lastOpenedAt_desc`, `title_asc`, `title_desc` |
+| `limit`       | string | `10`             | Page size (1–100)                                                                               |
+| `offset`      | string | `0`              | Pagination offset (≥ 0)                                                                         |
 
 **Auth:** `optionalUser` on the route. When `ownerId` is set, missing or invalid token → `401`; `ownerId !== token.sub` → `403`. Without `ownerId`, no auth is required (fleet list — legacy).
 
-List rows include `readOnly`, `isPrivate`, `createdAt`, and `updatedAt`. An owner live list (`ownerId === token.sub`, not Trash) also includes `isFavorite`. Trash and the public fleet omit it.
+List rows include `readOnly`, `isPrivate`, `createdAt`, and `updatedAt`. Owner live list and Owner Trash list include `preview` and `lastOpenedAt`. Owner live list also includes `isFavorite`. Owner Trash list omits `isFavorite`. Create, slug GET, update, and the public fleet omit `preview` and `lastOpenedAt`.
 
-**Sort:** Optional `sort` query param. Allowed values: `updatedAt_desc` (default), `createdAt_desc`, `title_asc`, `title_desc`. The server maps each key to a fixed, allowlisted Prisma `orderBy` (an unknown value falls back to `updatedAt_desc`). Required for the Settings → My Documents sort dropdown — client-side sort breaks paginated Load more. An owner live list pins that user's Favorites first, then applies `sort` inside each group. Trash and the fleet do not pin.
+**Sort:** Optional `sort` query param. Allowed values: `updatedAt_desc` (default), `createdAt_desc`, `lastOpenedAt_desc`, `title_asc`, `title_desc`. The server maps each key to a fixed, allowlisted Prisma `orderBy` (an unknown value falls back to `updatedAt_desc`). Required for the Settings → My Documents sort dropdown — client-side sort breaks paginated Load more. An owner live list pins that user's Favorites first, then applies `sort` inside each group. Trash and the fleet do not pin.
 
 **Private clamp:** Without a verified requester (`ownerId === token.sub`), private rows are excluded from both the results and `total` — see **Unauthenticated fleet list** above.
 
@@ -200,13 +201,17 @@ Owner-only (`requireUser`). Body `{ favorite: boolean }`. Writes a `DocumentFavo
 
 Response `{ documentId, isFavorite }`.
 
+### POST /api/documents/:documentId/opened
+
+Owner-only (`requireUser`). Sets `lastOpenedAt` with raw SQL so `@updatedAt` does not move. Soft-deleted → `404`. Repeats inside 30 seconds are a no-op success.
+
 ### DELETE /api/documents/:documentId/permanent
 
 Purge a soft-deleted doc's full footprint (owner-only) — chat and views via the `purge_document_footprint` Supabase RPC, editor media via a storage-prefix delete, then the metadata row. `DocumentFavorite` rows cascade-drop with that metadata delete. Refuses a live doc → `400`. Idempotent (already-gone → success). Shares the reaper's purge path.
 
 ### GET /api/documents?deleted=true
 
-The caller's own soft-deleted docs (Trash), newest-tombstone-first. `requireUser`; owner-scoped to `token.sub` (never a client `ownerId`). Same page shape as the list, but no `isFavorite` and no favorites-first ordering.
+The caller's own soft-deleted docs (Trash), newest-tombstone-first. `requireUser`; owner-scoped to `token.sub` (never a client `ownerId`). Same page shape as the list, but no `isFavorite` and no favorites-first ordering. Owner Trash list includes `preview` and `lastOpenedAt`. A SQL-NULL `preview` is filled the same way as the Owner live list.
 
 ### POST /api/documents/trash/purge
 
@@ -641,6 +646,202 @@ The editor's in-app revert runs the same operation over the collaboration server
 ### Internal version endpoints
 
 `POST /internal/documents/:documentId/versions` and `POST /internal/documents/:documentId/versions/:version/restore` on the collaboration process's internal listener, beside [the content apply endpoint](#internal-apply-endpoint) and `/metrics`. Not Traefik-routed. REST forwards to them over `HOCUSPOCUS_INTERNAL_URL` with the same service-role bearer and the caller's `x-request-id`. Deploy `hocuspocus-server` before `rest-api` whenever this wire shape changes.
+
+## Document changes
+
+Compares the newest stored snapshot at or before `since` with the newest at or before `until`, and reports the result per heading section. Read-only: nothing is written and no live document is loaded. Module: `src/modules/document-changes/`.
+
+The one route is service-role only (`Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`); a user JWT gets `401`. That check runs ahead of validation, so a bad key with a malformed `since` answers `401` and never `400`. The route addresses the document by `documentId`, never by slug — see [Identifying a document](#identifying-a-document).
+
+It reads Postgres in the REST process and never opens the live document. Neither `413` nor `503` can occur: the route takes no body, and it never hops to the collaboration process.
+
+### The window bounds commit time
+
+`since` and `until` bound the version row's `createdAt`. They never bound the version number. Both take an ISO 8601 instant carrying an offset, and `Z` counts as one. The accepted shape is `YYYY-MM-DDTHH:MM:SS`, then an optional fraction, then `Z` or `±HH:MM`. Several forms a reader may call valid ISO 8601 are refused with a `400`: a bare local timestamp `2026-08-01T00:00:00`, a minute-precision `2026-08-01T00:00Z`, an hour-only offset `2026-08-01T00:00:00+01`, and the basic format `20260801T000000Z`. In a query string a literal `+` decodes to a space, so a numeric offset must be percent-encoded as `%2B01:00`. `until` is optional and defaults to the moment the request is served, which is why the published OpenAPI carries no frozen date. Equal ends are allowed and take a fast path that reports no change. A `since` later than `until` is a caller error and answers `400`, **but only when you send `until`**. With `until` omitted, a `since` in the future resolves both ends to the newest row and reports no change. That reads exactly like the equal-ends answer above, so a mis-computed future date looks like a quiet document.
+
+**`createdAt` is commit time, not edit time.** A version row is inserted by the persistence worker, after a debounce of 10 s idle or 60 s maximum. So `until=now` can miss the last minute of typing. Day-scale windows are unaffected; minute-precision windows are illusory.
+
+**The anchor rule.** Each end resolves to the newest row whose `createdAt` is at or before it — `resolveAnchor` in `infra/changesStore.ts`, ordered `createdAt desc, version desc`. So `baseline` and `head` echo the rows the comparison actually used. `baseline.createdAt` is usually older than the `since` you asked for. Report what the response's anchors say, never what your own query asked for.
+
+**A `since` older than every surviving row resolves to `null`, not to the oldest row.** `baseline` comes back `null`, and the whole document is then reported as `added`. That is correct, not a fault. Nothing stored describes the document at that instant, so there is no earlier side to compare against. Retention thins autosave rows, so this is the ordinary answer for a window reaching back past `DOC_AUTOSAVE_RETENTION_DAYS`.
+
+**A null `baseline` also widens `versions`, `triggers` and `contributors` to the whole history.** The row count then takes its lower bound at version `0`. So it covers every version from 1 up to `head.version`, not only the versions inside the requested window. With a real `baseline` the bound is exact: it excludes the baseline row and includes the head row. The section counts are unaffected either way, because they come from the two snapshots alone.
+
+### GET /api/documents/:documentId/changes
+
+| Param   | Type        | Default             | Description                                                               |
+| ------- | ----------- | ------------------- | ------------------------------------------------------------------------- |
+| `since` | ISO instant | — (required)        | Anchors the baseline: the newest row at or before it. See the anchor rule |
+| `until` | ISO instant | the request instant | Anchors the head, the same way. Same shape as `since`                     |
+| `scope` | enum        | `summary`           | `summary` returns counts only; `headings` adds the `sections` tree        |
+
+```json
+{
+  "success": true,
+  "data": {
+    "documentId": "kR4pZ2mQ7tY1nB8xW3v",
+    "since": "2026-08-01T00:00:00.000Z",
+    "until": "2026-08-31T23:59:59.000Z",
+    "baseline": { "version": 11, "createdAt": "2026-07-29T16:40:02.884Z" },
+    "head": { "version": 18, "createdAt": "2026-08-30T09:14:51.220Z" },
+    "changed": true,
+    "summary": {
+      "sectionsAdded": 1,
+      "sectionsRemoved": 0,
+      "sectionsModified": 2,
+      "wordsAdded": 74,
+      "wordsRemoved": 12,
+      "versions": 7,
+      "triggers": ["websocket", "checkpoint"],
+      "contributors": [
+        {
+          "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+          "avatar_url": "https://example.test/ada.png",
+          "avatar_updated_at": "2026-07-01T09:12:00.000Z",
+          "full_name": "Ada Lovelace",
+          "display_name": "Ada",
+          "status": "online"
+        }
+      ]
+    }
+  }
+}
+```
+
+The `baseline` above is older than the requested `since`. That is the anchor rule, not a bug.
+
+| Field      | Meaning                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| `since`    | The window as the server read it, echoed back                                                     |
+| `until`    | The same, filled in with the request instant when the caller omitted it                           |
+| `baseline` | `{ version, createdAt }` of the older row used, or `null` when no row is old enough               |
+| `head`     | `{ version, createdAt }` of the newer row used, or `null` when no row exists at or before `until` |
+| `changed`  | Whether any section is `added`, `removed` or `modified`                                           |
+| `summary`  | The rollup, described below                                                                       |
+| `sections` | The outline tree. Present only for `scope=headings`                                               |
+
+| `summary` field                                          | Meaning                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `sectionsAdded` / `sectionsRemoved` / `sectionsModified` | How many sections carry that status, counted over the whole tree and not only its roots    |
+| `wordsAdded` / `wordsRemoved`                            | The section magnitudes summed. A `null` magnitude contributes `0`                          |
+| `versions`                                               | How many rows were stored in the window, counted by version number                         |
+| `triggers`                                               | The distinct non-null `trigger` values on those rows. A debounced save carries `websocket` |
+| `contributors`                                           | Profiles for every account those rows name, the `triggeredBy` of each row included         |
+
+`contributors` carries the same [`public.users` columns](#get-apidocumentsdocumentidversions) the history sidebar renders. The field is named for contributors, and it holds every account the window's rows name, so it is a superset of the editors.
+
+**`changed` is derived from the section statuses, never from the bytes.** A window that only spans the editor's first-open `toc-id` stamping pass has different bytes and no real edit, and reports `changed: false`.
+
+**`summary` is identical under both scopes.** The rollup is computed before the scope branch, so `scope=headings` adds `sections` and changes nothing else. Both scopes run the same comparison. `summary` is not a cheaper mode.
+
+Four windows come back with `changed: false`. Each one is a real answer, not an error. The `sections` column assumes `scope=headings`; under `scope=summary` the key is absent in every row.
+
+| Window                                      | What comes back                                                                    |
+| ------------------------------------------- | ---------------------------------------------------------------------------------- |
+| No row at or before `until`                 | `baseline` and `head` both `null`, `versions: 0`, `sections: []`                   |
+| Both ends land on the same row              | Both anchors set to that row, `versions: 0`, `sections: []`                        |
+| The two rows hold identical bytes           | Both anchors set, a real `versions` count, `sections: []`. Neither side is decoded |
+| Both rows decode, and every section matches | Both anchors set, a real `versions` count, `sections` full of `unchanged` nodes    |
+
+A named checkpoint of an unchanged document mints a row whose bytes duplicate its predecessor, which is the third case above.
+
+### The section tree
+
+`sections` is **absent** on `scope=summary` and **present** on `scope=headings`. Present and empty is not the same answer as absent. An empty array has two causes. The comparison ran and found no sections, or one of the fast paths above skipped it.
+
+```json
+{
+  "tocId": "hK2p9QmTvB4nX7Lc",
+  "text": "Rollout plan",
+  "level": 2,
+  "status": "modified",
+  "magnitude": { "wordsAdded": 31, "wordsRemoved": 4, "blocksBefore": 5, "blocksAfter": 6 },
+  "excerpt": "We move the beta group first and hold the rest for a week.",
+  "children": []
+}
+```
+
+| Field       | Meaning                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `tocId`     | The heading's stored `toc-id`, or `null`. Sanitized and cut at 200 characters                      |
+| `text`      | The heading's text, sanitized and cut at 200 characters. `""` on the preamble                      |
+| `level`     | The heading level, clamped to 1–6. A non-numeric stored level reads as `1`. `0` marks the preamble |
+| `status`    | One of `added`, `removed`, `modified`, `unchanged` — see [Section status](#section-status)         |
+| `magnitude` | `{ wordsAdded, wordsRemoved, blocksBefore, blocksAfter }`, or `null` when nothing countable moved  |
+| `excerpt`   | Up to 140 characters of the text that arrived. The key is omitted when there is nothing to show    |
+| `children`  | Nested sections. Always an array, often empty                                                      |
+
+**A section is one heading plus the top-level nodes up to the next heading of any level.** So a section does not contain its subsections, and editing a child never marks its parent `modified`. The document title is a section like any other.
+
+**Nesting is by level, not by containment.** A node becomes the child of the nearest preceding node with a strictly smaller level. A level-3 heading directly under a level-1 heading becomes its direct child; no level-2 node is invented. A leading level-3 heading followed by a level-1 heading gives two roots.
+
+**Nodes that sit before the first heading become one synthetic preamble.** It carries `level: 0`, `tocId: null` and `text: ""`. It is always a root sibling with no children, never the parent of the outline that follows. Only legacy documents that break the title-first rule carry one.
+
+**The tree is in head order.** Each `removed` section is emitted just after the last head section that did pair, and removals with nothing before them come first. A `removed` node carries the **baseline's** level and text, so it can nest under a head section by that older level.
+
+`excerpt` is not verbatim. Whitespace collapses to single spaces, C0 and C1 control characters are stripped, and the result is cut at 140 characters. Both caps exist because this text is meant for an email body, where a newline forges a whole entry. No mailer consumes it yet — that is issue #201.
+
+### Section status
+
+| `status`    | When                                                 | `magnitude`                                                          |
+| ----------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `added`     | The section has no baseline side                     | Every word and block in it, counted as added                         |
+| `removed`   | The section has no head side                         | Every word and block in it, counted as removed. No `excerpt`         |
+| `modified`  | Both sides exist and their canonical forms differ    | Word deltas plus the block count on each side, or `null` — see below |
+| `unchanged` | Both sides exist and their canonical forms are equal | Always `null`. An unchanged pair is never measured                   |
+
+The canonical form covers the heading node and the body together. So a heading level change from 2 to 3 stays visible, even when both node lists are otherwise identical. It drops the `toc-id` attribute, because the editor stamps that on first open and it is churn, not an edit.
+
+On `added` and `removed` the heading's own words and its own node count are included. A one-word heading over a three-word paragraph reports `wordsAdded: 4` and `blocksAfter: 2`.
+
+The `excerpt` on a `modified` section is the single widest inserted run, not every insertion. On an `added` section it is the section body, without the heading. Both are then cut at 140 characters.
+
+### How sections are paired
+
+Identity is resolved in four steps, in this order.
+
+1. **The preamble, by position.** When both sides open with a `level: 0` preamble, those two pair. A preamble carries no `toc-id` and no name, so position is its only identity.
+2. **By `toc-id`.** Both sides must carry one. Inside each snapshot the first occurrence wins, so a duplicate id falls through to the next step. A stable id beats position, which is what lets a moved section still read as `unchanged`.
+3. **By longest common subsequence, as `unchanged`.** The key is the canonical hash of the whole section. An unstamped baseline section still matches a freshly stamped head section here, because the canonical form drops `toc-id`. That is what stops the editor's first-open pass reading as a whole new document.
+4. **By longest common subsequence, as `modified`.** A leftover removal is zipped with a leftover addition under two conditions. The two levels must be equal, and at least one of the two ids must be `null`.
+
+That last condition is deliberate. Two sections that both carry a `toc-id` and still did not match are two different sections. Merging them would hide a deletion and call a new section an edit. So a rename that also mints a new id reports one `removed` plus one `added`, never one `modified`. A heading whose text and level both changed comes out the same way, because the levels have to match for the zip.
+
+Every section is keyed with the same node type, so an adjacent removal and addition can reach the zip at all. Unbalanced runs keep their leftovers: extra removals stay `removed`, and extra additions stay `added`.
+
+There is no `coarse` field on this response, unlike the [versions diff](#get-apidocumentsdocumentidversionsversiondiff). The matcher's fallback needs about 1000 unpaired headings on each side, so no real document reaches it. Stop looking for the field.
+
+### What this route does not tell you
+
+**A formatting-only edit reports `magnitude: null`.** The default token encoder reads neither marks nor attributes. Bold on existing words, a changed link address, and a heading level change all measure zero. The status still says `modified`: the edit happened, and only its size is unknown. A measurement that throws also reports `magnitude: null`, and the response cannot tell the two apart.
+
+**Word counting is whitespace splitting.** It is not language-aware, so a script that does not separate words with spaces counts as one word.
+
+**A parent's magnitude says nothing about its subtree.** Sections own no descendants, so a child edit leaves the parent `unchanged`.
+
+**A pure reorder of stamped sections reports `changed: false`.** The moved sections pair by `toc-id` and compare equal, so every status is `unchanged`. `scope=headings` still shows the new order, which is where a caller can see the move. Reordering sections that carry no `toc-id` is different: those fall to the matcher and can come back as `removed` plus `added`.
+
+**A caller that rotates every `toc-id` defeats pairing.** Nothing then matches by id, everything falls to the matcher, and an edited section reads `removed` plus `added` rather than `modified`. No editor produces this, because the webapp keeps its ids. A REST caller can, because `PATCH /content` stores a caller-supplied `toc-id` verbatim. The result is coarser, never false: the section is still reported as changed, and no edit is attributed to a section nobody touched.
+
+**A `toc-id` rewrite on its own is `unchanged`.** The canonical form drops the attribute, so re-anchoring a heading is not an edit.
+
+**Attribution is decoration.** It is per-replica and best-effort, anonymous editors are omitted, and retention thinning under-reports contributors on windows longer than the autosave retention. A profile-lookup outage empties `contributors` rather than failing the request. The content comparison stays correct in every one of those cases.
+
+**A document only reaches followers once a signed-in person has opened it at least once.** The audience for a content-change notification is workspace membership, and only a signed-in browser open creates the workspace row. So a document created through this API, which nobody has opened while signed in, notifies nobody — the owner included. This is a recorded gap, not a fault. Closing it would put a write into a read path and would record a first visitor who never visited. See issue #203.
+
+**The echoed `tocId` is sanitized, so it is not guaranteed to equal the stored attribute.** Whitespace collapses, control characters go, and the value is cut at 200 characters. A server-stamped id is 16 alphanumeric characters, which the sanitizer never alters, so pairing stays consistent. A stranger-written id of another shape can come back changed, and a deep link built from it then resolves to nothing.
+
+### Status codes
+
+| Status | Code                    | When                                                                                                                                                                                                                     |
+| ------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400`  | `VALIDATION_ERROR`      | Malformed `documentId`; a `since` or `until` that is not an ISO instant with an offset; a missing `since`; a `since` later than `until`, checked only when `until` is sent; a `scope` other than `summary` or `headings` |
+| `401`  | `UNAUTHORIZED`          | Missing, wrong, or user-JWT bearer; also when `SUPABASE_SERVICE_ROLE_KEY` is unset (fails closed). Checked before validation                                                                                             |
+| `404`  | `NOT_FOUND`             | Told apart by the message: there is no metadata row; the document is soft-deleted; or retention removed a version this window anchors on while the request ran                                                           |
+| `429`  | `RATE_LIMIT_EXCEEDED`   | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)                                                                                           |
+| `500`  | `INTERNAL_SERVER_ERROR` | A stored snapshot on either side could not be decoded. Nothing partial is returned                                                                                                                                       |
+
+Only the retention case is worth retrying: the document exists, and only the anchor row went. A missing metadata row and a soft-deleted document are both permanent, so retrying either just repeats the `404`.
 
 ## Document conversion
 

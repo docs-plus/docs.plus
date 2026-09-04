@@ -203,6 +203,36 @@ Authorization: Bearer {{serviceRoleKey}}
 # {}
 
 # ---------------------------------------------------------------------------
+# Document changes (service-role only)
+# ---------------------------------------------------------------------------
+# Read-only. `since` and `until` bound the version row's `createdAt`, never the
+# version number. Both need an ISO instant carrying an offset; `Z` is one. Drop
+# it and the route answers 400. A numeric offset must be percent-encoded as
+# %2B01:00 — a raw `+` in a query value decodes to a space and fails validation.
+
+### What changed since a fixed instant - counts only
+GET {{base}}/api/documents/{{documentId}}/changes?since=2026-08-01T00:00:00Z
+Authorization: Bearer {{serviceRoleKey}}
+
+### The same window with the heading tree
+### `sections` holds the whole outline, unchanged headings included.
+GET {{base}}/api/documents/{{documentId}}/changes?since=2026-08-01T00:00:00Z&scope=headings
+Authorization: Bearer {{serviceRoleKey}}
+
+### A closed window - `until` defaults to the request instant when omitted
+GET {{base}}/api/documents/{{documentId}}/changes?since=2026-08-01T00:00:00Z&until=2026-08-31T23:59:59Z
+Authorization: Bearer {{serviceRoleKey}}
+
+### A `since` older than every surviving row
+### `baseline` comes back null and the whole document reads as added.
+GET {{base}}/api/documents/{{documentId}}/changes?since=2000-01-01T00:00:00Z&scope=headings
+Authorization: Bearer {{serviceRoleKey}}
+
+### Equal ends report no change; a reversed pair is a 400
+GET {{base}}/api/documents/{{documentId}}/changes?since=2026-08-01T00:00:00Z&until=2026-08-01T00:00:00Z
+Authorization: Bearer {{serviceRoleKey}}
+
+# ---------------------------------------------------------------------------
 # Document conversion (service-role only)
 # ---------------------------------------------------------------------------
 # Export responses are the raw file, not the house envelope — save them rather
@@ -266,6 +296,18 @@ content-type: application/json
     ]
   }
 }
+
+# ---------------------------------------------------------------------------
+# Last opened
+# ---------------------------------------------------------------------------
+
+### Owner live list, Last opened sort
+GET {{base}}/api/documents?ownerId=<uuid>&sort=lastOpenedAt_desc
+token: <jwt>
+
+### Stamp Last opened
+POST {{base}}/api/documents/{{documentId}}/opened
+token: <jwt>
 
 # ---------------------------------------------------------------------------
 # Health

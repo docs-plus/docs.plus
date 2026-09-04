@@ -310,6 +310,24 @@ export const setDocumentFavorite = async (c: AppContext): Promise<Response> => {
   }
 }
 
+export const touchDocumentOpened = async (c: AppContext): Promise<Response> => {
+  const prisma = c.get('prisma')
+  const documentId = c.req.param('documentId')
+  if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
+  const requesterId = c.get('userId') as string
+
+  try {
+    const result = await documentsService.touchDocumentOpened(prisma, documentId, requesterId)
+    if (result.status === 'forbidden') return forbiddenResponse(c)
+    if (result.status === 'not-found') {
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    }
+    return ok(c, { documentId: result.documentId })
+  } catch (error) {
+    return handleError(c, error, { documentId })
+  }
+}
+
 export const duplicateDocument = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   const documentId = c.req.param('documentId')

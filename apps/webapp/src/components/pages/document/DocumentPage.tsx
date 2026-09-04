@@ -5,6 +5,7 @@ import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
 import useJoinWorkspace from '@hooks/useJoinWorkspace'
 import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
+import useTouchDocumentOpened from '@hooks/useTouchDocumentOpened'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { GoogleOneTapLayout } from '@layouts'
 import { useStore } from '@stores'
@@ -43,6 +44,7 @@ const DocumentPage = ({
     deviceType
   })
   useJoinWorkspace({ documentId: docMetadata.documentId, channelsLoading })
+  useTouchDocumentOpened(docMetadata.documentId, docMetadata.ownerId)
 
   useEffect(() => {
     ensureEmojiData()

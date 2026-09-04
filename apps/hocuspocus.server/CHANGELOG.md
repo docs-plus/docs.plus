@@ -39,6 +39,21 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **Owner live lists pin Favorites first.** `GET /api/documents?ownerId=token.sub`
   returns `isFavorite` and orders that user's Favorites first, then `sort`. Trash and the
   public fleet omit both.
+- **DocumentGridPreview.** `DocumentMetadata.preview` JSON. SQL NULL means never
+  extracted. `{ heading: null, lines: [] }` means empty or a failed extract.
+  Heading is stored even when it equals Title. The paper omits heading at paint
+  when it equals Title. Owner live list and Owner Trash list include `preview`
+  and fill SQL-NULL rows. Fill persists with `Promise.all` after decode and
+  returns a Map. `refreshDocumentGridPreview` always replaces. The owner list
+  mapper runs `parseDocumentGridPreview`. SQL NULL stays null. Invalid JSON
+  becomes `{ heading: null, lines: [] }`. Fleet, create, slug GET, and update
+  omit `preview`. Persist uses raw SQL so `@updatedAt` does not move. Worker
+  refresh runs after the persist transaction commits. Type lives in
+  `src/lib/documentGridPreview.ts`. Do not reuse admin `DocumentPreview`.
+- **Last opened.** `DocumentMetadata.lastOpenedAt`. Sort key `lastOpenedAt_desc`.
+  Owner live list and Owner Trash list include it. Fleet, create, slug GET,
+  and update omit it. `POST /api/documents/:documentId/opened` is owner-only,
+  raw SQL, 30-second debounce, trash → 404. Does not move `@updatedAt`.
 
 ### Changed
 
@@ -47,6 +62,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
   import, so the script's own `process.env` assignment would land too late. Run
   the script through `bun run test:e2e:duplicate-media`, never `bun` directly, or
   its purge deletes by prefix from the bucket named by `DO_STORAGE_ENDPOINT`.
+- **Owner Trash list includes `preview` and `lastOpenedAt` and fills SQL-NULL
+  rows.** The older Owner live list Added bullet said Trash omits both.
+  Fill matches the Owner live list. Owner Trash list still omits Favorite.
 
 ### Fixed
 
@@ -56,12 +74,32 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Documentation
 
+- Record the changes route in [API.md](./API.md), with its window semantics, both
+  response shapes, the status table and the section-matching rules. The limits are
+  stated rather than omitted. A formatting-only edit reports a null magnitude. A pure
+  section reorder reports `changed: false`. A caller that rotates every `toc-id`
+  defeats pairing. Request examples live in
+  [scripts/documents.http](./scripts/documents.http).
 - Record the Favorite route and owner-list `isFavorite` in [API.md](./API.md). The
   required-token list in [docs/api/authentication.md](../../docs/api/authentication.md)
   now includes favorite and unfavorite.
 - Record Markdown import media in [API.md](./API.md). A lone media URL, or a
   provider address written as an image, becomes a player node that `PATCH /content`
   accepts. Picture size stays empty on that JSON.
+- Record `preview`, `lastOpenedAt`, `lastOpenedAt_desc`, and
+  `POST /api/documents/:documentId/opened` in [API.md](./API.md). Owner Trash
+  includes `preview`.
+
+### Internal
+
+- **The document-changes route now has a real-infrastructure end-to-end script.**
+  `bun run test:e2e:document-changes` boots both entry points against Postgres and
+  Redis, then drives its assertions over five scenarios. Those are a real edit cycle,
+  an empty window, an unstamped baseline, the auth and tombstone gates, and the anchor
+  a window actually used. It also pins the two failures no unit test reaches. A
+  snapshot that will not decode answers `500`. A `since` before every surviving row
+  answers a null baseline rather than an error. A step in `backend-ci.yml` runs the
+  script on every backend change.
 
 ## [2.0.1] — 2026-08-31
 

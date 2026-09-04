@@ -13,7 +13,16 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 
 ## Documents list
 
-- **Favorite** — a per-user mark that pins a document to the top of Settings → Documents. Stored as `DocumentFavorite` (`userId` + `documentId`). Owner-only. Soft-delete keeps the row; purge cascade drops it. Not **Bookmark** (chat messages and the hyperlink picker) and not **Pin** (channel messages).
+- **Favorite** — a per-user mark that pins a document to the top of Settings → Documents. Stored as `DocumentFavorite` (`userId` + `documentId`). Owner-only. Soft-delete keeps the row; purge cascade drops it.
+  _Avoid_: Bookmark (chat messages and the hyperlink picker), Pin (channel messages)
+- **Owner live list** — the owner's undeleted Documents in Settings. Pins Favorites first. Includes `isFavorite`, DocumentGridPreview, and Last opened.
+  _Avoid_: public fleet (omits Favorite, DocumentGridPreview, and Last opened)
+- **Owner Trash list** — the owner's soft-deleted Documents. Includes DocumentGridPreview and Last opened. Omits Favorite. Same NULL fill as the Owner live list.
+  _Avoid_: Owner live list
+- **DocumentGridPreview** — the first-page extract painted on Documents paper (grid, list thumb, Trash thumb). SQL NULL means never extracted. `{ heading: null, lines: [] }` means empty or a failed extract. The paper omits heading at paint when it equals Title.
+  _Avoid_: DocumentPreview (admin stale-doc shape), screenshot, thumbnail
+- **Last opened** — `DocumentMetadata.lastOpenedAt`, stamped when the owner opens the pad. Sort key `lastOpenedAt_desc`. Does not move Last modified. Owner lists only.
+- **Date buckets** — Today / Yesterday / Previous 7 days / Previous 30 days / Earlier / Never opened. Used on date sorts in Settings → Documents. Favorites stay unbucketed. Never opened is for a null sort timestamp (Last opened with no stamp).
 
 ## Document access
 

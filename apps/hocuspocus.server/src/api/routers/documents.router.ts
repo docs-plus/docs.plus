@@ -77,6 +77,8 @@ documents.post('/:documentId/restore', requireUser, documentsController.restoreD
 
 documents.post('/:documentId/duplicate', requireUser, documentsController.duplicateDocument)
 
+documents.post('/:documentId/opened', requireUser, documentsController.touchDocumentOpened)
+
 documents.put(
   '/:documentId/favorite',
   requireUser,

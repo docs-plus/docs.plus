@@ -2,6 +2,10 @@ import { Prisma, PrismaClient } from '@prisma/client'
 import ShortUniqueId from 'short-unique-id'
 
 import { publishDocumentAccessEvent } from '../../lib/accessRealtime'
+import {
+  fillMissingDocumentPreviews,
+  parseDocumentGridPreview
+} from '../../lib/documentGridPreview'
 import { deriveDocumentId, INITIAL_EPOCH } from '../../lib/documentId'
 import {
   AppError,
@@ -115,7 +119,10 @@ export const createDocument = async (prisma: PrismaClient, params: CreateDocumen
       email: email || null
     }
 
-    const doc = await prisma.documentMetadata.create({ data: newDocumentMeta })
+    const doc = await prisma.documentMetadata.create({
+      data: newDocumentMeta,
+      select: PUBLIC_METADATA_SELECT
+    })
     const ownerProfile = userId ? await getOwnerProfile(userId) : null
 
     documentsServiceLogger.info({ documentId, slug: newSlug }, 'Document created successfully')
@@ -135,7 +142,8 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
     const normalizedSlug = normalizeSlug(slug)
 
     const doc = await prisma.documentMetadata.findUnique({
-      where: { slug: normalizedSlug }
+      where: { slug: normalizedSlug },
+      select: PUBLIC_METADATA_SELECT
     })
 
     if (!doc) return null
@@ -149,11 +157,7 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
 
     const ownerProfile = doc.ownerId ? await getOwnerProfile(doc.ownerId) : null
 
-    // The owner address stays in Postgres to track the Supabase profile. It never
-    // leaves on this route: a public slug read answers callers with no session.
-    const { email: _ownerEmail, ...publicDoc } = doc
-
-    return { ...publicDoc, keywords, ownerProfile }
+    return { ...doc, keywords, ownerProfile }
   } catch (error) {
     documentsServiceLogger.error({ err: error, slug }, 'Error fetching document by slug')
     throw handlePrismaError(error)
@@ -162,15 +166,17 @@ export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
 
 const SORT_FIELD_MAP: Record<
   string,
-  { field: 'updatedAt' | 'createdAt' | 'title'; dir: 'asc' | 'desc' }
+  { field: 'updatedAt' | 'createdAt' | 'lastOpenedAt' | 'title'; dir: 'asc' | 'desc' }
 > = {
   updatedAt_desc: { field: 'updatedAt', dir: 'desc' },
   createdAt_desc: { field: 'createdAt', dir: 'desc' },
+  lastOpenedAt_desc: { field: 'lastOpenedAt', dir: 'desc' },
   title_asc: { field: 'title', dir: 'asc' },
   title_desc: { field: 'title', dir: 'desc' }
 }
 
-const LIST_METADATA_SELECT = {
+/** Create, slug GET, update, and the public fleet. Never `preview` or `lastOpenedAt`. */
+const PUBLIC_METADATA_SELECT = {
   id: true,
   slug: true,
   title: true,
@@ -185,16 +191,26 @@ const LIST_METADATA_SELECT = {
   deletedAt: true
 } as const
 
+const OWNER_LIST_SELECT = {
+  ...PUBLIC_METADATA_SELECT,
+  lastOpenedAt: true,
+  preview: true
+} as const
+
 /** Owner live lists pin this user's favorites first. Trash and the fleet skip it. */
 function buildDocumentsOrderBy(args: {
   deleted?: boolean
   sort?: SearchDocumentsParams['sort']
-  favoritesFirst?: boolean
+  ownerLiveList?: boolean
 }) {
   const { field, dir } =
     SORT_FIELD_MAP[args.sort ?? 'updatedAt_desc'] ?? SORT_FIELD_MAP.updatedAt_desc
-  const sortOrder = args.deleted ? { deletedAt: 'desc' as const } : { [field]: dir }
-  if (!args.favoritesFirst) return sortOrder
+  const sortOrder = args.deleted
+    ? { deletedAt: 'desc' as const }
+    : field === 'lastOpenedAt'
+      ? { lastOpenedAt: { sort: dir, nulls: 'last' as const } }
+      : { [field]: dir }
+  if (!args.ownerLiveList) return sortOrder
   return [{ favorites: { _count: 'desc' as const } }, sortOrder]
 }
 
@@ -236,14 +252,18 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     // private rows. Owner-scoped calls (ownerId === token.sub) are unaffected.
     const privacyWhere = !requesterId || !ownerId ? { isPrivate: false } : {}
 
-    const favoritesFirst = Boolean(requesterId && ownerId && requesterId === ownerId && !deleted)
-    const orderBy = buildDocumentsOrderBy({ deleted, sort, favoritesFirst })
-    const listSelect = favoritesFirst
+    const ownerLiveList = Boolean(requesterId && ownerId && requesterId === ownerId && !deleted)
+    const ownerTrashList = Boolean(requesterId && ownerId && requesterId === ownerId && deleted)
+    const ownerPreviewList = ownerLiveList || ownerTrashList
+    const orderBy = buildDocumentsOrderBy({ deleted, sort, ownerLiveList })
+    const listSelect = ownerLiveList
       ? {
-          ...LIST_METADATA_SELECT,
+          ...OWNER_LIST_SELECT,
           favorites: { where: { userId: requesterId }, select: { userId: true } }
         }
-      : LIST_METADATA_SELECT
+      : ownerTrashList
+        ? OWNER_LIST_SELECT
+        : PUBLIC_METADATA_SELECT
 
     if (title || reqKeywords || description) {
       // to_tsquery (the `search` clauses) throws a 500 on operator punctuation
@@ -295,13 +315,20 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       ])
     }
 
-    const formattedDocs = docs.map((doc) => {
-      const { favorites, keywords, ...rest } = doc as typeof doc & {
+    const listed = docs.map((doc) => {
+      const {
+        favorites,
+        keywords,
+        preview: rawPreview,
+        ...rest
+      } = doc as typeof doc & {
         favorites?: { userId: string }[]
+        preview?: unknown
       }
       return {
         ...rest,
-        ...(favoritesFirst ? { isFavorite: (favorites?.length ?? 0) > 0 } : {}),
+        ...(ownerLiveList ? { isFavorite: (favorites?.length ?? 0) > 0 } : {}),
+        ...(ownerPreviewList ? { preview: parseDocumentGridPreview(rawPreview) } : {}),
         keywords: keywords
           ? keywords
               .split(',')
@@ -309,6 +336,18 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
               .filter(Boolean)
           : []
       }
+    })
+
+    const filled = ownerPreviewList
+      ? await fillMissingDocumentPreviews(
+          prisma,
+          listed.filter((doc) => doc.preview == null).map((doc) => doc.documentId)
+        )
+      : new Map()
+
+    const formattedDocs = listed.map((doc) => {
+      const next = filled.get(doc.documentId)
+      return next ? { ...doc, preview: next } : doc
     })
 
     const ownerIds = formattedDocs.filter((doc) => doc.ownerId).map((doc) => doc.ownerId!)
@@ -430,7 +469,8 @@ export const updateDocument = async (
         keywords: keywords ? keywords.join(',') : '',
         ownerId: requesterId || null,
         ...updateData
-      }
+      },
+      select: PUBLIC_METADATA_SELECT
     })
 
     if (updateData.isPrivate !== undefined || updateData.readOnly !== undefined) {
@@ -557,6 +597,37 @@ export const setDocumentFavorite = async (
   }
 
   return { status: 'ok', documentId, isFavorite: favorite }
+}
+
+export type TouchOpenedResult =
+  { status: 'ok'; documentId: string } | { status: 'forbidden' } | { status: 'not-found' }
+
+/** Sets `lastOpenedAt` only. Prisma `update` would stamp `@updatedAt` and rewrite Last modified. */
+export const touchDocumentOpened = async (
+  prisma: PrismaClient,
+  documentId: string,
+  requesterId?: string
+): Promise<TouchOpenedResult> => {
+  if (!documentId || documentId.trim().length === 0) {
+    throw new ValidationError('Document ID is required and cannot be empty')
+  }
+
+  const existing = await prisma.documentMetadata.findUnique({
+    where: { documentId },
+    select: { ownerId: true, deletedAt: true }
+  })
+
+  if (!isDocumentOwner(existing, requesterId)) return { status: 'forbidden' }
+  if (!existing || existing.deletedAt) return { status: 'not-found' }
+
+  await prisma.$executeRaw`
+    UPDATE "DocumentMetadata"
+    SET "lastOpenedAt" = NOW()
+    WHERE "documentId" = ${documentId}
+      AND "deletedAt" IS NULL
+      AND ("lastOpenedAt" IS NULL OR "lastOpenedAt" < NOW() - INTERVAL '30 seconds')
+  `
+  return { status: 'ok', documentId }
 }
 
 export type DuplicateDocumentResult =

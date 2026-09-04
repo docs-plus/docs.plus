@@ -132,6 +132,7 @@ export const createMockPrisma = (): Partial<PrismaClient> => {
       upsert: async (data: any) => ({ ...data.create })
     },
     $queryRaw: async () => [{ result: 1 }],
+    $executeRaw: async () => 0,
     $disconnect: async () => {}
   }
 

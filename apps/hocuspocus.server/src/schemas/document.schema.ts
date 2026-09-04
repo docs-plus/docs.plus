@@ -37,7 +37,7 @@ export const documentQuerySchema = z.object({
   deleted: z.enum(['true', 'false']).optional(),
   // Allowlisted sort — maps to a fixed Prisma orderBy in the service.
   sort: z
-    .enum(['updatedAt_desc', 'createdAt_desc', 'title_asc', 'title_desc'])
+    .enum(['updatedAt_desc', 'createdAt_desc', 'lastOpenedAt_desc', 'title_asc', 'title_desc'])
     .optional()
     .default('updatedAt_desc'),
   limit: z.string().optional().default('10'),

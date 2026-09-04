@@ -4,6 +4,7 @@ import * as Y from 'yjs'
 import { config } from '../config/env'
 import type { DeadLetterJobData, EnqueueStoreDocumentParams, StoreDocumentData } from '../types'
 import { toBullMQConnection } from '../types/redis.types'
+import { refreshDocumentGridPreview } from './documentGridPreview'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
 import { queueLogger } from './logger'
@@ -513,6 +514,18 @@ export const createDocumentWorker = () => {
           { jobId: job.id, duration: `${duration}ms` },
           'Document stored successfully'
         )
+
+        try {
+          await refreshDocumentGridPreview(prisma, {
+            documentId: data.documentName,
+            data: savedDoc.data
+          })
+        } catch (err) {
+          queueLogger.warn(
+            { err, documentId: data.documentName },
+            'Failed to persist document grid preview'
+          )
+        }
 
         // Send email notification AFTER transaction commits (fire-and-forget)
         if (isFirstCreation && createdSlug) {

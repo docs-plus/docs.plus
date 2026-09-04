@@ -1,8 +1,9 @@
 import Button from '@components/ui/Button'
-import { LuFileText, LuRotateCcw, LuTrash2 } from 'react-icons/lu'
+import { LuRotateCcw, LuTrash2 } from 'react-icons/lu'
 
 import type { OwnedDocument } from '../types'
 import { formatDeletedAgo, retentionCountdown } from '../utils/retention'
+import DocumentPreviewPaper from './DocumentPreviewPaper'
 
 // Raw --color-warning is ~3.1:1 on Paper (sub-AA). Mix toward base-content as a
 // direct color so it re-resolves per theme. An @theme token would freeze the mix
@@ -45,7 +46,7 @@ function TrashListRow({
         aria-label={`Select “${label}”`}
         className="checkbox checkbox-sm checkbox-primary shrink-0"
       />
-      <LuFileText size={18} className="text-base-content/40 shrink-0" />
+      <DocumentPreviewPaper preview={doc.preview} title={doc.title} variant="row" />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-base-content truncate font-medium">{label}</span>
         <span className="text-xs">

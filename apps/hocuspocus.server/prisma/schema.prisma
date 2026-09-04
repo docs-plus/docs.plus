@@ -43,6 +43,11 @@ model DocumentMetadata {
   ownerId     String?
   email       String?
   deletedAt   DateTime? // Soft-delete tombstone; the reaper purges the footprint after retention.
+  // First-page extract for the owner Documents grid. NULL = never extracted.
+  // Application SQL writes this column without touching updatedAt.
+  preview Json?
+  // Owner pad open. Application SQL writes this column without touching updatedAt.
+  lastOpenedAt DateTime?
 
   documents     Documents[]
   clientAuthors DocumentClientAuthor[]
@@ -50,6 +55,7 @@ model DocumentMetadata {
 
   @@index([ownerId])
   @@index([deletedAt])
+  @@index([ownerId, lastOpenedAt])
 }
 
 // Counts how many times a slug's document has been purged, so a reused slug cannot
