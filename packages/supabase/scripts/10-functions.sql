@@ -1342,6 +1342,9 @@ using (
   )
 );
 
-comment on policy "chatroom_read_topic_access" on realtime.messages is
-'Members-only subscription to chatroom-read:{channel_id}. Pairs with
-advance_read_cursor which fans out read:advanced with private := TRUE.';
+-- A line comment, not comment on policy: that statement needs ownership of
+-- realtime.messages and the seeding postgres role does not have it.
+--
+-- chatroom_read_topic_access: members-only subscription to
+-- chatroom-read:{channel_id}. Pairs with advance_read_cursor, which fans out
+-- read:advanced with private := TRUE.

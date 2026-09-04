@@ -949,7 +949,16 @@ COMMENT ON TRIGGER broadcast_notification_changes_trigger ON public.notification
 -- Rule: an authenticated user may subscribe ONLY to their own per-user
 -- topic, i.e. `notifications:<auth.uid()>`. No cross-user leakage.
 
-ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+-- Conditional because `realtime.messages` is owned by `supabase_realtime_admin`,
+-- and the seed runs as `postgres`, which is not a member of that role. Current
+-- images already ship RLS enabled here, so an unconditional ALTER aborts the
+-- whole reset with `42501 must be owner of table messages`.
+DO $$
+BEGIN
+    IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'realtime.messages'::regclass) THEN
+        EXECUTE 'ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY';
+    END IF;
+END $$;
 
 DROP POLICY IF EXISTS "notifications_topic_access" ON realtime.messages;
 
@@ -961,10 +970,12 @@ USING (
   realtime.messages.topic = 'notifications:' || (select auth.uid())::text
 );
 
-COMMENT ON POLICY "notifications_topic_access" ON realtime.messages IS
-'Allows authenticated users to subscribe to their own per-user notification topic
-(notifications:<auth.uid()>). Pairs with broadcast_notification_changes() which
-sends with private := TRUE.';
+-- A line comment, not comment on policy: that statement needs ownership of
+-- realtime.messages and the seeding postgres role does not have it.
+--
+-- notifications_topic_access: allows authenticated users to subscribe to their
+-- own per-user notification topic (notifications:<auth.uid()>). Pairs with
+-- broadcast_notification_changes() which sends with private := TRUE.
 
 -- ============================================================
 -- Hardening: pin search_path = public on functions defined above
@@ -8796,9 +8807,12 @@ using (
   )
 );
 
-comment on policy "chatroom_read_topic_access" on realtime.messages is
-'Members-only subscription to chatroom-read:{channel_id}. Pairs with
-advance_read_cursor which fans out read:advanced with private := TRUE.';
+-- A line comment, not comment on policy: that statement needs ownership of
+-- realtime.messages and the seeding postgres role does not have it.
+--
+-- chatroom_read_topic_access: members-only subscription to
+-- chatroom-read:{channel_id}. Pairs with advance_read_cursor, which fans out
+-- read:advanced with private := TRUE.
 
 
 -- ============================================================================
