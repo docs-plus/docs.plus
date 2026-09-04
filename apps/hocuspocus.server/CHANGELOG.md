@@ -19,6 +19,20 @@ This file is the operator and API changelog. The pad product lives in the [root 
   labeled links, and a media URL inside a list item stay links. Picture size
   is still empty on the import JSON; Settings replace writes natural width
   and height in the browser.
+- **Content-change followers, in the database.** A new `notification_category`
+  value, `content_change`, carries "this document changed" on
+  `public.notifications`. The subscription is workspace membership itself, so
+  there is no new table: `workspace_members.content_email_muted_at` holds the
+  whole state and `NULL` means following, while `left_at` is also `NULL`.
+  `notify_document_content_change` is the service-role fan-out. It writes one
+  carrier per eligible follower and skips editors, muted members, and anyone
+  already holding an unread carrier from the last 24 hours. It writes nothing
+  else: a document no signed-in person has ever opened has no `workspaces` row,
+  so it reaches nobody, the owner included. `set_document_follow` and
+  `get_document_follow_state` are the browser-facing pair, both gating on
+  `auth.uid()`. Push defaults off for this type and needs an explicit opt-in;
+  email defaults on. Two migrations ship it, because Postgres forbids using an
+  enum value added in the same transaction.
 - **What changed in a document, per heading section.**
   `GET /api/documents/:documentId/changes?since&until&scope` compares the newest stored
   snapshot at or before `since` with the newest at or before `until`. Service-role only.
