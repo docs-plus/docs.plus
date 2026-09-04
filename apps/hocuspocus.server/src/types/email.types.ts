@@ -75,6 +75,19 @@ export interface DigestDocument {
   slug: string
   url: string
   channels: DigestChannel[]
+  /** Absent on every legacy payload; only a content_change carrier seeds it. */
+  content_changes?: DigestContentChanges
+}
+
+/**
+ * Minimal seed written by the digest consumer. Issue #201 renders the detail
+ * (sections, magnitude, contributors) and extends this block.
+ */
+export interface DigestContentChanges {
+  /** Exact-case documentId, taken from the carrier's channel_id. */
+  document_id: string
+  /** Earliest carrier time when one window holds several carriers. */
+  since: string
 }
 
 export interface DigestChannel {

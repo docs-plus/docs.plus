@@ -19,6 +19,19 @@ This file is the operator and API changelog. The pad product lives in the [root 
   labeled links, and a media URL inside a list item stay links. Picture size
   is still empty on the import JSON; Settings replace writes natural width
   and height in the browser.
+- **Content-change notifications reach a private document's owner alone.** A
+  save fans out on every commit, and the worker decides the audience because
+  Supabase cannot: `isPrivate`, `ownerId` and `deletedAt` live in Prisma, and
+  workspace membership admits any signed-in visitor. A trashed document reaches
+  nobody. A private document with no owner reaches nobody. The rule is checked
+  again at send time, because a document can turn private after the carrier row
+  is written. A `content_change` always takes the digest branch, never the
+  immediate one, which has no privacy re-check. A digest left with nothing to
+  say marks its `email_queue` rows `'skipped'` rather than mailing an empty
+  page. The daily email cap now counts immediate rows only: one digest marks one
+  row per notification, so counting every row read a 60-notification digest as
+  60 emails. That loosens the cap for existing daily and weekly readers, on
+  purpose.
 - **Content-change followers, in the database.** A new `notification_category`
   value, `content_change`, carries "this document changed" on
   `public.notifications`. The subscription is workspace membership itself, so

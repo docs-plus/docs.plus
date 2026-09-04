@@ -7,16 +7,23 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { config } from '../../config/env'
 import type {
-  DigestChannel,
-  DigestDocument,
   DigestEmailRequest,
-  DigestNotification,
+  EmailStatus,
   NotificationEmailRequest,
   NotificationType
 } from '../../types/email.types'
+import { resolveContentChangeAudience } from '../contentChangeFanout'
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
+import { prisma } from '../prisma'
+import {
+  buildDigestDocuments,
+  CONTENT_CHANGE_TYPE,
+  type DigestRawNotification,
+  filterDigestDocuments,
+  normaliseDigestFrequency
+} from './digestDocuments'
 import { queueEmail } from './queue'
 
 const POLL_INTERVAL_MS = 2000
@@ -44,24 +51,10 @@ interface EmailQueuePayload {
   notifications?: DigestRawNotification[]
 }
 
-/** Raw notification data from SQL compile_digest_emails */
-interface DigestRawNotification {
-  notification_type: string
-  sender_name: string
-  sender_avatar_url: string | null
-  message_preview: string
-  channel_id: string | null
-  channel_name: string
-  workspace_id: string | null
-  workspace_name: string
-  workspace_slug: string
-  created_at: string
-}
-
 async function updateEmailStatus(
   client: SupabaseClient,
   queueId: string,
-  status: 'sent' | 'failed',
+  status: EmailStatus,
   errorMessage?: string
 ): Promise<void> {
   try {
@@ -75,64 +68,39 @@ async function updateEmailStatus(
   }
 }
 
-function buildDigestDocuments(
-  notifications: DigestRawNotification[],
-  appUrl: string
-): DigestDocument[] {
-  const workspaceMap = new Map<
-    string,
-    {
-      name: string
-      slug: string
-      channels: Map<string, { name: string; id: string; notifications: DigestNotification[] }>
-    }
-  >()
+/**
+ * Supabase cannot decide this: isPrivate, ownerId and deletedAt live in Prisma,
+ * and a document can turn private between the carrier insert and the send.
+ */
+async function readVisibleContentChangeDocuments(
+  documentIds: string[],
+  recipientId: string
+): Promise<{ visible: Set<string>; readFailed: boolean }> {
+  if (documentIds.length === 0) return { visible: new Set(), readFailed: false }
+  if (!recipientId) return { visible: new Set(), readFailed: false }
 
-  for (const n of notifications) {
-    const wsKey = n.workspace_slug || 'unknown'
-
-    if (!workspaceMap.has(wsKey)) {
-      workspaceMap.set(wsKey, {
-        name: n.workspace_name || wsKey,
-        slug: n.workspace_slug || wsKey,
-        channels: new Map()
-      })
-    }
-
-    const ws = workspaceMap.get(wsKey)!
-    const chKey = n.channel_id || 'general'
-
-    if (!ws.channels.has(chKey)) {
-      ws.channels.set(chKey, {
-        name: n.channel_name || 'General',
-        id: n.channel_id || '',
-        notifications: []
-      })
-    }
-
-    ws.channels.get(chKey)!.notifications.push({
-      type: n.notification_type as NotificationType,
-      sender_name: n.sender_name,
-      sender_avatar_url: n.sender_avatar_url || undefined,
-      message_preview: n.message_preview,
-      action_url: n.channel_id
-        ? `${appUrl}/${n.workspace_slug}?chatroom=${n.channel_id}`
-        : `${appUrl}/${n.workspace_slug}`,
-      created_at: n.created_at
+  try {
+    const rows = await prisma.documentMetadata.findMany({
+      where: { documentId: { in: documentIds } },
+      select: { documentId: true, isPrivate: true, ownerId: true, deletedAt: true }
     })
+    // One home for the audience rule. Re-deriving it here would let the two
+    // gates drift, and a privacy rule with two homes is one rule too many.
+    const visible = new Set(
+      rows
+        .filter((r) => {
+          const audience = resolveContentChangeAudience(r)
+          if (audience.kind === 'all') return true
+          return audience.kind === 'owner' && audience.onlyUser === recipientId
+        })
+        .map((r) => r.documentId)
+    )
+    return { visible, readFailed: false }
+  } catch (err) {
+    // Fail closed: a privacy question with no answer must not mail the document.
+    emailLogger.error({ err, recipientId }, 'Content-change privacy re-read failed')
+    return { visible: new Set(), readFailed: true }
   }
-
-  return Array.from(workspaceMap.values()).map((ws) => ({
-    name: ws.name,
-    slug: ws.slug,
-    url: `${appUrl}/${ws.slug}`,
-    channels: Array.from(ws.channels.values()).map((ch): DigestChannel => ({
-      name: ch.name,
-      id: ch.id,
-      url: ch.id ? `${appUrl}/${ws.slug}?chatroom=${ch.id}` : `${appUrl}/${ws.slug}`,
-      notifications: ch.notifications
-    }))
-  }))
 }
 
 /**
@@ -147,14 +115,39 @@ async function processDigestMessage(
   const appUrl = config.email.appUrl
 
   try {
-    const documents = buildDigestDocuments(payload.notifications || [], appUrl)
+    const built = buildDigestDocuments(payload.notifications || [], appUrl)
     const queueIds = payload.queue_ids || []
+
+    const { visible, readFailed } = await readVisibleContentChangeDocuments(
+      built.flatMap((doc) => (doc.content_changes ? [doc.content_changes.document_id] : [])),
+      payload.recipient_id || ''
+    )
+    const documents = filterDigestDocuments(built, visible)
+
+    // A failed re-read is not an answer, so it must not look like one. Writing
+    // 'skipped' here acks the message, the carriers stay unread, and the 24-hour
+    // dedupe then suppresses the next fan-out. Returning false leaves the rows
+    // 'processing' and lets pgmq redeliver once Prisma recovers.
+    if (readFailed) {
+      emailLogger.warn({ msgId, to: payload.recipient_email }, 'Digest deferred; re-read failed')
+      return false
+    }
+
+    if (documents.length === 0) {
+      // A genuinely empty digest is an answer. Mark it and ack, or pgmq
+      // redelivers the same empty digest forever.
+      await Promise.all(
+        queueIds.map((id) => updateEmailStatus(client, id, 'skipped', 'No digest content'))
+      )
+      emailLogger.info({ msgId, to: payload.recipient_email }, 'Digest email skipped')
+      return true
+    }
 
     const digestPayload: DigestEmailRequest = {
       to: payload.recipient_email!,
       recipient_name: payload.recipient_name || 'User',
       recipient_id: payload.recipient_id!,
-      frequency: (payload.frequency as 'daily' | 'weekly') || 'daily',
+      frequency: normaliseDigestFrequency(payload.frequency),
       documents,
       period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       period_end: new Date().toISOString()
@@ -179,8 +172,9 @@ async function processDigestMessage(
 
     // Per-row updates are independent single-row UPSERTs keyed on distinct
     // queue_ids, so settle them in parallel. Accepted-loss: digests mark 'sent'
-    // at enqueue (not post-delivery like notifications) because the BullMQ job
-    // payload carries no queue_ids, so a permanently-failed digest stays 'sent'.
+    // at enqueue, so a permanently-failed digest stays 'sent'. A row whose
+    // document was dropped for privacy is marked 'sent' too — the payload gives
+    // no key joining a notification back to its queue id.
     await Promise.all(queueIds.map((queueId) => updateEmailStatus(client, queueId, 'sent')))
 
     emailLogger.info(
@@ -212,6 +206,16 @@ async function processNotificationMessage(
   msgId: number,
   payload: EmailQueuePayload
 ): Promise<boolean> {
+  // This path reads no Prisma row, so it cannot answer the privacy question a
+  // content_change asks. One SQL line keeps carriers out of it, and that line
+  // is hand-deployed. Refusing here costs one carrier on a mis-ordered deploy;
+  // trusting it would mail a private document to a non-owner.
+  if (payload.notification_type === CONTENT_CHANGE_TYPE) {
+    await updateEmailStatus(client, payload.queue_id!, 'skipped', 'content_change is digest-only')
+    emailLogger.warn({ msgId }, 'Refused a content_change on the immediate path')
+    return true
+  }
+
   try {
     const emailPayload: NotificationEmailRequest = {
       queue_id: payload.queue_id!,

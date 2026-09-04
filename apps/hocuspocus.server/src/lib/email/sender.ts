@@ -1,5 +1,6 @@
 import {
   buildListUnsubscribeHeaders,
+  countDigestItems,
   getEmailSubject,
   renderDigestEmail,
   renderNotificationEmail,
@@ -111,10 +112,9 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         to = payload.to
         userId = payload.recipient_id
 
-        const totalNotifications = payload.documents.reduce(
-          (sum, doc) => sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0),
-          0
-        )
+        // One digest item is one chat notification, or one `content_changes`
+        // block. Subject and plaintext share one count so they cannot disagree.
+        const totalNotifications = countDigestItems(payload.documents)
 
         subject = `Your ${payload.frequency} digest - ${totalNotifications} notification${totalNotifications !== 1 ? 's' : ''}`
 

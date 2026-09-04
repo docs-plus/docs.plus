@@ -53,6 +53,26 @@ export function renderNotificationEmail(params: {
   return renderWithLayout('notification', { ...rest, notificationType, subject }, footerHtml)
 }
 
+/**
+ * One digest item is one chat notification, or one `content_changes` block.
+ * A document that only changed carries no chat line, so counting channels
+ * alone would print "0 notifications" over a digest that has content.
+ */
+export function countDigestItems(
+  documents: ReadonlyArray<{
+    channels: ReadonlyArray<{ notifications: ReadonlyArray<unknown> }>
+    content_changes?: unknown
+  }>
+): number {
+  return documents.reduce(
+    (sum, doc) =>
+      sum +
+      doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0) +
+      (doc.content_changes ? 1 : 0),
+    0
+  )
+}
+
 export function renderDigestEmail(params: {
   recipientName: string
   frequency: 'daily' | 'weekly'
@@ -73,6 +93,11 @@ export function renderDigestEmail(params: {
         created_at: string
       }>
     }>
+    // Declared here as well as on the backend's DigestDocument. Without it,
+    // structural typing let the extra property reach the template at runtime
+    // while vanishing from the type, so the count and the renderer drifted
+    // apart with no compiler error.
+    content_changes?: { document_id: string; since: string }
   }>
   periodStart: string
   periodEnd: string
@@ -81,10 +106,7 @@ export function renderDigestEmail(params: {
   const { documents, frequency, unsubscribeLinks, ...rest } = params
   const periodLabel = frequency === 'daily' ? 'today' : 'this week'
 
-  const totalNotifications = documents.reduce(
-    (sum, doc) => sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0),
-    0
-  )
+  const totalNotifications = countDigestItems(documents)
 
   const digestLinks: UnsubscribeLinks = {
     ...unsubscribeLinks,

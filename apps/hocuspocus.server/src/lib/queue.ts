@@ -4,6 +4,7 @@ import * as Y from 'yjs'
 import { config } from '../config/env'
 import type { DeadLetterJobData, EnqueueStoreDocumentParams, StoreDocumentData } from '../types'
 import { toBullMQConnection } from '../types/redis.types'
+import { fanOutContentChange } from './contentChangeFanout'
 import { refreshDocumentGridPreview } from './documentGridPreview'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { captureUnknown } from './instrument'
@@ -570,6 +571,20 @@ export const createDocumentWorker = () => {
               )
             })
         }
+
+        // Content-change fan-out (fire-and-forget, a sibling of the two blocks
+        // above and NOT part of the first-creation one — a content change fires
+        // on every save). The callback only reads and calls: the helper owns the
+        // try/catch, and a sync throw out here would bypass the catch below.
+        setImmediate(() => {
+          // The only audience facts this seam holds. `contributors` is
+          // per-replica and best-effort; a null actor is a server-driven save.
+          void fanOutContentChange({
+            documentId: data.documentName,
+            contributors: data.contributors,
+            actorId: data.triggeredBy ?? null
+          })
+        })
 
         return { success: true, version: savedDoc.version }
       } catch (err) {

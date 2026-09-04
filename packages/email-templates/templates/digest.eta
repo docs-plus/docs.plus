@@ -4,7 +4,7 @@
 
 <p style="margin: 0 0 <%= it.h.SPACING.xl %>; color: <%= it.h.COLORS.textMuted %>; font-size: 15px; line-height: 1.5;">
   Here's your <strong style="color: <%= it.h.COLORS.text %>;"><%= it.frequency %> digest</strong> with
-  <strong style="color: <%= it.h.COLORS.primary %>;"><%= it.totalNotifications %> notification<%= it.totalNotifications !== 1 ? 's' : '' %></strong>
+  <% /* One digest item is one chat notification, or one content_changes block. countDigestItems in engine.ts owns the count; this line only renders it. */ %><strong style="color: <%= it.h.COLORS.primary %>;"><%= it.totalNotifications %> notification<%= it.totalNotifications !== 1 ? 's' : '' %></strong>
   from <%= it.periodLabel %>.
 </p>
 
@@ -30,6 +30,22 @@
       </table>
     </td>
   </tr>
+
+  <% /* The count treats one content_changes block as one item, so it must render
+        one row. Guarded, so a legacy document with no block is unchanged. */ %>
+  <% if (doc.content_changes) { %>
+  <tr>
+    <td style="padding-bottom: <%= it.h.SPACING.md %>;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background-color: <%= it.h.COLORS.background %>; border-radius: <%= it.h.RADIUS.md %>; border: 1px solid <%= it.h.COLORS.border %>; padding: <%= it.h.SPACING.md %>;">
+            <span style="color: <%= it.h.COLORS.textMuted %>; font-size: 13px;">✏️ This document changed since <%= doc.content_changes.since.slice(0, 10) %>.</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <% } %>
 
   <!-- Channels -->
   <tr>

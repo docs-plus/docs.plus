@@ -3,7 +3,7 @@
  * `@docs.plus/email-templates` (eta engine).
  */
 
-import { APP_URL, getEmailSubject } from '@docs.plus/email-templates'
+import { APP_URL, countDigestItems, getEmailSubject } from '@docs.plus/email-templates'
 
 import type { DigestDocument, NotificationType } from '../../types/email.types'
 
@@ -84,10 +84,7 @@ export function buildDigestEmailText(params: {
 }): string {
   const { recipientName, frequency, documents } = params
 
-  const totalNotifications = documents.reduce(
-    (sum, doc) => sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0),
-    0
-  )
+  const totalNotifications = countDigestItems(documents)
 
   const documentsText = documents
     .map((doc) => {
@@ -110,7 +107,13 @@ export function buildDigestEmailText(params: {
         })
         .join('\n\n')
 
-      return `📄 ${doc.name}\n${channelsText}`
+      // Mirrors the HTML row. The count treats one block as one item, so the
+      // plaintext must show it or the number and the body disagree.
+      const changedText = doc.content_changes
+        ? `  ✏️ This document changed since ${doc.content_changes.since.slice(0, 10)}.`
+        : ''
+      const body = [changedText, channelsText].filter(Boolean).join('\n')
+      return `📄 ${doc.name}\n${body}`
     })
     .join('\n\n---\n\n')
 

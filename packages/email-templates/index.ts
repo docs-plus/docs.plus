@@ -5,6 +5,7 @@
 
 export {
   buildListUnsubscribeHeaders,
+  countDigestItems,
   getEmailSubject,
   renderDigestEmail,
   renderNewDocumentEmail,
