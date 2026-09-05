@@ -14,6 +14,30 @@ const s3Client = new S3Client({
   endpoint: process.env.DO_STORAGE_ENDPOINT
 })
 
+// Matches the 10 s Supabase bound by intent, not by import: the two services must
+// stay separately tunable. This bounds ONE call, never a route. deleteByPrefix
+// spends it per key over up to 1000 keys, and the worker reaper runs that path.
+const S3_REQUEST_TIMEOUT_MS = 10_000
+
+// Bun's S3 client accepts no signal, so the deadline abandons a hung call rather
+// than cancelling it. An abandoned write can therefore still land: measured at
+// +15.3s against a 10s deadline, so the caller reports failure over a stored
+// object. Accepted, because a purge reaps by prefix and no URL is stored first.
+const withS3Deadline = <T>(operation: string, key: string, run: () => Promise<T>): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      storageS3Logger.error(
+        { operation, key, timeoutMs: S3_REQUEST_TIMEOUT_MS },
+        'S3 request timed out'
+      )
+      reject(new Error(`S3 ${operation} timed out after ${S3_REQUEST_TIMEOUT_MS}ms`))
+    }, S3_REQUEST_TIMEOUT_MS)
+  })
+
+  return Promise.race([run(), deadline]).finally(() => clearTimeout(timer))
+}
+
 // Object-key layout is NODE_ENV/<documentId>/<file>. Upload and delete-by-prefix
 // share this so a key-scheme change can't desync writes from the reaper's purge.
 const s3Prefix = (documentId: string): string => `${process.env.NODE_ENV}/${documentId}/`
@@ -35,11 +59,13 @@ export const upload = async (
   const contentDisposition = /svg\+xml|html/i.test(contentType) ? 'attachment' : undefined
 
   try {
-    await s3Client.write(key, fileContent, {
-      type: contentType,
-      acl: 'public-read',
-      ...(contentDisposition ? { contentDisposition } : {})
-    })
+    await withS3Deadline('write', key, () =>
+      s3Client.write(key, fileContent, {
+        type: contentType,
+        acl: 'public-read',
+        ...(contentDisposition ? { contentDisposition } : {})
+      })
+    )
 
     const duration = performance.now() - startTime
     const size =
@@ -66,7 +92,9 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
     // Lazy reference: synchronous, no network call.
     const s3File = s3Client.file(key)
 
-    const exists = await s3File.exists()
+    // The deadline covers this head request. The streamed body below is not
+    // bounded by it — a large download must stay free to take the time it needs.
+    const exists = await withS3Deadline('exists', key, () => s3File.exists())
     if (!exists) {
       return c.json({ error: 'File not found' }, 404)
     }
@@ -107,12 +135,13 @@ export const copyObject = async (
   const sourceKey = generateS3Key(sourceDocumentId, fileName)
   const sourceFile = s3Client.file(sourceKey)
 
-  if (!(await sourceFile.exists())) {
+  if (!(await withS3Deadline('exists', sourceKey, () => sourceFile.exists()))) {
     storageS3Logger.warn({ sourceKey, targetDocumentId }, 'Referenced S3 media object is missing')
     return false
   }
 
-  await upload(targetDocumentId, fileName, await sourceFile.arrayBuffer())
+  const body = await withS3Deadline('read', sourceKey, () => sourceFile.arrayBuffer())
+  await upload(targetDocumentId, fileName, body)
   return true
 }
 
@@ -125,10 +154,12 @@ export const deleteByPrefix = async (documentId: string): Promise<void> => {
   let deleted = 0
 
   do {
-    const page = await s3Client.list({ prefix, maxKeys: 1000, startAfter })
+    const page = await withS3Deadline('list', prefix, () =>
+      s3Client.list({ prefix, maxKeys: 1000, startAfter })
+    )
     const contents = page.contents ?? []
     for (const { key } of contents) {
-      await s3Client.delete(key)
+      await withS3Deadline('delete', key, () => s3Client.delete(key))
       deleted++
     }
     startAfter = page.isTruncated ? contents.at(-1)?.key : undefined

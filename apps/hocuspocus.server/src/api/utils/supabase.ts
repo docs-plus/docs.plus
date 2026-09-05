@@ -1,11 +1,8 @@
 import { config } from '../../config/env'
-import { getServiceRoleClient } from '../../lib/supabase'
+import { getServiceRoleClient, SUPABASE_FETCH_TIMEOUT_MS } from '../../lib/supabase'
 
 /** Service-role Supabase client (bypasses RLS); memoized. Null if not configured. */
 export const getSupabaseClient = getServiceRoleClient
-
-// Cap outbound PostgREST calls so a hung Supabase response can't pin a request.
-const SUPABASE_FETCH_TIMEOUT_MS = 10_000
 
 /**
  * PostgREST fetch with apikey + Authorization headers merged in (extra headers
