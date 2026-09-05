@@ -24,11 +24,14 @@ buildInfo.set(
   1
 )
 
+// The ladder runs to 60 because the REST server sets `idleTimeout: 60`. Stopping
+// at 5 put every request between 5 s and that ceiling in one overflow bucket.
+// histogram_quantile could then never report a p95 above 5 s.
 export const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
   help: 'HTTP request latency in seconds',
   labelNames: ['method', 'route', 'status'] as const,
-  buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60],
   registers: [register]
 })
 
@@ -188,6 +191,17 @@ export const ydocUpdateBytes = new Histogram({
   name: 'ydoc_update_bytes',
   help: 'Size in bytes of each applied Y.Doc update',
   buckets: [64, 256, 1024, 4096, 16384, 65536, 262144, 1048576],
+  registers: [register]
+})
+
+// The whole stored state, not one update, so the ladder runs well past
+// ydoc_update_bytes. Largest measured row is 244,903 B. The top bucket is 64 MiB
+// because a loaded room costs 16.5-17x its snapshot in heap, which already
+// exceeds the 1024 M WS replica ceiling.
+export const documentSnapshotBytes = new Histogram({
+  name: 'document_snapshot_bytes',
+  help: 'Size in bytes of each stored document snapshot',
+  buckets: [256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216, 67108864],
   registers: [register]
 })
 

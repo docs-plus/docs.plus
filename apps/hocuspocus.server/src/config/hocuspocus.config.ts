@@ -11,7 +11,11 @@ import { isRoomSealed } from '../lib/accessRealtime'
 import { drainContributors } from '../lib/contributors'
 import { buildStoreJobId, enqueueStoreDocument } from '../lib/queue'
 import { stripSnapshotMetadata } from '../lib/snapshotMetadata'
-import { documentPersistFallbackTotal, documentStoreRejectionsTotal } from '../lib/metrics'
+import {
+  documentPersistFallbackTotal,
+  documentSnapshotBytes,
+  documentStoreRejectionsTotal
+} from '../lib/metrics'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
@@ -236,6 +240,9 @@ const configureExtensions = () => {
         // and a second drain there would find an empty set.
         const contributors = drainContributors(document)
         const stateBuffer: Buffer = state
+        // Observed above the try so the queue-down fallback is counted too. Both
+        // arms persist these same bytes.
+        documentSnapshotBytes.observe(stateBuffer.byteLength)
 
         try {
           await enqueueStoreDocument({
