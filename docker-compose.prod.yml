@@ -229,10 +229,17 @@ services:
       - 'traefik.http.routers.rest-api-health.service=rest-api'
       - 'traefik.http.routers.rest-api-health.middlewares=security-headers@file'
       - 'traefik.http.services.rest-api.loadbalancer.server.port=4000'
-      # Health check - only route to healthy containers
-      - 'traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health'
+      # Health check - only route to healthy containers. Liveness on purpose, and
+      # on a different path from the collaboration block. Both replicas share one
+      # Redis and one database, so a dependency probe empties the pool. REST's
+      # `/health` runs the dependency check the admin dashboard reads, so liveness
+      # needed a route of its own.
+      - 'traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health/live'
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.interval=5s'
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.timeout=3s'
+    # Dependencies, not /health/live. The deploy waits on this container status
+    # before it stops the old replicas. A port-open-only answer would then retire
+    # working replicas in favour of broken ones.
     healthcheck:
       test:
         [

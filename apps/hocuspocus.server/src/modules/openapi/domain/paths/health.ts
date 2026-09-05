@@ -48,6 +48,25 @@ export const healthPaths: OpenApiPaths = {
       }
     }
   },
+  '/health/live': {
+    get: {
+      operationId: 'getHealthLive',
+      summary: 'Liveness probe',
+      description:
+        'Answers 200 whenever the process is up. Calls no dependency on purpose. The edge probe reads this route, and both replicas share one Redis and one database, so a dependency probe there empties the pool. Read `/health` for dependencies.',
+      tags: ['Health'],
+      security: [{}],
+      // No 503 arm, unlike `probe()`: liveness cannot report a dependency down.
+      responses: {
+        '200': {
+          description: 'The process is up.',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/HealthCheckResult' } }
+          }
+        }
+      }
+    }
+  },
   '/health/database': {
     get: probe(
       'getHealthDatabase',
