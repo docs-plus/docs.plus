@@ -7,9 +7,17 @@ import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible'
 
 import { config } from '../config/env'
 import { httpLogger } from '../lib/logger'
+import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
 
 const redisClient = getRedisClient()
+
+const CONSUME_TIMED_OUT = Symbol('rate-limit-consume-timed-out')
+// A slow Redis is not a broken one, so the catch arm below never fires for it.
+// The shared 60s REDIS_COMMAND_TIMEOUT is then the only bound on the route.
+// Measured p99 consume is 0.39ms. The budget clears the 100ms event-loop lag the
+// SLO accepts and the 200ms first Redis reconnect delay, which 150ms did not.
+const RATE_LIMIT_CONSUME_TIMEOUT_MS = 500
 
 export const rateLimiter = (options: {
   points: number
@@ -48,12 +56,30 @@ export const rateLimiter = (options: {
     // x-real-ip is set by Traefik to the true client; fall back to the first XFF hop.
     const ip = realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
 
+    let consumeTimer: ReturnType<typeof setTimeout> | undefined
+
     try {
       // The key holds nothing the caller writes. Keying it on User-Agent too gave a
       // client that increments that header a fresh budget on every request. That
       // keying also minted one Redis key per distinct value, in the same volatile
       // keyspace the claim-check payloads live in.
-      const rateLimiterRes = await limiter.consume(ip, 1)
+      const rateLimiterRes = await Promise.race([
+        limiter.consume(ip, 1),
+        new Promise<typeof CONSUME_TIMED_OUT>((resolve) => {
+          consumeTimer = setTimeout(() => resolve(CONSUME_TIMED_OUT), RATE_LIMIT_CONSUME_TIMEOUT_MS)
+        })
+      ])
+
+      if (rateLimiterRes === CONSUME_TIMED_OUT) {
+        // The limiter is failing open. No latency alert fires at this speed and no
+        // rule matches a level-40 warn, so the counter is the only aggregate trace.
+        rateLimitFailOpenTotal.inc({ reason: 'timeout' })
+        httpLogger.warn(
+          { ip, timeoutMs: RATE_LIMIT_CONSUME_TIMEOUT_MS },
+          'Rate limiter timed out, allowing the request'
+        )
+        return next()
+      }
 
       c.header('X-RateLimit-Limit', points.toString())
       c.header('X-RateLimit-Remaining', rateLimiterRes.remainingPoints.toString())
@@ -69,6 +95,7 @@ export const rateLimiter = (options: {
       // rate-limited route fail for as long as Redis was down, while /health —
       // exempt from this middleware — stayed green. Let the request through.
       if (!(rejRes instanceof RateLimiterRes)) {
+        rateLimitFailOpenTotal.inc({ reason: 'store-error' })
         httpLogger.error({ err: rejRes }, 'Rate limiter store failed, allowing the request')
         return next()
       }
@@ -92,6 +119,10 @@ export const rateLimiter = (options: {
         },
         429
       )
+    } finally {
+      // Promise.race attaches its own handler to both inputs, so a late store-fault
+      // rejection is already handled. Measured. Only the timer needs clearing.
+      clearTimeout(consumeTimer)
     }
   }
 }

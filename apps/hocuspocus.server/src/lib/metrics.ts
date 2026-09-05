@@ -172,6 +172,17 @@ export const documentContentApplyTotal = new Counter({
   registers: [register]
 })
 
+// Rate limiter fail-opens, by reason. Before the timeout arm a slow Redis held
+// requests for 60s, which tripped the p95 latency alert. It now answers in well
+// under a second, so that alert stays quiet and no rule matches a level-40 warn.
+// This counter is the only remaining trace.
+export const rateLimitFailOpenTotal = new Counter({
+  name: 'rate_limit_fail_open_total',
+  help: 'Requests allowed through because the rate limiter could not decide, by reason',
+  labelNames: ['reason'] as const,
+  registers: [register]
+})
+
 // Size of each merged Y.Doc update applied to a document, a proxy for edit volume.
 export const ydocUpdateBytes = new Histogram({
   name: 'ydoc_update_bytes',
