@@ -22,6 +22,7 @@ import { wsLogger } from './lib/logger'
 import {
   documentLoadDuration,
   documentPersistDuration,
+  httpMetricsMiddleware,
   metricsContentType,
   metricsText,
   setActiveConnectionsProvider,
@@ -572,6 +573,10 @@ versionOps = documentVersionOps.ops
 // unknown internal path would therefore fall to the framework default (plain
 // text) unless the house envelope is re-declared on the parent.
 const internalApp = new Hono()
+// These routes run in the WS process, beside the live Y.Doc, so they are the ones
+// most able to stall other people's typing. Registered before the routes, or Hono
+// never wraps them. The /metrics arm below stays ahead of this dispatch.
+internalApp.use('*', httpMetricsMiddleware())
 internalApp.route('/', contentApply.app)
 internalApp.route('/', documentVersionOps.app)
 internalApp.notFound((c) =>
