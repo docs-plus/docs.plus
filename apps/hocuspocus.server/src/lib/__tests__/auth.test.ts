@@ -111,4 +111,31 @@ describe('verifySupabaseTokenOutcome', () => {
     })
     expect(outcome.kind).toBe('unavailable')
   })
+
+  // Last in the file on purpose: filling the cache evicts the tokens seeded above.
+  // It asserts only on tokens it inserts itself. Anything already cached is older,
+  // so it is evicted before the first flood token, whatever ran before.
+  test('evicts the oldest token instead of clearing the whole cache', async () => {
+    let calls = 0
+    const getUser = stubGetUser(() => {
+      calls += 1
+      return { data: { user: { id: 'u-flood', email: 'f@flood.c' } }, error: null }
+    })
+
+    // MAX_TOKEN_CACHE is 1000, so 1001 distinct tokens overflow it by exactly one.
+    for (let i = 0; i <= 1000; i += 1) {
+      await verifySupabaseTokenOutcome(`tok-flood-${i}`, { getUser })
+    }
+    expect(calls).toBe(1001)
+
+    // The survivor is read first. Re-verifying the evicted token below re-caches it,
+    // and that set evicts whatever is then oldest — which is this very token.
+    await verifySupabaseTokenOutcome('tok-flood-1', { getUser })
+    expect(calls).toBe(1001)
+
+    // Only the oldest was dropped, so it costs one fresh Supabase Auth round trip.
+    // A clear() would have made every one of the 1000 survivors cost one instead.
+    await verifySupabaseTokenOutcome('tok-flood-0', { getUser })
+    expect(calls).toBe(1002)
+  })
 })

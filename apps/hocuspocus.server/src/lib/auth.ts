@@ -57,7 +57,15 @@ const MAX_TOKEN_CACHE = 1000
 const tokenCache = new Map<string, { user: SupabaseUser | null; expiresAt: number }>()
 
 function cacheSet(token: string, user: SupabaseUser | null, ttlMs: number): void {
-  if (tokenCache.size >= MAX_TOKEN_CACHE) tokenCache.clear()
+  // Clearing the whole map made every signed-in person re-verify at once. That
+  // hammers Supabase Auth on a reconnect storm. The delete comes first because an
+  // expired token is still present here. Without it the size check would evict an
+  // unrelated entry, and a token in active use would stay first in line forever.
+  tokenCache.delete(token)
+  if (tokenCache.size >= MAX_TOKEN_CACHE) {
+    const oldest = tokenCache.keys().next().value
+    if (oldest !== undefined) tokenCache.delete(oldest)
+  }
   tokenCache.set(token, { user, expiresAt: Date.now() + ttlMs })
 }
 
