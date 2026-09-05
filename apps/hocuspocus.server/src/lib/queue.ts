@@ -157,19 +157,28 @@ export function buildStoreJobId(documentName: string, state: Uint8Array): string
 export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): Promise<void> {
   const stateKey = STATE_KEY_PREFIX + params.jobId
   await stateRedis.set(stateKey, params.state, 'EX', STATE_KEY_TTL_SECONDS)
-  await StoreDocumentQueue.add(
-    'store-document',
-    {
-      documentName: params.documentName,
-      stateKey,
-      context: params.context,
-      commitMessage: params.commitMessage,
-      trigger: params.trigger,
-      triggeredBy: params.triggeredBy,
-      contributors: params.contributors
-    },
-    { jobId: params.jobId }
-  )
+  try {
+    await StoreDocumentQueue.add(
+      'store-document',
+      {
+        documentName: params.documentName,
+        stateKey,
+        context: params.context,
+        commitMessage: params.commitMessage,
+        trigger: params.trigger,
+        triggeredBy: params.triggeredBy,
+        contributors: params.contributors
+      },
+      { jobId: params.jobId }
+    )
+  } catch (err) {
+    // Usually no job will ever read this payload, and refreshPendingStateKeyTtls
+    // cannot shorten a key whose job is on neither `wait` nor `paused`. A producer
+    // command timeout can still leave the job hash, which then burns its retries.
+    // Fire-and-forget, so a delete on the same wedged Redis cannot mask the error.
+    stateRedis.del(stateKey).catch(() => {})
+    throw err
+  }
 }
 
 export interface StoreDlqEntry {
