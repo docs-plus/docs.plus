@@ -75,15 +75,18 @@ A `422` on a content write usually means a contract rule, not a malformed body. 
 
 ## Rate limiting
 
-One limiter covers every request except `/health` and `/health/*`.
+Two limiters cover every request except `/health` and `/health/*`.
 
-- The limit is `RATE_LIMIT_MAX` requests per 15 minutes, and the default is `100`.
-- The key is the client address alone. The user agent is not part of it.
+- The global limit is `RATE_LIMIT_MAX` requests per 15 minutes, and the default is `100`.
+- Public media reads have their own budget, ten times the global one. It covers every `GET` under `/api/plugins/hypermultimedia/`.
+- Every other route spends from the global budget, and that includes the upload `POST` on the same media path.
+- The media multiplier is fixed in the source. No environment variable changes it.
+- Both limiters key on the client address alone. The user agent is not part of it.
 - There is no separate allowance for a service-role caller.
 
 Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`. A `429` also carries `Retry-After`, in seconds.
 
-Two behaviours to plan for. A request that arrives with neither `x-forwarded-for` nor `x-real-ip` skips the limiter, which is why a direct local call is never limited. And when Redis is unavailable the limiter passes every request rather than refusing them.
+Two behaviours to plan for. A request that arrives with neither `x-forwarded-for` nor `x-real-ip` skips both limiters, which is why a direct local call is never limited. And when Redis is unavailable both limiters pass every request rather than refusing them.
 
 The limit is low for bulk work. Next step: prefer one large write over many small ones, and read [Quickstart](quickstart.md) before importing.
 

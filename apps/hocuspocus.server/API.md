@@ -981,7 +981,7 @@ A missing or invalid token is `401`. A body more than 1 MiB over that cap is ref
 
 ### GET /api/plugins/hypermultimedia/:documentId/:mediaId
 
-Stream a media file with its `Content-Type`.
+Stream a media file with its `Content-Type`. This read is charged to the larger media budget, not the global one — see [Rate limiting](#rate-limiting).
 
 ## Link metadata
 
@@ -1136,11 +1136,13 @@ await supabase.rpc('unregister_push_subscription', { p_device_id: 'unique-device
 
 ## Rate limiting
 
-A global limiter (`src/middleware/index.ts`) applies to every non-`OPTIONS` request except `/health` and `/health/*`. It is keyed on client IP alone and backed by Redis; **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip the limiter.
+Two Redis-backed limiters (`src/middleware/index.ts`) cover every non-`OPTIONS` request except `/health` and `/health/*`. Both are keyed on client IP alone, and **when Redis is unavailable, rate limiting is disabled** (requests pass). User-Agent is not part of the key: a client that varied that header earned a fresh budget on every request. Requests with no `x-forwarded-for` and no `x-real-ip` (direct/internal traffic) skip both.
 
-The single limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. There is no separate per-role tier in the REST middleware.
+The global limit is `RATE_LIMIT_MAX` requests (default `100`) per 15-minute window. Production runs `500`. There is no separate per-role tier in the REST middleware, so a service-role caller shares the same per-IP budget as a browser. Issue #166 tracks whether that should change.
 
-Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
+**Public media reads have their own, larger budget.** A `GET` under `/api/plugins/hypermultimedia/` is charged to a second limiter, which holds ten times the global points over its own 15-minute window. So a pad holding 20 images does not spend 20 points of the global budget on a cold load. The upload `POST` on that path stays on the global budget, as does every other route. The multiplier is a constant in the middleware, not an environment variable.
+
+Responses carry `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` (ISO timestamp). A media read reports its own limiter's numbers in those headers. On `429`, the body is the house envelope with code `RATE_LIMIT_EXCEEDED`, and a `Retry-After` header carries the seconds until the window resets.
 
 ## WebSocket API
 

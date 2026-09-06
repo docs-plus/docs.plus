@@ -58,7 +58,7 @@ The collaboration process serves one internal listener carrying both `/metrics` 
 | --------------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `SUPABASE_SERVICE_ROLE_KEY` | string | —       | Required for admin routes, internal email endpoints, and server-side Supabase reads. Optional in the schema, but those features fail without it. |
 | `ALLOWED_ORIGINS`           | list   | `[]`    | CORS allowlist. In production, falls back to `[APP_URL]` when empty. Dev allows any origin.                                                      |
-| `RATE_LIMIT_MAX`            | number | `100`   | Requests per 15-minute window (global limiter)                                                                                                   |
+| `RATE_LIMIT_MAX`            | number | `100`   | Requests per 15-minute window (global limiter). Public media reads use a separate bucket at ten times this value, fixed in the middleware        |
 
 ## Redis
 
