@@ -78,13 +78,16 @@ export default function PrivacyPage() {
 
       <LegalSection title="How long we keep data">
         <p>We keep account and document data while you use the service.</p>
-        <p>A deleted document stays for a short time. A later purge removes it.</p>
+        <p>A deleted document stays for 30 days. A purge then removes it.</p>
       </LegalSection>
 
       <LegalSection title="Your choices">
         <ul className="list-disc space-y-2 pl-5">
           <li>Sign out in Settings.</li>
-          <li>Change notification mail in Settings, or use the unsubscribe link in each mail.</li>
+          <li>
+            Change notification mail in Settings. Notification and digest mail carry an unsubscribe
+            link.
+          </li>
           <li>
             Email{' '}
             <a href={CONTACT_MAILTO} className={LINK_CLASS}>
@@ -93,6 +96,43 @@ export default function PrivacyPage() {
             if you want us to delete your account.
           </li>
         </ul>
+      </LegalSection>
+
+      <LegalSection title="Who is in charge of your data">
+        <p>
+          Our data protection lead is in charge of personal data at {LEGAL_OPERATOR}. Reach that
+          role at{' '}
+          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
+            {LEGAL_CONTACT_EMAIL}
+          </a>
+          .
+        </p>
+      </LegalSection>
+
+      <LegalSection title="How to complain">
+        <p>
+          Tell us first. Email{' '}
+          <a href={CONTACT_MAILTO} className={LINK_CLASS}>
+            {LEGAL_CONTACT_EMAIL}
+          </a>{' '}
+          and say what went wrong.
+        </p>
+        <p>We answer you within 30 days. We tell you the outcome, and what we changed.</p>
+        <p>
+          Not happy with our answer? You may complain to a regulator. In the United Kingdom that is
+          the Information Commissioner's Office, at{' '}
+          <a href="https://ico.org.uk/make-a-complaint/" className={LINK_CLASS}>
+            ico.org.uk/make-a-complaint
+          </a>
+          . In Quebec it is the Commission d'accès à l'information.
+        </p>
+        <p>
+          To report content instead of a data problem, see Report a problem on the{' '}
+          <Link href={TERMS_PATH} className={LINK_CLASS}>
+            terms of use
+          </Link>
+          .
+        </p>
       </LegalSection>
 
       <LegalSection title="Contact">
