@@ -18,6 +18,22 @@ The WebSocket process also serves an internal HTTP listener on `4003`. It carrie
 
 Ports are configurable via `APP_PORT`, `HOCUSPOCUS_PORT`, `WORKER_HEALTH_PORT`, and `HOCUSPOCUS_INTERNAL_HTTP_PORT` (see [ENV.md](./ENV.md)).
 
+### Scaling character
+
+The three processes scale on different signals, and a replica does not buy the same thing in each. Scale them independently. Scaling all three together wastes the tightest shared resource, which is Postgres connections.
+
+| Process   | Does a replica add capacity?                | Postgres connections each         | Scale on                         |
+| --------- | ------------------------------------------- | --------------------------------- | -------------------------------- |
+| REST API  | Yes, fully. It holds nothing authoritative. | `DB_POOL_SIZE`, default 5         | request rate, p95 latency, CPU   |
+| WebSocket | Connections yes. **Documents no.**          | `DB_POOL_SIZE`, default 5         | concurrent WebSocket connections |
+| Worker    | Yes, throughput                             | `WORKER_DB_POOL_SIZE`, default 10 | queue depth, oldest waiting age  |
+
+**The WebSocket row is the one that surprises people.** Every replica serving one connection to a document holds its own complete `Y.Doc`. Nothing splits the CRDT between replicas, so room memory multiplies rather than divides. Adding replicas buys connection headroom, never document headroom. The Traefik sticky cookie pins a browser, not a room, so it does not shard documents either. See [CLAUDE.md](./CLAUDE.md) §Runtime limits for the measured cost model.
+
+**The worker costs twice as much per replica.** Add it last, and only when queue depth demands it.
+
+Postgres connections are the shared ceiling. Each replica holds its pool for the process lifetime, so the fleet total is the sum across all three processes. Check the deployed `max_connections` before raising any replica count.
+
 ## Tech stack
 
 - **Runtime:** Bun (Node ≥ 24.11.0, Bun ≥ 1.4.0)

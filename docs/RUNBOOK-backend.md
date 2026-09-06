@@ -114,7 +114,9 @@ Grafana alert: `Container memory near limit (OOM risk)`. Severity critical, abov
 
 `Container crash loop (restarts increasing)` is the same failure one step later. An OOM kill shows as exit code 137.
 
-**The lever is room count, not a setting.** A loaded room costs 16.5–17x its stored snapshot in heap. The limit is 1024M per replica. The ceiling is therefore document size times the number of rooms loaded at once.
+**The lever is room count, not a setting.** A loaded room costs 16.5–17x its stored snapshot in heap, and about 23x in RSS. The cgroup kills on RSS, so use that slope. The limit is 1024M per replica, and the process itself floors at roughly 130–154 MB. The ceiling is therefore document size times the number of rooms loaded at once.
+
+**Adding replicas does not lower this.** Every replica serving one connection to a document holds its own complete copy of it. A hot room is therefore loaded on each of them. Measured 2026-09-05. Replicas raise connection capacity, never room capacity.
 
 Commands below use the `dc` alias from [Before you start](#before-you-start).
 
@@ -134,6 +136,11 @@ Commands below use the `dc` alias from [Before you start](#before-you-start).
 
    Rooms reload from Postgres as clients reconnect, so this is a reset, not a fix.
 
-3. Watch whether memory climbs back within the hour. If it does, the load is real. The options are more replicas or a higher `memory` limit in `docker-compose.prod.yml`, and both need a deploy.
+3. Watch whether memory climbs back within the hour. If it does, the load is real. Raise the `memory` limit in `docker-compose.prod.yml`, which needs a deploy.
+
+   **Do not add replicas to fix this.** Room memory multiplies across replicas rather than dividing, so a new replica loads the same hot room again. Add replicas only when `ws_active_connections` is the number that is high.
+
+   One large document can fill a replica on its own. At the measured RSS slope, a 5 MB stored snapshot costs about 118 MB loaded.
+
 4. If memory stays high while `ws_active_connections` falls, a room is wedged rather than busy. Hocuspocus unloads a room as soon as its last connection closes, so memory should follow connections down. Go to [Persistence stopped while users are connected](#persistence-stopped-while-users-are-connected).
 5. Check `stateless_relay_dropped_total`. A burst means a client is pushing oversized frames at the relay. The 64 KiB budget already drops them, so this is a probe and not the cause, but it is worth reporting.

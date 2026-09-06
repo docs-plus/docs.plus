@@ -72,6 +72,14 @@ These appear in the template and are read nowhere. Do not spend time on them.
 
 Next step: leave them as they are. Removing them is a repository change, not a deployment step.
 
+## Scaling past the defaults
+
+Replica counts live in `docker-compose.prod.yml`. Raising them is not uniform, because the three backend processes buy different things from a replica. Postgres connections are the shared ceiling, so check your database `max_connections` first.
+
+The short version: the REST API scales fully. The collaboration socket gains connection capacity, but not document capacity. The worker costs twice the database connections of the other two.
+
+Next step: read [`apps/hocuspocus.server/Readme.md`](../../apps/hocuspocus.server/Readme.md#scaling-character) before raising any count.
+
 ## When a value is wrong
 
 Most misconfiguration here fails quietly rather than loudly. [Install](install.md) lists the silent ones together. Two are worth repeating.
