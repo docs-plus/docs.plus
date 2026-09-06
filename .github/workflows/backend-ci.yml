@@ -95,6 +95,13 @@ jobs:
         working-directory: apps/hocuspocus.server
         run: bun run test:e2e
 
+      # Needs only Redis. Section [1] spawns two child processes, which is the
+      # replica condition the retention lease exists for, and every check here
+      # carries a control so a pass proves the mechanism fired.
+      - name: 🧪 Run real-infra E2E (fleet-wide limits)
+        working-directory: apps/hocuspocus.server
+        run: bun run test:e2e:limits
+
       # The script's `--env-file=../../.env.local` is a local-dev convenience;
       # Bun ignores a missing env file, so CI runs it on the job env above.
       - name: 🧪 Run real-infra E2E (document content injection)

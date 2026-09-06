@@ -17,6 +17,7 @@
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "test:e2e": "bun scripts/e2e-store-pipeline.ts",
+    "test:e2e:limits": "bun scripts/e2e-backend-limits.ts",
     "test:e2e:content-inject": "bun --env-file=../../.env.local scripts/e2e-content-inject.ts",
     "test:e2e:change-attribution": "bun --env-file=../../.env.local scripts/e2e-change-attribution.ts",
     "test:e2e:document-changes": "bun --env-file=../../.env.local scripts/e2e-document-changes.ts",
