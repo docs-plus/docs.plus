@@ -17,6 +17,7 @@ import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
 import { useThemeStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
+import { reportCurrentDocument } from '@utils/reportContent'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import React, { useState } from 'react'
@@ -99,6 +100,18 @@ const PadTitle = () => {
             tooltipPlacement="bottom"
             aria-label="History">
             <Icons.history size={20} className="text-base-content/70" />
+          </Button>
+
+          {/* Not gated on a session, unlike Notifications below: OSA s.20 wants
+              the route open to any reader. */}
+          <Button
+            variant="ghost"
+            shape="circle"
+            onClick={reportCurrentDocument}
+            tooltip="Report a problem"
+            tooltipPlacement="bottom"
+            aria-label="Report a problem">
+            <Icons.alert size={20} className="text-base-content/70" />
           </Button>
 
           {/* Notifications - authenticated users only */}

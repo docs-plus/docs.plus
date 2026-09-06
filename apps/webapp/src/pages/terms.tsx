@@ -75,7 +75,13 @@ export default function TermsPage() {
 
       <LegalSection title="Report a problem">
         <p>
-          Tell us if you find content that breaks these rules or the law. Email{' '}
+          Tell us if you find content that breaks these rules or the law. Press{' '}
+          <strong>Report a problem</strong> in the document title, or open the menu on a chat
+          message and choose <strong>Report</strong>. Either one starts a message to us with the
+          link already filled in.
+        </p>
+        <p>
+          You can also email{' '}
           <a href={CONTACT_MAILTO} className={LINK_CLASS}>
             {LEGAL_CONTACT_EMAIL}
           </a>

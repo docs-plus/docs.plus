@@ -16,6 +16,7 @@ import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
+import { openReportMail } from '@utils/reportContent'
 import React, { useMemo } from 'react'
 
 export type MessageActionMenuItem = {
@@ -45,7 +46,7 @@ export const useMessageActionMenuItems = (
   const { replyInThreadHandler } = useReplyInThreadHandler()
   const { editMessageHandler } = useEditMessageHandler()
   const { pinMessageHandler } = usePinMessageHandler()
-  const { copyMessageLinkHandler, copied: linkCopied } = useCopyMessageLinkHandler()
+  const { copyMessageLinkHandler, copied: linkCopied, getMessageUrl } = useCopyMessageLinkHandler()
   const { downloadMessageMediaHandler } = useDownloadMessageMediaHandler()
 
   const isOwner = message.user_id === profile?.id
@@ -151,6 +152,15 @@ export const useMessageActionMenuItems = (
         variant: 'danger',
         // Divider before Delete when Edit is hidden (non-owner); Edit owns separatorBefore when owner
         separatorBefore: !isOwner
+      },
+      {
+        // Deliberately not hidden on your own messages: OSA s.20 wants the route
+        // open to anyone who meets the content.
+        title: 'Report',
+        icon: <Icons.alert size={iconSize} />,
+        onClickFn: () => openReportMail('message', getMessageUrl(message)),
+        display: true,
+        separatorBefore: true
       }
     )
 
@@ -162,6 +172,7 @@ export const useMessageActionMenuItems = (
     copyMessageToDocHandler,
     downloadMessageMediaHandler,
     editMessageHandler,
+    getMessageUrl,
     iconSize,
     includeReaction,
     isOwner,
