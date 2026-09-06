@@ -46,6 +46,7 @@ Each was decided, and in most cases built and reverted. If you want to change on
 - **Title write.** One client module `apps/webapp/src/utils/titleWrite.ts`. Adapters stay adapters. Do not merge Title write with Access mutation. Do not invent a workspace package for the tag strip. Do not fold first-heading admission into this module. See `CONTEXT.md` §Pad outline.
 - **House envelope home.** `apps/hocuspocus.server/src/http/envelope.ts` owns `ok` / `fail` / `houseEnvelopeHook`. Do not force the hook onto link-metadata. See [apps/hocuspocus.server/CLAUDE.md](apps/hocuspocus.server/CLAUDE.md) §HTTP Modules.
 - **Collab session helpers.** Auth and disconnect predicates live in `apps/webapp/src/hooks/collabSession.ts`. Do not rewrite `HocuspocusProvider` construction. Do not re-export those helpers from `@utils`.
+- **Report route storage.** The Report action posts to the published contact address in `LEGAL_CONTACT_EMAIL` and keeps nothing. That was the deliberate scope, taken 2026-09-06 with the launch-legal review. Build storage or triage tooling only when real report volume shows it is needed, and bring the count rather than a design. One canonical home, `apps/webapp/src/utils/reportContent.ts` — do not add a second report path. Contract in [apps/webapp/CLAUDE.md](apps/webapp/CLAUDE.md) §Report Route.
 
 ## Cursor rules — `.cursor/rules/`
 
