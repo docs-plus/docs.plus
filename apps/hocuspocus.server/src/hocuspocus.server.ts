@@ -36,7 +36,8 @@ import {
 } from './lib/metrics'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { closeQueues, refreshPendingStateKeyTtls } from './lib/queue'
-import { disconnectRedis } from './lib/redis'
+import { disconnectRedis, getRedisClient } from './lib/redis'
+import { createRevertCooldown } from './lib/revertCooldown'
 import { resolveWsAccess } from './lib/wsAccess'
 import * as documentContent from './modules/document-content'
 import type { RevertOutcome, VersionFailureReason, VersionOps } from './modules/document-versions'
@@ -89,24 +90,9 @@ const LIST_TYPE = 'history.list'
 
 // A revert runs six whole-document traversals on this event loop and appends a
 // permanent backup row. Unlike its REST twin, a revert is reachable by any
-// signed-in client — including the anonymous session every visitor gets.
+// registered user with write access. Anonymous sign-in is off, so a visitor cannot.
 // `Throttle` only covers onConnect, so the cooldown lives here.
-const REVERT_COOLDOWN_MS = 2000
-const REVERT_COOLDOWN_MAX_KEYS = 10_000
-const lastRevertAt = new Map<string, number>()
-
-const revertCoolingDown = (documentId: string, now: number): boolean => {
-  const previous = lastRevertAt.get(documentId)
-  if (previous !== undefined && now - previous < REVERT_COOLDOWN_MS) return true
-  // Bounded without a timer: sweep expired keys only once the map is large.
-  if (lastRevertAt.size >= REVERT_COOLDOWN_MAX_KEYS) {
-    for (const [key, at] of lastRevertAt) {
-      if (now - at >= REVERT_COOLDOWN_MS) lastRevertAt.delete(key)
-    }
-  }
-  lastRevertAt.set(documentId, now)
-  return false
-}
+const revertCooldown = createRevertCooldown(getRedisClient())
 
 // `history.list` reads every version row plus the base64 head, and the same
 // unauthenticated frame can be looped. Keyed per CONNECTION, not per document: a
@@ -150,7 +136,7 @@ async function handleHistoryRevert(
 
   // After validation so a malformed flood cannot burn the document's only slot,
   // and before the ops so a real flood never reaches the traversals.
-  if (revertCoolingDown(documentId, Date.now())) return refuse('rate-limited')
+  if (await revertCooldown.coolingDown(documentId)) return refuse('rate-limited')
 
   if (!versionOps) {
     wsLogger.error({ documentId }, 'history.revert arrived before version ops were wired')

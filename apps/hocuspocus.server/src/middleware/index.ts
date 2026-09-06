@@ -3,21 +3,27 @@ import '../types' // For type augmentation
 import { type Context, Hono, type Next } from 'hono'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
-import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible'
+import { RateLimiterRedis } from 'rate-limiter-flexible'
 
+import { HYPERMULTIMEDIA_MOUNT_PATH } from '../api/routers/hypermultimedia.router'
 import { config } from '../config/env'
+import { CONSUME_TIMEOUT_MS, consumeWithin } from '../lib/consumeWithin'
 import { httpLogger } from '../lib/logger'
 import { rateLimitFailOpenTotal } from '../lib/metrics'
 import { getRedisClient } from '../lib/redis'
 
 const redisClient = getRedisClient()
 
-const CONSUME_TIMED_OUT = Symbol('rate-limit-consume-timed-out')
-// A slow Redis is not a broken one, so the catch arm below never fires for it.
-// The shared 60s REDIS_COMMAND_TIMEOUT is then the only bound on the route.
-// Measured p99 consume is 0.39ms. The budget clears the 100ms event-loop lag the
-// SLO accepts and the 200ms first Redis reconnect delay, which 150ms did not.
-const RATE_LIMIT_CONSUME_TIMEOUT_MS = 500
+// Media reads get their own budget rather than an exemption. The route is public
+// and every GET is an S3 round trip, so an unbounded one is an amplifier.
+// Production runs RATE_LIMIT_MAX=500, so the 25 cold pad loads derived at the
+// construction site below become 250 — a browsing session, not a single visit.
+export const MEDIA_READ_BUDGET_FACTOR = 10
+
+// Owned by the router, so renaming the mount cannot silently move media reads back
+// onto the global budget. The trailing slash is load-bearing: without it a path
+// such as `/api/plugins/hypermultimedia-other` would claim the media budget too.
+const MEDIA_READ_PATH_PREFIX = `${HYPERMULTIMEDIA_MOUNT_PATH}/`
 
 export const rateLimiter = (options: {
   points: number
@@ -56,55 +62,40 @@ export const rateLimiter = (options: {
     // x-real-ip is set by Traefik to the true client; fall back to the first XFF hop.
     const ip = realIp || forwardedFor!.split(',')[0]!.trim() || 'unknown'
 
-    let consumeTimer: ReturnType<typeof setTimeout> | undefined
+    // The key holds nothing the caller writes. Keying it on User-Agent too gave a
+    // client that increments that header a fresh budget on every request. That
+    // keying also minted one Redis key per distinct value, in the same volatile
+    // keyspace the claim-check payloads live in.
+    const outcome = await consumeWithin(limiter, ip)
 
-    try {
-      // The key holds nothing the caller writes. Keying it on User-Agent too gave a
-      // client that increments that header a fresh budget on every request. That
-      // keying also minted one Redis key per distinct value, in the same volatile
-      // keyspace the claim-check payloads live in.
-      const rateLimiterRes = await Promise.race([
-        limiter.consume(ip, 1),
-        new Promise<typeof CONSUME_TIMED_OUT>((resolve) => {
-          consumeTimer = setTimeout(() => resolve(CONSUME_TIMED_OUT), RATE_LIMIT_CONSUME_TIMEOUT_MS)
-        })
-      ])
+    if (outcome.kind === 'unavailable') {
+      // The limiter is failing open, which is deliberate for a public REST route.
+      // `lib/revertCooldown.ts` answers the same outcome the opposite way, on purpose.
+      // No latency alert fires at this speed and no rule matches a level-40 warn,
+      // so the counter is the only aggregate trace.
+      rateLimitFailOpenTotal.inc({ reason: outcome.reason, bucket: keyPrefix })
 
-      if (rateLimiterRes === CONSUME_TIMED_OUT) {
-        // The limiter is failing open. No latency alert fires at this speed and no
-        // rule matches a level-40 warn, so the counter is the only aggregate trace.
-        rateLimitFailOpenTotal.inc({ reason: 'timeout' })
+      if (outcome.reason === 'store-error') {
+        // Read as a rejection it made every rate-limited route fail for as long as
+        // Redis was down, while /health — exempt from this middleware — stayed
+        // green. Let the request through.
+        httpLogger.error({ err: outcome.error }, 'Rate limiter store failed, allowing the request')
+      } else {
         httpLogger.warn(
-          { ip, timeoutMs: RATE_LIMIT_CONSUME_TIMEOUT_MS },
+          { ip, timeoutMs: CONSUME_TIMEOUT_MS },
           'Rate limiter timed out, allowing the request'
         )
-        return next()
       }
-
-      c.header('X-RateLimit-Limit', points.toString())
-      c.header('X-RateLimit-Remaining', rateLimiterRes.remainingPoints.toString())
-      c.header(
-        'X-RateLimit-Reset',
-        new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString()
-      )
 
       return next()
-    } catch (rejRes: unknown) {
-      // A store fault rejects with a plain Error, not a RateLimiterRes, and there
-      // is no insuranceLimiter to absorb it. Read as a rejection it made every
-      // rate-limited route fail for as long as Redis was down, while /health —
-      // exempt from this middleware — stayed green. Let the request through.
-      if (!(rejRes instanceof RateLimiterRes)) {
-        rateLimitFailOpenTotal.inc({ reason: 'store-error' })
-        httpLogger.error({ err: rejRes }, 'Rate limiter store failed, allowing the request')
-        return next()
-      }
+    }
 
-      const retryAfter = Math.ceil(rejRes.msBeforeNext / 1000) || duration
+    if (outcome.kind === 'limited') {
+      const retryAfter = Math.ceil(outcome.res.msBeforeNext / 1000) || duration
 
       c.header('X-RateLimit-Limit', points.toString())
       c.header('X-RateLimit-Remaining', '0')
-      c.header('X-RateLimit-Reset', new Date(Date.now() + rejRes.msBeforeNext).toISOString())
+      c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
       c.header('Retry-After', retryAfter.toString())
 
       // House envelope. The retry seconds live in `Retry-After` only: `error.details`
@@ -119,11 +110,13 @@ export const rateLimiter = (options: {
         },
         429
       )
-    } finally {
-      // Promise.race attaches its own handler to both inputs, so a late store-fault
-      // rejection is already handled. Measured. Only the timer needs clearing.
-      clearTimeout(consumeTimer)
     }
+
+    c.header('X-RateLimit-Limit', points.toString())
+    c.header('X-RateLimit-Remaining', outcome.res.remainingPoints.toString())
+    c.header('X-RateLimit-Reset', new Date(Date.now() + outcome.res.msBeforeNext).toISOString())
+
+    return next()
   }
 }
 
@@ -234,6 +227,15 @@ export const setupMiddleware = (app: Hono) => {
     duration: 15 * 60,
     keyPrefix: 'global'
   })
+
+  // One pad load fetches every picture through the media proxy, so a document
+  // holding 20 images spent 20 points of the global budget on a cold open. That
+  // let about 25 page views exhaust an address, and an office NAT is one address.
+  const mediaReadRateLimiter = rateLimiter({
+    points: config.security.rateLimitMax * MEDIA_READ_BUDGET_FACTOR,
+    duration: 15 * 60,
+    keyPrefix: 'media-read'
+  })
   app.use('*', async (c, next) => {
     if (c.req.method === 'OPTIONS') {
       return next()
@@ -243,6 +245,12 @@ export const setupMiddleware = (app: Hono) => {
     const path = new URL(c.req.url).pathname
     if (path === '/health' || path.startsWith('/health/')) {
       return next()
+    }
+
+    // The public read only. The POST on this same prefix is an upload, and it
+    // stays on the global budget, where its cost belongs.
+    if (c.req.method === 'GET' && path.startsWith(MEDIA_READ_PATH_PREFIX)) {
+      return mediaReadRateLimiter(c, next)
     }
 
     return globalRateLimiter(c, next)

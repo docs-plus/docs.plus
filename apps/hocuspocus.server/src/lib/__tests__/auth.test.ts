@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 
+import { register } from '../metrics'
 import {
   isTransientAuthFailure,
+  MAX_TOKEN_CACHE,
   verifySupabaseTokenOutcome,
   type VerifyTokenOptions
 } from '../auth'
@@ -112,6 +114,34 @@ describe('verifySupabaseTokenOutcome', () => {
     expect(outcome.kind).toBe('unavailable')
   })
 
+  // Reads one metric sample, so the assertions below compare deltas rather than
+  // totals. Other tests in this file also verify tokens, so a total would drift.
+  const sample = async (name: string, label?: string): Promise<number> => {
+    const metric = (await register.getMetricsAsJSON()).find((m) => m.name === name)
+    const values = (metric?.values ?? []) as { value: number; labels: Record<string, string> }[]
+    if (!label) return values[0]?.value ?? 0
+    return values.find((v) => v.labels.result === label)?.value ?? 0
+  }
+
+  test('the cache gauge and the lookup counters track real usage', async () => {
+    const getUser = stubGetUser(() => ({
+      data: { user: { id: 'u-metric', email: 'm@metric.c' } },
+      error: null
+    }))
+
+    const missBefore = await sample('auth_token_cache_lookups_total', 'miss')
+    const hitBefore = await sample('auth_token_cache_lookups_total', 'hit')
+    const sizeBefore = await sample('auth_token_cache_size')
+
+    await verifySupabaseTokenOutcome('tok-metric-1', { getUser })
+    await verifySupabaseTokenOutcome('tok-metric-1', { getUser })
+
+    expect(await sample('auth_token_cache_lookups_total', 'miss')).toBe(missBefore + 1)
+    expect(await sample('auth_token_cache_lookups_total', 'hit')).toBe(hitBefore + 1)
+    // The gauge reads tokenCache.size at scrape time, so one new token adds one.
+    expect(await sample('auth_token_cache_size')).toBe(sizeBefore + 1)
+  })
+
   // Last in the file on purpose: filling the cache evicts the tokens seeded above.
   // It asserts only on tokens it inserts itself. Anything already cached is older,
   // so it is evicted before the first flood token, whatever ran before.
@@ -122,20 +152,21 @@ describe('verifySupabaseTokenOutcome', () => {
       return { data: { user: { id: 'u-flood', email: 'f@flood.c' } }, error: null }
     })
 
-    // MAX_TOKEN_CACHE is 1000, so 1001 distinct tokens overflow it by exactly one.
-    for (let i = 0; i <= 1000; i += 1) {
+    // Driven by the constant, so raising the cap cannot silently void this test.
+    // One more token than the cap overflows it by exactly one.
+    for (let i = 0; i <= MAX_TOKEN_CACHE; i += 1) {
       await verifySupabaseTokenOutcome(`tok-flood-${i}`, { getUser })
     }
-    expect(calls).toBe(1001)
+    expect(calls).toBe(MAX_TOKEN_CACHE + 1)
 
     // The survivor is read first. Re-verifying the evicted token below re-caches it,
     // and that set evicts whatever is then oldest — which is this very token.
     await verifySupabaseTokenOutcome('tok-flood-1', { getUser })
-    expect(calls).toBe(1001)
+    expect(calls).toBe(MAX_TOKEN_CACHE + 1)
 
     // Only the oldest was dropped, so it costs one fresh Supabase Auth round trip.
-    // A clear() would have made every one of the 1000 survivors cost one instead.
+    // A clear() would have made every one of the survivors cost one instead.
     await verifySupabaseTokenOutcome('tok-flood-0', { getUser })
-    expect(calls).toBe(1002)
+    expect(calls).toBe(MAX_TOKEN_CACHE + 2)
   })
 })

@@ -182,7 +182,36 @@ export const documentContentApplyTotal = new Counter({
 export const rateLimitFailOpenTotal = new Counter({
   name: 'rate_limit_fail_open_total',
   help: 'Requests allowed through because the rate limiter could not decide, by reason',
-  labelNames: ['reason'] as const,
+  labelNames: ['reason', 'bucket'] as const,
+  registers: [register]
+})
+
+// Retention sweep arms. `skipped` is the healthy steady state at two replicas,
+// so it cannot be read alone: a stuck lease key also produces only `skipped`.
+// Alert on the absence of `ran` across the fleet, never on `skipped` rising.
+export const retentionLeaseTotal = new Counter({
+  name: 'retention_lease_total',
+  help: 'Retention sweep attempts by lease outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// The degraded arms matter most here. This is the only rate limit on the revert
+// path, and a Redis fault silently drops it back to one budget per process.
+export const revertCooldownTotal = new Counter({
+  name: 'revert_cooldown_total',
+  help: 'history.revert cooldown decisions, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// The gauge that reads this cache lives in lib/auth.ts, beside the Map it
+// measures. Registered here it published 0 from the worker, which never imports
+// auth.ts, and a constant 0 dilutes any average across scrape jobs.
+export const authTokenCacheLookupsTotal = new Counter({
+  name: 'auth_token_cache_lookups_total',
+  help: 'Supabase token verifications served from cache or sent to Auth, by result',
+  labelNames: ['result'] as const,
   registers: [register]
 })
 

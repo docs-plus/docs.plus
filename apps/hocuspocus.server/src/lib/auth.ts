@@ -1,9 +1,11 @@
 import { timingSafeEqual } from 'node:crypto'
 
 import { isAuthRetryableFetchError } from '@supabase/supabase-js'
+import { Gauge } from 'prom-client'
 
 import { config } from '../config/env'
 import { jwtLogger } from './logger'
+import { authTokenCacheLookupsTotal, register } from './metrics'
 import { getAnonClient } from './supabase'
 
 export interface SupabaseUser {
@@ -53,8 +55,23 @@ const TOKEN_CACHE_TTL_MS = 60_000
 // Negative results expire faster: a revoked/refreshed token is a different string,
 // so a short window only suppresses re-verifying the exact same dead token.
 const NEG_TOKEN_CACHE_TTL_MS = 30_000
-const MAX_TOKEN_CACHE = 1000
+// The cap holds 1000 tokens per replica. Past it `cacheSet` drops the oldest entry
+// rather than clearing the whole map, so a full cache still serves every survivor.
+// Raise the number only when the gauge below shows real saturation in production.
+export const MAX_TOKEN_CACHE = 1000
 const tokenCache = new Map<string, { user: SupabaseUser | null; expiresAt: number }>()
+
+// Defined beside the Map so a process without this cache publishes no sample at
+// all. Registered in metrics.ts it reported 0 from the worker, which never imports
+// this file, and a constant 0 reads as an empty cache.
+export const authTokenCacheSize = new Gauge({
+  name: 'auth_token_cache_size',
+  help: 'Supabase access tokens currently held in the verification cache',
+  registers: [register],
+  collect() {
+    this.set(tokenCache.size)
+  }
+})
 
 function cacheSet(token: string, user: SupabaseUser | null, ttlMs: number): void {
   // Clearing the whole map made every signed-in person re-verify at once. That
@@ -80,8 +97,11 @@ export const verifySupabaseTokenOutcome = async (
   const now = Date.now()
   const cached = tokenCache.get(token)
   if (cached && cached.expiresAt > now) {
+    authTokenCacheLookupsTotal.inc({ result: 'hit' })
     return cached.user ? { kind: 'user', user: cached.user } : { kind: 'invalid' }
   }
+  // Counted before the call, so an expired entry reads as a miss like an absent one.
+  authTokenCacheLookupsTotal.inc({ result: 'miss' })
 
   const getUser: AuthGetUser =
     opts?.getUser ??

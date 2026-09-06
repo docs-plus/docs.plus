@@ -12,7 +12,7 @@ import {
 } from './lib/email'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { workerLogger } from './lib/logger'
-import { metricsContentType, metricsText } from './lib/metrics'
+import { metricsContentType, metricsText, retentionLeaseTotal } from './lib/metrics'
 import { checkDatabaseHealth, prisma, shutdownDatabase } from './lib/prisma'
 import {
   getPushQueueConsumerHealth,
@@ -22,6 +22,7 @@ import {
 } from './lib/push'
 import { closeQueues, createDocumentWorker, getStoreQueueOldestWaitingAgeMs } from './lib/queue'
 import { checkRedisHealth, disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
+import { type LeaseOutcome, withRedisLease } from './lib/redisLease'
 import { createRetention } from './lib/retention'
 import { getServiceRoleClient } from './lib/supabase'
 import { startWorkerMetricsSampling } from './lib/workerMetricsSampler'
@@ -97,9 +98,34 @@ if (emailConsumerStarted) {
   workerLogger.warn('⚠️ Email notification pgmq consumer not started - check Supabase config')
 }
 
-cleanupInterval = setInterval(() => retention.run(), CLEANUP_INTERVAL_MS)
+// At most one pass per TTL window, not one per replica. The TTL is half the
+// interval, so any replica count is capped at two passes per interval. A pass with
+// nothing reapable costs 18.2 ms cold, 4.6 ms warm, and 3 SQL statements. Only rows
+// past the delete cutoff add a Supabase RPC and an S3 list and delete per document.
+const RETENTION_LOCK_KEY = 'retention-sweep-lease'
+// Always half the interval, so a tick never blocks on the previous window's lease.
+// A fixed floor here ate passes instead: a 60s floor against a 60s interval skips
+// every other sweep. A Redis lease, not a Postgres advisory lock, because
+// retention.run() spans several connections and opens no transaction.
+const RETENTION_LOCK_TTL_S = Math.max(1, Math.floor(CLEANUP_INTERVAL_MS / 2000))
+
+// Count every arm; all three are otherwise silent. `retention_lease_total` in
+// lib/metrics.ts records why `skipped` cannot be read on its own.
+const runRetentionOnce = async (): Promise<LeaseOutcome> => {
+  const outcome = await withRedisLease(
+    redis,
+    RETENTION_LOCK_KEY,
+    RETENTION_LOCK_TTL_S,
+    retention.run,
+    workerLogger
+  )
+  retentionLeaseTotal.inc({ outcome })
+  return outcome
+}
+
+cleanupInterval = setInterval(() => void runRetentionOnce(), CLEANUP_INTERVAL_MS)
 // Run once on startup to clean any stale rows
-retention.run()
+void runRetentionOnce()
 workerLogger.info(
   {
     intervalMs: CLEANUP_INTERVAL_MS,

@@ -8,6 +8,13 @@ import * as documentsController from '../controllers/documents.controller'
 import { requireUser } from '../middleware/auth'
 import { MEDIA_MAX_FILE_SIZE } from '../services/media.service'
 
+/**
+ * The mount path, exported so the media-read rate-limit bucket in
+ * `middleware/index.ts` cannot drift from it. `src/index.ts` still repeats the
+ * literal in its own `app.route` call; align that before calling this the only source.
+ */
+export const HYPERMULTIMEDIA_MOUNT_PATH = '/api/plugins/hypermultimedia'
+
 const hypermultimedia = new Hono()
 
 // Reject oversize uploads before the controller buffers the whole multipart

@@ -9,7 +9,9 @@ import emailRouter from './api/email'
 import adminRouter from './api/routers/admin.router'
 import documentsRouter from './api/routers/documents.router'
 import healthRouter from './api/routers/health.router'
-import hypermultimediaRouter from './api/routers/hypermultimedia.router'
+import hypermultimediaRouter, {
+  HYPERMULTIMEDIA_MOUNT_PATH
+} from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
 import { verifyServiceRole } from './lib/auth'
 import { emailGateway } from './lib/email'
@@ -107,7 +109,7 @@ const documentConversionModule = documentConversion.init({
   mediaPublicBaseUrl: config.app.publicUrl
 })
 app.route('/api/documents', documentConversionModule.router)
-app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
+app.route(HYPERMULTIMEDIA_MOUNT_PATH, hypermultimediaRouter)
 app.route('/api/email', emailRouter)
 app.route('/api/admin', adminRouter)
 const linkMetadataModule = linkMetadata.init({
