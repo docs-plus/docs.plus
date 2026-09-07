@@ -12,7 +12,7 @@ import debounce from 'lodash/debounce'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LuBell, LuClock, LuInfo, LuMail, LuSmartphone, LuTriangleAlert } from 'react-icons/lu'
 
-import type { NotificationPreferences } from '../types'
+import type { EmailFrequency, NotificationPreferences } from '../types'
 import SettingsCard from './SettingsCard'
 
 interface ToggleRowProps {
@@ -143,12 +143,28 @@ const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 48
   return { value, label: formatTimeDisplay(value) }
 })
 
-const EMAIL_FREQUENCY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'immediate', label: 'Immediately (after 15 min if unread)' },
-  { value: 'daily', label: 'Daily digest (9 AM)' },
-  { value: 'weekly', label: 'Weekly digest (Mondays)' },
-  { value: 'never', label: 'Never' }
+const EMAIL_FREQUENCY_OPTIONS: { value: EmailFrequency; label: string; help: string }[] = [
+  {
+    value: 'immediate',
+    label: 'Immediately (after 15 min if unread)',
+    help: 'Chat mail waits 15 minutes if you have not read it. Document changes still go in the next digest.'
+  },
+  {
+    value: 'daily',
+    label: 'Daily digest (9 AM)',
+    help: 'One email at 9:00 AM in the timezone below.'
+  },
+  {
+    value: 'weekly',
+    label: 'Weekly digest (Mondays)',
+    help: 'One email on Mondays at 9:00 AM in the timezone below.'
+  },
+  { value: 'never', label: 'Never', help: 'No notification emails.' }
 ]
+
+function emailFrequencyOption(value: EmailFrequency | undefined) {
+  return EMAIL_FREQUENCY_OPTIONS.find((row) => row.value === (value ?? 'daily'))!
+}
 
 const getTimezoneOffset = (tz: string): string => {
   try {
@@ -367,6 +383,15 @@ const NotificationsSection = () => {
 
     if (key === 'email_enabled' && value === true && preferences.email_bounce_info) {
       patch.email_bounce_info = null
+    }
+
+    // Daily and weekly 9:00 AM use this timezone. Quiet Hours is the only
+    // other writer, so an email-only user would otherwise stay on UTC.
+    const needsTimezone =
+      (key === 'email_enabled' && value === true) ||
+      (key === 'email_frequency' && (value === 'daily' || value === 'weekly'))
+    if (needsTimezone && !preferences.timezone) {
+      patch.timezone = getBrowserTimezone()
     }
 
     setPreferences((prev) => {
@@ -606,24 +631,32 @@ const NotificationsSection = () => {
               <ToggleRow
                 id="email-content-changes"
                 label="Document changes"
-                description="When a document you follow is edited"
+                description="When a document you follow is edited. These always arrive in a digest, never as a 15-minute ping."
                 checked={preferences.email_content_changes ?? true}
                 onChange={(checked) => handlePreferenceChange('email_content_changes', checked)}
                 disabled={saving}
               />
 
-              <div className="py-3">
+              <div className="space-y-3 py-3">
                 <Select
                   id="email-frequency"
                   label="Email frequency"
                   labelPosition="above"
-                  value={preferences.email_frequency || 'daily'}
+                  value={emailFrequencyOption(preferences.email_frequency).value}
                   onChange={(val) => handlePreferenceChange('email_frequency', val)}
                   options={EMAIL_FREQUENCY_OPTIONS}
                   disabled={saving}
-                  helperText="How often would you like to receive email notifications?"
+                  helperText={emailFrequencyOption(preferences.email_frequency).help}
                   wrapperClassName="max-w-xs"
                 />
+                {(preferences.email_frequency === 'daily' ||
+                  preferences.email_frequency === 'weekly') && (
+                  <TimezoneSelect
+                    value={preferences.timezone || getBrowserTimezone()}
+                    onChange={(tz) => handlePreferenceChange('timezone', tz)}
+                    disabled={saving}
+                  />
+                )}
               </div>
             </>
           )}
