@@ -502,19 +502,17 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
 
   return (
     <DropdownContext.Provider value={dropdownContextValue}>
-      {/* Trigger Button — span wrapper isolates Tooltip ref from dropdown ref */}
       <Tooltip title={tooltip} placement="left" open={dropdown.open ? false : undefined}>
-        <span className={twMerge('join-item inline-flex', className)}>
-          <Button
-            ref={dropdown.refs.setReference}
-            {...dropdown.getReferenceProps()}
-            variant="ghost"
-            size="sm"
-            shape="square"
-            disabled={disabled}>
-            {trigger}
-          </Button>
-        </span>
+        <Button
+          ref={dropdown.refs.setReference}
+          {...dropdown.getReferenceProps()}
+          variant="ghost"
+          size="sm"
+          shape="square"
+          className={twMerge('join-item', className)}
+          disabled={disabled}>
+          {trigger}
+        </Button>
       </Tooltip>
 
       {dropdown.isMounted && (
