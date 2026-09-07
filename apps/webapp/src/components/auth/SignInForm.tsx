@@ -1,28 +1,19 @@
 import { signInWithOAuth } from '@api'
-import { announceSignedInProfile } from '@components/auth/applySignedInProfile'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import TextInput from '@components/ui/TextInput'
-import { Provider } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { FcGoogle } from 'react-icons/fc'
 import { LuMail } from 'react-icons/lu'
 
 import {
-  completeGooglePopupSignIn,
-  googleOAuthOptions,
-  openGoogleAuthPopup
-} from './googlePopupSignIn'
-import {
   forgetSignedInAccount,
   type LastSignedInAccount,
   readSignedInAccount
 } from './lastSignedInAccount'
-import { usePasskeyAutofill } from './usePasskeyAutofill'
 
 interface SignInFormProps {
   /** Post-auth return URL (pathname+search); when set the OAuth/magic-link redirect lands here. */
@@ -33,7 +24,6 @@ interface SignInFormProps {
 }
 
 const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) => {
-  const router = useRouter()
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [googleBusy, setGoogleBusy] = useState(false)
@@ -49,48 +39,31 @@ const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) =>
     setLastAccount(null)
   }
 
-  usePasskeyAutofill(() => router.reload())
-
   const isAnyLoading = googleBusy || emailBusy
 
-  const handleOAuthSignIn = async (provider: Provider) => {
-    // Opened first, synchronously. Any `await` before this makes the popup
-    // programmatic, and the browser blocks it. Null means no popup is available
-    // (mobile, or a blocker), so auth-js redirects this tab instead.
-    const popup = openGoogleAuthPopup()
+  const handleGoogleSignIn = async () => {
+    // Full-tab only. Never `prompt: 'consent'` — that forces Google's
+    // passkey challenge on every click.
     setGoogleBusy(true)
 
     try {
       const authCallbackURL = returnTo ? new URL(returnTo, location.origin) : new URL(location.href)
-
-      const response = await signInWithOAuth({
-        provider,
-        options: googleOAuthOptions(authCallbackURL.href, Boolean(popup), lastAccount?.email)
+      const { error } = await signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: authCallbackURL.href,
+          ...(lastAccount?.email ? { queryParams: { login_hint: lastAccount.email } } : {}),
+          scopes:
+            'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile'
+        }
       })
-
-      if (!popup) return
-
-      const url = response?.data?.url
-      if (!url) {
-        popup.close()
+      if (error) {
         toast.Error('Could not start Google sign-in. Please try again.')
-        return
+        setGoogleBusy(false)
       }
-      popup.location.href = url
-
-      const outcome = await completeGooglePopupSignIn(popup)
-      if (outcome === 'dismissed') return
-      if (outcome === 'signed-in') {
-        toast.Success('Signed in')
-        onClose()
-        return
-      }
-      announceSignedInProfile(outcome)
     } catch (error) {
-      popup?.close()
       console.error('Authentication error:', error)
       toast.Error('Authentication error: ' + error)
-    } finally {
       setGoogleBusy(false)
     }
   }
@@ -158,7 +131,7 @@ const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) =>
       btnStyle="outline"
       shape="block"
       className="min-h-12 font-semibold"
-      onClick={() => handleOAuthSignIn('google')}
+      onClick={handleGoogleSignIn}
       loading={googleBusy}
       disabled={isAnyLoading}
       startIcon={<FcGoogle className="size-5" />}>
@@ -182,7 +155,7 @@ const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) =>
         autoCorrect="off"
         spellCheck={false}
         placeholder="mail@site.com"
-        autoComplete="username webauthn"
+        autoComplete="username"
         className="min-h-11 text-base"
         value={magicLinkEmail}
         onChange={(e) => setMagicLinkEmail(e.target.value)}

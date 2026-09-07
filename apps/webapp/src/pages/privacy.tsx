@@ -33,7 +33,6 @@ export default function PrivacyPage() {
           <li>
             Email sign-in stores the address you type. We send a sign-in link to that address.
           </li>
-          <li>A passkey stores a public key and a device label, such as iCloud Keychain.</li>
           <li>Document and chat text you write, plus your name when you are signed in.</li>
           <li>Files you upload, and the account that uploaded them.</li>
           <li>Notification choices, if you turn email notices on.</li>
@@ -53,18 +52,6 @@ export default function PrivacyPage() {
           name and photo.
         </p>
         <p>We do not sell this data. We do not use it for ads.</p>
-      </LegalSection>
-
-      <LegalSection title="Passkeys">
-        <p>
-          A passkey lets you sign in with your fingerprint, face, screen lock, or a security key.
-        </p>
-        <p>
-          Your device keeps the private key. We receive only a public key and a device label, such
-          as iCloud Keychain. Your fingerprint and face never leave your device, and we never see
-          them.
-        </p>
-        <p>Remove a passkey at any time in Settings, under Security.</p>
       </LegalSection>
 
       <LegalSection title="Who we share with">

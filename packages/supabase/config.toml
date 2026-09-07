@@ -290,16 +290,10 @@ max_frequency = "5s"
 # enroll_enabled = true
 # verify_enabled = true
 
-# Passkeys — a FIRST sign-in method, not a second factor. Distinct from
-# [auth.mfa.web_authn] above, which stays off. Production uses rp_id "docs.plus";
-# never copy that here, a passkey is bound to the rp_id it was enrolled against.
+# Passkeys are off. Do not turn this on. The webapp has no passkey UI.
+# Distinct from [auth.mfa.web_authn] above, which also stays off.
 [auth.passkey]
-enabled = true
-
-[auth.webauthn]
-rp_display_name = "docs.plus"
-rp_id = "localhost"
-rp_origins = ["http://localhost:3000"]
+enabled = false
 
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
