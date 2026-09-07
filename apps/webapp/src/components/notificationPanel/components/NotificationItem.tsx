@@ -1,3 +1,7 @@
+import {
+  normalizeToPlainHistoryHash,
+  parseHistoryHash
+} from '@components/pages/history/historyShareUrl'
 import { PanelFeedItem } from '@components/PanelFeedItem'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
@@ -66,7 +70,22 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
       // live in later segments, and a bare push would drop the reader's filters.
       const target = actionUrlPathname(notification.action_url)
       const slugOf = (path: string) => path.split('/')[1] ?? ''
-      if (target && slugOf(target) !== slugOf(window.location.pathname)) void router.push(target)
+      if (!target) return
+
+      // Last opened / last visit already moved on this pad open, so the
+      // notification instant is the only since that still means "before I left".
+      useStore.getState().setPendingCompareSince(notification.created_at)
+
+      if (slugOf(target) !== slugOf(window.location.pathname)) {
+        void router.push(`${target}#history`)
+        return
+      }
+      const historyHash = parseHistoryHash(window.location.hash)
+      if (!historyHash.isHistory) {
+        window.location.hash = 'history'
+        return
+      }
+      if (historyHash.version != null) normalizeToPlainHistoryHash()
       return
     }
 

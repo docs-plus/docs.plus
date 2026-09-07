@@ -19,6 +19,11 @@ interface IHistoryStore {
   compareBaseItem: HistoryItem | null
   /** Version of the second in-flight watch that fills `compareBaseItem`. */
   pendingCompareVersion: number | null
+  /**
+   * ISO instant from a content_change notification. History compare consumes it
+   * once. Must survive `resetHistorySessionForMount` or a pad-open View loses it.
+   */
+  pendingCompareSince: string | null
   /** A background `document:saved` re-list is in flight; its failure must not blank the sidebar. */
   silentListRefresh: boolean
   setHistoryList: (historyList: HistoryItem[]) => void
@@ -32,6 +37,7 @@ interface IHistoryStore {
   setCompareMode: (compareMode: boolean) => void
   setCompareBaseItem: (item: HistoryItem | null) => void
   setPendingCompareVersion: (version: number | null) => void
+  setPendingCompareSince: (since: string | null) => void
   setSilentListRefresh: (silent: boolean) => void
 }
 
@@ -47,6 +53,7 @@ const history = immer<IHistoryStore>((set) => ({
   compareMode: false,
   compareBaseItem: null,
   pendingCompareVersion: null,
+  pendingCompareSince: null,
   silentListRefresh: false,
   setHistoryList: (historyList: HistoryItem[]) => {
     set((state) => {
@@ -112,6 +119,12 @@ const history = immer<IHistoryStore>((set) => ({
   setPendingCompareVersion: (version: number | null) => {
     set((state) => {
       state.pendingCompareVersion = version
+    })
+  },
+
+  setPendingCompareSince: (pendingCompareSince: string | null) => {
+    set((state) => {
+      state.pendingCompareSince = pendingCompareSince
     })
   },
 

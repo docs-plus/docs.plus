@@ -4,6 +4,7 @@ import { useEditor } from '@tiptap/react'
 import { useEffect } from 'react'
 
 import { clearHistorySession } from '../clearHistorySession'
+import { useArmPendingHistoryCompare } from './useArmPendingHistoryCompare'
 import { useHocuspocusStateless } from './useHocuspocusStateless'
 
 export function useHistoryEditor() {
@@ -25,6 +26,7 @@ export function useHistoryEditor() {
   useEffect(() => () => clearHistorySession(), [])
 
   useHocuspocusStateless()
+  useArmPendingHistoryCompare()
 
   return editor
 }
