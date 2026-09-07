@@ -31,3 +31,6 @@ export const openReportMail = (kind: ReportKind, url: string): void => {
  */
 export const reportCurrentDocument = (): void =>
   openReportMail('document', `${window.location.origin}${window.location.pathname}`)
+
+/** Pad route only. Home and /editor would mail a path that is not a document. */
+export const isDocumentReportPath = (pathname: string): boolean => pathname === '/[...slugs]'

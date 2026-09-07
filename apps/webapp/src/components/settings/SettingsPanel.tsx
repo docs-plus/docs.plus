@@ -3,11 +3,15 @@ import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useAuthStore } from '@stores'
+import { isDocumentReportPath, reportCurrentDocument } from '@utils/reportContent'
 import dynamic from 'next/dynamic'
-import { type ComponentType, useCallback, useState } from 'react'
+import { useRouter } from 'next/router'
+import { type ComponentType, type CSSProperties, useCallback, useState } from 'react'
+import type { IconType } from 'react-icons'
 import { LuChevronLeft, LuChevronRight, LuExternalLink, LuGithub, LuLogOut } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
 
-import { GITHUB_REPO_URL, SETTINGS_TABS, SUPPORT_LINKS } from './constants'
+import { GITHUB_REPO_URL, SETTINGS_TABS, SUPPORT_ROWS } from './constants'
 import { useSignOut } from './hooks/useSignOut'
 import { openSignOutConfirm } from './openSignOutConfirm'
 import {
@@ -17,7 +21,7 @@ import {
   ProfileSkeleton,
   SecuritySkeleton
 } from './SettingsPanelSkeleton'
-import type { SettingsPanelProps, TabType } from './types'
+import type { SettingsPanelProps, SupportInk, SupportRow, TabType } from './types'
 
 const ProfileSection = dynamic(() => import('./components/ProfileSection'), {
   loading: () => <ProfileSkeleton />
@@ -35,6 +39,90 @@ const NotificationsSection = dynamic(() => import('./components/NotificationsSec
   loading: () => <NotificationsSkeleton />
 })
 
+const STAR_SPARK_ANGLES = [0, 60, 120, 180, 240, 300] as const
+
+const SUPPORT_ROW_CLASS =
+  'text-base-content/70 hover:text-base-content hover:bg-base-200 group rounded-field flex min-h-[44px] items-center gap-2.5 px-2 py-1.5 text-sm transition-colors'
+
+function supportInkClass(ink: SupportInk): string {
+  switch (ink) {
+    case 'accent':
+      return 'group-hover:text-accent group-focus-visible:text-accent'
+    case 'warning':
+      return 'group-hover:text-warning group-focus-visible:text-warning'
+    case 'error':
+      return 'group-hover:text-error group-focus-visible:text-error'
+    default: {
+      const _exhaustive: never = ink
+      return _exhaustive
+    }
+  }
+}
+
+const SupportStarIcon = ({ Icon }: { Icon: IconType }) => (
+  <span className="relative inline-flex size-4 shrink-0 items-center justify-center overflow-visible">
+    <Icon
+      size={16}
+      className="group-hover/star:fill-accent group-hover/star:text-accent group-focus-visible/star:fill-accent group-focus-visible/star:text-accent origin-center motion-safe:group-hover/star:animate-[star-pop_var(--motion-region)_var(--motion-ease-enter)_both] motion-safe:group-focus-visible/star:animate-[star-pop_var(--motion-region)_var(--motion-ease-enter)_both]"
+    />
+    {STAR_SPARK_ANGLES.map((angle) => (
+      <span
+        key={angle}
+        aria-hidden
+        style={{ '--star-spark-angle': `${angle}deg` } as CSSProperties}
+        className="bg-accent pointer-events-none absolute top-1/2 left-1/2 -mt-0.5 -ml-0.5 size-1 rounded-full opacity-0 motion-safe:group-hover/star:animate-[star-spark_var(--motion-region)_var(--motion-ease-enter)_forwards] motion-safe:group-focus-visible/star:animate-[star-spark_var(--motion-region)_var(--motion-ease-enter)_forwards]"
+      />
+    ))}
+  </span>
+)
+
+const SupportRowControl = ({ row }: { row: SupportRow }) => {
+  const Icon = row.icon
+  const inkClass = supportInkClass(row.ink)
+  const isStarBurst = row.kind === 'link' && row.burst === 'star'
+  const body = (
+    <>
+      {isStarBurst ? (
+        <SupportStarIcon Icon={Icon} />
+      ) : (
+        <Icon size={16} className={twMerge('shrink-0 transition-colors', inkClass)} />
+      )}
+      {row.label}
+      {row.kind === 'link' && (
+        <LuExternalLink
+          size={14}
+          className={twMerge(
+            'ml-auto shrink-0 opacity-40 transition-colors',
+            inkClass,
+            'group-hover:opacity-100 group-focus-visible:opacity-100'
+          )}
+        />
+      )}
+    </>
+  )
+
+  if (row.kind === 'link') {
+    return (
+      <a
+        href={row.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={twMerge(SUPPORT_ROW_CLASS, isStarBurst && 'group/star overflow-visible')}>
+        {body}
+      </a>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={reportCurrentDocument}
+      className={twMerge(SUPPORT_ROW_CLASS, 'w-full')}>
+      {body}
+    </button>
+  )
+}
+
 // Only DocumentsSection reads `onOpenDocument`; the rest ignore the optional prop.
 const TAB_COMPONENTS: Record<TabType, ComponentType<{ onOpenDocument?: () => void }>> = {
   profile: ProfileSection,
@@ -48,6 +136,10 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [showContent, setShowContent] = useState(false)
   const user = useAuthStore((state) => state.profile)
+  const { pathname } = useRouter()
+  const supportRows = isDocumentReportPath(pathname)
+    ? SUPPORT_ROWS
+    : SUPPORT_ROWS.filter((row) => row.kind !== 'action')
   const { isLoading: signOutLoading, handleSignOut } = useSignOut()
 
   const handleTabChange = useCallback((tab: TabType) => {
@@ -131,30 +223,22 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
               Open Source
             </h3>
             <ul className="space-y-0.5">
-              {SUPPORT_LINKS.map((action) => {
-                const Icon = action.icon
-                return (
-                  <li key={action.label}>
-                    <a
-                      href={action.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-base-content/70 hover:text-base-content hover:bg-base-200 rounded-field flex min-h-[44px] items-center gap-2.5 px-2 py-1.5 text-sm transition-colors">
-                      <Icon size={16} className="shrink-0" />
-                      {action.label}
-                      <LuExternalLink size={14} className="ml-auto shrink-0 opacity-40" />
-                    </a>
-                  </li>
-                )
-              })}
+              {supportRows.map((row) => (
+                <li key={row.label}>
+                  <SupportRowControl row={row} />
+                </li>
+              ))}
             </ul>
 
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="border-base-300 bg-base-100 hover:bg-base-200 text-base-content rounded-field mt-2 flex min-h-[44px] items-center justify-center gap-2 border p-2.5 text-sm font-medium transition-colors">
-              <LuGithub size={18} />
+              className="border-base-300 bg-base-100 hover:bg-base-200 text-base-content group rounded-field mt-2 flex min-h-[44px] items-center justify-center gap-2 border p-2.5 text-sm font-medium transition-colors">
+              <LuGithub
+                size={18}
+                className="group-hover:text-primary group-focus-visible:text-primary transition-colors"
+              />
               View on GitHub
             </a>
           </nav>

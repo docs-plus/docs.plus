@@ -49,7 +49,7 @@ export default function TermsPage() {
 
       <LegalSection title="Your account">
         <p>You may open a public document without an account.</p>
-        <p>A Google sign-in, an email link, or a passkey creates an account.</p>
+        <p>A Google sign-in or an email link creates an account.</p>
       </LegalSection>
 
       <LegalSection title="Your content">
@@ -76,9 +76,9 @@ export default function TermsPage() {
       <LegalSection title="Report a problem">
         <p>
           Tell us if you find content that breaks these rules or the law. Press{' '}
-          <strong>Report a problem</strong> in the document title, or open the menu on a chat
-          message and choose <strong>Report</strong>. Either one starts a message to us with the
-          link already filled in.
+          <strong>Report a problem</strong> in Settings while a document is open, after Report an
+          Issue. On a chat message, open the menu and choose <strong>Report</strong>. Each one
+          starts a message to us with the link already filled in.
         </p>
         <p>
           You can also email{' '}

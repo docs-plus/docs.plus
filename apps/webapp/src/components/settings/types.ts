@@ -1,8 +1,29 @@
 import type { LinkItem, LinkMetadata } from '@types'
 import { LinkType } from '@types'
+import type { IconType } from 'react-icons'
 
 export type { LinkItem, LinkMetadata }
 export { LinkType }
+
+export type SupportInk = 'accent' | 'warning' | 'error'
+
+export type SupportRow =
+  | {
+      kind: 'link'
+      href: string
+      label: string
+      icon: IconType
+      ink: SupportInk
+      burst?: 'star'
+    }
+  | {
+      kind: 'action'
+      label: string
+      icon: IconType
+      ink: SupportInk
+    }
+
+export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'
 
 export type TabType = 'profile' | 'documents' | 'appearance' | 'security' | 'notifications'
 
@@ -59,7 +80,7 @@ export interface NotificationPreferences {
   email_replies?: boolean
   email_reactions?: boolean
   email_content_changes?: boolean
-  email_frequency?: 'immediate' | 'daily' | 'weekly' | 'never'
+  email_frequency?: EmailFrequency
   // `null` is the "clear-on-re-enable" wire sentinel; the FE truthy-check
   // at the banner site hides JSON-null.
   email_bounce_info?: EmailBounceInfo | null

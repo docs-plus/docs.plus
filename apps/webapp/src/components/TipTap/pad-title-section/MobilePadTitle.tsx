@@ -14,7 +14,6 @@ import { releasePadEditMode } from '@services/openHeadingChatroom'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import { reportCurrentDocument } from '@utils/reportContent'
 import { parseDocTitlePayload, plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
 import dynamic from 'next/dynamic'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
@@ -99,20 +98,6 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
     </Button>
   )
 }
-
-const ReportButton = () => (
-  <Button
-    variant="ghost"
-    size="sm"
-    shape="square"
-    className="touch-manipulation"
-    onClick={reportCurrentDocument}
-    aria-label="Report a problem"
-    tooltip="Report a problem"
-    tooltipPlacement="bottom">
-    <Icons.alert size={20} className="text-base-content/70 stroke-[1.75]" />
-  </Button>
-)
 
 const NotificationButton = () => {
   const openNotifications = () => useSheetStore.getState().openSheet('notifications')
@@ -332,7 +317,6 @@ const MobilePadTitle = () => {
               <ProviderSyncStatus disconnectedOnly />
               <PrivateIndicator />
               <ReadOnlyIndicator />
-              <ReportButton />
               {user && <NotificationButton />}
               <UserProfileButton
                 user={user}

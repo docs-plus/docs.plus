@@ -61,6 +61,38 @@
   }
 }
 
+// Settings "Star us on GitHub" delight. Shared tokens fail here: overlay-in
+// (120ms) cannot hold a pop-plus-burst. Region (220ms) is the house ceiling.
+@keyframes star-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  40% {
+    transform: scale(1.4) rotate(-16deg);
+  }
+
+  70% {
+    transform: scale(0.94) rotate(10deg);
+  }
+
+  100% {
+    transform: scale(1.12) rotate(0deg);
+  }
+}
+
+@keyframes star-spark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--star-spark-angle, 0deg)) translateY(0) scale(0.35);
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(var(--star-spark-angle, 0deg)) translateY(-12px) scale(1);
+  }
+}
+
 // The skeleton pill's 1.5s delay is functional (anti-flash on fast loads), not
 // decorative — under reduced motion keep the delayed reveal but drop the translate.
 // Safe to redefine globally: every other doc-region-in consumer is motion-safe:-gated.
