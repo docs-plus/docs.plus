@@ -19,6 +19,29 @@ import { authUnavailableResponse } from '../middleware/auth'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
 
+type DocumentHandler = (c: AppContext) => Promise<Response>
+
+/** Both fields open sockets — the email queue and Supabase. A test hands its own. */
+export interface DocumentsControllerDeps {
+  notifyNewDocument: typeof sendNewDocumentNotification
+  getOwnerProfile: typeof getOwnerProfile
+}
+
+export interface DocumentsHandlers {
+  getDocumentBySlug: DocumentHandler
+  listDocuments: DocumentHandler
+  createDocument: DocumentHandler
+  updateDocument: DocumentHandler
+  deleteDocument: DocumentHandler
+  restoreDocument: DocumentHandler
+  permanentDeleteDocument: DocumentHandler
+  purgeTrash: DocumentHandler
+  restoreTrash: DocumentHandler
+  setDocumentFavorite: DocumentHandler
+  touchDocumentOpened: DocumentHandler
+  duplicateDocument: DocumentHandler
+}
+
 const getValidJson = <T>(c: AppContext): T => (c.req as any).valid('json') as T
 const getValidQuery = <T>(c: AppContext): T => (c.req as any).valid('query') as T
 
@@ -126,67 +149,73 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
   }
 }
 
-export const createDocument = async (c: AppContext): Promise<Response> => {
-  const prisma = c.get('prisma')
-  const body = getValidJson<CreateDocumentInput>(c)
-  const user = c.get('user')
-  const serviceRole = c.get('serviceRole') === true
+// Only this handler reads a dep, so only this one is a factory. The other twelve
+// keep the request-scoped client that `src/index.ts` puts on the context.
+const buildCreateDocument =
+  (deps: DocumentsControllerDeps): DocumentHandler =>
+  async (c) => {
+    const prisma = c.get('prisma')
+    const body = getValidJson<CreateDocumentInput>(c)
+    const user = c.get('user')
+    const serviceRole = c.get('serviceRole') === true
 
-  if ((body.content || body.ownerId) && !serviceRole) {
-    return fail(c, 403, 'FORBIDDEN', 'content and ownerId require service-role authorization')
-  }
+    if ((body.content || body.ownerId) && !serviceRole) {
+      return fail(c, 403, 'FORBIDDEN', 'content and ownerId require service-role authorization')
+    }
 
-  try {
-    if (serviceRole && body.content) {
-      const outcome = await createDocumentWithContent(prisma, {
+    try {
+      if (serviceRole && body.content) {
+        const outcome = await createDocumentWithContent(prisma, {
+          slug: body.slug,
+          title: body.title,
+          description: body.description,
+          keywords: body.keywords,
+          content: body.content,
+          ownerId: body.ownerId ?? null
+        })
+
+        if (outcome.status === 'invalid-content') {
+          return fail(c, 422, 'UNPROCESSABLE_ENTITY', outcome.detail)
+        }
+
+        const created = outcome.document
+        // Parity with the worker's first-save path: without this, API-created
+        // documents never reach the operators' new-document stream.
+        setImmediate(() => {
+          deps
+            .notifyNewDocument({
+              documentId: created.documentId,
+              documentName: created.title || created.slug,
+              slug: created.slug,
+              creatorId: body.ownerId,
+              createdAt: created.createdAt
+            })
+            .catch((err) => {
+              documentsControllerLogger.error(
+                { err, documentId: created.documentId },
+                'Failed to send new document notification email'
+              )
+            })
+        })
+
+        const ownerProfile = body.ownerId ? await deps.getOwnerProfile(body.ownerId) : null
+        return ok(c, { ...created, ownerProfile })
+      }
+
+      const doc = await documentsService.createDocument(prisma, {
         slug: body.slug,
         title: body.title,
         description: body.description,
         keywords: body.keywords,
-        content: body.content,
-        ownerId: body.ownerId ?? null
+        userId: user?.sub ?? (serviceRole ? body.ownerId : undefined),
+        email: user?.email
       })
 
-      if (outcome.status === 'invalid-content') {
-        return fail(c, 422, 'UNPROCESSABLE_ENTITY', outcome.detail)
-      }
-
-      const created = outcome.document
-      // Parity with the worker's first-save path: without this, API-created
-      // documents never reach the operators' new-document stream.
-      setImmediate(() => {
-        sendNewDocumentNotification({
-          documentId: created.documentId,
-          documentName: created.title || created.slug,
-          slug: created.slug,
-          creatorId: body.ownerId,
-          createdAt: created.createdAt
-        }).catch((err) => {
-          documentsControllerLogger.error(
-            { err, documentId: created.documentId },
-            'Failed to send new document notification email'
-          )
-        })
-      })
-
-      const ownerProfile = body.ownerId ? await getOwnerProfile(body.ownerId) : null
-      return ok(c, { ...created, ownerProfile })
+      return ok(c, doc)
+    } catch (error) {
+      return handleError(c, error, { slug: body.slug })
     }
-
-    const doc = await documentsService.createDocument(prisma, {
-      slug: body.slug,
-      title: body.title,
-      description: body.description,
-      keywords: body.keywords,
-      userId: user?.sub ?? (serviceRole ? body.ownerId : undefined),
-      email: user?.email
-    })
-
-    return ok(c, doc)
-  } catch (error) {
-    return handleError(c, error, { slug: body.slug })
   }
-}
 
 export const updateDocument = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
@@ -408,3 +437,23 @@ export const uploadMedia = async (c: AppContext): Promise<Response> => {
     return handleError(c, error, { documentId, userId })
   }
 }
+
+export const createDocumentsController = (deps: DocumentsControllerDeps): DocumentsHandlers => ({
+  getDocumentBySlug,
+  listDocuments,
+  createDocument: buildCreateDocument(deps),
+  updateDocument,
+  deleteDocument,
+  restoreDocument,
+  permanentDeleteDocument,
+  purgeTrash,
+  restoreTrash,
+  setDocumentFavorite,
+  touchDocumentOpened,
+  duplicateDocument
+})
+
+export const defaultDocumentsController = createDocumentsController({
+  notifyNewDocument: sendNewDocumentNotification,
+  getOwnerProfile
+})
