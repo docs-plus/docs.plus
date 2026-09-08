@@ -1,5 +1,5 @@
+import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import { ScrollArea } from '@components/ui/ScrollArea'
-import { useHashRouter } from '@hooks/useHashRouter'
 import { useStore } from '@stores'
 import { useEffect, useRef } from 'react'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
@@ -14,7 +14,7 @@ type HistorySidebarBodyProps = HistorySidebarRowHandlers & {
 }
 
 export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: HistorySidebarBodyProps) {
-  const { requestedVersion } = useHashRouter()
+  const { version } = useHistoryHash()
   const documentId = useStore((state) => state.settings.metadata?.documentId)
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const listRootRef = useRef<HTMLDivElement>(null)
@@ -29,7 +29,7 @@ export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: History
     }
     if (scrollGateRef.current.done || rows.length === 0) return
 
-    const scrollTarget = requestedVersion ?? rowHandlers.activeVersion
+    const scrollTarget = version ?? rowHandlers.activeVersion
     const index = findActiveVersionRowIndex(rows, scrollTarget)
     if (index < 0) return
 
@@ -43,7 +43,7 @@ export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: History
     listRootRef.current
       ?.querySelector(`[data-history-sidebar-row-index="${index}"]`)
       ?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
-  }, [documentId, virtualize, requestedVersion, rowHandlers.activeVersion, rows])
+  }, [documentId, virtualize, version, rowHandlers.activeVersion, rows])
 
   if (virtualize) {
     return (

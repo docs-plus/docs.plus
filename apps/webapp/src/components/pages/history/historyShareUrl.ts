@@ -1,6 +1,9 @@
 import * as toast from '@components/toast'
+import { useLocationHash } from '@hooks/useLocationHash'
 import type { HistoryItem } from '@types'
 import { copyToClipboard } from '@utils/clipboard'
+import { splitHashRoute } from '@utils/splitHashRoute'
+import { useMemo } from 'react'
 
 import { formatVersionDate } from './helpers'
 
@@ -16,13 +19,7 @@ export type ParsedHistoryHash = {
 }
 
 export function parseHistoryHash(hash: string): ParsedHistoryHash {
-  const raw = hash.startsWith('#') ? hash.slice(1) : hash
-  if (!raw) {
-    return { isHistory: false, version: null, versionQueryInvalid: false }
-  }
-  const q = raw.indexOf('?')
-  const route = q === -1 ? raw : raw.slice(0, q)
-  const search = q === -1 ? '' : raw.slice(q)
+  const { route, search } = splitHashRoute(hash)
   if (route !== HISTORY_ROUTE) {
     return { isHistory: false, version: null, versionQueryInvalid: false }
   }
@@ -41,13 +38,22 @@ export function parseHistoryHash(hash: string): ParsedHistoryHash {
   return { isHistory: true, version: n, versionQueryInvalid: false }
 }
 
+/**
+ * An in-app link writes `#history` on a live page, so the listener matters as much as
+ * the first read. The subscription is shared with the overlay-hash reader.
+ */
+export function useHistoryHash(): ParsedHistoryHash {
+  const hash = useLocationHash()
+  return useMemo(() => parseHistoryHash(hash), [hash])
+}
+
 export function buildHistoryShareUrl(version: number): string {
   const { origin, pathname, search } = window.location
   return `${origin}${pathname}${search}#${HISTORY_ROUTE}?${VERSION_QUERY}=${version}`
 }
 
-/** `history.pushState` / `replaceState` do not fire `hashchange`; hooks like `useHashRouter` need a synthetic event. */
-function notifyHashChange(oldURL: string): void {
+/** `pushState` / `replaceState` never fire `hashchange`, so every hash reader would miss the write. */
+export function notifyHashChange(oldURL: string): void {
   const newURL = window.location.href
   if (oldURL === newURL) return
   try {
@@ -59,8 +65,12 @@ function notifyHashChange(oldURL: string): void {
 
 function updateAppUrl(method: 'push' | 'replace', url: string): void {
   const oldURL = window.location.href
+  // A replace rewrites THIS entry, so its router state must survive. Next reads
+  // `e.state` on popstate, and a null there makes Back rewrite the address bar
+  // instead of routing. A push mints a new entry, and copying the state onto it
+  // would give two entries one index, so that arm keeps null.
   if (method === 'push') window.history.pushState(null, '', url)
-  else window.history.replaceState(null, '', url)
+  else window.history.replaceState(window.history.state, '', url)
   notifyHashChange(oldURL)
 }
 

@@ -2,11 +2,11 @@ import { ComposerLinkDialogHost } from '@components/chatroom/components/MessageC
 import ChatPane from '@components/pages/document/components/chat/ChatPane'
 import EditFAB from '@components/pages/document/components/EditFAB'
 import TocModal from '@components/pages/document/components/TocModal'
+import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import ToolbarMobile from '@components/TipTap/toolbar/mobile/ToolbarMobile'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
-import { useHashRouter } from '@hooks/useHashRouter'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
 import { destroyChatRoomForHistory } from '@services/openHeadingChatroom'
@@ -28,19 +28,19 @@ const MobileLayout = () => {
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
-  const { isHistoryView } = useHashRouter()
+  const { isHistory } = useHistoryHash()
   const closeSheet = useSheetStore((state) => state.closeSheet)
   useVirtualKeyboard()
-  useVisualViewportCssSyncOnFocus(Boolean(isMobile && !isHistoryView))
+  useVisualViewportCssSyncOnFocus(Boolean(isMobile && !isHistory))
 
   useEffect(() => {
     closeSheet()
-    if (isHistoryView) destroyChatRoomForHistory()
-  }, [isHistoryView, closeSheet])
+    if (isHistory) destroyChatRoomForHistory()
+  }, [isHistory, closeSheet])
 
   return (
     <>
-      {isHistoryView ? (
+      {isHistory ? (
         <MobileHistory />
       ) : (
         <>

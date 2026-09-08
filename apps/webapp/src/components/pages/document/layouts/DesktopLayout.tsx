@@ -1,9 +1,9 @@
 import { emojiReaction } from '@api'
 import { EmojiPanel } from '@components/chatroom/components/EmojiPanel'
 import DesktopHistory from '@components/pages/history/desktop/DesktopHistory'
+import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import { PopoverInsideElementsProvider } from '@components/ui/Popover'
-import { useHashRouter } from '@hooks/useHashRouter'
 import { useChatStore, useStore } from '@stores'
 import React, { useCallback } from 'react'
 
@@ -14,7 +14,7 @@ const DesktopLayout = () => {
   const editor = useStore((state) => state.settings.editor.instance)
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
-  const { isHistoryView } = useHashRouter()
+  const { isHistory } = useHistoryHash()
 
   // Toolbar / pad-title popovers must not let FloatingFocusManager stamp `inert`
   // inside the editor — that recreates media node views. Keep the editor root inside.
@@ -33,7 +33,7 @@ const DesktopLayout = () => {
     chat.closeEmojiPicker()
   }, [])
 
-  if (isHistoryView) return <DesktopHistory />
+  if (isHistory) return <DesktopHistory />
 
   return (
     <PopoverInsideElementsProvider value={insideEditor}>

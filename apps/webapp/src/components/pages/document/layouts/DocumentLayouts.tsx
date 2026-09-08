@@ -1,5 +1,5 @@
+import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
-import { useHashRouter } from '@hooks/useHashRouter'
 import { useStore } from '@stores'
 import React from 'react'
 
@@ -14,7 +14,7 @@ const DocumentLayouts = ({
   isMobile: boolean
   provider: HocuspocusProvider
 }) => {
-  const { isHistoryView } = useHashRouter()
+  const { isHistory } = useHistoryHash()
 
   // The store holds the iPad-corrected answer, and both child layouts already read it.
   // The prop is that field's own server seed, used until the ssr:false hook writes it.
@@ -22,7 +22,7 @@ const DocumentLayouts = ({
 
   return (
     <>
-      {!isHistoryView && <PadEditorLifecycle provider={provider} />}
+      {!isHistory && <PadEditorLifecycle provider={provider} />}
       {isMobileDevice ? <MobileLayout /> : <DesktopLayout />}
     </>
   )
