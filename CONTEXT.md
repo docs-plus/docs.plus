@@ -33,7 +33,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **PrivateAccess** — server decision: `allow` | `sign-in-required` | `denied` (`resolvePrivateAccess`).
 - **PrivateGateVariant** — UI CTA after a blocked open: `sign-in-required` | `access-denied` | `check-unavailable` (`toPrivateGateVariant`). The third is a degraded backend (503 `AUTH_UNAVAILABLE`) that decided nothing, so its CTA retries instead of offering sign-in.
 - **Access mutation** — the owner changing Private/Read-only (`isDocumentOwner`, `useDocumentAccessMutation`). An ownerless document has nobody to be private for, so its locks do not move.
-- **Open document** — a document with no `ownerId`. Anyone may retitle it, signed in or not; its Private/Read-only locks are refused until ownership handoff ships.
+- **Open document** — a document with no `ownerId`. Anyone may retitle it, signed in or not. First edit and first persist do not stamp an owner. A signed-in `PUT` or `POST` create still does. Private/Read-only locks stay off until ownership handoff ships.
 - **Live seal** — REST publish → Redis `doc:{id}:access` → WS broadcast/close → client `applyAccessStateless`.
 - **Editing lock** — client cannot edit: content-fork error, `authorizedScope === 'readonly'`, or metadata Read-only for a non-owner (`selectDocumentEditingLocked`).
 

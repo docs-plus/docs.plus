@@ -4,7 +4,7 @@ The main docs.plus web application — a real-time collaborative documentation p
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router + Turbopack)
+- **Framework:** Next.js 15 (Pages Router + Turbopack)
 - **UI:** React 19, Tailwind CSS 4, DaisyUI
 - **Editor:** TipTap 3 with custom extensions
 - **Real-time:** Yjs + Hocuspocus
@@ -95,6 +95,8 @@ E2E tests use [cypress-split](https://github.com/bahmutov/cypress-split) to dist
 
 - `@docs.plus/hocuspocus` — Backend services
 - `@docs.plus/extension-*` — TipTap editor extensions
+
+See [CHANGELOG.md](./CHANGELOG.md) for pad UI notes. The product announcement lives in the [root CHANGELOG](../../CHANGELOG.md).
 
 ---
 

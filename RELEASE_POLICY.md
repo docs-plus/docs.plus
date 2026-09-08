@@ -63,7 +63,7 @@ for the Releases page only; per-package tags and npm publishing are unchanged.
 
 **Deploy.** Do not add a `(build):` commit for the version string. The version string is not shown in the UI. The next ordinary deploy applies it.
 
-**Changelogs.** The product changelog is [`CHANGELOG.md`](CHANGELOG.md). The hocuspocus changelog is [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md).
+**Changelogs.** The product changelog is [`CHANGELOG.md`](CHANGELOG.md). The webapp changelog is [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md). The hocuspocus changelog is [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md).
 
 ## Versioning Doctrine
 

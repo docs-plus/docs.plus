@@ -438,6 +438,8 @@ After 30 days, old automatic saves are thinned to one per day. Each day's newest
 
 The history can name who wrote a run of text. It can **never name who deleted one**. A restore, an import, or an API write carries no author, so the badge names the operation instead.
 
+A signed-in rename of the Pad title posts a notice in the document chat. History paints the latest of those notices above the editor. That notice is not a version. A signed-out rename posts nothing.
+
 Filtered to this section? [Show the whole document](/demo).
 
 ![Saved versions grouped by day, with faces, badges, and no Restore on the newest](/demo-assets/d16-history.png)
@@ -455,6 +457,8 @@ Filtered to this section? [Show the whole document](/demo).
 # 🔐 Who can open this document
 
 A document carries **two flags: Private and Read-only**. Private is owner-only. A signed-out visitor is asked to sign in, and any other signed-in person is refused. Read-only stops everyone but the owner from editing, and this page is read-only.
+
+A document with no owner is open. Anyone may change its Pad title, signed in or not. Typing does not make that person the owner. Private and Read-only do not turn on until the document has an owner. This page already has an owner, so only they can rename it.
 
 The two flags are never on together. Turning Private on clears Read-only in the same request.
 

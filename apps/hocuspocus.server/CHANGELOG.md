@@ -4,7 +4,7 @@
 
 All notable changes to `@docs.plus/hocuspocus` are documented here.
 
-This file is the operator and API changelog. The pad product lives in the [root CHANGELOG](../../CHANGELOG.md). Route contracts live in [API.md](./API.md) and [docs/api](../../docs/api). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
+This file is the operator and API changelog. The pad product lives in the [root CHANGELOG](../../CHANGELOG.md). The pad UI lives in [`apps/webapp/CHANGELOG.md`](../webapp/CHANGELOG.md). Route contracts live in [API.md](./API.md) and [docs/api](../../docs/api). Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ---
 

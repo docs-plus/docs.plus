@@ -4,7 +4,7 @@
 
 All notable changes to docs.plus are documented here.
 
-This file is the product changelog. It names the live webapp. The hocuspocus app keeps [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md). The five `@docs.plus/extension-*` packages keep their own `CHANGELOG.md` files. Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](RELEASE_POLICY.md).
+This file is the product changelog. The webapp package keeps [`apps/webapp/CHANGELOG.md`](apps/webapp/CHANGELOG.md). The hocuspocus app keeps [`apps/hocuspocus.server/CHANGELOG.md`](apps/hocuspocus.server/CHANGELOG.md). The five `@docs.plus/extension-*` packages keep their own `CHANGELOG.md` files. Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Section headings follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) plus the house order in [`RELEASE_POLICY.md`](RELEASE_POLICY.md).
 
 ---
 
