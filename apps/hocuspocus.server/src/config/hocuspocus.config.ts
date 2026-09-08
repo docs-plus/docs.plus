@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import type { Extension } from '@hocuspocus/server'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 import { Database } from '@hocuspocus/extension-database'
@@ -16,8 +17,9 @@ import {
   documentSnapshotBytes,
   documentStoreRejectionsTotal
 } from '../lib/metrics'
-import { HealthCheck } from '../extensions/health.extension'
+import { buildHealthReport, healthRoutes, redisSyncHealth } from '../lib/health'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
+import { DocumentOccupancyExtension } from '../extensions/document-occupancy.extension'
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
 import { checkDatabaseHealth, prisma } from '../lib/prisma'
 import { captureDegraded, captureUnknown } from '../lib/instrument'
@@ -40,8 +42,6 @@ const generateDefaultState = () => {
   ymeta.set('isDraft', true)
   return Y.encodeStateAsUpdate(ydoc)
 }
-
-const healthCheck = new HealthCheck()
 
 // A rebuilt CRDT has fresh item identities. Serving that CRDT without persisting
 // lets a returning client (IndexedDB cache of a previous rebuild) merge two
@@ -91,8 +91,11 @@ async function persistMigratedSnapshot(
   }
 }
 
-const configureExtensions = () => {
-  const extensions: any[] = []
+const configureExtensions = (): { extensions: Extension[]; redisWired: boolean } => {
+  const extensions: Extension[] = []
+  // Stated here, never found by scanning the array: a dependency that renames its
+  // exported class must break the import, not flip a probe to 'disabled'.
+  let redisWired = false
 
   if (config.hocuspocus.throttle.enabled) {
     extensions.push(
@@ -135,6 +138,7 @@ const configureExtensions = () => {
     }
 
     extensions.push(new RedisExtension(redisOptions))
+    redisWired = true
   }
 
   extensions.push(
@@ -368,8 +372,6 @@ const configureExtensions = () => {
     })
   )
 
-  extensions.push(healthCheck)
-
   if (config.redis.enabled) {
     extensions.push(new RedisSubscriberExtension())
   }
@@ -377,15 +379,20 @@ const configureExtensions = () => {
   if (config.supabase.url && config.supabase.serviceRoleKey) {
     extensions.push(new DocumentViewsExtension())
     dbLogger.info('Document view tracking enabled')
+
+    // Same gate: the Last left stamp is a service-role RPC, and without it the
+    // occupancy set has nothing to mute.
+    extensions.push(new DocumentOccupancyExtension())
+    dbLogger.info('Document occupancy tracking enabled')
   }
 
-  return extensions
+  return { extensions, redisWired }
 }
 
 export default () => {
   // Build extensions ONCE. Re-invoking configureExtensions() (the old onListen did)
   // opens a second set of Redis/DB connections that are never closed — a leak.
-  const extensions = configureExtensions()
+  const { extensions, redisWired } = configureExtensions()
   return {
     name: getServerName(),
     port: config.hocuspocus.port,
@@ -396,12 +403,8 @@ export default () => {
     // the library's own handler would process.exit(0) before that tail runs.
     stopOnSignals: false,
 
-    async onListen(data: any) {
-      healthCheck.onConfigure({ ...data, extensions })
-    },
-
     async onRequest(data: any) {
-      const { request, response } = data
+      const { request, response, instance } = data
 
       // Gated, apart from the liveness routes below, which always answer 200. The
       // rolling deploy retires the live replicas on this answer, and a replica
@@ -415,7 +418,7 @@ export default () => {
             status: dbHealthy ? 'ready' : 'not ready',
             services: {
               database: dbHealthy ? 'connected' : 'disconnected',
-              redis: healthCheck.getRedisStatus()
+              redis: redisSyncHealth(redisWired)
             }
           })
         )
@@ -423,17 +426,10 @@ export default () => {
         return Promise.reject()
       }
 
-      const healthRoutes: Record<string, () => unknown> = {
-        '/health': () => healthCheck.getHealth(),
-        '/health/websocket': () => healthCheck.getWebsocketStatus(),
-        '/health/database': () => healthCheck.getDatabaseStatus(),
-        '/health/redis': () => healthCheck.getRedisStatus()
-      }
-
-      const buildPayload = healthRoutes[request.url]
-      if (buildPayload) {
+      const selectPayload = healthRoutes[request.url]
+      if (selectPayload) {
         response.writeHead(200, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify(buildPayload()))
+        response.end(JSON.stringify(selectPayload(buildHealthReport(instance, redisWired))))
         return Promise.reject()
       }
     }

@@ -16,6 +16,7 @@ import { clientAuthorsExtension } from './extensions/client-authors.extension'
 import { contributorsExtension } from './extensions/contributors.extension'
 import { decideStatelessRelay, MAX_STATELESS_RELAY_BYTES } from './extensions/statelessRelay'
 import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
+import { countActiveConnections } from './lib/health'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { wsLogger } from './lib/logger'
@@ -518,14 +519,12 @@ const serverConfig = {
 
 const server = new Server(serverConfig)
 
-// Read live counts at scrape time rather than tracking inc/dec. Inc/dec tracking
-// would drift up forever (a load that failed before unload; a connection rejected
-// pre-auth whose onDisconnect never fires). Auth-rejected sockets never attach
-// to a document, so summing per-document connections counts only real ones.
+// Read live counts at scrape time rather than tracking inc/dec, which drifts up
+// forever: a load that failed before unload, or a socket rejected pre-auth whose
+// onDisconnect never fires. The count is shared, so ws_active_connections and
+// /health/websocket can never report different numbers.
 setActiveDocumentsProvider(() => server.hocuspocus.documents.size)
-setActiveConnectionsProvider(() =>
-  [...server.hocuspocus.documents.values()].reduce((sum, doc) => sum + doc.getConnectionsCount(), 0)
-)
+setActiveConnectionsProvider(() => countActiveConnections(server.hocuspocus))
 
 server.listen()
 
