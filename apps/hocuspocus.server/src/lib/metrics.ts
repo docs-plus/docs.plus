@@ -175,6 +175,37 @@ export const documentContentApplyTotal = new Counter({
   registers: [register]
 })
 
+// One read decides who a content change is allowed to mute. Every degraded arm
+// returns no ids, so `timeout`, `error` and `no-client` look exactly like the
+// `empty` room they are counted apart from. Read them together or the feature
+// can stop muting anyone and still look healthy.
+export const documentOccupancyReadsTotal = new Counter({
+  name: 'document_occupancy_reads_total',
+  help: 'Occupancy reads taken before a content-change fan-out, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
+// A lost register or refresh mutes nobody, which is the safe direction. A lost
+// release leaves a dead socket present until the 45 s stale bound prunes it, and
+// it can also stamp Last left while another tab of that person is still open.
+export const documentOccupancyWritesTotal = new Counter({
+  name: 'document_occupancy_writes_total',
+  help: 'Occupancy set writes by operation and outcome',
+  labelNames: ['op', 'outcome'] as const,
+  registers: [register]
+})
+
+// Last left is the window the digest and the History compare both read. `no-row`
+// is ordinary for a visitor with no membership row, and `skipped-present` is the
+// two-tab rule working. A rising `error` is neither.
+export const documentLastLeftStampsTotal = new Counter({
+  name: 'document_last_left_stamps_total',
+  help: 'Last left stamp attempts made when a document session closed, by outcome',
+  labelNames: ['outcome'] as const,
+  registers: [register]
+})
+
 // Rate limiter fail-opens, by reason. Before the timeout arm a slow Redis held
 // requests for 60s, which tripped the p95 latency alert. It now answers in well
 // under a second, so that alert stays quiet and no rule matches a level-40 warn.

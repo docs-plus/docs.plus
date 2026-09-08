@@ -1015,6 +1015,7 @@ export type Database = {
           content_email_muted_at: string | null
           created_at: string
           id: string
+          last_connection_closed_at: string | null
           left_at: string | null
           member_id: string
           updated_at: string | null
@@ -1024,6 +1025,7 @@ export type Database = {
           content_email_muted_at?: string | null
           created_at?: string
           id?: string
+          last_connection_closed_at?: string | null
           left_at?: string | null
           member_id: string
           updated_at?: string | null
@@ -1033,6 +1035,7 @@ export type Database = {
           content_email_muted_at?: string | null
           created_at?: string
           id?: string
+          last_connection_closed_at?: string | null
           left_at?: string | null
           member_id?: string
           updated_at?: string | null
@@ -1569,6 +1572,10 @@ export type Database = {
       join_workspace: { Args: { _workspace_id: string }; Returns: boolean }
       mark_bookmark_as_read: {
         Args: { p_bookmark_id: number; p_mark_as_read?: boolean }
+        Returns: boolean
+      }
+      mark_document_connection_closed: {
+        Args: { p_closed_at: string; p_document_id: string; p_user_id: string }
         Returns: boolean
       }
       message_content_preview: {

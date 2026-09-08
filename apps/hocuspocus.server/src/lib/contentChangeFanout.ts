@@ -5,32 +5,19 @@
  */
 
 import { config } from '../config/env'
+import { resolveContentChangeAudience } from './contentChangeAudience'
+import { readOccupantUserIds } from './documentOccupancy'
 import { logger } from './logger'
 import { prisma } from './prisma'
 import { getServiceRoleClient } from './supabase'
 
+export type { ContentChangeAudience, ContentChangeMetadata } from './contentChangeAudience'
+export { resolveContentChangeAudience } from './contentChangeAudience'
+
 const fanoutLogger = logger.child({ service: 'content-change-fanout' })
 
-/** Live document metadata the audience rule reads, and nothing more. */
-export interface ContentChangeMetadata {
-  deletedAt: Date | null
-  isPrivate: boolean
-  ownerId: string | null
-}
-
-export type ContentChangeAudience =
-  | { kind: 'none'; reason: 'tombstoned' | 'private-no-owner' }
-  | { kind: 'owner'; onlyUser: string }
-  | { kind: 'all' }
-
-/** A tombstone outranks ownership, so a trashed document reaches nobody. A purge
- *  leaves no metadata row at all, so it never reaches this rule. */
-export function resolveContentChangeAudience(meta: ContentChangeMetadata): ContentChangeAudience {
-  if (meta.deletedAt) return { kind: 'none', reason: 'tombstoned' }
-  if (!meta.isPrivate) return { kind: 'all' }
-  if (!meta.ownerId) return { kind: 'none', reason: 'private-no-owner' }
-  return { kind: 'owner', onlyUser: meta.ownerId }
-}
+/** `p_editor_ids` is uuid[], and one malformed entry raises 22P02 for the whole call. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface FanOutContentChangeParams {
   documentId: string
@@ -69,19 +56,27 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
       return
     }
 
+    // Live occupants are muted too: `p_editor_ids` already means "do not notify
+    // these people". Every degraded arm returns no ids, so the fan-out notifies
+    // anyway. That includes an empty read after the key expired under
+    // OCCUPANCY_TTL_S, which no later reader may "fix" into an error arm.
+    const occupancy = await readOccupantUserIds(documentId, Date.now())
+
     // The actor goes in twice, in two roles: self-suppression reads the array
-    // only. The RPC strips nulls itself, so this filter is belt-and-braces. The
-    // real hazard is a non-uuid string, which raises 22P02 inside the RPC and
-    // reaches the warn below as a silent no-op.
-    const editorIds = [
+    // only. The gate is the uuid shape, not truthiness: the array is uuid[], and
+    // one malformed id raises 22P02 inside the RPC, which reaches the warn below
+    // as a silent no-op that drops every notification for this save.
+    const suppressedIds = [
       ...new Set(
-        [...(params.contributors ?? []), params.actorId].filter((id): id is string => Boolean(id))
+        [...(params.contributors ?? []), params.actorId, ...occupancy.userIds].filter(
+          (id): id is string => typeof id === 'string' && UUID_PATTERN.test(id)
+        )
       )
     ]
 
     const { data, error } = await client.rpc('notify_document_content_change', {
       p_document_id: documentId,
-      p_editor_ids: editorIds,
+      p_editor_ids: suppressedIds,
       p_only_user: audience.kind === 'owner' ? audience.onlyUser : null,
       p_actor_id: params.actorId,
       // Dormant in the digest: `compile_digest_emails` never selects it. The
@@ -96,7 +91,13 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
     }
 
     fanoutLogger.debug(
-      { documentId, audience: audience.kind, inserted: data },
+      {
+        documentId,
+        audience: audience.kind,
+        inserted: data,
+        occupancy: occupancy.outcome,
+        occupants: occupancy.userIds.length
+      },
       'Content change fanned out'
     )
   } catch (err) {
