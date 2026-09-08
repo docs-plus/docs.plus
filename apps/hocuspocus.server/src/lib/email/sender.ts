@@ -1,8 +1,8 @@
 import {
+  buildDigestEmail,
   buildListUnsubscribeHeaders,
-  countDigestItems,
+  buildNotificationEmailText,
   getEmailSubject,
-  renderDigestEmail,
   renderNotificationEmail,
   type UnsubscribeLinks
 } from '@docs.plus/email-templates'
@@ -18,7 +18,6 @@ import type {
 import { emailLogger } from '../logger'
 import { getServiceRoleClient } from '../supabase'
 import { sendEmail } from './providers'
-import { buildDigestEmailText, buildNotificationEmailText } from './templates'
 
 async function getUnsubscribeLinks(userId: string): Promise<UnsubscribeLinks | undefined> {
   const supabase = getServiceRoleClient()
@@ -112,12 +111,6 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         to = payload.to
         userId = payload.recipient_id
 
-        // One digest item is one chat notification, or one `content_changes`
-        // block. Subject and plaintext share one count so they cannot disagree.
-        const totalNotifications = countDigestItems(payload.documents)
-
-        subject = `Your ${payload.frequency} digest - ${totalNotifications} notification${totalNotifications !== 1 ? 's' : ''}`
-
         const unsubscribeLinks = userId ? await getUnsubscribeLinks(userId) : undefined
 
         // Build List-Unsubscribe headers (RFC 8058) - use digest-specific link
@@ -127,20 +120,16 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           headers = buildListUnsubscribeHeaders(unsubscribeLinks.unsubscribe_all)
         }
 
-        html = renderDigestEmail({
+        const digest = buildDigestEmail({
           recipientName: payload.recipient_name,
           frequency: payload.frequency,
           documents: payload.documents,
-          periodStart: payload.period_start,
           periodEnd: payload.period_end,
           unsubscribeLinks
         })
-
-        text = buildDigestEmailText({
-          recipientName: payload.recipient_name,
-          frequency: payload.frequency,
-          documents: payload.documents
-        })
+        subject = digest.subject
+        html = digest.html
+        text = digest.text
         break
       }
 

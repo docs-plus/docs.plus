@@ -39,7 +39,13 @@
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="background-color: <%= it.h.COLORS.background %>; border-radius: <%= it.h.RADIUS.md %>; border: 1px solid <%= it.h.COLORS.border %>; padding: <%= it.h.SPACING.md %>;">
-            <span style="color: <%= it.h.COLORS.textMuted %>; font-size: 13px;">✏️ This document changed since <%= doc.content_changes.since.slice(0, 10) %>.</span>
+            <span style="color: <%= it.h.COLORS.textMuted %>; font-size: 13px;"><%= it.h.changeWindowLine(doc.content_changes.since, doc.content_changes.fromLastLeft, it.frequency, it.periodEnd) %></span>
+<% /* The helper returns '' when the count is absent or under 1, so the guard is
+      what keeps "0 people contributed" out of the mail. */ -%>
+<% var contributorsText = it.h.contributorLine(doc.content_changes.contributorCount) -%>
+<% if (contributorsText) { -%>
+            <span style="color: <%= it.h.COLORS.textLight %>; font-size: 12px; margin-left: <%= it.h.SPACING.sm %>;"><%= contributorsText %></span>
+<% } -%>
 <% /* A block whose enrichment failed carries no sections, so guard the list. */ -%>
 <% if (doc.content_changes.sections && doc.content_changes.sections.length) { -%>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: <%= it.h.SPACING.sm %>;">

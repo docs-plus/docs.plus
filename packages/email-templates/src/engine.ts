@@ -4,8 +4,9 @@ import { Eta } from 'eta'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-import { templateHelpers, type UnsubscribeLinks } from './helpers'
+import { digestNotificationsUrl, templateHelpers, type UnsubscribeLinks } from './helpers'
 import { APP_NAME, APP_URL, COLORS, RADIUS } from './tokens'
+import type { DigestDocument, DigestFrequency } from './types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = join(__dirname, '..', 'templates')
@@ -58,12 +59,7 @@ export function renderNotificationEmail(params: {
  * A document that only changed carries no chat line, so counting channels
  * alone would print "0 notifications" over a digest that has content.
  */
-export function countDigestItems(
-  documents: ReadonlyArray<{
-    channels: ReadonlyArray<{ notifications: ReadonlyArray<unknown> }>
-    content_changes?: unknown
-  }>
-): number {
+export function countDigestItems(documents: ReadonlyArray<DigestDocument>): number {
   return documents.reduce(
     (sum, doc) =>
       sum +
@@ -73,46 +69,18 @@ export function countDigestItems(
   )
 }
 
+/** Internal: `buildDigestEmail` in `templates.ts` is the one entry point. */
 export function renderDigestEmail(params: {
   recipientName: string
-  frequency: 'daily' | 'weekly'
-  documents: Array<{
-    name: string
-    slug: string
-    url: string
-    channels: Array<{
-      name: string
-      id: string
-      url: string
-      notifications: Array<{
-        type: string
-        sender_name: string
-        sender_avatar_url?: string
-        message_preview: string
-        action_url: string
-        created_at: string
-      }>
-    }>
-    // Declared here as well as on the backend's DigestDocument. Without it,
-    // structural typing let the extra property reach the template at runtime
-    // while vanishing from the type, so the count and the renderer drifted
-    // apart with no compiler error.
-    content_changes?: {
-      document_id: string
-      since: string
-      // Absent when enrichment failed, so the block degrades to the plain line.
-      sections?: Array<{ text: string; breadcrumb: string[]; url: string }>
-      moreCount?: number
-    }
-  }>
-  periodStart: string
+  frequency: DigestFrequency
+  documents: DigestDocument[]
   periodEnd: string
+  /** Resolved once by the caller, so the subject and both bodies cannot disagree. */
+  totalNotifications: number
   unsubscribeLinks?: UnsubscribeLinks
 }): string {
   const { documents, frequency, unsubscribeLinks, ...rest } = params
   const periodLabel = frequency === 'daily' ? 'today' : 'this week'
-
-  const totalNotifications = countDigestItems(documents)
 
   const digestLinks: UnsubscribeLinks = {
     ...unsubscribeLinks,
@@ -126,9 +94,8 @@ export function renderDigestEmail(params: {
       ...rest,
       frequency,
       documents,
-      totalNotifications,
       periodLabel,
-      notificationsUrl: `${APP_URL}/notifications`
+      notificationsUrl: digestNotificationsUrl(documents)
     },
     footerHtml
   )
@@ -164,7 +131,7 @@ export function renderUnsubscribePage(params: {
 
   if (params.showManageLink) {
     actions.push(
-      `<a href="${APP_URL}/settings/notifications" style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.white}; text-decoration: none; padding: 12px 24px; border-radius: ${RADIUS.md}; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>`
+      `<a href="${APP_URL}/#settings?tab=notifications" style="display: inline-block; background: ${COLORS.primary}; color: ${COLORS.white}; text-decoration: none; padding: 12px 24px; border-radius: ${RADIUS.md}; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>`
     )
   }
 
@@ -182,6 +149,7 @@ export function renderUnsubscribePage(params: {
   })
 }
 
+/** Takes a raw `string`, not `NotificationType`: it reads database text and answers for anything. */
 export function getEmailSubject(type: string, senderName: string): string {
   const name = senderName || 'Someone'
 

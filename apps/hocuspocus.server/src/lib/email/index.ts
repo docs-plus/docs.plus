@@ -13,7 +13,8 @@ export type {
   EmailStatusCallback,
   GenericEmailRequest,
   NotificationEmailRequest,
-  NotificationType
+  NotificationType,
+  UnsubscribeLinks
 } from '../../types/email.types'
 export { sendNewDocumentNotification } from './document-notification'
 export {
@@ -27,15 +28,11 @@ export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 export { emailGateway, EmailGatewayService } from './service'
 export {
-  buildDigestEmailText,
-  buildNewDocumentEmailText,
-  buildNotificationEmailText
-} from './templates'
-export type { UnsubscribeLinks } from '@docs.plus/email-templates'
-export {
+  buildDigestEmail,
   buildListUnsubscribeHeaders,
+  buildNewDocumentEmailText,
+  buildNotificationEmailText,
   getEmailSubject,
-  renderDigestEmail,
   renderNewDocumentEmail,
   renderNotificationEmail,
   renderUnsubscribePage

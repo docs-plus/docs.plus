@@ -1,9 +1,8 @@
-import { renderNewDocumentEmail } from '@docs.plus/email-templates'
+import { buildNewDocumentEmailText, renderNewDocumentEmail } from '@docs.plus/email-templates'
 
 import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { sendEmailViaProvider } from './sender'
-import { buildNewDocumentEmailText } from './templates'
 
 interface NewDocumentEmailParams {
   documentId: string

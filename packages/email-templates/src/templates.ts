@@ -1,14 +1,18 @@
 /**
- * Plain-text fallbacks only; the matching HTML templates live in
- * `@docs.plus/email-templates` (eta engine).
+ * Plain-text twins of the `.eta` bodies. They live beside the HTML they mirror
+ * so both surfaces reach one helper rather than a copy, and so the digest count
+ * and its plural rule are resolved once instead of once per surface.
  */
 
-import { APP_URL, countDigestItems, getEmailSubject } from '@docs.plus/email-templates'
-
-import type { DigestDocument, NotificationType } from '../../types/email.types'
-
-// Re-export getEmailSubject so existing barrel (index.ts) stays stable
-export { getEmailSubject }
+import { countDigestItems, getEmailSubject, renderDigestEmail } from './engine'
+import {
+  changeWindowLine,
+  contributorLine,
+  digestNotificationsUrl,
+  type UnsubscribeLinks
+} from './helpers'
+import { APP_URL } from './tokens'
+import type { DigestDocument, DigestFrequency, NotificationType } from './types'
 
 export function buildNotificationEmailText(params: {
   recipientName: string
@@ -43,7 +47,7 @@ View the message: ${actionUrl}
 
 ---
 You're receiving this because you have email notifications enabled.
-Manage preferences: ${APP_URL}/settings
+Manage preferences: ${APP_URL}/#settings?tab=notifications
 Unsubscribe: ${APP_URL}/unsubscribe
 `.trim()
 }
@@ -77,14 +81,14 @@ This is an automated notification from docs.plus
 `.trim()
 }
 
-export function buildDigestEmailText(params: {
+function buildDigestEmailText(params: {
   recipientName: string
-  frequency: 'daily' | 'weekly'
+  frequency: DigestFrequency
   documents: DigestDocument[]
+  periodEnd: string
+  items: string
 }): string {
-  const { recipientName, frequency, documents } = params
-
-  const totalNotifications = countDigestItems(documents)
+  const { recipientName, frequency, documents, periodEnd, items } = params
 
   const documentsText = documents
     .map((doc) => {
@@ -116,9 +120,13 @@ export function buildDigestEmailText(params: {
         return `    - ${trail}${section.text}: ${section.url}`
       })
       const moreLine = changes?.moreCount ? `    +${changes.moreCount} more` : ''
+      // An indented empty string is truthy, so the guard is what keeps the blank
+      // line out when the helper declines to name a contributor.
+      const contributors = contributorLine(changes?.contributorCount)
       const changedText = changes
         ? [
-            `  ✏️ This document changed since ${changes.since.slice(0, 10)}.`,
+            `  ${changeWindowLine(changes.since, changes.fromLastLeft, frequency, periodEnd)}`,
+            contributors ? `  ${contributors}` : '',
             ...sectionLines,
             moreLine
           ]
@@ -133,13 +141,42 @@ export function buildDigestEmailText(params: {
   return `
 Hi ${recipientName || 'there'},
 
-Here's your ${frequency} digest with ${totalNotifications} notification${totalNotifications !== 1 ? 's' : ''}:
+Here's your ${frequency} digest with ${items}:
 
 ${documentsText}
 
 ---
-View all notifications: ${APP_URL}/notifications
-Manage preferences: ${APP_URL}/settings
+View all notifications: ${digestNotificationsUrl(documents)}
+Manage preferences: ${APP_URL}/#settings?tab=notifications
 Unsubscribe: ${APP_URL}/unsubscribe
 `.trim()
+}
+
+export interface DigestEmail {
+  subject: string
+  html: string
+  text: string
+}
+
+/**
+ * The one entry point for a digest. The item count and its plural rule resolve
+ * here, so the subject and the two bodies cannot disagree about how much the
+ * mail carries, and no caller copies the payload field by field.
+ */
+export function buildDigestEmail(params: {
+  recipientName: string
+  frequency: DigestFrequency
+  documents: DigestDocument[]
+  /** The window's end, so the "ago" phrase matches on both surfaces. */
+  periodEnd: string
+  unsubscribeLinks?: UnsubscribeLinks
+}): DigestEmail {
+  const totalNotifications = countDigestItems(params.documents)
+  const items = `${totalNotifications} notification${totalNotifications === 1 ? '' : 's'}`
+
+  return {
+    subject: `Your ${params.frequency} digest - ${items}`,
+    html: renderDigestEmail({ ...params, totalNotifications }),
+    text: buildDigestEmailText({ ...params, items })
+  }
 }

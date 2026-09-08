@@ -5,7 +5,7 @@
  */
 
 import {
-  renderDigestEmail,
+  buildDigestEmail,
   renderNotificationEmail,
   renderUnsubscribePage
 } from '@docs.plus/email-templates'
@@ -23,6 +23,7 @@ import {
   sendDigestEmailSchema,
   sendGenericEmailSchema
 } from '../schemas/email.schema'
+import type { DigestDocument } from '../types/email.types'
 
 const emailRouter = new Hono()
 
@@ -76,13 +77,12 @@ emailRouter.post(
         recipient_name: payload.user_name || 'User',
         recipient_id: 'api-request', // Not a real user, just API call
         frequency: payload.frequency,
-        documents: payload.documents.map((doc) => ({
+        documents: payload.documents.map((doc): DigestDocument => ({
           name: doc.title || doc.slug,
           slug: doc.slug,
           url: `${process.env.APP_URL || 'https://docs.plus'}/${doc.slug}`,
           channels: [] // Simplified - no channel breakdown for API-triggered digests
         })),
-        period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         period_end: new Date().toISOString()
       })
 
@@ -155,6 +155,86 @@ emailRouter.post('/bounce', zValidator('json', emailBounceSchema, houseEnvelopeH
   }
 })
 
+/**
+ * Typed as `DigestDocument` so the one surface built for eyeballing the mail
+ * cannot drift from the payload it stands for. The untyped fixture it replaces
+ * carried no `content_changes`, so the Change block never rendered here.
+ */
+function digestPreviewDocuments(appUrl: string): DigestDocument[] {
+  return [
+    {
+      name: 'API Documentation',
+      slug: 'api-documentation',
+      url: `${appUrl}/api-documentation`,
+      workspace_id: 'Zrl8S6a5609d4ViFEf5',
+      channels: [
+        {
+          name: 'general',
+          id: 'ch-001',
+          url: `${appUrl}/api-documentation?chatroom=ch-001`,
+          notifications: [
+            {
+              type: 'mention',
+              sender_name: 'John Doe',
+              message_preview: 'Hey @Jane, can you review the auth section?',
+              action_url: `${appUrl}/api-documentation?chatroom=ch-001`,
+              created_at: new Date(Date.now() - 3600000).toISOString()
+            },
+            {
+              type: 'reply',
+              sender_name: 'Alice Chen',
+              message_preview: "I've added the rate limiting docs as discussed.",
+              action_url: `${appUrl}/api-documentation?chatroom=ch-001`,
+              created_at: new Date(Date.now() - 7200000).toISOString()
+            }
+          ]
+        }
+      ],
+      content_changes: {
+        document_id: 'Zrl8S6a5609d4ViFEf5',
+        since: new Date(Date.now() - 7200000).toISOString(),
+        fromLastLeft: true,
+        contributorCount: 3,
+        sections: [
+          {
+            text: 'Rate limiting',
+            breadcrumb: ['API Documentation', 'Authentication'],
+            url: `${appUrl}/api-documentation?id=rate-limiting`
+          },
+          {
+            text: 'Error codes',
+            breadcrumb: ['API Documentation'],
+            url: `${appUrl}/api-documentation?id=error-codes`
+          }
+        ],
+        moreCount: 2
+      }
+    },
+    {
+      name: 'Product Roadmap',
+      slug: 'product-roadmap',
+      url: `${appUrl}/product-roadmap`,
+      workspace_id: 'Kp2Rt9x4471b8QaWLm3',
+      channels: [
+        {
+          name: 'q1-planning',
+          id: 'ch-002',
+          url: `${appUrl}/product-roadmap?chatroom=ch-002`,
+          notifications: [
+            {
+              type: 'reaction',
+              sender_name: 'Bob Wilson',
+              message_preview: 'Reacted to your message about the timeline',
+              action_url: `${appUrl}/product-roadmap?chatroom=ch-002`,
+              created_at: new Date(Date.now() - 14400000).toISOString()
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
 /** Renders a template against hardcoded sample data, for visual testing only. */
 emailRouter.get('/preview/:type', async (c) => {
   const authHeader = c.req.header('Authorization')
@@ -180,61 +260,10 @@ emailRouter.get('/preview/:type', async (c) => {
   }
 
   if (type === 'digest') {
-    const html = renderDigestEmail({
+    const { html } = buildDigestEmail({
       recipientName: 'Jane Smith',
       frequency: 'daily',
-      documents: [
-        {
-          name: 'API Documentation',
-          slug: 'api-documentation',
-          url: `${appUrl}/api-documentation`,
-          channels: [
-            {
-              name: 'general',
-              id: 'ch-001',
-              url: `${appUrl}/api-documentation?chatroom=ch-001`,
-              notifications: [
-                {
-                  type: 'mention',
-                  sender_name: 'John Doe',
-                  message_preview: 'Hey @Jane, can you review the auth section?',
-                  action_url: `${appUrl}/api-documentation?chatroom=ch-001`,
-                  created_at: new Date(Date.now() - 3600000).toISOString()
-                },
-                {
-                  type: 'reply',
-                  sender_name: 'Alice Chen',
-                  message_preview: "I've added the rate limiting docs as discussed.",
-                  action_url: `${appUrl}/api-documentation?chatroom=ch-001`,
-                  created_at: new Date(Date.now() - 7200000).toISOString()
-                }
-              ]
-            }
-          ]
-        },
-        {
-          name: 'Product Roadmap',
-          slug: 'product-roadmap',
-          url: `${appUrl}/product-roadmap`,
-          channels: [
-            {
-              name: 'q1-planning',
-              id: 'ch-002',
-              url: `${appUrl}/product-roadmap?chatroom=ch-002`,
-              notifications: [
-                {
-                  type: 'reaction',
-                  sender_name: 'Bob Wilson',
-                  message_preview: 'Reacted to your message about the timeline',
-                  action_url: `${appUrl}/product-roadmap?chatroom=ch-002`,
-                  created_at: new Date(Date.now() - 14400000).toISOString()
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      periodStart: new Date(Date.now() - 86400000).toISOString(),
+      documents: digestPreviewDocuments(appUrl),
       periodEnd: new Date().toISOString()
     })
     return c.html(html)

@@ -22,7 +22,7 @@ export interface DigestDocumentMeta {
 
 export type ReadDigestMetadata = (documentId: string) => Promise<DigestDocumentMeta | null>
 
-/** The roster's own rule: `coalesce(updated_at, created_at)` on the membership row. */
+/** Last left: the instant the reader's last live connection closed, or null. */
 export type ReadDigestLastVisit = (recipientId: string, documentId: string) => Promise<Date | null>
 
 /**
@@ -161,6 +161,10 @@ async function withSections(
   if (rows.length === 0) return doc
 
   const more = rows.length - MAX_DIGEST_SECTIONS
+  // A floor, never a census: a service-role write carries no person, and a failed
+  // profile lookup resolves to none. So 0 is a real answer and stays absent, and
+  // the renderer never says "0 people".
+  const contributorCount = outcome.result.summary.contributors.length
   return {
     ...doc,
     content_changes: {
@@ -168,8 +172,14 @@ async function withSections(
       // Overwritten on the success path only, so the "changed since" line and the
       // rows beneath it describe one window.
       since: since.toISOString(),
+      // Explicit false, never an omitted key: absent means enrichment never ran,
+      // and the renderer must not read that as the frequency fallback.
+      // The retention floor can clamp the start past Last left. The words "since you
+      // left" would then name a date months after the real one, so the clamp wins.
+      fromLastLeft: lastVisit !== null && since.getTime() === lastVisit.getTime(),
       sections: rows.slice(0, MAX_DIGEST_SECTIONS),
-      ...(more > 0 ? { moreCount: more } : {})
+      ...(more > 0 ? { moreCount: more } : {}),
+      ...(contributorCount > 0 ? { contributorCount } : {})
     }
   }
 }

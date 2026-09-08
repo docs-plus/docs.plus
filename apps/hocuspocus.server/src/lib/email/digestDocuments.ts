@@ -75,6 +75,8 @@ export function buildDigestDocuments(
       const keepPrior = !Number.isNaN(prior) && (Number.isNaN(incoming) || prior <= incoming)
       ws.contentChanges = {
         document_id: documentId,
+        // A carrier time is not a Last left, so the email must not say "since you left".
+        fromLastLeft: false,
         since: keepPrior ? since! : n.created_at
       }
       continue

@@ -174,7 +174,7 @@ export default function UnsubscribePage() {
             )}
 
             <div className="card-actions mt-6 w-full flex-col gap-2">
-              <Link href="/settings/notifications" className="btn btn-primary btn-block">
+              <Link href="/#settings?tab=notifications" className="btn btn-primary btn-block">
                 Manage Preferences
               </Link>
               <Link href="/" className="btn btn-ghost btn-block">

@@ -4,7 +4,7 @@
  * `resolveContentChangeAudience` is what these pin — swap two lines there and a
  * trashed public document silently reaches everyone.
  */
-import { countDigestItems, renderDigestEmail } from '@docs.plus/email-templates'
+import { buildDigestEmail, countDigestItems } from '@docs.plus/email-templates'
 import { describe, expect, it } from 'bun:test'
 
 import { resolveContentChangeAudience } from '../../src/lib/contentChangeFanout'
@@ -14,7 +14,6 @@ import {
   resolveDigestSince
 } from '../../src/lib/email/digestContentChanges'
 import { filterDigestDocuments } from '../../src/lib/email/digestDocuments'
-import { buildDigestEmailText } from '../../src/lib/email/templates'
 import type { ComputeOutcome, SectionNode } from '../../src/modules/document-changes/types'
 import type { DigestDocument } from '../../src/types/email.types'
 
@@ -56,7 +55,11 @@ const changedDoc = (): DigestDocument => ({
   slug: 'changed-doc',
   url: 'https://docs.plus/changed-doc',
   channels: [],
-  content_changes: { document_id: 'Doc123', since: '2026-09-02T10:00:00.000Z' }
+  content_changes: {
+    document_id: 'Doc123',
+    fromLastLeft: false,
+    since: '2026-09-02T10:00:00.000Z'
+  }
 })
 
 /** The pre-enrichment shape: the raw id as the name, `lower(id)` as the slug. */
@@ -66,7 +69,11 @@ const enrichableDoc = (documentId = DOC_ID): EnrichableDocument => ({
   url: `https://docs.plus/${documentId.toLowerCase()}`,
   workspace_id: documentId,
   channels: [],
-  content_changes: { document_id: documentId, since: '2026-09-02T10:00:00.000Z' }
+  content_changes: {
+    document_id: documentId,
+    fromLastLeft: false,
+    since: '2026-09-02T10:00:00.000Z'
+  }
 })
 
 const section = (over: Partial<SectionNode> & { text: string }): SectionNode => ({
@@ -358,6 +365,44 @@ describe('enrichDigestDocuments', () => {
     expect(doc!.content_changes).toBeUndefined()
   })
 
+  // The email says "since you left" on this flag alone, so a wrong value is a
+  // falsehood in the body rather than a missing detail.
+  it('marks the window as Last left only when the reader has one', async () => {
+    const changed = async () =>
+      changesResult({ sections: [section({ text: 'Intro', tocId: 'intro' })] })
+
+    const [never] = await enrichDigestDocuments(
+      [enrichableDoc()],
+      enrichDeps({ computeChanges: changed })
+    )
+    // Explicit false, not undefined: absent means enrichment never ran.
+    expect(never!.content_changes?.fromLastLeft).toBe(false)
+
+    const [after] = await enrichDigestDocuments(
+      [enrichableDoc()],
+      enrichDeps({
+        computeChanges: changed,
+        readLastVisit: async () => new Date(NOW.getTime() - 17 * 60 * 1000)
+      })
+    )
+    expect(after!.content_changes?.fromLastLeft).toBe(true)
+  })
+
+  // The retention floor can move the window start months past Last left. The words
+  // "since you left" would then name the floor date, not the real departure.
+  it('drops the Last left claim when retention clamps the window start', async () => {
+    const [doc] = await enrichDigestDocuments(
+      [enrichableDoc()],
+      enrichDeps({
+        computeChanges: async () =>
+          changesResult({ sections: [section({ text: 'Intro', tocId: 'intro' })] }),
+        readLastVisit: async () => new Date(NOW.getTime() - 120 * DAY)
+      })
+    )
+    expect(doc!.content_changes?.fromLastLeft).toBe(false)
+    expect(doc!.content_changes?.since).toBe(new Date(NOW.getTime() - 30 * DAY).toISOString())
+  })
+
   it('builds every section link from the human slug, never the raw id', async () => {
     const [doc] = await enrichDigestDocuments(
       [enrichableDoc()],
@@ -384,18 +429,22 @@ describe('enrichDigestDocuments', () => {
     expect(doc!.content_changes?.moreCount).toBe(1)
     expect(doc!.content_changes?.sections?.at(-1)?.text).toBe('Section 8')
 
-    const html = renderDigestEmail({
+    const { html } = buildDigestEmail({
       recipientName: 'Ada',
       frequency: 'daily',
       documents: [doc!],
-      periodStart: '2026-09-01T00:00:00.000Z',
       periodEnd: '2026-09-03T00:00:00.000Z'
     })
     expect(html).toContain('+1 more')
     // The plaintext overflow follows its own surroundings, where the channel cap
     // already reads "...and N more", so both house wordings are accepted.
     expect(
-      buildDigestEmailText({ recipientName: 'Ada', frequency: 'daily', documents: [doc!] })
+      buildDigestEmail({
+        recipientName: 'Ada',
+        frequency: 'daily',
+        documents: [doc!],
+        periodEnd: '2026-09-03T00:00:00.000Z'
+      }).text
     ).toMatch(/(\+1 more|and 1 more)/)
   })
 })
@@ -403,23 +452,24 @@ describe('enrichDigestDocuments', () => {
 describe('the rendered digest', () => {
   // A substring, never a full-HTML snapshot: the surrounding markup is unstable
   // and a snapshot would fail on every unrelated style change.
-  it('names the change date in the HTML body', () => {
-    const html = renderDigestEmail({
+  it('names the change window in the HTML body', () => {
+    const { html } = buildDigestEmail({
       recipientName: 'Ada',
       frequency: 'daily',
       documents: [changedDoc()],
-      periodStart: '2026-09-01T00:00:00.000Z',
       periodEnd: '2026-09-03T00:00:00.000Z'
     })
-    expect(html).toContain('2026-09-02')
+    expect(html).toContain('✏️ Changed in the last day.')
   })
 
-  it('names the change date in the plaintext body', () => {
-    const text = buildDigestEmailText({
+  it('names the change window in the plaintext body', () => {
+    // Both surfaces take the same window end, which is what stops them drifting.
+    const { text } = buildDigestEmail({
       recipientName: 'Ada',
       frequency: 'daily',
-      documents: [changedDoc()]
+      documents: [changedDoc()],
+      periodEnd: '2026-09-03T00:00:00.000Z'
     })
-    expect(text).toContain('2026-09-02')
+    expect(text).toContain('✏️ Changed in the last day.')
   })
 })
