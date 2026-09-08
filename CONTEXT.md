@@ -5,7 +5,9 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## Pad outline
 
 - **Title** — the first line of the document. Always a heading. Its Block style cannot change.
-- **Title write** — changing the document Title. Same persist and room relay for the pad and the Documents list. Stored Title is plain text, not HTML. Client home: `apps/webapp/src/utils/titleWrite.ts`.
+- **Pad title** — `DocumentMetadata.title`. Header rename, Documents list, social card, TOC label, and breadcrumbs. Not Title. The two stores are not kept in sync.
+  _Avoid_: Title, Outline Title, document title
+- **Title write** — changing Pad title. Same persist and room relay for the pad and the Documents list. Stored Pad title is plain text, not HTML. Does not write Title. Client home: `apps/webapp/src/utils/titleWrite.ts`.
 - **Block style** — the outline role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.
 - **Subtitle** — a paragraph style, not a heading. It is not a TOC heading.
 - **HeadingScale** — visual size by rank inside a section. Distinct from Block style. The same heading level can look larger or smaller depending on the section.
@@ -43,6 +45,8 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Change window** — the version rows between the two Anchors. It supplies the version count, the triggers, and the contributors, and it is read separately from the section compare.
 - **Magnitude** — words added and removed for a changed Section, plus its block counts. Null when the edit moved formatting rather than words, while the status still says modified.
 - **Change digest** — the email that consumes this route. It runs in the worker process, which imports the compute factory by deep path instead of calling the route.
+- **Last left** — the instant a person's last live session on one document closed. Stored as `workspace_members.last_connection_closed_at`. `public.mark_document_connection_closed` is the only writer, and the service-role worker is the only caller (`packages/supabase/scripts/10-8-func-workspace_members.sql:329-369`). A returning reader's Change window starts here.
+  _Avoid_: `left_at`, a different fact that ends the membership (`packages/supabase/scripts/03-1-workspace_members.sql:8`); `updated_at`, the arrival stamp `join_workspace` writes, which the roster renders as "Last seen" (`packages/supabase/scripts/10-8-func-workspace_members.sql:238`); Last opened, the owner-only pad-open stamp in §Documents list
 
 ## Chat media gallery
 

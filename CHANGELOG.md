@@ -32,9 +32,50 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
   Previous 7 days, Previous 30 days, and Earlier. Favorites stay unbucketed at
   the top, then a hairline. Title sorts stay a flat list. Last opened sort also
   uses Never opened when `lastOpenedAt` is null.
+- Name how many people contributed in the digest email, under the changed-since
+  line. The count covers the same window as the sections beneath it. It is a
+  floor, not a head count, and it is left out when nobody is named.
+
+### Changed
+
+- Move Report a problem out of the pad title. It now sits in Settings, after
+  Report an Issue, while a document is open. Home Settings does not show that
+  row. A signed-out reader does not see it.
+
+- Fix the email footer links. View All Notifications opens the document and its
+  notifications panel. Manage preferences opens Settings on Notifications. Both
+  used to open a blank document named after the link, because the app has no
+  page at those addresses. Unsubscribe is unchanged and still works. The same
+  fix reaches the Manage Preferences button on the unsubscribe page.
+
+- Say "Changed in the last day" instead of "Changed since you left" when the
+  digest window has been shortened to the retention limit. The old line named a
+  date that could be months after you really left.
 
 ### Fixed
 
+- Keep a notification preference you change just before closing Settings. Turning a
+  toggle off and closing the panel within half a second discarded the change without
+  saying so, and the toggle came back on next time you looked.
+
+- Stop a duplicated document flashing into the list and then disappearing. A copy has
+  never been opened, so under the Last opened sort it belongs at the end of the list,
+  not the top.
+
+- Stop one document going missing from Settings → Documents after a delete. Pressing
+  Load more asked the server for the wrong position, so a document was skipped until
+  the page was reloaded.
+
+- Close Settings when your session ends while it is open from the editor toolbar. It
+  used to stay on screen as an empty shell that could not close itself. The other
+  three places that open Settings already closed it.
+
+- Open History with compare already painted when View is pressed on a
+  document-content notification. The compare window starts at Last left, the
+  moment you last closed that document, and runs to the newest version. It used
+  to start when the alert was sent, which is after the first save you missed, so
+  that save was left out. The click also used to skip navigation when that
+  document was already open, so the button did nothing on the Read tab.
 - Show formatting edits in version compare. Bolding a word, changing a link's address, or
   moving a heading from one level to another painted no highlight at all, so the reader saw
   an unchanged document while the edit was really there. The diff now compares marks and
@@ -43,6 +84,11 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 - Stop version compare drawing an empty strikethrough. A formatting edit reports a change
   that holds no text, and the removed-text marker was rendered anyway, telling the reader a
   word had gone when none had.
+
+### Removed
+
+- Remove passkeys. Sign-in is Google or an email link. Settings → Security no longer
+  lists passkeys. Local Auth has passkeys turned off.
 
 ## [2.0.1] — 2026-08-31
 
