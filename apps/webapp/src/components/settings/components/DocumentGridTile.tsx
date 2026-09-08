@@ -2,8 +2,9 @@ import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { LuEye, LuLock, LuStar } from 'react-icons/lu'
 
+import type { DocumentsListScope } from '../documentsQueryKey'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
-import type { DocumentSortKey, OwnedDocument } from '../types'
+import type { OwnedDocument } from '../types'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentPreviewPaper from './DocumentPreviewPaper'
@@ -12,9 +13,7 @@ import RenameDocumentDialog from './RenameDocumentDialog'
 
 interface DocumentGridTileProps {
   doc: OwnedDocument
-  userId: string
-  searchQuery: string
-  sortKey: DocumentSortKey
+  scope: DocumentsListScope
   members?: DocumentMembersEntry
   onOpenDocument?: () => void
   index: number
@@ -26,9 +25,7 @@ interface DocumentGridTileProps {
 /** Preview + title navigate; the footer ⋮ is a sibling so it never nests in the nav button. */
 function DocumentGridTile({
   doc,
-  userId,
-  searchQuery,
-  sortKey,
+  scope,
   members,
   onOpenDocument,
   index,
@@ -39,7 +36,7 @@ function DocumentGridTile({
   const router = useRouter()
   const openDialog = useStore((state) => state.openDialog)
   const label = doc.title ?? doc.slug
-  const date = documentListDate(doc, sortKey)
+  const date = documentListDate(doc, scope.sortKey)
 
   const open = () => {
     router.push(`/${doc.slug}`)
@@ -48,13 +45,7 @@ function DocumentGridTile({
 
   const openRenameDialog = () => {
     openDialog(
-      <RenameDocumentDialog
-        documentId={doc.documentId}
-        currentTitle={doc.title}
-        userId={userId}
-        searchQuery={searchQuery}
-        sortKey={sortKey}
-      />,
+      <RenameDocumentDialog documentId={doc.documentId} currentTitle={doc.title} scope={scope} />,
       { size: 'sm', align: 'top', className: 'mt-14' }
     )
   }
@@ -104,15 +95,8 @@ function DocumentGridTile({
         />
         <div className="ml-auto">
           <DocumentRowMenu
-            documentId={doc.documentId}
-            slug={doc.slug}
-            title={doc.title}
-            isPrivate={doc.isPrivate}
-            readOnly={doc.readOnly}
-            isFavorite={doc.isFavorite}
-            userId={userId}
-            searchQuery={searchQuery}
-            sortKey={sortKey}
+            doc={doc}
+            scope={scope}
             triggerTabIndex={isActive ? 0 : -1}
             onRename={openRenameDialog}
             onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}

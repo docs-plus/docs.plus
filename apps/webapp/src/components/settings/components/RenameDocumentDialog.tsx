@@ -3,15 +3,13 @@ import TextInput from '@components/ui/TextInput'
 import { useStore } from '@stores'
 import { useEffect, useRef, useState } from 'react'
 
+import type { DocumentsListScope } from '../documentsQueryKey'
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
-import type { DocumentSortKey } from '../types'
 
 interface RenameDocumentDialogProps {
   documentId: string
   currentTitle: string | null
-  userId: string
-  searchQuery: string
-  sortKey: DocumentSortKey
+  scope: DocumentsListScope
 }
 
 /**
@@ -19,15 +17,9 @@ interface RenameDocumentDialogProps {
  * is used instead of an inline swap. Stays mounted until the PUT settles so its
  * mutate-scoped rollback + toast still fire (an inline close would drop them).
  */
-function RenameDocumentDialog({
-  documentId,
-  currentTitle,
-  userId,
-  searchQuery,
-  sortKey
-}: RenameDocumentDialogProps) {
+function RenameDocumentDialog({ documentId, currentTitle, scope }: RenameDocumentDialogProps) {
   const closeDialog = useStore((state) => state.closeDialog)
-  const { commit, isPending } = useCommitDocumentRename(userId, searchQuery, sortKey)
+  const { commit, isPending } = useCommitDocumentRename(scope)
   const [draft, setDraft] = useState(currentTitle ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
 

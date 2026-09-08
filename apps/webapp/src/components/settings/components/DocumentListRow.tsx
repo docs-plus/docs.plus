@@ -3,18 +3,17 @@ import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { LuEye, LuFileText, LuLock, LuStar } from 'react-icons/lu'
 
+import type { DocumentsListScope } from '../documentsQueryKey'
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
 import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
-import type { DocumentSortKey, OwnedDocument } from '../types'
+import type { OwnedDocument } from '../types'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
 import DocumentRowMenu from './DocumentRowMenu'
 
 interface DocumentListRowProps {
   doc: OwnedDocument
-  userId: string
-  searchQuery: string
-  sortKey: DocumentSortKey
+  scope: DocumentsListScope
   members?: DocumentMembersEntry
   onOpenDocument?: () => void
   index: number
@@ -29,9 +28,7 @@ interface DocumentListRowProps {
  */
 function DocumentListRow({
   doc,
-  userId,
-  searchQuery,
-  sortKey,
+  scope,
   members,
   onOpenDocument,
   index,
@@ -41,9 +38,9 @@ function DocumentListRow({
 }: DocumentListRowProps) {
   const router = useRouter()
   const label = doc.title ?? doc.slug
-  const date = documentListDate(doc, sortKey)
+  const date = documentListDate(doc, scope.sortKey)
 
-  const { commit } = useCommitDocumentRename(userId, searchQuery, sortKey)
+  const { commit } = useCommitDocumentRename(scope)
   const [isRenaming, setIsRenaming] = useState(false)
   const [draft, setDraft] = useState('')
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -179,15 +176,8 @@ function DocumentListRow({
       <span className="text-base-content/60 hidden shrink-0 text-xs sm:block">{date}</span>
 
       <DocumentRowMenu
-        documentId={doc.documentId}
-        slug={doc.slug}
-        title={doc.title}
-        isPrivate={doc.isPrivate}
-        readOnly={doc.readOnly}
-        isFavorite={doc.isFavorite}
-        userId={userId}
-        searchQuery={searchQuery}
-        sortKey={sortKey}
+        doc={doc}
+        scope={scope}
         triggerTabIndex={isActive ? 0 : -1}
         onRename={enterRename}
         onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}

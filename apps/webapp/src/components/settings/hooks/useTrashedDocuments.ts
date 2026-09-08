@@ -3,15 +3,16 @@ import { supabaseClient } from '@utils/supabase'
 
 import { makeTrashKey } from '../documentsQueryKey'
 import type { DocumentsPage } from '../types'
+import { nextDocumentsOffset } from '../utils/documentsPageCache'
 
 const TRASH_PAGE_SIZE = 20
 
 // `deleted=true` auto-scopes to the token subject server-side (never a client ownerId);
 // rows come back ordered deletedAt desc with deletedAt populated.
-async function fetchTrashPage(pageParam: number): Promise<DocumentsPage> {
+async function fetchTrashPage(offset: number): Promise<DocumentsPage> {
   const params = new URLSearchParams({
     limit: String(TRASH_PAGE_SIZE),
-    offset: String(pageParam * TRASH_PAGE_SIZE),
+    offset: String(offset),
     deleted: 'true'
   })
 
@@ -38,11 +39,9 @@ export function useTrashedDocuments(userId: string | undefined) {
     queryKey: makeTrashKey(userId ?? ''),
     enabled: !!userId,
     refetchOnMount: 'always',
+    // The page param is a row offset, not a page index — see nextDocumentsOffset.
     initialPageParam: 0,
     queryFn: ({ pageParam }) => fetchTrashPage(pageParam),
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      const nextOffset = (lastPageParam + 1) * TRASH_PAGE_SIZE
-      return nextOffset < lastPage.total ? lastPageParam + 1 : undefined
-    }
+    getNextPageParam: (lastPage, allPages) => nextDocumentsOffset(allPages, lastPage.total)
   })
 }

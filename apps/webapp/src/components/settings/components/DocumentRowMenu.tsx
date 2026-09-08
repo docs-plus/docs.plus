@@ -8,7 +8,6 @@ import { Popover, PopoverContent, PopoverTrigger, usePopoverState } from '@compo
 import Toggle from '@components/ui/Toggle'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import { useStore } from '@stores'
-import { type InfiniteData, useQueryClient } from '@tanstack/react-query'
 import { copyToClipboard } from '@utils/clipboard'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -23,25 +22,16 @@ import {
   LuTrash2
 } from 'react-icons/lu'
 
-import { makeDocumentsKey } from '../documentsQueryKey'
+import type { DocumentsListScope } from '../documentsQueryKey'
+import { useOwnerDocumentsCache } from '../hooks/documentsCache'
 import useDuplicateDocument from '../hooks/useDuplicateDocument'
 import useToggleDocumentFavorite from '../hooks/useToggleDocumentFavorite'
-import type { DocumentSortKey, DocumentsPage, OwnedDocument } from '../types'
-import {
-  insertAfterFavoritesInPages,
-  patchFavoriteInPages
-} from '../utils/reorderFavoritedDocuments'
+import type { OwnedDocument } from '../types'
 
 export interface DocumentRowMenuProps {
-  documentId: string
-  slug: string
-  title: string | null
-  isPrivate: boolean
-  readOnly: boolean
-  isFavorite?: boolean
-  userId: string
-  searchQuery: string
-  sortKey: DocumentSortKey
+  doc: OwnedDocument
+  /** The one list this menu patches. Both call sites already hold it whole. */
+  scope: DocumentsListScope
   onOpenDocument?: () => void
   /** Menu delegates to the row/section (inline rename mode / rename dialog). */
   onRename?: () => void
@@ -52,26 +42,20 @@ export interface DocumentRowMenuProps {
 }
 
 function RowMenuItems({
-  documentId,
-  slug,
-  title,
-  isPrivate,
-  readOnly,
-  isFavorite,
-  userId,
-  searchQuery,
-  sortKey,
+  doc,
+  scope,
   onRename,
   onDelete,
   close,
   rowClassName
 }: DocumentRowMenuProps & { close: () => void; rowClassName?: string }) {
-  const queryClient = useQueryClient()
+  const { documentId, slug, title, isPrivate, readOnly, isFavorite } = doc
+  const cache = useOwnerDocumentsCache(scope)
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
   const { toggleFavorite, isPending: isFavoriting } = useToggleDocumentFavorite()
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
     documentId,
-    userId,
+    userId: scope.userId,
     isPrivate,
     readOnly
   })
@@ -102,24 +86,7 @@ function RowMenuItems({
       { documentId },
       {
         onSuccess: (copy) => {
-          const key = makeDocumentsKey(userId, searchQuery, sortKey)
-          const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-          if (snapshot) {
-            const now = new Date().toISOString()
-            // Omit `preview` so the paper stays blank until the next owner-list fill.
-            const created: OwnedDocument = {
-              documentId: copy.documentId,
-              slug: copy.slug,
-              title: copy.title,
-              readOnly: false,
-              isPrivate: false,
-              isFavorite: false,
-              updatedAt: now,
-              createdAt: now,
-              lastOpenedAt: null
-            }
-            queryClient.setQueryData(key, insertAfterFavoritesInPages(snapshot, created))
-          }
+          cache.addDuplicate()
           toast.Success(`Copy of “${label}” created`, {
             id: toastId,
             actionLabel: 'Open',
@@ -133,17 +100,12 @@ function RowMenuItems({
 
   const runToggleFavorite = () => {
     const next = !isFavorite
-    const key = makeDocumentsKey(userId, searchQuery, sortKey)
-
-    void queryClient.cancelQueries({ queryKey: key }).then(() => {
-      const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-      if (snapshot) queryClient.setQueryData(key, patchFavoriteInPages(snapshot, documentId, next))
-
+    void cache.setFavorite(documentId, next).then((rollback) => {
       toggleFavorite(
         { documentId, favorite: next },
         {
           onError: () => {
-            if (snapshot) queryClient.setQueryData(key, snapshot)
+            rollback?.()
             toast.Error('Couldn’t update favorite')
           }
         }
@@ -275,7 +237,7 @@ function RowMenuPopoverPanel(props: DocumentRowMenuProps) {
  */
 function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void }) {
   const { onClose } = props
-  const label = props.title ?? props.slug
+  const label = props.doc.title ?? props.doc.slug
   const sheetRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -332,7 +294,7 @@ function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void 
  * sheet below md. Stays open while toggles flip; Copy link hides once Private is on.
  */
 function DocumentRowMenu(props: DocumentRowMenuProps) {
-  const trigger = props.title ?? props.slug
+  const trigger = props.doc.title ?? props.doc.slug
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   return (

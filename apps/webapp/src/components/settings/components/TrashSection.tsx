@@ -1,14 +1,13 @@
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import { useStore } from '@stores'
-import { type InfiniteData, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { LuArrowLeft, LuRotateCcw, LuTrash2, LuX } from 'react-icons/lu'
 
-import { makeTrashKey } from '../documentsQueryKey'
+import { useTrashCache } from '../hooks/documentsCache'
 import useDeleteDocument from '../hooks/useDeleteDocument'
 import { useTrashedDocuments } from '../hooks/useTrashedDocuments'
-import type { DocumentsPage, OwnedDocument } from '../types'
+import type { OwnedDocument } from '../types'
 import DeleteForeverDialog from './DeleteForeverDialog'
 import TrashListRow from './TrashListRow'
 
@@ -33,16 +32,15 @@ interface TrashSectionProps {
 }
 
 /**
- * Trash sub-view of the Documents settings surface. Owns its own infinite query
- * (makeTrashKey) so the live list's cache is never disturbed.
+ * Trash sub-view of the Documents settings surface. Its own infinite query and its own
+ * cache key, so the Owner live list is never disturbed except where a restore says so.
  */
 const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
-  const queryClient = useQueryClient()
+  const cache = useTrashCache(userId)
   const openDialog = useStore((state) => state.openDialog)
   const { restoreDocument, permanentlyDeleteDocument, purgeTrash, bulkRestoreDocuments } =
     useDeleteDocument()
 
-  const key = makeTrashKey(userId)
   const { data, isLoading, isError, isFetchingNextPage, fetchNextPage, hasNextPage, refetch } =
     useTrashedDocuments(userId)
 
@@ -109,53 +107,19 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
     else requestAnimationFrame(run)
   }
 
-  // Optimistic remove reads the LIVE cache at click time (never a stale snapshot);
-  // cancel in-flight refetches first (refetchOnMount/focus) or one can clobber it back.
-  const removeManyOptimistically = async (ids: string[]) => {
-    await queryClient.cancelQueries({ queryKey: key })
-    const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-    const idSet = new Set(ids)
-    if (snapshot) {
-      // `total` is a global count replicated on every page (it feeds hasNextPage).
-      // Decrement each page by the count removed across ALL pages. Never use the
-      // per-page count, which would make the pages' totals diverge.
-      const removedCount = snapshot.pages.reduce(
-        (n, page) => n + page.docs.filter((d) => idSet.has(d.documentId)).length,
-        0
-      )
-      queryClient.setQueryData<InfiniteData<DocumentsPage>>(key, {
-        ...snapshot,
-        pages: snapshot.pages.map((page) => ({
-          ...page,
-          total: Math.max(0, page.total - removedCount),
-          docs: page.docs.filter((d) => !idSet.has(d.documentId))
-        }))
-      })
-    }
-    return snapshot
-  }
-
-  const rollback = (snapshot: InfiniteData<DocumentsPage> | undefined) => {
-    if (snapshot) queryClient.setQueryData(key, snapshot)
-  }
-
   const handleRestore = async (doc: OwnedDocument) => {
     const index = docs.findIndex((d) => d.documentId === doc.documentId)
-    const snapshot = await removeManyOptimistically([doc.documentId])
+    const rollback = await cache.removeDocuments([doc.documentId])
     reconcileFocus(index, docs.length - 1)
     restoreDocument(
       { documentId: doc.documentId },
       {
         onSuccess: () => {
-          // The doc is live again. Refresh the main list (distinct key prefix), then
-          // settle trash. The offset-based getNextPageParam can't survive a row being
-          // filtered out, so invalidate to resync docs/total/hasNextPage.
-          queryClient.invalidateQueries({ queryKey: ['documents', userId] })
-          queryClient.invalidateQueries({ queryKey: key })
+          cache.resyncOwnerList()
           toast.Success('Document restored')
         },
         onError: () => {
-          rollback(snapshot)
+          rollback?.()
           toast.Error('Couldn’t restore document')
         }
       }
@@ -164,19 +128,17 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
 
   const confirmDeleteForever = async (doc: OwnedDocument) => {
     const index = docs.findIndex((d) => d.documentId === doc.documentId)
-    const snapshot = await removeManyOptimistically([doc.documentId])
+    const rollback = await cache.removeDocuments([doc.documentId])
     // 100ms clears the dialog's floating-ui return-focus to the unmounted trigger.
     reconcileFocus(index, docs.length - 1, 100)
     permanentlyDeleteDocument(
       { documentId: doc.documentId },
       {
         onSuccess: () => {
-          // Settle trash (offset-based pagination can't survive a filtered row).
-          queryClient.invalidateQueries({ queryKey: key })
           toast.Success('Deleted forever')
         },
         onError: () => {
-          rollback(snapshot)
+          rollback?.()
           toast.Error('Couldn’t delete document')
         }
       }
@@ -197,20 +159,19 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   const handleBulkRestore = async () => {
     const ids = [...selected]
     if (ids.length === 0) return
-    const snapshot = await removeManyOptimistically(ids)
+    const rollback = await cache.removeDocuments(ids)
     clearSelection()
     bulkRestoreDocuments(
       { ids },
       {
         onSuccess: (res) => {
-          queryClient.invalidateQueries({ queryKey: ['documents', userId] })
-          queryClient.invalidateQueries({ queryKey: key })
+          cache.resyncOwnerList()
           toast.Success(
             res.restored === 1 ? 'Document restored' : `${res.restored} documents restored`
           )
         },
         onError: () => {
-          rollback(snapshot)
+          rollback?.()
           toast.Error('Couldn’t restore documents')
         }
       }
@@ -220,17 +181,16 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   const runBulkDeleteForever = async () => {
     const ids = [...selected]
     if (ids.length === 0) return
-    const snapshot = await removeManyOptimistically(ids)
+    const rollback = await cache.removeDocuments(ids)
     clearSelection()
     purgeTrash(
       { ids },
       {
         onSuccess: (res) => {
-          queryClient.invalidateQueries({ queryKey: key })
           toast.Success(res.purged === 1 ? 'Deleted forever' : `${res.purged} documents deleted`)
         },
         onError: () => {
-          rollback(snapshot)
+          rollback?.()
           toast.Error('Couldn’t delete documents')
         }
       }
@@ -252,18 +212,19 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   }
 
   const runEmptyTrash = async () => {
-    const snapshot = await removeManyOptimistically(docs.map((d) => d.documentId))
+    const rollback = await cache.removeDocuments(docs.map((d) => d.documentId))
     clearSelection()
     purgeTrash(
       {},
       {
         onSuccess: (res) => {
-          // Empty-all can span unloaded pages — resync to the true (empty) state.
-          queryClient.invalidateQueries({ queryKey: key })
+          // The only Trash write that is not a removal of loaded rows: it purges pages this
+          // list never held, so only the server knows the new total.
+          cache.resync()
           toast.Success(res.purged === 1 ? 'Deleted forever' : `${res.purged} documents deleted`)
         },
         onError: () => {
-          rollback(snapshot)
+          rollback?.()
           toast.Error('Couldn’t empty trash')
         }
       }

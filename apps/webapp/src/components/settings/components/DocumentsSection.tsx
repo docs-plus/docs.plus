@@ -4,23 +4,18 @@ import Select, { type SelectOption } from '@components/ui/Select'
 import TextInput from '@components/ui/TextInput'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import { useAuthStore } from '@stores'
-import { type InfiniteData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import { supabaseClient } from '@utils/supabase'
 import debounce from 'lodash/debounce'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react-icons/lu'
 
-import { makeDocumentsKey } from '../documentsQueryKey'
+import type { DocumentsListScope } from '../documentsQueryKey'
+import { useOwnerDocumentsCache } from '../hooks/documentsCache'
 import useDeleteDocument from '../hooks/useDeleteDocument'
 import { useDocumentMembers } from '../hooks/useDocumentMembers'
-import type { DocumentSortKey, DocumentsPage, OwnedDocument } from '../types'
-import {
-  DOCUMENT_TIME_BUCKET_LABEL,
-  documentTimeBucket,
-  isDateSortKey,
-  timestampForSort
-} from '../utils/documentTimeBucket'
+import { useOwnerDocuments } from '../hooks/useOwnerDocuments'
+import type { DocumentSortKey } from '../types'
+import { buildDocumentsListItems, type DocumentsListItem } from '../utils/documentsListItems'
 import DocumentGridTile from './DocumentGridTile'
 import DocumentListRow from './DocumentListRow'
 import SettingsCard from './SettingsCard'
@@ -28,20 +23,16 @@ import TrashSection from './TrashSection'
 
 type DocumentViewMode = 'list' | 'grid'
 
-// One pending soft-delete at a time: the removed doc + its restore slot, for the in-modal Undo
-// banner. Rendered inline (not a toast) so Undo stays clickable inside the Settings modal scrim.
+// One pending soft-delete at a time, for the in-modal Undo banner. Rendered inline (not a
+// toast) so Undo stays clickable inside the Settings modal scrim. `reinsert` comes from the
+// cache and stays bound to the list the row left, which search or sort may have replaced.
 type PendingDelete = {
   documentId: string
   title: string
-  key: ReturnType<typeof makeDocumentsKey>
-  removedDoc: OwnedDocument
-  pageIndex: number
-  indexInPage: number
+  reinsert: () => void
 }
 
 const UNDO_WINDOW_MS = 6000
-
-const ITEMS_PER_PAGE = 20
 
 // Sort labels map 1:1 to the backend `sort` enum; server-side only (client sort breaks Load more).
 const SORT_OPTIONS: SelectOption[] = [
@@ -52,42 +43,6 @@ const SORT_OPTIONS: SelectOption[] = [
   { value: 'title_desc', label: 'Name (Z→A)' }
 ]
 
-type DocumentsListItem =
-  | { kind: 'hairline' }
-  | { kind: 'bucket'; label: string; key: string }
-  | { kind: 'doc'; doc: OwnedDocument; index: number }
-
-const buildDocumentsListItems = (
-  docs: OwnedDocument[],
-  sortKey: DocumentSortKey
-): DocumentsListItem[] => {
-  const dateSort = isDateSortKey(sortKey)
-  const items: DocumentsListItem[] = []
-  let lastBucket: string | null = null
-
-  docs.forEach((doc, index) => {
-    const prev = index > 0 ? docs[index - 1] : undefined
-    const inFavoriteBlock = !!doc.isFavorite
-    if (prev?.isFavorite && !doc.isFavorite) {
-      items.push({ kind: 'hairline' })
-      lastBucket = null
-    }
-    if (dateSort && !inFavoriteBlock) {
-      const bucket = documentTimeBucket(timestampForSort(doc, sortKey))
-      if (bucket !== lastBucket) {
-        items.push({
-          kind: 'bucket',
-          label: DOCUMENT_TIME_BUCKET_LABEL[bucket],
-          key: `${bucket}-${index}`
-        })
-        lastBucket = bucket
-      }
-    }
-    items.push({ kind: 'doc', doc, index })
-  })
-  return items
-}
-
 const SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
 const VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
 
@@ -95,34 +50,6 @@ const VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
  *  column's name. The human slug matches nothing. One expression so the fetch key and both
  *  lookups cannot drift apart — a drift here was the original bug. */
 const membersKey = (doc: { documentId: string }) => doc.documentId.toLowerCase()
-
-async function fetchMyDocumentsPage(
-  uid: string,
-  pageParam: number,
-  title: string,
-  sort: DocumentSortKey
-): Promise<DocumentsPage> {
-  const params = new URLSearchParams({
-    limit: String(ITEMS_PER_PAGE),
-    offset: String(pageParam * ITEMS_PER_PAGE),
-    ownerId: uid,
-    sort
-  })
-  if (title) params.set('title', title)
-
-  // Owner-scoped list requires the token so the backend can gate ownerId === token.sub.
-  const {
-    data: { session }
-  } = await supabaseClient.auth.getSession()
-  const headers: Record<string, string> = {}
-  if (session?.access_token) headers.token = session.access_token
-
-  const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?${params}`
-  const response = await fetch(url, { headers })
-  if (!response.ok) throw new Error(`Failed to fetch documents: ${response.status}`)
-  const json = await response.json()
-  return json.data as DocumentsPage
-}
 
 const DocumentsBodySkeleton = ({ viewMode }: { viewMode: DocumentViewMode }) =>
   viewMode === 'grid' ? (
@@ -212,6 +139,8 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     if (typeof window !== 'undefined') window.sessionStorage.setItem(VIEW_STORAGE_KEY, mode)
   }
 
+  const scope: DocumentsListScope = { userId: userId ?? '', searchQuery, sortKey }
+
   const {
     data,
     isLoading,
@@ -221,19 +150,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     fetchNextPage,
     hasNextPage,
     refetch
-  } = useInfiniteQuery({
-    // The menu's optimistic patch keys on the exact same 4-tuple (via makeDocumentsKey);
-    // feed the DEBOUNCED searchQuery here, never inputValue, or the patch no-ops.
-    queryKey: makeDocumentsKey(userId ?? '', searchQuery, sortKey),
-    enabled: !!userId,
-    staleTime: 30_000,
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) => fetchMyDocumentsPage(userId!, pageParam, searchQuery, sortKey),
-    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      const nextOffset = (lastPageParam + 1) * ITEMS_PER_PAGE
-      return nextOffset < lastPage.total ? lastPageParam + 1 : undefined
-    }
-  })
+  } = useOwnerDocuments(scope)
 
   const docs = useMemo(() => data?.pages.flatMap((p) => p.docs) ?? [], [data])
   const total = data?.pages[0]?.total ?? 0
@@ -241,7 +158,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
   const { data: membersMap } = useDocumentMembers(docs.map(membersKey), !!userId)
 
-  const queryClient = useQueryClient()
+  const cache = useOwnerDocumentsCache(scope)
   const { deleteDocument, restoreDocument } = useDeleteDocument()
 
   // In-modal Undo banner state; the timer auto-dismisses (soft-delete stands) after the window.
@@ -285,38 +202,13 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     }
   }
 
-  // Optimistic soft-delete: filter the row out, offer Undo (~6s), reconcile keyboard focus.
-  // Not memoized — it must read this render's key tuple + live docs, or the patch no-ops.
+  // Optimistic soft-delete: drop the row, offer Undo (~6s), reconcile keyboard focus.
+  // Not memoized — it must read this render's scope + live docs, or the patch no-ops.
   const handleDelete = (documentId: string, keyboard: boolean) => {
-    const key = makeDocumentsKey(userId ?? '', searchQuery, sortKey)
     const delIndex = docs.findIndex((d) => d.documentId === documentId)
 
-    void queryClient.cancelQueries({ queryKey: key }).then(() => {
-      const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-      if (!snapshot) return
-
-      let removed: OwnedDocument | undefined
-      let pageIndex = 0
-      let indexInPage = 0
-      snapshot.pages.forEach((page, pi) => {
-        const idx = page.docs.findIndex((d) => d.documentId === documentId)
-        if (idx !== -1) {
-          removed = page.docs[idx]
-          pageIndex = pi
-          indexInPage = idx
-        }
-      })
-      if (!removed) return
-      const removedDoc = removed
-
-      queryClient.setQueryData<InfiniteData<DocumentsPage>>(key, {
-        ...snapshot,
-        pages: snapshot.pages.map((page) => ({
-          ...page,
-          total: Math.max(0, page.total - 1),
-          docs: page.docs.filter((d) => d.documentId !== documentId)
-        }))
-      })
+    void cache.removeDocument(documentId).then((outcome) => {
+      if (!outcome) return
 
       // The ⋮ trigger unmounts, so the section (not the closing menu) lands focus on the
       // adjacent row; 100ms clears floating-ui's 80ms return-focus race. Browser-pending.
@@ -328,11 +220,8 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
       clearTimeout(dismissTimerRef.current ?? undefined)
       setPendingDelete({
         documentId,
-        title: removedDoc.title ?? removedDoc.slug,
-        key,
-        removedDoc,
-        pageIndex,
-        indexInPage
+        title: outcome.removed.title ?? outcome.removed.slug,
+        reinsert: outcome.reinsert
       })
       dismissTimerRef.current = setTimeout(() => setPendingDelete(null), UNDO_WINDOW_MS)
 
@@ -340,7 +229,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
         { documentId },
         {
           onError: () => {
-            queryClient.setQueryData(key, snapshot)
+            outcome.rollback()
             clearTimeout(dismissTimerRef.current ?? undefined)
             setPendingDelete(null)
             toast.Error('Couldn’t delete document')
@@ -350,29 +239,64 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     })
   }
 
-  // Undo: re-read the live cache, splice the doc back at its slot, then restore server-side.
+  // Undo: put the row back where it sat, then restore server-side.
   const handleUndo = () => {
     const pending = pendingDelete
     if (!pending) return
     clearTimeout(dismissTimerRef.current ?? undefined)
     setPendingDelete(null)
+    pending.reinsert()
+    restoreDocument(
+      { documentId: pending.documentId },
+      { onError: () => toast.Error('Couldn’t restore document') }
+    )
+  }
 
-    const { documentId, key, removedDoc, pageIndex, indexInPage } = pending
-    const current = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-    if (current) {
-      queryClient.setQueryData<InfiniteData<DocumentsPage>>(key, {
-        ...current,
-        pages: current.pages.map((page, pi) => ({
-          ...page,
-          total: page.total + 1,
-          docs:
-            pi === pageIndex
-              ? [...page.docs.slice(0, indexInPage), removedDoc, ...page.docs.slice(indexInPage)]
-              : page.docs
-        }))
-      })
+  // One switch for both arms. The list and the grid carry the same item kinds and differ only
+  // in wrapper element and classes, so a new kind lands here once instead of twice.
+  const isListView = viewMode === 'list'
+  const ItemWrapper = isListView ? 'li' : 'div'
+
+  const renderItem = (item: DocumentsListItem) => {
+    if (item.kind === 'hairline') {
+      return (
+        <ItemWrapper
+          key="favorites-end"
+          aria-hidden
+          className={
+            isListView
+              ? 'pointer-events-none my-3'
+              : 'border-base-300 col-span-2 my-1 border-t lg:col-span-3'
+          }>
+          {isListView ? <div className="border-base-300 border-t" /> : null}
+        </ItemWrapper>
+      )
     }
-    restoreDocument({ documentId }, { onError: () => toast.Error('Couldn’t restore document') })
+    if (item.kind === 'bucket') {
+      return (
+        <ItemWrapper
+          key={item.key}
+          className={`text-base-content/45 text-[10px] font-bold tracking-wider uppercase ${
+            isListView ? 'px-2 pt-4 pb-1' : 'col-span-2 pt-2 lg:col-span-3'
+          }`}>
+          {item.label}
+        </ItemWrapper>
+      )
+    }
+    const DocumentItem = isListView ? DocumentListRow : DocumentGridTile
+    return (
+      <DocumentItem
+        key={item.doc.documentId}
+        doc={item.doc}
+        scope={scope}
+        members={membersMap?.get(membersKey(item.doc))}
+        onOpenDocument={onOpenDocument}
+        index={item.index}
+        isActive={item.index === activeIndex}
+        onActivate={setActiveIndex}
+        onDelete={handleDelete}
+      />
+    )
   }
 
   if (!userId) {
@@ -556,88 +480,20 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   {total} documents
                 </p>
 
-                {viewMode === 'list' ? (
+                {isListView ? (
                   <ul
                     ref={bindListRef}
                     role="list"
                     onKeyDown={handleListKeyDown}
                     className="[&>li[data-doc-row]+li[data-doc-row]]:border-base-300 [&>li[data-doc-row]+li[data-doc-row]]:border-t">
-                    {listItems.map((item) => {
-                      if (item.kind === 'hairline') {
-                        return (
-                          <li key="favorites-end" aria-hidden className="pointer-events-none my-3">
-                            <div className="border-base-300 border-t" />
-                          </li>
-                        )
-                      }
-                      if (item.kind === 'bucket') {
-                        return (
-                          <li
-                            key={item.key}
-                            className="text-base-content/45 px-2 pt-4 pb-1 text-[10px] font-bold tracking-wider uppercase">
-                            {item.label}
-                          </li>
-                        )
-                      }
-                      const { doc, index } = item
-                      return (
-                        <DocumentListRow
-                          key={doc.documentId}
-                          doc={doc}
-                          userId={userId}
-                          searchQuery={searchQuery}
-                          sortKey={sortKey}
-                          members={membersMap?.get(membersKey(doc))}
-                          onOpenDocument={onOpenDocument}
-                          index={index}
-                          isActive={index === activeIndex}
-                          onActivate={setActiveIndex}
-                          onDelete={handleDelete}
-                        />
-                      )
-                    })}
+                    {listItems.map(renderItem)}
                   </ul>
                 ) : (
                   <div
                     ref={bindListRef}
                     onKeyDown={handleListKeyDown}
                     className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                    {listItems.map((item) => {
-                      if (item.kind === 'hairline') {
-                        return (
-                          <div
-                            key="favorites-end"
-                            aria-hidden
-                            className="border-base-300 col-span-2 my-1 border-t lg:col-span-3"
-                          />
-                        )
-                      }
-                      if (item.kind === 'bucket') {
-                        return (
-                          <div
-                            key={item.key}
-                            className="text-base-content/45 col-span-2 pt-2 text-[10px] font-bold tracking-wider uppercase lg:col-span-3">
-                            {item.label}
-                          </div>
-                        )
-                      }
-                      const { doc, index } = item
-                      return (
-                        <DocumentGridTile
-                          key={doc.documentId}
-                          doc={doc}
-                          userId={userId}
-                          searchQuery={searchQuery}
-                          sortKey={sortKey}
-                          members={membersMap?.get(membersKey(doc))}
-                          onOpenDocument={onOpenDocument}
-                          index={index}
-                          isActive={index === activeIndex}
-                          onActivate={setActiveIndex}
-                          onDelete={handleDelete}
-                        />
-                      )
-                    })}
+                    {listItems.map(renderItem)}
                   </div>
                 )}
 

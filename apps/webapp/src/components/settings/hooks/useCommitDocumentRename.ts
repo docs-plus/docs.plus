@@ -1,19 +1,18 @@
 import * as toast from '@components/toast'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
-import { type InfiniteData, useQueryClient } from '@tanstack/react-query'
 import { plainTitle } from '@utils/titleWrite'
 import { useCallback } from 'react'
 
-import { makeDocumentsKey } from '../documentsQueryKey'
-import type { DocumentSortKey, DocumentsPage } from '../types'
+import type { DocumentsListScope } from '../documentsQueryKey'
+import { useOwnerDocumentsCache } from './documentsCache'
 
 /**
  * Optimistic title patch shared by the list inline-rename and the grid rename dialog.
  * `commit` resolves to `false` when the trimmed title is empty or unchanged (no PUT
  * sent), so callers can close/exit without waiting. Otherwise the mutation drives `isPending`.
  */
-const useCommitDocumentRename = (userId: string, searchQuery: string, sortKey: DocumentSortKey) => {
-  const queryClient = useQueryClient()
+const useCommitDocumentRename = (scope: DocumentsListScope) => {
+  const cache = useOwnerDocumentsCache(scope)
   const { mutate, isPending } = useUpdateDocMetadata()
 
   const commit = useCallback(
@@ -26,26 +25,14 @@ const useCommitDocumentRename = (userId: string, searchQuery: string, sortKey: D
       const trimmed = plainTitle(nextTitle.trim())
       if (!trimmed || trimmed === plainTitle(currentTitle ?? '')) return false
 
-      const key = makeDocumentsKey(userId, searchQuery, sortKey)
-      // Cancel in-flight refetches or a focus refetch resolving after this patch reverts it.
-      await queryClient.cancelQueries({ queryKey: key })
-      const snapshot = queryClient.getQueryData<InfiniteData<DocumentsPage>>(key)
-      if (snapshot) {
-        queryClient.setQueryData(key, {
-          ...snapshot,
-          pages: snapshot.pages.map((page) => ({
-            ...page,
-            docs: page.docs.map((d) => (d.documentId === documentId ? { ...d, title: trimmed } : d))
-          }))
-        })
-      }
+      const rollback = await cache.patchDocument(documentId, { title: trimmed })
 
       // Owner-scoped PUT of the title only (slug is immutable); optimistic patch above.
       mutate(
         { documentId, title: trimmed },
         {
           onError: () => {
-            if (snapshot) queryClient.setQueryData(key, snapshot)
+            rollback?.()
             toast.Error('Couldn’t rename document')
           },
           onSettled: () => options?.onSettled?.()
@@ -53,7 +40,7 @@ const useCommitDocumentRename = (userId: string, searchQuery: string, sortKey: D
       )
       return true
     },
-    [userId, searchQuery, sortKey, queryClient, mutate]
+    [cache, mutate]
   )
 
   return { commit, isPending }
