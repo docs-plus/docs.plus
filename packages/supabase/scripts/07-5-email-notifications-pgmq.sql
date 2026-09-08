@@ -1151,7 +1151,10 @@ begin
         'unsubscribe_reactions', public.get_unsubscribe_url(p_user_id, 'reactions', base_url),
         'unsubscribe_digest', public.get_unsubscribe_url(p_user_id, 'digest', base_url),
         'unsubscribe_all', public.get_unsubscribe_url(p_user_id, 'all', base_url),
-        'preferences', base_url || '/settings/notifications'
+        -- The app serves every path from one catch-all and has no /settings route,
+        -- so a path here opens a blank pad. The hash is read by the page that mounts
+        -- the settings panel.
+        'preferences', base_url || '/#settings?tab=notifications'
     );
 end;
 $$;
