@@ -21,7 +21,7 @@ const DocTitle = ({ className }: { className?: string }) => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const docMetadata = useStore((state) => state.settings.metadata)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
-  const profileId = useAuthStore((state) => state.profile?.id)
+  const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
   const canEdit = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
 
   useEffect(() => {
@@ -155,7 +155,7 @@ const DocTitle = ({ className }: { className?: string }) => {
           suppressContentEditableWarning
           className={twMerge(
             'truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium',
-            canEdit && 'hover:border-base-300'
+            canEdit && 'hover:border-base-300 cursor-text'
           )}
           style={{ flex: 1 }}
           onBlur={saveData}

@@ -361,11 +361,13 @@ const firstEditMetadataExtension = {
     if (!slug) return
     draftMetadataEnsured.add(document)
     try {
+      // Identity only. Do not stamp the socket user as owner; that locked
+      // Pad title on an unclaimed pad. Ownership stays on PUT/POST create.
       await ensureDraftDocumentMetadata(prisma, {
         documentId: documentName,
         slug,
-        ownerId: context?.user?.sub ?? null,
-        email: context?.user?.email ?? null
+        ownerId: null,
+        email: null
       })
     } catch (err) {
       wsLogger.warn({ err, documentName }, 'First-edit metadata anchor failed')

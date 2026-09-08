@@ -37,8 +37,8 @@ async function upsertDocumentMetadata(
     documentId: string
     slug: string
     title: string
-    ownerId?: string
-    email?: string
+    ownerId?: string | null
+    email?: string | null
   }
 ): Promise<string> {
   const row = await tx.documentMetadata.upsert({
@@ -452,8 +452,8 @@ export const createDocumentWorker = () => {
                     documentId: data.documentName,
                     slug: candidateSlug,
                     title: baseSlug,
-                    ownerId: context.user?.sub,
-                    email: context.user?.email
+                    ownerId: null,
+                    email: null
                   })
                 }
 

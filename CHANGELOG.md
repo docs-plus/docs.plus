@@ -61,6 +61,10 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ### Fixed
 
+- Keep Pad title open on a document with no owner. First edit no longer stamps
+  the signed-in visitor as owner, so anyone can rename it. An owned document
+  still answers only to its owner.
+
 - Show who renamed the Pad title when workspace chat is already open. A live
   notice arrives without the users join, so the chip used to say "someone".
   It now uses the snapshot username on that notice until the live join is

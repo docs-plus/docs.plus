@@ -106,6 +106,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Fixed
 
+- **First-edit and first persist no longer claim `ownerId`.** The slug→documentId
+  anchor and the no-row persist backstop write `ownerId` null. A signed-in
+  visitor who types does not become the owner. Pad title stays open until
+  `PUT` / `POST` create sets one. The worker `update: {}` arm is unchanged.
+
 - **ODT export and portable JSON no longer read an array as a node.** The shared
   `isRecord` guard accepted arrays, so a `content` array could reach a branch
   meant for a node. No shipped document is known to have hit it.

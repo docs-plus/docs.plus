@@ -13,5 +13,7 @@ export const canEditDocumentMetadata = (settings: Workspace, profileId?: string)
   if (settings.metadata?.documentId == null) return false
 
   const ownerId = settings.metadata.ownerId
-  return ownerId == null || ownerId === profileId
+  // Empty persist leftover is open, same as null.
+  if (!ownerId) return true
+  return ownerId === profileId
 }

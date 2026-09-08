@@ -12,5 +12,5 @@ export function isDocumentOwner(
 /** An ownerless document. Its title and description are open to everyone, signed
  *  in or not. Its locks cannot move — there is nobody for it to be private for. */
 export function isOpenDocument(existing: { ownerId?: string | null } | null | undefined): boolean {
-  return existing?.ownerId == null
+  return !existing?.ownerId
 }

@@ -43,7 +43,8 @@ const DocumentSettingsPanel = ({
   const docMetadata = useStore((state) => state.settings.metadata)
   const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, user?.id))
-  const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, user?.id))
+  const profileId = useAuthStore((state) => state.profile?.id ?? state.session?.id)
+  const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, profileId))
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isPending, mutate } = useUpdateDocMetadata()
