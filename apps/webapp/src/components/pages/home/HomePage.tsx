@@ -1,16 +1,16 @@
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
+import { SettingsTakeover } from '@components/settings/SettingsTakeover'
+import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import { Modal, ModalContent } from '@components/ui/Dialog'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
+import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
@@ -36,10 +36,6 @@ function HomeFlexSpacer({ compact }: { compact: boolean }) {
   )
 }
 
-const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
-  loading: () => <SettingsPanelSkeleton />
-})
-
 interface HomePageProps {
   hostname: string
   isAuthServiceAvailable: boolean
@@ -49,9 +45,28 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const user = useAuthStore((state) => state.profile)
   const [displayHostname, setDisplayHostname] = useState(hostname)
   const { isOpen: isProfileOpen, setIsOpen: setIsProfileOpen } = useSettingsModal()
+  const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
+  const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
   const { navigateToDocument, isLoading } = useNavigateToDocument()
   useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
   const keyboardCompact = useStore((state) => state.isKeyboardOpen)
+
+  // No argument means the header button, which must not reopen the tab a hash asked for.
+  const openSettings = useCallback(
+    (tab?: TabType) => {
+      setSettingsTab(tab)
+      setIsProfileOpen(true)
+    },
+    [setIsProfileOpen]
+  )
+
+  // The hash is a one-shot instruction. Clear it first, before the panel pushes its own
+  // mobile history entry. A signed-out visitor keeps the hash, so signing in still lands.
+  useEffect(() => {
+    if (overlay !== 'settings' || !user) return
+    clearOverlayHash()
+    openSettings(hashSettingsTab ?? undefined)
+  }, [overlay, hashSettingsTab, user, openSettings])
 
   useEffect(() => {
     useStore.getState().setWorkspaceSetting('metadata', { documentId: undefined })
@@ -93,7 +108,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
                   shape="circle"
                   size="lg"
                   className="border-0 p-0 transition-transform hover:scale-105"
-                  onClick={() => setIsProfileOpen(true)}
+                  onClick={() => openSettings()}
                   aria-label="Open profile settings"
                   aria-haspopup="dialog"
                   tooltip="Profile"
@@ -170,13 +185,11 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
         </HomeCollapseRegion>
       </div>
 
-      {user && (
-        <Modal open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-          <ModalContent size="4xl" mobileTakeover aria-label="Profile settings" className="p-0">
-            <SettingsPanel onClose={() => setIsProfileOpen(false)} />
-          </ModalContent>
-        </Modal>
-      )}
+      <SettingsTakeover
+        open={isProfileOpen}
+        onOpenChange={setIsProfileOpen}
+        defaultTab={settingsTab}
+      />
 
       {/* Settings confirms (rename/trash/private) dispatch here; without this mount they render nothing on `/`. */}
       <GlobalDialog />

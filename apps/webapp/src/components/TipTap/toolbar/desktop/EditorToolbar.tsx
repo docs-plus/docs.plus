@@ -1,8 +1,7 @@
 import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
+import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
-import { Modal, ModalContent } from '@components/ui/Dialog'
 import {
   Popover,
   PopoverContent,
@@ -30,10 +29,6 @@ import StyleSelect from './StyleSelect'
 
 const MediaInsertPanel = dynamic(() => import('../../mediaPopovers/MediaInsertPanel'), {
   loading: () => <MediaInsertPanelSkeleton />
-})
-
-const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
-  loading: () => <SettingsPanelSkeleton />
 })
 
 const DocumentSettingsPanel = dynamic(() => import('./DocumentSettingsPanel'), {
@@ -390,11 +385,11 @@ const EditorToolbar = () => {
         </div>
       </div>
 
-      <Modal open={isDocumentsOpen} onOpenChange={setDocumentsOpen}>
-        <ModalContent size="5xl" mobileTakeover aria-label="Settings" className="p-0">
-          <SettingsPanel defaultTab="documents" onClose={() => setDocumentsOpen(false)} />
-        </ModalContent>
-      </Modal>
+      <SettingsTakeover
+        open={isDocumentsOpen}
+        onOpenChange={setDocumentsOpen}
+        defaultTab="documents"
+      />
     </>
   )
 }

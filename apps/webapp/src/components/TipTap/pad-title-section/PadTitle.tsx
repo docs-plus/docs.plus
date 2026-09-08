@@ -1,5 +1,6 @@
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
+import { SettingsTakeover } from '@components/settings/SettingsTakeover'
+import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
@@ -10,6 +11,7 @@ import {
   PopoverTrigger
 } from '@components/ui/Popover'
 import UnreadBadge from '@components/ui/UnreadBadge'
+import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import { DocsPlusIcon } from '@icons'
 import { Icons } from '@icons'
@@ -19,13 +21,9 @@ import { useThemeStore } from '@stores'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import { NotificationPanelSkeleton } from '../../notificationPanel/components/NotificationPanelSkeleton'
-
-const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
-  loading: () => <SettingsPanelSkeleton />
-})
 import DocTitle from '../DocTitle'
 import FilterBar from './FilterBar'
 import PresentUsers from './PresentUsers'
@@ -49,9 +47,30 @@ const PadTitle = () => {
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
   const [isShareModalOpen, setShareModalOpen] = useState(false)
+  const [isNotificationsOpen, setNotificationsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
+  const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
   const workspaceId = useStore((state) => state.settings.workspaceId)
 
   const unreadCount = useNotificationCount({ workspaceId })
+
+  // No argument means the avatar button, which must not reopen the tab a hash asked for.
+  const openSettings = useCallback(
+    (tab?: TabType) => {
+      setSettingsTab(tab)
+      setProfileModalOpen(true)
+    },
+    [setProfileModalOpen]
+  )
+
+  // The hash is a one-shot instruction. Clear it first, before Settings pushes its own
+  // mobile history entry. A signed-out reader keeps the hash, so signing in still lands.
+  useEffect(() => {
+    if (!overlay || !user) return
+    clearOverlayHash()
+    if (overlay === 'notifications') setNotificationsOpen(true)
+    else openSettings(hashSettingsTab ?? undefined)
+  }, [overlay, hashSettingsTab, user, openSettings])
 
   return (
     <>
@@ -103,9 +122,18 @@ const PadTitle = () => {
 
           {/* Notifications - authenticated users only */}
           {isAuthServiceAvailable && user && (
-            <Popover placement="bottom-end">
+            <Popover
+              placement="bottom-end"
+              open={isNotificationsOpen}
+              onOpenChange={setNotificationsOpen}>
+              {/* A controlled `open` disables the Popover's own `useClick`, so the bell
+                  carries the toggle itself. Outside click and Esc still close it. */}
               <PopoverTrigger asChild>
-                <Button variant="ghost" shape="circle" className="relative">
+                <Button
+                  variant="ghost"
+                  shape="circle"
+                  className="relative"
+                  onClick={() => setNotificationsOpen((open) => !open)}>
                   <Icons.notifications size={18} className="text-base-content/70" />
                   <UnreadBadge
                     count={unreadCount}
@@ -130,7 +158,7 @@ const PadTitle = () => {
                   shape="circle"
                   size="lg"
                   className="border-0 p-0"
-                  onClick={() => setProfileModalOpen(true)}
+                  onClick={() => openSettings()}
                   tooltip="Profile"
                   tooltipPlacement="bottom">
                   <Avatar face={user} clickable={false} size="lg" className="pointer-events-none" />
@@ -176,13 +204,11 @@ const PadTitle = () => {
         </ModalContent>
       </Modal>
 
-      {user && (
-        <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-          <ModalContent size="5xl" mobileTakeover aria-label="Settings" className="p-0">
-            <SettingsPanel onClose={() => setProfileModalOpen(false)} />
-          </ModalContent>
-        </Modal>
-      )}
+      <SettingsTakeover
+        open={isProfileModalOpen}
+        onOpenChange={setProfileModalOpen}
+        defaultTab={settingsTab}
+      />
     </>
   )
 }

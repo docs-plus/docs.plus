@@ -1,12 +1,13 @@
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
-import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
+import { SettingsTakeover } from '@components/settings/SettingsTakeover'
+import type { TabType } from '@components/settings/types'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import { Modal, ModalContent } from '@components/ui/Dialog'
 import TextInput from '@components/ui/TextInput'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
+import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
@@ -15,12 +16,7 @@ import { useAuthStore, useSheetStore, useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { parseDocTitlePayload, plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
-import dynamic from 'next/dynamic'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-
-const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
-  loading: () => <SettingsPanelSkeleton />
-})
 
 import FilterBar from './FilterBar'
 import PrivateIndicator from './PrivateIndicator'
@@ -240,14 +236,30 @@ const MobilePadTitle = () => {
   const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const canEditMetadata = useStore((state) => canEditDocumentMetadata(state.settings, user?.id))
   const { isOpen: isProfileModalOpen, setIsOpen: setProfileModalOpen } = useSettingsModal(!!user)
+  const [settingsTab, setSettingsTab] = useState<TabType | undefined>(undefined)
+  const { overlay, settingsTab: hashSettingsTab } = useHashOverlay()
 
   // Settings is navigation, not a typing continuation — drop the keyboard before the takeover.
-  const handleProfileOpen = useCallback(() => {
-    if (isKeyboardOpen) {
-      setTimeout(() => editor?.view.dom.blur(), 50)
-    }
-    setProfileModalOpen(true)
-  }, [isKeyboardOpen, editor, setProfileModalOpen])
+  // No argument means the avatar button, which must not reopen the tab a hash asked for.
+  const openSettings = useCallback(
+    (tab?: TabType) => {
+      if (isKeyboardOpen) {
+        setTimeout(() => editor?.view.dom.blur(), 50)
+      }
+      setSettingsTab(tab)
+      setProfileModalOpen(true)
+    },
+    [isKeyboardOpen, editor, setProfileModalOpen]
+  )
+
+  // The hash is a one-shot instruction. Clear it first, so the replaceState lands before
+  // useSettingsModal pushes its takeover entry and not on top of it.
+  useEffect(() => {
+    if (!overlay || !user) return
+    clearOverlayHash()
+    if (overlay === 'notifications') useSheetStore.getState().openSheet('notifications')
+    else openSettings(hashSettingsTab ?? undefined)
+  }, [overlay, hashSettingsTab, user, openSettings])
 
   // Mobile doesn't render DocTitle, so remote title changes need their own
   // listener here. The ref keeps the handler on the latest metadata without
@@ -320,7 +332,7 @@ const MobilePadTitle = () => {
               {user && <NotificationButton />}
               <UserProfileButton
                 user={user}
-                onProfileClick={user ? handleProfileOpen : () => openInlineSignInDialog()}
+                onProfileClick={user ? () => openSettings() : () => openInlineSignInDialog()}
               />
             </div>
           </div>
@@ -331,13 +343,11 @@ const MobilePadTitle = () => {
         </div>
       </header>
 
-      {user && (
-        <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-          <ModalContent size="4xl" mobileTakeover aria-label="Settings" className="p-0">
-            <SettingsPanel onClose={() => setProfileModalOpen(false)} />
-          </ModalContent>
-        </Modal>
-      )}
+      <SettingsTakeover
+        open={isProfileModalOpen}
+        onOpenChange={setProfileModalOpen}
+        defaultTab={settingsTab}
+      />
     </>
   )
 }

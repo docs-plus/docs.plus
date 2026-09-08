@@ -132,9 +132,12 @@ const TAB_COMPONENTS: Record<TabType, ComponentType<{ onOpenDocument?: () => voi
   notifications: NotificationsSection
 }
 
-const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) => {
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
-  const [showContent, setShowContent] = useState(false)
+const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab ?? 'profile')
+  // A deep link names a tab, so the phone must open its pane, not the tab list. The test is
+  // whether a tab was NAMED: `profile` is also the fallback, so comparing against it cannot
+  // tell `#settings?tab=profile` from a bare `#settings`. The pane keeps its back button.
+  const [showContent, setShowContent] = useState(defaultTab !== undefined)
   const user = useAuthStore((state) => state.profile)
   const { pathname } = useRouter()
   const supportRows = isDocumentReportPath(pathname)
