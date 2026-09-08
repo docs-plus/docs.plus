@@ -1,3 +1,4 @@
+import { armCompareFromLastLeft } from '@components/pages/history/armCompareFromLastLeft'
 import {
   normalizeToPlainHistoryHash,
   parseHistoryHash
@@ -9,7 +10,7 @@ import Button from '@components/ui/Button'
 import { useDismissPanel } from '@hooks/useDismissPanel'
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { useChatStore, useStore } from '@stores'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 import { type PanelSurfaceVariant, type TNotification } from '@types'
 import { formatTimeAgo } from '@utils/formatTime'
 import { useRouter } from 'next/router'
@@ -54,6 +55,7 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
   const notificationActiveTab = useStore((state) => state.notificationActiveTab)
   const exiting = isDismissing(notification.id)
 
+  const profile = useAuthStore((state) => state.profile)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const dismissPanel = useDismissPanel(variant)
@@ -72,9 +74,7 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
       const slugOf = (path: string) => path.split('/')[1] ?? ''
       if (!target) return
 
-      // Last opened / last visit already moved on this pad open, so the
-      // notification instant is the only since that still means "before I left".
-      useStore.getState().setPendingCompareSince(notification.created_at)
+      void armCompareFromLastLeft(notification.channel_id, profile?.id)
 
       if (slugOf(target) !== slugOf(window.location.pathname)) {
         void router.push(`${target}#history`)

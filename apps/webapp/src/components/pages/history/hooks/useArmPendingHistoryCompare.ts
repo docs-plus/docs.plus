@@ -2,7 +2,7 @@ import * as toast from '@components/toast'
 import { useStore } from '@stores'
 import { useEffect } from 'react'
 
-import { pickCompareBaseSince } from '../pickCompareBaseSince'
+import { compareBaseSinceMessage, pickCompareBaseSince } from '../pickCompareBaseSince'
 import { useHistoryCompare } from './useHistoryCompare'
 import { useVersionContent } from './useVersionContent'
 
@@ -30,12 +30,14 @@ export function useArmPendingHistoryCompare(): void {
     const head = historyList[0]
     if (!head) return
 
-    const base = pickCompareBaseSince(historyList, pendingCompareSince)
-    if (!base) {
+    const picked = pickCompareBaseSince(historyList, pendingCompareSince)
+    if (picked.kind !== 'base') {
       setPendingCompareSince(null)
-      toast.Info('No earlier version to compare against.')
+      const message = compareBaseSinceMessage(picked)
+      if (message) toast.Info(message)
       return
     }
+    const base = picked.item
 
     if (activeHistory.version !== head.version) {
       watchVersionContent(head.version, { updateUrl: false })
@@ -49,9 +51,9 @@ export function useArmPendingHistoryCompare(): void {
 
     setPendingCompareSince(null)
     exitCompare()
-    if (!enterCompare(base.version)) {
-      toast.Info('No earlier version to compare against.')
-    }
+    // A refusal here means the provider went away, not that the document stood
+    // still, and neither frozen message states that. Say nothing.
+    enterCompare(base.version)
   }, [
     pendingCompareSince,
     hocuspocusProvider,

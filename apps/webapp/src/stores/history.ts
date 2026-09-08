@@ -20,8 +20,9 @@ interface IHistoryStore {
   /** Version of the second in-flight watch that fills `compareBaseItem`. */
   pendingCompareVersion: number | null
   /**
-   * ISO instant from a content_change notification. History compare consumes it
-   * once. Must survive `resetHistorySessionForMount` or a pad-open View loses it.
+   * Last left: the ISO instant this reader's last live session on the document
+   * closed, never the notification's own `created_at`. History compare consumes
+   * it once, so it must survive `resetHistorySessionForMount`.
    */
   pendingCompareSince: string | null
   /** A background `document:saved` re-list is in flight; its failure must not blank the sidebar. */
