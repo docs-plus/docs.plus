@@ -14,7 +14,6 @@ import type {
   NotificationEmailRequest,
   NotificationType
 } from '../../types/email.types'
-import { resolveContentChangeAudience } from '../contentChangeFanout'
 import { captureUnknown } from '../instrument'
 import { emailLogger } from '../logger'
 import { createPgmqConsumer, deterministicJobId } from '../pgmqConsumer'
@@ -25,9 +24,14 @@ import {
   buildDigestDocuments,
   CONTENT_CHANGE_TYPE,
   type DigestRawNotification,
-  filterDigestDocuments,
   normaliseDigestFrequency
 } from './digestDocuments'
+import {
+  decideDigestOutcome,
+  type DigestMetadataRow,
+  parseLastVisitStamp,
+  visibleDigestDocuments
+} from './digestMessage'
 import { queueEmail } from './queue'
 
 const POLL_INTERVAL_MS = 2000
@@ -79,15 +83,6 @@ const computeDocumentChanges = createComputeDocumentChanges({
   getOwnerProfiles
 })
 
-interface DigestMetadataRow {
-  documentId: string
-  title: string | null
-  slug: string
-  isPrivate: boolean
-  ownerId: string | null
-  deletedAt: Date | null
-}
-
 /**
  * One read serves both gates. The rename needs a human title, and the privacy
  * re-read needs the audience fields, and both are columns of the same row. Read
@@ -108,34 +103,14 @@ function readDigestMetadataRows(documentIds: string[]): Promise<DigestMetadataRo
   })
 }
 
-/**
- * The rename writes a human title over the raw id, so it runs behind the same
- * audience rule as the block. Without this a reader holding an old chat line
- * would learn the title of a document that has since turned private.
- */
-function visibleMetadata(
-  rows: DigestMetadataRow[],
-  recipientId: string
-): Map<string, DigestDocumentMeta> {
-  const visible = new Map<string, DigestDocumentMeta>()
-  for (const row of rows) {
-    const audience = resolveContentChangeAudience(row)
-    const maySee =
-      audience.kind === 'all' || (audience.kind === 'owner' && audience.onlyUser === recipientId)
-    if (maySee) visible.set(row.documentId, { title: row.title, slug: row.slug })
-  }
-  return visible
-}
-
 interface WorkspaceMemberVisitRow {
-  updated_at: string | null
-  created_at: string | null
+  last_connection_closed_at: string | null
 }
 
 /**
- * Last visit is coalesce(updated_at, created_at) — the expression the roster's
- * get_document_members already shows, so the two never drift. Membership lives
- * in Supabase, so Prisma cannot answer this.
+ * The window starts where the reader left, so it deliberately diverges from the
+ * roster's `get_document_members`. That one answers "Last seen", where an
+ * arrival is right. Membership lives in Supabase, so Prisma cannot answer this.
  */
 async function readDigestLastVisit(
   client: SupabaseClient,
@@ -146,7 +121,7 @@ async function readDigestLastVisit(
 
   const { data, error } = await client
     .from('workspace_members')
-    .select('updated_at, created_at')
+    .select('last_connection_closed_at')
     .eq('member_id', recipientId)
     // The exact-case documentId. workspace_slug is lower(documentId) and matches nothing here.
     .eq('workspace_id', documentId)
@@ -154,17 +129,14 @@ async function readDigestLastVisit(
     .maybeSingle()
 
   if (error) {
-    // No visit means the frequency window, so a failed read widens the window
-    // rather than costing the reader the block.
+    // No Last left means the frequency window, so a failed read widens the
+    // window rather than costing the reader the block.
     emailLogger.warn({ err: error, recipientId, documentId }, 'Digest last-visit read failed')
     return null
   }
 
   const row = data as WorkspaceMemberVisitRow | null
-  const raw = row?.updated_at || row?.created_at
-  if (!raw) return null
-  const at = new Date(raw)
-  return Number.isNaN(at.getTime()) ? null : at
+  return parseLastVisitStamp(row?.last_connection_closed_at)
 }
 
 /**
@@ -193,7 +165,7 @@ async function processDigestMessage(
     let metaReadFailed = false
     try {
       const ids = built.flatMap((doc) => (doc.workspace_id ? [doc.workspace_id] : []))
-      metaById = visibleMetadata(await readDigestMetadataRows(ids), recipientId)
+      metaById = visibleDigestDocuments(await readDigestMetadataRows(ids), recipientId)
     } catch (err) {
       emailLogger.error({ err, msgId }, 'Digest metadata read failed')
       metaReadFailed = true
@@ -221,25 +193,23 @@ async function processDigestMessage(
 
     // The same map answers the block gate: a document absent from it is one the
     // reader may not see, whatever the carrier said.
-    const documents = filterDigestDocuments(enriched, new Set(metaById.keys()))
-
-    // Only a message carrying a block asks a privacy question, and only that
-    // message may defer. The id list covers every chat document too, so a bare
-    // `metaReadFailed` would hold a chat-only digest back for no reason.
-    const readFailed = metaReadFailed && built.some((doc) => doc.content_changes)
+    const outcome = decideDigestOutcome({
+      built,
+      enriched,
+      visible: new Set(metaById.keys()),
+      metaReadFailed
+    })
 
     // A failed re-read is not an answer, so it must not look like one. Writing
     // 'skipped' here acks the message, the carriers stay unread, and the 24-hour
     // dedupe then suppresses the next fan-out. Returning false leaves the rows
     // 'processing' and lets pgmq redeliver once Prisma recovers.
-    if (readFailed) {
+    if (outcome.kind === 'defer') {
       emailLogger.warn({ msgId, to: payload.recipient_email }, 'Digest deferred; re-read failed')
       return false
     }
 
-    if (documents.length === 0) {
-      // A genuinely empty digest is an answer. Mark it and ack, or pgmq
-      // redelivers the same empty digest forever.
+    if (outcome.kind === 'skip') {
       await Promise.all(
         queueIds.map((id) => updateEmailStatus(client, id, 'skipped', 'No digest content'))
       )
@@ -252,8 +222,7 @@ async function processDigestMessage(
       recipient_name: payload.recipient_name || 'User',
       recipient_id: payload.recipient_id!,
       frequency,
-      documents,
-      period_start: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+      documents: outcome.documents,
       period_end: now.toISOString()
     }
 

@@ -1,3 +1,5 @@
+import type { StoreDlqDisposition } from '../lib/storeDlqDisposition'
+
 // Rows the server mints for itself: the pre-restore safety copy and the
 // one-time schema rebuild. They carry a name, so retention can only tell them
 // from a checkpoint a person chose by reading this (see pruneAutosaveVersions).
@@ -60,4 +62,30 @@ export interface DeadLetterJobData extends StoreDocumentData {
   originalJobId?: string
   failureReason?: string
   failedAt?: string
+}
+
+/** One parked dead-letter entry as the drain reports it to the operator. */
+export interface StoreDlqEntry {
+  jobId: string
+  documentName: string
+  stateBytes: number
+  /** Newest stored version, or null when no row exists — a replay would email. */
+  headVersion: number | null
+  /** A row landed after this entry failed, so the replay likely duplicates it. */
+  headSupersedes: boolean
+  failureReason?: string
+  failedAt?: string
+  disposition: StoreDlqDisposition
+}
+
+export interface StoreDlqDrainResult {
+  entries: StoreDlqEntry[]
+  replayed: number
+  discarded: number
+  /** Trashed entries — removed on apply, not parked: the live path refused those saves. */
+  skipped: number
+  /** Left in the queue for an operator: no metadata row and no purge tombstone. */
+  unresolved: number
+  /** The whole parked queue, never the `documentId`-filtered slice. */
+  depth: number
 }

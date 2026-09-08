@@ -2,7 +2,12 @@ import { Job, Queue, Worker } from 'bullmq'
 import * as Y from 'yjs'
 
 import { config } from '../config/env'
-import type { DeadLetterJobData, EnqueueStoreDocumentParams, StoreDocumentData } from '../types'
+import type {
+  DeadLetterJobData,
+  EnqueueStoreDocumentParams,
+  StoreDlqDrainResult,
+  StoreDocumentData
+} from '../types'
 import { toBullMQConnection } from '../types/redis.types'
 import { fanOutContentChange } from './contentChangeFanout'
 import { refreshDocumentGridPreview } from './documentGridPreview'
@@ -19,6 +24,7 @@ import {
 } from './redis'
 import { withUniqueSlug } from './slug'
 import { stripSnapshotMetadata } from './snapshotMetadata'
+import { judgeStoreDlqEntry } from './storeDlqDisposition'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
@@ -181,33 +187,6 @@ export async function enqueueStoreDocument(params: EnqueueStoreDocumentParams): 
   }
 }
 
-export interface StoreDlqEntry {
-  jobId: string
-  documentName: string
-  stateBytes: number
-  /** Newest stored version, or null when no row exists — a replay would email. */
-  headVersion: number | null
-  /** A row landed after this entry failed, so the replay likely duplicates it. */
-  headSupersedes: boolean
-  failureReason?: string
-  failedAt?: string
-  /** `discard` covers a payload-less entry, a tombstoned document, and a payload
-   * too old to replay. `unresolved` is the one state that is left in the queue. */
-  disposition: 'replay' | 'discard' | 'skip-trashed' | 'unresolved'
-}
-
-export interface StoreDlqDrainResult {
-  entries: StoreDlqEntry[]
-  replayed: number
-  discarded: number
-  /** Trashed entries — removed on apply, not parked: the live path refused those saves. */
-  skipped: number
-  /** Left in the queue for an operator: no metadata row and no purge tombstone. */
-  unresolved: number
-  /** The whole parked queue, never the `documentId`-filtered slice. */
-  depth: number
-}
-
 // One hydrated slice per pass. An entry embeds up to DLQ_MAX_INLINE_STATE_BYTES
 // as base64. Hydrating a whole queue to read its data is the +428 MB mistake
 // refreshPendingStateKeyTtls exists to avoid.
@@ -223,13 +202,6 @@ const DLQ_PARKED_STATES = ['waiting', 'delayed', 'prioritized'] as const
 // recreates the document under the DLQ's owner and re-sends its creation email.
 // Nothing here can tell that from a first save genuinely lost.
 const DELETE_RETENTION_MS = config.worker.deleteRetentionDays * 24 * 60 * 60 * 1000
-
-// deleteRetentionDays 0 disables the reaper, so no entry can go stale.
-const isPastDeleteRetention = (failedAt: string | undefined): boolean => {
-  if (!failedAt || DELETE_RETENTION_MS <= 0) return false
-  const failed = new Date(failedAt).getTime()
-  return Number.isFinite(failed) && Date.now() - failed > DELETE_RETENTION_MS
-}
 
 // Replays dead-lettered saves through enqueueStoreDocument so the worker's
 // FOR UPDATE merge stays the only code that appends a version. Operator-driven
@@ -295,26 +267,19 @@ export async function drainStoreDeadLetterQueue({
   for (const job of jobs) {
     const data = job.data
     const state = data.state ? Buffer.from(data.state, 'base64') : null
-    // A live row is the newest fact, so it decides ahead of the tombstone. Only the
-    // tombstone proves a purge — an absent row does not, because the eager anchor
-    // skips a slugless edit, cedes on P2002, and swallows its own write failure.
-    // That residue is a state this cannot read, so it is not destroyed.
-    let disposition: StoreDlqEntry['disposition']
-    if (trashed.has(data.documentName)) disposition = 'skip-trashed'
-    else if (!state) disposition = 'discard'
-    else if (known.has(data.documentName))
-      disposition = isPastDeleteRetention(data.failedAt) ? 'discard' : 'replay'
-    else if (purged.has(data.documentName)) disposition = 'discard'
-    else disposition = 'unresolved'
-
-    // Reported, never acted on. A later snapshot only carries what the saving
-    // client held, so a stranded edit from another client can survive a newer
-    // head. Auto-skipping on this would eat real recoveries. Scoped to 'replay'
-    // because only a replay can mint the duplicate this warns about.
     const head = heads.get(data.documentName)
-    const headSupersedes =
-      disposition === 'replay' &&
-      Boolean(head?.createdAt && data.failedAt && head.createdAt > new Date(data.failedAt))
+    const { disposition, headSupersedes } = judgeStoreDlqEntry(
+      {
+        hasState: state !== null,
+        known: known.has(data.documentName),
+        trashed: trashed.has(data.documentName),
+        purged: purged.has(data.documentName),
+        headCreatedAt: head?.createdAt ?? null,
+        failedAt: data.failedAt
+      },
+      Date.now(),
+      DELETE_RETENTION_MS
+    )
 
     result.entries.push({
       jobId: job.id ?? '(no id)',
