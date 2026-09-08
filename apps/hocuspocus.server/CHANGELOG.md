@@ -12,6 +12,17 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- **Pad title rename posts a workspace-chat notice.** A successful
+  `PUT /api/documents/:documentId` that changes `title` on an existing row
+  calls `notify_document_title_change` after the Prisma write. The call is
+  detached and never rejects, so a hung or missing RPC cannot fail the
+  rename. A create, an unchanged title, an empty title, or a signed-out
+  rename posts nothing.
+
+- Mention, everyone, and regular-message INSERT triggers skip
+  `type = notification`. A Pad title notice cannot mail or write inbox
+  rows.
+
 - **Markdown import keeps playable media.** A paragraph that is only a media
   URL becomes that media node (`video`, `audio`, and the six embeds). A typed
   `![youtube](url)` (and the same for the other block media nodes) is lifted

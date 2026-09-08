@@ -17,6 +17,7 @@ import {
 } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 import { isDocumentOwner, isOpenDocument } from '../../lib/ownerAccess'
+import { isPadTitleChange, notifyPadTitleChange } from '../../lib/padTitleChange'
 import { getOwnerProfile, getOwnerProfiles } from '../../lib/profiles'
 import { rehostMediaUrls } from '../../lib/rehostMediaUrls'
 import { normalizeSlug, withUniqueSlug } from '../../lib/slug'
@@ -402,7 +403,7 @@ export const updateDocument = async (
     // signed in or not — until the ownership handoff feature gives it an owner.
     const existing = await prisma.documentMetadata.findUnique({
       where: { documentId },
-      select: { ownerId: true, readOnly: true, isPrivate: true, deletedAt: true }
+      select: { ownerId: true, readOnly: true, isPrivate: true, deletedAt: true, title: true }
     })
 
     if (existing?.deletedAt) throw new NotFoundError('Document')
@@ -487,6 +488,23 @@ export const updateDocument = async (
     }
 
     documentsServiceLogger.info({ documentId }, 'Document updated successfully')
+
+    if (
+      requesterId &&
+      title !== undefined &&
+      isPadTitleChange({
+        existed: existing != null,
+        storedTitle: existing?.title,
+        nextTitle: title
+      })
+    ) {
+      notifyPadTitleChange({
+        documentId,
+        actorId: requesterId,
+        titleFrom: existing?.title ?? '',
+        titleTo: title
+      })
+    }
 
     return {
       ...upsertedDoc,

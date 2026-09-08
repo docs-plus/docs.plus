@@ -5,7 +5,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## Pad outline
 
 - **Title** — the first line of the document. Always a heading. Its Block style cannot change.
-- **Pad title** — `DocumentMetadata.title`. Header rename, Documents list, social card, TOC label, and breadcrumbs. Not Title. The two stores are not kept in sync.
+- **Pad title** — `DocumentMetadata.title`. Header rename, Documents list, social card, TOC label, and breadcrumbs. Not Title. The two stores are not kept in sync. A signed-in rename posts a workspace-chat notice (`title_changed`). History paints the latest live notice and the snapshot username. Chat paints the live username.
   _Avoid_: Title, Outline Title, document title
 - **Title write** — changing Pad title. Same persist and room relay for the pad and the Documents list. Stored Pad title is plain text, not HTML. Does not write Title. Client home: `apps/webapp/src/utils/titleWrite.ts`.
 - **Block style** — the outline role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.

@@ -6,6 +6,9 @@ import { useStore } from '@stores'
 import { EditorContent as TiptapEditorContent } from '@tiptap/react'
 import { isSessionExpired, shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
 
+import { HistoryPadTitleNotice } from './HistoryPadTitleNotice'
+import { useLatestPadTitleChange } from './hooks/useLatestPadTitleChange'
+
 type HistoryEditorVariant = 'desktop' | 'mobile'
 
 const SCROLL_ROOT: Record<HistoryEditorVariant, string> = {
@@ -28,8 +31,10 @@ const EDITOR_CLASS: Record<HistoryEditorVariant, string> = {
 export function HistoryEditorContent({ variant }: { variant: HistoryEditorVariant }) {
   const loadingHistory = useStore((state) => state.loadingHistory)
   const editor = useStore((state) => state.editor)
+  const documentId = useStore((state) => state.settings.metadata?.documentId)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const providerStatus = useStore((state) => state.settings.providerStatus)
+  const padTitleNotice = useLatestPadTitleChange(documentId)
 
   const scrollRootClass = SCROLL_ROOT[variant]
   const skeletonClass = SKELETON_CLASS[variant]
@@ -59,8 +64,13 @@ export function HistoryEditorContent({ variant }: { variant: HistoryEditorVarian
 
   return (
     <ScrollArea className={scrollRootClass} scrollbarSize="thin">
-      {needsAuth && <SessionExpiredBanner />}
-      <TiptapEditorContent editor={editor} className={editorClass} />
+      <div className="flex w-full min-w-0 flex-col items-center">
+        {needsAuth && <SessionExpiredBanner />}
+        {padTitleNotice ? (
+          <HistoryPadTitleNotice notice={padTitleNotice} variant={variant} />
+        ) : null}
+        <TiptapEditorContent editor={editor} className={editorClass} />
+      </div>
     </ScrollArea>
   )
 }

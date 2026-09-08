@@ -1,6 +1,7 @@
 import * as toast from '@components/toast'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
-import { plainTitle } from '@utils/titleWrite'
+import { useStore } from '@stores'
+import { plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
 import { useCallback } from 'react'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
@@ -31,6 +32,15 @@ const useCommitDocumentRename = (scope: DocumentsListScope) => {
       mutate(
         { documentId, title: trimmed },
         {
+          onSuccess: (responseData) => {
+            const { settings, setWorkspaceSetting } = useStore.getState()
+            const openId = settings.metadata?.documentId
+            if (!openId || documentId !== openId) return
+
+            const next = plainTitle(responseData.title ?? '')
+            setWorkspaceSetting('metadata', { ...settings.metadata, title: next })
+            sendDocTitleStateless(settings.hocuspocusProvider, next)
+          },
           onError: () => {
             rollback?.()
             toast.Error('Couldn’t rename document')

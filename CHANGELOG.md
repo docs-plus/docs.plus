@@ -12,6 +12,13 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
 
 ### Added
 
+- Show a Pad title rename in History and in workspace chat. After a signed-in
+  rename, chat shows who changed it and the old and new titles. History paints
+  the latest live notice above the editor and uses the snapshot username. Chat
+  paints the live username. A rename from Settings → Documents updates the
+  open pad header and the room when that document is open. A rename does not
+  mint a History version. There is no email and no bell for this notice.
+
 - Favorite owned documents from Settings → Documents. The ⋮ menu lists Favorite or
   Unfavorite after Duplicate, before Private. Favorited documents sit at the top of the
   list and the grid. The chosen sort still orders inside each group. A gold star mark
@@ -53,6 +60,11 @@ This file is the product changelog. It names the live webapp. The hocuspocus app
   date that could be months after you really left.
 
 ### Fixed
+
+- Show who renamed the Pad title when workspace chat is already open. A live
+  notice arrives without the users join, so the chip used to say "someone".
+  It now uses the snapshot username on that notice until the live join is
+  present.
 
 - Keep a notification preference you change just before closing Settings. Turning a
   toggle off and closing the panel within half a second discarded the change without

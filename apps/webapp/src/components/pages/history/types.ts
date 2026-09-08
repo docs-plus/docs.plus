@@ -45,6 +45,12 @@ export type HistoryAuthorship =
   | { status: 'unaligned' }
   | { status: 'ready'; roster: AuthorRoster; types: string[] }
 
+export type PadTitleChangeNotice = {
+  titleFrom: string
+  titleTo: string
+  userName: string
+}
+
 export type HistorySidebarRowHandlers = {
   activeVersion: number
   latestVersion: number

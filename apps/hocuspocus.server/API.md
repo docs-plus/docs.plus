@@ -183,6 +183,8 @@ Upsert document metadata by `documentId`. All fields optional: `title`, `descrip
 
 Access follows ownership. An **owned** document accepts writes only from its owner; every other caller gets `403`, private or not. An **ownerless** document is open: anyone, signed in or not, may set `title` / `description` / `keywords`. But its locks cannot move, because a document with no owner has nobody to be private for. Those changes are ignored and logged. Creating the row through this route makes a signed-in caller its owner, so they may set the locks in the same request. A soft-deleted document is `404`.
 
+A signed-in rename that changes Pad title posts a workspace-chat notice after the write. The PUT does not wait for that call. A missing RPC, a signed-out rename, a create, an unchanged title, or an empty title posts nothing. The Prisma write still succeeds.
+
 ### DELETE /api/documents/:documentId
 
 Soft-delete (owner-only, `requireUser`). Stamps `deletedAt`; the row survives for restore and is reaped after `DOC_DELETE_RETENTION_DAYS` (default 30). Idempotent — a missing row returns success. Non-owner → `403`.

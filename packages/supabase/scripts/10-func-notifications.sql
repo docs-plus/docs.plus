@@ -89,10 +89,11 @@ $$;
 COMMENT ON FUNCTION create_mention_notifications() IS 'Creates notifications for users who are mentioned with @username in a message.';
 
 -- Trigger: create_mention_notifications
+DROP TRIGGER IF EXISTS create_mention_notifications ON public.messages;
 CREATE TRIGGER create_mention_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content LIKE '%@%')
+WHEN (NEW.content LIKE '%@%' AND NEW.type IS DISTINCT FROM 'notification')
 EXECUTE FUNCTION create_mention_notifications();
 
 COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates notifications for users mentioned with @username in a message.';
@@ -265,7 +266,7 @@ DROP TRIGGER IF EXISTS create_everyone_notifications ON public.messages;
 CREATE TRIGGER create_everyone_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content ~ '(^|[^a-z0-9_-])@everyone($|[^a-z0-9_-])')
+WHEN (NEW.content ~ '(^|[^a-z0-9_-])@everyone($|[^a-z0-9_-])' AND NEW.type IS DISTINCT FROM 'notification')
 EXECUTE FUNCTION create_everyone_notifications();
 
 COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates notifications for all channel members when @everyone is used.';
@@ -345,10 +346,11 @@ COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notificat
 -- exactly @everyone) and produced duplicate inbox rows alongside the
 -- mention/reply/everyone notification creators. Use a regex that matches
 -- either pattern and negate with `!~`.
+DROP TRIGGER IF EXISTS create_regular_message_notifications ON public.messages;
 CREATE TRIGGER create_regular_message_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content !~ '@[A-Za-z0-9_]+|@everyone')
+WHEN (NEW.content !~ '@[A-Za-z0-9_]+|@everyone' AND NEW.type IS DISTINCT FROM 'notification')
 EXECUTE FUNCTION create_regular_message_notifications();
 
 COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'Creates notifications for regular messages that contain no @mention and no @everyone.';
@@ -696,4 +698,87 @@ comment on function public.notify_document_content_change(varchar, uuid[], uuid,
 revoke execute on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text)
     from public, anon, authenticated;
 grant execute on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text)
+    to service_role;
+
+
+-- Service-role writer for a Pad title rename. Inserts one workspace-chat
+-- notice. History reads the latest live row; it does not mint a version.
+create or replace function public.notify_document_title_change(
+    p_document_id varchar(36),
+    p_actor_id uuid,
+    p_title_from text,
+    p_title_to text
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_username text;
+begin
+    select u.username
+      into v_username
+      from public.users u
+     where u.id = p_actor_id;
+
+    if v_username is null then
+        return 0;
+    end if;
+
+    -- A document nobody has joined has no workspaces row. Do not mint one.
+    if not exists (
+        select 1
+          from public.workspaces w
+         where w.id = p_document_id
+           and w.deleted_at is null
+    ) then
+        return 0;
+    end if;
+
+    -- A workspaces row implies a channels row. A miss is a broken document.
+    -- Return 0 rather than insert the channel or raise on the messages FK.
+    if not exists (
+        select 1
+          from public.channels c
+         where c.id = p_document_id
+    ) then
+        return 0;
+    end if;
+
+    insert into public.messages (
+        user_id,
+        channel_id,
+        type,
+        content,
+        metadata
+    )
+    values (
+        p_actor_id,
+        p_document_id,
+        'notification',
+        'Document renamed',
+        jsonb_build_object(
+            'type', 'title_changed',
+            'title_from', p_title_from,
+            'title_to', p_title_to,
+            'user_id', p_actor_id,
+            'user_name', v_username
+        )
+    );
+
+    return 1;
+end;
+$$;
+
+comment on function public.notify_document_title_change(varchar, uuid, text, text) is
+'Service-role only. Inserts one workspace-chat notice after a Pad title rename. Returns 1 when a row was inserted, or 0 when the actor is not in public.users, the document has no live workspaces row, or it has no channels row. Creates neither a workspace nor a channel. content is a short fallback with no @ token and no titles.';
+
+-- Server-side only: REST posts the notice with the service-role key.
+-- The webapp must never call it, so the browser roles stay revoked here too.
+-- §5 of 29-lint-hardening revokes from public, anon and authenticated only,
+-- so the service_role grant below survives that sweep.
+revoke execute on function public.notify_document_title_change(varchar, uuid, text, text)
+    from public, anon, authenticated;
+grant execute on function public.notify_document_title_change(varchar, uuid, text, text)
     to service_role;

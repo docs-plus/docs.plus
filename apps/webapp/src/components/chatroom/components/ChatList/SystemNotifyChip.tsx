@@ -32,9 +32,13 @@ const NotifyUserAvatar = ({ message }: { message: MessageRow }) => {
 }
 
 const MentionLabel = ({ message, className }: { message: MessageRow; className?: string }) => {
-  const username = message.user_details?.username?.trim()
+  // Live join first. Realtime INSERT has no user_details, so fall back to the
+  // snapshot the notice already stores (title_changed / user_join_workspace).
+  const snapshot = getMetadataProperty<unknown>(message.metadata, 'user_name')
+  const username =
+    message.user_details?.username?.trim() || (typeof snapshot === 'string' ? snapshot.trim() : '')
   const fallback = message.user_details?.fullname?.trim() || 'someone'
-  const label = username ?? fallback
+  const label = username || fallback
 
   if (!username) {
     return <span className={twMerge('font-semibold', className)}>{label}</span>
@@ -147,6 +151,42 @@ export const SystemNotifyChip = ({ message, variant = 'desktop' }: Props) => {
             <DocsPlusIcon size={12} />
             <span className="font-medium underline">{docTitle}</span>
           </span>
+          <span>— {timeAgo}</span>
+        </DesktopChip>
+      )
+    }
+
+    case 'title_changed': {
+      const titleFrom = getMetadataProperty<string>(message.metadata, 'title_from') ?? ''
+      const titleTo = getMetadataProperty<string>(message.metadata, 'title_to') ?? ''
+
+      if (isMobile) {
+        return (
+          <MobileChip message={message} dateAttr={dateAttr} onClick={handleMentionClick} showAvatar>
+            <MobileTimedRow timeAgo={timeAgo}>
+              <p>
+                <MentionLabel message={message} />
+                <span className="text-base-content/75"> renamed this document</span>
+              </p>
+            </MobileTimedRow>
+            <p className="mt-1.5 min-w-0 break-words">
+              <span className="font-medium">&ldquo;{titleFrom}&rdquo;</span>
+              <span className="text-base-content/50 mx-1.5" aria-hidden>
+                →
+              </span>
+              <span className="font-medium">&ldquo;{titleTo}&rdquo;</span>
+            </p>
+          </MobileChip>
+        )
+      }
+
+      return (
+        <DesktopChip dateAttr={dateAttr} onClick={handleMentionClick}>
+          <MentionLabel message={message} />
+          <span>renamed this document</span>
+          <span className="font-medium break-words">&ldquo;{titleFrom}&rdquo;</span>
+          <span aria-hidden>→</span>
+          <span className="font-medium break-words">&ldquo;{titleTo}&rdquo;</span>
           <span>— {timeAgo}</span>
         </DesktopChip>
       )
