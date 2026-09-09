@@ -70,7 +70,7 @@
     "@tiptap/starter-kit": "catalog:",
     "@turbodocx/html-to-docx": "1.22.2",
     "bullmq": "^6.3.4",
-    "hono": "^4.13.5",
+    "hono": "^4.13.7",
     "ioredis": "^6.0.0",
     "isbot": "^5.2.2",
     "linkedom": "0.18.13",
