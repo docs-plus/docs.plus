@@ -1033,7 +1033,7 @@ Render a template (`notification` or `digest`) with sample data, as HTML. Servic
 
 ### GET /api/email/unsubscribe?token=
 
-One-click unsubscribe from an email link. No auth (the token is the credential). Verifies the token via the `process_unsubscribe` Supabase RPC and returns an HTML confirmation page.
+One-click unsubscribe from an email link. No auth (the token is the credential). Verifies the token in `lib/unsubscribeToken.ts`, then applies the change through the `apply_unsubscribe` Supabase RPC, and returns an HTML confirmation page.
 
 ### POST /api/email/unsubscribe?token=
 

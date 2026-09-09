@@ -64,14 +64,17 @@ The template points every URL at `localhost`. Replace each of these with your ow
 | `PUBLIC_RESTAPI_URL`       | Runtime | The REST API origin, with no `/api` suffix                   |
 | `ALLOWED_ORIGINS`          | Runtime | Your editor and admin origins. Empty falls back to `APP_URL` |
 | `APP_URL`                  | Runtime | Your editor domain, used in email links                      |
+| `EMAIL_UNSUBSCRIBE_SECRET` | Runtime | Nothing. It signs the unsubscribe links in email footers     |
 
 `make build` bakes the four build values into the bundles, so changing one afterwards needs another build.
 
 Miss one and nothing complains. `NEXT_PUBLIC_PROVIDER_URL` and `NEXT_PUBLIC_RESTAPI_URL` keep the template's `localhost`, which is the visitor's own machine. Left empty, `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_API_URL` fall back to `https://docs.plus` and `https://prodback.docs.plus`. Your admin dashboard then calls the maintainer's backend.
 
+`EMAIL_UNSUBSCRIBE_SECRET` fails the same quiet way. Unset, every email footer still shows an Unsubscribe link, and that link is rejected when a reader clicks it. Generate one with `openssl rand -base64 48`.
+
 `NEXT_PUBLIC_ADMIN_URL` is the one to skip. It sits in `.env.example`, and nothing in the repository reads it.
 
-Next step: set all seven before `make build`. The Traefik host rules are a separate job, and step 4 covers them.
+Next step: set all eight before `make build`. The Traefik host rules are a separate job, and step 4 covers them.
 
 ## 4. Point your domains at the server
 

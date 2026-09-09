@@ -119,9 +119,24 @@ The sender is picked by `getProvider()` (`lib/email/providers/index.ts`): `EMAIL
 | `SMTP_SECURE`                      | boolean | `false`             |
 | `NEW_DOCUMENT_NOTIFICATION_EMAILS` | list    | `[]`                |
 | `APP_URL`                          | string  | `https://docs.plus` |
+| `EMAIL_UNSUBSCRIBE_SECRET`         | string  | `''`                |
 | `EMAIL_WORKER_CONCURRENCY`         | number  | `3`                 |
 | `EMAIL_RATE_LIMIT_MAX`             | number  | `50`                |
 | `EMAIL_RATE_LIMIT_DURATION`        | number  | `60000`             |
+
+`EMAIL_UNSUBSCRIBE_SECRET` signs the one-click unsubscribe links in every footer
+(`lib/unsubscribeToken.ts`). The token is the whole credential, so a link works
+with no session. Generate one with `openssl rand -base64 48`. Use a different
+value per environment.
+
+Unset does not mean the mail ships without a link. `getUnsubscribeLinks` logs at
+error and returns nothing, and `helpers.ts` then falls back to
+`${APP_URL}/unsubscribe` with no token. The route rejects that link and tells the
+reader it is invalid. The RFC 8058 `List-Unsubscribe` header is omitted, which is
+correct: a header that answers 200 without writing is worse than none.
+
+`PUBLIC_RESTAPI_URL` must also reach the email worker. The header URL is built
+from it, because a mail client posts the URL itself and runs no JavaScript.
 
 ## Push notifications (VAPID)
 

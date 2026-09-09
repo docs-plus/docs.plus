@@ -160,7 +160,7 @@ export const emailPaths: OpenApiPaths = {
       operationId: 'unsubscribeViaLink',
       summary: 'One-click unsubscribe from an email link',
       description:
-        'Verifies the token through the `process_unsubscribe` Supabase RPC and always renders an HTML confirmation page — failures are rendered, not status-coded.',
+        'Verifies the token in the worker, applies the change through the `apply_unsubscribe` Supabase RPC, and always renders an HTML confirmation page — failures are rendered, not status-coded.',
       tags,
       security: [{}],
       parameters: unsubscribeTokenParam,

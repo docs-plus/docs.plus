@@ -419,9 +419,13 @@ services:
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
-      # Email gateway creds (SMTP_*, RESEND_API_KEY) load from env_file only —
-      # re-declaring SMTP_PASS here as ${SMTP_PASS} let a stale deploy-shell var
-      # override env_file and poison the container (2026-07-24 535 outage).
+      # This server's own public origin. The worker needs it because the RFC 8058
+      # List-Unsubscribe header must point at the API, not the webapp page.
+      PUBLIC_RESTAPI_URL: ${PUBLIC_RESTAPI_URL}
+      # Email gateway creds (SMTP_*, RESEND_API_KEY) and EMAIL_UNSUBSCRIBE_SECRET
+      # load from env_file only — re-declaring SMTP_PASS here as ${SMTP_PASS} let
+      # a stale deploy-shell var override env_file and poison the container
+      # (2026-07-24 535 outage).
       # Push Notifications (VAPID)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
