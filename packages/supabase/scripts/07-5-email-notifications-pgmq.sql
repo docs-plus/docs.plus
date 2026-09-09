@@ -896,161 +896,37 @@ $$;
 
 
 -- =============================================================================
--- 12. Unsubscribe Functions (unchanged from v1)
+-- 12. Unsubscribe
 -- =============================================================================
+-- Token signing and verification moved to the Node worker
+-- (`apps/hocuspocus.server/src/lib/unsubscribeToken.ts`). A hosted Supabase
+-- project's `postgres` role cannot set a custom parameter with ALTER DATABASE
+-- or ALTER ROLE — both raise 42501 — so `app.unsubscribe_secret` could never be
+-- provisioned, and every footer link shipped without a token. Postgres also
+-- wraps `encode(…, 'base64')` at 76 characters, which the old signer never
+-- stripped, so a long payload carried an embedded newline.
+--
+-- What remains here is the write. The caller has already proved identity.
 
--- Returns the HMAC secret used to sign unsubscribe tokens. Hard-fails when
--- unset rather than falling back to a derived-from-service-key default —
--- a missing GUC in prod must surface, not silently mint forgeable tokens.
-create or replace function internal.get_unsubscribe_secret()
-returns text
-language plpgsql
-stable
-security definer
-set search_path = public
-as $$
-declare
-    v_secret text;
-begin
-    v_secret := current_setting('app.unsubscribe_secret', true);
-    if v_secret is null or v_secret = '' then
-        raise exception 'app.unsubscribe_secret is not configured';
-    end if;
-    return v_secret;
-end;
-$$;
-
-create or replace function public.generate_unsubscribe_token(
+create or replace function public.apply_unsubscribe(
     p_user_id uuid,
     p_action text
 )
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    secret text;
-    payload jsonb;
-    payload_b64 text;
-    signature text;
-begin
-    if p_action not in ('mentions', 'replies', 'reactions', 'digest', 'all') then
-        raise exception 'Invalid unsubscribe action: %', p_action;
-    end if;
-
-    secret := internal.get_unsubscribe_secret();
-    if secret is null or secret = '' then
-        raise exception 'Unsubscribe secret not configured';
-    end if;
-
-    payload := jsonb_build_object(
-        'uid', p_user_id,
-        'act', p_action,
-        'exp', extract(epoch from (now() + interval '90 days'))::bigint,
-        'iat', extract(epoch from now())::bigint
-    );
-
-    payload_b64 := encode(convert_to(payload::text, 'UTF8'), 'base64');
-    payload_b64 := replace(replace(replace(payload_b64, '=', ''), '+', '-'), '/', '_');
-
-    signature := encode(hmac(payload_b64::bytea, secret::bytea, 'sha256'), 'base64');
-    signature := replace(replace(replace(signature, '=', ''), '+', '-'), '/', '_');
-
-    return payload_b64 || '.' || signature;
-end;
-$$;
-
-create or replace function internal.verify_unsubscribe_token(p_token text)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-    secret text;
-    parts text[];
-    payload_b64 text;
-    provided_sig text;
-    expected_sig text;
-    payload_json text;
-    payload jsonb;
-    expiry bigint;
-begin
-    parts := string_to_array(p_token, '.');
-    if array_length(parts, 1) != 2 then
-        return null;
-    end if;
-
-    payload_b64 := parts[1];
-    provided_sig := parts[2];
-
-    secret := internal.get_unsubscribe_secret();
-    if secret is null or secret = '' then
-        return null;
-    end if;
-
-    expected_sig := encode(hmac(payload_b64::bytea, secret::bytea, 'sha256'), 'base64');
-    expected_sig := replace(replace(replace(expected_sig, '=', ''), '+', '-'), '/', '_');
-
-    if expected_sig != provided_sig then
-        return null;
-    end if;
-
-    payload_b64 := replace(replace(payload_b64, '-', '+'), '_', '/');
-    case length(payload_b64) % 4
-        when 2 then payload_b64 := payload_b64 || '==';
-        when 3 then payload_b64 := payload_b64 || '=';
-        else null;
-    end case;
-
-    begin
-        payload_json := convert_from(decode(payload_b64, 'base64'), 'UTF8');
-        payload := payload_json::jsonb;
-    exception when others then
-        return null;
-    end;
-
-    expiry := (payload->>'exp')::bigint;
-    if expiry < extract(epoch from now()) then
-        return null;
-    end if;
-
-    return payload;
-end;
-$$;
-
-create or replace function public.process_unsubscribe(p_token text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    payload jsonb;
-    v_user_id uuid;
-    v_action text;
     v_user_email text;
     prefs jsonb;
     new_prefs jsonb;
     action_description text;
 begin
-    payload := internal.verify_unsubscribe_token(p_token);
-    if payload is null then
-        return jsonb_build_object(
-            'success', false,
-            'error', 'invalid_token',
-            'message', 'This unsubscribe link is invalid or has expired.'
-        );
-    end if;
-
-    v_user_id := (payload->>'uid')::uuid;
-    v_action := payload->>'act';
-
     select email, coalesce(profile_data->'notification_preferences', '{}'::jsonb)
     into v_user_email, prefs
     from public.users
-    where id = v_user_id;
+    where id = p_user_id;
 
     if v_user_email is null then
         return jsonb_build_object(
@@ -1060,7 +936,7 @@ begin
         );
     end if;
 
-    case v_action
+    case p_action
         when 'mentions' then
             new_prefs := jsonb_set(prefs, '{email_mentions}', 'false'::jsonb);
             action_description := 'mention emails';
@@ -1090,71 +966,15 @@ begin
         '{notification_preferences}',
         new_prefs
     )
-    where id = v_user_id;
+    where id = p_user_id;
 
     return jsonb_build_object(
         'success', true,
-        'action', v_action,
+        'action', p_action,
         'action_description', action_description,
         'email', v_user_email,
         'message', 'You have been unsubscribed from ' || action_description || '.',
-        'user_id', v_user_id
-    );
-end;
-$$;
-
-create or replace function public.get_unsubscribe_url(
-    p_user_id uuid,
-    p_action text,
-    p_base_url text default null
-)
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    token text;
-    base_url text;
-begin
-    token := public.generate_unsubscribe_token(p_user_id, p_action);
-    base_url := coalesce(
-        p_base_url,
-        current_setting('app.base_url', true),
-        'https://docs.plus'
-    );
-    return base_url || '/unsubscribe?token=' || token;
-end;
-$$;
-
-create or replace function public.get_email_footer_links(
-    p_user_id uuid,
-    p_base_url text default null
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    base_url text;
-begin
-    base_url := coalesce(
-        p_base_url,
-        current_setting('app.base_url', true),
-        'https://docs.plus'
-    );
-
-    return jsonb_build_object(
-        'unsubscribe_mentions', public.get_unsubscribe_url(p_user_id, 'mentions', base_url),
-        'unsubscribe_replies', public.get_unsubscribe_url(p_user_id, 'replies', base_url),
-        'unsubscribe_reactions', public.get_unsubscribe_url(p_user_id, 'reactions', base_url),
-        'unsubscribe_digest', public.get_unsubscribe_url(p_user_id, 'digest', base_url),
-        'unsubscribe_all', public.get_unsubscribe_url(p_user_id, 'all', base_url),
-        -- The app serves every path from one catch-all and has no /settings route,
-        -- so a path here opens a blank pad. The hash is read by the page that mounts
-        -- the settings panel.
-        'preferences', base_url || '/#settings?tab=notifications'
+        'user_id', p_user_id
     );
 end;
 $$;
@@ -1167,6 +987,14 @@ $$;
 drop function if exists internal.get_email_gateway_config() cascade;
 drop function if exists internal.http_post_signed(text, jsonb, jsonb, text) cascade;
 
+-- Token signing moved to Node. See section 12.
+drop function if exists public.process_unsubscribe(text) cascade;
+drop function if exists public.get_email_footer_links(uuid, text) cascade;
+drop function if exists public.get_unsubscribe_url(uuid, text, text) cascade;
+drop function if exists public.generate_unsubscribe_token(uuid, text) cascade;
+drop function if exists internal.verify_unsubscribe_token(text) cascade;
+drop function if exists internal.get_unsubscribe_secret() cascade;
+
 
 -- =============================================================================
 -- 14. Security: lock email/queue/admin functions to service_role
@@ -1174,15 +1002,15 @@ drop function if exists internal.http_post_signed(text, jsonb, jsonb, text) casc
 -- This file shipped with no explicit GRANT/REVOKE lines, which means every
 -- SECURITY DEFINER function below is callable by `public` (Postgres default).
 -- That includes the bounce-recording RPC, the queue consumer/ack RPCs, the
--- digest compiler, the admin stats RPC, and helper functions that compose
--- unsubscribe links. Lock them all to service_role; the Hocuspocus worker
+-- digest compiler, and the admin stats RPC. Lock them all to service_role; the Hocuspocus worker
 -- and admin controller invoke them with the service_role key.
 --
--- Note: `process_unsubscribe(text)` is also locked to service_role here.
--- The user-facing /unsubscribe URL handler in the webapp must call it via
--- the service-role key (server-side route), NOT via the browser session.
--- This is the safer default; relax only if a real browser-direct call site
--- emerges with a documented threat model.
+-- `apply_unsubscribe(uuid, text)` needs this lock more than the function it
+-- replaced. That one took a signed token and checked it, so the token was the
+-- credential. This one takes a user id and turns email off for whoever it names,
+-- with no proof of identity. The proof happens in Node, in
+-- `unsubscribeToken.ts`, before the call. Granting this to anon or authenticated
+-- would let anyone unsubscribe anyone.
 
 -- Bounce ingestion (called by email worker)
 revoke execute on function public.record_email_bounce(text, text, text, text) from public, anon, authenticated;
@@ -1215,20 +1043,15 @@ grant  execute on function public.cleanup_email_queue() to service_role;
 revoke execute on function public.get_email_notification_stats() from public, anon, authenticated;
 grant  execute on function public.get_email_notification_stats() to service_role;
 
--- Unsubscribe link helpers (server-side composition; HMAC over secret).
--- generate_/get_*_url are called from email composer; process_unsubscribe
--- is called from the /unsubscribe API route with service_role.
-revoke execute on function public.generate_unsubscribe_token(uuid, text) from public, anon, authenticated;
-grant  execute on function public.generate_unsubscribe_token(uuid, text) to service_role;
+-- Unsubscribe write. Called from the /unsubscribe route with service_role,
+-- after Node has verified the token.
+revoke execute on function public.apply_unsubscribe(uuid, text) from public, anon, authenticated;
+grant  execute on function public.apply_unsubscribe(uuid, text) to service_role;
+comment on function public.apply_unsubscribe(uuid, text) is
+    'Turns off one email preference for the named user. Performs NO identity check: '
+    'the caller must verify the signed token first (see unsubscribeToken.ts). '
+    'Granted to service_role only.';
 
-revoke execute on function public.process_unsubscribe(text) from public, anon, authenticated;
-grant  execute on function public.process_unsubscribe(text) to service_role;
-
-revoke execute on function public.get_unsubscribe_url(uuid, text, text) from public, anon, authenticated;
-grant  execute on function public.get_unsubscribe_url(uuid, text, text) to service_role;
-
-revoke execute on function public.get_email_footer_links(uuid, text) from public, anon, authenticated;
-grant  execute on function public.get_email_footer_links(uuid, text) to service_role;
 
 
 -- ============================================================
@@ -1241,13 +1064,8 @@ grant  execute on function public.get_email_footer_links(uuid, text) to service_
 -- ============================================================
 ALTER FUNCTION internal.is_email_enabled(p_user_id uuid) SET search_path = public;
 ALTER FUNCTION internal.get_email_preferences(p_user_id uuid) SET search_path = public;
-ALTER FUNCTION internal.get_unsubscribe_secret() SET search_path = public;
-ALTER FUNCTION internal.verify_unsubscribe_token(p_token text) SET search_path = public;
 ALTER FUNCTION public.queue_email_notification() SET search_path = public;
 ALTER FUNCTION public.process_email_queue() SET search_path = public;
 ALTER FUNCTION public.cleanup_email_queue() SET search_path = public;
 ALTER FUNCTION public.get_email_notification_stats() SET search_path = public;
-ALTER FUNCTION public.generate_unsubscribe_token(p_user_id uuid, p_action text) SET search_path = public;
-ALTER FUNCTION public.process_unsubscribe(p_token text) SET search_path = public;
-ALTER FUNCTION public.get_unsubscribe_url(p_user_id uuid, p_action text, p_base_url text) SET search_path = public;
-ALTER FUNCTION public.get_email_footer_links(p_user_id uuid, p_base_url text) SET search_path = public;
+ALTER FUNCTION public.apply_unsubscribe(p_user_id uuid, p_action text) SET search_path = public;

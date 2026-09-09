@@ -1162,6 +1162,10 @@ export type Database = {
         Returns: undefined
       }
       aggregate_document_view_stats: { Args: never; Returns: Json }
+      apply_unsubscribe: {
+        Args: { p_action: string; p_user_id: string }
+        Returns: Json
+      }
       archive_bookmark: {
         Args: { p_archive?: boolean; p_bookmark_id: number }
         Returns: boolean
@@ -1244,10 +1248,6 @@ export type Database = {
       fetch_messages_since: {
         Args: { p_channel_id: string; p_limit?: number; p_since_seq: number }
         Returns: Json
-      }
-      generate_unsubscribe_token: {
-        Args: { p_action: string; p_user_id: string }
-        Returns: string
       }
       get_activity_by_hour: {
         Args: { p_days?: number }
@@ -1393,10 +1393,6 @@ export type Database = {
           source: string
         }[]
       }
-      get_email_footer_links: {
-        Args: { p_base_url?: string; p_user_id: string }
-        Returns: Json
-      }
       get_email_notification_stats: { Args: never; Returns: Json }
       get_failed_push_subscriptions: {
         Args: { p_limit?: number; p_min_failures?: number }
@@ -1507,10 +1503,6 @@ export type Database = {
         }
         Returns: Json[]
       }
-      get_unsubscribe_url: {
-        Args: { p_action: string; p_base_url?: string; p_user_id: string }
-        Returns: string
-      }
       get_user_bookmarks: {
         Args: {
           p_archived?: boolean
@@ -1609,7 +1601,6 @@ export type Database = {
       }
       process_document_views_queue: { Args: never; Returns: Json }
       process_email_queue: { Args: never; Returns: Json }
-      process_unsubscribe: { Args: { p_token: string }; Returns: Json }
       purge_document_footprint: {
         Args: { p_document_id: string; p_slug: string }
         Returns: undefined

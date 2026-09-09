@@ -339,6 +339,7 @@ create table public.workspace_members (
     member_id         uuid not null references public.users(id) on delete cascade, -- The ID of the workspace member (user). If the user is deleted, their membership records are also deleted.
     left_at           timestamp with time zone, -- Timestamp when the user left the workspace.
     content_email_muted_at timestamp with time zone, -- Timestamp when the member muted content-change notifications for this document. Null means following, but only while left_at is also null.
+    last_connection_closed_at timestamp with time zone, -- Timestamp when this member's last live session on this document closed. Ends one session, not the membership.
     created_at        timestamp with time zone default timezone('utc', now()) not null, -- Timestamp when the membership record was created.
     updated_at        timestamp with time zone default timezone('utc', now()) -- Timestamp when the membership record was last updated.
 );
@@ -351,6 +352,7 @@ comment on column public.workspace_members.workspace_id is 'Reference to the wor
 comment on column public.workspace_members.member_id is 'Reference to the user who is a member of the workspace';
 comment on column public.workspace_members.left_at is 'Timestamp when the user left this workspace, null if still active';
 comment on column public.workspace_members.content_email_muted_at is 'Timestamp when this member muted content-change notifications for this document. Null means this member follows the document, but only while left_at is also null. Never trust this column for privacy: it is a delivery preference, not an access control, and it grants and removes no read rights.';
+comment on column public.workspace_members.last_connection_closed_at is 'Timestamp when this member''s last live session on this document closed. It ends one session while the membership continues, so it is not left_at, which ends the membership. It is not updated_at either: join_workspace writes updated_at when the member arrives, and the roster renders that as "Last seen". Written only by public.mark_document_connection_closed.';
 comment on column public.workspace_members.created_at is 'Timestamp when this membership record was created';
 comment on column public.workspace_members.updated_at is 'Timestamp when this membership record was last updated';
 
@@ -2621,161 +2623,37 @@ $$;
 
 
 -- =============================================================================
--- 12. Unsubscribe Functions (unchanged from v1)
+-- 12. Unsubscribe
 -- =============================================================================
+-- Token signing and verification moved to the Node worker
+-- (`apps/hocuspocus.server/src/lib/unsubscribeToken.ts`). A hosted Supabase
+-- project's `postgres` role cannot set a custom parameter with ALTER DATABASE
+-- or ALTER ROLE — both raise 42501 — so `app.unsubscribe_secret` could never be
+-- provisioned, and every footer link shipped without a token. Postgres also
+-- wraps `encode(…, 'base64')` at 76 characters, which the old signer never
+-- stripped, so a long payload carried an embedded newline.
+--
+-- What remains here is the write. The caller has already proved identity.
 
--- Returns the HMAC secret used to sign unsubscribe tokens. Hard-fails when
--- unset rather than falling back to a derived-from-service-key default —
--- a missing GUC in prod must surface, not silently mint forgeable tokens.
-create or replace function internal.get_unsubscribe_secret()
-returns text
-language plpgsql
-stable
-security definer
-set search_path = public
-as $$
-declare
-    v_secret text;
-begin
-    v_secret := current_setting('app.unsubscribe_secret', true);
-    if v_secret is null or v_secret = '' then
-        raise exception 'app.unsubscribe_secret is not configured';
-    end if;
-    return v_secret;
-end;
-$$;
-
-create or replace function public.generate_unsubscribe_token(
+create or replace function public.apply_unsubscribe(
     p_user_id uuid,
     p_action text
 )
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    secret text;
-    payload jsonb;
-    payload_b64 text;
-    signature text;
-begin
-    if p_action not in ('mentions', 'replies', 'reactions', 'digest', 'all') then
-        raise exception 'Invalid unsubscribe action: %', p_action;
-    end if;
-
-    secret := internal.get_unsubscribe_secret();
-    if secret is null or secret = '' then
-        raise exception 'Unsubscribe secret not configured';
-    end if;
-
-    payload := jsonb_build_object(
-        'uid', p_user_id,
-        'act', p_action,
-        'exp', extract(epoch from (now() + interval '90 days'))::bigint,
-        'iat', extract(epoch from now())::bigint
-    );
-
-    payload_b64 := encode(convert_to(payload::text, 'UTF8'), 'base64');
-    payload_b64 := replace(replace(replace(payload_b64, '=', ''), '+', '-'), '/', '_');
-
-    signature := encode(hmac(payload_b64::bytea, secret::bytea, 'sha256'), 'base64');
-    signature := replace(replace(replace(signature, '=', ''), '+', '-'), '/', '_');
-
-    return payload_b64 || '.' || signature;
-end;
-$$;
-
-create or replace function internal.verify_unsubscribe_token(p_token text)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-    secret text;
-    parts text[];
-    payload_b64 text;
-    provided_sig text;
-    expected_sig text;
-    payload_json text;
-    payload jsonb;
-    expiry bigint;
-begin
-    parts := string_to_array(p_token, '.');
-    if array_length(parts, 1) != 2 then
-        return null;
-    end if;
-
-    payload_b64 := parts[1];
-    provided_sig := parts[2];
-
-    secret := internal.get_unsubscribe_secret();
-    if secret is null or secret = '' then
-        return null;
-    end if;
-
-    expected_sig := encode(hmac(payload_b64::bytea, secret::bytea, 'sha256'), 'base64');
-    expected_sig := replace(replace(replace(expected_sig, '=', ''), '+', '-'), '/', '_');
-
-    if expected_sig != provided_sig then
-        return null;
-    end if;
-
-    payload_b64 := replace(replace(payload_b64, '-', '+'), '_', '/');
-    case length(payload_b64) % 4
-        when 2 then payload_b64 := payload_b64 || '==';
-        when 3 then payload_b64 := payload_b64 || '=';
-        else null;
-    end case;
-
-    begin
-        payload_json := convert_from(decode(payload_b64, 'base64'), 'UTF8');
-        payload := payload_json::jsonb;
-    exception when others then
-        return null;
-    end;
-
-    expiry := (payload->>'exp')::bigint;
-    if expiry < extract(epoch from now()) then
-        return null;
-    end if;
-
-    return payload;
-end;
-$$;
-
-create or replace function public.process_unsubscribe(p_token text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    payload jsonb;
-    v_user_id uuid;
-    v_action text;
     v_user_email text;
     prefs jsonb;
     new_prefs jsonb;
     action_description text;
 begin
-    payload := internal.verify_unsubscribe_token(p_token);
-    if payload is null then
-        return jsonb_build_object(
-            'success', false,
-            'error', 'invalid_token',
-            'message', 'This unsubscribe link is invalid or has expired.'
-        );
-    end if;
-
-    v_user_id := (payload->>'uid')::uuid;
-    v_action := payload->>'act';
-
     select email, coalesce(profile_data->'notification_preferences', '{}'::jsonb)
     into v_user_email, prefs
     from public.users
-    where id = v_user_id;
+    where id = p_user_id;
 
     if v_user_email is null then
         return jsonb_build_object(
@@ -2785,7 +2663,7 @@ begin
         );
     end if;
 
-    case v_action
+    case p_action
         when 'mentions' then
             new_prefs := jsonb_set(prefs, '{email_mentions}', 'false'::jsonb);
             action_description := 'mention emails';
@@ -2815,68 +2693,15 @@ begin
         '{notification_preferences}',
         new_prefs
     )
-    where id = v_user_id;
+    where id = p_user_id;
 
     return jsonb_build_object(
         'success', true,
-        'action', v_action,
+        'action', p_action,
         'action_description', action_description,
         'email', v_user_email,
         'message', 'You have been unsubscribed from ' || action_description || '.',
-        'user_id', v_user_id
-    );
-end;
-$$;
-
-create or replace function public.get_unsubscribe_url(
-    p_user_id uuid,
-    p_action text,
-    p_base_url text default null
-)
-returns text
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    token text;
-    base_url text;
-begin
-    token := public.generate_unsubscribe_token(p_user_id, p_action);
-    base_url := coalesce(
-        p_base_url,
-        current_setting('app.base_url', true),
-        'https://docs.plus'
-    );
-    return base_url || '/unsubscribe?token=' || token;
-end;
-$$;
-
-create or replace function public.get_email_footer_links(
-    p_user_id uuid,
-    p_base_url text default null
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-    base_url text;
-begin
-    base_url := coalesce(
-        p_base_url,
-        current_setting('app.base_url', true),
-        'https://docs.plus'
-    );
-
-    return jsonb_build_object(
-        'unsubscribe_mentions', public.get_unsubscribe_url(p_user_id, 'mentions', base_url),
-        'unsubscribe_replies', public.get_unsubscribe_url(p_user_id, 'replies', base_url),
-        'unsubscribe_reactions', public.get_unsubscribe_url(p_user_id, 'reactions', base_url),
-        'unsubscribe_digest', public.get_unsubscribe_url(p_user_id, 'digest', base_url),
-        'unsubscribe_all', public.get_unsubscribe_url(p_user_id, 'all', base_url),
-        'preferences', base_url || '/settings/notifications'
+        'user_id', p_user_id
     );
 end;
 $$;
@@ -2889,6 +2714,14 @@ $$;
 drop function if exists internal.get_email_gateway_config() cascade;
 drop function if exists internal.http_post_signed(text, jsonb, jsonb, text) cascade;
 
+-- Token signing moved to Node. See section 12.
+drop function if exists public.process_unsubscribe(text) cascade;
+drop function if exists public.get_email_footer_links(uuid, text) cascade;
+drop function if exists public.get_unsubscribe_url(uuid, text, text) cascade;
+drop function if exists public.generate_unsubscribe_token(uuid, text) cascade;
+drop function if exists internal.verify_unsubscribe_token(text) cascade;
+drop function if exists internal.get_unsubscribe_secret() cascade;
+
 
 -- =============================================================================
 -- 14. Security: lock email/queue/admin functions to service_role
@@ -2900,11 +2733,12 @@ drop function if exists internal.http_post_signed(text, jsonb, jsonb, text) casc
 -- unsubscribe links. Lock them all to service_role; the Hocuspocus worker
 -- and admin controller invoke them with the service_role key.
 --
--- Note: `process_unsubscribe(text)` is also locked to service_role here.
--- The user-facing /unsubscribe URL handler in the webapp must call it via
--- the service-role key (server-side route), NOT via the browser session.
--- This is the safer default; relax only if a real browser-direct call site
--- emerges with a documented threat model.
+-- `apply_unsubscribe(uuid, text)` needs this lock more than the function it
+-- replaced. That one took a signed token and checked it, so the token was the
+-- credential. This one takes a user id and turns email off for whoever it names,
+-- with no proof of identity. The proof happens in Node, in
+-- `unsubscribeToken.ts`, before the call. Granting this to anon or authenticated
+-- would let anyone unsubscribe anyone.
 
 -- Bounce ingestion (called by email worker)
 revoke execute on function public.record_email_bounce(text, text, text, text) from public, anon, authenticated;
@@ -2937,20 +2771,15 @@ grant  execute on function public.cleanup_email_queue() to service_role;
 revoke execute on function public.get_email_notification_stats() from public, anon, authenticated;
 grant  execute on function public.get_email_notification_stats() to service_role;
 
--- Unsubscribe link helpers (server-side composition; HMAC over secret).
--- generate_/get_*_url are called from email composer; process_unsubscribe
--- is called from the /unsubscribe API route with service_role.
-revoke execute on function public.generate_unsubscribe_token(uuid, text) from public, anon, authenticated;
-grant  execute on function public.generate_unsubscribe_token(uuid, text) to service_role;
+-- Unsubscribe write. Called from the /unsubscribe route with service_role,
+-- after Node has verified the token.
+revoke execute on function public.apply_unsubscribe(uuid, text) from public, anon, authenticated;
+grant  execute on function public.apply_unsubscribe(uuid, text) to service_role;
+comment on function public.apply_unsubscribe(uuid, text) is
+    'Turns off one email preference for the named user. Performs NO identity check: '
+    'the caller must verify the signed token first (see unsubscribeToken.ts). '
+    'Granted to service_role only.';
 
-revoke execute on function public.process_unsubscribe(text) from public, anon, authenticated;
-grant  execute on function public.process_unsubscribe(text) to service_role;
-
-revoke execute on function public.get_unsubscribe_url(uuid, text, text) from public, anon, authenticated;
-grant  execute on function public.get_unsubscribe_url(uuid, text, text) to service_role;
-
-revoke execute on function public.get_email_footer_links(uuid, text) from public, anon, authenticated;
-grant  execute on function public.get_email_footer_links(uuid, text) to service_role;
 
 
 -- ============================================================
@@ -2963,16 +2792,11 @@ grant  execute on function public.get_email_footer_links(uuid, text) to service_
 -- ============================================================
 ALTER FUNCTION internal.is_email_enabled(p_user_id uuid) SET search_path = public;
 ALTER FUNCTION internal.get_email_preferences(p_user_id uuid) SET search_path = public;
-ALTER FUNCTION internal.get_unsubscribe_secret() SET search_path = public;
-ALTER FUNCTION internal.verify_unsubscribe_token(p_token text) SET search_path = public;
 ALTER FUNCTION public.queue_email_notification() SET search_path = public;
 ALTER FUNCTION public.process_email_queue() SET search_path = public;
 ALTER FUNCTION public.cleanup_email_queue() SET search_path = public;
 ALTER FUNCTION public.get_email_notification_stats() SET search_path = public;
-ALTER FUNCTION public.generate_unsubscribe_token(p_user_id uuid, p_action text) SET search_path = public;
-ALTER FUNCTION public.process_unsubscribe(p_token text) SET search_path = public;
-ALTER FUNCTION public.get_unsubscribe_url(p_user_id uuid, p_action text, p_base_url text) SET search_path = public;
-ALTER FUNCTION public.get_email_footer_links(p_user_id uuid, p_base_url text) SET search_path = public;
+ALTER FUNCTION public.apply_unsubscribe(p_user_id uuid, p_action text) SET search_path = public;
 
 
 -- ============================================================================
@@ -6970,6 +6794,52 @@ grant execute on function public.set_document_follow(varchar, boolean) to authen
 revoke execute on function public.get_document_follow_state(varchar) from anon;
 grant execute on function public.get_document_follow_state(varchar) to authenticated;
 
+-- Stamps the instant one live document session ended, for the worker only.
+-- UPDATE-only: an upsert fires notify_on_workspace_join, which posts a "joined"
+-- chat message. updated_at is join_workspace's arrival stamp and the roster
+-- renders it as "Last seen", so this never names that column.
+create or replace function public.mark_document_connection_closed(
+    p_document_id varchar(36),
+    p_user_id uuid,
+    p_closed_at timestamptz
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_closed_at timestamptz;
+begin
+    -- least() ignores a null, so an unclamped null argument would stamp now().
+    -- Stamping now() at disconnect is the behaviour this column replaces.
+    if p_closed_at is null then
+        raise exception 'closed_at_required' using errcode = '22004';
+    end if;
+
+    -- greatest() below can never be undone, so a client clock ahead of the
+    -- server would freeze the column at a future instant. now() is timestamptz,
+    -- so this bound does not shift with the session TimeZone.
+    v_closed_at := least(p_closed_at, now());
+
+    update public.workspace_members
+       set last_connection_closed_at = greatest(coalesce(last_connection_closed_at, v_closed_at), v_closed_at)
+     where workspace_id = p_document_id
+       and member_id = p_user_id
+       and left_at is null;
+
+    return found;
+end;
+$$;
+
+comment on function public.mark_document_connection_closed(varchar, uuid, timestamptz) is
+'Stamps the instant one live document session ended for one member. p_document_id is the documentId verbatim, the value held in workspace_members.workspace_id and workspaces.id, never the lowercased workspaces.slug. UPDATE-only, so it never mints a membership row, and it never writes updated_at. The write is monotone, so a p_closed_at older than the stored value leaves the value alone. A p_closed_at after now() is clamped to now(). Returns true when an active membership row matched, which does not say the stamp advanced.';
+
+-- The worker holds the service-role key and is the only caller. No browser path
+-- exists, so this stays out of the 29-lint-hardening §6 authenticated list.
+revoke execute on function public.mark_document_connection_closed(varchar, uuid, timestamptz) from public, anon, authenticated;
+grant  execute on function public.mark_document_connection_closed(varchar, uuid, timestamptz) to service_role;
+
 
 -- ============================================================================
 -- File: 10-func-notifications.sql
@@ -7066,10 +6936,11 @@ $$;
 COMMENT ON FUNCTION create_mention_notifications() IS 'Creates notifications for users who are mentioned with @username in a message.';
 
 -- Trigger: create_mention_notifications
+DROP TRIGGER IF EXISTS create_mention_notifications ON public.messages;
 CREATE TRIGGER create_mention_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content LIKE '%@%')
+WHEN (NEW.content LIKE '%@%' AND NEW.type IS DISTINCT FROM 'notification')
 EXECUTE FUNCTION create_mention_notifications();
 
 COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates notifications for users mentioned with @username in a message.';
@@ -7242,7 +7113,7 @@ DROP TRIGGER IF EXISTS create_everyone_notifications ON public.messages;
 CREATE TRIGGER create_everyone_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content ~ '(^|[^a-z0-9_-])@everyone($|[^a-z0-9_-])')
+WHEN (NEW.content ~ '(^|[^a-z0-9_-])@everyone($|[^a-z0-9_-])' AND NEW.type IS DISTINCT FROM 'notification')
 EXECUTE FUNCTION create_everyone_notifications();
 
 COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates notifications for all channel members when @everyone is used.';
@@ -7322,10 +7193,11 @@ COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notificat
 -- exactly @everyone) and produced duplicate inbox rows alongside the
 -- mention/reply/everyone notification creators. Use a regex that matches
 -- either pattern and negate with `!~`.
+DROP TRIGGER IF EXISTS create_regular_message_notifications ON public.messages;
 CREATE TRIGGER create_regular_message_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
-WHEN (NEW.content !~ '@[A-Za-z0-9_]+|@everyone')
+WHEN (NEW.content !~ '@[A-Za-z0-9_]+|@everyone' AND NEW.type IS DISTINCT FROM 'notification')
 EXECUTE FUNCTION create_regular_message_notifications();
 
 COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'Creates notifications for regular messages that contain no @mention and no @everyone.';
@@ -7673,6 +7545,89 @@ comment on function public.notify_document_content_change(varchar, uuid[], uuid,
 revoke execute on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text)
     from public, anon, authenticated;
 grant execute on function public.notify_document_content_change(varchar, uuid[], uuid, uuid, text)
+    to service_role;
+
+
+-- Service-role writer for a Pad title rename. Inserts one workspace-chat
+-- notice. History reads the latest live row; it does not mint a version.
+create or replace function public.notify_document_title_change(
+    p_document_id varchar(36),
+    p_actor_id uuid,
+    p_title_from text,
+    p_title_to text
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_username text;
+begin
+    select u.username
+      into v_username
+      from public.users u
+     where u.id = p_actor_id;
+
+    if v_username is null then
+        return 0;
+    end if;
+
+    -- A document nobody has joined has no workspaces row. Do not mint one.
+    if not exists (
+        select 1
+          from public.workspaces w
+         where w.id = p_document_id
+           and w.deleted_at is null
+    ) then
+        return 0;
+    end if;
+
+    -- A workspaces row implies a channels row. A miss is a broken document.
+    -- Return 0 rather than insert the channel or raise on the messages FK.
+    if not exists (
+        select 1
+          from public.channels c
+         where c.id = p_document_id
+    ) then
+        return 0;
+    end if;
+
+    insert into public.messages (
+        user_id,
+        channel_id,
+        type,
+        content,
+        metadata
+    )
+    values (
+        p_actor_id,
+        p_document_id,
+        'notification',
+        'Document renamed',
+        jsonb_build_object(
+            'type', 'title_changed',
+            'title_from', p_title_from,
+            'title_to', p_title_to,
+            'user_id', p_actor_id,
+            'user_name', v_username
+        )
+    );
+
+    return 1;
+end;
+$$;
+
+comment on function public.notify_document_title_change(varchar, uuid, text, text) is
+'Service-role only. Inserts one workspace-chat notice after a Pad title rename. Returns 1 when a row was inserted, or 0 when the actor is not in public.users, the document has no live workspaces row, or it has no channels row. Creates neither a workspace nor a channel. content is a short fallback with no @ token and no titles.';
+
+-- Server-side only: REST posts the notice with the service-role key.
+-- The webapp must never call it, so the browser roles stay revoked here too.
+-- §5 of 29-lint-hardening revokes from public, anon and authenticated only,
+-- so the service_role grant below survives that sweep.
+revoke execute on function public.notify_document_title_change(varchar, uuid, text, text)
+    from public, anon, authenticated;
+grant execute on function public.notify_document_title_change(varchar, uuid, text, text)
     to service_role;
 
 
