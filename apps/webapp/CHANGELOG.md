@@ -23,6 +23,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   A Documents-list rename of the open pad writes the header and relays the
   room when a provider exists.
 
+### Changed
+
+- The sign-in form checks the email on rest-api, not on Next.
+
 ### Fixed
 
 - An ownerless Pad title stays editable after the metadata fetch. A missing
@@ -32,6 +36,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - A live chat notice used to say "someone" because a realtime INSERT has
   no users join. The chip now uses the snapshot username until that join
   is present.
+
+### Removed
+
+- Next routes for Validate, Status, and Confirm. The service worker no longer
+  writes user status.
+
+### Internal
+
+- Tab close holds the JWT in a ref and PATCHes `users` with keepalive.
 
 ## [2.0.1] — 2026-08-31
 

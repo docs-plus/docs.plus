@@ -31,7 +31,7 @@ Three schemes apply, by route group:
 
 | Scheme                                | Used by                                                                                                                                                                                                                                                                                                                                                                                                             | Header                                              |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`                                                                                                                                                                                                         | —                                                   |
+| None                                  | `/`, `/health/*`, `/openapi.json`, `/docs`, `GET /api/plugins/hypermultimedia/:documentId/:mediaId`, `/api/metadata`, `GET`/`POST /api/email/unsubscribe`, `GET /api/email/health`, `GET /api/email/status`, `POST /api/email/validate`                                                                                                                                                                             | —                                                   |
 | Optional Supabase user JWT            | `GET /api/documents` (list without `ownerId`), `GET /api/documents/:slug`, `PUT /api/documents/:docId`                                                                                                                                                                                                                                                                                                              | `token: <jwt>`                                      |
 | Required Supabase user JWT            | `GET /api/documents?ownerId=…` / `?deleted=true`, `POST /api/documents`, document lifecycle (`DELETE /:id`, `/:id/restore`, `/:id/duplicate`, `/:id/favorite`, `/:id/opened`, `/:id/permanent`, `POST /trash/purge`, `/trash/restore`), `POST /api/plugins/hypermultimedia/:documentId` (media upload; the service-role key is refused there — it is not a user token, so `requireUser` can resolve nobody from it) | `token: <jwt>`                                      |
 | Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                                  | `token: <jwt>` or the service-role bearer           |
@@ -1005,7 +1005,7 @@ Errors (`400`) use this module's own shape — top-level `code` and `message`, n
 
 ## Email
 
-Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → SMTP. **The `/api/email/send` endpoint was removed.** The endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `health`, `status` and both `unsubscribe` routes need no credential.
+Base path `/api/email` (`src/api/email.ts`). Notification delivery runs through a pgmq consumer, not HTTP: `email_queue` → `pg_cron` → pgmq → worker → BullMQ → SMTP. **The `/api/email/send` endpoint was removed.** Most endpoints below are internal triggers and webhooks. `send-generic`, `send-digest`, `bounce` and `preview/:type` require the service-role key. `health`, `status`, `validate`, and both `unsubscribe` routes need no credential. A rejected JSON or query body on `send-generic`, `send-digest`, `bounce`, `validate`, and `POST /unsubscribe` is the house envelope (`VALIDATION_ERROR`), not a raw Zod body.
 
 ### POST /api/email/send-generic
 
@@ -1026,6 +1026,10 @@ Email gateway health (no auth).
 ### GET /api/email/status
 
 `{ "operational": <bool>, "timestamp": "..." }` (no auth).
+
+### POST /api/email/validate
+
+Public magic-link check. Body: `{ "email": "<string>" }`. Returns `{ "isValid": <bool> }` on HTTP 200 for both results. Uses the house regex, then an MX lookup. Does not return MX records or DNS errors. Success is not wrapped in `ok()`. A missing or non-string `email` is the house envelope (`VALIDATION_ERROR` on 400).
 
 ### GET /api/email/preview/:type
 

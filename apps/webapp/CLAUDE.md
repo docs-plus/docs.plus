@@ -200,6 +200,15 @@ Follow industry overlay UX (Material, Apple HIG, Radix/shadcn) and dim-not-lift 
 - Workbox `urlPattern` matchers must be self-contained (next-pwa serializes via `Function.toString()` — no module-scope refs). Verify a matcher change under **Node** (the actual Next build runtime), never `bun -e`. Bun's `Function.prototype.toString()` re-serializes with `const` bindings inlined. A matcher that reads `const isSameOrigin = …; return !isSameOrigin` therefore reads back mutated, and throws a false serialization/assertion failure that Node (source-accurate) passes.
 - Deploy-boundary chunk/SW GlitchTip noise: `chunkLoadRecovery.ts` one-shot reload (10s `sessionStorage` cooldown) + `instrumentation-client.ts` `beforeSend` drops SW-lifecycle and auto-recovered chunk errors. Keep the chunk pattern lists in sync across both. Rebuild the webapp for `sw.js` changes.
 
+### Next Product APIs
+
+- Glossary: root [`CONTEXT.md`](../../CONTEXT.md) §Product HTTP (rest-api, Health, Validate, Status, Confirm).
+- **Next `pages/api` keeps only Health.** `apps/webapp/src/pages/api/health.ts` is the probe. Do not retarget Traefik, Docker HEALTHCHECK, compose, CI, `src/proxy.ts`, or Next health rewrites.
+- **Validate is on rest-api.** `SignInForm` fetches `${NEXT_PUBLIC_RESTAPI_URL}/email/validate`. Read top-level `isValid`. No cookies, rewrite, or Next proxy. The Next Validate route is deleted.
+- **Status is not a Hono route.** Heartbeat, visibility, online, and offline stay `updateUser` plus RLS. Tab close holds the JWT in `accessTokenRef` (filled by `onAuthStateChange`) and PATCHes Supabase REST with `keepalive`. Do not call `updateUser` on unload. Do not read `authStore.session` for a JWT. The service worker no longer writes Status. The Next Status route is deleted.
+- **Confirm is deleted.** Do not add a Hono stand-in or a Pages `auth/callback` page. A magic link to `/{slug}` still drops the hash; that is a different fact.
+- Leave `apps/webapp/src/utils/supabase/api.ts` even when it has no caller.
+
 ## Document Features
 
 ### Document Access

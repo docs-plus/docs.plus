@@ -4,6 +4,8 @@
  * SMTP. The worker delivers it, never a request to this router.
  */
 
+import { resolveMx } from 'node:dns/promises'
+
 import {
   buildDigestEmail,
   renderNotificationEmail,
@@ -23,11 +25,15 @@ import { verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
   emailBounceSchema,
   sendDigestEmailSchema,
-  sendGenericEmailSchema
+  sendGenericEmailSchema,
+  validateEmailBody
 } from '../schemas/email.schema'
 import type { DigestDocument } from '../types/email.types'
 
 const emailRouter = new Hono()
+
+/** Do not swap for `z.string().email()`. */
+const HOUSE_EMAIL_REGEX = /^[\w-]+(\.[\w-]+)*@([a-z\d-]+(\.[a-z\d-]+)*\.[a-z]{2,7})$/i
 
 emailRouter.post(
   '/send-generic',
@@ -116,6 +122,25 @@ emailRouter.get('/status', (c) => {
     timestamp: new Date().toISOString()
   })
 })
+
+/** Public. Both answers are 200 `{ isValid }`. */
+emailRouter.post(
+  '/validate',
+  zValidator('json', validateEmailBody, houseEnvelopeHook),
+  async (c) => {
+    const { email } = c.req.valid('json')
+    if (!HOUSE_EMAIL_REGEX.test(email)) {
+      return c.json({ isValid: false })
+    }
+
+    try {
+      await resolveMx(email.slice(email.lastIndexOf('@') + 1))
+      return c.json({ isValid: true })
+    } catch {
+      return c.json({ isValid: false })
+    }
+  }
+)
 
 /** A hard bounce auto-disables email for that user, inside the RPC. */
 emailRouter.post('/bounce', zValidator('json', emailBounceSchema, houseEnvelopeHook), async (c) => {

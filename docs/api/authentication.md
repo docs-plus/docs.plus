@@ -26,13 +26,13 @@ Never ship it to a browser, a mobile application, or any client you do not contr
 
 ## What each credential can call
 
-**No credential needed.** The health paths, `GET /api/metadata`, reading one media file, and the email unsubscribe pages.
+**No credential needed.** The health paths, `GET /api/metadata`, reading one media file, the email unsubscribe pages, and `POST /api/email/validate`.
 
 **A user token, optional.** Listing documents without an owner filter, reading one document by slug, and updating document metadata. Sending a token here changes what you see rather than whether the call works.
 
 **A user token, required.** Listing your own documents, creating a document, the whole document lifecycle — delete, restore, duplicate, favorite or unfavorite, Last opened (`POST /api/documents/:documentId/opened`), permanently delete, empty the trash. Uploading media also requires a user token.
 
-**Service-role only.** Reading and writing document content, every document version route, the email routes, and the `content` and `ownerId` fields when creating a document.
+**Service-role only.** Reading and writing document content, every document version route, the service-role email send and bounce routes, and the `content` and `ownerId` fields when creating a document.
 
 **Either a user token or the service-role key.** Export and import. The key passes every document; a user token is checked against that document's privacy and lock.
 

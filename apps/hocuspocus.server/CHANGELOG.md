@@ -12,6 +12,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- Public `POST /api/email/validate`. Body is `{ email }`. Both answers are
+  200 `{ isValid }`. A bad body is the house envelope.
+
 - **Pad title rename posts a workspace-chat notice.** A successful
   `PUT /api/documents/:documentId` that changes `title` on an existing row
   calls `notify_document_title_change` after the Prisma write. The call is

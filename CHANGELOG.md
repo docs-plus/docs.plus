@@ -45,6 +45,8 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ### Changed
 
+- Check a sign-in email on rest-api. Next keeps only the webapp health probe.
+
 - Move Report a problem out of the pad title. It now sits in Settings, after
   Report an Issue, while a document is open. Home Settings does not show that
   row. A signed-out reader does not see it.

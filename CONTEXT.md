@@ -70,6 +70,15 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Pane floor** — the chat pane's minimum height, the sum of its non-shrinkable furniture: grabber, header, feed padding, composer. Measure it; an estimate that omits the feed's own padding pushes the composer off-screen.
 - **Pane shell measure** — the live pad-shell height, the height the pad header reserves, and the chat pane's bottom safe-area inset. The Chat pane and its grabber both size from this measure. Not a constant.
 
+## Product HTTP
+
+- **rest-api** — the Hono HTTP process on port 4000. The browser base is `NEXT_PUBLIC_RESTAPI_URL`, which already ends in `/api`.
+- **Health** — Next `GET /api/health` only (`apps/webapp/src/pages/api/health.ts`). Do not retarget Traefik, Docker HEALTHCHECK, compose, or CI.
+- **Validate** — `POST /api/email/validate` on rest-api. Public. Body `{ email }`. Success is `{ isValid }` on 200. House regex, then MX. Not the house envelope.
+- **Status** — writing `users.status`. Heartbeat and visibility stay `updateUser` plus RLS. Tab close is a keepalive `PATCH` to Supabase REST. Not a Hono route.
+- **Confirm** — unused Next `GET /api/auth/callback/confirm`. Deleted. No Hono stand-in and no Pages `auth/callback` page.
+  _Avoid_: validate-email, updateUserStatus
+
 ## Presence awareness
 
 - **usersPresence** — Map of online Profiles keyed by user id (`useStore.usersPresence`); TOC heading stacks filter by `channelId`.

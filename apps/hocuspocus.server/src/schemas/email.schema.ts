@@ -31,3 +31,5 @@ export const emailBounceSchema = z.object({
   provider: z.string().max(50).optional(),
   reason: z.string().max(1000).optional()
 })
+
+export const validateEmailBody = z.object({ email: z.string() })

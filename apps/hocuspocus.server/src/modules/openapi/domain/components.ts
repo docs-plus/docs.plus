@@ -292,7 +292,7 @@ export const components: OpenApiComponents = {
       'Rejected by a handler or service guard (an `AppError`), so it carries the house envelope.'
     ),
     ZodValidationError: jsonResponse(
-      'Rejected by `zValidator` before the handler ran — on the email routes, before the service-role check too. Not the house envelope. Where the handler or service can also reject with an `AppError`, that 400 arrives as `ErrorEnvelope` instead, so treat a 400 body as either shape.',
+      'Rejected by `zValidator` before the handler ran, on routes that do not pass `houseEnvelopeHook`. `error` is a serialized `ZodError`, so there is no `error.code`. Routes that pass the hook document `ValidationError` instead.',
       '#/components/schemas/ZodValidationError'
     ),
     Unauthorized: envelopeResponse('Missing, invalid or expired credentials.'),

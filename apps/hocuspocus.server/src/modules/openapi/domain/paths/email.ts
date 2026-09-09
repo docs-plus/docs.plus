@@ -3,7 +3,8 @@ import { z } from 'zod'
 import {
   emailBounceSchema,
   sendDigestEmailSchema,
-  sendGenericEmailSchema
+  sendGenericEmailSchema,
+  validateEmailBody
 } from '../../../../schemas/email.schema'
 import type { JsonSchema, OpenApiPaths } from '../../types'
 import { rateLimitedRef } from '../components'
@@ -15,9 +16,8 @@ const security = [{ serviceRoleKey: [] }]
 const legacyRef = { $ref: '#/components/schemas/LegacyError' }
 
 const serviceRoleErrors = {
-  // zValidator runs ahead of the handler's service-role check, so a malformed body
-  // is rejected before any credential is looked at.
-  '400': { $ref: '#/components/responses/ZodValidationError' },
+  // Every email zValidator uses houseEnvelopeHook, so 400 is ErrorEnvelope.
+  '400': { $ref: '#/components/responses/ValidationError' },
   '401': { $ref: '#/components/responses/LegacyUnauthorized' },
   '429': rateLimitedRef,
   '500': { $ref: '#/components/responses/LegacyInternalError' }
@@ -129,6 +129,29 @@ export const emailPaths: OpenApiPaths = {
       }
     }
   },
+  '/api/email/validate': {
+    post: {
+      operationId: 'validateEmail',
+      summary: 'Check an email address for the magic-link form',
+      description:
+        'Public. Returns `{ isValid }` on 200 for both results. Uses the house regex, then an MX lookup. Does not wrap success in the house envelope.',
+      tags,
+      security: [{}],
+      requestBody: {
+        required: true,
+        content: { 'application/json': { schema: toJsonSchema(validateEmailBody) } }
+      },
+      responses: {
+        '200': jsonOk('Regex and MX result.', {
+          type: 'object',
+          properties: { isValid: { type: 'boolean' } },
+          required: ['isValid']
+        }),
+        '400': { $ref: '#/components/responses/ValidationError' },
+        '429': rateLimitedRef
+      }
+    }
+  },
   '/api/email/preview/{type}': {
     get: {
       operationId: 'previewEmailTemplate',
@@ -186,8 +209,18 @@ export const emailPaths: OpenApiPaths = {
           required: ['success']
         }),
         '400': {
-          description: 'Invalid or expired token.',
-          content: { 'application/json': { schema: legacyRef } }
+          description:
+            'Missing token from zValidator (house envelope), or an invalid or expired token from the handler (`LegacyError`).',
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  { $ref: '#/components/schemas/ErrorEnvelope' },
+                  { $ref: '#/components/schemas/LegacyError' }
+                ]
+              }
+            }
+          }
         },
         '429': rateLimitedRef,
         '500': { $ref: '#/components/responses/LegacyInternalError' }

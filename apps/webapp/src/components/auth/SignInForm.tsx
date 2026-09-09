@@ -78,7 +78,7 @@ const SignInForm = ({ returnTo, onClose, embedded = false }: SignInFormProps) =>
 
     setEmailBusy(true)
     try {
-      const res = await fetch('/api/validate-email', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_RESTAPI_URL}/email/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: magicLinkEmail })

@@ -75,7 +75,9 @@ Moved verbatim out of the repo-root [AGENTS.md](../../AGENTS.md). The `### Supab
 ### HTTP Modules
 
 - **House envelope** (`ok` / `fail` / `houseEnvelopeHook`) lives in `apps/hocuspocus.server/src/http/envelope.ts`. Content, conversion, versions, documents, admin, and email import it from there. Do not re-home it inside a feature controller. Do not re-export it from the content controller. `validationFailed` is not a public helper; the hook inlines that 400. Every `zValidator` passes the hook except a domain-specific 400 (link-metadata `INVALID_URL`). Do not force the hook onto that route.
-- New backend HTTP features go to the `hocuspocus.server` app (`@docs.plus/hocuspocus`, Hono), not webapp `pages/api/`.
+- New backend HTTP features go to the `hocuspocus.server` app (`@docs.plus/hocuspocus`, Hono), not webapp `pages/api/`. Next `pages/api` keeps only Health. See [`apps/webapp/CLAUDE.md`](../webapp/CLAUDE.md) §Next Product APIs and [`CONTEXT.md`](../../CONTEXT.md) §Product HTTP.
+- **Validate lives on the email router, not a `modules/` folder.** `POST /validate` on `src/api/email.ts`, already mounted at `/api/email`. Public. `security: [{}]`. Body schema is `validateEmailBody` in `src/schemas/email.schema.ts`. House regex, then `resolveMx`. Both answers are 200 `{ isValid }`. Do not wrap success in `ok()`. `zValidator` still uses `houseEnvelopeHook` (400). Do not use `z.string().email()`.
+- **Status is not a Hono route.** Presence writes stay on Supabase. Do not add a rest-api Status endpoint.
 - New endpoints live under `apps/hocuspocus.server/src/modules/<feature>/`:
   - `domain/`: pure logic and pipeline stages.
   - `http/`: controller, router, zod schema.
