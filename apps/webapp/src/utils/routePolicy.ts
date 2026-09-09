@@ -7,7 +7,7 @@ export interface RoutePolicy {
 }
 
 const DOCUMENT_SHELL_PATHS = new Set(['/[...slugs]', '/editor', '/c/[channelId]'])
-const UTILITY_PATHS = new Set(['/privacy', '/terms', '/unsubscribe'])
+const UTILITY_PATHS = new Set(['/privacy', '/terms'])
 
 function isDocumentShellPath(pathname: string): boolean {
   return DOCUMENT_SHELL_PATHS.has(pathname)

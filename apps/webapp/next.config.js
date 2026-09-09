@@ -181,6 +181,25 @@ module.exports = withPWA({
       fullUrl: !isProduction
     }
   },
+  /**
+   * The unsubscribe page is served by the backend, which renders it with no
+   * JavaScript. A mail client runs none, and this URL must stay on the app's own
+   * domain: a reader will not trust an infrastructure hostname on a consent link.
+   * Next proxies the rewrite, so the query string and the token ride along.
+   */
+  async rewrites() {
+    // Next bakes this into routes-manifest.json at BUILD time, so an empty value
+    // cannot be repaired at runtime. Without it `/unsubscribe` falls to the
+    // catch-all, hits `reservedSlugs.ts`, and every email consent link 404s.
+    // Fail the build instead of shipping that image.
+    const restApi = process.env.NEXT_PUBLIC_RESTAPI_URL
+    if (!restApi) {
+      throw new Error(
+        'NEXT_PUBLIC_RESTAPI_URL is required at build time: /unsubscribe has no route without it'
+      )
+    }
+    return [{ source: '/unsubscribe', destination: `${restApi}/email/unsubscribe` }]
+  },
   async headers() {
     // 🚀 Clean, modular CSP - only what each directive needs
     // Reduces header size by 70%+ and makes maintenance easier
