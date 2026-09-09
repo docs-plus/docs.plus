@@ -69,51 +69,36 @@ export function notificationIcon(type: string): string {
   }
 }
 
-export interface UnsubscribeLinks {
-  unsubscribe_mentions?: string
-  unsubscribe_replies?: string
-  unsubscribe_reactions?: string
-  unsubscribe_digest?: string
-  unsubscribe_all?: string
-  preferences?: string
+/**
+ * A resolved footer. The label and the URL arrive together, so they cannot
+ * describe different scopes. Choosing which action a mail offers is the
+ * sender's job, because only the sender knows what kind of mail it is.
+ */
+export interface EmailFooter {
+  unsubscribeUrl: string
+  unsubscribeText: string
+  preferencesUrl: string
 }
 
-export function footerLinks(
-  unsubscribeLinks?: UnsubscribeLinks,
-  notificationType?: string
-): string {
-  const preferencesUrl = unsubscribeLinks?.preferences || `${APP_URL}/#settings?tab=notifications`
+// Used when the signing secret is unset. The link carries no token and the
+// route rejects it, which the reader can report. A silent omission cannot be.
+const UNSIGNED_FOOTER: EmailFooter = {
+  unsubscribeUrl: `${APP_URL}/unsubscribe`,
+  unsubscribeText: 'Unsubscribe',
+  preferencesUrl: `${APP_URL}/#settings?tab=notifications`
+}
 
-  let specificUnsubscribe: string | undefined
-  let unsubscribeText = 'Unsubscribe'
-
-  if (unsubscribeLinks) {
-    switch (notificationType) {
-      case 'mention':
-        specificUnsubscribe = unsubscribeLinks.unsubscribe_mentions
-        unsubscribeText = 'Unsubscribe from mentions'
-        break
-      case 'reply':
-        specificUnsubscribe = unsubscribeLinks.unsubscribe_replies
-        unsubscribeText = 'Unsubscribe from replies'
-        break
-      case 'reaction':
-        specificUnsubscribe = unsubscribeLinks.unsubscribe_reactions
-        unsubscribeText = 'Unsubscribe from reactions'
-        break
-      default:
-        specificUnsubscribe = unsubscribeLinks.unsubscribe_all
-        unsubscribeText = 'Unsubscribe from all'
-    }
-  }
-
-  const unsubscribeUrl = specificUnsubscribe || `${APP_URL}/unsubscribe`
-
+export function footerLinks(footer: EmailFooter = UNSIGNED_FOOTER): string {
   return `
-    <a href="${escapeAttr(preferencesUrl)}" style="color: ${COLORS.primary}; text-decoration: none;">Manage preferences</a>
+    <a href="${escapeAttr(footer.preferencesUrl)}" style="color: ${COLORS.primary}; text-decoration: none;">Manage preferences</a>
     <span style="color: ${COLORS.border}; margin: 0 ${SPACING.sm};">|</span>
-    <a href="${escapeAttr(unsubscribeUrl)}" style="color: ${COLORS.primary}; text-decoration: none;">${unsubscribeText}</a>
+    <a href="${escapeAttr(footer.unsubscribeUrl)}" style="color: ${COLORS.primary}; text-decoration: none;">${footer.unsubscribeText}</a>
   `
+}
+
+/** The plain-text twin. Both parts of one mail must offer the same link. */
+export function footerLinksText(footer: EmailFooter = UNSIGNED_FOOTER): string {
+  return `Manage preferences: ${footer.preferencesUrl}\n${footer.unsubscribeText}: ${footer.unsubscribeUrl}`
 }
 
 const MINUTE_MS = 60_000
@@ -210,6 +195,7 @@ export const templateHelpers = {
   button,
   notificationIcon,
   footerLinks,
+  footerLinksText,
   changeWindowLine,
   contributorLine,
   truncate,

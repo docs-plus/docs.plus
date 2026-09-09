@@ -4,6 +4,7 @@ import type { DigestDocument } from '../types'
 import {
   buildDigestEmail,
   buildListUnsubscribeHeaders,
+  buildNotificationEmailText,
   getEmailSubject,
   renderNewDocumentEmail,
   renderNotificationEmail,
@@ -619,5 +620,79 @@ describe('design tokens', () => {
     const html = renderNotificationEmail(NOTIFICATION_PARAMS)
     const year = new Date().getFullYear().toString()
     expect(html).toContain(`&copy; ${year}`)
+  })
+})
+
+/**
+ * A past bug left the HTML part working while the plain-text part shipped a
+ * tokenless link, inside one message. Mail clients pick one part, so both must
+ * offer the same link, with the same label.
+ */
+describe('both parts of one mail carry the same footer', () => {
+  const footer = {
+    unsubscribeUrl: 'https://docs.plus/unsubscribe?token=REPLIES',
+    unsubscribeText: 'Unsubscribe from replies',
+    preferencesUrl: 'https://docs.plus/#settings?tab=notifications'
+  }
+
+  it('renders the same URL and the same label in both parts', () => {
+    const params = {
+      recipientName: 'Jane',
+      senderName: 'Sam',
+      notificationType: 'reply' as const,
+      messagePreview: 'hi',
+      actionUrl: 'https://docs.plus/doc',
+      footer
+    }
+    for (const body of [renderNotificationEmail(params), buildNotificationEmailText(params)]) {
+      expect(body).toContain(footer.unsubscribeUrl)
+      expect(body).toContain(footer.unsubscribeText)
+    }
+  })
+
+  it('carries the digest footer through both parts of a digest', () => {
+    const digestFooter = { ...footer, unsubscribeText: 'Unsubscribe from digests' }
+    const digest = buildDigestEmail({
+      recipientName: 'Jane',
+      frequency: 'daily' as const,
+      documents: [],
+      periodEnd: new Date(0).toISOString(),
+      footer: digestFooter
+    })
+    for (const body of [digest.html, digest.text]) {
+      expect(body).toContain(digestFooter.unsubscribeText)
+    }
+  })
+
+  // The label and the URL come from one object, so they cannot describe
+  // different scopes. That mismatch was a real defect: a link labelled
+  // "Unsubscribe from replies" once carried the all-mail token.
+  it('never shows a narrow label over a broad link', () => {
+    const html = renderNotificationEmail({
+      recipientName: 'Jane',
+      senderName: 'Sam',
+      notificationType: 'reply' as const,
+      messagePreview: 'hi',
+      actionUrl: 'https://docs.plus/doc',
+      footer: { ...footer, unsubscribeUrl: 'https://docs.plus/unsubscribe?token=ALL' }
+    })
+    // Whatever the caller passed is what renders. No hidden widening.
+    expect(html).toContain('token=ALL')
+    expect(html).toContain('Unsubscribe from replies')
+  })
+
+  // Without a secret the sender passes no footer. The link is then tokenless,
+  // and the label must not claim a scope the link does not carry.
+  it('offers a plain, unscoped label when no footer is supplied', () => {
+    const text = buildNotificationEmailText({
+      recipientName: 'Jane',
+      senderName: 'Sam',
+      notificationType: 'mention' as const,
+      messagePreview: 'hi',
+      actionUrl: 'https://docs.plus/doc'
+    })
+    expect(text).toContain('/unsubscribe')
+    expect(text).not.toContain('token=')
+    expect(text).not.toContain('Unsubscribe from')
   })
 })

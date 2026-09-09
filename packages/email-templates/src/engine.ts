@@ -4,9 +4,9 @@ import { Eta } from 'eta'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-import { digestNotificationsUrl, templateHelpers, type UnsubscribeLinks } from './helpers'
+import { digestNotificationsUrl, type EmailFooter, templateHelpers } from './helpers'
 import { APP_NAME, APP_URL, COLORS, RADIUS } from './tokens'
-import type { DigestDocument, DigestFrequency } from './types'
+import type { DigestDocument, DigestFrequency, NotificationType } from './types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = join(__dirname, '..', 'templates')
@@ -38,18 +38,18 @@ function renderWithLayout(
 export function renderNotificationEmail(params: {
   recipientName: string
   senderName: string
-  notificationType: string
+  notificationType: NotificationType
   messagePreview: string
   actionUrl: string
   senderAvatarUrl?: string
   documentName?: string
   channelName?: string
-  unsubscribeLinks?: UnsubscribeLinks
+  footer?: EmailFooter
 }): string {
-  const { unsubscribeLinks, notificationType, ...rest } = params
+  const { footer, notificationType, ...rest } = params
   const subject = getEmailSubject(notificationType, params.senderName)
 
-  const footerHtml = templateHelpers.footerLinks(unsubscribeLinks, notificationType)
+  const footerHtml = templateHelpers.footerLinks(footer)
 
   return renderWithLayout('notification', { ...rest, notificationType, subject }, footerHtml)
 }
@@ -77,16 +77,12 @@ export function renderDigestEmail(params: {
   periodEnd: string
   /** Resolved once by the caller, so the subject and both bodies cannot disagree. */
   totalNotifications: number
-  unsubscribeLinks?: UnsubscribeLinks
+  footer?: EmailFooter
 }): string {
-  const { documents, frequency, unsubscribeLinks, ...rest } = params
+  const { documents, frequency, footer, ...rest } = params
   const periodLabel = frequency === 'daily' ? 'today' : 'this week'
 
-  const digestLinks: UnsubscribeLinks = {
-    ...unsubscribeLinks,
-    unsubscribe_all: unsubscribeLinks?.unsubscribe_digest || unsubscribeLinks?.unsubscribe_all
-  }
-  const footerHtml = templateHelpers.footerLinks(digestLinks)
+  const footerHtml = templateHelpers.footerLinks(footer)
 
   return renderWithLayout(
     'digest',

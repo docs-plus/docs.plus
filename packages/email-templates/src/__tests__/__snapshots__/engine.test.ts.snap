@@ -636,7 +636,7 @@ exports[`buildDigestEmail snapshot 1`] = `
                 
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
-    <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe from all</a>
+    <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe</a>
   
               </p>
             </td>
@@ -892,7 +892,7 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
                 
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
-    <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe from all</a>
+    <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe</a>
   
               </p>
             </td>

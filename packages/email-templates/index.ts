@@ -11,7 +11,7 @@ export {
   renderNotificationEmail,
   renderUnsubscribePage
 } from './src/engine'
-export type { UnsubscribeLinks } from './src/helpers'
+export type { EmailFooter } from './src/helpers'
 export type { DigestEmail } from './src/templates'
 export {
   buildDigestEmail,

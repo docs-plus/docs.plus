@@ -13,11 +13,13 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
+import { config } from '../config/env'
 import { houseEnvelopeHook } from '../http/envelope'
 import { verifyServiceRole } from '../lib/auth'
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
 import { getServiceRoleClient } from '../lib/supabase'
+import { verifyUnsubscribeToken } from '../lib/unsubscribeToken'
 import {
   emailBounceSchema,
   sendDigestEmailSchema,
@@ -284,16 +286,41 @@ interface UnsubscribeResult {
 type UnsubscribeOutcome =
   { status: 'ok'; result: UnsubscribeResult } | { status: 'unconfigured' } | { status: 'failed' }
 
-// Run the process_unsubscribe RPC via the service-role client (mirrors /bounce).
-// Separates an unconfigured client from an RPC failure so each route renders its
-// own message; never throws.
+/**
+ * Identity comes from the token, which is verified here rather than in Postgres.
+ * A missing secret and a missing client are both `unconfigured`: neither is the
+ * visitor's fault, and each must not read to them as an expired link.
+ */
 async function processUnsubscribe(token: string): Promise<UnsubscribeOutcome> {
   const supabase = getServiceRoleClient()
-  if (!supabase) return { status: 'unconfigured' }
+  if (!supabase) {
+    emailLogger.error('Supabase service-role client is not configured for unsubscribe')
+    return { status: 'unconfigured' }
+  }
+  const secret = config.email.unsubscribeSecret
+  if (!secret) {
+    emailLogger.error('EMAIL_UNSUBSCRIBE_SECRET is not set — cannot verify unsubscribe tokens')
+    return { status: 'unconfigured' }
+  }
 
-  const { data, error } = await supabase.rpc('process_unsubscribe', { p_token: token })
+  const payload = verifyUnsubscribeToken({ token, secret })
+  if (!payload) {
+    return {
+      status: 'ok',
+      result: {
+        success: false,
+        error: 'invalid_token',
+        message: 'This unsubscribe link is invalid or has expired.'
+      }
+    }
+  }
+
+  const { data, error } = await supabase.rpc('apply_unsubscribe', {
+    p_user_id: payload.uid,
+    p_action: payload.act
+  })
   if (error) {
-    emailLogger.error({ err: error }, 'process_unsubscribe RPC failed')
+    emailLogger.error({ err: error }, 'apply_unsubscribe RPC failed')
     return { status: 'failed' }
   }
   return { status: 'ok', result: data as UnsubscribeResult }
@@ -321,7 +348,6 @@ emailRouter.get('/unsubscribe', async (c) => {
     const outcome = await processUnsubscribe(token)
 
     if (outcome.status === 'unconfigured') {
-      emailLogger.error('Supabase credentials not configured for unsubscribe')
       return c.html(
         renderUnsubscribePage({
           success: false,
@@ -337,7 +363,7 @@ emailRouter.get('/unsubscribe', async (c) => {
         renderUnsubscribePage({
           success: false,
           title: 'Error',
-          message: 'Unable to process your request. The link may be invalid or expired.',
+          message: 'Unable to process your request. Please try again later.',
           showManageLink: true
         })
       )

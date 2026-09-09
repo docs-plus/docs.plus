@@ -2,44 +2,76 @@ import {
   buildDigestEmail,
   buildListUnsubscribeHeaders,
   buildNotificationEmailText,
+  type EmailFooter,
   getEmailSubject,
-  renderNotificationEmail,
-  type UnsubscribeLinks
+  renderNotificationEmail
 } from '@docs.plus/email-templates'
 
+import { config } from '../../config/env'
 import type {
   DigestEmailRequest,
   EmailJobData,
   EmailResult,
   EmailStatusCallback,
   GenericEmailRequest,
-  NotificationEmailRequest
+  NotificationEmailRequest,
+  NotificationType
 } from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { getServiceRoleClient } from '../supabase'
+import type { UnsubscribeAction } from '../unsubscribeToken'
+import { signUnsubscribeToken } from '../unsubscribeToken'
 import { sendEmail } from './providers'
+import { oneClickUrl, unsubscribeLinkUrl } from './unsubscribeUrls'
 
-async function getUnsubscribeLinks(userId: string): Promise<UnsubscribeLinks | undefined> {
-  const supabase = getServiceRoleClient()
-  if (!supabase) return undefined
+/**
+ * Which unsubscribe a mail offers. Exhaustive on purpose: adding a notification
+ * type must not silently fall through to turning off every email.
+ */
+const ACTION_FOR_TYPE: Record<NotificationType, UnsubscribeAction> = {
+  mention: 'mentions',
+  reply: 'replies',
+  reaction: 'reactions',
+  message: 'all',
+  thread_message: 'all',
+  channel_event: 'all',
+  content_change: 'all'
+}
 
-  try {
-    const appUrl = process.env.APP_URL || 'https://docs.plus'
+const UNSUBSCRIBE_TEXT: Record<UnsubscribeAction, string> = {
+  mentions: 'Unsubscribe from mentions',
+  replies: 'Unsubscribe from replies',
+  reactions: 'Unsubscribe from reactions',
+  digest: 'Unsubscribe from digests',
+  all: 'Unsubscribe from all'
+}
 
-    const { data, error } = await supabase.rpc('get_email_footer_links', {
-      p_user_id: userId,
-      p_base_url: appUrl
-    })
-
-    if (error) {
-      emailLogger.warn({ err: error, userId }, 'Failed to fetch unsubscribe links')
-      return undefined
-    }
-
-    return data as UnsubscribeLinks
-  } catch (err) {
-    emailLogger.warn({ err }, 'Error fetching unsubscribe links')
+/**
+ * One action, one signature, both URL shapes. The footer label and the header
+ * therefore always describe the same scope. A missing secret still sends the
+ * mail: blocking every notification on one config slip is worse.
+ */
+function resolveUnsubscribe(
+  userId: string,
+  action: UnsubscribeAction
+): { footer: EmailFooter; oneClick?: string } | undefined {
+  const secret = config.email.unsubscribeSecret
+  if (!secret) {
+    emailLogger.error({ userId }, 'EMAIL_UNSUBSCRIBE_SECRET is not set — footer link has no token')
     return undefined
+  }
+  const appUrl = process.env.APP_URL || 'https://docs.plus'
+  const token = signUnsubscribeToken({ userId, action, secret })
+  const apiOrigin = config.app.publicUrl
+  return {
+    footer: {
+      unsubscribeUrl: unsubscribeLinkUrl(appUrl, token),
+      unsubscribeText: UNSUBSCRIBE_TEXT[action],
+      preferencesUrl: `${appUrl}/#settings?tab=notifications`
+    },
+    // Absent origin means no header: a dead one tells the client the
+    // unsubscribe worked when nothing was written.
+    oneClick: apiOrigin ? oneClickUrl(apiOrigin, token) : undefined
   }
 }
 
@@ -75,12 +107,10 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           actionUrl = appUrl
         }
 
-        const unsubscribeLinks = userId ? await getUnsubscribeLinks(userId) : undefined
-
-        // Build List-Unsubscribe headers (RFC 8058)
-        if (unsubscribeLinks?.unsubscribe_all) {
-          headers = buildListUnsubscribeHeaders(unsubscribeLinks.unsubscribe_all)
-        }
+        const unsub = userId
+          ? resolveUnsubscribe(userId, ACTION_FOR_TYPE[payload.notification_type])
+          : undefined
+        if (unsub?.oneClick) headers = buildListUnsubscribeHeaders(unsub.oneClick)
 
         html = renderNotificationEmail({
           recipientName: payload.recipient_name,
@@ -91,7 +121,7 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           senderAvatarUrl: payload.sender_avatar_url,
           documentName: payload.document_name,
           channelName: payload.channel_name,
-          unsubscribeLinks
+          footer: unsub?.footer
         })
 
         text = buildNotificationEmailText({
@@ -101,7 +131,8 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           messagePreview: payload.message_preview,
           actionUrl,
           documentName: payload.document_name,
-          channelName: payload.channel_name
+          channelName: payload.channel_name,
+          footer: unsub?.footer
         })
         break
       }
@@ -111,21 +142,15 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         to = payload.to
         userId = payload.recipient_id
 
-        const unsubscribeLinks = userId ? await getUnsubscribeLinks(userId) : undefined
-
-        // Build List-Unsubscribe headers (RFC 8058) - use digest-specific link
-        if (unsubscribeLinks?.unsubscribe_digest) {
-          headers = buildListUnsubscribeHeaders(unsubscribeLinks.unsubscribe_digest)
-        } else if (unsubscribeLinks?.unsubscribe_all) {
-          headers = buildListUnsubscribeHeaders(unsubscribeLinks.unsubscribe_all)
-        }
+        const unsub = userId ? resolveUnsubscribe(userId, 'digest') : undefined
+        if (unsub?.oneClick) headers = buildListUnsubscribeHeaders(unsub.oneClick)
 
         const digest = buildDigestEmail({
           recipientName: payload.recipient_name,
           frequency: payload.frequency,
           documents: payload.documents,
           periodEnd: payload.period_end,
-          unsubscribeLinks
+          footer: unsub?.footer
         })
         subject = digest.subject
         html = digest.html

@@ -8,8 +8,8 @@ export type {
   DigestDocument,
   DigestFrequency,
   DigestNotification,
-  NotificationType,
-  UnsubscribeLinks
+  EmailFooter,
+  NotificationType
 } from '@docs.plus/email-templates'
 
 export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'

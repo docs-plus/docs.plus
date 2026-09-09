@@ -9,9 +9,9 @@ import {
   changeWindowLine,
   contributorLine,
   digestNotificationsUrl,
-  type UnsubscribeLinks
+  type EmailFooter,
+  footerLinksText
 } from './helpers'
-import { APP_URL } from './tokens'
 import type { DigestDocument, DigestFrequency, NotificationType } from './types'
 
 export function buildNotificationEmailText(params: {
@@ -22,6 +22,7 @@ export function buildNotificationEmailText(params: {
   actionUrl: string
   documentName?: string
   channelName?: string
+  footer?: EmailFooter
 }): string {
   const {
     recipientName,
@@ -47,8 +48,7 @@ View the message: ${actionUrl}
 
 ---
 You're receiving this because you have email notifications enabled.
-Manage preferences: ${APP_URL}/#settings?tab=notifications
-Unsubscribe: ${APP_URL}/unsubscribe
+${footerLinksText(params.footer)}
 `.trim()
 }
 
@@ -87,6 +87,7 @@ function buildDigestEmailText(params: {
   documents: DigestDocument[]
   periodEnd: string
   items: string
+  footer?: EmailFooter
 }): string {
   const { recipientName, frequency, documents, periodEnd, items } = params
 
@@ -147,8 +148,7 @@ ${documentsText}
 
 ---
 View all notifications: ${digestNotificationsUrl(documents)}
-Manage preferences: ${APP_URL}/#settings?tab=notifications
-Unsubscribe: ${APP_URL}/unsubscribe
+${footerLinksText(params.footer)}
 `.trim()
 }
 
@@ -169,7 +169,7 @@ export function buildDigestEmail(params: {
   documents: DigestDocument[]
   /** The window's end, so the "ago" phrase matches on both surfaces. */
   periodEnd: string
-  unsubscribeLinks?: UnsubscribeLinks
+  footer?: EmailFooter
 }): DigestEmail {
   const totalNotifications = countDigestItems(params.documents)
   const items = `${totalNotifications} notification${totalNotifications === 1 ? '' : 's'}`

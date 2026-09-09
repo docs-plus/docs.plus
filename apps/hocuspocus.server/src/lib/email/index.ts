@@ -5,6 +5,7 @@ export type {
   DigestEmailRequest,
   DigestNotification,
   EmailBounceEvent,
+  EmailFooter,
   EmailFrequency,
   EmailGatewayHealth,
   EmailJobData,
@@ -13,8 +14,7 @@ export type {
   EmailStatusCallback,
   GenericEmailRequest,
   NotificationEmailRequest,
-  NotificationType,
-  UnsubscribeLinks
+  NotificationType
 } from '../../types/email.types'
 export { sendNewDocumentNotification } from './document-notification'
 export {
