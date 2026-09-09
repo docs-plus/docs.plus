@@ -53,7 +53,7 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
     <MessageFeedError>
       <div
         className={twMerge(
-          'message-feed scrollbar-custom scrollbar-thin relative flex min-h-0 flex-1 flex-col overflow-hidden',
+          'message-feed scrollbar-custom relative flex min-h-0 flex-1 scrollbar-thin flex-col overflow-hidden',
           className
         )}
         data-key="chatroom-feed">

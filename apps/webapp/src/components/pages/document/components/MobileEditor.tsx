@@ -18,7 +18,7 @@ const Editor = () => {
   return (
     <div
       ref={editorWrapperRef}
-      className="editor editorWrapper scrollbar-custom scrollbar-thin relative flex min-h-0 w-full max-w-full flex-1 flex-col justify-start overflow-y-auto scroll-smooth">
+      className="editor editorWrapper scrollbar-custom relative flex min-h-0 w-full max-w-full flex-1 scrollbar-thin flex-col justify-start overflow-y-auto scroll-smooth">
       <EditorContent />
     </div>
   )

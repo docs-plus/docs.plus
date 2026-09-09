@@ -68,7 +68,7 @@ const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: b
     <ToolbarSkeleton />
 
     <div className="editor flex min-h-0 w-full flex-1 flex-row-reverse bg-[var(--pad-well)]">
-      <div className="editorWrapper scrollbar-custom scrollbar-thin flex h-full min-w-0 flex-1 items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
+      <div className="editorWrapper scrollbar-custom flex h-full min-w-0 flex-1 scrollbar-thin items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
         <EditorContentSkeleton className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
       </div>
       <aside className="h-full shrink-0 bg-[var(--pad-well)]" style={{ width: tocWidth }}>

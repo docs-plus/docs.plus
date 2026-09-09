@@ -51,7 +51,7 @@ export function HistorySidebarBody({ rows, virtualize, ...rowHandlers }: History
         <Virtuoso
           ref={virtuosoRef}
           data={rows}
-          className="scrollbar-custom scrollbar-thin h-full"
+          className="scrollbar-custom h-full scrollbar-thin"
           style={{ height: '100%' }}
           increaseViewportBy={200}
           itemContent={(index, row) => (

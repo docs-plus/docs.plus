@@ -119,7 +119,7 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
 
       <div className="flex flex-1">
         <aside className="tiptap__toc m_desktop border-base-300 bg-base-100 flex w-64 shrink-0 flex-col border-r !pt-0">
-          <div className="scrollbar-custom scrollbar-thin min-h-0 flex-1 overflow-y-auto p-2">
+          <div className="scrollbar-custom min-h-0 flex-1 scrollbar-thin overflow-y-auto p-2">
             <TocDesktop />
           </div>
         </aside>
@@ -128,7 +128,7 @@ const EditorPlayground = ({ localPersistence, docName }: EditorPlaygroundProps) 
           <div className="pad tiptap history_editor flex flex-col border-solid">
             <div className="editor relative flex size-full flex-row justify-around align-top">
               <div className="mainWrapper relative flex w-full max-w-full flex-col align-top">
-                <div className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
+                <div className="editorWrapper scrollbar-custom bg-base-200 flex h-full grow scrollbar-thin items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
                   <TiptapEditor className={`tiptap__editor docy_editor relative`} editor={editor} />
                 </div>
               </div>

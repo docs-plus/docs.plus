@@ -34,7 +34,7 @@ const DesktopEditor = () => {
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           <div
             ref={editorWrapperRef}
-            className="editorWrapper scrollbar-custom scrollbar-thin flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
+            className="editorWrapper scrollbar-custom flex h-full grow scrollbar-thin items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
             <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
           </div>
 
