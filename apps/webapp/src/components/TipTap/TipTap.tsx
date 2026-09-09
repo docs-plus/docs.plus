@@ -46,6 +46,7 @@ import { MarkdownPaste } from './extensions/markdown-paste'
 import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { ListKeymapWithoutTab } from './listKeymapWithoutTab'
 import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
 import { getMediaActionsResolver } from './mediaPopovers/mediaComment'
 import { createLucideToolbarIcons } from './mediaPopovers/mediaToolbarLucide'
@@ -118,8 +119,12 @@ const Editor = ({
         linkOnPaste: false,
         openOnClick: false,
         shouldAutoLink: () => false
-      }
+      },
+      // 3.30+ ListKeymap Tab sinks a following paragraph into the previous list.
+      // Indent owns Tab. StarterKit's copy is replaced below.
+      listKeymap: false
     }),
+    ListKeymapWithoutTab,
 
     ParagraphStyle,
 

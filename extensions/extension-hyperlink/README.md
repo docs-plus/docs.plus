@@ -23,7 +23,7 @@ Beyond the mark itself, the package covers the link behavior hosts usually hand-
 bun add @docs.plus/extension-hyperlink
 ```
 
-Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 Installs two runtime dependencies, `@floating-ui/dom` and `linkifyjs`. The popover engine and the tooltip ship inside `dist`, so they add no third package.
 

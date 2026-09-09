@@ -1,6 +1,24 @@
-import { schema } from '@tiptap/pm/schema-basic'
+import { Schema } from '@tiptap/pm/model'
 
 import { buildCompareDecorations } from './compareDecorations'
+
+/** Fixture schema. `@tiptap/pm` 3.31 dropped the `schema-basic` export. */
+const schema = new Schema({
+  nodes: {
+    doc: { content: 'block+' },
+    paragraph: { group: 'block', content: 'inline*' },
+    heading: {
+      group: 'block',
+      content: 'inline*',
+      attrs: { level: { default: 1 } }
+    },
+    text: { group: 'inline' }
+  },
+  marks: {
+    strong: {},
+    link: { attrs: { href: { default: '' } } }
+  }
+})
 
 /** One paragraph from mixed inline pieces; a bare string becomes an unmarked text node. */
 const para = (...pieces: (string | object)[]) => ({
@@ -87,7 +105,7 @@ describe('buildCompareDecorations', () => {
   })
 
   it('ignores a toc-id rewrite, which the first browser open performs', () => {
-    // `prosemirror-schema-basic` drops an unknown attr, so both sides decode identically.
+    // This fixture schema has no toc-id, so both sides decode identically.
     // The real webapp schema declares toc-id, and diffTokenEncoder strips it by name.
     const stamped = (id: string) => ({
       type: 'doc',

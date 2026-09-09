@@ -23,7 +23,7 @@ One `HyperMultimediaKit.configure` call adds all nine nodes. Every node gets a m
 bun add @docs.plus/extension-hypermultimedia
 ```
 
-Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 Installs one runtime dependency, `@floating-ui/dom`. The popover engine and the tooltip engine ship inside `dist`, so they add no further install.
 

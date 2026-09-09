@@ -1,4 +1,5 @@
 import { getHyperlinkPopoverConfigAtInvoke } from '@components/TipTap/hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { ListKeymapWithoutTab } from '@components/TipTap/listKeymapWithoutTab'
 import { getComposerState, syncComposerDraft } from '@db/messageComposerDB'
 import { Hyperlink } from '@docs.plus/extension-hyperlink'
 import { Indent } from '@docs.plus/extension-indent'
@@ -126,6 +127,7 @@ export const useTiptapEditor = ({
           link: false, // Hyperlink extension owns <a> marks; StarterKit Link duplicates autolink/schema.
           code: false, // Disable default code to use our custom InlineCode extension
           codeBlock: false,
+          listKeymap: false,
           bulletList: {
             keepMarks: true,
             keepAttributes: false // TODO: keepAttributes:true loses marks; investigating upstream.
@@ -135,6 +137,7 @@ export const useTiptapEditor = ({
             keepAttributes: false // TODO: keepAttributes:true loses marks; investigating upstream.
           }
         }),
+        ListKeymapWithoutTab,
         InlineCode,
         Indent.configure({
           indentChars: '\t'

@@ -23,7 +23,7 @@ A textblock is a node that holds inline text, such as a paragraph or a heading. 
 bun add @docs.plus/extension-placeholder
 ```
 
-Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 Installs with no runtime dependencies.
 

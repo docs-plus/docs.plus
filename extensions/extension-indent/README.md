@@ -23,7 +23,7 @@ Lists, tables and the browser all claim Tab. This extension registers at priorit
 bun add @docs.plus/extension-indent
 ```
 
-Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 Installs with no runtime dependencies.
 

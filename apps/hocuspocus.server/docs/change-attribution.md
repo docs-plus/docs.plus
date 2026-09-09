@@ -55,8 +55,9 @@ therefore identity churn rather than an edit.
 
 Two things follow for anyone changing that file. Interning to integers is not a style choice: it
 keeps the library's cheap prefix and suffix trim alive, which a fresh object per character
-destroys. And the version is load-bearing — `@tiptap/pm` declares `prosemirror-changeset: "^2.3.0"`,
-so only the lockfile pins the version that carries the third argument.
+destroys. `@tiptap/pm` 3.31.3 declares `prosemirror-changeset: "^2.4.1"`. The root
+override pins `2.4.1`. Version `2.4.2` halves `MAX_DIFF_SIZE` and bails on a whole-document
+range, so Compare would paint one change for any pad over about 2500 positions.
 
 The block comparison on this side of the wire never had this blindness. `canonicalizeBlock` hashes
 each top-level block from its whole JSON, marks and attributes included, and strips only

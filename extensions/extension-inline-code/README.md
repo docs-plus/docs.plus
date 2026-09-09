@@ -23,7 +23,7 @@ Two traps come with a backtick code mark. `@tiptap/extension-code` exits a code 
 bun add @docs.plus/extension-inline-code
 ```
 
-Requires **`@tiptap/core` ^3.22.3** and **`@tiptap/pm` ^3.22.3** (Tiptap 3.x).
+Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 Installs with no runtime dependencies.
 
