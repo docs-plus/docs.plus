@@ -82,13 +82,12 @@ describe('Markdown import/export — hyperlink mark', () => {
       })
     })
 
-    // A mark contributes only the slices around `renderChildren()`, so the label
-    // cannot be escaped from `renderMarkdown`. Balanced brackets need no escape;
-    // pin that here so nobody re-adds a replace that would corrupt the
-    // placeholder and blank the link syntax entirely.
-    it('round-trips balanced brackets in the label without escaping', () => {
+    // The mark cannot escape its own label (`renderChildren` is a sentinel).
+    // `@tiptap/markdown` now escapes the text itself. Re-import must still
+    // restore the brackets. Do not add a replace on the sentinel.
+    it('round-trips balanced brackets in the label', () => {
       cy.setEditorContent('<p><a href="https://example.com/x">a [b] c</a></p>')
-      cy.getMarkdown().should('include', '[a [b] c](https://example.com/x)')
+      cy.getMarkdown().should('include', '[a \\[b\\] c](https://example.com/x)')
       cy.getMarkdown().then((md) => {
         cy.setMarkdown(md)
         cy.get('#editor a[href="https://example.com/x"]').should('have.text', 'a [b] c')
