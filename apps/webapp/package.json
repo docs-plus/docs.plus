@@ -77,7 +77,7 @@
     "lowlight": "^3.3.0",
     "mobile-detect": "^1.4.5",
     "motion": "^13.1.1",
-    "next": "15.5.21",
+    "next": "15.5.25",
     "next-pwa": "^5.6.0",
     "next-secure-headers": "^2.2.0",
     "postcss-viewport-height-correction": "^1.1.1",
