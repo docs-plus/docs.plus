@@ -117,6 +117,15 @@ export const envSchema = z.object({
   NEW_DOCUMENT_NOTIFICATION_EMAILS: commaSeparatedList,
   APP_URL: z.string().default('https://docs.plus'),
 
+  // Signs one-click unsubscribe links. Empty is allowed so local and CI boot, and
+  // the sender fails closed at first use. A short secret is worse than none: it is
+  // recovered offline from one link, and then mints a token for any user.
+  EMAIL_UNSUBSCRIBE_SECRET: z
+    .string()
+    .refine((v) => v === '' || v.length >= 32, 'must be empty or at least 32 characters')
+    .optional()
+    .default(''),
+
   EMAIL_WORKER_CONCURRENCY: numericString('3'),
   EMAIL_RATE_LIMIT_MAX: numericString('50'),
   EMAIL_RATE_LIMIT_DURATION: numericString('60000'),

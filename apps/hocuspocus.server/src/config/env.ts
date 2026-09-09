@@ -89,6 +89,7 @@ export const config = {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS
     },
+    unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET,
     gateway: {
       workerConcurrency: env.EMAIL_WORKER_CONCURRENCY,
       rateLimitMax: env.EMAIL_RATE_LIMIT_MAX,
