@@ -23,12 +23,10 @@ export const Input = ({ className }: { className?: string }) => {
         'text-base-content flex min-w-0 flex-1 items-center self-center',
         rowHeight,
         className
-      )}
-      tabIndex={1}>
+      )}>
       <EditorContent
         id="chatroom-editor"
         data-testid="composer-input"
-        tabIndex={2}
         ref={editorRef}
         className={twMerge(
           'text-base-content max-h-52 w-full overflow-y-auto break-words wrap-anywhere whitespace-pre-line',
