@@ -11,26 +11,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../ChatroomContext'
-import { Actions, EmojiButton, MentionButton } from './components/Actions'
+import { Actions, EmojiButton } from './components/Actions'
 import { ComposerEmojiPanel } from './components/ComposerEmojiPanel'
 import { Context } from './components/Context'
-import CommentContext from './components/Context/CommentContext'
-import EditContext from './components/Context/EditContext'
-import ReplyContext from './components/Context/ReplyContext'
 import { Input } from './components/Input'
 import { ComposerDesktopLayout, ComposerLayout, ComposerMobileLayout } from './components/layouts'
-import {
-  BlockquoteButton,
-  BoldButton,
-  BulletListButton,
-  CodeBlockButton,
-  CodeButton,
-  HyperlinkButton,
-  ItalicButton,
-  OrderedListButton,
-  StrikethroughButton,
-  Toolbar
-} from './components/Toolbar'
+import { Toolbar } from './components/Toolbar'
 import {
   type ComposerAttachmentActions,
   ComposerAttachmentActionsContext
@@ -292,22 +278,9 @@ export default MessageComposer
 
 MessageComposer.EditorContent = EditorContent
 MessageComposer.Toolbar = Toolbar
-MessageComposer.BlockquoteButton = BlockquoteButton
-MessageComposer.CodeButton = CodeButton
-MessageComposer.HyperlinkButton = HyperlinkButton
-MessageComposer.ItalicButton = ItalicButton
-MessageComposer.OrderedListButton = OrderedListButton
-MessageComposer.StrikethroughButton = StrikethroughButton
-MessageComposer.BoldButton = BoldButton
-MessageComposer.BulletListButton = BulletListButton
-MessageComposer.CodeBlockButton = CodeBlockButton
 MessageComposer.Context = Context
-MessageComposer.ReplyContext = ReplyContext
-MessageComposer.EditContext = EditContext
-MessageComposer.CommentContext = CommentContext
 MessageComposer.Actions = Actions
 MessageComposer.EmojiButton = EmojiButton
-MessageComposer.MentionButton = MentionButton
 MessageComposer.Input = Input
 MessageComposer.ComposerDesktopLayout = ComposerDesktopLayout
 MessageComposer.ComposerMobileLayout = ComposerMobileLayout
