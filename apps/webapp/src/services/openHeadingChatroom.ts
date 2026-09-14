@@ -59,24 +59,6 @@ export function focusChatComposerWithRetry(): void {
   retryWithBackoff(focusChatEditor, FOCUS_RETRY)
 }
 
-export function insertChatComposerContentWithRetry(insertContent: string): void {
-  retryWithBackoff(
-    () => {
-      const { editorInstance } = useChatStore.getState().chatRoom
-      if (!editorInstance) return false
-
-      editorInstance.chain().focus().insertContent(insertContent).run()
-      return true
-    },
-    {
-      ...FOCUS_RETRY,
-      onRetry: (attempt, error) => {
-        console.info(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
-      }
-    }
-  )
-}
-
 type ScheduleOpenHeadingChatroomParams = {
   headingId: string
   workspaceId: string | undefined
@@ -109,7 +91,6 @@ export type OpenHeadingChatroomParams = {
   scroll2Heading?: boolean
   fetchMsgsFromId?: string
   focusEditor?: boolean
-  insertContent?: string | null
 }
 
 export function openHeadingChatroom({
@@ -118,8 +99,7 @@ export function openHeadingChatroom({
   anchor,
   scroll2Heading = false,
   fetchMsgsFromId,
-  focusEditor = false,
-  insertContent = null
+  focusEditor = false
 }: OpenHeadingChatroomParams): void {
   const { workspaceId } = useStore.getState().settings
   const chatStore = useChatStore.getState()
@@ -160,7 +140,6 @@ export function openHeadingChatroom({
     onPaneOpen: scroll2Heading ? () => scrollToHeading(headingId) : undefined
   })
   exitDocEditModeForSheet()
-  if (insertContent) insertChatComposerContentWithRetry(insertContent)
   if (focusEditor) focusChatComposerWithRetry()
 }
 
@@ -173,22 +152,19 @@ type OpenHeadingChatBrowseParams = {
   scroll2Heading?: boolean
   fetchMsgsFromId?: string
   focusEditor?: boolean
-  insertContent?: string | null
 }
 
 export function openHeadingChatBrowse({
   headingId,
   scroll2Heading = false,
   fetchMsgsFromId,
-  focusEditor = false,
-  insertContent = null
+  focusEditor = false
 }: OpenHeadingChatBrowseParams): void {
   openHeadingChatroom({
     headingId,
     intent: 'browse',
     scroll2Heading,
     fetchMsgsFromId,
-    focusEditor,
-    insertContent
+    focusEditor
   })
 }

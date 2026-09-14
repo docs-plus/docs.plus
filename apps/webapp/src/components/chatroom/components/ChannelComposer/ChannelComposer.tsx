@@ -4,12 +4,7 @@ import { twMerge } from 'tailwind-merge'
 
 import MsgComposer from '../MessageComposer/MessageComposer'
 import { ChatroomComposerSkeleton } from '../skeleton'
-import {
-  JoinBroadcastChannel,
-  JoinDirectChannel,
-  JoinGroupChannel,
-  SignInToJoinChannel
-} from './components'
+import { JoinBroadcastChannel, JoinDirectChannel, JoinGroupChannel } from './components'
 
 export interface ChannelComposerProps {
   children?: React.ReactNode
@@ -64,9 +59,6 @@ const ChannelComposer = ({ children, className }: ChannelComposerProps) => (
 
 export default ChannelComposer
 
-ChannelComposer.SignInPrompt = SignInToJoinChannel
 ChannelComposer.JoinDirect = JoinDirectChannel
 ChannelComposer.JoinGroup = JoinGroupChannel
 ChannelComposer.JoinBroadcast = JoinBroadcastChannel
-ChannelComposer.MsgComposer = MsgComposer
-ChannelComposer.AccessControl = AccessControl
