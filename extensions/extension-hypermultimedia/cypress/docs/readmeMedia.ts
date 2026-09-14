@@ -10,7 +10,7 @@ export function readmeMediaUrl(file: string): string {
   return `${README_MEDIA_BASE}/${file}`
 }
 
-export const README_IMAGE = readmeMediaUrl('sample.png')
+export const README_IMAGE = readmeMediaUrl('sample.jpg')
 export const README_VIDEO = readmeMediaUrl('sample.mp4')
 export const README_AUDIO = readmeMediaUrl('sample.ogg')
 
@@ -33,9 +33,6 @@ export const README_GALLERY_VIDEO_HEIGHT = 270
 export const README_GALLERY_LOOM_HEIGHT = 360
 /** Spotify full-art player height (album / playlist / show / episode). */
 export const README_GALLERY_SPOTIFY_HEIGHT = 352
-export const README_GALLERY_IMAGE_WIDTH = 332
-export const README_GALLERY_IMAGE_HEIGHT = 332
-
 /** HTMLMediaElement.HAVE_CURRENT_DATA — decoded frame, not metadata-only. */
 export const README_MEDIA_HAVE_CURRENT_DATA = 2
 
@@ -65,10 +62,8 @@ export function readmeGalleryLayout(
   return { ...README_GALLERY_LAYOUT, width, height }
 }
 
-export const README_IMAGE_GALLERY_LAYOUT = readmeGalleryLayout(
-  README_GALLERY_IMAGE_WIDTH,
-  README_GALLERY_IMAGE_HEIGHT
-)
+/** 16:9 — matches `sample.jpg` (1280×720). */
+export const README_IMAGE_GALLERY_LAYOUT = readmeGalleryLayout()
 
 export const README_LOOM_GALLERY_OPTS = {
   hideEmbedTopBar: true,

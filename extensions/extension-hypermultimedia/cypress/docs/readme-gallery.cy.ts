@@ -107,7 +107,7 @@ const GALLERY_SCENES: GalleryScene[] = [
     setup: (editor) => {
       editor.commands.setImage({
         src: README_IMAGE,
-        alt: 'Sample photo',
+        alt: 'Cartoon game art',
         ...README_IMAGE_GALLERY_LAYOUT
       })
     },
@@ -121,7 +121,7 @@ const GALLERY_SCENES: GalleryScene[] = [
     setup: (editor) => {
       editor.commands.setImage({
         src: README_IMAGE,
-        alt: 'Grapefruit slice',
+        alt: 'Cartoon game art',
         ...README_IMAGE_GALLERY_LAYOUT
       })
     },
@@ -280,9 +280,13 @@ function runGalleryScene(scene: GalleryScene, theme: ReadmeGalleryTheme): void {
 }
 
 describe('README screenshot gallery', () => {
+  const raw = Cypress.env('gallerySlugs')
+  const slugs = typeof raw === 'string' && raw.length > 0 ? new Set(raw.split('+')) : null
+
   for (const theme of ['light', 'dark'] as const) {
     describe(`${theme} theme`, () => {
       for (const scene of GALLERY_SCENES) {
+        if (slugs && !slugs.has(scene.slug)) continue
         it(`captures ${scene.slug} (${theme})`, () => {
           runGalleryScene(scene, theme)
         })
