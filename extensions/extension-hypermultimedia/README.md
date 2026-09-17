@@ -150,6 +150,8 @@ editor.commands.setLoom({ src: 'https://www.loom.com/share/abcdef1234567890' })
 editor.commands.updateImageDimensions({ keyId: 'abc123', width: 480, height: 320 })
 ```
 
+For unlisted Vimeo videos, pass the full URL with its path hash or `h` query parameter. HTML export and import preserve that hash.
+
 `updateImageDimensions` edits an image that already sits in the document. It finds the node by its `keyId` attribute and writes `width` and `height`. It returns `false` when no image carries that `keyId`, so `editor.can()` reports a miss. `setImage` writes a fresh `keyId` on every insert, and a host reads it back with `node.attrs.keyId`.
 
 Chain any of them like a normal Tiptap command:

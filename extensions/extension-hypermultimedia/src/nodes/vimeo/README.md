@@ -23,7 +23,7 @@ HyperMultimediaKit.configure({
 
 Configure defaults on `HyperMultimediaKit.configure({ Vimeo: { … } })`. Each node stores its own attributes; unset values fall back to kit defaults when the embed URL is built.
 
-Override player behavior per insert with `setVimeo({ … })`. The node `start` attribute (seconds) maps to Vimeo `start_time`. Unlisted videos need the full watch URL including the `h` query param — it is preserved in the embed URL.
+Override player behavior per insert with `setVimeo({ … })`. The node `start` attribute (seconds) maps to Vimeo `start_time`. Unlisted videos need their full watch URL, including the path hash (`/123456789/deadbeef`) or `h` query parameter. The embed preserves that hash through HTML export and import. An explicit `h` query parameter takes precedence over a path hash.
 
 Query names follow [Vimeo embed options](https://developer.vimeo.com/player/sdk/embed) (`start_time`, `end_time`, etc.).
 

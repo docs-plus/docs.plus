@@ -123,7 +123,8 @@ export const parseVimeoVideoRef = (url: string): { id: string; h?: string } | nu
     if (host === 'vimeo.com') {
       const id = parsed.pathname.match(/\/(\d+)/)?.[1]
       if (!id) return null
-      const h = parsed.searchParams.get('h') ?? undefined
+      const pathHash = parsed.pathname.match(/\/\d+\/([0-9a-f]+)\/?$/i)?.[1]
+      const h = parsed.searchParams.get('h') ?? pathHash
       return { id, h }
     }
   } catch {

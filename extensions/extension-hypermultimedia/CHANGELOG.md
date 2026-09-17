@@ -15,6 +15,9 @@ historical Conventional Commits format. The project adheres to
 
 ### Fixed
 
+- Preserve the path hash in unlisted Vimeo URLs through insertion and HTML round-trips.
+  Query-string hashes keep precedence. Addresses [the standalone contribution](https://github.com/HMarzban/extension-hypermultimedia/pull/4).
+
 - Iframe embeds no longer set `allowfullscreen` when `allow` already includes
   `fullscreen`. Chrome treats `allow` as the winner and warned on Vimeo, Loom,
   and Spotify. YouTube still emits `allowfullscreen` because its `allow` list
