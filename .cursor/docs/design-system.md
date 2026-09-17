@@ -673,11 +673,11 @@ docked — `components/chatroom/components/MessageComposer/components/ComposerEm
 
 content — `styles/_chat-editor.scss`, `components/chatroom/components/skeleton/`
 
-| State                    | Recipe                                                                                                                                                                                                                                                                               |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| frame                    | `.chat_msg_container/.chat_editor_container`: pre `bg base-200, 1px base-300 border, radius 6px, mono 13px`; inline code `bg base-200, base-300 border, radius 3px, color var(--color-error)`; blockquote `border-left 3px base-300`; `.msg_card` shares `editor-prose-shared` mixin |
-| feed / composer skeleton | daisyUI `skeleton` bones (`skeleton size-8 rounded-full`, `skeleton h-2.5 w-16 rounded-field`); composer skeleton mirrors the ComposerBar frame per variant; breadcrumb `skeleton h-3 w-10 rounded-field` + chevron `skeleton size-2.5`                                              |
-| media accent bones       | at most one info accent per feed: `bg-[color-mix(in_oklch,var(--color-info)_20%,var(--color-base-300))]` (panel 18%) — never media-tinted or brand bones                                                                                                                             |
+| State                    | Recipe                                                                                                                                                                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame                    | `.chat_editor_container`: pre `bg base-200, 1px base-300 border, radius 6px, mono 13px`; inline code `bg base-200, base-300 border, radius 3px, color var(--color-error)`; blockquote `border-left 3px base-300`; `.msg_card` shares `editor-prose-shared` mixin |
+| feed / composer skeleton | daisyUI `skeleton` bones (`skeleton size-8 rounded-full`, `skeleton h-2.5 w-16 rounded-field`); composer skeleton mirrors the ComposerBar frame per variant; breadcrumb `skeleton h-3 w-10 rounded-field` + chevron `skeleton size-2.5`                          |
+| media accent bones       | at most one info accent per feed: `bg-[color-mix(in_oklch,var(--color-info)_20%,var(--color-base-300))]` (panel 18%) — never media-tinted or brand bones                                                                                                         |
 
 > Off-system: pre 6px / inline-code 3px radii off the `--radius-*` scale; hardcoded `Monaco/Menlo/Ubuntu Mono` stack.
 
