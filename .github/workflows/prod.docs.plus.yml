@@ -262,8 +262,10 @@ jobs:
     # runs the Prisma migration and rolls all three backend services. Gating on
     # `has_back` alone let a `(build): front` push deploy backend code no test
     # had ever touched. `has_back` stays so `(build): back no-deploy` still runs.
-    if: needs.triage.outputs.has_back == 'true' || needs.triage.outputs.app_deploy == 'true'
+    if: github.event_name == 'pull_request' || needs.triage.outputs.has_back == 'true' || needs.triage.outputs.app_deploy == 'true'
     uses: ./.github/workflows/backend-ci.yml
+    with:
+      run_e2e: ${{ github.event_name != 'pull_request' }}
 
   extension-tests:
     name: 🧪 Ext (${{ matrix.ext }})
@@ -386,6 +388,8 @@ jobs:
       - name: 🏗️ Build Webapp
         run: bun run --filter @docs.plus/webapp build:ci
         env:
+          # This build checks compilation only; deployment builds use the host's environment.
+          NEXT_PUBLIC_RESTAPI_URL: http://localhost:4000
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
 

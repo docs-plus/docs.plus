@@ -1,11 +1,14 @@
 name: Backend CI
 
-# Reusable backend quality gates (no-infra unit/integration + real-infra E2E).
-# Called only by the prod pipeline, gated on `has_back || app_deploy` — every
-# deploy migrates the database and rolls the backend, so every deploy runs these.
-# Stage and pull requests never invoke it.
+# Pull requests run the backend suites without services.
+# Production build triggers also run E2E against Postgres and Redis.
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      run_e2e:
+        description: Run the Postgres and Redis E2E suites
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -39,6 +42,7 @@ jobs:
         run: bun run test
 
   backend-e2e:
+    if: inputs.run_e2e
     name: 🧪 Backend E2E (real Postgres + Redis)
     runs-on: ubuntu-latest
     timeout-minutes: 20

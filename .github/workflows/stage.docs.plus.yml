@@ -173,6 +173,8 @@ jobs:
       - name: 🏗️ Build Webapp
         run: bun run --filter @docs.plus/webapp build:ci
         env:
+          # This build checks compilation only; deployment builds use the host's environment.
+          NEXT_PUBLIC_RESTAPI_URL: http://localhost:4000
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
 
