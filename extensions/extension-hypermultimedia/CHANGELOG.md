@@ -19,6 +19,10 @@ historical Conventional Commits format. The project adheres to
 - Export `isSafeMediaSrc` from the package entry. Markdown import uses it to
   refuse an unsafe URL before it mints a media node.
 
+### Changed
+
+- Require `@tiptap/core` and `@tiptap/pm` `^3.31.3`, and update the `@floating-ui/dom` runtime dependency to `^1.8.0`.
+
 ### Fixed
 
 - Keep X theme, width, language, privacy, alignment, and hidden-content options in fallback markup after an oEmbed failure.
