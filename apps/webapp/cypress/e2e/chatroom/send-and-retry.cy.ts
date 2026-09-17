@@ -11,6 +11,7 @@ describe('chatroom send and retry', () => {
   })
 
   it('clears persisted drafts from the app origin before the next visit', () => {
+    const draftText = 'Draft left by the previous case'
     cy.get('[data-testid="composer-input"] .ProseMirror').should('be.visible')
     cy.window().then(
       (win) =>
@@ -23,7 +24,7 @@ describe('chatroom send and retry', () => {
             transaction.objectStore('composer').put({
               workspaceId: 'e2e-workspace',
               roomId: 'test-channel',
-              state: { text: 'Draft left by the previous case' },
+              state: { text: draftText },
               updatedAt: Date.now()
             })
             transaction.oncomplete = () => {
@@ -37,15 +38,50 @@ describe('chatroom send and retry', () => {
           }
         })
     )
-    clearChatroomDrafts()
-    cy.window().then(async (win) => {
-      expect(win.location.origin).to.equal(new URL(Cypress.config('baseUrl')!).origin)
-      const databases = await win.indexedDB.databases()
-      expect(databases.map((database) => database.name)).not.to.include('chatApp')
-    })
     cy.visit('/c/test-channel')
     cy.waitForMessage('message-40')
-    cy.get('[data-testid="composer-input"]').should('have.text', '')
+    cy.get('[data-testid="composer-input"]').should('contain.text', draftText)
+
+    clearChatroomDrafts()
+    cy.visit('/c/test-channel')
+    cy.waitForMessage('message-40')
+    cy.window().then(async (win) => {
+      const started = Date.now()
+      for (;;) {
+        const row = await new Promise<unknown>((resolve, reject) => {
+          const request = win.indexedDB.open('chatApp')
+          request.onerror = () => reject(request.error)
+          request.onsuccess = () => {
+            const db = request.result
+            if (!db.objectStoreNames.contains('composer')) {
+              db.close()
+              resolve('not-ready')
+              return
+            }
+            const get = db
+              .transaction('composer', 'readonly')
+              .objectStore('composer')
+              .get(['e2e-workspace', 'test-channel'])
+            get.onsuccess = () => {
+              db.close()
+              resolve(get.result)
+            }
+            get.onerror = () => {
+              db.close()
+              reject(get.error)
+            }
+          }
+        })
+        if (row === 'not-ready') {
+          if (Date.now() - started > 4000) throw new Error('The composer store did not open')
+          await new Promise((resolve) => setTimeout(resolve, 50))
+          continue
+        }
+        expect(row, 'leftover composer draft').to.equal(undefined)
+        return
+      }
+    })
+    cy.get('[data-testid="composer-input"]').should('not.contain.text', draftText)
   })
 
   it('posts a message and renders the optimistic row', () => {
