@@ -125,6 +125,16 @@ HyperMultimediaKit.configure({
 })
 ```
 
+## Network failures
+
+If oEmbed fails, the node supplies a blockquote and canonical post link to `widgets.js`.
+That fallback keeps the theme, width, language, privacy, alignment, and hidden-content options.
+If the script also fails, the post link stays visible.
+
+Keep browser CORS protection enabled. The fallback needs no browser extension or unrestricted proxy.
+Your host controls CSP and WebView navigation permissions.
+A visible fallback link does not prove that X permits the full widget in that environment.
+
 ## Sizing
 
 X embeds size through the oEmbed `maxwidth` attribute, not the resize gripper. The media toolbar exposes three presets — Compact (280), Standard (400, default), Wide (550) — and `setX({ maxwidth })` accepts any of those values per insert.

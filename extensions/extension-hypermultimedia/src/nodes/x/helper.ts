@@ -268,15 +268,27 @@ function sanitizeXEmbedHtml(html: string): string {
 }
 
 /** Minimal blockquote widgets.js needs when oEmbed is empty or scrubbed away. */
-function seedXEmbedMarkup(wrapper: HTMLElement, statusUrl: string): void {
+function seedXEmbedMarkup(wrapper: HTMLElement, params: Record<string, string | number>): void {
   if (hasRenderableXEmbed(wrapper)) return
 
-  const url = normalizeXUrl(statusUrl)
+  const url = normalizeXUrl(String(params.url ?? ''))
   if (!url) return
 
   wrapper.replaceChildren()
   const blockquote = document.createElement('blockquote')
   blockquote.className = 'twitter-tweet'
+  // widgets.js reads these attributes when oEmbed cannot supply its own markup.
+  for (const [parameter, attribute] of [
+    ['theme', 'data-theme'],
+    ['maxwidth', 'data-width'],
+    ['lang', 'data-lang'],
+    ['align', 'data-align']
+  ]) {
+    if (params[parameter] != null) blockquote.setAttribute(attribute, String(params[parameter]))
+  }
+  blockquote.dataset.dnt = params.dnt === 0 ? 'false' : 'true'
+  if (params.hide_media) blockquote.dataset.cards = 'hidden'
+  if (params.hide_thread) blockquote.dataset.conversation = 'none'
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.textContent = url
@@ -311,8 +323,6 @@ export async function mountXEmbed(
 ): Promise<boolean> {
   if (signal?.aborted) return false
 
-  const statusUrl = String(params.url ?? '')
-
   try {
     const html = await fetchOEmbedHtml(params, signal)
     if (signal?.aborted) return false
@@ -321,7 +331,7 @@ export async function mountXEmbed(
     // oEmbed may fail; fall back to a blockquote seed for widgets.js.
   }
 
-  seedXEmbedMarkup(wrapper, statusUrl)
+  seedXEmbedMarkup(wrapper, params)
 
   if (signal?.aborted) return false
 

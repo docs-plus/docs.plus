@@ -4,6 +4,9 @@ Clean-room Cypress suite against `test/playground/main.ts` via `@docs.plus/playg
 
 ## Specs
 
+Reported integrations also run through `transaction-edit.cy.ts` and `labeled-preview.cy.ts`.
+These cover direct and chained edits, visible preview labels, and operation without a metadata service.
+
 | Spec                        | What it proves                                                                                                                                                                                                                                                     |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `create.cy.ts`              | Mod-k create popover: lifecycle, URL validation/normalization (bare domains, phones, emails), collapsed-caret insert, documented DOM contract                                                                                                                      |

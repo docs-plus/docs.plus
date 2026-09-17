@@ -218,6 +218,19 @@ The media toolbar, the paste path, the insert commands and the caption each carr
 - **A caption survives HTML round-trip for `image` only.** Every other node keeps the editable caption and the attribute, but emits no `<figure>`, so clipboard copy and the toolbar Copy action drop the text. Markdown export drops every caption. See [Caption](#caption).
 - **The paste handler drops pasted image files silently without a listener.** Add an `editorFileUpload` listener and insert the nodes yourself — see [Image file paste (`editorFileUpload`)](#image-file-paste-editorfileupload).
 
+### React Native and WebView hosts
+
+The package runs inside a browser document. It does not provide a React Native bridge.
+Browser touch tests do not establish compatibility with TenTap or a specific Android or iOS WebView.
+
+Use the current node names and commands from [Migrating from 1.x](#migrating-from-1x).
+Load `styles.css` inside the WebView document.
+For X, configure `X`, call `setX`, and size posts with `maxwidth`; X has no resize gripper.
+Provider and video taps keep their player controls, so expose a host action to open editing controls on touch devices.
+
+When reporting a bridge problem, include the TenTap, WebView, Tiptap, and extension versions, device OS, editor HTML, bridge setup, and failing action.
+Use a minimal runnable app. A viewport resize or browser touch simulation cannot replace a device reproduction.
+
 ## Styling
 
 The package ships one stylesheet. It carries the resize gripper, the loading shell, the media toolbar, the caption, and the `x`, `loom` and `spotify` embed styles.
@@ -440,6 +453,10 @@ Provider embeds resolve options in two layers. Kit defaults come from `HyperMult
 **Spotify** builds `open.spotify.com/embed/{type}/{id}` from any `track`, `album`, `playlist`, `artist`, `show` or `episode` URL. The Spotify node also accepts a `spotify:type:id` URI, an `intl-xx` path, an already-`embed` path, and the "Copy embed" `<iframe>` markup. Two paths rewrite `src` to the canonical share URL: `parseHTML` and the pasted `<iframe>` rule. `setSpotify` and a pasted plain URL store the string you pass. `theme` is `0` for dark and `1` for light; leaving it unset lets Spotify render its own default, which is dark. The player is fixed-height, so it pins its height on a narrow column instead of scaling like a video embed.
 
 **X** sizes through the oEmbed `maxwidth` presets Compact `280`, Standard `400` and Wide `550`. The toolbar Post options menu switches both `maxwidth` and `theme`. `maxwidth` defaults to `400`. `theme` defaults to `'light'`, `lang` to `'en'`, `hide_media` and `hide_thread` to `false`. An X post reads its own `theme` attribute, not the page `color-scheme` — see [Theming](#theming). `dnt` defaults to `true` and is a kit option only, because `AddXOptions` omits it. The `align` attribute is a schema attribute passed straight to oEmbed, with no kit option and no `setX` field. The `x` node has no drag-resize.
+
+When X's oEmbed endpoint fails, fallback markup keeps the configured widget options.
+If `widgets.js` also fails, a canonical post link stays visible.
+Keep browser CORS protection enabled; see [X network failures](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/src/nodes/x#network-failures).
 
 ## Media toolbar
 

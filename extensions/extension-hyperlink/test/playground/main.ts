@@ -108,11 +108,29 @@ function byoPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): 
   return root
 }
 
+function labeledPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): HTMLElement {
+  const root = previewHyperlinkPopover(options)
+  root.style.flexWrap = 'wrap'
+  root.style.maxWidth = 'calc(100vw - 32px)'
+  for (const button of root.querySelectorAll('button')) {
+    const label = document.createElement('span')
+    label.textContent = button.getAttribute('aria-label')
+    button.append(label)
+    button.style.width = 'auto'
+    button.style.padding = '0 10px'
+  }
+  return root
+}
+
 const popovers = useCustomPopovers
   ? { previewHyperlink: byoPreviewHyperlink, createHyperlink: byoCreateHyperlink }
   : noPopovers
     ? { previewHyperlink: null, createHyperlink: null }
-    : { previewHyperlink: previewHyperlinkPopover, createHyperlink: createHyperlinkPopover }
+    : {
+        previewHyperlink:
+          params.get('popover') === 'labels' ? labeledPreviewHyperlink : previewHyperlinkPopover,
+        createHyperlink: createHyperlinkPopover
+      }
 
 const editor = new Editor({
   element,

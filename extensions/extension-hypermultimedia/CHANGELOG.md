@@ -6,7 +6,13 @@ here. Entries from 2.0.0 onward follow
 historical Conventional Commits format. The project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.1.0] — 2026-09-17
+
+### Highlights
+
+- Unlisted Vimeo links keep their access hashes through insertion and HTML round-trips.
+- Hosts can import `isSafeMediaSrc` to validate media URLs before insertion.
+- X fallback markup keeps the configured post options when oEmbed fails.
 
 ### Added
 
@@ -14,6 +20,8 @@ historical Conventional Commits format. The project adheres to
   refuse an unsafe URL before it mints a media node.
 
 ### Fixed
+
+- Keep X theme, width, language, privacy, alignment, and hidden-content options in fallback markup after an oEmbed failure.
 
 - Preserve the path hash in unlisted Vimeo URLs through insertion and HTML round-trips.
   Query-string hashes keep precedence. Addresses [the standalone contribution](https://github.com/HMarzban/extension-hypermultimedia/pull/4).

@@ -142,6 +142,16 @@ editor.chain().focus().setHyperlink({ href: 'https://example.com' }).run()
 editor.getAttributes('hyperlink').href // read the current href
 ```
 
+### Links on images
+
+The mark can wrap an inline image when the parent schema permits marks.
+For `HyperMultimediaKit`, configure `Image: { inline: true }`, select the image, then call `setHyperlink({ href })`.
+Use `editHyperlink({ newURL })` to change its URL without replacing the image with text.
+HTML export and import keep the image inside its anchor.
+
+The prebuilt edit form requires link text. Use a host URL form for image-only links.
+Block media and custom node views need separate integration checks; they are not covered by this inline-image recipe.
+
 ## Keyboard shortcuts
 
 | Shortcut            | Context            | Action                                                                                                                                                        |
@@ -322,6 +332,35 @@ Three ways to use them:
 - **Use the prebuilt popovers** — slot the three factories into `Hyperlink.configure({ popovers })`, as in [Quickstart](#quickstart). The shell handles positioning, dismissal, focus, and cleanup.
 - **Open them from outside the editor** — call [the openers](#openers) from a toolbar button or a React component.
 - **Replace one or all of them** — pass your own factory into the matching slot. See [Bring your own popover](#bring-your-own-popover). For a popover that is not anchored to a hyperlink, or to observe popover state from outside, see [Advanced](#advanced).
+
+### Visible action labels
+
+The prebuilt preview makes no metadata request and needs no `/api/metadata` endpoint.
+Its buttons use icons, accessible names, and hover/focus tooltips.
+To show text beside every icon, wrap the existing factory:
+
+```ts
+Hyperlink.configure({
+  popovers: {
+    previewHyperlink: (options) => {
+      const root = previewHyperlinkPopover(options)
+      root.style.flexWrap = 'wrap'
+      root.style.maxWidth = 'calc(100vw - 32px)'
+      for (const button of root.querySelectorAll('button')) {
+        const label = document.createElement('span')
+        label.textContent = button.getAttribute('aria-label')
+        button.append(label)
+        button.style.width = 'auto'
+        button.style.padding = '0 10px'
+      }
+      return root
+    }
+  }
+})
+```
+
+This keeps the built-in actions and gives touch users visible labels without waiting for a tooltip.
+For metadata cards, supply a custom preview factory and fetch metadata through your own service.
 
 ### Popover-factory option shapes
 
