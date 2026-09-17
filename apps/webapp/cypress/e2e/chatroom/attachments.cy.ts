@@ -623,6 +623,8 @@ describe('chatroom attachments', () => {
                 url: storagePath,
                 type: 'image',
                 name: 'secret.png',
+                width: 32,
+                height: 32,
                 spoiler: true
               }
             ],
@@ -634,7 +636,10 @@ describe('chatroom attachments', () => {
       assertImageControlReady()
       waitForStorageSignIfPending()
 
-      cy.get(`[data-msg-id="${messageId}"] [data-testid="feed-spoiler-reveal"]`).should('exist')
+      // Match the storage fixture dimensions so image loading cannot move the native click target.
+      cy.get<HTMLImageElement>(
+        `[data-msg-id="${messageId}"] [data-testid="feed-spoiler-reveal"] img`
+      ).should('have.prop', 'naturalWidth', 32)
       cy.get(`[data-msg-id="${messageId}"] [data-testid="feed-spoiler-reveal"]`).realClick()
       cy.get('[data-testid="chat-media-gallery"]').should('not.exist')
       cy.get(`[data-msg-id="${messageId}"] [data-testid="feed-image-open"]`, {
