@@ -1,0 +1,44 @@
+name: Chatroom Browser Tests
+
+# Enable automatic PR coverage after configuring NEXT_PUBLIC_VIRTUOSO_LICENSE.
+# No deployment or database credentials are used by this isolated suite.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chatroom-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chatroom:
+    name: Chatroom E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_VIRTUOSO_LICENSE: ${{ secrets.NEXT_PUBLIC_VIRTUOSO_LICENSE }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '26.8.2'
+      - uses: ./.github/actions/setup-bun
+        with:
+          bun-version: '1.4.1'
+      - uses: ./.github/actions/setup-cypress
+      - name: Run the isolated chatroom browser suite
+        run: bash scripts/test-chatroom.sh
+      - name: Retain results and failure screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: chatroom-e2e-${{ github.run_id }}
+          include-hidden-files: true
+          path: |
+            Notes/test-results-*.txt
+            Notes/.e2e-logs-*/
+            Notes/chatroom-server.log
+            apps/webapp/cypress/screenshots/
+          retention-days: 7

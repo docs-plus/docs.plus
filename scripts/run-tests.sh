@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Unit + clean-room + webapp E2E. Gate order: scripts/publishable-extensions.ts.
-# Usage: bash scripts/run-tests.sh [--unit | --extensions | --e2e | all]
+# Usage: bash scripts/run-tests.sh [--unit | --extensions | --e2e | all] [--scope <directory>]
 # Needs bash (process substitution). E2E needs make dev-local. Report → Notes/.
 
 set -o pipefail
@@ -44,10 +44,20 @@ case "${1:-all}" in
   all|"")  RUN_EXTENSION_GATES=true; RUN_WEBAPP_UNIT=true; RUN_E2E=true ;;
   *)
     echo -e "${RED}Unknown option: $1${NC}"
-    echo "Usage: $0 [--unit | --extensions | --e2e | all]"
+    echo "Usage: $0 [--unit | --extensions | --e2e | all] [--scope <directory>]"
     exit 1
     ;;
 esac
+
+E2E_SPEC_ROOT="$WEBAPP_DIR/cypress/e2e"
+if [ "$#" -gt 1 ]; then
+  if [ "$1" != "--e2e" ] || [ "$#" -ne 3 ] || [ "$2" != "--scope" ] || \
+    [[ ! "$3" =~ ^[a-zA-Z0-9_-]+$ ]] || [ ! -d "$E2E_SPEC_ROOT/$3" ]; then
+    echo "Usage: $0 --e2e [--scope <directory under cypress/e2e>]"
+    exit 1
+  fi
+  E2E_SPEC_ROOT="$E2E_SPEC_ROOT/$3"
+fi
 
 # One extension's gate command. The caller owns cwd, logging and exit handling,
 # so the serial and parallel paths cannot drift apart.
@@ -89,6 +99,10 @@ if $RUN_E2E; then
     echo -e "${YELLOW}  Start it with: make dev-local${NC}"
     echo -e "${YELLOW}  Or set BASE_URL env var if running elsewhere.${NC}"
     echo ""
+    if [ "${CI:-}" = "true" ] || [ ! -t 0 ]; then
+      echo "Start the webapp before running E2E tests."
+      exit 1
+    fi
     echo -n "Continue anyway? [y/N] "
     read -r answer
     if [[ ! "$answer" =~ ^[Yy]$ ]]; then
@@ -262,6 +276,7 @@ if $RUN_E2E; then
     echo " E2E TESTS (Cypress)"
     echo " Started: $(date)"
     echo " Base URL: ${BASE_URL}"
+    echo " Spec root: ${E2E_SPEC_ROOT}"
     echo " Parallel workers: ${CYPRESS_PARALLEL}"
     echo "============================================================================="
     echo ""
@@ -291,11 +306,12 @@ if $RUN_E2E; then
     # the `cypress/e2e/...` keys the write-back below stores.
     ( cd "$WEBAPP_DIR" && \
       SPLIT="$CYPRESS_PARALLEL" SPLIT_INDEX="$i" SPLIT_FILE="cypress/timings.json" \
+      SPLIT_OUTPUT_FILE="$WORKER_LOGS_DIR/worker-${i}-timings.json" \
       bunx cypress run \
         --project "$WEBAPP_DIR" \
         --browser electron \
         --config "baseUrl=${BASE_URL}" \
-        --spec "$WEBAPP_DIR/cypress/e2e/**/*.cy.{js,ts}" \
+        --spec "$E2E_SPEC_ROOT/**/*.cy.{js,ts}" \
     ) > "$WORKER_LOGS_DIR/worker-${i}.log" 2>&1 &
     WORKER_PIDS+=($!)
     WORKER_EXITS+=(-)
@@ -443,12 +459,12 @@ if $RUN_E2E; then
   # A narrower spec glob drops files silently; totals then hide the shortfall.
   # Editor-only globbing hid 10 specs for two months — compare against the tree.
   # Skip `manual-browser-test` to match excludeSpecPattern in cypress.config.ts.
-  DISCOVERED_SPECS=$(find "$WEBAPP_DIR/cypress/e2e" \
+  DISCOVERED_SPECS=$(find "$E2E_SPEC_ROOT" \
     \( -name '*.cy.js' -o -name '*.cy.ts' \) -type f \
     -not -path '*manual-browser-test*' 2>/dev/null | wc -l | tr -d ' ')
   if [ "$DISCOVERED_SPECS" -eq 0 ]; then
-    echo -e "  ${RED}✗ Found no spec files under ${WEBAPP_DIR}/cypress/e2e${NC}"
-    echo "  E2E found no spec files under ${WEBAPP_DIR}/cypress/e2e" >> "$REPORT"
+    echo -e "  ${RED}✗ Found no spec files under ${E2E_SPEC_ROOT}${NC}"
+    echo "  E2E found no spec files under ${E2E_SPEC_ROOT}" >> "$REPORT"
     E2E_EXIT=1
     echo ""
   elif [ "$TOTAL_SPECS" -lt "$DISCOVERED_SPECS" ]; then
@@ -546,7 +562,8 @@ if $RUN_E2E; then
   done
   echo '' >> "$TIMINGS_TMP"
   echo ']}' >> "$TIMINGS_TMP"
-  if [ "$(wc -l < "$TIMINGS_TMP")" -gt 3 ]; then
+  # A scoped run must not replace timings for the rest of the webapp suite.
+  if [ "$E2E_SPEC_ROOT" = "$WEBAPP_DIR/cypress/e2e" ] && [ "$(wc -l < "$TIMINGS_TMP")" -gt 3 ]; then
     mv "$TIMINGS_TMP" "$TIMINGS_FILE"
     echo -e "  ${DIM}Updated timings: ${TIMINGS_FILE}${NC}"
   else

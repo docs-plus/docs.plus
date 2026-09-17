@@ -1,6 +1,5 @@
 import Chatroom from '@components/chatroom/Chatroom'
 import { useAuthStore, useChatStore, useStore } from '@stores'
-import { supabaseClient } from '@utils/supabase'
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -14,10 +13,7 @@ function bootstrapE2EChannel(channelId: string, fetchMsgsFromId?: string | null)
   useAuthStore.getState().setProfile(e2eProfile)
   useAuthStore.getState().setSession({ user: { id: 'user-1' } })
 
-  void supabaseClient.auth.setSession({
-    access_token: 'e2e-access-token',
-    refresh_token: 'e2e-refresh-token'
-  })
+  // Cypress seeds the browser session; do not replace it with an invalid JWT.
 
   useChatStore
     .getState()
@@ -62,7 +58,9 @@ export default function E2EChatroomPage() {
 
   return (
     <div className="bg-base-100 flex h-dvh flex-col">
-      <Chatroom variant="desktop" className="flex min-h-0 flex-1 flex-col">
+      <Chatroom
+        variant={router.query.variant === 'mobile' ? 'mobile' : 'desktop'}
+        className="flex min-h-0 flex-1 flex-col">
         <Chatroom.Toolbar>
           <span className="text-sm font-medium">E2E Chat</span>
           <div className="ml-auto flex items-center gap-1" />

@@ -28,7 +28,7 @@ declare global {
 }
 
 Cypress.Commands.add('waitForMessage', (key: string) =>
-  cy.get(`[data-key="${key}"]`, { timeout: 10_000 }).should('be.visible')
+  cy.get(`[data-msg-id="${key}"], [data-key="${key}"]`, { timeout: 10_000 }).should('be.visible')
 )
 
 Cypress.Commands.add('scrollToMessageViaApi', (id: string) =>
