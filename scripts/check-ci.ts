@@ -11,6 +11,7 @@ import { existsSync, lstatSync, rmSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 import { resolve } from 'path'
 
+import { nextServerConflict } from './check-next-server.ts'
 import { PUBLISHABLE_EXTENSION_DIRS } from './publishable-extensions.ts'
 
 const ROOT = resolve(import.meta.dir, '..')
@@ -99,14 +100,6 @@ function extensionsFor(changed: string[]): string[] {
   )
 }
 
-async function nextDevLive(): Promise<string | null> {
-  const result = await $`ps -ax -o command=`.quiet().nothrow()
-  const text = result.stdout.toString()
-  if (/\bnext\s+(dev|start)\b/.test(text))
-    return 'Next dest is live; a production build would corrupt that .next'
-  return null
-}
-
 function discardNextBuild(appDir: string): void {
   const dest = resolve(ROOT, appDir, '.next')
   if (!existsSync(dest)) return
@@ -141,7 +134,7 @@ const subject = (await gitLines(['log', '-1', '--format=%s']))[0] ?? ''
 const appDeploy = /^\(build\):\s/.test(subject) && /\b(back|front)\b/.test(subject)
 const changed = await changedPaths()
 const extMatrix = extensionsFor(changed)
-const destBlock = await nextDevLive()
+const destBlock = await nextServerConflict(ROOT)
 
 console.log('check:ci — local replica of the prod quality gates')
 console.log(`HEAD  ${subject || '(no commits)'}`)
@@ -155,6 +148,9 @@ console.log('')
 
 let failed = false
 
+if (!(await runGate('Next server guard', ['bun', 'test', 'scripts/check-next-server.test.ts']))) {
+  failed = true
+}
 if (!(await runGate('lint', ['bun', 'run', 'lint']))) failed = true
 if (!(await runGate('lint:styles', ['bun', 'run', 'lint:styles']))) failed = true
 
