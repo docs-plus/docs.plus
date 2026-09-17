@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-import { stubChatroom } from '../../support/chatroomFixtures'
+import { clearChatroomDrafts, stubChatroom } from '../../support/chatroomFixtures'
 
 beforeEach(stubChatroom)
 
@@ -8,6 +8,44 @@ describe('chatroom send and retry', () => {
   beforeEach(() => {
     cy.visit('/c/test-channel')
     cy.waitForMessage('message-40')
+  })
+
+  it('clears persisted drafts from the app origin before the next visit', () => {
+    cy.get('[data-testid="composer-input"] .ProseMirror').should('be.visible')
+    cy.window().then(
+      (win) =>
+        new Promise<void>((resolve, reject) => {
+          const request = win.indexedDB.open('chatApp')
+          request.onerror = () => reject(request.error)
+          request.onsuccess = () => {
+            const db = request.result
+            const transaction = db.transaction('composer', 'readwrite')
+            transaction.objectStore('composer').put({
+              workspaceId: 'e2e-workspace',
+              roomId: 'test-channel',
+              state: { text: 'Draft left by the previous case' },
+              updatedAt: Date.now()
+            })
+            transaction.oncomplete = () => {
+              db.close()
+              resolve()
+            }
+            transaction.onerror = () => {
+              db.close()
+              reject(transaction.error)
+            }
+          }
+        })
+    )
+    clearChatroomDrafts()
+    cy.window().then(async (win) => {
+      expect(win.location.origin).to.equal(new URL(Cypress.config('baseUrl')!).origin)
+      const databases = await win.indexedDB.databases()
+      expect(databases.map((database) => database.name)).not.to.include('chatApp')
+    })
+    cy.visit('/c/test-channel')
+    cy.waitForMessage('message-40')
+    cy.get('[data-testid="composer-input"]').should('have.text', '')
   })
 
   it('posts a message and renders the optimistic row', () => {

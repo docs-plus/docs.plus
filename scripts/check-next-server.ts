@@ -58,11 +58,13 @@ export async function nextServerConflict(
       '--port',
       '-H',
       '--hostname',
+      '--keepAliveTimeout',
       '--experimental-https-key',
       '--experimental-https-cert',
       '--experimental-https-ca',
       '--experimental-upload-trace'
     ])
+    const optionsWithOptionalValue = new Set(['--inspect', '--internal-trace'])
     let positionalOnly = false
     const directories: string[] = []
     for (let index = 0; index < args.length; index++) {
@@ -73,6 +75,10 @@ export async function nextServerConflict(
       }
       if (!positionalOnly && optionsWithValue.has(argument)) {
         index++
+        continue
+      }
+      if (!positionalOnly && optionsWithOptionalValue.has(argument)) {
+        if (args[index + 1] && !args[index + 1].startsWith('-')) index++
         continue
       }
       if (!positionalOnly && argument.startsWith('-')) continue

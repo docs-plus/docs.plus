@@ -16,8 +16,13 @@ afterAll(() => rmSync(fixture, { recursive: true, force: true }))
 
 // Real process discovery, without starting Next, binding ports or touching .next.
 // Trailing arguments reproduce the command signature inspected by the guard.
-async function withServer(directory: string, check: () => Promise<void>, args: string[] = []) {
-  const child = Bun.spawn([process.execPath, probe, 'next', 'dev', ...args], {
+async function withServer(
+  directory: string,
+  check: () => Promise<void>,
+  args: string[] = [],
+  command: 'dev' | 'start' = 'dev'
+) {
+  const child = Bun.spawn([process.execPath, probe, 'next', command, ...args], {
     cwd: directory,
     stdout: 'ignore',
     stderr: 'ignore'
@@ -41,6 +46,46 @@ test('allows a running server in another clone with a shared path prefix', async
     expect(await nextServerConflict(checkout)).toBeNull()
   })
 })
+
+test('allows an unrelated production server with a keep-alive timeout', async () => {
+  await withServer(
+    otherCheckout,
+    async () => {
+      expect(await nextServerConflict(checkout)).toBeNull()
+    },
+    ['--keepAliveTimeout', '60000'],
+    'start'
+  )
+})
+
+test('blocks a relative checkout target after a keep-alive timeout', async () => {
+  await withServer(
+    otherCheckout,
+    async () => {
+      expect(await nextServerConflict(checkout)).toContain('targets this checkout')
+    },
+    ['--keepAliveTimeout', '60000', '../repo'],
+    'start'
+  )
+})
+
+test.each([
+  ['--inspect', '127.0.0.1:9229'],
+  ['--internal-trace', 'overview']
+])('allows an unrelated server with the optional %s value', async (option, value) => {
+  await withServer(otherCheckout, async () => {
+    expect(await nextServerConflict(checkout)).toBeNull()
+  }, [option, value])
+})
+
+test.each(['--inspect', '--internal-trace'])(
+  'keeps resolving checkout targets when %s has no value',
+  async (option) => {
+    await withServer(otherCheckout, async () => {
+      expect(await nextServerConflict(checkout)).toContain('targets this checkout')
+    }, [option, '--', '../repo'])
+  }
+)
 
 test('blocks a server launched from an app subdirectory', async () => {
   const app = join(checkout, 'apps', 'webapp')

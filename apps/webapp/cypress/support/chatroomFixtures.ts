@@ -28,9 +28,16 @@ export const chatroomRows = Array.from({ length: 40 }, (_, i) => ({
   reactions: {}
 }))
 
-export function stubChatroom() {
-  // Cypress clears cookies/localStorage between cases, but IndexedDB drafts persist.
-  cy.window().then(
+export function clearChatroomDrafts() {
+  // Visit an inert document on the app origin: about:blank has no explicit origin,
+  // and visiting the real chatroom would reopen its database before deletion.
+  const resetPath = '/__chatroom_fixture_reset__'
+  cy.intercept('GET', resetPath, {
+    headers: { 'content-type': 'text/html' },
+    body: '<!doctype html><html><body></body></html>'
+  })
+  cy.visit(resetPath)
+  return cy.window().then(
     (win) =>
       new Promise<void>((resolve, reject) => {
         const request = win.indexedDB.deleteDatabase('chatApp')
@@ -40,6 +47,11 @@ export function stubChatroom() {
           reject(new Error('The previous chat draft database is still open'))
       })
   )
+}
+
+export function stubChatroom() {
+  // Cypress clears cookies/localStorage between cases, but IndexedDB drafts persist.
+  clearChatroomDrafts()
   // Virtuoso measures items synchronously; these browser notifications are benign.
   // https://virtuoso.dev/message-list/resize-observer-errors/
   cy.on('uncaught:exception', (error) => {
