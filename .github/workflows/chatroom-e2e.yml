@@ -1,9 +1,32 @@
 name: Chatroom Browser Tests
 
-# Enable automatic PR coverage after configuring NEXT_PUBLIC_VIRTUOSO_LICENSE.
 # No deployment or database credentials are used by this isolated suite.
 on:
   workflow_dispatch: {}
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/webapp/**'
+      - 'extensions/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - '.github/actions/**'
+      - '.github/workflows/chatroom-e2e.yml'
+      - 'package.json'
+      - 'bun.lock'
+      - '*config*'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/webapp/**'
+      - 'extensions/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - '.github/actions/**'
+      - '.github/workflows/chatroom-e2e.yml'
+      - 'package.json'
+      - 'bun.lock'
+      - '*config*'
 
 permissions:
   contents: read
@@ -15,6 +38,10 @@ concurrency:
 jobs:
   chatroom:
     name: Chatroom E2E
+    # Fork and Dependabot pull requests cannot use the commercial license secret.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
