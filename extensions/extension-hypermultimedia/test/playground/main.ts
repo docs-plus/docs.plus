@@ -36,7 +36,7 @@ const editor = new Editor({
       shouldAutoLink: (url: string) => !isMediaUrl(url)
     }),
     HyperMultimediaKit.configure({
-      Image: { inline: false },
+      Image: { inline: params.get('inlineImage') === 'true' },
       Video: true,
       Audio: true,
       Youtube: true,
@@ -44,7 +44,10 @@ const editor = new Editor({
       SoundCloud: true,
       Spotify: true,
       Loom: true,
-      X: true,
+      X:
+        params.get('xOptions') === 'custom'
+          ? { theme: 'dark', lang: 'fr', hide_media: true, hide_thread: true, dnt: false }
+          : true,
       loadingShell,
       isUploadedMedia: () => uploadedParam
     })

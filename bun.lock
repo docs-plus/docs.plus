@@ -287,7 +287,7 @@
     },
     "extensions/extension-hypermultimedia": {
       "name": "@docs.plus/extension-hypermultimedia",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "dependencies": {
         "@floating-ui/dom": "^1.8.0",
       },
