@@ -63,13 +63,24 @@ export async function nextServerConflict(
       '--experimental-https-ca',
       '--experimental-upload-trace'
     ])
+    let positionalOnly = false
+    const directories: string[] = []
     for (let index = 0; index < args.length; index++) {
       const argument = args[index].replace(/^(["'])(.*)\1$/, '$2')
-      if (optionsWithValue.has(argument)) {
+      if (!positionalOnly && argument === '--') {
+        positionalOnly = true
+        continue
+      }
+      if (!positionalOnly && optionsWithValue.has(argument)) {
         index++
         continue
       }
-      if (argument.startsWith('-')) continue
+      if (!positionalOnly && argument.startsWith('-')) continue
+      directories.push(argument)
+    }
+    if (directories.length > 1)
+      return `Cannot resolve ambiguous app arguments for Next server ${pid}`
+    for (const argument of directories) {
       let appDirectory: string
       try {
         appDirectory = realpathSync(resolve(directory, argument))

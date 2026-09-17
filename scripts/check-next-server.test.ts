@@ -75,3 +75,18 @@ test('blocks an app reached through an absolute symlink alias', async () => {
     expect(await nextServerConflict(checkout)).toContain('targets this checkout')
   }, [alias])
 })
+
+test('resolves dash-prefixed app directories after the option delimiter', async () => {
+  symlinkSync(checkout, join(otherCheckout, '-app'))
+  await withServer(otherCheckout, async () => {
+    expect(await nextServerConflict(checkout)).toContain('targets this checkout')
+  }, ['--', '-app'])
+})
+
+test('fails closed on multiple positional app paths in the process listing', async () => {
+  mkdirSync(join(otherCheckout, 'first'))
+  mkdirSync(join(otherCheckout, 'second'))
+  await withServer(otherCheckout, async () => {
+    expect(await nextServerConflict(checkout)).toContain('Cannot resolve ambiguous app arguments')
+  }, ['first', 'second'])
+})
