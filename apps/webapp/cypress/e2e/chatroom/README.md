@@ -35,10 +35,11 @@ Scoped runs leave the full-suite timing data unchanged.
 
 ## CI and remaining coverage
 
-The `Chatroom Browser Tests` workflow provides a manual run and uploads reports and failure screenshots.
+The `Chatroom Browser Tests` workflow runs when relevant files change on `main` or in pull requests from this repository.
+Fork and Dependabot pull requests skip this job because they cannot use its license secret.
+The workflow also supports manual runs and uploads reports and failure screenshots.
 Configure the repository Actions secret `NEXT_PUBLIC_VIRTUOSO_LICENSE` before running it.
 The job fails clearly when the license is absent.
-Automatic PR coverage remains pending that configuration and a successful hosted run.
 
 The existing media-filter case remains pending because its control is currently unmounted.
 The reaction test verifies the held-touch menu and the submitted emoji payload.

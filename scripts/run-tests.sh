@@ -219,7 +219,9 @@ fi
 parse_cypress_results() {
   local logfile="$1"
 
-  sed -n '/(Run Finished)/,/(All specs passed\|specs\? failed)/p' "$logfile" \
+  # CI logs contain ANSI colors even when Cypress writes to a file.
+  sed -E $'s/\033\\[[0-9;]*m//g' "$logfile" \
+    | sed -n '/(Run Finished)/,/(All specs passed\|specs\? failed)/p' \
     | sed 's/[│┤├┌┐└┘─]//g' \
     | grep -E '(✔|✖).*[0-9]' \
     | grep -v 'All specs\|failed (' \

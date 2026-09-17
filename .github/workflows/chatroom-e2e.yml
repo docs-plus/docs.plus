@@ -55,6 +55,8 @@ jobs:
         with:
           bun-version: '1.4.1'
       - uses: ./.github/actions/setup-cypress
+      - name: Check Cypress report parsing
+        run: bun test scripts/run-tests.test.ts
       - name: Run the isolated chatroom browser suite
         run: bash scripts/test-chatroom.sh
       - name: Retain results and failure screenshots
