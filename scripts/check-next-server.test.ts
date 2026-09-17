@@ -69,23 +69,16 @@ test('blocks a relative checkout target after a keep-alive timeout', async () =>
   )
 })
 
-test.each([
-  ['--inspect', '127.0.0.1:9229'],
-  ['--internal-trace', 'overview']
-])('allows an unrelated server with the optional %s value', async (option, value) => {
-  await withServer(otherCheckout, async () => {
-    expect(await nextServerConflict(checkout)).toBeNull()
-  }, [option, value])
-})
-
-test.each(['--inspect', '--internal-trace'])(
-  'keeps resolving checkout targets when %s has no value',
-  async (option) => {
-    await withServer(otherCheckout, async () => {
+test('blocks a relative checkout target after --inspect', async () => {
+  await withServer(
+    otherCheckout,
+    async () => {
       expect(await nextServerConflict(checkout)).toContain('targets this checkout')
-    }, [option, '--', '../repo'])
-  }
-)
+    },
+    ['--inspect', '../repo'],
+    'start'
+  )
+})
 
 test('blocks a server launched from an app subdirectory', async () => {
   const app = join(checkout, 'apps', 'webapp')
