@@ -1,9 +1,11 @@
 /// <reference types="cypress" />
 
+import { stubChatroom } from '../../support/chatroomFixtures'
+
+beforeEach(stubChatroom)
+
 describe('chatroom attachments', () => {
   const storagePath = 'user-1/channel-1/test.png'
-  const imageDataUrl =
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z4EPDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
   const channelAggregateBody = {
     channel_info: {
@@ -64,34 +66,6 @@ describe('chatroom attachments', () => {
     ...overrides
   })
 
-  const seedSupabaseAuthSession = () => {
-    cy.window().then((win) => {
-      win.localStorage.setItem(
-        'sb-docsplus_supabase-auth-token',
-        JSON.stringify({
-          access_token: 'e2e-access-token',
-          refresh_token: 'e2e-refresh-token',
-          expires_in: 3600,
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          token_type: 'bearer',
-          user: { id: 'user-1', aud: 'authenticated', role: 'authenticated' }
-        })
-      )
-    })
-  }
-
-  /** Drag-and-drop tests leave IDB attachment drafts that block Send on the next case. */
-  const clearComposerDrafts = () => {
-    cy.window().then((win) => {
-      return new Promise<void>((resolve) => {
-        const request = win.indexedDB.deleteDatabase('chatApp')
-        request.onsuccess = () => resolve()
-        request.onerror = () => resolve()
-        request.onblocked = () => resolve()
-      })
-    })
-  }
-
   const stubStorage = () => {
     cy.intercept({ method: /POST|PUT/, url: '**/storage/v1/object/media/**' }, (req) => {
       req.reply({
@@ -101,17 +75,26 @@ describe('chatroom attachments', () => {
       })
     }).as('storageUpload')
 
+    // Storage returns a relative signed path, which supabase-js prefixes with its URL.
+    // Returning a data URL here creates an invalid prefixed URL and intermittent image failures.
     cy.intercept('POST', '**/storage/v1/object/sign/media/**', (req) => {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
-      const rawPath = body?.paths?.[0] ?? body?.path ?? storagePath
-      const signedUrl = /\.(png|jpe?g|gif|webp)$/i.test(rawPath)
-        ? imageDataUrl
-        : `https://example.test/signed/${rawPath}`
-      req.reply({
-        statusCode: 200,
-        body: { signedURL: signedUrl, signedUrl }
-      })
+      const path = new URL(req.url).pathname.replace('/storage/v1', '')
+      req.reply({ statusCode: 200, body: { signedURL: `${path}?token=test` } })
     }).as('storageSign')
+    cy.intercept('GET', '**/storage/v1/object/sign/media/**', (req) => {
+      if (/\.(png|jpe?g|gif|webp)(\?|$)/i.test(req.url)) {
+        req.reply({
+          fixture: '../../public/icons/favicon-32x32.png',
+          headers: { 'content-type': 'image/png' }
+        })
+      } else {
+        req.reply({
+          statusCode: 200,
+          body: '',
+          headers: { 'content-type': 'application/octet-stream' }
+        })
+      }
+    })
   }
 
   const stubChannelAggregate = () => {
@@ -153,7 +136,6 @@ describe('chatroom attachments', () => {
     stubMessageWindow(rows)
     stubChannelAggregate()
     stubStorage()
-    seedSupabaseAuthSession()
     cy.visit('/c/test-channel')
     cy.wait('@channelAggregate')
     cy.wait('@messageWindow')
@@ -253,25 +235,17 @@ describe('chatroom attachments', () => {
     cy.wait('@messageInsert', { timeout: 15_000 })
   }
 
-  const registerUncaughtHandler = () => {
-    cy.on('uncaught:exception', (err) => {
-      if (err.message.includes('ResizeObserver loop')) return false
-    })
-  }
-
   describe('composer', () => {
     beforeEach(() => {
-      registerUncaughtHandler()
       stubStorage()
       stubMessageInsert()
       stubChannelAggregate()
       stubMessageWindow([])
-      seedSupabaseAuthSession()
-      clearComposerDrafts()
       cy.visit('/c/test-channel')
       cy.wait('@channelAggregate')
       cy.wait('@messageWindow')
       cy.waitForMessage('chatroom-feed')
+      cy.get('.message-feed > .absolute').should('not.exist')
       cy.window().its('__chatTestApi').should('exist')
       cy.window().then((win) => {
         win.__chatTestApi?.resetComposerAttachments?.()
@@ -391,13 +365,18 @@ describe('chatroom attachments', () => {
     })
 
     it('accepts pasted files in the composer', () => {
-      attachFixtureFile({
-        contents: Cypress.Buffer.from('89504e470d0a1a0a', 'hex'),
-        fileName: 'pasted.png',
-        mimeType: 'image/png',
-        lastModified: Date.now()
+      cy.get('[data-testid="composer-input"] .ProseMirror').then(($input) => {
+        const win = $input[0].ownerDocument.defaultView!
+        const clipboardData = new win.DataTransfer()
+        clipboardData.items.add(
+          new win.File([Cypress.Buffer.from('89504e470d0a1a0a', 'hex')], 'pasted.png', {
+            type: 'image/png'
+          })
+        )
+        $input[0].dispatchEvent(
+          new win.ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData })
+        )
       })
-
       expectAttachmentVisible('pasted.png')
     })
 
@@ -415,10 +394,6 @@ describe('chatroom attachments', () => {
   })
 
   describe('feed gallery', () => {
-    beforeEach(() => {
-      registerUncaughtHandler()
-    })
-
     it('opens the root gallery when clicking a feed image', () => {
       const messageId = 'feed-image-1'
       visitFeed(
@@ -576,7 +551,10 @@ describe('chatroom attachments', () => {
           cy.get('[data-testid="feed-video-poster"]').should('exist')
         })
       cy.get('[data-chat-media] [aria-label="Expand video"]').should('not.exist')
-      cy.get('[data-chat-media] [data-testid="feed-video-poster"]').click()
+      cy.get('[data-chat-media] [data-testid="feed-video-poster"] video').should('have.attr', 'src')
+      cy.get('[data-chat-media] [data-testid="feed-video-poster"]')
+        .should('be.visible')
+        .click({ scrollBehavior: false })
       cy.get('[data-testid="chat-media-gallery"]').contains('2 / 2')
       cy.get('[data-testid="chat-media-gallery"] video').should('exist')
 
@@ -658,13 +636,7 @@ describe('chatroom attachments', () => {
 
       cy.get(`[data-msg-id="${messageId}"] [data-testid="feed-spoiler-reveal"]`).should('exist')
       cy.get(`[data-msg-id="${messageId}"] [data-testid="feed-spoiler-reveal"]`).realClick()
-      cy.get(`[data-msg-id="${messageId}"]`).then(($msg) => {
-        if ($msg.find('[data-testid="feed-image-open"]').length === 0) {
-          cy.window().then((win) => {
-            win.__chatTestApi?.revealFeedSpoiler?.(storagePath)
-          })
-        }
-      })
+      cy.get('[data-testid="chat-media-gallery"]').should('not.exist')
       cy.get(`[data-msg-id="${messageId}"] [data-testid="feed-image-open"]`, {
         timeout: 15_000
       }).should('be.visible')
@@ -691,7 +663,10 @@ describe('chatroom attachments', () => {
       waitForStorageSignIfPending()
       assertVideoPosterReady()
       cy.get('[data-chat-media] [data-media-layout="mosaic"]').should('exist')
-      cy.get('[data-chat-media] [data-testid="feed-video-poster"]').click({ force: true })
+      cy.get('[data-chat-media] [data-testid="feed-video-poster"] video').should('have.attr', 'src')
+      cy.get('[data-chat-media] [data-testid="feed-video-poster"]')
+        .should('be.visible')
+        .click({ scrollBehavior: false })
       cy.get('[data-testid="chat-media-gallery"]').contains('2 / 2')
 
       cy.get('[data-testid="chat-media-gallery"] [aria-label="Previous media"]').click()

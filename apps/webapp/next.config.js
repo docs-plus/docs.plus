@@ -12,13 +12,15 @@ const {
   GLITCHTIP_CONNECT_HOSTS
 } = require('./config/security/third-party-hosts')
 const isProduction = process.env.NODE_ENV === 'production'
+const isE2E = process.env.NEXT_PUBLIC_E2E === 'true'
 const isCoverageInstrumentation =
   process.env.COVERAGE === 'true' || process.env.CYPRESS_COVERAGE === 'true'
 const path = require('path')
 const { createSecureHeaders } = require('next-secure-headers')
 const withPWA = require('next-pwa')({
   dest: 'public',
-  disable: !isProduction,
+  // Fixture suites need a stable page; worker activation otherwise reloads mid-test.
+  disable: !isProduction || isE2E,
   register: true,
   skipWaiting: false,
   // next-pwa defaults this on, and reloads the page the moment the network returns.
@@ -172,7 +174,8 @@ module.exports = withPWA({
     //     }
     //   : false,
     // Enable React optimizations
-    reactRemoveProperties: isProduction
+    // Keep Cypress selectors in the explicitly opted-in local/CI test build.
+    reactRemoveProperties: isProduction && !isE2E
   },
 
   // Production logging and monitoring

@@ -1,5 +1,9 @@
 /// <reference types="cypress" />
 
+import { stubChatroom } from '../../support/chatroomFixtures'
+
+beforeEach(stubChatroom)
+
 describe('chatroom open with unread', () => {
   it('lands on the unread separator when first_unread anchor exists', () => {
     cy.intercept('POST', '**/rest/v1/rpc/fetch_message_window*', {
@@ -15,6 +19,7 @@ describe('chatroom open with unread', () => {
       }
     }).as('window')
     cy.visit('/c/test-channel')
-    cy.get('[data-key^="unread-"]').should('be.visible')
+    cy.wait('@window').its('request.body.p_anchor_kind').should('equal', 'first_unread')
+    cy.get('[role="separator"][aria-label="New messages"]').should('be.visible')
   })
 })

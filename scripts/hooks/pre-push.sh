@@ -11,9 +11,9 @@ fi
 
 # check:ci skips webapp build:ci when a Next development server is live.
 # A green skip is not the GitHub job. A live server plus a production
-# build also corrupts .next.
-if ps -ax -o command= | grep -E '[n]ext (dev|start)' >/dev/null; then
-    echo "❌ A Next development server is running."
+# build in the same checkout also corrupts .next. Other clones have separate output.
+if ! bun "$REPO_ROOT/scripts/check-next-server.ts"; then
+    echo "❌ Cannot safely build this checkout while its Next server is running."
     echo "   Stop the webapp development server, then push again."
     echo "   After the push: restart the development server."
     echo "   check:ci already removes the production .next after build:ci."

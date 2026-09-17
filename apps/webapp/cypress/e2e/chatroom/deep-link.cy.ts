@@ -1,5 +1,9 @@
 /// <reference types="cypress" />
 
+import { stubChatroom } from '../../support/chatroomFixtures'
+
+beforeEach(stubChatroom)
+
 describe('chatroom deep link', () => {
   it('mounts with the target message visible and flashed', () => {
     const targetId = 'msg-deep-link'
@@ -13,7 +17,10 @@ describe('chatroom deep link', () => {
       }
     }).as('window')
     cy.visit(`/c/test-channel?msg=${targetId}`)
+    cy.wait('@window')
+      .its('request.body')
+      .should('include', { p_anchor_kind: 'message_id', p_anchor_value: targetId })
     cy.waitForMessage(targetId)
-    cy.get('.msg_card--flash').should('be.visible')
+    cy.waitForMessage(targetId).should('have.class', 'msg_card--flash')
   })
 })
