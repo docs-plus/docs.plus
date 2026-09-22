@@ -5,8 +5,10 @@ Renders embedded X (formerly Twitter) posts via the official oEmbed endpoint and
 ## Install
 
 ```sh
-bun add @docs.plus/extension-hypermultimedia
+npm install @docs.plus/extension-hypermultimedia
 ```
+
+Or use `pnpm add @docs.plus/extension-hypermultimedia`, `yarn add @docs.plus/extension-hypermultimedia`, or `bun add @docs.plus/extension-hypermultimedia`.
 
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'

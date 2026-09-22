@@ -25,8 +25,8 @@
     "ATTRIBUTION.md"
   ],
   "rules": [
-    "Use Bun for every package operation: `bun add`, `bun run`, `bunx`. Never npm, yarn, pnpm or npx, and never write `npm install` in an example.",
-    "Install a docs.plus Tiptap extension with `bun add @docs.plus/extension-<name>`. The five are extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code and extension-placeholder.",
+    "Inside the docs.plus monorepo, use Bun for every package operation: `bun install`, `bun run`, `bunx`. Never npm, yarn, pnpm or npx there.",
+    "Install a docs.plus Tiptap extension in an app with `npm install @docs.plus/extension-<name>`; pnpm, yarn or bun add also work. The five: extension-hyperlink, extension-hypermultimedia, extension-indent, extension-inline-code, extension-placeholder.",
     "Read each extension's README and package.json for its version and Tiptap peer requirements. Resolve catalog references from the root package.json.",
     "With extension-hyperlink set `StarterKit.configure({ link: false })`. StarterKit v3 bundles its own link mark claiming the same commands and the same a[href] parse rule. The clash is silent.",
     "With extension-inline-code set `StarterKit.configure({ code: false })`. Both marks render <code> and both bind Mod-e. The clash is silent.",

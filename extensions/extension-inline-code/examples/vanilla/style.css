@@ -1,0 +1,6 @@
+.ProseMirror :not(pre) > code {
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 0.15em 0.3em;
+  font-size: 0.9em;
+}

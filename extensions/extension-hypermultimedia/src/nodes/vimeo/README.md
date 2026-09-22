@@ -5,8 +5,10 @@ Embeds Vimeo watch and player URLs as iframe players. Paste a link or call `setV
 ## Install
 
 ```sh
-bun add @docs.plus/extension-hypermultimedia
+npm install @docs.plus/extension-hypermultimedia
 ```
+
+Or use `pnpm add @docs.plus/extension-hypermultimedia`, `yarn add @docs.plus/extension-hypermultimedia`, or `bun add @docs.plus/extension-hypermultimedia`.
 
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'

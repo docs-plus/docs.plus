@@ -15,13 +15,20 @@
 
 Tiptap extension for literal indent: Tab inserts an indent string at the caret or at each selected line start, and Shift-Tab removes it.
 
-Lists, tables and the browser all claim Tab. This extension registers at priority `25`, below the Tiptap default `100`, so it sees Tab last. Its own handler then runs a list sink, a table move, and literal indent, in that order. Literal indent runs only in contexts you allowlist through [`allowedIndentContexts`](#allowedindentcontexts). The default allowlist holds two rules: paragraphs under `doc`, and paragraphs under `blockquote`. Headings, code blocks and every other textblock stay excluded until you add a rule.
+## Why use it
+
+- **Lists and tables keep Tab.** The extension registers at priority `25`, below the Tiptap default `100`. So `@tiptap/extension-list` sinks list items and `@tiptap/extension-table` moves between cells first.
+- **Keyboard users can still leave the editor.** When nothing claims Tab, the key falls through to the browser default. Tab focus navigation keeps working.
+- **You choose where indent applies.** The default allowlist holds two rules: paragraphs under `doc`, and paragraphs under `blockquote`. Headings, code blocks and every other textblock stay excluded until you add a rule.
+- **Selections indent line by line.** Any non-empty selection indents at each line start, and it never replaces the selected text.
 
 ## Install
 
 ```sh
-bun add @docs.plus/extension-indent
+npm install @docs.plus/extension-indent
 ```
+
+Or use `pnpm add @docs.plus/extension-indent`, `yarn add @docs.plus/extension-indent`, or `bun add @docs.plus/extension-indent`.
 
 Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
@@ -31,11 +38,11 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
 
-Two optional packages change what Tab does before literal indent. `@tiptap/extension-table` adds cell navigation. `@tiptap/extension-list` binds Tab sink for `listItem`, and for `taskItem` only when `TaskItem` runs `nested: true`. It always binds Shift-Tab lift. `@tiptap/starter-kit` already ships `listItem`.
-
-Coming from `0.1.x`? Read [Migrating from 0.1.x](#migrating-from-01x) first — `2.0.0` renames one option.
+Coming from `0.1.x`? Read [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#migrating-from-01x) first — `2.0.0` renames one option.
 
 ## Quickstart
+
+The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
 
 The editor below indents body paragraphs, blockquote paragraphs and headings.
 
@@ -62,90 +69,29 @@ const editor = new Editor({
 })
 ```
 
-The snippet keeps `indentChars` at the two-space default, and it needs no CSS — see [Styling](#styling) for the two cases that do. In React, pass the same `extensions` array to `useEditor` from `@tiptap/react`.
+The snippet keeps `indentChars` at the two-space default, and it needs no CSS. See [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#styling) for the two cases that do. In React, pass the same `extensions` array to `useEditor` from `@tiptap/react`.
 
-## Options
+You should see one paragraph that asks you to press Tab. Click before its first word and press Tab: the text moves two spaces to the right. Press Shift-Tab to move it back.
 
-Pass any of the three options to `Indent.configure({ … })`. Every key you leave out keeps the default below.
+## Caveats
 
-| Option                  | Type                  | Default                                                                                         | Description                                                                                                                      |
-| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `indentChars`           | `string`              | `'  '`                                                                                          | The command inserts or removes this text per step. Two spaces by default, often `'\t'`. An empty string turns both commands off. |
-| `enabled`               | `boolean`             | `true`                                                                                          | Set to `false` to turn both commands off and leave Tab unclaimed, without removing the extension.                                |
-| `allowedIndentContexts` | `IndentContextRule[]` | `[{ textblock: 'paragraph', parent: 'doc' }, { textblock: 'paragraph', parent: 'blockquote' }]` | Full allowlist for literal indent and outdent. See [below](#allowedindentcontexts).                                              |
+- **Tab in a table cell never inserts an indent, whatever your allowlist holds.** Call `editor.commands.indent()` from a toolbar button instead.
+- **`configure({ allowedIndentContexts })` replaces the default allowlist instead of merging into it.** Passing one rule drops both defaults, so list every rule you keep.
+- **Headings, code blocks and every textblock outside the default allowlist ignore Tab.** In those textblocks Tab moves focus out of the editor, because the handler returns `false`. Add one rule for each textblock and parent you need.
+- **`editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load.** See [Keep the indent in saved HTML](#keep-the-indent-in-saved-html).
 
-### `allowedIndentContexts`
+The full list, with the reason for each, is in [Caveats](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#caveats).
 
-The option sets where literal indent applies. `indent()` and `outdent()` run only when the innermost textblock at the caret and its **immediate parent** both match one rule. For a selection, the same check runs at every covered line.
+## Common tasks
 
-Each rule is `{ textblock: string, parent: string }`. Both values are Tiptap / ProseMirror `NodeType.name` strings, so they are lowercase type names such as `paragraph` and `heading`, never HTML tags such as `H1`. `Object.keys(editor.schema.nodes)` prints every type name in the running schema.
+### Add toolbar buttons
 
-The option is a full allowlist, not a merge. Passing `allowedIndentContexts` to `configure()` replaces the default allowlist, so list every rule you keep.
-
-| You want                                                         | Rules                                                                                                     |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Body and blockquote paragraphs (package default)                 | `{ textblock: 'paragraph', parent: 'doc' }` and `{ textblock: 'paragraph', parent: 'blockquote' }`        |
-| Body paragraphs only                                             | `{ textblock: 'paragraph', parent: 'doc' }`                                                               |
-| Blockquote paragraphs only                                       | `{ textblock: 'paragraph', parent: 'blockquote' }`                                                        |
-| Headings                                                         | `{ textblock: 'heading', parent: 'doc' }`                                                                 |
-| List item paragraphs                                             | `{ textblock: 'paragraph', parent: 'listItem' }`                                                          |
-| Table cell and header-cell paragraphs, through the commands only | `{ textblock: 'paragraph', parent: 'tableCell' }` and `{ textblock: 'paragraph', parent: 'tableHeader' }` |
-
-**Headings.** A heading is its own textblock type, so the default allowlist skips it. Add one rule for each parent you need:
-
-```ts
-Indent.configure({
-  allowedIndentContexts: [
-    { textblock: 'paragraph', parent: 'doc' },
-    { textblock: 'paragraph', parent: 'blockquote' },
-    { textblock: 'heading', parent: 'doc' }
-  ]
-})
-```
-
-**List item paragraphs.** Tab in a list item sinks the list item, because `@tiptap/extension-list` binds Tab at the Tiptap default priority `100`, and this extension registers at `25`. A rule here takes effect only where sink and lift do not apply. The first item of a list has nothing to sink into, so Tab falls through to literal indent there. Under the default `nested: false`, `TaskItem` binds no Tab, and `sinkListItem('taskItem')` cannot run, so Tab in a task item always falls through to literal indent. Both `listItem` and `taskItem` hold the paragraph directly, so each needs its own rule:
-
-```ts
-Indent.configure({
-  allowedIndentContexts: [
-    { textblock: 'paragraph', parent: 'doc' },
-    { textblock: 'paragraph', parent: 'listItem' },
-    { textblock: 'paragraph', parent: 'taskItem' }
-  ]
-})
-```
-
-**Table cell paragraphs.** Tab in a table cell never falls through to literal indent. `@tiptap/extension-table` binds Tab at priority `100`, and it adds a row when no next cell exists. This extension's own handler also runs `goToNextCell` before `indent()`. So a `tableCell` rule takes effect through the commands, not through Tab. A header cell is a different node type, and `insertTable` adds a header row by default, so the top row needs a `tableHeader` rule:
-
-```ts
-Indent.configure({
-  allowedIndentContexts: [
-    { textblock: 'paragraph', parent: 'doc' },
-    { textblock: 'paragraph', parent: 'tableCell' },
-    { textblock: 'paragraph', parent: 'tableHeader' }
-  ]
-})
-
-// Wire this to a toolbar button, not to Tab.
-editor.chain().focus().indent().run()
-```
-
-**Turn literal indent off.** Pass an empty array. Tab still sinks lists and moves table cells:
-
-```ts
-Indent.configure({ allowedIndentContexts: [] })
-```
-
-## Commands
-
-The extension registers `indent()` and `outdent()` on `editor.commands`. Both run the same `enabled`, `indentChars` and context gate as the Tab key. This extension's own handler runs the list sink and the table move before `indent()`, so a toolbar button covers contexts Tab does not.
+Both commands run the same `enabled`, `indentChars` and context gate as the Tab key.
 
 ```ts
 editor.chain().focus().indent().run()
 editor.chain().focus().outdent().run()
 ```
-
-Any non-empty selection indents at each line start, and it never replaces the selected text. See [Multiline selections](#multiline-selections).
 
 `editor.can()` runs the context gate without dispatching a transaction. Use it for the disabled state of a toolbar button:
 
@@ -154,154 +100,34 @@ const canIndent = editor.can().indent()
 const canOutdent = editor.can().outdent()
 ```
 
-Both commands return `true` only when they change the document. They return `false` in these cases:
+See [Commands](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md#commands) for the cases where both return `false`.
 
-- `enabled` is `false`, or `indentChars` is an empty string.
-- The caret sits in a context no rule allows.
-- A selection covers at least one line in a context no rule allows. The command rejects the whole run and leaves the document unchanged. See [Multiline selections](#multiline-selections).
-- A selection covers no line at all. A `NodeSelection` on a leaf block, such as a horizontal rule, lands here.
-- `outdent()` finds no `indentChars` to remove. See [Outdent at the caret](#outdent-at-the-caret) for the caret rules.
+### Keep the indent in saved HTML
 
-## Keyboard shortcuts
-
-The extension binds two keys on the editor document.
-
-| Shortcut    | Context    | Action            |
-| ----------- | ---------- | ----------------- |
-| `Tab`       | `document` | Runs `indent()`.  |
-| `Shift-Tab` | `document` | Runs `outdent()`. |
-
-Two separate orders decide what Tab does, and both matter.
-
-**Between extensions.** The extension registers at priority `25`, below the Tiptap default `100`. Tiptap sorts extensions by descending priority, so `@tiptap/extension-list` and `@tiptap/extension-table` claim Tab first. A handler that returns `false` lets the key fall through, so this extension sees Tab only when list and table return `false`.
-
-**Inside this extension's handler.** The handler runs a list sink, then a table move, then `indent()`. In the setup this README documents, list and table already claimed Tab, so the first two do nothing. They cover a host that removes or overrides those Tab bindings.
-
-When all three return `false`, the handler returns `false`, and the key falls through to other extensions and to the browser default. Tab focus navigation keeps working.
-
-## Caveats
-
-Literal indent is text, not a node attribute, and Tab is a shared key. Both facts explain every caveat below.
-
-- Two leading spaces can disappear on screen. The browser paints a whitespace run as one space, unless `white-space` on the editor element keeps the run. `@tiptap/core` injects that rule by default, so the indent collapses only when you pass `injectCSS: false` or override the rule. See [Styling](#styling).
-- Headings, code blocks and every textblock outside the default allowlist ignore Tab. In those textblocks Tab moves focus out of the editor, because the handler returns `false`. Add one rule for each textblock and parent you need.
-- `configure({ allowedIndentContexts })` replaces the default allowlist instead of merging into it. Passing one rule drops both defaults, so list every rule you keep.
-- Tab in a table cell never inserts an indent, whatever your allowlist holds. `@tiptap/extension-table` binds Tab at priority `100` and claims the key first. Call `editor.commands.indent()` from a toolbar button instead.
-- `CodeBlock` with `enableTabIndentation: true` inserts its own spaces, not `indentChars`. It binds Tab at priority `100`, and it sizes the indent from its own `tabSize`. To use `indentChars` there, keep the option `false` and add a `codeBlock` rule, such as `{ textblock: 'codeBlock', parent: 'doc' }` for a top-level code block.
-- `indentChars: ''` is not a full off switch. Both commands return `false` on an empty string, but the Tab handler still runs the list sink and the table move. Use `enabled: false` to leave Tab unclaimed.
-- `editor.getHTML()` writes the indent out, and `setContent(savedHtml)` drops it on load. HTML parsing collapses a whitespace run unless you pass `parseOptions`. See [Persistence](#persistence).
-
-## Styling
-
-The package ships no CSS. The default editor needs none either, because `@tiptap/core` injects `.ProseMirror { white-space: pre-wrap; white-space: break-spaces; }` while `injectCSS` stays `true`, so the editor keeps every space the command inserts.
-
-Two cases need a host rule:
-
-- The host passes `injectCSS: false` to the `Editor` constructor.
-- A host stylesheet overrides `white-space` on `.ProseMirror`. Tiptap appends its `<style>` tag to `<head>`, so a host rule wins through a later stylesheet or a stronger selector.
-
-Add this rule in either case:
-
-```css
-.ProseMirror {
-  white-space: pre-wrap;
-}
-```
-
-`white-space: break-spaces` keeps the run as well.
-
-When the indent still collapses, read the computed `white-space` on the editor element. ProseMirror logs a console warning when that value is `normal`, `nowrap` or `pre-line`.
-
-## Multiline selections
-
-Every non-empty textblock the selection covers counts as one line. An empty textblock is not a line. The command skips a textblock the selection only touches at a boundary. The selection touches a boundary when the caret lands on the textblock's first position.
-
-Lines indent and outdent at their starts, even when the selection begins or ends mid-line. The same rule covers a select-all.
-
-`indent()` and `outdent()` apply the context gate the same way: every covered line must match `allowedIndentContexts`, or the command returns `false` and leaves the document unchanged.
-
-They differ after that gate. `indent()` prefixes every line. `outdent()` removes `indentChars` only from the lines whose text starts with it, and leaves the rest alone. `outdent()` returns `false` only when no covered line carries an indent.
-
-```ts
-// Before, with the two-space default:
-//   '  AA'
-//   'BB'
-editor.chain().focus().outdent().run()
-// After: 'AA' and 'BB'. The second line was already flush, so it did not move.
-```
-
-A table `CellSelection` works too. It exposes only its head cell on `from` and `to`, so both commands walk `selection.ranges` instead. `indent()` over a selected cell rectangle indents every cell in it, under the same allowlist.
-
-## Outdent at the caret
-
-With an empty selection, `outdent()` removes one of two things:
-
-- one `indentChars` immediately before the caret. This undoes a fresh Tab without moving the caret to column 0.
-- the line's leading `indentChars`, when the caret sits at the start of an indented line.
-
-The two cases never overlap, because the caret is either at the line start or after some text. When neither applies, the command returns `false` and changes nothing.
-
-`outdent()` checks the document text before it deletes. So it never removes a zero-width inline node, such as a hard break, in place of indent characters.
-
-## Persistence
-
-Literal indent is characters in the text, not a node attribute, so it survives wherever the text survives.
-
-`editor.getJSON()` round-trips it with no extra option. A paragraph holding `'  Hi'` serializes to `{"type":"text","text":"  Hi"}` and reloads as `'  Hi'`.
-
-`editor.getHTML()` does not. HTML parsing collapses a whitespace run and strips the leading one, so `setContent(savedHtml)` returns the paragraph unindented. Pass `parseOptions` to keep it:
+HTML parsing collapses a whitespace run and strips the leading one. Pass `parseOptions` to keep it:
 
 ```ts
 editor.commands.setContent(savedHtml, { parseOptions: { preserveWhitespace: true } })
 ```
 
-The constructor loads content the same way, and `parseOptions` is a top-level field there:
+`editor.getJSON()` round-trips the indent with no extra option. See [Persistence](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md#persistence).
+
+### Indent with a tab character
+
+`indentChars` sets the text each step inserts or removes. Two spaces is the default, and `'\t'` is a common choice:
 
 ```ts
-const editor = new Editor({
-  extensions: [StarterKit, Indent],
-  content: savedHtml,
-  parseOptions: { preserveWhitespace: true }
-})
+Indent.configure({ indentChars: '\t' })
 ```
 
-Both `true` and `'full'` keep the whitespace run. `'full'` also keeps newlines, which literal indent does not need.
+## Documentation
 
-## Migrating from 0.1.x
-
-One thing changed for a `0.1.x` reader: the context option.
-
-**`allowedIndentContexts` replaces `allowedNodeTypes`.** `0.1.x` matched a flat list of type names against the node at the caret, and an empty list allowed every context. Map each name to one `{ textblock, parent }` rule for each parent you need:
-
-```ts
-// 0.1.x
-Indent.configure({ allowedNodeTypes: ['paragraph'] })
-// 2.x
-Indent.configure({
-  allowedIndentContexts: [{ textblock: 'paragraph', parent: 'doc' }]
-})
-```
-
-`[]` now disables literal indent instead of allowing it everywhere.
-
-The `0.1.x` default was `['paragraph', 'listItem', 'orderedList']`, so list items took a literal indent on Tab when you never passed the option. In `2.x`, Tab in a list item sinks the list item. Add `{ textblock: 'paragraph', parent: 'listItem' }` only when you want literal indent there as well.
-
-The package root exports `Indent`, `IndentContextRule` and `IndentOptions`. `IndentContext` is internal, and `0.1.x` did not export it either.
-
-`allowedIndentContexts` is required on the resolved `IndentOptions` type. You need no action: `configure()` still accepts partials, and the default allowlist is unchanged.
-
-Full breaking-change list: [CHANGELOG.md](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/CHANGELOG.md).
-
-## TypeScript
-
-Three named exports, and nothing else:
-
-- **Extension** — `Indent`. Its registered name is `'indent'`. `editor.extensionManager` looks it up under that name, and a preset excludes it by that name.
-- **Types** — `IndentOptions` (the resolved option object) and `IndentContextRule` (`{ textblock: string; parent: string }`).
-
-`indent` and `outdent` are declared on the Tiptap `Commands` interface, so `editor.commands.indent()` and `editor.chain().indent()` type-check after the import.
-
-`IndentContext` is not exported from the package root.
+| Guide                                                                                                                  | What it covers                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/api.md)              | Options, `allowedIndentContexts` recipes, commands, keyboard shortcuts and Tab order, the full caveats list, TypeScript |
+| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md)                    | Styling, multiline selections, outdent at the caret, persistence                                                        |
+| [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md) | `allowedNodeTypes` to `allowedIndentContexts`, the changed defaults                                                     |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/CHANGELOG.md)                 | Every release and its breaking changes                                                                                  |
 
 ## Part of docs.plus
 

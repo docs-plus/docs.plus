@@ -1,6 +1,22 @@
 # `@docs.plus/extension-*` family
 
-Five publishable Tiptap extensions for [docs.plus](https://docs.plus). Every package in this directory is at `2.0.0`, so the family shares one major under the `@docs.plus` npm scope. [Release policy](#release-policy) links the tracker that holds the npm status of each one.
+Five publishable Tiptap extensions for [docs.plus](https://docs.plus). The five packages share major version `2` under the `@docs.plus` npm scope. [Release policy](#release-policy) links the tracker that holds the npm status of each one.
+
+## Choose an extension
+
+Pick the package for the job, install it, and run its Quickstart.
+
+| Package                                                     | What it does for you                                                                                                          |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`extension-hyperlink`](./extension-hyperlink/)             | Turns typed URLs, emails, and E.164 phone numbers into links, with optional popovers to create, preview, and edit them.       |
+| [`extension-hypermultimedia`](./extension-hypermultimedia/) | Embeds images, audio, video, YouTube, Vimeo, SoundCloud, Spotify, X, and Loom, each with a caption and a media toolbar.       |
+| [`extension-indent`](./extension-indent/)                   | Makes Tab indent text and Shift-Tab remove the indent, while lists and tables keep their own Tab behavior.                    |
+| [`extension-inline-code`](./extension-inline-code/)         | Formats text as inline code when you type it between backticks or press `Mod-e`, and adds no extra character to the document. |
+| [`extension-placeholder`](./extension-placeholder/)         | Shows hint text in the empty textblock at the cursor, and its cost does not grow with document length.                        |
+
+Each package README is a short start page, and the detail lives in the `docs/` folder of that package.
+
+The table below adds the CSS export and the clean-room port of each package.
 
 | Package                                                     | Description                                                                                   | CSS export     | Clean-room port |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------- | --------------- |
@@ -13,8 +29,10 @@ Five publishable Tiptap extensions for [docs.plus](https://docs.plus). Every pac
 ## Install
 
 ```sh
-bun add @docs.plus/extension-hyperlink
+npm install @docs.plus/extension-hyperlink
 ```
+
+Or use `pnpm add @docs.plus/extension-hyperlink`, `yarn add @docs.plus/extension-hyperlink`, or `bun add @docs.plus/extension-hyperlink`.
 
 Use the matching package name from the table above (`@docs.plus/extension-hypermultimedia`, `@docs.plus/extension-indent`, and so on).
 
@@ -24,7 +42,7 @@ Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 `extension-inline-code` is the one package with an extra floor. Its backtick rules use RegExp lookbehind, so it needs an engine with RegExp lookbehind — Chrome 62+, Firefox 78+, Safari and iOS Safari 16.4+.
 
-Two packages ship a stylesheet, imported as `@docs.plus/extension-hyperlink/styles.css` and `@docs.plus/extension-hypermultimedia/styles.css`. The other three ship no CSS, and each package README holds the rule to add in its Styling section. `extension-placeholder` renders nothing at all until you add that rule.
+Two packages ship a stylesheet, imported as `@docs.plus/extension-hyperlink/styles.css` and `@docs.plus/extension-hypermultimedia/styles.css`. The other three ship no CSS. The `extension-inline-code` and `extension-placeholder` Quickstarts show the rule to add. `extension-indent` needs a rule only in the two cases that its [Styling](./extension-indent/docs/guide.md#styling) section lists. `extension-placeholder` renders nothing at all until you add its Quickstart rule.
 
 ## Where it runs
 

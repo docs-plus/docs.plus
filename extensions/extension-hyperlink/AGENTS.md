@@ -32,7 +32,7 @@ Persistent memory for AI agents working inside this package. Covers schema, comm
 - `isSafeHref` + `composeGate` are the single XSS gate. `parseHTML` uses `getAttrs` + `isSafeHref(href)`; `clickHandler.ts` and the preview popover `window.open` fallback also call `isSafeHref`.
 - `composeGate(options)` composes `isSafeHref` with user `isAllowedUri(href, { defaultValidate, protocols, defaultProtocol })`.
 - All write boundaries use the composed gate: `setHyperlink`, `toggleHyperlink`, `editHyperlink`, input rule, paste rule, paste handler, autolink, popover submit. `parseHTML`/`parseMarkdown` apply only the `isSafeHref` floor so a tightened `isAllowedUri` cannot strip marks from existing documents on import.
-- `DANGEROUS_SCHEME_RE` is defined only in `validateURL.ts` and is deliberately public (exported via `utils/index.ts`, the single root-reachable path, documented in README → Security). In-package call sites import `isSafeHref`, never the regex.
+- `DANGEROUS_SCHEME_RE` is defined only in `validateURL.ts` and is deliberately public (exported via `utils/index.ts`, the single root-reachable path, documented in `docs/security.md`). In-package call sites import `isSafeHref`, never the regex.
 - Every path that stores a hyperlink mark routes through `normalizeHref(raw)` or `normalizeLinkifyHref(match)`:
   - Bare domains become `https://...`; explicit schemes are preserved.
   - Bare email becomes `mailto:<email>` via strict full-string linkify match.

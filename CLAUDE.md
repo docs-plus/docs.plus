@@ -24,7 +24,7 @@ If guidance overlaps, project policy in `AGENTS.md` and `.cursor/docs/` wins; `.
 
 These rules cause the most damage when an agent misses them. Full context in [AGENTS.md](AGENTS.md).
 
-- **Bun only.** Never `npm`, `yarn`, `pnpm`, `npx` — including the install commands in published extension READMEs/CHANGELOGs. Use the plain `bun add <pkg>` line, never `npm install` or `@next` soak lines. See the [release-extensions](.cursor/skills/release-extensions/SKILL.md) skill §Extension Package Contract. Lockfile is `bun.lock`.
+- **Bun only for repo work.** Never run `npm`, `yarn`, `pnpm`, or `npx` in this monorepo. One exception: install lines for extension users in public docs lead with `npm install <pkg>`, then name pnpm, Yarn, and Bun (maintainer ruling, 2026-09-22). No `@next` soak lines. See the [release-extensions](.cursor/skills/release-extensions/SKILL.md) skill §Extension Package Contract. Lockfile is `bun.lock`.
 - **No commits unless asked.** No `git add`, `git commit`, `git push`, `git stash`, or `--amend` inside plan execution. End multi-task plans at a "Review checkpoint".
 - **Stay in the current worktree.** Do not switch execution to another path or parallel checkout.
 - **Never hand-edit generated files:** `apps/webapp/src/types/supabase.ts` (Supabase CLI output) and `packages/supabase/seed.sql`. After any SQL change run `bun run --filter @docs.plus/supabase_back types` and include the regenerated file in the same change — full rules in [packages/supabase/CLAUDE.md](packages/supabase/CLAUDE.md).

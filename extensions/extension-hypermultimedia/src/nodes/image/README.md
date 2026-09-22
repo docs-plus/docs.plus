@@ -7,8 +7,10 @@ Block or inline image node with hover resize grippers, the shared media toolbar,
 ## Install
 
 ```sh
-bun add @docs.plus/extension-hypermultimedia
+npm install @docs.plus/extension-hypermultimedia
 ```
+
+Or use `pnpm add @docs.plus/extension-hypermultimedia`, `yarn add @docs.plus/extension-hypermultimedia`, or `bun add @docs.plus/extension-hypermultimedia`.
 
 ```js
 import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
@@ -89,7 +91,7 @@ Hover the image (desktop) or tap it (touch) to activate the gripper. Four side h
 
 ## Toolbar
 
-The shared media toolbar mounts in the image's top-right corner — inline: alignment, wrap margin, caption, view original, download; overflow `…`: Replace URL, copy, delete. Customize it with the kit-level `mediaActions` / `mediaToolbar` hooks — see the [package README](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia#media-toolbar).
+The shared media toolbar mounts in the image's top-right corner — inline: alignment, wrap margin, caption, view original, download; overflow `…`: Replace URL, copy, delete. Customize it with the kit-level `mediaActions` / `mediaToolbar` hooks — see the [media toolbar guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md).
 
 ## Caption
 

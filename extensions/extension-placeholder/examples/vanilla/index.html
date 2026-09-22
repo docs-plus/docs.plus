@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@docs.plus/extension-placeholder</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        max-width: 720px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      #editor .ProseMirror {
+        min-height: 160px;
+        padding: 12px 16px;
+        border: 1px solid #9ca3af;
+        border-radius: 8px;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1><code>@docs.plus/extension-placeholder</code></h1>
+    <p>
+      You should see the hint
+      <code>Write something …</code>
+      in the empty editor as soon as the page loads. Click in the editor and type a character, and
+      the hint disappears. Press Enter, and the hint moves to the new empty paragraph.
+    </p>
+    <div id="editor"></div>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
