@@ -25,6 +25,10 @@ bun add @docs.plus/extension-hyperlink
 
 Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
+This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
+
+React Native has no DOM. Load the editor in a web view.
+
 Installs two runtime dependencies, `@floating-ui/dom` and `linkifyjs`. The popover engine and the tooltip ship inside `dist`, so they add no third package.
 
 The Quickstart also imports `@tiptap/starter-kit`. Add it with `bun add @tiptap/starter-kit` when your app has none yet.

@@ -26,6 +26,14 @@ Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
 Two packages ship a stylesheet, imported as `@docs.plus/extension-hyperlink/styles.css` and `@docs.plus/extension-hypermultimedia/styles.css`. The other three ship no CSS, and each package README holds the rule to add in its Styling section. `extension-placeholder` renders nothing at all until you add that rule.
 
+## Where it runs
+
+None of the five imports React, Vue, or Next.js.
+
+Use them from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser. Each Quickstart shows that call.
+
+React Native has no DOM. Load the editor in a web view.
+
 ## Recommended pairings
 
 Three of these entries are required, not optional: two packages replace a StarterKit mark, and one replaces a Tiptap built-in.

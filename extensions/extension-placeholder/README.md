@@ -25,6 +25,10 @@ bun add @docs.plus/extension-placeholder
 
 Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
+This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
+
+React Native has no DOM. Load the editor in a web view.
+
 Installs with no runtime dependencies.
 
 To move from Tiptap's built-in Placeholder, see [Migrating from the built-in Placeholder](#migrating-from-the-built-in-placeholder).

@@ -25,6 +25,10 @@ bun add @docs.plus/extension-indent
 
 Requires **`@tiptap/core` ^3.31.3** and **`@tiptap/pm` ^3.31.3** (Tiptap 3.x).
 
+This package imports no React, Vue, or Next.js code. Use it from a plain page, Vite, React, Vue, Svelte, Next.js, Nuxt, or SvelteKit. Create the editor in the browser.
+
+React Native has no DOM. Load the editor in a web view.
+
 Installs with no runtime dependencies.
 
 Two optional packages change what Tab does before literal indent. `@tiptap/extension-table` adds cell navigation. `@tiptap/extension-list` binds Tab sink for `listItem`, and for `taskItem` only when `TaskItem` runs `nested: true`. It always binds Shift-Tab lift. `@tiptap/starter-kit` already ships `listItem`.
