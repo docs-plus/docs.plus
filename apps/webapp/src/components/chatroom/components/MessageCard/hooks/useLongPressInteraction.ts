@@ -46,6 +46,8 @@ export const useLongPressInteraction = () => {
   }, [])
 
   const handleActivation = useCallback((event: any) => {
+    // Fires only past the hold threshold, so a tap or scroll never buzzes. iOS has no Vibration API.
+    if ('vibrate' in navigator) navigator.vibrate(10)
     onActivationRef.current?.(event)
   }, [])
 
