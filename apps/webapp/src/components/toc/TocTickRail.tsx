@@ -35,13 +35,10 @@ const TICK_OVERSCAN = 16
 const RAIL_USER_SCROLL_LOCK_MS = 800
 const RAIL_SPY_CONTEXT_TICKS = 8
 const RAIL_MAX_VIEWPORT_RATIO = 0.84
-const PREVIEW_PROSE_CLASS =
-  'tiptap ProseMirror text-base-content min-h-0 px-2.5 pt-2 pb-1.5 text-xs leading-relaxed [&_.ha-wrap]:hidden [&_a]:text-primary [&_hr]:hidden [&_ol]:my-0.5 [&_pre]:p-1.5 [&_pre]:text-[10px] [&_ul]:my-0.5 [&_:is(h1,h2,h3,h4,h5,h6)]:!mt-0 [&_:is(h1,h2,h3,h4,h5,h6)]:!mb-1 [&_:is(h1,h2,h3,h4,h5,h6)]:!pr-0 [&_:is(h1,h2,h3,h4,h5,h6)]:!line-clamp-2 [&_:is(h1,h2,h3,h4,h5,h6)]:!text-sm [&_:is(h1,h2,h3,h4,h5,h6)]:!font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-snug [&_:is(h1,h2,h3,h4,h5,h6)]:!text-base-content'
-const PREVIEW_BODY_CLASS = 'text-base-content/70 [overflow-wrap:anywhere] line-clamp-3 [&_p]:!my-0'
-const PREVIEW_MEDIA_CLASS = 'bg-base-200 h-24 w-full overflow-hidden'
 const TICK_HOVER_SLOP_PX = 72
 const TICK_APPROACH_GROW = 0.78
-const TICK_ROW_FALLBACK_PX = 8
+// Must match the tick button's h-2 (8px).
+const TICK_ROW_PX = 8
 const TICK_WIDTH = {
   idle: 10,
   far: 13,
@@ -88,7 +85,6 @@ type RailGeometry = {
   right: number
   bottom: number
   firstTop: number
-  rowPx: number
 }
 
 function visibleRailItems(items: TocItem[]): TocItem[] {
@@ -107,7 +103,7 @@ function maxRailTicks(navH: number, viewH: number) {
   if (vh <= 0 && navH <= 0) return Number.POSITIVE_INFINITY
   const viewCap = vh > 0 ? vh * RAIL_MAX_VIEWPORT_RATIO : navH
   const measured = navH > 0 ? Math.min(navH, viewCap) : viewCap
-  return Math.max(1, Math.floor(measured / TICK_ROW_FALLBACK_PX))
+  return Math.max(1, Math.floor(measured / TICK_ROW_PX))
 }
 
 function deepestKeptLevel(items: TocItem[], maxTicks: number) {
@@ -187,7 +183,7 @@ function visibleSpyId(items: TocItem[], visible: TocItem[], id: string | null): 
 
 function railWindow(scrollTop: number, height: number, count: number) {
   if (count === 0) return { start: 0, end: 0 }
-  const row = TICK_ROW_FALLBACK_PX
+  const row = TICK_ROW_PX
   const overscan = TICK_OVERSCAN
   const start = Math.max(0, Math.floor(scrollTop / row) - overscan)
   const end = Math.min(count, Math.ceil((scrollTop + (height || 640)) / row) + overscan)
@@ -206,7 +202,7 @@ function clampScroll(next: number, max: number) {
 }
 
 function railSpyScrollTop(index: number, count: number, innerH: number, current: number) {
-  const row = TICK_ROW_FALLBACK_PX
+  const row = TICK_ROW_PX
   const total = count * row
   const maxScroll = Math.max(0, total - innerH)
   if (maxScroll === 0) return 0
@@ -244,8 +240,7 @@ function readRailGeometry(nav: HTMLElement): RailGeometry {
     left: rail.left,
     right: rail.right,
     bottom: rail.bottom,
-    firstTop: stack?.getBoundingClientRect().top ?? rail.top,
-    rowPx: TICK_ROW_FALLBACK_PX
+    firstTop: stack?.getBoundingClientRect().top ?? rail.top
   }
 }
 
@@ -388,9 +383,10 @@ function mountSectionPreview(host: HTMLElement, headingId: string, fallback: str
   }
 
   const prose = document.createElement('div')
-  prose.className = PREVIEW_PROSE_CLASS
+  prose.className =
+    'tiptap ProseMirror text-base-content min-h-0 px-2.5 pt-2 pb-1.5 text-xs leading-relaxed [&_.ha-wrap]:hidden [&_a]:text-primary [&_hr]:hidden [&_ol]:my-0.5 [&_pre]:p-1.5 [&_pre]:text-[10px] [&_ul]:my-0.5 [&_:is(h1,h2,h3,h4,h5,h6)]:!mt-0 [&_:is(h1,h2,h3,h4,h5,h6)]:!mb-1 [&_:is(h1,h2,h3,h4,h5,h6)]:!pr-0 [&_:is(h1,h2,h3,h4,h5,h6)]:!line-clamp-2 [&_:is(h1,h2,h3,h4,h5,h6)]:!text-sm [&_:is(h1,h2,h3,h4,h5,h6)]:!font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:!leading-snug [&_:is(h1,h2,h3,h4,h5,h6)]:!text-base-content'
   const body = document.createElement('div')
-  body.className = PREVIEW_BODY_CLASS
+  body.className = 'text-base-content/70 [overflow-wrap:anywhere] line-clamp-3 [&_p]:!my-0'
   let heading: HTMLElement | null = null
   let media: HTMLElement | null = null
 
@@ -416,7 +412,7 @@ function mountSectionPreview(host: HTMLElement, headingId: string, fallback: str
 
   if (media && hasPreviewMedia(media)) {
     const well = document.createElement('div')
-    well.className = PREVIEW_MEDIA_CLASS
+    well.className = 'bg-base-200 h-24 w-full overflow-hidden'
     fitPreviewMediaCover(media)
     well.appendChild(media)
     host.appendChild(well)
@@ -545,7 +541,8 @@ function useTickHoverProximity(
         if (
           active instanceof HTMLElement &&
           nav.contains(active) &&
-          active.hasAttribute('data-toc-id')
+          active.hasAttribute('data-toc-id') &&
+          active.matches(':focus-visible')
         ) {
           commit({
             id: active.getAttribute('data-toc-id'),
@@ -558,10 +555,9 @@ function useTickHoverProximity(
         return
       }
 
-      const rowPx = rail.rowPx || TICK_ROW_FALLBACK_PX
       const index = Math.max(
         0,
-        Math.min(list.length - 1, Math.round((y - rail.firstTop - rowPx / 2) / rowPx))
+        Math.min(list.length - 1, Math.round((y - rail.firstTop - TICK_ROW_PX / 2) / TICK_ROW_PX))
       )
       const id = list[index]?.id ?? null
 
@@ -625,7 +621,7 @@ function useChatRailReserve() {
     }
 
     const onTick = () => {
-      setDragging((was) => was || true)
+      setDragging(true)
     }
     const onEnd = () => setDragging(false)
     window.addEventListener('chat-panel-resize-tick', onTick)
@@ -836,7 +832,7 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
     setHover(next)
   }, [])
   const { start, end } = railWindow(viewport.scrollTop, viewport.height, visible.length)
-  const stackH = visible.length * TICK_ROW_FALLBACK_PX
+  const stackH = visible.length * TICK_ROW_PX
   const stackOffset = railStackOffset(viewport.height, stackH)
   const [slideStack, setSlideStack] = useState(false)
   const [previewAnchor, setPreviewAnchor] = useState<HTMLElement | null>(null)
@@ -894,6 +890,7 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
           <button
             type="button"
             aria-label="Show table of contents"
+            data-toc-rail-reopen
             className="btn btn-ghost btn-square btn-xs text-base-content/60 hover:text-base-content"
             onClick={onOpenWide}>
             <Icons.tableOfContents size={16} className="stroke-[1.75]" aria-hidden />
@@ -931,7 +928,7 @@ export function TocTickRail({ onOpenWide }: { onOpenWide: () => void }) {
                 <div
                   key={item.id}
                   className="absolute inset-x-0"
-                  style={{ top: index * TICK_ROW_FALLBACK_PX, height: TICK_ROW_FALLBACK_PX }}>
+                  style={{ top: index * TICK_ROW_PX, height: TICK_ROW_PX }}>
                   <TocTick
                     id={item.id}
                     label={item.textContent}

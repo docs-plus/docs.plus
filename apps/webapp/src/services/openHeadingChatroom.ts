@@ -25,13 +25,19 @@ export function destroyChatRoomForHistory(): void {
 export function focusHeadingChatTrigger(headingId: string | undefined): void {
   if (!headingId) return
   const id = CSS.escape(headingId)
-  const trigger =
-    document.querySelector<HTMLElement>(`.toc__chat-trigger[data-heading-id="${id}"]`) ??
-    document.querySelector<HTMLElement>('[aria-label="Show table of contents"]') ??
+  const candidates = [
+    document.querySelector<HTMLElement>(`.toc__chat-trigger[data-heading-id="${id}"]`),
+    document.querySelector<HTMLElement>('[data-toc-rail-reopen]'),
     document.querySelector<HTMLElement>(
       '.tableOfContents button:not([disabled]), .tableOfContents a[href]'
     )
-  trigger?.focus({ preventScroll: true })
+  ]
+  // A trigger inside a folded subtree exists but cannot take focus; try the next one.
+  for (const el of candidates) {
+    if (!el) continue
+    el.focus({ preventScroll: true })
+    if (document.activeElement === el) return
+  }
 }
 
 /** Sheet-open variant: only acts when the keyboard is up, avoiding a redundant blur. */
