@@ -1,9 +1,9 @@
-let stopVoiceRecording: (() => void) | null = null
+let discardVoiceNote: (() => void) | null = null
 
-export function registerComposerVoiceStop(fn: (() => void) | null): void {
-  stopVoiceRecording = fn
+export function registerComposerVoiceDiscard(fn: (() => void) | null): void {
+  discardVoiceNote = fn
 }
 
-export function stopComposerVoiceRecording(): void {
-  stopVoiceRecording?.()
+export function discardComposerVoiceNote(): void {
+  discardVoiceNote?.()
 }

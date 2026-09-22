@@ -4,7 +4,7 @@ import { useChatStore } from '@stores'
 import type { EmojiPickerEventType } from '../../../../../stores/chat/emojiPickerStore'
 import { useComposerEmojiPanelStore } from '../stores/composerEmojiPanelStore'
 import { useComposerLinkDialogStore } from '../stores/composerLinkDialogStore'
-import { stopComposerVoiceRecording } from './composerVoiceRecording'
+import { discardComposerVoiceNote } from './composerVoiceRecording'
 import { dismissComposerMentionSuggestion } from './mentionTypes'
 
 type ComposerEmojiPicker = { isOpen: boolean; eventType: EmojiPickerEventType | null }
@@ -22,7 +22,7 @@ export function isComposerEmojiOverlayOpen(): boolean {
 
 /** Close the inline panel and any emoji picker, including the reaction picker. */
 export function dismissComposerEmojiOverlays(): void {
-  stopComposerVoiceRecording()
+  discardComposerVoiceNote()
   useComposerEmojiPanelStore.getState().close()
   closeMessageReaction()
 }
@@ -32,7 +32,7 @@ export function dismissComposerOverlaysBeforeMention(): void {
   useComposerLinkDialogStore.getState().close()
 }
 
-/** No voice stop: it would end the recording that is starting. */
+/** No voice discard: it would end the recording that is starting. */
 export function dismissComposerOverlaysBeforeVoice(): void {
   useComposerEmojiPanelStore.getState().close()
   closeMessageReaction()
@@ -40,6 +40,6 @@ export function dismissComposerOverlaysBeforeVoice(): void {
 }
 
 export function dismissComposerEmojiAndMentionOverlays(): void {
-  stopComposerVoiceRecording()
+  discardComposerVoiceNote()
   dismissComposerOverlaysBeforeVoice()
 }

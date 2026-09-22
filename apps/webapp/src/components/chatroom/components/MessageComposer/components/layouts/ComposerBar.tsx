@@ -6,7 +6,7 @@ import { useAuthStore, useStore } from '@stores'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { registerComposerVoiceStop } from '../../helpers/composerVoiceRecording'
+import { registerComposerVoiceDiscard } from '../../helpers/composerVoiceRecording'
 import { useComposerAttachmentList } from '../../hooks'
 import { useComposerFileDrop } from '../../hooks/useComposerFileDrop'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
@@ -45,16 +45,16 @@ export function ComposerBar({ variant, className }: Props) {
     userId: user?.id
   })
 
-  const stopVoiceRef = useRef(voice.discard)
-  stopVoiceRef.current = voice.discard
+  const discardVoiceRef = useRef(voice.discard)
+  discardVoiceRef.current = voice.discard
 
   useEffect(() => {
-    registerComposerVoiceStop(() => stopVoiceRef.current())
-    return () => registerComposerVoiceStop(null)
+    registerComposerVoiceDiscard(() => discardVoiceRef.current())
+    return () => registerComposerVoiceDiscard(null)
   }, [])
 
   useEffect(() => {
-    return () => stopVoiceRef.current()
+    return () => discardVoiceRef.current()
   }, [])
 
   const onVoiceFromMenu = useCallback(() => {

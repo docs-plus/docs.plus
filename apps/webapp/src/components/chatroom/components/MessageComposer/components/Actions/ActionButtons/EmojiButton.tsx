@@ -5,7 +5,7 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
-import { stopComposerVoiceRecording } from '../../../helpers/composerVoiceRecording'
+import { discardComposerVoiceNote } from '../../../helpers/composerVoiceRecording'
 import { isComposerInsertEmojiPickerOpen } from '../../../helpers/dismissComposerOverlays'
 import { dismissComposerMentionSuggestion } from '../../../helpers/mentionTypes'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
@@ -36,7 +36,7 @@ export const EmojiButton = ({ className, size, ...props }: Props) => {
   const onPress = useCallback(() => {
     if (!editor) return
 
-    stopComposerVoiceRecording()
+    discardComposerVoiceNote()
     dismissComposerMentionSuggestion(editor)
 
     if (isMobile) {

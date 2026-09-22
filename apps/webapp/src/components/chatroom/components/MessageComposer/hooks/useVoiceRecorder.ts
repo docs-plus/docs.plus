@@ -127,7 +127,7 @@ export function useVoiceRecorder({
     setDragOffset(0, 0)
   }, [setDragOffset])
 
-  // The one way back to idle: Cancel, Discard, a short hold, an overlay, and unmount.
+  // Every user action back to idle: Cancel, Discard, a short hold, an overlay, and unmount.
   const discard = useCallback(() => {
     startIdRef.current++
     sendOnStopRef.current = false
@@ -234,7 +234,10 @@ export function useVoiceRecorder({
           if (event.data.size > 0) chunksRef.current.push(event.data)
         }
 
+        // A recorder can stop on its own (a lost device), so clear here too.
         recorder.onstop = () => {
+          clearTimers()
+          setLiveLevels(IDLE_LEVELS)
           releaseStream()
           const send = sendOnStopRef.current
           sendOnStopRef.current = false
@@ -285,7 +288,11 @@ export function useVoiceRecorder({
         startLevelLoop()
       } catch {
         // A replaced start must not tear down the recording that replaced it.
-        if (startId !== startIdRef.current) return
+        // A newer start resets releasedEarlyRef, so only an early release shows the error.
+        if (startId !== startIdRef.current) {
+          if (releasedEarlyRef.current) toast.Error('Microphone access denied or unavailable')
+          return
+        }
         clearTimers()
         releaseStream()
         resetGesture()
@@ -373,7 +380,6 @@ export function useVoiceRecorder({
 
   return {
     phase,
-    elapsedMs,
     elapsedLabel: formatAudioClock(elapsedMs / 1000),
     previewUrl,
     liveLevels,
@@ -381,7 +387,6 @@ export function useVoiceRecorder({
     isLocked,
     // Only a phone holds: desktop recording always starts locked.
     isHolding: phase === 'recording' && !isLocked,
-    isActive: phase === 'recording' || phase === 'preview',
     dragSurfaceRef,
     startHold,
     moveHold,

@@ -20,33 +20,39 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
     ? 'size-11 min-h-11 min-w-11 rounded-field'
     : 'size-8 min-h-8 min-w-8 rounded-field'
 
-  const bindHoldListeners = useCallback(() => {
-    if (listeningRef.current) return
-    listeningRef.current = true
+  const bindHoldListeners = useCallback(
+    (pointerId: number) => {
+      if (listeningRef.current) return
+      listeningRef.current = true
 
-    const onMove = (event: PointerEvent) => {
-      voice.moveHold(event.clientX, event.clientY)
-    }
+      // A second finger on the feed must not move or end the hold.
+      const onMove = (event: PointerEvent) => {
+        if (event.pointerId !== pointerId) return
+        voice.moveHold(event.clientX, event.clientY)
+      }
 
-    const onUp = () => {
-      listeningRef.current = false
-      voice.endHold()
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      window.removeEventListener('pointercancel', onUp)
-    }
+      const onUp = (event: PointerEvent) => {
+        if (event.pointerId !== pointerId) return
+        listeningRef.current = false
+        voice.endHold()
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+        window.removeEventListener('pointercancel', onUp)
+      }
 
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    window.addEventListener('pointercancel', onUp)
-  }, [voice])
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+      window.addEventListener('pointercancel', onUp)
+    },
+    [voice]
+  )
 
   const onPointerDown = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
       if (!isMobile || canSend || voice.phase === 'preview') return
       event.preventDefault()
       event.currentTarget.setPointerCapture(event.pointerId)
-      bindHoldListeners()
+      bindHoldListeners(event.pointerId)
       void voice.startHold(event.clientX, event.clientY)
     },
     [bindHoldListeners, canSend, isMobile, voice]
