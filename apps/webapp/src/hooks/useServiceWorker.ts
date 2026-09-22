@@ -13,7 +13,7 @@ const reportSwIssue = (kind: string, detail: unknown) =>
 
 /**
  * Keeps PWA clients on the newest deploy: next-pwa registers sw.js, this hook
- * sends SKIP_WAITING when a new one installs and reloads on controllerchange.
+ * sends SKIP_WAITING when a new one installs and reloads when it replaces a controller.
  * Update checks run on load, visibilitychange, focus, online, and a 10-min poll.
  */
 const useServiceWorker = () => {
@@ -29,8 +29,15 @@ const useServiceWorker = () => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
     let refreshing = false
+    // A first install claims an uncontrolled page (clientsClaim), which also fires
+    // controllerchange. Only a worker replacing an existing controller is a deploy.
+    let hadController = navigator.serviceWorker.controller !== null
 
     const handleControllerChange = () => {
+      if (!hadController) {
+        hadController = true
+        return
+      }
       if (refreshing) return
       refreshing = true
       console.info('[SW] New version activated, reloading…')
