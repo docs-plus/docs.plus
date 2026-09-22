@@ -4,6 +4,7 @@ import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
@@ -129,31 +130,39 @@ function TocDesktopComponent({ className = '' }: TocDesktopProps) {
           </ul>
         </SortableContext>
 
-        <DragOverlay dropAnimation={null} style={{ zIndex: 10000 }}>
-          {activeItem && (
-            <div className="toc-drag-wrapper">
-              <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />
+        {/* The scroller's fade mask would clip and fade the fixed drag card. */}
+        {typeof document !== 'undefined' &&
+          createPortal(
+            <DragOverlay dropAnimation={null} style={{ zIndex: 10000 }}>
+              {activeItem && (
+                <div className="toc-drag-wrapper">
+                  <TocLevelPicker level={originalLevel} projectedLevel={projectedLevel} />
 
-              <div
-                ref={overlayRef}
-                className="toc-drag-card"
-                style={
-                  sourceRect
-                    ? { width: sourceRect.width, minHeight: sourceRect.height, height: 'auto' }
-                    : undefined
-                }>
-                {descendantCount > 0 && <Icons.listTree className="toc-tree-icon" size={14} />}
-                <span className="toc__link wrap-anywhere">{activeItem.textContent}</span>
-                {descendantCount > 0 && (
-                  <span className="toc-descendant-badge">+{descendantCount}</span>
-                )}
-                {descendantCount > 0 && (
-                  <div className="toc-stack-indicator" data-count={Math.min(descendantCount, 3)} />
-                )}
-              </div>
-            </div>
+                  <div
+                    ref={overlayRef}
+                    className="toc-drag-card"
+                    style={
+                      sourceRect
+                        ? { width: sourceRect.width, minHeight: sourceRect.height, height: 'auto' }
+                        : undefined
+                    }>
+                    {descendantCount > 0 && <Icons.listTree className="toc-tree-icon" size={14} />}
+                    <span className="toc__link wrap-anywhere">{activeItem.textContent}</span>
+                    {descendantCount > 0 && (
+                      <span className="toc-descendant-badge">+{descendantCount}</span>
+                    )}
+                    {descendantCount > 0 && (
+                      <div
+                        className="toc-stack-indicator"
+                        data-count={Math.min(descendantCount, 3)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </DragOverlay>,
+            document.body
           )}
-        </DragOverlay>
 
         {activeId && dropTarget.id && dropTarget.indicatorY !== null && dropTarget.rect && (
           <DropIndicatorPortal
