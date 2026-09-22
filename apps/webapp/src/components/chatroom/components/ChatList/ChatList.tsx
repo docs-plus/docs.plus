@@ -16,7 +16,6 @@ import { PaginationLoader } from './PaginationLoader'
 import { StickyDayHeader } from './StickyDayHeader'
 
 export type ChatListContext = {
-  channelId: string
   onAtBottomChange: (atBottom: boolean) => void
   currentUserId: string | null
   variant: keyof ChatroomVariant
@@ -44,7 +43,6 @@ const ChatListFooter: VirtuosoMessageListProps<ChatItem, ChatListContext>['Foote
 )
 
 export type ChatListProps = {
-  channelId: string
   onAtBottomChange: (atBottom: boolean) => void
   onLastVisibleIndexChange?: (index: number) => void
   initialData?: ChatItem[]
@@ -72,7 +70,6 @@ export const ChatList = forwardRef<
 >(
   (
     {
-      channelId,
       onAtBottomChange,
       onLastVisibleIndexChange,
       initialData = [],
@@ -90,14 +87,13 @@ export const ChatList = forwardRef<
     useImperativeHandle(externalRef, () => internalRef.current!)
     const context = useMemo<ChatListContext>(
       () => ({
-        channelId,
         onAtBottomChange,
         currentUserId,
         variant,
         loadingOlder,
         loadingNewer
       }),
-      [channelId, onAtBottomChange, currentUserId, variant, loadingOlder, loadingNewer]
+      [onAtBottomChange, currentUserId, variant, loadingOlder, loadingNewer]
     )
     const onScroll = useCallback(
       (location: ListScrollLocation) => {
@@ -126,18 +122,18 @@ export const ChatList = forwardRef<
     )
     return (
       <VirtuosoMessageList<ChatItem, ChatListContext>
-        ref={internalRef as any}
+        ref={internalRef}
         initialData={initialData}
         context={context}
-        computeItemKey={computeItemKey as any}
-        ItemContent={ItemContent as any}
-        StickyHeader={StickyDayHeader as any}
+        computeItemKey={computeItemKey}
+        ItemContent={ItemContent}
+        StickyHeader={StickyDayHeader}
         Header={ChatListHeader}
         Footer={ChatListFooter}
-        EmptyPlaceholder={MessagesEmptyState as any}
+        EmptyPlaceholder={MessagesEmptyState}
         onScroll={onScroll}
-        shortSizeAlign={'bottom-smooth' as any}
-        style={{ height: '100%', overscrollBehavior: 'contain' } as any}
+        shortSizeAlign="bottom-smooth"
+        style={{ height: '100%', overscrollBehavior: 'contain' }}
       />
     )
   }

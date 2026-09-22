@@ -20,9 +20,6 @@ import { useMemo } from 'react'
 
 import { type MessageActionMenuItem, messageActionTitle } from './messageActionMenu'
 
-export type { MessageActionMenuItem, MessageActionMenuItemId } from './messageActionMenu'
-export { messageActionTitle } from './messageActionMenu'
-
 type Options = {
   iconSize?: number
   includeReaction?: boolean

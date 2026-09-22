@@ -8,12 +8,7 @@ declare global {
         align?: 'start' | 'center' | 'end',
         behavior?: 'instant' | 'smooth'
       ) => void
-      currentTailSeq: () => number | null
-      lastSeenSeq: () => number | null
-      jumpToPresent: () => void
       clearFeedSpoilerReveal: () => void
-      revealFeedSpoiler: (path: string) => void
-      isFeedSpoilerRevealed?: (path: string) => boolean
       resetComposerAttachments: () => void
     }
   }

@@ -2,13 +2,10 @@ import type { ChatItem } from '@components/chatroom/types/chat-items'
 import { fetchMessageWindow } from '@components/chatroom/utils/fetchMessageWindow'
 import {
   applyWindowSeqRefs,
-  findMessageItemIndex,
   type MessageWindowRefs
 } from '@components/chatroom/utils/messageWindow'
-import type { ItemLocation, VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
+import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import { useCallback } from 'react'
-
-export type JumpTarget = { mode: 'present' } | { mode: 'message'; id: string }
 
 type ListRef = React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>
 
@@ -33,35 +30,20 @@ const whenReplaced = (listRef: ListRef, items: ChatItem[]) =>
   })
 
 export const useJumpTo = (channelId: string, listRef: ListRef, windowRefs: MessageWindowRefs) =>
-  useCallback(
-    async (target: JumpTarget) => {
-      const anchorKind = target.mode === 'present' ? 'tail' : 'message_id'
-      const anchorValue = target.mode === 'message' ? target.id : undefined
-      const result = await fetchMessageWindow({
-        channelId,
-        anchorKind,
-        anchorValue,
-        beforeLimit: 80,
-        afterLimit: target.mode === 'present' ? 0 : 40
-      })
-      if (!result) return
+  useCallback(async () => {
+    const result = await fetchMessageWindow({
+      channelId,
+      anchorKind: 'tail',
+      beforeLimit: 80,
+      afterLimit: 0
+    })
+    if (!result) return
 
-      const { win, items } = result
-      applyWindowSeqRefs(win, items, windowRefs)
-
-      let initialLocation: ItemLocation
-      if (target.mode === 'present') {
-        initialLocation = { index: 'LAST', align: 'end', behavior: 'instant' }
-      } else {
-        const idx = findMessageItemIndex(items, target.id)
-        initialLocation =
-          idx >= 0
-            ? { index: idx, align: 'center', behavior: 'instant' }
-            : { index: 'LAST', align: 'end', behavior: 'instant' }
-      }
-
-      listRef.current?.data.replace(items, { initialLocation, purgeItemSizes: true })
-      await whenReplaced(listRef, items)
-    },
-    [channelId, listRef, windowRefs]
-  )
+    const { win, items } = result
+    applyWindowSeqRefs(win, items, windowRefs)
+    listRef.current?.data.replace(items, {
+      initialLocation: { index: 'LAST', align: 'end', behavior: 'instant' },
+      purgeItemSizes: true
+    })
+    await whenReplaced(listRef, items)
+  }, [channelId, listRef, windowRefs])

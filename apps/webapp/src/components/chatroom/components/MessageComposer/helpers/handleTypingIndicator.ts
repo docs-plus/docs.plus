@@ -2,7 +2,6 @@ import { useAuthStore, useStore } from '@stores'
 import type { PresenceActivity, TypingIndicatorPayload } from '@types'
 import debounce from 'lodash/debounce'
 
-// Enum to represent the different states of typing indicator.
 export enum TypingIndicatorType {
   SentMsg = 'SentMsg',
   StartTyping = 'startTyping',
@@ -15,7 +14,6 @@ const ACTIVITY_START_DELAY_MS = 300
 // A presence sync also drops it, so the resend brings the chip back.
 const ACTIVITY_KEEPALIVE_MS = 3000
 
-// Flag to track if typing has started.
 let hasStartedTyping = false
 
 let currentActivity: PresenceActivity | null = null
@@ -34,7 +32,6 @@ const sendTypingIndicator = (type: TypingIndicatorPayload['type'], activity?: Pr
     user: { id: profile.id }
   }
 
-  // Broadcasting typing indicator event.
   broadcaster
     ?.send({
       type: 'broadcast',
@@ -45,30 +42,25 @@ const sendTypingIndicator = (type: TypingIndicatorPayload['type'], activity?: Pr
     .catch(console.error)
 }
 
-// Debounce function to limit the frequency of stop typing indicator broadcasts.
 const debouncedStopTypingIndicator = debounce(() => {
-  sendTypingIndicator(TypingIndicatorType.StopTyping)
-  hasStartedTyping = false // Resetting typing start flag.
-}, 1000) // Waiting for 1 second of inactivity before stopping the typing indicator.
+  sendTypingIndicator('stopTyping')
+  hasStartedTyping = false
+}, 1000)
 
-// Main function to handle typing indicator based on the event type.
 export const handleTypingIndicator = (type: TypingIndicatorType) => {
   if (type === TypingIndicatorType.StartTyping) {
     // An emoji insert fires onUpdate; it must not flash "typing" under the chip.
     if (currentActivity) return
-    // When user starts typing.
     if (!hasStartedTyping) {
-      sendTypingIndicator(type) // Display typing indicator.
+      sendTypingIndicator('startTyping')
       hasStartedTyping = true
     }
-    debouncedStopTypingIndicator() // Debounce stopping the indicator.
+    debouncedStopTypingIndicator()
   } else if (type === TypingIndicatorType.StopTyping) {
-    // When user stops typing.
-    debouncedStopTypingIndicator() // Debounce stopping the indicator.
+    debouncedStopTypingIndicator()
   } else if (type === TypingIndicatorType.SentMsg) {
-    // When user sends a message.
-    debouncedStopTypingIndicator.cancel() // Cancel any pending debounced stop calls.
-    sendTypingIndicator(TypingIndicatorType.StopTyping) // Immediately stop typing indicator.
+    debouncedStopTypingIndicator.cancel()
+    sendTypingIndicator('stopTyping')
     hasStartedTyping = false
   }
 }
@@ -88,7 +80,7 @@ export const startComposerActivity = (activity: PresenceActivity) => {
   currentActivity = activity
   activityStartTimer = setTimeout(() => {
     debouncedStopTypingIndicator.cancel()
-    if (hasStartedTyping) sendTypingIndicator(TypingIndicatorType.StopTyping)
+    if (hasStartedTyping) sendTypingIndicator('stopTyping')
     hasStartedTyping = false
     sendTypingIndicator('startActivity', activity)
     activityStartSent = true

@@ -78,7 +78,6 @@ const MessageFeed = ({ className, showScrollToBottom = true }: Props) => {
           <ChatListContextMenu>
             <ChatList
               ref={listRef as any}
-              channelId={channelId}
               onAtBottomChange={onAtBottomChange}
               onLastVisibleIndexChange={onLastVisibleIndexChange}
               loadOlder={loadOlder}

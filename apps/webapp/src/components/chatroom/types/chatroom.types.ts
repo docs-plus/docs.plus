@@ -1,6 +1,5 @@
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 
-import type { JumpTarget } from '../hooks/useJumpTo'
 import type { ChannelFeedMode } from '../utils/channelFeedProjection'
 import type { ChatItem } from './chat-items'
 import type { SendDraft, SendResult } from './send.types'
@@ -38,7 +37,6 @@ export interface ChatroomContextValue {
   send: (draft: SendDraft) => Promise<SendResult>
   retry: (clientId: string) => Promise<void>
   scrollToMessage: (messageId: string) => Promise<void>
-  jumpTo: (target: JumpTarget) => Promise<void>
   snapToPresent: () => Promise<void>
   atBottom: boolean
   newCount: number

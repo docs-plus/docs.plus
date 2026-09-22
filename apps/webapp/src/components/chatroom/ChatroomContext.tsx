@@ -25,11 +25,7 @@ import type { ChatItem } from './types/chat-items'
 import { isMessage } from './types/chat-items'
 import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
 import type { ChannelFeedMode } from './utils/channelFeedProjection'
-import {
-  clearFeedSpoilerReveal,
-  isFeedSpoilerRevealed,
-  markFeedSpoilerRevealed
-} from './utils/feedSpoilerReveal'
+import { clearFeedSpoilerReveal } from './utils/feedSpoilerReveal'
 import {
   MESSAGE_FLASH_AFTER_INSTANT_SCROLL_MS,
   scheduleMessageFlash,
@@ -166,7 +162,7 @@ export const ChatroomProvider: React.FC<{
   const snapToPresent = useCallback(async () => {
     setNewCount(0)
     setHasMention(false)
-    await jumpTo({ mode: 'present' })
+    await jumpTo()
   }, [jumpTo])
 
   const onAuthRequired = useCallback(() => {
@@ -260,23 +256,13 @@ export const ChatroomProvider: React.FC<{
           behavior: behavior ?? 'instant'
         })
       },
-      currentTailSeq: () => newestSeqRef.current,
-      lastSeenSeq: () => newestSeqRef.current,
-      jumpToPresent: () => {
-        snapToPresent()
-      },
       clearFeedSpoilerReveal,
-      revealFeedSpoiler: (path: string) => {
-        markFeedSpoilerRevealed({ path, url: path, type: 'image' })
-      },
-      isFeedSpoilerRevealed: (path: string) =>
-        isFeedSpoilerRevealed({ path, url: path, type: 'image' }),
       resetComposerAttachments: () => useComposerAttachmentsStore.getState().pruneExceptKeys([])
     }
     return () => {
       delete (window as any).__chatTestApi
     }
-  }, [newestSeqRef, snapToPresent])
+  }, [])
 
   let errorMsg: string | null = null
   if (metadataError) {
@@ -299,7 +285,6 @@ export const ChatroomProvider: React.FC<{
       send,
       retry,
       scrollToMessage,
-      jumpTo,
       snapToPresent,
       atBottom,
       newCount,
@@ -328,7 +313,6 @@ export const ChatroomProvider: React.FC<{
       send,
       retry,
       scrollToMessage,
-      jumpTo,
       snapToPresent,
       atBottom,
       newCount,

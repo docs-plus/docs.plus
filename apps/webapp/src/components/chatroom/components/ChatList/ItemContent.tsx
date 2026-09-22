@@ -1,25 +1,19 @@
 import type { ChatItem } from '@components/chatroom/types/chat-items'
 import { isDay, isMessage, isUnread } from '@components/chatroom/types/chat-items'
-import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import type { TGroupedMsgRow } from '@types'
 import { useMemo } from 'react'
 
+import type { ChatListContext } from './ChatList'
 import { DesktopMessageBody } from './DesktopMessageBody'
 import { FeedSeparator } from './FeedSeparator'
 import { MobileMessageBody } from './MobileMessageBody'
 import { SystemNotifyChip } from './SystemNotifyChip'
 
-export type ItemContentContext = {
-  channelId: string
-  currentUserId: string | null
-  variant: keyof ChatroomVariant
-}
-
 export type ItemContentProps = {
   index: number
   data: ChatItem | null | undefined
   prevData?: ChatItem | null
-  context?: ItemContentContext
+  context?: Pick<ChatListContext, 'currentUserId' | 'variant'>
 }
 
 /**

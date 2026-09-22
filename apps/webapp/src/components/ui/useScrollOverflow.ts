@@ -2,7 +2,7 @@ import { type RefObject, useLayoutEffect } from 'react'
 
 export type ScrollFade = false | 'start' | 'end' | 'both'
 
-export type ScrollOverflow = 'none' | 'start' | 'end' | 'both'
+type ScrollOverflow = 'none' | 'start' | 'end' | 'both'
 
 /** Rubber-band overshoot sits in this band; a tighter epsilon flickers the mask. */
 const SCROLL_OVERFLOW_EPSILON_PX = 6
