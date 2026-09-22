@@ -141,7 +141,8 @@ const useResizeContainer = () => {
       setMode('drag')
 
       const startY = e.clientY
-      const startHeight = containerRef.current.clientHeight
+      // offsetHeight counts the 1px border-t; clientHeight would lose 1px per click.
+      const startHeight = containerRef.current.offsetHeight
       const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)
 
       document.body.style.userSelect = 'none'
@@ -201,6 +202,8 @@ const useResizeContainer = () => {
             startSettle(lastPaint, 0, 'settle-to-close')
             return
           case 'abort-now':
+            // React skips the write when paint is already 320, so the dragged height would stay.
+            if (containerRef.current) containerRef.current.style.height = `${CHAT_MIN_HEIGHT}px`
             setPaint(CHAT_MIN_HEIGHT)
             setMode('open')
             setOrUpdateChatPanelHeight(CHAT_MIN_HEIGHT)
