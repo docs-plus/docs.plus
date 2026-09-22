@@ -214,6 +214,32 @@ describe('Documents API', () => {
       expect(captured?.orderBy).toEqual({ title: 'asc' })
     })
 
+    test('lastOpenedAt_desc sorts only the owner live list; other calls fall back', async () => {
+      let captured: { orderBy?: unknown } | undefined
+      mockPrisma.documentMetadata.findMany = async (args: { orderBy?: unknown }) => {
+        captured = args
+        return []
+      }
+      mockPrisma.documentMetadata.count = async () => 0
+
+      const response = await testServer.get('/api/documents?sort=lastOpenedAt_desc')
+      expect(response.status).toBe(200)
+      expect(captured?.orderBy).toEqual({ updatedAt: 'desc' })
+
+      const base = { sort: 'lastOpenedAt_desc' as const, limit: 10, offset: 0 }
+      await searchDocuments(mockPrisma, { ...base, requesterId: 'user-456' })
+      expect(captured?.orderBy).toEqual({ updatedAt: 'desc' })
+
+      await searchDocuments(mockPrisma, { ...base, requesterId: 'user-456', ownerId: 'user-123' })
+      expect(captured?.orderBy).toEqual({ updatedAt: 'desc' })
+
+      await searchDocuments(mockPrisma, { ...base, requesterId: 'user-123', ownerId: 'user-123' })
+      expect(captured?.orderBy).toEqual([
+        { favorites: { _count: 'desc' } },
+        { lastOpenedAt: { sort: 'desc', nulls: 'last' } }
+      ])
+    })
+
     test('defaults to updatedAt_desc when sort is omitted', async () => {
       let captured: any
       mockPrisma.documentMetadata.findMany = async (args: any) => {

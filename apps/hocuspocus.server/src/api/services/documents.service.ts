@@ -198,14 +198,20 @@ const OWNER_LIST_SELECT = {
   preview: true
 } as const
 
-/** Owner live lists pin this user's favorites first. Trash and the fleet skip it. */
+/**
+ * Owner live lists pin this user's favorites first. Trash and the fleet skip it.
+ * Only the owner live list may sort by `lastOpenedAt`; elsewhere the order would leak it.
+ */
 function buildDocumentsOrderBy(args: {
   deleted?: boolean
   sort?: SearchDocumentsParams['sort']
   ownerLiveList?: boolean
 }) {
+  const requested = SORT_FIELD_MAP[args.sort ?? 'updatedAt_desc'] ?? SORT_FIELD_MAP.updatedAt_desc
   const { field, dir } =
-    SORT_FIELD_MAP[args.sort ?? 'updatedAt_desc'] ?? SORT_FIELD_MAP.updatedAt_desc
+    requested.field === 'lastOpenedAt' && !args.ownerLiveList
+      ? SORT_FIELD_MAP.updatedAt_desc
+      : requested
   const sortOrder = args.deleted
     ? { deletedAt: 'desc' as const }
     : field === 'lastOpenedAt'
