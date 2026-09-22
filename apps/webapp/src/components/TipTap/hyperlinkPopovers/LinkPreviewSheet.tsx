@@ -142,9 +142,11 @@ const LinkPreviewSheet = ({ data: payload }: LinkPreviewSheetProps) => {
                     )}
                   </span>
                   {isCopy ? (
-                    <span className={twMerge('swap flex-1', copied && 'swap-active')} aria-hidden>
-                      <span className="swap-on">Copied!</span>
-                      <span className="swap-off">{action.label}</span>
+                    <span className="flex-1">
+                      <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
+                        <span className="swap-on">Copied!</span>
+                        <span className="swap-off">{action.label}</span>
+                      </span>
                     </span>
                   ) : (
                     <span className="flex-1">{action.label}</span>
