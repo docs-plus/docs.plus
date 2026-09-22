@@ -36,6 +36,10 @@ const SHARED_PREFIXES = [
   '.github/actions/setup-cypress/',
   '.github/actions/setup-bun/'
 ]
+// The hypermultimedia suite imports hyperlink, so the filter keys it on both.
+const ALSO_WATCHES: Partial<Record<string, string[]>> = {
+  'extension-hypermultimedia': ['extension-hyperlink']
+}
 
 const SUPABASE_STUB = {
   NEXT_PUBLIC_RESTAPI_URL: process.env.NEXT_PUBLIC_RESTAPI_URL || 'http://localhost:4000',
@@ -95,8 +99,10 @@ function extensionsFor(changed: string[]): string[] {
   if (changed.includes('FORCE_ALL') || changed.some(hitsShared)) {
     return [...PUBLISHABLE_EXTENSION_DIRS]
   }
-  return PUBLISHABLE_EXTENSION_DIRS.filter((dir) =>
+  const touched = (dir: string) =>
     changed.some((file) => file === `extensions/${dir}` || file.startsWith(`extensions/${dir}/`))
+  return PUBLISHABLE_EXTENSION_DIRS.filter(
+    (dir) => touched(dir) || (ALSO_WATCHES[dir] ?? []).some(touched)
   )
 }
 
@@ -148,7 +154,14 @@ console.log('')
 
 let failed = false
 
-if (!(await runGate('Next server guard', ['bun', 'test', 'scripts/check-next-server.test.ts']))) {
+if (
+  !(await runGate('script tests', [
+    'bun',
+    'test',
+    'scripts/check-next-server.test.ts',
+    'scripts/run-tests.test.ts'
+  ]))
+) {
   failed = true
 }
 if (!(await runGate('lint', ['bun', 'run', 'lint']))) failed = true
@@ -329,7 +342,11 @@ record(
     ? 'CI will run this on (build): deploy — needs the workflow Postgres/Redis services'
     : 'CI skips this unless the commit is a (build): back or front deploy'
 )
-record('webapp Cypress', 'skip', 'not a prod quality-gate job')
+record(
+  'webapp Cypress',
+  'skip',
+  'chatroom-e2e.yml runs the chatroom suite on PRs and main; local: bash scripts/test-chatroom.sh'
+)
 
 console.log('')
 console.log('── verdict')

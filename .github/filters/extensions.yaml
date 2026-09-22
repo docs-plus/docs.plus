@@ -30,6 +30,8 @@ extension-hyperlink:
 extension-hypermultimedia:
   - *shared
   - 'extensions/extension-hypermultimedia/**'
+  # Its playground imports extension-hyperlink, and linked-image.cy.ts tests that pair.
+  - 'extensions/extension-hyperlink/**'
 extension-inline-code:
   - *shared
   - 'extensions/extension-inline-code/**'
