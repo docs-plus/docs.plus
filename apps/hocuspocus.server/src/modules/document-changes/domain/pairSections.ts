@@ -1,4 +1,5 @@
 import { type BlockKey, matchBlocks } from '../../document-versions/domain/matchBlocks'
+import { MAX_DIFF_LCS_CELLS } from '../../document-versions/types'
 import type { Section, SectionPair } from '../types'
 import { canonicalSection } from './canonicalSection'
 
@@ -115,14 +116,39 @@ export function movedTocIds(baseline: Section[], pairs: SectionPair[]): Readonly
       pair.baseline.tocId === pair.head.tocId &&
       canonicalSection(pair.baseline) === canonicalSection(pair.head)
   )
+  const pos = new Map(baseline.map((section, index) => [section, index]))
   const beforeIds = [...same]
-    .sort((a, b) => baseline.indexOf(a.baseline) - baseline.indexOf(b.baseline))
+    .sort((a, b) => (pos.get(a.baseline) ?? 0) - (pos.get(b.baseline) ?? 0))
     .map((pair) => pair.baseline.tocId as string)
   const afterIds = same.map((pair) => pair.head.tocId as string)
   return idsOutsideLcs(beforeIds, afterIds)
 }
 
-function idsOutsideLcs(before: string[], after: string[]): Set<string> {
+function idsOutsideLcs(allBefore: string[], allAfter: string[]): Set<string> {
+  let start = 0
+  while (
+    start < allBefore.length &&
+    start < allAfter.length &&
+    allBefore[start] === allAfter[start]
+  ) {
+    start += 1
+  }
+  let endBefore = allBefore.length
+  let endAfter = allAfter.length
+  while (
+    endBefore > start &&
+    endAfter > start &&
+    allBefore[endBefore - 1] === allAfter[endAfter - 1]
+  ) {
+    endBefore -= 1
+    endAfter -= 1
+  }
+  const before = allBefore.slice(start, endBefore)
+  const after = allAfter.slice(start, endAfter)
+  const moved = new Set<string>()
+  // Above the cell cap, skip move detection; sections still pair by id.
+  if (before.length * after.length > MAX_DIFF_LCS_CELLS) return moved
+
   const n = before.length
   const m = after.length
   const width = m + 1
@@ -152,7 +178,6 @@ function idsOutsideLcs(before: string[], after: string[]): Set<string> {
     }
   }
 
-  const moved = new Set<string>()
   for (const id of before) if (!kept.has(id)) moved.add(id)
   for (const id of after) if (!kept.has(id)) moved.add(id)
   return moved
