@@ -57,7 +57,7 @@ function contextBefore(text: string): string {
     tail.lastIndexOf('? '),
     tail.lastIndexOf('\n')
   )
-  const slice = breakAt >= 0 ? tail.slice(breakAt + 2) : tail
+  const slice = breakAt >= 0 ? tail.slice(breakAt + 1) : tail
   return slice.replace(/^\s+/, '')
 }
 

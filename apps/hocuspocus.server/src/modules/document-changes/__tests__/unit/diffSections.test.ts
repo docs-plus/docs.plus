@@ -98,17 +98,16 @@ describe('diffSections', () => {
 
   test('a changed sentence keeps the new words and the old words', () => {
     const [section] = changesOf(
-      doc(heading(1, 'Title', 't1'), para(text('alpha'))),
-      doc(heading(1, 'Title', 't1'), para(text('beta')))
+      doc(heading(1, 'Title', 't1'), para(text('Hello alpha'))),
+      doc(heading(1, 'Title', 't1'), para(text('Hello beta')))
     ).filter((row) => row.status === 'modified')
     expect(section.excerpt).toBe('beta')
     expect(section.removedExcerpt).toBe('alpha')
-    expect(section.runs).toEqual(
-      expect.arrayContaining([
-        { kind: 'removed', text: 'alpha' },
-        { kind: 'added', text: 'beta' }
-      ])
-    )
+    expect(section.runs).toEqual([
+      { kind: 'same', text: 'Hello ' },
+      { kind: 'removed', text: 'alpha' },
+      { kind: 'added', text: 'beta' }
+    ])
   })
 
   test('a pure reorder is moved', () => {
