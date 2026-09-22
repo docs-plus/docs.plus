@@ -14,13 +14,21 @@ import { useHistorySidebarRows } from './hooks/useHistorySidebarRows'
 import { useVersionContent } from './hooks/useVersionContent'
 import { HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD } from './types'
 
-function SidebarHeader({ count, onClose }: { count: number; onClose?: () => void }) {
+function SidebarHeader({
+  count,
+  hasMore,
+  onClose
+}: {
+  count: number
+  hasMore?: boolean
+  onClose?: () => void
+}) {
   return (
     <header className="border-base-300 bg-base-200 sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b px-3 py-3">
       <div className="min-w-0 flex-1">
         <h2 className="text-base-content text-base font-semibold sm:text-lg">Version History</h2>
         <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
-          {count} version{count !== 1 ? 's' : ''}
+          {hasMore ? `${count}+ versions` : `${count} version${count !== 1 ? 's' : ''}`}
         </p>
       </div>
       {onClose && (
@@ -39,11 +47,13 @@ function SidebarHeader({ count, onClose }: { count: number; onClose?: () => void
 function SidebarFrame({
   className,
   count,
+  hasMore,
   onClose,
   children
 }: {
   className?: string
   count: number
+  hasMore?: boolean
   onClose?: () => void
   children: ReactNode
 }) {
@@ -54,7 +64,7 @@ function SidebarFrame({
         className
       )}>
       <div className="flex h-full min-h-0 flex-col overflow-hidden motion-safe:animate-[doc-content-in_200ms_ease-out_both]">
-        <SidebarHeader count={count} onClose={onClose} />
+        <SidebarHeader count={count} hasMore={hasMore} onClose={onClose} />
         {children}
       </div>
     </div>
@@ -103,7 +113,11 @@ const HistorySidebar = ({
   }
 
   return (
-    <SidebarFrame className={className} count={historyList.length} onClose={onClose}>
+    <SidebarFrame
+      className={className}
+      count={historyList.length}
+      hasMore={historyHasMore}
+      onClose={onClose}>
       {/* Desktop only: Authors needs a roster that does not fit the mobile drawer.
           Compare marks now mount on mobile; this tab stays desktop until designed. */}
       {variant === 'desktop' && (
@@ -121,8 +135,10 @@ const HistorySidebar = ({
           rows={rows}
           hasMore={historyHasMore}
           onShowOlder={fetchOlderHistory}
+          // Virtualize while more pages exist, so one Show older press does not swap trees.
           virtualize={
-            variant === 'desktop' && historyList.length >= HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD
+            variant === 'desktop' &&
+            (historyHasMore || historyList.length >= HISTORY_SIDEBAR_VIRTUALIZE_THRESHOLD)
           }
           activeVersion={activeVersion}
           latestVersion={historyList[0].version}

@@ -4,8 +4,6 @@ import { immer } from 'zustand/middleware/immer'
 interface IHistoryStore {
   historyList: HistoryItem[]
   activeHistory: HistoryItem | null
-  /** `history.list` latestSnapshot — hydrate head when watch fails. */
-  latestSnapshot: HistoryItem | null
   /** Uid -> author, shipped beside the list rather than repeated on every row. */
   profiles: HistoryProfileMap
   /** Yjs clientID -> person, per document. Ships once beside `profiles`. */
@@ -32,7 +30,6 @@ interface IHistoryStore {
   historyNextBefore: number | null
   setHistoryList: (historyList: HistoryItem[]) => void
   setActiveHistory: (activeHistory: HistoryItem | null) => void
-  setLatestSnapshot: (item: HistoryItem | null) => void
   setProfiles: (profiles: HistoryProfileMap) => void
   setClientAuthors: (clientAuthors: ClientAuthorBinding[]) => void
   setLoadingHistory: (loadingHistory: boolean) => void
@@ -50,7 +47,6 @@ interface IHistoryStore {
 const history = immer<IHistoryStore>((set) => ({
   historyList: [],
   activeHistory: null,
-  latestSnapshot: null,
   profiles: {},
   clientAuthors: [],
   loadingHistory: true,
@@ -72,12 +68,6 @@ const history = immer<IHistoryStore>((set) => ({
   setActiveHistory: (activeHistory: HistoryItem | null) => {
     set((state) => {
       state.activeHistory = activeHistory
-    })
-  },
-
-  setLatestSnapshot: (latestSnapshot: HistoryItem | null) => {
-    set((state) => {
-      state.latestSnapshot = latestSnapshot
     })
   },
 

@@ -1,7 +1,7 @@
 import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso'
 
 import type { HistorySidebarRowHandlers, SidebarRow } from '../types'
@@ -64,6 +64,13 @@ export function HistorySidebarBody({
       ?.scrollIntoView({ block: 'nearest', behavior: 'auto' })
   }, [documentId, virtualize, version, rowHandlers.activeVersion, rows])
 
+  // A new Footer function each render is a new component type, so Virtuoso remounts it.
+  const virtuosoComponents = useMemo(
+    () =>
+      hasMore ? { Footer: () => <OlderVersionsButton onShowOlder={onShowOlder} /> } : undefined,
+    [hasMore, onShowOlder]
+  )
+
   if (virtualize) {
     return (
       <div className="min-h-0 flex-1" data-testid="history-sidebar-virtualized">
@@ -78,11 +85,7 @@ export function HistorySidebarBody({
               <HistorySidebarRowItem row={row} {...rowHandlers} />
             </div>
           )}
-          components={
-            hasMore
-              ? { Footer: () => <OlderVersionsButton onShowOlder={onShowOlder} /> }
-              : undefined
-          }
+          components={virtuosoComponents}
         />
       </div>
     )

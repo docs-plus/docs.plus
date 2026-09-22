@@ -1,7 +1,7 @@
 /**
  * Hocuspocus stateless: client `{ msg: 'history', type, documentId? }`;
  * server unicast `{ msg: 'history.response', type, response }` on the same connection.
- * Failures use `error: 'history_failed'`. List may include `latestSnapshot` (legacy: plain array).
+ * Failures use `error: 'history_failed'`. List is one page of rows (legacy: plain array).
  */
 import type {
   ClientAuthorBinding,
@@ -15,12 +15,13 @@ export const HISTORY_RESPONSE = 'history.response' as const
 export const HISTORY_ERROR = 'history_failed' as const
 /** Worker broadcast after a version row lands: `{ msg, documentId, version, timestamp }`. */
 export const HISTORY_SAVED_MSG = 'document:saved' as const
+/** The server refuses a second list within 250 ms per connection, and a fast reply beats that. */
+export const HISTORY_LIST_GAP_MS = 300
 
 export type HistoryListWireResponse =
   | HistoryItem[]
   | {
       versions: HistoryItem[]
-      latestSnapshot: HistoryItem | null
       hasMore?: boolean
       beforeVersion?: number
       nextBefore?: number

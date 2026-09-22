@@ -1,32 +1,23 @@
 import {
-  copyHistoryVersionLinkToClipboard,
+  buildHistoryShareUrl,
   copyVersionLinkTitle
 } from '@components/pages/history/historyShareUrl'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCopyToClipboard } from '@hooks/useCopyToClipboard'
+import { useCallback } from 'react'
 
 export function useCopyHistoryVersionLink(
   version: number | undefined,
   createdAt: string | undefined
 ) {
-  const [copied, setCopied] = useState(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [])
+  const { copy: copyText, copied } = useCopyToClipboard({
+    successMessage: 'Link copied',
+    errorMessage: "Couldn't copy link"
+  })
 
   const copy = useCallback(async () => {
     if (version == null) return
-
-    const ok = await copyHistoryVersionLinkToClipboard(version)
-    if (!ok) return
-
-    setCopied(true)
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => setCopied(false), 2000)
-  }, [version])
+    await copyText(buildHistoryShareUrl(version))
+  }, [version, copyText])
 
   const idleLabel = createdAt ? copyVersionLinkTitle(createdAt) : 'Copy link'
 

@@ -1,7 +1,5 @@
-import * as toast from '@components/toast'
 import { useLocationHash } from '@hooks/useLocationHash'
 import type { HistoryItem } from '@types'
-import { copyToClipboard } from '@utils/clipboard'
 import { splitHashRoute } from '@utils/splitHashRoute'
 import { useMemo } from 'react'
 
@@ -9,7 +7,6 @@ import { formatVersionDate } from './helpers'
 
 const HISTORY_ROUTE = 'history'
 const VERSION_QUERY = 'version'
-const SINCE_QUERY = 'since'
 
 export type ParsedHistoryHash = {
   isHistory: boolean
@@ -17,36 +14,26 @@ export type ParsedHistoryHash = {
   version: number | null
   /** `version` query present but not a finite number. */
   versionQueryInvalid: boolean
-  /** Window start from a digest link. Null when absent or unreadable. */
-  since: string | null
-}
-
-function sinceFrom(params: URLSearchParams): string | null {
-  const raw = params.get(SINCE_QUERY)
-  if (!raw) return null
-  const at = Date.parse(raw)
-  return Number.isFinite(at) ? new Date(at).toISOString() : null
 }
 
 export function parseHistoryHash(hash: string): ParsedHistoryHash {
   const { route, search } = splitHashRoute(hash)
   if (route !== HISTORY_ROUTE) {
-    return { isHistory: false, version: null, versionQueryInvalid: false, since: null }
+    return { isHistory: false, version: null, versionQueryInvalid: false }
   }
   const params = new URLSearchParams(search)
-  const since = sinceFrom(params)
   if (!params.has(VERSION_QUERY)) {
-    return { isHistory: true, version: null, versionQueryInvalid: false, since }
+    return { isHistory: true, version: null, versionQueryInvalid: false }
   }
   const v = params.get(VERSION_QUERY)
   if (v === null || v === '') {
-    return { isHistory: true, version: null, versionQueryInvalid: true, since }
+    return { isHistory: true, version: null, versionQueryInvalid: true }
   }
   const n = Number(v)
   if (!Number.isFinite(n)) {
-    return { isHistory: true, version: null, versionQueryInvalid: true, since }
+    return { isHistory: true, version: null, versionQueryInvalid: true }
   }
-  return { isHistory: true, version: n, versionQueryInvalid: false, since }
+  return { isHistory: true, version: n, versionQueryInvalid: false }
 }
 
 /**
@@ -151,15 +138,4 @@ export function resolveHistoryListTargetVersion(
 export function copyVersionLinkTitle(createdAt: string): string {
   const { date, time } = formatVersionDate(createdAt)
   return `Copy link to the version from ${date} at ${time}`
-}
-
-export async function copyHistoryVersionLinkToClipboard(version: number): Promise<boolean> {
-  const url = buildHistoryShareUrl(version)
-  const ok = await copyToClipboard(url)
-  if (ok) {
-    toast.Success('Link copied')
-  } else {
-    toast.Error("Couldn't copy link")
-  }
-  return ok
 }

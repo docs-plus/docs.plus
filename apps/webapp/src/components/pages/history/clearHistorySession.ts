@@ -1,14 +1,15 @@
 import { useStore } from '@stores'
 
 import { bindHistoryDecodeCache, clearHistoryDecodeCache } from './historyDecodeCache'
+import { cancelDeepLinkWalk } from './statelessMessageHandlers'
 
 export function resetHistorySessionForMount(): void {
   const state = useStore.getState()
+  cancelDeepLinkWalk()
   bindHistoryDecodeCache(state.settings.metadata?.documentId)
   state.setActiveHistory(null)
   state.setPendingWatchVersion(null)
   state.setHistoryList([])
-  state.setLatestSnapshot(null)
   state.setProfiles({})
   state.setClientAuthors([])
   state.setSilentListRefresh(false)

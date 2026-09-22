@@ -3,7 +3,6 @@ import { shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
 import { useLayoutEffect } from 'react'
 
 import { resetHistorySessionForMount } from '../clearHistorySession'
-import { parseHistoryHash } from '../historyShareUrl'
 import { useDocumentHistory } from './useDocumentHistory'
 import { useHistoryEditorApplyWhenReady } from './useHistoryEditorApplyWhenReady'
 import { useStatelessMessage } from './useStatelessMessage'
@@ -31,10 +30,6 @@ export const useHocuspocusStateless = () => {
 
   useLayoutEffect(() => {
     if (!hocuspocusProvider) return
-    // A digest View link carries the window the mail described. Set it before
-    // the list request, which includes that row when it sits off the first page.
-    const since = parseHistoryHash(window.location.hash).since
-    if (since) useStore.getState().setPendingCompareSince(since)
     hocuspocusProvider.on('stateless', handleStatelessMessage)
     fetchHistory()
 

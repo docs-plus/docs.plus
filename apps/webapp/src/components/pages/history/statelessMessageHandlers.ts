@@ -13,8 +13,10 @@ import type {
 } from '@components/pages/history/historyStatelessWire'
 import {
   HISTORY_ERROR,
+  HISTORY_LIST_GAP_MS,
   HISTORY_RESPONSE,
-  HISTORY_SAVED_MSG
+  HISTORY_SAVED_MSG,
+  sendHistoryListRequest
 } from '@components/pages/history/historyStatelessWire'
 import * as toast from '@components/toast'
 import { useStore } from '@stores'
@@ -58,11 +60,53 @@ const REVERT_FAILURE_MESSAGE: Record<VersionFailureReason, string> = {
     'A restore just ran in this document. Yours did not run. Wait a few seconds, check the document, then try again if you still need to.'
 }
 
+const DEEP_LINK_PAGE_CAP = 40
+// Module scope is safe: every history mount calls cancelDeepLinkWalk before its first reply.
+let deepLinkPages = 0
+let deepLinkRetried = false
+let walkTimer: ReturnType<typeof setTimeout> | undefined
+
+export function cancelDeepLinkWalk(): void {
+  clearTimeout(walkTimer)
+  walkTimer = undefined
+  deepLinkPages = 0
+  deepLinkRetried = false
+}
+
+/** The hash names a version below every loaded page, and an older page could still hold it. */
+function deepLinkBelowLoaded(list: HistoryItem[]): boolean {
+  const version = parseHistoryHash(window.location.hash).version
+  const before = store().historyNextBefore
+  return (
+    version != null &&
+    before != null &&
+    store().historyHasMore &&
+    version < before &&
+    !list.some((item) => item.version === version)
+  )
+}
+
+function isDeepLinkWalk(list: HistoryItem[]): boolean {
+  return store().loadingHistory && store().pendingWatchVersion == null && deepLinkBelowLoaded(list)
+}
+
+function pageTowardDeepLink() {
+  // One timer only: a second copy of the same request trips the list cooldown.
+  clearTimeout(walkTimer)
+  walkTimer = setTimeout(() => {
+    walkTimer = undefined
+    // A null provider unmounts the history view, and the next mount cancels the walk.
+    const { hocuspocusProvider, metadata } = store().settings
+    const beforeVersion = store().historyNextBefore
+    if (!hocuspocusProvider || beforeVersion == null || !isDeepLinkWalk(store().historyList)) return
+    sendHistoryListRequest(hocuspocusProvider, metadata?.documentId, { beforeVersion })
+  }, HISTORY_LIST_GAP_MS)
+}
+
 function clearEmptyHistory(deps: HistoryStatelessHandlerDeps, notify: () => void) {
   store().setPendingWatchVersion(null)
   store().setHistoryList([])
   store().setActiveHistory(null)
-  store().setLatestSnapshot(null)
   store().setLoadingHistory(false)
   notify()
   normalizeToPlainHistoryHash()
@@ -93,19 +137,6 @@ function recoverAfterWatchFailure(deps: HistoryStatelessHandlerDeps, failedVersi
 
   if (
     tryHydrateVersion(deps, sidebarItem, 'History: could not decode list row after watch failed')
-  ) {
-    return
-  }
-
-  const snapshot = store().latestSnapshot
-  if (
-    snapshot &&
-    snapshot.version === sidebarItem.version &&
-    tryHydrateVersion(
-      deps,
-      snapshot,
-      'History: could not decode latest snapshot after watch failed'
-    )
   ) {
     return
   }
@@ -170,9 +201,20 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
 
   if (failedType === 'history.watch') {
     if (payload.reason === 'rate-limited') {
+      const watchRefused = store().pendingWatchVersion != null
+      const compareRefused = store().pendingCompareVersion != null
       store().setPendingWatchVersion(null)
       store().setPendingCompareVersion(null)
       store().setLoadingHistory(false)
+      // Same strand as the compare arm below: compare mode with no base blocks every row.
+      if (compareRefused && !watchRefused && store().compareBaseItem == null) {
+        store().setCompareMode(false)
+      }
+      // The URL already names the refused version; point it back at what the editor shows.
+      const active = store().activeHistory
+      if (watchRefused && active && parseHistoryHash(window.location.hash).version != null) {
+        replaceHistoryHashVersion(active.version)
+      }
       toast.Info('Too many versions opened at once. Wait a moment and try again.')
       return
     }
@@ -199,10 +241,24 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
       store().setSilentListRefresh(false)
       return
     }
+    // A loaded list means an older page failed. That request never set loading or the
+    // watch slot, so skip the shared tail. A refused double click still gets its reply.
+    if (store().historyList.length > 0) {
+      if (isDeepLinkWalk(store().historyList)) {
+        if (payload.reason === 'rate-limited' && !deepLinkRetried) {
+          deepLinkRetried = true
+          pageTowardDeepLink()
+        } else {
+          openResolvedTarget(store().historyList, deps)
+        }
+        return
+      }
+      if (payload.reason !== 'rate-limited') toast.Error('Could not load older versions.')
+      return
+    }
     toast.Error('Could not load version history.')
     store().setHistoryList([])
     store().setActiveHistory(null)
-    store().setLatestSnapshot(null)
     normalizeToPlainHistoryHash()
   } else {
     toast.Error('Something went wrong loading history.')
@@ -239,7 +295,6 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
   if (silent) store().setSilentListRefresh(false)
 
   let list: HistoryItem[]
-  let latestSnapshot: HistoryItem | null | undefined
   let profiles: HistoryProfileMap
   let clientAuthors: ClientAuthorBinding[]
 
@@ -250,27 +305,52 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
   }
   if (Array.isArray(raw)) {
     list = raw
-    latestSnapshot = undefined
     profiles = {}
     clientAuthors = []
     store().setHistoryHasMore(false)
     store().setHistoryNextBefore(null)
   } else {
     const page = raw.versions ?? []
-    const older = raw.beforeVersion != null
     const current = store().historyList
-    list = older
-      ? [...current, ...page.filter((item) => !current.some((row) => row.version === item.version))]
-      : page
-    latestSnapshot = raw.latestSnapshot ?? null
-    profiles = older ? { ...store().profiles, ...(raw.profiles ?? {}) } : (raw.profiles ?? {})
-    clientAuthors = raw.clientAuthors ?? []
-    store().setHistoryHasMore(Boolean(raw.hasMore))
-    store().setHistoryNextBefore(raw.nextBefore ?? null)
-    if (older) {
-      store().setHistoryList(list)
-      store().setProfiles(profiles)
+    const inPage = (row: HistoryItem) => page.some((item) => item.version === row.version)
+
+    if (raw.beforeVersion != null) {
+      // A reply to a cursor the store has moved past would append rows out of place.
+      if (raw.beforeVersion !== store().historyNextBefore) return
+      const walking = isDeepLinkWalk(current)
+      const merged = [
+        ...current,
+        ...page.filter((item) => !current.some((row) => row.version === item.version))
+      ]
+      store().setHistoryList(merged)
+      store().setProfiles({ ...store().profiles, ...(raw.profiles ?? {}) })
+      store().setHistoryHasMore(Boolean(raw.hasMore))
+      store().setHistoryNextBefore(raw.nextBefore ?? null)
+      if (walking) {
+        deepLinkRetried = false
+        openListTarget(merged, deps)
+      }
       return
+    }
+
+    // A re-list returns page one only. Keep the older pages the reader already
+    // loaded, and keep their cursor, or the row they have open disappears.
+    // Keep them only when the page reaches the old head; otherwise a gap opens.
+    const pageTail = raw.nextBefore ?? Math.min(...page.map((item) => item.version))
+    const reachesHead = current[0] != null && pageTail <= current[0].version
+    const kept =
+      page.length === 0 || !reachesHead
+        ? []
+        : current.filter((row) => row.version < pageTail && !inPage(row))
+    clientAuthors = raw.clientAuthors ?? []
+    if (kept.length > 0) {
+      list = [...page, ...kept]
+      profiles = { ...store().profiles, ...(raw.profiles ?? {}) }
+    } else {
+      list = page
+      profiles = raw.profiles ?? {}
+      store().setHistoryHasMore(Boolean(raw.hasMore))
+      store().setHistoryNextBefore(raw.nextBefore ?? null)
     }
   }
 
@@ -282,7 +362,6 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
   }
 
   store().setHistoryList(list)
-  store().setLatestSnapshot(latestSnapshot ?? null)
   store().setProfiles(profiles)
   store().setClientAuthors(clientAuthors)
 
@@ -292,6 +371,21 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     return
   }
 
+  cancelDeepLinkWalk()
+  openListTarget(list, deps)
+}
+
+/** A shared link can name a version below the loaded pages; page toward it before judging it. */
+function openListTarget(list: HistoryItem[], deps: HistoryStatelessHandlerDeps) {
+  if (deepLinkPages < DEEP_LINK_PAGE_CAP && deepLinkBelowLoaded(list)) {
+    deepLinkPages += 1
+    pageTowardDeepLink()
+    return
+  }
+  openResolvedTarget(list, deps)
+}
+
+function openResolvedTarget(list: HistoryItem[], deps: HistoryStatelessHandlerDeps) {
   const resolved = resolveHistoryListTargetVersion(list, window.location.hash)
   if (resolved == null) {
     store().setPendingWatchVersion(null)
@@ -307,11 +401,6 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
 
   const parsedHash = parseHistoryHash(window.location.hash)
   const syncUrlOnWatch = invalidDeepLink || parsedHash.version != null
-
-  if (latestSnapshot?.data != null && latestSnapshot.version === targetVersion) {
-    applySnapshot(deps, latestSnapshot, 'History: could not decode latest snapshot')
-    return
-  }
 
   deps.watchVersionContent(targetVersion, { updateUrl: syncUrlOnWatch })
 }

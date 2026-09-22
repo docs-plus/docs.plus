@@ -25,7 +25,7 @@ export interface HistoryProfile {
   status: string | null
 }
 
-/** Uid -> profile. The list is unpaginated and authors repeat, so it ships once per response. */
+/** Uid -> profile. Authors repeat across a page, so it ships once per response. */
 export type HistoryProfileMap = Record<string, HistoryProfile>
 
 /**
@@ -42,7 +42,7 @@ export interface HistoryItem {
   version: number
   createdAt: string
   commitMessage?: string
-  /** Base64 Yjs update from `history.watch` / `latestSnapshot`. */
+  /** Base64 Yjs update from `history.watch`. */
   data?: string
   trigger?: VersionTrigger | null
   /** Uid credited with the save; resolve through the response's profile map. */

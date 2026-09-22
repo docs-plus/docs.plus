@@ -96,10 +96,9 @@ const WATCH_TYPE = 'history.watch'
 // `Throttle` only covers onConnect, so the cooldown lives here.
 const revertCooldown = createRevertCooldown(getRedisClient())
 
-// `history.list` reads every version row plus the base64 head, and the same
-// unauthenticated frame can be looped. Keyed per CONNECTION, not per document: a
-// per-document key would let one visitor's refresh blank every other viewer's.
-// Short enough that no remount can trip it — the client never retries a refusal.
+// `history.list` reads one 50-row page, and the same unauthenticated frame can be
+// looped. Keyed per CONNECTION, not per document, so one visitor cannot refuse
+// another. A fast second Show older click can hit it; the client keeps its list.
 const LIST_COOLDOWN_MS = 250
 const lastListAt = new WeakMap<Connection, number>()
 

@@ -20,20 +20,12 @@ describe('parseHistoryHash', () => {
     expect(parseHistoryHash('#history')).toEqual({
       isHistory: true,
       version: null,
-      versionQueryInvalid: false,
-      since: null
+      versionQueryInvalid: false
     })
   })
 
   it('reads a version', () => {
     expect(parseHistoryHash('#history?version=7').version).toBe(7)
-  })
-
-  it('reads the digest window start', () => {
-    expect(parseHistoryHash('#history?since=2026-09-22T04:00:00.000Z').since).toBe(
-      '2026-09-22T04:00:00.000Z'
-    )
-    expect(parseHistoryHash('#history?since=not-a-date').since).toBeNull()
   })
 
   // An unreadable version must not silently mean "the head": the sidebar shows a
@@ -43,8 +35,7 @@ describe('parseHistoryHash', () => {
     expect(parsed).toEqual({
       isHistory: true,
       version: null,
-      versionQueryInvalid: true,
-      since: null
+      versionQueryInvalid: true
     })
   })
 
