@@ -3,6 +3,7 @@
  * in apps/hocuspocus.server/templates/ — this engine does not manage them.
  */
 
+export { DEFAULT_DIGEST_MAX_BYTES, fitDigestDocuments } from './src/digestFit'
 export {
   buildListUnsubscribeHeaders,
   countDigestItems,
@@ -13,7 +14,6 @@ export {
 } from './src/engine'
 export type { EmailFooter } from './src/helpers'
 export type { DigestEmail } from './src/templates'
-export { DEFAULT_DIGEST_MAX_BYTES, fitDigestDocuments } from './src/digestFit'
 export {
   buildDigestEmail,
   buildNewDocumentEmailText,
@@ -24,10 +24,10 @@ export type {
   DigestChangedSection,
   DigestChangeRun,
   DigestChannel,
-  DigestHeadingChat,
   DigestContentChanges,
   DigestDocument,
   DigestFrequency,
+  DigestHeadingChat,
   DigestNotification,
   NotificationType
 } from './src/types'

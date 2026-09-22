@@ -52,15 +52,21 @@ function sectionChanged(section: DigestChangedSection): boolean {
 
 function dropOldestChat(documents: DigestDocument[]): DigestDocument[] | null {
   let best: { doc: number; section: number; chat: number; at: string } | null = null
-  documents.forEach((doc, docIndex) => {
-    doc.content_changes?.sections?.forEach((section, sectionIndex) => {
-      section.chats?.forEach((chat, chatIndex) => {
-        if (!best || chat.at < best.at) {
-          best = { doc: docIndex, section: sectionIndex, chat: chatIndex, at: chat.at }
+  for (let docIndex = 0; docIndex < documents.length; docIndex++) {
+    const sections = documents[docIndex]?.content_changes?.sections
+    if (!sections) continue
+    for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+      const chats = sections[sectionIndex]?.chats
+      if (!chats) continue
+      for (let chatIndex = 0; chatIndex < chats.length; chatIndex++) {
+        const at = chats[chatIndex]?.at
+        if (at === undefined) continue
+        if (!best || at < best.at) {
+          best = { doc: docIndex, section: sectionIndex, chat: chatIndex, at }
         }
-      })
-    })
-  })
+      }
+    }
+  }
   if (!best) return null
   const target = best
   return documents.map((doc, docIndex) => {
