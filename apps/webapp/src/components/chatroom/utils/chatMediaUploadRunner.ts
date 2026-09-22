@@ -177,25 +177,21 @@ export class ChatMediaUploadRunner {
     this.abortControllers.set(id, controller)
     this.activeIds.add(id)
 
-    this.ctx.setAttachments((prev) => {
-      const exists = prev.some((attachment) => attachment.id === id)
-      if (exists) {
-        return prev.map((attachment) =>
-          attachment.id === id
-            ? {
-                ...attachment,
-                file,
-                status: 'uploading',
-                progress: 0,
-                error: undefined,
-                tooLarge: undefined,
-                item: undefined
-              }
-            : attachment
-        )
-      }
-      return [...prev, { id, file, status: 'uploading', progress: 0 }]
-    })
+    this.ctx.setAttachments((prev) =>
+      prev.map((attachment) =>
+        attachment.id === id
+          ? {
+              ...attachment,
+              file,
+              status: 'uploading',
+              progress: 0,
+              error: undefined,
+              tooLarge: undefined,
+              item: undefined
+            }
+          : attachment
+      )
+    )
 
     return downscaleChatMediaImage(file)
       .then((uploadFile) =>

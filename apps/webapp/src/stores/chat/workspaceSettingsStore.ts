@@ -2,25 +2,19 @@ import { CommentMessageMemory, ComposerMessageMemory, TChannelSettings } from '@
 import { immer } from 'zustand/middleware/immer'
 
 type WorkspaceSettings = {
-  workspaceId?: string
-  workspaceBroadcaster?: any
   channels: Map<string, TChannelSettings>
 }
 
 export interface IWorkspaceSettingsStore {
   workspaceSettings: WorkspaceSettings
   setWorkspaceChannelSetting: (channelId: string, key: keyof TChannelSettings, value: any) => void
-  setWorkspaceSetting: (key: keyof WorkspaceSettings, value: any) => void
   setCommentMessageMemory: (channelId: string, message: CommentMessageMemory | null) => void
   setReplyMessageMemory: (channelId: string, message: ComposerMessageMemory | null) => void
   setEditMessageMemory: (channelId: string, message: ComposerMessageMemory | null) => void
-  clearMemoryStates: (channelId: string) => void
 }
 
 const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   workspaceSettings: {
-    workspaceId: undefined,
-    workspaceBroadcaster: undefined,
     channels: new Map()
   },
 
@@ -30,12 +24,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
         state.workspaceSettings.channels.get(channelId) || ({} as TChannelSettings)
       channelSettings[key] = value
       state.workspaceSettings.channels.set(channelId, channelSettings)
-    })
-  },
-
-  setWorkspaceSetting: (key, value) => {
-    set((state) => {
-      state.workspaceSettings[key] = value
     })
   },
 
@@ -49,16 +37,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
 
   setEditMessageMemory: (channelId, message) => {
     setMemory(set, 'editMessageMemory', channelId, message)
-  },
-
-  clearMemoryStates: (channelId) => {
-    set((state: any) => {
-      const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
-      channelSettings.replyMessageMemory = null
-      channelSettings.editMessageMemory = null
-      channelSettings.commentMessageMemory = null
-      state.workspaceSettings.channels.set(channelId, channelSettings)
-    })
   }
 }))
 
