@@ -16,7 +16,8 @@ export const CopyLinkAction = ({ className }: Props) => {
 
   return (
     <li className={twMerge('border-base-300', className)}>
-      <a
+      <button
+        type="button"
         className={twMerge('flex items-center gap-2', copied && 'text-success')}
         aria-label={copied ? 'Copied!' : messageActionTitle.copyLink}
         onClick={() => copyMessageLinkHandler(message)}>
@@ -28,7 +29,7 @@ export const CopyLinkAction = ({ className }: Props) => {
           <span className="swap-on">Copied!</span>
           <span className="swap-off">{messageActionTitle.copyLink}</span>
         </span>
-      </a>
+      </button>
     </li>
   )
 }
