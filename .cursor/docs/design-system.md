@@ -187,8 +187,8 @@ Depth encodes behavior. Every surface is exactly one species:
 
 New overlay surfaces pick an existing species and reuse its export — never a third radius/shadow stack.
 
-**Paint order** follows the species. Docked surfaces are ≤ `z-40`. The TOC↔editor sash (`z-[41]`) and
-TOC column (`z-[42]`) sit in the band above docked chat and below floating overlays. That band lets
+**Paint order** follows the species. Docked chat and the TOC column share `z-[42]`. The TOC↔editor
+sash is `z-[41]`. Other docked surfaces stay at `z-40` or lower. All sit below `z-50`. That band lets
 presence overhang clear the hairline without beating Dialog/Popover. The floating portal layer is
 `z-50` (`[data-floating-ui-portal]`, `globals.scss`). Surfaces stacked _on_ a floating surface (nested
 dropdowns, toasts over modals) use `z-[60]`. Higher one-offs (`z-[9999]`, inline `zIndex`) are
@@ -627,7 +627,7 @@ chip/badge — `components/chatroom/components/ChatList/SystemNotifyChip.tsx`, `
 | jump-to-present     | `Button shape=circle absolute right-2 bottom-3 z-40 motion-safe:animate-[doc-region-in_200ms_ease-out_both]`; primary variant + chevron `text-primary-content` + `UnreadBadge sm error absolute -top-1 -right-1`; subdued `variant=neutral bg-base-300 border-base-300 border` + `text-base-content`; at-bottom unmounts |
 | new-messages banner | `border-base-300 bg-primary text-primary-content z-30 border-b px-3 py-2 text-sm` + doc-region-in; dismiss `text-primary-content hover:bg-primary-content/15`                                                                                                                                                            |
 
-### ComposerBar + Input + context bars + SignInToJoinChannel — both
+### ComposerBar + Input + context bars — both
 
 docked — `components/chatroom/components/MessageComposer/components/layouts/ComposerBar.tsx` (+ `…/Input/Input.tsx`, `…/Context/MessageContextBar.tsx`, `…/ChannelComposer/components/`; metrics `styles/_chat-editor.scss`)
 
@@ -637,7 +637,7 @@ docked — `components/chatroom/components/MessageComposer/components/layouts/Co
 | input                       | borderless `text-base-content max-h-52 break-words` (`text-base leading-8`, emoji-boost `text-xl sm:text-2xl`); placeholder `color-mix(base-content 40%)` via `p.is-empty::before`                                                                                                                                                                                          |
 | drag / voice-hold           | file-over `ring-primary ring-2 ring-inset`; row `pointer-events-none opacity-55` while recording unlocked                                                                                                                                                                                                                                                                   |
 | reply / edit / comment bars | `border-base-300 border-b py-2 pr-3 pl-2` + `border-l-[3px]`: reply `border-l-info bg-base-200/40` icon `text-info`; edit `border-l-warning` icon `text-warning`; comment shell from `commentReferenceTheme` (non-interactive); dismiss `CloseButton size=xs`, phone adds `min-h-11 min-w-11` through `className` (glyph stays small)                                       |
-| anon sign-in surface        | **not mounted** — `ChannelComposer` renders the live composer for signed-out users; the unmounted `SignInToJoinChannel` recipe is `channel-composer-surface border-base-300 bg-base-200 border px-3 py-3` + desktop `mb-2 rounded-field` / mobile `rounded-t-box border-b-0`; CTA `Button variant=primary shape=wide size=sm` + logIn "Sign in to join"                     |
+| anon sign-in surface        | **not mounted** — `ChannelComposer` renders the live composer for signed-out users                                                                                                                                                                                                                                                                                          |
 
 ### FormattingToolbar (composer) — both
 
@@ -801,7 +801,7 @@ modal (L2) — `components/TipTap/pad-title-section/ShareModal.tsx`
 | State               | Recipe                                                                                                                                                                                                                                                                                                                                       |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | frame               | `p-6` body in `ModalContent size=lg p-0`; URL row `border-base-300 bg-base-100 rounded-field border p-2` + input `text-base-content/70 bg-transparent text-sm focus:outline-none`; divider `bg-base-300 h-px` + `text-base-content/40 text-xs uppercase`; close `CloseButton` (see Form & primitive foundations) + `className="-mt-1 -mr-2"` |
-| copy idle / success | `btn btn-sm px-4 font-medium btn-primary` → success `btn-success` + keyed check `motion-safe:animate-[doc-region-in_120ms_ease-out_both]`                                                                                                                                                                                                    |
+| copy idle / success | `btn btn-sm px-4 font-medium`, `btn-primary` idle → `btn-success` on success; label is a daisyUI `swap` root (`swap-active` on success, `aria-hidden` on the root) with the check in `swap-on` and the copy glyph in `swap-off`; no keyed remount, no `doc-region-in`                                                                        |
 | social buttons      | `flex-1 rounded-box p-3 transition-colors` + brand color class; hover brand bg + `hover:text-white`                                                                                                                                                                                                                                          |
 
 > Off-system: raw brand hexes `#1877f2` (Facebook), `#0a66c2` (LinkedIn), `#25d366` (WhatsApp), `#ff4500` (Reddit) + `hover:text-white` — deliberate brand colors.
