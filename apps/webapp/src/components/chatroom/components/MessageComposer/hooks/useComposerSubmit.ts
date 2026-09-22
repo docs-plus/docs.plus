@@ -205,7 +205,16 @@ export const useComposerSubmit = ({
       // writer, which saves the draft list as the saved draft.
       const restoreAttachments =
         clearEarly && prepared.hasAttachments ? releaseSentAttachments(readyMedias) : null
-      if (clearEarly) cleanupAfterSubmit()
+      // An edit or comment started during the probe owns the editor now, so leave it alone.
+      if (clearEarly) {
+        const live = useChatStore.getState().workspaceSettings.channels.get(channelId)
+        const modeChanged =
+          (live?.editMessageMemory ?? null) !== (editMessageMemory ?? null) ||
+          (live?.commentMessageMemory ?? null) !== (commentMessageMemory ?? null)
+        if (!modeChanged) cleanupAfterSubmit()
+        else if (workspaceId && !editMessageMemory)
+          void discardComposerDraft(workspaceId, channelId)
+      }
 
       try {
         if (prepared.htmlChunks.length === 0) {
@@ -223,11 +232,9 @@ export const useComposerSubmit = ({
         if (!isAlreadyCapturedError(error)) {
           captureUnknown(error, { tags: { surface: 'chat-send' } })
         }
-        // A failed send with media left a failed row, which keeps the media for Retry and Delete.
-        // Otherwise an untouched composer takes back the sent media, and a comment's text and mode.
-        if (isFailedRowError(error)) {
-          if (prepared.hasAttachments) releaseSentAttachments(readyMedias)
-        } else if (clearEarly && isComposerUntouched(editor, channelId)) {
+        // A failed row keeps the media for Retry and Delete. With no row, an untouched composer
+        // takes back the sent media, and a comment's text and mode.
+        if (!isFailedRowError(error) && clearEarly && isComposerUntouched(editor, channelId)) {
           restoreAttachments?.()
           if (prepared.mode.kind === 'comment') {
             setCommentMsgMemory(channelId, prepared.mode.commentMemory)
@@ -240,10 +247,7 @@ export const useComposerSubmit = ({
         return
       }
 
-      if (prepared.hasAttachments) {
-        if (clearEarly) releaseSentAttachments(readyMedias)
-        else clearAttachments()
-      }
+      if (prepared.hasAttachments && !clearEarly) clearAttachments()
       if (!clearEarly) cleanupAfterSubmit()
       showNotificationPrompt()
     },

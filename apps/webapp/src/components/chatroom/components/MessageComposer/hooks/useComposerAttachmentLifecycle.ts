@@ -44,17 +44,15 @@ export const useComposerAttachmentLifecycle = ({
   commentMessageMemory,
   isMobile
 }: Args) => {
-  const skipAttachmentDraft = Boolean(
-    editMessageMemory || replyMessageMemory || commentMessageMemory
-  )
-
+  // A comment shows the saved draft tiles, but its files never enter the saved draft.
   useComposerAttachmentDraft({
     workspaceId,
     channelId,
     editor,
     attachments,
     draftHydrated,
-    skipDraft: skipAttachmentDraft,
+    skipHydrate: Boolean(editMessageMemory || replyMessageMemory),
+    skipWrite: Boolean(editMessageMemory || replyMessageMemory || commentMessageMemory),
     onHydrateAttachments: (drafts) => {
       if (!workspaceId) return
       hydrateComposerAttachmentsFromDraft(workspaceId, channelId, drafts)

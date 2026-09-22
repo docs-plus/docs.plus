@@ -39,7 +39,8 @@ type Args = {
   editor: Editor | null
   attachments: ComposerAttachment[]
   draftHydrated: boolean
-  skipDraft?: boolean
+  skipHydrate?: boolean
+  skipWrite?: boolean
   onHydrateAttachments: (drafts: ComposerAttachmentDraft[]) => void
 }
 
@@ -49,7 +50,8 @@ export const useComposerAttachmentDraft = ({
   editor,
   attachments,
   draftHydrated,
-  skipDraft = false,
+  skipHydrate = false,
+  skipWrite = false,
   onHydrateAttachments
 }: Args) => {
   const hydratedAttachmentsRef = useRef(false)
@@ -59,7 +61,7 @@ export const useComposerAttachmentDraft = ({
   }, [channelId, workspaceId])
 
   useEffect(() => {
-    if (!workspaceId || !channelId || skipDraft || !draftHydrated) return
+    if (!workspaceId || !channelId || skipHydrate || !draftHydrated) return
     if (hydratedAttachmentsRef.current) return
 
     let cancelled = false
@@ -81,7 +83,7 @@ export const useComposerAttachmentDraft = ({
     return () => {
       cancelled = true
     }
-  }, [channelId, draftHydrated, onHydrateAttachments, skipDraft, workspaceId])
+  }, [channelId, draftHydrated, onHydrateAttachments, skipHydrate, workspaceId])
 
   const lastDraftRef = useRef<string>('')
   const hidDraftRef = useRef(false)
@@ -95,7 +97,7 @@ export const useComposerAttachmentDraft = ({
     const hidesDraft = Boolean(memory?.editMessageMemory || memory?.commentMessageMemory)
     const endsHiddenDraft = hidDraftRef.current && !hidesDraft
     hidDraftRef.current = hidesDraft
-    if (!workspaceId || !channelId || skipDraft || !draftHydrated) return
+    if (!workspaceId || !channelId || skipWrite || !draftHydrated) return
     if (hidesDraft || endsHiddenDraft || !editor || editor.isDestroyed) return
 
     const readyDraft = readyAttachmentsToDraft(attachments)
@@ -109,7 +111,7 @@ export const useComposerAttachmentDraft = ({
       attachments: readyDraft.length > 0 ? readyDraft : undefined
     }
     syncComposerDraft(workspaceId, channelId, state)
-  }, [attachments, channelId, draftHydrated, editor, skipDraft, workspaceId])
+  }, [attachments, channelId, draftHydrated, editor, skipWrite, workspaceId])
 }
 
 export const hydrateComposerAttachmentsFromDraft = (

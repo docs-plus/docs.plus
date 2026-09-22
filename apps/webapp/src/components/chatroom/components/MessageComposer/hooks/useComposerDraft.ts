@@ -27,23 +27,24 @@ export const useComposerDraft = ({
   const isMobile = useStore((state) => state.settings.editor.isMobile)
   const isEditing = Boolean(editMessageMemory)
   const isCommenting = Boolean(commentMessageMemory)
-  const prevModeRef = useRef({ isEditing: false, isCommenting: false })
+  // Null until the first run with an editor, so a composer that mounts in comment mode loads the draft.
+  const prevModeRef = useRef<{ isEditing: boolean; isCommenting: boolean } | null>(null)
 
   useEffect(() => {
     const prev = prevModeRef.current
-    prevModeRef.current = { isEditing, isCommenting }
     if (!editor || !workspaceId || !channelId) {
       setDraftHydrated(false)
       return
     }
+    prevModeRef.current = { isEditing, isCommenting }
     // A comment that did not start from an edit keeps the editor, which can hold a restored comment.
-    if (isEditing || (isCommenting && !prev.isEditing)) {
+    if (isEditing || (isCommenting && prev !== null && !prev.isEditing)) {
       setDraftHydrated(true)
       return
     }
 
     // The end of an edit or a comment replaces its text, even when the draft has no text.
-    const endsMode = prev.isEditing || prev.isCommenting
+    const endsMode = prev !== null && (prev.isEditing || prev.isCommenting)
     setDraftHydrated(false)
     let cancelled = false
     getComposerState(workspaceId, channelId)
