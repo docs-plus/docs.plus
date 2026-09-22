@@ -132,8 +132,10 @@ export function usePushNotifications(): UsePushNotificationsReturn {
           const urlObj = new URL(url, window.location.origin)
           const channelId = urlObj.searchParams.get('chatroom')
           const messageId = urlObj.searchParams.get('msg_id')
+          // The first segment is the pad; later segments are filter terms.
+          const padOf = (path: string) => path.split('/')[1] ?? ''
 
-          if (channelId) {
+          if (channelId && padOf(urlObj.pathname) === padOf(window.location.pathname)) {
             // PubSub keeps navigation in-app, same as NotificationItem.
             PubSub.publish(CHAT_OPEN, {
               headingId: channelId,
@@ -142,9 +144,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
               scroll2Heading: true
             })
           } else {
-            const currentUrl = window.location.pathname + window.location.search
-            if (url !== currentUrl) {
-              window.location.href = url
+            // Another pad's chatroom id would open on this pad, so load its page.
+            // The path only, so an absolute action_url stays on this origin.
+            const target = urlObj.pathname + urlObj.search + urlObj.hash
+            const { pathname, search, hash } = window.location
+            if (target !== pathname + search + hash) {
+              window.location.assign(target)
             }
           }
         }

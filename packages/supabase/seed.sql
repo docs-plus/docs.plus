@@ -1983,7 +1983,9 @@ begin
             )
             where id = v_user_id;
 
-            -- Insert system_alert notification so user sees it in-app
+            -- Insert system_alert notification so user sees it in-app.
+            -- There is no /settings route: a path would open a pad named
+            -- "settings". The hash opens the Settings panel, like the email footer.
             insert into public.notifications (
                 receiver_user_id,
                 sender_user_id,
@@ -1996,7 +1998,7 @@ begin
                 null,
                 'system_alert',
                 'Email delivery to ' || v_masked_email || ' failed. Your email notifications have been paused. Tap to review.',
-                '/settings/notifications',
+                '/#settings?tab=notifications',
                 now()
             );
         end if;
