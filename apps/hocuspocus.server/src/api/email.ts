@@ -250,8 +250,7 @@ function digestPreviewDocuments(appUrl: string): DigestDocument[] {
             text: 'Error codes',
             url: `${appUrl}/api-documentation?id=error-codes`
           }
-        ],
-        moreCount: 2
+        ]
       }
     },
     {

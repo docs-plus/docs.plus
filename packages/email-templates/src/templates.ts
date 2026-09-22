@@ -14,8 +14,17 @@ import {
 } from './helpers'
 import type { DigestChangeRun, DigestDocument, DigestFrequency, NotificationType } from './types'
 
+// Plain text has no colour, so markers keep removed and added words apart.
 function paintRuns(runs: readonly DigestChangeRun[]): string {
-  const text = runs.map((run) => run.text).join('')
+  const text = runs
+    .map((run) =>
+      run.kind === 'removed'
+        ? `[-${run.text}-]`
+        : run.kind === 'added'
+          ? `{+${run.text}+}`
+          : run.text
+    )
+    .join('')
   return text ? `\n      ${text}` : ''
 }
 
@@ -118,8 +127,7 @@ function buildDigestEmailText(params: {
         .join('\n\n')
 
       // Mirrors the HTML block. The count treats one block as one item, so the
-      // plaintext must show it or the number and the body disagree. "+N more"
-      // is byte-identical on both surfaces.
+      // plaintext must show it or the number and the body disagree.
       const changes = doc.content_changes
       const sectionLines = (changes?.sections ?? []).map((section) => {
         const painted = section.runs?.length ? paintRuns(section.runs) : ''
@@ -130,9 +138,6 @@ function buildDigestEmailText(params: {
           .join('')
         return `    ${section.text}\n      ${section.url}${painted}${added}${removed}${chats}`
       })
-      const moreLine = changes?.moreCount
-        ? `    ${changes.moreCount} more section${changes.moreCount === 1 ? '' : 's'} changed.`
-        : ''
       // An indented empty string is truthy, so the guard is what keeps the blank
       // line out when the helper declines to name a contributor.
       const contributors = contributorLine(changes?.contributorCount)
@@ -140,8 +145,7 @@ function buildDigestEmailText(params: {
         ? [
             `  ${changeWindowLine(changes.since, changes.fromLastLeft, frequency, periodEnd)}`,
             contributors ? `  ${contributors}` : '',
-            ...sectionLines,
-            moreLine
+            ...sectionLines
           ]
             .filter(Boolean)
             .join('\n')

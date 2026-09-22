@@ -10,6 +10,7 @@ import type {
   DigestNotification,
   NotificationType
 } from '../../types/email.types'
+import { sanitizePlainText } from '../sanitizePlainText'
 
 /** notification_category value written by notify_document_content_change. */
 export const CONTENT_CHANGE_TYPE = 'content_change'
@@ -96,7 +97,7 @@ export function buildDigestDocuments(
       type: n.notification_type as NotificationType,
       sender_name: n.sender_name,
       sender_avatar_url: n.sender_avatar_url || undefined,
-      message_preview: n.message_preview,
+      message_preview: sanitizePlainText(n.message_preview, 200),
       action_url: n.channel_id
         ? `${appUrl}/${n.workspace_slug}?chatroom=${n.channel_id}`
         : `${appUrl}/${n.workspace_slug}`,

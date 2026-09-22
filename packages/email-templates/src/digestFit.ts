@@ -1,14 +1,6 @@
 import type { EmailFooter } from './helpers'
 import { buildDigestEmail } from './templates'
-import type {
-  DigestChangedSection,
-  DigestChangeRun,
-  DigestDocument,
-  DigestFrequency
-} from './types'
-
-/** Gmail clips a mail near 102KB. Stop short of that. */
-export const DEFAULT_DIGEST_MAX_BYTES = 90 * 1024
+import type { DigestChangeRun, DigestDocument, DigestFrequency } from './types'
 
 export interface DigestFitParams {
   recipientName: string
@@ -22,32 +14,33 @@ function joined(runs: readonly DigestChangeRun[]): string {
   return runs.map((run) => run.text).join('')
 }
 
-/** The first sentence, so a long passage can shrink without losing the edit. */
+/**
+ * The first sentence, so a long passage can shrink without losing the edit.
+ * Change runs stay whole, and the cut only lands in a `same` run after one.
+ */
 function firstSentence(runs: readonly DigestChangeRun[]): DigestChangeRun[] {
-  let seen = ''
+  let sawChange = false
   const kept: DigestChangeRun[] = []
   for (const run of runs) {
-    const next = seen + run.text
-    const match = /[.!?](?:\s|$)/.exec(next)
-    if (match?.index === undefined) {
+    if (run.kind !== 'same') {
       kept.push(run)
-      seen = next
+      sawChange = true
       continue
     }
-    const take = match.index + 1 - seen.length
-    if (take >= run.text.length) {
+    const match = sawChange ? /[.!?](?:\s|$)/.exec(run.text) : null
+    if (!match) {
+      kept.push(run)
+      continue
+    }
+    if (match.index + match[0].length >= run.text.length) {
       kept.push(run)
       return kept
     }
-    const head = run.text.slice(0, Math.max(take, 0)).trimEnd()
+    const head = run.text.slice(0, match.index + 1).trimEnd()
     if (head) kept.push({ kind: run.kind, text: head })
     return kept
   }
   return kept
-}
-
-function sectionChanged(section: DigestChangedSection): boolean {
-  return Boolean(section.runs?.length || section.excerpt || section.removed)
 }
 
 function dropOldestChat(documents: DigestDocument[]): DigestDocument[] | null {
@@ -75,7 +68,7 @@ function dropOldestChat(documents: DigestDocument[]): DigestDocument[] | null {
       if (sectionIndex !== target.section) return [section]
       const chats = (section.chats ?? []).filter((_, chatIndex) => chatIndex !== target.chat)
       const next = chats.length > 0 ? { ...section, chats } : { ...section, chats: undefined }
-      if (!sectionChanged(next) && chats.length === 0) return []
+      if (section.chatOnly && chats.length === 0) return []
       return [next]
     })
     return { ...doc, content_changes: { ...doc.content_changes, sections } }

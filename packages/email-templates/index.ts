@@ -3,7 +3,7 @@
  * in apps/hocuspocus.server/templates/ — this engine does not manage them.
  */
 
-export { DEFAULT_DIGEST_MAX_BYTES, fitDigestDocuments } from './src/digestFit'
+export { fitDigestDocuments } from './src/digestFit'
 export {
   buildListUnsubscribeHeaders,
   countDigestItems,

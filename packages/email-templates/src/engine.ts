@@ -55,15 +55,16 @@ export function renderNotificationEmail(params: {
 }
 
 /**
- * One digest item is one chat notification, or one `content_changes` block.
- * A document that only changed carries no chat line, so counting channels
- * alone would print "0 notifications" over a digest that has content.
+ * One item is one chat line, in a card or under a heading, or one
+ * `content_changes` block. Heading chats leave their channel card, so the
+ * sections must be counted too, or the subject undercounts the mail.
  */
 export function countDigestItems(documents: ReadonlyArray<DigestDocument>): number {
   return documents.reduce(
     (sum, doc) =>
       sum +
       doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0) +
+      (doc.content_changes?.sections ?? []).reduce((n, s) => n + (s.chats?.length ?? 0), 0) +
       (doc.content_changes ? 1 : 0),
     0
   )

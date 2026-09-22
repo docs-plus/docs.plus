@@ -60,6 +60,8 @@ export interface DigestChangedSection {
   /** Absent when the section was removed and has nothing to open. */
   tocId?: string
   chats?: DigestHeadingChat[]
+  /** Set when the heading is in the mail only for its chats. */
+  chatOnly?: true
 }
 
 /**
@@ -78,8 +80,6 @@ export interface DigestContentChanges {
   fromLastLeft: boolean
   /** Changed sections in document order. */
   sections?: DigestChangedSection[]
-  /** Leftover count from a payload. Enrichment does not set it. */
-  moreCount?: number
   /** People named in the window. A floor, never a census. Absent when none resolved. */
   contributorCount?: number
 }

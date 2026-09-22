@@ -295,8 +295,6 @@ describe('flattenChangedSections', () => {
     expect(rows.map((row) => row.text)).toEqual(['Deep', 'Sibling'])
   })
 
-  // The trap: an unchanged heading must still parent its changed child, or that
-  // child loses its breadcrumb and reads as a root.
   // A toc id is stranger-written on a public document, so it is encoded.
   it('encodes the toc id into the link and falls back to the document url', () => {
     const rows = flattenChangedSections(tree(), DOC_URL)
@@ -433,7 +431,6 @@ describe('enrichDigestDocuments', () => {
       enrichDeps({ computeChanges: async () => changesResult({ sections: many }) })
     )
     expect(doc!.content_changes?.sections).toHaveLength(25)
-    expect(doc!.content_changes?.moreCount).toBeUndefined()
   })
 
   it('puts a heading chat under that heading and drops the channel card', async () => {

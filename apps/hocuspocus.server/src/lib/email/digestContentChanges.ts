@@ -89,12 +89,17 @@ function headingChats(notifications: DigestNotification[]): DigestHeadingChat[] 
   })
 }
 
-/** Every named heading, in document order, so a chat can sit under the right one. */
+/**
+ * Every named heading, in document order, so a chat can sit under the right one.
+ * A removed heading is left out: its row carries no tocId and joins the tail.
+ */
 function headingIndex(tree: SectionNode[]): { tocId: string; text: string }[] {
   const rows: { tocId: string; text: string }[] = []
   const walk = (nodes: SectionNode[]): void => {
     for (const node of nodes) {
-      if (node.tocId && node.text.length > 0) rows.push({ tocId: node.tocId, text: node.text })
+      if (node.status !== 'removed' && node.tocId && node.text.length > 0) {
+        rows.push({ tocId: node.tocId, text: node.text })
+      }
       walk(node.children)
     }
   }
@@ -106,7 +111,7 @@ function headingIndex(tree: SectionNode[]): { tocId: string; text: string }[] {
  * A heading chat is the channel whose id is the heading. Those lines move under
  * the heading. A channel that does not match stays in the channel card.
  */
-export function placeHeadingChats(
+function placeHeadingChats(
   doc: DigestDocument,
   changed: DigestChangedSection[],
   headings: readonly { tocId: string; text: string }[]
@@ -127,7 +132,7 @@ export function placeHeadingChats(
     if (!row && chats.length === 0) return
     seen.add(tocId)
     if (chats.length > 0) moved.add(tocId)
-    const base = row ?? { text, url: sectionUrl(doc.url, tocId), tocId }
+    const base = row ?? { text, url: sectionUrl(doc.url, tocId), tocId, chatOnly: true as const }
     sections.push(chats.length > 0 ? { ...base, chats } : base)
   }
 

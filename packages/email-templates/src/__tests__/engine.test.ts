@@ -75,9 +75,19 @@ const DIGEST_CHANGES_PARAMS = {
           {
             text: 'Rate limiting',
             url: 'https://docs.plus/api-docs?id=rate-limiting'
+          },
+          {
+            text: 'Retries',
+            url: 'https://docs.plus/api-docs?id=retries',
+            tocId: 'retries',
+            runs: [
+              { kind: 'same', text: 'Retries use ' },
+              { kind: 'removed', text: 'a new' },
+              { kind: 'added', text: 'the same' },
+              { kind: 'same', text: ' key.' }
+            ]
           }
-        ],
-        moreCount: 2
+        ]
       }
     }
   ] satisfies DigestDocument[]
@@ -251,7 +261,7 @@ describe('buildDigestEmail', () => {
     expect(html).toContain('https://docs.plus/api-docs?id=rate-limiting')
     expect(html).toContain('Alice')
     expect(html).toContain('The cap should wait, not fail.')
-    expect(text).toContain('Requests over the cap fail wait.')
+    expect(text).toContain('Requests over the cap [-fail-]{+ wait+}.')
     expect(text).toContain('Alice: The cap should wait, not fail.')
     expect(text).toContain('Later retries use the same key')
     expect(text).not.toContain('More:')

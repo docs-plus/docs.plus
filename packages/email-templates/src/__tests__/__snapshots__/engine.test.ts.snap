@@ -417,8 +417,10 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
                 </td>
               </tr>
               <tr>
-                <td style="padding-top: 14px; color: #9ca3af; font-size: 12px;">
-                  2 more sections changed.
+                <td style="padding-top: 22px;">
+                  <a href="https://docs.plus/api-docs?id=retries" style="color: #1f2937; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Retries</a>
+                  <p style="margin: 6px 0 0; color: #1f2937; font-size: 15px; line-height: 1.45; font-weight: 400;">
+<span style="">Retries use </span><span style="background-color:#fee2e2;color:#6b7280;text-decoration:line-through;border-radius:2px;">a new</span><span style="background-color:#d1fae5;border-radius:2px;">the same</span><span style=""> key.</span>                  </p>
                 </td>
               </tr>
             </table>

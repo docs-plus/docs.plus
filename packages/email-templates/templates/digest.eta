@@ -4,7 +4,7 @@
 
 <p style="margin: 0 0 <%= it.h.SPACING.xl %>; color: <%= it.h.COLORS.textMuted %>; font-size: 15px; line-height: 1.5;">
   Here's your <strong style="color: <%= it.h.COLORS.text %>;"><%= it.frequency %> digest</strong> with
-  <% /* One digest item is one chat notification, or one content_changes block. countDigestItems in engine.ts owns the count; this line only renders it. */ %><strong style="color: <%= it.h.COLORS.primary %>;"><%= it.totalNotifications %> notification<%= it.totalNotifications !== 1 ? 's' : '' %></strong>
+  <% /* One digest item is one chat line, in a card or under a heading, or one content_changes block. countDigestItems in engine.ts owns the count; this line only renders it. */ %><strong style="color: <%= it.h.COLORS.primary %>;"><%= it.totalNotifications %> notification<%= it.totalNotifications !== 1 ? 's' : '' %></strong>
   from <%= it.periodLabel %>.
 </p>
 
@@ -72,13 +72,6 @@
                 </td>
               </tr>
 <% }) -%>
-<% if (doc.content_changes.moreCount) { -%>
-              <tr>
-                <td style="padding-top: 14px; color: <%= it.h.COLORS.textLight %>; font-size: 12px;">
-                  <%= doc.content_changes.moreCount %> more section<%= doc.content_changes.moreCount === 1 ? '' : 's' %> changed.
-                </td>
-              </tr>
-<% } -%>
             </table>
 <% } -%>
           </td>
