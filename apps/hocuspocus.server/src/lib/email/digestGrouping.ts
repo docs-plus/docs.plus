@@ -5,6 +5,8 @@ const KEY = 'email:digest-grouping'
 const MAX_KB_KEY = 'email:digest-max-kb'
 
 export const DEFAULT_DIGEST_MAX_KB = 90
+export const DIGEST_MAX_KB_MIN = 10
+export const DIGEST_MAX_KB_MAX = 102
 
 /** Missing Redis or an unknown value stays on one mail per document. */
 export async function readDigestGrouping(redis: RedisClient | null): Promise<DigestGrouping> {
@@ -22,7 +24,9 @@ export async function readDigestMaxKb(redis: RedisClient | null): Promise<number
   if (!redis) return DEFAULT_DIGEST_MAX_KB
   try {
     const value = Number(await redis.get(MAX_KB_KEY))
-    if (!Number.isInteger(value) || value < 10 || value > 102) return DEFAULT_DIGEST_MAX_KB
+    if (!Number.isInteger(value) || value < DIGEST_MAX_KB_MIN || value > DIGEST_MAX_KB_MAX) {
+      return DEFAULT_DIGEST_MAX_KB
+    }
     return value
   } catch {
     return DEFAULT_DIGEST_MAX_KB

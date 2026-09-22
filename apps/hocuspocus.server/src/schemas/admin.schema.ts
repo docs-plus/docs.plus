@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { DIGEST_MAX_KB_MAX, DIGEST_MAX_KB_MIN } from '../lib/email/digestGrouping'
+
 export const listDocumentsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).optional().default('1'),
   limit: z.string().regex(/^\d+$/).optional().default('20'),
@@ -153,3 +155,14 @@ export type GhostCleanupAnonymousInput = z.infer<typeof ghostCleanupAnonymousSch
 export type WorkspaceMediaStorageStat = z.infer<typeof workspaceMediaStorageStatSchema>
 export type WorkspaceMediaStorageSummary = z.infer<typeof workspaceMediaStorageSummarySchema>
 export type MediaStorageQuery = z.infer<typeof mediaStorageQuerySchema>
+
+export const digestSettingsBodySchema = z
+  .object({
+    grouping: z.enum(['document', 'aggregate']).optional(),
+    maxKb: z.number().int().min(DIGEST_MAX_KB_MIN).max(DIGEST_MAX_KB_MAX).optional()
+  })
+  .refine((body) => body.grouping !== undefined || body.maxKb !== undefined, {
+    message: 'grouping or maxKb is required'
+  })
+
+export type DigestSettingsBody = z.infer<typeof digestSettingsBodySchema>

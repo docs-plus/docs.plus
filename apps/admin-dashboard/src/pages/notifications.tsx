@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   LuBell,
   LuBellOff,
@@ -366,6 +367,10 @@ export default function NotificationsPage() {
     mutationFn: (body: { grouping?: DigestGrouping; maxKb?: number }) => saveDigestGrouping(body),
     onSuccess: (result) => {
       queryClient.setQueryData(['admin', 'email', 'digest-grouping'], result)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+      setMaxKb(String(digestGrouping?.maxKb ?? 90))
     }
   })
   const grouping = digestGrouping?.grouping ?? 'document'

@@ -1,4 +1,3 @@
-import type { DigestGrouping } from '../../lib/email/digestDocuments'
 import {
   readDigestGrouping,
   readDigestMaxKb,
@@ -7,6 +6,7 @@ import {
 } from '../../lib/email/digestGrouping'
 import { adminLogger } from '../../lib/logger'
 import { getRedisClient } from '../../lib/redis'
+import type { DigestSettingsBody } from '../../schemas/admin.schema'
 import type { AppContext } from '../../types/hono.types'
 import * as stats from '../services/adminStats.service'
 import { getSupabaseClient } from '../utils/supabase'
@@ -161,18 +161,7 @@ export async function getDigestGrouping(c: AppContext) {
 }
 
 export async function setDigestGrouping(c: AppContext) {
-  const body = await c.req.json().catch(() => null)
-  const grouping = body?.grouping as DigestGrouping | undefined
-  const maxKb = body?.maxKb === undefined ? undefined : Number(body.maxKb)
-  if (grouping !== undefined && grouping !== 'document' && grouping !== 'aggregate') {
-    return c.json({ error: 'grouping must be document or aggregate' }, 400)
-  }
-  if (maxKb !== undefined && (!Number.isInteger(maxKb) || maxKb < 10 || maxKb > 102)) {
-    return c.json({ error: 'maxKb must be a whole number from 10 to 102' }, 400)
-  }
-  if (grouping === undefined && maxKb === undefined) {
-    return c.json({ error: 'grouping or maxKb is required' }, 400)
-  }
+  const { grouping, maxKb } = c.req.valid('json' as never) as DigestSettingsBody
   const redis = getRedisClient()
   if (!redis) return c.json({ error: 'Redis is not available' }, 503)
   try {

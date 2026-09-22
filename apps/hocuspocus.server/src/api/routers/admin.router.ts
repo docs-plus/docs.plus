@@ -9,6 +9,7 @@ import {
   bulkDeleteSchema,
   daysQuerySchema,
   deleteDocumentSchema,
+  digestSettingsBodySchema,
   disableFailedSubsSchema,
   ghostAccountsQuerySchema,
   ghostBulkDeleteSchema,
@@ -35,7 +36,11 @@ admin.get('/stats/platform', adminController.getPlatformStats)
 admin.get('/stats/notifications', adminController.getNotificationStatsAdmin)
 admin.get('/stats/email', adminController.getEmailStatsAdmin)
 admin.get('/email/digest-grouping', adminController.getDigestGrouping)
-admin.put('/email/digest-grouping', adminController.setDigestGrouping)
+admin.put(
+  '/email/digest-grouping',
+  zValidator('json', digestSettingsBodySchema, houseEnvelopeHook),
+  adminController.setDigestGrouping
+)
 admin.get('/stats/push', adminController.getPushStatsAdmin)
 admin.get('/stats/push/pipeline', adminController.getPushPipelineAdmin)
 admin.get('/push/subscriptions', adminController.getPushSubscriptionsRaw)
