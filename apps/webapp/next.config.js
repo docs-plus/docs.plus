@@ -168,12 +168,6 @@ module.exports = withPWA({
   },
   compiler: {
     removeConsole: false,
-    // removeConsole: isProduction
-    //   ? {
-    //       exclude: ['error', 'warn']
-    //     }
-    //   : false,
-    // Enable React optimizations
     // Keep Cypress selectors in the explicitly opted-in local/CI test build.
     reactRemoveProperties: isProduction && !isE2E
   },
