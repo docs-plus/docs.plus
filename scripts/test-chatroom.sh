@@ -34,6 +34,9 @@ node -e '
 
 mkdir -p Notes
 bun scripts/check-next-server.ts
+# Set before the build, so a failed or stopped build still drops its .next.
+SERVER_PID=''
+trap 'kill "$SERVER_PID" 2>/dev/null || true; wait "$SERVER_PID" 2>/dev/null || true; rm -rf "$ROOT_DIR/apps/webapp/.next"' EXIT
 bash scripts/build-extensions.sh
 bun run --filter @docs.plus/webapp build:ci
 
@@ -47,7 +50,6 @@ cp -R "$ROOT_DIR/apps/webapp/.next/static/." "$STANDALONE_DIR/.next/static/"
   exec env PORT="$CHATROOM_PORT" HOSTNAME=127.0.0.1 node server.js
 ) > "$ROOT_DIR/Notes/chatroom-server.log" 2>&1 &
 SERVER_PID=$!
-trap 'kill "$SERVER_PID" 2>/dev/null || true; wait "$SERVER_PID" 2>/dev/null || true; rm -rf "$ROOT_DIR/apps/webapp/.next"' EXIT
 
 READY=false
 for attempt in $(seq 1 60); do
