@@ -1,5 +1,6 @@
 import { applySignedInProfile } from '@components/auth/applySignedInProfile'
 import * as toast from '@components/toast'
+import { writeAppBadge } from '@hooks/useNotificationCount'
 import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import { trackSignUpOnce } from '@utils/analytics'
@@ -71,6 +72,8 @@ export const useOnAuthStateChange = () => {
         getUserProfile(session.user)
       }
       if (event === 'SIGNED_OUT') {
+        // The bell hook stops at a null profile, so it never zeroes the app icon.
+        writeAppBadge(0)
         setObservabilityUser(null)
         useAuthStore.getState().setSession(null)
         useAuthStore.getState().setProfile(null)

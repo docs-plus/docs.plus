@@ -1,8 +1,10 @@
 import { getUnreadNotificationCount } from '@api'
-import { wasClientRead } from '@components/notificationPanel/feed/readDedupe'
+import { trackClientRead, wasClientRead } from '@components/notificationPanel/feed/readDedupe'
+import { NOTIFICATION_STATE_CHANGED } from '@hooks/usePushNotifications'
 import { useAuthStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
+import PubSub from 'pubsub-js'
 import { useEffect, useRef } from 'react'
 
 interface UseNotificationCountProps {
@@ -33,6 +35,14 @@ function matchesWorkspace(
   return !filterId || payloadWorkspaceId === filterId
 }
 
+/** Copies the bell count onto the installed app icon. Only desktop Chromium promises to
+ * show it. A missing API or a rejected promise is a silent no-op. */
+export const writeAppBadge = (count: number) => {
+  if (!('setAppBadge' in navigator)) return
+  const write = count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge()
+  write.catch(() => {})
+}
+
 /** Per-user `notifications:<uid>` broadcast counter. Requires `{ config: { private: true } }`
  * on channel subscribe — matches SQL trigger + `notifications_topic_access` RLS;
  * omit it and subscribe() silently fails. */
@@ -41,20 +51,49 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
   const unreadCount = useStore((state) => state.totalNotificationUnreadCount)
   const setUnreadCount = useStore((state) => state.setTotalNotificationUnreadCount)
   const subscriptionRef = useRef<RealtimeChannel | null>(null)
+  // Realtime deltas on a count that never loaded are wrong, so they stay off the icon.
+  const badgeReadyRef = useRef(false)
 
   useEffect(() => {
-    if (!profile?.id) return
+    if (badgeReadyRef.current) writeAppBadge(unreadCount)
+  }, [unreadCount])
 
-    const fetchInitialCount = async () => {
-      const count = await getUnreadNotificationCount({
-        workspace_id: workspaceId || null
-      })
+  useEffect(() => {
+    badgeReadyRef.current = false
+    if (!profile?.id) return
+    let stale = false
+
+    const fetchCount = async () => {
+      const count = await getUnreadNotificationCount({ workspace_id: workspaceId || null })
+      if (stale) return
+      if (count === null) {
+        badgeReadyRef.current = false
+        setUnreadCount(0)
+        return
+      }
       setUnreadCount(count)
+      badgeReadyRef.current = true
+      // The store skips an equal value, so the effect above may not run.
+      writeAppBadge(count)
     }
 
-    fetchInitialCount()
+    fetchCount()
 
-    if (!navigator.onLine) return
+    // A push click marks a read, maybe before the channel below is live. Refetch,
+    // and keep its realtime UPDATE from lowering the count a second time.
+    const pushToken = PubSub.subscribe(
+      NOTIFICATION_STATE_CHANGED,
+      (_message: string | symbol, data?: { notification_id?: string }) => {
+        if (data?.notification_id) trackClientRead(data.notification_id)
+        fetchCount()
+      }
+    )
+    const stop = () => {
+      stale = true
+      PubSub.unsubscribe(pushToken)
+    }
+
+    if (!navigator.onLine) return stop
 
     const topic = `notifications:${profile.id}`
 
@@ -97,6 +136,7 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
     subscriptionRef.current = channel.subscribe()
 
     return () => {
+      stop()
       subscriptionRef.current?.unsubscribe()
       subscriptionRef.current = null
     }
