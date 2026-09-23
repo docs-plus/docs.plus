@@ -1,167 +1,27 @@
-/**
- * Defers `beforeinstallprompt` for our own engagement-gated UI (web.dev/promote-install).
- * Safari fires no such event, so iOS gets a manual Add-to-Home-Screen path instead.
- */
 import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { useAuthStore } from '@stores'
-import { trackEvent } from '@utils/analytics'
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { LuDownload, LuShare, LuSmartphone, LuSquarePlus, LuX } from 'react-icons/lu'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { LuDownload, LuSmartphone, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
-const STORAGE_PREFIX = 'pwa-install'
-const DISMISSED_KEY = `${STORAGE_PREFIX}-dismissed`
-const SNOOZED_UNTIL_KEY = `${STORAGE_PREFIX}-snoozed-until`
-const PROMPT_COUNT_KEY = `${STORAGE_PREFIX}-prompt-count`
-const SESSION_COUNT_KEY = `${STORAGE_PREFIX}-session-count`
+import { IOSInstructions } from './IOSInstructions'
+import {
+  DISMISSED_KEY,
+  PROMPT_COUNT_KEY,
+  PWA_OFFLINE_LINE,
+  SESSION_COUNT_KEY,
+  SHOW_PWA_INSTALL_EVENT,
+  type ShowPWAInstallDetail,
+  SNOOZED_UNTIL_KEY,
+  usePWAInstall,
+  usePWAInstallStore
+} from './pwaInstallStore'
 
 const SNOOZE_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_PROMPT_COUNT = 3
 const ENGAGEMENT_DELAY_MS = 30_000
 const MIN_SESSION_COUNT = 2
-
-const SHOW_PWA_INSTALL_EVENT = 'show-pwa-install-prompt'
-
-/** Honest offline claim, shared by the install card and Home Install. */
-export const PWA_OFFLINE_LINE = 'Keeps a local copy of the pad you already opened.'
-
-type ShowPWAInstallDetail = { force?: boolean }
-
-/** Call when an action needs the PWA (enabling push on iOS); skips the engagement wait. */
-export function showPWAInstallPrompt() {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(SHOW_PWA_INSTALL_EVENT))
-  }
-}
-
-/** A deliberate Install click. Skips every timed-card gate except "this window cannot install". */
-export function openPWAInstallPrompt() {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(
-      new CustomEvent<ShowPWAInstallDetail>(SHOW_PWA_INSTALL_EVENT, { detail: { force: true } })
-    )
-  }
-}
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-function createSharedValue<T>(initial: T) {
-  let value = initial
-  const listeners = new Set<() => void>()
-  return {
-    get: () => value,
-    set: (next: T) => {
-      value = next
-      listeners.forEach((listener) => listener())
-    },
-    subscribe: (listener: () => void) => {
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
-      }
-    }
-  }
-}
-
-// Module scope: the event fires once, and the card and Home Install must see the same one.
-const sharedPrompt = createSharedValue<BeforeInstallPromptEvent | null>(null)
-const sharedAppInstalled = createSharedValue(false)
-const autoShowHolds = createSharedValue(0)
-let listeningForInstall = false
-
-const getNoPrompt = () => null
-const getFalse = () => false
-const getAutoShowHeld = () => autoShowHolds.get() > 0
-
-// Registered once for the page, so a second hook instance cannot double-count `pwa_install`.
-function listenForInstall() {
-  if (listeningForInstall) return
-  listeningForInstall = true
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent Chrome's default mini-infobar — we show our own UI
-    e.preventDefault()
-    sharedPrompt.set(e as BeforeInstallPromptEvent)
-  })
-
-  window.addEventListener('appinstalled', () => {
-    trackEvent('pwa_install')
-    sharedPrompt.set(null)
-    sharedAppInstalled.set(true)
-    localStorage.setItem(DISMISSED_KEY, 'permanent')
-    localStorage.removeItem(SNOOZED_UNTIL_KEY)
-    localStorage.removeItem(PROMPT_COUNT_KEY)
-  })
-}
-
-/** While `active`, the timed card does not auto-open. Home Install holds it while visible. */
-export function useHoldPWAAutoShow(active: boolean) {
-  useEffect(() => {
-    if (!active) return
-    autoShowHolds.set(autoShowHolds.get() + 1)
-    return () => autoShowHolds.set(autoShowHolds.get() - 1)
-  }, [active])
-}
-
-export function usePWAInstall() {
-  const deferredPrompt = useSyncExternalStore(sharedPrompt.subscribe, sharedPrompt.get, getNoPrompt)
-  const appInstalled = useSyncExternalStore(
-    sharedAppInstalled.subscribe,
-    sharedAppInstalled.get,
-    getFalse
-  )
-  const [isStandalone, setIsStandalone] = useState(false)
-  const { platform, isPWAInstalled } = usePlatformDetection()
-  const isInstalled = appInstalled || isStandalone
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    listenForInstall()
-
-    const mediaQuery = window.matchMedia('(display-mode: standalone)')
-    setIsStandalone(mediaQuery.matches || isPWAInstalled)
-
-    const handleDisplayChange = (e: MediaQueryListEvent) => {
-      setIsStandalone(e.matches)
-    }
-
-    mediaQuery.addEventListener?.('change', handleDisplayChange)
-    return () => mediaQuery.removeEventListener?.('change', handleDisplayChange)
-  }, [isPWAInstalled])
-
-  const install = useCallback(async (): Promise<boolean> => {
-    const prompt = sharedPrompt.get()
-    if (!prompt) return false
-
-    try {
-      await prompt.prompt()
-      const { outcome } = await prompt.userChoice
-
-      if (outcome === 'accepted') {
-        localStorage.setItem(DISMISSED_KEY, 'permanent')
-      }
-
-      return outcome === 'accepted'
-    } catch {
-      return false
-    } finally {
-      // One event allows one prompt(); drop it so no surface offers it twice.
-      sharedPrompt.set(null)
-    }
-  }, [])
-
-  return {
-    canInstall: deferredPrompt !== null || (platform === 'ios' && !isInstalled),
-    canNativeInstall: deferredPrompt !== null,
-    isInstalled,
-    install,
-    platform
-  }
-}
 
 interface PWAInstallPromptProps {
   className?: string
@@ -171,9 +31,9 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
   const { mounted, shown, show: showCard, hide: hideCard, nodeRef } = useEntryExitTransition()
   const [showIOSSteps, setShowIOSSteps] = useState(false)
   const profile = useAuthStore((state) => state.profile)
-  const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
+  const { platform, iosSupportsWebPush } = usePlatformDetection()
   const { canInstall, canNativeInstall, install, isInstalled } = usePWAInstall()
-  const autoShowHeld = useSyncExternalStore(autoShowHolds.subscribe, getAutoShowHeld, getFalse)
+  const autoShowHeld = usePWAInstallStore((s) => s.autoShowHolds > 0)
   const hasAutoShownRef = useRef(false)
   const engagementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Only a timer-opened card yields to Home Install. A deliberate open stays.
@@ -182,7 +42,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
   // State only — the engagement timing lives in the auto-show effect.
   const isEligible = useCallback(() => {
     if (!profile) return false
-    if (isInstalled || isPWAInstalled) return false
+    if (isInstalled) return false
     if (!canInstall) return false
     if (platform === 'ios' && !iosSupportsWebPush) return false
 
@@ -196,13 +56,13 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     if (count >= MAX_PROMPT_COUNT) return false
 
     return true
-  }, [profile, isInstalled, isPWAInstalled, canInstall, platform, iosSupportsWebPush])
+  }, [profile, isInstalled, canInstall, platform, iosSupportsWebPush])
 
   // A forced open checks only whether this window can install. It spends no timed-card budget.
   const show = useCallback(
     (force = false) => {
       if (force) {
-        if (isInstalled || isPWAInstalled || !canInstall) return
+        if (isInstalled || !canInstall) return
       } else {
         if (!isEligible()) return
         const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
@@ -211,7 +71,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
 
       showCard()
     },
-    [isEligible, isInstalled, isPWAInstalled, canInstall, showCard]
+    [isEligible, isInstalled, canInstall, showCard]
   )
 
   const hide = useCallback(
@@ -385,69 +245,6 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
         )}
       </div>
     </div>
-  )
-}
-
-function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
-  return (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 rounded-field p-2">
-            <LuSquarePlus size={24} className="text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold">Add to Home Screen</h3>
-            <p className="text-xs opacity-60">Follow these steps in Safari</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="hover:bg-base-content/10 rounded-field -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
-          aria-label="Dismiss">
-          <LuX size={16} />
-        </button>
-      </div>
-
-      <ol className="flex flex-col gap-3">
-        <li className="flex items-center gap-3">
-          <div className="bg-base-content/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
-            1
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span>Tap</span>
-            <LuShare size={18} className="text-primary" />
-            <span className="opacity-70">in Safari&apos;s toolbar</span>
-          </div>
-        </li>
-        <li className="flex items-center gap-3">
-          <div className="bg-base-content/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
-            2
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span>Scroll down, tap</span>
-            <LuSquarePlus size={18} className="text-primary" />
-            <span className="font-medium">&quot;Add to Home Screen&quot;</span>
-          </div>
-        </li>
-        <li className="flex items-center gap-3">
-          <div className="bg-base-content/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
-            3
-          </div>
-          <span className="text-sm">
-            Tap <span className="font-medium">&quot;Add&quot;</span> — then open from Home Screen
-          </span>
-        </li>
-      </ol>
-
-      <div className="flex justify-end pt-1">
-        <button
-          onClick={onBack}
-          className="text-primary cursor-pointer text-sm font-medium hover:underline">
-          ← Back
-        </button>
-      </div>
-    </>
   )
 }
 

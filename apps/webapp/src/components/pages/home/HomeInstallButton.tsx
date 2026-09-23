@@ -1,11 +1,10 @@
 import {
-  openPWAInstallPrompt,
+  forceShowPWAInstallPrompt,
   PWA_OFFLINE_LINE,
   useHoldPWAAutoShow,
   usePWAInstall
-} from '@components/pwa'
+} from '@components/pwa/pwaInstallStore'
 import Button from '@components/ui/Button'
-import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { useId, useSyncExternalStore } from 'react'
 import { LuDownload } from 'react-icons/lu'
 
@@ -20,9 +19,8 @@ const getFalse = () => false
 export function HomeInstallButton() {
   const hydrated = useSyncExternalStore(noopSubscribe, getTrue, getFalse)
   const { canInstall, isInstalled } = usePWAInstall()
-  const { isPWAInstalled } = usePlatformDetection()
   const captionId = useId()
-  const visible = hydrated && canInstall && !isInstalled && !isPWAInstalled
+  const visible = hydrated && canInstall && !isInstalled
 
   useHoldPWAAutoShow(visible)
 
@@ -36,7 +34,7 @@ export function HomeInstallButton() {
         startIcon={LuDownload}
         className="text-base-content/70"
         aria-describedby={captionId}
-        onClick={openPWAInstallPrompt}>
+        onClick={forceShowPWAInstallPrompt}>
         Install app
       </Button>
       <p id={captionId} className="text-base-content/50 text-xs">

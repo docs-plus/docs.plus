@@ -1,8 +1,8 @@
+export { PWAInstallPrompt } from './PWAInstallPrompt'
 export {
-  openPWAInstallPrompt,
+  forceShowPWAInstallPrompt,
   PWA_OFFLINE_LINE,
-  PWAInstallPrompt,
   showPWAInstallPrompt,
   useHoldPWAAutoShow,
   usePWAInstall
-} from './PWAInstallPrompt'
+} from './pwaInstallStore'
