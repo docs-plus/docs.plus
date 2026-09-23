@@ -34,13 +34,16 @@ const wrapStrayInlineNodes = (doc: TiptapDocJson): TiptapDocJson => {
 /**
  * Parses through the export path's manager — a second one mutates the global
  * `marked` singleton. Callers gate on `MAX_MARKDOWN_CHARS` first: `marked`
- * parses in quadratic time and blocks the event loop.
+ * parses in quadratic time and blocks the event loop. No title rule: a
+ * fragment written into an existing document must not gain a title.
  */
-export const importMarkdown = (markdown: string, fallbackTitle: string): ImportResult => {
+export const parseMarkdown = (markdown: string): TiptapDocJson => {
   const parsed = getMarkdownManager().parse(markdown) as unknown as TiptapDocJson
-  const wrapped = wrapStrayInlineNodes(parsed)
-  const promoted = promoteImportedMedia(wrapped)
-  const { doc, branch } = ensureTitleHeading(promoted, fallbackTitle)
+  return promoteImportedMedia(wrapStrayInlineNodes(parsed))
+}
+
+export const importMarkdown = (markdown: string, fallbackTitle: string): ImportResult => {
+  const { doc, branch } = ensureTitleHeading(parseMarkdown(markdown), fallbackTitle)
   const title = titleHeadingText(doc) || fallbackTitle.trim()
   const warning = titleHeadingWarning(branch, title)
 

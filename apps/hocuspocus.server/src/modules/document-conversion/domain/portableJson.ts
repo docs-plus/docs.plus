@@ -1,17 +1,12 @@
 import { isRecord } from '../../../lib/isRecord'
 import type { TiptapDocJson } from '../types'
-
-type JsonNode = Record<string, unknown>
-interface Frame {
-  source: unknown[]
-  target: JsonNode[]
-}
+import { type JsonNode, mapNodes } from './mapNodes'
 
 // Every embed is an iframe or a player that DOCX, Markdown and ODT cannot express.
 // The `src` is the only part a reader can still follow. `image` is not an embed,
 // so it is left alone here. DOCX and Markdown keep `image` as a picture, while
 // odtExport degrades it to a link (ODF frames need a measured width).
-const EMBED_NODE_TYPES = new Set([
+export const EMBED_NODE_TYPES = new Set([
   'youtube',
   'vimeo',
   'loom',
@@ -38,34 +33,12 @@ const embedToParagraph = (node: JsonNode): JsonNode => {
   return { type: 'paragraph', content: [text] }
 }
 
-/**
- * Iterative by the same rule as `encodeContent` — an explicit stack, never
- * recursion, so deep input cannot overflow the walk.
- */
-export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson => {
-  const content: JsonNode[] = []
-  const stack: Frame[] = [{ source: doc.content ?? [], target: content }]
-
-  while (stack.length > 0) {
-    const { source, target } = stack.pop() as Frame
-
-    for (const child of source) {
-      if (!isRecord(child)) continue
-      if (child.type === MEDIA_UPLOAD_PLACEHOLDER) continue
-      if (typeof child.type === 'string' && EMBED_NODE_TYPES.has(child.type)) {
-        target.push(embedToParagraph(child))
-        continue
-      }
-
-      const copy: JsonNode = { ...child }
-      if (Array.isArray(child.content)) {
-        const nested: JsonNode[] = []
-        copy.content = nested
-        stack.push({ source: child.content, target: nested })
-      }
-      target.push(copy)
+/** Rewrites the nodes only the editor can render, so no writer meets them. */
+export const toPortableJson = (doc: TiptapDocJson): TiptapDocJson =>
+  mapNodes(doc, (node) => {
+    if (node.type === MEDIA_UPLOAD_PLACEHOLDER) return 'drop'
+    if (typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type)) {
+      return embedToParagraph(node)
     }
-  }
-
-  return { ...doc, content }
-}
+    return null
+  })
