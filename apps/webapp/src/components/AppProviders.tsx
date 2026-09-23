@@ -7,6 +7,7 @@ import { useBroadcastListener } from '@hooks/useBroadcastListener'
 import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
 import { useHandleUserStatus } from '@hooks/useHandleUserStatus'
 import { useInitialSteps } from '@hooks/useInitialSteps'
+import { useNotificationClickBridge } from '@hooks/useNotificationClickBridge'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { useVisualViewportCssSync } from '@hooks/useVisualViewportCssSync'
@@ -37,6 +38,7 @@ export default function AppProviders({
   useVisualViewportCssSync({ mode: policy.viewportMode })
 
   useServiceWorker()
+  useNotificationClickBridge()
   useOnAuthStateChange()
   useCatchUserPresences(documentShell)
   useBroadcastListener(documentShell)

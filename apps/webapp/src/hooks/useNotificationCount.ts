@@ -1,8 +1,9 @@
 import { getUnreadNotificationCount } from '@api'
-import { trackClientRead, wasClientRead } from '@components/notificationPanel/feed/readDedupe'
-import { NOTIFICATION_STATE_CHANGED } from '@hooks/usePushNotifications'
+import { wasClientRead } from '@components/notificationPanel/feed/readDedupe'
+import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
 import { useAuthStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import { writeAppBadge } from '@utils/appBadge'
 import { supabaseClient } from '@utils/supabase'
 import PubSub from 'pubsub-js'
 import { useEffect, useRef } from 'react'
@@ -33,14 +34,6 @@ function matchesWorkspace(
   payloadWorkspaceId: string | null
 ): boolean {
   return !filterId || payloadWorkspaceId === filterId
-}
-
-/** Copies the bell count onto the installed app icon. Only desktop Chromium promises to
- * show it. A missing API or a rejected promise is a silent no-op. */
-export const writeAppBadge = (count: number) => {
-  if (!('setAppBadge' in navigator)) return
-  const write = count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge()
-  write.catch(() => {})
 }
 
 /** Per-user `notifications:<uid>` broadcast counter. Requires `{ config: { private: true } }`
@@ -79,15 +72,10 @@ export const useNotificationCount = ({ workspaceId }: UseNotificationCountProps)
 
     fetchCount()
 
-    // A push click marks a read, maybe before the channel below is live. Refetch,
-    // and keep its realtime UPDATE from lowering the count a second time.
-    const pushToken = PubSub.subscribe(
-      NOTIFICATION_STATE_CHANGED,
-      (_message: string | symbol, data?: { notification_id?: string }) => {
-        if (data?.notification_id) trackClientRead(data.notification_id)
-        fetchCount()
-      }
-    )
+    // A push click marks a read, maybe before the channel below is live, so refetch.
+    const pushToken = PubSub.subscribe(NOTIFICATION_STATE_CHANGED, () => {
+      fetchCount()
+    })
     const stop = () => {
       stale = true
       PubSub.unsubscribe(pushToken)

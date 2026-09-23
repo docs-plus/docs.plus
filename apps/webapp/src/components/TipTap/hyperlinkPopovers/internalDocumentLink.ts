@@ -2,15 +2,13 @@ import { Icons } from '@components/icons/registry'
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import type { Editor } from '@tiptap/core'
 import { TIPTAP_NODES } from '@types'
+import { padSlugOf } from '@utils/filterRoute'
 
 import type { InternalDocumentLink, InternalLinkDescriptor } from './types'
 
 // Side-effectful execution lives in `internalDocumentLinkActions.ts`; this
 // module stays import-light so `classify` is testable without the app's
 // store/Supabase graph.
-
-const internalDocSlug = (pathname: string): string | undefined =>
-  pathname.split('/').filter(Boolean)[0]
 
 /**
  * Resolves to an in-document destination, or `null` for external. Precedence
@@ -30,7 +28,7 @@ export function classifyInternalDocumentLink(
   }
   if (origin && url.origin !== origin) return null
 
-  const currentDocSlug = internalDocSlug(currentPathname)
+  const currentDocSlug = padSlugOf(currentPathname)
   const segments = url.pathname.split('/').filter(Boolean)
   if (!currentDocSlug || segments[0] !== currentDocSlug) return null
 

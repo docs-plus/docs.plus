@@ -4,6 +4,9 @@ export function normalizeSlugQuery(slugs: string | string[] | undefined): string
   return Array.isArray(slugs) ? slugs : [slugs]
 }
 
+/** The first path segment is the pad; later segments are filter terms. */
+export const padSlugOf = (pathname: string): string => pathname.split('/').filter(Boolean)[0] ?? ''
+
 function parseAsPath(asPath: string): URL {
   return new URL(asPath, 'http://localhost')
 }

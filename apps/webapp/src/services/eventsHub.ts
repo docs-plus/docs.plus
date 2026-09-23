@@ -16,6 +16,8 @@ export { CHAT_COMMENT, type TChatCommentData } from './chatEvents'
 
 export const CHAT_OPEN = Symbol('chat.open')
 export const CHAT_CLOSE = Symbol('chat.close')
+/** A push click marked a read; the bell count and the panel summary refetch. */
+export const NOTIFICATION_STATE_CHANGED = Symbol('notification.stateChanged')
 
 export function closeHeadingChatroom(): void {
   const headingId = useChatStore.getState().chatRoom.headingId

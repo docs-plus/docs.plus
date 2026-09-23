@@ -4,7 +4,7 @@ import {
   getUnreadNotificationsPaginated
 } from '@api'
 import { useApi } from '@hooks/useApi'
-import { NOTIFICATION_STATE_CHANGED } from '@hooks/usePushNotifications'
+import { NOTIFICATION_STATE_CHANGED } from '@services/eventsHub'
 import { useAuthStore, useStore } from '@stores'
 import { type TNotification, type TNotificationSummary, type TTab } from '@types'
 import PubSub from 'pubsub-js'
