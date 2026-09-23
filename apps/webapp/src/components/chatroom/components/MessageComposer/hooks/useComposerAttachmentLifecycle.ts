@@ -1,9 +1,10 @@
 import type { ComposerAttachment } from '@components/chatroom/stores/composerAttachmentsStore'
 import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths'
 import type { Editor } from '@tiptap/react'
-import type { CommentMessageMemory, ComposerMessageMemory, MessageMediaItem } from '@types'
+import type { ComposerMessageMemory, MessageMediaItem } from '@types'
 import { useEffect } from 'react'
 
+import type { ComposerModeEdge } from '../types'
 import {
   hydrateComposerAttachmentsFromDraft,
   useComposerAttachmentDraft
@@ -21,9 +22,8 @@ type Args = {
   loadExistingAttachments: (items: MessageMediaItem[]) => void
   cancelEditAttachments: () => void
   draftHydrated: boolean
-  replyMessageMemory: ComposerMessageMemory | null | undefined
   editMessageMemory: ComposerMessageMemory | null | undefined
-  commentMessageMemory: CommentMessageMemory | null | undefined
+  modeEdge: ComposerModeEdge
   isMobile: boolean
 }
 
@@ -39,9 +39,8 @@ export const useComposerAttachmentLifecycle = ({
   loadExistingAttachments,
   cancelEditAttachments,
   draftHydrated,
-  replyMessageMemory,
   editMessageMemory,
-  commentMessageMemory,
+  modeEdge,
   isMobile
 }: Args) => {
   // A comment shows the saved draft tiles, but its files never enter the saved draft.
@@ -51,8 +50,8 @@ export const useComposerAttachmentLifecycle = ({
     editor,
     attachments,
     draftHydrated,
-    skipHydrate: Boolean(editMessageMemory || replyMessageMemory),
-    skipWrite: Boolean(editMessageMemory || replyMessageMemory || commentMessageMemory),
+    skipHydrate: modeEdge.to === 'edit' || modeEdge.to === 'reply',
+    skipWrite: modeEdge.to !== 'none',
     onHydrateAttachments: (drafts) => {
       if (!workspaceId) return
       hydrateComposerAttachmentsFromDraft(workspaceId, channelId, drafts)
@@ -69,11 +68,9 @@ export const useComposerAttachmentLifecycle = ({
     cancelEditAttachments()
   }, [editMessageMemory, cancelEditAttachments])
 
-  // Also runs at mount: the desktop Close chatroom clears every mode and unmounts in one tick.
   useEffect(() => {
-    if (replyMessageMemory || commentMessageMemory) return
-    discardModeAttachments()
-  }, [replyMessageMemory, commentMessageMemory, discardModeAttachments])
+    if (modeEdge.discardModeAdded) discardModeAttachments()
+  }, [modeEdge, discardModeAttachments])
 
   useEffect(() => {
     if (!editor) return
@@ -89,7 +86,7 @@ export const useComposerAttachmentLifecycle = ({
     return () => dom.removeEventListener('paste', onPaste)
   }, [addFiles, editor, userId])
 
-  const isComment = Boolean(commentMessageMemory)
+  const isComment = modeEdge.to === 'comment'
 
   // Set on the live host, not through `editorProps`: the editor is built once per mount.
   useEffect(() => {

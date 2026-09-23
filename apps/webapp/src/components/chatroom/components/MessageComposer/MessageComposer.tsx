@@ -26,6 +26,7 @@ import { startComposerActivity, stopComposerActivity } from './helpers/handleTyp
 import { useComposerAttachmentLifecycle } from './hooks/useComposerAttachmentLifecycle'
 import { useComposerAttachments } from './hooks/useComposerAttachments'
 import { useComposerDraft } from './hooks/useComposerDraft'
+import { useComposerModeEdge } from './hooks/useComposerModeEdge'
 import { useComposerSubmit } from './hooks/useComposerSubmit'
 import { useTiptapEditor } from './hooks/useTiptapEditor'
 import { useComposerEmojiPanelStore } from './stores/composerEmojiPanelStore'
@@ -80,6 +81,7 @@ const MessageComposer = ({
   )
 
   const { replyMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
+  const { modeEdge, draftEdge } = useComposerModeEdge(channelSettings)
 
   const {
     attachments,
@@ -115,9 +117,8 @@ const MessageComposer = ({
     loadExistingAttachments,
     cancelEditAttachments,
     draftHydrated,
-    replyMessageMemory,
     editMessageMemory,
-    commentMessageMemory,
+    modeEdge,
     isMobile
   })
 
@@ -126,7 +127,7 @@ const MessageComposer = ({
     workspaceId,
     channelId,
     editMessageMemory,
-    commentMessageMemory,
+    draftEdge,
     setIsEmojiOnly,
     setDraftHydrated
   })
