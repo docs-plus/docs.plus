@@ -167,7 +167,7 @@ jobs:
           if [ "$IS_PRE" = "true" ]; then
             INSTALL=$(printf '```bash\nbun add %s@next\n# or: npm install %s@%s\n```' "$PKG" "$PKG" "$VERSION")
           else
-            INSTALL=$(printf '```bash\nbun add %s@%s\n```' "$PKG" "$VERSION")
+            INSTALL=$(printf '```bash\nnpm install %s@%s\n```' "$PKG" "$VERSION")
           fi
 
           BODY=$(cat "$RUNNER_TEMP/release_body.md")
