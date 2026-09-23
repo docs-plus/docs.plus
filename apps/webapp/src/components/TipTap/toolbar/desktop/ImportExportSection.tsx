@@ -3,8 +3,10 @@ import {
   exportDocument,
   type ExportFormat,
   importDocument,
-  type ImportedDocument
+  type ImportedDocument,
+  pickExportTarget
 } from '@api'
+import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
@@ -94,9 +96,14 @@ const ImportExportSection = ({
 
   const runExport = async (format: ExportFormat) => {
     setExportError(null)
+    // The save picker needs the click's user activation, so it opens before any await.
+    const target = await pickExportTarget(format, documentTitle)
+    if (!target) return
     setBusyFormat(format)
     try {
-      await exportDocument(documentId, format, documentTitle || 'document')
+      const result = await exportDocument(documentId, format, target)
+      if (result === 'cancelled') return
+      if (result === 'shared') toast.Success('Shared')
       setSavedFormat(format)
       setTimeout(() => setSavedFormat(null), 2000)
     } catch (error) {
