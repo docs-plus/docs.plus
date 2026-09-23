@@ -74,8 +74,8 @@ function sendHistoryResponse(
     JSON.stringify({
       msg: 'history.response',
       type,
-      response,
       ...echo,
+      response,
       ...(failure
         ? { error: failure.error, ...(failure.reason && { reason: failure.reason }) }
         : {})
@@ -262,13 +262,13 @@ const statelessExtension = {
     if (parsedPayload.msg === 'history') {
       const canonicalId = roomDocumentId(document)
       const type = parsedPayload.type
-
       const { since, version, beforeVersion } = parsedPayload
       const echo = {
         ...(typeof since === 'string' ? { since } : {}),
         ...(typeof version === 'number' ? { version } : {}),
         ...(typeof beforeVersion === 'number' ? { beforeVersion } : {})
       }
+
       if (!canonicalId || !type) {
         wsLogger.warn(
           { parsedPayload, hasRoomName: Boolean(canonicalId) },

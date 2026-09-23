@@ -57,9 +57,9 @@ The canonical error shape is defined by `getErrorResponse` in `src/lib/errors.ts
 }
 ```
 
-`error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set. `AUTH_UNAVAILABLE` (503) sits outside this set: the auth middleware returns it, not an `AppError`, when Supabase token verification is unreachable.
-
 A request-validation `400` (`VALIDATION_ERROR`) also carries `error.fields`: one `{ path, message }` per rejected input, so a caller can fix it without guessing.
+
+`error.details` is included only when `NODE_ENV=development`. `AppError` subclasses map to status codes and codes: `VALIDATION_ERROR` (400), `BAD_REQUEST` (400), `UNAUTHORIZED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), `UNPROCESSABLE_ENTITY` (422), `RATE_LIMIT_EXCEEDED` (429), `INTERNAL_SERVER_ERROR` (500), `SERVICE_UNAVAILABLE` (503), `DATABASE_ERROR`. `handlePrismaError` maps Prisma codes (`P2002` → conflict, `P2025` → not found, etc.) into the same set. `AUTH_UNAVAILABLE` (503) sits outside this set: the auth middleware returns it, not an `AppError`, when Supabase token verification is unreachable.
 
 The documents controller emits this envelope on error and `{ "success": true, "data": ... }` on success.
 
@@ -317,9 +317,9 @@ Applies content to the document. Query: `mode` = `replace` (default) or `append`
 
 `replace` swaps the whole body; `append` adds the payload's top-level nodes after the existing ones. Appending into an empty document makes the payload the document's first node, so the title-first rule applies there too.
 
-**Naming a write is permanent history.** A `commitMessage` becomes the version row's name, and autosave retention never thins a named row — see [Document versions](#document-versions). Name the writes a person would want to find again, and leave a bulk import's chunks unnamed. A named 500-chunk run leaves 500 rows nothing will ever prune.
-
 A `200` returns `{ "documentId", "mode", "version"? }`. `version` is the saved version row that holds this write. It is present when the call waited for that row (see [Durability contract](#durability-contract)).
+
+**Naming a write is permanent history.** A `commitMessage` becomes the version row's name, and autosave retention never thins a named row — see [Document versions](#document-versions). Name the writes a person would want to find again, and leave a bulk import's chunks unnamed. A named 500-chunk run leaves 500 rows nothing will ever prune.
 
 Live and cold documents take the same path. If collaborators have the document open, they see the change immediately without reconnecting. If nobody has it open, it loads, applies, persists, and unloads.
 
@@ -353,11 +353,10 @@ Live and cold documents take the same path. If collaborators have the document o
 | `429`  | `RATE_LIMIT_EXCEEDED`   | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting)                                                                              |
 | `500`  | `INTERNAL_SERVER_ERROR` | Snapshot decode failure on `GET`; persist failure on `PATCH` (see the durability contract); or the REST and collaboration processes holding different service-role keys, which the message names explicitly |
 | `503`  | `SERVICE_UNAVAILABLE`   | The collaboration process is unreachable or did not answer within 30 s                                                                                                                                      |
+| `503`  | `DOCUMENT_BUSY`         | Earlier writes to the same document were still saving at the 20 s deadline. Nothing was applied                                                                                                             |
+| `503`  | `SAVE_NOT_CONFIRMED`    | Applied, but the saved row did not appear within 20 s. It may still be saved. Wait about a minute before you verify with `GET`                                                                              |
 
 ### Access semantics under the service key
-
-| `503` | `DOCUMENT_BUSY` | Earlier writes to the same document were still saving at the 20 s deadline. Nothing was applied |
-| `503` | `SAVE_NOT_CONFIRMED` | Applied, but the saved row did not appear within 20 s. It may still be saved. Wait about a minute before you verify with `GET` |
 
 | Document state  | GET   | PATCH                                                                |
 | --------------- | ----- | -------------------------------------------------------------------- |

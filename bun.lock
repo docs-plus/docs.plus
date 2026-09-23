@@ -474,8 +474,8 @@
         "bun-types": "catalog:",
         "eslint": "catalog:",
         "globals": "catalog:",
-        "typescript": "catalog:",
         "playwright": "^1.63.0",
+        "typescript": "catalog:",
       },
     },
     "packages/release-tooling": {
