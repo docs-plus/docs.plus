@@ -3,7 +3,7 @@ import type { ChatroomVariant } from '@components/chatroom/types/chatroom.types'
 import { CHAT_MEDIA_MAX_ATTACHMENTS } from '@components/chatroom/utils/messageMediaPaths'
 import { openComposerSignIn } from '@components/chatroom/utils/openComposerSignIn'
 import { useAuthStore, useStore } from '@stores'
-import { useCallback, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { registerComposerVoiceDiscard } from '../../helpers/composerVoiceRecording'
@@ -57,10 +57,6 @@ export function ComposerBar({ variant, className }: Props) {
     return () => discardVoiceRef.current()
   }, [])
 
-  const onVoiceFromMenu = useCallback(() => {
-    void voice.startLockedFromMenu()
-  }, [voice])
-
   // The held mic stays at full strength, so the dim skips it.
   const dim = voice.isHolding && 'opacity-55'
 
@@ -108,7 +104,7 @@ export function ComposerBar({ variant, className }: Props) {
         <ComposerInsertMenu
           className={twMerge('composer-bar__insert-trigger shrink-0', dim)}
           showVoiceEntry={canSend}
-          onVoiceFromMenu={onVoiceFromMenu}
+          onVoiceFromMenu={voice.startLockedFromMenu}
         />
         <MsgComposer.Input className={twMerge('min-w-0 flex-1 py-0', dim)} />
         <MsgComposer.Actions className={isMobile ? 'gap-0.5' : undefined}>

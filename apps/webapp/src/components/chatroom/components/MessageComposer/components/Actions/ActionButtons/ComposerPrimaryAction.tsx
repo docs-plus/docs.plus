@@ -53,14 +53,14 @@ export function ComposerPrimaryAction({ voice, className }: Props) {
       event.preventDefault()
       event.currentTarget.setPointerCapture(event.pointerId)
       bindHoldListeners(event.pointerId)
-      void voice.startHold(event.clientX, event.clientY)
+      voice.startHold(event.clientX, event.clientY)
     },
     [bindHoldListeners, canSend, isMobile, voice]
   )
 
   const onPress = useCallback(() => {
     if (isMobile || canSend || voice.phase !== 'idle') return
-    void voice.startLockedFromMenu()
+    voice.startLockedFromMenu()
   }, [canSend, isMobile, voice])
 
   if (voice.phase === 'preview') return null
