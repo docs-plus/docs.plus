@@ -113,7 +113,7 @@ Each package has its own CONTRIBUTING.md — see
 [indent](./extension-indent/CONTRIBUTING.md),
 [inline-code](./extension-inline-code/CONTRIBUTING.md), and
 [placeholder](./extension-placeholder/CONTRIBUTING.md). Hero or gallery PNGs: `bun run docs:screenshots`
-in the package (`cypress/docs/` → `assets/`).
+in the package (`cypress/docs/` → `assets/`). Hero GIFs for hyperlink and hypermultimedia: `bun run docs:gif`, which needs `ffmpeg`. Each `examples/vanilla` app must match its README Quickstart; `bun scripts/check-quickstart-example.ts --write <extension-dir>` regenerates it.
 
 Monorepo development needs Node `>=24.11.0` and Bun `>=1.4.0`, the floors the root `package.json` sets.
 
