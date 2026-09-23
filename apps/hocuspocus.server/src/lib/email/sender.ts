@@ -51,7 +51,7 @@ const UNSUBSCRIBE_TEXT: Record<UnsubscribeAction, string> = {
  * therefore always describe the same scope. A missing secret still sends the
  * mail: blocking every notification on one config slip is worse.
  */
-function resolveUnsubscribe(
+export function resolveUnsubscribe(
   userId: string,
   action: UnsubscribeAction
 ): { footer: EmailFooter; oneClick?: string } | undefined {

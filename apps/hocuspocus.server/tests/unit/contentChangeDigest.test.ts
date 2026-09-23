@@ -4,15 +4,11 @@
  * `resolveContentChangeAudience` is what these pin — swap two lines there and a
  * trashed public document silently reaches everyone.
  */
-import { buildDigestEmail, countDigestItems } from '@docs.plus/email-templates'
+import { buildDigestEmail, countDigestItems, fitDigestDocuments } from '@docs.plus/email-templates'
 import { describe, expect, it } from 'bun:test'
 
 import { resolveContentChangeAudience } from '../../src/lib/contentChangeFanout'
-import {
-  enrichDigestDocuments,
-  flattenChangedSections,
-  resolveDigestSince
-} from '../../src/lib/email/digestContentChanges'
+import { enrichDigestDocuments, resolveDigestSince } from '../../src/lib/email/digestContentChanges'
 import { filterDigestDocuments, groupDigestDocuments } from '../../src/lib/email/digestDocuments'
 import type { ComputeOutcome, SectionNode } from '../../src/modules/document-changes/types'
 import type { DigestDocument } from '../../src/types/email.types'
@@ -260,52 +256,110 @@ describe('resolveDigestSince', () => {
   })
 })
 
-describe('flattenChangedSections', () => {
-  const tree = (): SectionNode[] => [
-    section({ text: '', level: 0, tocId: 'preamble' }),
-    section({
-      text: 'Alpha',
-      tocId: 'alpha',
-      status: 'unchanged',
-      children: [
-        section({
-          text: 'Beta',
-          level: 2,
-          tocId: 'beta',
-          status: 'unchanged',
-          children: [
-            section({
-              text: 'Gamma',
-              level: 3,
-              tocId: 'gamma',
-              status: 'unchanged',
-              children: [section({ text: 'Deep', level: 4, tocId: 'deep id&1' })]
-            })
-          ]
-        }),
-        section({ text: 'Sibling', level: 2, tocId: null, status: 'added' })
-      ]
-    })
+/** A heading chat: the channel id is the heading's toc-id. */
+const headingChannel = (tocId: string, text: string, createdAt: string) => ({
+  name: tocId,
+  id: tocId,
+  url: `${DOC_URL}?chatroom=${tocId}`,
+  notifications: [
+    {
+      type: 'message' as const,
+      sender_name: 'Lena',
+      message_preview: text,
+      action_url: `${DOC_URL}?chatroom=${tocId}`,
+      created_at: createdAt
+    }
   ]
+})
 
-  it('keeps document order and drops only the unchanged rows', () => {
-    const rows = flattenChangedSections(tree(), DOC_URL)
-    // The preamble sanitises to '', and a nameless row is dropped rather than
-    // rendered as a live link with no label.
-    expect(rows.map((row) => row.text)).toEqual(['Deep', 'Sibling'])
-  })
-
+describe('enrichDigestDocuments', () => {
   // A toc id is stranger-written on a public document, so it is encoded.
-  it('encodes the toc id into the link and falls back to the document url', () => {
-    const rows = flattenChangedSections(tree(), DOC_URL)
+  it('encodes the toc id into the link and falls back to the document url', async () => {
+    const [doc] = await enrichDigestDocuments(
+      [enrichableDoc()],
+      enrichDeps({
+        computeChanges: async () =>
+          changesResult({
+            sections: [
+              section({ text: 'Deep', tocId: 'deep id&1' }),
+              section({ text: 'Sibling', tocId: null, status: 'added' })
+            ]
+          })
+      })
+    )
+    const rows = doc!.content_changes!.sections!
     expect(rows[0]!.url).toBe(`${DOC_URL}?id=deep%20id%261`)
     expect(rows[0]!.tocId).toBe('deep id&1')
     expect(rows[1]!.url).toBe(DOC_URL)
     expect(rows[1]!.tocId).toBeUndefined()
   })
-})
 
-describe('enrichDigestDocuments', () => {
+  // A removed heading and a heading with no toc-id once fell to the tail, after
+  // every live heading. The mail then read out of document order.
+  it('keeps a removed heading in its document place', async () => {
+    const [doc] = await enrichDigestDocuments(
+      [enrichableDoc()],
+      enrichDeps({
+        computeChanges: async () =>
+          changesResult({
+            sections: [
+              // The preamble sanitises to '', and a nameless row is dropped.
+              section({ text: '', level: 0, tocId: 'preamble' }),
+              section({
+                text: 'Alpha',
+                tocId: 'alpha',
+                children: [section({ text: 'Beta', level: 2, tocId: 'beta', status: 'removed' })]
+              }),
+              section({ text: 'Sibling', tocId: null, status: 'added' }),
+              section({ text: 'Gamma', tocId: 'gamma' })
+            ]
+          })
+      })
+    )
+    expect(doc!.content_changes?.sections?.map((row) => row.text)).toEqual([
+      'Alpha',
+      'Beta',
+      'Sibling',
+      'Gamma'
+    ])
+  })
+
+  // The fit drops a heading only when it came in for its chats alone. A wrong
+  // flag either drops a changed heading or leaves an empty one in the mail.
+  it('keeps a changed heading with no runs and drops a chat-only one in the fit', async () => {
+    const docIn = enrichableDoc()
+    docIn.channels = [
+      headingChannel('quiet', 'Only a chat here.', '2026-09-21T09:00:00.000Z'),
+      headingChannel('moved', 'Moved it up.', '2026-09-21T10:00:00.000Z')
+    ]
+    const [doc] = await enrichDigestDocuments(
+      [docIn],
+      enrichDeps({
+        computeChanges: async () =>
+          changesResult({
+            sections: [
+              section({ text: 'Quiet', tocId: 'quiet', status: 'unchanged' }),
+              section({ text: 'Moved', tocId: 'moved', status: 'moved' })
+            ]
+          })
+      })
+    )
+    expect(doc!.content_changes?.sections?.map((row) => row.text)).toEqual(['Quiet', 'Moved'])
+
+    const fitted = fitDigestDocuments(
+      {
+        recipientName: 'Ada',
+        frequency: 'daily',
+        documents: [doc!],
+        periodEnd: '2026-09-03T00:00:00.000Z'
+      },
+      1
+    )
+    const sections = fitted[0]!.content_changes?.sections
+    expect(sections?.map((row) => row.text)).toEqual(['Moved'])
+    expect(sections?.[0]!.chats).toBeUndefined()
+  })
+
   it('keeps sending when compute throws, and still enriches the other document', async () => {
     const documents = await enrichDigestDocuments(
       [enrichableDoc('Bad6a648b3056yMseW'), enrichableDoc()],

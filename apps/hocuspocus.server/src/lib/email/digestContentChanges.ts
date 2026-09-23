@@ -90,87 +90,37 @@ function headingChats(notifications: DigestNotification[]): DigestHeadingChat[] 
 }
 
 /**
- * Every named heading, in document order, so a chat can sit under the right one.
- * A removed heading is left out: its row carries no tocId and joins the tail.
+ * One walk, so every Section keeps its document place. A heading chat moves
+ * only under a live heading; a removed heading's chat keeps its channel card.
+ * A nameless row is dropped: it would be a live link with no label.
  */
-function headingIndex(tree: SectionNode[]): { tocId: string; text: string }[] {
-  const rows: { tocId: string; text: string }[] = []
-  const walk = (nodes: SectionNode[]): void => {
-    for (const node of nodes) {
-      if (node.status !== 'removed' && node.tocId && node.text.length > 0) {
-        rows.push({ tocId: node.tocId, text: node.text })
-      }
-      walk(node.children)
-    }
-  }
-  walk(tree)
-  return rows
-}
-
-/**
- * A heading chat is the channel whose id is the heading. Those lines move under
- * the heading. A channel that does not match stays in the channel card.
- */
-function placeHeadingChats(
-  doc: DigestDocument,
-  changed: DigestChangedSection[],
-  headings: readonly { tocId: string; text: string }[]
+function placeSections(
+  tree: SectionNode[],
+  doc: DigestDocument
 ): { sections: DigestChangedSection[]; channels: DigestDocument['channels'] } {
-  const byChannel = new Map(
+  const pending = new Map(
     doc.channels.filter((channel) => channel.id).map((channel) => [channel.id, channel])
   )
-  const changedById = new Map(
-    changed.flatMap((row) => (row.tocId ? [[row.tocId, row] as const] : []))
-  )
   const sections: DigestChangedSection[] = []
-  const seen = new Set<string>()
-  const moved = new Set<string>()
-
-  const emit = (tocId: string, text: string, row?: DigestChangedSection) => {
-    if (seen.has(tocId)) return
-    const chats = headingChats(byChannel.get(tocId)?.notifications ?? [])
-    if (!row && chats.length === 0) return
-    seen.add(tocId)
-    if (chats.length > 0) moved.add(tocId)
-    const base = row ?? { text, url: sectionUrl(doc.url, tocId), tocId, chatOnly: true as const }
-    sections.push(chats.length > 0 ? { ...base, chats } : base)
-  }
-
-  for (const heading of headings) {
-    emit(heading.tocId, heading.text, changedById.get(heading.tocId))
-  }
-  for (const row of changed) {
-    if (!row.tocId) sections.push(row)
-  }
-
-  return {
-    sections,
-    channels: doc.channels.filter((channel) => !channel.id || !moved.has(channel.id))
-  }
-}
-
-/**
- * Depth-first, document order. An `unchanged` node is dropped. A nameless row
- * is dropped too: it would be a live link with no label.
- */
-export function flattenChangedSections(
-  tree: SectionNode[],
-  docUrl: string
-): DigestChangedSection[] {
-  const rows: DigestChangedSection[] = []
 
   const walk = (nodes: SectionNode[]): void => {
     for (const node of nodes) {
-      if (node.status !== 'unchanged' && node.text.length > 0) {
-        rows.push({
+      // A removed section's anchor resolves to nothing, so this links to
+      // the document rather than offering a link that goes nowhere.
+      const live = node.status !== 'removed' && node.text.length > 0 ? node.tocId : null
+      const chats = live ? headingChats(pending.get(live)?.notifications ?? []) : []
+      if (live && chats.length > 0) pending.delete(live)
+      const changed = node.status !== 'unchanged' && node.text.length > 0
+      if (changed || chats.length > 0) {
+        sections.push({
           text: node.text,
-          // A removed section's anchor resolves to nothing, so this links to
-          // the document rather than offering a link that goes nowhere.
-          url: node.status === 'removed' ? docUrl : sectionUrl(docUrl, node.tocId),
-          ...(node.status !== 'removed' && node.tocId ? { tocId: node.tocId } : {}),
+          url: sectionUrl(doc.url, live),
+          ...(live ? { tocId: live } : {}),
           ...(node.excerpt ? { excerpt: node.excerpt } : {}),
           ...(node.removedExcerpt ? { removed: node.removedExcerpt } : {}),
-          ...(node.runs?.length ? { runs: node.runs } : {})
+          ...(node.runs?.length ? { runs: node.runs } : {}),
+          ...(changed ? {} : { chatOnly: true as const }),
+          ...(chats.length > 0 ? { chats } : {})
         })
       }
       walk(node.children)
@@ -178,7 +128,10 @@ export function flattenChangedSections(
   }
 
   walk(tree)
-  return rows
+  return {
+    sections,
+    channels: doc.channels.filter((channel) => !channel.id || pending.has(channel.id))
+  }
 }
 
 /**
@@ -234,12 +187,9 @@ async function withSections(
     return rest
   }
 
-  const tree = outcome.result.sections ?? []
-  const rows = flattenChangedSections(tree, doc.url)
-  const placed = placeHeadingChats(doc, rows, headingIndex(tree))
+  const placed = placeSections(outcome.result.sections ?? [], doc)
   if (placed.sections.length === 0) return doc
 
-  const sections = placed.sections
   // A floor, never a census: a service-role write carries no person, and a failed
   // profile lookup resolves to none. So 0 is a real answer and stays absent, and
   // the renderer never says "0 people".
@@ -257,7 +207,7 @@ async function withSections(
       // The retention floor can clamp the start past Last left. The words "since you
       // left" would then name a date months after the real one, so the clamp wins.
       fromLastLeft: lastVisit !== null && since.getTime() === lastVisit.getTime(),
-      sections,
+      sections: placed.sections,
       ...(contributorCount > 0 ? { contributorCount } : {})
     }
   }

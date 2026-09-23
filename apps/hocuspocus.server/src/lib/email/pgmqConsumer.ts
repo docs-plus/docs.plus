@@ -37,6 +37,7 @@ import {
   visibleDigestDocuments
 } from './digestMessage'
 import { queueEmail } from './queue'
+import { resolveUnsubscribe } from './sender'
 
 const POLL_INTERVAL_MS = 2000
 const BATCH_SIZE = 50
@@ -229,6 +230,8 @@ async function processDigestMessage(
     const groups = groupDigestDocuments(outcome.documents, grouping)
     const queueKey = [...queueIds].sort().join(',')
 
+    const footer = recipientId ? resolveUnsubscribe(recipientId, 'digest')?.footer : undefined
+
     for (const documents of groups) {
       const docKey = documents.map((document) => document.workspace_id || document.slug).join(',')
       const fitted = fitDigestDocuments(
@@ -236,7 +239,8 @@ async function processDigestMessage(
           recipientName: payload.recipient_name || 'User',
           frequency,
           documents,
-          periodEnd: now.toISOString()
+          periodEnd: now.toISOString(),
+          footer
         },
         maxBytes
       )
