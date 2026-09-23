@@ -5,7 +5,7 @@ import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import { canMapDecorations, computeSection, transactionAffectsNodeType } from '../shared'
 import { saveFoldedIds } from './helpers/fold-storage'
 
-type HeadingFoldMeta =
+export type HeadingFoldMeta =
   | { type: 'toggle'; id: string; contentHeight?: number }
   | { type: 'set'; ids: Set<string>; persist?: boolean }
   | { type: 'endAnimation'; id: string }

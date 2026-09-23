@@ -1,10 +1,12 @@
+import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
+import { canOpenFind } from '@components/TipTap/find/canOpenFind'
 import { TocHeader, TocMobile } from '@components/toc'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { useModal } from '@components/ui/ModalDrawer'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { DocsPlusIcon, Icons } from '@icons'
-import { useAuthStore, useSheetStore, useStore } from '@stores'
+import { useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
 import Link from 'next/link'
 import { useCallback } from 'react'
 import type { IconType } from 'react-icons'
@@ -41,15 +43,17 @@ const TocModal = () => {
   const loading = useStore((state) => state.settings.editor.loading)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const editor = useStore((state) => state.settings.editor.instance)
+  // The drawer mounts only in MobileLayout, so this is always the phone rule.
+  const findAllowed = canOpenFind(true, useChatStore(selectPadOwnsKeyboard))
 
   const hasActiveFilters = useStore(
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
   )
 
-  const openSheetFromToc = useCallback(
-    (open: () => void) => {
+  const closeTocThen = useCallback(
+    (next: () => void) => {
       closeModal?.()
-      open()
+      next()
     },
     [closeModal]
   )
@@ -97,10 +101,17 @@ const TocModal = () => {
 
         <footer className="border-base-300 bg-base-100 shrink-0 border-t px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
           <div className="bg-base-200 rounded-box flex w-full items-center justify-evenly gap-1 p-0">
+            {findAllowed && (
+              <TocModalIconButton
+                aria-label="Find in document"
+                onClick={() => closeTocThen(() => editor.commands.openCaretFind())}
+                startIcon={Icons.search}
+              />
+            )}
             <div className="relative">
               <TocModalIconButton
                 aria-label={hasActiveFilters ? 'Open filters (active)' : 'Open filters'}
-                onClick={() => openSheetFromToc(() => openSheet('filters'))}
+                onClick={() => closeTocThen(() => openSheet('filters'))}
                 startIcon={Icons.filter}
               />
               {hasActiveFilters && (
@@ -113,13 +124,13 @@ const TocModal = () => {
             </div>
             <TocModalIconButton
               aria-label="Document settings"
-              onClick={() => openSheetFromToc(() => openSheet('documentSettings'))}
+              onClick={() => closeTocThen(() => openSheet('documentSettings'))}
               startIcon={Icons.settings}
             />
             {user && (
               <TocModalIconButton
                 aria-label="Bookmarks"
-                onClick={() => openSheetFromToc(() => openSheet('bookmarks'))}
+                onClick={() => closeTocThen(() => openSheet('bookmarks'))}
                 startIcon={Icons.bookmark}
               />
             )}

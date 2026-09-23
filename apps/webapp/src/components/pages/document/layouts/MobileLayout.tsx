@@ -4,6 +4,7 @@ import EditFAB from '@components/pages/document/components/EditFAB'
 import TocModal from '@components/pages/document/components/TocModal'
 import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
+import FindBar from '@components/TipTap/find/FindBar'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import ToolbarMobile from '@components/TipTap/toolbar/mobile/ToolbarMobile'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
@@ -26,6 +27,7 @@ const MobileLeftSidePanel = () => {
 
 const MobileLayout = () => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
@@ -52,6 +54,7 @@ const MobileLayout = () => {
               <div className="mobilePadTitleShell bg-base-100 sticky top-0 z-20 w-full shrink-0 motion-safe:animate-[doc-content-in_220ms_ease-out_both]">
                 <MobilePadTitle />
               </div>
+              {editor && <FindBar editor={editor} variant="mobile" />}
               <MobileLeftSidePanel />
               <MobileEditor />
               <EditFAB />

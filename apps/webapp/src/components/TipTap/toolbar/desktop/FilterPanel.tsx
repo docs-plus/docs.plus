@@ -176,7 +176,7 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
         <TextInput
           id="filterSearchBox"
           role="combobox"
-          aria-label="Find in document"
+          aria-label="Filter sections"
           aria-expanded={showSuggestions}
           aria-controls={SUGGESTIONS_ID}
           aria-autocomplete="list"
@@ -191,7 +191,7 @@ const FilterPanel = ({ className = '', onClose, variant = 'popover' }: FilterPan
           onKeyDown={handleKeyDown}
           onFocus={() => setIsOpen(true)}
           onBlur={() => setIsOpen(false)}
-          placeholder="Find in document..."
+          placeholder="Filter sections..."
           startIcon={<Icons.search size={16} className="text-base-content/50" />}
           endIcon={
             filterInput ? (

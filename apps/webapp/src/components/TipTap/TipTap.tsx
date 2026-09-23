@@ -37,8 +37,9 @@ import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
 import * as Y from 'yjs'
 
+import { CaretFind, foldedIdsIncludingFind } from './extensions/caret-find'
 import { HeadingFilter } from './extensions/heading-filter'
-import { HeadingFold, headingFoldPluginKey } from './extensions/heading-fold'
+import { HeadingFold, type HeadingFoldMeta, headingFoldPluginKey } from './extensions/heading-fold'
 import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
 import { Highlight } from './extensions/highlight'
@@ -151,19 +152,26 @@ const Editor = ({
     }),
     HeadingFilter.configure({
       foldAdapter: {
-        getFoldedIds: (state) => {
-          return headingFoldPluginKey.getState(state)?.foldedIds ?? new Set<string>()
-        },
+        getFoldedIds: foldedIdsIncludingFind,
         setTemporaryFolds: (tr, ids) => {
-          tr.setMeta(headingFoldPluginKey, { type: 'set', ids, persist: false })
+          tr.setMeta(headingFoldPluginKey, {
+            type: 'set',
+            ids,
+            persist: false
+          } satisfies HeadingFoldMeta)
           return tr
         },
         restoreFolds: (tr, savedIds) => {
-          tr.setMeta(headingFoldPluginKey, { type: 'set', ids: savedIds, persist: true })
+          tr.setMeta(headingFoldPluginKey, {
+            type: 'set',
+            ids: savedIds,
+            persist: true
+          } satisfies HeadingFoldMeta)
           return tr
         }
       }
     }),
+    CaretFind,
 
     Indent.configure({
       indentChars: '\t',

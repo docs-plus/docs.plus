@@ -1,4 +1,5 @@
 // TipTap / pad editor visuals — keep all editor-only SCSS under styles/editor/
+@use './caret-find';
 @use './heading-filter';
 @use './heading-fold';
 @use './heading-node';

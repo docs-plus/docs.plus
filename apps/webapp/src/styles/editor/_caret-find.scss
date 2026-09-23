@@ -1,0 +1,16 @@
+// Pad find hits (TipTap/extensions/caret-find). Separate from the Filter highlight on purpose.
+.caret-find-hit {
+  background-color: color-mix(in oklch, var(--color-warning) 28%, transparent);
+  border-radius: 2px;
+}
+
+.caret-find-current {
+  background-color: color-mix(in oklch, var(--color-warning) 60%, transparent);
+  box-shadow: 0 0 0 1px var(--color-warning);
+}
+
+// ToolbarMobile has no find check: it would show pad edit controls in read mode, and its
+// `onTouchEnd` refocuses the editor. The browser tracks focus, so no store or reset is needed.
+.mobileLayoutRoot:has(.caret-find-bar:focus-within) > .mobileToolbarBottom {
+  display: none;
+}

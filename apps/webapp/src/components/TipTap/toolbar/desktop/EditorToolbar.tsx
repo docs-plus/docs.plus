@@ -16,6 +16,7 @@ import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef } from 'react'
 
+import FindBar from '../../find/FindBar'
 import MediaInsertPanelSkeleton from '../../mediaPopovers/MediaInsertPanelSkeleton'
 import { clearFormatting } from '../clearFormatting'
 import ToolbarButton from '../ToolbarButton'
@@ -341,6 +342,14 @@ const EditorToolbar = () => {
             </Popover>
           )}
 
+          <ToolbarButton
+            data-testid="toolbar-find"
+            onClick={() => editor.commands.openCaretFind()}
+            tooltip="Find in document (⌘+F)"
+            aria-label="Find in document">
+            <Icons.search size={ICON_SIZE} />
+          </ToolbarButton>
+
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
               <div>
@@ -383,6 +392,8 @@ const EditorToolbar = () => {
           </Popover>
         </div>
       </div>
+
+      <FindBar editor={editor} variant="desktop" />
 
       <SettingsTakeover
         open={isDocumentsOpen}
