@@ -107,22 +107,23 @@ export const useComposerAttachments = ({ workspaceId, channelId, userId }: Args)
   }, [activeKey, activeRunnerRef, resetRemovedPersistedPaths, setAttachments])
 
   // The outbound message owns these uploads now, so they leave the strip undeleted,
-  // and the upload runner is not reset. The undo returns them when no feed row took the message.
+  // and the upload runner is not reset. The undo returns them to the list they left.
   const releaseSentAttachments = useCallback(
     (sent: MessageMediaItem[]) => {
+      const key = activeKey
       const sentPaths = new Set(sent.map(mediaStoragePath))
       const isSent = (entry: ComposerAttachment) => {
         const path = entry.item ? mediaStoragePath(entry.item) : null
         return path != null && sentPaths.has(path)
       }
       let released: ComposerAttachment[] = []
-      setAttachments(draftKey, (prev) => {
+      setAttachments(key, (prev) => {
         released = prev.filter(isSent)
         return released.length > 0 ? prev.filter((entry) => !isSent(entry)) : prev
       })
-      return () => setAttachments(draftKey, (prev) => [...released, ...prev])
+      return () => setAttachments(key, (prev) => [...released, ...prev])
     },
-    [setAttachments, draftKey]
+    [setAttachments, activeKey]
   )
 
   const discardModeAttachments = useCallback(() => {

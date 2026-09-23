@@ -170,6 +170,16 @@ export const useComposerSubmit = ({
         savedDraftRead = getComposerState(workspaceId, channelId)
       }
 
+      // Claim the sent files before the first await. A mode that ends during the probe or the
+      // send deletes the uploads it added, so a file this send names must leave its list first.
+      const draftKey = composerAttachmentKey(workspaceId, channelId)
+      const unsentModeAddedIds = [
+        ...(useComposerAttachmentsStore.getState().modeAddedByKey[draftKey] ?? [])
+      ]
+      const restoreAttachments = prepared.hasAttachments
+        ? releaseSentAttachments(readyMedias)
+        : null
+
       // The composer clears only after the probe, so a second press here would send a second copy.
       probingRef.current = true
       const [storageReady, savedDraft] = await Promise.all([
@@ -179,6 +189,7 @@ export const useComposerSubmit = ({
         probingRef.current = false
       })
       if (!storageReady) {
+        restoreAttachments?.()
         toast.Error('Attachments are still uploading. Wait a moment and try again.')
         return
       }
@@ -195,16 +206,6 @@ export const useComposerSubmit = ({
       }
 
       const unsentHtml = clearEarly ? editor.getHTML() : ''
-      // The early clear ends comment mode, which empties the record of the files the comment added.
-      // A restored comment records them again, so a later cancel still deletes their uploads.
-      const draftKey = composerAttachmentKey(workspaceId, channelId)
-      const { modeAddedByKey, pushModeAddedId } = useComposerAttachmentsStore.getState()
-      const unsentModeAddedIds = modeAddedByKey[draftKey] ?? []
-      // Release before the clear, so the sent files leave the draft list first. The clear ends a
-      // reply or comment, which deletes the uploads that the mode added. It also fires the text
-      // writer, which saves the draft list as the saved draft.
-      const restoreAttachments =
-        clearEarly && prepared.hasAttachments ? releaseSentAttachments(readyMedias) : null
       // An edit or comment started during the probe owns the editor now, so leave it alone.
       if (clearEarly) {
         const live = useChatStore.getState().workspaceSettings.channels.get(channelId)
@@ -232,13 +233,16 @@ export const useComposerSubmit = ({
         if (!isAlreadyCapturedError(error)) {
           captureUnknown(error, { tags: { surface: 'chat-send' } })
         }
-        // A failed row keeps the media for Retry and Delete. With no row, an untouched composer
-        // takes back the sent media, and a comment's text and mode.
-        if (!isFailedRowError(error) && clearEarly && isComposerUntouched(editor, channelId)) {
+        // A composer that never cleared (an edit) always takes its files back. After an early
+        // clear, a failed row keeps the media for Retry and Delete; with no row, an untouched
+        // composer takes back the media, and a comment its text, mode and mode-added record.
+        if (!clearEarly) restoreAttachments?.()
+        else if (!isFailedRowError(error) && isComposerUntouched(editor, channelId)) {
           restoreAttachments?.()
           if (prepared.mode.kind === 'comment') {
             setCommentMsgMemory(channelId, prepared.mode.commentMemory)
             editor.commands.setContent(unsentHtml)
+            const { pushModeAddedId } = useComposerAttachmentsStore.getState()
             for (const id of unsentModeAddedIds) pushModeAddedId(draftKey, id)
             if (savedDraft && workspaceId) void setComposerState(workspaceId, channelId, savedDraft)
           }
