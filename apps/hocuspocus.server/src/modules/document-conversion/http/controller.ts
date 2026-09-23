@@ -4,8 +4,8 @@ import type { Logger } from 'pino'
 import slugify from 'slugify'
 
 import { fail, ok } from '../../../http/envelope'
+import { decideDocumentAccess } from '../../../lib/documentAccess'
 import { ydocToPmJson } from '../../../lib/nested-flat-migration'
-import { resolvePrivateAccess } from '../../../lib/privateAccess'
 import { findHeadRow } from '../../document-content/infra/contentStore'
 import { exportDocx } from '../domain/docxExport'
 import { importDocx } from '../domain/docxImport'
@@ -42,32 +42,24 @@ const findConversionMeta = (
     select: { slug: true, ownerId: true, deletedAt: true, isPrivate: true, readOnly: true }
   })
 
-/** Service-role passes. A user answers the same predicate as the WS gate and
- *  the slug read, so one privacy rule covers every surface. */
-const denyRead = (c: Context, meta: ConversionMeta): Response | null => {
+/** Service-role passes. A user answers the same rule as the WS gate and the
+ *  slug read. Write adds the admin lock, refused before any conversion CPU. */
+const deny = (c: Context, meta: ConversionMeta, want: 'read' | 'write'): Response | null => {
   if (c.get('serviceRole')) return null
 
-  const access = resolvePrivateAccess({
-    isPrivate: meta.isPrivate,
-    ownerId: meta.ownerId,
-    userId: c.get('userId'),
-    isAnonymous: c.get('user')?.is_anonymous
-  })
-  if (access === 'sign-in-required')
-    return fail(c, 401, 'UNAUTHORIZED', 'Sign in to access this document')
-  if (access === 'denied') return fail(c, 403, 'FORBIDDEN', 'This document is private')
-  return null
-}
-
-/** Read access plus the admin lock. Refuse a locked document's non-owners
- *  before spending the CPU on a conversion. */
-const denyWrite = (c: Context, meta: ConversionMeta): Response | null => {
-  const denied = denyRead(c, meta)
-  if (denied) return denied
-  if (c.get('serviceRole')) return null
-  if (meta.readOnly && c.get('userId') !== meta.ownerId)
-    return fail(c, 403, 'FORBIDDEN', 'This document is read-only')
-  return null
+  const caller = { userId: c.get('userId'), isAnonymous: c.get('user')?.is_anonymous }
+  switch (decideDocumentAccess(meta, caller, want)) {
+    case 'allow':
+      return null
+    case 'not-found':
+      return fail(c, 404, 'NOT_FOUND', 'Document not found')
+    case 'sign-in-required':
+      return fail(c, 401, 'UNAUTHORIZED', 'Sign in to access this document')
+    case 'denied':
+      return fail(c, 403, 'FORBIDDEN', 'This document is private')
+    case 'read-only':
+      return fail(c, 403, 'FORBIDDEN', 'This document is read-only')
+  }
 }
 
 const EXPORT_MEDIA_TYPES: Record<ExportFormat, string> = {
@@ -124,7 +116,7 @@ export const createGetExportHandler =
 
     const meta = await findConversionMeta(deps.prisma, documentId)
     if (!meta || meta.deletedAt) return fail(c, 404, 'NOT_FOUND', 'Document not found')
-    const denied = denyRead(c, meta)
+    const denied = deny(c, meta, 'read')
     if (denied) return denied
 
     const head = await findHeadRow(deps.prisma, documentId)
@@ -216,7 +208,7 @@ export const createPostImportHandler =
 
     const meta = await findConversionMeta(deps.prisma, documentId)
     if (!meta || meta.deletedAt) return fail(c, 404, 'NOT_FOUND', 'Document not found')
-    const denied = denyWrite(c, meta)
+    const denied = deny(c, meta, 'write')
     if (denied) return denied
 
     let form: FormData
