@@ -53,6 +53,10 @@ export interface SheetDataMap {
   mediaInsert: {
     editor: Editor
   }
+  /** Phone slash menu. Items and the highlight live in the slash session, not here. */
+  slashMenu: {
+    editor: Editor
+  }
   /** Mobile history compare picker. A is chosen here; B stays the viewed version. */
   historyCompare: Record<string, never>
   /** Mobile reaction picker. Selection reads `emojiPicker` in the chat store. */

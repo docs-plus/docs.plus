@@ -45,6 +45,7 @@ import { HeadingActionsExtension } from './extensions/HeadingActions'
 import { Highlight } from './extensions/highlight'
 import { MarkdownPaste } from './extensions/markdown-paste'
 import { ParagraphStyle } from './extensions/paragraph-style'
+import { SlashMenu } from './extensions/slash-menu'
 import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
 import { ListKeymapWithoutTab } from './listKeymapWithoutTab'
@@ -214,6 +215,8 @@ const Editor = ({
     }),
     MediaUploadPlaceholder,
     MarkdownPaste,
+    // Pad only. The chat composer builds its own extension list and must never gain `/`.
+    SlashMenu,
     Highlight,
     Typography,
     Table.configure({

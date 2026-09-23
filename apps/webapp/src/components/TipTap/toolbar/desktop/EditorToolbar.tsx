@@ -24,6 +24,7 @@ import ToolbarDivider from '../ToolbarDivider'
 import ToolbarSelect from '../ToolbarSelect'
 import { DocumentSettingsSkeleton } from './DocumentSettingsSkeleton'
 import { FilterSkeleton } from './FilterSkeleton'
+import { filterOpenRequest, insertMediaOpenRequest } from './popoverOpenRequest'
 import StyleSelect from './StyleSelect'
 
 /* ── Lazy-loaded panels ── */
@@ -165,6 +166,7 @@ const EditorToolbar = () => {
           <PopoverContent className={popoverPanelClassName}>
             <MediaInsertPanel />
           </PopoverContent>
+          <insertMediaOpenRequest.Listener />
         </Popover>
 
         <ToolbarButton
@@ -371,6 +373,7 @@ const EditorToolbar = () => {
             <PopoverContent className={popoverPanelClassName}>
               <FilterPanel />
             </PopoverContent>
+            <filterOpenRequest.Listener />
           </Popover>
 
           <ToolbarDivider />

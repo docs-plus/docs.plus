@@ -21,6 +21,7 @@ import LinkEditorSheet from './TipTap/hyperlinkPopovers/LinkEditorSheet'
 import LinkPreviewSheet from './TipTap/hyperlinkPopovers/LinkPreviewSheet'
 import MediaControlsSheet from './TipTap/mediaPopovers/MediaControlsSheet'
 import MediaInsertSheet from './TipTap/mediaPopovers/MediaInsertSheet'
+import SlashMenuSheet from './TipTap/slash/SlashMenuSheet'
 
 type SheetEntry<K extends keyof SheetDataMap> = {
   render: (data: SheetDataMap[K]) => React.ReactNode
@@ -83,6 +84,13 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
     ariaLabel: 'Insert media',
     detent: 'content',
     render: (data) => <MediaInsertSheet data={data} />
+  },
+  slashMenu: {
+    id: 'slash_menu_sheet',
+    detent: 'content',
+    // The query is typed in the editor, so focus must stay there.
+    trapFocus: false,
+    render: (data) => <SlashMenuSheet data={data} />
   },
   historyCompare: {
     id: 'history_compare_sheet',
