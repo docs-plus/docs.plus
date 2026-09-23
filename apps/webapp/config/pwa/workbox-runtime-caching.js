@@ -86,4 +86,11 @@ if (adapted !== EXPECTED_ADAPTED) {
   )
 }
 
-module.exports = cache
+// A request carrying the REST `token` header is signed-in data. Keep it out of
+// Cache Storage. It sits first so the cross-origin catch-all (rule 13) never sees it.
+const signedInRestRule = {
+  urlPattern: ({ request }) => Boolean(request?.headers?.has('token')),
+  handler: 'NetworkOnly'
+}
+
+module.exports = [signedInRestRule, ...cache]
