@@ -104,6 +104,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **History marks a connected app's version.** A version an MCP tool wrote
+  shows a "Connected app" badge, and its writers note says the writers were
+  not recorded.
+
 - `useVoiceRecorder` takes `onSend` and returns `sendPreview` and `discard`,
   not `onAttach`, `confirmAttach`, and three reset paths. `useSendVoiceWhenReady`
   sends a released note once its tile is ready. `addFiles` returns the ids it

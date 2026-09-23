@@ -1,6 +1,6 @@
 /** Provenance the server stamps on a version row. `websocket` is a live collaborative save. */
 export type VersionTrigger =
-  'websocket' | 'api' | 'checkpoint' | 'revert' | 'revert-backup' | 'schema-migration'
+  'websocket' | 'api' | 'mcp' | 'checkpoint' | 'revert' | 'revert-backup' | 'schema-migration'
 
 /** Why the server refused a version op. Drives the toast copy. */
 export type VersionFailureReason =

@@ -88,6 +88,7 @@ const MAX_ATTRIBUTION_FACES = 3
  */
 const VERSION_TRIGGER_LABELS: Partial<Record<VersionTrigger, string>> = {
   api: 'API',
+  mcp: 'Connected app',
   checkpoint: 'Checkpoint',
   revert: 'Restored',
   'revert-backup': 'Pre-restore',

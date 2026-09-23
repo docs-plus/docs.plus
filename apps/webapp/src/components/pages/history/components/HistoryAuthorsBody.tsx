@@ -19,6 +19,7 @@ const TRIGGER_NOTE: Partial<Record<VersionTrigger, string>> = {
   revert: 'This version came from a restore, so its writers were not recorded.',
   'revert-backup': 'This version came from a restore, so its writers were not recorded.',
   api: 'This version came from the API, so its writers were not recorded.',
+  mcp: 'This version came from a connected app, so its writers were not recorded.',
   'schema-migration': 'This version came from a schema migration, so its writers were not recorded.'
 }
 
