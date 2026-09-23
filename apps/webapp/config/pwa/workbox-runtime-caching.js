@@ -86,11 +86,13 @@ if (adapted !== EXPECTED_ADAPTED) {
   )
 }
 
-// A request carrying the REST `token` header is signed-in data. Keep it out of
-// Cache Storage. It sits first so the cross-origin catch-all (rule 13) never sees it.
-const signedInRestRule = {
-  urlPattern: ({ request }) => Boolean(request?.headers?.has('token')),
+// A request with a token or Authorization header never enters Cache Storage.
+// supabase-js always sends Authorization. Sign-out does not clear the cache.
+// It sits first so rule 13 never sees these.
+const credentialedRequestRule = {
+  urlPattern: ({ request }) =>
+    Boolean(request?.headers?.has('token') || request?.headers?.has('authorization')),
   handler: 'NetworkOnly'
 }
 
-module.exports = [signedInRestRule, ...cache]
+module.exports = [credentialedRequestRule, ...cache]
