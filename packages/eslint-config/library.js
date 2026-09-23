@@ -10,5 +10,8 @@ export default [
       // tsup keeps warn/error as diagnostic channels; only console.log is noise.
       'no-console': ['warn', { allow: ['warn', 'error'] }]
     }
-  }
+  },
+
+  // StackBlitz copies of the README Quickstart. They must match the README word for word.
+  { ignores: ['examples/**'] }
 ]
