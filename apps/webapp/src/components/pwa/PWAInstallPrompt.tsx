@@ -6,7 +6,7 @@ import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { useAuthStore } from '@stores'
 import { trackEvent } from '@utils/analytics'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { LuDownload, LuShare, LuSmartphone, LuSquarePlus, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
@@ -23,10 +23,24 @@ const MIN_SESSION_COUNT = 2
 
 const SHOW_PWA_INSTALL_EVENT = 'show-pwa-install-prompt'
 
+/** Honest offline claim, shared by the install card and Home Install. */
+export const PWA_OFFLINE_LINE = 'Keeps a local copy of the pad you already opened.'
+
+type ShowPWAInstallDetail = { force?: boolean }
+
 /** Call when an action needs the PWA (enabling push on iOS); skips the engagement wait. */
 export function showPWAInstallPrompt() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SHOW_PWA_INSTALL_EVENT))
+  }
+}
+
+/** A deliberate Install click. Skips every timed-card gate except "this window cannot install". */
+export function openPWAInstallPrompt() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent<ShowPWAInstallDetail>(SHOW_PWA_INSTALL_EVENT, { detail: { force: true } })
+    )
   }
 }
 
@@ -35,54 +49,97 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+function createSharedValue<T>(initial: T) {
+  let value = initial
+  const listeners = new Set<() => void>()
+  return {
+    get: () => value,
+    set: (next: T) => {
+      value = next
+      listeners.forEach((listener) => listener())
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    }
+  }
+}
+
+// Module scope: the event fires once, and the card and Home Install must see the same one.
+const sharedPrompt = createSharedValue<BeforeInstallPromptEvent | null>(null)
+const sharedAppInstalled = createSharedValue(false)
+const autoShowHolds = createSharedValue(0)
+let listeningForInstall = false
+
+const getNoPrompt = () => null
+const getFalse = () => false
+const getAutoShowHeld = () => autoShowHolds.get() > 0
+
+// Registered once for the page, so a second hook instance cannot double-count `pwa_install`.
+function listenForInstall() {
+  if (listeningForInstall) return
+  listeningForInstall = true
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome's default mini-infobar — we show our own UI
+    e.preventDefault()
+    sharedPrompt.set(e as BeforeInstallPromptEvent)
+  })
+
+  window.addEventListener('appinstalled', () => {
+    trackEvent('pwa_install')
+    sharedPrompt.set(null)
+    sharedAppInstalled.set(true)
+    localStorage.setItem(DISMISSED_KEY, 'permanent')
+    localStorage.removeItem(SNOOZED_UNTIL_KEY)
+    localStorage.removeItem(PROMPT_COUNT_KEY)
+  })
+}
+
+/** While `active`, the timed card does not auto-open. Home Install holds it while visible. */
+export function useHoldPWAAutoShow(active: boolean) {
+  useEffect(() => {
+    if (!active) return
+    autoShowHolds.set(autoShowHolds.get() + 1)
+    return () => autoShowHolds.set(autoShowHolds.get() - 1)
+  }, [active])
+}
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
+  const deferredPrompt = useSyncExternalStore(sharedPrompt.subscribe, sharedPrompt.get, getNoPrompt)
+  const appInstalled = useSyncExternalStore(
+    sharedAppInstalled.subscribe,
+    sharedAppInstalled.get,
+    getFalse
+  )
+  const [isStandalone, setIsStandalone] = useState(false)
   const { platform, isPWAInstalled } = usePlatformDetection()
+  const isInstalled = appInstalled || isStandalone
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
-    const handleBeforeInstall = (e: Event) => {
-      // Prevent Chrome's default mini-infobar — we show our own UI
-      e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
-    }
-
-    const handleInstalled = () => {
-      trackEvent('pwa_install')
-      setIsInstalled(true)
-      setDeferredPrompt(null)
-      localStorage.setItem(DISMISSED_KEY, 'permanent')
-      localStorage.removeItem(SNOOZED_UNTIL_KEY)
-      localStorage.removeItem(PROMPT_COUNT_KEY)
-    }
+    listenForInstall()
 
     const mediaQuery = window.matchMedia('(display-mode: standalone)')
-    setIsInstalled(mediaQuery.matches || isPWAInstalled)
+    setIsStandalone(mediaQuery.matches || isPWAInstalled)
 
     const handleDisplayChange = (e: MediaQueryListEvent) => {
-      setIsInstalled(e.matches)
+      setIsStandalone(e.matches)
     }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
-    window.addEventListener('appinstalled', handleInstalled)
     mediaQuery.addEventListener?.('change', handleDisplayChange)
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
-      window.removeEventListener('appinstalled', handleInstalled)
-      mediaQuery.removeEventListener?.('change', handleDisplayChange)
-    }
+    return () => mediaQuery.removeEventListener?.('change', handleDisplayChange)
   }, [isPWAInstalled])
 
   const install = useCallback(async (): Promise<boolean> => {
-    if (!deferredPrompt) return false
+    const prompt = sharedPrompt.get()
+    if (!prompt) return false
 
     try {
-      await deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      setDeferredPrompt(null)
+      await prompt.prompt()
+      const { outcome } = await prompt.userChoice
 
       if (outcome === 'accepted') {
         localStorage.setItem(DISMISSED_KEY, 'permanent')
@@ -91,8 +148,11 @@ export function usePWAInstall() {
       return outcome === 'accepted'
     } catch {
       return false
+    } finally {
+      // One event allows one prompt(); drop it so no surface offers it twice.
+      sharedPrompt.set(null)
     }
-  }, [deferredPrompt])
+  }, [])
 
   return {
     canInstall: deferredPrompt !== null || (platform === 'ios' && !isInstalled),
@@ -113,8 +173,11 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
   const profile = useAuthStore((state) => state.profile)
   const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
   const { canInstall, canNativeInstall, install, isInstalled } = usePWAInstall()
+  const autoShowHeld = useSyncExternalStore(autoShowHolds.subscribe, getAutoShowHeld, getFalse)
   const hasAutoShownRef = useRef(false)
   const engagementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Only a timer-opened card yields to Home Install. A deliberate open stays.
+  const openedByTimerRef = useRef(false)
 
   // State only — the engagement timing lives in the auto-show effect.
   const isEligible = useCallback(() => {
@@ -135,14 +198,21 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     return true
   }, [profile, isInstalled, isPWAInstalled, canInstall, platform, iosSupportsWebPush])
 
-  const show = useCallback(() => {
-    if (!isEligible()) return
+  // A forced open checks only whether this window can install. It spends no timed-card budget.
+  const show = useCallback(
+    (force = false) => {
+      if (force) {
+        if (isInstalled || isPWAInstalled || !canInstall) return
+      } else {
+        if (!isEligible()) return
+        const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
+        localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
+      }
 
-    const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
-    localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
-
-    showCard()
-  }, [isEligible, showCard])
+      showCard()
+    },
+    [isEligible, isInstalled, isPWAInstalled, canInstall, showCard]
+  )
 
   const hide = useCallback(
     (permanent = false) => {
@@ -157,8 +227,17 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
 
   // Reset the iOS panel only after the card has fully exited.
   useEffect(() => {
-    if (!mounted) setShowIOSSteps(false)
+    if (mounted) return
+    setShowIOSSteps(false)
+    openedByTimerRef.current = false
   }, [mounted])
+
+  // Home Install came into view over a timed card. Close it with no snooze, dismiss, or count write.
+  useEffect(() => {
+    if (!autoShowHeld || !mounted || !openedByTimerRef.current) return
+    openedByTimerRef.current = false
+    hideCard()
+  }, [autoShowHeld, mounted, hideCard])
 
   const handleInstall = async () => {
     if (platform === 'ios') {
@@ -195,10 +274,13 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
 
     const sessions = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10)
     if (sessions < MIN_SESSION_COUNT) return
+    // Re-arms when the hold lifts, so leaving Home does not cost this session its timed card.
+    if (autoShowHeld) return
 
     engagementTimerRef.current = setTimeout(() => {
       if (isEligible() && !hasAutoShownRef.current) {
         hasAutoShownRef.current = true
+        openedByTimerRef.current = true
         show()
       }
     }, ENGAGEMENT_DELAY_MS)
@@ -208,13 +290,14 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
         clearTimeout(engagementTimerRef.current)
       }
     }
-  }, [profile, isEligible, show])
+  }, [profile, isEligible, show, autoShowHeld])
 
-  // Programmatic trigger skips the engagement wait, not the eligibility checks.
+  // Programmatic trigger skips the engagement wait. Only a forced one skips eligibility.
   useEffect(() => {
-    const handler = () => {
+    const handler = (e: Event) => {
       hasAutoShownRef.current = false
-      show()
+      openedByTimerRef.current = false
+      show((e as CustomEvent<ShowPWAInstallDetail | null>).detail?.force === true)
     }
     window.addEventListener(SHOW_PWA_INSTALL_EVENT, handler)
     return () => window.removeEventListener(SHOW_PWA_INSTALL_EVENT, handler)
@@ -277,7 +360,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary">•</span>
-                <span>Faster loading & works offline</span>
+                <span>{PWA_OFFLINE_LINE}</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-primary">•</span>

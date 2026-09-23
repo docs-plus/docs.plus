@@ -38,11 +38,15 @@ async function fetchDocumentsPage(
  * alike. The page param is a ROW OFFSET, never a page index — see `nextDocumentsOffset`.
  * The scope must carry the DEBOUNCED search term, or the optimistic patches miss this key.
  */
-export function useOwnerDocuments(scope: DocumentsListScope) {
+export function useOwnerDocuments(
+  scope: DocumentsListScope,
+  focusOptions: { refetchOnWindowFocus?: boolean | 'always' } = {}
+) {
   return useInfiniteQuery({
     queryKey: makeDocumentsKey(scope),
     enabled: !!scope.userId,
     staleTime: 30_000,
+    ...focusOptions,
     initialPageParam: 0,
     queryFn: ({ pageParam }) => fetchDocumentsPage(pageParam, scope),
     getNextPageParam: (lastPage, allPages) => nextDocumentsOffset(allPages, lastPage.total)

@@ -1,3 +1,4 @@
+import { ownerDocumentsPrefix } from '@components/settings/documentsQueryKey'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
 import type { TabType } from '@components/settings/types'
@@ -9,15 +10,18 @@ import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
+import { useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 import { HomeActionCard } from './HomeActionCard'
 import { HomeCollapseRegion } from './HomeCollapseRegion'
+import { HomeDocuments } from './HomeDocuments'
 import { HomeFooter } from './HomeFooter'
 import { HomeHero } from './HomeHero'
+import { HomeInstallButton } from './HomeInstallButton'
 import { HOME_MOBILE_MQ, HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
 
 const HOME_FLEX_SPACER = 'motion-safe:transition-[flex-grow] max-sm:min-h-0 max-sm:shrink'
@@ -50,6 +54,8 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
   const { navigateToDocument, isLoading } = useNavigateToDocument()
   useVirtualKeyboard({ activeMq: HOME_MOBILE_MQ, clearStoreOnDisable: true })
   const keyboardCompact = useStore((state) => state.isKeyboardOpen)
+  const queryClient = useQueryClient()
+  const wasProfileOpenRef = useRef(false)
 
   // No argument means the header button, which must not reopen the tab a hash asked for.
   const openSettings = useCallback(
@@ -67,6 +73,15 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
     clearOverlayHash()
     openSettings(hashSettingsTab ?? undefined)
   }, [overlay, hashSettingsTab, user, openSettings])
+
+  // Settings patches only its own list key, and closing it fires no focus event. Refresh
+  // Home on close. Watch the state, because mobile back closes it without `onOpenChange`.
+  useEffect(() => {
+    const wasOpen = wasProfileOpenRef.current
+    wasProfileOpenRef.current = isProfileOpen
+    if (!wasOpen || isProfileOpen || !user) return
+    void queryClient.invalidateQueries({ queryKey: ownerDocumentsPrefix(user.id) })
+  }, [isProfileOpen, user, queryClient])
 
   useEffect(() => {
     useStore.getState().setWorkspaceSetting('metadata', { documentId: undefined })
@@ -132,9 +147,10 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
         <main
           id="home-main"
-          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-y-contain px-4 max-sm:py-2 sm:justify-center sm:py-12">
+          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-y-contain px-4 max-sm:py-2 sm:py-12">
           <HomeFlexSpacer compact={keyboardCompact} />
-          <div id="home-action-block" className="w-full max-w-2xl shrink-0">
+          {/* Auto margins, not justify-center: a tall Home then overflows at the bottom only. */}
+          <div id="home-action-block" className="w-full max-w-2xl shrink-0 sm:my-auto">
             <HomeHero compact={keyboardCompact} />
             <HomeActionCard
               hostname={displayHostname}
@@ -142,6 +158,12 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
               onNavigate={navigateToDocument}
               compact={keyboardCompact}
             />
+            <HomeCollapseRegion collapsed={keyboardCompact}>
+              {user && isAuthServiceAvailable && (
+                <HomeDocuments userId={user.id} onSeeAll={() => openSettings('documents')} />
+              )}
+              <HomeInstallButton />
+            </HomeCollapseRegion>
             <HomeCollapseRegion
               collapsed={keyboardCompact}
               className={keyboardCompact ? 'max-sm:mt-0' : 'mt-8 sm:mt-12'}>
