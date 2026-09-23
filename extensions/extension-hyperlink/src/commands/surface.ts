@@ -20,12 +20,12 @@ export type EditHyperlinkAttributes = {
 }
 
 export interface HyperlinkPublicCommands<ReturnType> {
-  /** Write the hyperlink mark; returns `false` when `href` is missing or fails the gate. See README → Commands. */
+  /** Write the hyperlink mark; returns `false` when `href` is missing or fails the gate. See docs/api.md → Commands. */
   setHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
   unsetHyperlink: () => ReturnType
   /** Toggle; same gates as `setHyperlink`. */
   toggleHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
-  /** Open the create popover (configured `popovers.createHyperlink` or the prebuilt fallback); no-op only when the factory returns `null`. See README → Commands. */
+  /** Open the create popover (configured `popovers.createHyperlink` or the prebuilt fallback); no-op only when the factory returns `null`. See docs/api.md → Commands. */
   openCreateHyperlinkPopover: (attributes?: Partial<HyperlinkAttributes>) => ReturnType
   editHyperlinkText: (text: string) => ReturnType
   editHyperlinkHref: (href: string) => ReturnType

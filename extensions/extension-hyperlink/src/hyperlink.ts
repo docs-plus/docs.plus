@@ -41,7 +41,7 @@ export type IsAllowedUriContext = {
 
 /**
  * `Extra` extends the built-ins with consumer-typed fields; it defaults to
- * `Record<string, unknown>` to keep the v2 open index signature. Example: README → TypeScript.
+ * `Record<string, unknown>` to keep the v2 open index signature. Example: docs/api.md → TypeScript.
  */
 export type HyperlinkAttributes<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   href: string | null
@@ -95,7 +95,7 @@ export interface HyperlinkOptions {
     createHyperlink?: ((options: CreateHyperlinkOptions) => HTMLElement | null) | null
   }
   validate?: (url: string) => boolean
-  /** Scheme used by `normalizeHref` to promote bare domains. Default `'https'`. See README → Options. */
+  /** Scheme used by `normalizeHref` to promote bare domains. Default `'https'`. See docs/api.md → Options. */
   defaultProtocol: string
   /** URI policy hook — runs AFTER `isSafeHref`, BEFORE the mark is written. Mirrors `@tiptap/extension-link`. */
   isAllowedUri?: (uri: string, ctx: IsAllowedUriContext) => boolean

@@ -171,7 +171,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
   })
 
   describe('dark mode', () => {
-    // README → Theming promises color tokens use `light-dark()` so the
+    // docs/styling.md → Theming promises color tokens use `light-dark()` so the
     // popover follows the nearest ancestor's `color-scheme`. We assert on
     // the shipped CSS text instead of flipping the system media query
     // (flaky across Electron versions).

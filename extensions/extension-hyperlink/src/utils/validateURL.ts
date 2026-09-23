@@ -13,7 +13,7 @@ export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
 /**
  * Single XSS gate used at every read/write boundary. Returns `false`
  * for nullish/empty hrefs and any scheme matched by
- * {@link DANGEROUS_SCHEME_RE}. See README → Security.
+ * {@link DANGEROUS_SCHEME_RE}. See docs/security.md.
  */
 export const isSafeHref = (href: string | null | undefined): href is string => {
   if (typeof href !== 'string' || href.length === 0) return false
@@ -68,7 +68,7 @@ const hasPlausibleHost = (url: string): boolean => {
 /**
  * Shape-validate a URL: web schemes with a plausible host, app schemes from
  * the `getSpecialUrlInfo` catalog, and bare E.164 phones. Rejects schemes
- * matched by {@link DANGEROUS_SCHEME_RE}. See README → Validation.
+ * matched by {@link DANGEROUS_SCHEME_RE}. See docs/url-handling.md.
  */
 export const validateURL = (url: string, options?: ValidateURLOptions): boolean => {
   const trimmed = url.trim()

@@ -44,7 +44,7 @@ export const DEFAULT_PROTOCOL = 'https' as const
 /**
  * Canonicalize a user-supplied href so stored marks point somewhere
  * absolute (bare `google.com` would otherwise resolve against
- * `document.baseURI` at render time). See README → Normalization for
+ * `document.baseURI` at render time). See docs/url-handling.md for
  * the full pipeline order.
  */
 export const normalizeHref = (raw: string, defaultProtocol: string = DEFAULT_PROTOCOL): string => {
