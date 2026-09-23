@@ -9,13 +9,13 @@ import {
   type ChatActionUrlLookups,
   type ChatPushFields,
   resolveChatActionUrl
-} from '../../src/lib/push/chatActionUrl'
+} from '../chatActionUrl'
 
-const APP_URL = 'https://docs.plus'
 const DOC_ID = 'V6a648b3056yMseWrj1'
 
 const payload = (over: Partial<ChatPushFields> = {}): ChatPushFields => ({
   notification_id: 'notif-1',
+  type: 'mention',
   action_url: '',
   channel_id: 'heading-1',
   ...over
@@ -31,27 +31,28 @@ const lookups = (
 
 describe('resolveChatActionUrl', () => {
   it('links the human slug, the chatroom and the message', async () => {
-    expect(await resolveChatActionUrl(payload(), APP_URL, lookups('api-docs'))).toBe(
-      'https://docs.plus/api-docs?chatroom=heading-1&msg_id=msg-1'
+    expect(await resolveChatActionUrl(payload(), lookups('api-docs'))).toBe(
+      '/api-docs?chatroom=heading-1&msg_id=msg-1'
     )
   })
 
   it('leaves out msg_id when the row names no message', async () => {
-    expect(await resolveChatActionUrl(payload(), APP_URL, lookups('api-docs', null))).toBe(
-      'https://docs.plus/api-docs?chatroom=heading-1'
+    expect(await resolveChatActionUrl(payload(), lookups('api-docs', null))).toBe(
+      '/api-docs?chatroom=heading-1'
     )
   })
 
   it('keeps the empty link when the document has no metadata row', async () => {
-    const url = await resolveChatActionUrl(payload(), APP_URL, lookups(null))
-    expect(url).toBe('')
-    expect(url).not.toContain(DOC_ID.toLowerCase())
+    expect(await resolveChatActionUrl(payload(), lookups(null))).toBe('')
   })
 
   it('keeps a link the row already carries', async () => {
     const own = 'https://docs.plus/api-docs'
-    expect(await resolveChatActionUrl(payload({ action_url: own }), APP_URL, lookups('x'))).toBe(
-      own
-    )
+    expect(await resolveChatActionUrl(payload({ action_url: own }), lookups('x'))).toBe(own)
+  })
+
+  it('builds no chat link for a row that is not a chat type', async () => {
+    const row = payload({ type: 'content_change', channel_id: DOC_ID })
+    expect(await resolveChatActionUrl(row, lookups('api-docs'))).toBe('')
   })
 })

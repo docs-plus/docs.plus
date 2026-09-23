@@ -13,6 +13,7 @@ import type {
   DigestHeadingChat,
   DigestNotification
 } from '../../types/email.types'
+import { buildChatActionUrl } from '../push/chatActionUrl'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -151,7 +152,9 @@ function withResolvedName(
     slug: meta.slug,
     url,
     channels: doc.channels.map((channel) => {
-      const channelUrl = channel.id ? `${url}?chatroom=${channel.id}` : url
+      const channelUrl = channel.id
+        ? buildChatActionUrl(meta.slug, channel.id, { origin: appUrl })
+        : url
       return {
         ...channel,
         url: channelUrl,

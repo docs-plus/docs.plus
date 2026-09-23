@@ -5,7 +5,6 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { config } from '../../config/env'
 import type { PushNotificationRequest } from '../../types/push.types'
 import { captureUnknown } from '../instrument'
 import { pushLogger } from '../logger'
@@ -48,8 +47,10 @@ function readSlug(documentId: string): Promise<string | null> {
   const slug = prisma.documentMetadata
     .findUnique({ where: { documentId }, select: { slug: true } })
     .then((row) => row?.slug ?? null)
-  // A failed read must not stick for the whole TTL.
-  slug.catch(() => slugCache.delete(documentId))
+  // A failed read must not stick for the whole TTL. The guard spares a newer entry.
+  slug.catch(() => {
+    if (slugCache.get(documentId)?.slug === slug) slugCache.delete(documentId)
+  })
   slugCache.set(documentId, { slug, expiresAt: now + SLUG_CACHE_TTL_MS })
   return slug
 }
@@ -71,10 +72,10 @@ async function readChatNotification(
   return { messageId: data.message_id ?? null, documentId: channel?.workspace_id ?? null }
 }
 
-/** A failed lookup costs the deep link, not the push: the worker still opens `/`. */
+/** A failed lookup costs the deep link, not the push: the service worker still opens `/`. */
 async function chatActionUrl(payload: PushQueuePayload, ctx: PgmqConsumerContext): Promise<string> {
   try {
-    return await resolveChatActionUrl(payload, config.email.appUrl, {
+    return await resolveChatActionUrl(payload, {
       readNotification: (id) => readChatNotification(ctx.getClient(), id),
       readSlug
     })
