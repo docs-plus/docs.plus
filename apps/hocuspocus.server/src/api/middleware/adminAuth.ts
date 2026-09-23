@@ -1,6 +1,7 @@
 import type { Context, Next } from 'hono'
 
 import { verifySupabaseTokenOutcome } from '../../lib/auth'
+import { isConnectedAppToken } from '../../lib/jwtClaims'
 import { adminLogger } from '../../lib/logger'
 import { getSupabaseClient } from '../utils/supabase'
 
@@ -22,6 +23,11 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
   if (outcome.kind !== 'user') {
     const _exhaustive: never = outcome
     return _exhaustive
+  }
+
+  // A connected app must never get admin power.
+  if (isConnectedAppToken(token)) {
+    return c.json({ error: 'Connected apps cannot use admin routes' }, 403)
   }
 
   const user = outcome.user

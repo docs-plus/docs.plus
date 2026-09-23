@@ -19,6 +19,7 @@ import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from
 import { countActiveConnections } from './lib/health'
 import { handleHistoryStateless } from './lib/history-stateless'
 import { captureUnknown, flushObservability } from './lib/instrument'
+import { isConnectedAppToken } from './lib/jwtClaims'
 import { wsLogger } from './lib/logger'
 import {
   documentLoadDuration,
@@ -462,6 +463,11 @@ const serverConfig = {
         const outcome = await verifySupabaseTokenOutcome(tokenData.accessToken)
         switch (outcome.kind) {
           case 'user':
+            // In every environment: the dev fallback below would admit it as anonymous.
+            if (isConnectedAppToken(tokenData.accessToken)) {
+              wsAuthRejectionsTotal.inc({ reason: 'connected-app' })
+              throw new Error('Connected apps cannot open documents over WebSocket')
+            }
             user = outcome.user
             wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
             break

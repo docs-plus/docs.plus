@@ -1,6 +1,8 @@
 import type { Context, Next } from 'hono'
 
+import { fail } from '../../http/envelope'
 import { verifyServiceRole, verifySupabaseTokenOutcome } from '../../lib/auth'
+import { isConnectedAppToken } from '../../lib/jwtClaims'
 
 // Accept either `Authorization: Bearer <jwt>` or the `token` header the webapp
 // already uses on document reads (fetchDocument.ts), so callers stay consistent.
@@ -33,6 +35,9 @@ export async function requireUser(c: Context, next: Next) {
     case 'invalid':
       return unauthorized(c, 'Invalid or expired token')
     case 'user':
+      if (isConnectedAppToken(token)) {
+        return fail(c, 403, 'FORBIDDEN', 'Connected apps can use only /api/mcp')
+      }
       c.set('user', outcome.user)
       c.set('userId', outcome.user.sub)
       await next()
@@ -62,7 +67,8 @@ export async function optionalUser(c: Context, next: Next) {
   if (token) {
     const outcome = await verifySupabaseTokenOutcome(token)
     // Transient outage → proceed anonymous; only a verified user is attached.
-    if (outcome.kind === 'user') {
+    // A connected app's token proceeds anonymous too: it belongs to /api/mcp.
+    if (outcome.kind === 'user' && !isConnectedAppToken(token)) {
       c.set('user', outcome.user)
       c.set('userId', outcome.user.sub)
     } else if (outcome.kind === 'unavailable') {
