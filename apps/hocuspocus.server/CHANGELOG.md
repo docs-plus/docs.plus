@@ -12,6 +12,9 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- **A validation `400` names each rejected input.** `error.fields` holds one
+  `{ path, message }` per field.
+
 - Public `POST /api/email/validate`. Body is `{ email }`. Both answers are
   200 `{ isValid }`. A bad body is the house envelope.
 
@@ -72,6 +75,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `toc-id` stamping pass reports `changed: false`. A section's `magnitude` is null when the
   edit changed formatting rather than words; its status still says `modified`. Attribution
   is decoration, and a profile-lookup outage empties `contributors` rather than failing.
+  A section that keeps its text and its `toc-id` but changes place is `moved`.
+  `summary.sectionsMoved` counts them, and a `moved` section makes `changed` true. An
+  insertion does not mark later sections `moved`. On a very large outline the route
+  reports no `moved` section. A section can also carry `removedExcerpt`, the text that
+  left, and `runs`, the ordered `same`, `removed` and `added` text around the edit.
 - **Owner-only Favorite.** `PUT /api/documents/:documentId/favorite` accepts
   `{ favorite: boolean }` and writes a `DocumentFavorite` join for `token.sub`
   (`userId` + `documentId`). Migration `20260901100000_add_document_favorites` adds the
@@ -95,8 +103,36 @@ This file is the operator and API changelog. The pad product lives in the [root 
   Owner live list and Owner Trash list include it. Fleet, create, slug GET,
   and update omit it. `POST /api/documents/:documentId/opened` is owner-only,
   raw SQL, 30-second debounce, trash → 404. Does not move `@updatedAt`.
-- List and watch replies and failures echo the request's `since`, `version`
-  and `beforeVersion`.
+- **`history.list` takes `since`.** A first page sent with `since` carries
+  `anchor`, the newest version at or before that instant. When retention
+  removed every such row, `anchor` is the oldest surviving row. `anchor` is
+  never added to `versions`. List and watch replies and failures echo the
+  request's `since`, `version` and `beforeVersion`.
+- **Admin digest settings.** `GET` and `PUT /api/admin/email/digest-grouping`
+  read and write `{ grouping, maxKb }`. `grouping` is `document` (one mail per
+  document) or `aggregate` (one combined mail). `maxKb` is the HTML size the
+  digest fit works toward, a JSON integer from 10 to 102. A `PUT` body needs at
+  least one of the two. A bad body is the house envelope, `400` with code
+  `VALIDATION_ERROR`. The values live in the Redis keys `email:digest-grouping`
+  and `email:digest-max-kb`. A missing or bad value, or no Redis, reads as
+  `document` and 90 KB. `PUT` answers `503` when Redis is not available. The
+  worker reads both values when it builds each digest.
+- **The change digest body reads like the pad.** Each changed Section is a bold
+  heading that links to its place on the pad (`?id=` plus the `toc-id`), with
+  its passage under it. Sections keep their document order. The passage paints
+  the section's `runs`: added text green, removed text red and struck through.
+  Without `runs` it paints `excerpt` or `removedExcerpt`. The plain-text part
+  marks removed text `[-…-]` and added text `{+…+}`. A heading chat moves
+  under its heading only when compute succeeds and the heading is live. Every
+  other chat stays in its channel card, and so does a removed heading's chat.
+  A heading with no change and no new heading chat stays out of the mail. The
+  heading row has no Chat or View link. The subject counts every chat line,
+  under a heading or in a card, plus one per Change digest block.
+- **The digest fit works toward `maxKb`.** It measures the HTML with the real
+  unsubscribe footer. It drops the oldest chat first, then shortens one
+  passage, but only in a context run after an edit. Change runs stay whole, so
+  a mail can still go over `maxKb`. The fit drops a heading only when the
+  heading came in for its chats alone and no chat is left.
 
 ### Changed
 
@@ -108,10 +144,24 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **Owner Trash list includes `preview` and `lastOpenedAt` and fills SQL-NULL
   rows.** The older Owner live list Added bullet said Trash omits both.
   Fill matches the Owner live list. Owner Trash list still omits Favorite.
-- `history.list` returns the Anchor for `since` in its own `anchor` field.
-  `versions` no longer carries it out of order.
+- **`history.list` returns one page.** A page holds up to 50 rows, newest
+  first, with `hasMore`. When `hasMore` is true, the reply carries
+  `nextBefore`. Send it back as `beforeVersion` to get the next older page,
+  whose `response` carries that `beforeVersion`. A client that ignores `hasMore` sees only the
+  newest page.
+- **`history.watch` has a per-connection rate limit.** Past it, the server
+  answers `history_failed` with reason `rate-limited`, as `history.list`
+  already does for its cooldown.
 
 ### Fixed
+
+- **A content write to a cold document waits for its own commit (#229).**
+  Each document has a per-document lock, and a `200` carries the saved
+  `version`. A save that cannot be confirmed in 20 s answers `503` with
+  `SAVE_NOT_CONFIRMED`. When earlier writes still hold the lock, the answer
+  is `503` with `DOCUMENT_BUSY`, and nothing is applied.
+- **A chat push opens the message.** The worker builds
+  `/<slug>?chatroom=…&msg_id=…`, because the queued row has no link.
 
 - **First-edit and first persist no longer claim `ownerId`.** The slug→documentId
   anchor and the no-row persist backstop write `ownerId` null. A signed-in
@@ -124,13 +174,22 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 - An unknown history `type` is refused with `history_failed`.
 
+- **The digest plain-text part uses the HTML caps.** A channel card shows 5
+  lines and an 80-character preview. Before, the plain text showed 3 lines and
+  50 characters.
+
+### Removed
+
+- `latestSnapshot` from the `history.list` reply. It carried the head version's
+  snapshot. The head now loads through `history.watch`, like every other
+  version.
+
 ### Documentation
 
 - Record the changes route in [API.md](./API.md), with its window semantics, both
   response shapes, the status table and the section-matching rules. The limits are
-  stated rather than omitted. A formatting-only edit reports a null magnitude. A pure
-  section reorder reports `changed: false`. A caller that rotates every `toc-id`
-  defeats pairing. Request examples live in
+  stated rather than omitted. A formatting-only edit reports a null magnitude. A
+  caller that rotates every `toc-id` defeats pairing. Request examples live in
   [scripts/documents.http](./scripts/documents.http).
 - Record the Favorite route and owner-list `isFavorite` in [API.md](./API.md). The
   required-token list in [docs/api/authentication.md](../../docs/api/authentication.md)
@@ -143,6 +202,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   includes `preview`.
 
 ### Internal
+
+- One document access rule, `decideDocumentAccess` in
+  `src/lib/documentAccess.ts`, serves the REST conversion routes.
+- Removed `queue.test.ts` and `worker.test.ts`. They compared constants they
+  set themselves and imported no source.
 
 - **The document-changes route now has a real-infrastructure end-to-end script.**
   `bun run test:e2e:document-changes` boots both entry points against Postgres and

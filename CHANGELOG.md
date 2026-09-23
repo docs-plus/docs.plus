@@ -50,6 +50,24 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   Previous 7 days, Previous 30 days, and Earlier. Favorites stay unbucketed at
   the top, then a hairline. Title sorts stay a flat list. Last opened sort also
   uses Never opened when `lastOpenedAt` is null.
+- Drag the desktop table of contents narrow to fold it into the tick rail, a
+  32px map of the headings. Docked chat then spans the full width of the pad.
+  Hover or focus a tick to preview its section, and click it to jump there.
+  The rail hides headings inside a folded section. The button at the top of
+  the rail opens the full table again at its last width. A refresh also opens
+  the full table.
+- Get a change digest email when other people edit a document you follow. You
+  follow a document when you open it while signed in. Turn Follow off in
+  Document settings to stop that mail. The owner of a Private or Read-only
+  document does not see Follow, because nobody else can edit that document.
+  The mail reads like the pad. Each changed heading links to its place in the
+  document, and the passage sits under it. Added words are green, and removed
+  words are red and struck through. A new chat on a heading sits under that
+  heading; other chats stay in their channel card. Headings with no change
+  stay out. A plain-text mail marks removed words `[-like this-]` and added
+  words `{+like this+}`. Each document gets its own mail by default. In
+  Admin Notifications, an admin can send one combined mail instead and set the
+  HTML size limit from 10 to 102 KB. The default is 90 KB.
 - Name how many people contributed in the digest email, under the changed-since
   line. The count covers the same window as the sections beneath it. It is a
   floor, not a head count, and it is left out when nobody is named.
@@ -79,6 +97,35 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   digest window has been shortened to the retention limit. The old line named a
   date that could be months after you really left.
 
+- Close the docked chat by dragging its top edge down, the way the table of
+  contents folds into the tick rail. Let go below 160 px to close it. Let go
+  between 160 and 320 px, and the panel returns to 320 px. The Close button
+  stays.
+
+- Fade the table of contents at an edge where more headings are out of view.
+  On desktop only the bottom edge fades, so the sticky document title stays
+  whole. The phone drawer fades both edges.
+
+- Load History one page at a time. The sidebar lists the newest 50 versions,
+  and Show older versions loads 50 more. While older versions remain, the
+  count shows a plus, as in "50+ versions". A shared link to an older version
+  loads older pages until it finds that version. If you open many versions in
+  a few seconds, History asks you to wait a moment.
+
+- Hide Restore in History from signed-out visitors and from readers who cannot
+  edit the document. They can still read and compare every version. A visitor
+  used to see Restore and then a sign-in message.
+
+- Fade a copy control to a check when the copy works. The Share dialog, link
+  previews, chat message menus, bookmarks, notifications, Settings →
+  Documents, and History version links all fade. A menu that closes after a
+  copy first waits for the check to show.
+
+- Give chat message actions one set of names: Copy Link, Copy to Doc, Edit,
+  and Delete. The right-click menu, the phone long-press menu, and the ⋯ menu
+  match, and Edit sits above Delete in each. A message with files keeps Copy
+  Link, where it used to say Share message link.
+
 ### Fixed
 
 - Mark your first message in an empty chat as sent. It was saved at once, but
@@ -90,7 +137,13 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 - Keep your chat draft and files across sends, replies, edits, and comments. A
   failed comment gives back its text, its mode, and its files. Ending a reply or
-  a comment no longer deletes a file you just sent.
+  a comment no longer deletes a file you just sent. A file that is still sending
+  now stays with its message when you end a reply, an edit, or a comment, or
+  press Escape. That message used to fail or show a broken tile. Sending a
+  comment no longer deletes your saved draft. An edit or a comment that you
+  start while an earlier send checks its files keeps its text. Switching
+  between a reply and a comment removes the files you added for the one you
+  leave.
 
 - Let Escape close only what is on top. Closing the mention list, a link
   popover, or the media gallery no longer also cancels a reply, an edit, or a
@@ -103,7 +156,11 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Make slide up to lock, slide left to cancel, and the 5-minute limit work
   while you hold the mic on a phone. A composer style let the browser read a
   slide as a scroll, and that ended the hold. Cancel discards the note. Letting
-  go while the browser asks for the microphone turns the microphone off.
+  go while the browser asks for the microphone turns the microphone off. A
+  second finger on the screen no longer moves or ends the hold. When a
+  recording stops by itself, its timer and sound levels now stop too. If you
+  let go before the first microphone prompt and then refuse it, an error now
+  says so.
 
 - Save a voice note recorded on an iPhone as `.m4a`. It was named `.webm`,
   though it holds MP4 audio.
@@ -123,6 +180,9 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   button's name matches its tooltip, and each format button says when it is on,
   on the phone grid too. The + menu, the mention list, and the emoji panel work
   from the keyboard. Small controls on a phone are 44 px targets.
+
+- Make Copy Link in a chat message's ⋯ menu a real button. It now works from
+  the keyboard, and a screen reader names it as a button.
 
 - Fix smaller chat composer faults. A file over 10 MB is refused when you add
   it, unless it is a picture that can shrink. A file that cannot fit shows no
@@ -172,6 +232,14 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 - Stop version compare drawing an empty strikethrough. A formatting edit reports a change
   that holds no text, and the removed-text marker was rendered anyway, telling the reader a
   word had gone when none had.
+- Show 5 messages per channel, and 80 characters of each, in the plain-text
+  digest email, as the HTML version does. It used to show 3 and 50.
+- Keep a new, unsaved document at its address when you rename its Pad title on
+  a phone, or save its description or tags. The server used to file it under
+  the new title, so a reload at the same address lost it.
+- Stop the docked chat panel losing 1 px each time you click its resize handle.
+- Keep the colour of a saved highlight. The server stored it, but the pad
+  dropped it.
 
 ### Removed
 

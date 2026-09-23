@@ -18,6 +18,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Added
 
+- **OAuth consent page at `/oauth/consent`.** A signed-in user sees the
+  client name, the redirect origin and the scopes in plain words, then
+  approves or denies. A redirect with a script scheme is refused.
+- **The installed app icon shows the unread notification count.** A failed
+  count fetch returns `null`, not `0`, so an error never clears the badge.
+  Sign-out clears it.
+- **iOS launch splash screens** for the installed app, linked by device size.
+- **Home shows recent documents and an Install app button.** A signed-in
+  owner sees up to 8 documents by Last opened, with See all into Settings.
+- **The status chip warns "No offline copy"** when the browser stops saving
+  the local copy of the pad.
+
 - Your own empty profile card keeps one row: "No bio or links yet." and
   Add bio and links. The button opens Settings on Profile.
 
@@ -33,6 +45,63 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `stopActivity` on `typingIndicator`: 300 ms start delay, 3 s keepalive, 8 s
   expiry.
 
+- `TocTickRail` is the desktop tick rail, a session-only 32px heading map.
+  `DesktopEditor` deep-imports it into the `.editor` pad row, so docked chat
+  can span the pad. `useTocResize` runs
+  `wide | rail | drag | settle-to-rail | settle-to-wide`, and `stepTocRelease`
+  is its only release step. A release under `TOC_SNAP_WIDTH` (120) snaps to
+  the rail. A release from 120 to 240
+  paints 240 for this session only. `docsy:toc-width` keeps only the last
+  committed wide width over 240. A stored value at or below 240 reads as
+  missing and opens at 320. The section preview is an L1 card
+  (`popoverPanelClassName`) that clones the live section from
+  `editor.view.dom`. A focused tick holds the preview only while it matches
+  `:focus-visible`. `focusHeadingChatTrigger` falls back to the rail reopen
+  button (`data-toc-rail-reopen`) and skips a trigger that cannot take focus.
+
+- `ScrollArea` takes `fade` (`start`, `end` or `both`). `useScrollOverflow`
+  sets `data-scroll-overflow`, and `_scrollArea.scss` paints an alpha
+  `mask-image` only on an edge with hidden content. The desktop TOC passes
+  `end`, so the sticky title row stays whole. `TocModal` passes `both`.
+  `TocDesktop` portals its `DragOverlay` to `document.body`, so the mask does
+  not clip the drag card.
+
+- `DocumentSettingsPanel` shows a Follow toggle through `useDocumentFollow`
+  for a signed-in reader, when `showFollow` is true. The owner of a Private or
+  Read-only document does not see it, because nobody else can edit.
+  `useDocumentFollow` stays disabled while Follow is hidden.
+
+- History loads its list in pages. `HistorySidebarBody` renders a Show older
+  versions footer while `historyHasMore` is true. `fetchOlderHistory` sends
+  `history.list` with `beforeVersion` set to `historyNextBefore`. An
+  older-page reply for a cursor the store has moved past is dropped. A
+  first-page re-list keeps the older pages when the new page reaches the old
+  head. Otherwise the page and its cursor replace the list. A refused or
+  failed Show older keeps the sidebar. While older pages exist,
+  `HistorySidebar` shows `{count}+ versions` and the desktop sidebar always
+  virtualizes. A `rate-limited` watch clears both pending watch slots, stops
+  loading, and shows an info toast. It does not evict the row or request the
+  next one.
+
+- History list and watch replies echo the request's `since`, `version` and
+  `beforeVersion` on `HistoryStatelessPayload`. `sendHistoryListRequest` takes
+  `{ beforeVersion, since }`, and `fetchHistory` sends `pendingCompareSince`
+  as `since`. A `since` list reply stores its Anchor in `historyAnchor`
+  (`{ since, item }`), never in `historyList`. `useArmPendingHistoryCompare`
+  arms compare from that Anchor. When no Anchor arrived and no loaded row sits
+  at or before Last left, it sends one silent list with `since`. It first
+  waits for any silent list in flight and for `HISTORY_LIST_GAP_MS`. It
+  retries a refusal once, then opens no compare. A watch failure goes to
+  compare only when its `version` equals `pendingCompareVersion`. A failure
+  whose echo names neither slot is dropped. Only a first page can be silent,
+  so an older-page frame never clears `silentListRefresh`. A reply with no
+  echo keeps the old path.
+
+- A `#history?version=` link below the loaded pages loads older pages,
+  `HISTORY_LIST_GAP_MS` apart, until the version arrives. Only then is the
+  link judged unavailable. `loadingHistory` stays true during the walk, and
+  `resetHistorySessionForMount` cancels it.
+
 ### Changed
 
 - `useVoiceRecorder` takes `onSend` and returns `sendPreview` and `discard`,
@@ -40,6 +109,23 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   sends a released note once its tile is ready. `addFiles` returns the ids it
   queued and creates each row before its upload starts. `MessageMediaItem`
   gains `duration` and `waveform`, which `readAudioShape` sets for voice notes.
+  The pure `stepVoiceNote` (`MessageComposer/helpers/stepVoiceNote.ts`) now
+  owns every voice transition. It returns the next state and a list of
+  effects, and `useVoiceRecorder` runs them in order inside `dispatch`. A
+  `VoiceMicRequest` object tracks each microphone request, so `startHold` and
+  `startLockedFromMenu` are synchronous. The hook no longer returns
+  `elapsedMs` or `isActive`. The overlay helpers
+  `registerComposerVoiceStop` and `stopComposerVoiceRecording` are now
+  `registerComposerVoiceDiscard` and `discardComposerVoiceNote`.
+
+- `useComposerModeEdge` turns reply, edit and comment memory into one
+  `ComposerModeEdge` per change: the new mode, `draftLoad` (`keep`, `fill` or
+  `replace`) and `discardModeAdded`. Mount counts as an edge. The pure table
+  is `composerModeEdgeAction`. `useComposerDraft` and
+  `useComposerAttachmentLifecycle` read the edge, not the three memories. One
+  behavior changes: a switch between reply and comment now deletes the
+  uploads that the mode you leave added. Before, they stayed until the daily
+  orphan cleanup.
 
 - The sign-in form checks the email on rest-api, not on Next.
 
@@ -52,7 +138,46 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - An own optimistic chat row carries `data-status` (`pending` or `failed`) on
   the card root. The status paints in the timestamp slot.
 
+- `useResizeContainer` snaps the docked chat sash like `useTocResize`. Its
+  modes are `open | drag | settle-to-min | settle-to-close`. Below 320 px the
+  paint follows the pointer and the inner column fades. A release under
+  `CHAT_SNAP_HEIGHT` (160) settles to 0, then calls `closeHeadingChatroom()`.
+  A release from 160 to 320 settles back to 320. Both settles use
+  `--motion-overlay-in`. Under reduced motion an abort writes 320 to
+  `style.height` itself, because React skips a `paint` that is already 320.
+  The stored height never goes below 320.
+  `useSyncChatPanelHeight` replaces `useAdjustEditorSizeForChatRoom`. It writes
+  `--chat-panel-height` on `.editor` before the tick rail paints.
+
+- Copy success fades to a check through daisyUI `swap` / `swap-active`, not a
+  keyed remount with `doc-region-in`. `CopyButton` drops its scale transition.
+  A menu or sheet that closes after a copy holds for `COPY_FADE_HOLD_MS`
+  (`MOTION_PANEL_MS × 2`) through `useCloseAfterHold`, and only after a
+  successful copy. Documents ⋮ cancels that hold when another action runs. The
+  chat `NotificationToggle` stacks its three icons by opacity and is disabled
+  while an update is in flight. TOC Copy link, gallery copy and chat file-card
+  copy stay hard cuts. In `LinkPreviewSheet`, Copy link wraps its `swap` in a
+  `flex-1` span, because `.swap` centers its content. `useCopyHistoryVersionLink`
+  runs on `useCopyToClipboard`, and `copyHistoryVersionLinkToClipboard` is gone.
+
+- `useVersionRestore` returns `allowRestore`: a profile and no editing lock
+  (`selectDocumentEditingLocked`), the same gates as `history.revert`. Without
+  it the Restore control is hidden and an open confirm closes. The "Sign in to
+  restore a version." toast is gone.
+
+- Chat message action titles live once, in `messageActionTitle`
+  (`MessageCard/hooks/messageActionMenu.ts`). The right-click menu and the
+  hover ⋯ menu both read Copy Link, Copy to Doc, Edit and Delete. Copy Link no
+  longer becomes Share message link on a message with files. Edit sits above
+  Delete in both menus. `MessageActionMenuItem` and `MessageActionMenuItemId`
+  moved to that file, and `useMessageActionMenuItems` re-exports them.
+
 ### Fixed
+
+- A chat notification from another pad opens that pad at the message.
+- Signed-in REST replies never enter the service worker cache.
+- Title and description saves made offline queue, then replay in order.
+- The Share, Make private and Sign out dialogs have accessible names.
 
 - `_chat-editor.scss` drops its unlayered `touch-action: manipulation` rule on
   `.composer-bar__actions .btn`. It overrode the mic's layered `touch-none`.
@@ -85,15 +210,63 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   no users join. The chip now uses the snapshot username until that join
   is present.
 
-- Compare opened from a change notification no longer diffs against the
-  wrong version when a quick second list is refused.
+- A refused history watch no longer strands compare mode or the URL. A
+  refused compare watch with no base leaves compare mode. A refused view
+  watch points `#history?version=` back at the version the editor shows.
 
-- Show older no longer leaves the Last-left version between two pages.
+- A composer that mounts in comment mode loads the saved draft. Before, it
+  skipped the load, and the comment send then deleted the draft. Draft tiles
+  now hydrate in comment mode, but comment files never enter the saved
+  draft. `useComposerAttachmentDraft` splits `skipDraft` into `skipHydrate`
+  and `skipWrite`. A send reads the live mode after the storage probe, so an
+  edit or comment started during the probe keeps the editor.
+
+- A send with files calls `releaseSentAttachments` on the active attachment
+  list before its first `await`. Before, a reply, comment or edit that ended
+  during the storage probe deleted uploads the send still named. The message
+  was then refused or showed a broken tile. Escape during an edit send did
+  the same through `cancelEditAttachments`. A failed probe or a failed edit
+  returns the files to the list they left.
+
+- The mic hold listeners in `ComposerPrimaryAction` follow the pressing
+  pointer only, so a second finger no longer moves or ends the hold.
+  `recorder.onstop` clears the timers and live levels, so a recorder that
+  stops on its own leaks nothing. A first microphone denial after an early
+  release now shows the error toast.
+
+- A chat sash drag in `useResizeContainer` starts from `offsetHeight`, not
+  `clientHeight`, so a click no longer shrinks the panel by its 1px
+  `border-t`.
+
+- The hover ⋯ menu Copy Link (`CopyLinkAction`) is a `<button type="button">`.
+  The `<a>` had no `href`, so it had no button role and no keyboard
+  activation.
+
+- `MobilePadTitle` and `DocumentSettingsPanel` send `slug` with their
+  `useUpdateDocMetadata` saves, as `DocTitle` already did. A first save on a
+  never-persisted draft then creates the row under the URL slug, not under
+  `slugify(title)`.
+
+- The `Highlight` extension declares a `color` attribute. It parses
+  `data-color` or the inline background colour, and renders both. Upstream
+  adds `color` only with `multicolor` on, so a stored highlight lost its
+  colour.
 
 ### Removed
 
 - Next routes for Validate, Status, and Confirm. The service worker no longer
   writes user status.
+
+- `latestSnapshot` on the `history.list` wire type, and `latestSnapshot` /
+  `setLatestSnapshot` in the history store. A failed watch no longer tries to
+  hydrate from it. The list carries no document bytes.
+
+- `useJumpTo` jumps to the present only. `JumpTarget` and the `jumpTo` field
+  on `ChatroomContextValue` are gone. `snapToPresent` is the one caller.
+
+- Five `window.__chatTestApi` hooks that no spec used: `currentTailSeq`,
+  `lastSeenSeq`, `jumpToPresent`, `revealFeedSpoiler` and
+  `isFeedSpoilerRevealed`.
 
 ### Internal
 
@@ -101,7 +274,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - Chat stores and broadcast payloads have real types, not `any`. The unused
   typing map, the dead pin listener, and dead composer code are gone. The
-  composer `ToolbarButton` takes a plain `isActive`.
+  composer `ToolbarButton` takes a plain `isActive`. `SignInToJoinChannel`,
+  the `setWorkspaceSetting` and `clearMemoryStates` store setters, and the
+  unused `workspaceId` and `workspaceBroadcaster` fields are gone too.
+  `ChatMediaUploadRunner` no longer appends a missing row, because `addFiles`
+  creates each row first. `ChatList` drops its unused `channelId` prop and its
+  `as any` casts.
 
 - The desktop emoji picker no longer re-renders on every chat store change.
 
