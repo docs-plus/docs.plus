@@ -19,6 +19,14 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Painted width** — the TOC column width this frame. Locks to 32 in `rail` and `settle-to-rail`.
 - **tocWidth** — last committed Wide TOC width only (>240). Never the rail or the 240 abort floor. `useTocResize` writes it on release, not on every pointer move.
 
+## Pad tools
+
+- **Find** — caret find in the open pad (`TipTap/extensions/caret-find/`). A literal, case-insensitive text search that includes Title. It unfolds a hit only for the session and never writes folds to storage.
+  _Avoid_: Filter, Find in document (for Filter)
+- **Filter** — the heading filter (`matchSections`). It folds sections that do not match. It is not a text search.
+- **Slash menu** — `/` on an empty textblock that is not Title opens a list of block inserts. Each row runs an existing editor command.
+- **Command jump** — Mod+Shift+K opens a dialog of places and owned pads. It moves the reader; it inserts nothing. Not the Slash menu.
+
 ## Documents list
 
 - **Favorite** — a per-user mark that pins a document to the top of Settings → Documents. Stored as `DocumentFavorite` (`userId` + `documentId`). Owner-only. Soft-delete keeps the row; purge cascade drops it.

@@ -1,3 +1,4 @@
+import { CommandJump } from '@components/commandJump/CommandJump'
 import { ownerDocumentsPrefix } from '@components/settings/documentsQueryKey'
 import { useSettingsModal } from '@components/settings/hooks/useSettingsModal'
 import { SettingsTakeover } from '@components/settings/SettingsTakeover'
@@ -215,6 +216,8 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
       {/* Settings confirms (rename/trash/private) dispatch here; without this mount they render nothing on `/`. */}
       <GlobalDialog />
+
+      <CommandJump surface="home" />
     </>
   )
 }

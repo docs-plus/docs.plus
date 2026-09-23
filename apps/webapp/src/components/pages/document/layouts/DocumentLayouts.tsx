@@ -1,3 +1,4 @@
+import { CommandJump } from '@components/commandJump/CommandJump'
 import { useHistoryHash } from '@components/pages/history/historyShareUrl'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
@@ -24,6 +25,7 @@ const DocumentLayouts = ({
     <>
       {!isHistory && <PadEditorLifecycle provider={provider} />}
       {isMobileDevice ? <MobileLayout /> : <DesktopLayout />}
+      <CommandJump surface="pad" />
     </>
   )
 }
