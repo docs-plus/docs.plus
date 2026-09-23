@@ -8,7 +8,7 @@ import { IoCheckmarkCircle } from 'react-icons/io5'
 import { twMerge } from 'tailwind-merge'
 
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
-import { parseDocTitlePayload, plainTitle, sendDocTitleStateless } from '../../utils/titleWrite'
+import { parseDocTitlePayload, plainTitle } from '../../utils/titleWrite'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
 
@@ -127,7 +127,6 @@ const DocTitle = ({ className }: { className?: string }) => {
     if (isSuccess && data) {
       const next = plainTitle(data.title ?? '')
       setTitle(next)
-      sendDocTitleStateless(hocuspocusProvider, next)
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
@@ -137,7 +136,7 @@ const DocTitle = ({ className }: { className?: string }) => {
         timeoutRef.current = null
       }, SAVED_INDICATOR_DURATION)
     }
-  }, [hocuspocusProvider, isSuccess, data, setTitle])
+  }, [isSuccess, data, setTitle])
 
   useEffect(() => {
     return () => {

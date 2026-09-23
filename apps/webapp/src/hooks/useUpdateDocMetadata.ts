@@ -1,6 +1,8 @@
 import * as toast from '@components/toast'
+import { useStore } from '@stores'
 import { onlineManager, useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
+import { plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
 
 export interface UpdateDocMetadataParams {
   title?: string
@@ -34,8 +36,6 @@ const useUpdateDocMetadata = () => {
     // so the last title typed is the last one saved.
     scope: { id: 'updateDocumentMetadata' },
     onMutate: () => {
-      // TanStack assumes online until an 'offline' event, so a pad opened offline would send and fail.
-      if (navigator.onLine === false) onlineManager.setOnline(false)
       if (!onlineManager.isOnline()) {
         toast.Warning(
           'You are offline. This change will save when you reconnect. Keep this page open.'
@@ -76,8 +76,16 @@ const useUpdateDocMetadata = () => {
       if (!json.success || !json.data) throw new Error('Invalid update response')
       return json.data as UpdateDocMetadataResponse
     },
-    onSuccess: () => {
-      // Documents list uses optimistic updates — do NOT invalidate here (avoids flash).
+    // Hook-level, so a save queued offline still relays after its dialog unmounts.
+    // Documents list uses optimistic updates — do NOT invalidate here (avoids flash).
+    onSuccess: (data, { documentId, title }) => {
+      if (title === undefined) return
+      const { settings, setWorkspaceSetting } = useStore.getState()
+      if (settings.metadata?.documentId !== documentId) return
+
+      const next = plainTitle(data.title ?? '')
+      setWorkspaceSetting('metadata', { ...settings.metadata, title: next })
+      sendDocTitleStateless(settings.hocuspocusProvider, next)
     }
   })
 

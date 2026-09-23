@@ -11,7 +11,7 @@ import {
   HOME_OG_IMAGE_WIDTH,
   HOME_SITE_URL
 } from '@components/pages/home/homeMetadata'
-import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
+import { MutationCache, onlineManager, QueryCache, QueryClient } from '@tanstack/react-query'
 import { trackEvent } from '@utils/analytics'
 import { installChunkLoadRecovery } from '@utils/chunkLoadRecovery'
 import { captureUnknown } from '@utils/observability'
@@ -124,17 +124,18 @@ export default function MyApp({
   pageProps: AppPageProps
 }) {
   const router = useRouter()
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        queryCache: new QueryCache({
-          onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })
-        }),
-        mutationCache: new MutationCache({
-          onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })
-        })
+  const [queryClient] = useState(() => {
+    // TanStack assumes online until an 'offline' event, so a page opened offline would send and fail.
+    if (typeof window !== 'undefined' && !navigator.onLine) onlineManager.setOnline(false)
+    return new QueryClient({
+      queryCache: new QueryCache({
+        onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })
+      }),
+      mutationCache: new MutationCache({
+        onError: (error) => captureUnknown(error, { tags: { surface: 'react-query' } })
       })
-  )
+    })
+  })
   const isMobileInitial = pageProps.isMobile || false
   const isAuthServiceAvailable = pageProps.isAuthServiceAvailable
   const documentShell = getRoutePolicy(router.pathname).documentShell

@@ -14,9 +14,10 @@ import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { releasePadEditMode } from '@services/openHeadingChatroom'
 import { useAuthStore, useSheetStore, useStore } from '@stores'
+import { onlineManager } from '@tanstack/react-query'
 import type { Editor } from '@tiptap/core'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
-import { parseDocTitlePayload, plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
+import { parseDocTitlePayload, plainTitle } from '@utils/titleWrite'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import FilterBar from './FilterBar'
@@ -146,8 +147,6 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
 
 const TitleEditContent = () => {
   const metadata = useStore((state) => state.settings.metadata)
-  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
-  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const closeDialog = useStore((state) => state.closeDialog)
   const { isPending, mutate } = useUpdateDocMetadata()
   const [value, setValue] = useState('')
@@ -168,17 +167,13 @@ const TitleEditContent = () => {
       return
     }
 
+    // The hook updates the header and relays the title, even after this dialog unmounts.
     mutate(
       { title: trimmed, documentId: metadata.documentId, slug: metadata.slug },
-      {
-        onSuccess: (responseData) => {
-          const next = plainTitle(responseData.title ?? '')
-          setWorkspaceSetting('metadata', { ...metadata, title: next })
-          sendDocTitleStateless(hocuspocusProvider, next)
-          closeDialog()
-        }
-      }
+      { onSuccess: () => closeDialog() }
     )
+    // Offline, the save is queued; do not leave the dialog on a disabled Saving button.
+    if (!onlineManager.isOnline()) closeDialog()
   }
 
   return (

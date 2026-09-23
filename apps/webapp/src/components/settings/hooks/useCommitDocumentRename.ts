@@ -1,7 +1,6 @@
 import * as toast from '@components/toast'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
-import { useStore } from '@stores'
-import { plainTitle, sendDocTitleStateless } from '@utils/titleWrite'
+import { plainTitle } from '@utils/titleWrite'
 import { useCallback } from 'react'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
@@ -29,18 +28,10 @@ const useCommitDocumentRename = (scope: DocumentsListScope) => {
       const rollback = await cache.patchDocument(documentId, { title: trimmed })
 
       // Owner-scoped PUT of the title only (slug is immutable); optimistic patch above.
+      // The hook relays the title when this is the open pad.
       mutate(
         { documentId, title: trimmed },
         {
-          onSuccess: (responseData) => {
-            const { settings, setWorkspaceSetting } = useStore.getState()
-            const openId = settings.metadata?.documentId
-            if (!openId || documentId !== openId) return
-
-            const next = plainTitle(responseData.title ?? '')
-            setWorkspaceSetting('metadata', { ...settings.metadata, title: next })
-            sendDocTitleStateless(settings.hocuspocusProvider, next)
-          },
           onError: () => {
             rollback?.()
             toast.Error('Couldn’t rename document')
