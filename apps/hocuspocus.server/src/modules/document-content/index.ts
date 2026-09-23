@@ -1,4 +1,6 @@
 export { contentBodyLimit } from './http/controller'
+export type { ContentClient } from './infra/contentClient'
+export { createContentClient } from './infra/contentClient'
 export { createDocumentWithContent } from './infra/contentStore'
 export { init, initWsApply } from './module'
 export type { ContentApplyResponseData, ContentReadResponseData, TiptapDocJson } from './types'

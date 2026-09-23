@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { REV_PATTERN } from '../domain/sections'
+
 /**
  * Shape-level only — encode checks content expressions. Import-light on
  * purpose: `src/schemas/document.schema.ts` imports this file, so pulling
@@ -42,11 +44,8 @@ export const internalApplyBodySchema = z
     mode: z.enum(['replace', 'append', 'section']).default('replace'),
     content: tiptapDocSchema,
     commitMessage: commitMessageSchema.optional(),
-    sectionId: z.string().min(1).max(64).optional(),
-    rev: z
-      .string()
-      .regex(/^[0-9a-f]{12}$/)
-      .optional(),
+    sectionId: z.string().trim().min(1).max(64).optional(),
+    rev: z.string().regex(REV_PATTERN).optional(),
     actor: actorSchema.optional()
   })
   .refine((body) => body.mode !== 'section' || (body.sectionId && body.rev), {

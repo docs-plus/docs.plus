@@ -7,9 +7,9 @@ import type { Logger } from 'pino'
 import { fail, ok } from '../../../http/envelope'
 import { captureUnknown } from '../../../lib/instrument'
 import { emptyContent, liveDocJson, readContent } from '../domain/readContent'
+import type { ContentClient } from '../infra/contentClient'
 import { findDocumentMeta, findHeadRow } from '../infra/contentStore'
 import type { ApplyContent } from '../infra/hocuspocusApply'
-import type { WsApplyClient } from '../infra/wsApplyClient'
 import type {
   ApplyActor,
   ApplyMode,
@@ -142,7 +142,7 @@ export const createGetContentHandler =
 
 export interface ApplyControllerDeps {
   prisma: PrismaClient
-  wsApply: WsApplyClient
+  content: ContentClient
 }
 
 export const createPatchContentHandler =
@@ -159,7 +159,7 @@ export const createPatchContentHandler =
     const meta = await findDocumentMeta(deps.prisma, documentId)
     if (!meta || meta.deletedAt) return fail(c, 404, 'NOT_FOUND', 'Document not found')
 
-    const outcome = await deps.wsApply.apply({
+    const outcome = await deps.content.apply({
       documentId,
       mode,
       content,

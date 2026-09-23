@@ -64,9 +64,6 @@ const headCovers = (head: Uint8Array, after: Map<number, number>): boolean => {
   return true
 }
 
-const sameVector = (a: Map<number, number>, b: Map<number, number>): boolean =>
-  a.size === b.size && [...a].every(([client, clock]) => b.get(client) === clock)
-
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
 export type ApplyContent = (request: ApplyContentRequest) => Promise<ApplyOutcome>
@@ -174,7 +171,7 @@ export const createApplyContent = (
     // worker's new-document email: an actor write credits the actor, never the owner.
     const owner = meta.ownerId ? { sub: meta.ownerId, email: meta.email ?? undefined } : undefined
     const context: ApplyContext = {
-      user: actor ? { sub: actor.sub, email: actor.email } : owner,
+      user: actor ?? owner,
       slug: meta.slug,
       documentId,
       deviceType: 'service'
@@ -202,11 +199,7 @@ export const createApplyContent = (
 
     const room = connection.document
     // Filled inside the transact callback; an object, so TS does not narrow it to its initial value.
-    const run: {
-      result: DocApplyResult
-      before?: Map<number, number>
-      after?: Map<number, number>
-    } = { result: { ok: true } }
+    const run: { result: DocApplyResult; after?: Map<number, number> } = { result: { ok: true } }
     let outcome: ApplyOutcome
     try {
       // Appending into an empty fragment IS the document's first node, so the
@@ -223,7 +216,6 @@ export const createApplyContent = (
 
       try {
         await connection.transact((document) => {
-          run.before = Y.decodeStateVector(Y.encodeStateVector(document))
           const target = sectionId && rev ? { sectionId, rev } : undefined
           run.result = applyContentToDoc(document, encoded.scratch, mode, target)
           run.after = Y.decodeStateVector(Y.encodeStateVector(document))
@@ -256,13 +248,11 @@ export const createApplyContent = (
         .catch((error) => logger.error({ err: error, documentId }, 'Disconnect after apply failed'))
     }
 
-    // Wait only when this apply's disconnect unloaded the room and the write
-    // changed something. A held room never reloads from the stale head, and a
-    // no-op wait would run to the deadline.
+    // Wait only when this apply's disconnect unloaded the room. A held room
+    // never reloads from the stale head.
     const unloaded = hocuspocus.documents.get(documentId) !== room
-    const { before, after } = run
-    if (outcome.status !== 'applied' || !before || !after) return outcome
-    if (sameVector(before, after)) return outcome
+    const { after } = run
+    if (outcome.status !== 'applied' || !after) return outcome
     if (!unloaded) {
       recordPending(documentId, after)
       return outcome

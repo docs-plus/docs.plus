@@ -4,12 +4,11 @@ import ShortUniqueId from 'short-unique-id'
 import { isRecord } from '../../../lib/isRecord'
 import { getMigrationSchema, migrationExtensions } from '../../../lib/migration-extensions'
 import type { EncodeOutcome, TiptapDocJson } from '../types'
-import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES } from '../types'
+import { MAX_CONTENT_DEPTH, MAX_CONTENT_NODES, TOC_ID_ATTR } from '../types'
 
 // UniqueID also stamps the hyperlink mark, but nothing reads a hyperlink's
 // toc-id and this walk visits nodes only — do not "fix" it by descending marks.
 const TOC_ID_NODE_TYPES = new Set(['heading', 'table'])
-const TOC_ID_ATTR = 'toc-id'
 /** Bounded so the hand-rolled 422 envelope cannot leak a stack or a serialized error. */
 const MAX_DETAIL_CHARS = 500
 

@@ -17,6 +17,9 @@ export interface TiptapDocJson {
 export type ApplyMode = 'replace' | 'append' | 'section'
 export type ReadFormat = 'json' | 'text'
 
+/** The attr that keys a heading's section, chat room and digest links. */
+export const TOC_ID_ATTR = 'toc-id'
+
 /** Yjs transaction origin for API-applied content, so client plugins can tell it apart. */
 export const CONTENT_APPLY_ORIGIN = 'document-content-api'
 
@@ -82,12 +85,9 @@ export type ReadOutcome =
 export type CreateOutcome =
   { status: 'created'; document: DocumentMetadata } | { status: 'invalid-content'; detail: string }
 
-/** `not-loaded`: no room here, so the caller decodes the persisted head itself. */
-export type LiveReadOutcome =
-  | { status: 'ok'; content: JSONContent }
-  | { status: 'not-loaded' }
-  | { status: 'not-found' }
-  | { status: 'unreachable' }
+/** The newest content: the live room when one is loaded, else the persisted head. */
+export type ContentReadOutcome =
+  { status: 'ok'; content: JSONContent } | { status: 'not-found' } | { status: 'unavailable' }
 
 /** The person an MCP write acts for. Absent on REST, which names nobody. */
 export interface ApplyActor {
@@ -101,7 +101,7 @@ export interface ApplyRequest {
   content: TiptapDocJson
   /** `toc-id` of the target heading; required for `section`. */
   sectionId?: string
-  /** `sectionRev` the caller read; required for `section`. */
+  /** The section `rev` the caller read; required for `section`. */
   rev?: string
   actor?: ApplyActor
   commitMessage?: string
@@ -135,7 +135,7 @@ export interface ApplyContentRequest extends Omit<ApplyRequest, 'commitMessage'>
  * means nobody, while an absent key means "fall back to the connection user".
  */
 export interface ApplyContext {
-  user?: { sub: string; email?: string }
+  user?: ApplyActor
   slug: string
   documentId: string
   deviceType: 'service'

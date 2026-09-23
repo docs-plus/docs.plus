@@ -5,7 +5,7 @@ import * as Y from 'yjs'
 import { migrationExtensions } from '../../../../lib/migration-extensions'
 import { applyContentToDoc } from '../../domain/applyContentToDoc'
 import { liveDocJson } from '../../domain/readContent'
-import { findSectionBody, sectionRev } from '../../domain/sections'
+import { findSection } from '../../domain/sections'
 import type { TiptapDocJson } from '../../types'
 
 const doc = (...content: Record<string, unknown>[]): TiptapDocJson => ({ type: 'doc', content })
@@ -26,10 +26,9 @@ const liveDocWith = (payload: TiptapDocJson): Y.Doc => {
   return live
 }
 
-const decode = (live: Y.Doc) =>
-  TiptapTransformer.fromYdoc(live, 'default') as { content: Record<string, any>[] }
+const decode = (live: Y.Doc) => liveDocJson(live) as { content: Record<string, any>[] }
 
-const blockText = (live: Y.Doc): string[] =>
+const textOf = (live: Y.Doc): string[] =>
   decode(live).content.map((node) =>
     (node.content ?? []).map((child: any) => child.text ?? '').join('')
   )
@@ -41,7 +40,7 @@ describe('applyContentToDoc', () => {
     )
     applyContentToDoc(live, scratchFrom(doc(heading('NEW'))), 'replace')
 
-    expect(blockText(live)).toEqual(['NEW'])
+    expect(textOf(live)).toEqual(['NEW'])
   })
 
   test('append preserves existing content and extends it', () => {
@@ -52,7 +51,7 @@ describe('applyContentToDoc', () => {
       'append'
     )
 
-    expect(blockText(live)).toEqual(['Title', 'added'])
+    expect(textOf(live)).toEqual(['Title', 'added'])
   })
 
   test('marks and attrs survive the cross-document clone', () => {
@@ -132,7 +131,7 @@ describe('applyContentToDoc', () => {
     }
 
     expect(() => applyContentToDoc(live, scratch, 'replace')).toThrow('pathological node')
-    expect(blockText(live)).toEqual(['OLD', 'keep'])
+    expect(textOf(live)).toEqual(['OLD', 'keep'])
     expect(updates).toBe(0)
   })
 })
@@ -159,38 +158,38 @@ const outline = () =>
     para('three body')
   )
 
-describe('findSectionBody and sectionRev', () => {
+describe('findSection', () => {
   test('a body stops at the next heading of any level; the last runs to the end', () => {
-    expect(findSectionBody(outline(), 'two')).toEqual({
+    expect(findSection(outline(), 'two')).toMatchObject({
       headingIndex: 2,
       start: 3,
       end: 4,
       level: 2
     })
-    expect(findSectionBody(outline(), 'three')).toEqual({
+    expect(findSection(outline(), 'three')).toMatchObject({
       headingIndex: 4,
       start: 5,
       end: 6,
       level: 3
     })
-    expect(findSectionBody(outline(), 'missing')).toBeNull()
-    expect(sectionRev(outline(), 'missing')).toBeNull()
+    expect(findSection(outline(), 'missing')).toBeNull()
   })
 
   test('a subsection edit leaves the parent rev alone; attr key order does not count', () => {
+    const revOf = (json: TiptapDocJson, id: string) => findSection(json, id)?.rev
     const edited = outline()
     edited.content[5] = para('changed')
-    expect(sectionRev(edited, 'two')).toBe(sectionRev(outline(), 'two'))
-    expect(sectionRev(edited, 'three')).not.toBe(sectionRev(outline(), 'three'))
+    expect(revOf(edited, 'two')).toBe(revOf(outline(), 'two'))
+    expect(revOf(edited, 'three')).not.toBe(revOf(outline(), 'three'))
 
     const reordered = outline()
     reordered.content[2] = { ...section('Two', 2, 'two'), attrs: { 'toc-id': 'two', level: 2 } }
-    expect(sectionRev(reordered, 'two')).toBe(sectionRev(outline(), 'two'))
+    expect(revOf(reordered, 'two')).toBe(revOf(outline(), 'two'))
   })
 })
 
 describe('applyContentToDoc — section mode', () => {
-  const revOf = (live: Y.Doc, id: string) => sectionRev(liveDocJson(live), id) as string
+  const revOf = (live: Y.Doc, id: string) => findSection(liveDocJson(live), id)?.rev as string
 
   test('replaces only the body and keeps the heading node and its toc-id', () => {
     const live = liveDocWith(outline())
@@ -202,7 +201,7 @@ describe('applyContentToDoc — section mode', () => {
     )
 
     expect(result).toEqual({ ok: true })
-    expect(blockText(live)).toEqual([
+    expect(textOf(live)).toEqual([
       'Title',
       'intro',
       'Two',
@@ -216,7 +215,7 @@ describe('applyContentToDoc — section mode', () => {
 
   test('a stale rev or a missing heading is a conflict and writes nothing', () => {
     const live = liveDocWith(outline())
-    const before = blockText(live)
+    const before = textOf(live)
 
     expect(
       applyContentToDoc(live, scratchFrom(doc(para('x'))), 'section', {
@@ -230,12 +229,12 @@ describe('applyContentToDoc — section mode', () => {
         rev: '000000000000'
       })
     ).toEqual({ ok: false, status: 'conflict', detail: 'section not found' })
-    expect(blockText(live)).toEqual(before)
+    expect(textOf(live)).toEqual(before)
   })
 
   test('a heading at or above the target level is refused and writes nothing', () => {
     const live = liveDocWith(outline())
-    const before = blockText(live)
+    const before = textOf(live)
 
     for (const level of [1, 2]) {
       const result = applyContentToDoc(
@@ -246,6 +245,6 @@ describe('applyContentToDoc — section mode', () => {
       )
       expect(result).toMatchObject({ ok: false, status: 'invalid-content' })
     }
-    expect(blockText(live)).toEqual(before)
+    expect(textOf(live)).toEqual(before)
   })
 })

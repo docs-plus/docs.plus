@@ -3,9 +3,9 @@ import type * as Y from 'yjs'
 import type { ApplyMode } from '../types'
 import { CONTENT_APPLY_ORIGIN } from '../types'
 import { liveDocJson } from './readContent'
-import { findSectionBody, sectionRev } from './sections'
+import { findSection } from './sections'
 
-export interface SectionTarget {
+interface SectionTarget {
   sectionId: string
   rev: string
 }
@@ -26,18 +26,16 @@ const locateSection = (
   target: SectionTarget
 ): { ok: true; start: number; end: number } | Exclude<DocApplyResult, { ok: true }> => {
   const json = liveDocJson(doc)
-  const rev = sectionRev(json, target.sectionId)
-  if (rev === null) return { ok: false, status: 'conflict', detail: 'section not found' }
-  if (rev !== target.rev) return { ok: false, status: 'conflict', detail: 'section changed' }
+  const section = findSection(json, target.sectionId)
+  if (!section) return { ok: false, status: 'conflict', detail: 'section not found' }
+  if (section.rev !== target.rev)
+    return { ok: false, status: 'conflict', detail: 'section changed' }
 
   // One JSON entry per fragment item, so the indices carry over. A mismatch
   // means the mapping broke, and a splice would land on the wrong nodes.
   if ((json.content ?? []).length !== doc.getXmlFragment('default').length) {
     return { ok: false, status: 'conflict', detail: 'section could not be addressed' }
   }
-
-  const section = findSectionBody(json, target.sectionId)
-  if (!section) return { ok: false, status: 'conflict', detail: 'section not found' }
 
   // A heading at or above the target would re-parent the subsections after it.
   // Read from the source nodes: a clone holds its attributes as pending values.

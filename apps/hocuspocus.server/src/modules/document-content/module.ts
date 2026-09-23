@@ -2,8 +2,8 @@ import type { Hono } from 'hono'
 
 import { createInternalApp } from './http/internalApp'
 import { createRouter } from './http/router'
+import { createContentClient } from './infra/contentClient'
 import { createApplyContent } from './infra/hocuspocusApply'
-import { createWsApplyClient } from './infra/wsApplyClient'
 import type { InitDeps, InitWsApplyDeps } from './types'
 
 export interface InitResult {
@@ -15,9 +15,10 @@ export interface InitWsApplyResult {
 }
 
 export const init = (deps: InitDeps): InitResult => {
-  const wsApply = createWsApplyClient({
+  const content = createContentClient({
     baseUrl: deps.wsApplyBaseUrl,
     serviceRoleKey: deps.serviceRoleKey,
+    prisma: deps.prisma,
     logger: deps.logger
   })
 
@@ -26,7 +27,7 @@ export const init = (deps: InitDeps): InitResult => {
       prisma: deps.prisma,
       logger: deps.logger,
       verifyServiceRole: deps.verifyServiceRole,
-      wsApply
+      content
     })
   }
 }

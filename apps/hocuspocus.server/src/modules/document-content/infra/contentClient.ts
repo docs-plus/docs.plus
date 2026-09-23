@@ -1,19 +1,23 @@
+import type { PrismaClient } from '@prisma/client'
 import type { JSONContent } from '@tiptap/core'
 import type { Logger } from 'pino'
 
 import { internalHop } from '../../../lib/internalHop'
 import { isRecord } from '../../../lib/isRecord'
-import type { ApplyRequest, LiveReadOutcome, WsApplyOutcome } from '../types'
+import { emptyContent, readContent } from '../domain/readContent'
+import type { ApplyRequest, ContentReadOutcome, WsApplyOutcome } from '../types'
 import { DOCUMENT_BUSY_CODE, NOT_CONFIRMED_CODE, WS_APPLY_TIMEOUT_MS } from '../types'
+import { findHeadRow } from './contentStore'
 
-export interface WsApplyClient {
+export interface ContentClient {
   apply: (request: ApplyRequest) => Promise<WsApplyOutcome>
-  readLive: (documentId: string) => Promise<LiveReadOutcome>
+  read: (documentId: string) => Promise<ContentReadOutcome>
 }
 
-export interface WsApplyClientDeps {
+export interface ContentClientDeps {
   baseUrl: string
   serviceRoleKey: string | null
+  prisma: PrismaClient
   logger: Logger
 }
 
@@ -27,8 +31,8 @@ const dataField = (body: unknown): Record<string, unknown> | undefined =>
   isRecord(body) && isRecord(body.data) ? body.data : undefined
 
 /** REST → WS hop. Transport and envelope failures both collapse to `unreachable` (503). */
-export const createWsApplyClient = (deps: WsApplyClientDeps): WsApplyClient => {
-  const apply: WsApplyClient['apply'] = async ({
+export const createContentClient = (deps: ContentClientDeps): ContentClient => {
+  const apply: ContentClient['apply'] = async ({
     documentId,
     mode,
     content,
@@ -100,7 +104,10 @@ export const createWsApplyClient = (deps: WsApplyClientDeps): WsApplyClient => {
     }
   }
 
-  const readLive: WsApplyClient['readLive'] = async (documentId) => {
+  // The read shares the apply's hop budget. No read has been timed, so it has no number of its own.
+  const readLive = async (
+    documentId: string
+  ): Promise<ContentReadOutcome | { status: 'not-loaded' }> => {
     const hop = await internalHop({
       baseUrl: deps.baseUrl,
       path: ['internal', 'documents', documentId, 'content', 'live'],
@@ -121,8 +128,24 @@ export const createWsApplyClient = (deps: WsApplyClientDeps): WsApplyClient => {
         : { err: hop.error, documentId, url: hop.url },
       'Internal live read failed'
     )
-    return { status: 'unreachable' }
+    return { status: 'unavailable' }
   }
 
-  return { apply, readLive }
+  // A loaded room answers from the collab process. A cold one is decoded here,
+  // so a read never blocks the collab event loop.
+  const read: ContentClient['read'] = async (documentId) => {
+    const live = await readLive(documentId)
+    if (live.status !== 'not-loaded') return live
+    const head = await findHeadRow(deps.prisma, documentId)
+    if (!head) return { status: 'ok', content: emptyContent('json') as JSONContent }
+    const decoded = readContent(head.data, 'json')
+    if (decoded.ok) return { status: 'ok', content: decoded.content as JSONContent }
+    deps.logger.error(
+      { err: decoded.error, documentId, version: head.version },
+      'Snapshot decode failed'
+    )
+    return { status: 'unavailable' }
+  }
+
+  return { apply, read }
 }
