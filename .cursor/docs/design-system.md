@@ -794,6 +794,17 @@ full-viewport shell — `components/pages/document/components/PrivateDocumentGat
 
 > **SSR:** When gate applies, generic `<Head>` (no private title/description in OG); `robots: noindex`.
 
+### OAuth consent — utility route — both
+
+full-viewport shell — `apps/webapp/src/pages/oauth/consent.tsx` (same frame as PrivateDocumentGate)
+
+| State   | Recipe                                                                                                                                                                                                                                                                              |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame   | Gate frame, column `max-w-md`; page-owned `GlobalDialog`; `robots: noindex, nofollow`                                                                                                                                                                                               |
+| status  | Signed out, ended, unavailable, returning: gate card (lock disc, title, `/70` body). Signed out → **Sign in** `primary block min-h-12` → `openInlineSignInDialog({ returnTo })`; unavailable → **Try again**                                                                        |
+| details | Client block `border-warning/30 bg-warning/10 rounded-box border p-4`: `Icons.alert text-warning` + "Unverified app" eyebrow, name `font-semibold [overflow-wrap:anywhere]` in `<bdi>`, redirect origin `font-mono break-all`; plain-word list; `text-xs` lifetime + signed-in line |
+| actions | **Deny** `ghost` + **Approve** `primary`, both `min-h-12 flex-1`; `flex-col-reverse` on phones puts Approve on top; busy = `loading` on the pressed one, both disabled                                                                                                              |
+
 ### ShareModal — both
 
 modal (L2) — `components/TipTap/pad-title-section/ShareModal.tsx`
