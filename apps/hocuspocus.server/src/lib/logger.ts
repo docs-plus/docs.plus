@@ -45,7 +45,14 @@ export const logger = pino({
       'password',
       'token',
       'accessToken',
-      'refreshToken'
+      'refreshToken',
+      // Pino matches top-level keys only; an OAuth body or an HTTP client error nests them.
+      'access_token',
+      'refresh_token',
+      '*.access_token',
+      '*.refresh_token',
+      '*.headers.authorization',
+      'err.config.headers.Authorization'
     ],
     censor: '[REDACTED]'
   }
