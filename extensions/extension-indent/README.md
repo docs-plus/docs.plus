@@ -15,6 +15,8 @@
 
 Tiptap extension for literal indent: Tab inserts an indent string at the caret or at each selected line start, and Shift-Tab removes it.
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-indent/examples/vanilla?file=main.ts)
+
 ## Why use it
 
 - **Lists and tables keep Tab.** The extension registers at priority `25`, below the Tiptap default `100`. So `@tiptap/extension-list` sinks list items and `@tiptap/extension-table` moves between cells first.
@@ -41,6 +43,10 @@ Installs with no runtime dependencies.
 Coming from `0.1.x`? Read [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md#migrating-from-01x) first — `2.0.0` renames one option.
 
 ## Quickstart
+
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-indent/examples/vanilla?file=main.ts)
+
+Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-indent/examples/vanilla).
 
 The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
 
@@ -128,6 +134,7 @@ Indent.configure({ indentChars: '\t' })
 | [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/guide.md)                    | Styling, multiline selections, outdent at the caret, persistence                                                        |
 | [Migrating from 0.1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/docs/migration.md) | `allowedNodeTypes` to `allowedIndentContexts`, the changed defaults                                                     |
 | [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-indent/CHANGELOG.md)                 | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-indent/README.md)                             | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

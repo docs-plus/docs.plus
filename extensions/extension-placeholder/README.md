@@ -17,6 +17,8 @@ Tiptap placeholder extension that shows hint text in the empty textblock at the 
 
 A textblock is a node that holds inline text, such as a paragraph or a heading.
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-placeholder/examples/vanilla?file=main.ts)
+
 ## Why use it
 
 - **Cost tracks cursor depth, not document length.** Tiptap's built-in Placeholder scans every top-level block with `doc.descendants` on every editor update. This package walks up from the cursor instead.
@@ -43,6 +45,10 @@ Installs with no runtime dependencies.
 To move from Tiptap's built-in Placeholder, see [Migrating from the built-in Placeholder](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/migration.md#migrating-from-the-built-in-placeholder).
 
 ## Quickstart
+
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-placeholder/examples/vanilla?file=main.ts)
+
+Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-placeholder/examples/vanilla).
 
 Register `Placeholder` in the extensions array and set the hint text. The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
 
@@ -133,12 +139,13 @@ The extension has no focus option. To hide the hint while the editor has no focu
 
 ## Documentation
 
-| Guide                                                                                                                                          | What it covers                                                                     |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/api.md)                                 | Options, the `placeholder` callback, the full caveats list, and TypeScript exports |
-| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/guide.md)                                       | How it works, Styling and class names, and collaborative editing                   |
-| [Migrating from the built-in Placeholder](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/migration.md) | Moving from Tiptap's built-in Placeholder: option map and behavior differences     |
-| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/CHANGELOG.md)                                    | Every release and its breaking changes                                             |
+| Guide                                                                                                                                          | What it covers                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/api.md)                                 | Options, the `placeholder` callback, the full caveats list, and TypeScript exports                                      |
+| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/guide.md)                                       | How it works, Styling and class names, and collaborative editing                                                        |
+| [Migrating from the built-in Placeholder](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/docs/migration.md) | Moving from Tiptap's built-in Placeholder: option map and behavior differences                                          |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-placeholder/CHANGELOG.md)                                    | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-placeholder/README.md)                                                | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

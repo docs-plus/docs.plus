@@ -8,12 +8,14 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/preview-dark.png">
-    <img alt="Embedded image with hover toolbar and resize gripper in the editor" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/preview-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/demo-dark.gif">
+    <img alt="Pasting a YouTube URL embeds a player, and dragging a corner gripper resizes it" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hypermultimedia/assets/demo-light.gif">
   </picture>
 </p>
 
 Tiptap extension for embedding media in the editor: images, audio, video, and provider embeds (YouTube, Vimeo, SoundCloud, Spotify, X, Loom).
+
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/examples/vanilla?file=main.ts)
 
 ## Why use it
 
@@ -42,6 +44,10 @@ Upgrading from `1.x`? Version 2.0.0 renames the stored node types to camelCase a
 
 ## Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/examples/vanilla?file=main.ts)
+
+Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hypermultimedia/examples/vanilla).
+
 The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
 
 ```ts
@@ -54,8 +60,7 @@ import '@docs.plus/extension-hypermultimedia/styles.css'
 const editor = new Editor({
   element: document.querySelector('#editor')!,
   // One image, then an empty paragraph to paste into.
-  content:
-    '<img src="https://docs.plus/demo-assets/extensions__extension-hypermultimedia__assets__image-light.png"><p></p>',
+  content: '<img src="https://docs.plus/demo-assets/sample-photo.jpg"><p></p>',
   // No `configure` call: all nine nodes load with their defaults.
   extensions: [StarterKit, HyperMultimediaKit]
 })
@@ -243,17 +248,18 @@ The shots below show every node the kit ships: the local asset files `image`, `v
 
 ## Documentation
 
-| Guide                                                                                                                                        | What it covers                                                                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md)                           | Kit options, per-node options, default sizes, commands, keyboard shortcuts, the full caveats list, TypeScript exports |
-| [Media toolbar](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md)                 | Toolbar actions, custom actions and icons, captions, a host-built toolbar                                             |
-| [Embeds](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/embeds.md)                               | Player options for YouTube, Vimeo, Loom, SoundCloud, Spotify and X                                                    |
-| [Paste and import](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md)           | Markdown import and export, paste precedence with a link extension, image file paste                                  |
-| [Resize and loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md) | Drag-resize limits, the loading shell and a custom overlay                                                            |
-| [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/styling.md)                             | The stylesheet, the `--hm-*` theme tokens, class names                                                                |
-| [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md)                           | The scheme gate on stored `src` values, the View original allowlist                                                   |
-| [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md)                | Renamed node types and exports, removed API, the stored-data migration                                                |
-| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md)                              | Every release and its breaking changes                                                                                |
+| Guide                                                                                                                                        | What it covers                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/api.md)                           | Kit options, per-node options, default sizes, commands, keyboard shortcuts, the full caveats list, TypeScript exports   |
+| [Media toolbar](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/media-toolbar.md)                 | Toolbar actions, custom actions and icons, captions, a host-built toolbar                                               |
+| [Embeds](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/embeds.md)                               | Player options for YouTube, Vimeo, Loom, SoundCloud, Spotify and X                                                      |
+| [Paste and import](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/paste-and-import.md)           | Markdown import and export, paste precedence with a link extension, image file paste                                    |
+| [Resize and loading shell](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/resize-and-loading.md) | Drag-resize limits, the loading shell and a custom overlay                                                              |
+| [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/styling.md)                             | The stylesheet, the `--hm-*` theme tokens, class names                                                                  |
+| [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/security.md)                           | The scheme gate on stored `src` values, the View original allowlist                                                     |
+| [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/docs/migration.md)                | Renamed node types and exports, removed API, the stored-data migration                                                  |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hypermultimedia/CHANGELOG.md)                              | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-hypermultimedia/README.md)                                          | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

@@ -17,6 +17,8 @@ Tiptap mark for inline code (`` `code` ``).
 
 It takes the place of `@tiptap/extension-code` and StarterKit's `code` mark, with the same `<code>` tag and the same `Mod-e` key.
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-inline-code/examples/vanilla?file=main.ts)
+
 ## Why use it
 
 - **No stray space when you leave a code span.** `@tiptap/extension-code` inserts a space when `ArrowRight` exits a code span. This mark inserts no character into the document.
@@ -46,6 +48,10 @@ Upgrading from `@tiptap/extension-code`? See [Migrating from `@tiptap/extension-
 
 ## Quickstart
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-inline-code/examples/vanilla?file=main.ts)
+
+Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-inline-code/examples/vanilla).
+
 The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
 
 ```ts
@@ -70,18 +76,18 @@ editor.mount(document.querySelector('#editor')!)
 editor.commands.setContent('<p>Call <code>render()</code> first.</p>')
 ```
 
-The package ships no CSS, so the span inherits no styling of its own. Add this rule to see the span. [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/guide.md#styling) has more rules.
+The package ships no CSS, so the span inherits no styling of its own. Add this rule to see the span. `light-dark()` follows your page's `color-scheme`, so the span stays readable in dark mode. [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/guide.md#styling) has more rules.
 
 ```css
 .ProseMirror :not(pre) > code {
-  background: #f3f4f6;
+  background: light-dark(#f3f4f6, #374151);
   border-radius: 4px;
   padding: 0.15em 0.3em;
   font-size: 0.9em;
 }
 ```
 
-You should see one paragraph, with `render()` on a light grey background. Type text between single backticks, and the backticks go away. Select a word and press `Mod-e` (Cmd on macOS, Ctrl elsewhere) to toggle the mark. Pasted backtick text converts the same way.
+You should see one paragraph, with `render()` on a grey background. Type text between single backticks, and the backticks go away. Select a word and press `Mod-e` (Cmd on macOS, Ctrl elsewhere) to toggle the mark. Pasted backtick text converts the same way.
 
 ## Caveats
 
@@ -131,12 +137,13 @@ The full setup is in [Markdown](https://github.com/docs-plus/docs.plus/blob/main
 
 ## Documentation
 
-| Guide                                                                                                                                          | What it covers                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/api.md)                                 | Options, commands, keyboard shortcuts, the full caveats list, and TypeScript exports             |
-| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/guide.md)                                       | Styling, input and paste rules, a custom delimiter, and Markdown                                 |
-| [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md) | Moving from `@tiptap/extension-code`: five steps, a stored-JSON rename, and behavior differences |
-| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/CHANGELOG.md)                                    | Every release and its breaking changes                                                           |
+| Guide                                                                                                                                          | What it covers                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/api.md)                                 | Options, commands, keyboard shortcuts, the full caveats list, and TypeScript exports                                    |
+| [Guide](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/guide.md)                                       | Styling, input and paste rules, a custom delimiter, and Markdown                                                        |
+| [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md) | Moving from `@tiptap/extension-code`: five steps, a stored-JSON rename, and behavior differences                        |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/CHANGELOG.md)                                    | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-inline-code/README.md)                                                | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

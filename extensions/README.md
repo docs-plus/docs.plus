@@ -26,6 +26,8 @@ The table below adds the CSS export and the clean-room port of each package.
 | [`extension-inline-code`](./extension-inline-code/)         | Inline code mark (`Mod-e`, backtick rules)                                                    | none           | 5176            |
 | [`extension-placeholder`](./extension-placeholder/)         | Hint text in the empty textblock at the cursor; cost tracks cursor depth, not document length | none           | 5177            |
 
+Each package README has an **Open in StackBlitz** button. It runs that package's Quickstart in the browser, with nothing to install.
+
 ## Install
 
 ```sh
@@ -61,6 +63,18 @@ Three of these entries are required, not optional: two packages replace a Starte
 - **Placeholder + the Tiptap built-in — required.** Remove the built-in from the extensions array. Both register the name `placeholder`, so both decorate the document.
 - **Hyperlink + hypermultimedia.** `Hyperlink.configure({ shouldAutoLink: (url) => !isMediaUrl(url) })`, so a pasted media URL becomes a media node instead of a link. `isMediaUrl` matches every provider whatever the kit configuration holds, so compose the veto from the per-provider validators when you disable providers. Each package also owns its own popover controller, so opening a popover in one never dismisses the popover of the other.
 - **Indent + lists and tables.** `@tiptap/extension-list` and `@tiptap/extension-table` bind Tab at the Tiptap default `priority: 100`. `extension-indent` registers at `25`, so it sees Tab last, and literal indent runs only where list and table both return `false`.
+
+## Using these packages with AI coding agents
+
+The package READMEs are written for AI coding agents as well as people. Each Caveats section lists every setup mistake that fails with no error. Each Quickstart runs as written, and an **Open in StackBlitz** button runs it.
+
+Point your agent at the README for the version you installed. jsDelivr serves it as plain Markdown:
+
+```text
+https://cdn.jsdelivr.net/npm/@docs.plus/extension-<name>@<version>/README.md
+```
+
+The docs are also indexed on [Context7](https://context7.com/docs-plus/docs.plus) as the library `/docs-plus/docs.plus`. Agents that use the Context7 MCP server can look them up there.
 
 ## Vocabulary
 

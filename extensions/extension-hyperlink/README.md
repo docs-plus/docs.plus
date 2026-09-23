@@ -8,14 +8,16 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-dark.png">
-    <img alt="Preview popover on a link — copy, edit, and remove actions" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/preview-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/demo-dark.gif">
+    <img alt="Typing "docs.plus" autolinks it, clicking the link opens a preview with copy, edit and remove, and Mod-K on a selected word opens the create-link form" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/extensions/extension-hyperlink/assets/demo-light.gif">
   </picture>
 </p>
 
 Tiptap hyperlink mark with optional prebuilt popovers for creating, previewing, and editing links.
 
 It replaces the `@tiptap/extension-link` mark that StarterKit v3 bundles.
+
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink/examples/vanilla?file=main.ts)
 
 ## Why use it
 
@@ -43,6 +45,10 @@ Installs two runtime dependencies, `@floating-ui/dom` and `linkifyjs`. The popov
 Upgrading from `1.x`? Option names, command names, and CSS class names all changed — see [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md#migrating-from-1x).
 
 ## Quickstart
+
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink/examples/vanilla?file=main.ts)
+
+Run this Quickstart in your browser first, with nothing to install. The app lives in [`examples/vanilla`](https://github.com/docs-plus/docs.plus/tree/main/extensions/extension-hyperlink/examples/vanilla).
 
 The host page needs one mount point: `<div id="editor"></div>`. The snippet also imports `@tiptap/starter-kit`. Add it with `npm install @tiptap/starter-kit` when your app has none yet.
 
@@ -169,16 +175,17 @@ Prebuilt create, preview, and edit popovers (`styles.css` + `popovers` config). 
 
 ## Documentation
 
-| Guide                                                                                                                   | What it covers                                                                                       |
-| ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md)            | Options, commands, keyboard shortcuts, the full caveats list, server bundles, and TypeScript exports |
-| [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md)            | The three popover slots, factory option shapes, openers, and custom popovers                         |
-| [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md)              | The stylesheet, `--hl-*` theme tokens, dark mode, and class names                                    |
-| [URL handling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/url-handling.md)    | Href normalization, scheme classification, and Markdown round-trip                                   |
-| [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/security.md)            | The dangerous-scheme gate at each boundary, and the exported safety helpers                          |
-| [Advanced](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/advanced.md)            | The floating-popover primitive, the UI controller, and the tooltip primitive                         |
-| [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md) | Renamed options, commands, CSS classes, and popover APIs                                             |
-| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md)               | Every release and its breaking changes                                                               |
+| Guide                                                                                                                   | What it covers                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [API reference](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/api.md)            | Options, commands, keyboard shortcuts, the full caveats list, server bundles, and TypeScript exports                    |
+| [Popovers](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/popovers.md)            | The three popover slots, factory option shapes, openers, and custom popovers                                            |
+| [Styling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/styling.md)              | The stylesheet, `--hl-*` theme tokens, dark mode, and class names                                                       |
+| [URL handling](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/url-handling.md)    | Href normalization, scheme classification, and Markdown round-trip                                                      |
+| [Security](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/security.md)            | The dangerous-scheme gate at each boundary, and the exported safety helpers                                             |
+| [Advanced](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/advanced.md)            | The floating-popover primitive, the UI controller, and the tooltip primitive                                            |
+| [Migrating from 1.x](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/docs/migration.md) | Renamed options, commands, CSS classes, and popover APIs                                                                |
+| [Changelog](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-hyperlink/CHANGELOG.md)               | Every release and its breaking changes                                                                                  |
+| [For AI coding agents](https://cdn.jsdelivr.net/npm/@docs.plus/extension-hyperlink/README.md)                           | This README as plain Markdown for your agent. The docs are also on [Context7](https://context7.com/docs-plus/docs.plus) |
 
 ## Part of docs.plus
 

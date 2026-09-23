@@ -8,8 +8,7 @@ import '@docs.plus/extension-hypermultimedia/styles.css'
 const editor = new Editor({
   element: document.querySelector('#editor')!,
   // One image, then an empty paragraph to paste into.
-  content:
-    '<img src="https://docs.plus/demo-assets/extensions__extension-hypermultimedia__assets__image-light.png"><p></p>',
+  content: '<img src="https://docs.plus/demo-assets/sample-photo.jpg"><p></p>',
   // No `configure` call: all nine nodes load with their defaults.
   extensions: [StarterKit, HyperMultimediaKit]
 })
