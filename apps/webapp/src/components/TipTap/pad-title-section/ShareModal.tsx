@@ -1,4 +1,5 @@
 import CloseButton from '@components/ui/CloseButton'
+import { ModalHeading } from '@components/ui/Dialog'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
@@ -102,7 +103,9 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
     <div className="p-6">
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h2 className="text-base-content text-lg font-semibold">Share this document</h2>
+          <ModalHeading className="text-base-content text-lg font-semibold">
+            Share this document
+          </ModalHeading>
           <p className="text-base-content/50 mt-0.5 text-sm">
             {isPrivate
               ? 'This document is private. Only you can open it.'

@@ -1,4 +1,5 @@
 import Button from '@components/ui/Button'
+import { ModalHeading } from '@components/ui/Dialog'
 import { useStore } from '@stores'
 import { useEffect } from 'react'
 
@@ -25,7 +26,9 @@ function MakePrivateDialog({ onConfirm, onDismiss }: MakePrivateDialogProps) {
 
   return (
     <div className="p-5">
-      <h2 className="text-base-content text-base font-semibold">Make this document private?</h2>
+      <ModalHeading className="text-base-content text-base font-semibold">
+        Make this document private?
+      </ModalHeading>
       <p className="text-base-content/70 mt-2 text-sm">
         Only you will be able to open it. Anyone currently viewing will lose access.
       </p>

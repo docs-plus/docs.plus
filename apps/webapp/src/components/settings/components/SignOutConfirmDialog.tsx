@@ -1,4 +1,5 @@
 import Button from '@components/ui/Button'
+import { ModalHeading } from '@components/ui/Dialog'
 import { useStore } from '@stores'
 
 type SignOutConfirmDialogProps = {
@@ -16,7 +17,7 @@ function SignOutConfirmDialog({ onConfirm }: SignOutConfirmDialogProps) {
 
   return (
     <div className="p-5">
-      <h2 className="text-base-content text-base font-semibold">Sign out?</h2>
+      <ModalHeading className="text-base-content text-base font-semibold">Sign out?</ModalHeading>
       <p className="text-base-content/70 mt-2 text-sm">
         You&apos;ll need to sign in again to edit documents or join the conversation.
       </p>
