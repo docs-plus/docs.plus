@@ -1,14 +1,22 @@
 import { openMakePrivateConfirm } from '@components/settings/openMakePrivateConfirm'
+import * as toast from '@components/toast'
 import {
   type DocumentAccessField,
   type DocumentAccessPatch,
   patchDocumentAccess
 } from '@hooks/patchDocumentAccess'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
-import { useQueryClient } from '@tanstack/react-query'
+import { onlineManager, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
 
 export type { DocumentAccessField }
+
+// Access flips never queue offline: a Private or Read-only change must land now or not at all.
+function refuseOffline(): boolean {
+  if (onlineManager.isOnline()) return false
+  toast.Error('You are offline. This change was not saved.')
+  return true
+}
 
 export function useDocumentAccessMutation(args: {
   documentId: string
@@ -24,6 +32,7 @@ export function useDocumentAccessMutation(args: {
 
   const applyPatch = useCallback(
     (patch: DocumentAccessPatch, pendingField: DocumentAccessField) => {
+      if (refuseOffline()) return
       setPending(pendingField)
       patchDocumentAccess({
         documentId,
@@ -40,6 +49,7 @@ export function useDocumentAccessMutation(args: {
   const setPrivate = useCallback(
     (next: boolean) => {
       if (next) {
+        if (refuseOffline()) return
         setConfirmingPrivate(true)
         openMakePrivateConfirm({
           // Private seals the room — clear Read-only so the pair can't both stay on.
