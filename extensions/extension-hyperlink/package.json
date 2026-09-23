@@ -48,6 +48,7 @@
     "cypress:run": "bunx cypress run",
     "cypress:open": "bunx cypress open",
     "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5173 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
+    "docs:gif": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5173 'bun cypress/docs/demo-gif.ts'",
     "prepack": "bunx release-prepack",
     "prepublishOnly": "bunx release-preflight"
   },

@@ -11,10 +11,11 @@ bun run test:unit:watch  # unit in watch mode
 bun run test:e2e         # Cypress headless against the current dist/ (run build first)
 bun run test:e2e:watch   # same, but opens the Cypress runner
 bun run playground       # playground only, http://127.0.0.1:5173 (run build first)
-bun run docs:screenshots # regenerate README hero PNGs in assets/
+bun run docs:screenshots # regenerate README gallery PNGs in assets/
+bun run docs:gif         # regenerate the README hero GIFs in assets/
 ```
 
-`docs:screenshots` overwrites tracked `assets/preview-*.png` (README hotlinks).
+`docs:screenshots` overwrites tracked `assets/preview-*.png` (README hotlinks). `docs:gif` records the README hero in light and dark and overwrites `assets/demo-*.gif`. It needs `ffmpeg` on your PATH. Run it after any change to the popover or toolbar UI, together with `docs:screenshots`.
 
 The playground accepts query-string flags so the dedicated specs can exercise opt-in behaviors without forking the bootstrap:
 

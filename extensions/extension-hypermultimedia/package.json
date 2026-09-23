@@ -40,6 +40,7 @@
     "typecheck": "tsc --noEmit",
     "playground": "bun --hot docs-playground --entry ./test/playground/main.ts --port 5174 --readme-media-dir ./assets/readme-media",
     "docs:screenshots": "bun run --filter @docs.plus/extension-hyperlink build && bun run build && bunx start-server-and-test playground http://127.0.0.1:5174 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
+    "docs:gif": "bun run --filter @docs.plus/extension-hyperlink build && bun run build && bunx start-server-and-test playground http://127.0.0.1:5174 'bun cypress/docs/demo-gif.ts'",
     "pretest": "bun run build",
     "test": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:run",
     "test:e2e": "bunx start-server-and-test playground http://127.0.0.1:5174 cypress:run",

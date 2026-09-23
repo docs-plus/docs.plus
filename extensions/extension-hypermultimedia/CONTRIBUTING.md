@@ -10,9 +10,10 @@ bun run test:e2e        # Cypress headless against the current dist/ (run build 
 bun run test:e2e:watch  # same, but opens the Cypress runner
 bun run playground      # playground only, http://127.0.0.1:5174 (run build first)
 bun run docs:screenshots # regenerate README gallery PNGs in assets/
+bun run docs:gif         # regenerate the README hero GIFs in assets/
 ```
 
-`docs:screenshots` builds hyperlink first, serves `assets/readme-media/` at `/readme-media/*`, then overwrites `assets/*.png`.
+`docs:screenshots` builds hyperlink first, serves `assets/readme-media/` at `/readme-media/*`, then overwrites `assets/*.png`. `docs:gif` records the README hero in light and dark and overwrites `assets/demo-*.gif`. It needs `ffmpeg` on your PATH. Run it after any change to the popover or toolbar UI, together with `docs:screenshots`.
 
 Capture flow (`runGalleryScene`): wait for `data-hm-loading="ready"` → hover toolbar (+ gripper except X) → screenshot. Default Cypress test isolation — each `it` calls `visitPlayground`. Settle/decode constants: [cypress/docs/readmeMedia.ts](./cypress/docs/readmeMedia.ts). Video/audio require `readyState >= README_MEDIA_HAVE_CURRENT_DATA`; video also needs `videoWidth > 0`. Loom uses `README_GALLERY_LOOM_READY_TIMEOUT_MS` for the loading shell and `README_GALLERY_LOOM_SETTLE_MS` after ready (timeout ≠ post-ready settle). X uses real oEmbed + `widgets.js` with `theme` on `setX`, then `README_GALLERY_X_WIDGETS_SETTLE_MS`. Scene table: [readme-gallery.cy.ts](./cypress/docs/readme-gallery.cy.ts). Media licenses: [ATTRIBUTION.md](./assets/readme-media/ATTRIBUTION.md).
 

@@ -475,6 +475,7 @@
         "eslint": "catalog:",
         "globals": "catalog:",
         "typescript": "catalog:",
+        "playwright": "^1.63.0",
       },
     },
     "packages/release-tooling": {

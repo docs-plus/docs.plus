@@ -2,13 +2,14 @@
   "name": "@docs.plus/playground",
   "version": "0.0.0",
   "private": true,
-  "description": "Internal clean-room Cypress harness for @docs.plus/extension-* (docs-playground + setupPlayground). Never published.",
+  "description": "Internal clean-room harness for @docs.plus/extension-* (docs-playground, setupPlayground, recordDemo). Never published.",
   "type": "module",
   "bin": {
     "docs-playground": "./src/launch.ts"
   },
   "exports": {
     "./setup": "./src/setup.ts",
+    "./recordDemo": "./src/recordDemo.ts",
     "./tsconfig.json": "./tsconfig.json",
     "./cypress/flattenReadmeScreenshots": "./cypress/flattenReadmeScreenshots.ts",
     "./cypress/readmeGallery": "./cypress/readmeGallery.ts",
@@ -31,6 +32,7 @@
     "bun-types": "catalog:",
     "eslint": "catalog:",
     "globals": "catalog:",
+    "playwright": "^1.63.0",
     "typescript": "catalog:"
   }
 }
