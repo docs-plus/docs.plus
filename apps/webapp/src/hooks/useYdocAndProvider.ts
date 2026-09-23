@@ -33,7 +33,7 @@ let persistRequested = false
 const requestPersistentStorage = () => {
   if (persistRequested) return
   persistRequested = true
-  const storage = typeof navigator !== 'undefined' ? navigator.storage : undefined
+  const storage = navigator.storage
   if (typeof storage?.persist !== 'function' || typeof storage.persisted !== 'function') return
   void storage
     .persisted()
@@ -93,15 +93,18 @@ const useYdocAndProvider = ({
 
     // y-indexeddb drops its write promises, so a failed write only shows up as a
     // transaction abort that bubbles to the db (QuotaExceededError in Chromium).
+    // `_db` is the only handle that reports a failed open; public `db` is a bare field.
     let mirrorDisposed = false
+    const flagMirrorFailed = () => {
+      if (!mirrorDisposed) setWorkspaceSetting('mirrorWriteFailed', true)
+    }
     persistence?._db
       .then((db) =>
         db.addEventListener('abort', (event) => {
-          if (mirrorDisposed || !(event.target as IDBTransaction | null)?.error) return
-          setWorkspaceSetting('mirrorWriteFailed', true)
+          if ((event.target as IDBTransaction | null)?.error) flagMirrorFailed()
         })
       )
-      .catch(() => {})
+      .catch(flagMirrorFailed)
 
     providerRef.current = new HocuspocusProvider({
       url: providerUrl,
@@ -315,11 +318,12 @@ const useYdocAndProvider = ({
 
     const handleUpdate = (_update: Uint8Array, origin: unknown) => {
       if (origin === providerRef.current) return
+      // Past first sync, so mirror replay and the mount scaffold never ask, but an
+      // offline edit does. providerSyncing stays false through a disconnect.
+      if (!useStore.getState().settings.editor.providerSyncing) requestPersistentStorage()
       if (!isSyncedRef.current) return
       if (typeof navigator !== 'undefined' && !navigator.onLine) return
       if (authStoppedRef.current) return
-
-      requestPersistentStorage()
 
       if (syncedTimeoutRef.current) {
         clearTimeout(syncedTimeoutRef.current)

@@ -312,7 +312,7 @@ const MobilePadTitle = () => {
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-              <ProviderSyncStatus disconnectedOnly />
+              <ProviderSyncStatus compact />
               <PrivateIndicator />
               <ReadOnlyIndicator />
               {user && <NotificationButton />}
