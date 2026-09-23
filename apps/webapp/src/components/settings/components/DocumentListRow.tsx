@@ -1,7 +1,7 @@
 import TextInput from '@components/ui/TextInput'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { LuEye, LuFileText, LuLock, LuStar } from 'react-icons/lu'
+import { LuFileText } from 'react-icons/lu'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
@@ -9,6 +9,7 @@ import { type DocumentMembersEntry } from '../hooks/useDocumentMembers'
 import type { OwnedDocument } from '../types'
 import { documentListDate } from '../utils/documentListDate'
 import DocumentMembersCluster from './DocumentMembersCluster'
+import DocumentRowLabel from './DocumentRowLabel'
 import DocumentRowMenu from './DocumentRowMenu'
 
 interface DocumentListRowProps {
@@ -37,7 +38,7 @@ function DocumentListRow({
   onDelete
 }: DocumentListRowProps) {
   const router = useRouter()
-  const label = doc.title ?? doc.slug
+  const label = doc.title || doc.slug
   const date = documentListDate(doc, scope.sortKey)
 
   const { commit } = useCommitDocumentRename(scope)
@@ -147,22 +148,7 @@ function DocumentListRow({
         className="rounded-field focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
         <LuFileText size={18} className="text-base-content/40 shrink-0" />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="text-base-content truncate font-medium">{label}</span>
-            {doc.isFavorite && (
-              <LuStar
-                size={13}
-                className="text-accent fill-accent shrink-0"
-                aria-label="Favorite"
-              />
-            )}
-            {doc.isPrivate && (
-              <LuLock size={13} className="text-base-content/60 shrink-0" aria-label="Private" />
-            )}
-            {doc.readOnly && (
-              <LuEye size={13} className="text-base-content/60 shrink-0" aria-label="Read-only" />
-            )}
-          </span>
+          <DocumentRowLabel doc={doc} />
           <span className="text-base-content/60 text-xs sm:hidden">{date}</span>
         </span>
       </button>

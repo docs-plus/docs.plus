@@ -1,8 +1,9 @@
+import DocumentRowLabel from '@components/settings/components/DocumentRowLabel'
 import { useOwnerDocuments } from '@components/settings/hooks/useOwnerDocuments'
 import { documentListDate } from '@components/settings/utils/documentListDate'
 import Button from '@components/ui/Button'
 import { useRouter } from 'next/router'
-import { LuFileText, LuStar } from 'react-icons/lu'
+import { LuFileText } from 'react-icons/lu'
 
 const HOME_DOCUMENTS_LIMIT = 8
 
@@ -49,18 +50,7 @@ export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
               onClick={() => router.push(`/${doc.slug}`)}
               className="rounded-field hover:bg-base-200 focus-visible:ring-primary flex w-full min-w-0 items-center gap-3 px-2 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
               <LuFileText size={18} className="text-base-content/40 shrink-0" />
-              <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                <span className="text-base-content truncate text-sm font-medium">
-                  {doc.title || doc.slug}
-                </span>
-                {doc.isFavorite && (
-                  <LuStar
-                    size={13}
-                    className="text-accent fill-accent shrink-0"
-                    aria-label="Favorite"
-                  />
-                )}
-              </span>
+              <DocumentRowLabel doc={doc} className="flex-1 text-sm" />
               <span className="text-base-content/60 shrink-0 text-xs">
                 {documentListDate(doc, 'lastOpenedAt_desc')}
               </span>
