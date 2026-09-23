@@ -5,17 +5,10 @@ import {
 import * as toast from '@components/toast'
 import type { MessageMediaItem } from '@types'
 import { copyToClipboard } from '@utils/clipboard'
+import { isIOSDevice } from '@utils/platform'
+import { canShareFiles, isAbortError } from '@utils/shareFiles'
 
 const isHttpUrl = (url: string): boolean => url.startsWith('http://') || url.startsWith('https://')
-
-const isIosSafari = (): boolean => /iPad|iPhone|iPod/.test(navigator.userAgent)
-
-const canShareFiles = (files: File[]): boolean =>
-  typeof navigator.share === 'function' &&
-  typeof navigator.canShare === 'function' &&
-  navigator.canShare({ files })
-
-const isShareAbort = (err: unknown): boolean => err instanceof Error && err.name === 'AbortError'
 
 const defaultFileName = (media: MessageMediaItem): string => media.name?.trim() || 'attachment'
 
@@ -107,7 +100,7 @@ export async function copyMediaImage(
       toast.Success('Image shared')
       return true
     } catch (err) {
-      if (isShareAbort(err)) return false
+      if (isAbortError(err)) return false
     }
   }
 
@@ -122,7 +115,7 @@ export async function saveMediaFile(media: MessageMediaItem): Promise<boolean> {
     return false
   }
 
-  if (isIosSafari()) {
+  if (isIOSDevice()) {
     const blob = await fetchMediaBlob(url)
     if (!blob) {
       toast.Error('Media unavailable')
@@ -136,7 +129,7 @@ export async function saveMediaFile(media: MessageMediaItem): Promise<boolean> {
         toast.Success('Shared — choose Save to Files')
         return true
       } catch (err) {
-        if (isShareAbort(err)) return false
+        if (isAbortError(err)) return false
       }
     }
 

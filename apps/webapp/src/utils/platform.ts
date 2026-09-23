@@ -68,3 +68,24 @@ export function getDevicePlatform(): DevicePlatform {
 
   return 'web'
 }
+
+// On Apple, Ctrl-F is the emacs forward-char key in text fields, so only Meta is Mod.
+const IS_APPLE =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+
+/**
+ * Mod+`key` (lowercase letter) with exactly the given Shift state and no Alt.
+ * A Latin `event.key` wins, so Dvorak Mod-u stays underline; `code` only covers non-Latin layouts.
+ */
+export function isModShortcut(
+  event: KeyboardEvent,
+  key: string,
+  { shift = false }: { shift?: boolean } = {}
+): boolean {
+  if (event.altKey || event.shiftKey !== shift) return false
+  const mod = IS_APPLE ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey
+  if (!mod) return false
+  const pressed = event.key ?? ''
+  if (/^[a-z]$/i.test(pressed)) return pressed.toLowerCase() === key
+  return event.code === `Key${key.toUpperCase()}`
+}

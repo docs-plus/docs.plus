@@ -1,4 +1,7 @@
-import { clearHistoryHash } from '@components/pages/history/historyShareUrl'
+import {
+  clearHistoryHash,
+  replaceAppUrlThenNotifyHashChange
+} from '@components/pages/history/historyShareUrl'
 import type { TabType } from '@components/settings/types'
 import { splitHashRoute } from '@utils/splitHashRoute'
 import { useMemo } from 'react'
@@ -51,6 +54,22 @@ export function parseOverlayHash(hash: string): HashOverlay {
 export function clearOverlayHash(): void {
   if (parseOverlayHash(window.location.hash).overlay == null) return
   clearHistoryHash()
+}
+
+/**
+ * Replace, not push: the Settings and pad title readers clear the hash at once, so a
+ * pushed entry would leave one dead Back step.
+ */
+export function openOverlayHash(
+  overlay: NonNullable<HashOverlay['overlay']>,
+  settingsTab?: TabType
+): void {
+  let route = NOTIFICATIONS_ROUTE
+  if (overlay === 'settings') {
+    route = settingsTab ? `${SETTINGS_ROUTE}?${TAB_QUERY}=${settingsTab}` : SETTINGS_ROUTE
+  }
+  const { pathname, search } = window.location
+  replaceAppUrlThenNotifyHashChange(`${pathname}${search}#${route}`)
 }
 
 /**

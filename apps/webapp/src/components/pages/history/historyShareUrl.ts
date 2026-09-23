@@ -77,6 +77,11 @@ export function pushAppUrlThenNotifyHashChange(pathWithSearchAndHash: string): v
   updateAppUrl('push', pathWithSearchAndHash)
 }
 
+/** Rewrites this entry, keeps its router state, and wakes hash listeners. */
+export function replaceAppUrlThenNotifyHashChange(pathWithSearchAndHash: string): void {
+  updateAppUrl('replace', pathWithSearchAndHash)
+}
+
 export function replaceHistoryHashVersion(version: number | null): void {
   const { pathname, search } = window.location
   const url =
