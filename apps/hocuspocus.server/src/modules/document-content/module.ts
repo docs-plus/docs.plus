@@ -43,6 +43,8 @@ export const initWsApply = (deps: InitWsApplyDeps): InitWsApplyResult => {
     app: createInternalApp({
       verifyServiceRole: deps.verifyServiceRole,
       applyContent,
+      hocuspocus: deps.hocuspocus,
+      prisma: deps.prisma,
       logger: deps.logger
     })
   }

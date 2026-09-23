@@ -1,4 +1,6 @@
+import type { Hocuspocus } from '@hocuspocus/server'
 import { zValidator } from '@hono/zod-validator'
+import type { PrismaClient } from '@prisma/client'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { requestId } from 'hono/request-id'
@@ -10,12 +12,18 @@ import { captureUnknown } from '../../../lib/instrument'
 import type { ApplyContent } from '../infra/hocuspocusApply'
 import type { VerifyServiceRole } from '../types'
 import { INTERNAL_BODY_HEADROOM_BYTES, MAX_CONTENT_BYTES } from '../types'
-import { contentBodyLimit, createInternalApplyHandler } from './controller'
+import {
+  contentBodyLimit,
+  createInternalApplyHandler,
+  createInternalReadHandler
+} from './controller'
 import { documentIdParamSchema, internalApplyBodySchema } from './schema'
 
 export interface InternalAppDeps {
   verifyServiceRole: VerifyServiceRole
   applyContent: ApplyContent
+  hocuspocus: Hocuspocus
+  prisma: PrismaClient
   logger: Logger
 }
 
@@ -27,9 +35,13 @@ export interface InternalAppDeps {
 export const createInternalApp = (deps: InternalAppDeps): Hono => {
   const app = new Hono()
   const applyPath = '/internal/documents/:documentId/content'
+  const readPath = '/internal/documents/:documentId/content/live'
 
   app.use('*', requestId())
+  // Each path needs its own guard: `use` matches the exact path, not subpaths,
+  // and this listener binds 0.0.0.0.
   app.use(applyPath, requireServiceRole(deps.verifyServiceRole))
+  app.use(readPath, requireServiceRole(deps.verifyServiceRole))
 
   app.post(
     applyPath,
@@ -37,6 +49,13 @@ export const createInternalApp = (deps: InternalAppDeps): Hono => {
     zValidator('param', documentIdParamSchema, houseEnvelopeHook),
     zValidator('json', internalApplyBodySchema, houseEnvelopeHook),
     createInternalApplyHandler(deps.applyContent)
+  )
+
+  // POST because the hop client only posts. It reads; it never writes.
+  app.post(
+    readPath,
+    zValidator('param', documentIdParamSchema, houseEnvelopeHook),
+    createInternalReadHandler(deps)
   )
 
   app.notFound((c) => fail(c, 404, 'NOT_FOUND', 'Not found'))

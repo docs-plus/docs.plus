@@ -30,9 +30,25 @@ export const patchBodySchema = z.object({
   commitMessage: commitMessageSchema.optional()
 })
 
-/** The internal hop carries the mode in the body; REST has already defaulted it. */
-export const internalApplyBodySchema = z.object({
-  mode: z.enum(['replace', 'append']).default('replace'),
-  content: tiptapDocSchema,
-  commitMessage: commitMessageSchema.optional()
+/** Bounded so the hop body stays inside INTERNAL_BODY_HEADROOM_BYTES. */
+const actorSchema = z.object({
+  sub: z.string().min(1).max(128),
+  email: z.string().max(254).optional()
 })
+
+/** The internal hop carries the mode in the body; REST has already defaulted it. */
+export const internalApplyBodySchema = z
+  .object({
+    mode: z.enum(['replace', 'append', 'section']).default('replace'),
+    content: tiptapDocSchema,
+    commitMessage: commitMessageSchema.optional(),
+    sectionId: z.string().min(1).max(64).optional(),
+    rev: z
+      .string()
+      .regex(/^[0-9a-f]{12}$/)
+      .optional(),
+    actor: actorSchema.optional()
+  })
+  .refine((body) => body.mode !== 'section' || (body.sectionId && body.rev), {
+    message: 'section mode needs sectionId and rev'
+  })

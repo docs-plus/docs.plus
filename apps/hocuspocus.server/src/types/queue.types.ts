@@ -9,7 +9,8 @@ export type MachineVersionTrigger = (typeof MACHINE_VERSION_TRIGGERS)[number]
 // Provenance stamped on a Documents row. Live collaborative saves are
 // 'websocket'; the rest are one-shot operations that ride the connection
 // context of the caller that opened the direct connection.
-export type VersionTrigger = 'websocket' | 'api' | 'checkpoint' | 'revert' | MachineVersionTrigger
+export type VersionTrigger =
+  'websocket' | 'api' | 'mcp' | 'checkpoint' | 'revert' | MachineVersionTrigger
 
 export interface StoreDocumentContext {
   slug?: string

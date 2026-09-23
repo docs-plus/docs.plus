@@ -319,6 +319,8 @@ Applies content to the document. Query: `mode` = `replace` (default) or `append`
 
 **Naming a write is permanent history.** A `commitMessage` becomes the version row's name, and autosave retention never thins a named row — see [Document versions](#document-versions). Name the writes a person would want to find again, and leave a bulk import's chunks unnamed. A named 500-chunk run leaves 500 rows nothing will ever prune.
 
+A `200` returns `{ "documentId", "mode", "version"? }`. `version` is the saved version row that holds this write. It is present when the call waited for that row (see [Durability contract](#durability-contract)).
+
 Live and cold documents take the same path. If collaborators have the document open, they see the change immediately without reconnecting. If nobody has it open, it loads, applies, persists, and unloads.
 
 **Clearing a document** is `replace` with a single empty level-1 heading: `[{ "type": "heading", "attrs": { "level": 1 } }]`. The applier also clears the editor's `needsInitialization` flag, which is what stops the starter template from overwriting that particular payload on first open.
@@ -327,7 +329,9 @@ Live and cold documents take the same path. If collaborators have the document o
 
 **Verifying a write.** A `200` means the payload reached the live document and its save was handed off for persistence. Your own write flushes at once, not on the store debounce. So the 10 s / 60 s figures in the **Staleness** note above describe browser edits, never your verification wait. Confirm a write by comparing the content `GET /api/documents/:documentId/content?format=json` returns.
 
-**Retries.** `replace` is idempotent. `append` is at-least-once under a `503` or timeout — `GET` and verify before retrying one. A retried `append` that carries `toc-id`s plants each one a second time — see [Content contract](#content-contract). A single persist-failed `500` is retriable with `mode=replace`. A _repeated_ persist-failed `500` for the same document means server-side persistence is wedged for it until the collaboration process restarts. Stop retrying and alert an operator, because further attempts keep mutating and broadcasting to live clients while never persisting. The operator signal is `document_content_apply_total{outcome="error"}` on the collaboration process's metrics endpoint.
+**One document, one write at a time.** The collaboration process runs writes to one document in order. On a cold document each write waits for its saved row, up to 20 s from arrival. So a burst of parallel writes to one document can get `503 DOCUMENT_BUSY` for the writes that could not start in time. Nothing was applied for those. Send writes to one document in sequence.
+
+**Retries.** `replace` is idempotent. `append` is at-least-once under a `503` or timeout. After `503 SAVE_NOT_CONFIRMED`, the write was applied but not saved in time, and a `GET` cannot see it until the save lands. Wait about a minute, then `GET` and verify before you retry. A retry at once can apply the change twice. `503 DOCUMENT_BUSY` applied nothing, so a retry after a few seconds is safe. A retried `append` that carries `toc-id`s plants each one a second time — see [Content contract](#content-contract). A single persist-failed `500` is retriable with `mode=replace`. A _repeated_ persist-failed `500` for the same document means server-side persistence is wedged for it until the collaboration process restarts. Stop retrying and alert an operator, because further attempts keep mutating and broadcasting to live clients while never persisting. The operator signal is `document_content_apply_total{outcome="error"}` on the collaboration process's metrics endpoint.
 
 **Batching imports.** Every `PATCH` persists a full document version. Prefer one `replace` or a few large appends over many small ones. A 500-chunk import stores roughly 500 cumulative snapshots, which survive until autosave retention thins unnamed versions to one per document per day (`DOC_AUTOSAVE_RETENTION_DAYS`). Many small appends also run into the global rate limiter.
 
@@ -352,6 +356,9 @@ Live and cold documents take the same path. If collaborators have the document o
 
 ### Access semantics under the service key
 
+| `503` | `DOCUMENT_BUSY` | Earlier writes to the same document were still saving at the 20 s deadline. Nothing was applied |
+| `503` | `SAVE_NOT_CONFIRMED` | Applied, but the saved row did not appear within 20 s. It may still be saved. Wait about a minute before you verify with `GET` |
+
 | Document state  | GET   | PATCH                                                                |
 | --------------- | ----- | -------------------------------------------------------------------- |
 | Public          | `200` | `200`                                                                |
@@ -362,10 +369,10 @@ Live and cold documents take the same path. If collaborators have the document o
 
 ### Durability contract
 
-A `PATCH 200` means the change was applied to the document, broadcast to any live collaborators, and pushed into the normal store pipeline. It does not certify a committed database row:
+A `PATCH 200` means the change was applied to the document, broadcast to any live collaborators, and pushed into the normal store pipeline:
 
-- In production the immediate store can lose the cross-replica lock to a peer and abort silently. The release flush and any later client-driven store heal it — the same crash window normal collaborative edits have.
-- For a cold document, `200` means durably enqueued. A worker outage longer than the claim-check TTL is a pre-existing platform gap.
+- **Cold document** (nobody has it open): the call waits until a saved version row holds the write, and the `200` carries that `version`. If the row does not appear within 20 s, the answer is `503 SAVE_NOT_CONFIRMED`, never a false `200`.
+- **Open document**: the room stays loaded, so the call does not wait, and the `200` has no `version`. In production the immediate store can lose the cross-replica lock to a peer and abort silently. The release flush and any later client-driven store heal it — the same crash window normal collaborative edits have. If the last person leaves before that save lands, the next write to the document waits for it first.
 
 A `500` with the persist-failed message means the change may already be visible to live clients but did not persist.
 

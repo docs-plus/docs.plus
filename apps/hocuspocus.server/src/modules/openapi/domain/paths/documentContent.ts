@@ -50,7 +50,7 @@ export const documentContentPaths: OpenApiPaths = {
       operationId: 'patchDocumentContent',
       summary: 'Apply content to a document',
       description:
-        'Live and cold documents take the same path — open collaborators see the change immediately. Documents are title-first: a heading-less payload is 422. Concurrency is CRDT last-writer-wins with no `If-Match` guard. `replace` is idempotent; `append` is at-least-once under a 503 or timeout, so `GET` and verify before retrying one. A *repeated* persist-failed 500 for the same document means persistence is wedged — stop retrying and alert an operator.',
+        'Live and cold documents take the same path — open collaborators see the change immediately. Documents are title-first: a heading-less payload is 422. Concurrency is CRDT last-writer-wins with no `If-Match` guard. On a cold document the call waits up to 20 s for the saved version row. `503 SAVE_NOT_CONFIRMED` means applied but not yet saved: wait about a minute, then `GET` before any retry. `503 DOCUMENT_BUSY` means nothing was applied, because earlier writes to the same document were still saving. `replace` is idempotent; `append` is at-least-once under a 503 or timeout. A *repeated* persist-failed 500 for the same document means persistence is wedged — stop retrying and alert an operator.',
       tags,
       security,
       parameters: [...documentIdParam, ...toParameters(patchQuerySchema, 'query')],
@@ -63,9 +63,19 @@ export const documentContentPaths: OpenApiPaths = {
       responses: {
         '200': {
           description:
-            'Applied, broadcast to live collaborators and pushed into the store pipeline. This does not certify a committed database row — see the durability contract in API.md.',
+            'Applied and broadcast to live collaborators. With `version`, that saved version row holds the write. Without it, someone had the document open, so the save was not awaited. See the durability contract in API.md.',
           content: {
-            'application/json': { schema: { type: 'object', additionalProperties: true } }
+            'application/json': {
+              schema: dataEnvelope({
+                type: 'object',
+                properties: {
+                  documentId: { type: 'string' },
+                  mode: { type: 'string', enum: ['replace', 'append'] },
+                  version: { type: 'integer' }
+                },
+                required: ['documentId', 'mode']
+              })
+            }
           }
         },
         '413': { $ref: '#/components/responses/PayloadTooLarge' },

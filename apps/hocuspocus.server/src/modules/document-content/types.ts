@@ -1,5 +1,6 @@
 import type { Hocuspocus } from '@hocuspocus/server'
 import type { DocumentMetadata, PrismaClient } from '@prisma/client'
+import type { JSONContent } from '@tiptap/core'
 import type { Logger } from 'pino'
 import type * as Y from 'yjs'
 
@@ -13,7 +14,7 @@ export interface TiptapDocJson {
   content: Record<string, unknown>[]
 }
 
-export type ApplyMode = 'replace' | 'append'
+export type ApplyMode = 'replace' | 'append' | 'section'
 export type ReadFormat = 'json' | 'text'
 
 /** Yjs transaction origin for API-applied content, so client plugins can tell it apart. */
@@ -29,16 +30,35 @@ export const MAX_CONTENT_DEPTH = 100
 /** REST→WS hop budget. `replace` is idempotent on retry; `append` is at-least-once. */
 export const WS_APPLY_TIMEOUT_MS = 30_000
 
+/**
+ * The WS applier's own budget, counted from arrival. It must stay below the hop
+ * timeout, which stays below REST's 60 s idleTimeout. Otherwise REST reports a
+ * failure over a write that then commits.
+ */
+export const WS_APPLY_DEADLINE_MS = 20_000
+export const COMMIT_POLL_MS = 50
+
 /** Fail-closed encode result. `invalid-content` is the single 422 discriminant. */
 export type EncodeOutcome =
   { ok: true; scratch: Y.Doc } | { ok: false; reason: 'invalid-content'; detail: string }
 
+/** The hop client maps 503s by these codes: `busy` and `not-confirmed` state different facts. */
+export const DOCUMENT_BUSY_CODE = 'DOCUMENT_BUSY'
+export const NOT_CONFIRMED_CODE = 'SAVE_NOT_CONFIRMED'
+
+/**
+ * `busy`: the per-document lock was still held at the deadline, so nothing was
+ * applied. `not-confirmed`: applied, but the worker did not commit it in time.
+ */
 export type ApplyOutcome =
-  | { status: 'applied' }
+  | { status: 'applied'; version?: number }
   | { status: 'not-found' }
   | { status: 'invalid-content'; detail: string }
+  | { status: 'conflict'; detail: string }
   | { status: 'open-failed' }
   | { status: 'persist-failed' }
+  | { status: 'busy' }
+  | { status: 'not-confirmed' }
 
 /**
  * Hop-only outcomes. `upstream-unauthorized` is separate from `unreachable`
@@ -62,17 +82,35 @@ export type ReadOutcome =
 export type CreateOutcome =
   { status: 'created'; document: DocumentMetadata } | { status: 'invalid-content'; detail: string }
 
+/** `not-loaded`: no room here, so the caller decodes the persisted head itself. */
+export type LiveReadOutcome =
+  | { status: 'ok'; content: JSONContent }
+  | { status: 'not-loaded' }
+  | { status: 'not-found' }
+  | { status: 'unreachable' }
+
+/** The person an MCP write acts for. Absent on REST, which names nobody. */
+export interface ApplyActor {
+  sub: string
+  email?: string
+}
+
 export interface ApplyRequest {
   documentId: string
   mode: ApplyMode
   content: TiptapDocJson
+  /** `toc-id` of the target heading; required for `section`. */
+  sectionId?: string
+  /** `sectionRev` the caller read; required for `section`. */
+  rev?: string
+  actor?: ApplyActor
   commitMessage?: string
   requestId?: string
   payloadBytes?: number
 }
 
 /** Why a version row exists. Projected onto the row, never a read predicate. */
-export type VersionTrigger = 'api' | 'checkpoint' | 'revert'
+export type VersionTrigger = 'api' | 'mcp' | 'checkpoint' | 'revert'
 
 /**
  * Attribution for the version row an apply mints. `forceKey` only widens the
@@ -110,6 +148,8 @@ export interface ApplyContext {
 export interface ContentApplyResponseData {
   documentId: string
   mode: ApplyMode
+  /** The committed version row that holds this write, when the applier waited for one. */
+  version?: number
 }
 
 export interface ContentReadResponseData {

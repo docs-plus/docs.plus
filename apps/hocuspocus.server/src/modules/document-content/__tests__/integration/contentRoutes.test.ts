@@ -69,9 +69,12 @@ const harness = (options: { serviceRoleEnabled?: boolean } = {}): Harness => {
       logger: silentLogger,
       verifyServiceRole: (header) =>
         options.serviceRoleEnabled === false ? false : header === `Bearer ${SERVICE_KEY}`,
-      wsApply: async (request) => {
-        wsCalls.push(request)
-        return outcome
+      wsApply: {
+        apply: async (request) => {
+          wsCalls.push(request)
+          return outcome
+        },
+        readLive: async () => ({ status: 'unreachable' })
       }
     })
   )

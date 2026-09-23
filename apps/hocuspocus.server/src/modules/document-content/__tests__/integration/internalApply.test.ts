@@ -6,6 +6,7 @@ import type { Logger } from 'pino'
 import * as Y from 'yjs'
 
 import { createMockPrisma, TestServer } from '../../../../../tests/helpers/test-server'
+import { stripSnapshotMetadata } from '../../../../lib/snapshotMetadata'
 import { createInternalApp } from '../../http/internalApp'
 import { createApplyContent } from '../../infra/hocuspocusApply'
 import type { TiptapDocJson } from '../../types'
@@ -59,6 +60,7 @@ interface StoreCall {
 }
 
 const persisted = new Map<string, Uint8Array>()
+const persistedVersions = new Map<string, number>()
 const storeCalls: StoreCall[] = []
 const rejectingDocuments = new Set<string>()
 
@@ -68,8 +70,19 @@ const database = new Database({
     storeCalls.push({ documentName, state, context })
     if (rejectingDocuments.has(documentName)) throw new Error('forced store failure')
     persisted.set(documentName, state)
+    persistedVersions.set(documentName, (persistedVersions.get(documentName) ?? 0) + 1)
   }
 })
+
+/** The head-row read the applier's commit wait polls, honouring `version: { gt }`. */
+const headRowFrom =
+  (read: (documentId: string) => { version: number; data: Uint8Array } | null) =>
+  async (args: any) => {
+    const head = read(args.where.documentId)
+    const after = args.where.version?.gt
+    if (!head || (after !== undefined && head.version <= after)) return null
+    return { version: head.version, data: Buffer.from(head.data) }
+  }
 
 // Production debounce values: `transact()` and `disconnect()` both store
 // immediately, so nothing is left pending between tests.
@@ -79,10 +92,16 @@ const metaRows = new Map<string, Record<string, unknown> | null>()
 const prisma = createMockPrisma() as any
 prisma.documentMetadata.findUnique = async (args: any) =>
   metaRows.get(args.where.documentId) ?? null
+prisma.documents.findFirst = headRowFrom((documentId) => {
+  const data = persisted.get(documentId)
+  return data ? { version: persistedVersions.get(documentId) ?? 0, data } : null
+})
 
 const app = createInternalApp({
   verifyServiceRole: (header) => header === `Bearer ${SERVICE_KEY}`,
   applyContent: createApplyContent({ hocuspocus, prisma, logger: silentLogger }),
+  hocuspocus,
+  prisma,
   logger: silentLogger
 })
 const server = new TestServer(app)
@@ -167,7 +186,12 @@ describe('Internal content apply — cold document', () => {
     const body = await response.json()
 
     expect(response.status).toBe(200)
-    expect(body.data).toEqual({ documentId: COLD_DOC, mode: 'replace' })
+    // The room unloaded, so the applier waited for the row and reports it.
+    expect(body.data).toEqual({
+      documentId: COLD_DOC,
+      mode: 'replace',
+      version: expect.any(Number)
+    })
 
     expect(storeCalls.length).toBeGreaterThan(0)
     const { json, metadata } = decodeState(storeCalls[0].state)
@@ -263,7 +287,7 @@ describe('Internal content apply — live document', () => {
   })
 
   test('append extends the live document instead of replacing it', async () => {
-    persisted.clear()
+    // No clear: the held write above waits for a head row, and a real one never vanishes.
     metaRows.set(LIVE_DOC, liveMeta(LIVE_DOC, 'live-doc'))
 
     await server.post(applyPath(LIVE_DOC), { mode: 'replace', content: titleDoc('Base') }, AUTH)
@@ -309,5 +333,68 @@ describe('Internal content apply — wedged persistence', () => {
     expect(secondBody.error.message).toContain('wedged')
     // The Database hook is never reached again — that is the wedge.
     expect(storeCalls.length).toBe(storeCallsBefore)
+  })
+})
+
+describe('Internal content apply — the store worker lags (#229)', () => {
+  const LAGGING_DOC = 'laggingDocument12AB'
+  const WORKER_LAG_MS = 150
+
+  const bodyDoc = (text: string): TiptapDocJson => ({
+    type: 'doc',
+    content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Title' }] },
+      { type: 'paragraph', content: [{ type: 'text', text }] }
+    ]
+  })
+
+  test('two sequential replaces end with one body', async () => {
+    const seed = TiptapTransformer.toYdoc(bodyDoc('seed'), 'default')
+    const head = { version: 1, data: stripSnapshotMetadata(Y.encodeStateAsUpdate(seed)) }
+
+    // The store hook only enqueues; the worker merges raw onto the head and
+    // strips the result later, as production does. The unload then leaves a
+    // window where the next open reads a head without the last write.
+    const laggingDatabase = new Database({
+      fetch: async () => head.data,
+      store: async ({ state }) => {
+        setTimeout(() => {
+          head.data = stripSnapshotMetadata(Y.mergeUpdates([head.data, state]))
+          head.version += 1
+        }, WORKER_LAG_MS)
+      }
+    })
+    const lagging = new Hocuspocus({
+      extensions: [laggingDatabase],
+      debounce: 10_000,
+      maxDebounce: 60_000
+    })
+    const laggingPrisma = createMockPrisma() as any
+    laggingPrisma.documentMetadata.findUnique = async () => liveMeta(LAGGING_DOC, 'lagging-doc')
+    laggingPrisma.documents.findFirst = headRowFrom(() => head)
+
+    const applyContent = createApplyContent({
+      hocuspocus: lagging,
+      prisma: laggingPrisma,
+      logger: silentLogger
+    })
+    const request = (text: string) => ({
+      documentId: LAGGING_DOC,
+      mode: 'replace' as const,
+      content: bodyDoc(text),
+      version: { trigger: 'api' as const, triggeredBy: null }
+    })
+
+    const first = await applyContent(request('first'))
+    const second = await applyContent(request('second'))
+    await new Promise((resolve) => setTimeout(resolve, WORKER_LAG_MS * 3))
+
+    const { json } = decodeState(head.data)
+    const texts = json.content.map((node) => node.content?.[0]?.text)
+    expect(texts).toEqual(['Title', 'second'])
+    // The transact and disconnect flushes both commit, so the head passes 2.
+    expect(first).toEqual({ status: 'applied', version: expect.any(Number) })
+    expect((first as { version: number }).version).toBeGreaterThan(1)
+    expect(second.status).toBe('applied')
   })
 })

@@ -38,6 +38,31 @@ export const findHeadRow = (
     select: { data: true, version: true }
   }) as Promise<{ data: Buffer; version: number } | null>
 
+/** Head version only, 0 when no row exists. The commit wait compares against it. */
+export const findHeadVersion = async (
+  prisma: PrismaClient,
+  documentId: string
+): Promise<number> => {
+  const row = await prisma.documents.findFirst({
+    where: { documentId },
+    orderBy: { version: 'desc' },
+    select: { version: true }
+  })
+  return row?.version ?? 0
+}
+
+/** Null until a row newer than `version` exists, so an idle poll carries no bytes. */
+export const findHeadRowAfter = (
+  prisma: PrismaClient,
+  documentId: string,
+  version: number
+): Promise<{ data: Buffer; version: number } | null> =>
+  prisma.documents.findFirst({
+    where: { documentId, version: { gt: version } },
+    orderBy: { version: 'desc' },
+    select: { data: true, version: true }
+  }) as Promise<{ data: Buffer; version: number } | null>
+
 export interface CreateWithContentParams {
   slug: string
   title?: string
