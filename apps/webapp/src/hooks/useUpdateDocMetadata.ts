@@ -1,4 +1,5 @@
-import { useMutation } from '@tanstack/react-query'
+import * as toast from '@components/toast'
+import { onlineManager, useMutation } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
 
 export interface UpdateDocMetadataParams {
@@ -29,6 +30,18 @@ const useUpdateDocMetadata = () => {
     UpdateDocMetadataParams
   >({
     mutationKey: ['updateDocumentMetadata'],
+    // Offline saves pause and resume on reconnect. One scope runs them in order,
+    // so the last title typed is the last one saved.
+    scope: { id: 'updateDocumentMetadata' },
+    onMutate: () => {
+      // TanStack assumes online until an 'offline' event, so a pad opened offline would send and fail.
+      if (navigator.onLine === false) onlineManager.setOnline(false)
+      if (!onlineManager.isOnline()) {
+        toast.Warning(
+          'You are offline. This change will save when you reconnect. Keep this page open.'
+        )
+      }
+    },
     mutationFn: async ({ title, description, keywords, documentId, readOnly, isPrivate, slug }) => {
       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
 
