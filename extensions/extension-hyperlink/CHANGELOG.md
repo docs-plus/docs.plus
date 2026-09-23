@@ -10,6 +10,26 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ## [Unreleased]
 
+### Documentation
+
+- The README is a short start page: why to use it, install, a Quickstart
+  that shows a result, the caveats that fail with no error, and common
+  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `popovers.md`, `styling.md`, `url-handling.md`, `security.md`, `advanced.md`, `migration.md`).
+- The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
+  follow on the next line.
+- An **Open in StackBlitz** button runs the Quickstart in the browser.
+  The app lives in `examples/vanilla`, and preflight fails when it drifts
+  from the README.
+- A "For AI coding agents" row points agents at this README as plain
+  Markdown on jsDelivr.
+- The README opens with a GIF: autolink, the preview popover, and `Mod-k`.
+- `docs/api.md` Caveats now list the `popovers.previewHyperlink` click trap.
+
+### Internal
+
+- `bun run docs:gif` re-records the README GIFs.
+- Source comments point at the `docs/` pages instead of README sections.
+
 ## [2.0.0] — 2026-08-11
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface. The option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.

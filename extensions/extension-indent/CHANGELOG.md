@@ -2,6 +2,21 @@
 
 All notable changes to `@docs.plus/extension-indent` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+
+- The README is a short start page: why to use it, install, a Quickstart
+  that shows a result, the caveats that fail with no error, and common
+  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `guide.md`, `migration.md`).
+- The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
+  follow on the next line.
+- An **Open in StackBlitz** button runs the Quickstart in the browser.
+  The app lives in `examples/vanilla`, and preflight fails when it drifts
+  from the README.
+- A "For AI coding agents" row points agents at this README as plain
+  Markdown on jsDelivr.
+
 ## [2.0.0] — 2026-08-11
 
 First npm release since `0.1.1`. The major aligns the package with the docs.plus extension-family `2.x` line; the `0.2.0` milestone below never shipped, so everything since `0.1.1` lands here.

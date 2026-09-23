@@ -6,6 +6,27 @@ here. Entries from 2.0.0 onward follow
 historical Conventional Commits format. The project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+
+- The README is a short start page: why to use it, install, a Quickstart
+  that shows a result, the caveats that fail with no error, and common
+  tasks. The full reference moved to `docs/` on GitHub (`api.md`, `embeds.md`, `media-toolbar.md`, `paste-and-import.md`, `resize-and-loading.md`, `styling.md`, `security.md`, `migration.md`).
+- The install line leads with `npm install`. `pnpm`, `yarn` and `bun`
+  follow on the next line.
+- An **Open in StackBlitz** button runs the Quickstart in the browser.
+  The app lives in `examples/vanilla`, and preflight fails when it drifts
+  from the README.
+- A "For AI coding agents" row points agents at this README as plain
+  Markdown on jsDelivr.
+- The README opens with a GIF: a pasted YouTube URL becomes a player, then a corner drag resizes it.
+- The Quickstart image is a photo served from docs.plus.
+
+### Internal
+
+- `bun run docs:gif` re-records the README GIFs.
+
 ## [2.1.0] — 2026-09-17
 
 ### Highlights
