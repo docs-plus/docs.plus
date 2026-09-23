@@ -244,8 +244,10 @@ Deeper layout lives in `apps/webapp/README.md`, `apps/hocuspocus.server/Readme.m
 Five open-source [Tiptap](https://tiptap.dev) extensions power the docs.plus editor. The table below describes the source in this repository. All five are published on npm at `2.0.0`. A published version can still lag this source, so check the status tracker before you pin one.
 
 ```sh
-bun add @docs.plus/extension-hyperlink
+npm install @docs.plus/extension-hyperlink
 ```
+
+Or use `pnpm add`, `yarn add`, or `bun add` with the same package name.
 
 | Package                                                              | Description                                                                                   |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
