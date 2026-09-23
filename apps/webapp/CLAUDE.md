@@ -67,9 +67,8 @@ Distinguish **docked** pad regions from **floating** overlays. Docked = TOC colu
 
 - The canonical mobile sheet system is `apps/webapp/src/components/BottomSheet.tsx`, wrapping `react-modal-sheet`.
 - Sheets register through `useSheetStore` with `SheetType` + `SheetDataMap`.
-- New mobile UI surfaces add a `SheetType` variant, a typed `SheetDataMap` entry, and a React subscriber.
+- New mobile UI surfaces add a `SheetType` variant, a typed `SheetDataMap` entry, and an entry in `SHEETS` in `components/BottomSheet.tsx`. Each entry holds `render` and that sheet's props. Do not build a parallel sheet system beside it, imperative-DOM or otherwise.
 - Tiptap extension imperative-DOM popovers connect to React sheets through extension `popovers` config, gated by `settings.deviceDetect.isMobile` in `TipTap.tsx`.
-- Do not build parallel sheet systems — imperative-DOM or otherwise — next to the React + Zustand sheet system. Extend new mobile action panels via a `SheetType` variant plus the `SHEET_CONTENT` / `SHEET_PROPS` registries.
 - **A `Sheet` portals to `document.body` unless it receives a `mountPoint`** — the library calls `createPortal(sheet, mountPoint ?? document.body)`. Where the React element sits says nothing about where its DOM lands. A `Sheet` rendered inside the mobile flex shell never joins that flex layout. Moving the component that renders it moves the React element only. The library also gates its keyboard hook on `isOpen && avoidKeyboard`, so a closed sheet attaches no `visualViewport` listeners.
 - Keyboard dismissal is a per-sheet entry-point decision. Do not globalize it in `useSheetStore` or `BottomSheet`.
 - Keep the keyboard up for the chat composer and `linkEditor`. The composer emoji panel mounts inline (not as a sheet variant); `emojiPicker` is no longer a `SheetType` / `SheetDataMap` entry / `useBottomSheet.openEmojiPicker` flow. `CHATROOM_OVERLAY_SHEETS` is gone with it. Do not reintroduce an `emojiPicker` sheet variant for the composer surface.
