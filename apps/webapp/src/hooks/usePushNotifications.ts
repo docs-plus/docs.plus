@@ -20,6 +20,68 @@ export type { PushErrorCode } from '@utils/push-notifications'
 // Event for notification state changes (used by notification panel to refresh)
 export const NOTIFICATION_STATE_CHANGED = Symbol('notification.stateChanged')
 
+/** The first path segment is the pad; later segments are filter terms. */
+export const padOf = (path: string) => path.split('/')[1] ?? ''
+
+let clickListenerMounts = 0
+
+const handleNotificationClick = async (event: MessageEvent) => {
+  if (event.data?.type !== 'NOTIFICATION_CLICK') return
+  const { url, notification_id } = event.data
+
+  if (notification_id) {
+    try {
+      await markNotificationAsRead(notification_id)
+
+      const store = useStore.getState()
+      const { notifications, updateNotifications, setNotificationTab, notificationTabs } = store
+
+      ;(['Unread', 'Mentions'] as const).forEach((tab) => {
+        const tabNotifications = notifications.get(tab)
+        if (tabNotifications) {
+          const filtered = tabNotifications.filter((n) => n.id !== notification_id)
+          if (filtered.length !== tabNotifications.length) {
+            updateNotifications(tab, filtered)
+            const tabInfo = notificationTabs.find((t) => t.label === tab)
+            if (tabInfo?.count) {
+              setNotificationTab(tab, Math.max(0, tabInfo.count - 1))
+            }
+          }
+        }
+      })
+
+      // Listeners include the notification summary refresh.
+      PubSub.publish(NOTIFICATION_STATE_CHANGED, { notification_id })
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err)
+    }
+  }
+
+  if (url) {
+    const urlObj = new URL(url, window.location.origin)
+    const channelId = urlObj.searchParams.get('chatroom')
+    const messageId = urlObj.searchParams.get('msg_id')
+
+    if (channelId && padOf(urlObj.pathname) === padOf(window.location.pathname)) {
+      // PubSub keeps navigation in-app, same as NotificationItem.
+      PubSub.publish(CHAT_OPEN, {
+        headingId: channelId,
+        toggleRoom: false,
+        fetchMsgsFromId: messageId || undefined,
+        scroll2Heading: true
+      })
+    } else {
+      // Another pad's chatroom id would open on this pad, so load its page.
+      // The path only, so an absolute action_url stays on this origin.
+      const target = urlObj.pathname + urlObj.search + urlObj.hash
+      const { pathname, search, hash } = window.location
+      if (target !== pathname + search + hash) {
+        window.location.assign(target)
+      }
+    }
+  }
+}
+
 interface UsePushNotificationsReturn {
   isSupported: boolean
   permission: NotificationPermission | 'unsupported'
@@ -92,72 +154,17 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     return unsubscribe
   }, [isSupported])
 
+  // Two mounts (the prompt card and Settings) share one listener, so a click runs once.
   useEffect(() => {
     if (!isSupported) return
-
-    const handleMessage = async (event: MessageEvent) => {
-      if (event.data?.type === 'NOTIFICATION_CLICK') {
-        const { url, notification_id } = event.data
-
-        if (notification_id) {
-          try {
-            await markNotificationAsRead(notification_id)
-
-            const store = useStore.getState()
-            const { notifications, updateNotifications, setNotificationTab, notificationTabs } =
-              store
-
-            ;(['Unread', 'Mentions'] as const).forEach((tab) => {
-              const tabNotifications = notifications.get(tab)
-              if (tabNotifications) {
-                const filtered = tabNotifications.filter((n) => n.id !== notification_id)
-                if (filtered.length !== tabNotifications.length) {
-                  updateNotifications(tab, filtered)
-                  const tabInfo = notificationTabs.find((t) => t.label === tab)
-                  if (tabInfo?.count) {
-                    setNotificationTab(tab, Math.max(0, tabInfo.count - 1))
-                  }
-                }
-              }
-            })
-
-            // Listeners include the notification summary refresh.
-            PubSub.publish(NOTIFICATION_STATE_CHANGED, { notification_id })
-          } catch (err) {
-            console.error('Failed to mark notification as read:', err)
-          }
-        }
-
-        if (url) {
-          const urlObj = new URL(url, window.location.origin)
-          const channelId = urlObj.searchParams.get('chatroom')
-          const messageId = urlObj.searchParams.get('msg_id')
-          // The first segment is the pad; later segments are filter terms.
-          const padOf = (path: string) => path.split('/')[1] ?? ''
-
-          if (channelId && padOf(urlObj.pathname) === padOf(window.location.pathname)) {
-            // PubSub keeps navigation in-app, same as NotificationItem.
-            PubSub.publish(CHAT_OPEN, {
-              headingId: channelId,
-              toggleRoom: false,
-              fetchMsgsFromId: messageId || undefined,
-              scroll2Heading: true
-            })
-          } else {
-            // Another pad's chatroom id would open on this pad, so load its page.
-            // The path only, so an absolute action_url stays on this origin.
-            const target = urlObj.pathname + urlObj.search + urlObj.hash
-            const { pathname, search, hash } = window.location
-            if (target !== pathname + search + hash) {
-              window.location.assign(target)
-            }
-          }
-        }
+    if (clickListenerMounts++ === 0) {
+      navigator.serviceWorker?.addEventListener('message', handleNotificationClick)
+    }
+    return () => {
+      if (--clickListenerMounts === 0) {
+        navigator.serviceWorker?.removeEventListener('message', handleNotificationClick)
       }
     }
-
-    navigator.serviceWorker?.addEventListener('message', handleMessage)
-    return () => navigator.serviceWorker?.removeEventListener('message', handleMessage)
   }, [isSupported])
 
   const subscribe = useCallback(async (): Promise<SubscribeResult> => {

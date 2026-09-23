@@ -9,6 +9,7 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useDismissPanel } from '@hooks/useDismissPanel'
+import { padOf } from '@hooks/usePushNotifications'
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useAuthStore, useChatStore, useStore } from '@stores'
@@ -76,12 +77,11 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
       // Compare the document segment, not the whole path: active filter terms
       // live in later segments, and a bare push would drop the reader's filters.
       const target = actionUrlPathname(notification.action_url)
-      const slugOf = (path: string) => path.split('/')[1] ?? ''
       if (!target) return
 
       void armCompareFromLastLeft(notification.channel_id, profile?.id)
 
-      if (slugOf(target) !== slugOf(window.location.pathname)) {
+      if (padOf(target) !== padOf(window.location.pathname)) {
         void router.push(`${target}#history`)
         return
       }
@@ -103,6 +103,18 @@ export const NotificationItem = ({ notification, variant = 'popover' }: Notifica
 
     const messageId = notification.message_id
     const channelId = notification.channel_id
+
+    // Another pad's chatroom id would open on this pad, so load that pad with
+    // the deep link, as the push click does. A chat row with no link stays here.
+    const target = actionUrlPathname(notification.action_url)
+    if (target && padOf(target) !== padOf(window.location.pathname)) {
+      const deepLink = new URLSearchParams()
+      if (channelId) deepLink.set('chatroom', channelId)
+      if (messageId) deepLink.set('msg_id', messageId)
+      dismissPanel()
+      window.location.assign(`${target}?${deepLink}`)
+      return
+    }
 
     if (headingId === channelId) destroyChatRoom()
 
