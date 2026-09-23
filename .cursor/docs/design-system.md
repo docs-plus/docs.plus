@@ -923,11 +923,11 @@ docked — `components/chatroom/components/MessageComposer/components/layouts/Co
 
 sheet (mobile) — `components/TipTap/hyperlinkPopovers/LinkPreviewSheet.tsx`, `LinkEditorSheet.tsx`, `components/TipTap/hyperlinkPopovers/components/InternalLinkChip.tsx`
 
-| State              | Recipe                                                                                                                                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| frame              | SheetLayout "Link"; header block `border-base-300 border-b pb-3`; editor sheet = SheetLayout + SheetActionFooter (canonical Back + primary Apply)                                                      |
-| action rows        | `group hover:bg-base-200 active:bg-base-200 text-base-content min-h-12 rounded-field py-2.5 text-base transition-colors`; danger `hover:text-error active:text-error` (+ icon group variants)          |
-| internal-link chip | icon tile `bg-primary/10 text-primary size-10 rounded-field`; label `text-base-content truncate font-semibold`; sublabel `text-base-content/60 text-xs`; favicon fallback `bg-base-300 size-5 rounded` |
+| State              | Recipe                                                                                                                                                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| frame              | SheetLayout "Link"; header block `border-base-300 border-b pb-3`; editor sheet = SheetLayout + SheetActionFooter (canonical Back + primary Apply)                                                                                                                                      |
+| action rows        | `group hover:bg-base-200 active:bg-base-200 text-base-content min-h-12 rounded-field py-2.5 text-base transition-colors`; danger `hover:text-error active:text-error` (+ icon group variants); Copy link wraps its `swap` root in a `flex-1` span, because `.swap` centers its content |
+| internal-link chip | icon tile `bg-primary/10 text-primary size-10 rounded-field`; label `text-base-content truncate font-semibold`; sublabel `text-base-content/60 text-xs`; favicon fallback `bg-base-300 size-5 rounded`                                                                                 |
 
 > Off-system: `rounded-field` action rows / icon tile (raw Tailwind radius, not rounded-field/box).
 

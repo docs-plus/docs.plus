@@ -66,21 +66,21 @@ Next step: check the document's `readOnly` flag through the REST metadata read, 
 
 History travels over the same socket as stateless messages. The client sends `{ msg: 'history', type, … }`. The server answers only that connection, with `{ msg: 'history.response', type, response }`.
 
-| `type`           | You send                   | `response`                                                             |
-| ---------------- | -------------------------- | ---------------------------------------------------------------------- |
-| `history.list`   | `beforeVersion?`, `since?` | `{ versions, hasMore, nextBefore?, anchor?, profiles, clientAuthors }` |
-| `history.watch`  | `version`                  | That version with its Yjs bytes, or `null`                             |
-| `history.revert` | `version`                  | `{ restoredFrom, backupVersion }`                                      |
+| `type`           | You send                   | `response`                                                                             |
+| ---------------- | -------------------------- | -------------------------------------------------------------------------------------- |
+| `history.list`   | `beforeVersion?`, `since?` | `{ versions, hasMore, nextBefore?, beforeVersion?, anchor?, profiles, clientAuthors }` |
+| `history.watch`  | `version`                  | That version with its Yjs bytes, or `null`                                             |
+| `history.revert` | `version`                  | `{ restoredFrom, backupVersion }`                                                      |
 
-Every list and watch reply, success or failure, repeats the `since`, `version` and `beforeVersion` you sent. Use them to match a reply to its request.
+Every list and watch reply, success or failure, repeats the `since`, `version` and `beforeVersion` you sent. They sit at the top level of the frame, beside `response`. Use them to match a reply to its request.
 
 A failure carries `error: 'history_failed'` and may carry `reason`. An unknown `type` is refused the same way.
 
-`versions` is one page of 50, newest first. To read the next page, pass `nextBefore` back as `beforeVersion`.
+`versions` is one page of 50, newest first. To read the next page, pass `nextBefore` back as `beforeVersion`. An older page also carries that `beforeVersion` inside `response`.
 
 On a first page sent with `since`, `anchor` is the newest version at or before that instant, else the oldest version. It is not added to `versions`, but it can repeat a row that `versions` holds.
 
-A connection may send one list per 250 ms and eight watches per 10 s. Extra requests fail with `reason: 'rate-limited'`.
+Each connection has a rate limit on list and watch requests. A request over it fails with `reason: 'rate-limited'`.
 
 ## Ports, and what not to connect to
 
