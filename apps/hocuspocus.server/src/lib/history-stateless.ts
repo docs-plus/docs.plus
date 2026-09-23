@@ -32,8 +32,13 @@ export type HistoryListResult = {
   versions: HistoryVersionMeta[]
   hasMore: boolean
   beforeVersion?: number
-  /** Pass this as the next `beforeVersion`. Ignores an extra Last-left row. */
+  /** Pass this as the next `beforeVersion`. */
   nextBefore?: number
+  /**
+   * First page with `since` only. The Anchor for `since`, else the oldest row.
+   * It is not added to `versions`, but it can repeat a row that `versions` holds.
+   */
+  anchor?: HistoryVersionMeta
   /**
    * Uid -> profile side table rather than a profile per row. A handful of
    * authors repeat across the page.
@@ -98,7 +103,9 @@ const toVersion = (value: unknown): number | undefined =>
     : undefined
 
 /** Document version history over the Hocuspocus stateless channel. */
-export async function handleHistoryStateless(payload: HistoryPayload): Promise<unknown> {
+export async function handleHistoryStateless(
+  payload: HistoryPayload & { type: 'history.list' | 'history.watch' }
+): Promise<unknown> {
   const { type, documentId } = payload
 
   switch (type) {
@@ -131,23 +138,21 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
       const rows = pageRows.slice(0, HISTORY_LIST_PAGE)
       const nextBefore = rows[rows.length - 1]?.version
 
-      // Last left can sit older than this page. One extra metadata row keeps
-      // compare honest without shipping every version. When retention took every
-      // row before it, the oldest row is the A the client falls back to.
-      if (beforeVersion === undefined && Number.isFinite(sinceMs)) {
-        const anchor =
-          (await prisma.documents.findFirst({
-            where: { documentId, createdAt: { lte: new Date(sinceMs) } },
-            orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
-            select: versionSelect
-          })) ??
-          (await prisma.documents.findFirst({
-            where: { documentId },
-            orderBy: [{ createdAt: 'asc' }, { version: 'asc' }],
-            select: versionSelect
-          }))
-        if (anchor && !rows.some((row) => row.version === anchor.version)) rows.push(anchor)
-      }
+      // Last left can sit below this page, so the reply names it separately.
+      // When retention took every earlier row, the oldest row stands in.
+      const anchor =
+        beforeVersion === undefined && Number.isFinite(sinceMs)
+          ? ((await prisma.documents.findFirst({
+              where: { documentId, createdAt: { lte: new Date(sinceMs) } },
+              orderBy: [{ createdAt: 'desc' }, { version: 'desc' }],
+              select: versionSelect
+            })) ??
+            (await prisma.documents.findFirst({
+              where: { documentId },
+              orderBy: [{ createdAt: 'asc' }, { version: 'asc' }],
+              select: versionSelect
+            })))
+          : null
 
       const versions: HistoryVersionMeta[] = rows.map((row) => ({
         ...row,
@@ -165,6 +170,9 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
         hasMore,
         ...(hasMore && nextBefore !== undefined ? { nextBefore } : {}),
         ...(beforeVersion !== undefined ? { beforeVersion } : {}),
+        ...(anchor
+          ? { anchor: { ...anchor, trigger: anchor.trigger as VersionTrigger | null } }
+          : {}),
         profiles: await resolveProfiles([...profileIds]),
         clientAuthors
       } satisfies HistoryListResult
@@ -183,8 +191,5 @@ export async function handleHistoryStateless(payload: HistoryPayload): Promise<u
 
       return toSnapshot(doc)
     }
-
-    default:
-      return payload
   }
 }

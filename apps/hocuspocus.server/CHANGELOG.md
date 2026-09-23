@@ -95,6 +95,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
   Owner live list and Owner Trash list include it. Fleet, create, slug GET,
   and update omit it. `POST /api/documents/:documentId/opened` is owner-only,
   raw SQL, 30-second debounce, trash → 404. Does not move `@updatedAt`.
+- List and watch replies and failures echo the request's `since`, `version`
+  and `beforeVersion`.
 
 ### Changed
 
@@ -106,6 +108,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **Owner Trash list includes `preview` and `lastOpenedAt` and fills SQL-NULL
   rows.** The older Owner live list Added bullet said Trash omits both.
   Fill matches the Owner live list. Owner Trash list still omits Favorite.
+- `history.list` returns the Anchor for `since` in its own `anchor` field.
+  `versions` no longer carries it out of order.
 
 ### Fixed
 
@@ -117,6 +121,8 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **ODT export and portable JSON no longer read an array as a node.** The shared
   `isRecord` guard accepted arrays, so a `content` array could reach a branch
   meant for a node. No shipped document is known to have hit it.
+
+- An unknown history `type` is refused with `history_failed`.
 
 ### Documentation
 

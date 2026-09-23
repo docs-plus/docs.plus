@@ -67,13 +67,15 @@ function sendHistoryResponse(
   connection: Connection,
   type: string,
   response: unknown,
-  failure?: HistoryFailure
+  failure?: HistoryFailure,
+  echo: Pick<HistoryPayload, 'since' | 'version' | 'beforeVersion'> = {}
 ) {
   connection.sendStateless(
     JSON.stringify({
       msg: 'history.response',
       type,
       response,
+      ...echo,
       ...(failure
         ? { error: failure.error, ...(failure.reason && { reason: failure.reason }) }
         : {})
@@ -261,12 +263,18 @@ const statelessExtension = {
       const canonicalId = roomDocumentId(document)
       const type = parsedPayload.type
 
+      const { since, version, beforeVersion } = parsedPayload
+      const echo = {
+        ...(typeof since === 'string' ? { since } : {}),
+        ...(typeof version === 'number' ? { version } : {}),
+        ...(typeof beforeVersion === 'number' ? { beforeVersion } : {})
+      }
       if (!canonicalId || !type) {
         wsLogger.warn(
           { parsedPayload, hasRoomName: Boolean(canonicalId) },
           'history stateless missing room or type'
         )
-        if (type) sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED })
+        if (type) sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED }, echo)
         return
       }
 
@@ -275,48 +283,50 @@ const statelessExtension = {
           { clientDocumentId: parsedPayload.documentId, canonicalId },
           'history stateless documentId does not match connection room'
         )
-        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED })
+        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED }, echo)
         return
       }
 
-      // Handled ahead of the read ops: they share the envelope but not the
-      // dispatch, whose default arm echoes an unknown type back as a success.
+      // Revert keeps its own gates and envelope. The read ops share the rest,
+      // and any other type is refused here, before dispatch.
       if (type === REVERT_TYPE) {
-        await handleHistoryRevert(connection, canonicalId, parsedPayload.version)
+        await handleHistoryRevert(connection, canonicalId, version)
         return
       }
 
-      if (type === LIST_TYPE && listCoolingDown(connection, Date.now())) {
-        sendHistoryResponse(connection, type, null, {
-          error: HISTORY_FAILED,
-          reason: 'rate-limited'
-        })
+      if (type !== LIST_TYPE && type !== WATCH_TYPE) {
+        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED }, echo)
         return
       }
 
-      if (type === WATCH_TYPE && watchOverBudget(connection, Date.now())) {
-        sendHistoryResponse(connection, type, null, {
-          error: HISTORY_FAILED,
-          reason: 'rate-limited'
-        })
+      if (
+        (type === LIST_TYPE && listCoolingDown(connection, Date.now())) ||
+        (type === WATCH_TYPE && watchOverBudget(connection, Date.now()))
+      ) {
+        sendHistoryResponse(
+          connection,
+          type,
+          null,
+          { error: HISTORY_FAILED, reason: 'rate-limited' },
+          echo
+        )
         return
-      }
-
-      const historyPayload: HistoryPayload = {
-        type,
-        documentId: canonicalId,
-        version: parsedPayload.version,
-        beforeVersion: parsedPayload.beforeVersion,
-        since: parsedPayload.since
       }
 
       try {
-        const response = await handleHistoryStateless(historyPayload)
-        sendHistoryResponse(connection, type, response)
+        // Inline, so `type` keeps its narrowed literal union.
+        const response = await handleHistoryStateless({
+          type,
+          documentId: canonicalId,
+          version,
+          beforeVersion,
+          since
+        })
+        sendHistoryResponse(connection, type, response, undefined, echo)
       } catch (error) {
         wsLogger.error({ err: error }, 'Error handling history event')
         captureUnknown(error)
-        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED })
+        sendHistoryResponse(connection, type, null, { error: HISTORY_FAILED }, echo)
       }
       return
     }
