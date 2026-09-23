@@ -4,8 +4,8 @@ import { useCallback } from 'react'
 
 /**
  * Compare picks a second version (A) to diff the viewed one (B) against. A rides its own
- * watch slot, so the viewer's version is never replaced. B never re-watches while compare
- * is on, and that is what makes an un-echoed failure attributable.
+ * watch slot, so the viewer's version is never replaced. Replies echo the version, which
+ * tells the two slots apart.
  */
 export const useHistoryCompare = () => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)

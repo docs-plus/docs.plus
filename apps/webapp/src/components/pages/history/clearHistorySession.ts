@@ -12,6 +12,7 @@ export function resetHistorySessionForMount(): void {
   state.setHistoryList([])
   state.setProfiles({})
   state.setClientAuthors([])
+  state.setHistoryAnchor(null)
   state.setSilentListRefresh(false)
   state.setHistoryHasMore(false)
   state.setHistoryNextBefore(null)

@@ -218,9 +218,9 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
       toast.Info('Too many versions opened at once. Wait a moment and try again.')
       return
     }
-    // A failure frame echoes no version. With only the compare slot open it is
-    // compare's, and the recovery path would evict the row the reader is viewing.
-    if (store().pendingCompareVersion != null && failedVersion == null) {
+    // The echo names the refused version. A failed A must not evict the row
+    // the reader is viewing.
+    if (payload.version != null && payload.version === store().pendingCompareVersion) {
       // Leaving compareMode on with no base strands the sidebar: every row click
       // reassigns an A side that never renders, so no version can be opened.
       store().setPendingCompareVersion(null)
@@ -229,6 +229,8 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
       toast.Error("Can't compare this version")
       return
     }
+    // A stale reply that names neither slot must not replace the viewed version.
+    if (payload.version != null && payload.version !== failedVersion) return
     toast.Error('Could not open this version. Try another or go back to the editor.')
     recoverAfterWatchFailure(deps, failedVersion)
     return
@@ -237,7 +239,7 @@ function handleHistoryFailed(payload: HistoryStatelessPayload, deps: HistoryStat
   if (failedType === 'history.list') {
     // A background refresh nobody asked for must not blank the sidebar or drop
     // the version from the URL; the reader keeps what they already have.
-    if (store().silentListRefresh) {
+    if (payload.beforeVersion == null && store().silentListRefresh) {
       store().setSilentListRefresh(false)
       return
     }
@@ -289,8 +291,31 @@ function handleHistoryRevert(payload: HistoryStatelessPayload) {
 function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatelessHandlerDeps) {
   const raw = payload.response as HistoryListWireResponse | null | undefined
 
-  // Read and clear first: any list response ends the silent window. One lost reply
-  // otherwise latches the flag, and every later failure is swallowed with the spinner up.
+  // An older page is still detected by `raw.beforeVersion`, because old and new
+  // servers both send it. Only the failure arm reads the top-level `beforeVersion` echo.
+  if (raw != null && !Array.isArray(raw) && raw.beforeVersion != null) {
+    // A reply to a cursor the store has moved past would append rows out of place.
+    if (raw.beforeVersion !== store().historyNextBefore) return
+    const current = store().historyList
+    const page = raw.versions ?? []
+    const walking = isDeepLinkWalk(current)
+    const merged = [
+      ...current,
+      ...page.filter((item) => !current.some((row) => row.version === item.version))
+    ]
+    store().setHistoryList(merged)
+    store().setProfiles({ ...store().profiles, ...(raw.profiles ?? {}) })
+    store().setHistoryHasMore(Boolean(raw.hasMore))
+    store().setHistoryNextBefore(raw.nextBefore ?? null)
+    if (walking) {
+      deepLinkRetried = false
+      openListTarget(merged, deps)
+    }
+    return
+  }
+
+  // Only a first page can be silent. An older-page frame must not end the silent window.
+  // Read and clear first: one lost reply would otherwise latch the flag.
   const silent = store().silentListRefresh
   if (silent) store().setSilentListRefresh(false)
 
@@ -313,24 +338,8 @@ function handleHistoryList(payload: HistoryStatelessPayload, deps: HistoryStatel
     const page = raw.versions ?? []
     const current = store().historyList
     const inPage = (row: HistoryItem) => page.some((item) => item.version === row.version)
-
-    if (raw.beforeVersion != null) {
-      // A reply to a cursor the store has moved past would append rows out of place.
-      if (raw.beforeVersion !== store().historyNextBefore) return
-      const walking = isDeepLinkWalk(current)
-      const merged = [
-        ...current,
-        ...page.filter((item) => !current.some((row) => row.version === item.version))
-      ]
-      store().setHistoryList(merged)
-      store().setProfiles({ ...store().profiles, ...(raw.profiles ?? {}) })
-      store().setHistoryHasMore(Boolean(raw.hasMore))
-      store().setHistoryNextBefore(raw.nextBefore ?? null)
-      if (walking) {
-        deepLinkRetried = false
-        openListTarget(merged, deps)
-      }
-      return
+    if (payload.since != null && raw.anchor) {
+      store().setHistoryAnchor({ since: payload.since, item: raw.anchor })
     }
 
     // A re-list returns page one only. Keep the older pages the reader already
@@ -419,16 +428,14 @@ function handleHistoryWatch(payload: HistoryStatelessPayload, deps: HistoryState
   }
 
   if (response == null) {
-    // A failure carries no version, so it can only be attributed when one request
-    // is outstanding. With both in flight the viewed version wins and the compare
-    // request is left for compare exit to clear.
-    if (pendingCompare != null && pending == null) {
+    if (payload.version != null && payload.version === pendingCompare) {
       store().setPendingCompareVersion(null)
       store().setCompareMode(false)
       store().setCompareBaseItem(null)
       toast.Error('Could not load the version to compare against.')
       return
     }
+    if (payload.version != null && payload.version !== pending) return
     recoverAfterWatchFailure(deps, pending)
     return
   }

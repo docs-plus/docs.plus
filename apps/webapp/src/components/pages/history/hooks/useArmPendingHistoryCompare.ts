@@ -14,6 +14,7 @@ export function useArmPendingHistoryCompare(): void {
   const pendingCompareSince = useStore((state) => state.pendingCompareSince)
   const setPendingCompareSince = useStore((state) => state.setPendingCompareSince)
   const historyList = useStore((state) => state.historyList)
+  const historyAnchor = useStore((state) => state.historyAnchor)
   const activeHistory = useStore((state) => state.activeHistory)
   const loadingHistory = useStore((state) => state.loadingHistory)
   const pendingWatchVersion = useStore((state) => state.pendingWatchVersion)
@@ -23,7 +24,7 @@ export function useArmPendingHistoryCompare(): void {
   const historyHasMore = useStore((state) => state.historyHasMore)
   const silentListRefresh = useStore((state) => state.silentListRefresh)
   const setSilentListRefresh = useStore((state) => state.setSilentListRefresh)
-  const requestedSinceRef = useRef<string | null>(null)
+  const sinceSendsRef = useRef<{ since: string; sends: number } | null>(null)
   const { enterCompare, exitCompare } = useHistoryCompare()
   const { watchVersionContent } = useVersionContent()
 
@@ -38,26 +39,36 @@ export function useArmPendingHistoryCompare(): void {
     const head = historyList[0]
     if (!head) return
 
-    // Last left arrived after the list, so no loaded row sits at or before it.
-    // Re-list once with `since`; the first-page merge keeps older pages and adds the anchor.
-    // Wait out the list cooldown. Mark the request only when it leaves: any re-render
-    // cancels the timer, and a mark set earlier would skip the send and pick the wrong base.
+    // Last left can sit below the loaded pages. Ask once with `since` after the list gap,
+    // and retry a refusal once. Arm from an echoed Anchor; never fall back to the oldest
+    // loaded row while older pages exist. Count a send only when it leaves: a re-render
+    // cancels the timer.
+    const anchor = historyAnchor?.since === pendingCompareSince ? historyAnchor.item : null
     const sinceAt = Date.parse(pendingCompareSince)
     if (
+      !anchor &&
       historyHasMore &&
-      !historyList.some((item) => Date.parse(item.createdAt) <= sinceAt) &&
-      requestedSinceRef.current !== pendingCompareSince
+      !historyList.some((item) => Date.parse(item.createdAt) <= sinceAt)
     ) {
       const since = pendingCompareSince
+      const sent = sinceSendsRef.current
+      const sends = sent?.since === since ? sent.sends : 0
+      if (sends >= 2) {
+        setPendingCompareSince(null)
+        return
+      }
       const timer = setTimeout(() => {
-        requestedSinceRef.current = since
+        sinceSendsRef.current = { since, sends: sends + 1 }
         setSilentListRefresh(true)
         sendHistoryListRequest(hocuspocusProvider, documentId, { since })
       }, HISTORY_LIST_GAP_MS)
       return () => clearTimeout(timer)
     }
 
-    const picked = pickCompareBaseSince(historyList, pendingCompareSince)
+    const picked = pickCompareBaseSince(
+      anchor ? [...historyList, anchor] : historyList,
+      pendingCompareSince
+    )
     if (picked.kind !== 'base') {
       setPendingCompareSince(null)
       const message = compareBaseSinceMessage(picked)
@@ -90,6 +101,7 @@ export function useArmPendingHistoryCompare(): void {
     pendingCompareVersion,
     activeHistory,
     historyList,
+    historyAnchor,
     compareMode,
     compareBaseItem,
     historyHasMore,

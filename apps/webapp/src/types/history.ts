@@ -49,3 +49,5 @@ export interface HistoryItem {
   triggeredBy?: string | null
   contributors?: string[]
 }
+
+export type HistoryAnchor = { since: string; item: HistoryItem }

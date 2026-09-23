@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/react'
-import { ClientAuthorBinding, HistoryItem, HistoryProfileMap } from '@types'
+import { ClientAuthorBinding, HistoryAnchor, HistoryItem, HistoryProfileMap } from '@types'
 import { immer } from 'zustand/middleware/immer'
 interface IHistoryStore {
   historyList: HistoryItem[]
@@ -23,6 +23,8 @@ interface IHistoryStore {
    * it once, so it must survive `resetHistorySessionForMount`.
    */
   pendingCompareSince: string | null
+  /** The server's Anchor for one `since`, from a list reply that echoed it. Never part of `historyList`. */
+  historyAnchor: HistoryAnchor | null
   /** A background `document:saved` re-list is in flight; its failure must not blank the sidebar. */
   silentListRefresh: boolean
   /** The loaded page is not the whole list. */
@@ -39,6 +41,7 @@ interface IHistoryStore {
   setCompareBaseItem: (item: HistoryItem | null) => void
   setPendingCompareVersion: (version: number | null) => void
   setPendingCompareSince: (since: string | null) => void
+  setHistoryAnchor: (anchor: HistoryAnchor | null) => void
   setSilentListRefresh: (silent: boolean) => void
   setHistoryHasMore: (historyHasMore: boolean) => void
   setHistoryNextBefore: (historyNextBefore: number | null) => void
@@ -56,6 +59,7 @@ const history = immer<IHistoryStore>((set) => ({
   compareBaseItem: null,
   pendingCompareVersion: null,
   pendingCompareSince: null,
+  historyAnchor: null,
   silentListRefresh: false,
   historyHasMore: false,
   historyNextBefore: null,
@@ -123,6 +127,12 @@ const history = immer<IHistoryStore>((set) => ({
   setPendingCompareSince: (pendingCompareSince: string | null) => {
     set((state) => {
       state.pendingCompareSince = pendingCompareSince
+    })
+  },
+
+  setHistoryAnchor: (historyAnchor: HistoryAnchor | null) => {
+    set((state) => {
+      state.historyAnchor = historyAnchor
     })
   },
 

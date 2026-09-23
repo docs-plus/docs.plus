@@ -85,6 +85,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   no users join. The chip now uses the snapshot username until that join
   is present.
 
+- Compare opened from a change notification no longer diffs against the
+  wrong version when a quick second list is refused.
+
+- Show older no longer leaves the Last-left version between two pages.
+
 ### Removed
 
 - Next routes for Validate, Status, and Confirm. The service worker no longer

@@ -1,7 +1,8 @@
 /**
- * Hocuspocus stateless: client `{ msg: 'history', type, documentId? }`;
- * server unicast `{ msg: 'history.response', type, response }` on the same connection.
- * Failures use `error: 'history_failed'`. List is one page of rows (legacy: plain array).
+ * Hocuspocus stateless: client `{ msg: 'history', type, documentId? }`; server unicast
+ * `{ msg: 'history.response', type, response }`. Failures use `error: 'history_failed'`.
+ * List and watch replies echo the request's `since`, `version` and `beforeVersion`.
+ * List is one page of rows (legacy: plain array).
  */
 import type {
   ClientAuthorBinding,
@@ -25,6 +26,7 @@ export type HistoryListWireResponse =
       hasMore?: boolean
       beforeVersion?: number
       nextBefore?: number
+      anchor?: HistoryItem
       profiles?: HistoryProfileMap
       clientAuthors?: ClientAuthorBinding[]
     }
@@ -43,7 +45,10 @@ export type HistoryStatelessPayload = {
   reason?: VersionFailureReason
   /** `document:saved` broadcast only — a different message on the same parse. */
   documentId?: string
+  /** Request echo on a list or watch reply. The saved version on `document:saved`. */
   version?: number
+  since?: string
+  beforeVersion?: number
 }
 
 export type HistoryStatelessSender = {
