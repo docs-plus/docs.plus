@@ -31,7 +31,14 @@ const withPWA = require('next-pwa')({
   // references any of them: the screenshots are read only by the browser's own install
   // prompt, over the network. Precaching all of it costs every first visit ~8.3M.
   // The leading "!" is next-pwa's own globby syntax.
-  publicExcludes: ['!demo-assets/**/*', '!external-html/**/*', '!icons/screenshot-*'],
+  publicExcludes: [
+    '!demo-assets/**/*',
+    '!external-html/**/*',
+    '!icons/screenshot-*',
+    '!icons/apple-splash-*',
+    '!icons/og-card-*',
+    '!badges/**/*'
+  ],
   // Exclude files that don't exist in Next.js 15+
   buildExcludes: [/dynamic-css-manifest\.json$/, /middleware-manifest\.json$/],
   // Import custom service worker for push notifications

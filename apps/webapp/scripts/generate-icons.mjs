@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /* global console, process */
 
 /**
@@ -8,10 +8,10 @@
  * Uses sharp for high-quality rasterization.
  *
  * Usage:
- *   node scripts/generate-icons.mjs
+ *   bun scripts/generate-icons.mjs
  *
  * Prerequisites:
- *   npm install --save-dev sharp
+ *   sharp (already a webapp devDependency)
  *
  * Icon Specifications:
  * ─────────────────────────────────────────────────────────────────
@@ -38,6 +38,10 @@
  * FAVICON:
  *   - favicon-32x32.png         → 32×32
  *   - favicon-16x16.png         → 16×16
+ *
+ * APPLE SPLASH (iOS Home Screen launch, portrait, no alpha):
+ *   - apple-splash-1290x2796.png, apple-splash-1179x2556.png, apple-splash-1170x2532.png
+ *   - Logo centered on #ffffff; linked from src/pages/_document.tsx
  * ─────────────────────────────────────────────────────────────────
  */
 
@@ -75,6 +79,27 @@ async function generateIcon(svgBuffer, outputName, size) {
   console.log(`  ✅ ${outputName} (${size}×${size})`)
 }
 
+// Two passes: sharp runs composite late, so removeAlpha in the same chain would not apply.
+async function generateSplash(svgBuffer, width, height) {
+  const outputName = `apple-splash-${width}x${height}.png`
+  const logo = await sharp(svgBuffer)
+    .resize(Math.round(width * 0.4))
+    .png()
+    .toBuffer()
+  const canvas = await sharp({
+    create: { width, height, channels: 3, background: { r: 255, g: 255, b: 255 } }
+  })
+    .composite([{ input: logo, gravity: 'center' }])
+    .png()
+    .toBuffer()
+  await sharp(canvas)
+    .removeAlpha()
+    .png({ compressionLevel: 9 })
+    .toFile(path.join(ICONS_DIR, outputName))
+
+  console.log(`  ✅ ${outputName} (${width}×${height})`)
+}
+
 async function main() {
   console.log('🎨 Generating PWA icons for Docs.plus\n')
 
@@ -100,6 +125,11 @@ async function main() {
   console.log('\n⭐ Favicons:')
   await generateIcon(appleTouchSvg, 'favicon-32x32.png', 32)
   await generateIcon(appleTouchSvg, 'favicon-16x16.png', 16)
+
+  console.log('\n🚀 Apple Splash Screens (iOS):')
+  await generateSplash(appleTouchSvg, 1290, 2796)
+  await generateSplash(appleTouchSvg, 1179, 2556)
+  await generateSplash(appleTouchSvg, 1170, 2532)
 
   console.log('\n✨ All icons generated successfully!')
   console.log('\n📋 Next steps:')

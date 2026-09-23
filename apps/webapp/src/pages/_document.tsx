@@ -79,6 +79,21 @@ export default function Document() {
         <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
+        <link
+          rel="apple-touch-startup-image"
+          media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)"
+          href="/icons/apple-splash-1290x2796.png"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)"
+          href="/icons/apple-splash-1179x2556.png"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+          href="/icons/apple-splash-1170x2532.png"
+        />
 
         <link rel="mask-icon" href="/icons/logo.svg" color={THEME_COLOR_LIGHT} />
 
