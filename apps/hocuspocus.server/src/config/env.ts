@@ -72,8 +72,14 @@ export const config = {
     serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY
   },
 
+  mcp: {
+    authIssuer: env.MCP_AUTH_ISSUER || `${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1`
+  },
+
   security: {
-    allowedOrigins: env.ALLOWED_ORIGINS,
+    // The production CORS list and the MCP Origin gate. `||` because Compose can set APP_URL to ''.
+    originAllowlist:
+      env.ALLOWED_ORIGINS.length > 0 ? env.ALLOWED_ORIGINS : [env.APP_URL || 'https://docs.plus'],
     rateLimitMax: env.RATE_LIMIT_MAX
   },
 

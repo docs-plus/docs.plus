@@ -93,6 +93,7 @@
         "@hocuspocus/server": "catalog:",
         "@hocuspocus/transformer": "catalog:",
         "@hono/zod-validator": "^0.9.1",
+        "@modelcontextprotocol/server": "2.0.0",
         "@prisma/adapter-pg": "^6.19.3",
         "@prisma/client": "^6.19.3",
         "@sentry/bun": "^10.73.0",
@@ -1205,6 +1206,10 @@
     "@lifeomic/attempt": ["@lifeomic/attempt@3.1.0", "", {}, "sha512-QZqem4QuAnAyzfz+Gj5/+SLxqwCAw2qmt7732ZXodr6VDWGeYLG6w1i/vYLa55JQM9wRuBKLmXmiZ2P0LtE5rw=="],
 
     "@metascraper/helpers": ["@metascraper/helpers@5.50.6", "", { "dependencies": { "audio-extensions": "0.0.0", "chrono-node": "2.9.1", "condense-whitespace": "~2.0.0", "data-uri-utils": "~1.0.13", "debug-logfmt": "~1.4.7", "entities": "~7.0.1", "file-extension": "~4.0.5", "has-values": "~2.0.1", "image-extensions": "~1.1.0", "is-relative-url": "~3.0.0", "is-uri": "~1.2.14", "iso-639-3": "~2.2.0", "isostring": "0.0.1", "jsdom": "~29.1.1", "jsonrepair": "~3.14.0", "lodash": "~4.18.1", "memoize-one": "~6.0.0", "microsoft-capitalize": "~1.0.8", "mime": "3", "normalize-url": "6", "re2": "~1.24.1", "smartquotes": "~2.3.2", "tldts": "~7.4.2", "url-regex-safe": "~4.0.0", "video-extensions": "1" } }, "sha512-Vm3Ida3h6yuewt1tZSZdHrj660oNonoc9/xwZ261uTc/k6kj3GyEhtYWRaA+wa0MgAociLYvKitTmdtjGmS/+Q=="],
+
+    "@modelcontextprotocol/core": ["@modelcontextprotocol/core@2.0.0", "", { "dependencies": { "zod": "^4.2.0" } }, "sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA=="],
+
+    "@modelcontextprotocol/server": ["@modelcontextprotocol/server@2.0.0", "", { "dependencies": { "@modelcontextprotocol/core": "2.0.0", "zod": "^4.2.0" } }, "sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw=="],
 
     "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ=="],
 

@@ -13,7 +13,7 @@ import hypermultimediaRouter, {
   HYPERMULTIMEDIA_MOUNT_PATH
 } from './api/routers/hypermultimedia.router'
 import { config } from './config/env' // import runs env validation (fail-fast at boot)
-import { verifyServiceRole } from './lib/auth'
+import { verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { emailGateway } from './lib/email'
 import { AppError, getErrorResponse } from './lib/errors'
 import { captureHttpError, captureUnknown, flushObservability } from './lib/instrument'
@@ -23,12 +23,14 @@ import { prisma, shutdownDatabase } from './lib/prisma'
 import { getOwnerProfiles } from './lib/profiles'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
+import { getServiceRoleClient } from './lib/supabase'
 import { setupMiddleware } from './middleware'
 import * as documentChanges from './modules/document-changes'
 import * as documentContent from './modules/document-content'
 import * as documentConversion from './modules/document-conversion'
 import * as documentVersions from './modules/document-versions'
 import * as linkMetadata from './modules/link-metadata'
+import * as mcp from './modules/mcp'
 import * as openapi from './modules/openapi'
 
 const app = new Hono()
@@ -117,6 +119,26 @@ const linkMetadataModule = linkMetadata.init({
   logger: logger.child({ module: 'link-metadata' })
 })
 app.route('/api/metadata', linkMetadataModule.router)
+// Its own content client, so hop and decode logs carry the `mcp` module.
+const mcpLogger = logger.child({ module: 'mcp' })
+const mcpModule = mcp.init({
+  prisma,
+  logger: mcpLogger,
+  content: documentContent.createContentClient({
+    baseUrl: config.hocuspocus.internalUrl,
+    serviceRoleKey: config.supabase.serviceRoleKey ?? null,
+    prisma,
+    logger: mcpLogger
+  }),
+  verifyToken: verifySupabaseTokenOutcome,
+  publicBaseUrl: config.app.publicUrl,
+  authIssuer: config.mcp.authIssuer,
+  allowedOrigins: config.security.originAllowlist,
+  redis: getRedisClient(),
+  supabase: getServiceRoleClient(),
+  version: pkg.version
+})
+app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
 // Absolute paths (/openapi.json, /docs), so this mounts at the root.
 app.route('/', openapiModule.router)
 

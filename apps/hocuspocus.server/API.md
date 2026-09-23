@@ -17,13 +17,14 @@ The REST API runs from `src/index.ts` on a Hono app. This document covers the HT
 6. [Document versions](#document-versions)
 7. [Document changes](#document-changes)
 8. [Document conversion](#document-conversion)
-9. [Media](#media)
-10. [Link metadata](#link-metadata)
-11. [Email](#email)
-12. [Admin](#admin)
-13. [Push notifications](#push-notifications)
-14. [Rate limiting](#rate-limiting)
-15. [WebSocket API](#websocket-api)
+9. [MCP connector](#mcp-connector)
+10. [Media](#media)
+11. [Link metadata](#link-metadata)
+12. [Email](#email)
+13. [Admin](#admin)
+14. [Push notifications](#push-notifications)
+15. [Rate limiting](#rate-limiting)
+16. [WebSocket API](#websocket-api)
 
 ## Authentication
 
@@ -37,6 +38,7 @@ Three schemes apply, by route group:
 | Either of the two above               | `GET /api/documents/:documentId/export`, `POST /api/documents/:documentId/import` — the key passes every document, a user token is checked against the document's privacy and lock                                                                                                                                                                                                                                  | `token: <jwt>` or the service-role bearer           |
 | Supabase service-role key             | `/api/email/send-generic`, `/send-digest`, `/bounce`, `/preview/:type`, `GET`/`PATCH /api/documents/:documentId/content`, every `/api/documents/:documentId/versions` route, `GET /api/documents/:documentId/changes`, and the `content` / `ownerId` fields on `POST /api/documents`                                                                                                                                | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` |
 | Supabase user JWT + `admin_users` row | `/api/admin/*`                                                                                                                                                                                                                                                                                                                                                                                                      | `Authorization: Bearer <jwt>`                       |
+| Supabase OAuth token with `client_id` | `/api/mcp` — see [MCP connector](#mcp-connector); admin routes refuse these tokens                                                                                                                                                                                                                                                                                                                                  | `Authorization: Bearer <jwt>`                       |
 
 > **`GET /api/documents/:slug` auth (shipped — owner-scoped private):** `optionalUser` attaches the caller. Public docs return full metadata to anyone; private docs are **owner-only** — anonymous or ownerless-private → `403 { access: 'sign-in-required' }`, signed-in non-owner → `403 { access: 'denied' }`. See the slug access matrix below.
 
@@ -978,6 +980,68 @@ An empty `warnings` array means a clean import.
 | `429`  | `RATE_LIMIT_EXCEEDED`    | Global rate limiter. The house envelope; the retry seconds ride the `Retry-After` header — see [Rate limiting](#rate-limiting) |
 | `500`  | `INTERNAL_SERVER_ERROR`  | Export only: the stored snapshot could not be decoded, or the converter threw                                                  |
 | `503`  | `AUTH_UNAVAILABLE`       | Supabase token verification was unreachable                                                                                    |
+
+## MCP connector
+
+`/api/mcp` is a Model Context Protocol server (`src/modules/mcp/`). A person adds docs.plus to an AI app as a connector and signs in as themselves. The app's agent then reads and edits that person's documents through the tools below. It uses `@modelcontextprotocol/server` 2.0.0 with `createMcpHandler`. Every request gets a fresh server, so the endpoint holds no session between requests or replicas.
+
+**Supported hosts.** claude.ai, Claude Desktop and ChatGPT add it as a remote connector. Claude Code should work through dynamic client registration (DCR). Nobody has tested it yet.
+
+### Endpoints
+
+| Route                                               | Auth         | What it does                                                                                                    |
+| --------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------- |
+| `GET /api/mcp/.well-known/oauth-protected-resource` | None         | RFC 9728 metadata: `resource` is `<PUBLIC_RESTAPI_URL>/api/mcp`, `authorization_servers` is `[MCP_AUTH_ISSUER]` |
+| `POST`, `GET`, `DELETE /api/mcp`                    | OAuth bearer | The MCP transport. Legacy (2025) clients get `GET` and `DELETE` answered `405`                                  |
+
+`PUBLIC_RESTAPI_URL` unset (local) makes the metadata use the request origin. `MCP_AUTH_ISSUER` unset means `${SUPABASE_URL}/auth/v1`. Set it to the exact `issuer` from Supabase's `/auth/v1/.well-known/openid-configuration`, or hosts reject the metadata.
+
+### Authorization
+
+- Supabase Auth is the authorization server. Hosts register with DCR, then run OAuth 2.1 with PKCE.
+- Only `Authorization: Bearer` is read. The house `token` header is ignored here.
+- A request without a valid token gets `401` and `WWW-Authenticate: Bearer resource_metadata="…/api/mcp/.well-known/oauth-protected-resource"`. When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header.
+- The token is verified with Supabase Auth (`getUser`, cached 60 s). An Auth outage returns `503 AUTH_UNAVAILABLE`.
+- **The token must carry `client_id`.** Only an OAuth grant mints one; a browser session token never does. A token without it gets `401` with `error="invalid_token"`, and the description says to connect through OAuth.
+- **Audience is a known gap.** Supabase always sets `aud` to `authenticated` and never writes the RFC 8707 `resource` into the token (supabase/auth#2610). So this server cannot prove a token was minted for it. The `client_id` rule is the strongest check Supabase allows today.
+- A request with an `Origin` header outside the CORS allowlist (`ALLOWED_ORIGINS`, else `APP_URL`) gets `403` before anything else. Hosted apps call from their servers and send no `Origin`. A browser client, such as the MCP inspector, needs its origin on that list.
+- On this server, only `/api/mcp` accepts a token that carries `client_id`. The other REST routes that need a user answer `403`, and `/api/admin/*` does too. Routes where sign-in is optional treat the caller as signed out. The WebSocket refuses the connection.
+
+### Tools
+
+Every tool except `find_documents` takes a document slug. Each runs as the signed-in person. A result also carries `structuredContent`, whose keys are snake_case like the inputs. Each tool first applies the access rule the rest of the API uses. A private document opens for its owner only. A read-only document takes document writes from its owner only.
+
+| Tool                 | Hints           | What it does                                                                                                                                                                             |
+| -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `find_documents`     | read-only       | `scope: "mine"` lists the caller's documents. `scope: "public"` searches public documents by title and needs `query`. `limit` is at most 50. Each result says whether it is the caller's |
+| `get_outline`        | read-only       | The heading tree. A heading holds every later heading until one of the same or a smaller level. Each node has `section_id`, `level`, `title`, `rev` and `children`                       |
+| `read_document`      | read-only       | The document as Markdown. With `section_id`, one heading and its body, plus that section's `rev`                                                                                         |
+| `append_to_document` | not destructive | Adds Markdown at the end                                                                                                                                                                 |
+| `replace_section`    | destructive     | Replaces one section body, if `rev` still matches                                                                                                                                        |
+| `list_chat_rooms`    | read-only       | The chat rooms of the document's headings. Each has the heading's `section_id`, title, level, message count and last activity                                                            |
+| `read_chat_thread`   | read-only       | Messages in one heading's room, newest last. `limit` is 30 by default and at most 50. `before_seq` pages to older messages                                                               |
+| `post_chat_message`  | not destructive | Posts plain text, at most 2000 characters, in one existing heading room, as the caller                                                                                                   |
+
+**Section rules.** A section body is the nodes after its heading, up to the next heading of **any** level. So an edit in a subsection never conflicts with its parent. `replace_section` keeps the heading node and its `toc-id`, so the heading's chat room and digest links stay attached. `get_outline` shows the containing tree for navigation; `rev` always hashes the heading plus its body.
+
+**Reads.** A read uses the live document when this collaboration replica holds the room. Otherwise REST decodes the stored head. A write that is still saving may not show yet. Output stops at 100 000 characters, or at `max_chars` when smaller, and the text says where it stopped. Every picture, video, audio file and embed shows as a placeholder such as `[image]` or `[video]`. A file attachment keeps its name and loses its link. No media URL reaches the agent. The text is framed as document data, with a note that says whether the caller owns the document.
+
+**Writes.**
+
+- Markdown goes through the import parser with no title rule. The cap is 65 536 characters.
+- A level-1 heading (`#`) is refused, because it is the document title. One exception: `append_to_document` on an empty document must start with exactly one `#` heading, the title.
+- In `replace_section`, a heading at or above the target heading's level is refused. It would move the following subsections under a new parent.
+- A stale `rev` is refused: "The section changed since you read it. Call read_document or get_outline again, then retry with the new rev." An unknown `section_id` is refused with a text that names the field and points to `get_outline`.
+- `append_to_document` is at-least-once. After an unclear failure, the error tells the agent to wait about a minute and read the document before it retries. A read at once cannot see a write that is still saving.
+- A write credits the caller, never the document owner. The version row gets `trigger: "mcp"`.
+
+**Writes and posts need ownership.** `append_to_document`, `replace_section` and `post_chat_message` work only in documents the caller owns. Any other document is refused, even a public editable one, with a text that tells the person to make the change in docs.plus. Reads follow the normal access rule.
+
+**Chat.** A heading's chat room has the heading's `toc-id` as its id, so a room id is a `section_id` from `get_outline`. Rooms start lazily: a heading nobody has opened chat on has no room, so the room list is a subset of the outline. The chat tools pass the same document gate as the other tools before any chat query. A private document gives the same refusal, never an empty list. Posting needs read access and ownership, like the write tools; the read-only lock guards the document text, not chat. A read shows the author's username, the time and the plain text, never `html`, and never a media path. Deleted messages are left out. The text is framed as chat data that other people wrote. Output stops at 100 000 characters by leaving out older messages, and the result gives `before_seq` for the next page. The message count comes from a counter that a job fills once a minute. So it can lag by about a minute, and a new room can show 0. A post removes every `@`, so it cannot send mention or `@everyone` notifications. The text is at most 2000 characters, and the stored `html` is at most 3000. Each line break adds 7 characters to the `html`, and each `&` adds 4. So many short lines can pass the first limit and fail the second. A post needs a live heading that already has a room; otherwise it is refused. Each post gets a new message id, so a retry after an unclear failure can post twice.
+
+**Errors.** A tool error is an MCP result with `isError: true`. Its text gives the next step. When one argument is at fault, the text starts with that field. A bad argument never reaches the tool: the SDK answers with the failing field.
+
+**Budget and logs.** Each person gets 60 tool calls a minute, kept in Redis (`mcp-sub`). With no Redis, or a Redis fault, calls run without the budget. There is no per-address budget, because every hosted Claude call arrives from one Anthropic address range. The global rate limit still applies to `/api/mcp`. Each call logs one line with the keys `tool`, `sub`, `clientId`, `outcome` and `durationMs`. Arguments, headers and tokens are never logged.
 
 ## Media
 

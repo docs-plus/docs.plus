@@ -12,6 +12,19 @@ This file is the operator and API changelog. The pad product lives in the [root 
 
 ### Added
 
+- **MCP connector at `/api/mcp`.** A person connects docs.plus to Claude or
+  ChatGPT and signs in as themselves through the Supabase OAuth server. The
+  server is stateless, one MCP server per request, on
+  `@modelcontextprotocol/server` `2.0.0`. Eight tools: `find_documents`,
+  `get_outline`, `read_document`, `append_to_document`, `replace_section`,
+  `list_chat_rooms`, `read_chat_thread` and `post_chat_message`. Each tool
+  takes a slug and checks the caller's access before it reads or writes.
+  Writes and chat posts work only in documents the caller owns.
+  `replace_section` keeps the heading and refuses a stale `rev`. Reads stop
+  at 100 000 characters and say so, hide media URLs, and frame the text as
+  data. A post removes every `@`, so it sends no notification. Each person
+  gets 60 calls a minute. Set `MCP_AUTH_ISSUER` to the Supabase issuer.
+
 - **A validation `400` names each rejected input.** `error.fields` holds one
   `{ path, message }` per field.
 
@@ -135,6 +148,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   heading came in for its chats alone and no chat is left.
 
 ### Changed
+
+- **A connected app's token works only at `/api/mcp`.** A token that carries
+  a `client_id` claim comes from the OAuth flow. Admin routes and every other
+  signed-in route answer `403`, an optional route treats it as signed out, and
+  the WebSocket refuses it. A browser session token is unchanged.
 
 - **`test:e2e:duplicate-media` forces local storage from the package script.**
   The storage backend is now picked once from validated config, which freezes at

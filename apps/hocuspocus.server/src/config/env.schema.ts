@@ -71,6 +71,10 @@ export const envSchema = z.object({
   SUPABASE_URL: z.string().min(1, 'SUPABASE_URL is required'),
   SUPABASE_ANON_KEY: z.string().min(1, 'SUPABASE_ANON_KEY is required'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  // The OAuth issuer the MCP metadata names, exactly as Supabase's
+  // openid-configuration reports it. Unset means `${SUPABASE_URL}/auth/v1`, which
+  // is wrong wherever SUPABASE_URL is a container-internal address.
+  MCP_AUTH_ISSUER: z.string().optional(),
 
   ALLOWED_ORIGINS: commaSeparatedList,
   RATE_LIMIT_MAX: numericString('100'),

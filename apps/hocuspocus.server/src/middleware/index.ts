@@ -175,16 +175,10 @@ export const pinoLogger = () => {
 
 export const setupMiddleware = (app: Hono) => {
   // First so preflight OPTIONS gets CORS headers.
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-
-  // Development allows any origin. Production restricts to ALLOWED_ORIGINS (falling
-  // back to APP_URL); never pair a wildcard origin with credentials.
+  // Development allows any origin. Production restricts to the resolved allowlist;
+  // never pair a wildcard origin with credentials.
   const isDevelopment = process.env.NODE_ENV === 'development'
-  const prodOrigins =
-    allowedOrigins.length > 0 ? allowedOrigins : [process.env.APP_URL || 'https://docs.plus']
+  const prodOrigins = config.security.originAllowlist
 
   app.use(
     '*',
@@ -192,14 +186,24 @@ export const setupMiddleware = (app: Hono) => {
       origin: isDevelopment ? (origin) => origin || '*' : prodOrigins,
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'token', 'X-Requested-With'],
+      // Mcp-Protocol-Version serves browser MCP clients, such as the inspector.
+      // Server-side hosts send no Origin, so CORS never reaches them.
+      allowHeaders: [
+        'Content-Type',
+        'Authorization',
+        'token',
+        'X-Requested-With',
+        'Mcp-Protocol-Version'
+      ],
       // Content-Disposition carries the export filename. Without it here the browser
       // hides the header cross-origin and every download lands under a guessed name.
+      // WWW-Authenticate is how a browser MCP client finds the OAuth metadata.
       exposeHeaders: [
         'X-RateLimit-Limit',
         'X-RateLimit-Remaining',
         'X-RateLimit-Reset',
-        'Content-Disposition'
+        'Content-Disposition',
+        'WWW-Authenticate'
       ],
       maxAge: 86400
     })
