@@ -73,7 +73,12 @@ const DocumentSettingsPanel = ({
 
   const saveDescriptionHandler = () => {
     mutate(
-      { documentId: docMetadata.documentId, description: docDescription, keywords: tags },
+      {
+        documentId: docMetadata.documentId,
+        description: docDescription,
+        keywords: tags,
+        slug: docMetadata.slug
+      },
       {
         onSuccess: () => toast.Success('Description and keywords updated')
       }

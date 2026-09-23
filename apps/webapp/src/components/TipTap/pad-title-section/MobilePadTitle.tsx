@@ -179,7 +179,7 @@ const TitleEditContent = () => {
     }
 
     mutate(
-      { title: trimmed, documentId: metadata.documentId },
+      { title: trimmed, documentId: metadata.documentId, slug: metadata.slug },
       {
         onSuccess: (responseData) => {
           const next = plainTitle(responseData.title ?? '')
