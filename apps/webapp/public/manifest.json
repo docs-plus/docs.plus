@@ -23,6 +23,27 @@
     "client_mode": "navigate-existing"
   },
 
+  "share_target": {
+    "action": "/receive",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "file",
+          "accept": [
+            ".docx",
+            ".md",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/markdown",
+            "text/x-markdown",
+            "text/plain"
+          ]
+        }
+      ]
+    }
+  },
+
   "icons": [
     {
       "src": "/icons/logo.svg",

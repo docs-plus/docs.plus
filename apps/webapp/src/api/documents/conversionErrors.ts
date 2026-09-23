@@ -16,3 +16,14 @@ export const conversionErrorMessage = (status: number): string =>
 
 export const NETWORK_ERROR_MESSAGE =
   'Couldn’t reach the server. Check your connection and try again.'
+
+/** Keeps the HTTP status, so a caller can branch on it instead of on the message text. */
+export class ConversionError extends Error {
+  readonly status: number
+
+  constructor(status: number) {
+    super(conversionErrorMessage(status))
+    this.name = 'ConversionError'
+    this.status = status
+  }
+}

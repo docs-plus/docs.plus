@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Service Worker Extension for Docs.plus
-// Handles: Lifecycle (activate/claim), Push notifications
+// Handles: Lifecycle (activate/claim), Share target, Push notifications
 // Version: 2.4.0 - Imported by Workbox sw.js via importScripts
 // -----------------------------------------------------------------------------
 
@@ -27,6 +27,45 @@ self.addEventListener("message", (event) => {
     return;
   }
 });
+
+// Share target: Android posts a shared file to /receive (manifest share_target).
+// A page cannot read a POST body, so the worker keeps the file in Cache Storage and
+// redirects to GET /receive. Every other request falls through to Workbox untouched.
+const SHARE_CACHE = "docsplus-share-target";
+const SHARE_KEY = "/__docsplus/shared-file";
+
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  if (request.method !== "POST") return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin || url.pathname !== "/receive") return;
+  event.respondWith(stashSharedFile(request));
+});
+
+async function stashSharedFile(request) {
+  const back = (query) => Response.redirect(new URL(`/receive?${query}`, self.location.origin).href, 303);
+  try {
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof File)) return back("retry=1");
+    const cache = await caches.open(SHARE_CACHE);
+    await cache.put(
+      SHARE_KEY,
+      new Response(file, {
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          // Header values must be ByteStrings; a file name can hold any character.
+          "X-Share-Name": encodeURIComponent(file.name),
+          "X-Share-Id": `${Date.now()}`,
+        },
+      })
+    );
+    return back("shared=1");
+  } catch (error) {
+    console.error("[SW Extension] Could not keep the shared file", error);
+    return back("retry=1");
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Push Notification Handlers

@@ -1,8 +1,13 @@
+import Button from '@components/ui/Button'
 import CopyButton, { CopyButtonSize } from '@components/ui/CopyButton'
+import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+const BUTTON_CLASS =
+  'text-base-content/70 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none'
 
 type Props = {
   className?: string
@@ -27,8 +32,32 @@ export const ShareButton = ({
     newUrl.searchParams.set('chatroom', chatRoom.headingId)
     return newUrl.toString()
   }, [chatRoom?.headingId])
+  const { copy } = useCopyToClipboard({ successMessage, errorMessage })
 
   if (!chatRoomUrl) return null
+
+  // Open the OS share sheet where the browser has a share sheet; copy elsewhere.
+  if (typeof navigator.share === 'function') {
+    const share = () => {
+      navigator.share({ url: chatRoomUrl, title: document.title }).catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        void copy(chatRoomUrl)
+      })
+    }
+    return (
+      <Button
+        variant="ghost"
+        shape="square"
+        size={size}
+        startIcon={Icons.shareNative}
+        iconSize={iconSize}
+        tooltip="Share link"
+        aria-label="Share link"
+        onClick={share}
+        className={twMerge(BUTTON_CLASS, '[&_svg]:stroke-[1.75]', className)}
+      />
+    )
+  }
 
   return (
     <CopyButton
@@ -38,10 +67,7 @@ export const ShareButton = ({
       variant="ghost"
       square
       icon={Icons.link}
-      className={twMerge(
-        'text-base-content/70 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
-        className
-      )}
+      className={twMerge(BUTTON_CLASS, className)}
       tooltip="Copy link"
       successMessage={successMessage}
       errorMessage={errorMessage}

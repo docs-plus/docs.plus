@@ -1,6 +1,6 @@
 import { supabaseClient } from '@utils/supabase'
 
-import { conversionErrorMessage, NETWORK_ERROR_MESSAGE } from './conversionErrors'
+import { ConversionError, NETWORK_ERROR_MESSAGE } from './conversionErrors'
 import type { ImportedDocument } from './types'
 
 /**
@@ -30,9 +30,9 @@ export const importDocument = async (documentId: string, file: File): Promise<Im
     throw new Error(NETWORK_ERROR_MESSAGE)
   }
 
-  if (!response.ok) throw new Error(conversionErrorMessage(response.status))
+  if (!response.ok) throw new ConversionError(response.status)
 
   const payload = await response.json()
-  if (!payload?.success) throw new Error(conversionErrorMessage(response.status))
+  if (!payload?.success) throw new ConversionError(response.status)
   return payload.data as ImportedDocument
 }

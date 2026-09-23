@@ -11,11 +11,9 @@ import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
 import type { Editor } from '@tiptap/core'
-import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import React, { useState } from 'react'
 
-import { sanitizeJsonContent } from '../../extensions/markdown-paste/markdownPastePlugin'
-import { commitImportedImageSizes } from './commitImportedImageSizes'
+import { applyImportedContent } from './applyImportedContent'
 
 interface ImportExportSectionProps {
   editor: Editor | null | undefined
@@ -154,11 +152,7 @@ const ImportExportSection = ({
     staged: Extract<ImportStage, { step: 'staged' }>
   ) => {
     try {
-      target.commands.setContent(sanitizeJsonContent(staged.result.content))
-      await commitImportedImageSizes(target)
-      // Replace rewrites the whole document, so an undo into the pre-import state
-      // lands on a mix of both.
-      if (!target.isDestroyed) yUndoPluginKey.getState(target.state)?.undoManager.clear()
+      await applyImportedContent(target, staged.result.content)
       setStage({ step: 'done', filename: staged.filename, warnings: staged.result.warnings })
     } catch {
       setStage({

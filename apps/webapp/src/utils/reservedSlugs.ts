@@ -4,6 +4,7 @@
 const RESERVED_SLUGS = new Set([
   'editor',
   'new',
+  'receive',
   'auth',
   'unsubscribe',
   '404',
