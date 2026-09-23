@@ -8,6 +8,7 @@ import { useChatStore, useStore } from '@stores'
 import React, { useCallback } from 'react'
 
 import DesktopEditor from '../components/DesktopEditor'
+import SkipToPadMain from '../components/SkipToPadMain'
 
 const DesktopLayout = () => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
@@ -39,6 +40,7 @@ const DesktopLayout = () => {
   return (
     <PopoverInsideElementsProvider value={insideEditor}>
       <div className={`pad tiptap relative flex h-full flex-col border-solid ${deviceClass}`}>
+        <SkipToPadMain />
         <PadTitle />
         <DesktopEditor />
         <EmojiPanel variant="desktop" onSelect={handleSelect}>

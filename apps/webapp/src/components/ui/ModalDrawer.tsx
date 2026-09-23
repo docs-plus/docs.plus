@@ -1,3 +1,10 @@
+import {
+  FloatingFocusManager,
+  useDismiss,
+  useFloating,
+  useInteractions,
+  useRole
+} from '@floating-ui/react'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import React, {
   createContext,
@@ -17,6 +24,8 @@ interface ModalDrawerProps {
   onModalStateChange?: (isOpen: boolean) => void
   width?: number
   position?: 'left' | 'right'
+  /** Accessible name of the open drawer; required so no drawer ships as an unnamed dialog. */
+  ariaLabel: string
 }
 
 interface ModalContextType {
@@ -39,15 +48,69 @@ export function useModalDrawerClose(): () => void {
   return context.close
 }
 
+/** The drawer toggle. A bare `<label htmlFor>` is not keyboard-operable, and close returns focus here. */
+export function ModalDrawerOpener({
+  modalId,
+  ariaLabel,
+  className,
+  children
+}: {
+  modalId: string
+  ariaLabel: string
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <label
+      htmlFor={modalId}
+      aria-label={ariaLabel}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          e.currentTarget.click()
+        }
+      }}
+      className={className}>
+      {children}
+    </label>
+  )
+}
+
 export type ModalDrawerHandle = {
   check: () => void
   uncheck: () => void
 }
 
 export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
-  ({ modalId = 'left_to_right_modal', children, onModalStateChange, position = 'left' }, ref) => {
+  (
+    { modalId = 'left_to_right_modal', children, onModalStateChange, position = 'left', ariaLabel },
+    ref
+  ) => {
     const checkboxRef = React.useRef<HTMLInputElement>(null)
     const [isOpen, setIsOpen] = useState(false)
+    const { refs, context } = useFloating({
+      open: isOpen,
+      onOpenChange: (open) => {
+        if (!open) modalControl.close()
+      }
+    })
+    const { getFloatingProps } = useInteractions([
+      useDismiss(context, { outsidePress: false }),
+      useRole(context, { role: 'dialog' })
+    ])
+
+    // Synchronous, not the focus manager's microtask: a caller that closes the drawer and then
+    // focuses something else in the same tap (TocModal Find) must keep that focus.
+    const returnFocusToOpener = useCallback(() => {
+      const active = document.activeElement
+      const inside = refs.floating.current?.contains(active) || active === checkboxRef.current
+      if (active && active !== document.body && !inside) return
+      document
+        .querySelector<HTMLElement>(`label[for="${modalId}"][role="button"]`)
+        ?.focus({ preventScroll: true })
+    }, [modalId, refs])
 
     const handleCheckboxChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,8 +118,9 @@ export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
         if (onModalStateChange) {
           onModalStateChange(event.target.checked)
         }
+        if (!event.target.checked) returnFocusToOpener()
       },
-      [onModalStateChange]
+      [onModalStateChange, returnFocusToOpener]
     )
 
     useImperativeHandle(ref, () => ({
@@ -100,10 +164,25 @@ export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
           ref={checkboxRef}
           onChange={handleCheckboxChange}
         />
-        <div className="drawer-side">
-          <label htmlFor={modalId} aria-label="close sidebar" className="drawer-overlay"></label>
-          <ModalContext.Provider value={modalControl}>{children}</ModalContext.Provider>
-        </div>
+        {/* Guards set aria-hidden on the page, never inert: inert recreates media node views. */}
+        <FloatingFocusManager
+          context={context}
+          disabled={!isOpen}
+          initialFocus={refs.floating}
+          returnFocus={false}>
+          {/* daisyUI delays `visibility` by 0.1s on open, so focus would miss. Keyed to :checked,
+              not React state, so a close that focuses the opener keeps the slide-out. */}
+          <div
+            ref={refs.setFloating}
+            {...getFloatingProps()}
+            aria-modal={isOpen || undefined}
+            aria-label={ariaLabel}
+            tabIndex={-1}
+            className="drawer-side outline-none [.drawer-toggle:checked~&]:[transition-property:opacity]">
+            <label htmlFor={modalId} aria-label="close sidebar" className="drawer-overlay"></label>
+            <ModalContext.Provider value={modalControl}>{children}</ModalContext.Provider>
+          </div>
+        </FloatingFocusManager>
       </div>
     )
   }

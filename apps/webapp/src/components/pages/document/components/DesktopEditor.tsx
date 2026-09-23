@@ -10,6 +10,7 @@ import { twMerge } from 'tailwind-merge'
 
 import { useSyncChatPanelHeight, useTocResize } from '../hooks'
 import EditorContent from './EditorContent'
+import { PAD_MAIN_ID } from './SkipToPadMain'
 import TOC from './Toc'
 
 const DesktopPadEditor = memo(function DesktopPadEditor({
@@ -19,11 +20,13 @@ const DesktopPadEditor = memo(function DesktopPadEditor({
 }) {
   useSyncChatPanelHeight(wrapperRef)
   return (
-    <div
+    <main
       ref={wrapperRef}
-      className="editorWrapper scrollbar-custom flex h-full min-w-0 grow scrollbar-thin items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 sm:px-6 sm:py-6">
+      id={PAD_MAIN_ID}
+      tabIndex={-1}
+      className="editorWrapper scrollbar-custom flex h-full min-w-0 grow scrollbar-thin items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 outline-none sm:px-6 sm:py-6">
       <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
-    </div>
+    </main>
   )
 })
 

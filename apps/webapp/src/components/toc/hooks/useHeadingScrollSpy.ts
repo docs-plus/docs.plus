@@ -231,6 +231,36 @@ function tocRowScrollTarget(id: string): Element | null {
   return li.querySelector(':scope > a') ?? li
 }
 
+function closestVerticalScroller(el: Element): HTMLElement | null {
+  for (let node = el.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node)
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+      return node
+    }
+  }
+  return null
+}
+
+/** Manual `block: 'nearest'` on the TOC scroller only. Chrome moves the sequential
+ * focus starting point on `scrollIntoView`, so the first Tab skipped the skip link. */
+function scrollTocRowIntoView(target: Element) {
+  if (target.getClientRects().length === 0) return
+  const scroller = closestVerticalScroller(target)
+  if (!scroller) return
+
+  const row = target.getBoundingClientRect()
+  const viewTop = scroller.getBoundingClientRect().top + scroller.clientTop
+  const viewBottom = viewTop + scroller.clientHeight
+  const above = row.top < viewTop
+  const below = row.bottom > viewBottom
+  if (above === below) return
+
+  // Same edge pick as the CSSOM `nearest` rule, including rows taller than the scroller.
+  const fitsInView = row.height <= scroller.clientHeight
+  const alignTop = above === fitsInView
+  scroller.scrollTop += alignTop ? row.top - viewTop : row.bottom - viewBottom
+}
+
 /** Align TOC scroller to spy focus without re-rendering the outline tree. */
 export function useTocAutoScroll() {
   const alignTocItem = useMemo(
@@ -238,9 +268,7 @@ export function useTocAutoScroll() {
       throttle(
         (id: string) => {
           const target = tocRowScrollTarget(id)
-          if (!target) return
-
-          target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
+          if (target) scrollTocRowIntoView(target)
         },
         TOC_ALIGN_THROTTLE_MS,
         { leading: true, trailing: true }

@@ -1,6 +1,7 @@
 import { clearHistoryHash } from '@components/pages/history/historyShareUrl'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Button from '@components/ui/Button'
+import { ModalDrawerOpener } from '@components/ui/ModalDrawer'
 import { Icons } from '@icons'
 import { useSheetStore, useStore } from '@stores'
 
@@ -117,12 +118,12 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
               <Icons.menu size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
             </button>
           ) : (
-            <label
-              htmlFor="mobile_history_panel"
-              aria-label="Open version history"
+            <ModalDrawerOpener
+              modalId="mobile_history_panel"
+              ariaLabel="Open version history"
               className="btn btn-sm btn-ghost btn-square drawer-button shrink-0 touch-manipulation">
               <Icons.menu size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
-            </label>
+            </ModalDrawerOpener>
           )}
         </div>
       </div>

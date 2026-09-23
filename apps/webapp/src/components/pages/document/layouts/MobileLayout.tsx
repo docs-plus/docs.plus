@@ -14,10 +14,11 @@ import { useSheetStore, useStore } from '@stores'
 import { useEffect } from 'react'
 
 import MobileEditor from '../components/MobileEditor'
+import SkipToPadMain from '../components/SkipToPadMain'
 
 const MobileLeftSidePanel = () => {
   return (
-    <ModalDrawer modalId="mobile_left_side_panel" width={80}>
+    <ModalDrawer modalId="mobile_left_side_panel" width={80} ariaLabel="Table of contents">
       <TocModal />
     </ModalDrawer>
   )
@@ -45,6 +46,7 @@ const MobileLayout = () => {
       ) : (
         <>
           <div className={`mobileLayoutRoot tiptap flex w-full flex-col ${deviceClass}`}>
+            <SkipToPadMain />
             <div className="mobileLayoutMain flex min-h-0 min-w-0 flex-1 flex-col">
               {/* Opacity only — no transforms next to the sticky/visualViewport machinery. */}
               <div className="mobilePadTitleShell bg-base-100 sticky top-0 z-20 w-full shrink-0 motion-safe:animate-[doc-content-in_220ms_ease-out_both]">

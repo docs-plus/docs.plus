@@ -43,7 +43,11 @@ const MobileHistory = () => {
       <div className="min-h-0 flex-1 overflow-hidden">
         <HistoryEditorContent variant="mobile" />
       </div>
-      <ModalDrawer ref={drawerRef} modalId="mobile_history_panel" position="right">
+      <ModalDrawer
+        ref={drawerRef}
+        modalId="mobile_history_panel"
+        position="right"
+        ariaLabel="Version history">
         <MobileHistorySidebar />
       </ModalDrawer>
     </div>

@@ -4,6 +4,7 @@ import type { TabType } from '@components/settings/types'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
+import { ModalDrawerOpener } from '@components/ui/ModalDrawer'
 import TextInput from '@components/ui/TextInput'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { canEditDocumentMetadata } from '@hooks/canEditDocumentMetadata'
@@ -50,24 +51,13 @@ const EditableToggle = ({ isEditable, onDone }: { isEditable: boolean; onDone: (
     )
   }
 
-  // A `<label htmlFor>` toggles the drawer checkbox on click but isn't keyboard-operable on its
-  // own. Adding role/tabIndex/keydown makes the label a real button (it opens the TOC — not
-  // "close sidebar").
   return (
-    <label
-      htmlFor="mobile_left_side_panel"
-      aria-label="Open menu"
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          e.currentTarget.click()
-        }
-      }}
+    <ModalDrawerOpener
+      modalId="mobile_left_side_panel"
+      ariaLabel="Open menu"
       className="btn btn-ghost btn-square btn-sm touch-manipulation">
       <Icons.menu size={20} className="text-base-content/70 stroke-[1.75]" />
-    </label>
+    </ModalDrawerOpener>
   )
 }
 

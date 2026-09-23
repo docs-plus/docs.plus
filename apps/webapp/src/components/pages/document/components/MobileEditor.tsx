@@ -4,9 +4,10 @@ import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useRef } from 'react'
 
 import EditorContent from './EditorContent'
+import { PAD_MAIN_ID } from './SkipToPadMain'
 
 const Editor = () => {
-  const editorWrapperRef = useRef<HTMLDivElement>(null)
+  const editorWrapperRef = useRef<HTMLElement>(null)
 
   useEditableDocControl()
 
@@ -16,11 +17,13 @@ const Editor = () => {
   useUnreadSync()
 
   return (
-    <div
+    <main
       ref={editorWrapperRef}
-      className="editor editorWrapper scrollbar-custom relative flex min-h-0 w-full max-w-full flex-1 scrollbar-thin flex-col justify-start overflow-y-auto scroll-smooth">
+      id={PAD_MAIN_ID}
+      tabIndex={-1}
+      className="editor editorWrapper scrollbar-custom relative flex min-h-0 w-full max-w-full flex-1 scrollbar-thin flex-col justify-start overflow-y-auto scroll-smooth outline-none">
       <EditorContent />
-    </div>
+    </main>
   )
 }
 
