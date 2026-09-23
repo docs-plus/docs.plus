@@ -13,9 +13,18 @@ type StatusPresentation = {
   className: string
 }
 
+const MIRROR_WRITE_FAILED: StatusPresentation = {
+  icon: <Icons.alert size={18} />,
+  text: 'No offline copy',
+  tooltip:
+    'This browser stopped saving an offline copy of this document. Your changes still save to the server.',
+  className: 'text-warning'
+}
+
 function statusPresentation(
   status: ProviderStatus,
-  contentForkError?: boolean
+  contentForkError?: boolean,
+  mirrorWriteFailed?: boolean
 ): StatusPresentation {
   switch (status) {
     case 'saving':
@@ -43,7 +52,9 @@ function statusPresentation(
       return {
         icon: <Icons.wifiOff size={18} />,
         text: 'Offline',
-        tooltip: 'You are offline. Changes will sync when you reconnect.',
+        tooltip: mirrorWriteFailed
+          ? 'You are offline, and this browser cannot save an offline copy. Keep this tab open until you reconnect.'
+          : 'You are offline. Changes will sync when you reconnect.',
         className: 'text-warning'
       }
     case 'error':
@@ -81,7 +92,7 @@ function statusPresentation(
 }
 
 // disconnectedOnly: compact surfaces (mobile header) show nothing while healthy
-// and only raise the chip on error/offline/unauthenticated.
+// and only raise the chip on error/offline/unauthenticated or a failed mirror.
 const ProviderSyncStatus = ({
   disconnectedOnly = false,
   onSignIn = openInlineSignInDialog
@@ -92,13 +103,14 @@ const ProviderSyncStatus = ({
   const providerStatus = useStore((state) => state.settings.providerStatus)
   const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
   const contentForkError = useStore((state) => state.settings.contentForkError)
+  const mirrorWriteFailed = useStore((state) => state.settings.mirrorWriteFailed)
 
   const disconnected = isProviderDisconnected(providerStatus)
 
-  if (disconnectedOnly && !disconnected) return null
+  if (disconnectedOnly && !disconnected && !mirrorWriteFailed) return null
 
   // First-sync window (S1–S2): the shell is real but the document hasn't arrived yet.
-  if (providerSyncing && !disconnected) {
+  if (providerSyncing && !disconnected && !disconnectedOnly) {
     return (
       <Tooltip title="Loading the latest version of this document…" placement="bottom">
         <div className="text-base-content/50 hover:bg-base-200 rounded-field flex cursor-default items-center gap-1.5 px-3 py-1 text-sm font-medium transition-colors">
@@ -109,7 +121,10 @@ const ProviderSyncStatus = ({
     )
   }
 
-  const config = statusPresentation(providerStatus, contentForkError)
+  const config =
+    mirrorWriteFailed && !disconnected
+      ? MIRROR_WRITE_FAILED
+      : statusPresentation(providerStatus, contentForkError, mirrorWriteFailed)
   // Opacity-only entry tier: the mobile chip lives in the sticky header, which
   // rides the visualViewport machinery — never use transform-based animations here.
   const chipClassName = `flex items-center gap-1.5 px-3 py-1 text-sm font-medium ${config.className} hover:bg-base-200 rounded-field transition-colors ${

@@ -26,6 +26,21 @@ import {
 
 type DeviceType = 'desktop' | 'mobile' | 'tablet'
 
+let persistRequested = false
+
+// Asked on the first local edit, not on open, so readers never see Firefox's
+// permission prompt. persisted() first stops a second ask once granted.
+const requestPersistentStorage = () => {
+  if (persistRequested) return
+  persistRequested = true
+  const storage = typeof navigator !== 'undefined' ? navigator.storage : undefined
+  if (typeof storage?.persist !== 'function' || typeof storage.persisted !== 'function') return
+  void storage
+    .persisted()
+    .then((granted) => granted || storage.persist())
+    .catch(() => {})
+}
+
 interface UseYdocAndProviderProps {
   documentId: string
   slug: string
@@ -75,6 +90,18 @@ const useYdocAndProvider = ({
       typeof window.indexedDB !== 'undefined'
         ? new IndexeddbPersistence(documentId, ydocRef.current)
         : null
+
+    // y-indexeddb drops its write promises, so a failed write only shows up as a
+    // transaction abort that bubbles to the db (QuotaExceededError in Chromium).
+    let mirrorDisposed = false
+    persistence?._db
+      .then((db) =>
+        db.addEventListener('abort', (event) => {
+          if (mirrorDisposed || !(event.target as IDBTransaction | null)?.error) return
+          setWorkspaceSetting('mirrorWriteFailed', true)
+        })
+      )
+      .catch(() => {})
 
     providerRef.current = new HocuspocusProvider({
       url: providerUrl,
@@ -232,6 +259,8 @@ const useYdocAndProvider = ({
 
     return () => {
       persistence?.destroy()
+      mirrorDisposed = true
+      setWorkspaceSetting('mirrorWriteFailed', false)
       clearTimeout(connectTimer)
       window.removeEventListener('online', reconnect)
       document.removeEventListener('visibilitychange', onVisibilityChange)
@@ -289,6 +318,8 @@ const useYdocAndProvider = ({
       if (!isSyncedRef.current) return
       if (typeof navigator !== 'undefined' && !navigator.onLine) return
       if (authStoppedRef.current) return
+
+      requestPersistentStorage()
 
       if (syncedTimeoutRef.current) {
         clearTimeout(syncedTimeoutRef.current)

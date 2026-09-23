@@ -26,6 +26,9 @@ export type Workspace = {
   // Set by onContentError: distinguishes a permanent schema/version freeze from
   // a transient network 'error' so the status chip can prompt a reload.
   contentForkError?: boolean
+  // The IndexedDB mirror aborted a transaction (quota, disk, cleared data).
+  // A side flag, never providerStatus 'error', because 'error' locks editing.
+  mirrorWriteFailed?: boolean
   editor: EditorSettings
   hocuspocusProvider?: any
   /** Mirrored from the provider on `authenticated` so edit-lock selectors react. */
