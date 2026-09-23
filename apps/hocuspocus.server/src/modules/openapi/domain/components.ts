@@ -43,7 +43,16 @@ const errorEnvelope: JsonSchema = {
           type: 'string',
           examples: ['VALIDATION_ERROR', 'UNAUTHORIZED', 'FORBIDDEN', 'NOT_FOUND', 'CONFLICT']
         },
-        details: { description: 'Present only when `NODE_ENV=development`.' }
+        details: { description: 'Present only when `NODE_ENV=development`.' },
+        fields: {
+          type: 'array',
+          description: 'Present on a request-validation 400: one entry per rejected input.',
+          items: {
+            type: 'object',
+            properties: { path: { type: 'string' }, message: { type: 'string' } },
+            required: ['path', 'message']
+          }
+        }
       },
       required: ['message', 'code']
     }
