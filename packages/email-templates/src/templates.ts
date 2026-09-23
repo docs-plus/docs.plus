@@ -8,9 +8,12 @@ import { countDigestItems, getEmailSubject, renderDigestEmail } from './engine'
 import {
   changeWindowLine,
   contributorLine,
+  DIGEST_CHANNEL_LINES,
+  DIGEST_PREVIEW_CHARS,
   digestNotificationsUrl,
   type EmailFooter,
-  footerLinksText
+  footerLinksText,
+  truncate
 } from './helpers'
 import type { DigestChangeRun, DigestDocument, DigestFrequency, NotificationType } from './types'
 
@@ -110,16 +113,16 @@ function buildDigestEmailText(params: {
       const channelsText = doc.channels
         .map((channel) => {
           const notificationsText = channel.notifications
-            .slice(0, 3)
+            .slice(0, DIGEST_CHANNEL_LINES)
             .map(
               (n) =>
-                `    - ${getEmailSubject(n.type, n.sender_name)}${n.message_preview ? `: "${n.message_preview.substring(0, 50)}..."` : ''}`
+                `    - ${getEmailSubject(n.type, n.sender_name)}${n.message_preview ? `: "${truncate(n.message_preview, DIGEST_PREVIEW_CHARS)}"` : ''}`
             )
             .join('\n')
 
           const more =
-            channel.notifications.length > 3
-              ? `\n    ...and ${channel.notifications.length - 3} more`
+            channel.notifications.length > DIGEST_CHANNEL_LINES
+              ? `\n    ...and ${channel.notifications.length - DIGEST_CHANNEL_LINES} more`
               : ''
 
           return `  #${channel.name} (${channel.notifications.length} messages)\n${notificationsText}${more}`

@@ -107,7 +107,7 @@
 
             <!-- Channel Notifications -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: <%= it.h.SPACING.sm %> <%= it.h.SPACING.lg %>;">
-              <% var shown = channel.notifications.slice(0, 5); %>
+              <% var shown = channel.notifications.slice(0, it.h.DIGEST_CHANNEL_LINES); %>
               <% shown.forEach(function(n) { %>
 
               <!-- Notification Item -->
@@ -124,7 +124,7 @@
                         </p>
                         <% if (n.message_preview) { %>
                         <p style="margin: <%= it.h.SPACING.xs %> 0 0; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; line-height: 1.4;">
-                          <%= it.h.truncate(n.message_preview, 80) %>
+                          <%= it.h.truncate(n.message_preview, it.h.DIGEST_PREVIEW_CHARS) %>
                         </p>
                         <% } %>
                       </td>
@@ -138,10 +138,10 @@
 
               <% }) %>
 
-              <% if (channel.notifications.length > 5) { %>
+              <% if (channel.notifications.length > it.h.DIGEST_CHANNEL_LINES) { %>
               <tr>
                 <td style="padding: <%= it.h.SPACING.sm %> 0; color: <%= it.h.COLORS.textLight %>; font-size: 11px; text-align: center;">
-                  +<%= channel.notifications.length - 5 %> more in this channel
+                  +<%= channel.notifications.length - it.h.DIGEST_CHANNEL_LINES %> more in this channel
                 </td>
               </tr>
               <% } %>

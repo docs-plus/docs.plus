@@ -208,6 +208,9 @@ function escapeAttr(str: string): string {
   return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
+export const DIGEST_CHANNEL_LINES = 5
+export const DIGEST_PREVIEW_CHARS = 80
+
 /** Only what a `.eta` reaches through `it.h`. Package-internal callers import directly. */
 export const templateHelpers = {
   avatar,
@@ -219,6 +222,8 @@ export const templateHelpers = {
   contributorLine,
   changeRunStyle,
   truncate,
+  DIGEST_CHANNEL_LINES,
+  DIGEST_PREVIEW_CHARS,
   COLORS,
   FONT_STACK,
   SPACING,
