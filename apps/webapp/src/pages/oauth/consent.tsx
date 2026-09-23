@@ -15,6 +15,8 @@ import { twMerge } from 'tailwind-merge'
 // auth-js puts the id into the request path unencoded, so only path-safe ids pass.
 const AUTHORIZATION_ID = /^[A-Za-z0-9_-]{1,128}$/
 const CLIENT_NAME_MAX = 80
+// A redirect URI that does not parse is shown cut, never whole.
+const REDIRECT_TEXT_MAX = 80
 // Supabase refuses these schemes at registration. Checked again because we call assign().
 // A blocklist, not an allowlist: native and MCP clients register custom-scheme redirects.
 const BLOCKED_PROTOCOLS = new Set(['javascript:', 'data:', 'vbscript:', 'file:', 'blob:', 'about:'])
@@ -34,6 +36,8 @@ type View =
   | { kind: 'invalid' }
   | { kind: 'unavailable' }
 
+type Decision = 'approve' | 'deny'
+
 // Directional overrides can make a self-chosen name read as another app.
 function displayClientName(name: string): string {
   const clean = name.replace(/[\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu, '').trim()
@@ -46,12 +50,13 @@ function redirectOrigin(uri: string): string {
     const url = new URL(uri)
     return url.origin !== 'null' ? url.origin : `${url.protocol}//${url.host}`
   } catch {
-    return uri.slice(0, CLIENT_NAME_MAX)
+    return uri.slice(0, REDIRECT_TEXT_MAX)
   }
 }
 
-function errorView(error: AuthError): View {
-  return error.status && error.status < 500 ? { kind: 'invalid' } : { kind: 'unavailable' }
+// No error and no data is a broken answer, so it reads as unavailable.
+function errorView(error: AuthError | null): View {
+  return error?.status && error.status < 500 ? { kind: 'invalid' } : { kind: 'unavailable' }
 }
 
 /** Returns false for a scheme that could run script in this origin. */
@@ -68,6 +73,10 @@ function assignRedirect(url: string): boolean {
   return true
 }
 
+function followRedirect(url: string): View {
+  return assignRedirect(url) ? { kind: 'redirecting' } : { kind: 'invalid' }
+}
+
 function isRedirect(data: OAuthAuthorizationDetails | OAuthRedirect): data is OAuthRedirect {
   return !('authorization_id' in data)
 }
@@ -77,7 +86,7 @@ const OAuthConsentPage = () => {
   const authLoading = useAuthStore((state) => state.loading)
   const session = useAuthStore((state) => state.session)
   const [view, setView] = useState<View>({ kind: 'loading' })
-  const [busy, setBusy] = useState<'approve' | 'deny' | null>(null)
+  const [busy, setBusy] = useState<Decision | null>(null)
   // A second details call answers 400, so StrictMode's replayed effect must not send one.
   const requestedRef = useRef(false)
 
@@ -96,18 +105,18 @@ const OAuthConsentPage = () => {
 
     supabaseClient.auth.oauth.getAuthorizationDetails(authorizationId).then(({ data, error }) => {
       if (error || !data) {
-        setView(error ? errorView(error) : { kind: 'unavailable' })
+        setView(errorView(error))
         return
       }
       if (isRedirect(data)) {
-        setView(assignRedirect(data.redirect_url) ? { kind: 'redirecting' } : { kind: 'invalid' })
+        setView(followRedirect(data.redirect_url))
         return
       }
       setView({ kind: 'details', details: data })
     })
   }, [router.isReady, authorizationId, authLoading, session])
 
-  const decide = async (action: 'approve' | 'deny') => {
+  const decide = async (action: Decision) => {
     if (!authorizationId || busy) return
     setBusy(action)
     const oauth = supabaseClient.auth.oauth
@@ -117,10 +126,10 @@ const OAuthConsentPage = () => {
         : await oauth.denyAuthorization(authorizationId, { skipBrowserRedirect: true })
     if (error || !data?.redirect_url) {
       setBusy(null)
-      setView(error ? errorView(error) : { kind: 'unavailable' })
+      setView(errorView(error))
       return
     }
-    setView(assignRedirect(data.redirect_url) ? { kind: 'redirecting' } : { kind: 'invalid' })
+    setView(followRedirect(data.redirect_url))
   }
 
   let content: ReactNode
@@ -233,8 +242,8 @@ function ConsentCard({
   onDecide
 }: {
   details: OAuthAuthorizationDetails
-  busy: 'approve' | 'deny' | null
-  onDecide: (action: 'approve' | 'deny') => void
+  busy: Decision | null
+  onDecide: (action: Decision) => void
 }) {
   const scopes = details.scope.split(/\s+/).filter(Boolean)
 
@@ -272,7 +281,7 @@ function ConsentCard({
         If you allow it, the app can:
       </h2>
       <ul className="text-base-content/80 mt-2 list-disc space-y-1 pl-5 text-sm">
-        <li>Act as you on docs.plus, on documents you can open.</li>
+        <li>Read documents you can open, and edit or post in documents you own.</li>
         {scopes.map((scope) => (
           <li key={scope}>{SCOPE_WORDS[scope] ?? `Use the “${scope}” permission`}</li>
         ))}
