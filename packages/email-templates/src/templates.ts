@@ -4,17 +4,9 @@
  * and its plural rule are resolved once instead of once per surface.
  */
 
+import { type DigestBlock, walkDigest } from './digestWalk'
 import { countDigestItems, getEmailSubject, renderDigestEmail } from './engine'
-import {
-  changeWindowLine,
-  contributorLine,
-  DIGEST_CHANNEL_LINES,
-  DIGEST_PREVIEW_CHARS,
-  digestNotificationsUrl,
-  type EmailFooter,
-  footerLinksText,
-  truncate
-} from './helpers'
+import { digestNotificationsUrl, type EmailFooter, footerLinksText } from './helpers'
 import type { DigestChangeRun, DigestDocument, DigestFrequency, NotificationType } from './types'
 
 // Plain text has no colour, so markers keep removed and added words apart.
@@ -98,77 +90,32 @@ This is an automated notification from docs.plus
 `.trim()
 }
 
-function buildDigestEmailText(params: {
-  recipientName: string
-  frequency: DigestFrequency
-  documents: DigestDocument[]
-  periodEnd: string
-  items: string
-  footer?: EmailFooter
-}): string {
-  const { recipientName, frequency, documents, periodEnd, items } = params
+function paintDigestBlock(block: DigestBlock): string {
+  switch (block.kind) {
+    case 'sheet':
+      return `${block.name}\n${block.url}`
+    case 'heading':
+      return `    ${block.text}\n      ${block.url}`
+    case 'notice':
+      return `      ${block.notice.sender_name}: ${block.notice.message_preview}\n      ${block.notice.action_url}`
+    case 'runs':
+      return `      ${paintRuns(block.runs)}`
+    case 'more':
+      return `      +${block.count} more in this channel`
+    case 'status':
+      return block.line ? `  ${block.line}` : ''
+    case 'home':
+      return block.url
+    default: {
+      const unseen: never = block
+      return unseen
+    }
+  }
+}
 
-  const documentsText = documents
-    .map((doc) => {
-      const channelsText = doc.channels
-        .map((channel) => {
-          const notificationsText = channel.notifications
-            .slice(0, DIGEST_CHANNEL_LINES)
-            .map(
-              (n) =>
-                `    - ${getEmailSubject(n.type, n.sender_name)}${n.message_preview ? `: "${truncate(n.message_preview, DIGEST_PREVIEW_CHARS)}"` : ''}`
-            )
-            .join('\n')
-
-          const more =
-            channel.notifications.length > DIGEST_CHANNEL_LINES
-              ? `\n    ...and ${channel.notifications.length - DIGEST_CHANNEL_LINES} more`
-              : ''
-
-          return `  #${channel.name} (${channel.notifications.length} messages)\n${notificationsText}${more}`
-        })
-        .join('\n\n')
-
-      // Mirrors the HTML block. The count treats one block as one item, so the
-      // plaintext must show it or the number and the body disagree.
-      const changes = doc.content_changes
-      const sectionLines = (changes?.sections ?? []).map((section) => {
-        const painted = section.runs?.length ? paintRuns(section.runs) : ''
-        const added = !painted && section.excerpt ? `\n      + ${section.excerpt}` : ''
-        const removed = !painted && section.removed ? `\n      - ${section.removed}` : ''
-        const chats = (section.chats ?? [])
-          .map((chat) => `\n      ${chat.at} ${chat.sender}: ${chat.text}`)
-          .join('')
-        return `    ${section.text}\n      ${section.url}${painted}${added}${removed}${chats}`
-      })
-      // An indented empty string is truthy, so the guard is what keeps the blank
-      // line out when the helper declines to name a contributor.
-      const contributors = contributorLine(changes?.contributorCount)
-      const changedText = changes
-        ? [
-            `  ${changeWindowLine(changes.since, changes.fromLastLeft, frequency, periodEnd)}`,
-            contributors ? `  ${contributors}` : '',
-            ...sectionLines
-          ]
-            .filter(Boolean)
-            .join('\n')
-        : ''
-      const body = [changedText, channelsText].filter(Boolean).join('\n')
-      return `📄 ${doc.name}\n${body}`
-    })
-    .join('\n\n---\n\n')
-
-  return `
-Hi ${recipientName || 'there'},
-
-Here's your ${frequency} digest with ${items}:
-
-${documentsText}
-
----
-View all notifications: ${digestNotificationsUrl(documents)}
-${footerLinksText(params.footer)}
-`.trim()
+function buildDigestEmailText(blocks: readonly DigestBlock[], footer?: EmailFooter): string {
+  const body = blocks.map(paintDigestBlock).filter(Boolean).join('\n')
+  return `${body}\n---\n${footerLinksText(footer)}`.trim()
 }
 
 export interface DigestEmail {
@@ -192,10 +139,18 @@ export function buildDigestEmail(params: {
 }): DigestEmail {
   const totalNotifications = countDigestItems(params.documents)
   const items = `${totalNotifications} notification${totalNotifications === 1 ? '' : 's'}`
+  const blocks = walkDigest({
+    documents: params.documents,
+    frequency: params.frequency,
+    periodEnd: params.periodEnd,
+    recipientName: params.recipientName,
+    totalNotifications,
+    notificationsUrl: digestNotificationsUrl(params.documents)
+  })
 
   return {
     subject: `Your ${params.frequency} digest - ${items}`,
-    html: renderDigestEmail({ ...params, totalNotifications }),
-    text: buildDigestEmailText({ ...params, items })
+    html: renderDigestEmail({ blocks, footer: params.footer }),
+    text: buildDigestEmailText(blocks, params.footer)
   }
 }

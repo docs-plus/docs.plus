@@ -27,7 +27,6 @@ export type {
   DigestContentChanges,
   DigestDocument,
   DigestFrequency,
-  DigestHeadingChat,
   DigestNotification,
   NotificationType
 } from './src/types'

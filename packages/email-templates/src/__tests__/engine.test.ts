@@ -160,13 +160,13 @@ describe('buildDigestEmail', () => {
   })
 
   it('includes frequency label', () => {
-    const { html } = buildDigestEmail(DIGEST_PARAMS)
-    expect(html).toContain('daily digest')
+    const { subject } = buildDigestEmail(DIGEST_PARAMS)
+    expect(subject).toContain('daily digest')
   })
 
   it('includes notification count', () => {
-    const { html } = buildDigestEmail(DIGEST_PARAMS)
-    expect(html).toContain('2 notifications')
+    const { subject } = buildDigestEmail(DIGEST_PARAMS)
+    expect(subject).toContain('2 notifications')
   })
 
   it('includes document name', () => {
@@ -214,8 +214,8 @@ describe('buildDigestEmail', () => {
     expect(html).toContain('Requests over the cap fail.')
     expect(html).toContain('https://docs.plus/api-docs?id=rate-limiting')
     expect(html).toContain('font-weight: 700')
-    expect(text).toContain('+ Requests over the cap wait.')
-    expect(text).toContain('- Requests over the cap fail.')
+    expect(text).toContain('{+Requests over the cap wait.+}')
+    expect(text).toContain('[-Requests over the cap fail.-]')
     expect(text).toContain('https://docs.plus/api-docs?id=rate-limiting')
   })
 
@@ -233,9 +233,11 @@ describe('buildDigestEmail', () => {
                 tocId: 'rate-limiting',
                 chats: [
                   {
-                    at: '2026-02-16 10:00',
-                    sender: 'Alice',
-                    text: 'The cap should wait, not fail.'
+                    type: 'message' as const,
+                    sender_name: 'Alice',
+                    message_preview: 'The cap should wait, not fail.',
+                    action_url: 'https://docs.plus/api-docs?chatroom=rate-limiting',
+                    created_at: '2026-02-16T10:00:00.000Z'
                   }
                 ],
                 runs: [
@@ -304,8 +306,20 @@ describe('buildDigestEmail', () => {
                 }
               ],
               chats: [
-                { at: '2026-09-01 01:00', sender: 'Old', text: 'oldest chat should go' },
-                { at: '2026-09-02 01:00', sender: 'New', text: 'newer chat stays if it fits' }
+                {
+                  type: 'message' as const,
+                  sender_name: 'Old',
+                  message_preview: 'oldest chat should go',
+                  action_url: 'https://docs.plus/pad?chatroom=bugs',
+                  created_at: '2026-09-01T01:00:00.000Z'
+                },
+                {
+                  type: 'message' as const,
+                  sender_name: 'New',
+                  message_preview: 'newer chat stays if it fits',
+                  action_url: 'https://docs.plus/pad?chatroom=bugs',
+                  created_at: '2026-09-02T01:00:00.000Z'
+                }
               ]
             }
           ]

@@ -130,17 +130,22 @@ This file is the operator and API changelog. The pad product lives in the [root 
   and `email:digest-max-kb`. A missing or bad value, or no Redis, reads as
   `document` and 90 KB. `PUT` answers `503` when Redis is not available. The
   worker reads both values when it builds each digest.
-- **The change digest body reads like the pad.** Each changed Section is a bold
-  heading that links to its place on the pad (`?id=` plus the `toc-id`), with
-  its passage under it. Sections keep their document order. The passage paints
-  the section's `runs`: added text green, removed text red and struck through.
-  Without `runs` it paints `excerpt` or `removedExcerpt`. The plain-text part
-  marks removed text `[-…-]` and added text `{+…+}`. A heading chat moves
-  under its heading only when compute succeeds and the heading is live. Every
-  other chat stays in its channel card, and so does a removed heading's chat.
-  A heading with no change and no new heading chat stays out of the mail. The
-  heading row has no Chat or View link. The subject counts every chat line,
-  under a heading or in a card, plus one per Change digest block.
+- **The change digest is a document sheet.** `buildDigestEmail` walks the
+  documents once (`walkDigest`). HTML and plain text only paint that block
+  list, so a View link cannot exist on one part and vanish from the other.
+  The shell is the shared mail frame with `frame: 'sheet'` (gray well, about
+  960px). Other mail stays the card frame. The sheet top bar is the mark, the
+  title, a bell, and the reader face. The mark and the title open the
+  document. The bell opens `#notifications` on the first document. There is
+  no greeting and no View-all button. A status bar on each document holds the
+  change-window line and the signed footer links. Under a heading, notices
+  come first, then the passage. A notice with no preview text reads "media".
+  Heading chats stay `DigestNotification` rows. A chat whose channel is not a
+  heading stays as the same notice row. A removed heading's chat stays in
+  that channel. A heading with no change and no new heading chat stays out.
+  The heading row has no Chat or View link. The subject counts every chat
+  line, under a heading or in a leftover channel, plus one per Change digest
+  block.
 - **The digest fit works toward `maxKb`.** It measures the HTML with the real
   unsubscribe footer. It drops the oldest chat first, then shortens one
   passage, but only in a context run after an edit. Change runs stay whole, so

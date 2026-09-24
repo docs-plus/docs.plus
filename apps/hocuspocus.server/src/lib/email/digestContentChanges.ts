@@ -7,12 +7,7 @@
 import type { Logger } from 'pino'
 
 import type { ComputeDocumentChanges, SectionNode } from '../../modules/document-changes/types'
-import type {
-  DigestChangedSection,
-  DigestDocument,
-  DigestHeadingChat,
-  DigestNotification
-} from '../../types/email.types'
+import type { DigestChangedSection, DigestDocument } from '../../types/email.types'
 import { buildChatActionUrl } from '../push/chatActionUrl'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -74,25 +69,9 @@ function sectionUrl(docUrl: string, tocId: string | null): string {
   return tocId ? `${docUrl}?id=${encodeURIComponent(tocId)}` : docUrl
 }
 
-function chatStamp(iso: string): string {
-  const at = Date.parse(iso)
-  if (Number.isNaN(at)) return iso
-  const date = new Date(at)
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`
-}
-
-function headingChats(notifications: DigestNotification[]): DigestHeadingChat[] {
-  return notifications.flatMap((note) => {
-    const text = note.message_preview.trim()
-    if (!text) return []
-    return [{ at: chatStamp(note.created_at), sender: note.sender_name, text }]
-  })
-}
-
 /**
  * One walk, so every Section keeps its document place. A heading chat moves
- * only under a live heading; a removed heading's chat keeps its channel card.
+ * only under a live heading; a removed heading's chat keeps its channel row.
  * A nameless row is dropped: it would be a live link with no label.
  */
 function placeSections(
@@ -109,7 +88,7 @@ function placeSections(
       // A removed section's anchor resolves to nothing, so this links to
       // the document rather than offering a link that goes nowhere.
       const live = node.status !== 'removed' && node.text.length > 0 ? node.tocId : null
-      const chats = live ? headingChats(pending.get(live)?.notifications ?? []) : []
+      const chats = live ? (pending.get(live)?.notifications ?? []) : []
       if (live && chats.length > 0) pending.delete(live)
       const changed = node.status !== 'unchanged' && node.text.length > 0
       if (changed || chats.length > 0) {

@@ -8,31 +8,28 @@
   <!--[if mso]>
   <style type="text/css">
     table { border-collapse: collapse; }
-    .content { width: 600px !important; }
+    .content { width: <%= it.frame === 'sheet' ? '960px' : '600px' %> !important; }
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: <%~ it.h.FONT_STACK %>; background-color: <%= it.h.COLORS.outerBg %>; -webkit-font-smoothing: antialiased;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: <%= it.h.COLORS.outerBg %>;">
+<body style="margin: 0; padding: 0; font-family: <%~ it.h.FONT_STACK %>; background-color: <%= it.frame === 'sheet' ? it.h.COLORS.padWell : it.h.COLORS.outerBg %>; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: <%= it.frame === 'sheet' ? it.h.COLORS.padWell : it.h.COLORS.outerBg %>;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: <%= it.h.COLORS.white %>; border-radius: <%= it.h.RADIUS.xl %>; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
-
-          <!-- Header -->
+      <td align="center" style="padding: <%= it.frame === 'sheet' ? '32px 16px' : '40px 20px' %>;">
+        <table role="presentation" class="content" width="<%= it.frame === 'sheet' ? '100%' : '600' %>" cellpadding="0" cellspacing="0" style="<%= it.frame === 'sheet' ? 'max-width: 960px; background-color: ' + it.h.COLORS.white + '; border: 1px solid ' + it.h.COLORS.sheetBorder + '; border-radius: 10px;' : 'background-color: ' + it.h.COLORS.white + '; border-radius: ' + it.h.RADIUS.xl + '; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);' %>">
+<% if (it.frame !== 'sheet') { %>
           <tr>
             <td style="background: <%= it.h.COLORS.primary %>; padding: <%= it.h.SPACING.xl %> <%= it.h.SPACING.xxl %>; text-align: center;">
               <h1 style="margin: 0; color: <%= it.h.COLORS.white %>; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;"><%= it.h.APP_NAME %></h1>
             </td>
           </tr>
-
-          <!-- Content -->
+<% } %>
           <tr>
-            <td style="padding: <%= it.h.SPACING.xxl %>;">
+            <td style="padding: <%= it.frame === 'sheet' ? '28px 32px 20px' : it.h.SPACING.xxl %>;">
               <%~ it.body %>
             </td>
           </tr>
-
-          <!-- Footer -->
+<% if (it.frame !== 'sheet') { %>
           <tr>
             <td style="padding: <%= it.h.SPACING.xl %> <%= it.h.SPACING.xxl %>; border-top: 1px solid <%= it.h.COLORS.border %>; background-color: <%= it.h.COLORS.background %>;">
               <p style="margin: 0 0 <%= it.h.SPACING.sm %>; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center; line-height: 1.5;">
@@ -43,7 +40,7 @@
               </p>
             </td>
           </tr>
-
+<% } %>
         </table>
 
         <!-- Copyright -->

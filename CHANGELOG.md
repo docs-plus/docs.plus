@@ -60,11 +60,14 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
   follow a document when you open it while signed in. Turn Follow off in
   Document settings to stop that mail. The owner of a Private or Read-only
   document does not see Follow, because nobody else can edit that document.
-  The mail reads like the pad. Each changed heading links to its place in the
-  document, and the passage sits under it. Added words are green, and removed
-  words are red and struck through. A new chat on a heading sits under that
-  heading; other chats stay in their channel card. Headings with no change
-  stay out. A plain-text mail marks removed words `[-like this-]` and added
+  The mail is a document sheet on a gray well. The mark and the title open
+  the document. A bell shows the unread count and opens the notification list
+  on that document. Under each changed heading, chats sit first, then the
+  passage. A chat with no text reads "media". Added words are green, and
+  removed words are red and struck through. A chat that is not under a
+  heading stays as its own row. Headings with no change stay out. The bottom
+  bar names when the document changed, and offers Manage preferences and
+  Unsubscribe. A plain-text mail marks removed words `[-like this-]` and added
   words `{+like this+}`. Each document gets its own mail by default. In
   Admin Notifications, an admin can send one combined mail instead and set the
   HTML size limit from 10 to 102 KB. The default is 90 KB.

@@ -52,7 +52,7 @@ function dropOldestChat(documents: DigestDocument[]): DigestDocument[] | null {
       const chats = sections[sectionIndex]?.chats
       if (!chats) continue
       for (let chatIndex = 0; chatIndex < chats.length; chatIndex++) {
-        const at = chats[chatIndex]?.at
+        const at = chats[chatIndex]?.created_at
         if (at === undefined) continue
         if (!best || at < best.at) {
           best = { doc: docIndex, section: sectionIndex, chat: chatIndex, at }

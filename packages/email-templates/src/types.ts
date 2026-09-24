@@ -42,13 +42,6 @@ export interface DigestChangeRun {
   text: string
 }
 
-export interface DigestHeadingChat {
-  /** Already formatted, for example `2025-07-09 19:54`. */
-  at: string
-  sender: string
-  text: string
-}
-
 export interface DigestChangedSection {
   /** Heading text. Compute already sanitised and capped it. */
   text: string
@@ -59,7 +52,7 @@ export interface DigestChangedSection {
   runs?: DigestChangeRun[]
   /** Absent when the section was removed and has nothing to open. */
   tocId?: string
-  chats?: DigestHeadingChat[]
+  chats?: DigestNotification[]
   /** Set when the heading is in the mail only for its chats. */
   chatOnly?: true
 }

@@ -21,14 +21,12 @@ exports[`renderNotificationEmail snapshot 1`] = `
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
 
-          <!-- Header -->
           <tr>
             <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
             </td>
           </tr>
 
-          <!-- Content -->
           <tr>
             <td style="padding: 32px;">
               <p style="margin: 0 0 24px; color: #1f2937; font-size: 16px; line-height: 1.5;">
@@ -91,7 +89,6 @@ exports[`renderNotificationEmail snapshot 1`] = `
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
               <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
@@ -133,196 +130,134 @@ exports[`buildDigestEmail snapshot 1`] = `
   <!--[if mso]>
   <style type="text/css">
     table { border-collapse: collapse; }
-    .content { width: 600px !important; }
+    .content { width: 960px !important; }
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #eef1f6; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef1f6;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+      <td align="center" style="padding: 32px 16px;">
+        <table role="presentation" class="content" width="100%" cellpadding="0" cellspacing="0" style="max-width: 960px; background-color: #ffffff; border: 1px solid #dce3ed; border-radius: 10px;">
 
-          <!-- Header -->
           <tr>
-            <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
-            </td>
-          </tr>
+            <td style="padding: 28px 32px 20px;">
+              
 
-          <!-- Content -->
-          <tr>
-            <td style="padding: 32px;">
-              <p style="margin: 0 0 16px; color: #1f2937; font-size: 16px; line-height: 1.5;">
-  Hi Jane Smith,
-</p>
-
-<p style="margin: 0 0 24px; color: #6b7280; font-size: 15px; line-height: 1.5;">
-  Here's your <strong style="color: #1f2937;">daily digest</strong> with
-  <strong style="color: #1a73e8;">2 notifications</strong>
-  from today.
-</p>
-
-<!-- Documents -->
-
-
-<!-- Document Section -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-  <!-- Document Header -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
   <tr>
-    <td style="padding-bottom: 12px;">
+    <td style="padding-bottom: 18px; border-bottom: 1px solid #dce3ed;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td>
-            <a href="https://docs.plus/api-docs" style="color: #1f2937; font-size: 15px; font-weight: 600; text-decoration: none;">
-              📄 API Documentation
+          <td width="36" valign="middle">
+            <a href="https://docs.plus/api-docs" style="text-decoration: none;">
+              <svg width="22" height="28" viewBox="0 0 22 28" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                <path fill="#1a73e8" d="M2 1h12l6 6v19a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                <path fill="#ffffff" d="M14 1v6h6"/>
+                <path fill="#1a73e8" d="M10 12h2v3h3v2h-3v3h-2v-3H7v-2h3z"/>
+              </svg>
             </a>
           </td>
-          <td align="right">
-            <a href="https://docs.plus/api-docs" style="color: #1a73e8; font-size: 12px; text-decoration: none;">Open →</a>
+          <td valign="middle" style="padding-left: 10px;">
+            <a href="https://docs.plus/api-docs" style="color: #0f172a; font-size: 20px; font-weight: 600; line-height: 1.2; text-decoration: none;">API Documentation</a>
+          </td>
+          <td width="120" align="right" valign="middle">
+            <table role="presentation" cellpadding="0" cellspacing="0" align="right">
+              <tr>
+                <td valign="middle" style="padding-right: 14px;">
+                  <a href="https://docs.plus/api-docs#notifications" style="text-decoration: none; color: #0f172a;">
+                    <span style="position: relative; display: inline-block; width: 22px; height: 22px; line-height: 22px;">
+                      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7"/>
+                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M10 19a2 2 0 0 0 4 0"/>
+                      </svg>
+                      <span style="position: absolute; top: -5px; right: -7px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: #dc2626; color: #ffffff; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center;">2</span>
+                    </span>
+                  </a>
+                </td>
+                <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 48px; border-radius: 50%; background: #1a73e8;">
+    <tr>
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Arial, sans-serif;">
+        J
+      </td>
+    </tr>
+  </table></td>
+              </tr>
+            </table>
           </td>
         </tr>
       </table>
     </td>
   </tr>
+</table>
 
-  <!-- Channels -->
+
+
+<p style="margin: 22px 0 0;">
+  <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"># general</a>
+</p>
+
+
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 12px;">
   <tr>
-    <td>
-      
-
-      <!-- Channel Section -->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
-        <tr>
-          <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-
-            <!-- Channel Header -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                  <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1f2937; font-size: 13px; font-weight: 600; text-decoration: none;">
-                    # general
-                  </a>
-                  <span style="color: #9ca3af; font-size: 12px; margin-left: 8px;">
-                    2 messages
-                  </span>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Channel Notifications -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: 8px 16px;">
-              
-              
-
-              <!-- Notification Item -->
-              <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
+    <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
       <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
         J
       </td>
     </tr>
-  </table>
-                      </td>
-                      <td style="padding-left: 8px;" valign="top">
-                        <p style="margin: 0; color: #1f2937; font-size: 13px; font-weight: 500;">
-                          <span style="color: #1a73e8;">@</span> John Doe
-                        </p>
-                        
-                        <p style="margin: 4px 0 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
-                          Hey @Jane, review the auth section?
-                        </p>
-                        
-                      </td>
-                      <td width="50" align="right" valign="middle">
-                        <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
+  </table></td>
+    <td style="padding-left: 10px;" valign="top">
+      <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
+        <span style="color: #1a73e8;">@</span> John Doe
+      </p>
+      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Hey @Jane, review the auth section?</p>
+    </td>
+    <td width="48" align="right" valign="middle">
+      <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
+    </td>
+  </tr>
+</table>
 
-              
 
-              <!-- Notification Item -->
-              <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 12px;">
+  <tr>
+    <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
       <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
         A
       </td>
     </tr>
-  </table>
-                      </td>
-                      <td style="padding-left: 8px;" valign="top">
-                        <p style="margin: 0; color: #1f2937; font-size: 13px; font-weight: 500;">
-                          <span style="color: #1a73e8;">↩</span> Alice Chen
-                        </p>
-                        
-                        <p style="margin: 4px 0 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
-                          Added rate limiting docs.
-                        </p>
-                        
-                      </td>
-                      <td width="50" align="right" valign="middle">
-                        <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-
-              
-
-              
-
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      
+  </table></td>
+    <td style="padding-left: 10px;" valign="top">
+      <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
+        <span style="color: #1a73e8;">↩</span> Alice Chen
+      </p>
+      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Added rate limiting docs.</p>
+    </td>
+    <td width="48" align="right" valign="middle">
+      <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
     </td>
   </tr>
 </table>
 
 
 
-<!-- CTA Button -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 22px 0 28px; border-top: 1px solid #dce3ed;">
   <tr>
-    <td align="center" style="padding-top: 16px;">
-      <a href="https://docs.plus/api-docs#notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; ">View All Notifications</a>
-    </td>
-  </tr>
-</table>
-
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
-                You're receiving this because you have email notifications enabled.
-              </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
-                
+    <td valign="middle" style="padding-top: 10px; color: #6b7280; font-size: 12px; line-height: 1.4;"></td>
+    <td align="right" valign="middle" style="padding-top: 10px; font-size: 12px; white-space: nowrap;">
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
     <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe</a>
-  
-              </p>
+  </td>
+  </tr>
+</table>
+
+
+
             </td>
           </tr>
 
@@ -352,221 +287,152 @@ exports[`buildDigestEmail snapshot — content changes 1`] = `
   <!--[if mso]>
   <style type="text/css">
     table { border-collapse: collapse; }
-    .content { width: 600px !important; }
+    .content { width: 960px !important; }
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #eef1f6; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef1f6;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+      <td align="center" style="padding: 32px 16px;">
+        <table role="presentation" class="content" width="100%" cellpadding="0" cellspacing="0" style="max-width: 960px; background-color: #ffffff; border: 1px solid #dce3ed; border-radius: 10px;">
 
-          <!-- Header -->
           <tr>
-            <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
-            </td>
-          </tr>
+            <td style="padding: 28px 32px 20px;">
+              
 
-          <!-- Content -->
-          <tr>
-            <td style="padding: 32px;">
-              <p style="margin: 0 0 16px; color: #1f2937; font-size: 16px; line-height: 1.5;">
-  Hi Jane Smith,
-</p>
-
-<p style="margin: 0 0 24px; color: #6b7280; font-size: 15px; line-height: 1.5;">
-  Here's your <strong style="color: #1f2937;">daily digest</strong> with
-  <strong style="color: #1a73e8;">3 notifications</strong>
-  from today.
-</p>
-
-<!-- Documents -->
-
-
-<!-- Document Section -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
-  <!-- Document Header -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
   <tr>
-    <td style="padding-bottom: 12px;">
+    <td style="padding-bottom: 18px; border-bottom: 1px solid #dce3ed;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td>
-            <a href="https://docs.plus/api-docs" style="color: #1f2937; font-size: 15px; font-weight: 600; text-decoration: none;">
-              📄 API Documentation
+          <td width="36" valign="middle">
+            <a href="https://docs.plus/api-docs" style="text-decoration: none;">
+              <svg width="22" height="28" viewBox="0 0 22 28" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                <path fill="#1a73e8" d="M2 1h12l6 6v19a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                <path fill="#ffffff" d="M14 1v6h6"/>
+                <path fill="#1a73e8" d="M10 12h2v3h3v2h-3v3h-2v-3H7v-2h3z"/>
+              </svg>
             </a>
           </td>
-          <td align="right">
-            <a href="https://docs.plus/api-docs" style="color: #1a73e8; font-size: 12px; text-decoration: none;">Open →</a>
+          <td valign="middle" style="padding-left: 10px;">
+            <a href="https://docs.plus/api-docs" style="color: #0f172a; font-size: 20px; font-weight: 600; line-height: 1.2; text-decoration: none;">API Documentation</a>
           </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding-bottom: 12px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="padding: 4px 2px 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-            <p style="margin: 0; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; line-height: 1.4;">✏️ Changed since you left, 1 day ago.</p>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <td width="120" align="right" valign="middle">
+            <table role="presentation" cellpadding="0" cellspacing="0" align="right">
               <tr>
-                <td style="padding-top: 18px;">
-                  <a href="https://docs.plus/api-docs?id=rate-limiting" style="color: #1f2937; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Rate limiting</a>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding-top: 22px;">
-                  <a href="https://docs.plus/api-docs?id=retries" style="color: #1f2937; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Retries</a>
-                  <p style="margin: 6px 0 0; color: #1f2937; font-size: 15px; line-height: 1.45; font-weight: 400;">
-<span style="">Retries use </span><span style="background-color:#fee2e2;color:#6b7280;text-decoration:line-through;border-radius:2px;">a new</span><span style="background-color:#d1fae5;border-radius:2px;">the same</span><span style=""> key.</span>                  </p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-
-  <!-- Channels -->
-  <tr>
-    <td>
-      
-
-      <!-- Channel Section -->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
-        <tr>
-          <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-
-            <!-- Channel Header -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
-                  <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1f2937; font-size: 13px; font-weight: 600; text-decoration: none;">
-                    # general
+                <td valign="middle" style="padding-right: 14px;">
+                  <a href="https://docs.plus/api-docs#notifications" style="text-decoration: none; color: #0f172a;">
+                    <span style="position: relative; display: inline-block; width: 22px; height: 22px; line-height: 22px;">
+                      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7"/>
+                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M10 19a2 2 0 0 0 4 0"/>
+                      </svg>
+                      <span style="position: absolute; top: -5px; right: -7px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: #dc2626; color: #ffffff; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center;">3</span>
+                    </span>
                   </a>
-                  <span style="color: #9ca3af; font-size: 12px; margin-left: 8px;">
-                    2 messages
-                  </span>
                 </td>
+                <td valign="middle"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 48px; border-radius: 50%; background: #1a73e8;">
+    <tr>
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Arial, sans-serif;">
+        J
+      </td>
+    </tr>
+  </table></td>
               </tr>
             </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 
-            <!-- Channel Notifications -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: 8px 16px;">
-              
-              
 
-              <!-- Notification Item -->
-              <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
+
+<p style="margin: 22px 0 0;">
+  <a href="https://docs.plus/api-docs?id=rate-limiting" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Rate limiting</a>
+</p>
+
+
+
+<p style="margin: 22px 0 0;">
+  <a href="https://docs.plus/api-docs?id=retries" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;">Retries</a>
+</p>
+
+
+
+<p style="margin: 12px 0 0; color: #1f2937; font-size: 15px; line-height: 1.45;">
+<span style="">Retries use </span><span style="background-color:#fee2e2;color:#6b7280;text-decoration:line-through;border-radius:2px;">a new</span><span style="background-color:#d1fae5;border-radius:2px;">the same</span><span style=""> key.</span>
+</p>
+
+
+
+<p style="margin: 22px 0 0;">
+  <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"># general</a>
+</p>
+
+
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 12px;">
+  <tr>
+    <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
       <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
         J
       </td>
     </tr>
-  </table>
-                      </td>
-                      <td style="padding-left: 8px;" valign="top">
-                        <p style="margin: 0; color: #1f2937; font-size: 13px; font-weight: 500;">
-                          <span style="color: #1a73e8;">@</span> John Doe
-                        </p>
-                        
-                        <p style="margin: 4px 0 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
-                          Hey @Jane, review the auth section?
-                        </p>
-                        
-                      </td>
-                      <td width="50" align="right" valign="middle">
-                        <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
+  </table></td>
+    <td style="padding-left: 10px;" valign="top">
+      <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
+        <span style="color: #1a73e8;">@</span> John Doe
+      </p>
+      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Hey @Jane, review the auth section?</p>
+    </td>
+    <td width="48" align="right" valign="middle">
+      <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
+    </td>
+  </tr>
+</table>
 
-              
 
-              <!-- Notification Item -->
-              <tr>
-                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 12px;">
+  <tr>
+    <td width="40" valign="top"><table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
     <tr>
       <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
         A
       </td>
     </tr>
-  </table>
-                      </td>
-                      <td style="padding-left: 8px;" valign="top">
-                        <p style="margin: 0; color: #1f2937; font-size: 13px; font-weight: 500;">
-                          <span style="color: #1a73e8;">↩</span> Alice Chen
-                        </p>
-                        
-                        <p style="margin: 4px 0 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
-                          Added rate limiting docs.
-                        </p>
-                        
-                      </td>
-                      <td width="50" align="right" valign="middle">
-                        <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-
-              
-
-              
-
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      
+  </table></td>
+    <td style="padding-left: 10px;" valign="top">
+      <p style="margin: 0; color: #1f2937; font-size: 14px; font-weight: 600; line-height: 1.3;">
+        <span style="color: #1a73e8;">↩</span> Alice Chen
+      </p>
+      <p style="margin: 2px 0 0; color: #6b7280; font-size: 13px; line-height: 1.4;">Added rate limiting docs.</p>
+    </td>
+    <td width="48" align="right" valign="middle">
+      <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
     </td>
   </tr>
 </table>
 
 
 
-<!-- CTA Button -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 22px 0 28px; border-top: 1px solid #dce3ed;">
   <tr>
-    <td align="center" style="padding-top: 16px;">
-      <a href="https://docs.plus/api-docs#notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; ">View All Notifications</a>
-    </td>
-  </tr>
-</table>
-
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
-              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
-                You're receiving this because you have email notifications enabled.
-              </p>
-              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
-                
+    <td valign="middle" style="padding-top: 10px; color: #6b7280; font-size: 12px; line-height: 1.4;">✏️ Changed since you left, 1 day ago.</td>
+    <td align="right" valign="middle" style="padding-top: 10px; font-size: 12px; white-space: nowrap;">
     <a href="https://docs.plus/#settings?tab=notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
     <span style="color: #e5e7eb; margin: 0 8px;">|</span>
     <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe</a>
-  
-              </p>
+  </td>
+  </tr>
+</table>
+
+
+
             </td>
           </tr>
 
@@ -606,14 +472,12 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
 
-          <!-- Header -->
           <tr>
             <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
             </td>
           </tr>
 
-          <!-- Content -->
           <tr>
             <td style="padding: 32px;">
               <p style="margin: 0 0 24px; color: #1f2937; font-size: 16px; font-weight: 600;">
@@ -698,7 +562,6 @@ exports[`renderNewDocumentEmail snapshot 1`] = `
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
             <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
               <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">

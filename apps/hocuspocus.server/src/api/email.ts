@@ -240,9 +240,11 @@ function digestPreviewDocuments(appUrl: string): DigestDocument[] {
             ],
             chats: [
               {
-                at: '2026-09-21 09:14',
-                sender: 'Lena',
-                text: 'The cap should wait, not fail.'
+                type: 'message',
+                sender_name: 'Lena',
+                message_preview: 'The cap should wait, not fail.',
+                action_url: `${appUrl}/api-documentation?chatroom=rate-limiting`,
+                created_at: '2026-09-21T09:14:00.000Z'
               }
             ]
           },

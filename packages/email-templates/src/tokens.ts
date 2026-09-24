@@ -17,6 +17,8 @@ export const COLORS = {
 
   background: '#f9fafb', // gray-50   (--b1 / base-100 area bg)
   outerBg: '#f5f5f5', // email body bg
+  padWell: '#eef1f6', // pad workspace well
+  sheetBorder: '#dce3ed', // document sheet edge
 
   white: '#ffffff',
 

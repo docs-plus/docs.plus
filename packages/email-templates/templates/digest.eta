@@ -1,169 +1,79 @@
-<p style="margin: 0 0 <%= it.h.SPACING.lg %>; color: <%= it.h.COLORS.text %>; font-size: 16px; line-height: 1.5;">
-  Hi <%= it.recipientName || 'there' %>,
-</p>
-
-<p style="margin: 0 0 <%= it.h.SPACING.xl %>; color: <%= it.h.COLORS.textMuted %>; font-size: 15px; line-height: 1.5;">
-  Here's your <strong style="color: <%= it.h.COLORS.text %>;"><%= it.frequency %> digest</strong> with
-  <% /* One digest item is one chat line, in a card or under a heading, or one content_changes block. countDigestItems in engine.ts owns the count; this line only renders it. */ %><strong style="color: <%= it.h.COLORS.primary %>;"><%= it.totalNotifications %> notification<%= it.totalNotifications !== 1 ? 's' : '' %></strong>
-  from <%= it.periodLabel %>.
-</p>
-
-<!-- Documents -->
-<% it.documents.forEach(function(doc) { %>
-
-<!-- Document Section -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: <%= it.h.SPACING.xl %>;">
-  <!-- Document Header -->
+<% it.blocks.forEach(function(block) { %>
+<% if (block.kind === 'sheet') { %>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
   <tr>
-    <td style="padding-bottom: <%= it.h.SPACING.md %>;">
+    <td style="padding-bottom: 18px; border-bottom: 1px solid <%= it.h.COLORS.sheetBorder %>;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td>
-            <a href="<%= doc.url %>" style="color: <%= it.h.COLORS.text %>; font-size: 15px; font-weight: 600; text-decoration: none;">
-              📄 <%= doc.name %>
+          <td width="36" valign="middle">
+            <a href="<%= block.url %>" style="text-decoration: none;">
+              <svg width="22" height="28" viewBox="0 0 22 28" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                <path fill="#1a73e8" d="M2 1h12l6 6v19a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                <path fill="#ffffff" d="M14 1v6h6"/>
+                <path fill="#1a73e8" d="M10 12h2v3h3v2h-3v3h-2v-3H7v-2h3z"/>
+              </svg>
             </a>
           </td>
-          <td align="right">
-            <a href="<%= doc.url %>" style="color: <%= it.h.COLORS.primary %>; font-size: 12px; text-decoration: none;">Open →</a>
+          <td valign="middle" style="padding-left: 10px;">
+            <a href="<%= block.url %>" style="color: #0f172a; font-size: 20px; font-weight: 600; line-height: 1.2; text-decoration: none;"><%= block.name %></a>
           </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-<% /* Unindented, with -%> slurping the newline: autoTrim is off for this
-      template, so an indented tag would emit a blank line and a legacy payload
-      would stop matching its stored snapshot. Measured against eta 4.6. */ -%>
-<% if (doc.content_changes) { -%>
-  <tr>
-    <td style="padding-bottom: <%= it.h.SPACING.md %>;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="padding: 4px 2px 8px; font-family: <%~ it.h.FONT_STACK %>;">
-            <p style="margin: 0; padding-bottom: 12px; border-bottom: 1px solid <%= it.h.COLORS.border %>; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; line-height: 1.4;"><%= it.h.changeWindowLine(doc.content_changes.since, doc.content_changes.fromLastLeft, it.frequency, it.periodEnd) %><% var contributorsText = it.h.contributorLine(doc.content_changes.contributorCount) -%><% if (contributorsText) { %> <span style="color: <%= it.h.COLORS.textLight %>;"><%= contributorsText %></span><% } -%></p>
-<% /* A block whose enrichment failed carries no sections, so guard the page. */ -%>
-<% if (doc.content_changes.sections && doc.content_changes.sections.length) { -%>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-<% doc.content_changes.sections.forEach(function(section, index) { -%>
+          <td width="120" align="right" valign="middle">
+            <table role="presentation" cellpadding="0" cellspacing="0" align="right">
               <tr>
-                <td style="padding-top: <%= index === 0 ? '18px' : '22px' %>;">
-                  <a href="<%= section.url %>" style="color: <%= it.h.COLORS.text %>; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"><%= section.text %></a>
-<% if (section.runs && section.runs.length) { -%>
-                  <p style="margin: 6px 0 0; color: <%= it.h.COLORS.text %>; font-size: 15px; line-height: 1.45; font-weight: 400;">
-<% section.runs.forEach(function(run) { -%>
-<span style="<%= it.h.changeRunStyle(run.kind) %>"><%= run.text %></span><% }) -%>
-                  </p>
-<% } else { -%>
-<% if (section.excerpt) { -%>
-                  <p style="margin: 6px 0 0; color: <%= it.h.COLORS.text %>; font-size: 15px; line-height: 1.45;">
-                    <span style="<%= it.h.changeRunStyle('added') %>"><%= section.excerpt %></span>
-                  </p>
-<% } -%>
-<% if (section.removed) { -%>
-                  <p style="margin: 6px 0 0; color: <%= it.h.COLORS.text %>; font-size: 15px; line-height: 1.45;">
-                    <span style="<%= it.h.changeRunStyle('removed') %>"><%= section.removed %></span>
-                  </p>
-<% } -%>
-<% } -%>
-<% if (section.chats && section.chats.length) { -%>
-<% section.chats.forEach(function(chat) { -%>
-                  <p style="margin: 8px 0 0; color: <%= it.h.COLORS.text %>; font-size: 15px; line-height: 1.45;"><span style="color: <%= it.h.COLORS.textMuted %>;">💬 <%= chat.at %></span> <strong><%= chat.sender %>:</strong> <%= chat.text %></p>
-<% }) -%>
-<% } -%>
-                </td>
-              </tr>
-<% }) -%>
-            </table>
-<% } -%>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-<% } -%>
-
-  <!-- Channels -->
-  <tr>
-    <td>
-      <% doc.channels.forEach(function(channel) { %>
-
-      <!-- Channel Section -->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: <%= it.h.SPACING.md %>;">
-        <tr>
-          <td style="background-color: <%= it.h.COLORS.background %>; border-radius: <%= it.h.RADIUS.md %>; border: 1px solid <%= it.h.COLORS.border %>;">
-
-            <!-- Channel Header -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding: <%= it.h.SPACING.md %> <%= it.h.SPACING.lg %>; border-bottom: 1px solid <%= it.h.COLORS.border %>;">
-                  <a href="<%= channel.url %>" style="color: <%= it.h.COLORS.text %>; font-size: 13px; font-weight: 600; text-decoration: none;">
-                    # <%= channel.name %>
+                <td valign="middle" style="padding-right: 14px;">
+                  <a href="<%= block.notificationsUrl %>" style="text-decoration: none; color: #0f172a;">
+                    <span style="position: relative; display: inline-block; width: 22px; height: 22px; line-height: 22px;">
+                      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7"/>
+                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M10 19a2 2 0 0 0 4 0"/>
+                      </svg>
+                      <span style="position: absolute; top: -5px; right: -7px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: #dc2626; color: #ffffff; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center;"><%= block.badge %></span>
+                    </span>
                   </a>
-                  <span style="color: <%= it.h.COLORS.textLight %>; font-size: 12px; margin-left: <%= it.h.SPACING.sm %>;">
-                    <%= channel.notifications.length %> message<%= channel.notifications.length !== 1 ? 's' : '' %>
-                  </span>
                 </td>
+                <td valign="middle"><%~ it.h.avatar(block.recipientName || 'You', undefined, 48) %></td>
               </tr>
-            </table>
-
-            <!-- Channel Notifications -->
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: <%= it.h.SPACING.sm %> <%= it.h.SPACING.lg %>;">
-              <% var shown = channel.notifications.slice(0, it.h.DIGEST_CHANNEL_LINES); %>
-              <% shown.forEach(function(n) { %>
-
-              <!-- Notification Item -->
-              <tr>
-                <td style="padding: <%= it.h.SPACING.sm %> 0; border-bottom: 1px solid <%= it.h.COLORS.borderLight %>;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td width="40" valign="top">
-                        <%~ it.h.avatar(n.sender_name, n.sender_avatar_url, 32) %>
-                      </td>
-                      <td style="padding-left: <%= it.h.SPACING.sm %>;" valign="top">
-                        <p style="margin: 0; color: <%= it.h.COLORS.text %>; font-size: 13px; font-weight: 500;">
-                          <span style="color: <%= it.h.COLORS.primary %>;"><%= it.h.notificationIcon(n.type) %></span> <%= n.sender_name %>
-                        </p>
-                        <% if (n.message_preview) { %>
-                        <p style="margin: <%= it.h.SPACING.xs %> 0 0; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; line-height: 1.4;">
-                          <%= it.h.truncate(n.message_preview, it.h.DIGEST_PREVIEW_CHARS) %>
-                        </p>
-                        <% } %>
-                      </td>
-                      <td width="50" align="right" valign="middle">
-                        <a href="<%= n.action_url %>" style="color: <%= it.h.COLORS.primary %>; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-
-              <% }) %>
-
-              <% if (channel.notifications.length > it.h.DIGEST_CHANNEL_LINES) { %>
-              <tr>
-                <td style="padding: <%= it.h.SPACING.sm %> 0; color: <%= it.h.COLORS.textLight %>; font-size: 11px; text-align: center;">
-                  +<%= channel.notifications.length - it.h.DIGEST_CHANNEL_LINES %> more in this channel
-                </td>
-              </tr>
-              <% } %>
-
             </table>
           </td>
         </tr>
       </table>
-
-      <% }) %>
     </td>
   </tr>
 </table>
-
-<% }) %>
-
-<!-- CTA Button -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<% } else if (block.kind === 'heading') { %>
+<p style="margin: 22px 0 0;">
+  <a href="<%= block.url %>" style="color: #0f172a; font-size: 18px; font-weight: 700; line-height: 1.25; text-decoration: none;"><%= block.text %></a>
+</p>
+<% } else if (block.kind === 'notice') { %>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top: 12px;">
   <tr>
-    <td align="center" style="padding-top: <%= it.h.SPACING.lg %>;">
-      <%~ it.h.button('View All Notifications', it.notificationsUrl) %>
+    <td width="40" valign="top"><%~ it.h.avatar(block.notice.sender_name, block.notice.sender_avatar_url, 32) %></td>
+    <td style="padding-left: 10px;" valign="top">
+      <p style="margin: 0; color: <%= it.h.COLORS.text %>; font-size: 14px; font-weight: 600; line-height: 1.3;">
+        <span style="color: <%= it.h.COLORS.primary %>;"><%= it.h.notificationIcon(block.notice.type) %></span> <%= block.notice.sender_name %>
+      </p>
+      <p style="margin: 2px 0 0; color: <%= it.h.COLORS.textMuted %>; font-size: 13px; line-height: 1.4;"><%= it.h.truncate(block.notice.message_preview, it.h.DIGEST_PREVIEW_CHARS) %></p>
+    </td>
+    <td width="48" align="right" valign="middle">
+      <a href="<%= block.notice.action_url %>" style="color: <%= it.h.COLORS.primary %>; font-size: 13px; font-weight: 600; text-decoration: none;">View</a>
     </td>
   </tr>
 </table>
-
+<% } else if (block.kind === 'runs') { %>
+<p style="margin: 12px 0 0; color: <%= it.h.COLORS.text %>; font-size: 15px; line-height: 1.45;">
+<% block.runs.forEach(function(run) { %><span style="<%= it.h.changeRunStyle(run.kind) %>"><%= run.text %></span><% }) %>
+</p>
+<% } else if (block.kind === 'more') { %>
+<p style="margin: 8px 0 0; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center;">+<%= block.count %> more in this channel</p>
+<% } else if (block.kind === 'status') { %>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 22px 0 28px; border-top: 1px solid <%= it.h.COLORS.sheetBorder %>;">
+  <tr>
+    <td valign="middle" style="padding-top: 10px; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; line-height: 1.4;"><%= block.line %></td>
+    <td align="right" valign="middle" style="padding-top: 10px; font-size: 12px; white-space: nowrap;"><%~ it.footerHtml %></td>
+  </tr>
+</table>
+<% } else if (block.kind === 'home') { %>
+<p style="margin: 0 0 16px; font-size: 14px;"><a href="<%= block.url %>" style="color: <%= it.h.COLORS.primary %>; text-decoration: none;"><%= it.h.APP_NAME %></a></p>
+<p style="margin: 0; font-size: 12px;"><%~ it.footerHtml %></p>
+<% } %>
+<% }) %>

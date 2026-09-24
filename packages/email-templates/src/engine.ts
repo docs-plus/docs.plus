@@ -4,9 +4,10 @@ import { Eta } from 'eta'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-import { digestNotificationsUrl, type EmailFooter, templateHelpers } from './helpers'
+import type { DigestBlock } from './digestWalk'
+import { type EmailFooter, templateHelpers } from './helpers'
 import { APP_NAME, APP_URL, COLORS, RADIUS } from './tokens'
-import type { DigestDocument, DigestFrequency, NotificationType } from './types'
+import type { DigestDocument, NotificationType } from './types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = join(__dirname, '..', 'templates')
@@ -29,10 +30,11 @@ function baseData(extra: Record<string, unknown> = {}) {
 function renderWithLayout(
   templateName: string,
   data: Record<string, unknown>,
-  footerHtml: string
+  footerHtml: string,
+  frame: 'card' | 'sheet' = 'card'
 ): string {
-  const bodyHtml = eta.render(templateName, baseData(data))
-  return eta.render('base', baseData({ body: bodyHtml, footerHtml }))
+  const bodyHtml = eta.render(templateName, baseData({ ...data, footerHtml }))
+  return eta.render('base', baseData({ body: bodyHtml, footerHtml, frame }))
 }
 
 export function renderNotificationEmail(params: {
@@ -71,31 +73,9 @@ export function countDigestItems(documents: ReadonlyArray<DigestDocument>): numb
 }
 
 /** Internal: `buildDigestEmail` in `templates.ts` is the one entry point. */
-export function renderDigestEmail(params: {
-  recipientName: string
-  frequency: DigestFrequency
-  documents: DigestDocument[]
-  periodEnd: string
-  /** Resolved once by the caller, so the subject and both bodies cannot disagree. */
-  totalNotifications: number
-  footer?: EmailFooter
-}): string {
-  const { documents, frequency, footer, ...rest } = params
-  const periodLabel = frequency === 'daily' ? 'today' : 'this week'
-
-  const footerHtml = templateHelpers.footerLinks(footer)
-
-  return renderWithLayout(
-    'digest',
-    {
-      ...rest,
-      frequency,
-      documents,
-      periodLabel,
-      notificationsUrl: digestNotificationsUrl(documents)
-    },
-    footerHtml
-  )
+export function renderDigestEmail(params: { blocks: DigestBlock[]; footer?: EmailFooter }): string {
+  const footerHtml = templateHelpers.footerLinks(params.footer)
+  return renderWithLayout('digest', { blocks: params.blocks, footerHtml }, footerHtml, 'sheet')
 }
 
 export function renderNewDocumentEmail(params: {

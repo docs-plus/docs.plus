@@ -533,7 +533,13 @@ describe('enrichDigestDocuments', () => {
     )
     const intro = doc!.content_changes?.sections?.find((row) => row.text === 'Intro')
     expect(intro?.chats).toEqual([
-      { at: '2026-09-21 09:14', sender: 'Lena', text: 'The second click should close it.' }
+      {
+        type: 'message',
+        sender_name: 'Lena',
+        message_preview: 'The second click should close it.',
+        action_url: `${DOC_URL}?chatroom=intro`,
+        created_at: '2026-09-21T09:14:00.000Z'
+      }
     ])
     expect(doc!.channels.map((channel) => channel.id)).toEqual(['room-general'])
     expect(doc!.content_changes?.sections?.some((row) => row.text === 'Quiet')).toBe(false)
@@ -551,6 +557,7 @@ describe('enrichDigestDocuments', () => {
     expect(chatAt).toBeGreaterThan(introAt)
     expect(cardAt).toBeGreaterThan(chatAt)
     expect(html).toContain('Review the auth section')
+    expect(html).toContain(`${DOC_URL}?chatroom=intro`)
   })
 })
 

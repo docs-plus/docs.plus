@@ -8,7 +8,6 @@ export type {
   DigestContentChanges,
   DigestDocument,
   DigestFrequency,
-  DigestHeadingChat,
   DigestNotification,
   EmailFooter,
   NotificationType
