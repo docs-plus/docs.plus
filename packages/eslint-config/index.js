@@ -18,6 +18,8 @@ export default [
       // Supabase CLI writes a minified edge-runtime bundle under `.temp`.
       // Gitignored, but ESLint does not read that — same class as `~/`.
       '**/.temp/**',
+      // Maintainer notes, including saved scratch harnesses. Gitignored too.
+      'Notes/**',
       '**/.claude/worktrees/**',
       '**/dist/**',
       '**/build/**',
