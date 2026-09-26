@@ -61,11 +61,17 @@ const profileFromPresence = (
   status: Profile['status']
 ): Profile | null => {
   if (typeof presence.id !== 'string') return null
+  // A tracked payload has no channelId field, so sync and join keep the one a
+  // broadcast set. An explicit null or '' still clears it, and a leave clears it.
+  const incoming =
+    presence.channelId === undefined && status !== 'OFFLINE'
+      ? useStore.getState().usersPresence.get(presence.id)?.channelId
+      : presence.channelId
   return {
     ...presence,
     id: presence.id,
     status,
-    channelId: resolveChannelId(presence.id, presence.channelId)
+    channelId: resolveChannelId(presence.id, incoming)
   } as Profile
 }
 
