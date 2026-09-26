@@ -6,7 +6,7 @@ groups:
     interval: 1m
     rules:
       - uid: worker-queue-backlog
-        title: store-documents queue backlog (>100 waiting)
+        title: store-documents queue backlog (jobs waiting for 10m)
         condition: C
         for: 10m
         noDataState: OK
@@ -14,7 +14,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: store-documents queue backlog >100 waiting for 10m (edit-persistence stall / data-loss risk). Tune after baseline.
+          summary: store-documents has had jobs waiting at every check for 10m (edit-persistence stall / data-loss risk). A healthy worker drains the queue within seconds.
           runbook_url: 'Restart/drain hocuspocus-worker; check redis + postgres.'
         data:
           - refId: A
@@ -22,6 +22,8 @@ groups:
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
+              # No oldest-waiting-age gauge is exported, so depth stands in for it.
+              # A live worker leaves the queue empty at almost every sample.
               expr: 'max by (queue) (queue_jobs{queue="store-documents",state="waiting"})'
               instant: true
               intervalMs: 1000
@@ -42,7 +44,7 @@ groups:
               type: threshold
               expression: B
               conditions:
-                - evaluator: { type: gt, params: [100] }
+                - evaluator: { type: gt, params: [0] }
               refId: C
 
       - uid: worker-job-failures

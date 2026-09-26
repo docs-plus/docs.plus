@@ -44,6 +44,49 @@ groups:
                 - evaluator: { type: lt, params: [1] }
               refId: C
 
+      - uid: dep-redis-down
+        title: Redis down (redis_up==0)
+        condition: C
+        for: 1m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis is down (redis_up==0). Document saves pause silently while it is down, and no counter moves. Check the docsplus-redis container.
+          runbook_url: 'https://github.com/docs-plus/docs.plus/blob/main/docs/RUNBOOK-backend.md#redis-down'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # The store lock fails as a quorum error with an empty message after
+              # about 43 s, so no save counter or rejection counter moves. This
+              # rule is the only signal for that outage.
+              expr: 'min(redis_up)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C
+
       - uid: dep-postgres-conn-saturation
         title: Postgres connection saturation (>80%)
         condition: C

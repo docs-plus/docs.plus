@@ -1,6 +1,6 @@
 # Backend runbook
 
-What to do when one of four backend alerts fires. It covers document persistence, the dead-letter queue, and the collaboration container's memory. It does not cover the edge, Supabase, the webapp, or any other alert.
+What to do when one of five backend alerts fires. It covers document persistence, Redis, the dead-letter queue, and the collaboration container's memory. It does not cover the edge, Supabase, the webapp, or any other alert.
 
 Each section below matches one Grafana alert. That alert links here through its `runbook_url` annotation.
 
@@ -42,31 +42,50 @@ The alert carries `reason`, not the document name. The logs name the document. C
 
 **Mechanism.** The store hook never throws. A throw would leave Hocuspocus's debouncer holding a rejected promise for the process lifetime, which stops saves for every room and blocks shutdown. The hook therefore counts `document_store_rejections_total`, logs, reports to Sentry, and returns. That counter is the only remaining trace of the dropped write, which is why this alert exists.
 
-## Persistence stopped while users are connected
+## Edits arriving but no document saved
 
-Grafana alert: `Document persistence stopped while users are connected`. Severity critical. It uses a 10-minute window plus `for: 10m`, so it fires after 20 minutes of open sockets with no save.
+Grafana alert: `Edits arriving but no document saved`. Severity critical. It uses a 10-minute window plus `for: 10m`, so it fires after 20 minutes in which edits reached `hocuspocus-server` and no save finished.
 
-**This does not self-heal. Restart `hocuspocus-server`.** Waiting is the wrong move. A rejected store promise wedges the debouncer for the process lifetime, and the wedged room never unloads either.
+The rule counts edits, not open sockets, so readers who never type cannot fire it. It is fleet-wide on purpose. Both replicas count an edit relayed through Redis, but only the replica that received it saves it.
 
 Commands below use the `dc` alias from [Before you start](#before-you-start).
 
-1. Rule out a quiet room first. The alert asks whether anything saved, not whether anyone typed, so a public document with six idle readers fires it. `sum(rate(ydoc_update_bytes_count[10m]))` counts edits reaching the server. Zero there means nobody is typing, and the restart would drop live connections for nothing. Above zero means edits are arriving and not persisting, which is the real stall. Go on.
-2. Capture the logs. They are the only explanation, and the restart is what you do next.
+1. Check Redis first. A Redis outage pauses every save, and no save counter moves. `Redis down` fires in the same window when this is the cause. Go to [Redis down](#redis-down).
+2. Confirm edits are still arriving. `sum(rate(ydoc_update_bytes_count{job="hocuspocus-server"}[10m]))` must be above zero. If it is zero, the stall is over and the alert clears on its own.
+3. Capture the logs of both replicas, and look for `Caught error during storeDocumentHooks`.
 
    ```bash
    dc logs --since 1h hocuspocus-server > /tmp/hocuspocus-persist-stall.log
    ```
 
-3. Restart the service.
+4. Restart only as a last resort, and only when Redis is healthy and saves stay at zero for another 10 minutes. A restart drops every live connection on that replica. `dc restart hocuspocus-server` restarts both replicas at once, so restart one container at a time instead. Names come from `dc ps`.
 
    ```bash
-   dc restart hocuspocus-server
+   docker restart docsplus-hocuspocus-server-<n>
    ```
 
-   Rooms reload from Postgres when clients reconnect. Any room that was wedged had already stopped saving, so the restart costs it nothing new. A healthy room loses at most its last debounce window.
+5. Confirm saves resumed. `sum(rate(document_persist_duration_seconds_count{job="hocuspocus-server"}[10m]))` must go above zero.
 
-4. Confirm saves resumed. `sum(rate(document_persist_duration_seconds_count[10m]))` must go above zero, and the alert clears on the next evaluation.
-5. Read the captured log for the throw that wedged the hook. Report it — the hook is written so that this cannot happen, so a real occurrence is a code defect.
+## Redis down
+
+Grafana alert: `Redis down (redis_up==0)`. Severity critical, after 1 minute.
+
+**Saves pause silently while Redis is down.** The store lock fails after about 43 seconds with an empty error, so no save counter and no rejection counter moves. This alert is the only signal. Edits stay in the loaded rooms. They save on the next edit or when the room closes, once Redis is back. A room that closes during the outage loses the edits it had not saved yet.
+
+1. Check the container.
+
+   ```bash
+   dc ps -a redis
+   dc logs --since 30m redis
+   ```
+
+2. Start it if it stopped. Redis keeps its data in an append-only file, so the queues survive a restart.
+
+   ```bash
+   dc up -d redis
+   ```
+
+3. Confirm saves resumed, as in step 5 of [Edits arriving but no document saved](#edits-arriving-but-no-document-saved).
 
 ## Dead-letter queue not empty
 
@@ -142,5 +161,5 @@ Commands below use the `dc` alias from [Before you start](#before-you-start).
 
    One large document can fill a replica on its own. At the measured RSS slope, a 5 MB stored snapshot costs about 118 MB loaded.
 
-4. If memory stays high while `ws_active_connections` falls, a room is wedged rather than busy. Hocuspocus unloads a room as soon as its last connection closes, so memory should follow connections down. Go to [Persistence stopped while users are connected](#persistence-stopped-while-users-are-connected).
+4. If memory stays high while `ws_active_connections` falls, a room is wedged rather than busy. Hocuspocus unloads a room as soon as its last connection closes, so memory should follow connections down. Go to [Edits arriving but no document saved](#edits-arriving-but-no-document-saved).
 5. Check `stateless_relay_dropped_total`. A burst means a client is pushing oversized frames at the relay. The 64 KiB budget already drops them, so this is a probe and not the cause, but it is worth reporting.

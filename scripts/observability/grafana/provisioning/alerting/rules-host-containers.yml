@@ -254,6 +254,48 @@ groups:
                 - evaluator: { type: lt, params: [1] }
               refId: C
 
+      - uid: infra-replica-missing
+        title: App replica missing (fewer than 2 up)
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Fewer than 2 replicas of {{ $labels.job }} are up for 5m. Check docker compose ps for that service and read the logs of the missing container.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              # A lost replica's `up` series vanishes from DNS discovery, so
+              # infra-target-down cannot see it. The vector(0) arms keep a job
+              # that lost every replica at 0.
+              expr: 'sum by (job) (up{job=~"rest-api|hocuspocus-server|hocuspocus-worker"}) or on (job) (label_replace(vector(0),"job","rest-api","","") or label_replace(vector(0),"job","hocuspocus-server","","") or label_replace(vector(0),"job","hocuspocus-worker","",""))'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [2] }
+              refId: C
+
       - uid: infra-target-down-telemetry
         title: Telemetry scrape target down (up==0)
         condition: C
