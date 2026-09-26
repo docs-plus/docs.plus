@@ -88,8 +88,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          # Every WS frame crosses Traefik, and cursor traffic grows with the square
+          # of one document's viewers. At 30 viewers the worst minute used 0.31 CPU,
+          # 40% throttled, and memory peaked at 203 MB (2026-09-26).
+          cpus: '1.0'
+          memory: 512M
         reservations:
           cpus: '0.1'
           memory: 64M
