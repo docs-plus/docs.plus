@@ -291,6 +291,27 @@ export function recordJobOutcome(
   }
 }
 
+// A labelled series does not exist until its first inc, so increase() never
+// counts that first event. Each process seeds, at startup, the series its alerts
+// read. Not at module scope: rest-api imports this file too.
+export const seedWsAlertSeries = (): void => {
+  for (const reason of ['fallback-save-failed', 'version-collision']) {
+    documentStoreRejectionsTotal.inc({ reason }, 0)
+  }
+  for (const reason of ['type-not-allowed', 'broadcast-frame']) {
+    statelessRelayDroppedTotal.inc({ reason }, 0)
+  }
+  for (const mode of ['replace', 'append', 'section']) {
+    documentContentApplyTotal.inc({ mode, outcome: 'error' }, 0)
+  }
+}
+
+export const seedWorkerAlertSeries = (): void => {
+  for (const queue of ['store-documents', 'email-notifications', 'push-notifications']) {
+    jobsTotal.inc({ queue, status: 'failed' }, 0)
+  }
+}
+
 export const queueJobs = new Gauge({
   name: 'queue_jobs',
   help: 'Jobs per queue by state (depth)',

@@ -12,7 +12,12 @@ import {
 } from './lib/email'
 import { captureUnknown, flushObservability } from './lib/instrument'
 import { workerLogger } from './lib/logger'
-import { metricsContentType, metricsText, retentionLeaseTotal } from './lib/metrics'
+import {
+  metricsContentType,
+  metricsText,
+  retentionLeaseTotal,
+  seedWorkerAlertSeries
+} from './lib/metrics'
 import { checkDatabaseHealth, prisma, shutdownDatabase } from './lib/prisma'
 import {
   getPushQueueConsumerHealth,
@@ -135,6 +140,7 @@ workerLogger.info(
   '🧹 Idempotency log + autosave version + soft-delete reaper cleanup scheduled'
 )
 
+seedWorkerAlertSeries()
 const stopWorkerMetricsSampling = startWorkerMetricsSampling()
 
 const healthApp = new Hono()

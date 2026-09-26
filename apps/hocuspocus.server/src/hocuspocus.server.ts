@@ -27,6 +27,7 @@ import {
   httpMetricsMiddleware,
   metricsContentType,
   metricsText,
+  seedWsAlertSeries,
   setActiveConnectionsProvider,
   setActiveDocumentsProvider,
   statelessRelayDroppedTotal,
@@ -568,6 +569,7 @@ const server = new Server(serverConfig)
 // /health/websocket can never report different numbers.
 setActiveDocumentsProvider(() => server.hocuspocus.documents.size)
 setActiveConnectionsProvider(() => countActiveConnections(server.hocuspocus))
+seedWsAlertSeries()
 
 server.listen()
 
