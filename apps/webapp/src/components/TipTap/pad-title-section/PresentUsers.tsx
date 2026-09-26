@@ -7,12 +7,14 @@ const PresentUsers = () => {
   const usersPresence = useStore((state) => state.usersPresence)
   const profile = useAuthStore((state) => state.profile)
 
-  // Authed users `track(profile)` themselves into presence, so the map
-  // includes self — filter it out so "alone in the room" doesn't render
-  // a single self-avatar. Anon never tracks, so the map is already just
-  // the other viewers; the filter is a harmless no-op for them.
+  // Authed users `track(profile)` themselves into presence, so drop self or
+  // "alone in the room" renders a self-avatar (a no-op for anon, who never
+  // track). A leave keeps the row as OFFLINE, so drop those too.
   const others = useMemo(
-    () => selectPresenceOthers(usersPresence?.values(), profile?.id),
+    () =>
+      selectPresenceOthers(usersPresence?.values(), profile?.id).filter(
+        (user) => user.status !== 'OFFLINE'
+      ),
     [usersPresence, profile?.id]
   )
 
