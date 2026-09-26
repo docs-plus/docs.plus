@@ -297,6 +297,28 @@ const Editor = ({
   }
 }
 
+const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const AVATAR_STAMP_PATTERN = /^[0-9TZ:.+\- ]{1,40}$/
+// Google is the only OAuth provider, and it serves profile photos from lhN hosts.
+const OAUTH_AVATAR_HOST_PATTERN = /^lh\d+\.googleusercontent\.com$/
+
+// Same face inputs as Avatar: bucket when id + avatarUpdatedAt, else OAuth src.
+const resolveCaretAvatarUrl = (caretUser: CaretUser): string | null => {
+  const stamp = caretUser.avatarUpdatedAt != null ? String(caretUser.avatarUpdatedAt) : ''
+  if (USER_ID_PATTERN.test(caretUser.id) && AVATAR_STAMP_PATTERN.test(stamp)) {
+    return Config.app.profile.getAvatarURL(caretUser.id, stamp)
+  }
+  if (!caretUser.avatarUrl) return null
+  try {
+    const url = new URL(caretUser.avatarUrl)
+    return url.protocol === 'https:' && OAUTH_AVATAR_HOST_PATTERN.test(url.hostname)
+      ? url.href
+      : null
+  } catch {
+    return null
+  }
+}
+
 const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
   const profile = authStore.getState().profile
   // Shared builder keeps the caret color identical across every awareness
@@ -306,30 +328,29 @@ const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
   return {
     provider,
     user,
+    // Peers write these fields. Set styles through CSSOM so each value stays one
+    // property; the setter drops a value that does not parse.
     render: (caretUser: CaretUser): HTMLElement => {
+      const color = String(caretUser.color)
       const cursor = document.createElement('span')
       cursor.classList.add('collaboration-cursor__caret')
-      cursor.setAttribute('style', `border-color: ${caretUser.color};`)
-
-      // Same face inputs as Avatar: bucket when id + avatarUpdatedAt, else OAuth src.
-      const avatarAddress =
-        caretUser.id && caretUser.avatarUpdatedAt
-          ? Config.app.profile.getAvatarURL(caretUser.id, String(caretUser.avatarUpdatedAt))
-          : caretUser.avatarUrl
-
-      const avatar = document.createElement('div')
-      avatar.classList.add('collaboration-cursor__avatar')
-      avatar.setAttribute(
-        'style',
-        `background-image: url(${avatarAddress}); background-color: var(--color-base-300); border-color: ${caretUser.color};`
-      )
+      cursor.style.borderColor = color
 
       const label = document.createElement('div')
       label.classList.add('collaboration-cursor__label')
-      label.setAttribute('style', `background-color: ${caretUser.color}`)
+      label.style.backgroundColor = color
       label.insertBefore(document.createTextNode(caretUser.name), null)
       cursor.insertBefore(label, null)
-      if (avatarAddress) cursor.insertBefore(avatar, null)
+
+      const avatarAddress = resolveCaretAvatarUrl(caretUser)
+      if (avatarAddress) {
+        const avatar = document.createElement('div')
+        avatar.classList.add('collaboration-cursor__avatar')
+        avatar.style.backgroundImage = `url(${JSON.stringify(avatarAddress)})`
+        avatar.style.backgroundColor = 'var(--color-base-300)'
+        avatar.style.borderColor = color
+        cursor.insertBefore(avatar, null)
+      }
       return cursor
     }
   }
