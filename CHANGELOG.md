@@ -12,6 +12,14 @@ This file is the product changelog. The webapp package keeps [`apps/webapp/CHANG
 
 ### Added
 
+- Share a document with a QR code. The share card shows the code beside the
+  link, so a phone opens the document with one scan. Click the code for a
+  full-screen Present view sized for a projector. It shows the code, the
+  document title and the link in large text. A button next to Close switches
+  the view to a dark background for a dark room, and dims the code's white
+  plate to light grey. The app theme does not change.
+  A private document shows no code.
+
 - Play chat audio in a themed player, with seek and 1×, 1.5×, or 2× speed. A
   voice note sent from now on shows its waveform and length before you press
   play. Starting one clip pauses the others.

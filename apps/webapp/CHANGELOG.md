@@ -104,6 +104,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- The share card is wider and puts the QR code on the left. On hover, a light
+  blur and a fullscreen button cover the code. At rest nothing covers it, so
+  it always scans. The card no longer shows the document name. The footer line
+  says what anyone with the link can do, and the owner sees Change.
+
 - **History marks a connected app's version.** A version an MCP tool wrote
   shows a "Connected app" badge, and its writers note says the writers were
   not recorded.
@@ -177,6 +182,16 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   moved to that file, and `useMessageActionMenuItems` re-exports them.
 
 ### Fixed
+
+- The share card copies the clean document link. It used to copy the address
+  bar, so heading, chat and filter parameters went out with the link.
+- The share card says "Anyone with the link can edit" unless the document is
+  Read-only. It used to say "view" for every public document.
+- Share links encode the document URL, so a Facebook, X, LinkedIn, Reddit or
+  Email link keeps the whole address. Links that open a new tab now say so to
+  screen readers.
+- Screen readers hear "Link copied" in the share card. The card body scrolls at
+  400% zoom, so no share link is cut off.
 
 - A chat notification from another pad opens that pad at the message.
 - Signed-in REST replies never enter the service worker cache.
@@ -273,6 +288,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `isFeedSpoilerRevealed`.
 
 ### Internal
+
+- Add `uqr` and `components/ui/QrCode.tsx`. The QR ink uses three fixed
+  tokens, `--qr-plate`, `--qr-ink` and `--qr-eye`, in every theme.
+  `PresentQrCode.tsx` owns the Present `<dialog>`, full screen and focus
+  return. `documentSettingsOpenRequest` opens the toolbar Document settings
+  popover from the share card.
 
 - Tab close holds the JWT in a ref and PATCHes `users` with keepalive.
 
