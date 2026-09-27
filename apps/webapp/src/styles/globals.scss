@@ -411,6 +411,12 @@
   );
   /* Overflow-edge fade on opt-in ScrollArea — alpha mask size, not a color. */
   --scroll-fade-size: 1.25rem;
+  /* QR code ink — fixed in every theme: scanners need dark modules on a light plate. */
+  --qr-plate: #ffffff;
+  --qr-ink: #0b1f4d;
+  --qr-eye: #1a56db;
+  /* Dark Present view: 66% of white's glare, still 10.7:1 against --qr-ink. */
+  --qr-plate-dim: #cbd5e1;
 }
 
 /* extension-hypermultimedia (resize-gripper.css, media-toolbar.css, media-loading-shell.css)

@@ -38,6 +38,7 @@ import {
   LuFolderOpen,
   LuFoldVertical,
   LuForward,
+  LuFullscreen,
   LuGripVertical,
   LuHash,
   LuHighlighter,
@@ -188,6 +189,7 @@ export const Icons = {
   play: LuPlay,
   pause: LuPause,
   maximize2: LuMaximize2,
+  fullscreen: LuFullscreen,
 
   calendar: LuCalendar,
   mapPin: LuMapPin,

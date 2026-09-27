@@ -1,147 +1,149 @@
+import { documentSettingsOpenRequest } from '@components/TipTap/toolbar/desktop/popoverOpenRequest'
 import CloseButton from '@components/ui/CloseButton'
-import { ModalHeading } from '@components/ui/Dialog'
+import { ModalDescription, ModalHeading } from '@components/ui/Dialog'
+import { Tooltip } from '@components/ui/Tooltip'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
-import { useStore } from '@stores'
-import { useEffect, useState } from 'react'
+import { useAuthStore, useStore } from '@stores'
+import { padSlugOf } from '@utils/filterRoute'
+import type { IconType } from 'react-icons'
 import { BsReddit } from 'react-icons/bs'
 import { FaFacebook } from 'react-icons/fa'
 import { FaLinkedin, FaSquareXTwitter, FaWhatsapp } from 'react-icons/fa6'
 
-const socialSharingMap = {
-  facebook: 'https://www.facebook.com/sharer.php?u=',
-  twitter: 'https://twitter.com/intent/tweet?url=',
-  linkedin: 'https://www.linkedin.com/shareArticle?url=',
-  whatsapp: 'https://wa.me/?text=',
-  reddit: 'https://reddit.com/submit?url=',
-  email: 'mailto:?body='
+import PresentQrCode from './PresentQrCode'
+
+interface ShareTarget {
+  label: string
+  icon: IconType
+  color: string
+  /** Both arguments arrive already URI-encoded. */
+  href: (url: string, title: string) => string
+  newTab: boolean
 }
 
-const socialButtons = [
+const shareTargets: ShareTarget[] = [
   {
-    key: 'facebook',
-    icon: FaFacebook,
     label: 'Facebook',
+    icon: FaFacebook,
     color: 'text-[#1877f2]',
-    hoverBg: 'hover:bg-[#1877f2]'
+    href: (url) => `https://www.facebook.com/sharer.php?u=${url}`,
+    newTab: true
   },
   {
-    key: 'twitter',
-    icon: FaSquareXTwitter,
     label: 'X',
+    icon: FaSquareXTwitter,
     color: 'text-base-content',
-    hoverBg: 'hover:bg-base-content'
+    href: (url) => `https://twitter.com/intent/tweet?url=${url}`,
+    newTab: true
   },
   {
-    key: 'linkedin',
-    icon: FaLinkedin,
     label: 'LinkedIn',
+    icon: FaLinkedin,
     color: 'text-[#0a66c2]',
-    hoverBg: 'hover:bg-[#0a66c2]'
+    href: (url) => `https://www.linkedin.com/shareArticle?url=${url}`,
+    newTab: true
   },
   {
-    key: 'whatsapp',
-    icon: FaWhatsapp,
     label: 'WhatsApp',
+    icon: FaWhatsapp,
     color: 'text-[#25d366]',
-    hoverBg: 'hover:bg-[#25d366]'
+    href: (url) => `https://wa.me/?text=${url}`,
+    newTab: true
   },
   {
-    key: 'reddit',
-    icon: BsReddit,
     label: 'Reddit',
+    icon: BsReddit,
     color: 'text-[#ff4500]',
-    hoverBg: 'hover:bg-[#ff4500]'
+    href: (url) => `https://reddit.com/submit?url=${url}`,
+    newTab: true
   },
   {
-    key: 'email',
-    icon: Icons.mail,
     label: 'Email',
-    color: 'text-base-content/50',
-    hoverBg: 'hover:bg-base-content'
+    icon: Icons.mail,
+    color: 'text-base-content/60',
+    href: (url, title) => `mailto:?subject=${title}&body=${url}`,
+    newTab: false
   }
 ]
+
+// Mirrors the server: only `readOnly` stops a visitor from editing a public document.
+const accessLines = {
+  private: { icon: Icons.lock, text: 'Private. Only you can open it.' },
+  view: { icon: Icons.eye, text: 'Anyone with the link can view' },
+  edit: { icon: Icons.pencil, text: 'Anyone with the link can edit' }
+}
 
 interface ShareModalProps {
   setIsOpen: (open: boolean) => void
 }
 
 const ShareModal = ({ setIsOpen }: ShareModalProps) => {
-  const [href, setHref] = useState('')
   const docMetadata = useStore((state) => state.settings.metadata)
-  const isPrivate = Boolean(docMetadata?.isPrivate)
+  const profileId = useAuthStore((state) => state.profile?.id)
   const { copy, copied } = useCopyToClipboard({ successMessage: 'Link copied!' })
 
-  useEffect(() => {
-    setHref(window.location.href)
-  }, [])
+  const isPrivate = Boolean(docMetadata?.isPrivate)
+  const access = accessLines[isPrivate ? 'private' : docMetadata?.readOnly ? 'view' : 'edit']
+  const isOwner = Boolean(profileId && profileId === docMetadata?.ownerId)
+  const canChangeAccess = isOwner && documentSettingsOpenRequest.canRequest()
+  const title = docMetadata?.title || 'Untitled document'
 
-  const handleShare = (social: string) => {
-    const url = socialSharingMap[social as keyof typeof socialSharingMap]
-    if (social === 'whatsapp') {
-      window.open(`${url}${encodeURIComponent(href)}`, '_blank')
-    } else if (url) {
-      window.open(`${url}${href}`, '_blank')
-    }
+  // Always the whole document: the address bar can carry heading, chat and filter state.
+  const slug = docMetadata?.slug || padSlugOf(window.location.pathname)
+  const shareUrl = `${window.location.origin}/${slug}`
+  const hasWebShare = typeof navigator.share === 'function'
+
+  const openDocumentSettings = () => {
+    setIsOpen(false)
+    documentSettingsOpenRequest.request()
   }
 
-  const webShareAPI = () => {
-    if (navigator.share) {
-      navigator
-        .share({
-          title: docMetadata.title,
-          text: docMetadata.description,
-          url: href
-        })
-        .catch(() => {})
-    }
+  const webShare = () => {
+    navigator.share({ title, text: docMetadata?.description, url: shareUrl }).catch(() => {})
   }
-
-  const hasWebShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   return (
-    <div className="p-6">
-      <div className="mb-5 flex items-start justify-between">
-        <div>
-          <ModalHeading className="text-base-content text-lg font-semibold">
-            Share this document
-          </ModalHeading>
-          <p className="text-base-content/50 mt-0.5 text-sm">
-            {isPrivate
-              ? 'This document is private. Only you can open it.'
-              : 'Anyone with the link can view'}
-          </p>
-        </div>
+    <div className="min-h-0 overflow-y-auto p-6">
+      <div className="flex items-start justify-between gap-3">
+        <ModalHeading className="text-base-content text-lg font-semibold">
+          Share this document
+        </ModalHeading>
         <CloseButton onClick={() => setIsOpen(false)} className="-mt-1 -mr-2" />
       </div>
 
       {isPrivate ? (
-        <p className="text-base-content/60 text-sm">
-          Turn off Private in Settings to share a link or post to social networks.
+        <p className="text-base-content/70 mt-4 text-sm">
+          Turn off Private in Settings to share a link or a QR code.
         </p>
       ) : (
-        <>
-          <div className="border-base-300 bg-base-100 rounded-field flex items-center gap-2 border p-2">
-            <input
-              type="text"
-              readOnly
-              value={href}
-              className="text-base-content/70 min-w-0 flex-1 bg-transparent px-2 text-sm focus:outline-none"
-              onClick={(e) => e.currentTarget.select()}
-            />
-            <div className="flex shrink-0 gap-1">
+        <div className="mt-6 grid gap-6 sm:grid-cols-[12.25rem_minmax(0,1fr)] sm:items-center sm:gap-x-4">
+          <PresentQrCode value={shareUrl} title={title} />
+
+          <div className="grid min-w-0 content-start gap-4 max-sm:order-first">
+            <div className="border-base-300 bg-base-100 rounded-field focus-within:border-primary flex items-center gap-2 border p-1.5">
+              <input
+                type="text"
+                readOnly
+                value={shareUrl}
+                aria-label="Document link"
+                className="text-base-content w-0 min-w-0 flex-1 bg-transparent px-2 text-sm focus:outline-none"
+                onClick={(e) => e.currentTarget.select()}
+              />
               {hasWebShare && (
-                <button
-                  type="button"
-                  onClick={webShareAPI}
-                  title="More sharing options"
-                  className="btn btn-ghost btn-sm btn-square text-base-content/50 hover:text-base-content">
-                  <Icons.shareNative size={18} />
-                </button>
+                <Tooltip title="More sharing options">
+                  <button
+                    type="button"
+                    onClick={webShare}
+                    aria-label="More sharing options"
+                    className="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-base-content">
+                    <Icons.shareNative size={16} />
+                  </button>
+                </Tooltip>
               )}
               <button
                 type="button"
-                onClick={() => copy(href)}
+                onClick={() => copy(shareUrl)}
                 aria-label={copied ? 'Copied' : 'Copy link'}
                 className={`btn btn-sm px-4 font-medium ${copied ? 'btn-success' : 'btn-primary'}`}>
                 <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
@@ -150,34 +152,53 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
                     Copied
                   </span>
                   <span className="swap-off flex items-center gap-1.5">
-                    <Icons.copy size={14} />
+                    <Icons.copy size={16} />
                     Copy
                   </span>
                 </span>
               </button>
             </div>
-          </div>
+            <span role="status" className="sr-only">
+              {copied ? 'Link copied' : ''}
+            </span>
 
-          <div className="my-6 flex items-center gap-3">
-            <div className="bg-base-300 h-px flex-1" />
-            <span className="text-base-content/40 text-xs tracking-wide uppercase">share via</span>
-            <div className="bg-base-300 h-px flex-1" />
+            <div className="grid gap-2">
+              <span id="share-via-label" className="text-base-content/70 text-xs font-semibold">
+                Share via
+              </span>
+              <div
+                role="group"
+                aria-labelledby="share-via-label"
+                className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                {shareTargets.map(({ label, icon: Icon, color, href, newTab }) => (
+                  <a
+                    key={label}
+                    href={href(encodeURIComponent(shareUrl), encodeURIComponent(title))}
+                    {...(newTab && { target: '_blank', rel: 'noopener noreferrer' })}
+                    className="rounded-field text-base-content/70 hover:bg-base-200 hover:text-base-content focus-visible:ring-primary flex min-h-10 items-center gap-2 px-2.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none">
+                    <Icon size={20} className={`shrink-0 ${color}`} />
+                    {label}
+                    {newTab && <span className="sr-only">(opens in new tab)</span>}
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
-
-          <div className="flex items-center justify-between gap-2">
-            {socialButtons.map(({ key, icon: Icon, label, color, hoverBg }) => (
-              <button
-                key={key}
-                onClick={() => handleShare(key)}
-                title={label}
-                className={`rounded-box flex flex-1 cursor-pointer flex-col items-center gap-2 p-3 transition-colors ${color} ${hoverBg} hover:text-white`}>
-                <Icon size={24} />
-                <span className="text-xs font-medium">{label}</span>
-              </button>
-            ))}
-          </div>
-        </>
+        </div>
       )}
+
+      <div className="text-base-content/70 mt-6 flex items-center gap-1.5 text-sm">
+        <access.icon size={16} />
+        <ModalDescription className="min-w-0">{access.text}</ModalDescription>
+        {canChangeAccess && (
+          <button
+            type="button"
+            onClick={openDocumentSettings}
+            className="text-primary rounded-selector focus-visible:ring-primary ml-1 shrink-0 font-semibold hover:underline focus-visible:ring-2 focus-visible:outline-none">
+            Change
+          </button>
+        )}
+      </div>
     </div>
   )
 }

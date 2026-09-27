@@ -198,7 +198,7 @@ const PadTitle = () => {
 
       {/* Share Modal */}
       <Modal open={isShareModalOpen} onOpenChange={setShareModalOpen}>
-        <ModalContent size="lg" className="p-0">
+        <ModalContent size="2xl" className="p-0">
           <ShareModal setIsOpen={setShareModalOpen} />
         </ModalContent>
       </Modal>

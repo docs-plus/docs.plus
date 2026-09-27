@@ -37,3 +37,4 @@ function createPopoverOpenRequest(): PopoverOpenRequest {
 // do not pull the whole toolbar into every editor bundle.
 export const insertMediaOpenRequest = createPopoverOpenRequest()
 export const filterOpenRequest = createPopoverOpenRequest()
+export const documentSettingsOpenRequest = createPopoverOpenRequest()
