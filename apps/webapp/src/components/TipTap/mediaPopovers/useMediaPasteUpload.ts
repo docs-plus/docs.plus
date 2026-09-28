@@ -1,5 +1,7 @@
+import { isVisitor } from '@components/auth/isVisitor'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
+import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { useEffect } from 'react'
 
 import { uploadMediaFile } from './uploadMediaFile'
@@ -23,6 +25,10 @@ export function useMediaPasteUpload(editor: Editor | null | undefined): void {
       if (!(event instanceof CustomEvent)) return
       const { files, editor: eventEditor } = event.detail as EditorFileUploadEventDetail
       if (eventEditor !== editor || !files?.length || !docMetadata) return
+      if (isVisitor()) {
+        openInlineSignInDialog()
+        return
+      }
       // Sequential: uploadMediaFile awaits image decoding before it places a
       // placeholder, so parallel uploads would insert in decode order.
       void (async () => {

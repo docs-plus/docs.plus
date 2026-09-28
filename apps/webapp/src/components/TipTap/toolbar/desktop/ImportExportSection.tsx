@@ -6,11 +6,13 @@ import {
   type ImportedDocument,
   pickExportTarget
 } from '@api'
+import { isVisitor } from '@components/auth/isVisitor'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { Icons } from '@icons'
 import type { Editor } from '@tiptap/core'
+import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import React, { useState } from 'react'
 
 import { applyImportedContent } from './applyImportedContent'
@@ -93,6 +95,10 @@ const ImportExportSection = ({
   const touchHeight = isSheet ? 'min-h-11' : ''
 
   const runExport = async (format: ExportFormat) => {
+    if (isVisitor()) {
+      openInlineSignInDialog()
+      return
+    }
     setExportError(null)
     // The save picker needs the click's user activation, so it opens before any await.
     const target = await pickExportTarget(format, documentTitle)
@@ -127,6 +133,10 @@ const ImportExportSection = ({
   // Synchronous to the click: iOS Safari revokes the gesture across an await, and
   // the picker then silently refuses to open.
   const pickFile = () => {
+    if (isVisitor()) {
+      openInlineSignInDialog()
+      return
+    }
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.docx,.md'

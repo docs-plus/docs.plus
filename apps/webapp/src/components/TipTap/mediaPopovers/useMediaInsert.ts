@@ -1,6 +1,8 @@
+import { isVisitor } from '@components/auth/isVisitor'
 import { detectMediaType, type MediaNodeType } from '@docs.plus/extension-hypermultimedia'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/core'
+import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { useState } from 'react'
 
 import { MEDIA_INSERT_REGISTRY } from './mediaInsert'
@@ -46,6 +48,12 @@ export function useMediaInsert(
 
   const submitFile = (file: File): void => {
     if (!docMetadata) return
+    // Close the panel first so the sign-in prompt takes focus.
+    if (isVisitor()) {
+      onInserted()
+      openInlineSignInDialog()
+      return
+    }
     void uploadMediaFile(editor, file, docMetadata)
     onInserted()
   }
