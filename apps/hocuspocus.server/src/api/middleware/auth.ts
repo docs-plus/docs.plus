@@ -6,7 +6,7 @@ import { isConnectedAppToken } from '../../lib/jwtClaims'
 
 // Accept either `Authorization: Bearer <jwt>` or the `token` header the webapp
 // already uses on document reads (fetchDocument.ts), so callers stay consistent.
-const extractToken = (c: Context): string | undefined => {
+export const extractToken = (c: Context): string | undefined => {
   const authHeader = c.req.header('Authorization')
   if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7)
   return c.req.header('token') || undefined

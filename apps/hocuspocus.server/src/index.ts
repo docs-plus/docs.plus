@@ -137,9 +137,12 @@ const mcpModule = mcp.init({
   allowedOrigins: config.security.originAllowlist,
   redis: getRedisClient(),
   supabase: getServiceRoleClient(),
+  supabaseUrl: config.supabase.url,
+  supabaseKey: config.supabase.serviceRoleKey ?? null,
   version: pkg.version
 })
 app.route(mcp.MCP_MOUNT_PATH, mcpModule.router)
+app.route('/api/connected-apps', mcpModule.connectedAppsRouter)
 // Absolute paths (/openapi.json, /docs), so this mounts at the root.
 app.route('/', openapiModule.router)
 

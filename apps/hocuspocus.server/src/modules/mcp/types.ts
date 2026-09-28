@@ -36,8 +36,11 @@ export interface InitDeps {
   allowedOrigins: readonly string[]
   /** Holds the per-caller tool budget and the usage counts. Null runs without both. */
   redis: RedisClient | null
-  /** The service-role client for the chat tools. Null turns them into a refusal. */
+  /** The service-role client for the chat tools and the redirect lookup. Null refuses chat and answers no redirects. */
   supabase: SupabaseClient | null
+  /** `SUPABASE_URL` and the service-role key, for the caller's own grant list. */
+  supabaseUrl: string | null
+  supabaseKey: string | null
   version: string
 }
 

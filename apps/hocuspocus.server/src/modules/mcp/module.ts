@@ -1,14 +1,17 @@
 import type { Hono } from 'hono'
 
+import { createConnectedAppsRouter } from './http/connectedApps'
 import { createRouter } from './http/router'
 import { createServerFactory } from './http/serverFactory'
 import { createChatStore } from './infra/chatStore'
+import { createGrantRedirects } from './infra/grantRedirects'
 import { createToolBudget } from './infra/toolBudget'
 import { createUsageRecorder } from './infra/usageStore'
 import type { InitDeps } from './types'
 
 export interface InitResult {
   router: Hono
+  connectedAppsRouter: Hono
 }
 
 export const init = (deps: InitDeps): InitResult => ({
@@ -27,5 +30,13 @@ export const init = (deps: InitDeps): InitResult => ({
       appUrl: deps.appUrl,
       version: deps.version
     })
-  })
+  }),
+  connectedAppsRouter: createConnectedAppsRouter(
+    createGrantRedirects({
+      supabase: deps.supabase,
+      supabaseUrl: deps.supabaseUrl,
+      supabaseKey: deps.supabaseKey,
+      logger: deps.logger
+    })
+  )
 })
