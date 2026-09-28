@@ -129,6 +129,29 @@ export const NotificationsSkeleton = () => (
   </div>
 )
 
+export const ConnectedAppsSkeleton = () => (
+  <div className="space-y-4">
+    <SettingsCard>
+      <div className="skeleton rounded-field mb-3 h-5 w-40" />
+      <div className="skeleton rounded-field mb-4 h-4 w-full" />
+      <div className="skeleton rounded-box mb-4 h-20 w-full" />
+      <div className="skeleton rounded-field mb-4 h-8 w-full" />
+      <div className="border-base-300 rounded-box divide-base-300 divide-y border">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-3 sm:p-4">
+            <div className="skeleton rounded-field size-9 shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="skeleton rounded-field h-4 w-24" />
+              <div className="skeleton rounded-field h-3 w-48" />
+            </div>
+            <div className="skeleton rounded-field h-8 w-20" />
+          </div>
+        ))}
+      </div>
+    </SettingsCard>
+  </div>
+)
+
 const SettingsPanelSkeleton = () => {
   const { pathname } = useRouter()
   const supportRows = isDocumentReportPath(pathname)

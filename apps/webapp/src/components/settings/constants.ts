@@ -6,6 +6,7 @@ import {
   LuFileText,
   LuLightbulb,
   LuPalette,
+  LuPlug,
   LuShield,
   LuStar,
   LuTriangleAlert,
@@ -25,7 +26,8 @@ export const SETTINGS_TABS: { id: TabType; label: string; icon: IconType; fullWi
     { id: 'documents', label: 'Documents', icon: LuFileText, fullWidth: true },
     { id: 'appearance', label: 'Appearance', icon: LuPalette },
     { id: 'security', label: 'Security', icon: LuShield },
-    { id: 'notifications', label: 'Notifications', icon: LuBell }
+    { id: 'notifications', label: 'Notifications', icon: LuBell },
+    { id: 'connected-apps', label: 'Connected apps', icon: LuPlug }
   ]
 
 export const GITHUB_REPO_URL = config.links.githubRepoUrl

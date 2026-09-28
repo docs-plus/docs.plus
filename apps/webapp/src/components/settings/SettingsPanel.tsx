@@ -16,6 +16,7 @@ import { useSignOut } from './hooks/useSignOut'
 import { openSignOutConfirm } from './openSignOutConfirm'
 import {
   AppearanceSkeleton,
+  ConnectedAppsSkeleton,
   DocumentsSkeleton,
   NotificationsSkeleton,
   ProfileSkeleton,
@@ -37,6 +38,9 @@ const SecuritySection = dynamic(() => import('./components/SecuritySection'), {
 })
 const NotificationsSection = dynamic(() => import('./components/NotificationsSection'), {
   loading: () => <NotificationsSkeleton />
+})
+const ConnectedAppsSection = dynamic(() => import('./components/ConnectedAppsSection'), {
+  loading: () => <ConnectedAppsSkeleton />
 })
 
 const STAR_SPARK_ANGLES = [0, 60, 120, 180, 240, 300] as const
@@ -123,13 +127,19 @@ const SupportRowControl = ({ row }: { row: SupportRow }) => {
   )
 }
 
-// Only DocumentsSection reads `onOpenDocument`; the rest ignore the optional prop.
-const TAB_COMPONENTS: Record<TabType, ComponentType<{ onOpenDocument?: () => void }>> = {
+interface SectionProps {
+  onOpenDocument?: () => void
+  onSelectTab?: (tab: TabType) => void
+}
+
+// Sections read only the optional props they need.
+const TAB_COMPONENTS: Record<TabType, ComponentType<SectionProps>> = {
   profile: ProfileSection,
   documents: DocumentsSection,
   appearance: AppearanceSection,
   security: SecuritySection,
-  notifications: NotificationsSection
+  notifications: NotificationsSection,
+  'connected-apps': ConnectedAppsSection
 }
 
 const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
@@ -293,7 +303,7 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
                 ? 'w-full max-w-none max-md:flex max-md:min-h-full max-md:flex-col max-md:p-0'
                 : 'max-w-2xl'
             }`}>
-            <ActiveSection onOpenDocument={handleClose} />
+            <ActiveSection onOpenDocument={handleClose} onSelectTab={handleTabChange} />
           </div>
         </ScrollArea>
       </div>

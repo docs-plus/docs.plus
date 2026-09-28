@@ -18,7 +18,8 @@ const SETTINGS_TABS: Record<TabType, true> = {
   documents: true,
   appearance: true,
   security: true,
-  notifications: true
+  notifications: true,
+  'connected-apps': true
 }
 
 export type HashOverlay = {

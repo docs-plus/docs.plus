@@ -25,7 +25,8 @@ export type SupportRow =
 
 export type EmailFrequency = 'immediate' | 'daily' | 'weekly' | 'never'
 
-export type TabType = 'profile' | 'documents' | 'appearance' | 'security' | 'notifications'
+export type TabType =
+  'profile' | 'documents' | 'appearance' | 'security' | 'notifications' | 'connected-apps'
 
 export type DocumentSortKey =
   'updatedAt_desc' | 'createdAt_desc' | 'lastOpenedAt_desc' | 'title_asc' | 'title_desc'
@@ -84,4 +85,30 @@ export interface NotificationPreferences {
   // `null` is the "clear-on-re-enable" wire sentinel; the FE truthy-check
   // at the banner site hides JSON-null.
   email_bounce_info?: EmailBounceInfo | null
+}
+
+export type ConnectRowAction =
+  { kind: 'link'; label: string; href: string } | { kind: 'copy'; label: string; text: string }
+
+export interface ConnectRow {
+  name: string
+  mark: string
+  where?: string
+  note: string
+  // `text` must appear in `note` and `phone.note` (checked in dev in connectRows.ts);
+  // that part renders as a link to the app's own page.
+  link?: { text: string; href: string }
+  command?: string
+  action?: ConnectRowAction
+  // Custom-scheme links and terminal commands do nothing on a phone.
+  desktopOnly?: boolean
+  phoneOnly?: boolean
+  phone?: Pick<ConnectRow, 'where' | 'note'>
+}
+
+// One row per client name. DCR registers a new client for each fresh connection.
+export interface ConnectedAppGroup {
+  name: string
+  clientIds: string[]
+  grantedAt: string
 }

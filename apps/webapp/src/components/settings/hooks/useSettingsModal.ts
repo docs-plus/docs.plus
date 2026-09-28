@@ -1,12 +1,6 @@
-import { useStore } from '@stores'
-import MobileDetect from 'mobile-detect'
 import { useEffect, useRef, useState } from 'react'
 
-// The store flag is unset outside the document shell, so fall back to the same
-// user-agent test the server runs. A narrow window is not the mobile shell.
-const isMobileSurface = (): boolean =>
-  useStore.getState().settings.editor.isMobile ??
-  Boolean(new MobileDetect(window.navigator.userAgent).mobile())
+import { isMobileSurface } from '../utils/isMobileSurface'
 
 /**
  * Sole consumer of the takeover's history entry. Pops it (if present) and resolves once
