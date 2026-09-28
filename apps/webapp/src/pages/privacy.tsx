@@ -63,6 +63,33 @@ export default function PrivacyPage() {
         <p>We do not sell personal data.</p>
       </LegalSection>
 
+      <LegalSection title="Connected AI apps">
+        <p>
+          You can connect an AI app to docs.plus. You approve each app on a docs.plus page first.
+          Connect only apps you trust.
+        </p>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>The app acts as you through docs.plus tools.</li>
+          <li>
+            It can read the documents you can open. It can edit documents and post in chat only in
+            documents you own.
+          </li>
+          <li>It receives your email address through the sign-in.</li>
+          <li>
+            Text the app reads goes to the company that runs the app. Their terms and privacy policy
+            apply to that text.
+          </li>
+          <li>
+            For each tool call, we record the tool name, your account id, the app, and the result.
+            We also keep daily counts for about 35 days. We do not log document text.
+          </li>
+        </ul>
+        <p>
+          To stop an app, open Settings › Connected apps and choose Disconnect. The app may keep
+          what it already read.
+        </p>
+      </LegalSection>
+
       <LegalSection title="How long we keep data">
         <p>We keep account and document data while you use the service.</p>
         <p>A deleted document stays for 30 days. A purge then removes it.</p>
