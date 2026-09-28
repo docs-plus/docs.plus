@@ -20,6 +20,7 @@ import type {
   GhostDeleteResult,
   GhostDeletionImpact,
   GhostSummary,
+  McpUsage,
   MediaStorageListResponse,
   MediaStorageSortBy,
   MessageTypeDistribution,
@@ -292,6 +293,11 @@ export async function saveDigestGrouping(
     method: 'PUT',
     body: JSON.stringify(body)
   })
+}
+
+export async function fetchMcpUsage(days: number): Promise<McpUsage> {
+  const body = await fetchApi<{ data: McpUsage }>(`/api/admin/mcp/usage?days=${days}`)
+  return body.data
 }
 
 export async function fetchSupabaseStats(): Promise<SupabaseStats> {

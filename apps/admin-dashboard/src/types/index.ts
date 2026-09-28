@@ -532,3 +532,16 @@ export interface StaleDocumentPreview {
     message_count: number
   }
 }
+
+/** `GET /api/admin/mcp/usage`. Counts only: no user ids, emails or client ids. */
+export interface McpUsage {
+  /** False when the server has no Redis, so no counts exist. */
+  available: boolean
+  /** `'<5'` stands for 1 to 4 people; the server never sends that count exactly. */
+  days: { day: string; calls: number; callers: number | '<5' }[]
+  callers: number | '<5'
+  tools: { tool: string; outcome: string; calls: number }[]
+  apps: { name: string; calls: number }[]
+  /** Null when Supabase Auth could not list the OAuth clients. */
+  registeredApps: { name: string; createdAt: string; redirectOrigins: string[] }[] | null
+}

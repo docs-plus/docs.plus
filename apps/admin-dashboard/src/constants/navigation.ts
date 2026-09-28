@@ -7,6 +7,7 @@ import {
   LuHardDrive,
   LuLayoutDashboard,
   LuMessageSquare,
+  LuPlug,
   LuShieldAlert,
   LuUsers
 } from 'react-icons/lu'
@@ -25,6 +26,7 @@ export const navItems: NavItem[] = [
   { href: '/channels', label: 'Channels', icon: LuMessageSquare },
   { href: '/notifications', label: 'Notifications', icon: LuBell },
   { href: '/storage', label: 'Media Storage', icon: LuHardDrive },
+  { href: '/mcp', label: 'MCP Usage', icon: LuPlug },
   { href: '/system', label: 'System', icon: LuActivity }
 ]
 
