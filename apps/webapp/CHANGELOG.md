@@ -236,6 +236,11 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   Delete in both menus. `MessageActionMenuItem` and `MessageActionMenuItemId`
   moved to that file, and `useMessageActionMenuItems` re-exports them.
 
+- Editors send far fewer cursor updates. An unchanged cursor is no longer sent
+  again after each remote edit, and a received cursor update is no longer
+  sent back. Both come from upstream bugs (`@tiptap/y-tiptap` #55 and
+  `@hocuspocus/provider` 3.x).
+
 ### Fixed
 
 - The share card copies the clean document link. It used to copy the address
@@ -326,6 +331,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   adds `color` only with `multicolor` on, so a stored highlight lost its
   colour.
 
+- A visitor who pastes or uploads media, imports or exports sees the sign-in
+  dialog. It used to send the request, which failed.
+- Heading faces in the outline no longer go blank after someone leaves.
+- The header face count leaves out people who left.
+- Remote carets set their color and avatar through checked values. An avatar
+  loads only from the profile storage bucket or a Google profile host.
+
 ### Removed
 
 - Next routes for Validate, Status, and Confirm. The service worker no longer
@@ -364,6 +376,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - The desktop emoji picker no longer re-renders on every chat store change.
 
 - The chat agent docs and the design system match the code again.
+
+- A failed service-worker update check is no longer reported. The current
+  worker stays in control, and the next check retries.
 
 ## [2.0.1] — 2026-08-31
 
