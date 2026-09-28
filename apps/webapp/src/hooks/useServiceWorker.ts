@@ -3,7 +3,6 @@ import { useCallback, useEffect } from 'react'
 
 // captureMessage events carry no `exception`, so instrumentation-client's
 // SW_LIFECYCLE_PATTERNS filter (exception-only) never drops these reports.
-// Once per kind per page load — the periodic poll would repeat the same failure.
 const reportSwIssue = (kind: string, detail: unknown) =>
   captureMessageOnce(`sw:${kind}`, `sw:${kind}`, {
     level: 'warning',
@@ -83,12 +82,8 @@ const useServiceWorker = () => {
 
     const checkForUpdates = () => {
       navigator.serviceWorker.getRegistration().then((reg) => {
-        if (reg) {
-          reg.update().catch((error) => {
-            // Offline is expected; report failures that happen while online
-            if (navigator.onLine) reportSwIssue('update-failed', error)
-          })
-        }
+        // A failed check leaves the current worker in control; the next trigger retries.
+        if (reg) reg.update().catch(() => {})
       })
     }
 
@@ -114,9 +109,7 @@ const useServiceWorker = () => {
 
       reg.addEventListener('updatefound', () => handleUpdateFound(reg))
 
-      reg.update().catch((error) => {
-        if (navigator.onLine) reportSwIssue('update-failed', error)
-      })
+      reg.update().catch(() => {})
     })
 
     const updateInterval = setInterval(checkForUpdates, 10 * 60 * 1000)
