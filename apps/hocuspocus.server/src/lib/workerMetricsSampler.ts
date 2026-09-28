@@ -14,9 +14,10 @@ import { getServiceRoleClient } from './supabase'
 
 const QUEUE_METRICS_INTERVAL_MS = 15000
 
-// Cron health rides the queue tick at a slower cadence (60 s): every call
-// sweeps cron.job_run_details, and the cron-stale alerts only fire at >15m.
-const CRON_HEALTH_SAMPLE_EVERY_TICKS = 4
+// Cron health rides the queue tick at a slower cadence (180 s): every call
+// sweeps cron.job_run_details. The tightest stale alert is >15m on a */10 job,
+// and 10m + 3m sample lag + scrape stays under it.
+const CRON_HEALTH_SAMPLE_EVERY_TICKS = 12
 
 // DLQs included: their `waiting` depth is the alerting signal for poisoned jobs.
 const monitoredQueues = [
