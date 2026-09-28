@@ -1,9 +1,7 @@
 import type { OAuthGrant } from '@supabase/supabase-js'
 import { useQuery } from '@tanstack/react-query'
-import { displayClientName } from '@utils/displayClientName'
+import { groupApps, type Redirects } from '@utils/appTrust'
 import { supabaseClient } from '@utils/supabase'
-
-import type { ConnectedAppGroup } from '../types'
 
 export const CONNECTED_APPS_QUERY_KEY = ['connected-apps'] as const
 
@@ -13,27 +11,37 @@ async function fetchGrants(): Promise<OAuthGrant[]> {
   return data ?? []
 }
 
-function groupByName(grants: OAuthGrant[]): ConnectedAppGroup[] {
-  const groups = new Map<string, ConnectedAppGroup>()
-  for (const grant of grants) {
-    const name = displayClientName(grant.client.name ?? '')
-    const group = groups.get(name)
-    if (!group) {
-      groups.set(name, { name, clientIds: [grant.client.id], grantedAt: grant.granted_at })
-      continue
-    }
-    group.clientIds.push(grant.client.id)
-    if (grant.granted_at > group.grantedAt) group.grantedAt = grant.granted_at
+// Grants omit redirect URIs. Without them every app stays unverified, so a failure is not an error.
+// The timeout keeps a hung backend from hiding every Disconnect button behind a pending query.
+async function fetchRedirects(): Promise<Redirects> {
+  try {
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession()
+    if (!session) return {}
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_RESTAPI_URL}/connected-apps/redirects`,
+      { headers: { token: session.access_token }, signal: AbortSignal.timeout(8_000) }
+    )
+    if (!response.ok) return {}
+    const json = await response.json()
+    return (json.data?.redirects ?? {}) as Redirects
+  } catch {
+    return {}
   }
-  return [...groups.values()].sort((a, b) => b.grantedAt.localeCompare(a.grantedAt))
 }
 
-/** The signed-in person's OAuth grants, grouped by app name, newest first. */
+async function fetchConnectedApps() {
+  const [grants, redirects] = await Promise.all([fetchGrants(), fetchRedirects()])
+  return { grants, redirects }
+}
+
+/** The signed-in person's OAuth grants, grouped by app and trust state, newest first. */
 export function useConnectedApps() {
   return useQuery({
     queryKey: CONNECTED_APPS_QUERY_KEY,
-    queryFn: fetchGrants,
-    select: groupByName,
+    queryFn: fetchConnectedApps,
+    select: groupApps,
     retry: 1
   })
 }

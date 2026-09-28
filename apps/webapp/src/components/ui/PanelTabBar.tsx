@@ -1,10 +1,13 @@
 import { formatCappedCount } from '@utils/formatCappedCount'
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import type { IconType } from 'react-icons'
 import { twMerge } from 'tailwind-merge'
 
 export type PanelTabOption<T extends string = string> = {
   label: T
   count?: number
+  /** A leading glyph; `null` color follows the tab's text. */
+  icon?: { component: IconType; color: string | null }
 }
 
 type PanelTabBarProps<T extends string> = {
@@ -12,6 +15,8 @@ type PanelTabBarProps<T extends string> = {
   activeTab: T
   onSelect: (tab: T) => void
   capitalize?: boolean
+  /** Replaces the panel inset, e.g. `p-0` inside a card. */
+  className?: string
 }
 
 type IndicatorRect = { left: number; width: number }
@@ -38,7 +43,8 @@ export function PanelTabBar<T extends string>({
   tabs,
   activeTab,
   onSelect,
-  capitalize = false
+  capitalize = false,
+  className
 }: PanelTabBarProps<T>) {
   const trackRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef(new Map<T, HTMLButtonElement>())
@@ -77,7 +83,7 @@ export function PanelTabBar<T extends string>({
   const labelClass = capitalize ? 'capitalize' : undefined
 
   return (
-    <div className="shrink-0 overflow-visible px-4 py-2.5">
+    <div className={twMerge('shrink-0 overflow-visible px-4 py-2.5', className)}>
       <div
         ref={trackRef}
         role="tablist"
@@ -103,12 +109,20 @@ export function PanelTabBar<T extends string>({
               aria-label={tabAriaLabel(tab.label, count)}
               onClick={() => onSelect(tab.label)}
               className={twMerge(
-                'rounded-field relative z-10 flex min-h-9 flex-1 items-center justify-center px-2 py-1.5 text-sm font-medium transition-colors duration-200',
+                'rounded-field relative z-10 flex min-h-9 flex-1 items-center justify-center px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-200',
                 isActive
                   ? 'text-base-content font-semibold'
                   : 'text-base-content/70 hover:text-base-content'
               )}>
-              <span className="relative inline-block">
+              <span className="relative inline-flex items-center gap-1.5">
+                {tab.icon && (
+                  <tab.icon.component
+                    size={14}
+                    aria-hidden
+                    className="shrink-0"
+                    style={tab.icon.color ? { color: tab.icon.color } : undefined}
+                  />
+                )}
                 <span className={labelClass}>{tab.label}</span>
                 {count !== undefined && count > 0 && (
                   <TabCountBadge count={count} isActive={isActive} />
