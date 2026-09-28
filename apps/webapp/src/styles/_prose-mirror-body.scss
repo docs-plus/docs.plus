@@ -103,6 +103,11 @@
     border: none;
     border-top: 2px solid var(--color-base-300);
     margin: 2rem 0;
+
+    &.ProseMirror-selectednode {
+      outline: var(--focus-ring-soft);
+      outline-offset: 2px;
+    }
   }
 
   .is-empty::before {
