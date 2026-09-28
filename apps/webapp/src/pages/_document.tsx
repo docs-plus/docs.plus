@@ -73,6 +73,8 @@ export default function Document() {
         <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+        {/* Transparent: Claude shows the domain's largest icon on a dark connector tile */}
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
 
         {/* Apple Touch Icons must be in HTML — Apple ignores the manifest */}
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />

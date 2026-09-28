@@ -38,6 +38,7 @@
  * FAVICON:
  *   - favicon-32x32.png         → 32×32
  *   - favicon-16x16.png         → 16×16
+ *   - icon-192x192.png          → 192×192, transparent, for other apps' dark tiles
  *
  * APPLE SPLASH (iOS Home Screen launch, portrait, no alpha):
  *   - apple-splash-1290x2796.png, apple-splash-1179x2556.png, apple-splash-1170x2532.png
@@ -57,18 +58,19 @@ const ICONS_DIR = path.resolve(__dirname, '../public/icons')
 
 // Read SVG sources
 const appleTouchSvg = readFileSync(path.join(ICONS_DIR, 'logo-apple-touch.svg'))
+const logoSvg = readFileSync(path.join(ICONS_DIR, 'logo.svg'))
 const maskableSvg = readFileSync(path.join(ICONS_DIR, 'logo-maskable.svg'))
 
 // We also generate standard (non-maskable) android icons from the apple-touch SVG
 // since it has a solid bg which looks better than transparent on most launchers
 const standardSvg = appleTouchSvg
 
-async function generateIcon(svgBuffer, outputName, size) {
+async function generateIcon(svgBuffer, outputName, size, alpha = 1) {
   const outputPath = path.join(ICONS_DIR, outputName)
   await sharp(svgBuffer)
     .resize(size, size, {
       fit: 'contain',
-      background: { r: 255, g: 255, b: 255, alpha: 1 }
+      background: { r: 255, g: 255, b: 255, alpha }
     })
     .png({
       quality: 100,
@@ -125,6 +127,7 @@ async function main() {
   console.log('\n⭐ Favicons:')
   await generateIcon(appleTouchSvg, 'favicon-32x32.png', 32)
   await generateIcon(appleTouchSvg, 'favicon-16x16.png', 16)
+  await generateIcon(logoSvg, 'icon-192x192.png', 192, 0)
 
   console.log('\n🚀 Apple Splash Screens (iOS):')
   await generateSplash(appleTouchSvg, 1290, 2796)
