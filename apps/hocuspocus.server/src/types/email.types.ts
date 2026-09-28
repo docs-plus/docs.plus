@@ -78,6 +78,8 @@ export interface DigestEmailRequest {
   frequency: DigestFrequency
   documents: DigestDocument[]
   period_end: string
+  /** The email_queue rows this mail settles once the provider answers. */
+  queue_ids?: string[]
 }
 
 export interface EmailGatewayHealth {

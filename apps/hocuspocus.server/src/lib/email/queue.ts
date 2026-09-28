@@ -63,6 +63,25 @@ EmailQueue?.on('error', (err: Error) => {
   captureUnknown(err)
 })
 
+/** The email_queue rows a job settles: one for a notification, several for a digest. */
+const queueIdsOf = ({ payload }: EmailJobData): string[] => {
+  if ('queue_id' in payload) return [payload.queue_id]
+  if ('queue_ids' in payload) return payload.queue_ids ?? []
+  return []
+}
+
+const settleQueueRows = (data: EmailJobData, status: 'sent' | 'failed', error?: string) =>
+  Promise.all(
+    queueIdsOf(data).map((queue_id) =>
+      updateSupabaseEmailStatus({
+        queue_id,
+        status,
+        sent_at: status === 'sent' ? new Date().toISOString() : undefined,
+        error_message: error
+      })
+    )
+  )
+
 export function createEmailWorker() {
   if (!queueConnection) {
     emailLogger.warn('Cannot create email worker - Redis not configured')
@@ -97,6 +116,8 @@ export function createEmailWorker() {
             { jobId: job.id, originalMessageId: existingSend.messageId },
             'Email already sent (idempotent skip)'
           )
+          // The first run can die between the send and the settle.
+          await settleQueueRows(data, 'sent')
           return {
             success: true,
             message_id: existingSend.messageId || undefined,
@@ -130,18 +151,18 @@ export function createEmailWorker() {
             })
         }
 
-        if (data.type === 'notification' && 'queue_id' in data.payload) {
-          await updateSupabaseEmailStatus({
-            queue_id: data.payload.queue_id,
-            status: result.success ? 'sent' : 'failed',
-            sent_at: result.success ? new Date().toISOString() : undefined,
-            error_message: result.error
-          })
-        }
+        // A failed attempt leaves the rows 'processing'; only the dead-letter
+        // branch below writes 'failed'.
+        if (result.success) await settleQueueRows(data, 'sent')
 
         const duration = Date.now() - startTime
         emailLogger.info(
-          { jobId: job.id, duration: `${duration}ms`, success: result.success },
+          {
+            jobId: job.id,
+            duration: `${duration}ms`,
+            success: result.success,
+            queueIds: queueIdsOf(data)
+          },
           'Email job completed'
         )
 
@@ -160,21 +181,21 @@ export function createEmailWorker() {
           emailLogger.error({ jobId: job.id }, 'Email exhausted retries, moving to DLQ')
           captureUnknown(error)
 
+          await settleQueueRows(
+            data,
+            'failed',
+            `Permanent failure after ${job.attemptsMade} attempts: ${error.message}`
+          )
+
           const dlqData: EmailDLQData = {
             ...data,
             originalJobId: job.id ?? undefined,
             failureReason: error.message,
             failedAt: new Date().toISOString()
           }
-          await EmailDeadLetterQueue?.add('failed-email', dlqData)
-
-          if (data.type === 'notification' && 'queue_id' in data.payload) {
-            await updateSupabaseEmailStatus({
-              queue_id: data.payload.queue_id,
-              status: 'failed',
-              error_message: `Permanent failure after ${job.attemptsMade} attempts: ${error.message}`
-            })
-          }
+          await EmailDeadLetterQueue?.add('failed-email', dlqData).catch((dlqErr: unknown) => {
+            emailLogger.error({ err: dlqErr, jobId: job.id }, 'Failed to add email to DLQ')
+          })
         }
 
         throw err
@@ -224,6 +245,7 @@ export async function queueEmail(data: EmailJobData, jobId?: string): Promise<st
   if (!EmailQueue) {
     emailLogger.warn('Email queue not available - sending synchronously')
     const result = await sendEmailViaProvider(data)
+    await settleQueueRows(data, result.success ? 'sent' : 'failed', result.error)
     return result.success ? 'sync-send' : null
   }
 

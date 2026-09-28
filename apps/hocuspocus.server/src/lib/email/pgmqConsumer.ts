@@ -71,11 +71,13 @@ async function updateEmailStatus(
   errorMessage?: string
 ): Promise<void> {
   try {
-    await client.rpc('update_email_status', {
+    // supabase-js reports a failure in the reply, never by throwing.
+    const { error } = await client.rpc('update_email_status', {
       p_queue_id: queueId,
       p_status: status,
       p_error_message: errorMessage || null
     })
+    if (error) emailLogger.error({ error, queueId, status }, 'Failed to update email status')
   } catch (err) {
     emailLogger.error({ err, queueId }, 'Error updating email status')
   }
@@ -250,7 +252,8 @@ async function processDigestMessage(
         recipient_id: payload.recipient_id!,
         frequency,
         documents: fitted,
-        period_end: now.toISOString()
+        period_end: now.toISOString(),
+        queue_ids: queueIds
       }
       const idempotencyJobId =
         grouping === 'aggregate'
@@ -266,13 +269,9 @@ async function processDigestMessage(
       }
     }
 
-    // Per-row updates are independent single-row UPSERTs keyed on distinct
-    // queue_ids, so settle them in parallel. Accepted-loss: digests mark 'sent'
-    // at enqueue, so a permanently-failed digest stays 'sent'. A row whose
-    // document was dropped for privacy is marked 'sent' too — the payload gives
-    // no key joining a notification back to its queue id.
-    await Promise.all(queueIds.map((queueId) => updateEmailStatus(client, queueId, 'sent')))
-
+    // The rows stay 'processing' until the email worker hears from the provider.
+    // Every mail carries every queue id, because the payload cannot map a row to
+    // a document; with one mail per document, any delivered mail settles them all.
     emailLogger.info(
       {
         msgId,
