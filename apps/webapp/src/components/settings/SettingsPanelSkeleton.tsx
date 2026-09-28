@@ -92,6 +92,15 @@ export const SecuritySkeleton = () => (
       <div className="skeleton rounded-field mb-3 h-4 w-64" />
       <div className="skeleton rounded-field h-11 w-full" />
     </SettingsCard>
+    <SettingsCard>
+      <div className="skeleton rounded-field mb-4 h-5 w-36" />
+      <div className="skeleton rounded-box mb-3 h-16 w-full" />
+      <div className="skeleton rounded-field h-4 w-72 max-w-full" />
+    </SettingsCard>
+    <SettingsCard>
+      <div className="skeleton rounded-field mb-3 h-5 w-32" />
+      <div className="skeleton rounded-field h-4 w-48" />
+    </SettingsCard>
   </div>
 )
 
