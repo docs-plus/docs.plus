@@ -84,6 +84,9 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
     const showLabel = !isIconOnly && (label || (copied && successLabel))
     const currentLabel = copied ? successLabel : label
 
+    const isPrimarySuccess = variant === 'primary' && copied
+    const successInk = isPrimarySuccess ? undefined : 'text-success'
+
     const idleLabel = tooltip || currentLabel || 'Copy'
     const doneLabel = successLabel
 
@@ -97,14 +100,18 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
         className={twMerge(
           'btn relative',
           btnSize,
-          variantConfig[variant],
+          // Green ink on a primary fill is unreadable, so the fill turns green instead.
+          isPrimarySuccess ? 'btn-success' : variantConfig[variant],
           circle && 'btn-circle',
           square && 'btn-square',
           showLabel && gap,
           className
         )}>
         <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
-          <SuccessIcon size={resolvedIconSize} className="swap-on text-success stroke-[1.75]" />
+          <SuccessIcon
+            size={resolvedIconSize}
+            className={twMerge('swap-on stroke-[1.75]', successInk)}
+          />
           <Icon size={resolvedIconSize} className="swap-off stroke-[1.75]" />
         </span>
 
@@ -112,7 +119,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
           <span
             className={twMerge(
               'motion-safe:transition-colors motion-safe:duration-[var(--motion-panel)]',
-              copied && 'text-success'
+              copied && successInk
             )}>
             {currentLabel}
           </span>
