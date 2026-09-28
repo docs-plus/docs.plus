@@ -207,17 +207,18 @@ export async function updateSupabaseEmailStatus(callback: EmailStatusCallback): 
   try {
     const updateData: Record<string, any> = { status: callback.status }
     if (callback.sent_at) updateData.sent_at = callback.sent_at
-    if (callback.error_message) updateData.error_message = callback.error_message
+    if (callback.status === 'sent') updateData.error_message = null
+    else if (callback.error_message) updateData.error_message = callback.error_message
 
-    const { error } = await supabase
-      .from('email_queue')
-      .update(updateData)
-      .eq('id', callback.queue_id)
+    let update = supabase.from('email_queue').update(updateData).eq('id', callback.queue_id)
+    // A delivered mail stays 'sent': a later failure of a sibling mail cannot undo it.
+    if (callback.status === 'failed') update = update.neq('status', 'sent')
+    const { error } = await update
 
     if (error) {
       emailLogger.error({ err: error, queueId: callback.queue_id }, 'Failed to update email status')
     }
   } catch (err) {
-    emailLogger.error({ err }, 'Error updating email status')
+    emailLogger.error({ err, queueId: callback.queue_id }, 'Error updating email status')
   }
 }
