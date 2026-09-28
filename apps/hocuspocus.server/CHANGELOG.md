@@ -183,6 +183,12 @@ This file is the operator and API changelog. The pad product lives in the [root 
   a mail can still go over `maxKb`. The fit drops a heading only when the
   heading came in for its chats alone and no chat is left.
 
+- **Alerts for Redis down and a missing replica.** `dep-redis-down` pages
+  when `redis_up` is 0 for 1 minute, because a Redis outage pauses every
+  save with no other signal. `infra-replica-missing` pages when a job has
+  fewer than 2 replicas up for 5 minutes. A lost replica's `up` series
+  vanishes, so the target-down rule cannot see it.
+
 ### Changed
 
 - **A connected app's token works only at `/api/mcp`.** A token that carries
@@ -206,6 +212,15 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **`history.watch` has a per-connection rate limit.** Past it, the server
   answers `history_failed` with reason `rate-limited`, as `history.list`
   already does for its cooldown.
+
+- **`realtime-doc-persist-stalled` pages on edits that do not save**, not on
+  open sockets. Readers who never type no longer page it. It stays
+  fleet-wide, because both replicas count a relayed edit and only one saves
+  it. The runbook now checks Redis first and restarts one replica last.
+- **`worker-queue-backlog` pages on any backlog held for 10 minutes**, not only
+  one above 100 jobs.
+- **Traefik runs with 1.0 CPU and 512M.** At 33 people in one document it hit
+  its 0.5 CPU limit and was 83% throttled.
 
 ### Fixed
 
@@ -236,6 +251,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
   trimmed, and an empty value falls back to `https://docs.plus`. Email links
   no longer get `//` when `APP_URL` ends in `/`. When `APP_URL` is `''`, a
   push link now starts with `https://docs.plus`, not a bare `/<slug>`.
+
+- **An awareness frame over 64 KiB is refused before it applies.** The
+  refusal closes that document connection and counts in
+  `ws_awareness_frames_dropped_total`. The budget fits about 120 people.
+- **Alerting counters start at 0.** A labelled series did not exist before
+  its first increment, so `increase()` missed the first lost save after each
+  deploy. The WS and worker processes now seed their alerting series on
+  startup.
 
 ### Security
 
