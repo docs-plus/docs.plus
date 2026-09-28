@@ -17,6 +17,7 @@ import {
   shouldFireFirstSyncTimeout,
   shouldRestoreSavedOnReconnect
 } from './collabSession'
+import { guardProviderAwareness } from './guardProviderAwareness'
 
 /**
  * Collab provider status. The saving → synced → saved ladder covers local
@@ -240,6 +241,7 @@ const useYdocAndProvider = ({
       },
       ...{ autoConnect: false }
     })
+    guardProviderAwareness(providerRef.current)
 
     setWorkspaceSetting('hocuspocusProvider', providerRef.current)
 
