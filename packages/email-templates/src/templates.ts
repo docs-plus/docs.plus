@@ -6,7 +6,7 @@
 
 import { type DigestBlock, walkDigest } from './digestWalk'
 import { countDigestItems, getEmailSubject, renderDigestEmail } from './engine'
-import { digestNotificationsUrl, type EmailFooter, footerLinksText } from './helpers'
+import { digestNotificationsUrl, type EmailFooter, footerLinksText, runText } from './helpers'
 import type { DigestChangeRun, DigestDocument, DigestFrequency, NotificationType } from './types'
 
 // Plain text has no colour, so markers keep removed and added words apart.
@@ -17,7 +17,7 @@ function paintRuns(runs: readonly DigestChangeRun[]): string {
         ? `[-${run.text}-]`
         : run.kind === 'added'
           ? `{+${run.text}+}`
-          : run.text
+          : runText(run)
     )
     .join('')
   return text ? `\n      ${text}` : ''

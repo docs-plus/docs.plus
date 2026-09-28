@@ -191,6 +191,10 @@ export function changeRunStyle(kind: DigestChangeRun['kind']): string {
   return ''
 }
 
+export function runText(run: DigestChangeRun): string {
+  return run.kind === 'gap' ? ' … ' : run.text
+}
+
 export function truncate(text: string, maxLength: number): string {
   if (!text) return ''
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
@@ -221,6 +225,7 @@ export const templateHelpers = {
   changeWindowLine,
   contributorLine,
   changeRunStyle,
+  runText,
   truncate,
   DIGEST_CHANNEL_LINES,
   DIGEST_PREVIEW_CHARS,

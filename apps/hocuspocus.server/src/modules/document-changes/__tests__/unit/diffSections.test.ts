@@ -136,4 +136,41 @@ describe('diffSections', () => {
     )
     expect(section.excerpt?.length).toBe(EXCERPT_MAX_CHARS)
   })
+
+  // The live digest painted two edits an image apart as one green sentence.
+  test('marks the gap between two edits that an image separates', () => {
+    const image = {
+      type: 'paragraph',
+      content: [{ type: 'image', attrs: { src: 'https://x.test/1.png' } }]
+    }
+    const [section] = changesOf(
+      doc(
+        heading(1, 'Title', 't1'),
+        para(text('Kept intro.')),
+        para(text('Kept middle.')),
+        image,
+        para(text('Tail kept.'))
+      ),
+      doc(
+        heading(1, 'Title', 't1'),
+        para(text('Kept intro.')),
+        para(text('First new line')),
+        para(text('Kept middle.')),
+        image,
+        para(text('Second new line')),
+        para(text('Tail kept.'))
+      )
+    ).filter((row) => row.status === 'modified')
+    expect(section.runs?.map((run) => run.kind)).toEqual(['added', 'gap', 'added'])
+  })
+
+  test('a long early edit does not hide a later edit', () => {
+    const [section] = changesOf(
+      doc(heading(1, 'Title', 't1'), para(text('word '.repeat(300))), para(text('Keep A'))),
+      doc(heading(1, 'Title', 't1'), para(text('Keep A')), para(text('Added at end')))
+    ).filter((row) => row.status === 'modified')
+    expect(
+      section.runs?.some((run) => run.kind === 'added' && run.text.includes('Added at end'))
+    ).toBe(true)
+  })
 })

@@ -25,7 +25,7 @@ interface Quantified {
 
 const NOTHING: Quantified = { magnitude: null, excerpt: '', removedExcerpt: '', runs: [] }
 
-const MAX_RUN_CHARS = 800
+const MAX_CONTEXT_CHARS = 800
 
 function cleanRun(text: string): string {
   const flat = text.replace(/\s+/g, ' ')
@@ -34,6 +34,10 @@ function cleanRun(text: string): string {
   const core = flat.trim()
   if (!core) return ''
   return `${lead}${core}${trail}`
+}
+
+function pushGap(runs: SectionChangeRun[]): void {
+  if (runs.length > 0 && runs[runs.length - 1]?.kind !== 'gap') runs.push({ kind: 'gap', text: '' })
 }
 
 function pushRun(runs: SectionChangeRun[], kind: SectionChangeRun['kind'], text: string): void {
@@ -61,18 +65,31 @@ function contextBefore(text: string): string {
   return slice.replace(/^\s+/, '')
 }
 
+/**
+ * Context shares the budget; every edit keeps at least an excerpt, so a long
+ * early edit cannot hide a later one. One section can therefore outgrow the
+ * budget, and the mail fit is what bounds the whole message.
+ */
 function capRuns(runs: SectionChangeRun[]): SectionChangeRun[] {
-  let left = MAX_RUN_CHARS
+  let left = MAX_CONTEXT_CHARS
   const out: SectionChangeRun[] = []
   for (const run of runs) {
+    if (run.kind === 'gap') {
+      pushGap(out)
+      continue
+    }
+    const room = run.kind === 'same' ? left : Math.max(left, EXCERPT_MAX_CHARS)
+    if (room <= 0) {
+      pushGap(out)
+      continue
+    }
     const lead = run.text.startsWith(' ') ? ' ' : ''
     const trail = run.text.endsWith(' ') ? ' ' : ''
-    const core = sanitizeText(run.text, left)
-    const text = core ? `${lead}${core}${trail}`.slice(0, left) : ''
-    if (!text) break
+    const core = sanitizeText(run.text, room)
+    const text = core ? `${lead}${core}${trail}`.slice(0, room) : ''
+    if (!text) continue
     out.push({ kind: run.kind, text })
-    left -= text.length
-    if (left <= 0) break
+    left = Math.max(0, left - text.length)
   }
   return out
 }
@@ -85,7 +102,10 @@ function runsAround(
   const runs: SectionChangeRun[] = []
   let cursor = 0
   for (const change of changes) {
-    const before = contextBefore(docB.textBetween(cursor, change.fromB, '\n', ' '))
+    const gap = docB.textBetween(cursor, change.fromB, '\n', ' ')
+    const before = contextBefore(gap)
+    // Without a marker, two edits far apart paint as one sentence.
+    if (gap.trim().length > before.trim().length) pushGap(runs)
     if (before) pushRun(runs, 'same', before)
     const removed = docA.textBetween(change.fromA, change.toA, '\n', ' ')
     const added = docB.textBetween(change.fromB, change.toB, '\n', ' ')

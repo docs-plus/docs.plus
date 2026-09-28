@@ -783,7 +783,7 @@ A named checkpoint of an unchanged document mints a row whose bytes duplicate it
 | `magnitude`      | `{ wordsAdded, wordsRemoved, blocksBefore, blocksAfter }`, or `null` when nothing countable moved    |
 | `excerpt`        | Up to 140 characters of the text that arrived. The key is omitted when there is nothing to show      |
 | `removedExcerpt` | Up to 140 characters of the text that left. A removed section puts its body here. Omitted when empty |
-| `runs`           | Ordered same, removed, and added text around the edit. Omitted when empty                            |
+| `runs`           | Ordered same, removed, and added text around each edit. A `gap` run (no text) marks skipped context  |
 | `children`       | Nested sections. Always an array, often empty                                                        |
 
 **A section is one heading plus the top-level nodes up to the next heading of any level.** So a section does not contain its subsections, and editing a child never marks its parent `modified`. The document title is a section like any other.

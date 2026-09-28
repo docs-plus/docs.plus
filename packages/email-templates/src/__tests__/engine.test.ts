@@ -342,6 +342,44 @@ describe('buildDigestEmail', () => {
     expect(Buffer.byteLength(html, 'utf8')).toBeLessThanOrEqual(limit)
   })
 
+  it('keeps every later edit when the fit shortens a passage', () => {
+    const documents = [
+      {
+        name: 'Pad',
+        slug: 'pad',
+        url: 'https://docs.plus/pad',
+        channels: [],
+        content_changes: {
+          document_id: 'pad',
+          since: '2026-09-01T00:00:00.000Z',
+          fromLastLeft: false,
+          sections: [
+            {
+              text: 'Bugs',
+              url: 'https://docs.plus/pad?id=bugs',
+              runs: [
+                { kind: 'added' as const, text: 'First edit' },
+                { kind: 'same' as const, text: ` stays. ${'context '.repeat(400)}` },
+                { kind: 'added' as const, text: 'Second edit' }
+              ]
+            }
+          ]
+        }
+      }
+    ] satisfies DigestDocument[]
+    const params = {
+      recipientName: 'Ada',
+      frequency: 'daily' as const,
+      documents,
+      periodEnd: '2026-09-03T00:00:00.000Z'
+    }
+    const limit = Buffer.byteLength(buildDigestEmail(params).html, 'utf8') - 1
+    const { html } = buildDigestEmail({ ...params, documents: fitDigestDocuments(params, limit) })
+    expect(html).toContain('First edit')
+    expect(html).toContain('Second edit')
+    expect(html).not.toContain('context context context')
+  })
+
   it('names Last left in the changed-document line', () => {
     const { html } = buildDigestEmail(DIGEST_CHANGES_PARAMS)
     // The fixture's `since` and `periodEnd` are one day apart, so this value is

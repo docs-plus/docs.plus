@@ -61,7 +61,7 @@
 </table>
 <% } else if (block.kind === 'runs') { %>
 <p style="margin: 12px 0 0; color: <%= it.h.COLORS.text %>; font-size: 15px; line-height: 1.45;">
-<% block.runs.forEach(function(run) { %><span style="<%= it.h.changeRunStyle(run.kind) %>"><%= run.text %></span><% }) %>
+<% block.runs.forEach(function(run) { %><span style="<%= it.h.changeRunStyle(run.kind) %>"><%= it.h.runText(run) %></span><% }) %>
 </p>
 <% } else if (block.kind === 'more') { %>
 <p style="margin: 8px 0 0; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center;">+<%= block.count %> more in this channel</p>

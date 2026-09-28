@@ -14,32 +14,43 @@ function joined(runs: readonly DigestChangeRun[]): string {
   return runs.map((run) => run.text).join('')
 }
 
+function pushGap(runs: DigestChangeRun[]): void {
+  if (runs[runs.length - 1]?.kind !== 'gap') runs.push({ kind: 'gap', text: '' })
+}
+
 /**
- * The first sentence, so a long passage can shrink without losing the edit.
- * Change runs stay whole, and the cut only lands in a `same` run after one.
+ * The first sentence, so a long passage can shrink without losing an edit.
+ * Change runs stay whole; later context shrinks to an ellipsis.
  */
 function firstSentence(runs: readonly DigestChangeRun[]): DigestChangeRun[] {
   let sawChange = false
+  let cut = false
   const kept: DigestChangeRun[] = []
   for (const run of runs) {
+    if (run.kind === 'gap') {
+      pushGap(kept)
+      continue
+    }
     if (run.kind !== 'same') {
       kept.push(run)
       sawChange = true
       continue
     }
+    if (cut) {
+      pushGap(kept)
+      continue
+    }
     const match = sawChange ? /[.!?](?:\s|$)/.exec(run.text) : null
-    if (!match) {
+    if (!match || match.index + match[0].length >= run.text.length) {
       kept.push(run)
       continue
     }
-    if (match.index + match[0].length >= run.text.length) {
-      kept.push(run)
-      return kept
-    }
     const head = run.text.slice(0, match.index + 1).trimEnd()
     if (head) kept.push({ kind: run.kind, text: head })
-    return kept
+    pushGap(kept)
+    cut = true
   }
+  while (kept[kept.length - 1]?.kind === 'gap') kept.pop()
   return kept
 }
 

@@ -42,8 +42,9 @@ export type SectionPair =
   | { baseline: Section; head: null }
   | { baseline: null; head: Section }
 
+/** A `gap` run marks skipped context between two edits and carries no text. */
 export interface SectionChangeRun {
-  kind: 'same' | 'added' | 'removed'
+  kind: 'same' | 'added' | 'removed' | 'gap'
   text: string
 }
 

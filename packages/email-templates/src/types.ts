@@ -37,8 +37,9 @@ export interface DigestChannel {
   notifications: DigestNotification[]
 }
 
+/** A `gap` run marks skipped context between two edits and carries no text. */
 export interface DigestChangeRun {
-  kind: 'same' | 'added' | 'removed'
+  kind: 'same' | 'added' | 'removed' | 'gap'
   text: string
 }
 
