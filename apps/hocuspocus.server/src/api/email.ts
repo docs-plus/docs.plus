@@ -88,7 +88,7 @@ emailRouter.post(
         documents: payload.documents.map((doc): DigestDocument => ({
           name: doc.title || doc.slug,
           slug: doc.slug,
-          url: `${process.env.APP_URL || 'https://docs.plus'}/${doc.slug}`,
+          url: `${config.email.appUrl}/${doc.slug}`,
           channels: [] // Simplified - no channel breakdown for API-triggered digests
         })),
         period_end: new Date().toISOString()
@@ -288,7 +288,7 @@ emailRouter.get('/preview/:type', async (c) => {
   }
 
   const type = c.req.param('type')
-  const appUrl = process.env.APP_URL || 'https://docs.plus'
+  const appUrl = config.email.appUrl
 
   if (type === 'notification') {
     const html = renderNotificationEmail({

@@ -1,5 +1,6 @@
 import { buildNewDocumentEmailText, renderNewDocumentEmail } from '@docs.plus/email-templates'
 
+import { config } from '../../config/env'
 import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { sendEmailViaProvider } from './sender'
@@ -41,8 +42,7 @@ export const sendNewDocumentNotification = async (
     return false
   }
 
-  const appUrl = process.env.APP_URL || 'https://docs.plus'
-  const documentUrl = `${appUrl}/${params.slug}`
+  const documentUrl = `${config.email.appUrl}/${params.slug}`
   const creatorDisplay = params.creatorName || params.creatorEmail || 'Anonymous'
 
   const html = renderNewDocumentEmail({

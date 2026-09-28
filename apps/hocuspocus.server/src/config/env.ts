@@ -2,6 +2,9 @@ import { env } from './env.schema'
 
 export { env }
 
+// `||` because Compose can set APP_URL to ''.
+const appUrl = (env.APP_URL || 'https://docs.plus').replace(/\/+$/, '')
+
 export const config = {
   app: {
     port: env.APP_PORT,
@@ -77,9 +80,8 @@ export const config = {
   },
 
   security: {
-    // The production CORS list and the MCP Origin gate. `||` because Compose can set APP_URL to ''.
-    originAllowlist:
-      env.ALLOWED_ORIGINS.length > 0 ? env.ALLOWED_ORIGINS : [env.APP_URL || 'https://docs.plus'],
+    // The production CORS list and the MCP Origin gate.
+    originAllowlist: env.ALLOWED_ORIGINS.length > 0 ? env.ALLOWED_ORIGINS : [appUrl],
     rateLimitMax: env.RATE_LIMIT_MAX
   },
 
@@ -87,7 +89,7 @@ export const config = {
     fromEmail: env.EMAIL_FROM || env.SMTP_USER || 'noreply@docs.plus',
     fromName: env.SMTP_FROM_NAME,
     notificationEmails: env.NEW_DOCUMENT_NOTIFICATION_EMAILS.filter((email) => email.includes('@')),
-    appUrl: env.APP_URL,
+    appUrl,
     smtp: {
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,

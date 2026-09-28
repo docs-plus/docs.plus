@@ -60,7 +60,7 @@ export function resolveUnsubscribe(
     emailLogger.error({ userId }, 'EMAIL_UNSUBSCRIBE_SECRET is not set — footer link has no token')
     return undefined
   }
-  const appUrl = process.env.APP_URL || 'https://docs.plus'
+  const appUrl = config.email.appUrl
   const token = signUnsubscribeToken({ userId, action, secret })
   const apiOrigin = config.app.publicUrl
   return {
@@ -77,7 +77,7 @@ export function resolveUnsubscribe(
 
 export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailResult> {
   const fromEmail = process.env.EMAIL_FROM || 'noreply@docs.plus'
-  const appUrl = process.env.APP_URL || 'https://docs.plus'
+  const appUrl = config.email.appUrl
 
   try {
     let to: string
