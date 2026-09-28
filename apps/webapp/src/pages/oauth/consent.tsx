@@ -4,6 +4,7 @@ import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { DocsPlusIcon, Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import type { AuthError, OAuthAuthorizationDetails, OAuthRedirect } from '@supabase/supabase-js'
+import { displayClientName } from '@utils/displayClientName'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { supabaseClient } from '@utils/supabase'
 import Head from 'next/head'
@@ -14,12 +15,12 @@ import { twMerge } from 'tailwind-merge'
 
 // auth-js puts the id into the request path unencoded, so only path-safe ids pass.
 const AUTHORIZATION_ID = /^[A-Za-z0-9_-]{1,128}$/
-const CLIENT_NAME_MAX = 80
 // A redirect URI that does not parse is shown cut, never whole.
 const REDIRECT_TEXT_MAX = 80
 // Supabase refuses these schemes at registration. Checked again because we call assign().
 // A blocklist, not an allowlist: native and MCP clients register custom-scheme redirects.
 const BLOCKED_PROTOCOLS = new Set(['javascript:', 'data:', 'vbscript:', 'file:', 'blob:', 'about:'])
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 const SCOPE_WORDS: Record<string, string> = {
   openid: 'Confirm who you are',
@@ -38,11 +39,13 @@ type View =
 
 type Decision = 'approve' | 'deny'
 
-// Directional overrides can make a self-chosen name read as another app.
-function displayClientName(name: string): string {
-  const clean = name.replace(/[\p{Cc}\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu, '').trim()
-  if (!clean) return 'Unnamed app'
-  return clean.length > CLIENT_NAME_MAX ? `${clean.slice(0, CLIENT_NAME_MAX)}…` : clean
+// Any program on the computer can listen on a loopback port, so the MCP spec asks for a warning.
+function isLoopbackRedirect(uri: string): boolean {
+  try {
+    return LOOPBACK_HOSTS.has(new URL(uri).hostname)
+  } catch {
+    return false
+  }
 }
 
 function redirectOrigin(uri: string): string {
@@ -271,6 +274,11 @@ function ConsentCard({
             {redirectOrigin(details.redirect_uri)}
           </span>
         </p>
+        {isLoopbackRedirect(details.redirect_uri) && (
+          <p className="text-base-content mt-3 text-xs font-medium">
+            This app runs on your own computer. Approve only if you started it.
+          </p>
+        )}
         <p className="text-base-content/70 mt-3 text-xs">
           Any app can register itself. docs.plus has not checked this one. Continue only if you
           started this from an app you trust.
@@ -288,8 +296,15 @@ function ConsentCard({
       </ul>
 
       <p className="text-base-content/70 mt-4 text-xs">
-        To stop access, sign out of docs.plus. That ends every session, this app’s too. A token the
-        app already holds can work for up to one hour.
+        To stop access later, open{' '}
+        <Link
+          href="/#settings?tab=connected-apps"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link link-primary">
+          Settings › Connected apps
+        </Link>{' '}
+        and choose Disconnect.
       </p>
       <p className="text-base-content/60 mt-3 text-xs break-all">
         Signed in as <span className="text-base-content font-medium">{details.user.email}</span>
