@@ -18,22 +18,54 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Added
 
-- **OAuth consent page at `/oauth/consent`.** A signed-in user sees the
-  client name, the redirect origin and the scopes in plain words, then
-  approves or denies. A redirect with a script scheme is refused. Its last
-  line points to Settings › Connected apps to stop access later. For a
-  redirect to `localhost`, `127.0.0.1` or `[::1]`, the page adds "This app
-  runs on your own computer. Approve only if you started it."
-- **Settings has a Connected apps tab.** `#settings?tab=connected-apps` opens
-  it. **Connect an AI app** shows the server URL and one row per AI app:
-  Copy URL, a one-click link for Cursor and VS Code, or a command for Claude
-  Code and Codex. The Claude and ChatGPT rows link to the page where the app
-  adds a connector. On a phone, those rows show no buttons or commands, and one
-  row replaces Cursor, VS Code, Claude Code and Codex. The note links and the
-  server URL **Copy** stay. **Connected** lists the apps the person approved,
-  one row per app name, marked **Unverified app**. It never loads an app's
-  logo or links its address. **Disconnect** asks first, then revokes every
-  connection in the row.
+- **OAuth consent page at `/oauth/consent`.** It asks "Allow Claude to use
+  your docs.plus account?" and shows the signed-in account. It lists what
+  the app will be able to do. It can read the documents you can open and
+  their chat. It can create documents, and a new document is public. It can
+  edit or post only in documents you own. Trust follows the redirect URI,
+  never the name the app registered. Claude's and ChatGPT's exact callbacks
+  show "Returns you to claude.ai" or "chatgpt.com". A `localhost`,
+  `127.0.0.1` or `[::1]` redirect is marked as an app on this computer. Any
+  other redirect gets a warning with its address, and the name in quotes.
+  The buttons are **Cancel** and **Allow**. A redirect with a script scheme
+  is refused. The `phone` scope adds no line, because no docs.plus account
+  holds a phone number.
+- **Settings has a Connected apps tab.** `#settings?tab=connected-apps`
+  opens it. **Apps with access** lists the apps the person allowed, one row
+  per app. A row says "Returns you to claude.ai" only when every registered
+  redirect is that app's exact callback. `GET /api/connected-apps/redirects`
+  supplies the redirects. Only such a row shows the brand mark. A loopback
+  app is marked **On this computer**, and any other app **Unverified app**.
+  An app that borrows a known name gets its own unverified row. It never
+  loads an app's logo or links its address. **Disconnect** asks first, then
+  revokes every connection in the row. For a row that is not Claude or
+  ChatGPT, the button's `aria-label` and the dialog add "(unverified)" or
+  "(on this computer)" to the name. The redirect lookup stops after 8 s. If
+  it fails, every row shows **Unverified app**, and **Disconnect** stays.
+  The card hides while the list loads or is empty.
+- **The Connected apps tab opens with the docs.plus MCP server.** It says
+  what MCP is and what a connected agent may do: find and read, create and
+  edit, and join the chat. It also says that you stay in control. **Apps
+  with access** follows, then **Add an AI app**.
+- **Add an AI app has one tab per app: Claude, ChatGPT, Claude Code, Codex
+  and Other.** Every tab but Other shows the app's mark and numbered steps.
+  **Add to Claude** and **Add to ChatGPT** copy the server URL and open the
+  app in a new tab. Claude opens its Add custom connector dialog with
+  docs.plus filled in. That link is undocumented, so the copied URL is the
+  fallback. Each value to copy sits in a code box with its own **Copy**.
+  That covers the terminal commands, the server URL in ChatGPT step 2, and
+  the MCP server URL in **Other**. **Other** also holds Add to Cursor, Add
+  to VS Code, and a **Setup guide** link for any other app. On a phone the
+  card has no tabs: it shows the MCP server URL and says to add apps on a
+  computer.
+- A title such as "Privacy" or "Terms" no longer opens a document on the
+  homepage; `privacy`, `terms`, `oauth` and `c` are reserved slugs now, like
+  `editor` and `new`.
+- A primary `CopyButton` turns green when the copy succeeds. Before, it put
+  green text on a blue button.
+- **A transparent 192 px site icon.** Claude draws a connector's icon from
+  the domain's largest icon, on a dark tile. The opaque white icons showed
+  there as a white square. `icon-192x192.png` is the logo with no background.
 - **Settings › Security shows how you sign in and which apps have access.**
   **How you sign in** lists Google, Email link or both, from the account's
   identities, and says "docs.plus does not use passwords. Sign in with Google

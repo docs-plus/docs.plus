@@ -125,6 +125,10 @@ The sender is picked by `getProvider()` (`lib/email/providers/index.ts`): `EMAIL
 | `EMAIL_RATE_LIMIT_MAX`             | number  | `50`                |
 | `EMAIL_RATE_LIMIT_DURATION`        | number  | `60000`             |
 
+`APP_URL` loses any trailing `/`, and an empty value falls back to
+`https://docs.plus` (`src/config/env.ts`). This one value feeds the production
+CORS fallback, MCP document links, and the links in emails and notifications.
+
 `EMAIL_UNSUBSCRIBE_SECRET` signs the one-click unsubscribe links in every footer
 (`lib/unsubscribeToken.ts`). The token is the whole credential, so a link works
 with no session. Generate one with `openssl rand -base64 48`. Use a different

@@ -15,15 +15,39 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **MCP connector at `/api/mcp`.** A person connects docs.plus to Claude or
   ChatGPT and signs in as themselves through the Supabase OAuth server. The
   server is stateless, one MCP server per request, on
-  `@modelcontextprotocol/server` `2.0.0`. Eight tools: `find_documents`,
-  `get_outline`, `read_document`, `append_to_document`, `replace_section`,
-  `list_chat_rooms`, `read_chat_thread` and `post_chat_message`. Each tool
-  except `find_documents` takes a slug and checks the caller's access before
+  `@modelcontextprotocol/server` `2.0.0`. Nine tools: `find_documents`,
+  `create_document`, `get_outline`, `read_document`, `append_to_document`,
+  `replace_section`, `list_chat_rooms`, `read_chat_thread` and
+  `post_chat_message`. Each tool except `find_documents` and
+  `create_document` takes a slug and checks the caller's access before
   it reads or writes. Writes and chat posts work only in documents the caller
   owns. `replace_section` keeps the heading and refuses a stale `rev`. Reads
   stop at 100 000 characters and say so, hide media URLs, and frame the text
-  as data. A post removes every `@`, so it sends no notification. Each person
+  as data. A post removes every `@`, so it sends no mention. Each person
   gets 60 calls a minute. Set `MCP_AUTH_ISSUER` to the Supabase issuer.
+
+- **`create_document` and server instructions.** A connected app makes a
+  document, and the caller owns it. An anonymous caller is refused. A taken
+  slug gets a suffix. A title whose slug is a webapp page, such as "Privacy",
+  gets `-document`. One transaction writes the document and version 1, with
+  `trigger: "mcp"` and the caller as `triggeredBy`. So refused text or a
+  failed write leaves no document. The new-document notice mail is sent after
+  the reply. The server's `instructions` tell the agent to use these tools,
+  not a browser. Without them, claude.ai and ChatGPT opened docs.plus in a
+  browser to make a document, and that document got another owner.
+
+- **`GET /api/connected-apps/redirects`** returns the registered redirect
+  URIs of the caller's own connected apps. Supabase grants omit them, and the
+  webapp needs them to tell the real Claude and ChatGPT from an app that only
+  borrows the name. It reads the grants with the caller's token. Any failure
+  answers an empty map.
+
+- **Tool hints follow the MCP and OpenAI definitions.** Read tools set
+  `destructiveHint: false`. Write tools set `openWorldHint: true`, because a
+  write to a public document publishes. `post_chat_message` only adds, so it
+  is not destructive, but room members who follow every message and are away
+  get a notification. Its description says so. The server info carries
+  `title` and `websiteUrl`.
 
 - **`GET /api/admin/mcp/usage` counts MCP tool calls.** Each call adds to
   three Redis keys a day: calls per tool and outcome, calls per `client_id`,
@@ -207,6 +231,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **The digest plain-text part uses the HTML caps.** A channel card shows 5
   lines and an 80-character preview. Before, the plain text showed 3 lines and
   50 characters.
+
+- **`APP_URL` is read once, as `config.email.appUrl`.** A trailing `/` is
+  trimmed, and an empty value falls back to `https://docs.plus`. Email links
+  no longer get `//` when `APP_URL` ends in `/`. When `APP_URL` is `''`, a
+  push link now starts with `https://docs.plus`, not a bare `/<slug>`.
 
 ### Security
 

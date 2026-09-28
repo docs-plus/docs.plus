@@ -99,7 +99,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 ## MCP connector
 
 - **MCP connector** — the docs.plus endpoint at `/api/mcp` that a connected app calls. In Claude and ChatGPT, the entry a person adds that points at this endpoint is also called a connector.
-- **Connected app** — an AI app, such as Claude or ChatGPT, that a person connected to docs.plus through the Supabase OAuth server. Its token carries a `client_id` claim (`isConnectedAppToken` in `apps/hocuspocus.server/src/lib/jwtClaims.ts`). The docs.plus server accepts the token only at `/api/mcp`; its other REST routes and the WebSocket refuse it. It reads what the person can open, and writes or posts only in documents the person owns. The person sees and disconnects each one in Settings > Connected apps. User docs: `docs/mcp/README.md`.
+- **Connected app** — an AI app, such as Claude or ChatGPT, that a person connected to docs.plus through the Supabase OAuth server. Its token carries a `client_id` claim (`isConnectedAppToken` in `apps/hocuspocus.server/src/lib/jwtClaims.ts`). The docs.plus server accepts the token only at `/api/mcp`; its other REST routes and the WebSocket refuse it. It reads what the person can open, creates documents the person owns, and writes or posts only in documents the person owns. The person sees and disconnects each one in Settings > Connected apps. That tab and the consent page judge an app by its registered redirect URIs, never by its name (`apps/webapp/src/utils/appTrust.ts`). User docs: `docs/mcp/README.md`.
   _Avoid_: host (only docs/mcp/reference.md uses it, as the MCP word), client (the OAuth registration), integration
 
 ## Presence awareness

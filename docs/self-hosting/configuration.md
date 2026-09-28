@@ -92,7 +92,7 @@ Most misconfiguration here fails quietly rather than loudly. [Install](install.m
 
 The MCP connector at `/api/mcp` lets people use docs.plus from Claude or ChatGPT. It needs the Supabase OAuth server. For the user side, see [Use docs.plus from Claude or ChatGPT](../mcp/README.md). For the tools and limits, see [MCP connector reference](../mcp/reference.md).
 
-The chat tools also need [`SUPABASE_SERVICE_ROLE_KEY`](../../apps/hocuspocus.server/ENV.md#security). Without it, they answer `Chat is not available on this docs.plus server.` The limit of 60 tool calls per minute needs [Redis](../../apps/hocuspocus.server/ENV.md#redis). Without Redis, that limit is off.
+The chat tools also need [`SUPABASE_SERVICE_ROLE_KEY`](../../apps/hocuspocus.server/ENV.md#security). Without it, they answer `Chat is not available on this docs.plus server.` Settings > Connected apps needs the key too, to read each app's redirect URIs. Without it, every connected app shows as unverified. The limit of 60 tool calls per minute needs [Redis](../../apps/hocuspocus.server/ENV.md#redis). Without Redis, that limit is off.
 
 **Hosted Supabase.** In the Supabase dashboard, open **Authentication > OAuth Server**.
 
@@ -101,8 +101,9 @@ The chat tools also need [`SUPABASE_SERVICE_ROLE_KEY`](../../apps/hocuspocus.ser
 3. Set **Authorization Path** to `/oauth/consent`.
 4. Turn on **Allow Dynamic OAuth Apps**.
 5. Choose **Save changes**.
+6. Open **Project Settings > JWT Keys**. The current signing key must be asymmetric (`ES256` or `RS256`). If the legacy JWT secret is still current, choose **Rotate keys**. AI apps ask for `openid`, and Supabase cannot sign that ID token with the legacy `HS256` secret. The token step then fails with `HS256 is not supported for ID token signing`. Rotation signs nobody out. Do not revoke the legacy secret: the `anon` and `service_role` keys are signed with it.
 
-The Supabase CLI does not push this setting, so set it in the dashboard.
+The Supabase CLI does not push these settings, so set them in the dashboard.
 
 **Local stack.** `packages/supabase/config.toml` already turns the OAuth server on.
 

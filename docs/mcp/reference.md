@@ -27,7 +27,7 @@ Replace `<PUBLIC_RESTAPI_URL>` with your server's value of [`PUBLIC_RESTAPI_URL`
 
 **Audience binding is not possible today.** Supabase always sets `aud` to `authenticated`. It never writes the RFC 8707 `resource` into the token ([supabase/auth#2610](https://github.com/supabase/auth/issues/2610)). So `/api/mcp` cannot prove that a token was issued for it. The `client_id` rule is the strongest check Supabase allows.
 
-**Revoking access.** A person disconnects an app in docs.plus **Settings > Connected apps**. The tab reads the person's grants with the Supabase `listGrants` call. **Disconnect** calls `revokeGrant` for each client. A host that uses DCR registers a new client on each fresh connection. So the tab groups clients by app name, and **Disconnect** revokes every client in the group. The app's current token can still work at /api/mcp for up to one minute.
+**Revoking access.** A person disconnects an app in docs.plus **Settings > Connected apps**. The tab reads the person's grants with the Supabase `listGrants` call. **Disconnect** calls `revokeGrant` for each client. A host that uses DCR registers a new client on each fresh connection. So the tab groups clients by trust state and app name, and **Disconnect** revokes every client in the group. Trust follows each client's registered redirect URIs, which the tab reads from `GET /api/connected-apps/redirects`, never the name the app registered. The app's current token can still work at /api/mcp for up to one minute.
 
 ### Discovery
 
@@ -54,24 +54,31 @@ The metadata sits under `/api/mcp`, not at the site root, because only `/api` an
 
 ## Tools
 
-Every tool except `find_documents` takes a document `slug`. Each tool runs as the signed-in person and checks access first. Reads follow the normal access rule. Writes and chat posts work only in documents the person owns.
+The server has 9 tools. Every tool except `find_documents` and `create_document` takes a document `slug`. Each tool runs as the signed-in person and checks access first. Reads follow the normal access rule. Writes and chat posts work only in documents the person owns.
 
-A result carries text and `structuredContent`, with snake_case keys. Document and chat text is framed as data that people wrote, not instructions. Every tool sets `openWorldHint: false`.
+A result carries text and `structuredContent`, with snake_case keys. Document and chat text is framed as data that people wrote, not instructions. The hints follow OpenAI's definitions. Read tools set `readOnlyHint: true`, `destructiveHint: false` and `openWorldHint: false`. Write tools set `openWorldHint: true`, because documents are public by default and a write publishes.
 
-| Tool                 | Hints                           | What it does                                                     | Inputs                                                   |
-| -------------------- | ------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
-| `find_documents`     | read-only                       | Lists the person's documents, or searches public ones by title   | `query`, `scope` (`mine` or `public`), `limit` (1 to 50) |
-| `get_outline`        | read-only                       | The heading tree, with a `section_id` and `rev` for each heading | `slug`                                                   |
-| `read_document`      | read-only                       | The document as Markdown, or one section with its `rev`          | `slug`, `section_id`, `max_chars`                        |
-| `append_to_document` | not destructive, not idempotent | Adds Markdown at the end                                         | `slug`, `markdown`                                       |
-| `replace_section`    | destructive, not idempotent     | Replaces the text under one heading. The heading stays.          | `slug`, `section_id`, `rev`, `markdown`                  |
-| `list_chat_rooms`    | read-only                       | The headings that have a chat room                               | `slug`                                                   |
-| `read_chat_thread`   | read-only                       | Messages in one heading's room, newest last                      | `slug`, `section_id`, `before_seq`, `limit` (1 to 50)    |
-| `post_chat_message`  | not destructive, not idempotent | Posts plain text in one heading's room, as the person            | `slug`, `section_id`, `text`                             |
+| Tool                 | Hints                       | What it does                                                       | Inputs                                                   |
+| -------------------- | --------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| `find_documents`     | read-only                   | Lists the person's documents, or searches public ones by title     | `query`, `scope` (`mine` or `public`), `limit` (1 to 50) |
+| `create_document`    | not destructive, open world | Makes a new document the person owns. Returns its `slug` and `url` | `title`, `markdown`                                      |
+| `get_outline`        | read-only                   | The heading tree, with a `section_id` and `rev` for each heading   | `slug`                                                   |
+| `read_document`      | read-only                   | The document as Markdown, or one section with its `rev`            | `slug`, `section_id`, `max_chars`                        |
+| `append_to_document` | not destructive, open world | Adds Markdown at the end                                           | `slug`, `markdown`                                       |
+| `replace_section`    | destructive, open world     | Replaces the text under one heading. The heading stays.            | `slug`, `section_id`, `rev`, `markdown`                  |
+| `list_chat_rooms`    | read-only                   | The headings that have a chat room                                 | `slug`                                                   |
+| `read_chat_thread`   | read-only                   | Messages in one heading's room, newest last                        | `slug`, `section_id`, `before_seq`, `limit` (1 to 50)    |
+| `post_chat_message`  | not destructive, open world | Posts plain text in one heading's room, as the person              | `slug`, `section_id`, `text`                             |
 
 `scope: "public"` needs a `query`. `find_documents` lists the most recently updated first, 20 by default. Its `updated_at` moves when the title or settings change, not on every text edit. So do not treat it as the time of the last text edit.
 
 A `#` heading in written Markdown is refused, because it is the document title. The one exception is the first append to an empty document, which must start with its title.
+
+`create_document` refuses an anonymous account. The `title` becomes the `#` heading, and `markdown`, if given, follows it. The Markdown is checked before anything is written, so refused text leaves no document. One transaction writes the document and version 1, so a failed write leaves none either. The slug comes from the title. A taken slug gets a suffix, and a slug that is a webapp page, such as `privacy`, gets `-document`. The new document is public, like any new docs.plus document. The `url` is the webapp address plus the slug.
+
+`post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
+
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. A host may ignore them. The server info also carries `title` and `websiteUrl`.
 
 ## Limits
 
@@ -99,8 +106,9 @@ A post with many short lines can pass the text cap and fail the HTML cap.
 
 When one argument is at fault, the tool error text starts with that field, such as `slug:` or `section_id:`. An argument with the wrong shape never reaches the tool. The MCP SDK on the server refuses it and names the failing field.
 
-Plan retries with care. `append_to_document`, `replace_section` and `post_chat_message` are not idempotent.
+Plan retries with care. `create_document`, `append_to_document`, `replace_section` and `post_chat_message` are not idempotent.
 
 - A stale `rev` is refused. Call `get_outline` or `read_document` again, then retry with the new `rev`.
 - After `docs.plus could not confirm the write`, wait about a minute, then call `read_document` before you retry. A read at once cannot see a write that is still saving.
 - After `docs.plus could not confirm the post`, call `read_chat_thread` before you retry.
+- After any unclear `create_document` failure, call `find_documents` before you retry.
