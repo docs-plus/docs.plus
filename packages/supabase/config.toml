@@ -259,6 +259,13 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# Refuses a token for a password sign-in (scripts/32-password-sign-in-hook.sql).
+# Keep it off locally: the backend e2e scripts and document-swarm sign in with
+# passwords, and with enable_confirmations = false a first email link fails too.
+# [auth.hook.custom_access_token]
+# enabled = true
+# uri = "pg-functions://postgres/public/hook_block_password_tokens"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]
 enabled = false

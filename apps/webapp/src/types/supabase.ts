@@ -1560,6 +1560,7 @@ export type Database = {
         }
         Returns: Json[]
       }
+      hook_block_password_tokens: { Args: { event: Json }; Returns: Json }
       is_admin: { Args: { check_user_id: string }; Returns: boolean }
       join_workspace: { Args: { _workspace_id: string }; Returns: boolean }
       mark_bookmark_as_read: {
