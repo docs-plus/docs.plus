@@ -502,6 +502,17 @@ describe('buildDigestEmail', () => {
     const { html } = buildDigestEmail(DIGEST_CHANGES_PARAMS)
     expect(html).toMatchSnapshot()
   })
+
+  // Gmail drops inline SVG, `position` and negative margins, which left a blank
+  // mark and a loose badge dot in the live digest.
+  it('draws the sheet header with images and tables only', () => {
+    const { html } = buildDigestEmail(DIGEST_CHANGES_PARAMS)
+    expect(html).not.toContain('<svg')
+    expect(html).not.toContain('position:')
+    expect(html).not.toMatch(/margin[a-z-]*:\s*-/)
+    expect(html).toContain('https://docs.plus/email/mark.png')
+    expect(html).toContain('https://docs.plus/email/bell.png')
+  })
 })
 
 describe('changeWindowLine', () => {

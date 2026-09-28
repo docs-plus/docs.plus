@@ -7,11 +7,7 @@
         <tr>
           <td width="36" valign="middle">
             <a href="<%= block.url %>" style="text-decoration: none;">
-              <svg width="22" height="28" viewBox="0 0 22 28" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-                <path fill="#1a73e8" d="M2 1h12l6 6v19a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
-                <path fill="#ffffff" d="M14 1v6h6"/>
-                <path fill="#1a73e8" d="M10 12h2v3h3v2h-3v3h-2v-3H7v-2h3z"/>
-              </svg>
+              <img src="<%= it.h.APP_URL %>/email/mark.png" width="32" height="32" alt="<%= it.h.APP_NAME %>" style="display: block; width: 32px; height: 32px; border: 0;">
             </a>
           </td>
           <td valign="middle" style="padding-left: 10px;">
@@ -20,16 +16,11 @@
           <td width="120" align="right" valign="middle">
             <table role="presentation" cellpadding="0" cellspacing="0" align="right">
               <tr>
-                <td valign="middle" style="padding-right: 14px;">
-                  <a href="<%= block.notificationsUrl %>" style="text-decoration: none; color: #0f172a;">
-                    <span style="position: relative; display: inline-block; width: 22px; height: 22px; line-height: 22px;">
-                      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display: block;">
-                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7"/>
-                        <path fill="none" stroke="#0f172a" stroke-width="1.75" d="M10 19a2 2 0 0 0 4 0"/>
-                      </svg>
-                      <span style="position: absolute; top: -5px; right: -7px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 999px; background: #dc2626; color: #ffffff; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center;"><%= block.badge %></span>
-                    </span>
-                  </a>
+                <td valign="bottom" style="padding-top: 6px;">
+                  <a href="<%= block.notificationsUrl %>" style="text-decoration: none;"><img src="<%= it.h.APP_URL %>/email/bell.png" width="20" height="20" alt="Notifications" style="display: block; width: 20px; height: 20px; border: 0;"></a>
+                </td>
+                <td valign="top" style="padding-right: 14px;">
+                  <a href="<%= block.notificationsUrl %>" style="display: block; height: 14px; min-width: 14px; padding: 0 4px; border-radius: 7px; background-color: #dc2626; color: #ffffff; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center; text-decoration: none; font-family: Arial, sans-serif;"><%= block.badge %></a>
                 </td>
                 <td valign="middle"><%~ it.h.avatar(block.recipientName || 'You', undefined, 48) %></td>
               </tr>
