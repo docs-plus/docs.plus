@@ -4,6 +4,7 @@ import { createRouter } from './http/router'
 import { createServerFactory } from './http/serverFactory'
 import { createChatStore } from './infra/chatStore'
 import { createToolBudget } from './infra/toolBudget'
+import { createUsageRecorder } from './infra/usageStore'
 import type { InitDeps } from './types'
 
 export interface InitResult {
@@ -21,6 +22,7 @@ export const init = (deps: InitDeps): InitResult => ({
       logger: deps.logger,
       content: deps.content,
       budget: createToolBudget(deps.redis, deps.logger),
+      usage: createUsageRecorder(deps.redis, deps.logger),
       chat: deps.supabase ? createChatStore(deps.supabase) : null,
       version: deps.version
     })
