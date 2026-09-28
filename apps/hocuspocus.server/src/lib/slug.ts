@@ -7,7 +7,7 @@ export const normalizeSlug = (slug: string): string =>
   slugify(slug.toLowerCase(), { lower: true, strict: true })
 
 // Runs `write` with the base slug, then retries with a uniquified suffix on a
-// Prisma P2002 slug collision. Shared by first-save (queue) and duplicate so the
+// Prisma P2002 slug collision. Shared by first-save (queue), duplicate and MCP create so the
 // collision-retry lives in one side-effect-free module. `queue.ts` connects Redis
 // at import, so it can't be the home for reusable helpers.
 export async function withUniqueSlug<T>(

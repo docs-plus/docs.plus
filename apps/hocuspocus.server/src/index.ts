@@ -132,6 +132,7 @@ const mcpModule = mcp.init({
   }),
   verifyToken: verifySupabaseTokenOutcome,
   publicBaseUrl: config.app.publicUrl,
+  appUrl: config.email.appUrl,
   authIssuer: config.mcp.authIssuer,
   allowedOrigins: config.security.originAllowlist,
   redis: getRedisClient(),

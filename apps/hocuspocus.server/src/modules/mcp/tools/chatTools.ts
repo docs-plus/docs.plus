@@ -73,7 +73,7 @@ export const registerChatTools = (
       description:
         "The chat rooms of a document. Each room belongs to one heading, and its id is that heading's section_id from get_outline. Rooms start lazily: a heading nobody has opened chat on has no room yet, so this list is a subset of the outline. The message count can lag by about a minute, so read the thread rather than trust a 0.",
       inputSchema: z.object({ slug: slugField }),
-      annotations: { readOnlyHint: true, openWorldHint: false }
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
     },
     run('list_chat_rooms', async ({ slug }) => {
       const doc = await openDocument(slug, 'read')
@@ -125,7 +125,7 @@ export const registerChatTools = (
           .describe('From an earlier read_chat_thread, for older messages'),
         limit: z.number().int().min(1).max(50).default(30)
       }),
-      annotations: { readOnlyHint: true, openWorldHint: false }
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
     },
     run(
       'read_chat_thread',
@@ -176,7 +176,7 @@ export const registerChatTools = (
     {
       title: 'Post chat message',
       description:
-        'Post a plain-text message in the chat room of one heading, as you, in a document you own. The room must exist; see list_chat_rooms. Every @ is removed, so a post never sends mention or @everyone notifications. A retry after an unclear failure can post twice, so read the thread first.',
+        'Post a plain-text message in the chat room of one heading, as you, in a document you own. The room must exist; see list_chat_rooms. Room members who follow every message and are away get a notification. Every @ is removed, so a post never sends mention or @everyone notifications. A retry after an unclear failure can post twice, so read the thread first.',
       inputSchema: z.object({
         slug: slugField,
         section_id: sectionIdField.describe('From list_chat_rooms'),
@@ -185,11 +185,12 @@ export const registerChatTools = (
           .max(MAX_CHAT_POST_CHARS)
           .describe('Plain text, no Markdown or HTML. @ is removed.')
       }),
+      // A post only adds, so it is not destructive. It reaches other people, so it is open world.
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: false,
-        openWorldHint: false
+        openWorldHint: true
       }
     },
     run('post_chat_message', async ({ slug, section_id: sectionId, text }) => {

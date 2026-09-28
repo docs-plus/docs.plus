@@ -28,6 +28,8 @@ export interface InitDeps {
   verifyToken: VerifyToken
   /** `PUBLIC_RESTAPI_URL`, origin only. Unset falls back to the request origin. */
   publicBaseUrl: string | null
+  /** The webapp origin, for the document links the tools return. */
+  appUrl: string
   /** Supabase Auth's `issuer`, exactly as its openid-configuration reports it. */
   authIssuer: string
   /** A present `Origin` outside this list gets 403. Server-side hosts send none. */
@@ -47,6 +49,7 @@ export interface ServerFactoryDeps {
   usage: RecordUsage
   /** Null when Supabase is not configured; the chat tools then refuse. */
   chat: ChatStore | null
+  appUrl: string
   version: string
 }
 

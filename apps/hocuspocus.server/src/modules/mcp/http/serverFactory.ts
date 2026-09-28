@@ -6,6 +6,11 @@ import { registerDocumentTools } from '../tools/documentTools'
 import { createToolContext } from '../tools/toolContext'
 import type { Caller, ServerFactoryDeps } from '../types'
 
+// Without it, claude.ai and ChatGPT fell back to a browser, whose session is not the
+// person's, so a document made there had another owner.
+const INSTRUCTIONS =
+  "These tools find, read, create and edit the person's docs.plus documents and their chat, signed in as this person. A browser session is not signed in as them, so a document made there is not theirs. To start a new document, call create_document; the person owns what it makes."
+
 // The SDK hands the factory whatever the route verified. A missing subject is
 // a wiring fault, so it fails loudly rather than running a tool as nobody.
 const callerFrom = (authInfo: AuthInfo | undefined): Caller => {
@@ -26,7 +31,10 @@ export const createServerFactory =
   (deps: ServerFactoryDeps): McpServerFactory =>
   ({ authInfo }) => {
     const context = createToolContext(deps, callerFrom(authInfo))
-    const server = new McpServer({ name: 'docs.plus', version: deps.version })
+    const server = new McpServer(
+      { name: 'docs.plus', title: 'docs.plus', version: deps.version, websiteUrl: deps.appUrl },
+      { instructions: INSTRUCTIONS }
+    )
     registerDocumentTools(server, deps, context)
     registerChatTools(server, deps, context)
     return server

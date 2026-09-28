@@ -4,8 +4,9 @@ import slugify from 'slugify'
 import * as Y from 'yjs'
 
 import { handlePrismaError } from '../../../lib/errors'
+import { withUniqueSlug } from '../../../lib/slug'
 import { encodeContent } from '../domain/encodeContent'
-import type { CreateOutcome, TiptapDocJson } from '../types'
+import type { ApplyActor, CreateOutcome, TiptapDocJson } from '../types'
 
 export interface DocumentContentMeta {
   documentId: string
@@ -71,12 +72,16 @@ export interface CreateWithContentParams {
   content: TiptapDocJson
   ownerId?: string | null
   email?: string | null
+  /** The person an MCP create acts for. Absent on REST, which names nobody. */
+  actor?: ApplyActor
+  /** Retry a taken slug with a suffix instead of failing with 409. */
+  uniqueSlug?: boolean
 }
 
 /**
  * Create a document and its version 1 in one transaction. Encoding runs first so
- * an invalid payload writes zero rows; a taken slug conflicts (P2002 → 409)
- * rather than being silently renamed or swallowed.
+ * an invalid payload writes zero rows. A taken slug conflicts (P2002 → 409)
+ * unless the caller asks for `uniqueSlug`; it is never swallowed.
  */
 export const createDocumentWithContent = async (
   prisma: PrismaClient,
@@ -89,24 +94,35 @@ export const createDocumentWithContent = async (
   const newSlug = slugify(params.slug.toLowerCase(), { lower: true, strict: true })
   const documentId = new ShortUniqueId().stamp(19)
 
-  try {
-    const document = await prisma.$transaction(async (tx) => {
+  const write = (slug: string) =>
+    prisma.$transaction(async (tx) => {
       const metadata = await tx.documentMetadata.create({
         data: {
           documentId,
-          slug: newSlug,
-          title: params.title || newSlug,
-          description: params.description || newSlug,
+          slug,
+          title: params.title || slug,
+          description: params.description || slug,
           keywords: params.keywords?.length ? params.keywords.join(', ') : '',
           ownerId: params.ownerId ?? null,
           email: params.email ?? null
         }
       })
+      // Same attribution rule as the apply route in http/controller.ts.
       await tx.documents.create({
-        data: { documentId, version: 1, data, commitMessage: '', trigger: 'api' }
+        data: {
+          documentId,
+          version: 1,
+          data,
+          commitMessage: '',
+          trigger: params.actor ? 'mcp' : 'api',
+          triggeredBy: params.actor?.sub ?? null
+        }
       })
       return metadata
     })
+
+  try {
+    const document = params.uniqueSlug ? await withUniqueSlug(newSlug, write) : await write(newSlug)
 
     return { status: 'created', document }
   } catch (error) {

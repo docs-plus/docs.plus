@@ -24,6 +24,7 @@ export const init = (deps: InitDeps): InitResult => ({
       budget: createToolBudget(deps.redis, deps.logger),
       usage: createUsageRecorder(deps.redis, deps.logger),
       chat: deps.supabase ? createChatStore(deps.supabase) : null,
+      appUrl: deps.appUrl,
       version: deps.version
     })
   })
