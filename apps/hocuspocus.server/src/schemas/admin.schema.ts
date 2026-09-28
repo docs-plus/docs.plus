@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { DIGEST_MAX_KB_MAX, DIGEST_MAX_KB_MIN } from '../lib/email/digestGrouping'
+import { MCP_USAGE_MAX_DAYS } from '../modules/mcp/infra/usageStore'
 
 export const listDocumentsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).optional().default('1'),
@@ -166,3 +167,9 @@ export const digestSettingsBodySchema = z
   })
 
 export type DigestSettingsBody = z.infer<typeof digestSettingsBodySchema>
+
+export const mcpUsageQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(MCP_USAGE_MAX_DAYS).default(7)
+})
+
+export type McpUsageQuery = z.infer<typeof mcpUsageQuerySchema>

@@ -1043,6 +1043,16 @@ Every tool except `find_documents` takes a document slug. Each runs as the signe
 
 **Budget and logs.** Each person gets 60 tool calls a minute, kept in Redis (`mcp-sub`). With no Redis, or a Redis fault, calls run without the budget. There is no per-address budget, because every hosted Claude call arrives from one Anthropic address range. The global rate limit still applies to `/api/mcp`. Each call logs one line with the keys `tool`, `sub`, `clientId`, `outcome` and `durationMs`. Arguments, headers and tokens are never logged.
 
+**Usage counts.** After each call, one Redis pipeline adds to three keys for the UTC day (`YYYY-MM-DD`). Each key expires 35 days after its first write.
+
+| Key                 | Type        | Holds                                                            |
+| ------------------- | ----------- | ---------------------------------------------------------------- |
+| `mcp:usage:<day>`   | hash        | Calls per `<tool>:<outcome>`. A budget refusal is `rate-limited` |
+| `mcp:clients:<day>` | hash        | Calls per OAuth `client_id`                                      |
+| `mcp:callers:<day>` | HyperLogLog | Distinct callers (`sub`). It gives a count and cannot list them  |
+
+The write never blocks or fails the call. It is skipped when Redis is not connected. No argument, result or document text goes into these keys. `GET /api/admin/mcp/usage` reads them.
+
 ## Media
 
 Base path `/api/plugins/hypermultimedia` (`src/api/routers/hypermultimedia.router.ts`). Backs the editor's hypermultimedia extension. Storage targets local disk when `PERSIST_TO_LOCAL_STORAGE=true`, otherwise S3-compatible (DigitalOcean Spaces).
@@ -1186,6 +1196,14 @@ Two audit routes are easy to misread. `/audit/media-storage` and `/audit/media-s
 | GET    | `/audit/notifications/email-bounces`        | Bounce list                    |
 | POST   | `/audit/notifications/disable-failed`       | Disable dead subscriptions     |
 | GET    | `/audit/notifications/dlq`                  | BullMQ dead-letter contents    |
+
+**MCP connector usage**
+
+| Method | Path                    | Purpose                                               |
+| ------ | ----------------------- | ----------------------------------------------------- |
+| GET    | `/mcp/usage?days=1..35` | Tool call counts, distinct callers and connected apps |
+
+`days` defaults to 7. The data holds `available` (false when Redis is off), `days` (per UTC day, oldest first: `day`, `calls`, `callers`), `callers` (distinct across the window), `tools` (`tool`, `outcome`, `calls`), `apps` (calls grouped by app name) and `registeredApps` (each registered OAuth client: `name`, `createdAt`, `redirectOrigins`). Each `callers` value is a number, or the string `'<5'` for 1 to 4 people, so an exact small count never leaves the server. `registeredApps` is `null` when Supabase Auth cannot list the clients. Counts are grouped by app name, never by client id or caller. A deleted client counts as `Unknown app`, and so does every client when the list fails. The server asks for up to 1000 clients in one call. If Supabase Auth ever pages the list, the clients past that page also count as `Unknown app`, and the server logs a warning. Success uses the house envelope.
 
 **Ghost accounts audit**
 

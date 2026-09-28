@@ -16,6 +16,7 @@ import {
   ghostCleanupAnonymousSchema,
   ghostResendSchema,
   listDocumentsQuerySchema,
+  mcpUsageQuerySchema,
   mediaStorageQuerySchema,
   paginationQuerySchema,
   staleDocumentsQuerySchema,
@@ -40,6 +41,11 @@ admin.put(
   '/email/digest-grouping',
   zValidator('json', digestSettingsBodySchema, houseEnvelopeHook),
   adminController.setDigestGrouping
+)
+admin.get(
+  '/mcp/usage',
+  zValidator('query', mcpUsageQuerySchema, houseEnvelopeHook),
+  adminController.getMcpUsage
 )
 admin.get('/stats/push', adminController.getPushStatsAdmin)
 admin.get('/stats/push/pipeline', adminController.getPushPipelineAdmin)
