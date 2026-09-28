@@ -1614,6 +1614,7 @@ export type Database = {
         }
         Returns: string
       }
+      refuse_connected_app_request: { Args: never; Returns: undefined }
       register_push_subscription: {
         Args: {
           p_device_id: string

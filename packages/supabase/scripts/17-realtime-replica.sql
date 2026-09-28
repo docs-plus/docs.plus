@@ -9,6 +9,8 @@
 drop publication if exists supabase_realtime;
 
 -- Create a new publication named 'supabase_realtime'.
+-- 31-connected-app-token-gate.sql gates each table listed here. Adding a table
+-- later needs that gate block in the same migration.
 -- `users` is in the publication because the admin dashboard subscribes to
 -- postgres_changes on it (packages/admin-dashboard/src/pages/users.tsx).
 -- Webapp consumers use Realtime Presence (channel.track) instead, so the
