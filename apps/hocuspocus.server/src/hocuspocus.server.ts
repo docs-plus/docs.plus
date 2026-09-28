@@ -33,6 +33,7 @@ import {
   setActiveDocumentsProvider,
   statelessRelayDroppedTotal,
   wsAuthRejectionsTotal,
+  wsAwarenessFramesDroppedTotal,
   wsAwarenessUpdatesTotal,
   wsConnectionsTotal,
   wsMessagesTotal,
@@ -50,6 +51,11 @@ import { MAX_VERSION_NUMBER } from './modules/document-versions/types'
 import type { HistoryPayload } from './types/document.types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+
+// An old provider sends the whole room's awareness back in one frame on join,
+// about 500 B per person, so a big room must fit. A throw here closes the
+// document connection, so the budget sits well above any real frame.
+const MAX_AWARENESS_FRAME_BYTES = 64 * 1024
 
 // Bracket load/store hooks keyed by the Document object. WeakMap means an aborted
 // load that never reaches the `after` hook is GC'd instead of leaking a timer.
@@ -369,6 +375,16 @@ const statelessExtension = {
       type = message.readVarUint()
     } catch {
       return // a truncated frame stays the library's error path, not a new one
+    }
+    if (type === MessageType.Awareness && update.byteLength > MAX_AWARENESS_FRAME_BYTES) {
+      wsAwarenessFramesDroppedTotal.inc()
+      wsLogger.warn(
+        { documentName, socketId, bytes: update.byteLength, limit: MAX_AWARENESS_FRAME_BYTES },
+        'Refused an awareness frame over the size budget'
+      )
+      throw Object.assign(new Error('Awareness frame exceeds the size budget'), {
+        reason: 'awareness-oversized'
+      })
     }
     if (type !== MessageType.BroadcastStateless) return
 

@@ -750,13 +750,14 @@ try {
   //    off outside production, so this proves the local room only.
   console.log('\n[8] stateless relay allowlist')
   {
-    const droppedTotal = async (reason: string) => {
+    const metricValue = async (series: string) => {
       const body = await (await fetch(`http://127.0.0.1:${internalPort}/metrics`)).text()
-      const line = body
-        .split('\n')
-        .find((row) => row.startsWith(`stateless_relay_dropped_total{reason="${reason}"}`))
+      const line = body.split('\n').find((row) => row.startsWith(`${series} `))
       return line ? Number(line.split(' ').pop()) : 0
     }
+    const droppedTotal = (reason: string) =>
+      metricValue(`stateless_relay_dropped_total{reason="${reason}"}`)
+    const awarenessDroppedTotal = () => metricValue('ws_awareness_frames_dropped_total')
 
     const doc = await createDocument('relay', { content: titleDoc('Relay') })
     const attacker = await openProvider(doc.documentId, doc.slug)
@@ -808,6 +809,69 @@ try {
       await sleep(50)
     }
     check(sawTitle, 'docTitle still relays')
+
+    // Awareness frame-size budget. The field is set in the constructor's tick, so the
+    // first awareness frame carries it; a normal join would first send an empty state.
+    const peerAwareness = victim.provider.awareness
+    let oversizedClientId = -1
+    let peerSawOversized = false
+    const watchOversized = () => {
+      if (peerAwareness.getStates().has(oversizedClientId)) peerSawOversized = true
+    }
+    peerAwareness.on('change', watchOversized)
+    let framesDropped = await awarenessDroppedTotal()
+    const oversized = new HocuspocusProvider({
+      url: `ws://127.0.0.1:${wsPort}`,
+      name: doc.documentId,
+      document: new Y.Doc(),
+      token: JSON.stringify({ slug: doc.slug, deviceType: 'desktop' }),
+      WebSocketPolyfill: WebSocket
+    })
+    oversized.setAwarenessField('blob', 'x'.repeat(70_000))
+    oversizedClientId = oversized.document.clientID
+    const refusedBy = Date.now() + 5_000
+    while ((await awarenessDroppedTotal()) === framesDropped && Date.now() < refusedBy) {
+      watchOversized()
+      await sleep(50)
+    }
+    // Destroyed at once, so a reconnect cannot send the frame again.
+    oversized.destroy()
+    check(
+      (await awarenessDroppedTotal()) >= framesDropped + 1,
+      'an awareness frame over the size budget was refused'
+    )
+    await sleep(500)
+    watchOversized()
+    peerAwareness.off('change', watchOversized)
+    check(!peerSawOversized, 'the refused awareness state never reached the other client')
+
+    // Positive control AFTER the negative: a normal field, then a large but legal one.
+    // The other client, a 3.x provider, sends the large state back, so that frame counts too.
+    framesDropped = await awarenessDroppedTotal()
+    const control = await openProvider(doc.documentId, doc.slug)
+    const controlClientId = control.ydoc.clientID
+    const peerState = () => peerAwareness.getStates().get(controlClientId)
+    const waitForState = async (accept: (state: any) => boolean) => {
+      const stateBy = Date.now() + 5_000
+      while (!accept(peerState()) && Date.now() < stateBy) await sleep(50)
+      return accept(peerState())
+    }
+    control.provider.setAwarenessField('user', { name: 'control' })
+    check(
+      await waitForState((state) => state?.user?.name === 'control'),
+      'a normal awareness field reaches the other client'
+    )
+    control.provider.setAwarenessField('blob', 'y'.repeat(23_000))
+    check(
+      await waitForState((state) => state?.blob?.length === 23_000),
+      'a 23 KB awareness field reaches the other client'
+    )
+    await sleep(500)
+    check(
+      (await awarenessDroppedTotal()) === framesDropped,
+      'no awareness frame was refused under the budget'
+    )
+    control.provider.destroy()
 
     // Type 6 never enters onStateless. The raw frame rides the already-authenticated
     // socket; the refusal closes the attacker's document connection, so it goes last.

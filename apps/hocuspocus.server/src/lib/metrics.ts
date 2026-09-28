@@ -90,6 +90,12 @@ export const wsAwarenessUpdatesTotal = new Counter({
   registers: [register]
 })
 
+export const wsAwarenessFramesDroppedTotal = new Counter({
+  name: 'ws_awareness_frames_dropped_total',
+  help: 'Awareness frames refused over the size budget',
+  registers: [register]
+})
+
 // Live count of documents held in memory, read from the Hocuspocus instance at
 // scrape time via collect() — drift-proof vs inc/dec on load/unload hooks.
 let activeDocumentsProvider: (() => number) | null = null
