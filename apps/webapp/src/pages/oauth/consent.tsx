@@ -1,9 +1,12 @@
+import { AppMark, AppTile } from '@components/ui/AppMark'
+import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { modalPanelFrameClassName } from '@components/ui/Dialog'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
 import { DocsPlusIcon, Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import type { AuthError, OAuthAuthorizationDetails, OAuthRedirect } from '@supabase/supabase-js'
+import { type AppTrust, appTrust } from '@utils/appTrust'
 import { displayClientName } from '@utils/displayClientName'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { supabaseClient } from '@utils/supabase'
@@ -11,24 +14,24 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { LuFilePlus } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 // auth-js puts the id into the request path unencoded, so only path-safe ids pass.
 const AUTHORIZATION_ID = /^[A-Za-z0-9_-]{1,128}$/
-// A redirect URI that does not parse is shown cut, never whole.
-const REDIRECT_TEXT_MAX = 80
 // Supabase refuses these schemes at registration. Checked again because we call assign().
 // A blocklist, not an allowlist: native and MCP clients register custom-scheme redirects.
 const BLOCKED_PROTOCOLS = new Set(['javascript:', 'data:', 'vbscript:', 'file:', 'blob:', 'about:'])
-const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
-const SCOPE_WORDS: Record<string, string> = {
-  openid: 'Confirm who you are',
-  email: 'See your email address',
-  profile: 'See your name and profile picture',
-  phone: 'See your phone number',
-  offline_access: 'Stay connected while you are away'
-}
+// `openid` alone adds no words. `offline_access` goes in the disconnect line.
+const IDENTITY_WORDS: [scope: string, words: string[]][] = [
+  ['profile', ['name', 'profile picture']],
+  ['email', ['email address']]
+]
+// Phone sign-up is off, so no account holds a number and `phone` shares nothing.
+const SILENT_SCOPES = ['openid', 'offline_access', 'phone']
+const HANDLED_SCOPES = new Set([...SILENT_SCOPES, ...IDENTITY_WORDS.map(([scope]) => scope)])
+const listFormat = new Intl.ListFormat('en', { type: 'conjunction' })
 
 type View =
   | { kind: 'loading' }
@@ -39,22 +42,10 @@ type View =
 
 type Decision = 'approve' | 'deny'
 
-// Any program on the computer can listen on a loopback port, so the MCP spec asks for a warning.
-function isLoopbackRedirect(uri: string): boolean {
-  try {
-    return LOOPBACK_HOSTS.has(new URL(uri).hostname)
-  } catch {
-    return false
-  }
-}
-
-function redirectOrigin(uri: string): string {
-  try {
-    const url = new URL(uri)
-    return url.origin !== 'null' ? url.origin : `${url.protocol}//${url.host}`
-  } catch {
-    return uri.slice(0, REDIRECT_TEXT_MAX)
-  }
+function identityLine(scopes: string[]): string | null {
+  const words = IDENTITY_WORDS.flatMap(([scope, list]) => (scopes.includes(scope) ? list : []))
+  if (words.length) return `See your ${listFormat.format(words)}.`
+  return scopes.includes('openid') ? 'Confirm who you are.' : null
 }
 
 // No error and no data is a broken answer, so it reads as unavailable.
@@ -239,6 +230,55 @@ function StatusCard({
   )
 }
 
+// A brand mark only for a verified app; the name alone could be anyone's.
+function TrustTile({ trust }: { trust: AppTrust }) {
+  if (trust.kind === 'known') return <AppMark app={trust.app} size={24} className="size-12" />
+  return (
+    <AppTile className="size-12">
+      {trust.kind === 'local' ? (
+        <Icons.monitor size={22} />
+      ) : (
+        <Icons.alert size={22} className="text-warning" />
+      )}
+    </AppTile>
+  )
+}
+
+// Trust follows the redirect URI. The name is the app's own claim, so it stays in quotes.
+function TrustLine({ trust }: { trust: AppTrust }) {
+  if (trust.kind === 'known') {
+    return (
+      <p className="text-base-content/60 mt-6 flex items-center justify-center gap-2 text-xs">
+        <Icons.lock size={14} aria-hidden />
+        <span>
+          Returns you to <span className="text-base-content font-mono">{trust.host}</span>
+        </span>
+      </p>
+    )
+  }
+  if (trust.kind === 'local') {
+    return (
+      <p className="text-base-content/70 mt-6 flex items-start gap-2 text-xs">
+        <Icons.monitor size={14} className="text-warning mt-0.5 shrink-0" aria-hidden />
+        <span>
+          Returns you to{' '}
+          <span className="text-base-content font-mono break-all">{trust.origin}</span>, an app on
+          this computer. Allow it only if you just started it.
+        </span>
+      </p>
+    )
+  }
+  return (
+    <div role="note" className="alert alert-soft alert-warning mt-6 items-start text-sm">
+      <Icons.alert size={18} className="text-warning mt-0.5 shrink-0" aria-hidden />
+      <span className="text-base-content">
+        docs.plus has not checked this app. It will send you to{' '}
+        <span className="font-mono break-all">{trust.origin}</span>. Allow it only if you trust it.
+      </span>
+    </div>
+  )
+}
+
 function ConsentCard({
   details,
   busy,
@@ -248,88 +288,102 @@ function ConsentCard({
   busy: Decision | null
   onDecide: (action: Decision) => void
 }) {
+  const profile = useAuthStore((state) => state.profile)
   const scopes = details.scope.split(/\s+/).filter(Boolean)
+  const trust = appTrust(details.redirect_uri)
+  const identity = identityLine(scopes)
+  const otherScopes = scopes.filter((scope) => !HANDLED_SCOPES.has(scope))
 
   return (
     <div className={twMerge(modalPanelFrameClassName, 'flex w-full flex-col px-6 py-8 sm:px-8')}>
-      <h1 className="text-base-content text-center text-lg font-semibold">
-        Allow this app to use your docs.plus account?
+      <div className="flex items-center justify-center gap-3">
+        <TrustTile trust={trust} />
+        <Icons.link size={16} className="text-base-content/50" aria-hidden />
+        <AppTile className="size-12">
+          <DocsPlusIcon size={24} />
+        </AppTile>
+      </div>
+
+      <h1 className="text-base-content mt-5 text-center text-lg font-semibold text-balance [overflow-wrap:anywhere]">
+        {trust.kind === 'known' ? (
+          `Allow ${trust.name} to use your docs.plus account?`
+        ) : (
+          <>
+            Allow “<bdi>{displayClientName(details.client.name)}</bdi>” to use your docs.plus
+            account?
+          </>
+        )}
       </h1>
 
-      <section
-        aria-label="Unverified app"
-        className="border-warning/30 bg-warning/10 rounded-box mt-5 border p-4">
-        <div className="flex items-center gap-2">
-          <Icons.alert size={16} className="text-warning shrink-0" aria-hidden />
-          <p className="text-base-content text-xs font-medium tracking-wide uppercase">
-            Unverified app
-          </p>
-        </div>
-        <p className="text-base-content mt-2 font-semibold [overflow-wrap:anywhere]">
-          <bdi>{displayClientName(details.client.name)}</bdi>
-        </p>
-        <p className="text-base-content/70 mt-1 text-xs">
-          Sends you back to{' '}
-          <span className="text-base-content font-mono break-all">
-            {redirectOrigin(details.redirect_uri)}
-          </span>
-        </p>
-        {isLoopbackRedirect(details.redirect_uri) && (
-          <p className="text-base-content mt-3 text-xs font-medium">
-            This app runs on your own computer. Approve only if you started it.
-          </p>
-        )}
-        <p className="text-base-content/70 mt-3 text-xs">
-          Any app can register itself. docs.plus has not checked this one. Continue only if you
-          started this from an app you trust.
-        </p>
-      </section>
+      <div className="border-base-300 mx-auto mt-3 flex w-fit max-w-full items-center gap-2 rounded-full border py-1 pr-3 pl-1">
+        <Avatar face={profile} size="xs" clickable={false} edge="none" />
+        <span className="text-base-content/70 truncate text-sm">{details.user.email}</span>
+      </div>
 
-      <h2 className="text-base-content mt-5 text-sm font-semibold">
-        If you allow it, the app can:
-      </h2>
-      <ul className="text-base-content/80 mt-2 list-disc space-y-1 pl-5 text-sm">
-        <li>Read documents you can open, and edit or post in documents you own.</li>
-        {scopes.map((scope) => (
-          <li key={scope}>{SCOPE_WORDS[scope] ?? `Use the “${scope}” permission`}</li>
+      <h2 className="text-base-content/70 mt-6 text-sm font-medium">It will be able to</h2>
+      <ul className="mt-3 space-y-3">
+        <li className="text-base-content flex items-start gap-3 text-sm">
+          <Icons.eye size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
+          Read the documents you can open, and their chat.
+        </li>
+        <li className="text-base-content flex items-start gap-3 text-sm">
+          <LuFilePlus size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
+          Create documents. A new document is public, like any docs.plus document.
+        </li>
+        <li className="text-base-content flex items-start gap-3 text-sm">
+          <Icons.pencil size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
+          Edit and post in chat only in documents you own.
+        </li>
+        {identity && (
+          <li className="text-base-content flex items-start gap-3 text-sm">
+            <Icons.user size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
+            {identity}
+          </li>
+        )}
+        {otherScopes.map((scope) => (
+          <li key={scope} className="text-base-content flex items-start gap-3 text-sm">
+            <Icons.info size={18} className="text-base-content/60 mt-0.5 shrink-0" aria-hidden />
+            <span className="[overflow-wrap:anywhere]">Use the “{scope}” permission.</span>
+          </li>
         ))}
       </ul>
 
-      <p className="text-base-content/70 mt-4 text-xs">
-        To stop access later, open{' '}
+      <TrustLine trust={trust} />
+
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          className="border-base-300 min-h-12 border"
+          loading={busy === 'deny'}
+          disabled={busy !== null}
+          onClick={() => onDecide('deny')}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          className="min-h-12"
+          loading={busy === 'approve'}
+          disabled={busy !== null}
+          onClick={() => onDecide('approve')}>
+          Allow
+        </Button>
+      </div>
+
+      <p className="text-base-content/60 mt-4 text-center text-xs">
+        {scopes.includes('offline_access')
+          ? 'It stays connected until you disconnect it in '
+          : 'You can disconnect it any time in '}
         <Link
           href="/#settings?tab=connected-apps"
           target="_blank"
           rel="noopener noreferrer"
           className="link link-primary">
           Settings › Connected apps
-        </Link>{' '}
-        and choose Disconnect.
+        </Link>
+        .
       </p>
-      <p className="text-base-content/60 mt-3 text-xs break-all">
-        Signed in as <span className="text-base-content font-medium">{details.user.email}</span>
-      </p>
-
-      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
-        <Button
-          type="button"
-          variant="ghost"
-          className="min-h-12 flex-1"
-          loading={busy === 'deny'}
-          disabled={busy !== null}
-          onClick={() => onDecide('deny')}>
-          Deny
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          className="min-h-12 flex-1"
-          loading={busy === 'approve'}
-          disabled={busy !== null}
-          onClick={() => onDecide('approve')}>
-          Approve
-        </Button>
-      </div>
     </div>
   )
 }
