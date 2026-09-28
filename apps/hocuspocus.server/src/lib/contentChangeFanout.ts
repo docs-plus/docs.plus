@@ -8,6 +8,7 @@ import { config } from '../config/env'
 import { resolveContentChangeAudience } from './contentChangeAudience'
 import { readOccupantUserIds } from './documentOccupancy'
 import { logger } from './logger'
+import { contentChangeFanoutTotal } from './metrics'
 import { prisma } from './prisma'
 import { getServiceRoleClient } from './supabase'
 
@@ -36,6 +37,7 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
   try {
     const client = getServiceRoleClient()
     if (!client) {
+      contentChangeFanoutTotal.inc({ outcome: 'no-client' })
       fanoutLogger.warn({ documentId }, 'No service-role client; skipped content-change fan-out')
       return
     }
@@ -46,12 +48,14 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
     })
     // A `Documents` row cannot exist without this one, so a miss is a purge race.
     if (!meta) {
+      contentChangeFanoutTotal.inc({ outcome: 'no-metadata' })
       fanoutLogger.warn({ documentId }, 'No document metadata; skipped content-change fan-out')
       return
     }
 
     const audience = resolveContentChangeAudience(meta)
     if (audience.kind === 'none') {
+      contentChangeFanoutTotal.inc({ outcome: 'no-audience' })
       fanoutLogger.debug({ documentId, reason: audience.reason }, 'Content change reaches nobody')
       return
     }
@@ -86,9 +90,12 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
     })
 
     if (error) {
+      contentChangeFanoutTotal.inc({ outcome: 'error' })
       fanoutLogger.warn({ error, documentId }, 'Failed to fan out content change')
       return
     }
+
+    contentChangeFanoutTotal.inc({ outcome: data ? 'notified' : 'none-notified' })
 
     fanoutLogger.debug(
       {
@@ -101,6 +108,7 @@ export async function fanOutContentChange(params: FanOutContentChangeParams): Pr
       'Content change fanned out'
     )
   } catch (err) {
+    contentChangeFanoutTotal.inc({ outcome: 'error' })
     fanoutLogger.warn({ err, documentId }, 'Error fanning out content change')
   }
 }

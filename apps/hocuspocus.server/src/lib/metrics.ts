@@ -193,12 +193,20 @@ export const documentOccupancyReadsTotal = new Counter({
 })
 
 // A lost register or refresh mutes nobody, which is the safe direction. A lost
-// release leaves a dead socket present until the 45 s stale bound prunes it, and
-// it can also stamp Last left while another tab of that person is still open.
+// release leaves a dead socket present until the 45 s stale bound prunes it.
 export const documentOccupancyWritesTotal = new Counter({
   name: 'document_occupancy_writes_total',
   help: 'Occupancy set writes by operation and outcome',
   labelNames: ['op', 'outcome'] as const,
+  registers: [register]
+})
+
+// Every save ends in exactly one outcome. `none-notified` means no NEW carrier:
+// readers were present, muted, or still hold an unread one from the last 24 h.
+export const contentChangeFanoutTotal = new Counter({
+  name: 'content_change_fanout_total',
+  help: 'Content-change fan-outs after a save, by outcome',
+  labelNames: ['outcome'] as const,
   registers: [register]
 })
 
