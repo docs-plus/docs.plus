@@ -16,6 +16,8 @@ docs.plus authenticates against your own Supabase project. There is no separate 
 
 Replace `<jwt>` with the access token Supabase returns for a signed-in user. Replace `<SUPABASE_SERVICE_ROLE_KEY>` with the service-role key from your Supabase project settings.
 
+A connected app, such as Claude or ChatGPT, holds a fourth kind of token, for `/api/mcp` only. See [What each credential can call](#what-each-credential-can-call).
+
 Note that a user token rides in a `token` header, not in `Authorization`. That is unusual, and it is what most first integrations get wrong.
 
 ## Keep the service-role key on a server
@@ -37,6 +39,8 @@ Never ship it to a browser, a mobile application, or any client you do not contr
 **Either a user token or the service-role key.** Export and import. The key passes every document; a user token is checked against that document's privacy and lock.
 
 **An admin token.** Everything under `/api/admin/`.
+
+**A connected app's token.** A token that carries a `client_id` claim comes from a connected app, such as Claude or ChatGPT. On this API, only `/api/mcp` accepts it, described in [MCP connector reference](../mcp/reference.md). It is sent as `Authorization: Bearer`, not in the `token` header. A route that requires a user token answers `403`, and so does `/api/admin/`. A route where a token is optional treats the caller as signed out. The WebSocket refuses the connection.
 
 ## One rule that surprises people
 

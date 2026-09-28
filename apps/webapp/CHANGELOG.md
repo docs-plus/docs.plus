@@ -20,7 +20,30 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - **OAuth consent page at `/oauth/consent`.** A signed-in user sees the
   client name, the redirect origin and the scopes in plain words, then
-  approves or denies. A redirect with a script scheme is refused.
+  approves or denies. A redirect with a script scheme is refused. Its last
+  line points to Settings › Connected apps to stop access later. For a
+  redirect to `localhost`, `127.0.0.1` or `[::1]`, the page adds "This app
+  runs on your own computer. Approve only if you started it."
+- **Settings has a Connected apps tab.** `#settings?tab=connected-apps` opens
+  it. **Connect an AI app** shows the server URL and one row per AI app:
+  Copy URL, a one-click link for Cursor and VS Code, or a command for Claude
+  Code and Codex. The Claude and ChatGPT rows link to the page where the app
+  adds a connector. On a phone, those rows show no buttons or commands, and one
+  row replaces Cursor, VS Code, Claude Code and Codex. The note links and the
+  server URL **Copy** stay. **Connected** lists the apps the person approved,
+  one row per app name, marked **Unverified app**. It never loads an app's
+  logo or links its address. **Disconnect** asks first, then revokes every
+  connection in the row.
+- **Settings › Security shows how you sign in and which apps have access.**
+  **How you sign in** lists Google, Email link or both, from the account's
+  identities, and says "docs.plus does not use passwords. Sign in with Google
+  or an email link." **Apps with access** says how many AI apps can use the
+  account. **Review connected apps** opens the Connected apps tab. The
+  Account email card now uses sentence case.
+- **/privacy has a Connected AI apps section.** It says what a connected app
+  can read and change, and what it receives. It says what docs.plus records
+  for each tool call, and how to stop an app. `LEGAL_UPDATED` is now
+  28 September 2026.
 - **The installed app icon shows the unread notification count.** A failed
   count fetch returns `null`, not `0`, so an error never clears the badge.
   Sign-out clears it.

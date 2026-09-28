@@ -1,0 +1,106 @@
+# MCP connector reference
+
+The docs.plus MCP connector for developers and agent builders: the endpoint, sign-in, tools, limits, and errors. MCP (Model Context Protocol) is an open standard that AI apps use to call tools outside the app. A host is the AI app, such as Claude or ChatGPT, that connects to docs.plus. docs.plus calls it a connected app. To connect a host step by step, see [Use docs.plus from Claude or ChatGPT](README.md).
+
+[`apps/hocuspocus.server/API.md`](../../apps/hocuspocus.server/API.md#mcp-connector) owns the route contract, including the section and chat rules.
+
+## Endpoint
+
+| Item      | Value                                                                                                                                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| URL       | `https://prodback.docs.plus/api/mcp`. On your own server, `<PUBLIC_RESTAPI_URL>/api/mcp`, after you [turn on the MCP connector](../self-hosting/configuration.md#turn-on-the-mcp-connector).                           |
+| Transport | Streamable HTTP, stateless. Each request gets a new server, so nothing is held between requests.                                                                                                                       |
+| Protocol  | Claude's and OpenAI's docs name the 2025 revisions, up to `2025-11-25`. [API.md](../../apps/hocuspocus.server/API.md#mcp-connector) calls these legacy. Only `2025-11-25` is tested, with the official MCP SDK client. |
+| Origin    | A request whose `Origin` header is not on the server's allowed list gets `403`. Hosted apps call from their servers and send no `Origin` header.                                                                       |
+
+Replace `<PUBLIC_RESTAPI_URL>` with your server's value of [`PUBLIC_RESTAPI_URL`](../../apps/hocuspocus.server/ENV.md).
+
+## Authorization
+
+- Supabase Auth is the authorization server, with OAuth 2.1. docs.plus runs no OAuth server of its own.
+- A host registers itself with dynamic client registration (DCR). Supabase does not offer Client ID Metadata Documents (CIMD).
+- The flow uses PKCE with `S256`. The consent page is `https://docs.plus/oauth/consent`. On your own server, it is your webapp address plus `/oauth/consent`.
+- Send the token as `Authorization: Bearer <token>`. Replace `<token>` with the access token the host gets at the end of the OAuth flow. The `token` header that other REST routes read is ignored here.
+- Only a token that carries a `client_id` claim is accepted. An OAuth grant adds that claim. A docs.plus browser session token never has it, so it gets `401`.
+- On the docs.plus server, only `/api/mcp` accepts a token with `client_id`. [Authentication](../api/authentication.md#what-each-credential-can-call) says what the other routes do with it.
+- The docs.plus Supabase project refuses a token with `client_id` too. The Data API (tables, RPC and GraphQL) answers `403` with the code `connected_app`. Storage shows the token no objects and refuses its uploads. Realtime refuses it on private channels, and applies the same refusal to database-change subscriptions. So build on the tools below, not on the Supabase APIs. A self-hosted server needs [one Supabase script](../self-hosting/configuration.md#turn-on-the-mcp-connector) for this.
+
+**Audience binding is not possible today.** Supabase always sets `aud` to `authenticated`. It never writes the RFC 8707 `resource` into the token ([supabase/auth#2610](https://github.com/supabase/auth/issues/2610)). So `/api/mcp` cannot prove that a token was issued for it. The `client_id` rule is the strongest check Supabase allows.
+
+**Revoking access.** A person disconnects an app in docs.plus **Settings > Connected apps**. The tab reads the person's grants with the Supabase `listGrants` call. **Disconnect** calls `revokeGrant` for each client. A host that uses DCR registers a new client on each fresh connection. So the tab groups clients by app name, and **Disconnect** revokes every client in the group. The app's current token can still work at /api/mcp for up to one minute.
+
+### Discovery
+
+A request without a valid token gets `401` and this header.
+
+```
+WWW-Authenticate: Bearer resource_metadata="https://prodback.docs.plus/api/mcp/.well-known/oauth-protected-resource"
+```
+
+When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header.
+
+The metadata sits under `/api/mcp`, not at the site root, because only `/api` and `/health` are routed publicly. It answers like this.
+
+```json
+{
+  "resource": "https://prodback.docs.plus/api/mcp",
+  "authorization_servers": ["https://tglymsfloxmouzjuoycu.supabase.co/auth/v1"],
+  "bearer_methods_supported": ["header"],
+  "resource_name": "docs.plus"
+}
+```
+
+`resource` must match the URL the person types into the host, with no `/` at the end.
+
+## Tools
+
+Every tool except `find_documents` takes a document `slug`. Each tool runs as the signed-in person and checks access first. Reads follow the normal access rule. Writes and chat posts work only in documents the person owns.
+
+A result carries text and `structuredContent`, with snake_case keys. Document and chat text is framed as data that people wrote, not instructions. Every tool sets `openWorldHint: false`.
+
+| Tool                 | Hints                           | What it does                                                     | Inputs                                                   |
+| -------------------- | ------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| `find_documents`     | read-only                       | Lists the person's documents, or searches public ones by title   | `query`, `scope` (`mine` or `public`), `limit` (1 to 50) |
+| `get_outline`        | read-only                       | The heading tree, with a `section_id` and `rev` for each heading | `slug`                                                   |
+| `read_document`      | read-only                       | The document as Markdown, or one section with its `rev`          | `slug`, `section_id`, `max_chars`                        |
+| `append_to_document` | not destructive, not idempotent | Adds Markdown at the end                                         | `slug`, `markdown`                                       |
+| `replace_section`    | destructive, not idempotent     | Replaces the text under one heading. The heading stays.          | `slug`, `section_id`, `rev`, `markdown`                  |
+| `list_chat_rooms`    | read-only                       | The headings that have a chat room                               | `slug`                                                   |
+| `read_chat_thread`   | read-only                       | Messages in one heading's room, newest last                      | `slug`, `section_id`, `before_seq`, `limit` (1 to 50)    |
+| `post_chat_message`  | not destructive, not idempotent | Posts plain text in one heading's room, as the person            | `slug`, `section_id`, `text`                             |
+
+`scope: "public"` needs a `query`. `find_documents` lists the most recently updated first, 20 by default. Its `updated_at` moves when the title or settings change, not on every text edit. So do not treat it as the time of the last text edit.
+
+A `#` heading in written Markdown is refused, because it is the document title. The one exception is the first append to an empty document, which must start with its title.
+
+## Limits
+
+| Limit               | Value                                                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Read output         | 100 000 characters per call, or `max_chars` when smaller. The text says where it stopped.                                   |
+| Markdown written    | 65 536 characters per call                                                                                                  |
+| Chat post           | 2000 characters of text. The stored HTML is capped at 3000 characters.                                                      |
+| Tool calls          | 60 per minute per person, on a server with Redis. Over it, the tool returns an error with the wait in seconds, not a `429`. |
+| Request body        | 1 MiB. A larger body gets `413`.                                                                                            |
+| REST API rate limit | The REST API [rate limit](../api/README.md#rate-limiting) also covers `/api/mcp`                                            |
+
+A post with many short lines can pass the text cap and fail the HTML cap.
+
+## Errors
+
+| Where     | Answer                        | Cause                                                                                                                   |
+| --------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Transport | `401` with `WWW-Authenticate` | No token, an invalid or expired token, or a token with no `client_id`                                                   |
+| Transport | `403 FORBIDDEN`               | An `Origin` header that is not on the allowed list                                                                      |
+| Transport | `413 PAYLOAD_TOO_LARGE`       | A body over 1 MiB                                                                                                       |
+| Transport | `429 RATE_LIMIT_EXCEEDED`     | The REST API limit for one network address. Many people on one hosted app share it. Wait for the `Retry-After` seconds. |
+| Transport | `503 AUTH_UNAVAILABLE`        | The server could not reach Supabase Auth. Retry with a backoff.                                                         |
+| Tool      | A result with `isError: true` | The tool refused. The text gives the next step.                                                                         |
+
+When one argument is at fault, the tool error text starts with that field, such as `slug:` or `section_id:`. An argument with the wrong shape never reaches the tool. The MCP SDK on the server refuses it and names the failing field.
+
+Plan retries with care. `append_to_document`, `replace_section` and `post_chat_message` are not idempotent.
+
+- A stale `rev` is refused. Call `get_outline` or `read_document` again, then retry with the new `rev`.
+- After `docs.plus could not confirm the write`, wait about a minute, then call `read_document` before you retry. A read at once cannot see a write that is still saving.
+- After `docs.plus could not confirm the post`, call `read_chat_thread` before you retry.

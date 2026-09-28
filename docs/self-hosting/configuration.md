@@ -88,6 +88,105 @@ Most misconfiguration here fails quietly rather than loudly. [Install](install.m
 
 **An upload cap under 1 MB is ignored** and floored to 10 MB, with a warning at startup. Next step: read the startup log after a cap change.
 
+## Turn on the MCP connector
+
+The MCP connector at `/api/mcp` lets people use docs.plus from Claude or ChatGPT. It needs the Supabase OAuth server. For the user side, see [Use docs.plus from Claude or ChatGPT](../mcp/README.md). For the tools and limits, see [MCP connector reference](../mcp/reference.md).
+
+The chat tools also need [`SUPABASE_SERVICE_ROLE_KEY`](../../apps/hocuspocus.server/ENV.md#security). Without it, they answer `Chat is not available on this docs.plus server.` The limit of 60 tool calls per minute needs [Redis](../../apps/hocuspocus.server/ENV.md#redis). Without Redis, that limit is off.
+
+**Hosted Supabase.** In the Supabase dashboard, open **Authentication > OAuth Server**.
+
+1. Turn on **Enable the Supabase OAuth Server**.
+2. Check **Site URL**. It comes from **Authentication > URL Configuration**, and it must be your webapp address.
+3. Set **Authorization Path** to `/oauth/consent`.
+4. Turn on **Allow Dynamic OAuth Apps**.
+5. Choose **Save changes**.
+
+The Supabase CLI does not push this setting, so set it in the dashboard.
+
+**Local stack.** `packages/supabase/config.toml` already turns the OAuth server on.
+
+```toml
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth/consent"
+allow_dynamic_registration = true
+```
+
+After you change that file, restart Supabase. Run this at the repository root.
+
+```bash
+bun --filter @docs.plus/supabase_back stop
+bun --filter @docs.plus/supabase_back start
+```
+
+**Check discovery.** Run this from any directory.
+
+```bash
+curl -s <SUPABASE_URL>/auth/v1/.well-known/openid-configuration
+```
+
+Replace `<SUPABASE_URL>` with your Supabase project URL, from the Supabase project settings. Locally it is `http://127.0.0.1:54321`.
+
+The answer must list `registration_endpoint`. If it is missing, the OAuth server or dynamic registration is off. Copy the `issuer` value exactly, and set [`MCP_AUTH_ISSUER`](../../apps/hocuspocus.server/ENV.md) to it. On a server, recreate the containers, as [above](#recreate-or-the-change-does-not-land). Locally, stop and restart `make dev-local`.
+
+**Check the endpoint.** Run this from any directory.
+
+```bash
+curl -si -X POST <PUBLIC_RESTAPI_URL>/api/mcp
+```
+
+Replace `<PUBLIC_RESTAPI_URL>` with the public origin of your REST API, such as `https://prodback.docs.plus`.
+
+The answer is `401`, with a `WWW-Authenticate` header that names a `resource_metadata` URL. Open that URL. Its `authorization_servers` entry must equal the `issuer` you copied, character for character. No proxy change is needed, because the connector sits under `/api`.
+
+**Refuse connected-app tokens in Supabase.** Supabase applies the same RLS to an OAuth token as to a session token, as its [Token Security and RLS](https://supabase.com/docs/guides/auth/oauth-server/token-security) guide says. `packages/supabase/scripts/31-connected-app-token-gate.sql` makes Supabase refuse a token that carries `client_id`. It covers the Data API, Storage and Realtime. The MCP tools use the service-role key, so the script does not change them.
+
+A new install runs this script with the other numbered files, as [Install](install.md#2-prepare-supabase) says. An existing install runs it once in the SQL editor. The paired migration `20260928120000_refuse_connected_app_tokens` has the same body, for a `supabase db push`. Both are safe to run again.
+
+Before you run it, check two things.
+
+1. Run `select rolconfig from pg_roles where rolname = 'authenticator';`. If the answer already sets `pgrst.db_pre_request`, merge both checks into one function first. The script replaces that setting.
+2. Check that PostgREST is version 12 or later. The Supabase dashboard shows it under **Project Settings > Infrastructure**. An older version still refuses the token, but answers `500` instead of `403`.
+
+After it runs, open a document with chat while signed in. Messages load and a send works. A connected app's token now gets `403` with the code `connected_app` from `<SUPABASE_URL>/rest/v1/`. One MCP tool call still works.
+
+The script adds a policy to each table in the `supabase_realtime` publication. After you add a table to that publication, run the script again.
+
+If the site breaks, this turns the Data API check off. Run it in the SQL editor.
+
+```sql
+alter role authenticator reset pgrst.db_pre_request;
+notify pgrst, 'reload config';
+```
+
+The Storage and Realtime policies stay. Each is named `Connected apps use only the MCP server`. They sit on `storage.objects`, on `realtime.messages`, and on each public table in `supabase_realtime`. Drop each one with `drop policy if exists`.
+
+## Turn off password sign-in
+
+docs.plus does not use passwords. People sign in with Google or an email link. Turn on this hook, so that no account can sign in with a password.
+
+`packages/supabase/scripts/32-password-sign-in-hook.sql` creates the function `public.hook_block_password_tokens`. A new install runs it with the other numbered files. An existing install runs it once in the SQL editor, or pushes the paired migration `20260928130000_reject_password_sign_in_hook`. Both are safe to run again.
+
+The function is a Custom Access Token hook, which every Supabase plan has. It refuses a token for a password sign-in and passes every other sign-in through unchanged. Keep **Confirm email** on. With it off, a first sign-in by email link also fails.
+
+**Hosted Supabase.** In the Supabase dashboard, open **Authentication > Hooks**. Add the **Customize Access Token (JWT) Claims** hook, choose **Postgres**, and pick that function. The hook runs each time Supabase issues a token. If sign-in or a token refresh fails after you turn it on, turn the hook off again.
+
+**Local stack.** `packages/supabase/config.toml` has the hook block, commented out.
+
+```toml
+# [auth.hook.custom_access_token]
+# enabled = true
+# uri = "pg-functions://postgres/public/hook_block_password_tokens"
+```
+
+It stays off locally, because the backend e2e scripts and document-swarm sign in with a password. With the hook on, those scripts fail. To turn it on, remove the `#` marks. Also set `enable_confirmations = true` under `[auth.email]`, so that a first email-link sign-in still works. Then restart Supabase. Run this at the repository root.
+
+```bash
+bun --filter @docs.plus/supabase_back stop
+bun --filter @docs.plus/supabase_back start
+```
+
 ## Where to go next
 
 - [`apps/hocuspocus.server/ENV.md`](../../apps/hocuspocus.server/ENV.md) — every backend variable, its type, and its default.

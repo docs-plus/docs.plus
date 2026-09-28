@@ -18,12 +18,19 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `@modelcontextprotocol/server` `2.0.0`. Eight tools: `find_documents`,
   `get_outline`, `read_document`, `append_to_document`, `replace_section`,
   `list_chat_rooms`, `read_chat_thread` and `post_chat_message`. Each tool
-  takes a slug and checks the caller's access before it reads or writes.
-  Writes and chat posts work only in documents the caller owns.
-  `replace_section` keeps the heading and refuses a stale `rev`. Reads stop
-  at 100 000 characters and say so, hide media URLs, and frame the text as
-  data. A post removes every `@`, so it sends no notification. Each person
+  except `find_documents` takes a slug and checks the caller's access before
+  it reads or writes. Writes and chat posts work only in documents the caller
+  owns. `replace_section` keeps the heading and refuses a stale `rev`. Reads
+  stop at 100 000 characters and say so, hide media URLs, and frame the text
+  as data. A post removes every `@`, so it sends no notification. Each person
   gets 60 calls a minute. Set `MCP_AUTH_ISSUER` to the Supabase issuer.
+
+- **`GET /api/admin/mcp/usage` counts MCP tool calls.** Each call adds to
+  three Redis keys a day: calls per tool and outcome, calls per `client_id`,
+  and distinct callers. The keys expire after 35 days. The route takes `days`
+  from 1 to 35 and groups calls by app name. It returns no user id, email or
+  client id. A Redis fault never fails a tool call. The admin dashboard shows
+  it on the MCP Usage page.
 
 - **A validation `400` names each rejected input.** `error.fields` holds one
   `{ path, message }` per field.
@@ -201,6 +208,27 @@ This file is the operator and API changelog. The pad product lives in the [root 
   lines and an 80-character preview. Before, the plain text showed 3 lines and
   50 characters.
 
+### Security
+
+- **Supabase refuses a connected app's token.** Run
+  `packages/supabase/scripts/31-connected-app-token-gate.sql` once, or push
+  the paired migration `20260928120000_refuse_connected_app_tokens`. The Data
+  API answers `403` with the code `connected_app`. Storage and Realtime refuse
+  the token too. The MCP tools use the service-role key, so they still work.
+  Check the existing `pgrst.db_pre_request` first, as
+  [configuration](../../docs/self-hosting/configuration.md#turn-on-the-mcp-connector)
+  says.
+
+- **Supabase can refuse every password sign-in.** docs.plus does not use
+  passwords. `packages/supabase/scripts/32-password-sign-in-hook.sql`, paired
+  with the migration `20260928130000_reject_password_sign_in_hook`, adds
+  `public.hook_block_password_tokens`. As the Custom Access Token hook, which
+  every Supabase plan has, it refuses a token for a password sign-in with
+  "Invalid login credentials". Google and email-link sign-in do not change.
+  Confirm email must stay on. The operator turns the hook on, as
+  [configuration](../../docs/self-hosting/configuration.md#turn-off-password-sign-in)
+  says. It stays off on the local stack.
+
 ### Removed
 
 - `latestSnapshot` from the `history.list` reply. It carried the head version's
@@ -223,6 +251,16 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - Record `preview`, `lastOpenedAt`, `lastOpenedAt_desc`, and
   `POST /api/documents/:documentId/opened` in [API.md](./API.md). Owner Trash
   includes `preview`.
+- Document the MCP connector for users and for developers, in
+  [docs/mcp/README.md](../../docs/mcp/README.md) and
+  [docs/mcp/reference.md](../../docs/mcp/reference.md).
+  [docs/self-hosting/configuration.md](../../docs/self-hosting/configuration.md)
+  says how to turn on the Supabase OAuth server. It also says how to run the
+  Supabase script that refuses a connected app's token.
+  [docs/api/authentication.md](../../docs/api/authentication.md) says that the
+  docs.plus server accepts a connected app's token only at `/api/mcp`. The
+  user guide starts with Settings > Connected apps, where a person connects
+  and disconnects each app.
 
 ### Internal
 

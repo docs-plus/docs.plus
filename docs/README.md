@@ -4,6 +4,13 @@ Everything written for people who use, host, or build on docs.plus. If you want 
 
 docs.plus is a real-time collaborative editor. A document is a tree of headings, and every heading carries its own chat thread.
 
+## Connect an AI assistant
+
+| Page                                                  | Answers                                                              |
+| ----------------------------------------------------- | -------------------------------------------------------------------- |
+| [Use docs.plus from Claude or ChatGPT](mcp/README.md) | How to connect, what the AI app can do, and what to do when it fails |
+| [MCP connector reference](mcp/reference.md)           | Endpoint, sign-in, tools, limits, and errors, for developers         |
+
 ## Run it on your own server
 
 | Page                                           | Answers                                                        |

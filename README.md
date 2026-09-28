@@ -2,6 +2,8 @@
 
 docs.plus is a free, open-source tool for real-time collaborative documents. Every heading in a document has its own chatroom, so a discussion stays next to the section it is about. The table of contents shows who is in each chatroom and how many messages you have not read.
 
+You can also [use docs.plus from Claude or ChatGPT](docs/mcp/README.md). The AI app reads the documents you can open and edits the ones you own.
+
 [![Tiptap extensions](https://img.shields.io/badge/Tiptap%20extensions-5%20on%20npm-1a73e8.svg)](https://www.npmjs.com/search?q=keywords:docs.plus)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
@@ -66,12 +68,13 @@ The local stack runs two databases. That command resets the Supabase database on
 
 Full documentation lives in [`docs/`](docs/README.md).
 
-| I want to                      | Read                                                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------- |
-| Run docs.plus on my own server | [Self-hosting](docs/self-hosting/README.md) → [Install](docs/self-hosting/install.md) |
-| Call the API from my code      | [API overview](docs/api/README.md) → [Quickstart](docs/api/quickstart.md)             |
-| Change the code                | [CONTRIBUTING.md](CONTRIBUTING.md)                                                    |
-| Understand a past decision     | [Decision records](docs/README.md#decision-records)                                   |
+| I want to                            | Read                                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------------------- |
+| Run docs.plus on my own server       | [Self-hosting](docs/self-hosting/README.md) → [Install](docs/self-hosting/install.md)   |
+| Call the API from my code            | [API overview](docs/api/README.md) → [Quickstart](docs/api/quickstart.md)               |
+| Use docs.plus from Claude or ChatGPT | [How to connect](docs/mcp/README.md) → [MCP connector reference](docs/mcp/reference.md) |
+| Change the code                      | [CONTRIBUTING.md](CONTRIBUTING.md)                                                      |
+| Understand a past decision           | [Decision records](docs/README.md#decision-records)                                     |
 
 <details>
 <summary><strong>🐳 Alternative: full Docker (`make up-dev`)</strong></summary>
