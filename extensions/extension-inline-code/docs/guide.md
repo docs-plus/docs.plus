@@ -42,7 +42,7 @@ export const pasteRegex = /(?<=^|[^`])`([^`]+)`(?!`)/g
 
 `inputRegex` is end-anchored and non-global, because a global flag moves the input-rule plugin's `lastIndex`. `pasteRegex` keeps the global flag, so one paste converts every span it finds.
 
-The prefix lookbehind sits in both regexes, so the character before the opening backtick stays out of the match. Typing `` x`x` `` marks the content alone and keeps the leading `x` plain. The backtick rules are module-scope regex literals that use it.
+The prefix lookbehind sits in both regexes, so the character before the opening backtick stays out of the match. Typing `` x`x` `` marks the content alone and keeps the leading `x` plain. The backtick rules build these patterns at runtime with `new RegExp`, so an engine with no lookbehind can still load the bundle. On Safari before 16.4 they fall back to an in-match prefix, and the character before the opening backtick is removed.
 
 ### Where the rules do not fire
 

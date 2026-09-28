@@ -34,7 +34,7 @@ function renameCodeMark<T extends StoredNode>(node: T): T {
 | `priority`                             | declares none, so it sorts at `100`          | `101`                                               |
 | `parseHTML`                            | every `<code>` tag                           | a `<code>` tag whose parent is not `PRE`            |
 | `ArrowRight` at the end of a textblock | `exitable: true` — exits and inserts a space | exits only at the document end, and inserts nothing |
-| Input-rule prefix                      | an in-match capture                          | a lookbehind                                        |
+| Input-rule prefix                      | an in-match capture                          | a lookbehind; an in-match capture on Safari < 16.4  |
 | Input rule over a non-text inline node | no inline-leaf guard, so the match converts  | declines the match                                  |
 | Exports                                | named symbols plus `Code` as default         | named symbols only                                  |
 

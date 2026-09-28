@@ -42,7 +42,7 @@ React Native has no DOM. Load the editor in a web view.
 
 Installs with no runtime dependencies.
 
-Also requires an engine with RegExp lookbehind: Chrome 62+, Firefox 78+, Safari and iOS Safari 16.4+.
+On Safari and iOS Safari before 16.4, which have no RegExp lookbehind, the rules fall back to the upstream pattern. There, the character before the opening backtick is removed.
 
 Upgrading from `@tiptap/extension-code`? See [Migrating from `@tiptap/extension-code`](https://github.com/docs-plus/docs.plus/blob/main/extensions/extension-inline-code/docs/migration.md).
 

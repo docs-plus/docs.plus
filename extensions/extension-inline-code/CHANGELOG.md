@@ -4,6 +4,10 @@ All notable changes to `@docs.plus/extension-inline-code` are documented here. T
 
 ## [Unreleased]
 
+### Fixed
+
+- The input and paste rules load on Safari before 16.4. There, the character before the opening backtick is removed, as in upstream.
+
 ### Documentation
 
 - The README is a short start page: why to use it, install, a Quickstart

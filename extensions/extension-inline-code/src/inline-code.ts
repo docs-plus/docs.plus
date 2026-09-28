@@ -6,12 +6,24 @@ export interface InlineCodeOptions {
 }
 
 /**
- * `inputRegex` is end-anchored and non-global: a global flag moves the input-rule
- * plugin's `lastIndex` and throws "Position out of range". `pasteRegex` stays
- * global to scan a paste. Prefix guard is a lookbehind — an in-match prefix gets eaten.
+ * The prefix guard is a lookbehind, because an in-match prefix gets eaten.
+ * Safari < 16.4 cannot parse a lookbehind literal, and one parse error fails the
+ * whole chunk, so build it at runtime. Old engines get the upstream in-match prefix.
  */
-export const inputRegex = /(?<=^|[^`])`([^`]+)`(?!`)$/
-export const pasteRegex = /(?<=^|[^`])`([^`]+)`(?!`)/g
+const supportsLookbehind = (() => {
+  try {
+    new RegExp('(?<=a)')
+    return true
+  } catch {
+    return false
+  }
+})()
+export const inputRegex = supportsLookbehind
+  ? new RegExp('(?<=^|[^`])`([^`]+)`(?!`)$')
+  : /(^|[^`])`([^`]+)`(?!`)$/
+export const pasteRegex = supportsLookbehind
+  ? new RegExp('(?<=^|[^`])`([^`]+)`(?!`)', 'g')
+  : /(^|[^`])`([^`]+)`(?!`)/g
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
