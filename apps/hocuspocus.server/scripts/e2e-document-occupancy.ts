@@ -35,7 +35,6 @@ const USER_B = '0f868b6c-cd9d-41ec-aff7-48f40f5efc38'
 interface ChildPayload {
   outcome?: string
   userIds?: string[]
-  lastOccupantGone?: boolean
   elapsedMs?: number
 }
 
@@ -50,8 +49,7 @@ if (childMode) {
   if (childMode === 'register') {
     payload = { outcome: await touchOccupant(doc, member, at, 'register') }
   } else if (childMode === 'release') {
-    const released = await releaseOccupant(doc, userId, member, at)
-    payload = { outcome: released.outcome, lastOccupantGone: released.lastOccupantGone }
+    payload = { outcome: await releaseOccupant(doc, member) }
   } else {
     const started = Date.now()
     const read = await readOccupantUserIds(doc, at)
@@ -219,21 +217,14 @@ console.log('\n[3] The two-tab rule — a different process registers and closes
     `two tabs collapse to one occupant id (got ${JSON.stringify(oneUser.userIds)})`
   )
 
-  // Neither closing process ever held the tab it closes, so the verdict can come
+  // Neither closing process ever held the tab it closes, so presence can come
   // only from the shared set.
   const first = await runChild('release', { doc: DOC, user: USER_A, socket: tabOne, at: now })
-  check(
-    first.payload.lastOccupantGone === false,
-    `closing the first tab does not report the person gone (got ${first.payload.lastOccupantGone})`
-  )
+  check(first.payload.outcome === 'ok', `the first tab closed (got ${first.payload.outcome})`)
   const still = await readOccupantUserIds(DOC, now)
   check(still.userIds.includes(USER_A), 'the person is still present after the first tab closes')
 
-  const second = await runChild('release', { doc: DOC, user: USER_A, socket: tabTwo, at: now })
-  check(
-    second.payload.lastOccupantGone === true,
-    `closing the second tab reports the person gone, which is what stamps Last left (got ${second.payload.lastOccupantGone})`
-  )
+  await runChild('release', { doc: DOC, user: USER_A, socket: tabTwo, at: now })
   const gone = await readOccupantUserIds(DOC, now)
   check(gone.userIds.length === 0, 'the room is empty once both tabs have closed')
 }

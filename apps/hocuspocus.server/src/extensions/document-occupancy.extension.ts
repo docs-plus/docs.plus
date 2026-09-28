@@ -1,14 +1,15 @@
 /**
- * Registers each live socket in the shared occupancy set, refreshes it from real
- * client traffic, and stamps Last left when a person's final socket on the
- * document closes. Per-connection state rides `context`, as document-views does.
+ * Keeps each visible socket in the shared occupancy set and stamps Last left
+ * when a socket closes. Per-connection state rides `context`, as document-views
+ * does.
  */
 
 import type {
   beforeHandleMessagePayload,
   connectedPayload,
   Extension,
-  onDisconnectPayload
+  onDisconnectPayload,
+  onStatelessPayload
 } from '@hocuspocus/server'
 import { isbot } from 'isbot'
 
@@ -24,16 +25,69 @@ import { getServiceRoleClient } from '../lib/supabase'
 
 const occupancyLogger = logger.child({ service: 'document-occupancy' })
 
+/** A tab must stay visible this long before the visit counts as reading. */
+export const READ_DWELL_MS = 10_000
+
+/** The stateless `msg` the pad sends when its tab is shown or hidden. */
+export const READING_MSG = 'reading'
+
+export interface ReadingState {
+  /** When the tab last became visible; null while it is hidden. */
+  visibleSince: number | null
+  /** The last instant this socket counted as reading; null until it does. */
+  readAt: number | null
+}
+
 /** The marker `connected` plants. Its presence is the only gate the later hooks read. */
-export interface OccupancyContext {
+export interface OccupancyContext extends ReadingState {
   userId: string
   member: string
-  lastSeenAt: number
+  /** The score last written to the set. */
   lastTouchAt: number
 }
 
+export type ReadingEvent = 'heard' | 'visible' | 'hidden'
+
+/**
+ * A visit counts only after the tab has been visible for READ_DWELL_MS. Edits
+ * earn no shortcut: opening a pad writes toc-ids and replays the local copy,
+ * so a quick open would otherwise move Last left past unseen changes.
+ */
+export const advanceReading = (
+  state: ReadingState,
+  event: ReadingEvent,
+  nowMs: number
+): ReadingState => {
+  const dwelled = state.visibleSince !== null && nowMs - state.visibleSince >= READ_DWELL_MS
+  const readAt = dwelled ? nowMs : state.readAt
+  switch (event) {
+    case 'visible':
+      return { visibleSince: state.visibleSince ?? nowMs, readAt }
+    case 'hidden':
+      return { visibleSince: null, readAt }
+    case 'heard':
+      return { visibleSince: state.visibleSince, readAt }
+    default: {
+      const unseen: never = event
+      return unseen
+    }
+  }
+}
+
+interface ConnectionContext {
+  occupancy?: OccupancyContext
+  /** A report that landed before `connected` planted the marker. */
+  reportedVisible?: boolean
+}
+
 const readOccupancyContext = (context: unknown): OccupancyContext | undefined =>
-  (context as { occupancy?: OccupancyContext } | undefined)?.occupancy
+  (context as ConnectionContext | undefined)?.occupancy
+
+const applyReading = (occupancy: OccupancyContext, event: ReadingEvent, nowMs: number): void => {
+  const next = advanceReading(occupancy, event, nowMs)
+  occupancy.visibleSince = next.visibleSince
+  occupancy.readAt = next.readAt
+}
 
 export type OccupancyCandidate = Pick<connectedPayload, 'context' | 'requestHeaders' | 'socketId'>
 
@@ -54,11 +108,25 @@ export const decideOccupancy = (
   if (typeof userId !== 'string' || !userId) return null
   if (context.user?.is_anonymous === true) return null
 
+  // A client that never reports reads as visible from the start.
+  const hidden = (context as ConnectionContext).reportedVisible === false
   return {
     userId,
     member: occupancyMember(userId, socketId),
-    lastSeenAt: nowMs,
-    lastTouchAt: nowMs
+    lastTouchAt: nowMs,
+    visibleSince: hidden ? null : nowMs,
+    readAt: null
+  }
+}
+
+/** The `visible` flag of a reading message, or null for any other payload. */
+export const readingVisibility = (payload: string): boolean | null => {
+  try {
+    const data = JSON.parse(payload) as { msg?: unknown; visible?: unknown }
+    if (data.msg !== READING_MSG || typeof data.visible !== 'boolean') return null
+    return data.visible
+  } catch {
+    return null
   }
 }
 
@@ -95,16 +163,30 @@ const stampLastLeft = async (
   }
 }
 
-/** Never rejects: the caller fires it detached so teardown does not wait on Supabase. */
+/**
+ * Never rejects: the caller fires it detached so teardown does not wait on Supabase.
+ * Every close stamps its own reading, because the column only moves forward: a
+ * short second tab must not swallow a long first one.
+ */
 const releaseAndStamp = async (documentId: string, occupancy: OccupancyContext): Promise<void> => {
-  const release = await releaseOccupant(documentId, occupancy.userId, occupancy.member, Date.now())
-  if (!release.lastOccupantGone) {
-    documentLastLeftStampsTotal.inc({ outcome: 'skipped-present' })
+  await releaseOccupant(documentId, occupancy.member)
+  if (occupancy.readAt === null) {
+    documentLastLeftStampsTotal.inc({ outcome: 'not-read' })
     return
   }
-  // The last instant this socket was heard from, never now(): detection lags a
-  // real leave by 30-60 s. Never a ZSCORE either — the member is already gone.
-  await stampLastLeft(documentId, occupancy.userId, occupancy.lastSeenAt)
+  await stampLastLeft(documentId, occupancy.userId, occupancy.readAt)
+}
+
+const touch = (
+  documentName: string,
+  occupancy: OccupancyContext,
+  nowMs: number,
+  op: 'register' | 'refresh'
+): void => {
+  occupancy.lastTouchAt = nowMs
+  // Hooks are awaited before the message applies, and a rejection closes the
+  // connection. Detached with a catch, so neither can happen.
+  void touchOccupant(documentName, occupancy.member, nowMs, op).catch(() => {})
 }
 
 export class DocumentOccupancyExtension implements Extension {
@@ -114,16 +196,14 @@ export class DocumentOccupancyExtension implements Extension {
     if (!occupancy) return
 
     payload.context.occupancy = occupancy
-    void touchOccupant(
-      payload.documentName,
-      occupancy.member,
-      occupancy.lastSeenAt,
-      'register'
-    ).catch(() => {})
+    if (occupancy.visibleSince !== null) {
+      touch(payload.documentName, occupancy, occupancy.lastTouchAt, 'register')
+    }
   }
 
-  // Real client traffic is the only refresh. A server timer would keep a dead
-  // socket fresh, because Hocuspocus needs 30-60 s to notice one.
+  // Real client traffic is the only refresh, and only while the tab is visible.
+  // A server timer would keep a dead socket fresh for the 30-60 s Hocuspocus
+  // needs to notice it.
   async beforeHandleMessage({ context, documentName }: beforeHandleMessagePayload) {
     const occupancy = readOccupancyContext(context)
     // Queued messages are emitted before `connected` runs, so this hook can fire
@@ -131,13 +211,28 @@ export class DocumentOccupancyExtension implements Extension {
     if (!occupancy) return
 
     const now = Date.now()
-    occupancy.lastSeenAt = now
+    applyReading(occupancy, 'heard', now)
+    if (occupancy.visibleSince === null) return
     if (now - occupancy.lastTouchAt < OCCUPANCY_TOUCH_MS) return
-    occupancy.lastTouchAt = now
+    touch(documentName, occupancy, now, 'refresh')
+  }
 
-    // This hook is awaited before the message applies, and a rejection closes the
-    // connection. Detached with a catch, so neither can happen.
-    void touchOccupant(documentName, occupancy.member, now, 'refresh').catch(() => {})
+  async onStateless({ payload, connection, documentName }: onStatelessPayload) {
+    const visible = readingVisibility(payload)
+    if (visible === null) return
+    const context = connection.context as ConnectionContext
+    const occupancy = context.occupancy
+    if (!occupancy) {
+      context.reportedVisible = visible
+      return
+    }
+
+    const now = Date.now()
+    const wasVisible = occupancy.visibleSince !== null
+    applyReading(occupancy, visible ? 'visible' : 'hidden', now)
+    // Only a visible tab mutes the fan-out, so the set follows the tab at once.
+    if (visible && !wasVisible) touch(documentName, occupancy, now, 'register')
+    if (!visible && wasVisible) void releaseOccupant(documentName, occupancy.member).catch(() => {})
   }
 
   async onDisconnect({ context, documentName }: onDisconnectPayload) {

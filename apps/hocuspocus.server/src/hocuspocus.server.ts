@@ -14,6 +14,7 @@ import { config } from './config/env'
 import HocuspocusConfig from './config/hocuspocus.config'
 import { clientAuthorsExtension } from './extensions/client-authors.extension'
 import { contributorsExtension } from './extensions/contributors.extension'
+import { READING_MSG } from './extensions/document-occupancy.extension'
 import { decideStatelessRelay, MAX_STATELESS_RELAY_BYTES } from './extensions/statelessRelay'
 import { type SupabaseUser, verifyServiceRole, verifySupabaseTokenOutcome } from './lib/auth'
 import { countActiveConnections } from './lib/health'
@@ -332,6 +333,9 @@ const statelessExtension = {
       }
       return
     }
+
+    // DocumentOccupancyExtension reads it; it is never relayed to the room.
+    if (parsedPayload.msg === READING_MSG) return
 
     const verdict = decideStatelessRelay(parsedPayload)
     if (!verdict.relay) {

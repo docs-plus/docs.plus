@@ -197,8 +197,8 @@ export const documentOccupancyWritesTotal = new Counter({
 })
 
 // Last left is the window the digest and the History compare both read. `no-row`
-// is ordinary for a visitor with no membership row, and `skipped-present` is the
-// two-tab rule working. A rising `error` is neither.
+// is ordinary for a visitor with no membership row, and `not-read` is a glance or
+// a background-only visit. A rising `error` is neither.
 export const documentLastLeftStampsTotal = new Counter({
   name: 'document_last_left_stamps_total',
   help: 'Last left stamp attempts made when a document session closed, by outcome',

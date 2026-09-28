@@ -1,7 +1,6 @@
 /**
- * Live presence per document, shared across the fleet. The fan-out reads it to
- * mute people who are still in the room. The disconnect path reads it to decide
- * whether a person's last socket on that document has gone.
+ * Visible presence per document, shared across the fleet. The fan-out reads it
+ * to mute people who can see the room. A hidden or closed tab leaves the set.
  */
 
 import type { ChainableCommander } from 'ioredis'
@@ -119,37 +118,17 @@ export const touchOccupant = async (
   return outcome
 }
 
-export interface OccupancyRelease {
-  /** True when no other live socket of this user remains on the document. */
-  lastOccupantGone: boolean
-  outcome: OccupancyOutcome
-}
-
-/**
- * Drops this socket, then reports whether the person still holds another one.
- * The stale prune runs here too, so one crashed replica's leftover member cannot
- * suppress a real Last left until some later fan-out happens to clear it.
- */
+/** Drops one socket: its tab closed or went to the background. */
 export const releaseOccupant = async (
   documentId: string,
-  userId: string,
-  member: string,
-  nowMs: number
-): Promise<OccupancyRelease> => {
+  member: string
+): Promise<OccupancyOutcome> => {
   const key = occupancyKey(documentId)
-  const cutoff = nowMs - OCCUPANT_STALE_MS
-
-  const { outcome, value } = await withinBudget('release', (client) =>
-    pruneAndListMembers(client.multi().zrem(key, member), key, cutoff)
-  )
-
+  const { outcome } = await withinBudget('release', async (client) => {
+    await client.zrem(key, member)
+  })
   documentOccupancyWritesTotal.inc({ op: 'release', outcome })
-
-  // A verdict we could not read is safe to take as "gone". The column is
-  // monotone, so a tab that really survived supersedes it on its own disconnect.
-  if (outcome !== 'ok' || !value) return { lastOccupantGone: true, outcome }
-
-  return { lastOccupantGone: !occupantUserIds(value).has(userId), outcome }
+  return outcome
 }
 
 export interface OccupancyRead {
