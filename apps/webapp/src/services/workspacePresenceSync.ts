@@ -42,7 +42,7 @@ export function selectPresenceOthers(
   selfId: string | undefined | null
 ): Profile[] {
   if (!users) return []
-  return Array.from(users).filter((u) => u.id !== selfId)
+  return Array.from(users).filter((u) => u.id !== selfId && u.status !== 'OFFLINE')
 }
 
 /** Drop sync-only channelId buffers — must run with clearUsersPresence on resubscribe. */
