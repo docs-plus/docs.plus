@@ -66,7 +66,7 @@
   }
 }
 
-// Pad document surface — prose rules live in _prose-mirror-body.scss; only tokens + layout here.
+// Pad document surface — prose rules live in _prose-mirror-body.scss; tokens, layout and block flow spacing here.
 .editorWrapper .ProseMirror {
   --prose-placeholder-mix: 50%;
   --prose-pre-padding-block: 0.75rem;
@@ -114,5 +114,11 @@
 
   > * + * {
     margin-top: 0.75em;
+  }
+
+  // Two plain body paragraphs sit closer than other block pairs.
+  // The :not guard keeps a subtitle and the paragraph after it on the block gap.
+  > p:not([data-paragraph-style]) + p:not([data-paragraph-style]) {
+    margin-top: 0.25em;
   }
 }

@@ -252,6 +252,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Two plain paragraphs sit 0.25em apart, so short lines under a heading read as
+  one block. Headings, subtitle, lists, tables, code and quotes keep the 0.75em
+  gap.
+
 - Headings of the same level in one section always share one size. A section
   move, a new heading, a paste, undo or a remote edit used to drop the size, so
   the heading fell back to a fixed default.
