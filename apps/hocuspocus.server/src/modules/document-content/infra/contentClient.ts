@@ -39,6 +39,10 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
     commitMessage,
     sectionId,
     rev,
+    from,
+    to,
+    oldText,
+    newText,
     actor,
     requestId
   }) => {
@@ -51,6 +55,10 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
         ...(commitMessage ? { commitMessage } : {}),
         ...(sectionId ? { sectionId } : {}),
         ...(rev ? { rev } : {}),
+        ...(from === undefined ? {} : { from }),
+        ...(to === undefined ? {} : { to }),
+        ...(oldText === undefined ? {} : { oldText }),
+        ...(newText === undefined ? {} : { newText }),
         ...(actor ? { actor } : {})
       },
       serviceRoleKey: deps.serviceRoleKey,
@@ -68,8 +76,12 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
 
     switch (hop.status) {
       case 200: {
-        const version = dataField(hop.body)?.version
-        return typeof version === 'number' ? { status: 'applied', version } : { status: 'applied' }
+        const data = dataField(hop.body)
+        return {
+          status: 'applied',
+          ...(typeof data?.version === 'number' ? { version: data.version } : {}),
+          ...(typeof data?.rev === 'string' ? { rev: data.rev } : {})
+        }
       }
       case 404:
         return { status: 'not-found' }
@@ -88,6 +100,12 @@ export const createContentClient = (deps: ContentClientDeps): ContentClient => {
         if (code === NOT_CONFIRMED_CODE) return { status: 'not-confirmed' }
         return { status: 'unreachable' }
       }
+      case 400:
+        deps.logger.warn(
+          { documentId, message: errorField(hop.body, 'message') },
+          'Internal content apply refused the request shape'
+        )
+        return { status: 'rejected' }
       case 401:
       case 403:
         deps.logger.error(

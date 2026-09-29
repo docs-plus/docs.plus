@@ -9,7 +9,6 @@ import {
   startsWithTitleHeading,
   TITLE_HEADING_DETAIL
 } from '../domain/encodeContent'
-import { containsTitleHeading } from '../domain/sections'
 import type {
   ApplyContentRequest,
   ApplyContext,
@@ -30,8 +29,6 @@ const METRIC_OUTCOME: Record<ApplyOutcome['status'], string> = {
   busy: 'busy',
   'not-confirmed': 'not_confirmed'
 }
-
-const TITLE_FORBIDDEN_DETAIL = 'content must not contain a level-1 heading'
 
 const MAX_PENDING_COMMITS = 1000
 const PENDING_MAX_AGE_MS = 5 * 60_000
@@ -149,7 +146,19 @@ export const createApplyContent = (
     request: ApplyContentRequest,
     deadline: number
   ): Promise<ApplyOutcome> => {
-    const { documentId, mode, content, version, sectionId, rev, actor } = request
+    const {
+      documentId,
+      mode,
+      content,
+      version,
+      sectionId,
+      rev,
+      from,
+      to,
+      oldText,
+      newText,
+      actor
+    } = request
 
     // The hop client gives up at its own timeout. Starting now would write
     // after REST had already reported failure.
@@ -158,11 +167,11 @@ export const createApplyContent = (
     const meta = await findDocumentMeta(prisma, documentId)
     if (!meta || meta.deletedAt) return { status: 'not-found' }
 
-    if (mode === 'section' && containsTitleHeading(content.content)) {
-      return { status: 'invalid-content', detail: TITLE_FORBIDDEN_DETAIL }
-    }
-
-    const encoded = encodeContent(content, { requireTitleHeading: mode === 'replace' })
+    // A text edit and a block delete bring no nodes, so there is nothing to encode.
+    const encoded =
+      content.content.length > 0
+        ? encodeContent(content, { requireTitleHeading: mode === 'replace' })
+        : { ok: true as const, scratch: new Y.Doc() }
     if (!encoded.ok) return { status: 'invalid-content', detail: encoded.detail }
 
     // A faithful WS-shaped context, not hygiene. A defensively-rowless first save
@@ -216,7 +225,8 @@ export const createApplyContent = (
 
       try {
         await connection.transact((document) => {
-          const target = sectionId && rev ? { sectionId, rev } : undefined
+          const target =
+            sectionId && rev ? { sectionId, rev, from, to, oldText, newText } : undefined
           run.result = applyContentToDoc(document, encoded.scratch, mode, target)
           run.after = Y.decodeStateVector(Y.encodeStateVector(document))
           // The flush that runs next must not mint a named row for a write that
@@ -233,7 +243,7 @@ export const createApplyContent = (
         if (version) consumeVersionStamp(context)
       }
       outcome = run.result.ok
-        ? { status: 'applied' }
+        ? { status: 'applied', ...(run.result.rev ? { rev: run.result.rev } : {}) }
         : { status: run.result.status, detail: run.result.detail }
     } catch (error) {
       logger.error({ err: error, documentId, mode }, 'Content apply transact rejected')
@@ -264,7 +274,7 @@ export const createApplyContent = (
       return { status: 'not-confirmed' }
     }
     pendingCommits.delete(documentId)
-    return { status: 'applied', version: committed }
+    return { ...outcome, version: committed }
   }
 
   return async (request) => {

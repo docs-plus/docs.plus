@@ -7,6 +7,7 @@ import * as Y from 'yjs'
 
 import { createMockPrisma, TestServer } from '../../../../../tests/helpers/test-server'
 import { stripSnapshotMetadata } from '../../../../lib/snapshotMetadata'
+import { findSection } from '../../domain/sections'
 import { createInternalApp } from '../../http/internalApp'
 import { createApplyContent } from '../../infra/hocuspocusApply'
 import type { TiptapDocJson } from '../../types'
@@ -16,6 +17,7 @@ const AUTH = { Authorization: `Bearer ${SERVICE_KEY}` }
 const COLD_DOC = 'coldDocument12345AB'
 const LIVE_DOC = 'liveDocument12345AB'
 const WEDGED_DOC = 'wedgedDocument123AB'
+const SECTION_DOC = 'sectionDocument12AB'
 
 const silentLogger = {
   info: () => {},
@@ -296,6 +298,64 @@ describe('Internal content apply — live document', () => {
     const { json } = decodeState(persisted.get(LIVE_DOC) as Uint8Array)
     expect(json.content.map((node) => node.type)).toEqual(['heading', 'paragraph'])
     expect(json.content[1].content[0].text).toBe('extra')
+  })
+})
+
+describe('Internal content apply — edits inside one section', () => {
+  const sectionDoc = (): TiptapDocJson => ({
+    type: 'doc',
+    content: [
+      { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Title' }] },
+      {
+        type: 'heading',
+        attrs: { level: 2, 'toc-id': 'two' },
+        content: [{ type: 'text', text: 'Two' }]
+      },
+      { type: 'paragraph', content: [{ type: 'text', text: 'first line' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: 'second line' }] }
+    ]
+  })
+  const persistedJson = () => decodeState(persisted.get(SECTION_DOC) as Uint8Array).json
+  const texts = () =>
+    persistedJson().content.map((node) =>
+      (node.content ?? []).map((child: Record<string, any>) => child.text ?? '').join('')
+    )
+
+  test('a blocks insert and a text edit cross the hop; only the text edit returns a rev', async () => {
+    metaRows.set(SECTION_DOC, liveMeta(SECTION_DOC, 'section-doc'))
+    await server.post(applyPath(SECTION_DOC), { mode: 'replace', content: sectionDoc() }, AUTH)
+
+    const rev = findSection(persistedJson(), 'two')?.rev
+    const inserted = await server.post(
+      applyPath(SECTION_DOC),
+      { mode: 'blocks', sectionId: 'two', rev, from: 1, to: 1, content: paragraphDoc('middle') },
+      AUTH
+    )
+    expect(inserted.status).toBe(200)
+    expect((await inserted.json()).data.rev).toBeUndefined()
+    const nextRev = findSection(persistedJson(), 'two')?.rev
+    expect(texts()).toEqual(['Title', 'Two', 'first line', 'middle', 'second line'])
+
+    const edited = await server.post(
+      applyPath(SECTION_DOC),
+      { mode: 'text', sectionId: 'two', rev: nextRev, oldText: 'second', newText: 'last' },
+      AUTH
+    )
+    expect(edited.status).toBe(200)
+    expect((await edited.json()).data.rev).toBe(findSection(persistedJson(), 'two')?.rev)
+    expect(texts()).toEqual(['Title', 'Two', 'first line', 'middle', 'last line'])
+  })
+
+  test('a text mode without oldText is a 400, never a write', async () => {
+    metaRows.set(SECTION_DOC, liveMeta(SECTION_DOC, 'section-doc'))
+    const before = texts()
+    const response = await server.post(
+      applyPath(SECTION_DOC),
+      { mode: 'text', sectionId: 'two', rev: '000000000000' },
+      AUTH
+    )
+    expect(response.status).toBe(400)
+    expect(texts()).toEqual(before)
   })
 })
 

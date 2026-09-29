@@ -1,17 +1,12 @@
 import type { JSONContent } from '@tiptap/core'
 
 import { isRecord } from '../../../lib/isRecord'
+import { isMediaHref } from '../../document-content/domain/media'
 import { type JsonNode, mapNodes } from '../../document-conversion/domain/mapNodes'
 import { EMBED_NODE_TYPES } from '../../document-conversion/domain/portableJson'
 
-// Matched without the `/api` prefix: the webapp builds file links from its REST base URL.
-const MEDIA_PATH = '/plugins/hypermultimedia/'
-
 const isMediaLink = (mark: unknown): boolean =>
-  isRecord(mark) &&
-  isRecord(mark.attrs) &&
-  typeof mark.attrs.href === 'string' &&
-  mark.attrs.href.includes(MEDIA_PATH)
+  isRecord(mark) && isRecord(mark.attrs) && isMediaHref(mark.attrs.href)
 
 // `image` is inline, so it becomes text. An embed is a block, so it becomes a paragraph.
 // A file attachment is a link to the media route; it keeps its name and loses the link.
@@ -31,3 +26,22 @@ const placeholder = (node: JsonNode): JsonNode | null => {
  * Run it before `toPortableJson`, which links an embed to its `src`.
  */
 export const redactMedia = (doc: JSONContent): JSONContent => mapNodes(doc, placeholder)
+
+const MEDIA_UPLOAD_PLACEHOLDER = 'mediaUploadPlaceholder'
+
+const isMediaNode = (node: JSONContent): boolean =>
+  node.type === 'image' ||
+  node.type === MEDIA_UPLOAD_PLACEHOLDER ||
+  (typeof node.type === 'string' && EMBED_NODE_TYPES.has(node.type)) ||
+  (Array.isArray(node.marks) && node.marks.some(isMediaLink))
+
+/** Media at any depth, so a block edit can refuse to delete a picture it only saw as a placeholder. */
+export const hasMedia = (nodes: readonly JSONContent[]): boolean => {
+  const stack = [...nodes]
+  while (stack.length > 0) {
+    const node = stack.pop() as JSONContent
+    if (isMediaNode(node)) return true
+    stack.push(...(node.content ?? []))
+  }
+  return false
+}

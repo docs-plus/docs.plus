@@ -315,7 +315,7 @@ export const seedWsAlertSeries = (): void => {
   for (const reason of ['type-not-allowed', 'broadcast-frame']) {
     statelessRelayDroppedTotal.inc({ reason }, 0)
   }
-  for (const mode of ['replace', 'append', 'section']) {
+  for (const mode of ['replace', 'append', 'blocks', 'text']) {
     documentContentApplyTotal.inc({ mode, outcome: 'error' }, 0)
   }
 }

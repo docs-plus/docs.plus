@@ -87,17 +87,18 @@ Each Connect section above says which address to expect. If the address is not t
 
 You ask in your own words. To point at one document, paste its link or give its title. The AI app picks the tool, and it may show the tool name when it asks for your permission.
 
-| Tool                 | What it does                                                                | You could ask                                                        |
-| -------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `find_documents`     | Lists or finds your documents, or searches public ones, by title            | "Find my docs.plus document called Launch plan."                     |
-| `create_document`    | Makes a new document that you own                                           | "Create a docs.plus document called Trip plan and write an outline." |
-| `get_outline`        | Shows the headings of a document                                            | "Show me the outline of my launch plan."                             |
-| `read_document`      | Reads a whole document, or one section                                      | "Summarize the Budget section."                                      |
-| `append_to_document` | Adds text at the end of a document you own                                  | "Add a Next steps section at the end."                               |
-| `replace_section`    | Rewrites the text under one heading, in a document you own                  | "Rewrite the Risks section in shorter sentences."                    |
-| `list_chat_rooms`    | Lists the headings that have a chat                                         | "Which sections have a discussion?"                                  |
-| `read_chat_thread`   | Reads the chat under one heading                                            | "What did people say about the Timeline?"                            |
-| `post_chat_message`  | Posts a message in the chat under one heading, as you, in your own document | "Post a short summary of this thread in its chat."                   |
+| Tool                 | What it does                                                                | You could ask                                                          |
+| -------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `find_documents`     | Lists or finds your documents, or searches public ones, by title            | "Find my docs.plus document called Launch plan."                       |
+| `create_document`    | Makes a new document that you own                                           | "Create a docs.plus document called Trip plan and write an outline."   |
+| `get_outline`        | Shows the headings of a document                                            | "Show me the outline of my launch plan."                               |
+| `read_document`      | Reads a whole document, or one section                                      | "Summarize the Budget section."                                        |
+| `append_to_document` | Adds text at the end of a document you own                                  | "Add a Next steps section at the end."                                 |
+| `replace_text`       | Changes words inside one paragraph, in a document you own                   | "In the Budget section, change 'high' to 'low'."                       |
+| `edit_blocks`        | Adds, replaces or removes paragraphs at one spot in a section you own       | "Add a paragraph about catering after the second paragraph of Budget." |
+| `list_chat_rooms`    | Lists the headings that have a chat                                         | "Which sections have a discussion?"                                    |
+| `read_chat_thread`   | Reads the chat under one heading                                            | "What did people say about the Timeline?"                              |
+| `post_chat_message`  | Posts a message in the chat under one heading, as you, in your own document | "Post a short summary of this thread in its chat."                     |
 
 **If the AI app opens docs.plus in a browser instead,** stop it. That browser is not signed in as you, so a document it makes does not belong to you. Check that docs.plus is on for this chat: in Claude, **+ › Connectors**; in ChatGPT, the tools menu. Then ask it to use the docs.plus tools.
 
@@ -106,8 +107,10 @@ You ask in your own words. To point at one document, paste its link or give its 
 - It reads only documents you can open in docs.plus yourself. A private document opens for its owner only.
 - It writes and posts in chat only in documents you own. It refuses any other document, even a public one you can edit.
 - It can create a new document. You own it. Like any new docs.plus document, it is public: other people can find it by title, open it and edit it. Make it private in docs.plus if you need to.
-- Rewriting a section keeps its heading. So the chat and the links on that heading stay in place.
-- If someone changed a section after the AI app read it, the rewrite is refused. The AI app must read the section again first.
+- It edits only the spot it names. It reads the section first, then changes words inside one paragraph, or adds, replaces or removes whole paragraphs at one numbered position.
+- It never changes a heading. So the chat and the links on that heading stay in place.
+- It never deletes a picture, video or file, including the name of an attached file. An edit that would remove one is refused.
+- If someone changed a section after the AI app read it, the edit is refused. The AI app must read the section again first.
 - A chat post can notify room members who follow every message and are away. The post has every `@` removed, so it never sends a mention or `@everyone` notification.
 - It can see your name, profile picture and email address. It never gets a phone number.
 - Pictures, videos and other media show as a placeholder such as `[image]`. The AI app never gets a media link.
@@ -133,6 +136,8 @@ When a tool fails, docs.plus sends the AI app a message. The AI app may show it 
 | `slug: "…" is private. Only its owner can open it.`                                                                                                   | Only the owner can open it. The owner can make it public in docs.plus.                                                                           |
 | `slug: no document "…" is open to you.`                                                                                                               | Paste the document link. The document may be deleted, or the title may not match.                                                                |
 | `section_id: no chat room "…" in this document yet.`                                                                                                  | Open that heading's chat in docs.plus once, then ask again.                                                                                      |
+| `remove_blocks: block(s) … hold a picture, video or file`                                                                                             | The AI app tried to remove media. Change those blocks in docs.plus yourself, or ask it to leave them.                                            |
+| `old_text: it appears … times` or `old_text: it is not in this section`                                                                               | Ask again. The AI app should read the section again and quote more nearby words.                                                                 |
 | `docs.plus could not confirm the write.` or `docs.plus could not confirm the post.`                                                                   | It may already be saved. For a write, wait about a minute. Then check the document or chat before you ask again, or the text may be added twice. |
 | `Another write to this document is running.`, `docs.plus could not open the document, so nothing was saved.`, or `docs.plus failed to run this tool.` | Ask again in a moment.                                                                                                                           |
 | `Too many docs.plus tool calls.`, `429`, or the AI app cannot reach docs.plus                                                                         | Wait a few minutes, then ask again. The tool-call message gives the exact seconds.                                                               |

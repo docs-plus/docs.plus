@@ -1,18 +1,21 @@
 import type { CallToolResult, McpServer } from '@modelcontextprotocol/server'
+import type { JSONContent } from '@tiptap/core'
 import { z } from 'zod'
 
 import {
   containsHeadingAtOrAbove,
   findSection,
-  REV_PATTERN
+  REV_PATTERN,
+  type Section
 } from '../../document-content/domain/sections'
+import { findUniqueText, jsonTextRuns } from '../../document-content/domain/textRuns'
 import type { TiptapDocJson, WsApplyOutcome } from '../../document-content/types'
 import { exportMarkdown } from '../../document-conversion/domain/markdownExport'
 import { parseMarkdown } from '../../document-conversion/domain/markdownImport'
 import { MAX_MARKDOWN_CHARS } from '../../document-conversion/types'
 import { checkFragment } from '../domain/checkFragment'
 import { buildOutline } from '../domain/outline'
-import { redactMedia } from '../domain/redactMedia'
+import { hasMedia, redactMedia } from '../domain/redactMedia'
 import { replaceLineBreaks } from '../domain/replaceLineBreaks'
 import { createOwnedDocument, listDocuments } from '../infra/documentStore'
 import {
@@ -42,8 +45,8 @@ const FRAGMENT_TEXT: Record<FragmentProblem, string> = {
   'title-not-allowed': 'markdown: a level-1 heading (#) is the document title. Use ## or deeper.'
 }
 
-const refusedText = (detail: string): string =>
-  `markdown: docs.plus refused it (${detail}). Fix it and retry.`
+const refusedText = (detail: string, field = 'markdown'): string =>
+  `${field}: docs.plus refused it (${detail}). Fix it and retry.`
 
 const noHeadingText = (sectionId: string): string =>
   `section_id: no heading "${sectionId}". Call get_outline to list the ids.`
@@ -63,6 +66,24 @@ const markdownField = z
   .min(1)
   .max(MAX_MARKDOWN_CHARS)
   .describe('Markdown to write. Use ## or deeper headings; # is the document title.')
+
+// The internal hop 400s any other shape, which would read as "unreachable".
+const revField = z.string().trim().regex(REV_PATTERN).describe('From get_outline or read_document')
+
+const unescapeMarkdown = (text: string): string =>
+  text.replace(/\\([\\`*_{}[\]()#+\-.!|~<>])/g, '$1')
+
+const redactedMarkdown = (nodes: JSONContent[]): string =>
+  exportMarkdown(redactMedia({ type: 'doc', content: nodes }) as TiptapDocJson)
+
+/** The heading, then each body block as `[n]`, so an edit can name its position. */
+const numberedSection = (nodes: JSONContent[], section: Section): string =>
+  [
+    redactedMarkdown([nodes[section.headingIndex]]),
+    ...nodes
+      .slice(section.start, section.end)
+      .map((node, index) => `[${index + 1}] ${redactedMarkdown([node])}`)
+  ].join('\n\n')
 
 const renderOutline = (nodes: OutlineNode[], depth = 0): string[] =>
   nodes.flatMap((node) => [
@@ -85,25 +106,36 @@ const parseFragment = (markdown: string, intoEmpty = false): TiptapDocJson => {
   return problem ? refuse(FRAGMENT_TEXT[problem]) : parsed
 }
 
+// A block edit renumbers the blocks after it. A fresh rev would let an agent
+// reuse its old numbers and remove the wrong block, so it must read again.
+const REREAD_TEXT =
+  ' Block numbers after the edit changed. Call read_document with section_id before the next edit.'
+
 const writeResult = (
   outcome: WsApplyOutcome,
   doc: DocumentRecord,
-  done: string
+  done: string,
+  { field = 'markdown', reread = false }: { field?: string; reread?: boolean } = {}
 ): CallToolResult => {
   switch (outcome.status) {
-    case 'applied':
+    case 'applied': {
+      const rev = outcome.rev ?? null
+      const next = reread ? REREAD_TEXT : rev ? ` The section's rev is now ${rev}.` : ''
       return reply(
-        `${done} "${doc.slug}"${outcome.version ? ` (version ${outcome.version})` : ''}.`,
-        { slug: doc.slug, version: outcome.version ?? null }
+        `${done} "${doc.slug}"${outcome.version ? ` (version ${outcome.version})` : ''}.${next}`,
+        { slug: doc.slug, version: outcome.version ?? null, rev }
       )
+    }
     case 'conflict':
       return toolError(CONFLICT_TEXT)
     case 'invalid-content':
-      return toolError(refusedText(outcome.detail))
+      return toolError(refusedText(outcome.detail, field))
     case 'not-found':
       return toolError(notFoundText(doc.slug))
     case 'busy':
       return toolError('Another write to this document is running. Retry in a few seconds.')
+    case 'rejected':
+      return toolError('docs.plus refused this request, so nothing was saved. Retry in a minute.')
     case 'open-failed':
       return toolError(
         'docs.plus could not open the document, so nothing was saved. Retry in a moment.'
@@ -207,7 +239,7 @@ export const registerDocumentTools = (
     {
       title: 'Get outline',
       description:
-        'The heading tree of a document. Each heading has a section_id and a rev for read_document and replace_section.',
+        'The heading tree of a document. Each heading has a section_id and a rev for read_document, edit_blocks and replace_text.',
       inputSchema: z.object({ slug: slugField }),
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false }
     },
@@ -228,7 +260,7 @@ export const registerDocumentTools = (
     {
       title: 'Read document',
       description:
-        'A document as Markdown, or one section: its heading and the text up to the next heading, with its rev. Media shows as a placeholder such as [image] or [youtube]; a file link keeps only its name.',
+        'A document as Markdown, or one section: its heading and the blocks up to the next heading, with its rev. In a section read, each block is numbered [1], [2] and so on, for edit_blocks. Media shows as a placeholder such as [image] or [youtube]; a file link keeps only its name.',
       inputSchema: z.object({
         slug: slugField,
         section_id: sectionIdField.optional().describe('From get_outline'),
@@ -238,19 +270,17 @@ export const registerDocumentTools = (
     },
     run('read_document', async ({ slug, section_id: sectionId, max_chars: maxChars }) => {
       const doc = await openDocument(slug, 'read')
-      let source = await loadContent(doc)
+      const source = await loadContent(doc)
       let rev: string | null = null
+      let markdown: string
       if (sectionId) {
         const section = findSection(source, sectionId)
         if (!section) return toolError(noHeadingText(sectionId))
         rev = section.rev
-        source = {
-          type: 'doc',
-          content: (source.content ?? []).slice(section.headingIndex, section.end)
-        }
+        markdown = numberedSection(source.content ?? [], section)
+      } else {
+        markdown = exportMarkdown(redactMedia(source) as TiptapDocJson)
       }
-
-      const markdown = exportMarkdown(redactMedia(source) as TiptapDocJson)
       const cap = maxChars ?? MAX_READ_CHARS
       const truncated = markdown.length > cap
       // The note is docs.plus's own guidance, so it sits outside the data frame.
@@ -300,19 +330,35 @@ export const registerDocumentTools = (
   )
 
   server.registerTool(
-    'replace_section',
+    'edit_blocks',
     {
-      title: 'Replace section',
+      title: 'Edit blocks',
       description:
-        'Replace the text under one heading, up to the next heading, in a document you own. The heading stays. Pass the rev from get_outline or read_document; a stale rev is refused.',
+        'Insert, replace or remove whole blocks in one section of a document you own, and leave every other block alone. Call read_document with section_id first: it numbers the blocks. Put the caret after block after_block (0 is right after the heading), remove the next remove_blocks blocks, then insert the Markdown there. A block with a picture, video or file cannot be removed. The heading never changes. Block numbers change after an edit, so read the section again before the next one. For words inside one paragraph, use replace_text.',
       inputSchema: z.object({
         slug: slugField,
         section_id: sectionIdField.describe('From get_outline'),
-        // The internal hop 400s any other shape, which would read as "unreachable".
-        rev: z.string().trim().regex(REV_PATTERN).describe('From get_outline or read_document'),
-        markdown: markdownField.describe(
-          'The new section text. Any heading in it must be deeper than the target heading.'
-        )
+        rev: revField,
+        after_block: z
+          .number()
+          .int()
+          .min(0)
+          .describe(
+            'The block number from read_document to insert after; 0 is right after the heading'
+          ),
+        remove_blocks: z
+          .number()
+          .int()
+          .min(0)
+          .default(0)
+          .describe('How many blocks after the caret to remove; 0 only inserts'),
+        markdown: z
+          .string()
+          .max(MAX_MARKDOWN_CHARS)
+          .default('')
+          .describe(
+            'Markdown to insert at the caret; empty only removes. A heading in it must be deeper than the section heading and can go only at the end of the section.'
+          )
       }),
       annotations: {
         readOnlyHint: false,
@@ -321,28 +367,141 @@ export const registerDocumentTools = (
         openWorldHint: true
       }
     },
-    run('replace_section', async ({ slug, section_id: sectionId, rev, markdown }) => {
-      const doc = await openDocument(slug, 'own')
-      const fragment = parseFragment(markdown)
-      // Checked before the write too: a refusal inside the applier has already
-      // loaded a cold collab room, and its unload stores an unnamed version row.
-      const section = findSection(await loadContent(doc), sectionId)
-      if (!section) return toolError(noHeadingText(sectionId))
-      if (section.rev !== rev) return toolError(CONFLICT_TEXT)
-      if (containsHeadingAtOrAbove(fragment.content, section.level)) {
-        return toolError(
-          refusedText(`a replacing heading must be deeper than level ${section.level}`)
-        )
-      }
-      const outcome = await deps.content.apply({
-        documentId: doc.documentId,
-        mode: 'section',
-        sectionId,
+    run(
+      'edit_blocks',
+      async ({
+        slug,
+        section_id: sectionId,
         rev,
-        content: fragment,
-        actor: { sub: caller.sub, email: caller.email }
-      })
-      return writeResult(outcome, doc, 'Replaced a section in')
-    })
+        after_block: from,
+        remove_blocks: count,
+        markdown
+      }) => {
+        const doc = await openDocument(slug, 'own')
+        const fragment: TiptapDocJson = markdown.trim()
+          ? parseFragment(markdown)
+          : { type: 'doc', content: [] }
+        // Checked before the write too: a refusal inside the applier has already
+        // loaded a cold collab room, and its unload stores an unnamed version row.
+        const nodes = (await loadContent(doc)).content ?? []
+        const section = findSection({ type: 'doc', content: nodes }, sectionId)
+        if (!section) return toolError(noHeadingText(sectionId))
+        if (section.rev !== rev) return toolError(CONFLICT_TEXT)
+
+        const blocks = section.end - section.start
+        const to = from + count
+        if (to > blocks) {
+          return toolError(
+            `after_block: this section has ${blocks} block(s), so after_block plus remove_blocks must be at most ${blocks}.`
+          )
+        }
+        if (count === 0 && fragment.content.length === 0) {
+          return toolError('markdown: give text to insert, or set remove_blocks to remove blocks.')
+        }
+        const removed = nodes.slice(section.start + from, section.start + to)
+        const media = removed.flatMap((node, index) => (hasMedia([node]) ? [from + index + 1] : []))
+        if (media.length > 0) {
+          return toolError(
+            `remove_blocks: block(s) ${media.join(', ')} hold a picture, video or file, and docs.plus never deletes media for an AI app. Choose a range that skips them, or ask the person to change them in docs.plus.`
+          )
+        }
+        if (containsHeadingAtOrAbove(fragment.content, section.level)) {
+          return toolError(refusedText(`a new heading must be deeper than level ${section.level}`))
+        }
+        if (to !== blocks && fragment.content.some((node) => node.type === 'heading')) {
+          return toolError(
+            refusedText(
+              `a new heading can go only at the end of the section, so after_block plus remove_blocks must be ${blocks}`
+            )
+          )
+        }
+
+        const outcome = await deps.content.apply({
+          documentId: doc.documentId,
+          mode: 'blocks',
+          sectionId,
+          rev,
+          from,
+          to,
+          content: fragment,
+          actor: { sub: caller.sub, email: caller.email }
+        })
+        return writeResult(outcome, doc, 'Edited blocks in', { reread: true })
+      }
+    )
+  )
+
+  server.registerTool(
+    'replace_text',
+    {
+      title: 'Replace text',
+      description:
+        'Change words inside a paragraph, list item or table cell in one section of a document you own, and leave everything else as it is. old_text must appear exactly once in the section body, inside one stretch of text: not across two paragraphs, a picture or a line break. Include a few words around the spot to make it unique. To insert, repeat the nearby words in old_text and add yours in new_text. To delete, leave new_text empty. new_text is plain text and keeps the formatting of the text it replaces. For new paragraphs, lists or formatting, use edit_blocks. The reply gives the new rev of the section for the next replace_text.',
+      inputSchema: z.object({
+        slug: slugField,
+        section_id: sectionIdField.describe('From get_outline'),
+        rev: revField,
+        old_text: z
+          .string()
+          .min(1)
+          .max(MAX_MARKDOWN_CHARS)
+          .describe(
+            'The exact text to change, copied from read_document, without Markdown symbols'
+          ),
+        new_text: z
+          .string()
+          .max(MAX_MARKDOWN_CHARS)
+          .describe('The text to put in its place; empty deletes it')
+      }),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true
+      }
+    },
+    run(
+      'replace_text',
+      async ({ slug, section_id: sectionId, rev, old_text: quotedOld, new_text: quotedNew }) => {
+        let oldText = quotedOld
+        let newText = quotedNew
+        const doc = await openDocument(slug, 'own')
+        const nodes = (await loadContent(doc)).content ?? []
+        const section = findSection({ type: 'doc', content: nodes }, sectionId)
+        if (!section) return toolError(noHeadingText(sectionId))
+        if (section.rev !== rev) return toolError(CONFLICT_TEXT)
+
+        const runs = jsonTextRuns(nodes.slice(section.start, section.end))
+        let match = findUniqueText(runs, oldText)
+        // read_document is Markdown, so copied text can carry escapes such as \_ or \[.
+        if (!match.ok && match.count === 0 && unescapeMarkdown(oldText) !== oldText) {
+          oldText = unescapeMarkdown(oldText)
+          newText = unescapeMarkdown(newText)
+          match = findUniqueText(runs, oldText)
+        }
+        if (!match.ok) {
+          return toolError(
+            match.count === 0
+              ? 'old_text: it is not in this section as one stretch of text. Copy it exactly from read_document, without Markdown symbols such as ** or [ ].'
+              : `old_text: it appears ${match.count} times in this section. Add nearby words so it appears once.`
+          )
+        }
+        if (oldText === newText) {
+          return toolError('new_text: it is the same as old_text, so nothing would change.')
+        }
+
+        const outcome = await deps.content.apply({
+          documentId: doc.documentId,
+          mode: 'text',
+          sectionId,
+          rev,
+          oldText,
+          newText,
+          content: { type: 'doc', content: [] },
+          actor: { sub: caller.sub, email: caller.email }
+        })
+        return writeResult(outcome, doc, 'Replaced text in', { field: 'old_text' })
+      }
+    )
   )
 }

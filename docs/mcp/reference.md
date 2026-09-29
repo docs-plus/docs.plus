@@ -55,21 +55,22 @@ The metadata sits under `/api/mcp`, not at the site root, because only `/api` an
 
 ## Tools
 
-The server has 9 tools. Every tool except `find_documents` and `create_document` takes a document `slug`. Each tool runs as the signed-in person and checks access first. Reads follow the normal access rule. Writes and chat posts work only in documents the person owns.
+The server has 10 tools. Every tool except `find_documents` and `create_document` takes a document `slug`. Each tool runs as the signed-in person and checks access first. Reads follow the normal access rule. Writes and chat posts work only in documents the person owns.
 
 A result carries text and `structuredContent`, with snake_case keys. Document and chat text is framed as data that people wrote, not instructions. The hints follow OpenAI's definitions. Read tools set `readOnlyHint: true`, `destructiveHint: false` and `openWorldHint: false`. Write tools set `openWorldHint: true`, because documents are public by default and a write publishes.
 
-| Tool                 | Hints                       | What it does                                                       | Inputs                                                   |
-| -------------------- | --------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
-| `find_documents`     | read-only                   | Lists the person's documents, or searches public ones by title     | `query`, `scope` (`mine` or `public`), `limit` (1 to 50) |
-| `create_document`    | not destructive, open world | Makes a new document the person owns. Returns its `slug` and `url` | `title`, `markdown`                                      |
-| `get_outline`        | read-only                   | The heading tree, with a `section_id` and `rev` for each heading   | `slug`                                                   |
-| `read_document`      | read-only                   | The document as Markdown, or one section with its `rev`            | `slug`, `section_id`, `max_chars`                        |
-| `append_to_document` | not destructive, open world | Adds Markdown at the end                                           | `slug`, `markdown`                                       |
-| `replace_section`    | destructive, open world     | Replaces the text under one heading. The heading stays.            | `slug`, `section_id`, `rev`, `markdown`                  |
-| `list_chat_rooms`    | read-only                   | The headings that have a chat room                                 | `slug`                                                   |
-| `read_chat_thread`   | read-only                   | Messages in one heading's room, newest last                        | `slug`, `section_id`, `before_seq`, `limit` (1 to 50)    |
-| `post_chat_message`  | not destructive, open world | Posts plain text in one heading's room, as the person              | `slug`, `section_id`, `text`                             |
+| Tool                 | Hints                       | What it does                                                                    | Inputs                                                                  |
+| -------------------- | --------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `find_documents`     | read-only                   | Lists the person's documents, or searches public ones by title                  | `query`, `scope` (`mine` or `public`), `limit` (1 to 50)                |
+| `create_document`    | not destructive, open world | Makes a new document the person owns. Returns its `slug` and `url`              | `title`, `markdown`                                                     |
+| `get_outline`        | read-only                   | The heading tree, with a `section_id` and `rev` for each heading                | `slug`                                                                  |
+| `read_document`      | read-only                   | The document as Markdown, or one section with its `rev` and numbered blocks     | `slug`, `section_id`, `max_chars`                                       |
+| `append_to_document` | not destructive, open world | Adds Markdown at the end                                                        | `slug`, `markdown`                                                      |
+| `edit_blocks`        | destructive, open world     | Inserts, replaces or removes whole blocks at a numbered position in one section | `slug`, `section_id`, `rev`, `after_block`, `remove_blocks`, `markdown` |
+| `replace_text`       | destructive, open world     | Changes text inside one paragraph, list item or table cell                      | `slug`, `section_id`, `rev`, `old_text`, `new_text`                     |
+| `list_chat_rooms`    | read-only                   | The headings that have a chat room                                              | `slug`                                                                  |
+| `read_chat_thread`   | read-only                   | Messages in one heading's room, newest last                                     | `slug`, `section_id`, `before_seq`, `limit` (1 to 50)                   |
+| `post_chat_message`  | not destructive, open world | Posts plain text in one heading's room, as the person                           | `slug`, `section_id`, `text`                                            |
 
 `scope: "public"` needs a `query`. `find_documents` lists the most recently updated first, 20 by default. Its `updated_at` moves when the title or settings change, not on every text edit. So do not treat it as the time of the last text edit.
 
@@ -77,9 +78,21 @@ A `#` heading in written Markdown is refused, because it is the document title. 
 
 `create_document` refuses an anonymous account. The `title` becomes the `#` heading, and `markdown`, if given, follows it. The Markdown is checked before anything is written, so refused text leaves no document. One transaction writes the document and version 1, so a failed write leaves none either. The slug comes from the title. A taken slug gets a suffix, and a slug that is a webapp page, such as `privacy`, gets `-document`. The new document is public, like any new docs.plus document. The `url` is the webapp address plus the slug.
 
+**Editing inside a section.** An AI app changes only the blocks or text it names. It never changes a heading, and it never removes media. It reads one section with `read_document` and `section_id`, then edits there.
+
+- A section read numbers each block after the heading: `[1]`, `[2]` and so on. A block is a paragraph, a list, a table, a quote or an embed. A picture sits inside a paragraph.
+- `edit_blocks` puts a caret after block `after_block`, where `0` is right after the heading. It removes the next `remove_blocks` blocks, then inserts the Markdown there. `remove_blocks: 0` only inserts, and empty Markdown only removes.
+- `edit_blocks` refuses to remove a block that holds a picture, a video, an embed, an upload in progress or a file link. An AI app sees media only as a placeholder, so it could never put the media back.
+- A new heading must be deeper than the section heading, and it can go only at the end of the section. Anywhere else, it would move the blocks after it into a new subsection.
+- `replace_text` refuses to remove the name of a file attachment, because the name carries the file link. It may add text next to it.
+- `replace_text` finds `old_text` in the section body and puts `new_text` in its place. `old_text` must appear exactly once, inside one stretch of text. It cannot cross two blocks, a picture or a line break, and it never matches the heading. To insert, repeat the nearby words and add to them. To delete, leave `new_text` empty.
+- `new_text` is plain text. It takes the formatting of the first character it replaces, so bold or a link around it stays. For new paragraphs or new formatting, use `edit_blocks`.
+- Both tools check the section `rev`. `replace_text` returns the new `rev`, so a second text edit needs no new read. `edit_blocks` returns no `rev`: its edit renumbers the blocks after it, and an agent that reused its old numbers could remove the wrong block. So it must read the section again.
+- `read_document` escapes Markdown characters, such as `snake\_case`. `replace_text` first looks for `old_text` as given, and if that finds nothing, it tries again with those escapes removed.
+
 `post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. A host may ignore them. The server info also carries `title`, `websiteUrl` and `description`.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. To change one, they name `replace_text` and `edit_blocks`. A host may ignore them. The server info also carries `title`, `websiteUrl` and `description`.
 
 ## Limits
 
@@ -107,7 +120,7 @@ A post with many short lines can pass the text cap and fail the HTML cap.
 
 When one argument is at fault, the tool error text starts with that field, such as `slug:` or `section_id:`. An argument with the wrong shape never reaches the tool. The MCP SDK on the server refuses it and names the failing field.
 
-Plan retries with care. `create_document`, `append_to_document`, `replace_section` and `post_chat_message` are not idempotent.
+Plan retries with care. `create_document`, `append_to_document`, `edit_blocks`, `replace_text` and `post_chat_message` are not idempotent.
 
 - A stale `rev` is refused. Call `get_outline` or `read_document` again, then retry with the new `rev`.
 - After `docs.plus could not confirm the write`, wait about a minute, then call `read_document` before you retry. A read at once cannot see a write that is still saving.

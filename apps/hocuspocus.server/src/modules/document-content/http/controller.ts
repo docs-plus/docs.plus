@@ -50,7 +50,8 @@ const applyOutcomeResponse = (
       const body: ContentApplyResponseData = {
         documentId,
         mode,
-        ...(outcome.version === undefined ? {} : { version: outcome.version })
+        ...(outcome.version === undefined ? {} : { version: outcome.version }),
+        ...(outcome.rev === undefined ? {} : { rev: outcome.rev })
       }
       return ok(c, body)
     }
@@ -80,6 +81,13 @@ const applyOutcomeResponse = (
       return fail(c, 500, 'INTERNAL_SERVER_ERROR', PERSIST_FAILED_MESSAGE)
     case 'unreachable':
       return fail(c, 503, 'SERVICE_UNAVAILABLE', 'Content apply service is unavailable')
+    case 'rejected':
+      return fail(
+        c,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'The collaboration process refused this request, so nothing was applied. Retry later.'
+      )
     case 'upstream-unauthorized':
       return fail(
         c,
@@ -173,16 +181,19 @@ export const createInternalApplyHandler =
   (applyContent: ApplyContent) =>
   async (c: Context): Promise<Response> => {
     const documentId = c.req.param('documentId') as string
-    const { mode, content, commitMessage, sectionId, rev, actor } = c.req.valid(
-      'json' as never
-    ) as {
-      mode: ApplyMode
-      content: TiptapDocJson
-      commitMessage?: string
-      sectionId?: string
-      rev?: string
-      actor?: ApplyActor
-    }
+    const { mode, content, commitMessage, sectionId, rev, from, to, oldText, newText, actor } =
+      c.req.valid('json' as never) as {
+        mode: ApplyMode
+        content: TiptapDocJson
+        commitMessage?: string
+        sectionId?: string
+        rev?: string
+        from?: number
+        to?: number
+        oldText?: string
+        newText?: string
+        actor?: ApplyActor
+      }
     const requestId = c.get('requestId') as string | undefined
 
     // A REST write is nobody's edit, so its row names no one. An MCP write
@@ -200,6 +211,10 @@ export const createInternalApplyHandler =
       content,
       sectionId,
       rev,
+      from,
+      to,
+      oldText,
+      newText,
       actor,
       version,
       requestId,

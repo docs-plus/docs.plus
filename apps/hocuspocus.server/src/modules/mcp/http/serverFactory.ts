@@ -9,7 +9,7 @@ import type { Caller, ServerFactoryDeps } from '../types'
 // Without it, claude.ai and ChatGPT fell back to a browser, whose session is not the
 // person's, so a document made there had another owner.
 const INSTRUCTIONS =
-  "These tools find, read, create and edit the person's docs.plus documents and their chat, signed in as this person. A browser session is not signed in as them, so a document made there is not theirs. To start a new document, call create_document; the person owns what it makes."
+  "These tools find, read, create and edit the person's docs.plus documents and their chat, signed in as this person. A browser session is not signed in as them, so a document made there is not theirs. To start a new document, call create_document; the person owns what it makes. To change one, read the section with read_document first, then edit only what must change: replace_text for words inside a paragraph, edit_blocks to insert, replace or remove whole blocks at a numbered position."
 
 // The SDK hands the factory whatever the route verified. A missing subject is
 // a wiring fault, so it fails loudly rather than running a tool as nobody.

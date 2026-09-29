@@ -14,7 +14,11 @@ export interface TiptapDocJson {
   content: Record<string, unknown>[]
 }
 
-export type ApplyMode = 'replace' | 'append' | 'section'
+/**
+ * `blocks` and `text` are MCP-only edits inside one section; REST offers `replace` and `append`.
+ * Each is a new mode name, so an older replica mid-deploy refuses it instead of widening it.
+ */
+export type ApplyMode = 'replace' | 'append' | 'blocks' | 'text'
 export type ReadFormat = 'json' | 'text'
 
 /** The attr that keys a heading's section, chat room and digest links. */
@@ -54,7 +58,7 @@ export const NOT_CONFIRMED_CODE = 'SAVE_NOT_CONFIRMED'
  * applied. `not-confirmed`: applied, but the worker did not commit it in time.
  */
 export type ApplyOutcome =
-  | { status: 'applied'; version?: number }
+  | { status: 'applied'; version?: number; rev?: string }
   | { status: 'not-found' }
   | { status: 'invalid-content'; detail: string }
   | { status: 'conflict'; detail: string }
@@ -67,9 +71,14 @@ export type ApplyOutcome =
  * Hop-only outcomes. `upstream-unauthorized` is separate from `unreachable`
  * because the likeliest cause is the two processes holding different
  * service-role keys. A 503 would send operators after a dead network.
+ * `rejected` is a 400: the collaboration process does not know the mode or a
+ * field, as in a rolling deploy, so nothing was written.
  */
 export type WsApplyOutcome =
-  ApplyOutcome | { status: 'unreachable' } | { status: 'upstream-unauthorized' }
+  | ApplyOutcome
+  | { status: 'unreachable' }
+  | { status: 'upstream-unauthorized' }
+  | { status: 'rejected' }
 
 /**
  * The hop re-serializes as `{mode, content}`, which is a few bytes longer than
@@ -99,10 +108,16 @@ export interface ApplyRequest {
   documentId: string
   mode: ApplyMode
   content: TiptapDocJson
-  /** `toc-id` of the target heading; required for `section`. */
+  /** `toc-id` of the target heading; required for `blocks` and `text`. */
   sectionId?: string
-  /** The section `rev` the caller read; required for `section`. */
+  /** The section `rev` the caller read; required for `blocks` and `text`. */
   rev?: string
+  /** `blocks`: body positions; the content replaces blocks `from` up to `to`, so equal values insert. */
+  from?: number
+  to?: number
+  /** `text`: the exact text found once in the section body, and what replaces it. */
+  oldText?: string
+  newText?: string
   actor?: ApplyActor
   commitMessage?: string
   requestId?: string
@@ -150,6 +165,8 @@ export interface ContentApplyResponseData {
   mode: ApplyMode
   /** The committed version row that holds this write, when the applier waited for one. */
   version?: number
+  /** The section's new rev after a section-scoped write, so the next edit needs no re-read. */
+  rev?: string
 }
 
 export interface ContentReadResponseData {

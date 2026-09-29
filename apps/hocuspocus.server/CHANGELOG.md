@@ -15,16 +15,30 @@ This file is the operator and API changelog. The pad product lives in the [root 
 - **MCP connector at `/api/mcp`.** A person connects docs.plus to Claude or
   ChatGPT and signs in as themselves through the Supabase OAuth server. The
   server is stateless, one MCP server per request, on
-  `@modelcontextprotocol/server` `2.0.0`. Nine tools: `find_documents`,
+  `@modelcontextprotocol/server` `2.0.0`. Ten tools: `find_documents`,
   `create_document`, `get_outline`, `read_document`, `append_to_document`,
-  `replace_section`, `list_chat_rooms`, `read_chat_thread` and
+  `edit_blocks`, `replace_text`, `list_chat_rooms`, `read_chat_thread` and
   `post_chat_message`. Each tool except `find_documents` and
   `create_document` takes a slug and checks the caller's access before
   it reads or writes. Writes and chat posts work only in documents the caller
-  owns. `replace_section` keeps the heading and refuses a stale `rev`. Reads
+  owns. Reads
   stop at 100 000 characters and say so, hide media URLs, and frame the text
   as data. A post removes every `@`, so it sends no mention. Each person
   gets 60 calls a minute. Set `MCP_AUTH_ISSUER` to the Supabase issuer.
+
+- **A connected app edits in place, never a heading, never media.**
+  `replace_section` is gone. A section read numbers each block. `edit_blocks`
+  inserts, replaces or removes whole blocks at one numbered position, and
+  refuses to remove a block that holds a picture, video, embed, upload or file
+  link. `replace_text` changes one exact piece of text inside one paragraph,
+  never the name of an attached file,
+  list item or table cell, and keeps its formatting. Neither touches the
+  heading, and both refuse a stale `rev`. `replace_text` returns the new `rev`;
+  `edit_blocks` does not, because it renumbers blocks, so the agent reads again. The internal
+  hop modes are now `replace`, `append`, `blocks` and `text`; the old
+  `section` mode is gone, so an older replica refuses a new edit during a
+  rolling deploy instead of replacing a whole section. ChatGPT keeps the tool
+  list it saw when it connected: press **Refresh** on the docs.plus app.
 
 - **`create_document` and server instructions.** A connected app makes a
   document, and the caller owns it. An anonymous caller is refused. A taken
