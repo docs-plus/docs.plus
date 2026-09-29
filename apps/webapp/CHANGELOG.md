@@ -252,6 +252,10 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Backspace or Delete on an empty line between two lists of the same type
+  joins them into one list. A nested Delete no longer moves the empty line into
+  a list item. Lists of different types lose the line but stay apart.
+
 - The share card copies the clean document link. It used to copy the address
   bar, so heading, chat and filter parameters went out with the link.
 - The share card says "Anyone with the link can edit" unless the document is

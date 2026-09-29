@@ -1,6 +1,6 @@
 # CLAUDE.md — editor (TipTap / ProseMirror)
 
-Document model, heading schema, HeadingScale, editor performance, and editor state.
+Document model, heading schema, list keymap, HeadingScale, editor performance, and editor state.
 
 Moved verbatim out of the repo-root [AGENTS.md](../../../../../AGENTS.md) so it loads only when working here. Root-level rules (git policy, package manager, code quality, test policy) still live there and still apply.
 
@@ -30,6 +30,14 @@ bun run migrate:nested-to-flat
 - Shared heading utilities live in `TipTap/extensions/shared/`: `computeSection`, `moveSection`, `canMapDecorations`, `transactionAffectsNodeType`, `matchSections`.
 - Section reorder is TOC-only via `useTocDrag` / `moveHeading` + `moveSection`. There is no in-editor heading drag handle extension.
 - Toolbar **Block style** (Title / Subtitle / H1–H6 / Normal) is outline role. Read and apply it through `TipTap/block-style/blockStyle`. Do not treat the H number as font size — that is HeadingScale. Names: [CONTEXT.md](../../../../../CONTEXT.md) §Pad outline.
+
+### List Keymap
+
+- `ListKeymapWithoutTab` only drops `Tab` from upstream ListKeymap, because Indent owns Tab. Do not grow it into a second list behavior.
+- `ListGapJoin` (`listGapJoin.ts`) is a temporary shim for #378. An empty paragraph between two lists goes away, and matching lists join through ProseMirror `autoJoin`. Lists match when they have the same node type and the same `type` attribute.
+- It runs at priority 101, before ListKeymap, and binds the same keys that the core keymap sends to Backspace and Delete. It ties with upstream's branching Delete keymap at 101; their conditions do not overlap. The pad and the chat composer both load it, next to `ListKeymapWithoutTab`.
+- Remove it when upstream `@tiptap/extension-list` re-joins lists across an empty paragraph.
+- Never test list keys through `editor.commands.keyboardShortcut()`. Its transaction capture replays a second dispatch onto stale state, and throws `Inconsistent open depths`. Real keys never throw that error. Use real keys.
 
 ### HeadingScale
 

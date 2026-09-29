@@ -310,7 +310,7 @@ tag a section's home in brackets.
 
 **[`apps/webapp/src/components/TipTap/CLAUDE.md`](apps/webapp/src/components/TipTap/CLAUDE.md)** · router tag `[TipTap]`
 
-§Editor Architecture · §Document Model And Migrations · §Heading Schema · §HeadingScale · §Editor Performance · §Editor State And References
+§Editor Architecture · §Document Model And Migrations · §Heading Schema · §List Keymap · §HeadingScale · §Editor Performance · §Editor State And References
 
 **[`apps/webapp/src/components/chatroom/CLAUDE.md`](apps/webapp/src/components/chatroom/CLAUDE.md)** · router tag `[chatroom]`
 

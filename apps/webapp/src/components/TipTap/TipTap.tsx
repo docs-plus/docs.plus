@@ -48,6 +48,7 @@ import { ParagraphStyle } from './extensions/paragraph-style'
 import { SlashMenu } from './extensions/slash-menu'
 import { TitleDocument } from './extensions/title-document'
 import { getHyperlinkPopoverConfig } from './hyperlinkPopovers/getHyperlinkPopoverConfig'
+import { ListGapJoin } from './listGapJoin'
 import { ListKeymapWithoutTab } from './listKeymapWithoutTab'
 import { getMediaToolbarFactory } from './mediaPopovers/getMediaToolbarFactory'
 import { getMediaActionsResolver } from './mediaPopovers/mediaComment'
@@ -127,6 +128,7 @@ const Editor = ({
       listKeymap: false
     }),
     ListKeymapWithoutTab,
+    ListGapJoin,
 
     ParagraphStyle,
 
