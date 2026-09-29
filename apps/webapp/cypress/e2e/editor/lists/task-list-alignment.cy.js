@@ -85,7 +85,7 @@ describe('Task List Alignment', () => {
       expect(p.textContent.trim(), 'paragraph should be empty').to.equal('')
 
       const beforeContent = win.getComputedStyle(p, '::before').content
-      expect(beforeContent).to.contain('Task item')
+      expect(beforeContent).to.contain('To-do')
     })
   })
 })
