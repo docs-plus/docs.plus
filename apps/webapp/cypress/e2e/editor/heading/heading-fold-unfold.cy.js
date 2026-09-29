@@ -39,12 +39,13 @@ describe('Heading Fold/Unfold (Flat Schema)', () => {
   })
 
   it('includes print media rules so folded content can print expanded (BC-7)', () => {
-    cy.document().then((doc) => {
-      const sheets = Array.from(doc.styleSheets)
+    // The rules live in the app iframe, so instanceof needs that window's CSSMediaRule.
+    cy.window().then((win) => {
+      const sheets = Array.from(win.document.styleSheets)
       const hasPrintRule = sheets.some((sheet) => {
         try {
           return Array.from(sheet.cssRules).some(
-            (rule) => rule instanceof CSSMediaRule && rule.conditionText === 'print'
+            (rule) => rule instanceof win.CSSMediaRule && rule.conditionText === 'print'
           )
         } catch {
           return false
