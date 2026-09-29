@@ -34,10 +34,10 @@ Replace `<PUBLIC_RESTAPI_URL>` with your server's value of [`PUBLIC_RESTAPI_URL`
 A request without a valid token gets `401` and this header.
 
 ```
-WWW-Authenticate: Bearer resource_metadata="https://prodback.docs.plus/api/mcp/.well-known/oauth-protected-resource"
+WWW-Authenticate: Bearer resource_metadata="https://prodback.docs.plus/api/mcp/.well-known/oauth-protected-resource", scope="openid email profile"
 ```
 
-When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header.
+When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header. The server asks hosts for `openid`, `email` and `profile` only, in `scope` here and in `scopes_supported` below.
 
 The metadata sits under `/api/mcp`, not at the site root, because only `/api` and `/health` are routed publicly. It answers like this.
 
@@ -46,7 +46,8 @@ The metadata sits under `/api/mcp`, not at the site root, because only `/api` an
   "resource": "https://prodback.docs.plus/api/mcp",
   "authorization_servers": ["https://tglymsfloxmouzjuoycu.supabase.co/auth/v1"],
   "bearer_methods_supported": ["header"],
-  "resource_name": "docs.plus"
+  "resource_name": "docs.plus",
+  "scopes_supported": ["openid", "email", "profile"]
 }
 ```
 

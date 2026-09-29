@@ -196,6 +196,14 @@ This file is the operator and API changelog. The pad product lives in the [root 
   signed-in route answer `403`, an optional route treats it as signed out, and
   the WebSocket refuses it. A browser session token is unchanged.
 
+- **`/api/mcp` names its scopes: `openid email profile`.** The `401`
+  `WWW-Authenticate` header carries `scope`, and the resource metadata carries
+  `scopes_supported`. Claude asks for these scopes, plus `offline_access`, so
+  it no longer asks for `phone`. An existing grant keeps its old scopes until the person
+  reconnects. ChatGPT still asks for every scope Supabase lists, `phone`
+  included. No account holds a phone number, because phone sign-up is off, so
+  this pin is defense in depth.
+
 - **`test:e2e:duplicate-media` forces local storage from the package script.**
   The storage backend is now picked once from validated config, which freezes at
   import, so the script's own `process.env` assignment would land too late. Run

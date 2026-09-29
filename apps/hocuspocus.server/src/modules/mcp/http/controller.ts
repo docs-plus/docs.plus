@@ -7,6 +7,9 @@ import type { VerifyToken } from '../types'
 
 export const MCP_MOUNT_PATH = '/api/mcp'
 export const RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource'
+// Claude asks for these. ChatGPT still asks for every scope Supabase lists, phone included;
+// phone sign-up is off, so no number exists to share. AI apps get name, picture and email.
+const SCOPES = ['openid', 'email', 'profile'] as const
 
 export interface EndpointDeps {
   publicBaseUrl: string | null
@@ -26,7 +29,8 @@ export const createMetadataHandler = (deps: EndpointDeps) => (c: Context) =>
     resource: resourceUrl(c, deps.publicBaseUrl),
     authorization_servers: [deps.authIssuer],
     bearer_methods_supported: ['header'],
-    resource_name: 'docs.plus'
+    resource_name: 'docs.plus',
+    scopes_supported: [...SCOPES]
   })
 
 /** MCP transports must refuse a foreign Origin, and Hono's `cors` never refuses. */
@@ -50,7 +54,8 @@ const challenge = (
     ...(errorDescription
       ? ['error="invalid_token"', `error_description="${errorDescription}"`]
       : []),
-    `resource_metadata="${resourceUrl(c, publicBaseUrl)}${RESOURCE_METADATA_PATH}"`
+    `resource_metadata="${resourceUrl(c, publicBaseUrl)}${RESOURCE_METADATA_PATH}"`,
+    `scope="${SCOPES.join(' ')}"`
   ]
   c.header('WWW-Authenticate', `Bearer ${params.join(', ')}`)
   return fail(c, 401, 'UNAUTHORIZED', message)

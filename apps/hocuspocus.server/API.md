@@ -1000,7 +1000,7 @@ An empty `warnings` array means a clean import.
 
 - Supabase Auth is the authorization server. Hosts register with DCR, then run OAuth 2.1 with PKCE.
 - Only `Authorization: Bearer` is read. The house `token` header is ignored here.
-- A request without a valid token gets `401` and `WWW-Authenticate: Bearer resource_metadata="…/api/mcp/.well-known/oauth-protected-resource"`. When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header.
+- A request without a valid token gets `401` and `WWW-Authenticate: Bearer resource_metadata="…/api/mcp/.well-known/oauth-protected-resource", scope="openid email profile"`. The resource metadata lists the same three in `scopes_supported`. When a token was sent, the header also carries `error="invalid_token"`. Hosts start sign-in from this header.
 - The token is verified with Supabase Auth (`getUser`, cached 60 s). An Auth outage returns `503 AUTH_UNAVAILABLE`.
 - **The token must carry `client_id`.** Only an OAuth grant mints one; a browser session token never does. A token without it gets `401` with `error="invalid_token"`, and the description says to connect through OAuth.
 - **Audience is a known gap.** Supabase always sets `aud` to `authenticated` and never writes the RFC 8707 `resource` into the token (supabase/auth#2610). So this server cannot prove a token was minted for it. The `client_id` rule is the strongest check Supabase allows today.
