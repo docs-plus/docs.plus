@@ -10,6 +10,7 @@ Shared names for docs.plus domain concepts. Architecture reviews and deepenings 
 - **Title write** — changing Pad title. Same persist and room relay for the pad and the Documents list. Stored Pad title is plain text, not HTML. Does not write Title. Client home: `apps/webapp/src/utils/titleWrite.ts`.
 - **Block style** — the outline role of the caret block: Title, Subtitle, heading level 1–6, or Normal. Not visual size.
 - **Subtitle** — a paragraph style, not a heading. It is not a TOC heading.
+- **Divider** — the `horizontalRule` node in the pad. A light split inside a Section. It makes no TOC entry, heading chat or Section. Not the daisyUI `divider` class.
 - **HeadingScale** — visual size by rank inside a section. Distinct from Block style. The same heading level can look larger or smaller depending on the section.
 - **Heading slug trail** (`?h=`) — outline ancestry from the target heading up through each parent to Title. Not a join of every heading before the target. `id=` is the resolver.
 - **Wide TOC** — the desktop outline column. Painted width ≥ 240. Wrap titles, nest, fold, Heading Chat Surface, unread, and presence live here.
