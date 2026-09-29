@@ -63,9 +63,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `editor` and `new`.
 - A primary `CopyButton` turns green when the copy succeeds. Before, it put
   green text on a blue button.
-- **A transparent 192 px site icon.** Claude draws a connector's icon from
-  the domain's largest icon, on a dark tile. The opaque white icons showed
-  there as a white square. `icon-192x192.png` is the logo with no background.
+- **A transparent 96 px site icon.** Claude draws a connector's icon from
+  Google's favicon service, on a dark tile. The opaque white icons showed
+  there as a white square. `icon-96x96.png` is the logo with no background,
+  and the page links it. `icon-192x192.png` is the same logo, kept as the
+  file to upload in connector dialogs. Google refreshes its copy only after
+  it crawls docs.plus again.
 - **Settings › Security shows how you sign in and which apps have access.**
   **How you sign in** lists Google, Email link or both, from the account's
   identities, and says "docs.plus does not use passwords. Sign in with Google

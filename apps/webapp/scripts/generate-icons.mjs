@@ -38,7 +38,8 @@
  * FAVICON:
  *   - favicon-32x32.png         → 32×32
  *   - favicon-16x16.png         → 16×16
- *   - icon-192x192.png          → 192×192, transparent, for other apps' dark tiles
+ *   - icon-96x96.png            → 96×96, transparent, linked for Claude's connector tile
+ *   - icon-192x192.png          → 192×192, transparent, upload asset for connector dialogs (not linked)
  *
  * APPLE SPLASH (iOS Home Screen launch, portrait, no alpha):
  *   - apple-splash-1290x2796.png, apple-splash-1179x2556.png, apple-splash-1170x2532.png
@@ -127,6 +128,7 @@ async function main() {
   console.log('\n⭐ Favicons:')
   await generateIcon(appleTouchSvg, 'favicon-32x32.png', 32)
   await generateIcon(appleTouchSvg, 'favicon-16x16.png', 16)
+  await generateIcon(logoSvg, 'icon-96x96.png', 96, 0)
   await generateIcon(logoSvg, 'icon-192x192.png', 192, 0)
 
   console.log('\n🚀 Apple Splash Screens (iOS):')
