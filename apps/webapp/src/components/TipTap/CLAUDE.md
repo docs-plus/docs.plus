@@ -43,15 +43,20 @@ bun run migrate:nested-to-flat
 
 - `apps/webapp/src/components/TipTap/extensions/heading-scale/heading-scale.ts` is a mandatory spec.
 - Heading font size is dynamic by rank within a section, not fixed per HTML level and not a Google-style ladder.
-- Each H1 starts a new section.
-- Within a section, distinct heading levels are sorted and sizes interpolate evenly between 20pt max and 12pt min.
+- The Title (the first top-level H1) takes no rank and gets no decoration. CSS draws it at a fixed 28pt.
+- The headings after the Title, up to the next H1, form section 1. Each later H1 starts a new section.
+- Ranking is per section, so the same level can have a different size in two sections.
+- Within a section, distinct heading levels are sorted and sizes interpolate evenly between 22pt max and 12pt min. Body text is 12pt (16px).
+- The minimum step between neighbouring ranks is 2pt, at six ranks: 22, 20, 18, 16, 14, 12. Three ranks give 22, 17, 12. Two ranks give 22, 12.
 - The same heading level repeated in one section gets the same visual size.
-- A section with one distinct heading level uses 20pt.
-- The title, first top-level H1, is part of section 1.
+- A section with one distinct heading level uses 22pt.
 - Use decorations only: `--hd-size`, `--hd-rank`, `--hd-total`. Never write sizes into the document.
 - Plugin state is `{ fingerprint, decorations }`.
 - Fingerprint is top-level heading levels in order, e.g. `1,2,4,1,3`.
-- Rebuild fully when the fingerprint changes or `y-sync$` meta is present; otherwise map the decoration set.
+- Map the decoration set while the fingerprint is unchanged. Rebuild fully when the fingerprint changes, or when mapping drops a decoration.
+- Detect a drop with the `onRemove` option of `DecorationSet.map`. A step that replaces a heading's tokens drops its node decoration: `setNodeMarkup` (UniqueID writes `toc-id` this way), `moveSection`, split, join and paste.
+- A Yjs change (remote, undo, redo) replaces the whole document, so mapping drops every decoration and the set rebuilds. A peer pays one full rebuild per remote transaction (measured ~8.7 ms at 1501 headings).
+- Do not gate on a y-sync key string. PluginKey adds a numeric suffix (`y-sync$1` in the live app), so the old `getMeta('y-sync$')` check never matched.
 - Do not replace this with fixed per-level point maps.
 
 ### Editor Performance
@@ -60,7 +65,7 @@ bun run migrate:nested-to-flat
 - Never put UI flags in `useEditor` deps.
 - Use `shouldRerenderOnTransaction: false` on collaboration editors.
 - Decoration plugins should avoid full rebuilds on every keystroke. Use `transactionAffectsNodeType(tr, 'heading')` or a cheaper structural check.
-- HeadingScale uses a heading-level fingerprint, not only `transactionAffectsNodeType`.
+- HeadingScale gates on a heading-level fingerprint, not `transactionAffectsNodeType`. Typing inside a heading maps the set.
 - Placeholder uses `@docs.plus/extension-placeholder` with O(1) state `init/apply`. Do not replace it with Tiptap's built-in placeholder, which scans with `doc.descendants`.
 - **Foreign attribute mutations inside the editor recreate node views (media embeds reload).** ProseMirror's `DOMObserver` watches every attribute on every descendant (no `attributeFilter`). It reconciles non-PM mutations by re-rendering the dirty range, destroying+recreating the affected node views. `NODE_DIRTY` is set by `docView.markDirty` over the unioned range. `CustomNodeViewDesc.update` returns `false` before consulting `spec.update`, so a node-view's own `ignoreMutation`/`update` can NOT veto a range-set dirty. Sibling mutations recreate it as collateral. Consequences and wiring:
   - **Never render a persistent `[role="status"]` / `[aria-live]` / `output` ARIA live-region inside `.ProseMirror`.** `@floating-ui/react` `FloatingFocusManager.markOthers()` runs on every popover/dialog open, regardless of `modal`. It sets the `data-floating-ui-inert` marker even when no `inert`/`aria-hidden` is applied. It collects live-regions as keep-targets, recurses into the editor, and stamps `data-floating-ui-inert` across the whole doc → every iframe embed reloads. Use `aria-busy` or a live-region OUTSIDE the editor.

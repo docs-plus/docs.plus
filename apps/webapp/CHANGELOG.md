@@ -252,6 +252,12 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Fixed
 
+- Headings of the same level in one section always share one size. A section
+  move, a new heading, a paste, undo or a remote edit used to drop the size, so
+  the heading fell back to a fixed default.
+- Heading sizes run from 22pt to 12pt, and the document title takes no rank.
+  Six levels in one section sit 2pt apart.
+
 - Backspace or Delete on an empty line between two lists of the same type
   joins them into one list. A nested Delete no longer moves the empty line into
   a list item. Lists of different types lose the line but stay apart.

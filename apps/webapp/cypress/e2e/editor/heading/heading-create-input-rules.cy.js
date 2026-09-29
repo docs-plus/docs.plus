@@ -50,4 +50,26 @@ describe('Heading Input Rules (Flat Schema)', () => {
       expect($el.attr('data-toc-id')).to.be.a('string').and.have.length.greaterThan(0)
     })
   })
+
+  it('sizes a heading typed with ### like the same level above it', () => {
+    const editor = cy.get('.docy_editor > .tiptap.ProseMirror')
+    editor.type('Title{enter}')
+    editor.type('## Heading Two{enter}')
+    editor.type('### First Three{enter}')
+    cy.get('h3[data-toc-id]').contains('First Three').should('exist')
+
+    cy.get('.docy_editor > .tiptap.ProseMirror').should('have.focus')
+    cy.realType('body text')
+    cy.realPress('Enter')
+    cy.realType('### Second Three')
+
+    cy.get('.docy_editor > .tiptap.ProseMirror > h3').should(($els) => {
+      expect($els).to.have.length(2)
+      expect($els[1].textContent.trim()).to.equal('Second Three')
+      for (const el of $els) {
+        expect(el.getAttribute('style') ?? '', el.textContent.trim()).to.contain('--hd-size')
+      }
+      expect(getComputedStyle($els[1]).fontSize).to.equal(getComputedStyle($els[0]).fontSize)
+    })
+  })
 })

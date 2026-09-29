@@ -54,3 +54,41 @@ describe('TOC Render and Drag (Flat Schema)', () => {
     cy.get('.toc__list').should('contain', 'First Heading Modified')
   })
 })
+
+describe('TOC drag keeps heading scale sizes', () => {
+  beforeEach(() => {
+    cy.visitEditor({ docName: 'toc-drag-heading-scale-test', persist: true })
+    cy.createDocument({
+      sections: [
+        section('Scale Title', [
+          heading(2, 'Section A', [
+            paragraph('a text'),
+            heading(3, 'Detail A', [paragraph('a detail')])
+          ]),
+          heading(2, 'Section B', [
+            paragraph('b text'),
+            heading(3, 'Detail B', [paragraph('b detail')])
+          ])
+        ])
+      ]
+    })
+    cy.waitForToc()
+  })
+
+  it('gives every moved heading its rank size', () => {
+    cy.dragTocItem('Section B', 'Section A', { position: 'before' })
+
+    cy.get('.docy_editor > .tiptap.ProseMirror > :is(h1, h2, h3, h4, h5, h6)').should(($all) => {
+      // TrailingNode appends an empty H1.
+      const els = [...$all].filter((el) => el.textContent.trim())
+      const texts = els.map((el) => el.textContent.trim())
+      expect(texts).to.deep.equal(['Scale Title', 'Section B', 'Detail B', 'Section A', 'Detail A'])
+      expect(els[0].getAttribute('style') ?? '').not.to.contain('--hd-size')
+      for (const el of els.slice(1)) {
+        expect(el.getAttribute('style') ?? '', el.textContent.trim()).to.contain('--hd-size')
+      }
+      const size = (i) => getComputedStyle(els[i]).fontSize
+      expect(size(2)).to.equal(size(4))
+    })
+  })
+})

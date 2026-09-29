@@ -3,7 +3,7 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-const MAX_SIZE = 20
+const MAX_SIZE = 22
 const MIN_SIZE = 12
 
 export const headingScalePluginKey = new PluginKey<HeadingScaleState>('headingScale')
@@ -36,7 +36,9 @@ function computeHeadingFingerprint(doc: PMNode): string {
 }
 
 function buildDecorations(doc: PMNode): DecorationSet {
-  const headings = collectTopLevelHeadings(doc)
+  const all = collectTopLevelHeadings(doc)
+  // CSS draws the Title (`> h1:first-child`) at a fixed 28pt, so it takes no rank.
+  const headings = all[0]?.pos === 0 && all[0].level === 1 ? all.slice(1) : all
   if (headings.length === 0) return DecorationSet.empty
 
   const sections: HeadingEntry[][] = []
@@ -96,26 +98,22 @@ export const HeadingScale = Extension.create({
             if (!tr.docChanged) return prev
 
             const doc = newState.doc
+            const fingerprint = computeHeadingFingerprint(doc)
 
-            if (tr.getMeta('y-sync$')) {
-              return {
-                fingerprint: computeHeadingFingerprint(doc),
-                decorations: buildDecorations(doc)
-              }
+            if (fingerprint === prev.fingerprint) {
+              // A step that replaces a heading's tokens (setNodeMarkup, moveSection, split, paste)
+              // drops its node decoration instead of moving it. A Yjs change replaces the whole
+              // document, so it always drops. Rebuild when anything drops.
+              let dropped = false
+              const decorations = prev.decorations.map(tr.mapping, doc, {
+                onRemove: () => {
+                  dropped = true
+                }
+              })
+              if (!dropped) return { fingerprint, decorations }
             }
 
-            const newFp = computeHeadingFingerprint(doc)
-            if (newFp === prev.fingerprint) {
-              return {
-                fingerprint: prev.fingerprint,
-                decorations: prev.decorations.map(tr.mapping, doc)
-              }
-            }
-
-            return {
-              fingerprint: newFp,
-              decorations: buildDecorations(doc)
-            }
+            return { fingerprint, decorations: buildDecorations(doc) }
           }
         },
 
