@@ -74,7 +74,10 @@ export default function PrivacyPage() {
             It can read the documents you can open. It can edit documents and post in chat only in
             documents you own.
           </li>
-          <li>It receives your email address through the sign-in.</li>
+          <li>
+            It receives your name, profile picture and email address through the sign-in. It never
+            receives a phone number.
+          </li>
           <li>
             Text the app reads goes to the company that runs the app. Their terms and privacy policy
             apply to that text.
