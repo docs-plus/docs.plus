@@ -22,7 +22,8 @@ function DisconnectAppDialog({ name, onConfirm }: DisconnectAppDialogProps) {
         Disconnect <bdi>{name}</bdi>?
       </ModalHeading>
       <p className="text-base-content/70 mt-2 text-sm">
-        This revokes its access to your docs.plus account. The app may keep what it already read.
+        This ends its access to your account. The app may keep what it already read. Remove the
+        connector in the app too.
       </p>
       <div className="mt-5 flex justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={() => closeDialog()}>

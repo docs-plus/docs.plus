@@ -4,22 +4,20 @@ import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
 import { AI_APP_BRANDS, type AiAppId } from '@utils/aiAppBrands'
 import { type ReactNode, useState } from 'react'
-import { LuPlug } from 'react-icons/lu'
+import { LuLayoutGrid, LuPlug } from 'react-icons/lu'
 
-import { GITHUB_REPO_URL } from '../constants'
 import { isMobileSurface } from '../utils/isMobileSurface'
 import { mcpServerUrl } from '../utils/mcpServerUrl'
 import SettingsCard from './SettingsCard'
 
 const SERVER_NAME = 'docs-plus'
-const SETUP_GUIDE_URL = `${GITHUB_REPO_URL}/blob/main/docs/mcp/README.md`
 
 const TABS = [
   { label: 'Claude', icon: AI_APP_BRANDS.claude },
   { label: 'ChatGPT', icon: AI_APP_BRANDS.chatgpt },
   { label: 'Claude Code', icon: AI_APP_BRANDS.claudeCode },
   { label: 'Codex', icon: AI_APP_BRANDS.codex },
-  { label: 'Other' }
+  { label: 'Other', icon: { component: LuLayoutGrid, color: null } }
 ] as const
 type ConnectTab = (typeof TABS)[number]['label']
 
@@ -27,9 +25,7 @@ const Strong = ({ children }: { children: ReactNode }) => (
   <span className="text-base-content font-medium">{children}</span>
 )
 
-const Steps = ({ children }: { children: ReactNode }) => (
-  <ol className="mt-5 space-y-4">{children}</ol>
-)
+const Steps = ({ children }: { children: ReactNode }) => <ol className="space-y-4">{children}</ol>
 
 const Step = ({ n, children }: { n: number; children: ReactNode }) => (
   <li className="flex gap-3">
@@ -72,23 +68,10 @@ const OpenAndCopy = ({ label, href, text }: { label: string; href: string; text:
   />
 )
 
-const PanelHeader = ({
-  app,
-  name,
-  where,
-  action
-}: {
-  app: AiAppId
-  name: string
-  where: string
-  action?: ReactNode
-}) => (
-  <div className="flex flex-wrap items-center gap-3">
-    <AppMark app={app} />
-    <div className="min-w-0 flex-1">
-      <p className="text-base-content text-sm font-semibold">{name}</p>
-      <p className="text-base-content/60 text-xs">{where}</p>
-    </div>
+// The tab already names the app, so the panel opens on where it runs and its one action.
+const PanelHeader = ({ where, action }: { where: string; action: ReactNode }) => (
+  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <p className="text-base-content/60 text-sm">{where}</p>
     {action}
   </div>
 )
@@ -115,7 +98,7 @@ const OtherRow = ({
 )
 
 const AddLink = ({ name, href }: { name: string; href: string }) => (
-  <a href={href} className="btn btn-soft btn-neutral btn-sm shrink-0 gap-1.5">
+  <a href={href} className="btn btn-primary btn-soft btn-sm shrink-0 gap-1.5">
     <Icons.externalLink size={16} aria-hidden />
     Add to {name}
   </a>
@@ -123,17 +106,7 @@ const AddLink = ({ name, href }: { name: string; href: string }) => (
 
 const ServerUrlField = ({ serverUrl }: { serverUrl: string }) => (
   <div>
-    <div className="flex items-baseline justify-between gap-3">
-      <p className="text-base-content text-sm font-medium">MCP server URL</p>
-      <a
-        href={SETUP_GUIDE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="link link-primary inline-flex items-center gap-1 text-xs no-underline hover:underline">
-        Setup guide
-        <Icons.externalLink size={12} aria-hidden />
-      </a>
-    </div>
+    <p className="text-base-content text-sm font-medium">MCP server URL</p>
     <CopyLine text={serverUrl} />
   </div>
 )
@@ -143,8 +116,6 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
     return (
       <>
         <PanelHeader
-          app="claude"
-          name="Claude"
           where="Web, desktop and phone"
           action={
             <OpenAndCopy
@@ -158,14 +129,14 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
         />
         <Steps>
           <Step n={1}>
-            Choose <Strong>Add to Claude</Strong>. Claude opens with docs.plus filled in, and the
+            Choose <Strong>Add to Claude</Strong>. Claude opens with everything filled in, and the
             server URL is copied.
           </Step>
           <Step n={2}>
             In Claude, choose <Strong>Continue</Strong>, then <Strong>Connect</Strong>.
           </Step>
           <Step n={3}>
-            On the docs.plus page, check that it says <Strong>Returns you to claude.ai</Strong>.
+            On the page that opens, check that it says <Strong>Returns you to claude.ai</Strong>.
             Then choose <Strong>Allow</Strong>.
           </Step>
         </Steps>
@@ -176,15 +147,9 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
     return (
       <>
         <PanelHeader
-          app="chatgpt"
-          name="ChatGPT"
           where="Web, with Developer mode on"
           action={
-            <OpenAndCopy
-              label="Add to ChatGPT"
-              text={serverUrl}
-              href="https://chatgpt.com/plugins"
-            />
+            <OpenAndCopy label="Open ChatGPT" text={serverUrl} href="https://chatgpt.com/plugins" />
           }
         />
         <Steps>
@@ -193,7 +158,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             <Strong>Developer mode</Strong>.
           </Step>
           <Step n={2}>
-            Choose <Strong>Add to ChatGPT</Strong>. ChatGPT Plugins opens, and the server URL is
+            Choose <Strong>Open ChatGPT</Strong>. ChatGPT Plugins opens, and the server URL is
             copied. You can also copy it here.
             <CopyLine text={serverUrl} />
           </Step>
@@ -202,7 +167,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             <Strong>Create</Strong>.
           </Step>
           <Step n={4}>
-            On the docs.plus page, check that it says <Strong>Returns you to chatgpt.com</Strong>.
+            On the page that opens, check that it says <Strong>Returns you to chatgpt.com</Strong>.
             Then choose <Strong>Allow</Strong>.
           </Step>
         </Steps>
@@ -212,10 +177,9 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
   if (tab === 'Claude Code') {
     return (
       <>
-        <PanelHeader app="claudeCode" name="Claude Code" where="Terminal" />
         <Steps>
           <Step n={1}>
-            Run this in a terminal.
+            Run this in the folder where you use Claude Code.
             <CopyLine text={`claude mcp add --transport http ${SERVER_NAME} ${serverUrl}`} />
           </Step>
           <Step n={2}>
@@ -223,7 +187,8 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             in.
           </Step>
           <Step n={3}>
-            On the docs.plus page, choose <Strong>Allow</Strong>.
+            On the page that opens, check that it says <Strong>an app on this computer</Strong>.
+            Then choose <Strong>Allow</Strong>.
           </Step>
         </Steps>
       </>
@@ -232,7 +197,6 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
   if (tab === 'Codex') {
     return (
       <>
-        <PanelHeader app="codex" name="Codex" where="Terminal" />
         <Steps>
           <Step n={1}>
             Run this in a terminal.
@@ -243,7 +207,8 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
             <CopyLine text={`codex mcp login ${SERVER_NAME}`} />
           </Step>
           <Step n={3}>
-            On the docs.plus page, choose <Strong>Allow</Strong>.
+            On the page that opens, check that it says <Strong>an app on this computer</Strong>.
+            Then choose <Strong>Allow</Strong>.
           </Step>
         </Steps>
       </>
@@ -259,7 +224,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
         <OtherRow
           app="cursor"
           name="Cursor"
-          note="Opens Cursor with docs.plus filled in."
+          note="Opens Cursor with everything filled in."
           action={
             <AddLink
               name="Cursor"
@@ -270,14 +235,15 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
         <OtherRow
           app="vscode"
           name="VS Code"
-          note="Opens VS Code with docs.plus filled in, for GitHub Copilot."
+          note="Opens VS Code with everything filled in, for GitHub Copilot."
           action={<AddLink name="VS Code" href={`vscode:mcp/install?${vscodeConfig}`} />}
         />
       </ul>
       <div className="border-base-300 mt-4 border-t pt-4">
         <ServerUrlField serverUrl={serverUrl} />
         <p className="text-base-content/60 mt-2 text-xs">
-          For any other AI app, paste this URL where it asks for a remote MCP server.
+          For any other AI app, paste this URL where it asks for a remote MCP server. The page that
+          opens may show a warning. Allow only if you started the connection.
         </p>
       </div>
     </>
@@ -291,7 +257,7 @@ const ConnectCard = () => {
 
   return (
     <SettingsCard>
-      <div className="mb-1 flex items-center gap-2">
+      <div className="mb-3 flex items-center gap-2">
         <LuPlug size={20} className="text-primary" />
         <h2 className="text-base-content text-base font-semibold">Add an AI app</h2>
       </div>
@@ -299,8 +265,8 @@ const ConnectCard = () => {
         // Phones cannot open editor links or run commands, and the Claude phone app cannot add a connector.
         <>
           <p className="text-base-content/60 text-xs sm:text-sm">
-            Add apps from docs.plus on a computer. An app you add there, such as Claude, then works
-            on your phone too.
+            Add apps on a computer. An app you add there, such as Claude, then works on your phone
+            too.
           </p>
           <div className="mt-4">
             <ServerUrlField serverUrl={serverUrl} />
@@ -308,11 +274,8 @@ const ConnectCard = () => {
         </>
       ) : (
         <>
-          <p className="text-base-content/60 text-xs sm:text-sm">
-            Pick your app, then follow its steps.
-          </p>
           {/* Scrolls sideways instead of wrapping a tab label in a narrow window. */}
-          <div className="mt-4 overflow-x-auto">
+          <div className="overflow-x-auto">
             <PanelTabBar tabs={TABS} activeTab={tab} onSelect={setTab} className="min-w-max p-0" />
           </div>
           <div role="tabpanel" aria-label={tab} className="mt-5">

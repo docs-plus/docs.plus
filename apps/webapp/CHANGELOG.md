@@ -38,24 +38,30 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   app is marked **On this computer**, and any other app **Unverified app**.
   An app that borrows a known name gets its own unverified row. It never
   loads an app's logo or links its address. **Disconnect** asks first, then
-  revokes every connection in the row. For a row that is not Claude or
+  revokes every connection in the row. The dialog says the app may keep what
+  it read, and to remove the connector in the app too. For a row that is not Claude or
   ChatGPT, the button's `aria-label` and the dialog add "(unverified)" or
   "(on this computer)" to the name. The redirect lookup stops after 8 s. If
   it fails, every row shows **Unverified app**, and **Disconnect** stays.
   The card hides while the list loads or is empty.
-- **The Connected apps tab opens with the docs.plus MCP server.** It says
-  what MCP is and what a connected agent may do: find and read, create and
-  edit, and join the chat. It also says that you stay in control. **Apps
-  with access** follows, then **Add an AI app**.
+- **The Connected apps tab opens with the docs.plus MCP server.** One short
+  card shows the MCP mark, a live status (Online, Unreachable, or You're
+  offline), a **Setup guide** link, and one row of chips for what a
+  connected AI app may do (read, create, edit and chat). The status only
+  proves this browser reached the MCP service. The service worker never
+  answers that check from its cache. **Apps with access** follows, then
+  **Add an AI app**.
 - **Add an AI app has one tab per app: Claude, ChatGPT, Claude Code, Codex
-  and Other.** Every tab but Other shows the app's mark and numbered steps.
-  **Add to Claude** and **Add to ChatGPT** copy the server URL and open the
-  app in a new tab. Claude opens its Add custom connector dialog with
+  and Other.** Each tab label carries the app's mark. Every tab but Other
+  shows numbered steps.
+  **Add to Claude** and **Open ChatGPT** copy the server URL and open the
+  app in a new tab. Every tab ends on the consent-page check: the return
+  address, or "an app on this computer". Claude opens its Add custom connector dialog with
   docs.plus filled in. That link is undocumented, so the copied URL is the
   fallback. Each value to copy sits in a code box with its own **Copy**.
   That covers the terminal commands, the server URL in ChatGPT step 2, and
-  the MCP server URL in **Other**. **Other** also holds Add to Cursor, Add
-  to VS Code, and a **Setup guide** link for any other app. On a phone the
+  the MCP server URL in **Other**. **Other** also holds Add to Cursor and Add
+  to VS Code. On a phone the
   card has no tabs: it shows the MCP server URL and says to add apps on a
   computer.
 - A title such as "Privacy" or "Terms" no longer opens a document on the

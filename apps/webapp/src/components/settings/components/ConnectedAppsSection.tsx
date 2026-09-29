@@ -43,7 +43,7 @@ const ConnectedAppRow = ({ group }: { group: ConnectedAppGroup }) => {
   const disconnect = async () => {
     try {
       await mutateAsync({ clientIds: group.clientIds })
-      toast.Success('App disconnected')
+      toast.Success(`${label} disconnected`)
     } catch {
       toast.Error(`Could not disconnect ${label}. Try again.`)
     }
@@ -114,16 +114,13 @@ const ConnectedCard = () => {
       ) : (
         <>
           <p className="text-base-content/60 mb-4 text-xs sm:text-sm">
-            {apps.length} {apps.length === 1 ? 'app can' : 'apps can'} use your docs.plus account.
+            {apps.length} AI {apps.length === 1 ? 'app' : 'apps'} can use your account.
           </p>
           <ul className="border-base-300 rounded-box divide-base-300 divide-y border">
             {apps.map((group) => (
               <ConnectedAppRow key={group.key} group={group} />
             ))}
           </ul>
-          <p className="text-base-content/60 mt-3 text-xs">
-            An app may keep what it already read. Remove docs.plus in the app too.
-          </p>
         </>
       )}
     </SettingsCard>

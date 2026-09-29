@@ -95,4 +95,11 @@ const credentialedRequestRule = {
   handler: 'NetworkOnly'
 }
 
-module.exports = [credentialedRequestRule, ...cache]
+// The MCP status probe must reach the network: a cached answer would show Online
+// while the server is down. Rule 13 would otherwise serve it NetworkFirst.
+const mcpStatusProbeRule = {
+  urlPattern: ({ url }) => url.pathname.endsWith('/.well-known/oauth-protected-resource'),
+  handler: 'NetworkOnly'
+}
+
+module.exports = [credentialedRequestRule, mcpStatusProbeRule, ...cache]

@@ -13,7 +13,7 @@ This is the easiest way. One docs.plus page gives the steps for each AI app.
 1. Sign in to docs.plus. Open **Settings** and choose **Connected apps**. The direct link is [docs.plus/#settings?tab=connected-apps](https://docs.plus/#settings?tab=connected-apps).
 2. Under **Add an AI app**, choose the tab for your AI app, and follow its steps.
    - **Claude**: choose **Add to Claude**. Claude's **Add custom connector** dialog opens with docs.plus filled in, and the server URL is copied. Claude warns that an external link suggested the connector. Check that the URL is the docs.plus server URL, then choose **Continue** and **Connect**.
-   - **ChatGPT**: turn on **Developer mode** first, as the tab says. Then choose **Add to ChatGPT**. ChatGPT Plugins opens, and the server URL is copied. Choose **+**, paste the URL, choose **OAuth**, then **Create**.
+   - **ChatGPT**: turn on **Developer mode** first, as the tab says. Then choose **Open ChatGPT**. ChatGPT Plugins opens, and the server URL is copied. Choose **+**, paste the URL, choose **OAuth**, then **Create**.
    - **Claude Code** and **Codex**: copy each command and run it in a terminal, as the tab says.
    - **Other**: choose **Add to Cursor** or **Add to VS Code**, and the app opens with docs.plus filled in. For any other AI app, copy the **MCP server URL** and paste it where the app asks for a remote MCP server.
    - The sections below give the Claude and ChatGPT steps in full.
@@ -23,7 +23,7 @@ This is the easiest way. One docs.plus page gives the steps for each AI app.
    - VS Code: `http://127.0.0.1:33418` or `https://vscode.dev`.
    - Cursor and other AI apps do not document their address yet. Allow only if you started the connection in that app yourself.
 
-The tab opens with what the docs.plus MCP server lets an AI app do. The **MCP server URL** and its **Copy** button are in the **Other** tab, and also in ChatGPT step 2. On a phone, **Add an AI app** shows no tabs, only the MCP server URL. Add apps from docs.plus on a computer. Claude added on the web or in Claude Desktop then works in the Claude phone app too.
+The tab opens with a short note on what the docs.plus MCP server lets an AI app do, and a **Setup guide** link to this page. Next to the title, **Online** means your browser reached the MCP server. **Unreachable** means it did not; the page checks again every 30 seconds. The **MCP server URL** and its **Copy** button are in the **Other** tab, and also in ChatGPT step 2. On a phone, **Add an AI app** shows no tabs, only the MCP server URL. Add apps from docs.plus on a computer. Claude added on the web or in Claude Desktop then works in the Claude phone app too.
 
 ## Connect in claude.ai, Claude Desktop, or Claude mobile
 

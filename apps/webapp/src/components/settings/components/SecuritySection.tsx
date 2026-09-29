@@ -4,7 +4,7 @@ import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import type { IconType } from 'react-icons'
 import { FcGoogle } from 'react-icons/fc'
-import { LuKeyRound, LuMail, LuPlug, LuShield } from 'react-icons/lu'
+import { LuKeyRound, LuMail, LuPlugZap, LuShield } from 'react-icons/lu'
 
 import { useConnectedApps } from '../hooks/useConnectedApps'
 import type { TabType } from '../types'
@@ -132,7 +132,7 @@ const AppsWithAccessCard = ({ onSelectTab }: { onSelectTab?: (tab: TabType) => v
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-[12rem] flex-1">
           <div className="mb-1.5 flex items-center gap-2">
-            <LuPlug size={20} className="text-primary" />
+            <LuPlugZap size={20} className="text-primary" />
             <h2 className="text-base-content text-base font-semibold">Apps with access</h2>
           </div>
           <div aria-busy={isPending} className="text-base-content/60 text-xs sm:text-sm">

@@ -31,6 +31,7 @@ export const SETTINGS_TABS: { id: TabType; label: string; icon: IconType; fullWi
   ]
 
 export const GITHUB_REPO_URL = config.links.githubRepoUrl
+export const MCP_GUIDE_URL = `${GITHUB_REPO_URL}/blob/main/docs/mcp/README.md`
 
 export const SUPPORT_ROWS: SupportRow[] = [
   {
