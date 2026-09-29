@@ -32,7 +32,13 @@ export const createServerFactory =
   ({ authInfo }) => {
     const context = createToolContext(deps, callerFrom(authInfo))
     const server = new McpServer(
-      { name: 'docs.plus', title: 'docs.plus', version: deps.version, websiteUrl: deps.appUrl },
+      {
+        name: 'docs.plus',
+        title: 'docs.plus',
+        version: deps.version,
+        websiteUrl: deps.appUrl,
+        description: 'Find, read, create and edit your docs.plus documents and their chat.'
+      },
       { instructions: INSTRUCTIONS }
     )
     registerDocumentTools(server, deps, context)

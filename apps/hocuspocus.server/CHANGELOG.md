@@ -202,7 +202,7 @@ This file is the operator and API changelog. The pad product lives in the [root 
   it no longer asks for `phone`. An existing grant keeps its old scopes until the person
   reconnects. ChatGPT still asks for every scope Supabase lists, `phone`
   included. No account holds a phone number, because phone sign-up is off, so
-  this pin is defense in depth.
+  this pin is defense in depth. The server info also carries a `description`.
 
 - **`test:e2e:duplicate-media` forces local storage from the package script.**
   The storage backend is now picked once from validated config, which freezes at

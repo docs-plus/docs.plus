@@ -79,7 +79,7 @@ A `#` heading in written Markdown is refused, because it is the document title. 
 
 `post_chat_message` only adds a message, so it is not destructive. It reaches other people: room members who follow every message and are away get a notification. Every `@` is removed, so it never sends a mention or `@everyone` notification.
 
-**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. A host may ignore them. The server info also carries `title` and `websiteUrl`.
+**Server instructions.** The `initialize` result carries `instructions`. They say that these tools act as the signed-in person, and that a browser session is not signed in as them. To start a document, they name `create_document`. A host may ignore them. The server info also carries `title`, `websiteUrl` and `description`.
 
 ## Limits
 
