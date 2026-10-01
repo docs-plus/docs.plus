@@ -540,18 +540,20 @@ DECLARE
 BEGIN
     /*
        If _workspace_id is not NULL, filter notifications by channels in that workspace.
-       Otherwise, no workspace filter.
+       Otherwise, no workspace filter. A row with no channel (a system alert) is
+       account-wide, so it passes in every workspace.
     */
 
     -- 1) Count all unread notifications
     SELECT COUNT(*)
     INTO v_unread_count
     FROM public.notifications AS n
-    JOIN public.channels      AS c ON c.id = n.channel_id
+    LEFT JOIN public.channels AS c ON c.id = n.channel_id
     WHERE n.receiver_user_id = auth.uid()
       AND n.readed_at IS NULL
       AND (
           _workspace_id IS NULL
+          OR n.channel_id IS NULL
           OR c.workspace_id = _workspace_id
       );
 
@@ -559,12 +561,13 @@ BEGIN
     SELECT COUNT(*)
     INTO v_unread_mention_count
     FROM public.notifications AS n
-    JOIN public.channels      AS c ON c.id = n.channel_id
+    LEFT JOIN public.channels AS c ON c.id = n.channel_id
     WHERE n.receiver_user_id = auth.uid()
       AND n.type = 'mention'
       AND n.readed_at IS NULL
       AND (
           _workspace_id IS NULL
+          OR n.channel_id IS NULL
           OR c.workspace_id = _workspace_id
       );
 
@@ -590,12 +593,13 @@ BEGIN
                 'avatar_updated_at',u.avatar_updated_at
             ) AS sender
         FROM public.notifications AS n
-        JOIN public.channels      AS c ON c.id = n.channel_id
+        LEFT JOIN public.channels AS c ON c.id = n.channel_id
         LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
         WHERE n.receiver_user_id = auth.uid()
           AND n.readed_at IS NULL
           AND (
               _workspace_id IS NULL
+              OR n.channel_id IS NULL
               OR c.workspace_id = _workspace_id
           )
         ORDER BY n.created_at DESC
@@ -624,13 +628,14 @@ BEGIN
                 'avatar_updated_at',u.avatar_updated_at
             ) AS sender
         FROM public.notifications AS n
-        JOIN public.channels      AS c ON c.id = n.channel_id
+        LEFT JOIN public.channels AS c ON c.id = n.channel_id
         LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
         WHERE n.receiver_user_id = auth.uid()
           AND n.type = 'mention'
           AND n.readed_at IS NULL
           AND (
               _workspace_id IS NULL
+              OR n.channel_id IS NULL
               OR c.workspace_id = _workspace_id
           )
         ORDER BY n.created_at DESC
@@ -789,11 +794,12 @@ BEGIN
     SELECT COUNT(*)
     INTO v_unread_count
     FROM public.notifications AS n
-    JOIN public.channels AS c ON c.id = n.channel_id
+    LEFT JOIN public.channels AS c ON c.id = n.channel_id
     WHERE n.receiver_user_id = auth.uid()
       AND n.readed_at IS NULL
       AND (
           _workspace_id IS NULL
+          OR n.channel_id IS NULL
           OR c.workspace_id = _workspace_id
       );
 
