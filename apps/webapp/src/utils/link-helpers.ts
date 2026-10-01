@@ -55,7 +55,7 @@ export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => 
   }
 }
 
-/** Deep-link to a chatroom message. Mirrors `BookmarkItem.handleCopyUrl` byte-for-byte. */
+/** Deep-link to a chatroom message. */
 export const buildBookmarkHref = (args: { messageId: string; channelId: string }): string => {
   const url = new URL(window.location.href)
   url.searchParams.set('msg_id', args.messageId)

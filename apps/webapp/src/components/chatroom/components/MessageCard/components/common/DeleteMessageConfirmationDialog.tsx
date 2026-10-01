@@ -1,4 +1,3 @@
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { ConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
 import { TMsgRow } from '@types'
 
@@ -8,10 +7,9 @@ type Props = {
   message: TMsgRow
 }
 
-/** Opens in the chat Modal host, so Cancel and the close after delete use its `closeDialog`. */
+/** Opens in GlobalDialog, so Cancel and the close after delete use its `closeDialog`. */
 export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
   const { deleteMessageHandler } = useDeleteMessageHandler()
-  const { closeDialog } = useChatroomContext()
 
   return (
     <ConfirmDialog
@@ -20,7 +18,6 @@ export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
       confirmLabel="Delete message"
       waitForConfirm
       onConfirm={() => deleteMessageHandler(message)}
-      onClose={closeDialog}
     />
   )
 }

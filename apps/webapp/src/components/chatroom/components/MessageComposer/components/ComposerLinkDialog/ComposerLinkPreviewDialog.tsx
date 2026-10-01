@@ -37,7 +37,7 @@ export function ComposerLinkPreviewDialog({ href, onEdit, onRemove, onClose }: P
   }
 
   return (
-    <ComposerLinkModalShell title="Link options" onBackdropClick={onClose}>
+    <ComposerLinkModalShell title="Link options" onClose={onClose}>
       <div data-testid="composer-link-preview" className="flex flex-col gap-4">
         {internalLink ? (
           <InternalLinkChip link={internalLink} editor={padEditor ?? null} />

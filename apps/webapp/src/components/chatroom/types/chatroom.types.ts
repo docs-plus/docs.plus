@@ -1,4 +1,3 @@
-import type { DialogConfig } from '@stores'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 
 import type { ChannelFeedMode } from '../utils/channelFeedProjection'
@@ -23,9 +22,6 @@ export interface ChatroomContextValue {
   variant: keyof ChatroomVariant
   error: string | null
   isChannelDataLoaded: boolean
-  openDialog: (content: React.ReactNode, config?: DialogConfig) => void
-  closeDialog: () => void
-  isDialogOpen: boolean
   /** Metadata + initial message window settled and no bootstrap error. */
   isFeedReady: boolean
   listRef: React.MutableRefObject<VirtuosoMessageListMethods<ChatItem, unknown> | null>

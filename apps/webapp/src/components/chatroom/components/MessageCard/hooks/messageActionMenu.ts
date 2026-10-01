@@ -24,10 +24,3 @@ export type MessageActionMenuItem = {
   separatorBefore?: boolean
   className?: string
 }
-
-export const messageActionTitle = {
-  copyLink: 'Copy link',
-  copyToDoc: 'Copy to doc',
-  edit: 'Edit',
-  delete: 'Delete'
-} as const

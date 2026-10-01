@@ -53,7 +53,7 @@ export function ComposerLinkEditorDialog({
   }
 
   return (
-    <ComposerLinkModalShell title="Link" onBackdropClick={onCancel} size="md">
+    <ComposerLinkModalShell title="Link" onClose={onCancel} size="md">
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
         <TextInput
           labelPosition="above"

@@ -1,6 +1,7 @@
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useStore } from '@stores'
 import { TMsgRow } from '@types'
+import { padSlugOf } from '@utils/filterRoute'
 import { useCallback } from 'react'
 
 export const useCopyMessageLinkHandler = () => {
@@ -10,7 +11,7 @@ export const useCopyMessageLinkHandler = () => {
 
   const getMessageUrl = useCallback((message: TMsgRow): string => {
     const workspaceId = useStore.getState().settings.workspaceId || ''
-    const documentSlug = location.pathname.split('/').pop()
+    const documentSlug = padSlugOf(location.pathname)
     const channelId = message.channel_id || workspaceId
     const messageId = message.id
 

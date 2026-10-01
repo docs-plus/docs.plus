@@ -1,7 +1,5 @@
-import { Modal, ModalContent } from '@components/ui/Dialog'
-import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { useUnreadCount } from '@hooks/useUnreadCount'
-import { type DialogConfig, useAuthStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import type { VirtuosoMessageListMethods } from '@virtuoso.dev/message-list'
 import React, {
   createContext,
@@ -52,10 +50,6 @@ export const ChatroomProvider: React.FC<{
   deepLinkMessageId?: string | null
   children: React.ReactNode
 }> = ({ channelId, variant, deepLinkMessageId = null, children }) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [dialogContent, setDialogContent] = useState<React.ReactNode>(null)
-  const [dialogConfig, setDialogConfig] = useState<DialogConfig>({})
-
   const listRef = useRef<VirtuosoMessageListMethods<ChatItem, unknown> | null>(null)
   const [atBottom, setAtBottom] = useState(true)
   const [newCount, setNewCount] = useState(0)
@@ -232,21 +226,6 @@ export const ChatroomProvider: React.FC<{
     advanceRef.current = onLastVisibleIndexChange
   }, [onLastVisibleIndexChange])
 
-  const openDialog = useCallback((content: React.ReactNode, config: DialogConfig = {}) => {
-    setDialogContent(content)
-    setDialogConfig(config)
-    setIsDialogOpen(true)
-  }, [])
-
-  const closeDialog = useCallback(() => {
-    setIsDialogOpen(false)
-    setDialogContent(null)
-    setDialogConfig({})
-  }, [])
-
-  // Same Back behaviour as GlobalDialog: on a phone, Back closes the dialog, not the pane.
-  useHistoryDismiss(isDialogOpen, closeDialog)
-
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_E2E !== 'true') return
     ;(window as any).__chatTestApi = {
@@ -281,9 +260,6 @@ export const ChatroomProvider: React.FC<{
       variant,
       error: errorMsg,
       isChannelDataLoaded,
-      openDialog,
-      closeDialog,
-      isDialogOpen,
       isFeedReady,
       listRef,
       send,
@@ -311,9 +287,6 @@ export const ChatroomProvider: React.FC<{
       errorMsg,
       isChannelDataLoaded,
       isFeedReady,
-      openDialog,
-      closeDialog,
-      isDialogOpen,
       send,
       retry,
       scrollToMessage,
@@ -334,14 +307,5 @@ export const ChatroomProvider: React.FC<{
     ]
   )
 
-  return (
-    <ChatroomContext.Provider value={value}>
-      {children}
-      <Modal open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <ModalContent size={dialogConfig.size || 'md'} className={dialogConfig.className}>
-          {dialogContent}
-        </ModalContent>
-      </Modal>
-    </ChatroomContext.Provider>
-  )
+  return <ChatroomContext.Provider value={value}>{children}</ChatroomContext.Provider>
 }

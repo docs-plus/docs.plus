@@ -25,8 +25,6 @@ export interface ConfirmDialogProps {
   onConfirm: () => void | Promise<unknown>
   /** Keep the dialog open with a busy confirm until `onConfirm` settles. A rejection re-enables it. */
   waitForConfirm?: boolean
-  /** Closes the host. Defaults to GlobalDialog's `closeDialog`; the chat host passes its own. */
-  onClose?: () => void
   /** Runs on unmount, however the dialog closed. */
   onDismiss?: () => void
 }
@@ -44,12 +42,10 @@ export function ConfirmDialog({
   tone = 'danger',
   onConfirm,
   waitForConfirm = false,
-  onClose,
   onDismiss
 }: ConfirmDialogProps) {
   useModalRole('alertdialog')
   const closeDialog = useStore((state) => state.closeDialog)
-  const close = onClose ?? closeDialog
   const [busy, setBusy] = useState(false)
 
   const onDismissRef = useRef(onDismiss)
@@ -60,14 +56,14 @@ export function ConfirmDialog({
 
   const confirm = async () => {
     if (!waitForConfirm) {
-      close()
+      closeDialog()
       void onConfirm()
       return
     }
     setBusy(true)
     try {
       await onConfirm()
-      close()
+      closeDialog()
     } catch {
       setBusy(false)
     }
@@ -81,7 +77,7 @@ export function ConfirmDialog({
       </div>
       {children}
       <DialogActions>
-        <Button variant="cancel" disabled={busy} onClick={close}>
+        <Button variant="cancel" disabled={busy} onClick={closeDialog}>
           Cancel
         </Button>
         <Button variant={tone === 'danger' ? 'error' : 'primary'} loading={busy} onClick={confirm}>

@@ -1,8 +1,12 @@
+import ContextMenuItems from '@components/chatroom/components/MessageCard/components/MessageContextMenu/ContextMenuItems'
 import { MessageCard } from '@components/chatroom/components/MessageCard/MessageCard'
+import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { HoverMenuDropdown } from '@components/ui/HoverMenu'
 import { Icons } from '@icons'
 
 export const HoverMenuActions = () => {
+  const { message } = useMessageCardContext()
+
   return (
     <>
       <MessageCard.Actions.EmojiReaction />
@@ -13,13 +17,10 @@ export const HoverMenuActions = () => {
       <HoverMenuDropdown
         tooltip="More actions"
         trigger={<Icons.moreVertical size={18} className="text-base-content/70" />}>
-        <MessageCard.Actions.Download />
-        <MessageCard.Actions.CopyToDoc />
-        <MessageCard.Actions.CopyLink />
-        <MessageCard.Actions.GroupAuth checkMessageAuthor separatorBefore>
-          <MessageCard.Actions.Edit />
-          <MessageCard.Actions.Delete />
-        </MessageCard.Actions.GroupAuth>
+        <ContextMenuItems
+          message={message}
+          only={['download', 'copy-to-doc', 'copy-link', 'edit', 'delete']}
+        />
         <MessageCard.Actions.ReadStatus />
       </HoverMenuDropdown>
     </>

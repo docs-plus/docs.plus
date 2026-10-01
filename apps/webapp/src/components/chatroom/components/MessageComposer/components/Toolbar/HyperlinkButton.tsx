@@ -3,13 +3,9 @@ import { Icons } from '@icons'
 
 import { useMessageComposer } from '../../hooks'
 import Button from '../ui/Button'
+import type { FormatButtonProps } from './formatToolbarLayout'
 
-type Props = {
-  className?: string
-  size?: number
-}
-
-export const HyperlinkButton = ({ className, size = 18, ...props }: Props) => {
+export const HyperlinkButton = ({ size, ...props }: FormatButtonProps) => {
   const { editor } = useMessageComposer()
   const active = Boolean(editor?.isActive('hyperlink'))
 
@@ -23,7 +19,6 @@ export const HyperlinkButton = ({ className, size = 18, ...props }: Props) => {
       isActive={active}
       aria-label="Hyperlink"
       tooltip="Hyperlink (⌘+K)"
-      className={className}
       {...props}>
       <Icons.link size={size} className="pointer-events-none shrink-0 stroke-[1.75]" />
     </Button>

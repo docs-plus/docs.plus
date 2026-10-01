@@ -1,4 +1,3 @@
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
 import { useBookmarkMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useBookmarkMessageHandler'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
@@ -12,13 +11,13 @@ import { parseMessageMedias } from '@components/chatroom/utils/messageMediaPaths
 import { isMessageBookmarked } from '@components/chatroom/utils/messagePresentation'
 import { openMessageReactionAt } from '@components/chatroom/utils/messageReaction'
 import { Icons } from '@icons'
-import { useAuthStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
 import { openReportMail } from '@utils/reportContent'
 import { useMemo } from 'react'
 
-import { type MessageActionMenuItem, messageActionTitle } from './messageActionMenu'
+import { type MessageActionMenuItem } from './messageActionMenu'
 
 type Options = {
   iconSize?: number
@@ -29,7 +28,7 @@ export const useMessageActionMenuItems = (
   message: TMsgRow,
   { iconSize = 18, includeReaction = false }: Options = {}
 ) => {
-  const { openDialog } = useChatroomContext()
+  const openDialog = useStore((s) => s.openDialog)
   const { profile } = useAuthStore()
   const { replyInMessageHandler } = useReplyInMessageHandler()
   const { copyMessageToDocHandler } = useCopyMessageToDocHandler()
@@ -71,7 +70,7 @@ export const useMessageActionMenuItems = (
 
     list.push({
       id: 'copy-link',
-      title: messageActionTitle.copyLink,
+      title: 'Copy link',
       icon: <Icons.link size={iconSize} />,
       onClickFn: () => copyMessageLinkHandler(message),
       display: true
@@ -102,7 +101,7 @@ export const useMessageActionMenuItems = (
       },
       {
         id: 'copy-to-doc',
-        title: messageActionTitle.copyToDoc,
+        title: 'Copy to doc',
         icon: <Icons.fileOpen size={iconSize} />,
         onClickFn: () => copyMessageToDocHandler(message),
         display: true
@@ -123,7 +122,7 @@ export const useMessageActionMenuItems = (
       },
       {
         id: 'edit',
-        title: messageActionTitle.edit,
+        title: 'Edit',
         icon: <Icons.edit size={iconSize} />,
         onClickFn: () => editMessageHandler(message),
         display: isOwner,
@@ -131,7 +130,7 @@ export const useMessageActionMenuItems = (
       },
       {
         id: 'delete',
-        title: messageActionTitle.delete,
+        title: 'Delete',
         icon: <Icons.trash size={iconSize} />,
         onClickFn: () => {
           openDialog(<DeleteMessageConfirmationDialog message={message} />, { size: 'sm' })

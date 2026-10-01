@@ -456,19 +456,9 @@ export interface HoverMenuDropdownProps {
   trigger: ReactNode
   /** Also the trigger's accessible name. */
   tooltip?: string
-  disabled?: boolean
-  className?: string
-  contentClassName?: string
 }
 
-export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
-  children,
-  trigger,
-  tooltip,
-  disabled,
-  className,
-  contentClassName
-}) => {
+export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({ children, trigger, tooltip }) => {
   const dropdown = useFloatingDropdown()
   const hoverMenuContext = useHoverMenuContext()
 
@@ -500,8 +490,7 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
           variant="ghost"
           size="sm"
           shape="square"
-          className={twMerge('join-item', className)}
-          disabled={disabled}>
+          className="join-item">
           {trigger}
         </Button>
       </Tooltip>
@@ -522,11 +511,7 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
                 maxWidth: '100%'
               }}
               {...dropdown.getFloatingProps()}
-              className={twMerge(
-                contextMenuPanelClassName,
-                'z-[60] max-h-80 w-52 overflow-y-auto',
-                contentClassName
-              )}>
+              className={`${contextMenuPanelClassName} z-[60] max-h-80 w-52 overflow-y-auto`}>
               <MenuListProvider
                 value={menuListValue}
                 elementsRef={dropdown.elementsRef}

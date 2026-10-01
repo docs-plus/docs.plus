@@ -17,11 +17,11 @@ const WIDTH_CLASS = { sm: 'max-w-sm', md: 'max-w-md' } as const
 type Props = {
   children: ReactNode
   title: string
-  onBackdropClick: () => void
+  onClose: () => void
   size?: keyof typeof WIDTH_CLASS
 }
 
-export function ComposerLinkModalShell({ children, title, onBackdropClick, size = 'sm' }: Props) {
+export function ComposerLinkModalShell({ children, title, onClose, size = 'sm' }: Props) {
   const titleId = useId()
   const cardRef = useRef<HTMLDivElement>(null)
   const isPresent = useIsPresent()
@@ -97,7 +97,7 @@ export function ComposerLinkModalShell({ children, title, onBackdropClick, size 
       <motion.div
         className={`absolute inset-0 ${modalBackdropClassName}`}
         role="presentation"
-        onClick={onBackdropClick}
+        onClick={onClose}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0, transition: EXIT_TRANSITION }}
@@ -118,7 +118,7 @@ export function ComposerLinkModalShell({ children, title, onBackdropClick, size 
             <h2 id={titleId} className="text-base-content text-xl font-semibold">
               {title}
             </h2>
-            <CloseButton onClick={onBackdropClick} />
+            <CloseButton onClick={onClose} />
           </div>
           {children}
         </motion.div>

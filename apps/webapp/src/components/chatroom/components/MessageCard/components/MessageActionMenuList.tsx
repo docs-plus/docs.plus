@@ -1,4 +1,7 @@
-import { type MessageActionMenuItem } from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
+import {
+  type MessageActionMenuItem,
+  type MessageActionMenuItemId
+} from '@components/chatroom/components/MessageCard/hooks/messageActionMenu'
 import { useMessageActionMenuItems } from '@components/chatroom/components/MessageCard/hooks/useMessageActionMenuItems'
 import { ContextMenuDivider, ContextMenuRow, MenuItem } from '@components/ui/ContextMenu'
 import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
@@ -17,6 +20,8 @@ type Props = {
   iconSize?: number
   includeReaction?: boolean
   isInteractive?: boolean
+  /** Shows only these rows, in this order. */
+  only?: MessageActionMenuItemId[]
 }
 
 function ActionMenuRow({
@@ -40,7 +45,7 @@ function ActionMenuRow({
     item.icon
   )
   const title = isCopyLink ? (
-    <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
+    <span className={twMerge('swap align-top', copied && 'swap-active')} aria-hidden>
       <span className="swap-on">Copied!</span>
       <span className="swap-off">{item.title}</span>
     </span>
@@ -53,7 +58,7 @@ function ActionMenuRow({
       icon={icon}
       variant={item.variant}
       disabled={disabled}
-      className={twMerge(item.className, isCopyLink && copied && 'text-success')}>
+      className={twMerge(item.className, isCopyLink && copied && 'text-[var(--success-ink)]')}>
       {title}
     </ContextMenuRow>
   )
@@ -65,7 +70,8 @@ export function MessageActionMenuList({
   onClose,
   iconSize = surface === 'longPress' ? 20 : 16,
   includeReaction = surface === 'contextMenu',
-  isInteractive = true
+  isInteractive = true,
+  only
 }: Props) {
   const { items, linkCopied } = useMessageActionMenuItems(message, { iconSize, includeReaction })
   const { schedule, cancel } = useCloseAfterHold(onClose)
@@ -82,9 +88,15 @@ export function MessageActionMenuList({
     onClose()
   }
 
+  const rows = only
+    ? only
+        .map((id) => items.find((item) => item.id === id))
+        .filter((item): item is MessageActionMenuItem => Boolean(item))
+    : items
+
   return (
     <>
-      {items
+      {rows
         .filter((item) => item.display)
         .map((item) => (
           <Fragment key={item.id}>

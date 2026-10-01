@@ -43,7 +43,6 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         variant={variant}
         size="sm"
         shape={shape}
-        // The one composer hit target: 32px on desktop, 44px on a phone.
         className={twMerge(
           'rounded-field size-8 min-h-8 min-w-8 shrink-0 cursor-pointer touch-manipulation border-0 p-0 antialiased',
           isMobile && 'size-11 min-h-11 min-w-11',
