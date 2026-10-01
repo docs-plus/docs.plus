@@ -176,6 +176,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   link judged unavailable. `loadingHistory` stays true during the walk, and
   `resetHistorySessionForMount` cancels it.
 
+- **Settings › Documents lists the documents you joined.** One list shows
+  the documents you own and the ones you opened while signed in. A **Show**
+  menu beside the sort picks All documents, Owned by me or Joined, and the
+  browser tab keeps your pick. A document you do not own shows its owner's
+  name. Its ⋮ menu offers only Open in new tab and Copy link. Joined has its
+  own empty state. Home and Command jump still list only your own documents.
+
 ### Changed
 
 - **Settings › Documents shows Trash only when the trash holds a document.**
@@ -279,6 +286,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   again after each remote edit, and a received cursor update is no longer
   sent back. Both come from upstream bugs (`@tiptap/y-tiptap` #55 and
   `@hocuspocus/provider` 3.x).
+
+- On a phone, the Settings › Documents ⋮ menu opens the app's standard
+  bottom sheet. Settings stays open behind it.
+- Chat toolbar buttons show the app's tooltip. The close button reads
+  "Close chat".
+- A document with 4 members shows all 4 faces. Past 4, the row shows 3 faces
+  and the count of the rest.
 
 ### Fixed
 
@@ -402,6 +416,17 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Remote carets set their color and avatar through checked values. An avatar
   loads only from the profile storage bucket or a Google profile host.
 
+- Chat closes when you switch to another document. It used to stay open and
+  show the old document's room.
+- On a phone, Back after a document switch with chat open takes one press. It
+  used to take two.
+- On a wide screen, small dropdowns, such as the documents sort, are 32px
+  tall. The small size was never built, so they showed at full size.
+- Grid previews in Settings › Documents keep their 4:3 shape. A long first
+  page no longer stretches the band.
+- In a segmented control, such as the list and grid toggle, the selected
+  segment shows its whole border.
+
 ### Removed
 
 - Next routes for Validate, Status, and Confirm. The service worker no longer
@@ -417,6 +442,9 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 - Five `window.__chatTestApi` hooks that no spec used: `currentTailSeq`,
   `lastSeenSeq`, `jumpToPresent`, `revealFeedSpoiler` and
   `isFeedSpoilerRevealed`.
+
+- The "No more notifications" and "No more bookmarks" lines at the end of
+  each list.
 
 ### Internal
 
@@ -443,6 +471,20 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 - A failed service-worker update check is no longer reported. The current
   worker stays in control, and the next check retries.
+
+- `Select` drops its `color` prop and the `SelectColor` type.
+  `selectSizeClassName` maps each size to a literal class, and
+  `SearchableSelect` uses it too.
+
+- `destroyChatRoomForHistory` is now `closeOpenChatRoom`. `DocumentPage`
+  calls it on a document switch. `TabbedPanelBody` drops `endMessage`.
+
+- `BottomSheet` mounts into the `mountPoint` its sheet data names, and holds
+  it through the close tween. A registry entry can set `escapeKey: false`.
+  The phone Documents ⋮ is the `documentRowMenu` sheet.
+
+- Documents list cache writes reach every list of the user: each scope,
+  search and sort.
 
 ## [2.0.1] — 2026-08-31
 
