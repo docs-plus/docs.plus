@@ -101,7 +101,7 @@ function DocumentListRow({
   if (isRenaming) {
     return (
       <li data-doc-row className="flex items-center gap-3 px-2 py-2">
-        <LuFileText size={18} className="text-base-content/40 shrink-0" />
+        <LuFileText size={18} className="text-base-content/60 shrink-0" />
         <TextInput
           ref={inputRef}
           size="sm"
@@ -131,44 +131,47 @@ function DocumentListRow({
   }
 
   return (
-    <li data-doc-row className="hover:bg-base-200 flex items-center gap-1 pr-1 transition-colors">
-      <button
-        ref={buttonRef}
-        type="button"
-        data-doc-row-button
-        tabIndex={isActive ? 0 : -1}
-        onClick={open}
-        onFocus={() => onActivate(index)}
-        onKeyDown={(e) => {
-          if (e.key === 'F2') {
-            e.preventDefault()
-            enterRename()
-          }
-        }}
-        className="rounded-field focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
-        <LuFileText size={18} className="text-base-content/40 shrink-0" />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <DocumentRowLabel doc={doc} />
-          <span className="text-base-content/60 text-xs sm:hidden">{date}</span>
-        </span>
-      </button>
+    // The fill sits on an inner row: rounding the `li` would bend the sibling hairline.
+    <li data-doc-row>
+      <div className="hover:bg-base-200 md:rounded-field flex items-center gap-1 pr-1 transition-colors">
+        <button
+          ref={buttonRef}
+          type="button"
+          data-doc-row-button
+          tabIndex={isActive ? 0 : -1}
+          onClick={open}
+          onFocus={() => onActivate(index)}
+          onKeyDown={(e) => {
+            if (e.key === 'F2') {
+              e.preventDefault()
+              enterRename()
+            }
+          }}
+          className="rounded-field focus-visible:ring-primary flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
+          <LuFileText size={18} className="text-base-content/60 shrink-0" />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <DocumentRowLabel doc={doc} className="text-sm" />
+            <span className="text-meta text-base-content/60 sm:hidden">{date}</span>
+          </span>
+        </button>
 
-      <DocumentMembersCluster
-        workspaceId={doc.documentId.toLowerCase()}
-        memberCount={members?.member_count ?? 0}
-        previews={members?.previews ?? []}
-        tabIndex={-1}
-      />
-      <span className="text-base-content/60 hidden shrink-0 text-xs sm:block">{date}</span>
+        <DocumentMembersCluster
+          workspaceId={doc.documentId.toLowerCase()}
+          memberCount={members?.member_count ?? 0}
+          previews={members?.previews ?? []}
+          tabIndex={-1}
+        />
+        <span className="text-meta text-base-content/60 hidden shrink-0 sm:block">{date}</span>
 
-      <DocumentRowMenu
-        doc={doc}
-        scope={scope}
-        triggerTabIndex={isActive ? 0 : -1}
-        onRename={enterRename}
-        onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}
-        onOpenDocument={onOpenDocument}
-      />
+        <DocumentRowMenu
+          doc={doc}
+          scope={scope}
+          triggerTabIndex={isActive ? 0 : -1}
+          onRename={enterRename}
+          onDelete={(keyboard) => onDelete(doc.documentId, keyboard)}
+          onOpenDocument={onOpenDocument}
+        />
+      </div>
     </li>
   )
 }

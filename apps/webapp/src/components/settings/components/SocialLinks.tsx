@@ -1,14 +1,16 @@
 import { fetchLinkMetadata } from '@api'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
+import { EmptyState } from '@components/ui/EmptyState'
 import TextInput from '@components/ui/TextInput'
+import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
-import type { ProfileData } from '@types'
 import { getFormattedHref, getGoogleFaviconUrl } from '@utils/link-helpers'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { LuExternalLink, LuLink, LuMail, LuPhone, LuPlus, LuTrash2 } from 'react-icons/lu'
 
 import { MAX_LINKS, MIN_PHONE_DIGITS } from '../constants'
+import type { useProfileUpdate } from '../hooks/useProfileUpdate'
 import type { LinkItem, LinkMetadata } from '../types'
 import { LinkType } from '../types'
 import { getSocialColor, isSocialDomain } from '../utils/socialIcons'
@@ -54,7 +56,7 @@ const validateLink = (url: string): ValidateLinkResult => {
   if (domain) {
     return { valid: true, type: isSocialDomain(domain) ? LinkType.Social : LinkType.Simple }
   }
-  return { valid: false, error: 'Invalid URL format!' }
+  return { valid: false, error: 'Enter a valid URL, email, or phone number.' }
 }
 
 const getFallbackIcon = (link: LinkItem) => {
@@ -80,16 +82,17 @@ const getFaviconUrl = (link: LinkItem): string | undefined => {
 }
 
 interface SocialLinksProps {
-  onSave: (options?: { successToast?: string; skipUsernameValidation?: boolean }) => Promise<void>
+  onSave: ReturnType<typeof useProfileUpdate>['handleSave']
   saveLoading: boolean
 }
 
 const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
   const user = useAuthStore((state) => state.profile)
-  const setProfile = useAuthStore((state) => state.setProfile)
 
   const [newLink, setNewLink] = useState('')
   const [fetching, setFetching] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+  const addErrorId = useId()
 
   const links = useMemo<LinkItem[]>(
     () => (user?.profile_data?.linkTree as LinkItem[]) ?? [],
@@ -98,36 +101,28 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
   const isLoading = fetching || saveLoading
   const isAtLimit = links.length >= MAX_LINKS
 
-  const updateLinkTree = useCallback(
-    (newLinkTree: LinkItem[]) => {
-      if (!user) return
-      setProfile({
-        ...user,
-        profile_data: { ...(user.profile_data as ProfileData), linkTree: newLinkTree }
-      })
-    },
-    [user, setProfile]
+  // The list is the confirmation, so a save shows no success toast. A failure rolls back.
+  const saveLinkTree = useCallback(
+    (linkTree: LinkItem[]) => onSave({ profile_data: { linkTree } }),
+    [onSave]
   )
 
-  // Optimistic — onSave failures surface a toast but the local tree
-  // already shows the change; the next profile fetch reconciles.
   const handleAddLink = useCallback(async () => {
-    if (!user || !newLink.trim()) return
-
-    if (isAtLimit) {
-      toast.Warning(`You can add up to ${MAX_LINKS} links.`)
+    if (!user) return
+    if (!newLink.trim()) {
+      setAddError('Enter a URL, email, or phone number.')
       return
     }
 
     const result = validateLink(newLink)
     if (!result.valid) {
-      toast.Error(result.error)
+      setAddError(result.error)
       return
     }
     const { type } = result
 
     if (isDuplicate(links, newLink)) {
-      toast.Warning('Link already exists!')
+      setAddError('You have already added this link.')
       return
     }
 
@@ -146,23 +141,19 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
         metadata
       }
 
-      updateLinkTree([...links, link])
-      await onSave({ successToast: 'Link added successfully!', skipUsernameValidation: true })
-      setNewLink('')
+      if (await saveLinkTree([...links, link])) setNewLink('')
     } catch {
-      toast.Error('An error occurred while adding the link.')
+      toast.Error('Couldn’t add the link.')
     } finally {
       setFetching(false)
     }
-  }, [user, newLink, links, isAtLimit, updateLinkTree, onSave])
+  }, [user, newLink, links, saveLinkTree])
 
   const handleRemoveLink = useCallback(
     async (url: string) => {
-      if (!user) return
-      updateLinkTree(links.filter((link) => link.url !== url))
-      await onSave({ successToast: 'Link removed successfully!', skipUsernameValidation: true })
+      await saveLinkTree(links.filter((link) => link.url !== url))
     },
-    [user, links, updateLinkTree, onSave]
+    [links, saveLinkTree]
   )
 
   const handleLinkClick = useCallback((e: React.MouseEvent, link: LinkItem) => {
@@ -182,36 +173,56 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <TextInput
-          label="Add URL, email, or phone"
-          labelPosition="floating"
-          placeholder="https://twitter.com/username"
-          value={newLink}
-          onChange={(e) => setNewLink(e.target.value)}
-          disabled={isLoading || isAtLimit}
-          onKeyDown={handleKeyDown}
-          wrapperClassName="flex-1"
-        />
-        <Button
-          onClick={handleAddLink}
-          disabled={isLoading || !newLink.trim() || isAtLimit}
-          loading={isLoading}
-          variant="primary"
-          startIcon={!isLoading ? LuPlus : undefined}
-          className="mt-auto min-w-10 px-3"
-          aria-label="Add link"
-        />
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-end gap-4">
+          <TextInput
+            label="Add URL, email, or phone"
+            labelPosition="above"
+            placeholder="https://twitter.com/username"
+            value={newLink}
+            onChange={(e) => {
+              setNewLink(e.target.value)
+              setAddError(null)
+            }}
+            disabled={isLoading || isAtLimit}
+            onKeyDown={handleKeyDown}
+            error={!!addError}
+            aria-describedby={addError ? addErrorId : undefined}
+            wrapperClassName="flex-1"
+          />
+          {/* Quiet, not primary: the pane's one primary is Save changes. */}
+          <Button
+            onClick={handleAddLink}
+            disabled={isLoading || isAtLimit}
+            loading={isLoading}
+            variant="quiet"
+            startIcon={LuPlus}
+            className="my-0 shrink-0">
+            Add link
+          </Button>
+        </div>
+        {addError && (
+          <p
+            id={addErrorId}
+            role="alert"
+            className="text-meta flex items-start gap-1.5 text-[var(--error-ink)]">
+            <Icons.alert size={16} className="mt-0.5 shrink-0" aria-hidden />
+            <span>{addError}</span>
+          </p>
+        )}
       </div>
 
       {isAtLimit && (
-        <p className="text-warning text-xs font-medium">Maximum of {MAX_LINKS} links reached.</p>
+        <p className="text-meta flex items-start gap-1.5 font-medium text-[var(--warning-ink)]">
+          <Icons.alert size={16} className="mt-0.5 shrink-0" aria-hidden />
+          <span>Maximum of {MAX_LINKS} links reached.</span>
+        </p>
       )}
 
       {links.length > 0 && (
         <div className="space-y-2">
-          <p className="text-base-content/50 text-xs font-medium">
-            Your Links ({links.length}/{MAX_LINKS})
+          <p className="text-meta text-base-content font-semibold">
+            Your links ({links.length}/{MAX_LINKS})
           </p>
 
           {links.map((link) => {
@@ -222,18 +233,24 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
             const hasBrandIcon = !!domain && !!iconColor
 
             return (
+              // -mx-2 keeps the text on the card edge while the hover fill bleeds past it.
               <div
                 key={link.url}
-                className="bg-base-200 hover:bg-base-300 group rounded-box flex items-center gap-3 p-2.5 transition-all">
-                <div className="bg-base-100 rounded-field flex size-8 shrink-0 items-center justify-center shadow-sm">
+                className="group rounded-field hover:bg-base-200 -mx-2 flex items-center gap-3 px-2 py-1.5 transition-colors">
+                <div aria-hidden className="flex size-5 shrink-0 items-center justify-center">
                   {hasBrandIcon && domain ? (
-                    <SocialIcon domain={domain} className="size-4" style={{ color: iconColor }} />
+                    <SocialIcon
+                      domain={domain}
+                      size={20}
+                      className="size-5"
+                      style={{ color: iconColor }}
+                    />
                   ) : faviconUrl ? (
                     <>
                       <img
                         src={faviconUrl}
                         alt=""
-                        className="size-5 rounded-sm object-contain"
+                        className="size-5 object-contain"
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
@@ -242,11 +259,11 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
                         }}
                       />
                       <span className="hidden items-center justify-center">
-                        <FallbackIcon className="text-base-content/60 size-4" />
+                        <FallbackIcon className="text-base-content/60 size-5" />
                       </span>
                     </>
                   ) : (
-                    <FallbackIcon className="text-base-content/60 size-4" />
+                    <FallbackIcon className="text-base-content/60 size-5" />
                   )}
                 </div>
 
@@ -261,19 +278,19 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
                     )}
                   </a>
                   {link.metadata?.description && (
-                    <p className="text-base-content/60 truncate text-xs">
+                    <p className="text-meta text-base-content/60 truncate">
                       {link.metadata.description}
                     </p>
                   )}
                 </div>
 
-                {/* Remove button — visible on mobile, hover-reveal on desktop */}
+                {/* Always shown on phones; on desktop it shows on row hover or keyboard focus. */}
                 <Button
                   onClick={() => handleRemoveLink(link.url)}
                   variant="ghost"
                   size="xs"
                   shape="circle"
-                  className="text-base-content/50 hover:bg-error/10 hover:text-error opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                  className="text-error hover:bg-error/10 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                   title="Remove link"
                   aria-label={`Remove ${link.metadata?.title || link.url}`}
                   startIcon={LuTrash2}
@@ -285,13 +302,11 @@ const SocialLinks = ({ onSave, saveLoading }: SocialLinksProps) => {
       )}
 
       {links.length === 0 && (
-        <div className="border-base-300 rounded-box flex flex-col items-center justify-center border-2 border-dashed py-6 text-center">
-          <div className="bg-base-200 mb-2 flex size-12 items-center justify-center rounded-full">
-            <LuLink size={24} className="text-base-content/40" />
-          </div>
-          <p className="text-base-content/60 text-sm font-medium">No links added yet</p>
-          <p className="text-base-content/40 mt-0.5 text-sm">Add your social profiles above</p>
-        </div>
+        <EmptyState
+          layout="inline"
+          title="No links added yet."
+          body="Add your social profiles above."
+        />
       )}
     </div>
   )

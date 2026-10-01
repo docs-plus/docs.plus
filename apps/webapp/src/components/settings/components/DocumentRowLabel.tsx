@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import { LuEye, LuLock, LuStar } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
 
 import type { OwnedDocument } from '../types'
 

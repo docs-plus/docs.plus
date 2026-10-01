@@ -1,17 +1,20 @@
 import * as toast from '@components/toast'
 import { AppMark, AppTile } from '@components/ui/AppMark'
-import Button from '@components/ui/Button'
+import Button, { dangerGhostClassName } from '@components/ui/Button'
+import { EmptyState } from '@components/ui/EmptyState'
 import { Icons } from '@icons'
 import type { AppTrust, ConnectedAppGroup } from '@utils/appTrust'
+import { twMerge } from '@utils/twMerge'
 import { LuPlugZap } from 'react-icons/lu'
 
 import { useConnectedApps } from '../hooks/useConnectedApps'
 import { useDisconnectApp } from '../hooks/useDisconnectApp'
 import { openDisconnectAppConfirm } from '../openDisconnectAppConfirm'
+import { appsWithAccessText } from '../utils/appsWithAccessText'
 import { formatShortDate } from '../utils/formatShortDate'
 import ConnectCard from './ConnectCard'
 import McpIntroCard from './McpIntroCard'
-import SettingsCard from './SettingsCard'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 // A known app needs no badge: its return address, not its name, proves who it is.
 const TrustBadge = ({ trust }: { trust: AppTrust }) => {
@@ -19,7 +22,11 @@ const TrustBadge = ({ trust }: { trust: AppTrust }) => {
   if (trust.kind === 'local') {
     return <span className="badge badge-sm badge-soft shrink-0">On this computer</span>
   }
-  return <span className="badge badge-sm badge-soft badge-warning shrink-0">Unverified app</span>
+  return (
+    <span className="badge badge-sm badge-soft badge-warning shrink-0 text-[var(--warning-ink)]">
+      Unverified app
+    </span>
+  )
 }
 
 // A brand mark only for a verified app: an unverified one could borrow any logo with the name.
@@ -66,21 +73,19 @@ const ConnectedAppRow = ({ group }: { group: ConnectedAppGroup }) => {
           </p>
           <TrustBadge trust={group.trust} />
         </div>
-        <p className="text-base-content/60 mt-0.5 text-xs">
+        <p className="text-meta text-base-content/60 mt-0.5">
           {group.trust.kind === 'known' && `Returns you to ${group.trust.host} · `}
           Connected on {formatShortDate(group.grantedAt)}
           {connections > 1 && ` · ${connections} connections`}
         </p>
       </div>
       <Button
-        variant="error"
-        btnStyle="outline"
+        variant="ghost"
         size="sm"
         loading={isPending}
-        disabled={isPending}
         aria-label={`Disconnect ${label}`}
         onClick={() => openDisconnectAppConfirm({ name: label, onConfirm: disconnect })}
-        className="shrink-0">
+        className={twMerge(dangerGhostClassName, 'shrink-0')}>
         Disconnect
       </Button>
     </li>
@@ -94,34 +99,25 @@ const ConnectedCard = () => {
 
   return (
     <SettingsCard>
-      <div className="mb-3 flex items-center gap-2">
-        <LuPlugZap size={20} className="text-primary" />
-        <h2 className="text-base-content text-base font-semibold">Apps with access</h2>
-      </div>
+      <SettingsCardHeader
+        icon={LuPlugZap}
+        title="Apps with access"
+        description={!isError && apps ? appsWithAccessText(apps.length) : undefined}
+      />
       {isError || !apps ? (
-        <div role="alert" className="flex flex-col items-center justify-center py-8 text-center">
-          <p className="text-base-content text-sm font-medium">Could not load connected apps</p>
-          <Button
-            size="sm"
-            variant="ghost"
-            loading={isFetching}
-            disabled={isFetching}
-            className="border-base-300 mt-4 border"
-            onClick={() => refetch()}>
-            Try again
-          </Button>
-        </div>
+        <EmptyState
+          layout="inline"
+          tone="error"
+          title="Couldn’t load connected apps."
+          onRetry={refetch}
+          retrying={isFetching}
+        />
       ) : (
-        <>
-          <p className="text-base-content/60 mb-4 text-xs sm:text-sm">
-            {apps.length} AI {apps.length === 1 ? 'app' : 'apps'} can use your account.
-          </p>
-          <ul className="border-base-300 rounded-box divide-base-300 divide-y border">
-            {apps.map((group) => (
-              <ConnectedAppRow key={group.key} group={group} />
-            ))}
-          </ul>
-        </>
+        <ul className="border-base-300 rounded-box divide-base-300 divide-y border">
+          {apps.map((group) => (
+            <ConnectedAppRow key={group.key} group={group} />
+          ))}
+        </ul>
       )}
     </SettingsCard>
   )

@@ -1,14 +1,14 @@
 import Button from '@components/ui/Button'
-import TextInput from '@components/ui/TextInput'
-import { useAuthStore } from '@stores'
 import type { User } from '@supabase/supabase-js'
 import type { IconType } from 'react-icons'
 import { FcGoogle } from 'react-icons/fc'
 import { LuKeyRound, LuMail, LuPlugZap, LuShield } from 'react-icons/lu'
 
+import { useAuthUser } from '../hooks/useAuthUser'
 import { useConnectedApps } from '../hooks/useConnectedApps'
 import type { TabType } from '../types'
-import SettingsCard from './SettingsCard'
+import { appsWithAccessText } from '../utils/appsWithAccessText'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 interface SignInMethod {
   provider: string
@@ -44,31 +44,14 @@ const userProviders = (user: User | null): Set<string> => {
   return new Set<string>(providers)
 }
 
-// The store keeps the signed-in Supabase user under `session`.
-const useAuthUser = () => useAuthStore((state) => state.session) as User | null
-
 const AccountEmailCard = () => {
-  // The profile query leaves out `email` (column grant), so read the auth user.
   const email = useAuthUser()?.email
+  if (!email) return null
 
   return (
     <SettingsCard>
-      <div className="mb-3 flex items-center gap-2">
-        <LuShield size={20} className="text-primary" />
-        <h2 className="text-base-content text-base font-semibold">Account email</h2>
-      </div>
-      <p className="text-base-content/60 mb-3 text-xs sm:text-sm">
-        The email address of your docs.plus account.
-      </p>
-
-      <TextInput
-        label="Current email"
-        labelPosition="floating"
-        type="email"
-        placeholder="Current email"
-        value={email || ''}
-        disabled
-      />
+      <SettingsCardHeader icon={LuShield} title="Account email" />
+      <p className="text-base-content text-sm font-medium break-all">{email}</p>
     </SettingsCard>
   )
 }
@@ -80,10 +63,7 @@ const SignInMethodsCard = () => {
 
   return (
     <SettingsCard>
-      <div className="mb-3 flex items-center gap-2">
-        <LuKeyRound size={20} className="text-primary" />
-        <h2 className="text-base-content text-base font-semibold">How you sign in</h2>
-      </div>
+      <SettingsCardHeader icon={LuKeyRound} title="How you sign in" />
       {user && methods.length > 0 && (
         <ul className="border-base-300 rounded-box divide-base-300 mb-3 divide-y border">
           {methods.map((method) => {
@@ -97,7 +77,7 @@ const SignInMethodsCard = () => {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-base-content text-sm font-semibold">{method.name}</p>
-                  <p className="text-base-content/60 mt-0.5 truncate text-xs">
+                  <p className="text-meta text-base-content/60 mt-0.5 truncate">
                     {method.note(user)}
                   </p>
                 </div>
@@ -106,45 +86,33 @@ const SignInMethodsCard = () => {
           })}
         </ul>
       )}
-      <p className="text-base-content/60 text-xs sm:text-sm">
-        docs.plus does not use passwords. Sign in with Google or an email link.
+      <p className="text-meta text-base-content/60">
+        There are no passwords. Sign in with Google or an email link.
       </p>
     </SettingsCard>
   )
 }
 
+// Shown only when an app has access. Loading, failure and zero render nothing:
+// the Connected apps tab owns the errors.
 const AppsWithAccessCard = ({ onSelectTab }: { onSelectTab?: (tab: TabType) => void }) => {
-  const { data: apps, isPending, isError } = useConnectedApps()
-
-  let status: React.ReactNode
-  if (isPending) {
-    status = <span aria-hidden className="skeleton rounded-field block h-4 w-48" />
-  } else if (isError) {
-    status = 'Could not load your connected apps.'
-  } else if (apps.length === 0) {
-    status = 'No AI apps can use your account.'
-  } else {
-    status = `${apps.length} AI ${apps.length === 1 ? 'app' : 'apps'} can use your account.`
-  }
+  const { data: apps, isError } = useConnectedApps()
+  if (isError || !apps?.length) return null
 
   return (
     <SettingsCard>
       <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-[12rem] flex-1">
-          <div className="mb-1.5 flex items-center gap-2">
-            <LuPlugZap size={20} className="text-primary" />
-            <h2 className="text-base-content text-base font-semibold">Apps with access</h2>
-          </div>
-          <div aria-busy={isPending} className="text-base-content/60 text-xs sm:text-sm">
-            {status}
-          </div>
-        </div>
+        <SettingsCardHeader
+          icon={LuPlugZap}
+          title="Apps with access"
+          description={appsWithAccessText(apps.length)}
+          className="mb-0 min-w-[12rem] flex-1"
+        />
         {onSelectTab && (
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onSelectTab('connected-apps')}
-            className="border-base-300 shrink-0 border">
+            className="shrink-0">
             Review connected apps
           </Button>
         )}

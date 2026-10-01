@@ -1,12 +1,11 @@
-import SignOutConfirmDialog from '@components/settings/components/SignOutConfirmDialog'
-import { useStore } from '@stores'
-import { createElement } from 'react'
+import { openConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
 
 /** Opens the shared sign-out confirm; sign-out only proceeds through `onConfirm`. */
 export function openSignOutConfirm(args: { onConfirm: () => void }): void {
-  useStore
-    .getState()
-    .openDialog(createElement(SignOutConfirmDialog, { onConfirm: args.onConfirm }), {
-      size: 'sm'
-    })
+  openConfirmDialog({
+    title: 'Sign out?',
+    body: 'You’ll need to sign in again to edit documents or join the conversation.',
+    confirmLabel: 'Sign out',
+    onConfirm: args.onConfirm
+  })
 }

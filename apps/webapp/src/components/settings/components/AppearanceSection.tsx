@@ -1,8 +1,9 @@
+import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import { PREFERENCE_TO_THEME, type ThemePreference, useThemeStore } from '@stores'
 import { useRef } from 'react'
 import { LuCheck, LuPalette } from 'react-icons/lu'
 
-import SettingsCard from './SettingsCard'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 /** Picker entries are the explicit (non-`system`) preferences; `system` is a separate row. */
 type PickerTheme = Exclude<ThemePreference, 'system'>
@@ -23,7 +24,7 @@ const DARK_THEMES: ThemeChoice[] = [
   { value: 'dark', label: 'Dark' },
   { value: 'graphite-dark', label: 'Graphite', premium: true },
   { value: 'paper-dark', label: 'Paper', premium: true },
-  { value: 'dark-hc', label: 'High Contrast' }
+  { value: 'dark-hc', label: 'High contrast' }
 ]
 
 // Flat traversal order for roving-tabindex arrow-key navigation (matches DOM order).
@@ -34,21 +35,21 @@ const NAV_ORDER: ThemePreference[] = [
 ]
 
 /** A tiny live copy of the real editor surface — well floor + floated sheet + accent.
-    `data-theme` alone drives it: daisyUI sets color-scheme per theme, so the `light-dark()`
-    tokens (--pad-well etc.) resolve correctly even in an isolated swatch. */
+    `data-theme` alone drives it: the token block re-declares on every `[data-theme]`, so
+    `--pad-well` resolves this swatch's own `base-200`, not the app's. */
 const ThemePreview = ({ value }: { value: PickerTheme }) => (
   <span
     data-theme={PREFERENCE_TO_THEME[value]}
     className="block aspect-[4/3] rounded-t-[inherit] bg-[var(--pad-well)] p-2">
-    <span className="border-base-300 bg-base-100 block h-full overflow-hidden rounded-[5px] border p-1.5">
+    <span className="border-base-300 bg-base-100 rounded-field block h-full overflow-hidden border p-1.5">
       <span className="mb-1.5 flex gap-1">
         <span className="bg-base-300 size-1 rounded-full" />
         <span className="bg-base-300 size-1 rounded-full" />
         <span className="bg-base-300 size-1 rounded-full" />
       </span>
-      <span className="bg-base-content/30 mb-1 block h-[3px] w-4/5 rounded" />
-      <span className="bg-base-content/30 mb-1.5 block h-[3px] w-1/2 rounded" />
-      <span className="bg-primary block h-[5px] w-6 rounded" />
+      <span className="bg-base-content/30 mb-1 block h-[3px] w-4/5 rounded-full" />
+      <span className="bg-base-content/30 mb-1.5 block h-[3px] w-1/2 rounded-full" />
+      <span className="bg-primary block h-[5px] w-6 rounded-full" />
     </span>
   </span>
 )
@@ -72,7 +73,7 @@ const ThemeCard = ({ value, label, group, premium, selected, onSelect, onKeyDown
     onClick={onSelect}
     onKeyDown={(e) => onKeyDown(e, value)}
     data-theme-radio={value}
-    className={`rounded-box relative cursor-pointer overflow-hidden border text-left transition-colors focus-visible:outline-none ${
+    className={`rounded-box focus-visible:ring-primary relative cursor-pointer overflow-hidden border text-left transition-colors focus-visible:ring-2 focus-visible:outline-none ${
       selected
         ? 'border-primary ring-primary/30 ring-2'
         : 'border-base-300 hover:border-base-content/25'
@@ -84,11 +85,11 @@ const ThemeCard = ({ value, label, group, premium, selected, onSelect, onKeyDown
     )}
     <ThemePreview value={value} />
     <span className="border-base-300 flex items-center justify-between gap-1 border-t px-2.5 py-1.5">
-      <span className={`text-xs font-medium ${selected ? 'text-primary' : 'text-base-content'}`}>
+      <span className={`text-meta font-medium ${selected ? 'text-primary' : 'text-base-content'}`}>
         {label}
       </span>
       {premium && (
-        <span className="text-primary bg-primary/10 rounded px-1.5 py-px text-[9px] font-bold tracking-wide uppercase">
+        <span className="bg-primary/10 rounded-full px-1.5 py-px text-[9px] font-bold tracking-wide text-[var(--primary-ink)] uppercase">
           New
         </span>
       )}
@@ -118,15 +119,13 @@ const AppearanceSection = () => {
   return (
     <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both]">
       <SettingsCard>
-        <div className="mb-3 flex items-center gap-2">
-          <LuPalette size={20} className="text-primary" />
-          <h2 className="text-base-content text-base font-semibold">Theme</h2>
-        </div>
-        <p className="text-base-content/60 text-xs">
-          Choose how docs.plus looks, or match your device.
-        </p>
+        <SettingsCardHeader
+          icon={LuPalette}
+          title="Theme"
+          description="Choose a look, or match your device."
+        />
 
-        <div ref={groupRef} role="radiogroup" aria-label="Theme" className="mt-4">
+        <div ref={groupRef} role="radiogroup" aria-label="Theme">
           {/* System — a policy, not a palette, so it reads as a full-width row. */}
           <button
             type="button"
@@ -137,12 +136,12 @@ const AppearanceSection = () => {
             onClick={() => setPreference('system')}
             onKeyDown={(e) => handleKeyDown(e, 'system')}
             data-theme-radio="system"
-            className={`rounded-box flex w-full items-center gap-3 border px-3 py-2.5 text-left transition-colors focus-visible:outline-none ${
+            className={`rounded-box focus-visible:ring-primary flex w-full items-center gap-3 border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none ${
               systemSelected
                 ? 'border-primary bg-primary/10 ring-primary/30 ring-2'
                 : 'border-base-300 hover:bg-base-200'
             }`}>
-            <span className="border-base-300 flex h-6 w-9 shrink-0 overflow-hidden rounded-md border">
+            <span className="border-base-300 rounded-field flex h-6 w-9 shrink-0 overflow-hidden border">
               <span data-theme="docsplus" className="bg-base-100 flex-1" />
               <span data-theme="docsplus-dark" className="bg-base-100 flex-1" />
             </span>
@@ -151,7 +150,7 @@ const AppearanceSection = () => {
                 className={`block text-sm font-medium ${systemSelected ? 'text-primary' : 'text-base-content'}`}>
                 System
               </span>
-              <span className="text-base-content/55 block text-xs">
+              <span className="text-meta text-base-content/60 block">
                 Matches your device&apos;s light or dark setting
               </span>
             </span>
@@ -169,9 +168,7 @@ const AppearanceSection = () => {
             ] as const
           ).map(([group, choices]) => (
             <div key={group}>
-              <p className="text-base-content/45 mt-4 mb-2 text-[10px] font-bold tracking-wider uppercase">
-                {group}
-              </p>
+              <ListGroupLabel className="mt-4 mb-2">{group}</ListGroupLabel>
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
                 {choices.map((choice) => (
                   <ThemeCard

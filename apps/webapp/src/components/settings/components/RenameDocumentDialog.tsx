@@ -1,7 +1,5 @@
-import Button from '@components/ui/Button'
-import TextInput from '@components/ui/TextInput'
+import { RenameDialog } from '@components/ui/dialogs/RenameDialog'
 import { useStore } from '@stores'
-import { useEffect, useRef, useState } from 'react'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
 import useCommitDocumentRename from '../hooks/useCommitDocumentRename'
@@ -20,48 +18,19 @@ interface RenameDocumentDialogProps {
 function RenameDocumentDialog({ documentId, currentTitle, scope }: RenameDocumentDialogProps) {
   const closeDialog = useStore((state) => state.closeDialog)
   const { commit, isPending } = useCommitDocumentRename(scope)
-  const [draft, setDraft] = useState(currentTitle ?? '')
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const timer = setTimeout(() => inputRef.current?.select(), 120)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const handleSave = async () => {
+  const handleSave = async (draft: string) => {
     const fired = await commit(documentId, currentTitle, draft, { onSettled: closeDialog })
     if (!fired) closeDialog()
   }
 
   return (
-    <div className="p-5">
-      <TextInput
-        ref={inputRef}
-        labelPosition="above"
-        label="Rename document"
-        value={draft}
-        maxLength={255}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave()
-          if (e.key === 'Escape') closeDialog()
-        }}
-        placeholder="Document title"
-        autoComplete="off"
-      />
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={closeDialog}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleSave}
-          disabled={isPending || !draft.trim()}>
-          {isPending ? 'Saving…' : 'Save'}
-        </Button>
-      </div>
-    </div>
+    <RenameDialog
+      initialValue={currentTitle ?? ''}
+      maxLength={255}
+      busy={isPending}
+      onSave={handleSave}
+    />
   )
 }
 

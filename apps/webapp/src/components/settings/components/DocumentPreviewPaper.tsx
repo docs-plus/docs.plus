@@ -41,7 +41,7 @@ function DocumentPreviewPaper({ preview, title }: DocumentPreviewPaperProps) {
       className="border-base-300 bg-base-100 relative h-full w-full overflow-hidden rounded-t-[2px] border border-b-0 px-3 pt-2.5">
       {empty ? (
         <span
-          className="text-base-content/30 absolute inset-0 grid place-items-center text-[9px]"
+          className="text-base-content/60 absolute inset-0 grid place-items-center text-[9px]"
           aria-hidden>
           Empty document
         </span>

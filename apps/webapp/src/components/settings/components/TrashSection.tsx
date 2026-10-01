@@ -1,14 +1,14 @@
 import * as toast from '@components/toast'
-import Button from '@components/ui/Button'
-import { useStore } from '@stores'
-import { useEffect, useRef, useState } from 'react'
+import Button, { dangerGhostClassName } from '@components/ui/Button'
+import { EmptyState } from '@components/ui/EmptyState'
+import { useEffect, useId, useRef, useState } from 'react'
 import { LuArrowLeft, LuRotateCcw, LuTrash2, LuX } from 'react-icons/lu'
 
 import { useTrashCache } from '../hooks/documentsCache'
 import useDeleteDocument from '../hooks/useDeleteDocument'
 import { useTrashedDocuments } from '../hooks/useTrashedDocuments'
+import { openDeleteForeverConfirm } from '../openDeleteForeverConfirm'
 import type { OwnedDocument } from '../types'
-import DeleteForeverDialog from './DeleteForeverDialog'
 import TrashListRow from './TrashListRow'
 
 const TrashBodySkeleton = () => (
@@ -37,7 +37,6 @@ interface TrashSectionProps {
  */
 const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   const cache = useTrashCache(userId)
-  const openDialog = useStore((state) => state.openDialog)
   const { restoreDocument, permanentlyDeleteDocument, purgeTrash, bulkRestoreDocuments } =
     useDeleteDocument()
 
@@ -48,6 +47,7 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
   const backRef = useRef<HTMLButtonElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
   const selectAllRef = useRef<HTMLInputElement>(null)
+  const selectAllId = useId()
 
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const selectedCount = selected.size
@@ -147,13 +147,15 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
 
   const handleDeleteForever = (doc: OwnedDocument) => {
     const label = doc.title ?? doc.slug
-    openDialog(
-      <DeleteForeverDialog
-        body={`Delete “${label}” forever? This permanently removes the document and everything in it and can’t be undone.`}
-        onConfirm={() => confirmDeleteForever(doc)}
-      />,
-      { size: 'sm', align: 'top', className: 'mt-14' }
-    )
+    openDeleteForeverConfirm({
+      body: (
+        <>
+          Delete “<bdi>{label}</bdi>” forever? This permanently removes the document and everything
+          in it and can’t be undone.
+        </>
+      ),
+      onConfirm: () => confirmDeleteForever(doc)
+    })
   }
 
   const handleBulkRestore = async () => {
@@ -199,16 +201,13 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
 
   const handleBulkDeleteForever = () => {
     const n = selectedCount
-    openDialog(
-      <DeleteForeverDialog
-        heading={n === 1 ? 'Delete forever?' : `Delete ${n} items forever?`}
-        body={`Permanently delete ${
-          n === 1 ? 'this document' : `these ${n} documents`
-        } and everything in ${n === 1 ? 'it' : 'them'}? This can’t be undone.`}
-        onConfirm={runBulkDeleteForever}
-      />,
-      { size: 'sm', align: 'top', className: 'mt-14' }
-    )
+    openDeleteForeverConfirm({
+      title: n === 1 ? 'Delete forever?' : `Delete ${n} items forever?`,
+      body: `Permanently delete ${
+        n === 1 ? 'this document' : `these ${n} documents`
+      } and everything in ${n === 1 ? 'it' : 'them'}? This can’t be undone.`,
+      onConfirm: runBulkDeleteForever
+    })
   }
 
   const runEmptyTrash = async () => {
@@ -235,17 +234,14 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
     // The true trash count (global `total`, replicated per page) — not just the
     // loaded rows, since empty-all purges every page server-side.
     const n = data?.pages[0]?.total ?? docs.length
-    openDialog(
-      <DeleteForeverDialog
-        heading="Empty trash?"
-        confirmLabel="Empty trash"
-        body={`Permanently delete all ${n} ${
-          n === 1 ? 'item' : 'items'
-        } in trash? This removes each document and everything in it and can’t be undone.`}
-        onConfirm={runEmptyTrash}
-      />,
-      { size: 'sm', align: 'top', className: 'mt-14' }
-    )
+    openDeleteForeverConfirm({
+      title: 'Empty trash?',
+      confirmLabel: 'Empty trash',
+      body: `Permanently delete all ${n} ${
+        n === 1 ? 'item' : 'items'
+      } in trash? This removes each document and everything in it and can’t be undone.`,
+      onConfirm: runEmptyTrash
+    })
   }
 
   return (
@@ -257,17 +253,17 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
             type="button"
             onClick={onBack}
             aria-label="Back to documents"
-            className="text-base-content/60 hover:bg-base-200 hover:text-base-content rounded-field inline-flex size-8 items-center justify-center transition-colors">
+            className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field focus-visible:ring-primary inline-flex size-8 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none">
             <LuArrowLeft size={20} className="stroke-[1.75]" />
           </button>
-          <h3 className="text-base-content font-medium">Trash</h3>
+          <h3 className="text-base-content text-base font-semibold">Trash</h3>
           <span className="flex-1" />
           {!selectionActive && docs.length > 0 && (
             <Button
               size="sm"
               variant="ghost"
               startIcon={LuTrash2}
-              className="text-error/80 hover:bg-error/10 hover:text-error"
+              className={dangerGhostClassName}
               onClick={handleEmptyTrash}>
               Empty trash
             </Button>
@@ -286,10 +282,9 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
             <span className="text-base-content text-sm font-medium">{selectedCount} selected</span>
             <span className="flex-1" />
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               startIcon={LuRotateCcw}
-              className="text-primary hover:bg-primary/10"
+              className="me-1"
               onClick={handleBulkRestore}>
               Restore
             </Button>
@@ -297,13 +292,13 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
               size="sm"
               variant="ghost"
               startIcon={LuTrash2}
-              className="text-error hover:bg-error/10"
+              className={dangerGhostClassName}
               onClick={handleBulkDeleteForever}>
               Delete forever
             </Button>
           </div>
         ) : (
-          <p className="text-base-content/50 pl-10 text-xs">
+          <p className="text-meta text-base-content/60 pl-10">
             Items in trash are removed permanently after 30 days.
           </p>
         )}
@@ -312,35 +307,23 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
       {isLoading ? (
         <TrashBodySkeleton />
       ) : isError ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <p className="text-base-content text-sm font-medium">Couldn’t load trash</p>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="border-base-300 mt-4 border"
-            onClick={() => refetch()}>
-            Try again
-          </Button>
-        </div>
+        <EmptyState tone="error" title="Couldn’t load trash." onRetry={refetch} />
       ) : docs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
-            <LuTrash2 size={24} className="text-base-content/40" />
-          </div>
-          <p className="text-base-content text-sm font-medium">Trash is empty.</p>
-        </div>
+        <EmptyState icon={LuTrash2} title="Trash is empty." />
       ) : (
         <div>
           <div className="border-base-300 flex items-center gap-3 border-b px-2 pb-2">
             <input
               ref={selectAllRef}
+              id={selectAllId}
               type="checkbox"
               checked={allSelected}
               onChange={toggleSelectAll}
-              aria-label="Select all"
               className="checkbox checkbox-sm checkbox-primary shrink-0"
             />
-            <span className="text-base-content/50 text-xs">Select all</span>
+            <label htmlFor={selectAllId} className="text-meta text-base-content/60 cursor-pointer">
+              Select all
+            </label>
           </div>
           <ul ref={listRef} role="list" className="divide-base-300 divide-y">
             {docs.map((doc) => (
@@ -358,12 +341,7 @@ const TrashSection = ({ userId, onBack }: TrashSectionProps) => {
 
           {hasNextPage && (
             <div className="mt-4 flex justify-center">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="border-base-300 border"
-                loading={isFetchingNextPage}
-                onClick={() => fetchNextPage()}>
+              <Button variant="quiet" loading={isFetchingNextPage} onClick={() => fetchNextPage()}>
                 Load more
               </Button>
             </div>

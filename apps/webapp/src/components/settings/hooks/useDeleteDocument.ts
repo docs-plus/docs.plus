@@ -1,5 +1,8 @@
-import { useMutation } from '@tanstack/react-query'
+import { useAuthStore } from '@stores'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabaseClient } from '@utils/supabase'
+
+import { makeTrashKey } from '../documentsQueryKey'
 
 // Same `token` header convention as useUpdateDocMetadata — the backend
 // strict-owner-gates the soft delete / restore off the Supabase JWT.
@@ -13,17 +16,23 @@ const authHeaders = async (): Promise<Record<string, string>> => {
 }
 
 /**
- * Owner-gated delete / restore / purge calls. Optimistic cache patches live
- * in the component; this hook only fires the requests and surfaces isPending.
+ * Owner-gated delete / restore / purge calls. Optimistic cache patches live in the
+ * component; this hook fires the requests and resyncs Trash after a delete or restore.
  */
 const useDeleteDocument = () => {
+  const queryClient = useQueryClient()
+  const userId = useAuthStore((state) => state.profile?.id)
+  // A soft delete or restore moves a row into or out of Trash at a place only the server knows.
+  const resyncTrash = () => queryClient.invalidateQueries({ queryKey: makeTrashKey(userId ?? '') })
+
   const deletion = useMutation<void, Error, { documentId: string }>({
     mutationKey: ['deleteDocument'],
     mutationFn: async ({ documentId }) => {
       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
       const response = await fetch(url, { method: 'DELETE', headers: await authHeaders() })
       if (!response.ok) throw new Error('Failed to delete document')
-    }
+    },
+    onSuccess: resyncTrash
   })
 
   const restoration = useMutation<void, Error, { documentId: string }>({
@@ -32,7 +41,8 @@ const useDeleteDocument = () => {
       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}/restore`
       const response = await fetch(url, { method: 'POST', headers: await authHeaders() })
       if (!response.ok) throw new Error('Failed to restore document')
-    }
+    },
+    onSuccess: resyncTrash
   })
 
   // Trash "Delete forever" — the backend refuses a live (non-soft-deleted) doc.

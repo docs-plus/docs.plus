@@ -1,27 +1,30 @@
 import * as toast from '@components/toast'
-import Button from '@components/ui/Button'
+import Button, { segmentClassName } from '@components/ui/Button'
+import { EmptyState } from '@components/ui/EmptyState'
+import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import Select, { type SelectOption } from '@components/ui/Select'
 import TextInput from '@components/ui/TextInput'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import { useAuthStore } from '@stores'
-import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
+import { twMerge } from '@utils/twMerge'
 import debounce from 'lodash/debounce'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { LuFileText, LuLayoutGrid, LuList, LuSearch, LuTrash2, LuX } from 'react-icons/lu'
 
+import { DOCUMENTS_VIEW_STORAGE_KEY, type DocumentViewMode } from '../constants'
 import type { DocumentsListScope } from '../documentsQueryKey'
 import { useOwnerDocumentsCache } from '../hooks/documentsCache'
 import useDeleteDocument from '../hooks/useDeleteDocument'
 import { useDocumentMembers } from '../hooks/useDocumentMembers'
 import { useOwnerDocuments } from '../hooks/useOwnerDocuments'
+import { useTrashedDocuments } from '../hooks/useTrashedDocuments'
+import { DocumentsBodySkeleton } from '../SettingsPanelSkeleton'
 import type { DocumentSortKey } from '../types'
 import { buildDocumentsListItems, type DocumentsListItem } from '../utils/documentsListItems'
 import DocumentGridTile from './DocumentGridTile'
 import DocumentListRow from './DocumentListRow'
 import SettingsCard from './SettingsCard'
 import TrashSection from './TrashSection'
-
-type DocumentViewMode = 'list' | 'grid'
 
 // One pending soft-delete at a time, for the in-modal Undo banner. Rendered inline (not a
 // toast) so Undo stays clickable inside the Settings modal scrim. `reinsert` comes from the
@@ -44,40 +47,16 @@ const SORT_OPTIONS: SelectOption[] = [
 ]
 
 const SORT_STORAGE_KEY = 'docsplus:my-docs-sort'
-const VIEW_STORAGE_KEY = 'docsplus:my-docs-view'
+
+const VIEW_OPTIONS = [
+  { mode: 'list', icon: LuList, label: 'List view' },
+  { mode: 'grid', icon: LuLayoutGrid, label: 'Grid view' }
+] as const
 
 /** Keyed on lower(documentId): that is what Supabase `workspaces.slug` holds, despite the
  *  column's name. The human slug matches nothing. One expression so the fetch key and both
  *  lookups cannot drift apart — a drift here was the original bug. */
 const membersKey = (doc: { documentId: string }) => doc.documentId.toLowerCase()
-
-const DocumentsBodySkeleton = ({ viewMode }: { viewMode: DocumentViewMode }) =>
-  viewMode === 'grid' ? (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="border-base-300 rounded-box border">
-          <div className="skeleton rounded-t-box aspect-[4/3]" />
-          <div className="space-y-2 p-3">
-            <div className="skeleton rounded-field h-4 w-3/4" />
-            <div className="skeleton rounded-field h-3 w-1/3" />
-          </div>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <div className="divide-base-300 divide-y">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="flex items-center gap-3 py-3">
-          <div className="skeleton size-[18px] shrink-0 rounded" />
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="skeleton rounded-field h-4 w-3/4" />
-            <div className="skeleton rounded-field h-3 w-16 sm:hidden" />
-          </div>
-          <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
-        </div>
-      ))}
-    </div>
-  )
 
 interface DocumentsSectionProps {
   // Dismiss the Settings modal when a row/tile opens a doc.
@@ -100,10 +79,17 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
   })
   const [viewMode, setViewMode] = useState<DocumentViewMode>(() => {
     if (typeof window === 'undefined') return 'list'
-    return window.sessionStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list'
+    return window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list'
   })
   // Trash is a sub-view of this same card: swaps the whole body, not a nav tab.
   const [showTrash, setShowTrash] = useState(false)
+  // The entry shows only once the trash total is known and above 0, so it never flashes.
+  const { data: trashData } = useTrashedDocuments(userId)
+  const hasTrash = (trashData?.pages[0]?.total ?? 0) > 0
+  // The last item left the trash (Empty trash, restore): go back to the list.
+  useEffect(() => {
+    if (!hasTrash) setShowTrash(false)
+  }, [hasTrash])
   const { navigateToDocument, isLoading: isCreatingDocument } = useNavigateToDocument()
 
   // Same order as DocumentListRow open: navigate, then close the settings surface.
@@ -136,7 +122,8 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
 
   const handleViewChange = (mode: DocumentViewMode) => {
     setViewMode(mode)
-    if (typeof window !== 'undefined') window.sessionStorage.setItem(VIEW_STORAGE_KEY, mode)
+    if (typeof window !== 'undefined')
+      window.sessionStorage.setItem(DOCUMENTS_VIEW_STORAGE_KEY, mode)
   }
 
   const scope: DocumentsListScope = { userId: userId ?? '', searchQuery, sortKey }
@@ -274,13 +261,12 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     }
     if (item.kind === 'bucket') {
       return (
-        <ItemWrapper
+        <ListGroupLabel
+          as={ItemWrapper}
           key={item.key}
-          className={`text-base-content/45 text-[10px] font-bold tracking-wider uppercase ${
-            isListView ? 'px-2 pt-4 pb-1' : 'col-span-2 pt-2 lg:col-span-3'
-          }`}>
+          className={isListView ? 'px-2 pt-4 pb-1' : 'col-span-2 pt-2 lg:col-span-3'}>
           {item.label}
-        </ItemWrapper>
+        </ListGroupLabel>
       )
     }
     const DocumentItem = isListView ? DocumentListRow : DocumentGridTile
@@ -299,28 +285,13 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
     )
   }
 
-  if (!userId) {
-    return (
-      <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:flex max-md:min-h-full max-md:flex-col">
-        <SettingsCard className="max-md:flex max-md:flex-1 max-md:flex-col max-md:justify-center max-md:rounded-none max-md:border-0 max-md:bg-transparent">
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
-              <LuFileText size={24} className="text-base-content/40" />
-            </div>
-            <p className="text-base-content text-sm font-medium">Sign in to see your documents.</p>
-            <Button variant="primary" className="mt-4" onClick={() => openInlineSignInDialog()}>
-              Sign in
-            </Button>
-          </div>
-        </SettingsCard>
-      </div>
-    )
-  }
+  // SettingsTakeover never renders without a profile; this only narrows the type.
+  if (!userId) return null
 
   return (
     <div className="space-y-4 motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:flex max-md:min-h-full max-md:flex-col">
       <SettingsCard className="max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
-        {showTrash ? (
+        {showTrash && hasTrash ? (
           <div className="max-md:min-h-0 max-md:flex-1 max-md:p-4">
             <TrashSection userId={userId} onBack={() => setShowTrash(false)} />
           </div>
@@ -333,11 +304,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 <span className="text-base-content/70 truncate text-sm">
                   Deleted “{pendingDelete.title}”
                 </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-primary hover:bg-primary/10 shrink-0"
-                  onClick={handleUndo}>
+                <Button variant="quiet" className="shrink-0" onClick={handleUndo}>
                   Undo
                 </Button>
               </div>
@@ -378,44 +345,35 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 />
 
                 <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    startIcon={LuTrash2}
-                    iconSize={20}
-                    aria-label="Trash"
-                    className="text-base-content/60 hover:text-base-content min-h-11 min-w-11 shrink-0 sm:min-h-9 sm:min-w-0 sm:px-3"
-                    onClick={() => setShowTrash(true)}>
-                    <span className="hidden sm:inline">Trash</span>
-                  </Button>
+                  {hasTrash && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      startIcon={LuTrash2}
+                      iconSize={20}
+                      aria-label="Trash"
+                      className="text-base-content/60 hover:text-base-content min-h-11 min-w-11 shrink-0 sm:min-h-9 sm:min-w-0 sm:px-3"
+                      onClick={() => setShowTrash(true)}>
+                      <span className="hidden sm:inline">Trash</span>
+                    </Button>
+                  )}
 
                   <div className="join shrink-0" role="radiogroup" aria-label="View layout">
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={viewMode === 'list'}
-                      aria-label="List view"
-                      onClick={() => handleViewChange('list')}
-                      className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
-                        viewMode === 'list'
-                          ? 'btn-primary'
-                          : 'btn-ghost border-base-300 text-base-content/60 border'
-                      }`}>
-                      <LuList size={20} className="stroke-[1.75]" />
-                    </button>
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={viewMode === 'grid'}
-                      aria-label="Grid view"
-                      onClick={() => handleViewChange('grid')}
-                      className={`join-item btn btn-sm min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 ${
-                        viewMode === 'grid'
-                          ? 'btn-primary'
-                          : 'btn-ghost border-base-300 text-base-content/60 border'
-                      }`}>
-                      <LuLayoutGrid size={20} className="stroke-[1.75]" />
-                    </button>
+                    {VIEW_OPTIONS.map(({ mode, icon: Icon, label }) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="radio"
+                        aria-checked={viewMode === mode}
+                        aria-label={label}
+                        onClick={() => handleViewChange(mode)}
+                        className={twMerge(
+                          'join-item btn btn-sm btn-ghost min-h-11 min-w-11 sm:min-h-8 sm:min-w-8',
+                          segmentClassName(viewMode === mode)
+                        )}>
+                        <Icon size={20} className="stroke-[1.75]" />
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -426,50 +384,39 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 <DocumentsBodySkeleton viewMode={viewMode} />
               </div>
             ) : isError ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center max-md:flex-1">
-                <p className="text-base-content text-sm font-medium">Couldn’t load documents</p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="border-base-300 mt-4 border"
-                  onClick={() => refetch()}>
-                  Try again
-                </Button>
-              </div>
+              <EmptyState
+                tone="error"
+                title="Couldn’t load documents."
+                className="max-md:flex-1 max-md:justify-center"
+                onRetry={refetch}
+              />
             ) : docs.length === 0 ? (
               searchQuery ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center max-md:flex-1">
-                  <p className="text-base-content text-sm font-medium">
-                    No results for “{searchQuery}”
-                  </p>
-                  <p className="text-base-content/60 mt-1 text-xs">
-                    Check spelling or try another title.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="border-base-300 mt-4 border"
-                    onClick={clearSearch}>
-                    Clear search
-                  </Button>
-                </div>
+                <EmptyState
+                  title={`No results for “${searchQuery}”.`}
+                  body="Check spelling or try another title."
+                  className="max-md:flex-1 max-md:justify-center"
+                  action={
+                    <Button variant="quiet" onClick={clearSearch}>
+                      Clear search
+                    </Button>
+                  }
+                />
               ) : (
-                <div className="flex flex-col items-center justify-center py-10 text-center max-md:flex-1">
-                  <div className="bg-base-200 mb-3 flex size-12 items-center justify-center rounded-full">
-                    <LuFileText size={24} className="text-base-content/40" />
-                  </div>
-                  <p className="text-base-content text-sm font-medium">No documents yet</p>
-                  <p className="text-base-content/60 mt-1 text-xs">
-                    Documents you create will appear here.
-                  </p>
-                  <Button
-                    variant="primary"
-                    className="mt-4 font-semibold"
-                    loading={isCreatingDocument}
-                    onClick={handleCreateDocument}>
-                    Create document
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={LuFileText}
+                  title="No documents yet."
+                  body="Documents you create will appear here."
+                  className="max-md:flex-1 max-md:justify-center"
+                  action={
+                    <Button
+                      variant="primary"
+                      loading={isCreatingDocument}
+                      onClick={handleCreateDocument}>
+                      Create document
+                    </Button>
+                  }
+                />
               )
             ) : (
               <div
@@ -477,7 +424,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                   isFetching && !isLoading ? 'transition-opacity motion-safe:opacity-60' : ''
                 }`}>
                 <p aria-live="polite" className="sr-only">
-                  {total} documents
+                  {total} {total === 1 ? 'document' : 'documents'}
                 </p>
 
                 {isListView ? (
@@ -500,9 +447,7 @@ const DocumentsSection = ({ onOpenDocument }: DocumentsSectionProps) => {
                 {hasNextPage && (
                   <div className="mt-4 flex justify-center">
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="border-base-300 border"
+                      variant="quiet"
                       loading={isFetchingNextPage}
                       onClick={() => fetchNextPage()}>
                       Load more

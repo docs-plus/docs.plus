@@ -1,15 +1,14 @@
+import { SheetLayout } from '@components/SheetLayout'
 import * as toast from '@components/toast'
-import {
-  ContextMenuDivider,
-  contextMenuPanelClassName,
-  ContextMenuRow
-} from '@components/ui/ContextMenu'
+import { ContextMenuDivider, contextMenuPanelClassName } from '@components/ui/ContextMenu'
+import { ContextMenuRowButton } from '@components/ui/ContextMenuRowButton'
 import { Popover, PopoverContent, PopoverTrigger, usePopoverState } from '@components/ui/Popover'
 import Toggle from '@components/ui/Toggle'
 import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import { useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { useEffect, useRef, useState } from 'react'
 import {
   LuCheck,
@@ -23,7 +22,6 @@ import {
   LuStar,
   LuTrash2
 } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
 
 import type { DocumentsListScope } from '../documentsQueryKey'
 import { useOwnerDocumentsCache } from '../hooks/documentsCache'
@@ -129,72 +127,65 @@ function RowMenuItems({
     })
   }
 
+  // The toggles sit between the rows, so the panel stays plain buttons, not `MenuItem`.
   return (
     <>
-      <button type="button" className="rounded-field group w-full text-left" onClick={openInNewTab}>
-        <ContextMenuRow icon={<LuExternalLink size={16} />} className={rowClassName}>
-          Open in new tab
-        </ContextMenuRow>
-      </button>
+      <ContextMenuRowButton
+        icon={<LuExternalLink size={16} />}
+        rowClassName={rowClassName}
+        onClick={openInNewTab}>
+        Open in new tab
+      </ContextMenuRowButton>
 
       {!isPrivate && (
-        <button
-          type="button"
-          className="rounded-field group w-full text-left"
+        <ContextMenuRowButton
           onClick={() => void copy(`${window.location.origin}/${slug}`)}
-          aria-label={copied ? 'Copied!' : 'Copy link'}>
-          <ContextMenuRow
-            icon={
-              <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
-                <LuCheck size={16} className="swap-on text-success" />
-                <LuLink size={16} className="swap-off" />
-              </span>
-            }
-            className={twMerge(rowClassName, copied && 'text-success')}>
+          aria-label={copied ? 'Copied!' : 'Copy link'}
+          icon={
             <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
-              <span className="swap-on">Copied!</span>
-              <span className="swap-off">Copy link</span>
+              <LuCheck size={16} className="swap-on text-success" />
+              <LuLink size={16} className="swap-off" />
             </span>
-          </ContextMenuRow>
-        </button>
+          }
+          rowClassName={twMerge(rowClassName, copied && 'text-[var(--success-ink)]')}>
+          <span className={twMerge('swap', copied && 'swap-active')} aria-hidden>
+            <span className="swap-on">Copied!</span>
+            <span className="swap-off">Copy link</span>
+          </span>
+        </ContextMenuRowButton>
       )}
 
-      <button type="button" className="rounded-field group w-full text-left" onClick={startRename}>
-        <ContextMenuRow icon={<LuPencilLine size={16} />} className={rowClassName}>
-          Rename
-        </ContextMenuRow>
-      </button>
+      <ContextMenuRowButton
+        icon={<LuPencilLine size={16} />}
+        rowClassName={rowClassName}
+        onClick={startRename}>
+        Rename
+      </ContextMenuRowButton>
 
-      <button
-        type="button"
-        className="rounded-field group w-full text-left disabled:pointer-events-none disabled:opacity-60"
+      <ContextMenuRowButton
+        icon={<LuCopy size={16} />}
         disabled={isDuplicating}
+        rowClassName={rowClassName}
         onClick={runDuplicate}>
-        <ContextMenuRow icon={<LuCopy size={16} />} className={rowClassName}>
-          Duplicate
-        </ContextMenuRow>
-      </button>
+        Duplicate
+      </ContextMenuRowButton>
 
-      <button
-        type="button"
-        className="rounded-field group w-full text-left disabled:pointer-events-none disabled:opacity-60"
+      <ContextMenuRowButton
+        icon={<LuStar size={16} className={isFavorite ? 'text-accent fill-accent' : undefined} />}
         disabled={isFavoriting}
+        rowClassName={rowClassName}
         onClick={runToggleFavorite}>
-        <ContextMenuRow
-          icon={<LuStar size={16} className={isFavorite ? 'text-accent fill-accent' : undefined} />}
-          className={rowClassName}>
-          {isFavorite ? 'Unfavorite' : 'Favorite'}
-        </ContextMenuRow>
-      </button>
+        {isFavorite ? 'Unfavorite' : 'Favorite'}
+      </ContextMenuRowButton>
 
-      <ContextMenuDivider />
+      <ContextMenuDivider as="div" />
 
       <div className="rounded-field flex items-start justify-between gap-2.5 px-2.5 py-2">
         <span className="flex min-w-0 items-start gap-2.5">
           <LuLock size={16} className="text-base-content/70 mt-0.5 shrink-0" />
           <span className="flex min-w-0 flex-col">
             <span className="text-sm font-medium">Private</span>
-            <span className="text-base-content/60 text-xs">Only you can open this document.</span>
+            <span className="text-meta text-base-content/60">Only you can open this document.</span>
           </span>
         </span>
         <Toggle
@@ -217,7 +208,7 @@ function RowMenuItems({
           <span className="flex min-w-0 flex-col">
             <span className="text-sm font-medium">Read-only</span>
             {isPrivate ? (
-              <span className="text-base-content/60 text-xs">
+              <span className="text-meta text-base-content/60">
                 Not used while the document is private.
               </span>
             ) : null}
@@ -237,16 +228,15 @@ function RowMenuItems({
         />
       </div>
 
-      <ContextMenuDivider />
+      <ContextMenuDivider as="div" />
 
-      <button
-        type="button"
-        className="rounded-field group w-full text-left"
+      <ContextMenuRowButton
+        icon={<LuTrash2 size={16} />}
+        variant="danger"
+        rowClassName={rowClassName}
         onClick={removeDocument}>
-        <ContextMenuRow icon={<LuTrash2 size={16} />} variant="danger" className={rowClassName}>
-          Delete
-        </ContextMenuRow>
-      </button>
+        Delete
+      </ContextMenuRowButton>
     </>
   )
 }
@@ -297,22 +287,22 @@ function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void 
           onClose()
         }}
       />
+      {/* No grabber: nothing drags this sheet. `pt-3` stands in for the library grabber row
+          that the SheetLayout header's `pt-1` expects. The safe-area pad comes from SheetLayout. */}
       <div
         ref={sheetRef}
         role="dialog"
         aria-label={`Document actions for “${label}”`}
         tabIndex={-1}
-        className="rounded-t-box border-base-300 bg-base-100 absolute inset-x-0 bottom-0 border border-b-0 px-2 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-xl outline-none motion-safe:animate-[doc-region-in_180ms_ease-out_both]"
+        className="rounded-t-box bg-base-100 absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-hidden pt-3 outline-none motion-safe:animate-[doc-region-in_180ms_ease-out_both]"
         onClick={(e) => e.stopPropagation()}>
-        <div className="bg-base-300 mx-auto mb-1.5 h-1 w-10 rounded-full" aria-hidden />
-        <p className="text-base-content/60 truncate px-2.5 pb-1.5 text-xs font-medium">{label}</p>
-        <RowMenuItems {...props} close={onClose} rowClassName="min-h-12" />
-        <button
-          type="button"
-          className="rounded-field hover:bg-base-200 mt-1 flex min-h-12 w-full items-center justify-center px-3 text-sm font-semibold"
-          onClick={onClose}>
-          Cancel
-        </button>
+        <SheetLayout
+          title={label}
+          onClose={onClose}
+          className="min-h-0 [&_h2]:truncate"
+          bodyClassName="px-1.5 pt-1.5">
+          <RowMenuItems {...props} close={onClose} rowClassName="min-h-12" />
+        </SheetLayout>
       </div>
     </div>
   )
@@ -337,7 +327,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
           e.stopPropagation()
           setIsSheetOpen(true)
         }}
-        className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-11 min-w-11 items-center justify-center transition-colors md:hidden">
+        className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field focus-visible:ring-primary inline-flex min-h-11 min-w-11 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none md:hidden">
         <LuEllipsisVertical size={20} className="stroke-[1.75]" />
       </button>
       {isSheetOpen && <RowMenuActionSheet {...props} onClose={() => setIsSheetOpen(false)} />}
@@ -349,7 +339,7 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
             aria-label={`Document actions for “${trigger}”`}
             tabIndex={props.triggerTabIndex}
             onClick={(e) => e.stopPropagation()}
-            className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field inline-flex min-h-9 min-w-9 items-center justify-center transition-colors max-md:hidden">
+            className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field focus-visible:ring-primary inline-flex min-h-9 min-w-9 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none max-md:hidden">
             <LuEllipsisVertical size={18} />
           </button>
         </PopoverTrigger>

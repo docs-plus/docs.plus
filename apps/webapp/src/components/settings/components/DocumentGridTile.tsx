@@ -46,7 +46,7 @@ function DocumentGridTile({
   const openRenameDialog = () => {
     openDialog(
       <RenameDocumentDialog documentId={doc.documentId} currentTitle={doc.title} scope={scope} />,
-      { size: 'sm', align: 'top', className: 'mt-14' }
+      { size: 'md', align: 'top', className: 'mt-14' }
     )
   }
 
@@ -82,7 +82,7 @@ function DocumentGridTile({
         <span className="text-base-content line-clamp-2 px-3 pt-3 text-sm font-medium">
           {label}
         </span>
-        <span className="text-base-content/60 px-3 pt-0.5 text-xs">{date}</span>
+        <span className="text-meta text-base-content/60 px-3 pt-0.5">{date}</span>
       </button>
 
       <div className="mt-auto flex items-center gap-2 px-3 pt-1 pb-2">

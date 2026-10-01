@@ -1,8 +1,13 @@
-import { isDocumentReportPath } from '@utils/reportContent'
+import { sheetSafeAreaPadMobileClassName } from '@utils/sheetBodyPadding'
 import { useRouter } from 'next/router'
 
 import SettingsCard from './components/SettingsCard'
-import { SETTINGS_TABS, SUPPORT_ROWS } from './constants'
+import {
+  DOCUMENTS_VIEW_STORAGE_KEY,
+  type DocumentViewMode,
+  SETTINGS_TABS,
+  supportRowsFor
+} from './constants'
 
 const navLabelWidth = (label: string) => Math.max(48, label.length * 8 + 8)
 
@@ -10,16 +15,16 @@ export const ProfileSkeleton = () => (
   <div className="space-y-4">
     <SettingsCard>
       <div className="flex items-center gap-5">
-        <div className="skeleton rounded-box size-24 shrink-0" />
+        <div className="skeleton size-24 shrink-0 rounded-full" />
         <div className="flex flex-col gap-2">
-          <div className="skeleton rounded-field h-5 w-32" />
-          <div className="skeleton rounded-field h-4 w-24" />
+          <div className="skeleton h-5 w-32" />
+          <div className="skeleton h-4 w-24" />
           <div className="skeleton rounded-field h-8 w-20" />
         </div>
       </div>
     </SettingsCard>
     <SettingsCard>
-      <div className="skeleton rounded-field mb-4 h-5 w-40" />
+      <div className="skeleton mb-4 h-5 w-40" />
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="skeleton rounded-field h-11 w-full" />
         <div className="skeleton rounded-field h-11 w-full" />
@@ -29,11 +34,39 @@ export const ProfileSkeleton = () => (
   </div>
 )
 
+export const DocumentsBodySkeleton = ({ viewMode }: { viewMode: DocumentViewMode }) =>
+  viewMode === 'grid' ? (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="border-base-300 rounded-box border">
+          <div className="skeleton rounded-t-box aspect-[4/3]" />
+          <div className="space-y-2 p-3">
+            <div className="skeleton h-4 w-3/4" />
+            <div className="skeleton h-3 w-1/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="divide-base-300 divide-y">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-3 py-3">
+          <div className="skeleton size-[18px] shrink-0" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="skeleton h-4 w-3/4" />
+            <div className="skeleton h-3 w-16 sm:hidden" />
+          </div>
+          <div className="skeleton hidden h-3 w-20 sm:block" />
+        </div>
+      ))}
+    </div>
+  )
+
 export const DocumentsSkeleton = () => {
   // Match the persisted view so the loading bones do not flip layout once the section mounts.
   const isGrid =
     typeof window !== 'undefined' &&
-    window.sessionStorage.getItem('docsplus:my-docs-view') === 'grid'
+    window.sessionStorage.getItem(DOCUMENTS_VIEW_STORAGE_KEY) === 'grid'
 
   return (
     <div className="space-y-4 max-md:flex max-md:min-h-full max-md:flex-col">
@@ -45,39 +78,13 @@ export const DocumentsSkeleton = () => {
             <div className="flex items-center gap-2 sm:justify-between sm:gap-3">
               <div className="skeleton rounded-field h-11 min-w-0 flex-1 sm:h-8 sm:w-44 sm:flex-none" />
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                <div className="skeleton rounded-field size-11 sm:h-8 sm:w-20" />
                 <div className="skeleton rounded-field h-11 w-[5.5rem] sm:h-8 sm:w-16" />
               </div>
             </div>
           </div>
 
           <div className="max-md:px-4 max-md:pt-3">
-            {isGrid ? (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="border-base-300 rounded-box border">
-                    <div className="skeleton rounded-t-box aspect-[4/3]" />
-                    <div className="space-y-2 p-3">
-                      <div className="skeleton rounded-field h-4 w-3/4" />
-                      <div className="skeleton rounded-field h-3 w-1/3" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="divide-base-300 divide-y">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center gap-3 py-3">
-                    <div className="skeleton size-[18px] shrink-0 rounded" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <div className="skeleton rounded-field h-4 w-3/4" />
-                      <div className="skeleton rounded-field h-3 w-16 sm:hidden" />
-                    </div>
-                    <div className="skeleton rounded-field hidden h-3 w-20 sm:block" />
-                  </div>
-                ))}
-              </div>
-            )}
+            <DocumentsBodySkeleton viewMode={isGrid ? 'grid' : 'list'} />
           </div>
         </div>
       </SettingsCard>
@@ -88,18 +95,13 @@ export const DocumentsSkeleton = () => {
 export const SecuritySkeleton = () => (
   <div className="space-y-4">
     <SettingsCard>
-      <div className="skeleton rounded-field mb-4 h-5 w-32" />
-      <div className="skeleton rounded-field mb-3 h-4 w-64" />
+      <div className="skeleton mb-4 h-5 w-32" />
       <div className="skeleton rounded-field h-11 w-full" />
     </SettingsCard>
     <SettingsCard>
-      <div className="skeleton rounded-field mb-4 h-5 w-36" />
+      <div className="skeleton mb-4 h-5 w-36" />
       <div className="skeleton rounded-box mb-3 h-16 w-full" />
-      <div className="skeleton rounded-field h-4 w-72 max-w-full" />
-    </SettingsCard>
-    <SettingsCard>
-      <div className="skeleton rounded-field mb-3 h-5 w-32" />
-      <div className="skeleton rounded-field h-4 w-48" />
+      <div className="skeleton h-4 w-72 max-w-full" />
     </SettingsCard>
   </div>
 )
@@ -108,10 +110,10 @@ export const AppearanceSkeleton = () => (
   <div className="space-y-4">
     <SettingsCard>
       <div className="mb-3 flex items-center gap-2">
-        <div className="skeleton size-5 rounded" />
-        <div className="skeleton rounded-field h-5 w-24" />
+        <div className="skeleton size-5" />
+        <div className="skeleton h-5 w-24" />
       </div>
-      <div className="skeleton rounded-field mb-4 h-3 w-64" />
+      <div className="skeleton mb-4 h-3 w-64" />
       <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="skeleton rounded-box h-[44px] w-full sm:h-28 sm:flex-1" />
@@ -124,12 +126,12 @@ export const AppearanceSkeleton = () => (
 export const NotificationsSkeleton = () => (
   <div className="space-y-4">
     <SettingsCard>
-      <div className="skeleton rounded-field mb-4 h-5 w-40" />
+      <div className="skeleton mb-4 h-5 w-40" />
       {[1, 2, 3].map((i) => (
         <div key={i} className="flex items-center justify-between py-3">
           <div className="flex-1 space-y-1">
-            <div className="skeleton rounded-field h-4 w-24" />
-            <div className="skeleton rounded-field h-3 w-40" />
+            <div className="skeleton h-4 w-24" />
+            <div className="skeleton h-3 w-40" />
           </div>
           <div className="skeleton h-6 w-10 rounded-full" />
         </div>
@@ -141,8 +143,8 @@ export const NotificationsSkeleton = () => (
 export const ConnectedAppsSkeleton = () => (
   <div className="space-y-4">
     <SettingsCard>
-      <div className="skeleton rounded-field mb-3 h-5 w-40" />
-      <div className="skeleton rounded-field mb-4 h-4 w-full" />
+      <div className="skeleton mb-3 h-5 w-40" />
+      <div className="skeleton mb-4 h-4 w-full" />
       <div className="skeleton rounded-box mb-4 h-20 w-full" />
       <div className="skeleton rounded-field mb-4 h-8 w-full" />
       <div className="border-base-300 rounded-box divide-base-300 divide-y border">
@@ -150,8 +152,8 @@ export const ConnectedAppsSkeleton = () => (
           <div key={i} className="flex items-center gap-3 p-3 sm:p-4">
             <div className="skeleton rounded-field size-9 shrink-0" />
             <div className="flex-1 space-y-1.5">
-              <div className="skeleton rounded-field h-4 w-24" />
-              <div className="skeleton rounded-field h-3 w-48" />
+              <div className="skeleton h-4 w-24" />
+              <div className="skeleton h-3 w-48" />
             </div>
             <div className="skeleton rounded-field h-8 w-20" />
           </div>
@@ -162,29 +164,26 @@ export const ConnectedAppsSkeleton = () => (
 )
 
 const SettingsPanelSkeleton = () => {
-  const { pathname } = useRouter()
-  const supportRows = isDocumentReportPath(pathname)
-    ? SUPPORT_ROWS
-    : SUPPORT_ROWS.filter((row) => row.kind !== 'action')
+  const supportRows = supportRowsFor(useRouter().pathname)
 
   return (
     <div className="bg-base-100 relative flex min-h-0 flex-1 flex-col overflow-clip md:h-[min(85vh,800px)] md:flex-none md:flex-row">
       <aside className="border-base-300 flex min-h-0 w-full flex-1 flex-col md:w-72 md:flex-none md:shrink-0 md:border-r lg:w-80">
-        <div className="border-base-300 flex items-center justify-between border-b p-4 md:hidden">
-          <div className="skeleton rounded-field h-5 w-20" />
-          <div className="skeleton size-8 rounded-full" />
+        <div className="border-base-300 flex shrink-0 items-center justify-between gap-2 border-b px-4 py-1.5 md:hidden">
+          <div className="skeleton h-7 w-24" />
+          <div className="skeleton rounded-field size-11" />
         </div>
 
         <div className="flex-1 space-y-4 overflow-hidden p-4 sm:p-6">
           <div className="bg-base-200 rounded-box flex items-center gap-2.5 p-2.5">
             <div className="skeleton ring-base-100 size-8 shrink-0 rounded-full shadow-sm ring-2" />
             <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="skeleton rounded-field h-4 w-28" />
-              <div className="skeleton rounded-field h-3 w-36" />
+              <div className="skeleton h-4 w-28" />
+              <div className="skeleton h-3 w-36" />
             </div>
           </div>
 
-          <div className="skeleton rounded-field ml-2 h-3 w-14" />
+          <div className="skeleton ml-2 h-3 w-14 max-md:hidden" />
 
           <div className="space-y-1">
             {SETTINGS_TABS.map((tab, i) => (
@@ -193,48 +192,39 @@ const SettingsPanelSkeleton = () => {
                 className={`rounded-field flex min-h-[44px] items-center gap-2.5 px-3 ${
                   i === 0 ? 'bg-primary/10' : ''
                 }`}>
-                <div className="skeleton size-[18px] shrink-0 rounded" />
-                <div
-                  className="skeleton rounded-field h-4"
-                  style={{ width: navLabelWidth(tab.label) }}
-                />
-                <div className="skeleton ml-auto size-[18px] shrink-0 rounded md:hidden" />
+                <div className="skeleton size-[18px] shrink-0" />
+                <div className="skeleton h-4" style={{ width: navLabelWidth(tab.label) }} />
+                <div className="skeleton ml-auto size-[18px] shrink-0 md:hidden" />
               </div>
             ))}
           </div>
 
           <div className="border-base-300 border-t" />
 
-          <div className="skeleton rounded-field ml-2 h-3 w-20" />
+          <div className="skeleton ml-2 h-3 w-20" />
 
           <div className="space-y-0.5">
             {supportRows.map((row) => (
               <div
                 key={row.label}
                 className="rounded-field flex min-h-[44px] items-center gap-2.5 px-2">
-                <div className="skeleton size-4 shrink-0 rounded" />
-                <div
-                  className="skeleton rounded-field h-4"
-                  style={{ width: navLabelWidth(row.label) }}
-                />
-                {row.kind === 'link' && (
-                  <div className="skeleton ml-auto size-3.5 shrink-0 rounded" />
-                )}
+                <div className="skeleton size-4 shrink-0" />
+                <div className="skeleton h-4" style={{ width: navLabelWidth(row.label) }} />
+                {row.kind === 'link' && <div className="skeleton ml-auto size-3.5 shrink-0" />}
               </div>
             ))}
           </div>
-
-          <div className="skeleton rounded-field h-[44px] w-full" />
         </div>
 
-        <div className="border-base-300 mt-auto shrink-0 border-t p-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div
+          className={`border-base-300 mt-auto shrink-0 border-t p-4 ${sheetSafeAreaPadMobileClassName} sm:px-6`}>
           <div className="skeleton rounded-field h-10 w-full" />
         </div>
       </aside>
 
       <div className="hidden min-h-0 flex-1 flex-col md:flex">
         <div className="border-base-300 flex shrink-0 items-center gap-2 border-b px-4 py-3">
-          <div className="skeleton rounded-field h-5 w-16" />
+          <div className="skeleton h-5 w-16" />
           <div className="skeleton ml-auto size-8 rounded-full" />
         </div>
 

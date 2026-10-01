@@ -1,11 +1,13 @@
+import { quietActionClassName } from '@components/ui/Button'
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import type { IconType } from 'react-icons'
 import { LuFilePlus, LuPencil } from 'react-icons/lu'
 import { SiModelcontextprotocol } from 'react-icons/si'
 
 import { MCP_GUIDE_URL } from '../constants'
 import { type McpServerStatus, useMcpServerStatus } from '../hooks/useMcpServerStatus'
-import SettingsCard from './SettingsCard'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 const ABILITIES: { icon: IconType; label: string }[] = [
   { icon: Icons.search, label: 'Read documents you can open' },
@@ -24,7 +26,7 @@ const STATUS: Record<McpServerStatus, { dot: string; label: string }> = {
 const ServerStatus = () => {
   const { dot, label } = STATUS[useMcpServerStatus()]
   return (
-    <span role="status" className="text-base-content/60 inline-flex items-center gap-1.5 text-xs">
+    <span role="status" className="text-base-content/60 text-meta inline-flex items-center gap-1.5">
       <span aria-hidden className={`status ${dot}`} />
       <span className="sr-only">MCP server </span>
       {label}
@@ -34,26 +36,24 @@ const ServerStatus = () => {
 
 const McpIntroCard = () => (
   <SettingsCard>
-    <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
-      <SiModelcontextprotocol size={20} className="text-primary" aria-hidden />
-      <h2 className="text-base-content text-base font-semibold">MCP server</h2>
+    <SettingsCardHeader icon={SiModelcontextprotocol} title="MCP server">
       <ServerStatus />
       <a
         href={MCP_GUIDE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="link link-primary ms-auto inline-flex items-center gap-1 text-sm no-underline hover:underline">
+        className={twMerge(quietActionClassName, 'ms-auto')}>
         Setup guide
-        <Icons.externalLink size={12} aria-hidden />
+        <Icons.externalLink size={14} aria-hidden />
       </a>
-    </div>
+    </SettingsCardHeader>
     <p className="text-base-content/70 text-sm">
       Connect an AI app such as Claude or ChatGPT. Signed in as you, it can:
     </p>
     <ul className="mt-3 flex flex-wrap gap-1.5">
       {ABILITIES.map(({ icon: Icon, label }) => (
         <li key={label} className="badge badge-soft badge-sm gap-1.5">
-          <Icon size={12} className="text-primary shrink-0" aria-hidden />
+          <Icon size={12} className="text-base-content/70 shrink-0" aria-hidden />
           {label}
         </li>
       ))}

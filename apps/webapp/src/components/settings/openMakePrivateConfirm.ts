@@ -1,17 +1,17 @@
-import MakePrivateDialog from '@components/settings/components/MakePrivateDialog'
-import { useStore } from '@stores'
-import { createElement } from 'react'
+import { openConfirmDialog } from '@components/ui/dialogs/ConfirmDialog'
 
 /** Opens the shared Private ON confirm; `onDismiss` runs on Cancel/Esc/scrim/unmount. */
 export function openMakePrivateConfirm(args: {
   onConfirm: () => void
   onDismiss?: () => void
 }): void {
-  useStore.getState().openDialog(
-    createElement(MakePrivateDialog, {
-      onConfirm: args.onConfirm,
-      onDismiss: args.onDismiss
-    }),
-    { size: 'sm' }
-  )
+  // Not destructive: the owner can switch it back, so the primary tone.
+  openConfirmDialog({
+    title: 'Make this document private?',
+    body: 'Only you will be able to open it. Anyone currently viewing will lose access.',
+    confirmLabel: 'Make private',
+    tone: 'default',
+    onConfirm: args.onConfirm,
+    onDismiss: args.onDismiss
+  })
 }

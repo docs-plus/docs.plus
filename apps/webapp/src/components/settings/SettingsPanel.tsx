@@ -1,17 +1,20 @@
 import { Avatar } from '@components/ui/Avatar'
-import Button from '@components/ui/Button'
+import Button, { dangerGhostClassName } from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
+import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useAuthStore } from '@stores'
-import { isDocumentReportPath, reportCurrentDocument } from '@utils/reportContent'
+import { reportCurrentDocument } from '@utils/reportContent'
+import { sheetSafeAreaPadMobileClassName } from '@utils/sheetBodyPadding'
+import { twMerge } from '@utils/twMerge'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { type ComponentType, type CSSProperties, useCallback, useState } from 'react'
 import type { IconType } from 'react-icons'
-import { LuChevronLeft, LuChevronRight, LuExternalLink, LuGithub, LuLogOut } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
+import { LuChevronLeft, LuChevronRight, LuExternalLink, LuLogOut } from 'react-icons/lu'
 
-import { GITHUB_REPO_URL, SETTINGS_TABS, SUPPORT_ROWS } from './constants'
+import { SETTINGS_TABS, supportRowsFor } from './constants'
+import { useAuthUser } from './hooks/useAuthUser'
 import { useSignOut } from './hooks/useSignOut'
 import { openSignOutConfirm } from './openSignOutConfirm'
 import {
@@ -46,7 +49,7 @@ const ConnectedAppsSection = dynamic(() => import('./components/ConnectedAppsSec
 const STAR_SPARK_ANGLES = [0, 60, 120, 180, 240, 300] as const
 
 const SUPPORT_ROW_CLASS =
-  'text-base-content/70 hover:text-base-content hover:bg-base-200 group rounded-field flex min-h-[44px] items-center gap-2.5 px-2 py-1.5 text-sm transition-colors'
+  'text-base-content/70 hover:text-base-content hover:bg-base-200 focus-visible:ring-primary group rounded-field flex min-h-[44px] items-center gap-2.5 px-2 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none'
 
 function supportInkClass(ink: SupportInk): string {
   switch (ink) {
@@ -149,10 +152,8 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
   // tell `#settings?tab=profile` from a bare `#settings`. The pane keeps its back button.
   const [showContent, setShowContent] = useState(defaultTab !== undefined)
   const user = useAuthStore((state) => state.profile)
-  const { pathname } = useRouter()
-  const supportRows = isDocumentReportPath(pathname)
-    ? SUPPORT_ROWS
-    : SUPPORT_ROWS.filter((row) => row.kind !== 'action')
+  const email = useAuthUser()?.email
+  const supportRows = supportRowsFor(useRouter().pathname)
   const { isLoading: signOutLoading, handleSignOut } = useSignOut()
 
   const handleTabChange = useCallback((tab: TabType) => {
@@ -174,17 +175,21 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
 
   return (
     <div className="bg-base-100 relative flex min-h-0 flex-1 flex-col overflow-clip md:h-[min(85vh,800px)] md:flex-none md:flex-row">
-      <aside
+      <div
         className={`border-base-300 bg-base-100 flex min-h-0 w-full flex-1 flex-col motion-safe:animate-[doc-content-in_180ms_ease-out_both] max-md:absolute max-md:inset-0 md:w-72 md:flex-none md:shrink-0 md:border-r lg:w-80 ${
           showContent
             ? 'max-md:invisible max-md:[transform:translateX(-25%)] max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-exit),visibility_0s_var(--motion-panel)]'
             : 'max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-enter)]'
-        }`}
-        role="navigation"
-        aria-label="Settings navigation">
-        <div className="border-base-300 flex items-center justify-between border-b p-4 md:hidden">
-          <h2 className="text-base-content text-base font-semibold">Settings</h2>
-          <CloseButton onClick={handleClose} iconSize={20} aria-label="Close settings" />
+        }`}>
+        {/* Phone rows are 44px targets, so the header drops to py-1.5 and keeps the pane header's height. */}
+        <div className="border-base-300 flex shrink-0 items-center justify-between gap-2 border-b px-4 py-1.5 md:hidden">
+          <h2 className="text-base-content text-xl font-semibold">Settings</h2>
+          <CloseButton
+            onClick={handleClose}
+            iconSize={20}
+            className="min-h-11 min-w-11"
+            aria-label="Close settings"
+          />
         </div>
 
         <ScrollArea className="min-h-0 flex-1 overscroll-contain p-4 sm:p-6" scrollbarSize="thin">
@@ -194,14 +199,15 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
               <p className="text-base-content truncate text-sm font-semibold">
                 {user?.display_name || user?.full_name || 'User'}
               </p>
-              <p className="text-base-content/60 truncate text-xs">{user?.email}</p>
+              <p className="text-meta text-base-content/60 truncate">{email}</p>
             </div>
           </div>
 
-          <nav className="mb-4">
-            <h3 className="text-base-content/50 mb-1.5 px-2 text-xs font-semibold tracking-wider uppercase">
+          <nav aria-label="Settings" className="mb-4">
+            {/* The phone hub header already reads "Settings", so this label is for screen readers there. */}
+            <ListGroupLabel as="h3" className="mb-1.5 px-2 max-md:sr-only">
               Settings
-            </h3>
+            </ListGroupLabel>
             <ul className="menu menu-sm w-full gap-0.5 p-0">
               {SETTINGS_TABS.map((item) => {
                 const Icon = item.icon
@@ -210,6 +216,7 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
                   <li key={item.id}>
                     <Button
                       onClick={() => handleTabChange(item.id)}
+                      aria-current={isActive ? 'page' : undefined}
                       variant={isActive ? 'primary' : 'ghost'}
                       className={`flex min-h-[44px] w-full items-center justify-between text-sm font-medium ${
                         !isActive ? 'text-base-content hover:bg-base-200' : ''
@@ -231,10 +238,10 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
 
           <div className="border-base-300 my-3 border-t" />
 
-          <nav className="mb-4">
-            <h3 className="text-base-content/50 mb-1.5 px-2 text-xs font-semibold tracking-wider uppercase">
-              Open Source
-            </h3>
+          <div className="mb-4">
+            <ListGroupLabel as="h3" className="mb-1.5 px-2">
+              Open source
+            </ListGroupLabel>
             <ul className="space-y-0.5">
               {supportRows.map((row) => (
                 <li key={row.label}>
@@ -242,34 +249,25 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
                 </li>
               ))}
             </ul>
-
-            <a
-              href={GITHUB_REPO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border-base-300 bg-base-100 hover:bg-base-200 text-base-content group rounded-field mt-2 flex min-h-[44px] items-center justify-center gap-2 border p-2.5 text-sm font-medium transition-colors">
-              <LuGithub
-                size={18}
-                className="group-hover:text-primary group-focus-visible:text-primary transition-colors"
-              />
-              View on GitHub
-            </a>
-          </nav>
+          </div>
         </ScrollArea>
 
-        <div className="border-base-300 mt-auto shrink-0 border-t p-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div
+          className={twMerge(
+            'border-base-300 mt-auto shrink-0 border-t p-4 sm:px-6',
+            sheetSafeAreaPadMobileClassName
+          )}>
           <Button
             onClick={() => openSignOutConfirm({ onConfirm: handleSignOut })}
-            disabled={signOutLoading}
             loading={signOutLoading}
             variant="ghost"
             shape="block"
-            startIcon={!signOutLoading ? LuLogOut : undefined}
-            className="border-base-300 text-base-content/70 hover:bg-error/10 hover:text-error border font-medium">
+            startIcon={LuLogOut}
+            className={twMerge(dangerGhostClassName, 'font-medium')}>
             Sign out
           </Button>
         </div>
-      </aside>
+      </div>
 
       <div
         className={`bg-base-100 flex min-h-0 flex-1 flex-col max-md:absolute max-md:inset-0 ${
@@ -277,7 +275,7 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
             ? 'max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-enter)]'
             : 'max-md:invisible max-md:[transform:translateX(100%)] max-md:motion-safe:[transition:transform_var(--motion-panel)_var(--motion-ease-exit),visibility_0s_var(--motion-panel)]'
         }`}>
-        <div className="border-base-300 bg-base-100 flex shrink-0 items-center gap-2 border-b px-4 py-3">
+        <div className="border-base-300 bg-base-100 flex shrink-0 items-center gap-2 border-b px-4 py-3 max-md:py-1.5">
           <Button
             onClick={handleBack}
             variant="ghost"
@@ -286,10 +284,21 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
             startIcon={LuChevronLeft}
             iconSize={20}
             aria-label="Back to menu"
-            className="md:hidden"
+            className="min-h-11 min-w-11 md:hidden"
           />
-          <h2 className="text-base-content flex-1 text-base font-semibold">{activeLabel}</h2>
-          <CloseButton onClick={handleClose} iconSize={20} aria-label="Close settings" />
+          <h2 className="text-base-content flex-1 text-xl font-semibold">{activeLabel}</h2>
+          {/* CloseButton takes one glyph size, so each breakpoint gets its own: phone 20, desktop 16. */}
+          <CloseButton
+            onClick={handleClose}
+            iconSize={20}
+            className="min-h-11 min-w-11 md:hidden"
+            aria-label="Close settings"
+          />
+          <CloseButton
+            onClick={handleClose}
+            className="max-md:hidden"
+            aria-label="Close settings"
+          />
         </div>
 
         <ScrollArea
@@ -298,11 +307,13 @@ const SettingsPanel = ({ defaultTab, onClose }: SettingsPanelProps) => {
           }`}
           scrollbarSize="thin">
           <div
-            className={`mx-auto p-4 sm:p-6 ${
+            className={twMerge(
+              'mx-auto p-4 sm:p-6',
               activeTabConfig?.fullWidth
                 ? 'w-full max-w-none max-md:flex max-md:min-h-full max-md:flex-col max-md:p-0'
-                : 'max-w-2xl'
-            }`}>
+                : 'max-w-2xl',
+              sheetSafeAreaPadMobileClassName
+            )}>
             <ActiveSection onOpenDocument={handleClose} onSelectTab={handleTabChange} />
           </div>
         </ScrollArea>

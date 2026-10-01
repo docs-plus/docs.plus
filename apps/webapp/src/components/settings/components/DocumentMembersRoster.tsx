@@ -1,7 +1,8 @@
 import { Avatar } from '@components/ui/Avatar'
+import { EmptyState } from '@components/ui/EmptyState'
 import { popoverPanelClassName } from '@components/ui/Popover'
 import { formatTimeAgo } from '@utils/formatTime'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { type DocumentRosterMember, useDocumentRoster } from '../hooks/useDocumentRoster'
 import { formatShortDate } from '../utils/formatShortDate'
@@ -26,8 +27,8 @@ function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRost
 
   return (
     <div className={twMerge(popoverPanelClassName, 'w-64 overflow-hidden p-0')}>
-      <div className="border-base-300 border-b px-3 py-2">
-        <span className="text-base-content text-sm font-medium">{memberCount} people</span>
+      <div className="border-base-300 border-b px-4 py-3">
+        <span className="text-base-content text-base font-semibold">{memberCount} people</span>
       </div>
 
       <div className="max-h-72 overflow-y-auto py-1">
@@ -42,15 +43,13 @@ function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRost
             </div>
           ))
         ) : isError ? (
-          <div className="flex flex-col items-center gap-2 px-3 py-6 text-center">
-            <p className="text-base-content/60 text-xs">Couldn’t load people</p>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="text-primary text-xs font-medium hover:underline">
-              Retry
-            </button>
-          </div>
+          <EmptyState
+            layout="inline"
+            tone="error"
+            title="Couldn’t load people."
+            className="px-3"
+            onRetry={refetch}
+          />
         ) : (
           (members ?? []).map((m) => (
             <div key={m.member_id} className="flex items-center gap-2.5 px-3 py-2">
@@ -66,7 +65,7 @@ function DocumentMembersRoster({ workspaceId, memberCount }: DocumentMembersRost
                     </span>
                   )}
                 </span>
-                <span className="text-base-content/50 truncate text-xs">
+                <span className="text-meta text-base-content/60 truncate">
                   Joined {formatShortDate(m.joined_at)}
                   {seenAfterJoin(m.joined_at, m.last_visit_at) &&
                     ` · Last seen ${formatTimeAgo(m.last_visit_at)} ago`}

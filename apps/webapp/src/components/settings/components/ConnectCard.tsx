@@ -8,7 +8,7 @@ import { LuLayoutGrid, LuPlug } from 'react-icons/lu'
 
 import { isMobileSurface } from '../utils/isMobileSurface'
 import { mcpServerUrl } from '../utils/mcpServerUrl'
-import SettingsCard from './SettingsCard'
+import SettingsCard, { SettingsCardHeader } from './SettingsCard'
 
 const SERVER_NAME = 'docs-plus'
 
@@ -34,7 +34,7 @@ const Step = ({ n, children }: { n: number; children: ReactNode }) => (
       className="bg-base-200 text-base-content/70 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
       {n}
     </span>
-    <div className="text-base-content/80 min-w-0 flex-1 pt-0.5 text-sm">{children}</div>
+    <div className="text-base-content/70 min-w-0 flex-1 pt-0.5 text-sm">{children}</div>
   </li>
 )
 
@@ -91,7 +91,7 @@ const OtherRow = ({
     <AppMark app={app} />
     <div className="min-w-0 flex-1">
       <p className="text-base-content text-sm font-semibold">{name}</p>
-      <p className="text-base-content/60 text-xs">{note}</p>
+      <p className="text-meta text-base-content/60">{note}</p>
     </div>
     {action}
   </li>
@@ -106,7 +106,7 @@ const AddLink = ({ name, href }: { name: string; href: string }) => (
 
 const ServerUrlField = ({ serverUrl }: { serverUrl: string }) => (
   <div>
-    <p className="text-base-content text-sm font-medium">MCP server URL</p>
+    <p className="text-base-content text-meta font-semibold">MCP server URL</p>
     <CopyLine text={serverUrl} />
   </div>
 )
@@ -241,7 +241,7 @@ function TabPanel({ tab, serverUrl }: { tab: ConnectTab; serverUrl: string }) {
       </ul>
       <div className="border-base-300 mt-4 border-t pt-4">
         <ServerUrlField serverUrl={serverUrl} />
-        <p className="text-base-content/60 mt-2 text-xs">
+        <p className="text-meta text-base-content/60 mt-2">
           For any other AI app, paste this URL where it asks for a remote MCP server. The page that
           opens may show a warning. Allow only if you started the connection.
         </p>
@@ -257,21 +257,18 @@ const ConnectCard = () => {
 
   return (
     <SettingsCard>
-      <div className="mb-3 flex items-center gap-2">
-        <LuPlug size={20} className="text-primary" />
-        <h2 className="text-base-content text-base font-semibold">Add an AI app</h2>
-      </div>
-      {isPhone ? (
+      <SettingsCardHeader
+        icon={LuPlug}
+        title="Add an AI app"
         // Phones cannot open editor links or run commands, and the Claude phone app cannot add a connector.
-        <>
-          <p className="text-base-content/60 text-xs sm:text-sm">
-            Add apps on a computer. An app you add there, such as Claude, then works on your phone
-            too.
-          </p>
-          <div className="mt-4">
-            <ServerUrlField serverUrl={serverUrl} />
-          </div>
-        </>
+        description={
+          isPhone
+            ? 'Add apps on a computer. An app you add there, such as Claude, then works on your phone too.'
+            : undefined
+        }
+      />
+      {isPhone ? (
+        <ServerUrlField serverUrl={serverUrl} />
       ) : (
         <>
           {/* Scrolls sideways instead of wrapping a tab label in a narrow window. */}

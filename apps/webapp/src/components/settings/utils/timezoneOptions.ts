@@ -6,6 +6,15 @@ export const getBrowserTimezone = (): string => {
   }
 }
 
+/** This engine's spelling of a zone: V8 says `Asia/Calcutta` where Firefox and Safari say `Asia/Kolkata`. */
+export const canonicalTimezone = (tz: string): string => {
+  try {
+    return new Intl.DateTimeFormat('en', { timeZone: tz }).resolvedOptions().timeZone
+  } catch {
+    return tz
+  }
+}
+
 // `Intl.supportedValuesOf` is missing on older browsers, so fall back to a
 // short list of common zones.
 const getAllTimezones = (): string[] => {
@@ -105,6 +114,11 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'Pacific/Auckland': 'New Zealand'
 }
 
+// Re-key by this engine's spelling, so `india` also finds `Asia/Calcutta` in V8.
+const ALIASES_BY_ZONE: Record<string, string> = Object.fromEntries(
+  Object.entries(TIMEZONE_ALIASES).map(([tz, alias]) => [canonicalTimezone(tz), alias])
+)
+
 export const formatTimeDisplay = (time: string): string => {
   const [hours, minutes] = time.split(':').map(Number)
   const period = hours >= 12 ? 'PM' : 'AM'
@@ -136,28 +150,45 @@ export const getTimezoneOffset = (tz: string): string => {
   }
 }
 
-export const formatTimezoneLabel = (tz: string): string => {
-  const alias = TIMEZONE_ALIASES[tz]
-  const cityName = tz.replace(/_/g, ' ')
+// `shortOffset` writes `GMT`, `GMT+9` or `GMT-3:30`; some ICU builds use U+2212 for the minus.
+const GMT_OFFSET = /^GMT(?:([+\-\u2212])(\d{1,2})(?::(\d{2}))?)?$/
 
-  if (alias) {
-    const primaryAlias = alias.split(',')[0].trim()
-    // Avoid duplication if alias is same as city
-    if (cityName.includes(primaryAlias)) {
-      return cityName
-    }
-    return `${primaryAlias} (${cityName})`
-  }
-  return cityName
+/** Minutes east of UTC; 0 when the text does not parse. */
+const parseOffsetMinutes = (gmtOffset: string): number => {
+  const match = GMT_OFFSET.exec(gmtOffset)
+  if (!match?.[1]) return 0
+  const minutes = Number(match[2]) * 60 + Number(match[3] ?? 0)
+  return match[1] === '+' ? minutes : -minutes
 }
 
-export const getTimezoneSearchText = (tz: string): string => {
-  const parts = [tz, tz.replace(/_/g, ' ')]
-  const alias = TIMEZONE_ALIASES[tz]
-  if (alias) {
-    parts.push(alias)
+const formatUtcOffset = (minutes: number): string => {
+  const abs = Math.abs(minutes)
+  const hours = String(Math.floor(abs / 60)).padStart(2, '0')
+  return `UTC${minutes < 0 ? '-' : '+'}${hours}:${String(abs % 60).padStart(2, '0')}`
+}
+
+/** The last IANA segment: `America/Argentina/Buenos_Aires` reads `Buenos Aires`. */
+const getTimezoneCity = (tz: string): string => (tz.split('/').pop() ?? tz).replace(/_/g, ' ')
+
+// One `Intl` read per zone; every other part derives from it.
+export const describeTimezone = (tz: string) => {
+  const gmtOffset = getTimezoneOffset(tz)
+  const minutes = parseOffsetMinutes(gmtOffset)
+  const offset = formatUtcOffset(minutes)
+  const city = getTimezoneCity(tz)
+  const country = ALIASES_BY_ZONE[tz]?.split(',')[0].trim()
+  return {
+    minutes,
+    offset,
+    city,
+    label: `(${offset}) ${city}`,
+    // Skip an alias that only repeats the city, such as Singapore.
+    country: country && country !== city ? country : undefined,
+    searchText: [tz, city, ALIASES_BY_ZONE[tz], offset, gmtOffset]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
   }
-  return parts.join(' ').toLowerCase()
 }
 
 // Read once per call: the offset text is DST-sensitive, so a frozen module
@@ -165,12 +196,14 @@ export const getTimezoneSearchText = (tz: string): string => {
 export const buildTimezoneOptions = (): {
   value: string
   label: string
-  description: string
+  description?: string
   searchText: string
 }[] =>
-  ALL_TIMEZONES.map((tz) => ({
-    value: tz,
-    label: formatTimezoneLabel(tz),
-    description: `${getTimezoneOffset(tz)}${TIMEZONE_ALIASES[tz] ? ` · ${TIMEZONE_ALIASES[tz]}` : ''}`,
-    searchText: getTimezoneSearchText(tz)
-  }))
+  ALL_TIMEZONES.map((tz) => ({ value: tz, ...describeTimezone(tz) }))
+    .sort((a, b) => a.minutes - b.minutes || a.city.localeCompare(b.city))
+    .map(({ value, label, country, searchText }) => ({
+      value,
+      label,
+      description: country,
+      searchText
+    }))
