@@ -25,7 +25,8 @@ create table public.users (
                         avatar_url ~ '^(https?://\S+|http://localhost(:[0-9]+)?/\S+)$'  -- Validate URL format including localhost
                     ),
     avatar_updated_at timestamp with time zone,                 -- New field for avatar updates
-    profile_data    jsonb default '{}'::jsonb not null,         -- Structured profile data
+    profile_data    jsonb default '{}'::jsonb not null,         -- Public profile data
+    notification_preferences jsonb default '{}'::jsonb not null, -- Private; no client SELECT grant
 
     -- Status Management
     status          user_status not null
@@ -44,6 +45,11 @@ create table public.users (
         check (char_length(username) >= 3),
     constraint valid_profile_data
         check (jsonb_typeof(profile_data) = 'object'),
+    -- profile_data is readable by every visitor; private settings must not return there.
+    constraint profile_data_has_no_notification_preferences
+        check (not profile_data ? 'notification_preferences'),
+    constraint valid_notification_preferences
+        check (jsonb_typeof(notification_preferences) = 'object'),
     constraint valid_deletion
         check (
             (deleted_at is null) or
@@ -62,24 +68,17 @@ comment on column public.users.full_name is 'User''s full display name';
 comment on column public.users.display_name is 'Virtual column that returns full_name or falls back to username';
 comment on column public.users.avatar_url is 'URL to user''s profile picture (must be valid HTTP/HTTPS URL)';
 comment on column public.users.avatar_updated_at is 'Timestamp of when the user''s avatar was last updated';
-comment on column public.users.profile_data is 'Extensible JSON profile data including social links, bio, and preferences';
 comment on column public.users.status is 'Current user online status (ONLINE/OFFLINE/AWAY/DND)';
 comment on column public.users.online_at is 'Timestamp of user''s last online presence';
 comment on column public.users.deleted_at is 'Soft deletion timestamp - null indicates active user';
 comment on column public.users.created_at is 'Account creation timestamp (UTC)';
 comment on column public.users.updated_at is 'Last profile update timestamp (UTC)';
 
--- Profile Data Schema Documentation, it's just example, you can add more fields
-comment on column public.users.profile_data is E'Expected schema:\n{
-  "job_title": string?,
-  "company": string?,
-  "about": string?,
-  "website": string?,
-  "social_links": [{
-    "url": string,
-    "type": "github" | "twitter" | "linkedin" | "other"
-  }]
+comment on column public.users.profile_data is E'Public profile data, readable by every visitor:\n{
+  "bio": string?,
+  "linkTree": [{ "url": string, "type": string, "metadata": object? }]
 }';
+comment on column public.users.notification_preferences is 'Private notification settings. No anon or authenticated SELECT grant: the owner reads it through get_notification_preferences() and writes it through update_notification_preferences().';
 
 -- Partial index for efficient online user queries
 -- Only indexes users with status='ONLINE', keeping the index small and fast

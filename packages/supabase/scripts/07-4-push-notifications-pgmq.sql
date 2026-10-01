@@ -105,7 +105,7 @@ stable
 set search_path = public
 as $$
     select coalesce(
-        (profile_data->'notification_preferences'->>'push_enabled')::boolean,
+        (notification_preferences->>'push_enabled')::boolean,
         true  -- Default to enabled
     )
     from public.users
@@ -119,10 +119,7 @@ language sql
 stable
 set search_path = public
 as $$
-    select coalesce(
-        profile_data->'notification_preferences',
-        '{}'::jsonb
-    )
+    select notification_preferences
     from public.users
     where id = p_user_id;
 $$;
@@ -136,10 +133,10 @@ set search_path = public
 as $$
     with user_prefs as (
         select
-            coalesce((profile_data->'notification_preferences'->>'quiet_hours_enabled')::boolean, false) as enabled,
-            coalesce(profile_data->'notification_preferences'->>'quiet_hours_start', '22:00') as start_time,
-            coalesce(profile_data->'notification_preferences'->>'quiet_hours_end', '08:00') as end_time,
-            coalesce(profile_data->'notification_preferences'->>'timezone', 'UTC') as tz
+            coalesce((notification_preferences->>'quiet_hours_enabled')::boolean, false) as enabled,
+            coalesce(notification_preferences->>'quiet_hours_start', '22:00') as start_time,
+            coalesce(notification_preferences->>'quiet_hours_end', '08:00') as end_time,
+            coalesce(notification_preferences->>'timezone', 'UTC') as tz
         from public.users
         where id = p_user_id
     )
@@ -696,11 +693,12 @@ begin
         alter publication supabase_realtime drop table notifications;
     end if;
 
-    if not exists (
+    -- No client subscribes to push_subscriptions over Realtime.
+    if exists (
         select 1 from pg_publication_tables
         where pubname = 'supabase_realtime' and tablename = 'push_subscriptions'
     ) then
-        alter publication supabase_realtime add table push_subscriptions;
+        alter publication supabase_realtime drop table push_subscriptions;
     end if;
 end $$;
 

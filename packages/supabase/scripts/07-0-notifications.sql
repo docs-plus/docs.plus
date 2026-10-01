@@ -34,9 +34,9 @@ comment on column public.notifications.readed_at is 'Timestamp when the user vie
 comment on column public.notifications.action_url is 'Link to navigate to the relevant content when the notification is clicked';
 
 -- update_notification_preferences — partial JSONB merge into
--- public.users.profile_data->'notification_preferences'. Collapses
--- per-toggle PATCHes into one debounced RPC. `||` is last-write-wins
--- across concurrent tabs (acceptable for single-user preference editing).
+-- public.users.notification_preferences. Collapses per-toggle PATCHes into
+-- one debounced RPC. `||` is last-write-wins across tabs and devices; the
+-- users_profile_changed trigger then tells the owner's other clients.
 
 create or replace function public.update_notification_preferences(p_patch jsonb)
 returns jsonb
@@ -55,17 +55,35 @@ begin
         raise exception 'patch_must_be_object' using errcode = '22023';
     end if;
     update public.users
-       set profile_data = jsonb_set(
-               coalesce(profile_data, '{}'::jsonb),
-               array['notification_preferences'],
-               coalesce(profile_data -> 'notification_preferences', '{}'::jsonb) || p_patch,
-               true
-           )
+       set notification_preferences = notification_preferences || p_patch
      where id = v_user_id
-     returning profile_data -> 'notification_preferences' into v_next;
+     returning notification_preferences into v_next;
     return v_next;
 end;
 $$;
 
-revoke all on function public.update_notification_preferences(jsonb) from public;
+revoke all on function public.update_notification_preferences(jsonb) from public, anon;
 grant execute on function public.update_notification_preferences(jsonb) to authenticated;
+
+-- get_notification_preferences — the owner's only read path. The column has
+-- no client SELECT grant, because users_select lets anyone read any row.
+
+create or replace function public.get_notification_preferences()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+    v_user_id uuid := auth.uid();
+begin
+    if v_user_id is null then
+        raise exception 'unauthenticated' using errcode = '42501';
+    end if;
+    return (select notification_preferences from public.users where id = v_user_id);
+end;
+$$;
+
+revoke all on function public.get_notification_preferences() from public, anon;
+grant execute on function public.get_notification_preferences() to authenticated;

@@ -972,6 +972,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          notification_preferences: Json
           online_at: string | null
           profile_data: Json
           status: Database["public"]["Enums"]["user_status"]
@@ -987,6 +988,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          notification_preferences?: Json
           online_at?: string | null
           profile_data?: Json
           status?: Database["public"]["Enums"]["user_status"]
@@ -1002,6 +1004,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          notification_preferences?: Json
           online_at?: string | null
           profile_data?: Json
           status?: Database["public"]["Enums"]["user_status"]
@@ -1441,6 +1444,7 @@ export type Database = {
         }[]
       }
       get_notification_health: { Args: never; Returns: Json }
+      get_notification_preferences: { Args: never; Returns: Json }
       get_notification_reach: { Args: never; Returns: Json }
       get_pgmq_queue_metrics: {
         Args: never
@@ -1648,6 +1652,14 @@ export type Database = {
       }
       update_notification_preferences: {
         Args: { p_patch: Json }
+        Returns: Json
+      }
+      update_profile: {
+        Args: {
+          p_full_name?: string
+          p_profile_patch?: Json
+          p_username?: string
+        }
         Returns: Json
       }
       update_view_duration: {

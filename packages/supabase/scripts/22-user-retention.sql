@@ -383,14 +383,11 @@ begin
     where user_id is not null
       and is_active = true;
 
-    -- Users with email notifications enabled (check profile_data.notification_preferences)
+    -- Missing means off, as in internal.is_email_enabled.
     select count(*) into v_email_enabled
     from public.users
     where deleted_at is null
-      and (
-        (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
-        or profile_data->'notification_preferences'->>'email_enabled' is null -- Default is enabled
-      );
+      and (notification_preferences->>'email_enabled')::boolean = true;
 
     -- Notification read rate
     select

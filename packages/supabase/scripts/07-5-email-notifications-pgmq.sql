@@ -97,7 +97,7 @@ stable
 set search_path = public
 as $$
     select coalesce(
-        (profile_data->'notification_preferences'->>'email_enabled')::boolean,
+        (notification_preferences->>'email_enabled')::boolean,
         false
     )
     from public.users
@@ -110,10 +110,7 @@ language sql
 stable
 set search_path = public
 as $$
-    select coalesce(
-        profile_data->'notification_preferences',
-        '{}'::jsonb
-    )
+    select notification_preferences
     from public.users
     where id = p_user_id;
 $$;
@@ -190,13 +187,9 @@ set search_path = public
 as $$
 begin
     update public.users
-    set profile_data = jsonb_set(
-        coalesce(profile_data, '{}'::jsonb),
-        '{notification_preferences}',
-        (coalesce(profile_data->'notification_preferences', '{}'::jsonb) - 'email_bounce_info')
-    )
+    set notification_preferences = notification_preferences - 'email_bounce_info'
     where id = p_user_id
-      and profile_data->'notification_preferences' ? 'email_bounce_info';
+      and notification_preferences ? 'email_bounce_info';
 end;
 $$;
 
@@ -241,14 +234,9 @@ begin
 
             -- Disable email + store bounce info in preferences
             update public.users
-            set profile_data = jsonb_set(
-                jsonb_set(
-                    coalesce(profile_data, '{}'::jsonb),
-                    '{notification_preferences,email_enabled}',
-                    'false'::jsonb
-                ),
-                '{notification_preferences,email_bounce_info}',
-                jsonb_build_object(
+            set notification_preferences = notification_preferences || jsonb_build_object(
+                'email_enabled', false,
+                'email_bounce_info', jsonb_build_object(
                     'email', v_masked_email,
                     'reason', coalesce(p_reason, 'Email delivery failed'),
                     'bounced_at', now()::text
@@ -586,7 +574,7 @@ begin
             u.email as recipient_email,
             u.display_name as recipient_name,
             coalesce(
-                u.profile_data->'notification_preferences'->>'email_frequency',
+                u.notification_preferences->>'email_frequency',
                 'daily'
             ) as frequency
         from public.email_queue eq
@@ -890,7 +878,7 @@ begin
         'users_with_email_enabled', (
             select count(*)
             from public.users
-            where (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
+            where (notification_preferences->>'email_enabled')::boolean = true
         )
     );
 end;
@@ -925,7 +913,7 @@ declare
     new_prefs jsonb;
     action_description text;
 begin
-    select email, coalesce(profile_data->'notification_preferences', '{}'::jsonb)
+    select email, notification_preferences
     into v_user_email, prefs
     from public.users
     where id = p_user_id;
@@ -963,11 +951,7 @@ begin
     end case;
 
     update public.users
-    set profile_data = jsonb_set(
-        coalesce(profile_data, '{}'::jsonb),
-        '{notification_preferences}',
-        new_prefs
-    )
+    set notification_preferences = new_prefs
     where id = p_user_id;
 
     return jsonb_build_object(

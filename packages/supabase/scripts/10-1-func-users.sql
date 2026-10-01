@@ -204,3 +204,104 @@ ALTER FUNCTION internal.is_user_online(p_user_id uuid) SET search_path = public;
 -- (counters, previews, notifications) bypass RLS on side-effect tables.
 -- search_path is already pinned above; flipping security mode is safe.
 ALTER FUNCTION public.update_user_online_at() SECURITY DEFINER;
+
+----------------------------------------------------
+----------------------------------------------------
+
+/**
+ * Function: update_profile
+ * Saves the owner's profile. Merges only the top-level profile_data keys it is given,
+ * so saving the bio never replaces links another device just wrote. An omitted
+ * name or username keeps its column. Invoker rights: the column grants and users_self_update still apply.
+ */
+CREATE OR REPLACE FUNCTION public.update_profile(
+    p_username text DEFAULT NULL,
+    p_full_name text DEFAULT NULL,
+    p_profile_patch jsonb DEFAULT '{}'::jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    v_saved jsonb;
+BEGIN
+    IF (select auth.uid()) IS NULL THEN
+        RAISE EXCEPTION 'unauthenticated' USING errcode = '42501';
+    END IF;
+    IF p_profile_patch IS NULL OR jsonb_typeof(p_profile_patch) <> 'object' THEN
+        RAISE EXCEPTION 'patch_must_be_object' USING errcode = '22023';
+    END IF;
+    UPDATE public.users
+       SET username = coalesce(p_username, username),
+           full_name = coalesce(p_full_name, full_name),
+           profile_data = profile_data || p_profile_patch
+     WHERE id = (select auth.uid())
+     RETURNING jsonb_build_object(
+         'username', username,
+         'full_name', full_name,
+         'profile_data', profile_data
+     ) INTO v_saved;
+    RETURN v_saved;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.update_profile(text, text, jsonb) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.update_profile(text, text, jsonb) TO authenticated;
+
+----------------------------------------------------
+----------------------------------------------------
+
+/**
+ * Function: broadcast_profile_change
+ * Tells every open client of the owner that their profile or settings changed.
+ * The payload carries no values: clients refetch through their own grants.
+ */
+CREATE OR REPLACE FUNCTION public.broadcast_profile_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    PERFORM realtime.send(
+        jsonb_build_object('user_id', NEW.id),
+        'profile_changed',
+        'profile:' || NEW.id::text,
+        TRUE
+    );
+    RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS users_profile_changed ON public.users;
+
+-- The column list and the guard keep the status heartbeat and cron out.
+CREATE TRIGGER users_profile_changed
+AFTER UPDATE OF username, full_name, avatar_url, avatar_updated_at, profile_data, notification_preferences
+ON public.users
+FOR EACH ROW
+WHEN (
+    OLD.username IS DISTINCT FROM NEW.username
+    OR OLD.full_name IS DISTINCT FROM NEW.full_name
+    OR OLD.avatar_url IS DISTINCT FROM NEW.avatar_url
+    OR OLD.avatar_updated_at IS DISTINCT FROM NEW.avatar_updated_at
+    OR OLD.profile_data IS DISTINCT FROM NEW.profile_data
+    OR OLD.notification_preferences IS DISTINCT FROM NEW.notification_preferences
+)
+EXECUTE FUNCTION public.broadcast_profile_change();
+
+DROP POLICY IF EXISTS "profile_topic_access" ON realtime.messages;
+
+CREATE POLICY "profile_topic_access"
+ON realtime.messages
+FOR SELECT
+TO authenticated
+USING (
+  realtime.messages.topic = 'profile:' || (select auth.uid())::text
+);
+
+-- A line comment, not comment on policy: postgres does not own realtime.messages.
+-- profile_topic_access: a user subscribes only to profile:<auth.uid()>, the
+-- private topic broadcast_profile_change() sends to.

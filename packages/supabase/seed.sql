@@ -142,7 +142,8 @@ create table public.users (
                         avatar_url ~ '^(https?://\S+|http://localhost(:[0-9]+)?/\S+)$'  -- Validate URL format including localhost
                     ),
     avatar_updated_at timestamp with time zone,                 -- New field for avatar updates
-    profile_data    jsonb default '{}'::jsonb not null,         -- Structured profile data
+    profile_data    jsonb default '{}'::jsonb not null,         -- Public profile data
+    notification_preferences jsonb default '{}'::jsonb not null, -- Private; no client SELECT grant
 
     -- Status Management
     status          user_status not null
@@ -161,6 +162,11 @@ create table public.users (
         check (char_length(username) >= 3),
     constraint valid_profile_data
         check (jsonb_typeof(profile_data) = 'object'),
+    -- profile_data is readable by every visitor; private settings must not return there.
+    constraint profile_data_has_no_notification_preferences
+        check (not profile_data ? 'notification_preferences'),
+    constraint valid_notification_preferences
+        check (jsonb_typeof(notification_preferences) = 'object'),
     constraint valid_deletion
         check (
             (deleted_at is null) or
@@ -179,24 +185,17 @@ comment on column public.users.full_name is 'User''s full display name';
 comment on column public.users.display_name is 'Virtual column that returns full_name or falls back to username';
 comment on column public.users.avatar_url is 'URL to user''s profile picture (must be valid HTTP/HTTPS URL)';
 comment on column public.users.avatar_updated_at is 'Timestamp of when the user''s avatar was last updated';
-comment on column public.users.profile_data is 'Extensible JSON profile data including social links, bio, and preferences';
 comment on column public.users.status is 'Current user online status (ONLINE/OFFLINE/AWAY/DND)';
 comment on column public.users.online_at is 'Timestamp of user''s last online presence';
 comment on column public.users.deleted_at is 'Soft deletion timestamp - null indicates active user';
 comment on column public.users.created_at is 'Account creation timestamp (UTC)';
 comment on column public.users.updated_at is 'Last profile update timestamp (UTC)';
 
--- Profile Data Schema Documentation, it's just example, you can add more fields
-comment on column public.users.profile_data is E'Expected schema:\n{
-  "job_title": string?,
-  "company": string?,
-  "about": string?,
-  "website": string?,
-  "social_links": [{
-    "url": string,
-    "type": "github" | "twitter" | "linkedin" | "other"
-  }]
+comment on column public.users.profile_data is E'Public profile data, readable by every visitor:\n{
+  "bio": string?,
+  "linkTree": [{ "url": string, "type": string, "metadata": object? }]
 }';
+comment on column public.users.notification_preferences is 'Private notification settings. No anon or authenticated SELECT grant: the owner reads it through get_notification_preferences() and writes it through update_notification_preferences().';
 
 -- Partial index for efficient online user queries
 -- Only indexes users with status='ONLINE', keeping the index small and fast
@@ -671,9 +670,9 @@ comment on column public.notifications.readed_at is 'Timestamp when the user vie
 comment on column public.notifications.action_url is 'Link to navigate to the relevant content when the notification is clicked';
 
 -- update_notification_preferences — partial JSONB merge into
--- public.users.profile_data->'notification_preferences'. Collapses
--- per-toggle PATCHes into one debounced RPC. `||` is last-write-wins
--- across concurrent tabs (acceptable for single-user preference editing).
+-- public.users.notification_preferences. Collapses per-toggle PATCHes into
+-- one debounced RPC. `||` is last-write-wins across tabs and devices; the
+-- users_profile_changed trigger then tells the owner's other clients.
 
 create or replace function public.update_notification_preferences(p_patch jsonb)
 returns jsonb
@@ -692,20 +691,38 @@ begin
         raise exception 'patch_must_be_object' using errcode = '22023';
     end if;
     update public.users
-       set profile_data = jsonb_set(
-               coalesce(profile_data, '{}'::jsonb),
-               array['notification_preferences'],
-               coalesce(profile_data -> 'notification_preferences', '{}'::jsonb) || p_patch,
-               true
-           )
+       set notification_preferences = notification_preferences || p_patch
      where id = v_user_id
-     returning profile_data -> 'notification_preferences' into v_next;
+     returning notification_preferences into v_next;
     return v_next;
 end;
 $$;
 
-revoke all on function public.update_notification_preferences(jsonb) from public;
+revoke all on function public.update_notification_preferences(jsonb) from public, anon;
 grant execute on function public.update_notification_preferences(jsonb) to authenticated;
+
+-- get_notification_preferences — the owner's only read path. The column has
+-- no client SELECT grant, because users_select lets anyone read any row.
+
+create or replace function public.get_notification_preferences()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+    v_user_id uuid := auth.uid();
+begin
+    if v_user_id is null then
+        raise exception 'unauthenticated' using errcode = '42501';
+    end if;
+    return (select notification_preferences from public.users where id = v_user_id);
+end;
+$$;
+
+revoke all on function public.get_notification_preferences() from public, anon;
+grant execute on function public.get_notification_preferences() to authenticated;
 
 
 -- ============================================================================
@@ -1101,7 +1118,7 @@ stable
 set search_path = public
 as $$
     select coalesce(
-        (profile_data->'notification_preferences'->>'push_enabled')::boolean,
+        (notification_preferences->>'push_enabled')::boolean,
         true  -- Default to enabled
     )
     from public.users
@@ -1115,10 +1132,7 @@ language sql
 stable
 set search_path = public
 as $$
-    select coalesce(
-        profile_data->'notification_preferences',
-        '{}'::jsonb
-    )
+    select notification_preferences
     from public.users
     where id = p_user_id;
 $$;
@@ -1132,10 +1146,10 @@ set search_path = public
 as $$
     with user_prefs as (
         select
-            coalesce((profile_data->'notification_preferences'->>'quiet_hours_enabled')::boolean, false) as enabled,
-            coalesce(profile_data->'notification_preferences'->>'quiet_hours_start', '22:00') as start_time,
-            coalesce(profile_data->'notification_preferences'->>'quiet_hours_end', '08:00') as end_time,
-            coalesce(profile_data->'notification_preferences'->>'timezone', 'UTC') as tz
+            coalesce((notification_preferences->>'quiet_hours_enabled')::boolean, false) as enabled,
+            coalesce(notification_preferences->>'quiet_hours_start', '22:00') as start_time,
+            coalesce(notification_preferences->>'quiet_hours_end', '08:00') as end_time,
+            coalesce(notification_preferences->>'timezone', 'UTC') as tz
         from public.users
         where id = p_user_id
     )
@@ -1692,11 +1706,12 @@ begin
         alter publication supabase_realtime drop table notifications;
     end if;
 
-    if not exists (
+    -- No client subscribes to push_subscriptions over Realtime.
+    if exists (
         select 1 from pg_publication_tables
         where pubname = 'supabase_realtime' and tablename = 'push_subscriptions'
     ) then
-        alter publication supabase_realtime add table push_subscriptions;
+        alter publication supabase_realtime drop table push_subscriptions;
     end if;
 end $$;
 
@@ -1824,7 +1839,7 @@ stable
 set search_path = public
 as $$
     select coalesce(
-        (profile_data->'notification_preferences'->>'email_enabled')::boolean,
+        (notification_preferences->>'email_enabled')::boolean,
         false
     )
     from public.users
@@ -1837,10 +1852,7 @@ language sql
 stable
 set search_path = public
 as $$
-    select coalesce(
-        profile_data->'notification_preferences',
-        '{}'::jsonb
-    )
+    select notification_preferences
     from public.users
     where id = p_user_id;
 $$;
@@ -1917,13 +1929,9 @@ set search_path = public
 as $$
 begin
     update public.users
-    set profile_data = jsonb_set(
-        coalesce(profile_data, '{}'::jsonb),
-        '{notification_preferences}',
-        (coalesce(profile_data->'notification_preferences', '{}'::jsonb) - 'email_bounce_info')
-    )
+    set notification_preferences = notification_preferences - 'email_bounce_info'
     where id = p_user_id
-      and profile_data->'notification_preferences' ? 'email_bounce_info';
+      and notification_preferences ? 'email_bounce_info';
 end;
 $$;
 
@@ -1968,14 +1976,9 @@ begin
 
             -- Disable email + store bounce info in preferences
             update public.users
-            set profile_data = jsonb_set(
-                jsonb_set(
-                    coalesce(profile_data, '{}'::jsonb),
-                    '{notification_preferences,email_enabled}',
-                    'false'::jsonb
-                ),
-                '{notification_preferences,email_bounce_info}',
-                jsonb_build_object(
+            set notification_preferences = notification_preferences || jsonb_build_object(
+                'email_enabled', false,
+                'email_bounce_info', jsonb_build_object(
                     'email', v_masked_email,
                     'reason', coalesce(p_reason, 'Email delivery failed'),
                     'bounced_at', now()::text
@@ -2313,7 +2316,7 @@ begin
             u.email as recipient_email,
             u.display_name as recipient_name,
             coalesce(
-                u.profile_data->'notification_preferences'->>'email_frequency',
+                u.notification_preferences->>'email_frequency',
                 'daily'
             ) as frequency
         from public.email_queue eq
@@ -2617,7 +2620,7 @@ begin
         'users_with_email_enabled', (
             select count(*)
             from public.users
-            where (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
+            where (notification_preferences->>'email_enabled')::boolean = true
         )
     );
 end;
@@ -2652,7 +2655,7 @@ declare
     new_prefs jsonb;
     action_description text;
 begin
-    select email, coalesce(profile_data->'notification_preferences', '{}'::jsonb)
+    select email, notification_preferences
     into v_user_email, prefs
     from public.users
     where id = p_user_id;
@@ -2690,11 +2693,7 @@ begin
     end case;
 
     update public.users
-    set profile_data = jsonb_set(
-        coalesce(profile_data, '{}'::jsonb),
-        '{notification_preferences}',
-        new_prefs
-    )
+    set notification_preferences = new_prefs
     where id = p_user_id;
 
     return jsonb_build_object(
@@ -4875,6 +4874,107 @@ ALTER FUNCTION internal.is_user_online(p_user_id uuid) SET search_path = public;
 -- (counters, previews, notifications) bypass RLS on side-effect tables.
 -- search_path is already pinned above; flipping security mode is safe.
 ALTER FUNCTION public.update_user_online_at() SECURITY DEFINER;
+
+----------------------------------------------------
+----------------------------------------------------
+
+/**
+ * Function: update_profile
+ * Saves the owner's profile. Merges only the top-level profile_data keys it is given,
+ * so saving the bio never replaces links another device just wrote. An omitted
+ * name or username keeps its column. Invoker rights: the column grants and users_self_update still apply.
+ */
+CREATE OR REPLACE FUNCTION public.update_profile(
+    p_username text DEFAULT NULL,
+    p_full_name text DEFAULT NULL,
+    p_profile_patch jsonb DEFAULT '{}'::jsonb
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+    v_saved jsonb;
+BEGIN
+    IF (select auth.uid()) IS NULL THEN
+        RAISE EXCEPTION 'unauthenticated' USING errcode = '42501';
+    END IF;
+    IF p_profile_patch IS NULL OR jsonb_typeof(p_profile_patch) <> 'object' THEN
+        RAISE EXCEPTION 'patch_must_be_object' USING errcode = '22023';
+    END IF;
+    UPDATE public.users
+       SET username = coalesce(p_username, username),
+           full_name = coalesce(p_full_name, full_name),
+           profile_data = profile_data || p_profile_patch
+     WHERE id = (select auth.uid())
+     RETURNING jsonb_build_object(
+         'username', username,
+         'full_name', full_name,
+         'profile_data', profile_data
+     ) INTO v_saved;
+    RETURN v_saved;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.update_profile(text, text, jsonb) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.update_profile(text, text, jsonb) TO authenticated;
+
+----------------------------------------------------
+----------------------------------------------------
+
+/**
+ * Function: broadcast_profile_change
+ * Tells every open client of the owner that their profile or settings changed.
+ * The payload carries no values: clients refetch through their own grants.
+ */
+CREATE OR REPLACE FUNCTION public.broadcast_profile_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    PERFORM realtime.send(
+        jsonb_build_object('user_id', NEW.id),
+        'profile_changed',
+        'profile:' || NEW.id::text,
+        TRUE
+    );
+    RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS users_profile_changed ON public.users;
+
+-- The column list and the guard keep the status heartbeat and cron out.
+CREATE TRIGGER users_profile_changed
+AFTER UPDATE OF username, full_name, avatar_url, avatar_updated_at, profile_data, notification_preferences
+ON public.users
+FOR EACH ROW
+WHEN (
+    OLD.username IS DISTINCT FROM NEW.username
+    OR OLD.full_name IS DISTINCT FROM NEW.full_name
+    OR OLD.avatar_url IS DISTINCT FROM NEW.avatar_url
+    OR OLD.avatar_updated_at IS DISTINCT FROM NEW.avatar_updated_at
+    OR OLD.profile_data IS DISTINCT FROM NEW.profile_data
+    OR OLD.notification_preferences IS DISTINCT FROM NEW.notification_preferences
+)
+EXECUTE FUNCTION public.broadcast_profile_change();
+
+DROP POLICY IF EXISTS "profile_topic_access" ON realtime.messages;
+
+CREATE POLICY "profile_topic_access"
+ON realtime.messages
+FOR SELECT
+TO authenticated
+USING (
+  realtime.messages.topic = 'profile:' || (select auth.uid())::text
+);
+
+-- A line comment, not comment on policy: postgres does not own realtime.messages.
+-- profile_topic_access: a user subscribes only to profile:<auth.uid()>, the
+-- private topic broadcast_profile_change() sends to.
 
 
 -- ============================================================================
@@ -8175,18 +8275,20 @@ DECLARE
 BEGIN
     /*
        If _workspace_id is not NULL, filter notifications by channels in that workspace.
-       Otherwise, no workspace filter.
+       Otherwise, no workspace filter. A row with no channel (a system alert) is
+       account-wide, so it passes in every workspace.
     */
 
     -- 1) Count all unread notifications
     SELECT COUNT(*)
     INTO v_unread_count
     FROM public.notifications AS n
-    JOIN public.channels      AS c ON c.id = n.channel_id
+    LEFT JOIN public.channels AS c ON c.id = n.channel_id
     WHERE n.receiver_user_id = auth.uid()
       AND n.readed_at IS NULL
       AND (
           _workspace_id IS NULL
+          OR n.channel_id IS NULL
           OR c.workspace_id = _workspace_id
       );
 
@@ -8194,12 +8296,13 @@ BEGIN
     SELECT COUNT(*)
     INTO v_unread_mention_count
     FROM public.notifications AS n
-    JOIN public.channels      AS c ON c.id = n.channel_id
+    LEFT JOIN public.channels AS c ON c.id = n.channel_id
     WHERE n.receiver_user_id = auth.uid()
       AND n.type = 'mention'
       AND n.readed_at IS NULL
       AND (
           _workspace_id IS NULL
+          OR n.channel_id IS NULL
           OR c.workspace_id = _workspace_id
       );
 
@@ -8225,12 +8328,13 @@ BEGIN
                 'avatar_updated_at',u.avatar_updated_at
             ) AS sender
         FROM public.notifications AS n
-        JOIN public.channels      AS c ON c.id = n.channel_id
+        LEFT JOIN public.channels AS c ON c.id = n.channel_id
         LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
         WHERE n.receiver_user_id = auth.uid()
           AND n.readed_at IS NULL
           AND (
               _workspace_id IS NULL
+              OR n.channel_id IS NULL
               OR c.workspace_id = _workspace_id
           )
         ORDER BY n.created_at DESC
@@ -8259,13 +8363,14 @@ BEGIN
                 'avatar_updated_at',u.avatar_updated_at
             ) AS sender
         FROM public.notifications AS n
-        JOIN public.channels      AS c ON c.id = n.channel_id
+        LEFT JOIN public.channels AS c ON c.id = n.channel_id
         LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
         WHERE n.receiver_user_id = auth.uid()
           AND n.type = 'mention'
           AND n.readed_at IS NULL
           AND (
               _workspace_id IS NULL
+              OR n.channel_id IS NULL
               OR c.workspace_id = _workspace_id
           )
         ORDER BY n.created_at DESC
@@ -8424,11 +8529,12 @@ BEGIN
     SELECT COUNT(*)
     INTO v_unread_count
     FROM public.notifications AS n
-    JOIN public.channels AS c ON c.id = n.channel_id
+    LEFT JOIN public.channels AS c ON c.id = n.channel_id
     WHERE n.receiver_user_id = auth.uid()
       AND n.readed_at IS NULL
       AND (
           _workspace_id IS NULL
+          OR n.channel_id IS NULL
           OR c.workspace_id = _workspace_id
       );
 
@@ -10265,14 +10371,11 @@ begin
     where user_id is not null
       and is_active = true;
 
-    -- Users with email notifications enabled (check profile_data.notification_preferences)
+    -- Missing means off, as in internal.is_email_enabled.
     select count(*) into v_email_enabled
     from public.users
     where deleted_at is null
-      and (
-        (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
-        or profile_data->'notification_preferences'->>'email_enabled' is null -- Default is enabled
-      );
+      and (notification_preferences->>'email_enabled')::boolean = true;
 
     -- Notification read rate
     select
@@ -11064,6 +11167,7 @@ DECLARE
         'notifications_summary', 'get_unread_notif_count',
         'get_unread_notifications_paginated', 'get_channel_notif_state',
         'get_workspace_notifications', 'update_notification_preferences',
+        'get_notification_preferences',
         -- Mentions / DMs
         'fetch_mentioned_users', 'create_direct_message_channel',
         -- Workspace / presence
