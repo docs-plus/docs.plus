@@ -123,17 +123,33 @@ List or search documents. With any of `title`/`keywords`/`description`, runs a f
 | `keywords`    | string | —                | Search term (tokenized)                                                                         |
 | `description` | string | —                | Search term (tokenized)                                                                         |
 | `ownerId`     | uuid   | —                | Filter by owner — **requires** `token` header; must match JWT `sub`                             |
+| `scope`       | string | —                | `all`, `owned` or `joined` — **requires** `token` header. See **List scope** below              |
 | `sort`        | string | `updatedAt_desc` | Allowlisted: `updatedAt_desc`, `createdAt_desc`, `lastOpenedAt_desc`, `title_asc`, `title_desc` |
 | `limit`       | string | `10`             | Page size (1–100)                                                                               |
 | `offset`      | string | `0`              | Pagination offset (≥ 0)                                                                         |
 
 **Auth:** `optionalUser` on the route. When `ownerId` is set, missing or invalid token → `401`; `ownerId !== token.sub` → `403`. Without `ownerId`, no auth is required (fleet list — legacy).
 
-List rows include `readOnly`, `isPrivate`, `createdAt`, and `updatedAt`. Owner live list and Owner Trash list include `preview` and `lastOpenedAt`. Owner live list also includes `isFavorite`. Owner Trash list omits `isFavorite`. Create, slug GET, update, and the public fleet omit `preview` and `lastOpenedAt`.
+List rows include `readOnly`, `isPrivate`, `createdAt`, `updatedAt`, and `isOwner` (`ownerId === token.sub`). Owner live list and Owner Trash list include `preview` and `lastOpenedAt`. Owner live list also includes `isFavorite`. Owner Trash list omits `isFavorite`. Create, slug GET, update, and the public fleet omit `preview` and `lastOpenedAt`.
 
 **Sort:** Optional `sort` query param. Allowed values: `updatedAt_desc` (default), `createdAt_desc`, `lastOpenedAt_desc`, `title_asc`, `title_desc`. The server maps each key to a fixed, allowlisted Prisma `orderBy` (an unknown value falls back to `updatedAt_desc`). Required for the Settings → My Documents sort dropdown — client-side sort breaks paginated Load more. An owner live list pins that user's Favorites first, then applies `sort` inside each group. Trash and the fleet do not pin.
 
 **Private clamp:** Without a verified requester (`ownerId === token.sub`), private rows are excluded from both the results and `total` — see **Unauthenticated fleet list** above.
+
+**List scope:** Settings → Documents sends `scope`. Without it, the list keeps the legacy behaviour: `ownerId` gives the owner list, and no `ownerId` gives the public fleet.
+
+| `scope`  | Rows                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------- |
+| `owned`  | The caller's live documents. Same as `ownerId=<sub>`.                                                   |
+| `all`    | `owned`, plus every joined row. One merged list.                                                        |
+| `joined` | Rows in the caller's active `workspace_members` set that the caller does not own. Ownerless rows count. |
+
+- A joined row is always public and live. A private or deleted document the caller does not own is never listed, in the page or in `total`. Trash stays owner-only.
+- The joined set is read on the server from `token.sub` through the service role, by exact-case `workspace_id` = `documentId`. The client never sends ids.
+- Search composes with the scope. A search lists only matching rows inside it.
+- Every scoped row carries `isOwner` and `preview`. A non-owned row also carries `owner` when it has one. It never carries `lastOpenedAt` or `isFavorite`.
+- Under `all`, only the caller's own Favorites pin first. Under `lastOpenedAt_desc`, a row the caller does not own sorts as never opened.
+- No `token` → `401`. `scope` with `deleted=true` → `400`. `ownerId` that is not `token.sub` → `403`. The membership read fails → `503 SERVICE_UNAVAILABLE`, never an empty list.
 
 > **Semantic note:** `updatedAt` on `DocumentMetadata` reflects metadata changes (title, flags, keywords), not every collaborative body save. The UI label “Last modified” matches Google Docs parity.
 

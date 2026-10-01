@@ -31,10 +31,12 @@ export const documentQuerySchema = z.object({
   title: z.string().optional(),
   keywords: z.string().optional(),
   description: z.string().optional(),
-  // Filter by owner — used by the Settings → Documents "Mine" pill.
+  // Owner list filter; must equal the token subject.
   ownerId: z.string().uuid().optional(),
   // Trash view — the owner's soft-deleted docs, auto-scoped to the token subject.
   deleted: z.enum(['true', 'false']).optional(),
+  // Settings list scope. No default: absent keeps the legacy owner or fleet list.
+  scope: z.enum(['all', 'owned', 'joined']).optional(),
   // Allowlisted sort — maps to a fixed Prisma orderBy in the service.
   sort: z
     .enum(['updatedAt_desc', 'createdAt_desc', 'lastOpenedAt_desc', 'title_asc', 'title_desc'])

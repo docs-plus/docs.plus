@@ -45,6 +45,9 @@ export interface SearchDocumentsParams {
   requesterId?: string
   // Trash view: return the owner's soft-deleted docs (deletedAt set) instead of live ones.
   deleted?: boolean
+  // The `all` / `joined` list scope. `documentIds` is the caller's active membership set,
+  // read on the server from token.sub, never from the client. Needs `requesterId`.
+  membership?: { scope: 'all' | 'joined'; documentIds: string[] }
   sort?: DocumentSortKey
   limit: number
   offset: number

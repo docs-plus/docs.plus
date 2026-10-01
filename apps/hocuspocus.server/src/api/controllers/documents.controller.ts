@@ -2,6 +2,7 @@ import { fail, ok } from '../../http/envelope'
 import { sendNewDocumentNotification } from '../../lib/email/document-notification'
 import { AppError, getErrorResponse } from '../../lib/errors'
 import { captureHttpError } from '../../lib/instrument'
+import { getJoinedDocumentIds } from '../../lib/joinedDocuments'
 import { documentsControllerLogger } from '../../lib/logger'
 import { resolvePrivateAccess } from '../../lib/privateAccess'
 import { getOwnerProfile } from '../../lib/profiles'
@@ -14,6 +15,7 @@ import type {
   TrashRestoreInput,
   UpdateDocumentMetadataInput
 } from '../../schemas/document.schema'
+import type { SearchDocumentsParams } from '../../types'
 import type { AppContext } from '../../types/hono.types'
 import { authUnavailableResponse } from '../middleware/auth'
 import * as documentsService from '../services/documents.service'
@@ -127,6 +129,28 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
     return fail(c, 401, 'UNAUTHORIZED', 'Authentication required')
   }
 
+  const scope = query.scope
+  if (scope) {
+    if (!requesterId) {
+      if (c.get('authUnavailable')) return authUnavailableResponse(c)
+      return fail(c, 401, 'UNAUTHORIZED', 'Authentication required')
+    }
+    if (wantsTrash) {
+      return fail(c, 400, 'BAD_REQUEST', 'scope cannot be combined with deleted=true')
+    }
+  }
+
+  // Read from the token subject only; a failed read is a 503, never an empty list.
+  let membership: SearchDocumentsParams['membership']
+  if (requesterId && (scope === 'all' || scope === 'joined')) {
+    try {
+      membership = { scope, documentIds: await getJoinedDocumentIds(requesterId) }
+    } catch (error) {
+      documentsControllerLogger.warn({ err: error }, 'Joined documents read failed')
+      return fail(c, 503, 'SERVICE_UNAVAILABLE', 'Joined documents are unavailable')
+    }
+  }
+
   const limit = parseInt(query.limit || '10', 10)
   const offset = parseInt(query.offset || '0', 10)
 
@@ -135,9 +159,11 @@ export const listDocuments = async (c: AppContext): Promise<Response> => {
       title: query.title,
       keywords: query.keywords,
       description: query.description,
-      ownerId: wantsTrash ? requesterId : query.ownerId,
+      ownerId:
+        wantsTrash || scope === 'owned' ? requesterId : membership ? undefined : query.ownerId,
       requesterId,
       deleted: wantsTrash,
+      membership,
       sort: query.sort,
       limit,
       offset

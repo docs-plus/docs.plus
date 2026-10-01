@@ -63,11 +63,13 @@ export const documentsPaths: OpenApiPaths = {
       operationId: 'listDocuments',
       summary: 'List or search documents',
       description:
-        "Full-text search when any of `title` / `keywords` / `description` is present, otherwise a plain list. Without a verified `ownerId === token.sub` requester, private rows are clamped out of both the page and `total`. `deleted=true` is the caller's own Trash and requires a token. An Owner live list pins that user's Favorites first, then applies `sort`. Those rows include `isFavorite`, `preview`, and `lastOpenedAt`. Owner Trash includes `preview` and `lastOpenedAt` and omits `isFavorite`. The public fleet omits all three.",
+        "Full-text search when any of `title` / `keywords` / `description` is present, otherwise a plain list. Without a verified `ownerId === token.sub` requester, private rows are clamped out of both the page and `total`. `deleted=true` is the caller's own Trash and requires a token. An Owner live list pins that user's Favorites first, then applies `sort`. Those rows include `isFavorite`, `preview`, and `lastOpenedAt`. Owner Trash includes `preview` and `lastOpenedAt` and omits `isFavorite`. The public fleet omits all three. `scope=all` adds the caller's joined rows, which are always public and live; `scope=joined` lists only those. A row the caller does not own never carries `lastOpenedAt` or `isFavorite`, and every row carries `isOwner`.",
       tags,
       security: optionalUserSecurity,
       parameters: toParameters(documentQuerySchema, 'query', {
         ownerId: 'Requires a matching `token` header; a mismatch against the JWT subject is a 403.',
+        scope:
+          'Requires a `token` header. Absent keeps the legacy owner or fleet list. With `deleted=true` it is a 400. A failed membership read is a 503.',
         sort: 'Allowlisted; an unknown value falls back to `updatedAt_desc`.',
         limit: 'Page size, 1–100. Out of range is a 400 from the service, not the validator.',
         offset: 'Pagination offset, >= 0. Out of range is a 400 from the service.'
@@ -79,7 +81,8 @@ export const documentsPaths: OpenApiPaths = {
         '400': { $ref: '#/components/responses/ValidationError' },
         '401': { $ref: '#/components/responses/Unauthorized' },
         '403': { $ref: '#/components/responses/Forbidden' },
-        '429': rateLimitedRef
+        '429': rateLimitedRef,
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
       }
     },
     post: {

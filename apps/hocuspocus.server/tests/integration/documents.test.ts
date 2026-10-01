@@ -310,6 +310,237 @@ describe('Documents API', () => {
     })
   })
 
+  describe('GET /api/documents?scope', () => {
+    // A small in-memory Prisma over the where shapes the scoped list writes. Comparisons
+    // follow SQL: `{ not: x }` and `{ in }` are never true on NULL, which is the trap.
+    type Row = Record<string, any> & { favorites: { userId: string }[] }
+
+    const matches = (row: Record<string, any>, where: any): boolean =>
+      Object.entries(where ?? {}).every(([key, cond]: [string, any]) => {
+        if (key === 'AND') return cond.every((w: any) => matches(row, w))
+        if (key === 'OR') return cond.some((w: any) => matches(row, w))
+        if (key === 'favorites' && cond.some)
+          return row.favorites.some((f: any) => matches(f, cond.some))
+        if (key === 'favorites' && cond.none)
+          return !row.favorites.some((f: any) => matches(f, cond.none))
+        const value = row[key]
+        if (cond === null || typeof cond !== 'object') return value === cond
+        if ('in' in cond) return value != null && cond.in.includes(value)
+        if ('not' in cond)
+          return cond.not === null ? value != null : value != null && value !== cond.not
+        if ('contains' in cond) return typeof value === 'string' && value.includes(cond.contains)
+        if ('search' in cond) return typeof value === 'string' && value.includes(cond.search)
+        throw new Error(`Unsupported filter on ${key}`)
+      })
+
+    const compare = (orderBy: any) => (a: Row, b: Row) => {
+      for (const term of [orderBy].flat()) {
+        const [field, spec] = Object.entries(term)[0] as [string, any]
+        if (typeof spec === 'object' && '_count' in spec) throw new Error('Unexpected count order')
+        const dir = typeof spec === 'string' ? spec : spec.sort
+        const [av, bv] = [a[field], b[field]]
+        if (av === bv) continue
+        if (av == null) return 1
+        if (bv == null) return -1
+        return (av < bv ? -1 : 1) * (dir === 'desc' ? -1 : 1)
+      }
+      return 0
+    }
+
+    const project = (row: Row, select: any) =>
+      Object.fromEntries(
+        Object.entries(select).flatMap(([key, on]: [string, any]) =>
+          key === 'favorites'
+            ? [[key, row.favorites.filter((f) => matches(f, on.where))]]
+            : on
+              ? [[key, row[key]]]
+              : []
+        )
+      )
+
+    const fakePrisma = (rows: Row[]) =>
+      ({
+        ...createMockPrisma(),
+        documentMetadata: {
+          count: async ({ where }: any) => rows.filter((r) => matches(r, where)).length,
+          findMany: async ({ where, orderBy, select, skip = 0, take }: any) =>
+            rows
+              .filter((r) => matches(r, where))
+              .sort(compare(orderBy))
+              .slice(skip, skip + take)
+              .map((r) => project(r, select))
+        }
+      }) as any
+
+    const day = (n: number) => new Date(Date.UTC(2026, 8, n))
+    const row = (slug: string, fields: Partial<Row> = {}): Row => ({
+      id: 0,
+      slug,
+      title: slug,
+      description: '',
+      documentId: `id-${slug}`,
+      keywords: '',
+      ownerId: null,
+      readOnly: false,
+      isPrivate: false,
+      createdAt: day(1),
+      updatedAt: day(1),
+      deletedAt: null,
+      lastOpenedAt: null,
+      preview: { heading: null, lines: [] },
+      favorites: [],
+      ...fields
+    })
+
+    const ME = 'user-123'
+    const OTHER = 'user-456'
+    const rows: Row[] = [
+      row('own-opened', {
+        ownerId: ME,
+        title: 'Garden notes',
+        updatedAt: day(2),
+        lastOpenedAt: day(20)
+      }),
+      row('own-private', { ownerId: ME, isPrivate: true, updatedAt: day(3) }),
+      row('own-fav', { ownerId: ME, updatedAt: day(4), favorites: [{ userId: ME }] }),
+      row('own-deleted', { ownerId: ME, deletedAt: day(5) }),
+      // The owner's star and open stamp: neither may pin, sort or show for the caller.
+      row('other-public', {
+        ownerId: OTHER,
+        title: 'Budget',
+        updatedAt: day(9),
+        lastOpenedAt: day(29),
+        favorites: [{ userId: OTHER }]
+      }),
+      row('other-private', { ownerId: OTHER, title: 'Garden secret', isPrivate: true }),
+      row('other-deleted', { ownerId: OTHER, deletedAt: day(6) }),
+      row('ownerless', { title: 'Garden plan', updatedAt: day(8) }),
+      row('ownerless-private', { isPrivate: true }),
+      row('stranger', { ownerId: OTHER })
+    ]
+    const memberOf = [
+      'own-opened',
+      'other-public',
+      'other-private',
+      'other-deleted',
+      'ownerless',
+      'ownerless-private'
+    ].map((slug) => `id-${slug}`)
+
+    const list = (scope: 'all' | 'joined', extra: Record<string, unknown> = {}) =>
+      searchDocuments(fakePrisma(rows), {
+        requesterId: ME,
+        membership: { scope, documentIds: memberOf },
+        limit: 100,
+        offset: 0,
+        ...extra
+      })
+    const slugs = (result: { docs: { slug: string }[] }) => result.docs.map((d) => d.slug)
+
+    test('all lists owned rows plus public live memberships, never private or deleted ones', async () => {
+      for (const sort of ['updatedAt_desc', 'lastOpenedAt_desc', 'title_asc'] as const) {
+        const result = await list('all', { sort })
+        expect(slugs(result).sort()).toEqual(
+          ['other-public', 'own-fav', 'own-opened', 'own-private', 'ownerless'].sort()
+        )
+        expect(result.total).toBe(5)
+      }
+    })
+
+    test('joined keeps ownerless rows and drops owned, private and deleted ones', async () => {
+      const result = await list('joined')
+      expect(slugs(result)).toEqual(['other-public', 'ownerless'])
+      expect(result.total).toBe(2)
+    })
+
+    test('search composes with the scope instead of replacing it', async () => {
+      expect(slugs(await list('joined', { title: 'Garden' }))).toEqual(['ownerless'])
+      const all = await list('all', { title: 'Garden' })
+      expect(slugs(all).sort()).toEqual(['own-opened', 'ownerless'])
+      expect(all.total).toBe(2)
+    })
+
+    test("pins only the caller's favorites and strips owner fields from non-owned rows", async () => {
+      const result = await list('all')
+      expect(slugs(result)).toEqual([
+        'own-fav',
+        'other-public',
+        'ownerless',
+        'own-private',
+        'own-opened'
+      ])
+      const bySlug = Object.fromEntries(result.docs.map((d: any) => [d.slug, d]))
+      expect(bySlug['own-fav']).toMatchObject({ isOwner: true, isFavorite: true })
+      expect(bySlug['own-opened'].lastOpenedAt).toEqual(day(20))
+      for (const slug of ['other-public', 'ownerless']) {
+        expect(bySlug[slug].isOwner).toBe(false)
+        expect(bySlug[slug]).not.toHaveProperty('isFavorite')
+        expect(bySlug[slug]).not.toHaveProperty('lastOpenedAt')
+      }
+    })
+
+    test('Last opened sorts a non-owned row as never opened', async () => {
+      const result = await list('all', { sort: 'lastOpenedAt_desc' })
+      expect(slugs(result)).toEqual([
+        'own-fav',
+        'own-opened',
+        'other-public',
+        'ownerless',
+        'own-private'
+      ])
+    })
+
+    test('offset pages walk the tiers without gaps or repeats', async () => {
+      const whole = slugs(await list('all', { sort: 'lastOpenedAt_desc' }))
+      const paged: string[] = []
+      for (let offset = 0; offset < whole.length; offset += 2) {
+        paged.push(...slugs(await list('all', { sort: 'lastOpenedAt_desc', limit: 2, offset })))
+      }
+      expect(paged).toEqual(whole)
+    })
+
+    test('scope requires a token', async () => {
+      const response = await testServer.get('/api/documents?scope=all')
+      expect(response.status).toBe(401)
+    })
+
+    test('scope cannot be combined with Trash', async () => {
+      const response = await testServer.get('/api/documents?scope=joined&deleted=true', {
+        token: 'valid-test-token'
+      })
+      expect(response.status).toBe(400)
+    })
+
+    test('fails closed with 503 when membership cannot be read', async () => {
+      let listed = false
+      mockPrisma.documentMetadata.findMany = async () => {
+        listed = true
+        return []
+      }
+      // The suite's service-role client is null, so the membership read fails.
+      const response = await testServer.get('/api/documents?scope=all', {
+        token: 'valid-test-token'
+      })
+      const data = await response.json()
+      expect(response.status).toBe(503)
+      expect(data.error).toHaveProperty('code', 'SERVICE_UNAVAILABLE')
+      expect(listed).toBe(false)
+    })
+
+    test('scope=owned is the owner live list of the token subject', async () => {
+      let captured: any
+      mockPrisma.documentMetadata.findMany = async (args: any) => {
+        captured = args
+        return []
+      }
+      const response = await testServer.get('/api/documents?scope=owned', {
+        token: 'valid-test-token'
+      })
+      expect(response.status).toBe(200)
+      expect(captured.where).toEqual({ ownerId: 'user-123', deletedAt: null })
+    })
+  })
+
   describe('GET /api/documents/:slug', () => {
     test('should get document by slug when exists', async () => {
       mockPrisma.documentMetadata.findUnique = async () => mockDocumentMetadata

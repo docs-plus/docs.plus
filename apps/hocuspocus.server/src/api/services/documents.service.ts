@@ -221,6 +221,101 @@ function buildDocumentsOrderBy(args: {
   return [{ favorites: { _count: 'desc' as const } }, sortOrder]
 }
 
+type DocumentWhere = Prisma.DocumentMetadataWhereInput
+type DocumentOrderBy =
+  | Prisma.DocumentMetadataOrderByWithRelationInput
+  | Prisma.DocumentMetadataOrderByWithRelationInput[]
+type ListTier = { where: DocumentWhere; orderBy: DocumentOrderBy }
+
+/**
+ * The `all` and `joined` scopes. A row the caller does not own must be public and live.
+ * The tiers stand in for orderings Prisma cannot write: pin only the caller's own stars,
+ * and sort a non-owned row as never opened. `ownerId: { not }` drops NULL, so say NULL too.
+ */
+function buildMemberScopeTiers(args: {
+  scope: 'all' | 'joined'
+  userId: string
+  documentIds: string[]
+  searchClauses: DocumentWhere[] | null
+  sort?: SearchDocumentsParams['sort']
+}): ListTier[] {
+  const { userId, sort } = args
+  const joinedArm: DocumentWhere = {
+    documentId: { in: args.documentIds },
+    isPrivate: false,
+    deletedAt: null
+  }
+  const notOwned: DocumentWhere[] = [{ ownerId: null }, { ownerId: { not: userId } }]
+  const scopeWhere: DocumentWhere =
+    args.scope === 'all'
+      ? { OR: [{ ownerId: userId, deletedAt: null }, joinedArm] }
+      : { AND: [joinedArm, { OR: notOwned }] }
+  const where = (...more: DocumentWhere[]): DocumentWhere => ({
+    AND: [...(args.searchClauses ? [{ OR: args.searchClauses }] : []), scopeWhere, ...more]
+  })
+
+  const orderBy = buildDocumentsOrderBy({ sort, ownerLiveList: false })
+  if (args.scope === 'joined') return [{ where: where(), orderBy }]
+
+  const mine = { userId }
+  const pinned = where({ ownerId: userId }, { favorites: { some: mine } })
+  const unpinned: DocumentWhere[] = [...notOwned, { favorites: { none: mine } }]
+  if (sort !== 'lastOpenedAt_desc') {
+    return [
+      { where: pinned, orderBy },
+      { where: where({ OR: unpinned }), orderBy }
+    ]
+  }
+
+  return [
+    { where: pinned, orderBy: { lastOpenedAt: { sort: 'desc', nulls: 'last' } } },
+    {
+      where: where(
+        { ownerId: userId },
+        { favorites: { none: mine } },
+        { lastOpenedAt: { not: null } }
+      ),
+      orderBy: { lastOpenedAt: 'desc' }
+    },
+    {
+      where: where({ OR: [...notOwned, { favorites: { none: mine }, lastOpenedAt: null }] }),
+      orderBy
+    }
+  ]
+}
+
+/** One offset page across ordered tiers; `total` is the sum of the tier counts. */
+async function findTieredPage<S extends Prisma.DocumentMetadataSelect>(
+  prisma: PrismaClient,
+  tiers: ListTier[],
+  select: S,
+  offset: number,
+  limit: number
+) {
+  const counts = await Promise.all(
+    tiers.map((tier) => prisma.documentMetadata.count({ where: tier.where }))
+  )
+  const docs: Prisma.DocumentMetadataGetPayload<{ select: S }>[] = []
+  let skip = offset
+  for (const [index, tier] of tiers.entries()) {
+    if (docs.length >= limit) break
+    if (skip >= counts[index]) {
+      skip -= counts[index]
+      continue
+    }
+    const page = await prisma.documentMetadata.findMany({
+      where: tier.where,
+      orderBy: tier.orderBy,
+      select,
+      skip,
+      take: limit - docs.length
+    })
+    docs.push(...(page as Prisma.DocumentMetadataGetPayload<{ select: S }>[]))
+    skip = 0
+  }
+  return [docs, counts.reduce((sum, count) => sum + count, 0)] as const
+}
+
 export const searchDocuments = async (prisma: PrismaClient, params: SearchDocumentsParams) => {
   const {
     title,
@@ -230,6 +325,7 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     requesterId,
     deleted,
     sort,
+    membership,
     limit,
     offset
   } = params
@@ -263,15 +359,17 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
     const ownerTrashList = Boolean(requesterId && ownerId && requesterId === ownerId && deleted)
     const ownerPreviewList = ownerLiveList || ownerTrashList
     const orderBy = buildDocumentsOrderBy({ deleted, sort, ownerLiveList })
+    const ownerFavoritesSelect = {
+      ...OWNER_LIST_SELECT,
+      favorites: { where: { userId: requesterId }, select: { userId: true } }
+    }
     const listSelect = ownerLiveList
-      ? {
-          ...OWNER_LIST_SELECT,
-          favorites: { where: { userId: requesterId }, select: { userId: true } }
-        }
+      ? ownerFavoritesSelect
       : ownerTrashList
         ? OWNER_LIST_SELECT
         : PUBLIC_METADATA_SELECT
 
+    let searchClauses: Prisma.DocumentMetadataWhereInput[] | null = null
     if (title || reqKeywords || description) {
       // to_tsquery (the `search` clauses) throws a 500 on operator punctuation
       // like `C++` or `foo)`. Reduce each token to bare word characters, so bad
@@ -285,13 +383,34 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
         .filter((x) => x && x !== 'undefined')
 
       const searchQuery = searchTokens.join(' & ')
+      searchClauses = [
+        { title: { contains: searchQuery } },
+        { title: { search: searchQuery } },
+        { keywords: { search: searchQuery } },
+        { description: { search: searchQuery } }
+      ]
+    }
+
+    if (membership) {
+      // The controller reads `membership` from token.sub, so it never comes without one.
+      if (!requesterId) throw new Error('A membership list needs requesterId')
+      if (membership.scope === 'joined' && membership.documentIds.length === 0) {
+        return { docs: [], total: 0 }
+      }
+      const tiers = buildMemberScopeTiers({
+        ...membership,
+        userId: requesterId,
+        searchClauses,
+        sort
+      })
+      const memberSelect =
+        membership.scope === 'all'
+          ? ownerFavoritesSelect
+          : { ...PUBLIC_METADATA_SELECT, preview: true as const }
+      ;[docs, total] = await findTieredPage(prisma, tiers, memberSelect, offset, limit)
+    } else if (searchClauses) {
       const searchWhere = {
-        OR: [
-          { title: { contains: searchQuery } },
-          { title: { search: searchQuery } },
-          { keywords: { search: searchQuery } },
-          { description: { search: searchQuery } }
-        ],
+        OR: searchClauses,
         ...(ownerWhere ?? {}),
         ...privacyWhere,
         ...deletedWhere
@@ -322,6 +441,7 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       ])
     }
 
+    const previewList = ownerPreviewList || Boolean(membership)
     const listed = docs.map((doc) => {
       const {
         favorites,
@@ -331,11 +451,18 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       } = doc as typeof doc & {
         favorites?: { userId: string }[]
         preview?: unknown
+        lastOpenedAt?: Date | null
       }
+      const isOwner = Boolean(requesterId) && rest.ownerId === requesterId
+      // A row the caller does not own never carries the owner's open stamp.
+      if (membership && !isOwner) delete rest.lastOpenedAt
       return {
         ...rest,
-        ...(ownerLiveList ? { isFavorite: (favorites?.length ?? 0) > 0 } : {}),
-        ...(ownerPreviewList ? { preview: parseDocumentGridPreview(rawPreview) } : {}),
+        isOwner,
+        ...(ownerLiveList || (membership && isOwner)
+          ? { isFavorite: (favorites?.length ?? 0) > 0 }
+          : {}),
+        ...(previewList ? { preview: parseDocumentGridPreview(rawPreview) } : {}),
         keywords: keywords
           ? keywords
               .split(',')
@@ -345,7 +472,8 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       }
     })
 
-    const filled = ownerPreviewList
+    // Every listed row is one the caller may read, so the fill never writes past that.
+    const filled = previewList
       ? await fillMissingDocumentPreviews(
           prisma,
           listed.filter((doc) => doc.preview == null).map((doc) => doc.documentId)

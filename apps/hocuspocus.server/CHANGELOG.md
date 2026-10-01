@@ -206,6 +206,18 @@ This file is the operator and API changelog. The pad product lives in the [root 
   fewer than 2 replicas up for 5 minutes. A lost replica's `up` series
   vanishes, so the target-down rule cannot see it.
 
+- **`GET /api/documents` takes `scope=all|owned|joined`.** Settings ›
+  Documents uses it to list owned and joined documents together. A joined
+  document is one the caller opened while signed in and does not own. An
+  ownerless document counts. The server reads the caller's memberships from
+  the token through the service role, so the client never sends ids. A
+  private or deleted document the caller does not own is never listed. Only
+  the caller's own Favorites pin first. A row the caller does not own sorts as
+  never opened and never carries `lastOpenedAt`. `scope` needs a `token`
+  (`401` without one) and refuses `deleted=true` (`400`). A failed membership
+  read answers `503 SERVICE_UNAVAILABLE`, never an empty list. Deploy this
+  server before the webapp.
+
 ### Changed
 
 - **Admin notification stats read `users.notification_preferences`.** Push the
