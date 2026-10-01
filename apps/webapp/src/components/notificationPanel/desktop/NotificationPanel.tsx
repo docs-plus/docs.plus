@@ -57,7 +57,6 @@ export const NotificationPanel = ({ variant = 'popover' }: NotificationPanelProp
         errorState={
           <EmptyState tone="error" title="Couldn’t load notifications." onRetry={retry} />
         }
-        endMessage="No more notifications"
       />
     </PanelSurfaceShell>
   )

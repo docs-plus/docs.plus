@@ -51,7 +51,6 @@ export const BookmarkPanel = ({ variant = 'popover' }: BookmarkPanelProps) => {
         }
         isError={isError}
         errorState={<EmptyState tone="error" title="Couldn’t load bookmarks." onRetry={retry} />}
-        endMessage="No more bookmarks"
       />
     </PanelSurfaceShell>
   )

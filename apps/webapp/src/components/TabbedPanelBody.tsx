@@ -28,7 +28,6 @@ type TabbedPanelBodyProps<TTab extends string, TItem> = {
   isError?: boolean
   /** Shown after loading and before empty: `EmptyState tone="error"` with Try again. */
   errorState?: ReactNode
-  endMessage: string
 }
 
 export function TabbedPanelBody<TTab extends string, TItem>({
@@ -47,8 +46,7 @@ export function TabbedPanelBody<TTab extends string, TItem>({
   loadingSkeleton,
   emptyState,
   isError = false,
-  errorState,
-  endMessage
+  errorState
 }: TabbedPanelBodyProps<TTab, TItem>) {
   const isSheet = variant === 'sheet'
   const isEmpty = !isLoading && items.length === 0
@@ -101,10 +99,6 @@ export function TabbedPanelBody<TTab extends string, TItem>({
                 <div ref={sentinelRef} className="flex justify-center py-3">
                   {isLoadingMore && <div className="loading loading-spinner loading-sm" />}
                 </div>
-              )}
-
-              {!hasMore && (
-                <p className="text-base-content/60 py-3 text-center text-xs">{endMessage}</p>
               )}
             </div>
           )}
