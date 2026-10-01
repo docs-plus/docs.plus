@@ -7,9 +7,9 @@ import Toggle from '@components/ui/Toggle'
 import { useCloseAfterHold } from '@hooks/useCloseAfterHold'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
-import { useStore } from '@stores'
+import { type SheetDataMap, useSheetStore, useStore } from '@stores'
 import { twMerge } from '@utils/twMerge'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import {
   LuCheck,
   LuCopy,
@@ -31,8 +31,10 @@ import type { OwnedDocument } from '../types'
 
 export interface DocumentRowMenuProps {
   doc: OwnedDocument
-  /** The one list this menu patches. Both call sites already hold it whole. */
+  /** The open list. The menu writes every list of `scope.userId`. */
   scope: DocumentsListScope
+  /** A non-owned row (joined or ownerless) offers only Open in new tab and Copy link. */
+  isOwner: boolean
   onOpenDocument?: () => void
   /** Menu delegates to the row/section (inline rename mode / rename dialog). */
   onRename?: () => void
@@ -45,13 +47,14 @@ export interface DocumentRowMenuProps {
 function RowMenuItems({
   doc,
   scope,
+  isOwner,
   onRename,
   onDelete,
   close,
   rowClassName
 }: DocumentRowMenuProps & { close: () => void; rowClassName?: string }) {
   const { documentId, slug, title, isPrivate, readOnly, isFavorite } = doc
-  const cache = useOwnerDocumentsCache(scope)
+  const cache = useOwnerDocumentsCache(scope.userId)
   const { duplicate, isPending: isDuplicating } = useDuplicateDocument()
   const { toggleFavorite, isPending: isFavoriting } = useToggleDocumentFavorite()
   const { setPrivate, setReadOnly, isControlDisabled } = useDocumentAccessMutation({
@@ -155,88 +158,96 @@ function RowMenuItems({
         </ContextMenuRowButton>
       )}
 
-      <ContextMenuRowButton
-        icon={<LuPencilLine size={16} />}
-        rowClassName={rowClassName}
-        onClick={startRename}>
-        Rename
-      </ContextMenuRowButton>
+      {isOwner && (
+        <>
+          <ContextMenuRowButton
+            icon={<LuPencilLine size={16} />}
+            rowClassName={rowClassName}
+            onClick={startRename}>
+            Rename
+          </ContextMenuRowButton>
 
-      <ContextMenuRowButton
-        icon={<LuCopy size={16} />}
-        disabled={isDuplicating}
-        rowClassName={rowClassName}
-        onClick={runDuplicate}>
-        Duplicate
-      </ContextMenuRowButton>
+          <ContextMenuRowButton
+            icon={<LuCopy size={16} />}
+            disabled={isDuplicating}
+            rowClassName={rowClassName}
+            onClick={runDuplicate}>
+            Duplicate
+          </ContextMenuRowButton>
 
-      <ContextMenuRowButton
-        icon={<LuStar size={16} className={isFavorite ? 'text-accent fill-accent' : undefined} />}
-        disabled={isFavoriting}
-        rowClassName={rowClassName}
-        onClick={runToggleFavorite}>
-        {isFavorite ? 'Unfavorite' : 'Favorite'}
-      </ContextMenuRowButton>
+          <ContextMenuRowButton
+            icon={
+              <LuStar size={16} className={isFavorite ? 'text-accent fill-accent' : undefined} />
+            }
+            disabled={isFavoriting}
+            rowClassName={rowClassName}
+            onClick={runToggleFavorite}>
+            {isFavorite ? 'Unfavorite' : 'Favorite'}
+          </ContextMenuRowButton>
 
-      <ContextMenuDivider as="div" />
+          <ContextMenuDivider as="div" />
 
-      <div className="rounded-field flex items-start justify-between gap-2.5 px-2.5 py-2">
-        <span className="flex min-w-0 items-start gap-2.5">
-          <LuLock size={16} className="text-base-content/70 mt-0.5 shrink-0" />
-          <span className="flex min-w-0 flex-col">
-            <span className="text-sm font-medium">Private</span>
-            <span className="text-meta text-base-content/60">Only you can open this document.</span>
-          </span>
-        </span>
-        <Toggle
-          size="sm"
-          variant="primary"
-          className="shrink-0"
-          checked={isPrivate}
-          disabled={isControlDisabled('isPrivate')}
-          onChange={(e) => {
-            cancel()
-            setPrivate(e.target.checked)
-          }}
-          aria-label={`Make “${label}” private`}
-        />
-      </div>
-
-      <div className="rounded-field flex items-center justify-between gap-2.5 px-2.5 py-2">
-        <span className="flex min-w-0 items-center gap-2.5">
-          <LuEye size={16} className="text-base-content/70 shrink-0" />
-          <span className="flex min-w-0 flex-col">
-            <span className="text-sm font-medium">Read-only</span>
-            {isPrivate ? (
-              <span className="text-meta text-base-content/60">
-                Not used while the document is private.
+          <div className="rounded-field flex items-start justify-between gap-2.5 px-2.5 py-2">
+            <span className="flex min-w-0 items-start gap-2.5">
+              <LuLock size={16} className="text-base-content/70 mt-0.5 shrink-0" />
+              <span className="flex min-w-0 flex-col">
+                <span className="text-sm font-medium">Private</span>
+                <span className="text-meta text-base-content/60">
+                  Only you can open this document.
+                </span>
               </span>
-            ) : null}
-          </span>
-        </span>
-        <Toggle
-          size="sm"
-          variant="primary"
-          className="shrink-0"
-          checked={readOnly}
-          disabled={isControlDisabled('readOnly')}
-          onChange={(e) => {
-            cancel()
-            setReadOnly(e.target.checked)
-          }}
-          aria-label={`Make “${label}” read-only`}
-        />
-      </div>
+            </span>
+            <Toggle
+              size="sm"
+              variant="primary"
+              className="shrink-0"
+              checked={isPrivate}
+              disabled={isControlDisabled('isPrivate')}
+              onChange={(e) => {
+                cancel()
+                setPrivate(e.target.checked)
+              }}
+              aria-label={`Make “${label}” private`}
+            />
+          </div>
 
-      <ContextMenuDivider as="div" />
+          <div className="rounded-field flex items-center justify-between gap-2.5 px-2.5 py-2">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <LuEye size={16} className="text-base-content/70 shrink-0" />
+              <span className="flex min-w-0 flex-col">
+                <span className="text-sm font-medium">Read-only</span>
+                {isPrivate ? (
+                  <span className="text-meta text-base-content/60">
+                    Not used while the document is private.
+                  </span>
+                ) : null}
+              </span>
+            </span>
+            <Toggle
+              size="sm"
+              variant="primary"
+              className="shrink-0"
+              checked={readOnly}
+              disabled={isControlDisabled('readOnly')}
+              onChange={(e) => {
+                cancel()
+                setReadOnly(e.target.checked)
+              }}
+              aria-label={`Make “${label}” read-only`}
+            />
+          </div>
 
-      <ContextMenuRowButton
-        icon={<LuTrash2 size={16} />}
-        variant="danger"
-        rowClassName={rowClassName}
-        onClick={removeDocument}>
-        Delete
-      </ContextMenuRowButton>
+          <ContextMenuDivider as="div" />
+
+          <ContextMenuRowButton
+            icon={<LuTrash2 size={16} />}
+            variant="danger"
+            rowClassName={rowClassName}
+            onClick={removeDocument}>
+            Delete
+          </ContextMenuRowButton>
+        </>
+      )}
     </>
   )
 }
@@ -250,71 +261,75 @@ function RowMenuPopoverPanel(props: DocumentRowMenuProps) {
   )
 }
 
-/**
- * In-tree, not portaled. The settings modal's focus trap and outside-press dismiss must
- * treat the sheet as inside. The full-screen blurred overlay is the fixed containing block.
- */
-function RowMenuActionSheet(props: DocumentRowMenuProps & { onClose: () => void }) {
-  const { onClose } = props
-  const label = props.doc.title ?? props.doc.slug
-  const sheetRef = useRef<HTMLDivElement>(null)
+type DocumentRowMenuSheetData = SheetDataMap['documentRowMenu']
 
-  useEffect(() => {
-    sheetRef.current?.focus()
-  }, [])
+/** Phone body of the house `documentRowMenu` sheet (`BottomSheet` registry). */
+export function DocumentRowMenuSheet({
+  mountPoint: _mountPoint,
+  ...props
+}: DocumentRowMenuSheetData) {
+  const closeSheet = useSheetStore((state) => state.closeSheet)
 
-  // Capture-phase Escape closes the sheet before the settings modal's own dismiss sees it.
-  // Never close while a GlobalDialog confirm (Private ON, delete) is stacked above the sheet.
+  // The sheet and Settings both dismiss on a document keydown, so one Escape closed both.
+  // Capture on window runs first and stops it. A GlobalDialog confirm above owns Escape.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      if (useStore.getState().globalDialog.isOpen) return
+      if (event.key !== 'Escape' || useStore.getState().globalDialog.isOpen) return
       event.stopPropagation()
-      onClose()
+      closeSheet()
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [onClose])
+  }, [closeSheet])
 
   return (
-    <div className="fixed inset-0 z-[60]">
-      <button
-        type="button"
-        aria-label="Dismiss document actions"
-        className="absolute inset-0 bg-[var(--modal-scrim)]"
-        onClick={(e) => {
-          e.stopPropagation()
-          onClose()
-        }}
-      />
-      {/* No grabber: nothing drags this sheet. `pt-3` stands in for the library grabber row
-          that the SheetLayout header's `pt-1` expects. The safe-area pad comes from SheetLayout. */}
-      <div
-        ref={sheetRef}
-        role="dialog"
-        aria-label={`Document actions for “${label}”`}
-        tabIndex={-1}
-        className="rounded-t-box bg-base-100 absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-hidden pt-3 outline-none motion-safe:animate-[doc-region-in_180ms_ease-out_both]"
-        onClick={(e) => e.stopPropagation()}>
-        <SheetLayout
-          title={label}
-          onClose={onClose}
-          className="min-h-0 [&_h2]:truncate"
-          bodyClassName="px-1.5 pt-1.5">
-          <RowMenuItems {...props} close={onClose} rowClassName="min-h-12" />
-        </SheetLayout>
-      </div>
-    </div>
+    <SheetLayout
+      title={props.doc.title ?? props.doc.slug}
+      onClose={closeSheet}
+      className="[&_h2]:truncate"
+      bodyClassName="px-1.5 pt-1.5">
+      <RowMenuItems {...props} close={closeSheet} rowClassName="min-h-12" />
+    </SheetLayout>
+  )
+}
+
+const isSheetFor = (documentId: string): boolean => {
+  const { activeSheet, sheetData } = useSheetStore.getState()
+  return (
+    activeSheet === 'documentRowMenu' &&
+    (sheetData as DocumentRowMenuSheetData).doc.documentId === documentId
   )
 }
 
 /**
- * Shared ⋮ actions menu for list rows and grid tiles — anchored Popover ≥md, bottom action
+ * Shared ⋮ actions menu for list rows and grid tiles — anchored Popover ≥md, house bottom
  * sheet below md. Stays open while toggles flip; Copy link hides once Private is on.
  */
 function DocumentRowMenu(props: DocumentRowMenuProps) {
+  const { documentId } = props.doc
   const trigger = props.doc.title ?? props.doc.slug
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const isSheetOpen = useSheetStore(
+    (state) =>
+      state.activeSheet === 'documentRowMenu' &&
+      (state.sheetData as DocumentRowMenuSheetData).doc.documentId === documentId
+  )
+
+  // The registry renders a snapshot, so push fresh props or the toggles show stale state.
+  // Never `openSheet` here: a late prop change after Delete would re-open the sheet.
+  useEffect(() => {
+    if (!isSheetOpen || !isSheetFor(documentId)) return
+    useSheetStore.setState((state) => ({
+      sheetData: { ...(state.sheetData as DocumentRowMenuSheetData), ...props }
+    }))
+  }, [isSheetOpen, documentId, props])
+
+  // A gone row must not leave its sheet open: it holds the focus trap and the Back entry.
+  useEffect(
+    () => () => {
+      if (isSheetFor(documentId)) useSheetStore.getState().closeSheet()
+    },
+    [documentId]
+  )
 
   return (
     <>
@@ -325,12 +340,14 @@ function DocumentRowMenu(props: DocumentRowMenuProps) {
         tabIndex={props.triggerTabIndex}
         onClick={(e) => {
           e.stopPropagation()
-          setIsSheetOpen(true)
+          // Mount inside the Settings panel: its outside-press dismiss, focus trap and
+          // aria-hidden then treat the sheet as inside. A body portal would close Settings.
+          const mountPoint = e.currentTarget.closest<HTMLElement>('[role="dialog"]') ?? undefined
+          useSheetStore.getState().openSheet('documentRowMenu', { ...props, mountPoint })
         }}
         className="text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-field focus-visible:ring-primary inline-flex min-h-11 min-w-11 items-center justify-center transition-colors focus-visible:ring-2 focus-visible:outline-none md:hidden">
         <LuEllipsisVertical size={20} className="stroke-[1.75]" />
       </button>
-      {isSheetOpen && <RowMenuActionSheet {...props} onClose={() => setIsSheetOpen(false)} />}
 
       <Popover placement="bottom-end">
         <PopoverTrigger asChild>

@@ -2,6 +2,7 @@ import SignInSheet from '@components/auth/SignInSheet'
 import { BookmarkPanel } from '@components/bookmarkPanel'
 import MessageReactionSheet from '@components/pages/document/components/chat/MessageReactionSheet'
 import HistoryCompareSheet from '@components/pages/history/mobile/HistoryCompareSheet'
+import { DocumentRowMenuSheet } from '@components/settings/components/DocumentRowMenu'
 import DocumentSettingsPanel from '@components/TipTap/toolbar/desktop/DocumentSettingsPanel'
 import FilterPanel from '@components/TipTap/toolbar/desktop/FilterPanel'
 import {
@@ -13,7 +14,7 @@ import {
 } from '@floating-ui/react'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
 import { type SheetData, type SheetDataMap, sheetTransitionHandlers, useSheetStore } from '@stores'
-import { useCallback, useLayoutEffect, useMemo, useRef } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
 
 import { NotificationPanel } from './notificationPanel/desktop/NotificationPanel'
@@ -25,6 +26,8 @@ import SlashMenuSheet from './TipTap/slash/SlashMenuSheet'
 
 type SheetEntry<K extends keyof SheetDataMap> = {
   render: (data: SheetDataMap[K]) => React.ReactNode
+  /** False when the body owns Escape, so one key press closes one layer. */
+  escapeKey?: false
 } & (
   | { trapFocus?: true; ariaLabel: string }
   | {
@@ -109,6 +112,13 @@ const SHEETS: { [K in keyof SheetDataMap]: SheetEntry<K> } = {
     ariaLabel: 'Sign in',
     detent: 'content',
     render: (data) => <SignInSheet data={data} />
+  },
+  documentRowMenu: {
+    id: 'document_row_menu_sheet',
+    ariaLabel: 'Document actions',
+    detent: 'content',
+    escapeKey: false,
+    render: (data) => <DocumentRowMenuSheet {...data} />
   }
 }
 
@@ -126,10 +136,24 @@ const BottomSheet = () => {
     }
   })
   const { getFloatingProps } = useInteractions([
-    useDismiss(context, { outsidePress: false, enabled: trapFocus }),
+    useDismiss(context, {
+      outsidePress: false,
+      escapeKey: activeEntry?.escapeKey !== false,
+      enabled: trapFocus
+    }),
     useRole(context, { role: 'dialog', enabled: trapFocus })
   ])
   const openerRef = useRef<HTMLElement | null>(null)
+
+  // A sheet opened inside a modal mounts into it (see `documentRowMenu`). Held through the
+  // close tween, so the root does not jump back to <body> mid-animation.
+  const [mountPoint, setMountPoint] = useState<HTMLElement>()
+  const nextMountPoint = (sheetData as { mountPoint?: HTMLElement }).mountPoint
+  if (isOpen && nextMountPoint !== mountPoint) setMountPoint(nextMountPoint)
+  const onCloseEnd = useCallback(() => {
+    sheetTransitionHandlers.onCloseEnd()
+    setMountPoint(undefined)
+  }, [])
 
   // Focus at open is often the editor, not the tapped control: iOS never focuses a tapped button,
   // and dismissSoftKeyboard blurs 50ms late. Return only to a tabbable, non-text opener, so close
@@ -177,6 +201,7 @@ const BottomSheet = () => {
       render: _render,
       trapFocus: _trapFocus,
       ariaLabel: _ariaLabel,
+      escapeKey: _escapeKey,
       ...props
     } = SHEETS[activeSheet]
     return props
@@ -188,8 +213,10 @@ const BottomSheet = () => {
       className="bottom-sheet !z-50"
       isOpen={isOpen}
       onClose={closeSheet}
+      mountPoint={mountPoint}
       {...sheetProps}
       {...sheetTransitionHandlers}
+      onCloseEnd={onCloseEnd}
       onOpenEnd={focusSheet}>
       {/* Guards set aria-hidden on the page, never inert: inert recreates media node views. */}
       <FloatingFocusManager

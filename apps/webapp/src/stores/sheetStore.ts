@@ -1,3 +1,4 @@
+import type { DocumentRowMenuProps } from '@components/settings/components/DocumentRowMenu'
 import type { HyperlinkAttributes } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
 import { create } from 'zustand'
@@ -65,6 +66,11 @@ export interface SheetDataMap {
   signIn: {
     returnTo?: string
   }
+  /**
+   * Phone ⋮ of a Settings → Documents row. `mountPoint` is the Settings panel, so the
+   * modal's outside-press dismiss and focus trap treat the sheet as inside.
+   */
+  documentRowMenu: DocumentRowMenuProps & { mountPoint?: HTMLElement }
 }
 
 export type SheetData = SheetDataMap[keyof SheetDataMap]
