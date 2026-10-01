@@ -108,7 +108,7 @@
     "@types/dompurify": "^3.2.0",
     "@types/google-one-tap": "^1.2.7",
     "@types/lodash": "^4.17.25",
-    "@types/node": "^26.5.0",
+    "@types/node": "^26.6.3",
     "@types/pubsub-js": "^1.8.6",
     "@types/randomcolor": "^0.5.9",
     "@types/react": "^19.2.18",
@@ -116,7 +116,7 @@
     "babel-loader": "^10.1.1",
     "babel-plugin-istanbul": "^8.0.0",
     "cypress": "^15.21.1",
-    "cypress-real-events": "^1.15.0",
+    "cypress-real-events": "^1.15.1",
     "cypress-split": "^1.25.0",
     "eslint": "catalog:",
     "eslint-config-next": "^16.3.4",
@@ -126,6 +126,6 @@
     "postcss": "^8.5.28",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.5"
   }
 }
