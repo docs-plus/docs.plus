@@ -39,7 +39,7 @@ export interface DocumentsCache {
 
 /**
  * Writes every list under `prefix`: one per scope, search and sort. Owned and All share
- * rows, so a write to one list alone left the other stale. A remove or a patch keeps each
+ * rows, so a write to one list alone would leave the other stale. A remove or a patch keeps each
  * list a server prefix, so no list refetches and none can race the pending write.
  * Keyed on the hash: a caller builds a fresh key array every render.
  */
@@ -53,9 +53,10 @@ function useDocumentPagesCache(prefix: QueryKey): DocumentsCache {
       queryClient
         .getQueriesData<Pages>(filter)
         .filter((entry): entry is [QueryKey, Pages] => entry[1] !== undefined)
-    const restore = (snapshots: [QueryKey, Pages][]): Rollback => {
-      return () => snapshots.forEach(([key, pages]) => queryClient.setQueryData(key, pages))
-    }
+    const restore =
+      (snapshots: [QueryKey, Pages][]): Rollback =>
+      () =>
+        snapshots.forEach(([key, pages]) => queryClient.setQueryData(key, pages))
 
     // Cancel first: a refetch already in flight lands after the patch and reverts it.
     const edit = async (change: (pages: Pages) => Pages): Promise<Rollback | null> => {

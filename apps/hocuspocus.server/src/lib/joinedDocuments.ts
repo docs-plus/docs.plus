@@ -27,7 +27,7 @@ export const getJoinedDocumentIds = async (userId: string): Promise<string[]> =>
       .range(from, from + PAGE_SIZE - 1)
     if (error) throw unavailable()
 
-    const rows = (data ?? []) as { workspace_id: string }[]
+    const rows = data as { workspace_id: string }[]
     for (const row of rows) ids.push(row.workspace_id)
     if (rows.length < PAGE_SIZE) return ids
   }

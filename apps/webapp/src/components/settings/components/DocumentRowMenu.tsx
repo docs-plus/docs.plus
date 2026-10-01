@@ -270,8 +270,8 @@ export function DocumentRowMenuSheet({
 }: DocumentRowMenuSheetData) {
   const closeSheet = useSheetStore((state) => state.closeSheet)
 
-  // The sheet and Settings both dismiss on a document keydown, so one Escape closed both.
-  // Capture on window runs first and stops it. A GlobalDialog confirm above owns Escape.
+  // The sheet and Settings both dismiss on a document keydown. Capture on window runs
+  // first and stops it, so Escape closes only the sheet. A GlobalDialog confirm owns Escape.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || useStore.getState().globalDialog.isOpen) return

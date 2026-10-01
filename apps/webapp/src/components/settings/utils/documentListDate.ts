@@ -7,7 +7,7 @@ export const documentListDate = (doc: OwnedDocument, sortKey: DocumentSortKey): 
       return formatShortDate(doc.createdAt)
     case 'lastOpenedAt_desc':
       // The server never sends another owner's open stamp. A joined row was opened, so
-      // 'Never opened' would be false; it shows its last edit instead.
+      // 'Never opened' would be false.
       if (doc.isOwner === false) return formatShortDate(doc.updatedAt)
       return doc.lastOpenedAt ? formatShortDate(doc.lastOpenedAt) : 'Never opened'
     case 'updatedAt_desc':

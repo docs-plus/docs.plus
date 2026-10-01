@@ -88,8 +88,8 @@ describe('useOwnerDocumentsCache', () => {
     ).toEqual(['a', 'b'])
   })
 
-  // All and Owned hold the same rows under two keys. Marking the sibling stale let its
-  // refetch race the pending DELETE and bring the row back, so every list is patched.
+  // All and Owned hold the same rows under two keys. A stale sibling would refetch, race
+  // the pending DELETE and bring the row back, so every list is patched.
   it('removes the row from the sibling scope too, and refetches neither list', async () => {
     const { client, cache } = mount(onePage)
     const ownedKey = makeDocumentsKey({ ...scope, scope: 'owned' })
