@@ -31,8 +31,8 @@ const syncChannel = async (
 ) => {
   let channelData = await readChannelMetadata(channelId, anchorMessageId)
   if (isCancelled()) return
-  // A chat can stay open across a document switch. Never create its row in the
-  // workspace of another document.
+  // DocumentPage closes the chat on a document switch. This guard stays as a second
+  // line: never create a chat row in the workspace of another document.
   const chatDocumentId = useChatStore.getState().chatRoom.documentId
   if (
     joinedWorkspace &&

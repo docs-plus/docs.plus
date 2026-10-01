@@ -14,10 +14,11 @@ export function releasePadEditMode(): void {
 }
 
 /**
- * The history route replaces the pad shell, so the pane cannot mount there. Without
- * this the room would stay populated with no surface rendering it.
+ * The chat store outlives the pad shell. When the history route replaces the shell, or
+ * a document switch swaps its pad, the open room has no surface left to render it.
+ * Close it, or it stays populated and shows the old pad's room.
  */
-export function destroyChatRoomForHistory(): void {
+export function closeOpenChatRoom(): void {
   const { chatRoom, destroyChatRoom } = useChatStore.getState()
   if (chatRoom.headingId) destroyChatRoom()
 }

@@ -8,10 +8,11 @@ import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useTouchDocumentOpened from '@hooks/useTouchDocumentOpened'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { GoogleOneTapLayout } from '@layouts'
+import { closeOpenChatRoom } from '@services/openHeadingChatroom'
 import { useStore } from '@stores'
 import { ensureEmojiData } from '@utils/ensureEmojiData'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 
 type DocumentPageProps = {
   docMetadata: any
@@ -49,6 +50,10 @@ const DocumentPage = ({
   useEffect(() => {
     ensureEmojiData()
   }, [])
+
+  // This page stays mounted across a document switch. The layout cleanup closes A's room
+  // before B paints, while the presence channel is still A's.
+  useLayoutEffect(() => closeOpenChatRoom, [docMetadata.documentId])
 
   if (!provider) return <HeadSeo />
 

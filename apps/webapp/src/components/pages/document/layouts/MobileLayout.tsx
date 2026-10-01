@@ -10,7 +10,7 @@ import ToolbarMobile from '@components/TipTap/toolbar/mobile/ToolbarMobile'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useVisualViewportCssSyncOnFocus } from '@hooks/useVisualViewportCssSyncOnFocus'
-import { destroyChatRoomForHistory } from '@services/openHeadingChatroom'
+import { closeOpenChatRoom } from '@services/openHeadingChatroom'
 import { useSheetStore, useStore } from '@stores'
 import { useEffect } from 'react'
 
@@ -38,7 +38,7 @@ const MobileLayout = () => {
 
   useEffect(() => {
     closeSheet()
-    if (isHistory) destroyChatRoomForHistory()
+    if (isHistory) closeOpenChatRoom()
   }, [isHistory, closeSheet])
 
   return (
