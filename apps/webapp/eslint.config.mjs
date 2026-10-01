@@ -21,8 +21,7 @@ export default [
     }
   },
   {
-    // TocItemBody.tsx imports tailwind-merge directly; drop it here once it uses @utils/twMerge.
-    files: ['src/utils/twMerge.ts', 'src/components/toc/TocItemBody.tsx'],
+    files: ['src/utils/twMerge.ts'],
     rules: { 'no-restricted-imports': 'off' }
   }
 ]
