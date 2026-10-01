@@ -18,6 +18,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Added
 
+- **Settings sync across your tabs and devices.** A setting you save shows in
+  every open tab and on every device where you are signed in. A field you are
+  still editing keeps your change. When two devices save different settings
+  at once, both changes stay. The theme stays per browser, and every open tab
+  of that browser follows it.
+
+- **A red dot on Bookmarks shows that In progress holds items.** The dot shows
+  on the desktop toolbar and in the phone outline, before you open the panel.
+
 - **OAuth consent page at `/oauth/consent`.** It asks "Allow Claude to use
   your docs.plus account?" and shows the signed-in account. It lists what
   the app will be able to do. It can read the documents you can open and
@@ -79,7 +88,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   **How you sign in** lists Google, Email link or both, from the account's
   identities, and says "docs.plus does not use passwords. Sign in with Google
   or an email link." **Apps with access** says how many AI apps can use the
-  account. **Review connected apps** opens the Connected apps tab. The
+  account, and it shows only when an app is connected. **Review connected
+  apps** opens the Connected apps tab. The
   Account email card now uses sentence case.
 - **/privacy has a Connected AI apps section.** It says what a connected app
   can read and change, and what it receives. It says what docs.plus records
@@ -168,6 +178,15 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **Settings › Documents shows Trash only when the trash holds a document.**
+  When the last document leaves the trash, the list comes back.
+
+- **One Time zone field.** Each zone reads like "(UTC+03:30) Tehran", and you
+  can search by city or country. When the saved zone is not this device's
+  zone, **Use this device's time zone** sets it back.
+
+- Notification settings are now private to your account.
+
 - **The app has one calmer, consistent look.** Sign-in, app consent, access
   gates and error pages share one card, with a clear title and one main
   action. Every confirmation uses one dialog, with Cancel first and the action
@@ -248,12 +267,13 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   it the Restore control is hidden and an open confirm closes. The "Sign in to
   restore a version." toast is gone.
 
-- Chat message action titles live once, in `messageActionTitle`
-  (`MessageCard/hooks/messageActionMenu.ts`). The right-click menu and the
-  hover ⋯ menu both read Copy Link, Copy to Doc, Edit and Delete. Copy Link no
-  longer becomes Share message link on a message with files. Edit sits above
-  Delete in both menus. `MessageActionMenuItem` and `MessageActionMenuItemId`
-  moved to that file, and `useMessageActionMenuItems` re-exports them.
+- Every chat message menu renders `MessageActionMenuList`: right-click, hover
+  ⋯ and long press. The titles live once, in `useMessageActionMenuItems`:
+  Copy link, Copy to doc, Edit and Delete. Copy link no longer becomes Share
+  message link on a message with files. Edit sits above Delete in every menu.
+  `MessageActionMenuItem` and `MessageActionMenuItemId` live in
+  `MessageCard/hooks/messageActionMenu.ts`. Chat confirms open through
+  `GlobalDialog`, and the chat room has no dialog host of its own.
 
 - Editors send far fewer cursor updates. An unchanged cursor is no longer sent
   again after each remote edit, and a received cursor update is no longer
@@ -261,6 +281,18 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `@hocuspocus/provider` 3.x).
 
 ### Fixed
+
+- The bell now counts account-wide alerts, such as a failed email delivery, in
+  every document. The count updates live when one arrives.
+- On a phone, Undo and Redo are disabled when there is nothing to undo or redo.
+- **Contact support** on the sign-in error page sends an email to the published
+  contact address. It used to open a public document named "support".
+- On a phone, Back after View in the bookmark or notification sheet takes one
+  press. It used to take two.
+- Enter that confirms an input-method (IME) candidate no longer saves a
+  half-typed rename.
+- An empty heading in the outline has a name for screen readers, such as
+  "Heading 2".
 
 - Two plain paragraphs sit 0.25em apart, so short lines under a heading read as
   one block. Headings, subtitle, lists, tables, code and quotes keep the 0.75em
@@ -350,9 +382,8 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
   `clientHeight`, so a click no longer shrinks the panel by its 1px
   `border-t`.
 
-- The hover ⋯ menu Copy Link (`CopyLinkAction`) is a `<button type="button">`.
-  The `<a>` had no `href`, so it had no button role and no keyboard
-  activation.
+- The hover ⋯ menu Copy link is a `<button type="button">`. The `<a>` had no
+  `href`, so it had no button role and no keyboard activation.
 
 - `MobilePadTitle` and `DocumentSettingsPanel` send `slug` with their
   `useUpdateDocMetadata` saves, as `DocTitle` already did. A first save on a

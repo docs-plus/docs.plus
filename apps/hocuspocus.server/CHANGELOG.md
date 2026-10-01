@@ -30,7 +30,10 @@ This file is the operator and API changelog. The pad product lives in the [root 
   `replace_section` is gone. A section read numbers each block. `edit_blocks`
   inserts, replaces or removes whole blocks at one numbered position, and
   refuses to remove a block that holds a picture, video, embed, upload or file
-  link. `replace_text` changes one exact piece of text inside one paragraph,
+  link. A new heading goes only at the end of the section. It must be deeper
+  than the section heading and no shallower than the next heading, so it never
+  takes over the subsections after it.
+  `replace_text` changes one exact piece of text inside one paragraph,
   never the name of an attached file,
   list item or table cell, and keeps its formatting. Neither touches the
   heading, and both refuse a stale `rev`. `replace_text` returns the new `rev`;
@@ -204,6 +207,11 @@ This file is the operator and API changelog. The pad product lives in the [root 
   vanishes, so the target-down rule cannot see it.
 
 ### Changed
+
+- **Admin notification stats read `users.notification_preferences`.** Push the
+  Supabase migration `20260930120000_private_notification_preferences` before
+  you deploy this server.
+- The unsubscribe page follows the device's dark mode.
 
 - **A connected app's token works only at `/api/mcp`.** A token that carries
   a `client_id` claim comes from the OAuth flow. Admin routes and every other

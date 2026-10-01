@@ -84,7 +84,7 @@ useStore((state) => state.settings.editor.instance)
 ```
 
 - Registered by `useEditorAndProvider.ts` via `setWorkspaceEditorSetting('instance', editor)`.
-- Consumers: `EditorContent.tsx`, `useTocActions.tsx`, the toolbar, collaboration-document features.
+- Consumers: `EditorContent.tsx`, `components/toc/hooks/tocActions.ts`, the toolbar, collaboration-document features.
 - `window._editor` and `window._store` are set only by `pages/editor.tsx` (standalone playground); both are undefined on real document/collab routes. Do not add new `window._editor` readers to document-route features.
 - React mobile sheets that need an editor reference use typed `SheetDataMap` payloads (e.g. `linkPreview`, `linkEditor`), not globals.
 - **ProseMirror state pitfalls:**
