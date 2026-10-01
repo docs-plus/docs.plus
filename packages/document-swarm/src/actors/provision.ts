@@ -90,24 +90,24 @@ async function ensureActor(
 }
 
 /**
- * Idempotent Admin API provision. `--force` re-syncs 1..count; otherwise a
- * larger existing pool is kept and only the shortfall is created.
+ * Idempotent Admin API provision. Every record is re-read from Auth, because a
+ * `db reset` gives the same emails new ids and a stale file seeds wrong owners.
+ * `--force` shrinks the pool to `count`; otherwise a larger pool keeps its size.
  */
 export async function provision(options: ProvisionOptions): Promise<void> {
   const { count, actorsFile, force } = options
   const admin = createAdminClient()
 
-  const existingRecords = force ? [] : ((await readActorsFile(actorsFile)) ?? [])
-  const reusedCount = Math.min(existingRecords.length, count)
+  const fileCount = force ? 0 : ((await readActorsFile(actorsFile)) ?? []).length
+  const poolSize = Math.max(count, fileCount)
   const existingByEmail = await listActorUsersByEmail(admin)
 
-  const records: ActorRecord[] = [...existingRecords]
+  const records: ActorRecord[] = []
   let created = 0
   let adopted = 0
-  for (let index = 1; index <= count; index++) {
-    if (records[index - 1]) continue
+  for (let index = 1; index <= poolSize; index++) {
     const { record, outcome } = await ensureActor(admin, index, existingByEmail)
-    records[index - 1] = record
+    records.push(record)
     if (outcome === 'created') created++
     else adopted++
   }
@@ -115,6 +115,6 @@ export async function provision(options: ProvisionOptions): Promise<void> {
   await Bun.write(actorsFile, `${JSON.stringify(records, null, 2)}\n`)
   console.log(
     `Swarm Actors ready → ${actorsFile}: pool ${records.length}, requested ${count} ` +
-      `(reused ${reusedCount} from file, created ${created}, adopted ${adopted} existing).`
+      `(created ${created}, adopted ${adopted} existing).`
   )
 }

@@ -20,7 +20,7 @@ bunx playwright install chromium
 
 ## Provision the actor pool
 
-Creates or reuses `swarm-actor-<n>` accounts through the Supabase Admin API and writes `actors.json` (gitignored). Idempotent — rerun to grow the pool.
+Creates or reuses `swarm-actor-<n>` accounts through the Supabase Admin API and writes `actors.json` (gitignored). Each run reads every `userId` back from Auth. Idempotent — rerun to grow the pool, and rerun after a `db reset`.
 
 ```bash
 bun run --filter @docs.plus/document-swarm provision --count 20
