@@ -168,6 +168,16 @@ plus the house order in [`RELEASE_POLICY.md`](../../RELEASE_POLICY.md).
 
 ### Changed
 
+- **The app has one calmer, consistent look.** Sign-in, app consent, access
+  gates and error pages share one card, with a clear title and one main
+  action. Every confirmation uses one dialog, with Cancel first and the action
+  last. Dialogs, menus and phone sheets now look and behave the same. Labels,
+  hints and links are easier to read, with stronger contrast in every theme.
+  Form fields show a label above, help below and a clear error. Empty lists,
+  loading states and notices share one look. Screen readers and keyboards get
+  better names, roles and focus rings. Emails have readable text contrast, and
+  the admin dashboard theme now matches the app.
+
 - The share card is wider and puts the QR code on the left. On hover, a light
   blur and a fullscreen button cover the code. At rest nothing covers it, so
   it always scans. The card no longer shows the document name. The footer line
