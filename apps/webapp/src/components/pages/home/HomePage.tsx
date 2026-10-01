@@ -6,17 +6,18 @@ import type { TabType } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { GlobalDialog } from '@components/ui/GlobalDialog'
+import { TextLink } from '@components/ui/TextLink'
 import { clearOverlayHash, useHashOverlay } from '@hooks/useHashOverlay'
 import { useNavigateToDocument } from '@hooks/useNavigateToDocument'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
-import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import { useQueryClient } from '@tanstack/react-query'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuUser } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
 
+import { BrandLockup } from './BrandLockup'
 import { HomeActionCard } from './HomeActionCard'
 import { HomeCollapseRegion } from './HomeCollapseRegion'
 import { HomeDocuments } from './HomeDocuments'
@@ -24,6 +25,7 @@ import { HomeFooter } from './HomeFooter'
 import { HomeHero } from './HomeHero'
 import { HomeInstallButton } from './HomeInstallButton'
 import { HOME_MOBILE_MQ, HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
+import { SkipLink } from './SkipLink'
 
 const HOME_FLEX_SPACER = 'motion-safe:transition-[flex-grow] max-sm:min-h-0 max-sm:shrink'
 
@@ -96,25 +98,19 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
   return (
     <>
-      <a
-        href="#home-main"
-        className="btn btn-primary btn-sm sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50">
-        Skip to main content
-      </a>
+      <SkipLink targetId="home-main" />
 
       <div
         className={twMerge(
-          'bg-base-200 flex flex-col overflow-hidden',
+          'bg-base-200 flex flex-col',
           // Mobile: pin the shell to the visual viewport rect so the iOS keyboard cannot scroll
           // the page off-screen; top/left/width track `--visual-viewport-*` (synced on focus/resize).
-          'max-sm:fixed max-sm:top-[var(--visual-viewport-offset-top,0px)] max-sm:left-[var(--visual-viewport-offset-left,0px)] max-sm:w-[var(--visual-viewport-width,100%)]'
-        )}
-        style={{ height: 'var(--visual-viewport-height, 100dvh)' }}>
+          'max-sm:fixed max-sm:top-[var(--visual-viewport-offset-top,0px)] max-sm:left-[var(--visual-viewport-offset-left,0px)] max-sm:h-[var(--visual-viewport-height,100dvh)] max-sm:w-[var(--visual-viewport-width,100%)] max-sm:overflow-hidden',
+          // Desktop scrolls as one page, so the footer follows a tall Home instead of clipping it.
+          'sm:min-h-dvh'
+        )}>
         <header className="flex shrink-0 items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2">
-            <DocsPlusIcon size={28} className="sm:size-10" />
-            <span className="text-base-content mt-1 text-lg font-bold sm:text-2xl">docs.plus</span>
-          </div>
+          <BrandLockup />
 
           {isAuthServiceAvailable && (
             <div className="flex items-center gap-2">
@@ -148,7 +144,7 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
 
         <main
           id="home-main"
-          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-y-contain px-4 max-sm:py-2 sm:py-12">
+          className="flex min-h-0 flex-1 flex-col items-center px-4 max-sm:overflow-y-auto max-sm:overscroll-y-contain max-sm:py-2 sm:py-12">
           <HomeFlexSpacer compact={keyboardCompact} />
           {/* Auto margins, not justify-center: a tall Home then overflows at the bottom only. */}
           <div id="home-action-block" className="w-full max-w-2xl shrink-0 sm:my-auto">
@@ -168,34 +164,15 @@ const HomePage = ({ hostname, isAuthServiceAvailable }: HomePageProps) => {
             <HomeCollapseRegion
               collapsed={keyboardCompact}
               className={keyboardCompact ? 'max-sm:mt-0' : 'mt-8 sm:mt-12'}>
-              <div className="text-base-content/50 space-y-1 text-center text-xs motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both] sm:space-y-2 sm:text-sm">
+              <div className="text-base-content/70 space-y-1 text-center text-xs motion-safe:animate-[doc-content-in_180ms_ease-out_120ms_both] sm:space-y-2 sm:text-sm">
                 <p>
-                  A{' '}
-                  <a
-                    href="https://github.com/docs-plus"
-                    className="text-primary font-medium hover:underline">
-                    free & open source
-                  </a>{' '}
-                  project by{' '}
-                  <a
-                    href="https://newspeak.house"
-                    className="text-primary font-medium hover:underline">
-                    Newspeak House
-                  </a>
+                  A <TextLink href="https://github.com/docs-plus">free & open source</TextLink>{' '}
+                  project by <TextLink href="https://newspeak.house">Newspeak House</TextLink>
                 </p>
                 <p>
                   Seed funded by{' '}
-                  <a
-                    href="https://www.grantfortheweb.org"
-                    className="text-primary font-medium hover:underline">
-                    Grant for Web
-                  </a>{' '}
-                  &{' '}
-                  <a
-                    href="https://www.nesta.org.uk"
-                    className="text-primary font-medium hover:underline">
-                    Nesta
-                  </a>
+                  <TextLink href="https://www.grantfortheweb.org">Grant for Web</TextLink> &{' '}
+                  <TextLink href="https://www.nesta.org.uk">Nesta</TextLink>
                 </p>
               </div>
             </HomeCollapseRegion>

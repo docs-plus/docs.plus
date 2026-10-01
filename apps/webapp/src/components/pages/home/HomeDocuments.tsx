@@ -37,7 +37,7 @@ export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
           Documents
         </h2>
         {(firstPage?.total ?? 0) > HOME_DOCUMENTS_LIMIT && (
-          <Button variant="ghost" size="xs" className="text-primary" onClick={onSeeAll}>
+          <Button variant="quiet" onClick={onSeeAll}>
             See all
           </Button>
         )}
@@ -49,9 +49,9 @@ export function HomeDocuments({ userId, onSeeAll }: HomeDocumentsProps) {
               type="button"
               onClick={() => router.push(`/${doc.slug}`)}
               className="rounded-field hover:bg-base-200 focus-visible:ring-primary flex w-full min-w-0 items-center gap-3 px-2 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none">
-              <LuFileText size={18} className="text-base-content/40 shrink-0" />
+              <LuFileText size={18} className="text-base-content/60 shrink-0" />
               <DocumentRowLabel doc={doc} className="flex-1 text-sm" />
-              <span className="text-base-content/60 shrink-0 text-xs">
+              <span className="text-meta text-base-content/60 shrink-0">
                 {documentListDate(doc, 'lastOpenedAt_desc')}
               </span>
             </button>

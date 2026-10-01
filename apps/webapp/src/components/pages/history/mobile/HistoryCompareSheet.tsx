@@ -1,4 +1,6 @@
 import { SheetLayout } from '@components/SheetLayout'
+import { EmptyState } from '@components/ui/EmptyState'
+import { Icons } from '@icons'
 import { useSheetStore } from '@stores'
 
 import { HistorySidebarBody } from '../components/HistorySidebarBody'
@@ -15,7 +17,12 @@ export default function HistoryCompareSheet() {
   return (
     <SheetLayout title="Compare with" onClose={close} fillHeight bodyClassName="overflow-hidden">
       {historyList.length === 0 ? (
-        <p className="text-base-content/60 px-4 py-6 text-sm">No versions yet</p>
+        <EmptyState
+          icon={Icons.history}
+          title="No versions yet."
+          body="Saved revisions will appear here when you or collaborators edit this document."
+          className="flex-1 justify-center"
+        />
       ) : (
         <HistorySidebarBody
           rows={rows}

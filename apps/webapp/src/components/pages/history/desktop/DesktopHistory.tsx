@@ -9,7 +9,7 @@ const DesktopHistory = () => {
   useHistoryCompareDecorations()
 
   return (
-    <div className="pad tiptap history_editor bg-base-200 flex h-full min-h-0 flex-col overflow-hidden motion-safe:animate-[doc-content-in_200ms_ease-out_both]">
+    <div className="pad tiptap history_editor flex h-full min-h-0 flex-col overflow-hidden bg-[var(--pad-well)] motion-safe:animate-[doc-content-in_200ms_ease-out_both]">
       <div className="editor relative flex min-h-0 min-w-0 flex-1 flex-row justify-around align-top">
         <div className="mainWrapper relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden align-top">
           <Toolbar />

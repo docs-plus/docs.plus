@@ -1,5 +1,5 @@
 import TypingText from '@components/ui/TypingText'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { HomeCollapseRegion } from './HomeCollapseRegion'
 import { HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'

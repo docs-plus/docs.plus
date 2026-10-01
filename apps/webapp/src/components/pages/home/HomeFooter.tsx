@@ -13,7 +13,7 @@ export function HomeFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub repository (opens in new tab)"
-            className="bg-neutral text-neutral-content hover:bg-neutral/90 flex min-h-11 items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium transition-colors sm:text-sm">
+            className="bg-neutral text-neutral-content hover:bg-neutral/90 focus-visible:outline-primary flex min-h-11 items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm">
             <LuGithub size={16} />
             <span>GitHub</span>
           </a>
@@ -22,7 +22,7 @@ export function HomeFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub discussions (opens in new tab)"
-            className="border-base-300 text-base-content hover:bg-base-200 flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-medium transition-colors sm:text-sm">
+            className="border-base-300 text-base-content hover:bg-base-200 focus-visible:outline-primary flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm">
             <LuMessageCircle size={16} />
             <span>Discuss</span>
           </a>
@@ -35,17 +35,21 @@ export function HomeFooter() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Discord community (opens in new tab)"
-          className="flex min-h-11 items-center gap-2 rounded-full bg-[#5865F2] px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-[#4752C4] sm:text-sm">
+          className="focus-visible:outline-primary flex min-h-11 items-center gap-2 rounded-full bg-[#5865F2] px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-[#4752C4] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm">
           <Icons.discord size={16} />
           <span>Discord</span>
         </a>
       </div>
 
       <nav aria-label="Legal" className="flex items-center gap-4 text-xs sm:text-sm">
-        <Link href={PRIVACY_PATH} className="hover:text-base-content hover:underline">
+        <Link
+          href={PRIVACY_PATH}
+          className="rounded-field hover:text-base-content focus-visible:outline-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
           Privacy
         </Link>
-        <Link href={TERMS_PATH} className="hover:text-base-content hover:underline">
+        <Link
+          href={TERMS_PATH}
+          className="rounded-field hover:text-base-content focus-visible:outline-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
           Terms
         </Link>
       </nav>

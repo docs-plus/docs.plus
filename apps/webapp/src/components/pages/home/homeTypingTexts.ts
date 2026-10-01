@@ -9,24 +9,38 @@ import {
   LuUsers
 } from 'react-icons/lu'
 
+// Raw hues read 1.7-4.3:1 on the light floor. Accent and secondary have no ink token, so they
+// borrow the nearest one.
 export const HOME_TYPING_TEXTS: TypingTextItem[] = [
-  { text: 'teams', icon: createElement(LuUsers, { size: 14 }), className: 'text-primary' },
+  {
+    text: 'teams',
+    icon: createElement(LuUsers, { size: 14 }),
+    className: 'text-[var(--primary-ink)]'
+  },
   {
     text: 'communities',
     icon: createElement(LuGlobe, { size: 14 }),
-    className: 'text-accent'
+    className: 'text-[var(--warning-ink)]'
   },
   {
     text: 'classrooms',
     icon: createElement(LuGraduationCap, { size: 14 }),
-    className: 'text-secondary'
+    className: 'text-[var(--success-ink)]'
   },
-  { text: 'projects', icon: createElement(LuRocket, { size: 14 }), className: 'text-warning' },
-  { text: 'meetups', icon: createElement(LuCalendar, { size: 14 }), className: 'text-error' },
+  {
+    text: 'projects',
+    icon: createElement(LuRocket, { size: 14 }),
+    className: 'text-[var(--warning-ink)]'
+  },
+  {
+    text: 'meetups',
+    icon: createElement(LuCalendar, { size: 14 }),
+    className: 'text-[var(--error-ink)]'
+  },
   {
     text: 'organizations',
     icon: createElement(LuBuilding2, { size: 14 }),
-    className: 'text-info'
+    className: 'text-[var(--info-ink)]'
   }
 ]
 

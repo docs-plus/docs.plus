@@ -31,9 +31,12 @@ export const useHocuspocusStateless = () => {
   useLayoutEffect(() => {
     if (!hocuspocusProvider) return
     hocuspocusProvider.on('stateless', handleStatelessMessage)
-    fetchHistory()
+    // StrictMode replays this effect in the same tick, and the server refuses a second
+    // list inside its cooldown. Deferring lets the replay's cleanup cancel the first send.
+    const listTimer = setTimeout(fetchHistory)
 
     return () => {
+      clearTimeout(listTimer)
       hocuspocusProvider.off('stateless', handleStatelessMessage)
     }
   }, [hocuspocusProvider, handleStatelessMessage, fetchHistory])

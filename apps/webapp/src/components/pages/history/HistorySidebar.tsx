@@ -1,10 +1,11 @@
 import SidebarLoader from '@components/skeleton/SidebarLoader'
 import CloseButton from '@components/ui/CloseButton'
+import { EmptyState } from '@components/ui/EmptyState'
 import { PanelTabBar } from '@components/ui/PanelTabBar'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { type ReactNode, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { HistoryAuthorsBody } from './components/HistoryAuthorsBody'
 import { HistorySidebarBody } from './components/HistorySidebarBody'
@@ -19,17 +20,23 @@ function SidebarHeader({
   hasMore,
   onClose
 }: {
-  count: number
+  count: number | null
   hasMore?: boolean
   onClose?: () => void
 }) {
   return (
     <header className="border-base-300 bg-base-200 sticky top-0 z-10 flex shrink-0 items-start gap-2 border-b px-3 py-3">
       <div className="min-w-0 flex-1">
-        <h2 className="text-base-content text-base font-semibold sm:text-lg">Version History</h2>
-        <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
-          {hasMore ? `${count}+ versions` : `${count} version${count !== 1 ? 's' : ''}`}
-        </p>
+        <h2 className="text-base-content text-base font-semibold">Version History</h2>
+        {count === null ? (
+          <div className="mt-0.5 flex h-5 items-center">
+            <div className="skeleton h-3 w-20" />
+          </div>
+        ) : (
+          <p className="text-base-content/60 text-meta mt-0.5">
+            {hasMore ? `${count}+ versions` : `${count} version${count !== 1 ? 's' : ''}`}
+          </p>
+        )}
       </div>
       {onClose && (
         <CloseButton
@@ -52,7 +59,7 @@ function SidebarFrame({
   children
 }: {
   className?: string
-  count: number
+  count: number | null
   hasMore?: boolean
   onClose?: () => void
   children: ReactNode
@@ -92,22 +99,24 @@ const HistorySidebar = ({
   const { historyList, activeVersion, rows, openDays, toggleDay, toggleSession } =
     useHistorySidebarRows()
 
-  if (loadingHistory && historyList.length === 0) return <SidebarLoader />
+  // The loader sits inside the real frame, so the swap to rows moves nothing.
+  if (loadingHistory && historyList.length === 0) {
+    return (
+      <SidebarFrame className={className} count={null} onClose={onClose}>
+        <SidebarLoader tabs={variant === 'desktop'} />
+      </SidebarFrame>
+    )
+  }
 
   if (historyList.length === 0) {
     return (
       <SidebarFrame className={className} count={0} onClose={onClose}>
-        <div className="flex flex-1 flex-col items-center justify-center space-y-3 px-4 py-8">
-          <div className="bg-base-300/50 flex size-12 items-center justify-center rounded-full">
-            <Icons.history className="text-base-content/40" size={24} aria-hidden />
-          </div>
-          <div className="text-center">
-            <p className="text-base-content/60 font-medium">No versions yet</p>
-            <p className="text-base-content/40 mt-1 max-w-[15rem] text-sm leading-relaxed">
-              Saved revisions will appear here when you or collaborators edit this document.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={Icons.history}
+          title="No versions yet."
+          body="Saved revisions will appear here when you or collaborators edit this document."
+          className="flex-1 justify-center"
+        />
       </SidebarFrame>
     )
   }

@@ -2,8 +2,8 @@ import TableOfContentsLoader from '@components/skeleton/TableOfContentsLoader'
 import { TocDesktop } from '@components/toc'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
+import { twMerge } from '@utils/twMerge'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const TOC = ({ className = '' }: { className?: string }) => {
   const loading = useStore((state) => state.settings.editor.loading)

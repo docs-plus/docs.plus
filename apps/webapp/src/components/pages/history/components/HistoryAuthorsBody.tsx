@@ -148,7 +148,7 @@ export function HistoryAuthorsBody() {
       <fieldset className="space-y-1">
         <legend className="sr-only">Show parts with text from</legend>
 
-        <label className="hover:bg-base-200/60 rounded-field flex min-h-9 cursor-pointer items-center gap-2 px-2">
+        <label className="hover:bg-base-300 rounded-field flex min-h-9 cursor-pointer items-center gap-2 px-2">
           <input
             type="radio"
             name="history-authors"
@@ -156,7 +156,7 @@ export function HistoryAuthorsBody() {
             checked={activeSelection === null}
             onChange={() => select(null)}
           />
-          <span className="text-base-content/80 text-sm">None</span>
+          <span className="text-base-content text-sm">None</span>
         </label>
 
         {selectable.map((row) => {
@@ -164,7 +164,7 @@ export function HistoryAuthorsBody() {
           return (
             <label
               key={row.key}
-              className="hover:bg-base-200/60 rounded-field flex min-h-9 cursor-pointer items-center gap-2 px-2">
+              className="hover:bg-base-300 rounded-field flex min-h-9 cursor-pointer items-center gap-2 px-2">
               <input
                 type="radio"
                 name="history-authors"
@@ -175,7 +175,7 @@ export function HistoryAuthorsBody() {
               {profile && (
                 <Avatar face={profile} size="xs" clickable={false} className="shrink-0" />
               )}
-              <span className="text-base-content/80 min-w-0 truncate text-sm">{rowLabel(row)}</span>
+              <span className="text-base-content min-w-0 truncate text-sm">{rowLabel(row)}</span>
             </label>
           )
         })}

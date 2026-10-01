@@ -5,8 +5,8 @@ import { Icons } from '@icons'
 import { useStore } from '@stores'
 import type { HistoryItem, HistoryProfile, HistoryProfileMap, VersionTrigger } from '@types'
 import { resolveDisplayName } from '@utils/avatarFace'
+import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { formatRelativeTime, formatTime } from '../helpers'
 import { useCopyHistoryVersionLink } from '../hooks/useCopyHistoryVersionLink'
@@ -15,13 +15,11 @@ export function CopyVersionLinkButton({
   version,
   createdAt,
   isActiveRow,
-  inlineInRow,
   className
 }: {
   version: number
   createdAt: string
   isActiveRow: boolean
-  inlineInRow?: boolean
   className?: string
 }) {
   const { copy, copied, label } = useCopyHistoryVersionLink(version, createdAt)
@@ -34,10 +32,9 @@ export function CopyVersionLinkButton({
       iconSize={16}
       className={twMerge(
         'shrink-0 border-0 bg-transparent shadow-none active:bg-transparent',
-        inlineInRow
-          ? 'min-h-10 min-w-10 rounded-none hover:bg-transparent md:min-h-9 md:min-w-9'
-          : 'rounded-field hover:bg-base-300/35 min-h-[44px] min-w-[44px] md:min-h-8 md:min-w-8',
-        isActiveRow ? 'text-primary' : 'text-base-content/45 hover:text-primary',
+        'min-h-10 min-w-10 hover:bg-transparent md:min-h-9 md:min-w-9',
+        'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
+        isActiveRow ? 'text-primary' : 'text-base-content/70 hover:text-base-content',
         'transition-opacity duration-150',
         isActiveRow
           ? 'opacity-100'
@@ -53,7 +50,7 @@ export function CopyVersionLinkButton({
         void copy()
       }}>
       <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
-        <Icons.check size={16} className="swap-on text-success stroke-[1.75]" />
+        <Icons.check size={16} className="swap-on stroke-[1.75] text-[var(--success-ink)]" />
         <Icons.link size={16} className="swap-off stroke-[1.75]" />
       </span>
     </Button>
@@ -137,12 +134,10 @@ export function peopleFromHistoryItems(
 export function PeopleAttribution({
   people,
   inline,
-  active,
   showName = true
 }: {
   people: HistoryProfile[]
   inline?: boolean
-  active?: boolean
   showName?: boolean
 }) {
   if (people.length === 0) return null
@@ -172,13 +167,7 @@ export function PeopleAttribution({
         />
       )}
       {solo && showName && (
-        <span
-          className={twMerge(
-            'truncate text-xs',
-            active ? 'text-primary/70' : 'text-base-content/60'
-          )}>
-          {soloName}
-        </span>
+        <span className="text-base-content/70 truncate text-xs">{soloName}</span>
       )}
     </span>
   )
@@ -188,18 +177,10 @@ export function PeopleAttribution({
  * Resolves ids through the profile map. Renders nothing when none resolve, because
  * `Avatar` invents a DiceBear face from a bare id and would name a person we cannot.
  */
-export function VersionAttribution({
-  item,
-  inline,
-  active
-}: {
-  item: HistoryItem
-  inline?: boolean
-  active?: boolean
-}) {
+export function VersionAttribution({ item, inline }: { item: HistoryItem; inline?: boolean }) {
   const profiles = useStore((state) => state.profiles)
   const people = useMemo(() => peopleFromHistoryItems([item], profiles), [item, profiles])
-  return <PeopleAttribution people={people} inline={inline} active={active} />
+  return <PeopleAttribution people={people} inline={inline} />
 }
 
 export function VersionSummary({
@@ -220,7 +201,7 @@ export function VersionSummary({
           className={twMerge(
             titleClassName,
             'font-medium',
-            active ? 'text-primary' : 'text-base-content/90'
+            active ? 'text-[var(--primary-ink)]' : 'text-base-content'
           )}>
           {formatTime(version.createdAt)}
         </span>
@@ -228,10 +209,8 @@ export function VersionSummary({
         <VersionTriggerBadge trigger={version.trigger} />
         <CompareBaseMarker version={version.version} />
       </div>
-      <p className={twMerge('text-base-content/50 mt-0.5 text-xs', active && 'text-primary/70')}>
-        {formatRelativeTime(version.createdAt)}
-      </p>
-      <VersionAttribution item={version} active={active} />
+      <p className="text-base-content/60 mt-0.5 text-xs">{formatRelativeTime(version.createdAt)}</p>
+      <VersionAttribution item={version} />
       {version.commitMessage && (
         <p className="text-base-content/70 mt-1 truncate text-sm">{version.commitMessage}</p>
       )}

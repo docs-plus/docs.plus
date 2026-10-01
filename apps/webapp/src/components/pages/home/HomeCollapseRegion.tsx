@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { HOME_REGION_DURATION, homeRegionEase } from './homeMobileLayout'
 

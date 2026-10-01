@@ -5,8 +5,8 @@ import { useHeadingScrollSpy } from '@components/toc/hooks/useHeadingScrollSpy'
 import { TocTickRail } from '@components/toc/TocTickRail'
 import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
+import { twMerge } from '@utils/twMerge'
 import { memo, type RefObject, useRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useSyncChatPanelHeight, useTocResize } from '../hooks'
 import EditorContent from './EditorContent'
@@ -24,7 +24,7 @@ const DesktopPadEditor = memo(function DesktopPadEditor({
       ref={wrapperRef}
       id={PAD_MAIN_ID}
       tabIndex={-1}
-      className="editorWrapper scrollbar-custom flex h-full min-w-0 grow scrollbar-thin items-start justify-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 outline-none sm:px-6 sm:py-6">
+      className="editorWrapper scrollbar-custom flex h-full min-w-0 grow scrollbar-thin flex-col items-center overflow-y-auto scroll-smooth border-t-0 bg-[var(--pad-well)] px-3 py-4 outline-none sm:px-6 sm:py-6">
       <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
     </main>
   )

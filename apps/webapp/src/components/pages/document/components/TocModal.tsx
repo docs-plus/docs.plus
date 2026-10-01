@@ -1,12 +1,21 @@
 import { selectPadOwnsKeyboard } from '@components/chatroom/utils/selectPadOwnsKeyboard'
+import { SheetFooter } from '@components/SheetFooter'
 import { canOpenFind } from '@components/TipTap/find/canOpenFind'
+import { indicatorDotClassName } from '@components/TipTap/toolbar/indicatorDot'
 import { TocHeader, TocMobile } from '@components/toc'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { useModal } from '@components/ui/ModalDrawer'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { DocsPlusIcon, Icons } from '@icons'
-import { useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
+import {
+  selectInProgressBookmarkCount,
+  useAuthStore,
+  useChatStore,
+  useSheetStore,
+  useStore,
+  withInProgressBookmarks
+} from '@stores'
 import Link from 'next/link'
 import { useCallback } from 'react'
 import type { IconType } from 'react-icons'
@@ -29,7 +38,7 @@ function TocModalIconButton({
       size="sm"
       shape="square"
       iconSize={20}
-      className="text-base-content/70 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
+      className="text-base-content/70 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
       onClick={onClick}
       startIcon={startIcon}
     />
@@ -45,6 +54,7 @@ const TocModal = () => {
   const editor = useStore((state) => state.settings.editor.instance)
   // The drawer mounts only in MobileLayout, so this is always the phone rule.
   const findAllowed = canOpenFind(true, useChatStore(selectPadOwnsKeyboard))
+  const inProgressBookmarks = useChatStore(selectInProgressBookmarkCount)
 
   const hasActiveFilters = useStore(
     (state) => state.settings.editor.filterResult.sortedSlugs.length > 0
@@ -68,10 +78,10 @@ const TocModal = () => {
         <header className="border-base-300 bg-base-100 z-20 flex shrink-0 items-center justify-between border-b px-4 py-3">
           <Link
             href="/"
-            className="text-base-content hover:text-primary flex items-center gap-1.5 outline-0 transition-colors"
+            className="text-base-content hover:text-primary rounded-field focus-visible:ring-primary flex items-center gap-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             aria-label="Go to home">
             <DocsPlusIcon size={36} />
-            <span className="text-base-content mt-1.5 font-semibold">docs.plus</span>
+            <span className="text-base-content mt-1.5 font-bold">docs.plus</span>
           </Link>
 
           <div className="bg-base-200 rounded-box flex items-center gap-1.5 p-1">
@@ -92,14 +102,14 @@ const TocModal = () => {
           </div>
         </header>
 
-        <div className="bg-base-200 flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--pad-well)]">
           <TocHeader variant="mobile" />
           <ScrollArea className="h-0 min-h-0 flex-1" scrollbarSize="thin" hideScrollbar fade="both">
             <TocMobile className="tiptap__toc w-full pb-6" />
           </ScrollArea>
         </div>
 
-        <footer className="border-base-300 bg-base-100 shrink-0 border-t px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
+        <SheetFooter>
           <div className="bg-base-200 rounded-box flex w-full items-center justify-evenly gap-1 p-0">
             {findAllowed && (
               <TocModalIconButton
@@ -117,7 +127,7 @@ const TocModal = () => {
               {hasActiveFilters && (
                 <span
                   data-testid="filter-active-indicator-mobile"
-                  className="bg-error ring-base-200 absolute top-1 right-1 size-1.5 rounded-full ring-2"
+                  className={indicatorDotClassName('ring-base-200')}
                   aria-hidden
                 />
               )}
@@ -128,14 +138,23 @@ const TocModal = () => {
               startIcon={Icons.settings}
             />
             {user && (
-              <TocModalIconButton
-                aria-label="Bookmarks"
-                onClick={() => closeTocThen(() => openSheet('bookmarks'))}
-                startIcon={Icons.bookmark}
-              />
+              <div className="relative">
+                <TocModalIconButton
+                  aria-label={withInProgressBookmarks('Bookmarks', inProgressBookmarks)}
+                  onClick={() => closeTocThen(() => openSheet('bookmarks'))}
+                  startIcon={Icons.bookmark}
+                />
+                {inProgressBookmarks > 0 && (
+                  <span
+                    data-testid="bookmarks-in-progress-indicator-mobile"
+                    className={indicatorDotClassName('ring-base-200')}
+                    aria-hidden
+                  />
+                )}
+              </div>
             )}
           </div>
-        </footer>
+        </SheetFooter>
       </div>
     </div>
   )

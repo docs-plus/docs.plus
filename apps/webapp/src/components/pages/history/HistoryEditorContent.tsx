@@ -13,7 +13,7 @@ type HistoryEditorVariant = 'desktop' | 'mobile'
 
 const SCROLL_ROOT: Record<HistoryEditorVariant, string> = {
   desktop:
-    'editorWrapper bg-base-200 flex min-h-0 min-w-0 flex-1 items-start justify-center border-t-0 px-3 py-4 sm:px-6 sm:py-6',
+    'editorWrapper bg-[var(--pad-well)] flex min-h-0 min-w-0 flex-1 items-start justify-center border-t-0 px-3 py-4 sm:px-6 sm:py-6',
   mobile:
     'editor editorWrapper history-mobile-editor flex h-full min-h-0 w-full min-w-0 flex-1 border-t-0'
 }

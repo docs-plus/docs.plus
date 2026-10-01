@@ -5,8 +5,7 @@ import { ModalDrawerOpener } from '@components/ui/ModalDrawer'
 import { Icons } from '@icons'
 import { useSheetStore, useStore } from '@stores'
 
-import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
-import { countVersionsAfter, formatCompareRange, formatVersionDate } from '../helpers'
+import { formatCompareRange, formatVersionDate } from '../helpers'
 import { useCopyHistoryVersionLink } from '../hooks/useCopyHistoryVersionLink'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useHistoryCompare } from '../hooks/useHistoryCompare'
@@ -16,17 +15,8 @@ const ICON_SIZE = 20
 
 const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => {
   const activeHistory = useStore((state) => state.activeHistory)
-  const historyList = useStore((state) => state.historyList)
   const versionInfo = useGetVersionInfo()
-  const {
-    restoreOpen,
-    setRestoreOpen,
-    requestRestore,
-    confirmRestore,
-    restoring,
-    canRestore,
-    allowRestore
-  } = useVersionRestore()
+  const { requestRestore, restoring, canRestore, allowRestore } = useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, exitCompare } = useHistoryCompare()
   const close = useSheetStore((state) => state.closeSheet)
   const compareSheetOpen = useSheetStore((state) => state.activeSheet === 'historyCompare')
@@ -58,7 +48,7 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
           aria-label="Back to Editor"
           tooltip="Back to the Editor"
           tooltipPlacement="right">
-          <Icons.back size={ICON_SIZE} className="text-base-content/70 stroke-[1.75]" />
+          <Icons.back size={ICON_SIZE} className="stroke-[1.75]" />
         </ToolbarButton>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
@@ -79,10 +69,7 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
               aria-label={copyLinkLabel}>
               <span className={`swap ${copied ? 'swap-active' : ''}`} aria-hidden>
                 <Icons.check size={ICON_SIZE} className="swap-on text-success stroke-[1.75]" />
-                <Icons.link
-                  size={ICON_SIZE}
-                  className="swap-off text-base-content/70 stroke-[1.75]"
-                />
+                <Icons.link size={ICON_SIZE} className="swap-off stroke-[1.75]" />
               </span>
             </ToolbarButton>
           )}
@@ -103,10 +90,7 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
                 ? 'Hide changes'
                 : 'Show what changed in this version. Edits that only changed formatting show nothing, and very large differences are shown as one block.'
             }>
-            <Icons.splitVertical
-              size={ICON_SIZE}
-              className={compareMode ? 'stroke-[1.75]' : 'text-base-content/70 stroke-[1.75]'}
-            />
+            <Icons.splitVertical size={ICON_SIZE} className="stroke-[1.75]" />
           </ToolbarButton>
 
           {compareSheetOpen ? (
@@ -170,14 +154,6 @@ const Toolbar = ({ onOpenCompareSheet }: { onOpenCompareSheet: () => void }) => 
           </Button>
         </div>
       )}
-
-      <HistoryRestoreModal
-        open={restoreOpen}
-        onOpenChange={setRestoreOpen}
-        createdAt={activeHistory?.createdAt}
-        newerCount={countVersionsAfter(historyList, activeHistory?.version)}
-        onConfirm={confirmRestore}
-      />
     </header>
   )
 }

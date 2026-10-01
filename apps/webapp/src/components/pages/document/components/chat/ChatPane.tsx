@@ -42,7 +42,7 @@ const ChatPaneGrabber = () => {
           useChatStore.getState().setPaneMode('half')
         }
       }}
-      className="focus-visible:ring-primary/30 flex h-5 w-full shrink-0 cursor-grab touch-none items-center justify-center focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing">
+      className="focus-visible:ring-primary flex h-6 w-full shrink-0 cursor-grab touch-none items-center justify-center focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset active:cursor-grabbing">
       <span className="bg-base-300 h-1 w-[30px] rounded-full" aria-hidden />
     </div>
   )
@@ -63,8 +63,11 @@ const ChatPane = () => {
 
   useEffect(() => {
     if (!isOpen) return
+    // A tap opens the pane too, and a programmatic focus would paint the keyboard ring.
     const frame = requestAnimationFrame(() => {
-      ref.current?.querySelector<HTMLElement>('[data-chat-pane-grabber]')?.focus()
+      ref.current
+        ?.querySelector<HTMLElement>('[data-chat-pane-grabber]')
+        ?.focus({ focusVisible: false })
     })
     return () => cancelAnimationFrame(frame)
   }, [isOpen])

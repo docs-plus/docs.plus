@@ -90,6 +90,7 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
         shape="block"
         onClick={appendHeadingToEnd}
         startIcon={Icons.plus}
+        aria-label="Add headings"
         tooltip="Add headings"
       />
     </div>

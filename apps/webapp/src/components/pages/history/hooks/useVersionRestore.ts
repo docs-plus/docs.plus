@@ -3,7 +3,10 @@ import * as toast from '@components/toast'
 import { selectDocumentEditingLocked } from '@hooks/isDocumentEditingLocked'
 import { useAuthStore, useStore } from '@stores'
 import { isProviderDisconnected } from '@utils/providerCollabStatus'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+
+import { openHistoryRestoreConfirm } from '../components/historyRestoreConfirm'
+import { countVersionsAfter } from '../helpers'
 
 /**
  * Matches the server's own version-op budget. A restore that has not answered by
@@ -22,7 +25,6 @@ export const useVersionRestore = () => {
   const userId = useAuthStore((state) => state.profile?.id)
   const editingLocked = useStore((state) => selectDocumentEditingLocked(state.settings, userId))
 
-  const [restoreOpen, setRestoreOpen] = useState(false)
   const [restoring, setRestoring] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -44,23 +46,30 @@ export const useVersionRestore = () => {
   // Same gates as history.revert: signed-in writer, not locked.
   const allowRestore = Boolean(userId) && !editingLocked
 
+  // Set while the confirm this hook opened is up, so only our own confirm is closed.
+  const shownRef = useRef(false)
+
   // A leftover confirm would no-op and look like Restore ran.
   useEffect(() => {
-    if (!allowRestore) setRestoreOpen(false)
+    if (allowRestore || !shownRef.current) return
+    shownRef.current = false
+    useStore.getState().closeDialog()
   }, [allowRestore])
+
+  useEffect(
+    () => () => {
+      if (!shownRef.current) return
+      shownRef.current = false
+      useStore.getState().closeDialog()
+    },
+    []
+  )
 
   // `activeHistory` still names the PREVIOUS version while a watch is in flight.
   // Restoring here would replace the document for everyone with a version the reader
   // did not ask for. `canRestore` also keeps the 30s timeout from being cancelled by the
   // incoming watch clearing the shared `loadingHistory` flag.
   const canRestore = allowRestore && pendingWatchVersion == null && !restoring
-
-  const requestRestore = useCallback(() => {
-    if (!allowRestore) return
-    if (!activeHistory?.version) return
-    if (pendingWatchVersion != null) return
-    setRestoreOpen(true)
-  }, [activeHistory?.version, allowRestore, pendingWatchVersion])
 
   const confirmRestore = useCallback(() => {
     if (!allowRestore) return
@@ -103,13 +112,28 @@ export const useVersionRestore = () => {
     setLoadingHistory
   ])
 
-  return {
-    restoreOpen,
-    setRestoreOpen,
-    requestRestore,
-    confirmRestore,
-    restoring,
-    canRestore,
-    allowRestore
-  }
+  // GlobalDialog keeps the element it opened with, so the confirm reads the latest
+  // `confirmRestore` through a ref.
+  const confirmRef = useRef(confirmRestore)
+  useLayoutEffect(() => {
+    confirmRef.current = confirmRestore
+  })
+
+  const requestRestore = useCallback(() => {
+    if (!allowRestore) return
+    if (!activeHistory?.version) return
+    if (pendingWatchVersion != null) return
+    if (shownRef.current) return
+    shownRef.current = true
+    openHistoryRestoreConfirm({
+      createdAt: activeHistory.createdAt,
+      newerCount: countVersionsAfter(useStore.getState().historyList, activeHistory.version),
+      onConfirm: () => confirmRef.current(),
+      onDismiss: () => {
+        shownRef.current = false
+      }
+    })
+  }, [activeHistory, allowRestore, pendingWatchVersion])
+
+  return { requestRestore, restoring, canRestore, allowRestore }
 }

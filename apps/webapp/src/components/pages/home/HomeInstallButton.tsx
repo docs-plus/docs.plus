@@ -37,7 +37,7 @@ export function HomeInstallButton() {
         onClick={forceShowPWAInstallPrompt}>
         Install app
       </Button>
-      <p id={captionId} className="text-base-content/50 text-xs">
+      <p id={captionId} className="text-base-content/70 text-xs">
         {PWA_OFFLINE_LINE}
       </p>
     </div>

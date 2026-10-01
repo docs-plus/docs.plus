@@ -4,9 +4,8 @@ import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
 
-import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
 import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionBlock'
-import { countVersionsAfter, formatCompareRange } from '../helpers'
+import { formatCompareRange } from '../helpers'
 import { useCopyHistoryVersionLink } from '../hooks/useCopyHistoryVersionLink'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useHistoryCompare } from '../hooks/useHistoryCompare'
@@ -16,17 +15,8 @@ const ICON_SIZE = 16
 
 const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
-  const historyList = useStore((state) => state.historyList)
   const versionInfo = useGetVersionInfo()
-  const {
-    restoreOpen,
-    setRestoreOpen,
-    requestRestore,
-    confirmRestore,
-    restoring,
-    canRestore,
-    allowRestore
-  } = useVersionRestore()
+  const { requestRestore, restoring, canRestore, allowRestore } = useVersionRestore()
   const { compareMode, compareBaseItem, canCompare, toggleCompare, exitCompare } =
     useHistoryCompare()
   const {
@@ -41,7 +31,7 @@ const Toolbar = () => {
 
   return (
     <>
-      <header className="border-base-300 bg-base-100 flex min-h-12 shrink-0 items-center border-b px-3 py-2">
+      <header className="border-base-300 bg-base-100 flex h-14 shrink-0 items-center border-b px-3">
         <ToolbarButton
           onClick={() => clearHistoryHash()}
           aria-label="Back to Editor"
@@ -89,7 +79,8 @@ const Toolbar = () => {
                 : 'Show what changed in this version. Edits that only changed formatting show nothing, and very large differences are shown as one block.'
             }>
             <Icons.splitVertical size={ICON_SIZE} />
-            <span>Changes</span>
+            {/* `.is-active` paints text-primary, which is 3.95:1 on its own tint at 12px. */}
+            <span className={compareMode ? 'text-[var(--primary-ink)]' : undefined}>Changes</span>
           </ToolbarButton>
         </div>
 
@@ -116,14 +107,6 @@ const Toolbar = () => {
           </div>
         )}
       </div>
-
-      <HistoryRestoreModal
-        open={restoreOpen}
-        onOpenChange={setRestoreOpen}
-        createdAt={activeHistory?.createdAt}
-        newerCount={countVersionsAfter(historyList, activeHistory?.version)}
-        onConfirm={confirmRestore}
-      />
     </>
   )
 }

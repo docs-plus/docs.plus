@@ -1,3 +1,5 @@
+import { Banner } from '@components/ui/Banner'
+
 import type { PadTitleChangeNotice } from './types'
 
 type HistoryEditorVariant = 'desktop' | 'mobile'
@@ -15,22 +17,22 @@ export function HistoryPadTitleNotice({
   variant: HistoryEditorVariant
 }) {
   return (
-    <div role="status" className={WRAP[variant]}>
-      <div className="rounded-box border-base-300 bg-base-100 border px-4 py-2 text-sm leading-snug">
-        <p className="text-base-content">
+    <div className={WRAP[variant]}>
+      <Banner tone="info" className="leading-snug">
+        <p>
           <span className="font-semibold">
             {notice.userName === 'someone' ? 'someone' : `@${notice.userName}`}
           </span>
-          <span className="text-base-content/75"> renamed this document</span>
+          <span className="text-base-content/70"> renamed this document</span>
         </p>
-        <p className="text-base-content mt-1 min-w-0 break-words">
+        <p className="min-w-0 break-words">
           <span className="font-medium">&ldquo;{notice.titleFrom}&rdquo;</span>
           <span aria-hidden className="text-base-content/50 mx-1.5">
             →
           </span>
           <span className="font-medium">&ldquo;{notice.titleTo}&rdquo;</span>
         </p>
-      </div>
+      </Banner>
     </div>
   )
 }

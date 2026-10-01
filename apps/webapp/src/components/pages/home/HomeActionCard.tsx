@@ -1,8 +1,8 @@
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import { prefetchDocumentShell } from '@hooks/useNavigateToDocument'
+import { twMerge } from '@utils/twMerge'
 import { FormEvent, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { HOME_REGION_DURATION, HOME_SLUG_INPUT_ID, homeRegionEase } from './homeMobileLayout'
 
@@ -52,7 +52,6 @@ export function HomeActionCard({
       <Button
         variant="primary"
         shape="block"
-        size="lg"
         className="mb-6 text-base font-bold sm:mb-8"
         onClick={createDoc}
         onMouseEnter={prefetchDocumentShell}
@@ -65,7 +64,7 @@ export function HomeActionCard({
 
       <div className="mb-6 flex items-center gap-3 sm:mb-8 sm:gap-4">
         <div className="bg-base-300 h-px flex-1" />
-        <span className="text-base-content/50 text-xs sm:text-sm">or open existing</span>
+        <span className="text-base-content/60 text-xs sm:text-sm">or open existing</span>
         <div className="bg-base-300 h-px flex-1" />
       </div>
 
@@ -96,7 +95,6 @@ export function HomeActionCard({
         <Button
           type="submit"
           variant="neutral"
-          size="lg"
           className="w-full px-8 sm:h-auto sm:w-auto"
           disabled={isLoading || !trimmed}
           loading={pending === 'open'}

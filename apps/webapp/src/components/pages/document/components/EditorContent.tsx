@@ -7,8 +7,8 @@ import useDoubleTap from '@hooks/useDoubleTap'
 import { useStore } from '@stores'
 import { EditorContent as TiptapEditor } from '@tiptap/react'
 import { isSessionExpired, shouldShowSyncErrorWhileLoading } from '@utils/providerCollabStatus'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 const EditorContent = ({ className }: { className?: string }) => {
   const editor = useStore((state) => state.settings.editor.instance)

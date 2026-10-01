@@ -1,4 +1,4 @@
-import Button from '@components/ui/Button'
+import { ListGroupLabel } from '@components/ui/ListGroupLabel'
 import { Icons } from '@icons'
 
 import type { HistorySidebarRowHandlers, SidebarRow } from '../types'
@@ -21,19 +21,17 @@ export function HistorySidebarRowItem({
     case 'day-header':
       return (
         <div className="border-base-300 border-b">
-          <Button
+          <button
+            type="button"
             onClick={() => onToggleDay(row.dayKey)}
-            variant="ghost"
-            className="btn-block bg-base-200 hover:bg-base-300/80 active:bg-base-300/80 justify-between rounded-none border-0 px-3 py-2 shadow-none">
-            <span className="text-base-content text-xs font-semibold tracking-wide uppercase">
-              {row.label}
-            </span>
+            className="bg-base-200 hover:bg-base-300 focus-visible:ring-primary flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset">
+            <ListGroupLabel as="span">{row.label}</ListGroupLabel>
             {openDays.has(row.dayKey) ? (
               <Icons.chevronUp className="text-base-content/50 shrink-0" size={16} />
             ) : (
               <Icons.chevronDown className="text-base-content/50 shrink-0" size={16} />
             )}
-          </Button>
+          </button>
         </div>
       )
 
