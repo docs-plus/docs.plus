@@ -11,6 +11,7 @@ interface CloseButtonProps {
   iconSize?: number
   className?: string
   'aria-label'?: string
+  tooltip?: string
 }
 
 /** Hover and pressed fills come from daisyUI's own btn-ghost. It resolves to an opaque
@@ -21,7 +22,8 @@ const CloseButton = ({
   size = 'sm',
   iconSize,
   className = '',
-  'aria-label': ariaLabel = 'Close'
+  'aria-label': ariaLabel = 'Close',
+  tooltip
 }: CloseButtonProps) => {
   return (
     <Button
@@ -33,6 +35,7 @@ const CloseButton = ({
       startIcon={Icons.close}
       className={`text-base-content/70 hover:text-base-content focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none ${className}`}
       aria-label={ariaLabel}
+      tooltip={tooltip}
     />
   )
 }

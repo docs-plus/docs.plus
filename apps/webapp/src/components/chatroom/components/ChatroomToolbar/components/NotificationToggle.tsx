@@ -50,7 +50,7 @@ export const NotificationToggle = ({ className, size = 'sm', iconSize }: Props) 
       loading={fetchLoading}
       disabled={loading}
       onClick={handleToggle}
-      title={config.label}
+      tooltip={config.label}
       className={twMerge(chatToolbarIconButtonClassName, className)}
       aria-label={`Notifications: ${config.label}`}>
       <span className="inline-grid place-content-center" aria-hidden>

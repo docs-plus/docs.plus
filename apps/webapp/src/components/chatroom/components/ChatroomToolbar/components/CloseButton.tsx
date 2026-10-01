@@ -10,7 +10,8 @@ export const CloseButton = ({ className }: Props) => {
     <SharedCloseButton
       onClick={closeHeadingChatroom}
       className={className}
-      aria-label="Close chatroom"
+      aria-label="Close chat"
+      tooltip="Close chat"
     />
   )
 }

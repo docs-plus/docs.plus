@@ -27,7 +27,7 @@ export function MediaFilterToggle({ className }: Props) {
       )}
       aria-pressed={mediaOnly}
       aria-label={mediaOnly ? 'Show all messages' : 'Show messages with attachments only'}
-      title={mediaOnly ? 'Show all messages' : 'Media only'}
+      tooltip={mediaOnly ? 'Show all messages' : 'Media only'}
       data-testid="chat-media-filter"
       onClick={() => setFeedMode(mediaOnly ? 'all' : 'media-only')}>
       <Icons.image size={16} aria-hidden />
