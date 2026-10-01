@@ -158,6 +158,8 @@ apps/hocuspocus.server/temp/
 
 # Claude Code — per-machine personal settings (do not commit)
 .claude/settings.local.json
+# Design system lock — a maintainer's time-boxed session unlock (scripts/hooks/design-system-lock.ts)
+/.claude/design-system.unlock.json
 
 # Superpowers — local brainstorm/mocks scratch (do not commit)
 .superpowers/

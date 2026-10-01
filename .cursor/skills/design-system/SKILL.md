@@ -38,6 +38,10 @@ automatically when you work under `apps/webapp/`.
 
 ## Hard guardrails
 
+- **The design system is locked.** Read and follow `.cursor/docs/design-system.md` §Change protocol
+  (locked). Never add or change a token, species, size, radius, shadow, ink step or house-language
+  rule unless the maintainer asked for that exact change. Updating a catalog row to match approved
+  code is the only routine edit. Never bypass the lock hook or loosen `CODEOWNERS`.
 - No new shadow/radius values; no shadows on docked light surfaces; scrims are black tokens only.
 - No `*Classes.ts`/`*Styles.ts` string modules; no second floating-surface language.
 - No live regions inside `.ProseMirror`; overlay species and motion tiers come from `apps/webapp/CLAUDE.md`.

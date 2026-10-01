@@ -81,6 +81,13 @@ that it writes in Simplified English. It must also say that the returned text co
 the agent restates this when it dispatches further agents. A system prompt or output style set on
 you does not reach it.
 
+## The design system is locked
+
+[design-system.md](../docs/design-system.md) is maintainer-owned and mandatory for every UI
+change. Follow it as written. Never add or change a token, species, size, radius, shadow, ink step
+or house-language rule unless the maintainer asked for that exact change. The full rule is its
+§Change protocol (locked). In Claude Code a hook enforces it; in Cursor this rule is the guard.
+
 ## Keeping this honest
 
 `bun run check:agent-docs` asserts that every section reference and relative link between these

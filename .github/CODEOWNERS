@@ -1,0 +1,10 @@
+# The design system is maintainer-owned. A pull request that touches it needs the maintainer's review.
+# Turn on "Require review from Code Owners" in the main branch protection to make this binding.
+/.cursor/docs/design-system.md                 @HMarzban
+/.cursor/rules/design-system.mdc               @HMarzban
+/.cursor/skills/design-system/                 @HMarzban
+/apps/webapp/src/styles/globals.scss           @HMarzban
+/apps/admin-dashboard/src/styles/globals.scss  @HMarzban
+/.claude/settings.json                         @HMarzban
+/scripts/hooks/design-system-lock.ts           @HMarzban
+/.github/CODEOWNERS                            @HMarzban

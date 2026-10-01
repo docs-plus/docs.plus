@@ -1,6 +1,6 @@
 ---
 description: docs.plus design system — tokens, themes, elevation species, state language for all webapp UI
-globs: apps/webapp/src/**/*.tsx,apps/webapp/src/**/*.ts,apps/webapp/src/styles/**
+globs: apps/webapp/src/**/*.tsx,apps/webapp/src/**/*.ts,apps/webapp/src/styles/**,apps/admin-dashboard/src/**,.cursor/docs/design-system.md,.cursor/skills/design-system/**
 alwaysApply: false
 ---
 
@@ -14,6 +14,11 @@ Behavioral invariants (pad geometry, motion wiring, scrims, sheet systems) live 
 
 ## Cardinal rules
 
+- **The design system is locked and mandatory.** Follow `.cursor/docs/design-system.md` as written,
+  including §House language (direction C). Never add or change a token, species, size, radius,
+  shadow, ink step or house-language rule unless the maintainer asked for that exact change in this
+  chat. Updating a catalog row to match approved code is the only routine edit. Never edit
+  `globals.scss` theme blocks or tokens on your own. See §Change protocol (locked).
 - **Tokens only.** daisyUI semantic classes (`base-*`, `primary`, `*-content`, status colors) or
   `var(--…)` tokens — never raw Tailwind palette classes or hex outside `globals.scss` and the
   brand allowlist (social/platform/logo colors; media-anchored overlays stay black/white).
