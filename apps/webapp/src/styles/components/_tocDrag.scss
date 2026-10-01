@@ -19,11 +19,11 @@
   padding: 0;
   margin: 0;
   cursor: grab;
-  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+  color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
   // One chip frame for every state — fill/ink swap in `_tableOfContents.scss`.
   background-color: var(--color-base-100);
   border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-field, 0.25rem);
+  border-radius: var(--radius-field);
   box-shadow: var(--toc-grip-shadow, 0 1px 2px color-mix(in oklch, black 10%, transparent));
   z-index: 2;
   -webkit-user-drag: element;
@@ -77,7 +77,7 @@
   color: var(--color-primary-content);
   font-size: 0.65rem;
   font-weight: 700;
-  border-radius: 4px;
+  border-radius: 9999px;
   text-align: center;
   line-height: 18px;
   z-index: 5;
@@ -109,9 +109,10 @@
   padding: 0 4px;
   font-size: 0.65rem;
   font-weight: 600;
-  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+  // Live options take idle ink; /40 is only for disabled.
+  color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-field);
   transition:
     background-color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out),
     color var(--motion-overlay-in, 120ms) var(--motion-ease-enter, ease-out);
@@ -148,8 +149,9 @@
     }
   }
 
+  // Inverse pair: base-100 ink on a base-content fill holds contrast in every theme.
   &.active {
-    color: var(--color-primary-content);
+    color: var(--color-base-100);
     background: var(--color-base-content);
     position: relative;
     border-color: transparent;
@@ -199,13 +201,13 @@
     color: var(--color-neutral-content);
     font-size: 0.65rem;
     font-weight: 600;
-    border-radius: 8px;
+    border-radius: 9999px;
   }
 
   .toc-stack-indicator {
     position: absolute;
     inset: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-field);
     pointer-events: none;
     z-index: -1;
 

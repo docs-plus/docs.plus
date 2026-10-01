@@ -1,6 +1,6 @@
 import { AI_APP_BRANDS, type AiAppId } from '@utils/aiAppBrands'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 /** A square tile for an app's mark: a brand glyph, a letter, or a status icon. */
 export const AppTile = ({ children, className }: { children: ReactNode; className?: string }) => (

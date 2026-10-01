@@ -350,18 +350,46 @@
   --color-media-image: light-dark(#059669, #34d399);
   --color-media-video: light-dark(#7c3aed, #a78bfa);
   --color-media-audio: light-dark(#ea580c, #fb923c);
+  /* 13/20 meta type: labels, help, footer strips and quiet actions. Merge it with
+     `@utils/twMerge`; stock tailwind-merge reads `text-meta` as a colour. */
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.25rem;
+  /* Sign in with Google button: Google's own fill, stroke and ink (third-party identity). */
+  --color-google-fill: light-dark(#ffffff, #131314);
+  --color-google-stroke: light-dark(#747775, #8e918f);
+  --color-google-ink: light-dark(#1f1f1f, #e3e3e3);
 }
 
-:root {
+/* `[data-theme]` too: a custom property resolves its var() where it is declared, so a nested
+   theme scope (theme swatch, Present view) must re-declare these to get its own values. */
+:root,
+[data-theme] {
   --font-sans: Helvetica, Arial, sans-serif;
   --color-docsy: var(--color-primary);
   --caret-color: var(--color-primary);
   --caret-color-inverse: var(--color-primary-content);
   --border-color-tint: color-mix(in oklch, var(--color-base-content) 14%, transparent);
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-  /* Info hue readable as TEXT ink on light `bg-info/10` surfaces (plain `info` fails AA there). Adapts
-     per theme via base-content — darkens on light grounds, lifts on dark ones. */
-  --info-ink: color-mix(in oklch, var(--color-info), var(--color-base-content) 42%);
+  /* Hues as TEXT ink: each mix is the least that clears 5:1 on base-100, base-200, hue/10 and
+     btn-soft in all 7 themes. oklab keeps the hue (oklch turned info purple on paper). Not @theme
+     aliases: a @theme colour freezes its var() mix, so use `text-[var(--x-ink)]`. */
+  --info-ink: color-mix(in oklab, var(--color-info), var(--color-base-content) 42%);
+  --primary-ink: color-mix(in oklab, var(--color-primary), var(--color-base-content) 25%);
+  --success-ink: color-mix(in oklab, var(--color-success), var(--color-base-content) 40%);
+  --warning-ink: color-mix(in oklab, var(--color-warning), var(--color-base-content) 40%);
+  --error-ink: color-mix(in oklab, var(--color-error), var(--color-base-content) 25%);
+  /* Code inks: highlight.js tokens on the base-200 `pre`, inline code on its base-content 10% chip.
+     Comment and inline are /70: /60 lands on 4.50:1 on base-200 and fails on the chip. */
+  --code-ink-inline: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --code-ink-comment: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --code-ink-keyword: var(--info-ink);
+  --code-ink-string: var(--success-ink);
+  --code-ink-number: var(--warning-ink);
+  --code-ink-variable: var(--error-ink);
+  --code-ink-title: color-mix(in oklab, var(--color-accent), var(--color-base-content) 50%);
+  /* Peer caret label ink, fixed in every theme: `getCursorUser` builds mid-tone plates, so this
+     dark ink holds 4.5:1 on the plate in light and dark alike. */
+  --caret-label-ink: #0f172a;
   /* Pad workspace — docked regions (TOC, editor well, chat) share one divider; shadows only on floating overlays. */
   --pad-divider: var(--color-base-300);
   --pad-sheet-border: var(--color-base-300);
@@ -390,6 +418,12 @@
         color-mix(in oklch, black 8%, transparent),
         color-mix(in oklch, black 40%, transparent)
       );
+  /* Tooltip tier: a hairline, lighter than L1. Black-based like --shadow-overlay. */
+  --shadow-tooltip: 0 2px 4px
+    light-dark(
+      color-mix(in oklch, black 10%, transparent),
+      color-mix(in oklch, black 40%, transparent)
+    );
   /* Bottom-anchored lift (mobile toolbar + chat pane). Same two layers the toolbar
      already used — not a new value. */
   --shadow-lift-up:
@@ -411,6 +445,11 @@
   );
   /* Overflow-edge fade on opt-in ScrollArea — alpha mask size, not a color. */
   --scroll-fade-size: 1.25rem;
+}
+
+/* QR inks stay `:root` only: the Present `<dialog>` carries `data-theme`, and an unlayered
+   `[data-theme]` value would beat its layered `[--qr-plate:var(--qr-plate-dim)]` utility. */
+:root {
   /* QR code ink — fixed in every theme: scanners need dark modules on a light plate. */
   --qr-plate: #ffffff;
   --qr-ink: #0b1f4d;
@@ -432,13 +471,14 @@ html[data-theme] {
 
   --hm-toolbar-bg: var(--color-base-100);
   --hm-toolbar-fg: var(--color-base-content);
-  --hm-toolbar-border: var(--border-color-tint);
-  --hm-toolbar-hover: var(--color-base-300);
-  --hm-toolbar-active: color-mix(in oklch, var(--color-primary) 14%, var(--color-base-100));
+  /* The media toolbar frame is the extension skin; these tokens are its only webapp values. */
+  --hm-toolbar-border: var(--color-base-300);
+  --hm-toolbar-hover: var(--color-base-200);
+  --hm-toolbar-active: color-mix(in oklch, var(--color-primary) 15%, var(--color-base-100));
   --hm-toolbar-active-fg: var(--color-primary);
   --hm-toolbar-shadow: var(--shadow-overlay);
-  --hm-caption-fg: var(--muted-foreground);
-  --hm-caption-placeholder: color-mix(in oklch, var(--color-base-content) 35%, transparent);
+  --hm-caption-fg: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+  --hm-caption-placeholder: color-mix(in oklab, var(--color-base-content) 50%, transparent);
 
   --hm-loading-bg: var(--color-base-200);
   --hm-loading-shimmer: light-dark(
@@ -446,10 +486,12 @@ html[data-theme] {
     color-mix(in oklch, white 8%, transparent)
   );
   --hm-loading-provider: var(--color-base-content);
-  --hm-loading-message: var(--muted-foreground);
-  --hm-loading-error: var(--color-error);
+  /* /70, not /60: the message sits on base-200, where /60 lands on 4.50:1. */
+  --hm-loading-message: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+  --hm-loading-error: var(--error-ink);
   --hm-loading-spinner-track: var(--color-base-300);
-  --hm-loading-spinner-active: var(--color-primary);
+  /* Status, not interaction: the arc rides base-content like the house `loading` spinner. */
+  --hm-loading-spinner-active: var(--color-base-content);
 }
 
 /* Premium light themes — media accents tuned to each palette (--pad-well = base-200). */
@@ -496,6 +538,16 @@ html[data-theme] {
   background-color: light-dark(var(--color-neutral), var(--color-base-200));
   color: light-dark(var(--color-neutral-content), var(--color-base-content));
   border: 1px solid light-dark(transparent, var(--color-base-300));
+}
+
+/* Action ink on the inverse surfaces (toast action). Light: primary lifted toward the slab ink;
+   53% is the least that clears 5:1 on all three light slabs (Paper 5.02). Dark: --primary-ink. */
+.surface-inverse,
+.surface-inverse-raised {
+  --inverse-action-ink: light-dark(
+    color-mix(in oklab, var(--color-primary), var(--color-neutral-content) 53%),
+    var(--primary-ink)
+  );
 }
 
 * {
@@ -578,59 +630,6 @@ html:not(.m_mobile) {
   iframe {
     background-color: var(--color-base-200);
   }
-
-  &__modal {
-    padding: 8px;
-    background-color: var(--color-base-100);
-    color: var(--color-base-content);
-    border-radius: var(--radius-box);
-    display: flex;
-    align-items: center;
-    box-shadow: var(--shadow-overlay);
-    border: 1px solid var(--color-base-300);
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-
-    &__divider {
-      border-left: 2px solid var(--color-base-300);
-      height: 5px;
-      margin: 6px 10px;
-    }
-
-    select {
-      border-radius: var(--radius-field);
-      border-color: var(--color-base-300);
-      padding: 0.5rem 0.5rem;
-      background-color: var(--color-base-100);
-      color: var(--color-base-content);
-      &:hover {
-        background-color: var(--color-base-200);
-      }
-    }
-
-    button {
-      border-color: var(--color-base-300);
-      padding: 8px;
-      border-radius: var(--radius-field);
-      &:hover {
-        background-color: var(--color-base-200);
-      }
-    }
-
-    &--active {
-      background-color: var(--color-primary);
-      fill: var(--color-primary-content);
-      &:hover {
-        svg {
-          fill: var(--color-base-content);
-        }
-      }
-      svg {
-        fill: var(--color-primary-content);
-      }
-    }
-  }
 }
 
 .message--card__content {
@@ -674,29 +673,6 @@ html:not(.m_mobile) {
   top: 1.6rem;
 }
 
-/* Highlight glow — jump flash via flashMessage / useIsMessageHighlighted */
-.border-ping-glow {
-  position: relative;
-  border-width: 2px;
-  border-style: solid;
-  animation: border-ping-glow 2.5s ease-in-out infinite;
-  transition: all 0.3s ease;
-}
-
-@keyframes border-ping-glow {
-  0%,
-  100% {
-    border-color: color-mix(in oklch, var(--color-primary) 60%, transparent);
-    box-shadow: 0 0 5px color-mix(in oklch, var(--color-primary) 20%, transparent);
-  }
-  50% {
-    border-color: var(--color-primary);
-    box-shadow:
-      0 0 15px color-mix(in oklch, var(--color-primary) 60%, transparent),
-      0 0 5px color-mix(in oklch, var(--color-primary) 80%, transparent);
-  }
-}
-
 @keyframes avatar-typing {
   0% {
     transform: translateY(0);
@@ -726,8 +702,7 @@ html:not(.m_mobile) {
 /* Decorative infinite loops stop under reduced motion; .loading spinners stay (status). */
 @media (prefers-reduced-motion: reduce) {
   .avatar-typing,
-  .avatar-activity,
-  .border-ping-glow {
+  .avatar-activity {
     animation: none;
   }
 }
@@ -881,34 +856,18 @@ $msg-flash-rest-2: 78%;
   display: none; /* Chrome, Safari, Opera */
 }
 
-/* em-emoji-picker (emoji-mart) — border and shadow for separation (same UX as Popover/context menu). */
+/* em-emoji-picker (emoji-mart 5.6) — L1 frame through the vars its shadow DOM reads. Its text,
+   accent and panel colours read `--rgb-*` "r, g, b" triplets that tokens cannot produce, so the
+   dark-theme sheet in `EmojiPanel/Picker.tsx` still paints those. */
 /* stylelint-disable-next-line selector-type-no-unknown -- em-emoji-picker is a custom element */
 em-emoji-picker {
   border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  box-shadow: var(--shadow-overlay);
-}
-
-/* em-emoji-picker (emoji-mart) — force our theme tokens onto the host so the shadow DOM
-   inherits them in every theme (its built-in "dark" can otherwise render light). All values
-   are theme-aware daisyUI tokens, so this is correct unconditionally — no dark gate needed. */
-/* stylelint-disable-next-line selector-type-no-unknown -- em-emoji-picker is a custom element */
-em-emoji-picker {
   background-color: var(--color-base-100) !important;
-  --background: var(--color-base-100);
-  --color: var(--color-base-content);
-  --border-color: var(--color-base-300);
-  --input-background: var(--color-base-200);
-  --input-border-color: var(--color-base-300);
-  --input-placeholder-color: var(--color-base-content);
-  --category-icon-color: var(--color-base-content);
-  --category-icon-active-color: var(--color-primary);
-  --hover-background: var(--color-base-200);
-  --focus-background: var(--color-base-200);
-  --epr-bg-color: var(--color-base-100);
-  --epr-text-color: var(--color-base-content);
-  --epr-picker-border-color: var(--color-base-300);
-  --epr-category-icon-active-color: var(--color-primary);
+  --border-radius: var(--radius-box);
+  --shadow: var(--shadow-overlay);
+  --font-family: var(--font-sans);
+  --color-border: color-mix(in oklab, var(--color-base-content) 8%, transparent);
+  --color-border-over: color-mix(in oklab, var(--color-base-content) 16%, transparent);
 }
 
 /* em-emoji (emoji-mart web component) — theme-aware.

@@ -37,7 +37,8 @@
 
   .collaboration-cursor__label {
     border-radius: 3px 3px 3px 0;
-    color: var(--color-base-content);
+    // The plate is a mid-tone peer colour in every theme, so the ink is fixed, not base-content.
+    color: var(--caret-label-ink);
     font-size: 12px;
     font-weight: 600;
     left: -1px;
@@ -79,7 +80,8 @@
 
   code {
     background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
-    color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+    color: var(--code-ink-inline);
+    font-family: var(--font-mono);
   }
 
   img {
@@ -117,9 +119,9 @@
   pre {
     background: var(--color-base-200);
     border: 1px solid var(--color-base-300);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-field);
     color: var(--color-base-content);
-    font-family: 'JetBrainsMono', monospace;
+    font-family: var(--font-mono);
     overflow: auto;
     padding: var(--prose-pre-padding-block) var(--prose-pre-padding-inline);
 
@@ -132,7 +134,7 @@
 
     .hljs-comment,
     .hljs-quote {
-      color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+      color: var(--code-ink-comment);
     }
 
     .hljs-variable,
@@ -144,7 +146,7 @@
     .hljs-link,
     .hljs-selector-id,
     .hljs-selector-class {
-      color: var(--color-error);
+      color: var(--code-ink-variable);
     }
 
     .hljs-number,
@@ -154,23 +156,23 @@
     .hljs-literal,
     .hljs-type,
     .hljs-params {
-      color: var(--color-warning);
+      color: var(--code-ink-number);
     }
 
     .hljs-string,
     .hljs-symbol,
     .hljs-bullet {
-      color: var(--color-success);
+      color: var(--code-ink-string);
     }
 
     .hljs-title,
     .hljs-section {
-      color: var(--color-accent);
+      color: var(--code-ink-title);
     }
 
     .hljs-keyword,
     .hljs-selector-tag {
-      color: var(--color-info);
+      color: var(--code-ink-keyword);
     }
 
     .hljs-emphasis {

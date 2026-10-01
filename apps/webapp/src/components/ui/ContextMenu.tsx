@@ -16,8 +16,8 @@ import {
   useRole,
   useTypeahead
 } from '@floating-ui/react'
+import { twMerge } from '@utils/twMerge'
 import { createContext, forwardRef, useContext, useEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { useOverlayTransition } from './useOverlayTransition'
 
@@ -25,50 +25,80 @@ import { useOverlayTransition } from './useOverlayTransition'
 export const contextMenuPanelClassName =
   'flex flex-col list-none bg-base-100 border-base-300 m-0 min-w-[11rem] rounded-box border p-1.5 shadow-xl outline-none'
 
+/** Row host focus look: `group` feeds the `ContextMenuRow` fill, the ring shows keyboard focus. */
+export const contextMenuRowHostClassName =
+  'group rounded-field focus-visible:ring-primary outline-none focus-visible:ring-2 focus-visible:ring-inset'
+
 export type ContextMenuRowVariant = 'default' | 'primary' | 'danger'
 
 type ContextMenuRowProps = {
-  icon: React.ReactNode
+  /** Leading 16px glyph. A group gives every row an icon, or none. */
+  icon?: React.ReactNode
   children: React.ReactNode
   variant?: ContextMenuRowVariant
+  /** Fill without hover or focus: a listbox row that `aria-activedescendant` points at. */
+  active?: boolean
+  disabled?: boolean
+  /** End slot, such as the check on a selected option. */
+  trailing?: React.ReactNode
   className?: string
-  dimIcon?: boolean
 }
 
-const contextMenuRowVariantClass: Record<ContextMenuRowVariant, string> = {
-  default: 'group-hover:bg-base-300 group-active:bg-base-300/90',
-  primary: 'group-hover:bg-base-300 group-active:bg-base-300/90 text-primary',
-  danger: 'group-hover:bg-error/20 group-active:bg-error/25 text-error'
+const contextMenuRowInk: Record<ContextMenuRowVariant, string> = {
+  default: '',
+  primary: 'text-primary',
+  danger: 'text-error'
 }
 
+/**
+ * The one menu and listbox row. Hover and keyboard focus fill it through the parent's `group`
+ * (`MenuItem`); a listbox that keeps focus on its trigger passes `active` instead.
+ */
 export function ContextMenuRow({
   icon,
   children,
   variant = 'default',
-  className,
-  dimIcon = true
+  active = false,
+  disabled = false,
+  trailing,
+  className
 }: ContextMenuRowProps) {
   return (
     <span
       className={twMerge(
-        'rounded-field flex w-full cursor-pointer items-center gap-2.5 px-2.5 py-2 text-sm transition-colors duration-150',
-        contextMenuRowVariantClass[variant],
+        'rounded-field flex w-full items-center gap-2.5 px-2.5 py-2 text-left text-sm transition-colors duration-150',
+        contextMenuRowInk[variant],
+        disabled
+          ? 'text-base-content/40 cursor-not-allowed'
+          : 'group-hover:bg-base-200 group-focus-visible:bg-base-200 group-active:bg-base-300 cursor-pointer',
+        active && !disabled && 'bg-base-200',
         className
       )}>
-      <span className={twMerge('flex-shrink-0', dimIcon && variant === 'default' && 'opacity-70')}>
-        {icon}
-      </span>
-      <span className="font-medium">{children}</span>
+      {icon && (
+        <span
+          className={twMerge('flex-shrink-0', variant === 'default' && !disabled && 'opacity-70')}>
+          {icon}
+        </span>
+      )}
+      <span className="min-w-0 flex-1 font-medium">{children}</span>
+      {trailing && <span className="flex shrink-0 items-center">{trailing}</span>}
     </span>
   )
 }
 
-export function ContextMenuDivider({ className }: { className?: string }) {
+/** `as="div"` for a panel of plain buttons, where an `<li>` is invalid markup. */
+export function ContextMenuDivider({
+  className,
+  as: Tag = 'li'
+}: {
+  className?: string
+  as?: 'li' | 'div'
+}) {
   return (
-    <li
+    <Tag
       role="separator"
       aria-hidden
-      className={twMerge('bg-base-300 pointer-events-none my-[4px] h-px shrink-0 p-0', className)}
+      className={twMerge('bg-base-300 pointer-events-none my-1 h-px shrink-0 p-0', className)}
     />
   )
 }
@@ -92,17 +122,53 @@ export const useContextMenuContext = () => {
   return context
 }
 
+type MenuListProviderProps = {
+  value: ContextMenuContextType
+  elementsRef: React.RefObject<Array<HTMLElement | null>>
+  labelsRef?: React.RefObject<Array<string | null>>
+  children: React.ReactNode
+}
+
+/**
+ * Lets a floating panel other than `ContextMenu` host `MenuItem` rows. The host owns
+ * `useListNavigation` + `useTypeahead` over the same refs and passes their `getItemProps`.
+ */
+export function MenuListProvider({
+  value,
+  elementsRef,
+  labelsRef,
+  children
+}: MenuListProviderProps) {
+  return (
+    <ContextMenuContext.Provider value={value}>
+      <FloatingList elementsRef={elementsRef} labelsRef={labelsRef}>
+        {children}
+      </FloatingList>
+    </ContextMenuContext.Provider>
+  )
+}
+
 type MenuItemProps = React.LiHTMLAttributes<HTMLLIElement> & {
   ref?: React.Ref<HTMLLIElement>
+  /** Skipped by arrow keys and ignores clicks. Pass the same flag to its `ContextMenuRow`. */
+  disabled?: boolean
 }
 
 /**
  * Registers via `useListItem` (Floating UI's `FloatingList`), not DOM position, so keyboard
  * and focus wiring reaches rows through any wrapper the caller nests them in.
- * Throws outside a `ContextMenu` provider — no longer a standalone `<li>`.
- * Clicking does not close the menu; the caller owns `setIsOpen(false)`.
+ * Throws outside a `ContextMenu` or `MenuListProvider`. Clicking does not close the menu;
+ * the caller owns `setIsOpen(false)`.
  */
-export function MenuItem({ children, ref, className, onKeyDown, ...props }: MenuItemProps) {
+export function MenuItem({
+  children,
+  ref,
+  className,
+  onKeyDown,
+  onClick,
+  disabled = false,
+  ...props
+}: MenuItemProps) {
   const { activeIndex, getItemProps } = useContextMenuContext()
   const { ref: itemRef, index } = useListItem()
   const mergedRef = useMergeRefs([ref, itemRef])
@@ -110,18 +176,28 @@ export function MenuItem({ children, ref, className, onKeyDown, ...props }: Menu
   return (
     <li
       role="menuitem"
-      className={twMerge('group rounded-field cursor-pointer', className)}
+      aria-disabled={disabled || undefined}
+      className={twMerge(
+        contextMenuRowHostClassName,
+        'cursor-pointer',
+        disabled && 'cursor-not-allowed',
+        className
+      )}
       {...getItemProps({
         ref: mergedRef,
         tabIndex: activeIndex === index ? 0 : -1,
         ...props,
+        onClick(e: React.MouseEvent<HTMLElement>) {
+          if (disabled) return
+          onClick?.(e as React.MouseEvent<HTMLLIElement>)
+        },
         onKeyDown(e: React.KeyboardEvent<HTMLElement>) {
           onKeyDown?.(e as React.KeyboardEvent<HTMLLIElement>)
           // <li> gets no native Enter/Space-to-click; useListNavigation only
           // moves focus, so activation has to be wired here.
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            e.currentTarget.click()
+            if (!disabled) e.currentTarget.click()
           }
         }
       })}>

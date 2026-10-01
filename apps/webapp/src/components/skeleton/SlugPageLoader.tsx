@@ -33,7 +33,7 @@ const usePersistedTocWidth = () => {
 const StatusPill = () => (
   <div
     role="status"
-    className="bg-neutral text-neutral-content fixed bottom-4 left-4 z-50 flex animate-[doc-region-in_200ms_ease-out_1500ms_both] items-center gap-2 rounded-full px-4 py-2 text-sm shadow-lg">
+    className="surface-inverse-raised fixed bottom-4 left-4 z-50 flex animate-[doc-region-in_200ms_ease-out_1500ms_both] items-center gap-2 rounded-full px-4 py-2 text-sm shadow-xl">
     <span className="loading loading-spinner loading-sm" />
     <span>Opening document…</span>
   </div>
@@ -45,11 +45,11 @@ const StatusPill = () => (
 // className matches DesktopEditor's EditorContent call verbatim.
 const DesktopSkeleton = ({ tocWidth, isAuthed }: { tocWidth: number; isAuthed: boolean }) => (
   <div className="pad tiptap flex min-h-0 w-full flex-1 flex-col">
-    <header className="border-base-300 bg-base-100 flex h-14 min-h-12 w-full items-center border-b px-3 py-2">
+    <header className="border-base-300 bg-base-100 flex h-14 w-full shrink-0 items-center border-b px-3">
       <div className="flex flex-1 items-center gap-2">
-        <div className="skeleton size-[34px] rounded" />
-        <div className="skeleton h-5 w-40 rounded" />
-        <div className="skeleton h-5 w-14 rounded" />
+        <div className="skeleton rounded-field size-[34px]" />
+        <div className="skeleton h-5 w-40" />
+        <div className="skeleton h-5 w-14" />
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <div className="skeleton rounded-field h-10 w-20" />
@@ -86,13 +86,13 @@ const MobileSkeleton = ({ isAuthed }: { isAuthed: boolean }) => (
       <div className="border-base-300 flex min-h-[61px] w-full flex-col justify-center border-b px-2 py-2">
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1">
-            <div className="skeleton size-8 rounded" />
-            <div className="skeleton ml-1 h-6 w-40 rounded" />
+            <div className="skeleton rounded-field size-8" />
+            <div className="skeleton ml-1 h-6 w-40" />
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {isAuthed ? (
               <>
-                <div className="skeleton size-8 rounded" />
+                <div className="skeleton rounded-field size-8" />
                 <div className="skeleton size-10 rounded-full" />
               </>
             ) : (

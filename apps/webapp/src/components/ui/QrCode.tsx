@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { encode } from 'uqr'
 
 // ISO/IEC 18004 asks for a 4-module light margin; a smaller one must sit on a light surface.

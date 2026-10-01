@@ -2,9 +2,6 @@
 @use './chat-editor';
 @use './components/document-shell';
 
-$pad-header-height: 64px;
-$pad-toolbar-height: 38px;
-
 .ProseMirror {
   /* TipTap Highlight — inline `background-color` on <mark> would ignore theme; force accent tint */
   mark {
@@ -20,7 +17,7 @@ $pad-toolbar-height: 38px;
     background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-radius: 0.4rem;
     box-decoration-break: clone;
-    color: var(--color-primary);
+    color: var(--primary-ink);
     padding: 0.1rem 0.3rem;
     &::after {
       content: '\200B';
@@ -39,15 +36,17 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.hyperlink-preview-popover {
+// Same frame as `contextMenuPanelClassName`, so every floating panel matches.
+.hyperlink-preview-popover,
+.hyperlink-link-popover-shell {
   background-color: var(--color-base-100);
   color: var(--color-base-content);
-  // Unified with the TOC + chat context menus (`contextMenuPanelClassName`):
-  // 1px base-300 border, rounded-xl corners, overlay shadow — one surface
-  // language across every floating menu/popover, light and dark.
   border: 1px solid var(--color-base-300);
   border-radius: var(--radius-box);
   box-shadow: var(--shadow-overlay);
+}
+
+.hyperlink-preview-popover {
   padding: 8px;
   width: 22rem;
   max-width: calc(100vw - 1rem);
@@ -55,122 +54,6 @@ $pad-toolbar-height: 38px;
   display: flex;
   align-items: center;
   gap: 0.25rem;
-
-  form {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    width: 100%;
-  }
-
-  .inputs-wrapper,
-  .href-wrapper,
-  .text-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border: 1px solid var(--color-base-300);
-    border-radius: var(--radius-field);
-    padding: 0.375rem 0.5rem;
-    background-color: var(--color-base-100);
-    transition:
-      border-color 0.15s ease-in-out,
-      box-shadow 0.15s ease-in-out;
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    box-sizing: border-box;
-
-    &:focus-within {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 1px var(--color-primary);
-    }
-
-    &.error {
-      border-color: var(--color-error);
-      box-shadow: 0 0 0 1px var(--color-error);
-
-      &:focus-within {
-        border-color: var(--color-error);
-        box-shadow: 0 0 0 1px var(--color-error);
-      }
-    }
-
-    input {
-      border: none;
-      outline: none;
-      background: transparent;
-      font-size: 0.875rem;
-      flex: 1;
-      color: var(--color-base-content);
-      padding: 0;
-
-      &::placeholder {
-        color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-      }
-    }
-
-    .search-icon {
-      color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .error-message {
-      color: var(--color-error);
-      font-size: 11px;
-      font-weight: bold;
-      display: none;
-      position: absolute;
-      top: -8px;
-      background-color: var(--color-base-100);
-      padding: 0px 2px;
-      border-radius: var(--radius-field);
-      box-shadow: 0 0px 2px 0px color-mix(in oklch, var(--color-base-content) 10%, transparent);
-      left: 3px;
-
-      &.show {
-        display: block;
-      }
-    }
-  }
-
-  .buttons-wrapper {
-    flex-shrink: 0;
-
-    button[type='submit'],
-    .back-button {
-      background-color: transparent;
-      border: none;
-      border-radius: 0.25rem;
-      padding: 0.375rem 0.75rem;
-      font-size: 0.875rem;
-      font-family: var(--font-sans) !important;
-      cursor: pointer;
-      transition: background-color 0.15s ease-in-out;
-      white-space: nowrap;
-      font-weight: bold;
-
-      &:hover {
-        background-color: var(--color-primary);
-        color: var(--color-primary-content);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-
-        &:hover {
-          background-color: transparent;
-          color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-        }
-      }
-    }
-  }
 
   // Compact desktop preview metadata row.
   .metadata {
@@ -220,6 +103,7 @@ $pad-toolbar-height: 38px;
       background-color: var(--color-base-200);
     }
 
+    // Neutral tile like the mobile InternalLinkChip; one step up on hover so it stays visible on the base-200 row.
     .chip-icon {
       width: 1.875rem;
       height: 1.875rem;
@@ -228,8 +112,13 @@ $pad-toolbar-height: 38px;
       align-items: center;
       justify-content: center;
       border-radius: var(--radius-field);
-      background-color: color-mix(in oklch, var(--color-primary) 14%, transparent);
-      color: var(--color-primary);
+      background-color: var(--color-base-200);
+      color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+      transition: background-color 0.15s ease-in-out;
+    }
+
+    &:hover .chip-icon {
+      background-color: var(--color-base-300);
     }
 
     .chip-text {
@@ -248,8 +137,9 @@ $pad-toolbar-height: 38px;
     }
 
     .chip-sub {
-      font-size: 0.6875rem;
-      color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+      font-size: var(--text-meta);
+      line-height: var(--text-meta--line-height);
+      color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -259,14 +149,10 @@ $pad-toolbar-height: 38px;
   .copy {
     margin-left: auto;
   }
-}
 
-.hyperlink-preview-popover {
-  // Flex children default to `min-width: auto` (= content size), which overrides
-  // the nested `max-width: 200px` caps whenever the href is wider than its cap.
-  // Resetting `min-width: 0` down the chain lets the anchor actually shrink and
-  // the ellipsis kick in, so the popover stays a fixed width regardless of href
-  // length.
+  // Flex children default to `min-width: auto`, which beats the nested `max-width: 200px`
+  // caps. `min-width: 0` down the chain lets the anchor shrink and ellipsize, so the
+  // popover keeps one width whatever the href length.
   .metadata,
   .metadata-loading {
     min-width: 0;
@@ -324,41 +210,16 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.tippy-svg-arrow {
-  top: -12px !important;
-  fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-}
-
-// Shared frame for the React-rendered hyperlink popovers (create + edit).
-// Kept token-for-token with `.hyperlink-preview-popover` (lines 46–53) so
-// the popover family reads as one cohesive surface; if the preview popover's
-// border / radius / shadow ever moves, update both blocks together.
+// React create and edit popovers.
 .hyperlink-link-popover-shell {
-  background-color: var(--color-base-100);
-  color: var(--color-base-content);
-  // Unified with the TOC + chat context menus (`contextMenuPanelClassName`):
-  // 1px base-300 border, rounded-xl corners, overlay shadow — one surface
-  // language across every floating menu/popover, light and dark.
-  border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  box-shadow: var(--shadow-overlay);
-
-  // daisyUI's `<label class="input">` defaults `--input-color` to base-content
-  // for both the unfocused tint and the focus outline, and uses a 2px outline
-  // offset which reads as a "double ring" against the wrapper border. The
-  // legacy hyperlink form used the primary colour for focus only, with the
-  // ring tight against the input. Mirror that here so the popover focus state
-  // matches the reference family.
+  // daisyUI `.input` rings focus in base-content with a 2px offset. Against this frame's
+  // border that reads as a double ring, so focus takes primary ink with no offset.
   .input:focus-within {
     --input-color: var(--color-primary);
     outline-offset: 0;
     border: none;
   }
 }
-
-// --------------------------------------------------------------------------
-// Hyperlink preview: loading skeleton (shared desktop + mobile)
-// --------------------------------------------------------------------------
 
 @keyframes hyperlink-preview-shimmer {
   0% {
@@ -424,74 +285,13 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.dropdown-menu {
-  background: var(--color-base-100);
-  color: var(--color-base-content);
-  border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  box-shadow: var(--shadow-overlay);
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  overflow: auto;
-  padding: 0.5rem;
-  position: relative;
-  min-width: 180px;
-
-  button {
-    align-items: center;
-    background-color: transparent;
-    display: flex;
-    gap: 0.5rem;
-    text-align: left;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-    color: var(--color-base-content);
-    font-size: 0.9rem;
-
-    &:hover,
-    &:hover.is-selected {
-      background-color: var(--color-base-200);
-    }
-
-    &.is-selected {
-      background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
-      color: var(--color-primary);
-    }
-  }
-}
-
-// Media Upload Placeholder Styles
-.media-upload-placeholder {
-  // Ensure proper sizing and positioning
-  .relative {
-    min-height: 180px;
-  }
-
-  // Smooth transitions for progress
-  .transition-all {
-    transition: all 300ms ease-out;
-  }
-
-  // Backdrop blur for modern effect
-  .backdrop-blur {
-    backdrop-filter: blur(4px);
-  }
-
-  // Ensure proper z-index layering
-  .absolute {
-    z-index: 10;
-  }
-}
-
 .message--card__content,
 .msg_card {
   .mention,
   [data-type='mention'] {
     border-radius: 0.4rem;
     box-decoration-break: clone;
-    color: var(--color-primary);
+    color: var(--primary-ink);
     padding: 0.1rem 0.3rem;
     &::after {
       content: '\200B';
@@ -504,81 +304,6 @@ $pad-toolbar-height: 38px;
   [data-type='mention'] {
     font-weight: 600;
     cursor: pointer;
-  }
-}
-
-// Image Toolbar Styles
-.media-toolbar {
-  background-color: var(--color-base-100);
-  color: var(--color-base-content);
-  border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-box);
-  box-shadow: var(--shadow-overlay);
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-
-  &__button {
-    border: 1px solid transparent;
-    border-radius: var(--radius-field);
-    padding: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 150ms ease-out;
-
-    &--text {
-      font-size: 0.75rem;
-      line-height: 1;
-      padding: 6px 8px;
-      min-width: 4.5rem;
-    }
-
-    &:hover {
-      background-color: var(--color-base-200);
-      border-color: var(--color-base-300);
-    }
-
-    &--active {
-      background-color: color-mix(in oklch, var(--color-primary) 15%, transparent);
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-
-      &:hover {
-        background-color: color-mix(in oklch, var(--color-primary) 20%, transparent);
-      }
-    }
-  }
-
-  &__select {
-    border: 1px solid var(--color-base-300);
-    border-radius: var(--radius-field);
-    padding: 6px;
-    cursor: pointer;
-    background-color: var(--color-base-100);
-    color: var(--color-base-content);
-    font-size: 0.75rem;
-    min-width: 5rem;
-
-    &:focus {
-      outline: none;
-    }
-
-    &:hover {
-      background-color: var(--color-base-200);
-    }
-  }
-
-  &__divider {
-    box-sizing: border-box;
-    width: 1px;
-    align-self: stretch;
-    flex-shrink: 0;
-    background-color: var(--color-base-300);
-    margin-block: 5px;
-    margin-inline: 0;
   }
 }
 

@@ -40,7 +40,7 @@ function ProfileLinkIcon({ link }: { link: SanitizedProfileLink }) {
         <img
           src={faviconUrl}
           alt=""
-          className="size-5 rounded-sm object-contain"
+          className="size-5 object-contain"
           loading="lazy"
           onError={(e) => {
             e.currentTarget.style.display = 'none'
@@ -60,16 +60,17 @@ function ProfileLinkIcon({ link }: { link: SanitizedProfileLink }) {
 
 export function ProfileLinkRow({ link }: { link: SanitizedProfileLink }) {
   return (
+    // -mx-2 keeps the text on the section edge while the hover fill bleeds past it.
     <a
       {...profileLinkAnchorProps(link)}
-      className="bg-base-200/80 hover:bg-base-300 rounded-box flex items-center gap-3 p-3 transition-colors duration-150">
-      <span className="bg-base-100 ring-base-300/60 flex size-9 shrink-0 items-center justify-center rounded-full ring-1">
+      className="rounded-field hover:bg-base-200 focus-visible:ring-primary -mx-2 flex items-center gap-3 px-2 py-1.5 transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none">
+      <span className="flex size-5 shrink-0 items-center justify-center">
         <ProfileLinkIcon link={link} />
       </span>
       <div className="min-w-0 flex-1">
         <span className="text-base-content block truncate text-sm font-medium">{link.title}</span>
         {link.description ? (
-          <span className="text-base-content/60 block truncate text-xs">{link.description}</span>
+          <span className="text-meta text-base-content/60 block truncate">{link.description}</span>
         ) : null}
       </div>
     </a>

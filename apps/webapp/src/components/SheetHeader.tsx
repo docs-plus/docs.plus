@@ -1,6 +1,6 @@
 import CloseButton from '@components/ui/CloseButton'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 type SheetHeaderProps = {
   onClose?: () => void
@@ -8,11 +8,16 @@ type SheetHeaderProps = {
   children?: ReactNode
 }
 
+/** An `h2`, like the popover twin `PanelPopoverHeader`, so the sheet keeps its heading. */
 function SheetHeaderTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p className={twMerge('text-base-content flex-1 text-lg font-semibold', className)}>
+    <h2
+      className={twMerge(
+        'text-base-content min-w-0 flex-1 text-xl font-semibold break-words',
+        className
+      )}>
       {children}
-    </p>
+    </h2>
   )
 }
 

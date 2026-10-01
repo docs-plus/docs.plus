@@ -1,9 +1,13 @@
+import { sheetBodyStackClassName, sheetSafeAreaPadClassName } from '@utils/sheetBodyPadding'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import SheetHeader from './SheetHeader'
 
 export const sheetHeaderClassName = 'border-base-300 shrink-0 border-b px-4 pt-1 pb-3'
+
+/** `stack`: the form body (`px-4 py-3`, `gap-4`). `bare`: lists that own their own geometry. */
+export type SheetBodyLayout = 'stack' | 'bare'
 
 type SheetLayoutProps = {
   title: string
@@ -12,6 +16,8 @@ type SheetLayoutProps = {
   headerActions?: ReactNode
   onClose?: () => void
   fillHeight?: boolean
+  /** Defaults to `bare`, so callers that pad their own body keep their padding. */
+  body?: SheetBodyLayout
   className?: string
   bodyClassName?: string
 }
@@ -23,6 +29,7 @@ export function SheetLayout({
   headerActions,
   onClose,
   fillHeight = false,
+  body = 'bare',
   className,
   bodyClassName
 }: SheetLayoutProps) {
@@ -40,8 +47,9 @@ export function SheetLayout({
       <div
         className={twMerge(
           'flex min-h-0 flex-1 flex-col overflow-y-auto',
+          body === 'stack' && sheetBodyStackClassName,
           // SheetFooter already insets for the safe area — only add it here when there's no footer.
-          !footer && 'pb-[max(1rem,env(safe-area-inset-bottom))]',
+          !footer && sheetSafeAreaPadClassName,
           bodyClassName
         )}>
         {children}

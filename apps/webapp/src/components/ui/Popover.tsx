@@ -6,6 +6,7 @@ import {
   offset,
   Placement,
   shift,
+  size,
   useClick,
   useDismiss,
   useFloating,
@@ -50,12 +51,25 @@ export function usePopover({
     transform: false,
     middleware: [
       offset(offsetSize),
+      // No side fallback: a side placement let shift() lift a tall panel over its own trigger.
       flip({
         crossAxis: placement.includes('-'),
-        fallbackAxisSideDirection: 'end',
         padding: offsetSize
       }),
-      shift({ padding: offsetSize })
+      shift({ padding: offsetSize }),
+      size({
+        padding: offsetSize,
+        apply({ availableHeight, elements }) {
+          // Cap only a panel taller than the space, so small popovers keep their own box.
+          // Measure uncapped: a `max-h-[inherit]` child reports the cap as its own height.
+          elements.floating.style.maxHeight = ''
+          const tooTall = elements.floating.scrollHeight > availableHeight
+          Object.assign(elements.floating.style, {
+            maxHeight: tooTall ? `${Math.max(0, Math.floor(availableHeight))}px` : '',
+            overflowY: tooTall ? 'auto' : ''
+          })
+        }
+      })
     ]
   })
 

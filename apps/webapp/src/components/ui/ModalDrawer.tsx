@@ -6,6 +6,7 @@ import {
   useRole
 } from '@floating-ui/react'
 import { useHistoryDismiss } from '@hooks/useHistoryDismiss'
+import { twMerge } from '@utils/twMerge'
 import React, {
   createContext,
   forwardRef,
@@ -14,7 +15,6 @@ import React, {
   useImperativeHandle,
   useState
 } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface ModalDrawerProps {
   modalId?: string
@@ -161,6 +161,7 @@ export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
           id={modalId}
           type="checkbox"
           className="drawer-toggle"
+          aria-label={ariaLabel}
           ref={checkboxRef}
           onChange={handleCheckboxChange}
         />
@@ -179,7 +180,12 @@ export const ModalDrawer = forwardRef<ModalDrawerHandle, ModalDrawerProps>(
             aria-label={ariaLabel}
             tabIndex={-1}
             className="drawer-side outline-none [.drawer-toggle:checked~&]:[transition-property:opacity]">
-            <label htmlFor={modalId} aria-label="close sidebar" className="drawer-overlay"></label>
+            {/* The house scrim, not daisyUI's fixed 40% black. A pointer target only: the
+                drawer's own Close button names the action, and a label may not carry aria-label. */}
+            <label
+              htmlFor={modalId}
+              aria-hidden="true"
+              className="drawer-overlay bg-[var(--modal-scrim)]"></label>
             <ModalContext.Provider value={modalControl}>{children}</ModalContext.Provider>
           </div>
         </FloatingFocusManager>

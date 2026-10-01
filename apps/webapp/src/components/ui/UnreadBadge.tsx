@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import RollingNumber from './RollingNumber'
 
@@ -51,9 +51,12 @@ const UnreadBadge = ({
         className
       )}
       aria-live="polite"
-      aria-atomic="true"
-      aria-label={`${count} unread`}>
-      <RollingNumber value={count} max={max} />
+      aria-atomic="true">
+      {/* The reels render every digit 0-9, so they stay out of the tree; the text is the one name. */}
+      <span className="inline-flex" aria-hidden>
+        <RollingNumber value={count} max={max} />
+      </span>
+      <span className="sr-only">{`${count} unread`}</span>
     </span>
   )
 }

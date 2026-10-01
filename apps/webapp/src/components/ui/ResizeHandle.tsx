@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import { forwardRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 export type ResizeHandleOrientation = 'horizontal' | 'vertical'
 
@@ -10,7 +10,8 @@ export interface ResizeHandleProps {
   className?: string
 }
 
-/** VS Code-style sash: stradds the split; one divider (idle hairline → primary on hover/drag). */
+/** VS Code-style sash: straddles the split; one divider (idle hairline → primary on hover/drag).
+ * Mouse only, so no `tabIndex`: a focusable separator must carry `aria-valuenow`, and this has no value. */
 const ResizeHandle = forwardRef<HTMLDivElement, ResizeHandleProps>(
   ({ orientation, onMouseDown, isResizing = false, className }, ref) => {
     const isVertical = orientation === 'vertical'
@@ -30,7 +31,6 @@ const ResizeHandle = forwardRef<HTMLDivElement, ResizeHandleProps>(
         onMouseDown={onMouseDown}
         className={twMerge(
           'absolute touch-none select-none',
-          'focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none',
           isVertical && [
             'top-0 h-full w-[var(--resize-sash-hit)] cursor-col-resize',
             'right-[calc(var(--resize-sash-hit)/-2)]',
@@ -55,7 +55,6 @@ const ResizeHandle = forwardRef<HTMLDivElement, ResizeHandleProps>(
         role="separator"
         aria-orientation={isVertical ? 'vertical' : 'horizontal'}
         aria-valuetext={active ? 'Resizing' : undefined}
-        tabIndex={-1}
       />
     )
   }

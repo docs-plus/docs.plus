@@ -1,6 +1,6 @@
 import { prefersReducedMotion } from '@utils/motion'
+import { twMerge } from '@utils/twMerge'
 import { ReactNode, useCallback, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 export interface TypingTextItem {
   text: string

@@ -1,5 +1,7 @@
+import { twMerge } from '@utils/twMerge'
 import { forwardRef, TextareaHTMLAttributes, useId } from 'react'
-import { twMerge } from 'tailwind-merge'
+
+import { FieldHelp, fieldLabelClassName } from './FieldHelp'
 
 export type TextareaSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type TextareaColor =
@@ -11,6 +13,7 @@ export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaE
   size?: TextareaSize
   color?: TextareaColor
   ghost?: boolean
+  /** Help line under the field. With `error`, it renders as the error line. */
   helperText?: string
   error?: boolean
   success?: boolean
@@ -70,50 +73,48 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const textareaClasses = buildTextareaClasses(size, color, ghost, error, success)
 
-    const helperTextClasses = twMerge(
-      'label text-xs',
-      error && 'text-error',
-      success && 'text-success'
+    const helperId = helperText ? `${id}-help` : undefined
+    const describedBy = [props['aria-describedby'], helperId].filter(Boolean).join(' ') || undefined
+
+    const helperTextEl = helperText && (
+      <FieldHelp id={helperId} error={error} success={success}>
+        {helperText}
+      </FieldHelp>
     )
+
+    const textareaProps = {
+      ref,
+      id,
+      rows,
+      disabled,
+      ...props,
+      className: twMerge(textareaClasses, disabled && 'textarea-disabled', className),
+      'aria-invalid': props['aria-invalid'] ?? (error || undefined),
+      'aria-describedby': describedBy
+    }
 
     // daisyUI 5.5+: the span MUST come before the textarea or the label never floats.
     if (labelPosition === 'floating') {
       return (
-        <div className={twMerge('form-control w-full', wrapperClassName)}>
+        <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
           <label className="floating-label w-full">
             {label && <span>{label}</span>}
-            <textarea
-              ref={ref}
-              id={id}
-              placeholder={props.placeholder || label || ' '}
-              rows={rows}
-              className={twMerge(textareaClasses, disabled && 'textarea-disabled', className)}
-              disabled={disabled}
-              {...props}
-            />
+            <textarea {...textareaProps} placeholder={props.placeholder || label || ' '} />
           </label>
-          {helperText && <p className={helperTextClasses}>{helperText}</p>}
+          {helperTextEl}
         </div>
       )
     }
 
     return (
-      <div className={twMerge('form-control w-full', wrapperClassName)}>
+      <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
         {label && (
-          <label htmlFor={id} className="label">
-            <span className="label-text text-base-content">{label}</span>
+          <label htmlFor={id} className={fieldLabelClassName}>
+            {label}
           </label>
         )}
-        <textarea
-          ref={ref}
-          id={id}
-          placeholder={props.placeholder || ' '}
-          rows={rows}
-          className={twMerge(textareaClasses, disabled && 'textarea-disabled', className)}
-          disabled={disabled}
-          {...props}
-        />
-        {helperText && <p className={helperTextClasses}>{helperText}</p>}
+        <textarea {...textareaProps} placeholder={props.placeholder || ' '} />
+        {helperTextEl}
       </div>
     )
   }

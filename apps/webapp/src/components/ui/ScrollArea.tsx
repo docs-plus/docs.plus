@@ -1,3 +1,4 @@
+import { twMerge } from '@utils/twMerge'
 import {
   type CSSProperties,
   forwardRef,
@@ -6,7 +7,6 @@ import {
   useCallback,
   useRef
 } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 import { type ScrollFade, useScrollOverflow } from './useScrollOverflow'
 

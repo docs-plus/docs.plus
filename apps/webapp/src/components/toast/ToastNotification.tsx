@@ -1,5 +1,5 @@
+import { twMerge } from '@utils/twMerge'
 import toast, { ToastOptions } from 'react-hot-toast'
-import { twMerge } from 'tailwind-merge'
 
 export type ToastVariant = 'success' | 'error' | 'info' | 'warning' | 'neutral'
 
@@ -10,12 +10,12 @@ export interface ToastNotificationOptions extends ToastOptions {
   onAction?: () => void
 }
 
-const variantIndicatorColors: Record<ToastVariant, string> = {
+// Neutral renders no status bar.
+const variantIndicatorColors: Record<Exclude<ToastVariant, 'neutral'>, string> = {
   success: 'bg-success',
   error: 'bg-error',
   info: 'bg-info',
-  warning: 'bg-warning',
-  neutral: 'bg-neutral-content/30'
+  warning: 'bg-warning'
 }
 
 const defaultOptions: ToastNotificationOptions = {
@@ -30,7 +30,11 @@ export const ToastNotification = (
 ) => {
   const opts = { ...defaultOptions, ...options }
   const variant = opts.variant || 'neutral'
-  const indicatorColor = variantIndicatorColors[variant]
+  // Only an error interrupts: `alert` is assertive, so it takes no polite override.
+  const liveRegion =
+    variant === 'error'
+      ? ({ role: 'alert' } as const)
+      : ({ role: 'status', 'aria-live': 'polite' } as const)
 
   return toast.custom(
     (t) => (
@@ -45,11 +49,10 @@ export const ToastNotification = (
           t.visible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
           opts.className
         )}
-        role="alert"
-        aria-live="polite">
+        {...liveRegion}>
         {variant !== 'neutral' && (
           <span
-            className={twMerge('h-6 w-1 shrink-0 rounded-full', indicatorColor)}
+            className={twMerge('h-6 w-1 shrink-0 rounded-full', variantIndicatorColors[variant])}
             aria-hidden="true"
           />
         )}
@@ -63,7 +66,7 @@ export const ToastNotification = (
               opts.onAction?.()
               toast.dismiss(t.id)
             }}
-            className="text-info shrink-0 text-sm font-semibold transition-colors hover:opacity-80">
+            className="shrink-0 text-sm font-semibold text-[var(--inverse-action-ink)] hover:underline">
             {opts.actionLabel}
           </button>
         )}

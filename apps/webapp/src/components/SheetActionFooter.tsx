@@ -1,9 +1,12 @@
 import { Icons } from '@components/icons/registry'
 import { SheetFooter } from '@components/SheetFooter'
+import Button from '@components/ui/Button'
 
 type SheetActionFooterProps = {
   primaryLabel?: string
   primaryDisabled?: boolean
+  /** Busy submit: Apply keeps its label beside a spinner and is disabled. Back stays usable. */
+  loading?: boolean
   onBack?: () => void
   backTestId?: string
   submitTestId?: string
@@ -12,6 +15,7 @@ type SheetActionFooterProps = {
 export function SheetActionFooter({
   primaryLabel = 'Apply',
   primaryDisabled = false,
+  loading = false,
   onBack,
   backTestId,
   submitTestId
@@ -29,13 +33,15 @@ export function SheetActionFooter({
             <Icons.back size={20} aria-hidden />
           </button>
         )}
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={primaryDisabled}
+          loading={loading}
           data-testid={submitTestId}
-          className="btn btn-primary min-h-12 flex-1 text-base font-semibold">
+          className="min-h-12 flex-1 text-base font-semibold">
           {primaryLabel}
-        </button>
+        </Button>
       </div>
     </SheetFooter>
   )

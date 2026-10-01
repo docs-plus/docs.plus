@@ -80,7 +80,9 @@ export function Tooltip({
     delay: { open: showDelay, close: hideDelay },
     move: false
   })
-  const dismiss = useDismiss(context)
+  // A press closes it, or it stays up over the next toolbar button. It also cancels a
+  // pending show, and hover waits for a fresh pointer enter before it opens again.
+  const dismiss = useDismiss(context, { referencePress: controlledOpen == null })
   const role = useRole(context, { role: 'tooltip' })
 
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role])
@@ -140,7 +142,7 @@ export function Tooltip({
           <div
             ref={refs.setFloating}
             style={{ ...floatingStyles, ...transitionStyles }}
-            className={`bg-neutral text-neutral-content z-50 rounded px-2 py-1 font-mono text-xs ${className}`}
+            className={`bg-neutral text-neutral-content rounded-field pointer-events-none z-50 max-w-[250px] px-2 py-1 text-xs shadow-[var(--shadow-tooltip)] ${className}`}
             {...getFloatingProps()}>
             {title}
             <div

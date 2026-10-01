@@ -48,15 +48,4 @@
     fill: none;
     stroke: currentColor;
   }
-
-  // StyleSelect “Document title” row — non-interactive `div` mimicking the select trigger (not a `button`)
-  div.select.select-ghost.is-active {
-    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
-
-    svg {
-      fill: none;
-      stroke: currentColor;
-    }
-  }
 }

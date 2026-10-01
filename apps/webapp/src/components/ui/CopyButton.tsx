@@ -1,9 +1,9 @@
 import { Tooltip } from '@components/ui/Tooltip'
 import useCopyToClipboard, { UseCopyToClipboardOptions } from '@hooks/useCopyToClipboard'
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import { forwardRef, useCallback } from 'react'
 import { IconType } from 'react-icons'
-import { twMerge } from 'tailwind-merge'
 
 export type CopyButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 export type CopyButtonVariant = 'ghost' | 'outline' | 'soft' | 'primary'
@@ -85,7 +85,8 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
     const currentLabel = copied ? successLabel : label
 
     const isPrimarySuccess = variant === 'primary' && copied
-    const successInk = isPrimarySuccess ? undefined : 'text-success'
+    // Plain `text-success` is about 3.3:1 on white; the ink token holds 4.5:1 on every ground.
+    const successInk = isPrimarySuccess ? undefined : 'text-[var(--success-ink)]'
 
     const idleLabel = tooltip || currentLabel || 'Copy'
     const doneLabel = successLabel

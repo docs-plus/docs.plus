@@ -10,7 +10,7 @@ import {
   stackSurfaceToEdge,
   TEXT_CLASSES
 } from '@utils/avatarStackGeometry'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 import { Avatar, type AvatarActivity } from './Avatar'
 

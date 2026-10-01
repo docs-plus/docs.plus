@@ -11,10 +11,13 @@ import {
   useInteractions
 } from '@floating-ui/react'
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
+import { ContextMenuRow } from './ContextMenu'
+import { FieldHelp, fieldLabelClassName } from './FieldHelp'
 import { useSelectExclusion } from './hooks/useSelectExclusion'
+import { popoverPanelClassName } from './Popover'
 import { ScrollArea } from './ScrollArea'
 import { useOverlayTransition } from './useOverlayTransition'
 
@@ -25,6 +28,8 @@ export type SelectColor =
 export interface SelectOption {
   value: string
   label: string
+  /** Quiet end-of-row note in the list only, such as "Default". */
+  hint?: string
   disabled?: boolean
 }
 
@@ -39,6 +44,7 @@ export interface SelectProps {
   color?: SelectColor
   ghost?: boolean
   placeholder?: string
+  /** Help line under the field. With `error`, it renders as the error line. */
   helperText?: string
   error?: boolean
   success?: boolean
@@ -117,7 +123,7 @@ const Select = ({
         apply({ rects, elements, availableHeight }) {
           Object.assign(elements.floating.style, {
             width: `${rects.reference.width}px`,
-            maxHeight: `${Math.min(availableHeight - 16, maxHeight + 8)}px`
+            maxHeight: `${Math.min(availableHeight - 16, maxHeight + 12)}px`
           })
         },
         padding: 8
@@ -224,10 +230,12 @@ const Select = ({
 
   const triggerClasses = buildTriggerClasses(size, color, ghost, error, success)
 
-  const helperTextClasses = twMerge(
-    'label text-xs',
-    error && 'text-error',
-    success && 'text-success'
+  const helperId = helperText ? `${id}-help` : undefined
+
+  const helperTextEl = helperText && (
+    <FieldHelp id={helperId} error={error} success={success}>
+      {helperText}
+    </FieldHelp>
   )
 
   const triggerButton = (
@@ -245,8 +253,9 @@ const Select = ({
       )}
       aria-haspopup="listbox"
       aria-expanded={isOpen}
-      onKeyDown={handleKeyDown}
-      {...getReferenceProps()}>
+      aria-invalid={error || undefined}
+      aria-describedby={helperId}
+      {...getReferenceProps({ onKeyDown: handleKeyDown })}>
       <span className={twMerge('truncate', !selectedOption && 'text-base-content/50')}>
         {displayLabel}
       </span>
@@ -265,18 +274,18 @@ const Select = ({
       <div
         ref={refs.setFloating}
         style={{ ...floatingStyles, ...transitionStyles }}
-        className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-xl"
+        className={twMerge(popoverPanelClassName, 'flex min-h-0 w-auto flex-col')}
         onKeyDown={handleKeyDown}
         role="listbox"
+        aria-labelledby={id}
         aria-activedescendant={
           highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
         }
         {...getFloatingProps()}>
         <ScrollArea scrollbarSize="thin" preserveWidth={false} className="min-h-0 min-w-0 flex-1">
-          <div ref={listRef} className="py-1">
+          <div ref={listRef} className="p-1.5">
             {options.map((option, index) => {
               const isSelected = option.value === value
-              const isHighlighted = index === highlightedIndex
 
               return (
                 <button
@@ -286,16 +295,26 @@ const Select = ({
                   disabled={option.disabled}
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   onMouseEnter={() => !option.disabled && setHighlightedIndex(index)}
-                  className={twMerge(
-                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
-                    isHighlighted && 'bg-base-200',
-                    isSelected && 'text-primary font-medium',
-                    option.disabled && 'text-base-content/30 cursor-not-allowed'
-                  )}
+                  className="group block w-full text-left"
                   role="option"
                   aria-selected={isSelected}>
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {isSelected && <Icons.check size={16} className="text-primary shrink-0" />}
+                  <ContextMenuRow
+                    active={index === highlightedIndex}
+                    disabled={option.disabled}
+                    trailing={
+                      (option.hint || isSelected) && (
+                        <span className="flex items-center gap-2">
+                          {option.hint && (
+                            <span className="text-meta text-base-content/60">{option.hint}</span>
+                          )}
+                          {isSelected && (
+                            <Icons.check size={16} className="text-primary" aria-hidden />
+                          )}
+                        </span>
+                      )
+                    }>
+                    <span className="block truncate">{option.label}</span>
+                  </ContextMenuRow>
                 </button>
               )
             })}
@@ -307,27 +326,27 @@ const Select = ({
 
   if (labelPosition === 'floating') {
     return (
-      <div className={twMerge('form-control w-full', wrapperClassName)}>
+      <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
         <label className="floating-label w-full">
           {label && <span>{label}</span>}
           {triggerButton}
         </label>
         {dropdown}
-        {helperText && <p className={helperTextClasses}>{helperText}</p>}
+        {helperTextEl}
       </div>
     )
   }
 
   return (
-    <div className={twMerge('form-control w-full', wrapperClassName)}>
+    <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
       {label && (
-        <label htmlFor={id} className="label">
-          <span className="label-text text-base-content">{label}</span>
+        <label htmlFor={id} className={fieldLabelClassName}>
+          {label}
         </label>
       )}
       {triggerButton}
       {dropdown}
-      {helperText && <p className={helperTextClasses}>{helperText}</p>}
+      {helperTextEl}
     </div>
   )
 }

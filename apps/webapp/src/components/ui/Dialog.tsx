@@ -10,18 +10,23 @@ import {
   useTransitionStyles
 } from '@floating-ui/react'
 import { MOTION_DIALOG_IN_MS, MOTION_DIALOG_OUT_MS, prefersReducedMotion } from '@utils/motion'
+import { twMerge } from '@utils/twMerge'
 import * as React from 'react'
 import { useId } from 'react'
-import { twMerge } from 'tailwind-merge'
+
+import CloseButton from './CloseButton'
 
 interface ModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
+type ModalRole = 'dialog' | 'alertdialog'
+
 function useModal({ open, onOpenChange }: ModalProps) {
   const [labelId, setLabelId] = React.useState<string>()
   const [descriptionId, setDescriptionId] = React.useState<string>()
+  const [modalRole, setModalRole] = React.useState<ModalRole>('dialog')
 
   const { refs, context } = useFloating({
     open,
@@ -29,7 +34,7 @@ function useModal({ open, onOpenChange }: ModalProps) {
   })
 
   const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown' })
-  const role = useRole(context)
+  const role = useRole(context, { role: modalRole })
   const interactions = useInteractions([dismiss, role])
 
   return React.useMemo(
@@ -42,6 +47,7 @@ function useModal({ open, onOpenChange }: ModalProps) {
       descriptionId,
       setLabelId,
       setDescriptionId,
+      setModalRole,
       ...interactions
     }),
     [open, onOpenChange, refs, context, interactions, labelId, descriptionId]
@@ -73,10 +79,13 @@ export function Modal({
   return <ModalContext.Provider value={modal}>{children}</ModalContext.Provider>
 }
 
-type ModalAlign = 'center' | 'top'
+export type ModalAlign = 'center' | 'top'
+
+/** Width ladder: confirm `sm`, form `md`/`lg`, rich content `2xl`. Settings hub uses `4xl`/`5xl`. */
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
 
 type Props = {
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
+  size?: ModalSize
   align?: ModalAlign
   mobileTakeover?: boolean
   className?: string
@@ -116,7 +125,9 @@ export function ModalHeading({
   }, [id, setLabelId])
 
   return (
-    <h2 id={id} className={className}>
+    <h2
+      id={id}
+      className={twMerge('text-base-content text-xl font-semibold text-balance', className)}>
       {children}
     </h2>
   )
@@ -141,9 +152,49 @@ export function ModalDescription({
   }, [id, setDescriptionId])
 
   return (
-    <p id={id} className={className}>
+    <p id={id} className={twMerge('text-base-content/70 text-sm', className)}>
       {children}
     </p>
+  )
+}
+
+/** Card role for the open modal. A confirm passes `alertdialog`; unmount restores `dialog`,
+ *  because GlobalDialog reuses one Modal for every body. */
+export function useModalRole(role: ModalRole) {
+  const { setModalRole } = useModalContext()
+
+  React.useLayoutEffect(() => {
+    setModalRole(role)
+    return () => setModalRole('dialog')
+  }, [role, setModalRole])
+}
+
+/** Dialog body. `relative` anchors `ModalClose`. */
+export function ModalBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={twMerge('relative flex flex-col gap-4 p-6', className)} {...props} />
+}
+
+/** Dialog action row: Cancel first, the one primary last. `mt-2` on the `gap-4` body gives 24px. */
+export function DialogActions({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={twMerge('mt-2 flex flex-wrap justify-end gap-2', className)} {...props} />
+}
+
+/** Top-right close for a `ModalBody`; give the title `pr-10` so it clears the button. */
+export function ModalClose({
+  className,
+  'aria-label': ariaLabel = 'Close'
+}: {
+  className?: string
+  'aria-label'?: string
+}) {
+  const { setOpen } = useModalContext()
+  return (
+    <CloseButton
+      size="md"
+      onClick={() => setOpen(false)}
+      aria-label={ariaLabel}
+      className={twMerge('absolute top-[18px] right-4', className)}
+    />
   )
 }
 

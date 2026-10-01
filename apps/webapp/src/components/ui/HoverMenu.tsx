@@ -3,6 +3,7 @@ import { Tooltip } from '@components/ui/Tooltip'
 import {
   autoUpdate,
   flip,
+  FloatingFocusManager,
   FloatingPortal,
   offset,
   Placement,
@@ -13,8 +14,11 @@ import {
   useFloating,
   useHover,
   useInteractions,
-  useRole
+  useListNavigation,
+  useRole,
+  useTypeahead
 } from '@floating-ui/react'
+import { twMerge } from '@utils/twMerge'
 import debounce from 'lodash/debounce'
 import {
   createContext,
@@ -28,8 +32,8 @@ import {
   useRef,
   useState
 } from 'react'
-import { twMerge } from 'tailwind-merge'
 
+import { contextMenuPanelClassName, MenuListProvider } from './ContextMenu'
 import { useOverlayTransition } from './useOverlayTransition'
 
 class HoverMenuManager {
@@ -383,30 +387,11 @@ const HoverMenuContent: FC<HoverMenuContentProps> = ({ children, portalId, menuC
   )
 }
 
-export interface HoverMenuItemProps {
-  children: ReactNode
-  tooltip?: string
-  className?: string
-}
-
-export const HoverMenuItem: FC<HoverMenuItemProps> = ({ children, tooltip, className }) => {
-  const item = (
-    <div className={twMerge('btn btn-sm btn-square join-item btn-ghost', className)}>
-      {children}
-    </div>
-  )
-
-  if (!tooltip) return item
-
-  return (
-    <Tooltip title={tooltip} placement="left">
-      {item}
-    </Tooltip>
-  )
-}
-
 function useFloatingDropdown() {
   const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const elementsRef = useRef<Array<HTMLElement | null>>([])
+  const labelsRef = useRef<Array<string | null>>([])
 
   const data = useFloating({
     placement: 'bottom-end',
@@ -430,42 +415,46 @@ function useFloatingDropdown() {
 
   const click = useClick(context)
   const dismiss = useDismiss(context)
-  const role = useRole(context)
+  const role = useRole(context, { role: 'menu' })
+  const listNavigation = useListNavigation(context, {
+    listRef: elementsRef,
+    activeIndex,
+    onNavigate: setActiveIndex
+  })
+  const typeahead = useTypeahead(context, {
+    enabled: open,
+    listRef: labelsRef,
+    activeIndex,
+    onMatch: setActiveIndex
+  })
 
-  const interactions = useInteractions([click, dismiss, role])
+  const interactions = useInteractions([click, dismiss, role, listNavigation, typeahead])
 
   return useMemo(
     () => ({
       open,
       setOpen,
+      activeIndex,
+      elementsRef,
+      labelsRef,
       isMounted,
       transitionStyles,
       ...interactions,
       ...data
     }),
-    [open, setOpen, isMounted, transitionStyles, interactions, data]
+    [open, setOpen, activeIndex, isMounted, transitionStyles, interactions, data]
   )
 }
 
-interface DropdownContextType {
-  isOpen: boolean
-  setOpen: (open: boolean) => void
-  closeDropdown: () => void
-}
-
-const DropdownContext = createContext<DropdownContextType | null>(null)
-
-export const useDropdownContext = () => {
-  const context = useContext(DropdownContext)
-  if (!context) {
-    throw new Error('Dropdown context must be used within HoverMenuDropdown')
-  }
-  return context
-}
+// Non-modal, so excluding the editors costs no a11y. It keeps markOthers from stamping
+// `data-floating-ui-inert` on a ProseMirror root, which recreates its node views.
+const editorRoots = () => Array.from(document.querySelectorAll('.ProseMirror'))
 
 export interface HoverMenuDropdownProps {
+  /** `MenuItem` rows with `ContextMenuRow` bodies; `ContextMenuDivider` between groups. */
   children: ReactNode
   trigger: ReactNode
+  /** Also the trigger's accessible name. */
   tooltip?: string
   disabled?: boolean
   className?: string
@@ -491,21 +480,23 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
     }
   }, [dropdown.open, hoverMenuContext])
 
-  const dropdownContextValue = useMemo(
+  const menuListValue = useMemo(
     () => ({
       isOpen: dropdown.open,
-      setOpen: dropdown.setOpen,
-      closeDropdown: () => dropdown.setOpen(false)
+      setIsOpen: dropdown.setOpen,
+      activeIndex: dropdown.activeIndex,
+      getItemProps: dropdown.getItemProps
     }),
     [dropdown]
   )
 
   return (
-    <DropdownContext.Provider value={dropdownContextValue}>
+    <>
       <Tooltip title={tooltip} placement="left" open={dropdown.open ? false : undefined}>
         <Button
           ref={dropdown.refs.setReference}
           {...dropdown.getReferenceProps()}
+          aria-label={tooltip}
           variant="ghost"
           size="sm"
           shape="square"
@@ -517,60 +508,35 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
 
       {dropdown.isMounted && (
         <FloatingPortal>
-          <div
-            ref={dropdown.refs.setFloating}
-            style={{
-              ...dropdown.floatingStyles,
-              ...dropdown.transitionStyles,
-              position: 'fixed',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              overflow: 'hidden'
-            }}
-            {...dropdown.getFloatingProps()}
-            className={twMerge(
-              'bg-base-100 border-base-300 rounded-box z-[60] overflow-hidden border shadow-xl',
-              contentClassName
-            )}>
-            <ul className="menu bg-base-100 rounded-box max-h-80 w-52 overflow-y-auto !p-1">
-              {children}
+          <FloatingFocusManager
+            context={dropdown.context}
+            modal={false}
+            initialFocus={dropdown.refs.floating}
+            getInsideElements={editorRoots}>
+            <ul
+              ref={dropdown.refs.setFloating}
+              style={{
+                ...dropdown.floatingStyles,
+                ...dropdown.transitionStyles,
+                position: 'fixed',
+                maxWidth: '100%'
+              }}
+              {...dropdown.getFloatingProps()}
+              className={twMerge(
+                contextMenuPanelClassName,
+                'z-[60] max-h-80 w-52 overflow-y-auto',
+                contentClassName
+              )}>
+              <MenuListProvider
+                value={menuListValue}
+                elementsRef={dropdown.elementsRef}
+                labelsRef={dropdown.labelsRef}>
+                {children}
+              </MenuListProvider>
             </ul>
-          </div>
+          </FloatingFocusManager>
         </FloatingPortal>
       )}
-    </DropdownContext.Provider>
-  )
-}
-
-export interface HoverMenuDropdownItemProps {
-  children: ReactNode
-  onClick?: () => void
-  disabled?: boolean
-  className?: string
-}
-
-export const HoverMenuDropdownItem: FC<HoverMenuDropdownItemProps> = ({
-  children,
-  onClick,
-  disabled,
-  className
-}) => {
-  const { closeDropdown } = useDropdownContext()
-
-  const handleClick = () => {
-    onClick?.()
-    closeDropdown()
-  }
-
-  return (
-    <li>
-      <Button
-        variant="ghost"
-        onClick={handleClick}
-        disabled={disabled}
-        className={twMerge('flex w-full items-center gap-2 text-sm', className)}>
-        {children}
-      </Button>
-    </li>
+    </>
   )
 }

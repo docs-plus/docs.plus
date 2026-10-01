@@ -1,5 +1,6 @@
 export { default as authStore } from './authStore'
 export { useAuthStore } from './authStore'
+export { selectInProgressBookmarkCount, withInProgressBookmarks } from './chat/bookmark'
 export { type IStore as IChatStore, useChatStore } from './chat/useChatStore'
 export * from './dialogStore'
 export * from './focusedHeadingStore'

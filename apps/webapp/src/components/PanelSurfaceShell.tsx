@@ -1,37 +1,38 @@
-import { SheetLayout } from '@components/SheetLayout'
+import { PanelPopoverHeader } from '@components/PanelPopoverHeader'
+import { type SheetBodyLayout, SheetLayout } from '@components/SheetLayout'
+import { useDismissPanel } from '@hooks/useDismissPanel'
 import type { PanelSurfaceVariant } from '@types'
+import { twMerge } from '@utils/twMerge'
 import type { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 type PanelSurfaceShellProps = {
   variant: PanelSurfaceVariant
   title: string
   children: ReactNode
-  popoverHeader: ReactNode
   fillHeight?: boolean
   headerActions?: ReactNode
   footer?: ReactNode
-  /** Popover only: set false to drop the bordered header bar (header supplies its own padding). */
-  popoverHeaderBordered?: boolean
-  onClose?: () => void
+  /** Sheet only: passed to `SheetLayout`. */
+  body?: SheetBodyLayout
   bodyClassName?: string
+  /** Popover only: merged onto the outer frame. */
   className?: string
 }
 
-/** Popover panel vs mobile sheet: shared title header, divergent frame only. */
+/** Popover panel vs mobile sheet: one title header and close, divergent frame only. */
 export function PanelSurfaceShell({
   variant,
   title,
   children,
-  popoverHeader,
   fillHeight = false,
   headerActions,
   footer,
-  popoverHeaderBordered = true,
-  onClose,
+  body,
   bodyClassName,
   className
 }: PanelSurfaceShellProps) {
+  const dismiss = useDismissPanel(variant)
+
   if (variant === 'sheet') {
     return (
       <SheetLayout
@@ -39,7 +40,8 @@ export function PanelSurfaceShell({
         fillHeight={fillHeight}
         headerActions={headerActions}
         footer={footer}
-        onClose={onClose}
+        onClose={dismiss}
+        body={body}
         bodyClassName={bodyClassName}>
         {children}
       </SheetLayout>
@@ -48,11 +50,8 @@ export function PanelSurfaceShell({
 
   return (
     <div className={twMerge('bg-base-100 flex min-h-0 w-full flex-col overflow-hidden', className)}>
-      <div
-        className={
-          popoverHeaderBordered ? 'border-base-300 shrink-0 border-b px-4 py-3' : 'shrink-0'
-        }>
-        {popoverHeader}
+      <div className="border-base-300 shrink-0 border-b px-4 py-3">
+        <PanelPopoverHeader title={title} actions={headerActions} onClose={dismiss} />
       </div>
       {children}
       {footer ? <div className="border-base-300 shrink-0 border-t">{footer}</div> : null}

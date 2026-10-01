@@ -1,7 +1,7 @@
 import { formatCappedCount } from '@utils/formatCappedCount'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import type { IconType } from 'react-icons'
-import { twMerge } from 'tailwind-merge'
 
 export type PanelTabOption<T extends string = string> = {
   label: T
@@ -31,7 +31,7 @@ function TabCountBadge({ count, isActive }: { count: number; isActive: boolean }
     <span
       aria-hidden
       className={twMerge(
-        'badge badge-xs badge-error text-error-content animate-badge-entry absolute -top-2.5 left-full ml-0.5 min-h-4 min-w-4 -translate-y-px rounded-full border-0 px-1 text-[10px] leading-none font-semibold tabular-nums shadow-sm ring-2',
+        'badge badge-xs badge-error text-error-content animate-badge-entry absolute -top-2.5 left-full ml-0.5 min-h-4 min-w-4 -translate-y-px rounded-full border-0 px-1 text-[10px] leading-none font-semibold tabular-nums ring-2',
         isActive ? 'ring-base-100' : 'ring-base-300'
       )}>
       {formatCappedCount(count)}
@@ -80,7 +80,8 @@ export function PanelTabBar<T extends string>({
     else tabRefs.current.delete(label)
   }
 
-  const labelClass = capitalize ? 'capitalize' : undefined
+  // Sentence case ("In progress"); the label span is a flex item, so `::first-letter` applies.
+  const labelClass = capitalize ? 'first-letter:uppercase' : undefined
 
   return (
     <div className={twMerge('shrink-0 overflow-visible px-4 py-2.5', className)}>
@@ -109,7 +110,7 @@ export function PanelTabBar<T extends string>({
               aria-label={tabAriaLabel(tab.label, count)}
               onClick={() => onSelect(tab.label)}
               className={twMerge(
-                'rounded-field relative z-10 flex min-h-9 flex-1 items-center justify-center px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-200',
+                'rounded-field focus-visible:ring-primary relative z-10 flex min-h-9 flex-1 items-center justify-center px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:ring-2 focus-visible:outline-none',
                 isActive
                   ? 'text-base-content font-semibold'
                   : 'text-base-content/70 hover:text-base-content'

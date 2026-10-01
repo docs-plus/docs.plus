@@ -1,49 +1,45 @@
-import { ScrollArea } from '@components/ui/ScrollArea'
-
-const SidebarLoader = () => {
+/** Body bones for HistorySidebar. The sidebar renders them inside its real frame and header. */
+const SidebarLoader = ({ tabs = false }: { tabs?: boolean }) => {
   return (
-    <div className="bg-base-100 border-base-300 flex h-full min-h-0 w-64 flex-col overflow-hidden border-l">
-      {/* Header */}
-      <div className="border-base-300 border-b p-4">
-        <div className="skeleton h-5 w-36 rounded" />
-        <div className="skeleton mt-2 h-3 w-24 rounded" />
-      </div>
+    <div aria-hidden className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Mirrors the PanelTabBar track, so the tabs do not jump when they load. */}
+      {tabs && (
+        <div className="shrink-0 px-4 py-2.5">
+          <div className="bg-base-300 rounded-box flex gap-1 p-1">
+            <div className="skeleton rounded-field h-9 flex-1" />
+            <div className="skeleton rounded-field h-9 flex-1" />
+          </div>
+        </div>
+      )}
 
-      {/* Version list */}
-      <ScrollArea className="min-h-0 flex-1" scrollbarSize="thin" hideScrollbar>
-        {[1, 2, 3].map((day) => (
-          <div key={day} className="border-base-200 border-b">
-            {/* Day header */}
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="skeleton h-4 w-24 rounded" />
-              <div className="skeleton size-4 rounded" />
-            </div>
-
-            {/* Session items */}
-            <div className="space-y-1 pb-3">
-              {[1, 2].map((session) => (
-                <div key={session} className="flex items-start gap-3 px-4 py-2">
-                  {/* Timeline dot */}
-                  <div className="pt-1.5">
-                    <div className="skeleton size-2 rounded-full" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <div className="skeleton h-4 w-20 rounded" />
-                      {session === 1 && day === 1 && (
-                        <div className="skeleton bg-primary/20 h-4 w-12 rounded" />
-                      )}
-                    </div>
-                    <div className="skeleton h-3 w-16 rounded" />
-                  </div>
-                </div>
-              ))}
+      {[1, 2, 3].map((day) => (
+        <div key={day}>
+          <div className="border-base-300 border-b">
+            <div className="flex min-h-10 items-center justify-between px-3 py-2">
+              <div className="skeleton h-3 w-24" />
+              <div className="skeleton size-4" />
             </div>
           </div>
-        ))}
-      </ScrollArea>
+
+          {[1, 2].map((session) => (
+            <div key={session} className="px-3 py-1">
+              <div className="rounded-box border-base-300 bg-base-100 flex min-h-11 items-center gap-2.5 border px-3 py-2.5">
+                <div className="skeleton rounded-field size-5 shrink-0" />
+                {/* Line boxes match the real 20px time and 16px meta lines. */}
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <div className="flex h-5 items-center">
+                    <div className="skeleton h-4 w-24" />
+                  </div>
+                  <div className="flex h-4 items-center">
+                    <div className="skeleton h-3 w-16" />
+                  </div>
+                </div>
+                <div className="skeleton size-6 shrink-0 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

@@ -1,9 +1,10 @@
+import type { ModalAlign, ModalSize } from '@components/ui/Dialog'
 import { ReactNode } from 'react'
 import { immer } from 'zustand/middleware/immer'
 
 export interface DialogConfig {
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
-  align?: 'center' | 'top'
+  size?: ModalSize
+  align?: ModalAlign
   className?: string
   dismissible?: boolean
 }

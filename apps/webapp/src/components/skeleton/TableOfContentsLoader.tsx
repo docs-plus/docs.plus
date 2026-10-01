@@ -12,8 +12,8 @@ const TableOfContentsLoader: React.FC<React.HTMLProps<HTMLDivElement>> = (props)
       <div className="space-y-1 px-1.5 pt-2">
         <div className="border-base-300 mb-1 border-b pt-2 pb-1">
           <div className="rounded-field flex items-center gap-2 px-3 py-1.5">
-            <div className="skeleton h-5 min-w-0 flex-1 rounded" />
-            <div className="skeleton size-6 shrink-0 rounded" />
+            <div className="skeleton h-5 min-w-0 flex-1" />
+            <div className="skeleton rounded-field size-6 shrink-0" />
           </div>
         </div>
         {/* Nest steps mirror daisyUI menu `ms-4` (1rem). */}

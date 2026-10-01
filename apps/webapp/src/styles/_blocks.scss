@@ -13,6 +13,22 @@
         padding-inline-end: calc(1.5rem + 1.5rem);
       }
 
+      // The pad's `h-full` column gets the clearance as a spacer: padding taller than the
+      // box grows it, so `.editor` overflows and chat scroll-into-view moves the pad.
+      &:where(main) {
+        padding-bottom: 0;
+
+        &::after {
+          content: '';
+          flex-shrink: 0;
+          height: calc(300px + var(--chat-panel-height, 0px));
+
+          @media print {
+            display: none;
+          }
+        }
+      }
+
       /* Scrollbar: Tailwind `scrollbar-custom scrollbar-thin` on `.editorWrapper` (same as ScrollArea) */
     }
 
@@ -47,10 +63,6 @@
 }
 
 .history_editor {
-  .tippy-box {
-    display: none !important;
-  }
-
   /* Read-only: no heading chat/comment widgets (extension off; belt-and-suspenders for decorations). */
   :is(.ha-wrap, .ha-selection-comment-dock) {
     display: none !important;

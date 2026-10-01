@@ -11,12 +11,16 @@ import {
   useInteractions
 } from '@floating-ui/react'
 import { Icons } from '@icons'
+import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
+import { ContextMenuRow } from './ContextMenu'
+import { FieldHelp, fieldLabelClassName } from './FieldHelp'
 import { useSelectExclusion } from './hooks/useSelectExclusion'
+import { popoverPanelClassName } from './Popover'
 import { ScrollArea } from './ScrollArea'
 import type { SelectSize } from './Select'
+import TextInput from './TextInput'
 import { useOverlayTransition } from './useOverlayTransition'
 
 export interface SearchableSelectOption {
@@ -41,6 +45,8 @@ export interface SearchableSelectProps {
   wrapperClassName?: string
   maxHeight?: number
   emptyMessage?: string
+  /** Merged onto the option label, on the trigger and in the list. */
+  optionLabelClassName?: string
 }
 
 /** Keep in lockstep with `Select`'s trigger classes. */
@@ -63,7 +69,8 @@ const SearchableSelect = ({
   className,
   wrapperClassName,
   maxHeight = 200,
-  emptyMessage = 'No options found'
+  emptyMessage = 'No options found.',
+  optionLabelClassName
 }: SearchableSelectProps) => {
   const id = useId()
 
@@ -195,12 +202,14 @@ const SearchableSelect = ({
   )
 
   const triggerClasses = buildTriggerClasses(size)
+  const helperId = helperText ? `${id}-help` : undefined
+  const listboxId = `${id}-listbox`
 
   return (
-    <div className={twMerge('form-control w-full', wrapperClassName)}>
+    <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
       {label && (
-        <label htmlFor={id} className="label">
-          <span className="label-text text-base-content">{label}</span>
+        <label htmlFor={id} className={fieldLabelClassName}>
+          {label}
         </label>
       )}
 
@@ -219,9 +228,14 @@ const SearchableSelect = ({
         )}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        onKeyDown={handleKeyDown}
-        {...getReferenceProps()}>
-        <span className={twMerge('truncate', !selectedOption && 'text-base-content/50')}>
+        aria-describedby={helperId}
+        {...getReferenceProps({ onKeyDown: handleKeyDown })}>
+        <span
+          className={twMerge(
+            'truncate',
+            !selectedOption && 'text-base-content/50',
+            optionLabelClassName
+          )}>
           {displayValue}
         </span>
         <Icons.chevronDown
@@ -239,30 +253,28 @@ const SearchableSelect = ({
           <div
             ref={refs.setFloating}
             style={{ ...floatingStyles, ...transitionStyles }}
-            className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-xl"
+            className={twMerge(popoverPanelClassName, 'flex min-h-0 w-auto flex-col')}
             onKeyDown={handleKeyDown}
-            aria-activedescendant={
-              highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
-            }
             {...getFloatingProps()}>
             <div className="border-base-300 shrink-0 border-b p-2">
-              <div className="relative">
-                <Icons.search
-                  size={16}
-                  className="text-base-content/40 pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2"
-                />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
-                    setHighlightedIndex(0)
-                  }}
-                  placeholder={searchPlaceholder}
-                  className="bg-base-200 text-base-content placeholder:text-base-content/40 rounded-field w-full py-1.5 pr-3 pl-8 text-sm outline-none"
-                />
-              </div>
+              <TextInput
+                ref={searchInputRef}
+                ghost
+                size="sm"
+                startIcon={<Icons.search size={16} className="text-base-content/60 shrink-0" />}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setHighlightedIndex(0)
+                }}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                aria-controls={listboxId}
+                aria-activedescendant={
+                  filteredOptions.length > 0 ? `${id}-option-${highlightedIndex}` : undefined
+                }
+                autoComplete="off"
+              />
             </div>
 
             <ScrollArea
@@ -270,39 +282,40 @@ const SearchableSelect = ({
               preserveWidth={false}
               className="min-h-0 min-w-0 flex-1"
               style={{ maxHeight }}>
-              <div ref={listRef} role="listbox">
+              <div ref={listRef} id={listboxId} role="listbox" className="p-1.5">
                 {filteredOptions.length === 0 ? (
-                  <div className="text-base-content/50 px-3 py-4 text-center text-sm">
-                    {emptyMessage}
-                  </div>
+                  <div className="text-base-content/60 px-2.5 py-2 text-sm">{emptyMessage}</div>
                 ) : (
                   filteredOptions.map((option, index) => {
                     const isSelected = option.value === value
-                    const isHighlighted = index === highlightedIndex
 
                     return (
                       <button
                         key={option.value}
                         id={`${id}-option-${index}`}
                         type="button"
+                        tabIndex={-1}
                         onClick={() => handleSelect(option.value)}
                         onMouseEnter={() => setHighlightedIndex(index)}
-                        className={twMerge(
-                          'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
-                          isHighlighted && 'bg-base-200',
-                          isSelected && 'text-primary font-medium'
-                        )}
+                        className="group block w-full text-left"
                         role="option"
                         aria-selected={isSelected}>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate">{option.label}</span>
+                        <ContextMenuRow
+                          active={index === highlightedIndex}
+                          trailing={
+                            isSelected && (
+                              <Icons.check size={16} className="text-primary" aria-hidden />
+                            )
+                          }>
+                          <span className={twMerge('block truncate', optionLabelClassName)}>
+                            {option.label}
+                          </span>
                           {option.description && (
-                            <span className="text-base-content/50 block truncate text-xs">
+                            <span className="text-base-content/60 block truncate text-xs font-normal">
                               {option.description}
                             </span>
                           )}
-                        </span>
-                        {isSelected && <Icons.check size={16} className="text-primary shrink-0" />}
+                        </ContextMenuRow>
                       </button>
                     )
                   })
@@ -313,7 +326,7 @@ const SearchableSelect = ({
         </FloatingPortal>
       )}
 
-      {helperText && <p className="text-base-content/50 mt-1 text-xs">{helperText}</p>}
+      {helperText && <FieldHelp id={helperId}>{helperText}</FieldHelp>}
     </div>
   )
 }

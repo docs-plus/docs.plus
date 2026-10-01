@@ -6,14 +6,6 @@ type TBookmarkTabData = {
   count?: number
 }
 
-type TBookmarkStats = {
-  total: number
-  archived: number
-  active: number
-  unread: number
-  read: number
-}
-
 type BookmarkDraft = {
   bookmarkTabs: TBookmarkTabData[]
   bookmarks: Map<TBookmarkTab, TBookmarkWithMessage[]>
@@ -96,14 +88,20 @@ function relocateBookmark(
   state.bookmarks.set(toTab, [updated, ...(state.bookmarks.get(toTab) || [])])
 }
 
+/** The 'in progress' tab count; the Bookmarks dot reads it. */
+export const selectInProgressBookmarkCount = (state: { bookmarkTabs: TBookmarkTabData[] }) =>
+  state.bookmarkTabs.find((tab) => tab.label === 'in progress')?.count ?? 0
+
+/** The accessible name of a control that shows the Bookmarks dot. */
+export const withInProgressBookmarks = (label: string, count: number) =>
+  count > 0 ? `${label}, ${count} ${count === 1 ? 'bookmark' : 'bookmarks'} in progress` : label
+
 interface IBookmarkStore {
-  bookmarkSummary: TBookmarkStats
   bookmarkTabs: TBookmarkTabData[]
   loadingBookmarks: boolean
   bookmarks: Map<TBookmarkTab, TBookmarkWithMessage[]>
   bookmarkActiveTab: TBookmarkTab
   bookmarkPage: number
-  setBookmarkSummary: (summary: TBookmarkStats) => void
   setBookmarks: (tab: TBookmarkTab, bookmarks: TBookmarkWithMessage[]) => void
   setBookmarkTab: (tab: TBookmarkTab, count?: number) => void
   setLoadingBookmarks: (loading: boolean) => void
@@ -122,13 +120,6 @@ interface IBookmarkStore {
 }
 
 const bookmark = immer<IBookmarkStore>((set) => ({
-  bookmarkSummary: {
-    total: 0,
-    archived: 0,
-    active: 0,
-    unread: 0,
-    read: 0
-  },
   bookmarks: new Map<TBookmarkTab, TBookmarkWithMessage[]>(),
   bookmarkTabs: [
     { label: 'in progress', count: 0 },
@@ -151,12 +142,6 @@ const bookmark = immer<IBookmarkStore>((set) => ({
         if (item.label === tab) return { ...item, count }
         return item
       })
-    })
-  },
-
-  setBookmarkSummary: (summary: TBookmarkStats) => {
-    set((state) => {
-      state.bookmarkSummary = summary
     })
   },
 
@@ -185,20 +170,10 @@ const bookmark = immer<IBookmarkStore>((set) => ({
     })
   },
 
+  // Keeps the counts: usePadBookmarkStats owns them, and the Bookmarks dot must not blink.
   clearBookmarks: () => {
     set((state) => {
       state.bookmarks.clear()
-      state.bookmarkSummary = {
-        total: 0,
-        archived: 0,
-        active: 0,
-        unread: 0,
-        read: 0
-      }
-      state.bookmarkTabs = state.bookmarkTabs.map((item) => ({
-        ...item,
-        count: 0
-      }))
     })
   },
 

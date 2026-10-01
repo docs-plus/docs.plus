@@ -1,6 +1,8 @@
+import { twMerge } from '@utils/twMerge'
 import { forwardRef, InputHTMLAttributes, ReactNode, useId } from 'react'
 import { IconType } from 'react-icons'
-import { twMerge } from 'tailwind-merge'
+
+import { FieldHelp, fieldLabelClassName } from './FieldHelp'
 
 export type InputSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type InputColor =
@@ -16,6 +18,7 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   endIcon?: IconType | ReactNode
   iconSize?: number
   labelClassName?: string
+  /** Help line under the field. With `error`, it renders as the error line. */
   helperText?: string
   error?: boolean
   success?: boolean
@@ -86,10 +89,13 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       disabled && 'input-disabled'
     )
 
+    const helperId = helperText ? `${id}-help` : undefined
+    const describedBy = [props['aria-describedby'], helperId].filter(Boolean).join(' ') || undefined
+
     const helperTextEl = helperText && (
-      <p className={twMerge('label text-xs', error && 'text-error', success && 'text-success')}>
+      <FieldHelp id={helperId} error={error} success={success}>
         {helperText}
-      </p>
+      </FieldHelp>
     )
 
     const datalistEl = datalist.length > 0 && (
@@ -106,13 +112,15 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       type: 'text' as const,
       list: datalistId,
       disabled,
-      ...props
+      ...props,
+      'aria-invalid': props['aria-invalid'] ?? (error || undefined),
+      'aria-describedby': describedBy
     }
 
     // daisyUI 5.5+: the span MUST come before the input or the label never floats.
     if (labelPosition === 'floating') {
       return (
-        <div className={twMerge('form-control w-full', wrapperClassName)}>
+        <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
           <label className={twMerge('floating-label w-full', containerClassName)}>
             {label && <span>{label}</span>}
             <input
@@ -129,12 +137,10 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
 
     if (labelPosition === 'above') {
       return (
-        <div className={twMerge('form-control w-full', wrapperClassName)}>
+        <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
           {label && (
-            <label htmlFor={id} className="label">
-              <span className={twMerge('label-text text-base-content', labelClassName)}>
-                {label}
-              </span>
+            <label htmlFor={id} className={twMerge(fieldLabelClassName, labelClassName)}>
+              {label}
             </label>
           )}
           {hasIcons ? (
@@ -169,7 +175,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
     }
 
     return (
-      <div className={twMerge('form-control w-full', wrapperClassName)}>
+      <div className={twMerge('flex w-full flex-col gap-1.5', wrapperClassName)}>
         <label
           className={twMerge(
             'input flex w-full items-center gap-2',

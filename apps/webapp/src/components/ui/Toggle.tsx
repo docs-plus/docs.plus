@@ -1,5 +1,7 @@
+import { twMerge } from '@utils/twMerge'
 import { forwardRef, InputHTMLAttributes, useId } from 'react'
-import { twMerge } from 'tailwind-merge'
+
+import { FieldHelp } from './FieldHelp'
 
 export type ToggleSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type ToggleVariant =
@@ -29,6 +31,9 @@ const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
       'toggle',
       'bg-base-300 border-base-content/20',
       'checked:bg-primary checked:border-primary checked:text-primary-content',
+      // An outline, not a ring: daisyUI draws the knob with box-shadow. Its own
+      // outline is currentColor, which is primary-content when checked.
+      'focus-visible:[outline:var(--focus-ring-soft)] focus-visible:outline-offset-1',
       size && `toggle-${size}`,
       variant && `toggle-${variant}`,
       className
@@ -47,13 +52,16 @@ const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
       )
     }
 
+    const helperId = helperText ? `${id}-help` : undefined
+    const describedBy = [props['aria-describedby'], helperId].filter(Boolean).join(' ') || undefined
+
     return (
-      <div className={twMerge('form-control', wrapperClassName)}>
+      <div className={twMerge('flex flex-col items-start gap-1.5', wrapperClassName)}>
         <label
           htmlFor={id}
           className={twMerge(
-            'label cursor-pointer justify-start gap-3',
-            disabled && 'cursor-not-allowed opacity-50'
+            'inline-flex cursor-pointer items-center gap-3',
+            disabled && 'cursor-not-allowed'
           )}>
           <input
             ref={ref}
@@ -62,10 +70,14 @@ const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
             className={toggleClasses}
             disabled={disabled}
             {...props}
+            aria-describedby={describedBy}
           />
-          <span className="label-text text-base-content">{label}</span>
+          <span
+            className={twMerge('text-base-content text-sm', disabled && 'text-base-content/40')}>
+            {label}
+          </span>
         </label>
-        {helperText && <p className="label text-base-content/70 text-xs">{helperText}</p>}
+        {helperText && <FieldHelp id={helperId}>{helperText}</FieldHelp>}
       </div>
     )
   }

@@ -1,5 +1,5 @@
 import { formatCappedCount } from '@utils/formatCappedCount'
-import { twMerge } from 'tailwind-merge'
+import { twMerge } from '@utils/twMerge'
 
 export interface RollingNumberProps {
   value: number

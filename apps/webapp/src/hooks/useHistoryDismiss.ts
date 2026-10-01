@@ -16,6 +16,26 @@ const markerIsLive = (): boolean =>
 /** Surfaces holding the one marked entry. A drawer -> sheet handoff passes it along instead of
  *  stacking, so the consume has to know no owner is left before it pops. */
 let openSurfaces = 0
+let pendingPop: Promise<void> | null = null
+
+/**
+ * Pops the marked entry once and resolves when the traversal lands. A caller that writes the
+ * URL next awaits this, so the close's pop cannot land on top of its write. `history.state`
+ * only changes on landing, so every pop shares the one in-flight promise.
+ */
+export function consumeHistoryDismissEntry(): Promise<void> {
+  if (pendingPop) return pendingPop
+  if (!markerIsLive()) return Promise.resolve()
+  pendingPop = new Promise((resolve) => {
+    const onLanded = () => {
+      pendingPop = null
+      resolve()
+    }
+    window.addEventListener('popstate', onLanded, { once: true })
+    window.history.back()
+  })
+  return pendingPop
+}
 
 /**
  * One marked history entry while any surface is open on mobile, so hardware
@@ -46,7 +66,7 @@ export function useHistoryDismiss(isOpen: boolean, onDismiss: () => void): void 
       // Deferred: React runs every cleanup before any effect. A sibling opening in this
       // same flush (TOC drawer -> filter sheet) has not adopted the entry yet.
       queueMicrotask(() => {
-        if (openSurfaces === 0 && markerIsLive()) window.history.back()
+        if (openSurfaces === 0) void consumeHistoryDismissEntry()
       })
     }
   }, [isOpen])

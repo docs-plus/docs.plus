@@ -1,10 +1,11 @@
 import { getUserProfileForModal } from '@api'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
+import { ModalHeading } from '@components/ui/Dialog'
 import { useAsyncRequest } from '@hooks/useAsyncRequest'
 import { useAuthStore, useStore } from '@stores'
 import type { PostgrestError } from '@supabase/supabase-js'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 
 import { ProfileDialogShell } from './ProfileDialogShell'
 import { ProfileLinkRow } from './ProfileLinkRow'
@@ -21,9 +22,6 @@ interface UserProfileDialogProps {
 type UserProfileResponse = Awaited<ReturnType<typeof getUserProfileForModal>>
 type UserProfileRecord = NonNullable<UserProfileResponse['data']>
 
-const sectionLabelClass =
-  'text-base-content/50 mb-2 text-xs font-semibold tracking-wide uppercase sm:text-sm'
-
 export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
   const closeDialog = useStore((state) => state.closeDialog)
   const viewerId = useAuthStore((state) => state.profile?.id)
@@ -39,42 +37,34 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
     false
   )
 
-  useEffect(() => {
-    if (!userId) {
-      setData(null)
-      return
-    }
-
-    setData(null)
-
+  const loadProfile = useCallback(() => {
     request(userId).catch((requestError) => {
       console.error('Failed to load user profile', requestError)
     })
+  }, [request, userId])
+
+  useEffect(() => {
+    setData(null)
+    if (!userId) return
+
+    loadProfile()
 
     return () => {
       setData(null)
     }
-  }, [userId, request, setData])
+  }, [userId, loadProfile, setData])
 
   const links = useMemo(() => sanitizeProfileLinks(userData?.profile_data?.linkTree), [userData])
 
   if (!userId) {
     return (
-      <ProfileDialogShell
-        title="No user selected"
-        message="Choose a user to see their profile."
-        onClose={closeDialog}
-      />
+      <ProfileDialogShell title="No user selected" message="Choose a user to see their profile." />
     )
   }
 
   if (loading) {
     return (
-      <ProfileDialogShell
-        title="Loading profile"
-        onClose={closeDialog}
-        busy
-        header={<UserProfileDialogHeaderSkeleton />}>
+      <ProfileDialogShell title="Loading profile" busy header={<UserProfileDialogHeaderSkeleton />}>
         <UserProfileDialogSkeleton />
       </ProfileDialogShell>
     )
@@ -82,11 +72,11 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   if (error) {
     return (
-      <ProfileDialogShell
-        title="Unable to load profile"
-        message={error.message || 'Please try again later.'}
-        onClose={closeDialog}
-      />
+      <ProfileDialogShell title="Unable to load profile" message={error.message ?? ''}>
+        <Button variant="quiet" className="self-start" onClick={loadProfile}>
+          Try again
+        </Button>
+      </ProfileDialogShell>
     )
   }
 
@@ -95,7 +85,6 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       <ProfileDialogShell
         title="User not available"
         message="We couldn't load this profile right now."
-        onClose={closeDialog}
       />
     )
   }
@@ -107,7 +96,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
   const isOwnProfile = viewerId != null && viewerId === (userData.id || userId)
 
   const emptyProfile = isOwnProfile ? (
-    <div className="flex items-center gap-3 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="flex items-center gap-3 p-6">
       <p className="text-base-content/60 min-w-0 flex-1 text-sm">No bio or links yet.</p>
       <Button
         variant="ghost"
@@ -121,13 +110,13 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       </Button>
     </div>
   ) : (
-    <p className="text-base-content/50 p-4 text-sm sm:p-6">No bio or links yet.</p>
+    <p className="text-base-content/60 p-6 text-sm">No bio or links yet.</p>
   )
 
   return (
     <ProfileDialogShell
       title={fullName}
-      onClose={closeDialog}
+      titleInHeader
       header={
         <>
           <Avatar
@@ -138,23 +127,23 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
             className="shrink-0"
           />
           <div className="min-w-0 flex-1 self-center">
-            <p className="text-base-content truncate text-lg font-bold sm:text-xl">{fullName}</p>
+            <ModalHeading className="truncate text-nowrap">{fullName}</ModalHeading>
             {username ? <p className="text-base-content/60 truncate text-sm">@{username}</p> : null}
           </div>
         </>
       }>
       {bio || links.length > 0 ? (
-        <div className="space-y-6 p-4 sm:p-6">
+        <div className="space-y-4 p-6">
           {bio ? (
             <section>
-              <h3 className={sectionLabelClass}>About</h3>
-              <p className="text-base-content/80 text-sm whitespace-pre-line sm:text-base">{bio}</p>
+              <h3 className="text-base-content mb-2 text-base font-semibold">About</h3>
+              <p className="text-base-content text-sm whitespace-pre-line">{bio}</p>
             </section>
           ) : null}
 
           {links.length > 0 ? (
             <section>
-              <h3 className={sectionLabelClass}>Links</h3>
+              <h3 className="text-base-content mb-2 text-base font-semibold">Links</h3>
               <div className="flex flex-col gap-2">
                 {links.map((link) => (
                   <ProfileLinkRow key={link.key} link={link} />

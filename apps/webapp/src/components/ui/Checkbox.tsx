@@ -1,5 +1,7 @@
+import { twMerge } from '@utils/twMerge'
 import { forwardRef, InputHTMLAttributes, useId } from 'react'
-import { twMerge } from 'tailwind-merge'
+
+import { FieldHelp } from './FieldHelp'
 
 export type CheckboxSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type CheckboxColor =
@@ -39,14 +41,16 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
     const id = _id || generatedId
 
     const checkboxClasses = buildCheckboxClasses(size, color)
+    const helperId = helperText ? `${id}-help` : undefined
+    const describedBy = [props['aria-describedby'], helperId].filter(Boolean).join(' ') || undefined
 
     return (
-      <div className={twMerge('form-control', wrapperClassName)}>
+      <div className={twMerge('flex flex-col items-start gap-1.5', wrapperClassName)}>
         <label
           htmlFor={id}
           className={twMerge(
-            'label cursor-pointer justify-start gap-3',
-            disabled && 'cursor-not-allowed opacity-50'
+            'inline-flex cursor-pointer items-center gap-3',
+            disabled && 'cursor-not-allowed'
           )}>
           <input
             ref={ref}
@@ -55,10 +59,16 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             className={twMerge(checkboxClasses, className)}
             disabled={disabled}
             {...props}
+            aria-describedby={describedBy}
           />
-          {label && <span className="label-text text-base-content">{label}</span>}
+          {label && (
+            <span
+              className={twMerge('text-base-content text-sm', disabled && 'text-base-content/40')}>
+              {label}
+            </span>
+          )}
         </label>
-        {helperText && <p className="label text-base-content/70 text-xs">{helperText}</p>}
+        {helperText && <FieldHelp id={helperId}>{helperText}</FieldHelp>}
       </div>
     )
   }

@@ -15,8 +15,8 @@ import {
   type AvatarSize,
   SIZE_CLASSES
 } from '@utils/avatarStackGeometry'
+import { twMerge } from '@utils/twMerge'
 import { forwardRef, type Ref, useCallback, useEffect, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 /** Which candidate the `<img>` points at; steps forward on load failure. */
 type AvatarImageSource = 'bucket' | 'remote' | 'fallback'
