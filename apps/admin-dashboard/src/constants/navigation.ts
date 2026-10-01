@@ -18,7 +18,7 @@ export interface NavItem {
   icon: IconType
 }
 
-// Single source of truth — used by Sidebar and MobileMenu.
+// Both lists feed NavLinks, the one nav of the Sidebar and the MobileMenu.
 export const navItems: NavItem[] = [
   { href: '/', label: 'Overview', icon: LuLayoutDashboard },
   { href: '/users', label: 'Users', icon: LuUsers },

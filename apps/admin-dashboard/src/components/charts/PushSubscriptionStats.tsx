@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { IconType } from 'react-icons'
 import {
   LuApple,
   LuChrome,
@@ -12,6 +13,7 @@ import {
   LuTriangleAlert
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { fetchPushSubscriptionAnalytics } from '@/services/api'
 
 function ProgressBar({
@@ -25,7 +27,7 @@ function ProgressBar({
   value: number
   total: number
   color: string
-  icon?: React.ComponentType<{ className?: string }>
+  icon?: IconType
 }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0
   return (
@@ -35,40 +37,25 @@ function ProgressBar({
           {Icon && <Icon className="h-4 w-4" />}
           {label}
         </span>
-        <span className="font-mono">
+        <span className="tabular-nums">
           {value.toLocaleString()} ({pct}%)
         </span>
       </div>
       <div className="bg-base-300 h-2 w-full overflow-hidden rounded-full">
-        <div className={`h-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+        <div className={`h-full ${color} transition-[width]`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
 }
 
-function MiniStat({
-  label,
-  value,
-  trend,
-  icon: Icon
-}: {
-  label: string
-  value: number
-  trend?: 'up' | 'down' | 'neutral'
-  icon?: React.ComponentType<{ className?: string }>
-}) {
+function MiniStat({ label, value, trend }: { label: string; value: number; trend: 'up' | 'down' }) {
   return (
-    <div className="bg-base-200/50 flex items-center gap-3 rounded-lg p-3">
-      {Icon && (
-        <div className="bg-base-300 rounded-lg p-2">
-          <Icon className="h-5 w-5" />
-        </div>
-      )}
+    <div className="bg-base-200/50 rounded-field flex items-center gap-3 p-3">
       <div>
         <p className="text-2xl font-bold">{value.toLocaleString()}</p>
         <p className="text-base-content/60 flex items-center gap-1 text-xs">
-          {trend === 'up' && <LuTrendingUp className="text-success h-3 w-3" />}
-          {trend === 'down' && <LuTrendingDown className="text-error h-3 w-3" />}
+          {trend === 'up' && <LuTrendingUp className="h-3 w-3 text-[var(--success-ink)]" />}
+          {trend === 'down' && <LuTrendingDown className="h-3 w-3 text-[var(--error-ink)]" />}
           {label}
         </p>
       </div>
@@ -96,8 +83,6 @@ export function PushSubscriptionStats() {
     )
   }
 
-  const analytics = data
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -112,7 +97,7 @@ export function PushSubscriptionStats() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="bg-base-100 rounded-box border-base-300 border p-4">
+        <SectionCard className="p-4">
           <h3 className="mb-4 flex items-center gap-2 font-medium">
             <LuSmartphone className="h-4 w-4" />
             Platform Distribution
@@ -120,42 +105,42 @@ export function PushSubscriptionStats() {
           <div className="space-y-3">
             <ProgressBar
               label="Web"
-              value={analytics.platforms.web}
-              total={analytics.platforms.total}
+              value={data.platforms.web}
+              total={data.platforms.total}
               color="bg-primary"
               icon={LuChrome}
             />
             <ProgressBar
               label="iOS PWA"
-              value={analytics.platforms.ios}
-              total={analytics.platforms.total}
+              value={data.platforms.ios}
+              total={data.platforms.total}
               color="bg-secondary"
               icon={LuApple}
             />
             <ProgressBar
               label="Android"
-              value={analytics.platforms.android}
-              total={analytics.platforms.total}
+              value={data.platforms.android}
+              total={data.platforms.total}
               color="bg-accent"
               icon={LuSmartphone}
             />
-            {analytics.platforms.desktop > 0 && (
+            {data.platforms.desktop > 0 && (
               <ProgressBar
                 label="Desktop"
-                value={analytics.platforms.desktop}
-                total={analytics.platforms.total}
+                value={data.platforms.desktop}
+                total={data.platforms.total}
                 color="bg-info"
                 icon={LuMonitor}
               />
             )}
           </div>
-          <div className="text-base-content/60 mt-3 border-t pt-3 text-center text-sm">
-            Total: <span className="font-semibold">{analytics.platforms.total}</span> active
+          <div className="text-base-content/60 border-base-300 mt-3 border-t pt-3 text-center text-sm">
+            Total: <span className="font-semibold">{data.platforms.total}</span> active
             subscriptions
           </div>
-        </div>
+        </SectionCard>
 
-        <div className="bg-base-100 rounded-box border-base-300 border p-4">
+        <SectionCard className="p-4">
           <h3 className="mb-4 flex items-center gap-2 font-medium">
             <LuShield className="h-4 w-4" />
             Subscription Health
@@ -163,68 +148,70 @@ export function PushSubscriptionStats() {
           <div className="space-y-3">
             <ProgressBar
               label="Fresh (< 7d)"
-              value={analytics.health.fresh}
-              total={analytics.platforms.total}
+              value={data.health.fresh}
+              total={data.platforms.total}
               color="bg-success"
             />
             <ProgressBar
               label="OK (7-30d)"
-              value={analytics.health.ok}
-              total={analytics.platforms.total}
+              value={data.health.ok}
+              total={data.platforms.total}
               color="bg-warning"
             />
             <ProgressBar
               label="Stale (> 30d)"
-              value={analytics.health.stale}
-              total={analytics.platforms.total}
+              value={data.health.stale}
+              total={data.platforms.total}
               color="bg-error"
             />
           </div>
-          <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
+          <div className="border-base-300 mt-3 flex items-center justify-between border-t pt-3 text-sm">
             <span className="text-base-content/60 flex items-center gap-1">
               <LuClock className="h-4 w-4" />
               Avg age
             </span>
-            <span className="font-mono font-semibold">{analytics.health.avgAgeDays} days</span>
+            <span className="font-semibold tabular-nums">{data.health.avgAgeDays} days</span>
           </div>
-          {analytics.health.stale > 0 && (
-            <div className="bg-error/10 text-error mt-2 flex items-center gap-2 rounded-lg p-2 text-xs">
+          {data.health.stale > 0 && (
+            <div className="bg-error/10 rounded-field mt-2 flex items-center gap-2 p-2 text-xs text-[var(--error-ink)]">
               <LuTriangleAlert className="h-4 w-4 shrink-0" />
-              {analytics.health.stale} subscriptions need refresh
+              {data.health.stale} subscriptions need refresh
             </div>
           )}
-        </div>
+        </SectionCard>
 
-        <div className="bg-base-100 rounded-box border-base-300 space-y-4 border p-4">
+        <SectionCard className="space-y-4 p-4">
           <h3 className="flex items-center gap-2 font-medium">
             <LuTrendingUp className="h-4 w-4" />
             Lifecycle (7 days)
           </h3>
           <div className="grid grid-cols-2 gap-2">
-            <MiniStat label="New" value={analytics.lifecycle.newThisWeek} trend="up" />
-            <MiniStat label="Churned" value={analytics.lifecycle.churnedThisWeek} trend="down" />
+            <MiniStat label="New" value={data.lifecycle.newThisWeek} trend="up" />
+            <MiniStat label="Churned" value={data.lifecycle.churnedThisWeek} trend="down" />
           </div>
 
-          {analytics.errors.total > 0 && (
-            <div className="border-t pt-4">
+          {data.errors.total > 0 && (
+            <div className="border-base-300 border-t pt-4">
               <h4 className="text-base-content/70 mb-2 flex items-center gap-2 text-sm font-medium">
                 <LuTriangleAlert className="h-4 w-4" />
-                Errors ({analytics.errors.total})
+                Errors ({data.errors.total})
               </h4>
               <div className="space-y-1">
-                {Object.entries(analytics.errors.byType)
+                {Object.entries(data.errors.byType)
                   .sort(([, a], [, b]) => b - a)
                   .slice(0, 5)
                   .map(([type, count]) => (
                     <div key={type} className="flex items-center justify-between text-xs">
-                      <code className="bg-error/10 text-error rounded px-1.5 py-0.5">{type}</code>
-                      <span className="font-mono">{count}</span>
+                      <code className="bg-error/10 rounded-field px-1.5 py-0.5 text-[var(--error-ink)]">
+                        {type}
+                      </code>
+                      <span className="tabular-nums">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
           )}
-        </div>
+        </SectionCard>
       </div>
     </div>
   )

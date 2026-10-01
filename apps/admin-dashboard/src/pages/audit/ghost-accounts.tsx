@@ -15,6 +15,7 @@ import {
   LuUserX
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
@@ -114,11 +115,11 @@ function GhostAccountsTable({
 }) {
   if (ghosts.length === 0) {
     return (
-      <div className="rounded-box bg-base-100 border-base-300 flex flex-col items-center justify-center border py-16">
-        <LuGhost className="text-success mb-4 h-12 w-12 opacity-40" />
+      <SectionCard className="flex flex-col items-center justify-center py-16">
+        <LuGhost className="text-success mb-4 h-12 w-12" />
         <p className="text-lg font-semibold">No Ghost Accounts Found</p>
         <p className="text-base-content/60 mt-1 text-sm">All user accounts look healthy.</p>
-      </div>
+      </SectionCard>
     )
   }
 
@@ -147,7 +148,7 @@ function GhostAccountsTable({
         </thead>
         <tbody>
           {ghosts.map((ghost) => (
-            <tr key={ghost.id} className="hover">
+            <tr key={ghost.id} className="row-hover">
               <td>
                 <input
                   type="checkbox"
@@ -159,9 +160,9 @@ function GhostAccountsTable({
               <td>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">
-                    {ghost.email || <span className="italic opacity-50">anonymous</span>}
+                    {ghost.email || <span className="text-base-content/60 italic">anonymous</span>}
                   </span>
-                  <span className="text-base-content/40 font-mono text-xs">
+                  <span className="text-base-content/60 text-xs tabular-nums">
                     {ghost.id.slice(0, 8)}...
                   </span>
                 </div>
@@ -183,6 +184,7 @@ function GhostAccountsTable({
                       <button
                         className="btn btn-ghost btn-xs gap-1"
                         onClick={() => onResend(ghost.email!)}
+                        aria-label={`Resend confirmation email to ${ghost.email}`}
                         title="Resend confirmation email">
                         <LuMail className="h-3 w-3" />
                       </button>
@@ -191,6 +193,7 @@ function GhostAccountsTable({
                     className="btn btn-ghost btn-xs text-error gap-1"
                     onClick={() => onDelete(ghost.id)}
                     disabled={isDeleting}
+                    aria-label={`Delete account ${ghost.email || ghost.id.slice(0, 8)}`}
                     title="Delete account">
                     <LuTrash2 className="h-3 w-3" />
                   </button>
@@ -234,7 +237,7 @@ function AnonymousSessionsPanel({
           icon={<LuUserX className="h-5 w-5" />}
           loading={isLoading}
         />
-        <div className="bg-base-100 rounded-box border-base-300 flex flex-col items-center justify-center border p-5">
+        <SectionCard className="flex flex-col items-center justify-center p-5">
           <p className="text-base-content/60 mb-3 text-sm">Safe to cleanup</p>
           <button
             className="btn btn-error btn-sm gap-2"
@@ -247,7 +250,7 @@ function AnonymousSessionsPanel({
             )}
             Cleanup 90d+ Anonymous ({orphanedAnon})
           </button>
-        </div>
+        </SectionCard>
       </div>
 
       {total === 0 && !isLoading && (
@@ -495,17 +498,19 @@ export default function GhostAccountsAuditPage() {
         </div>
 
         <div className="flex items-center justify-between">
-          <div role="tablist" className="tabs tabs-bordered">
+          <div role="tablist" className="tabs tabs-border">
             <button
               role="tab"
-              className={`tab gap-2 ${activeTab === 'ghosts' ? 'tab-active' : ''}`}
+              aria-selected={activeTab === 'ghosts'}
+              className={`tab gap-2 ${activeTab === 'ghosts' ? 'tab-active' : 'text-base-content/70 hover:text-base-content'}`}
               onClick={() => setActiveTab('ghosts')}>
               <LuGhost className="h-4 w-4" />
               Ghost Accounts ({nonAnonGhosts})
             </button>
             <button
               role="tab"
-              className={`tab gap-2 ${activeTab === 'anonymous' ? 'tab-active' : ''}`}
+              aria-selected={activeTab === 'anonymous'}
+              className={`tab gap-2 ${activeTab === 'anonymous' ? 'tab-active' : 'text-base-content/70 hover:text-base-content'}`}
               onClick={() => setActiveTab('anonymous')}>
               <LuUserX className="h-4 w-4" />
               Anonymous Sessions ({totalAnon})
@@ -525,9 +530,9 @@ export default function GhostAccountsAuditPage() {
 
         {activeTab === 'ghosts' && (
           <div className="space-y-4">
-            <div className="bg-base-100 rounded-box border-base-300 flex flex-wrap items-center gap-3 border p-3">
+            <SectionCard className="flex flex-wrap items-center gap-3 p-3">
               <select
-                className="select select-bordered select-sm"
+                className="select select-sm"
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}>
                 <option value="">All Types</option>
@@ -539,7 +544,7 @@ export default function GhostAccountsAuditPage() {
               </select>
 
               <select
-                className="select select-bordered select-sm"
+                className="select select-sm"
                 value={minAgeDays}
                 onChange={(e) => setMinAgeDays(parseInt(e.target.value))}>
                 <option value={7}>Older than 7 days</option>
@@ -551,7 +556,7 @@ export default function GhostAccountsAuditPage() {
 
               {ghostsLoading && <span className="loading loading-spinner loading-sm" />}
               <span className="text-base-content/60 text-sm">{ghostsData?.total ?? 0} results</span>
-            </div>
+            </SectionCard>
 
             <BulkActionBar count={selectedCount} onClear={clearSelection}>
               <button
@@ -567,7 +572,7 @@ export default function GhostAccountsAuditPage() {
               </button>
             </BulkActionBar>
 
-            <div className="bg-base-100 rounded-box border-base-300 border">
+            <SectionCard>
               <GhostAccountsTable
                 ghosts={visibleGhosts}
                 isSelected={isSelected}
@@ -579,13 +584,13 @@ export default function GhostAccountsAuditPage() {
                 onResend={handleResend}
                 isDeleting={deleteMutation.isPending}
               />
-            </div>
+            </SectionCard>
 
             <div className="alert">
               <LuBan className="h-5 w-5 shrink-0" />
               <div>
                 <p className="font-medium">Smart Deletion</p>
-                <p className="text-sm opacity-70">
+                <p className="text-base-content/70 text-sm">
                   Accounts with messages or owned documents are soft-deleted, so chat history keeps
                   its author and documents keep an owner. Accounts with neither are permanently
                   removed. This is automatic — no manual choice needed.
@@ -605,7 +610,7 @@ export default function GhostAccountsAuditPage() {
         )}
 
         {summaryData && !summaryLoading && (
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h3 className="mb-4 text-lg font-semibold">Ghost Type Breakdown</h3>
             <div className="space-y-2">
               {Object.entries(summaryData.by_type)
@@ -619,7 +624,7 @@ export default function GhostAccountsAuditPage() {
                       <span className="w-36 text-sm">{config?.label || type}</span>
                       <div className="bg-base-200 h-4 flex-1 overflow-hidden rounded-full">
                         <div
-                          className="bg-primary h-full rounded-full transition-all"
+                          className="bg-primary h-full rounded-full transition-[width]"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -632,15 +637,15 @@ export default function GhostAccountsAuditPage() {
             </div>
 
             {totalGhosts === 0 && (
-              <p className="text-success text-center text-sm font-medium">
+              <p className="text-center text-sm font-medium text-[var(--success-ink)]">
                 All clear — no ghost accounts detected!
               </p>
             )}
-          </div>
+          </SectionCard>
         )}
 
         {summaryData?.public_users && !summaryLoading && (
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h3 className="mb-4 text-lg font-semibold">Public Users Health</h3>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div className="text-center">
@@ -648,19 +653,19 @@ export default function GhostAccountsAuditPage() {
                 <p className="text-base-content/60 text-sm">Total Profiles</p>
               </div>
               <div className="text-center">
-                <p className="text-success text-2xl font-bold">
+                <p className="text-2xl font-bold text-[var(--success-ink)]">
                   {summaryData.public_users.active_count}
                 </p>
                 <p className="text-base-content/60 text-sm">Active</p>
               </div>
               <div className="text-center">
-                <p className="text-warning text-2xl font-bold">
+                <p className="text-2xl font-bold text-[var(--warning-ink)]">
                   {summaryData.public_users.never_active_count}
                 </p>
                 <p className="text-base-content/60 text-sm">Never Active</p>
               </div>
               <div className="text-center">
-                <p className="text-error text-2xl font-bold">
+                <p className="text-2xl font-bold text-[var(--error-ink)]">
                   {summaryData.public_users.soft_deleted_count}
                 </p>
                 <p className="text-base-content/60 text-sm">Soft Deleted</p>
@@ -675,7 +680,7 @@ export default function GhostAccountsAuditPage() {
                 {' (includes anonymous sessions)'}
               </span>
             </div>
-          </div>
+          </SectionCard>
         )}
       </div>
     </AdminLayout>

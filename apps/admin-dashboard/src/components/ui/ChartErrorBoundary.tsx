@@ -10,17 +10,16 @@ interface Props {
 
 interface State {
   hasError: boolean
-  error: Error | null
 }
 
 export class ChartErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+  static getDerivedStateFromError(): State {
+    return { hasError: true }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -28,7 +27,7 @@ export class ChartErrorBoundary extends Component<Props, State> {
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null })
+    this.setState({ hasError: false })
   }
 
   render() {
@@ -37,12 +36,15 @@ export class ChartErrorBoundary extends Component<Props, State> {
 
       return (
         <div
-          className="bg-base-200/50 border-base-300 flex flex-col items-center justify-center gap-3 rounded-lg border"
+          className="border-base-300 rounded-box flex flex-col items-center justify-center gap-3 border"
           style={{ height }}>
           <LuCircleAlert className="text-error h-8 w-8" />
           <p className="text-base-content/60 text-sm">Failed to load chart</p>
-          <button onClick={this.handleRetry} className="btn btn-sm btn-ghost gap-1">
-            <LuRefreshCw className="h-4 w-4" />
+          <button
+            type="button"
+            onClick={this.handleRetry}
+            className="text-primary text-meta rounded-field focus-visible:outline-primary -my-2.5 inline-flex cursor-pointer items-center gap-1.5 py-2.5 font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
+            <LuRefreshCw className="h-3.5 w-3.5" />
             Retry
           </button>
         </div>

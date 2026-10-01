@@ -215,7 +215,10 @@ export interface ViewsSummary {
 }
 
 export interface TopViewedDocument {
+  /** Analytics key (lower(documentId)), never a URL segment. */
   document_slug: string
+  /** The human path; null when no document metadata row exists. */
+  slug?: string | null
   title?: string
   views: number
   unique_users?: number // Frontend naming

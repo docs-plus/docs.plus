@@ -26,7 +26,7 @@ const ErrorPage: NextPage<ErrorProps> = ({ statusCode }) => {
       <div className="bg-base-200 flex min-h-screen items-center justify-center">
         <div className="max-w-md px-4 text-center">
           <Icon
-            className={`mx-auto mb-6 h-20 w-20 ${is404 ? 'text-base-content/30' : 'text-error'}`}
+            className={`mx-auto mb-6 h-20 w-20 ${is404 ? 'text-base-content/50' : 'text-error'}`}
           />
           <h1 className="mb-3 text-3xl font-bold">{title}</h1>
           <p className="text-base-content/60 mb-6">{message}</p>

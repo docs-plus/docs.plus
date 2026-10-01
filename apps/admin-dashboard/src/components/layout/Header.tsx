@@ -28,7 +28,10 @@ export function Header({
 
         <div className="flex flex-shrink-0 items-center gap-2">
           {onExport && (
-            <button onClick={onExport} className="btn btn-outline btn-sm gap-2">
+            <button
+              onClick={onExport}
+              aria-label={exportLabel}
+              className="btn btn-outline btn-sm gap-2">
               <LuDownload className="h-4 w-4" />
               <span className="hidden sm:inline">{exportLabel}</span>
             </button>
@@ -38,6 +41,7 @@ export function Header({
             <button
               onClick={onRefresh}
               disabled={refreshing}
+              aria-label="Refresh"
               className="btn btn-ghost btn-sm gap-2">
               <LuRefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>

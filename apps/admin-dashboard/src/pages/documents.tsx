@@ -14,6 +14,7 @@ import {
   LuUsers
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { Sparkline } from '@/components/charts'
 import { ActionsDropdown, DeleteModal } from '@/components/documents'
@@ -33,7 +34,7 @@ import {
 } from '@/services/api'
 import type { Document } from '@/types'
 import { exportToCSV } from '@/utils/export'
-import { formatDate, formatDateTime } from '@/utils/format'
+import { formatDate, formatDateTime, userLabel } from '@/utils/format'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
@@ -181,7 +182,7 @@ export default function DocumentsPage() {
       render: (doc: Document) => (
         <div className="min-w-0">
           <p className="max-w-[200px] truncate font-medium">{doc.title || doc.docId}</p>
-          <code className="text-base-content/50 text-xs">{doc.docId}</code>
+          <code className="text-base-content/60 text-xs">{doc.docId}</code>
         </div>
       )
     },
@@ -201,11 +202,11 @@ export default function DocumentsPage() {
                 size="sm"
               />
               <span className="max-w-[100px] truncate text-sm">
-                {doc.ownerName || doc.ownerEmail?.split('@')[0]}
+                {userLabel(doc.ownerName, doc.ownerEmail)}
               </span>
             </>
           ) : (
-            <span className="text-base-content/40 text-sm">No owner</span>
+            <span className="text-base-content/60 text-sm">No owner</span>
           )}
         </div>
       )
@@ -226,7 +227,7 @@ export default function DocumentsPage() {
             </span>
           )}
           {!doc.isPrivate && !doc.readOnly && (
-            <span className="text-base-content/40 text-sm">Public</span>
+            <span className="text-base-content/60 text-sm">Public</span>
           )}
         </div>
       )
@@ -301,7 +302,7 @@ export default function DocumentsPage() {
       header: 'Created',
       sortable: true,
       render: (doc: Document) => (
-        <span className="text-base-content/50 text-sm">{formatDate(doc.createdAt)}</span>
+        <span className="text-base-content/60 text-sm">{formatDate(doc.createdAt)}</span>
       )
     },
     {
@@ -378,7 +379,7 @@ export default function DocumentsPage() {
             className="max-w-md"
           />
 
-          <div className="bg-base-100 rounded-box border-base-300 border">
+          <SectionCard>
             <DataTable
               columns={columns}
               data={data?.data || []}
@@ -397,16 +398,18 @@ export default function DocumentsPage() {
               }}
               emptyMessage="No documents found"
             />
-          </div>
+          </SectionCard>
         </div>
 
-        <DeleteModal
-          isOpen={!!deleteTarget}
-          doc={deleteTarget}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setDeleteTarget(null)}
-          isDeleting={deleteMutation.isPending}
-        />
+        {deleteTarget && (
+          <DeleteModal
+            key={deleteTarget.id}
+            doc={deleteTarget}
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => setDeleteTarget(null)}
+            isDeleting={deleteMutation.isPending}
+          />
+        )}
       </AdminLayout>
     </>
   )

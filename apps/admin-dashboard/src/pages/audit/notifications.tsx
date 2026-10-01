@@ -14,6 +14,7 @@ import {
   LuSmartphone
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
@@ -117,7 +118,7 @@ function PushFailureBreakdown({
               </div>
               <div className="bg-base-200 h-5 flex-1 overflow-hidden rounded-full">
                 <div
-                  className={`h-full rounded-full transition-all ${
+                  className={`h-full rounded-full transition-[width] ${
                     ['EXPIRED', 'NOT_FOUND'].includes(category) ? 'bg-error/70' : 'bg-warning/70'
                   }`}
                   style={{ width: `${Math.max(pct, 2)}%` }}
@@ -126,7 +127,7 @@ function PushFailureBreakdown({
               <span className="text-base-content/70 w-24 shrink-0 text-right text-sm">
                 {count} subs ({pct}%)
               </span>
-              <span className="text-base-content/50 hidden w-20 shrink-0 text-right text-xs md:inline">
+              <span className="text-base-content/60 hidden w-20 shrink-0 text-right text-xs md:inline">
                 {users} users
               </span>
             </div>
@@ -195,8 +196,8 @@ function EmailFailureBreakdown({
               <td>
                 <CategoryBadge category={row.error_category} />
               </td>
-              <td className="font-mono">{row.failure_count}</td>
-              <td className="font-mono">{row.affected_users}</td>
+              <td className="tabular-nums">{row.failure_count}</td>
+              <td className="tabular-nums">{row.affected_users}</td>
               <td className="text-base-content/60 text-xs">
                 {row.last_failure_at ? formatRelative(row.last_failure_at) : '-'}
               </td>
@@ -292,7 +293,7 @@ function FailedSubscriptionsTable({
                     onChange={() => toggleItem(sub.subscription_id)}
                   />
                 </td>
-                <td className="font-mono text-xs">{sub.username || sub.user_id.slice(0, 8)}</td>
+                <td className="text-xs">{sub.username || sub.user_id.slice(0, 8)}</td>
                 <td>
                   <PlatformBadge platform={sub.platform} />
                 </td>
@@ -309,7 +310,7 @@ function FailedSubscriptionsTable({
                     <span className="badge badge-ghost badge-sm">Disabled</span>
                   )}
                 </td>
-                <td className="text-error max-w-[200px] truncate text-xs">
+                <td className="max-w-[200px] truncate text-xs text-[var(--error-ink)]">
                   {sub.last_error || '-'}
                 </td>
                 <td className="text-base-content/60 text-xs">
@@ -364,13 +365,13 @@ function EmailBouncesTable({
         <tbody>
           {data.map((bounce) => (
             <tr key={bounce.bounce_id}>
-              <td className="font-mono text-xs">{bounce.email}</td>
+              <td className="text-xs">{bounce.email}</td>
               <td>
                 <CategoryBadge category={bounce.bounce_type.toUpperCase()} />
               </td>
               <td className="text-xs">{bounce.provider || '-'}</td>
               <td className="max-w-[200px] truncate text-xs">{bounce.reason || '-'}</td>
-              <td className="font-mono text-xs">{bounce.username || '-'}</td>
+              <td className="text-xs">{bounce.username || '-'}</td>
               <td className="text-base-content/60 text-xs">
                 {bounce.bounced_at ? formatRelative(bounce.bounced_at) : '-'}
               </td>
@@ -429,9 +430,9 @@ function DLQViewer() {
               <tbody>
                 {data?.push.jobs.map((job) => (
                   <tr key={job.id}>
-                    <td className="font-mono text-xs">{job.id}</td>
+                    <td className="text-xs tabular-nums">{job.id}</td>
                     <td className="text-xs">{job.name}</td>
-                    <td className="text-error max-w-[200px] truncate text-xs">
+                    <td className="max-w-[200px] truncate text-xs text-[var(--error-ink)]">
                       {job.failedReason || '-'}
                     </td>
                     <td className="text-base-content/60 text-xs">
@@ -462,9 +463,9 @@ function DLQViewer() {
               <tbody>
                 {data?.email.jobs.map((job) => (
                   <tr key={job.id}>
-                    <td className="font-mono text-xs">{job.id}</td>
+                    <td className="text-xs tabular-nums">{job.id}</td>
                     <td className="text-xs">{job.name}</td>
-                    <td className="text-error max-w-[200px] truncate text-xs">
+                    <td className="max-w-[200px] truncate text-xs text-[var(--error-ink)]">
                       {job.failedReason || '-'}
                     </td>
                     <td className="text-base-content/60 text-xs">
@@ -701,38 +702,30 @@ export default function NotificationAuditPage() {
             <StatCard
               title="Push Delivery Rate"
               value={healthLoading ? '—' : `${pushDeliveryRate}%`}
-              icon={
-                <LuSmartphone
-                  className={`h-6 w-6 ${pushDeliveryRate >= 95 ? 'text-success' : pushDeliveryRate >= 80 ? 'text-warning' : 'text-error'}`}
-                />
-              }
+              icon={<LuSmartphone className="h-6 w-6" />}
               loading={healthLoading}
             />
             <StatCard
               title="Email Delivery Rate"
               value={healthLoading ? '—' : `${emailDeliveryRate}%`}
-              icon={
-                <LuMail
-                  className={`h-6 w-6 ${emailDeliveryRate >= 95 ? 'text-success' : emailDeliveryRate >= 80 ? 'text-warning' : 'text-error'}`}
-                />
-              }
+              icon={<LuMail className="h-6 w-6" />}
               loading={healthLoading}
             />
             <StatCard
               title="Failed Push Subs"
               value={failedSubsCount}
-              icon={<LuCircleAlert className="text-warning h-6 w-6" />}
+              icon={<LuCircleAlert className="h-6 w-6" />}
               loading={healthLoading}
             />
             <StatCard
               title="Hard Bounces"
               value={hardBounces}
-              icon={<LuMailWarning className="text-error h-6 w-6" />}
+              icon={<LuMailWarning className="h-6 w-6" />}
               loading={healthLoading}
             />
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Push Failures by Category</h2>
               <BulkCleanupActions
@@ -742,12 +735,12 @@ export default function NotificationAuditPage() {
               />
             </div>
             <PushFailureBreakdown data={pushFailures} isLoading={pushFailuresLoading} />
-          </div>
+          </SectionCard>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">Email Failures</h2>
             <EmailFailureBreakdown data={emailFailures} isLoading={emailFailuresLoading} />
-          </div>
+          </SectionCard>
 
           <CollapsibleSection
             title={`Failed Push Subscriptions (${failedSubs?.length ?? 0})`}

@@ -22,21 +22,23 @@ export function CollapsibleSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <button
+          type="button"
+          aria-expanded={isOpen}
           onClick={() => setIsOpen(!isOpen)}
           className="hover:text-primary flex items-center gap-2 text-xl font-semibold transition-colors">
           {isOpen ? (
-            <LuChevronDown className="text-base-content/60 h-5 w-5" />
+            <LuChevronDown className="text-base-content/70 h-5 w-5" />
           ) : (
-            <LuChevronRight className="text-base-content/60 h-5 w-5" />
+            <LuChevronRight className="text-base-content/70 h-5 w-5" />
           )}
-          {icon && <span className="text-primary">{icon}</span>}
+          {icon && <span className="text-base-content/70">{icon}</span>}
           {title}
         </button>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
 
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`overflow-hidden transition-opacity duration-300 ease-in-out ${
           isOpen ? 'opacity-100' : 'max-h-0 opacity-0'
         }`}>
         {isOpen && <div className="space-y-6">{children}</div>}

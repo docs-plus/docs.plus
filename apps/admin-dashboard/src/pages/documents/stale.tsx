@@ -14,6 +14,7 @@ import {
   LuTrash2
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { StalePreviewModal } from '@/components/documents'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -31,7 +32,7 @@ import {
 } from '@/services/api'
 import type { StaleDocument } from '@/types'
 import { exportToCSV } from '@/utils/export'
-import { formatBytes, formatRelative } from '@/utils/format'
+import { formatBytes, formatRelative, userLabel } from '@/utils/format'
 
 // Disable static generation
 export const getServerSideProps: GetServerSideProps = async () => {
@@ -40,18 +41,20 @@ export const getServerSideProps: GetServerSideProps = async () => {
 
 function getScoreBadge(score: number, reason: string) {
   if (score >= 100) {
-    return <span className="badge badge-error badge-sm gap-1">🔴 {reason}</span>
+    return <span className="badge badge-error badge-sm">{reason}</span>
   }
   if (score >= 90) {
-    return <span className="badge badge-warning badge-sm gap-1">🟠 {reason}</span>
+    return <span className="badge badge-warning badge-sm">{reason}</span>
   }
   if (score >= 70) {
-    return <span className="badge badge-info badge-sm gap-1">🟡 {reason}</span>
+    return (
+      <span className="badge badge-soft badge-info badge-sm text-[var(--info-ink)]">{reason}</span>
+    )
   }
   if (score >= 50) {
-    return <span className="badge badge-ghost badge-sm gap-1">🟤 {reason}</span>
+    return <span className="badge badge-ghost badge-sm">{reason}</span>
   }
-  return <span className="badge badge-ghost badge-sm gap-1">{reason || 'Low'}</span>
+  return <span className="badge badge-ghost badge-sm">{reason || 'Low'}</span>
 }
 
 export default function StaleDocumentsPage() {
@@ -200,7 +203,7 @@ export default function StaleDocumentsPage() {
             title="Open document in new tab">
             {doc.title || doc.slug}
           </a>
-          <code className="text-base-content/50 block text-xs">{doc.slug}</code>
+          <code className="text-base-content/60 block text-xs">{doc.slug}</code>
         </div>
       )
     },
@@ -219,11 +222,11 @@ export default function StaleDocumentsPage() {
                 size="sm"
               />
               <span className="max-w-[80px] truncate text-sm">
-                {doc.owner_name || doc.owner_email?.split('@')[0]}
+                {userLabel(doc.owner_name, doc.owner_email)}
               </span>
             </>
           ) : (
-            <span className="text-base-content/40 text-sm">No owner</span>
+            <span className="text-base-content/60 text-sm">No owner</span>
           )}
         </div>
       )
@@ -242,9 +245,9 @@ export default function StaleDocumentsPage() {
           <div className="flex items-center gap-1">
             <LuEye className="h-3 w-3" />
             {doc.views_7d}
-            <span className="text-base-content/40">7d</span>
+            <span className="text-base-content/60">7d</span>
           </div>
-          <div className="text-base-content/50">{doc.views_30d} 30d</div>
+          <div className="text-base-content/60">{doc.views_30d} 30d</div>
         </div>
       )
     },
@@ -277,6 +280,7 @@ export default function StaleDocumentsPage() {
         <button
           className="btn btn-ghost btn-sm btn-square"
           onClick={() => setPreviewSlug(doc.slug)}
+          aria-label={`Preview and delete ${doc.title || doc.slug}`}
           title="Preview & Delete">
           <LuTrash2 className="h-4 w-4" />
         </button>
@@ -334,7 +338,6 @@ export default function StaleDocumentsPage() {
               title="Low Engagement"
               value={summary?.low_engagement ?? 0}
               loading={summaryLoading}
-              className="border-ghost/20"
             />
             <StatCard
               title="Recoverable"
@@ -347,7 +350,7 @@ export default function StaleDocumentsPage() {
           <BulkActionBar count={selectedCount} onClear={clearSelection}>
             {confirmBulkDelete ? (
               <>
-                <span className="text-error text-sm font-medium">
+                <span className="text-sm font-medium text-[var(--error-ink)]">
                   Delete {selectedCount} document{selectedCount !== 1 ? 's' : ''}?
                 </span>
                 <button
@@ -425,7 +428,9 @@ export default function StaleDocumentsPage() {
                     </tr>
                     <tr>
                       <td>
-                        <span className="badge badge-info badge-sm">Declining Interest</span>
+                        <span className="badge badge-soft badge-info badge-sm text-[var(--info-ink)]">
+                          Declining Interest
+                        </span>
                       </td>
                       <td>70</td>
                       <td>0 views in 7 days AND no edits for 30+ days</td>
@@ -439,7 +444,7 @@ export default function StaleDocumentsPage() {
                     </tr>
                   </tbody>
                 </table>
-                <p className="text-base-content/50 text-xs">
+                <p className="text-base-content/60 text-xs">
                   <strong>Not Stale:</strong> Documents with 3+ views in the last 7 days OR recently
                   edited are considered active and won't appear here.
                 </p>
@@ -449,16 +454,16 @@ export default function StaleDocumentsPage() {
 
           <div className="text-base-content/60 flex flex-wrap items-center gap-4 text-sm">
             <span className="font-medium">Legend:</span>
-            <span>🔴 Truly Abandoned</span>
-            <span>🟠 Ghost Document</span>
-            <span>🟡 Declining Interest</span>
-            <span>🟤 Low Engagement</span>
-            <span className="text-base-content/40 ml-4">
-              v=versions d=days h=headings p=paragraphs
+            <span className="badge badge-error badge-sm">Truly Abandoned</span>
+            <span className="badge badge-warning badge-sm">Ghost Document</span>
+            <span className="badge badge-soft badge-info badge-sm text-[var(--info-ink)]">
+              Declining Interest
             </span>
+            <span className="badge badge-ghost badge-sm">Low Engagement</span>
+            <span className="ml-4">v=versions d=days h=headings p=paragraphs</span>
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border">
+          <SectionCard>
             <DataTable
               columns={columns}
               data={staleData?.data || []}
@@ -477,16 +482,18 @@ export default function StaleDocumentsPage() {
               }}
               emptyMessage="No stale documents found"
             />
-          </div>
+          </SectionCard>
         </div>
 
-        <StalePreviewModal
-          isOpen={!!previewSlug}
-          slug={previewSlug}
-          onConfirmDelete={handleSingleDelete}
-          onCancel={() => setPreviewSlug(null)}
-          isDeleting={deleteMutation.isPending}
-        />
+        {previewSlug && (
+          <StalePreviewModal
+            key={previewSlug}
+            slug={previewSlug}
+            onConfirmDelete={handleSingleDelete}
+            onCancel={() => setPreviewSlug(null)}
+            isDeleting={deleteMutation.isPending}
+          />
+        )}
       </AdminLayout>
     </>
   )

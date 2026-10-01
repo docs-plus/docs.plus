@@ -40,7 +40,7 @@ export function Sparkline({
   if (!data.length) {
     return (
       <div
-        className={`text-base-content/30 flex items-center justify-center text-xs ${className}`}
+        className={`text-base-content/40 flex items-center justify-center text-xs ${className}`}
         style={{ width, height }}>
         —
       </div>

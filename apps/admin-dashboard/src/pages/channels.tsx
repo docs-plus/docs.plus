@@ -5,6 +5,7 @@ import { useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { LuFileText, LuHash, LuRadio } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { DataTable } from '@/components/tables/DataTable'
@@ -81,7 +82,7 @@ export default function ChannelsPage() {
                 <p className="max-w-[150px] truncate text-sm font-medium">
                   {channel.document_name || channel.document_slug}
                 </p>
-                <code className="text-base-content/50 text-xs">{channel.document_slug}</code>
+                <code className="text-base-content/60 text-xs">{channel.document_slug}</code>
               </div>
             </>
           ) : (
@@ -146,7 +147,7 @@ export default function ChannelsPage() {
             className="max-w-md"
           />
 
-          <div className="bg-base-100 rounded-box border-base-300 border">
+          <SectionCard>
             <DataTable
               columns={columns}
               data={data?.data || []}
@@ -165,7 +166,7 @@ export default function ChannelsPage() {
               }}
               emptyMessage="No channels found"
             />
-          </div>
+          </SectionCard>
         </div>
       </AdminLayout>
     </>

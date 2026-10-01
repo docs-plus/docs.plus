@@ -1,21 +1,25 @@
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+import { userLabel } from '@/utils/format'
+
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
 const SIZE_CLASSES: Record<AvatarSize, string> = {
-  xs: 'w-6 h-6 text-[10px]',
+  xs: 'w-6 h-6 text-xs',
   sm: 'w-7 h-7 text-xs',
   md: 'w-8 h-8 text-sm',
   lg: 'w-10 h-10 text-base',
   xl: 'w-12 h-12 text-lg'
 }
 
+// Every pair clears 4.5:1 in both themes. Neutral took info's slot (3.84:1 in light), so the
+// hash still maps each user to the same index.
 const AVATAR_COLORS = [
   'bg-primary text-primary-content',
   'bg-secondary text-secondary-content',
   'bg-accent text-accent-content',
-  'bg-info text-info-content',
+  'bg-neutral text-neutral-content',
   'bg-success text-success-content',
   'bg-warning text-warning-content'
 ]
@@ -70,7 +74,7 @@ export function Avatar({
 }: AvatarProps) {
   const [failedSources, setFailedSources] = useState(0)
 
-  const displayName = name || email?.split('@')[0] || null
+  const displayName = userLabel(name, email)
   const initial = getInitial(displayName)
   const colorClass = getColorFromString(userId || displayName || 'default')
   const sizeClass = SIZE_CLASSES[size]
@@ -95,7 +99,7 @@ export function Avatar({
   }, [])
 
   const containerClass = twMerge(
-    'rounded-full flex items-center justify-center font-medium shrink-0',
+    'rounded-full flex items-center justify-center font-semibold shrink-0',
     sizeClass,
     className
   )

@@ -4,25 +4,21 @@ import { LuSearch, LuX } from 'react-icons/lu'
 interface SearchInputProps {
   placeholder?: string
   onSearch: (value: string) => void
-  value?: string
-  defaultValue?: string
+  value: string
   className?: string
 }
 
 export function SearchInput({
   placeholder = 'Search...',
   onSearch,
-  value: controlledValue,
-  defaultValue = '',
+  value,
   className = ''
 }: SearchInputProps) {
-  const [internalValue, setInternalValue] = useState(defaultValue)
+  const [internalValue, setInternalValue] = useState(value)
 
   useEffect(() => {
-    if (controlledValue !== undefined) {
-      setInternalValue(controlledValue)
-    }
-  }, [controlledValue])
+    setInternalValue(value)
+  }, [value])
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -54,13 +50,15 @@ export function SearchInput({
     <form onSubmit={handleSubmit} className={className}>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <LuSearch className="text-base-content/40 h-4 w-4" />
+          {/* `z-1`: the daisyUI 5 `.input` is `relative` with a fill, so it would paint over the glyph. */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-1 flex items-center pl-3">
+            <LuSearch className="text-base-content/50 h-4 w-4" />
           </div>
           <input
             type="text"
             placeholder={placeholder}
-            className={`input input-bordered w-full pl-10 ${internalValue ? 'pr-10' : 'pr-3'}`}
+            aria-label={placeholder}
+            className={`input w-full pl-10 ${internalValue ? 'pr-10' : 'pr-3'}`}
             value={internalValue}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -69,13 +67,14 @@ export function SearchInput({
             <button
               type="button"
               onClick={handleClear}
-              className="hover:text-error absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
+              className="text-base-content/70 hover:text-base-content absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
+              aria-label="Clear search"
               title="Clear search (Esc)">
               <LuX className="h-4 w-4" />
             </button>
           )}
         </div>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" aria-label="Search">
           <LuSearch className="h-4 w-4" />
           <span className="hidden sm:inline">Search</span>
         </button>

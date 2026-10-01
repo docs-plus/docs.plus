@@ -5,6 +5,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { LuBuilding2, LuDatabase, LuFolderOpen, LuHardDrive, LuTriangleAlert } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
@@ -82,7 +83,7 @@ const columns = [
                 <span className="badge badge-error badge-sm shrink-0">Over quota</span>
               ) : null}
             </p>
-            <code className="text-base-content/50 text-xs">{row.workspace_id}</code>
+            <code className="text-base-content/60 text-xs">{row.workspace_id}</code>
           </div>
         </div>
       )
@@ -94,7 +95,7 @@ const columns = [
     sortable: true,
     render: (row: WorkspaceMediaStorageStat) =>
       row.slug ? (
-        <code className="bg-base-200 rounded px-2 py-1 text-sm">{row.slug}</code>
+        <code className="bg-base-200 rounded-field px-2 py-1 text-sm">{row.slug}</code>
       ) : (
         <span className="text-base-content/40 text-sm">-</span>
       )
@@ -143,7 +144,7 @@ const columns = [
             aria-label={`${row.usage_percent}% of quota used`}
           />
           <span
-            className={`w-10 text-right text-xs tabular-nums ${overQuota ? 'text-error font-semibold' : 'text-base-content/70'}`}>
+            className={`w-10 text-right text-xs tabular-nums ${overQuota ? 'font-semibold text-[var(--error-ink)]' : 'text-base-content/70'}`}>
             {row.usage_percent}%
           </span>
         </div>
@@ -270,7 +271,7 @@ export default function StoragePage() {
             className="max-w-md"
           />
 
-          <div className="bg-base-100 rounded-box border-base-300 border">
+          <SectionCard>
             <DataTable
               columns={columns}
               data={data?.data ?? []}
@@ -289,7 +290,7 @@ export default function StoragePage() {
               }}
               emptyMessage={search ? 'No workspaces match your search' : 'No chat media stored yet'}
             />
-          </div>
+          </SectionCard>
         </div>
       </AdminLayout>
     </>

@@ -43,12 +43,12 @@ export default function LoginPage() {
         <title>Login | Admin Dashboard</title>
       </Head>
 
-      <div className="bg-base-200 flex min-h-screen items-center justify-center">
-        <div className="card bg-base-100 w-96 shadow-lg">
+      <div className="bg-base-200 flex min-h-screen items-center justify-center px-4">
+        <div className="card bg-base-100 border-base-300 w-full max-w-96 border">
           <div className="card-body">
             <div className="mb-2 flex items-center justify-center gap-2">
-              <LuLayoutDashboard className="text-primary h-8 w-8" />
-              <h1 className="text-primary text-2xl font-bold">docs.plus</h1>
+              <LuLayoutDashboard className="text-base-content/70 h-8 w-8" />
+              <h1 className="text-2xl font-bold">docs.plus</h1>
             </div>
             <p className="text-base-content/60 mb-6 text-center text-sm">Admin Dashboard</p>
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
               )}
             </button>
 
-            <p className="text-base-content/50 mt-6 text-center text-xs">
+            <p className="text-base-content/60 mt-6 text-center text-xs">
               Only authorized administrators can access this dashboard.
               <br />
               Contact your system admin for access.

@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { clsx } from 'clsx'
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
+import type { IconType } from 'react-icons'
 import {
   LuEllipsisVertical,
   LuExternalLink,
@@ -27,6 +29,7 @@ export function ActionsDropdown({
   onDelete,
   isUpdating
 }: ActionsDropdownProps) {
+  const menuId = useId()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -40,90 +43,79 @@ export function ActionsDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleOpenDocument = () => {
-    window.open(`${APP_URL}/${doc.docId}`, '_blank')
+  const openDocument = () => window.open(`${APP_URL}/${doc.docId}`, '_blank')
+  const act = (fn: () => void) => () => {
+    fn()
     setIsOpen(false)
   }
 
+  // `dropdown-open` keeps the panel shown; daisyUI otherwise needs `:focus-within`, which Safari
+  // does not give a clicked button.
   return (
-    <div className="dropdown dropdown-end" ref={dropdownRef}>
+    <div className={clsx('dropdown dropdown-end', isOpen && 'dropdown-open')} ref={dropdownRef}>
       <button
         type="button"
         className="btn btn-ghost btn-sm btn-square"
         onClick={() => setIsOpen(!isOpen)}
-        disabled={isUpdating}>
+        disabled={isUpdating}
+        aria-label="Document actions"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? menuId : undefined}>
         {isUpdating ? (
           <span className="loading loading-spinner loading-xs" />
         ) : (
-          <LuEllipsisVertical className="h-4 w-4" />
+          <LuEllipsisVertical className="h-4 w-4" aria-hidden />
         )}
       </button>
       {isOpen && (
-        <ul className="dropdown-content menu bg-base-100 rounded-box border-base-300 z-50 w-56 border p-2 shadow-lg">
-          <li>
-            <button type="button" onClick={handleOpenDocument} className="gap-3">
-              <LuExternalLink className="h-4 w-4" />
-              Open in new tab
-            </button>
-          </li>
-          <div className="divider my-1" />
-          <li>
-            <button
-              type="button"
-              onClick={() => {
-                onTogglePrivate()
-                setIsOpen(false)
-              }}
-              className="gap-3">
-              {doc.isPrivate ? (
-                <>
-                  <LuLockOpen className="h-4 w-4" />
-                  Make Public
-                </>
-              ) : (
-                <>
-                  <LuLock className="h-4 w-4" />
-                  Make Private
-                </>
-              )}
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={() => {
-                onToggleReadOnly()
-                setIsOpen(false)
-              }}
-              className="gap-3">
-              {doc.readOnly ? (
-                <>
-                  <LuEyeOff className="h-4 w-4" />
-                  Remove Read-only
-                </>
-              ) : (
-                <>
-                  <LuEye className="h-4 w-4" />
-                  Make Read-only
-                </>
-              )}
-            </button>
-          </li>
-          <div className="divider my-1" />
-          <li>
-            <button
-              type="button"
-              onClick={() => {
-                onDelete()
-                setIsOpen(false)
-              }}
-              className="text-error hover:bg-error hover:text-error-content gap-3">
-              <LuTrash2 className="h-4 w-4" />
-              Delete document
-            </button>
-          </li>
+        <ul
+          id={menuId}
+          className="dropdown-content bg-base-100 border-base-300 rounded-box z-50 m-0 mt-1 flex w-56 list-none flex-col border p-1.5 shadow-xl">
+          <MenuRow icon={LuExternalLink} onClick={act(openDocument)}>
+            Open in new tab
+          </MenuRow>
+          <MenuDivider />
+          <MenuRow icon={doc.isPrivate ? LuLockOpen : LuLock} onClick={act(onTogglePrivate)}>
+            {doc.isPrivate ? 'Make public' : 'Make private'}
+          </MenuRow>
+          <MenuRow icon={doc.readOnly ? LuEyeOff : LuEye} onClick={act(onToggleReadOnly)}>
+            {doc.readOnly ? 'Remove read-only' : 'Make read-only'}
+          </MenuRow>
+          <MenuDivider />
+          <MenuRow icon={LuTrash2} danger onClick={act(onDelete)}>
+            Delete document
+          </MenuRow>
         </ul>
       )}
     </div>
   )
+}
+
+interface MenuRowProps {
+  icon: IconType
+  onClick: () => void
+  danger?: boolean
+  children: ReactNode
+}
+
+/** Mirrors the webapp `ContextMenuRow`: `base-200` hover, `text-error` danger, dimmed idle icon. */
+function MenuRow({ icon: Icon, onClick, danger = false, children }: MenuRowProps) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className={clsx(
+          'rounded-field hover:bg-base-200 focus-visible:bg-base-200 focus-visible:ring-primary active:bg-base-300 flex w-full cursor-pointer items-center gap-2.5 px-2.5 py-2 text-left text-sm font-medium transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-inset',
+          danger && 'text-error'
+        )}>
+        <Icon className={clsx('h-4 w-4 shrink-0', !danger && 'opacity-70')} aria-hidden />
+        {children}
+      </button>
+    </li>
+  )
+}
+
+function MenuDivider() {
+  return <li role="separator" aria-hidden className="bg-base-300 my-1 h-px shrink-0" />
 }

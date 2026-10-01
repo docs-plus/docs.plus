@@ -1,43 +1,33 @@
 import { useEffect, useState } from 'react'
-import {
-  LuCalendar,
-  LuHistory,
-  LuMessageSquare,
-  LuTrash2,
-  LuTriangleAlert,
-  LuUser
-} from 'react-icons/lu'
+import { LuCalendar, LuHistory, LuMessageSquare, LuTriangleAlert, LuUser } from 'react-icons/lu'
 
 import { getDocumentDeletionImpact } from '@/services/api'
 import type { DeletionImpact, Document } from '@/types'
-import { formatDate } from '@/utils/format'
+import { formatDate, userLabel } from '@/utils/format'
+
+import { DeleteDocumentDialog } from './DeleteDocumentDialog'
+import { DocumentFact } from './DocumentFact'
+import { TypeToConfirm } from './TypeToConfirm'
 
 interface DeleteModalProps {
-  isOpen: boolean
-  doc: Document | null
+  doc: Document
   onConfirm: (confirmSlug: string) => void
   onCancel: () => void
   isDeleting: boolean
 }
 
-export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: DeleteModalProps) {
+/** Mount with `key={doc.id}`, so a new target starts fresh. */
+export function DeleteModal({ doc, onConfirm, onCancel, isDeleting }: DeleteModalProps) {
   const [confirmInput, setConfirmInput] = useState('')
   const [impact, setImpact] = useState<DeletionImpact | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (isOpen && doc) {
-      setConfirmInput('')
-      setImpact(null)
-      setLoading(true)
-      getDocumentDeletionImpact(doc.id)
-        .then(setImpact)
-        .catch(() => setImpact(null))
-        .finally(() => setLoading(false))
-    }
-  }, [isOpen, doc])
-
-  if (!isOpen || !doc) return null
+    getDocumentDeletionImpact(doc.id)
+      .then(setImpact)
+      .catch(() => setImpact(null))
+      .finally(() => setLoading(false))
+  }, [doc.id])
 
   const slug = doc.docId
   const canDelete = confirmInput === slug && !loading
@@ -46,168 +36,87 @@ export function DeleteModal({ isOpen, doc, onConfirm, onCancel, isDeleting }: De
     if (canDelete) onConfirm(confirmInput)
   }
 
-  const ownerDisplay = impact?.owner?.username || impact?.owner?.email?.split('@')[0] || null
+  const ownerDisplay = userLabel(impact?.owner?.username, impact?.owner?.email)
   const channelCount = impact?.workspace?.channelCount ?? 0
   const versionCount = impact?.document.versionCount ?? doc.versionCount
 
   return (
-    <dialog className="modal modal-open">
-      <div className="modal-box max-w-md">
-        <div className="border-base-300 flex items-start gap-4 border-b pb-4">
-          <div className="bg-error/10 rounded-xl p-3">
-            <LuTrash2 className="text-error h-6 w-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold">Delete Document</h3>
-            <p className="text-base-content/60 mt-0.5 text-sm">
-              This action is permanent and cannot be undone.
-            </p>
-          </div>
+    <DeleteDocumentDialog
+      title="Delete document"
+      subtitle={
+        <p className="text-base-content/60 text-sm">
+          This action is permanent and cannot be undone.
+        </p>
+      }
+      width="md"
+      isDeleting={isDeleting}
+      canDelete={canDelete}
+      onConfirm={handleConfirm}
+      onCancel={onCancel}>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-8">
+          <span className="loading loading-spinner loading-md text-primary" />
+          <p className="text-base-content/60 text-sm">Loading document details...</p>
         </div>
+      ) : (
+        <>
+          <div className="card bg-base-200 border-base-300 border">
+            <div className="card-body gap-3 p-4">
+              <div className="min-w-0">
+                <h4 className="line-clamp-1 text-base font-semibold">
+                  {doc.title || 'Untitled Document'}
+                </h4>
+                <code className="text-base-content/70 bg-base-300 rounded-field text-meta mt-1 inline-block px-1.5 py-0.5 break-all">
+                  {slug}
+                </code>
+              </div>
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-12">
-            <span className="loading loading-spinner loading-md text-primary" />
-            <p className="text-base-content/60 text-sm">Loading document details...</p>
-          </div>
-        ) : (
-          <div className="space-y-5 py-5">
-            <div className="card bg-base-200 border-base-300 border">
-              <div className="card-body gap-3 p-4">
-                <div>
-                  <h4 className="line-clamp-1 text-base font-semibold">
-                    {doc.title || 'Untitled Document'}
-                  </h4>
-                  <code className="text-base-content/50 bg-base-300 mt-1 inline-block rounded px-1.5 py-0.5 text-xs">
-                    {slug}
-                  </code>
-                </div>
-
-                <div className="border-base-300 grid grid-cols-2 gap-3 border-t pt-2">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-base-300 rounded-lg p-1.5">
-                      <LuUser className="text-base-content/60 h-3.5 w-3.5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-base-content/40 text-[10px] font-medium tracking-wide uppercase">
-                        Owner
-                      </p>
-                      <p className="truncate text-sm font-medium">
-                        {ownerDisplay || <span className="text-base-content/40">No owner</span>}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="bg-base-300 rounded-lg p-1.5">
-                      <LuHistory className="text-base-content/60 h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-base-content/40 text-[10px] font-medium tracking-wide uppercase">
-                        Versions
-                      </p>
-                      <p className="text-sm font-medium">{versionCount}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="bg-base-300 rounded-lg p-1.5">
-                      <LuMessageSquare className="text-base-content/60 h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-base-content/40 text-[10px] font-medium tracking-wide uppercase">
-                        Channels
-                      </p>
-                      <p className="text-sm font-medium">
-                        {impact?.workspace ? (
-                          channelCount
-                        ) : (
-                          <span className="text-base-content/40">None</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="bg-base-300 rounded-lg p-1.5">
-                      <LuCalendar className="text-base-content/60 h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="text-base-content/40 text-[10px] font-medium tracking-wide uppercase">
-                        Created
-                      </p>
-                      <p className="text-sm font-medium">{formatDate(doc.createdAt)}</p>
-                    </div>
-                  </div>
-                </div>
+              <div className="border-base-300 grid grid-cols-2 gap-3 border-t pt-3">
+                <DocumentFact icon={LuUser} label="Owner">
+                  {ownerDisplay || <span className="text-base-content/70">No owner</span>}
+                </DocumentFact>
+                <DocumentFact icon={LuHistory} label="Versions">
+                  {versionCount}
+                </DocumentFact>
+                <DocumentFact icon={LuMessageSquare} label="Channels">
+                  {impact?.workspace ? (
+                    channelCount
+                  ) : (
+                    <span className="text-base-content/70">None</span>
+                  )}
+                </DocumentFact>
+                <DocumentFact icon={LuCalendar} label="Created">
+                  {formatDate(doc.createdAt)}
+                </DocumentFact>
               </div>
             </div>
+          </div>
 
-            {impact?.workspace && (
-              <div className="alert bg-warning/10 border-warning/20 text-warning-content border">
-                <LuTriangleAlert className="text-warning h-5 w-5 shrink-0" />
-                <div className="text-sm">
-                  <span className="font-medium">Workspace data will be deleted:</span>
-                  <span className="text-base-content/70 ml-1">
-                    {channelCount} channel{channelCount !== 1 ? 's' : ''}, all messages, members,
-                    and notifications.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="form-control">
-              <label className="label pb-1">
-                <span className="label-text text-sm">
-                  Type <kbd className="kbd kbd-sm font-mono">{slug}</kbd> to confirm deletion
-                </span>
-              </label>
-              <input
-                type="text"
-                className={`input input-bordered w-full font-mono ${
-                  confirmInput && confirmInput !== slug ? 'input-error' : ''
-                } ${confirmInput === slug ? 'input-success' : ''}`}
-                placeholder={slug}
-                value={confirmInput}
-                onChange={(e) => setConfirmInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && canDelete && handleConfirm()}
-                disabled={isDeleting}
-                autoComplete="off"
-                spellCheck={false}
-                autoFocus
+          {impact?.workspace && (
+            <div className="alert alert-soft alert-warning items-start">
+              <LuTriangleAlert
+                className="mt-0.5 size-4 shrink-0 text-[var(--warning-ink)]"
+                aria-hidden
               />
+              <p className="text-base-content text-sm">
+                <span className="font-medium">Workspace data will be deleted:</span>
+                <span className="text-base-content/70 ml-1">
+                  {channelCount} channel{channelCount !== 1 ? 's' : ''}, all messages, members, and
+                  notifications.
+                </span>
+              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="border-base-300 flex gap-3 border-t pt-4">
-          <button
-            type="button"
-            className="btn btn-ghost flex-1"
-            onClick={onCancel}
-            disabled={isDeleting}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-error flex-1"
-            onClick={handleConfirm}
-            disabled={!canDelete || isDeleting}>
-            {isDeleting ? (
-              <>
-                <span className="loading loading-spinner loading-sm" />
-                Deleting...
-              </>
-            ) : (
-              <>
-                <LuTrash2 className="h-4 w-4" />
-                Delete Document
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-      <div className="modal-backdrop bg-black/60" onClick={isDeleting ? undefined : onCancel} />
-    </dialog>
+          <TypeToConfirm
+            expected={slug}
+            value={confirmInput}
+            onChange={setConfirmInput}
+            onSubmit={handleConfirm}
+            disabled={isDeleting}
+          />
+        </>
+      )}
+    </DeleteDocumentDialog>
   )
 }

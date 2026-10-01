@@ -4,6 +4,7 @@ import Head from 'next/head'
 import { useState } from 'react'
 import { LuActivity, LuCircleAlert, LuPlug, LuUsers } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { TrendAreaChart } from '@/components/charts/TrendAreaChart'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -150,7 +151,7 @@ export default function McpUsagePage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="Tool calls"
               value={totalCalls}
@@ -177,7 +178,7 @@ export default function McpUsagePage() {
             />
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">Calls per day</h2>
             <TrendAreaChart
               data={data?.days ?? []}
@@ -202,10 +203,10 @@ export default function McpUsagePage() {
                 rowKey={(row) => row.day}
               />
             </div>
-          </div>
+          </SectionCard>
 
           <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
-            <div className="bg-base-100 rounded-box border-base-300 border p-5">
+            <SectionCard className="p-5">
               <h2 className="mb-4 text-lg font-semibold">By tool</h2>
               <DataTable
                 columns={toolColumns}
@@ -214,8 +215,8 @@ export default function McpUsagePage() {
                 rowKey={(row) => row.tool}
                 emptyMessage="No tool calls in this window"
               />
-            </div>
-            <div className="bg-base-100 rounded-box border-base-300 border p-5">
+            </SectionCard>
+            <SectionCard className="p-5">
               <h2 className="mb-4 text-lg font-semibold">By app</h2>
               <DataTable
                 columns={appColumns}
@@ -224,10 +225,10 @@ export default function McpUsagePage() {
                 rowKey={(row) => row.name}
                 emptyMessage="No tool calls in this window"
               />
-            </div>
+            </SectionCard>
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">Registered apps</h2>
             {data && data.registeredApps === null ? (
               <p className="text-base-content/60 text-sm">
@@ -252,7 +253,7 @@ export default function McpUsagePage() {
                 emptyMessage="No apps registered"
               />
             )}
-          </div>
+          </SectionCard>
         </div>
       </AdminLayout>
     </>

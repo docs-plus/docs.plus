@@ -55,7 +55,7 @@ export function TrendAreaChart<T extends object>({
 
   if (!data.length) {
     return (
-      <div className="text-base-content/50 flex items-center justify-center" style={{ height }}>
+      <div className="text-base-content/60 flex items-center justify-center" style={{ height }}>
         {emptyMessage}
       </div>
     )
@@ -91,9 +91,10 @@ export function TrendAreaChart<T extends object>({
           contentStyle={{
             backgroundColor: 'var(--color-base-100)',
             border: '1px solid var(--color-base-300)',
-            borderRadius: '0.5rem',
+            borderRadius: 'var(--radius-field)',
             fontSize: '0.875rem'
           }}
+          wrapperClassName="shadow-sm"
           labelFormatter={(_, payload) => payload[0]?.payload?.fullDate || ''}
           {...(series.length === 1 && {
             formatter: (value: unknown) => [(value as number).toLocaleString(), series[0].label]

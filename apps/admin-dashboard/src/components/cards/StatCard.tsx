@@ -1,13 +1,15 @@
 import { clsx } from 'clsx'
 import { ReactNode } from 'react'
 import { LuTrendingDown, LuTrendingUp } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
 
 interface StatCardProps {
   title: string
   value: number | string
+  description?: string
   icon?: ReactNode
   trend?: {
-    value: number
+    value: number | string
     label: string
     direction: 'up' | 'down' | 'neutral'
   }
@@ -15,12 +17,20 @@ interface StatCardProps {
   className?: string
 }
 
-export function StatCard({ title, value, icon, trend, loading, className }: StatCardProps) {
+export function StatCard({
+  title,
+  value,
+  description,
+  icon,
+  trend,
+  loading,
+  className
+}: StatCardProps) {
   const formattedValue = typeof value === 'number' ? value.toLocaleString() : value
 
   return (
-    <div className={clsx('bg-base-100 rounded-box border-base-300 border p-5', className)}>
-      <div className="flex items-start justify-between">
+    <div className={twMerge('bg-base-100 rounded-box border-base-300 border p-5', className)}>
+      <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <p className="text-base-content/60 mb-1 text-sm">{title}</p>
           {loading ? (
@@ -29,12 +39,14 @@ export function StatCard({ title, value, icon, trend, loading, className }: Stat
             <p className="text-3xl font-bold">{formattedValue}</p>
           )}
 
+          {description && <p className="text-meta text-base-content/60">{description}</p>}
+
           {trend && !loading && (
             <div
               className={clsx(
                 'mt-2 flex items-center gap-1 text-sm',
-                trend.direction === 'up' && 'text-success',
-                trend.direction === 'down' && 'text-error',
+                trend.direction === 'up' && 'text-[var(--success-ink)]',
+                trend.direction === 'down' && 'text-[var(--error-ink)]',
                 trend.direction === 'neutral' && 'text-base-content/60'
               )}>
               {trend.direction === 'up' && <LuTrendingUp className="h-4 w-4" />}
@@ -47,7 +59,7 @@ export function StatCard({ title, value, icon, trend, loading, className }: Stat
           )}
         </div>
 
-        {icon && <div className="bg-primary/10 text-primary rounded-lg p-3">{icon}</div>}
+        {icon && <div className="bg-base-200 text-base-content/70 rounded-field p-3">{icon}</div>}
       </div>
     </div>
   )

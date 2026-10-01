@@ -1,10 +1,8 @@
 @import 'tailwindcss';
 @plugin 'daisyui';
 
-/* ============================================
-   Admin Dashboard Theme
-   Uses the same docsplus theme from webapp
-   ============================================ */
+/* Verbatim copy of the webapp `docsplus` / `docsplus-dark` theme blocks.
+   Keep in sync with `apps/webapp/src/styles/globals.scss`; admin drifted once (F464). */
 
 @plugin 'daisyui/theme' {
   name: 'docsplus';
@@ -13,44 +11,50 @@
   color-scheme: 'light';
 
   /* NEUTRALS */
-  --color-base-100: #fafbfc;
-  --color-base-200: #f7f9fc;
-  --color-base-300: #e5eaf1;
-  --color-base-content: #0f172a;
+  --color-base-100: #ffffff; /* paper — sheet, panels, header, chat */
+  --color-base-200: #eef1f6; /* workspace well — one step below sheets */
+  --color-base-300: #dce3ed; /* borders/dividers — crisp against white paper */
+  --color-base-content: #0f172a; /* slate-900 (clean + readable) */
 
   /* PRIMARY (brand blue) */
-  --color-primary: #1a73e8;
+  --color-primary: #1a73e8; /* docs blue */
   --color-primary-content: #ffffff;
 
-  /* SECONDARY */
-  --color-secondary: #0f9d7a;
+  /* SECONDARY (collaboration / presence) */
+  --color-secondary: #0f9d7a; /* calm teal-green */
   --color-secondary-content: #06261e;
 
-  /* ACCENT */
-  --color-accent: #eab308;
+  /* ACCENT (highlights / bookmarks / comments) */
+  --color-accent: #eab308; /* warm gold (refined highlight) */
   --color-accent-content: #1c1917;
 
-  /* NEUTRAL */
-  --color-neutral: #334155;
+  /* NEUTRAL (secondary UI / icons) */
+  --color-neutral: #334155; /* slate-700 */
   --color-neutral-content: #f8fafc;
 
   /* STATUS */
-  --color-info: #0284c7;
+  --color-info: #0284c7; /* sky-600 (calm info) */
   --color-info-content: #f0f9ff;
-  --color-success: #16a34a;
+
+  --color-success: #16a34a; /* green-600 (not neon) */
   --color-success-content: #052e16;
-  --color-warning: #ea580c;
+
+  --color-warning: #ea580c; /* orange-600 (distinct from gold accent) */
   --color-warning-content: #1c1917;
-  --color-error: #dc2626;
+
+  --color-error: #dc2626; /* red-600 */
   --color-error-content: #ffffff;
 
-  /* SHAPE */
-  --radius-selector: 0.5rem;
-  --radius-field: 0.5rem;
-  --radius-box: 1rem;
+  /* SHAPE SYSTEM */
+  --radius-selector: 0.5rem; /* 8px */
+  --radius-field: 0.5rem; /* 8px */
+  --radius-box: 0.625rem; /* 10px */
+
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
+
+  /* Docs apps: prefer borders over shadows */
   --depth: 0;
   --noise: 0;
 }
@@ -62,53 +66,78 @@
   color-scheme: 'dark';
 
   /* NEUTRALS */
-  --color-base-100: #0b1220;
-  --color-base-200: #0f172a;
-  --color-base-300: #1e293b;
-  --color-base-content: #e5e7eb;
+  --color-base-100: #0b1220; /* deep blue-black */
+  --color-base-200: #0f172a; /* surface */
+  --color-base-300: #2d3f57; /* borders (lifted for visibility — matches GitHub Dark ratio) */
+  --color-base-content: #e5e7eb; /* soft white */
 
-  /* PRIMARY */
-  --color-primary: #6ea8ff;
+  /* PRIMARY (brand blue, darker-friendly) */
+  --color-primary: #6ea8ff; /* softer than neon */
   --color-primary-content: #0b1220;
 
-  /* SECONDARY */
-  --color-secondary: #2fbf9b;
+  /* SECONDARY (collaboration / presence) */
+  --color-secondary: #2fbf9b; /* calm teal-green */
   --color-secondary-content: #071a14;
 
-  /* ACCENT */
-  --color-accent: #e3b341;
+  /* ACCENT (highlights / bookmarks / comments) */
+  --color-accent: #e3b341; /* warm gold */
   --color-accent-content: #0b1220;
 
-  /* NEUTRAL */
-  --color-neutral: #8b9bb0;
+  /* NEUTRAL (secondary UI / icons) */
+  --color-neutral: #8b9bb0; /* muted gray-blue */
   --color-neutral-content: #0b1220;
 
   /* STATUS */
-  --color-info: #38bdf8;
+  --color-info: #38bdf8; /* sky-400 */
   --color-info-content: #07131f;
-  --color-success: #22c55e;
-  --color-success-content: #052e16;
-  --color-warning: #fb923c;
-  --color-warning-content: #1c1917;
-  --color-error: #f87171;
-  --color-error-content: #1c1917;
 
-  /* SHAPE */
-  --radius-selector: 0.5rem;
-  --radius-field: 0.5rem;
-  --radius-box: 1rem;
+  --color-success: #22c55e; /* green-500 (balanced in dark) */
+  --color-success-content: #071a14;
+
+  --color-warning: #fb7a3a; /* orange (distinct from accent gold) */
+  --color-warning-content: #0b1220;
+
+  --color-error: #ff6b6b; /* coral red */
+  --color-error-content: #0b1220;
+
+  /* SHAPE SYSTEM (must match light theme) */
+  --radius-selector: 0.5rem; /* 8px */
+  --radius-field: 0.5rem; /* 8px */
+  --radius-box: 0.625rem; /* 10px */
+
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
+
   --depth: 0;
   --noise: 0;
 }
 
-/* Custom admin styles */
-.admin-sidebar {
-  @apply bg-base-200 border-base-300 w-64 border-r;
+@theme {
+  /* 13/20 meta type: labels, help, footer strips and quiet actions. Stock tailwind-merge
+     reads `text-meta` as a colour, so do not merge it against a `text-*` colour class. */
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.25rem;
 }
 
-.stat-card {
-  @apply bg-base-100 rounded-box border-base-300 border p-4;
+:root,
+[data-theme] {
+  --font-sans: Helvetica, Arial, sans-serif;
+  /* Hues as TEXT ink, same mixes as the webapp: each clears 5:1 on base-100 and base-200 in
+     both themes. Not @theme aliases: a @theme colour freezes its var() mix, so use
+     `text-[var(--x-ink)]`. */
+  --info-ink: color-mix(in oklab, var(--color-info), var(--color-base-content) 42%);
+  --success-ink: color-mix(in oklab, var(--color-success), var(--color-base-content) 40%);
+  --warning-ink: color-mix(in oklab, var(--color-warning), var(--color-base-content) 40%);
+  --error-ink: color-mix(in oklab, var(--color-error), var(--color-base-content) 25%);
+  /* Modal scrim: always black-based (never base-content — white fog on dark UI). */
+  --modal-scrim: light-dark(
+    color-mix(in oklch, black 45%, transparent),
+    color-mix(in oklch, black 55%, transparent)
+  );
+}
+
+/* On body, not `*`: an unlayered `*` rule would beat `font-mono` and the preflight mono stack. */
+body {
+  font-family: var(--font-sans);
 }

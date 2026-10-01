@@ -18,7 +18,7 @@ export function confirmToast({
     (t) => (
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs opacity-70">{body}</p>
+        <p className="text-base-content/70 text-xs">{body}</p>
         <div className="flex gap-2">
           <button
             className={`btn btn-xs ${confirmClass}`}

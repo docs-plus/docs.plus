@@ -56,7 +56,7 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
           segments.map((segment) => (
             <div
               key={segment.label}
-              className={`${segment.color} transition-all duration-300`}
+              className={`${segment.color} transition-[width] duration-300`}
               style={{ width: `${segment.pct}%` }}
               title={`${segment.label}: ${segment.value} (${segment.pct}%)`}
             />

@@ -14,6 +14,7 @@ import {
   LuUsers
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import {
   DauTrendChart,
@@ -99,7 +100,7 @@ export default function OverviewPage() {
         />
 
         <div className="space-y-6 p-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="Total Users"
               value={supabaseStats?.users.total ?? 0}
@@ -144,7 +145,7 @@ export default function OverviewPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
               title="Online Now"
               value={supabaseStats?.users.online ?? 0}
@@ -174,7 +175,7 @@ export default function OverviewPage() {
             />
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">Document Statistics</h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
@@ -227,7 +228,7 @@ export default function OverviewPage() {
                 </p>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
           <CollapsibleSection
             title="User Retention & Engagement"
@@ -250,31 +251,31 @@ export default function OverviewPage() {
             </ChartErrorBoundary>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
+              <SectionCard className="p-5 lg:col-span-2">
                 {/* online_at is a single last-seen timestamp, so this is a
                     last-seen-by-day distribution, not a true DAU time series. */}
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuActivity className="text-primary h-5 w-5" />
+                  <LuActivity className="text-base-content/70 h-5 w-5" />
                   Users by Last-Seen Day
                 </h3>
                 <ChartErrorBoundary fallbackHeight={280}>
                   <DauTrendChart data={dauTrend || []} loading={dauTrendLoading} height={280} />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
 
-              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+              <SectionCard className="p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuUserCheck className="text-primary h-5 w-5" />
+                  <LuUserCheck className="text-base-content/70 h-5 w-5" />
                   User Lifecycle
                 </h3>
                 <ChartErrorBoundary fallbackHeight={200}>
                   <UserLifecycleChart data={lifecycleSegments} loading={lifecycleLoading} />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
 
-              <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-3">
+              <SectionCard className="p-5 lg:col-span-3">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuUserPlus className="text-primary h-5 w-5" />
+                  <LuUserPlus className="text-base-content/70 h-5 w-5" />
                   Signups per Day
                 </h3>
                 <ChartErrorBoundary fallbackHeight={280}>
@@ -284,7 +285,7 @@ export default function OverviewPage() {
                     height={280}
                   />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
             </div>
           </CollapsibleSection>
 
@@ -292,9 +293,9 @@ export default function OverviewPage() {
             title="Engagement"
             icon={<LuMessageSquare className="h-5 w-5" />}
             defaultOpen={true}>
-            <div className="bg-base-100 rounded-box border-base-300 border">
+            <SectionCard>
               <h3 className="flex items-center gap-2 p-5 pb-0 text-lg font-semibold">
-                <LuMessageSquare className="text-primary h-5 w-5" />
+                <LuMessageSquare className="text-base-content/70 h-5 w-5" />
                 Message Types (last 7 days)
               </h3>
               <DataTable
@@ -304,7 +305,7 @@ export default function OverviewPage() {
                 loading={messageTypesLoading}
                 emptyMessage="No messages in the last 7 days"
               />
-            </div>
+            </SectionCard>
           </CollapsibleSection>
 
           <CollapsibleSection
@@ -316,19 +317,19 @@ export default function OverviewPage() {
             </ChartErrorBoundary>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
+              <SectionCard className="p-5 lg:col-span-2">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuEye className="text-primary h-5 w-5" />
+                  <LuEye className="text-base-content/70 h-5 w-5" />
                   Views Trend
                 </h3>
                 <ChartErrorBoundary fallbackHeight={280}>
                   <ViewsTrendChart data={viewsTrend || []} loading={trendLoading} height={280} />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
 
-              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+              <SectionCard className="p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuFileText className="text-primary h-5 w-5" />
+                  <LuFileText className="text-base-content/70 h-5 w-5" />
                   Top Documents
                 </h3>
                 <ChartErrorBoundary fallbackHeight={200}>
@@ -338,29 +339,29 @@ export default function OverviewPage() {
                     limit={5}
                   />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+              <SectionCard className="p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuMonitor className="text-primary h-5 w-5" />
+                  <LuMonitor className="text-base-content/70 h-5 w-5" />
                   Device Breakdown
                 </h3>
                 <ChartErrorBoundary fallbackHeight={150}>
                   <DeviceBreakdown data={viewsSummary} loading={viewsSummaryLoading} />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
 
-              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+              <SectionCard className="p-5">
                 <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                  <LuUsers className="text-primary h-5 w-5" />
+                  <LuUsers className="text-base-content/70 h-5 w-5" />
                   User Types
                 </h3>
                 <ChartErrorBoundary fallbackHeight={150}>
                   <UserTypeBreakdown data={viewsSummary} loading={viewsSummaryLoading} />
                 </ChartErrorBoundary>
-              </div>
+              </SectionCard>
             </div>
           </CollapsibleSection>
         </div>

@@ -1,12 +1,6 @@
-import { clsx } from 'clsx'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import { LuLayoutDashboard, LuLogOut, LuX } from 'react-icons/lu'
+import { LuX } from 'react-icons/lu'
 
-import { navItems } from '@/constants/navigation'
-import { supabase } from '@/lib/supabase'
-
-import { ThemeToggle } from './ThemeToggle'
+import { NavBrand, NavFooter, NavLinks } from './NavRow'
 
 interface MobileMenuProps {
   isOpen: boolean
@@ -14,71 +8,27 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
-  const router = useRouter()
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
-
-  const handleNavClick = () => {
-    onClose()
-  }
-
   if (!isOpen) return null
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-[var(--modal-scrim)] lg:hidden" onClick={onClose} />
 
       <aside className="bg-base-200 fixed inset-y-0 left-0 z-50 flex w-64 flex-col lg:hidden">
         <div className="border-base-300 flex items-center justify-between border-b p-4">
-          <Link href="/" className="flex items-center gap-2" onClick={handleNavClick}>
-            <LuLayoutDashboard className="text-primary h-6 w-6" />
-            <span className="text-lg font-bold">docs.plus</span>
-            <span className="badge badge-sm badge-primary">Admin</span>
-          </Link>
-          <button onClick={onClose} className="btn btn-ghost btn-sm btn-square">
-            <LuX className="h-5 w-5" />
-          </button>
-        </div>
-
-        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-          {navItems.map((item) => {
-            const isActive = router.pathname === item.href
-            const Icon = item.icon
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={handleNavClick}
-                className={clsx(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-content'
-                    : 'hover:bg-base-300 text-base-content'
-                )}>
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="border-base-300 space-y-2 border-t p-4">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-base-content/60 text-sm">Theme</span>
-            <ThemeToggle />
-          </div>
-
+          <NavBrand onNavigate={onClose} />
           <button
-            onClick={handleSignOut}
-            className="hover:bg-base-300 text-base-content flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors">
-            <LuLogOut className="h-5 w-5" />
-            <span>Sign Out</span>
+            type="button"
+            onClick={onClose}
+            className="btn btn-ghost btn-sm btn-square"
+            aria-label="Close menu">
+            <LuX className="h-5 w-5" aria-hidden />
           </button>
         </div>
+
+        <NavLinks onNavigate={onClose} />
+
+        <NavFooter />
       </aside>
     </>
   )

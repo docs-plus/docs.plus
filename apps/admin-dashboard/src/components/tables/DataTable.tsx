@@ -51,47 +51,27 @@ export function DataTable<T extends object>({
   const renderSortIcon = (colKey: string) => {
     if (!sorting) return null
     if (sorting.sortKey !== colKey) {
-      return <LuArrowUpDown className="text-base-content/30 h-3.5 w-3.5" />
+      return <LuArrowUpDown className="text-base-content/50 h-3.5 w-3.5" aria-hidden />
     }
     return sorting.sortDirection === 'asc' ? (
-      <LuArrowUp className="text-primary h-3.5 w-3.5" />
+      <LuArrowUp className="text-primary h-3.5 w-3.5" aria-hidden />
     ) : (
-      <LuArrowDown className="text-primary h-3.5 w-3.5" />
+      <LuArrowDown className="text-primary h-3.5 w-3.5" aria-hidden />
     )
   }
 
-  if (loading) {
-    return (
-      <div className="overflow-x-auto">
-        <table className="table">
-          <thead>
-            <tr>
-              {columns.map((col) => (
-                <th key={String(col.key)} className={col.className}>
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[...Array(5)].map((_, i) => (
-              <tr key={i}>
-                {columns.map((col) => (
-                  <td key={String(col.key)}>
-                    <div className="skeleton h-4 w-full" />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
+  const ariaSort = (colKey: string) => {
+    if (sorting?.sortKey !== colKey) return 'none'
+    return sorting.sortDirection === 'asc' ? 'ascending' : 'descending'
   }
 
-  if (data.length === 0) {
+  if (!loading && data.length === 0) {
     return <div className="text-base-content/60 py-12 text-center">{emptyMessage}</div>
   }
+
+  const pageSize = pagination?.pageSize || 20
+  const start = pagination ? (pagination.page - 1) * pageSize + 1 : 0
+  const end = pagination ? Math.min(pagination.page * pageSize, pagination.total) : 0
 
   return (
     <div>
@@ -100,60 +80,76 @@ export function DataTable<T extends object>({
           <thead>
             <tr>
               {columns.map((col) => {
-                const isSortable = col.sortable && sorting
+                const key = String(col.key)
+                if (loading || !col.sortable || !sorting) {
+                  return (
+                    <th key={key} className={col.className}>
+                      {col.header}
+                    </th>
+                  )
+                }
                 return (
-                  <th
-                    key={String(col.key)}
-                    className={`${col.className || ''} ${isSortable ? 'hover:bg-base-200 cursor-pointer transition-colors select-none' : ''}`}
-                    onClick={isSortable ? () => sorting.onSort(String(col.key)) : undefined}>
-                    <div className="flex items-center gap-1.5">
+                  <th key={key} className={col.className} aria-sort={ariaSort(key)}>
+                    <button
+                      type="button"
+                      onClick={() => sorting.onSort(key)}
+                      className="rounded-field hover:bg-base-200 focus-visible:ring-primary -mx-1.5 -my-1 flex cursor-pointer items-center gap-1.5 px-1.5 py-1 transition-colors outline-none select-none focus-visible:ring-2">
                       <span>{col.header}</span>
-                      {col.sortable && renderSortIcon(String(col.key))}
-                    </div>
+                      {renderSortIcon(key)}
+                    </button>
                   </th>
                 )
               })}
             </tr>
           </thead>
           <tbody>
-            {data.map((item) => (
-              <tr key={rowKey(item)} className="hover">
-                {columns.map((col) => (
-                  <td key={String(col.key)} className={col.className}>
-                    {col.render ? col.render(item) : String(item[col.key as keyof T] ?? '-')}
-                  </td>
+            {loading
+              ? [...Array(5)].map((_, i) => (
+                  <tr key={i}>
+                    {columns.map((col) => (
+                      <td key={String(col.key)}>
+                        <div className="skeleton h-4 w-full" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              : data.map((item) => (
+                  <tr key={rowKey(item)} className="row-hover">
+                    {columns.map((col) => (
+                      <td key={String(col.key)} className={col.className}>
+                        {col.render ? col.render(item) : String(item[col.key as keyof T] ?? '-')}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
 
-      {pagination && pagination.totalPages > 1 && (
+      {!loading && pagination && pagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between px-2">
           <p className="text-base-content/60 text-sm">
-            {(() => {
-              const pageSize = pagination.pageSize || 20
-              const start = (pagination.page - 1) * pageSize + 1
-              const end = Math.min(pagination.page * pageSize, pagination.total)
-              return `Showing ${start} to ${end} of ${pagination.total}`
-            })()}
+            {`Showing ${start} to ${end} of ${pagination.total}`}
           </p>
-          <div className="join">
+          <div className="flex items-center gap-2">
             <button
-              className="join-item btn btn-sm"
+              type="button"
+              className="btn btn-sm btn-square"
+              aria-label="Previous page"
               disabled={pagination.page <= 1}
               onClick={() => pagination.onPageChange(pagination.page - 1)}>
-              <LuChevronLeft className="h-4 w-4" />
+              <LuChevronLeft className="h-4 w-4" aria-hidden />
             </button>
-            <button className="join-item btn btn-sm">
+            <span className="text-sm tabular-nums">
               {pagination.page} / {pagination.totalPages}
-            </button>
+            </span>
             <button
-              className="join-item btn btn-sm"
+              type="button"
+              className="btn btn-sm btn-square"
+              aria-label="Next page"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => pagination.onPageChange(pagination.page + 1)}>
-              <LuChevronRight className="h-4 w-4" />
+              <LuChevronRight className="h-4 w-4" aria-hidden />
             </button>
           </div>
         </div>

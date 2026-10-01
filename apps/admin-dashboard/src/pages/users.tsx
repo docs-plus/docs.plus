@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LuCircle, LuFileText, LuRadio, LuShieldCheck, LuShieldOff } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { DataTable } from '@/components/tables/DataTable'
@@ -234,7 +235,7 @@ export default function UsersPage() {
       header: 'Status',
       sortable: true,
       render: (user: UserWithExtras) => {
-        let statusColor = 'text-base-content/30'
+        let statusColor = 'text-base-content/40'
         if (user.status === 'ONLINE') statusColor = 'text-success'
         else if (user.status === 'AWAY') statusColor = 'text-warning'
         return (
@@ -268,13 +269,14 @@ export default function UsersPage() {
       header: '',
       render: (user: UserWithExtras) => {
         const isSelf = user.id === currentUserId
-        let tooltip = user.is_admin ? 'Revoke admin' : 'Make admin'
-        if (isSelf) tooltip = 'Cannot change own role'
+        const actionLabel = user.is_admin ? 'Revoke admin' : 'Make admin'
+        const tooltip = isSelf ? 'Cannot change own role' : actionLabel
         return (
           <div className="tooltip tooltip-left" data-tip={tooltip}>
             <button
               type="button"
-              className={`btn btn-ghost btn-sm btn-square ${user.is_admin ? 'text-primary' : 'text-base-content/30 hover:text-primary'}`}
+              aria-label={`${actionLabel}: ${user.username || user.email}`}
+              className={`btn btn-ghost btn-sm btn-square disabled:text-base-content/40 ${user.is_admin ? 'text-primary' : 'text-base-content/70 hover:text-base-content'}`}
               onClick={() => handleToggleAdmin(user)}
               disabled={isSelf || toggleAdminMutation.isPending}>
               {user.is_admin ? (
@@ -319,7 +321,7 @@ export default function UsersPage() {
             className="max-w-md"
           />
 
-          <div className="bg-base-100 rounded-box border-base-300 border">
+          <SectionCard>
             <DataTable
               columns={columns}
               data={usersWithExtras}
@@ -338,7 +340,7 @@ export default function UsersPage() {
               }}
               emptyMessage="No users found"
             />
-          </div>
+          </SectionCard>
         </div>
       </AdminLayout>
     </>

@@ -10,6 +10,7 @@ import {
   LuServer
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
@@ -108,15 +109,17 @@ export default function SystemPage() {
             />
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">Service Status</h2>
             <div className="space-y-3">
               {servicesLoading
-                ? [...Array(2)].map((_, i) => <div key={i} className="skeleton h-12 w-full" />)
+                ? [...Array(2)].map((_, i) => (
+                    <div key={i} className="skeleton rounded-field h-12 w-full" />
+                  ))
                 : services?.map((service) => (
                     <div
                       key={service.name}
-                      className="bg-base-200 flex items-center justify-between rounded-lg p-3">
+                      className="bg-base-200 rounded-field flex items-center justify-between p-3">
                       <div className="flex items-center gap-3">
                         {service.status === 'healthy' ? (
                           <LuCircleCheck className="text-success h-5 w-5" />
@@ -145,9 +148,9 @@ export default function SystemPage() {
                     </div>
                   ))}
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">Database Tables</h2>
             <div className="overflow-x-auto">
               <table className="table">
@@ -172,7 +175,7 @@ export default function SystemPage() {
                     : tableSizes?.map((table) => (
                         <tr key={table.table}>
                           <td>
-                            <code className="bg-base-200 rounded px-2 py-1 text-sm">
+                            <code className="bg-base-200 rounded-field px-2 py-1 text-sm">
                               {table.table}
                             </code>
                           </td>
@@ -182,7 +185,7 @@ export default function SystemPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </SectionCard>
 
           <div className="text-base-content/60 text-center text-sm">
             <LuClock className="mr-1 inline h-4 w-4" />

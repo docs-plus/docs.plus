@@ -23,6 +23,7 @@ import {
   LuWifi
 } from 'react-icons/lu'
 
+import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { PushSubscriptionStats } from '@/components/charts/PushSubscriptionStats'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -145,13 +146,13 @@ function PushPipelineFlow({
   ]
 
   return (
-    <div className="bg-base-100 rounded-box border-base-300 border p-5">
+    <SectionCard className="p-5">
       <h3 className="mb-4 text-lg font-semibold">Push Notification Pipeline (pgmq)</h3>
       <div className="flex flex-wrap items-center justify-between gap-2">
         {steps.map((step, i) => (
           <div key={step.name} className="flex items-center gap-2">
             <div
-              className={`flex flex-col items-center rounded-lg p-3 ${
+              className={`rounded-field flex flex-col items-center p-3 ${
                 step.status === 'ok'
                   ? 'bg-success/10'
                   : step.status === 'warning'
@@ -178,7 +179,7 @@ function PushPipelineFlow({
           </div>
         ))}
       </div>
-    </div>
+    </SectionCard>
   )
 }
 
@@ -208,7 +209,7 @@ function FailedSubscriptionsTable({ subscriptions }: { subscriptions: PushSubscr
         <tbody>
           {subscriptions.map((sub) => (
             <tr key={sub.id}>
-              <td className="font-mono text-xs">{sub.username || sub.user_id.slice(0, 8)}</td>
+              <td className="text-xs">{sub.username || sub.user_id.slice(0, 8)}</td>
               <td className="max-w-[150px] truncate text-xs">{sub.device_name || 'Unknown'}</td>
               <td>
                 <span className="badge badge-ghost badge-sm">{sub.platform}</span>
@@ -216,7 +217,9 @@ function FailedSubscriptionsTable({ subscriptions }: { subscriptions: PushSubscr
               <td>
                 <span className="badge badge-error badge-sm">{sub.failed_count}</span>
               </td>
-              <td className="text-error max-w-[200px] truncate text-xs">{sub.last_error || '-'}</td>
+              <td className="max-w-[200px] truncate text-xs text-[var(--error-ink)]">
+                {sub.last_error || '-'}
+              </td>
               <td className="text-base-content/60 text-xs">
                 {sub.last_used_at ? formatRelative(sub.last_used_at) : 'Never'}
               </td>
@@ -253,7 +256,7 @@ function RecentActivityTable({ subscriptions }: { subscriptions: PushSubscriptio
         <tbody>
           {subscriptions.map((sub) => (
             <tr key={sub.id}>
-              <td className="font-mono text-xs">{sub.username || sub.user_id.slice(0, 8)}</td>
+              <td className="text-xs">{sub.username || sub.user_id.slice(0, 8)}</td>
               <td className="max-w-[150px] truncate text-xs">{sub.device_name || 'Unknown'}</td>
               <td>
                 <span className="badge badge-ghost badge-sm">{sub.platform}</span>
@@ -419,10 +422,10 @@ export default function NotificationsPage() {
 
         <div className="space-y-6 p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="bg-base-100 rounded-box border-base-300 flex items-center justify-between border p-4">
+            <SectionCard className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div
-                  className={`rounded-lg p-2 ${pushGatewayHealth?.status === 'healthy' ? 'bg-success/10' : pushGatewayHealth?.status === 'degraded' ? 'bg-warning/10' : 'bg-error/10'}`}>
+                  className={`rounded-field p-2 ${pushGatewayHealth?.status === 'healthy' ? 'bg-success/10' : pushGatewayHealth?.status === 'degraded' ? 'bg-warning/10' : 'bg-error/10'}`}>
                   <LuServer
                     className={`h-5 w-5 ${pushGatewayHealth?.status === 'healthy' ? 'text-success' : pushGatewayHealth?.status === 'degraded' ? 'text-warning' : 'text-error'}`}
                   />
@@ -437,12 +440,12 @@ export default function NotificationsPage() {
                 </div>
               </div>
               <StatusBadge status={pushGatewayHealth?.status || 'down'} />
-            </div>
+            </SectionCard>
 
-            <div className="bg-base-100 rounded-box border-base-300 flex items-center justify-between border p-4">
+            <SectionCard className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div
-                  className={`rounded-lg p-2 ${emailGatewayHealth?.status === 'healthy' ? 'bg-success/10' : emailGatewayHealth?.status === 'degraded' ? 'bg-warning/10' : 'bg-error/10'}`}>
+                  className={`rounded-field p-2 ${emailGatewayHealth?.status === 'healthy' ? 'bg-success/10' : emailGatewayHealth?.status === 'degraded' ? 'bg-warning/10' : 'bg-error/10'}`}>
                   <LuMail
                     className={`h-5 w-5 ${emailGatewayHealth?.status === 'healthy' ? 'text-success' : emailGatewayHealth?.status === 'degraded' ? 'text-warning' : 'text-error'}`}
                   />
@@ -458,10 +461,10 @@ export default function NotificationsPage() {
                 </div>
               </div>
               <StatusBadge status={emailGatewayHealth?.status || 'down'} />
-            </div>
+            </SectionCard>
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 flex flex-wrap items-center justify-between gap-3 border p-4">
+          <SectionCard className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <p className="font-medium">Digest mail</p>
               <p className="text-base-content/60 text-xs">
@@ -490,7 +493,7 @@ export default function NotificationsPage() {
                 type="number"
                 min={10}
                 max={102}
-                className="input input-sm input-bordered w-20"
+                className="input input-sm w-20"
                 value={maxKb}
                 disabled={digestGroupingLoading || digestGroupingMutation.isPending}
                 onChange={(event) => setMaxKb(event.target.value)}
@@ -505,7 +508,7 @@ export default function NotificationsPage() {
               />
               KB
             </label>
-          </div>
+          </SectionCard>
 
           <PushPipelineFlow
             pipeline={pipelineStats || null}
@@ -541,7 +544,7 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+          <SectionCard className="p-5">
             <h2 className="mb-4 text-lg font-semibold">By Type</h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
               {notificationTypes.map((type) => (
@@ -559,7 +562,7 @@ export default function NotificationsPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </SectionCard>
 
           <div>
             <h2 className="mb-4 text-lg font-semibold">Push Notifications</h2>
@@ -626,9 +629,10 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <div className="bg-base-100 rounded-box border-base-300 border">
+          <SectionCard>
             <button
               onClick={() => setDebugExpanded(!debugExpanded)}
+              aria-expanded={debugExpanded}
               className="flex w-full items-center justify-between p-5">
               <div className="flex items-center gap-2">
                 <LuRefreshCw className="h-5 w-5" />
@@ -643,13 +647,13 @@ export default function NotificationsPage() {
             </button>
 
             {debugExpanded && (
-              <div className="space-y-6 border-t p-5">
+              <div className="border-base-300 space-y-6 border-t p-5">
                 <CollapsibleSection title="Pipeline Configuration" defaultOpen>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-base-content/60 text-sm">Queue Depth</span>
-                        <code className="bg-base-200 rounded px-2 py-1 text-xs">
+                        <code className="bg-base-200 rounded-field px-2 py-1 text-xs">
                           {pipelineStats?.queueDepth ?? 0}
                         </code>
                       </div>
@@ -659,7 +663,7 @@ export default function NotificationsPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-base-content/60 text-sm">Messages Processed</span>
-                        <code className="bg-base-200 rounded px-2 py-1 text-xs">
+                        <code className="bg-base-200 rounded-field px-2 py-1 text-xs">
                           {pipelineStats?.messagesProcessed ?? 0}
                         </code>
                       </div>
@@ -698,7 +702,7 @@ export default function NotificationsPage() {
                 </CollapsibleSection>
               </div>
             )}
-          </div>
+          </SectionCard>
         </div>
       </AdminLayout>
     </>

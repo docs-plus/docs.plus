@@ -23,3 +23,8 @@ export function formatBytes(bytes: number): string {
   const value = bytes / 1024 ** index
   return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`
 }
+
+/** A person's shown name: the profile name, else the email's local part. */
+export function userLabel(name?: string | null, email?: string | null): string | null {
+  return name || email?.split('@')[0] || null
+}
