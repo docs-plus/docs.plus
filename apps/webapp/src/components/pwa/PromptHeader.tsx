@@ -1,11 +1,15 @@
 import type { IconType } from 'react-icons'
 import { LuX } from 'react-icons/lu'
 
+/** The frame shared by the PWA install and notification prompt cards. */
+export const promptCardClassName =
+  'rounded-box flex flex-col gap-4 px-5 py-4 surface-inverse shadow-xl border-base-300 border'
+
 type PromptHeaderProps = {
   icon: IconType
   title: string
   subtitle: string
-  titleId?: string
+  titleId: string
   closeLabel: string
   onClose: () => void
 }

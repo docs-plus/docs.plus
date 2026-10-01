@@ -50,7 +50,7 @@ export function HistorySessionRow({
           : 'border-base-300 bg-base-100 hover:border-base-content/20'
       )}
       data-testid={`history-session-row-${session.id}`}>
-      {/* Plain buttons with inset rings: the card clips overflow, which hid a btn outline. */}
+      {/* Plain buttons with inset rings: the card clips overflow, so a btn outline would not show. */}
       <button
         type="button"
         onClick={() => onToggleSession(session.id)}

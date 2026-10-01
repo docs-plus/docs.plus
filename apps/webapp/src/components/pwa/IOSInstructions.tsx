@@ -2,18 +2,26 @@ import { LuShare, LuSquarePlus } from 'react-icons/lu'
 
 import { PromptHeader } from './PromptHeader'
 
-export function IOSInstructions({ onBack, onClose }: { onBack: () => void; onClose: () => void }) {
+type IOSInstructionsProps = {
+  titleId: string
+  descId: string
+  onBack: () => void
+  onClose: () => void
+}
+
+export function IOSInstructions({ titleId, descId, onBack, onClose }: IOSInstructionsProps) {
   return (
     <>
       <PromptHeader
         icon={LuSquarePlus}
         title="Add to Home Screen"
         subtitle="Follow these steps in Safari"
+        titleId={titleId}
         closeLabel="Dismiss"
         onClose={onClose}
       />
 
-      <ol className="flex flex-col gap-3">
+      <ol id={descId} className="flex flex-col gap-3">
         <li className="flex items-center gap-3">
           <div className="bg-base-content/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
             1

@@ -72,7 +72,9 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   if (error) {
     return (
-      <ProfileDialogShell title="Unable to load profile" message={error.message ?? ''}>
+      <ProfileDialogShell
+        title="Unable to load profile"
+        message={error.message || 'Please try again later.'}>
         <Button variant="quiet" className="self-start" onClick={loadProfile}>
           Try again
         </Button>

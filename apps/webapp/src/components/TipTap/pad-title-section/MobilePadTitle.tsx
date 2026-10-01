@@ -25,9 +25,10 @@ import {
 } from '@stores'
 import { onlineManager } from '@tanstack/react-query'
 import type { Editor } from '@tiptap/core'
+import { yUndoPluginKey } from '@tiptap/y-tiptap'
 import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { parseDocTitlePayload, plainTitle } from '@utils/titleWrite'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 import FilterBar from './FilterBar'
 import PrivateIndicator from './PrivateIndicator'
@@ -133,14 +134,40 @@ const NotificationButton = () => {
   )
 }
 
+const CAN_UNDO = 1
+const CAN_REDO = 2
+
+// The pad editor always has Collaboration, so the Yjs stack events cover every change.
+// Not a transaction selector: redo is pushed after the PM transaction, and clear()
+// dispatches none.
+const useUndoRedoState = (editor: Editor | null): number => {
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      if (!editor) return () => {}
+      const undoManager = yUndoPluginKey.getState(editor.state)?.undoManager
+      const stackEvents = ['stack-item-added', 'stack-item-popped', 'stack-cleared'] as const
+      stackEvents.forEach((name) => undoManager?.on(name, notify))
+      return () => stackEvents.forEach((name) => undoManager?.off(name, notify))
+    },
+    [editor]
+  )
+  const getSnapshot = () => {
+    if (!editor || editor.isDestroyed) return 0
+    const um = yUndoPluginKey.getState(editor.state)?.undoManager
+    return (um?.undoStack.length ? CAN_UNDO : 0) | (um?.redoStack.length ? CAN_REDO : 0)
+  }
+  return useSyncExternalStore(subscribe, getSnapshot, () => 0)
+}
+
 const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
+  const undoRedo = useUndoRedoState(editor)
+
   return (
     <div className={`flex items-center ${className}`}>
       <div className="flex items-center gap-2">
         <ToolbarButton
           onPress={() => editor?.commands.undo()}
-          editor={editor}
-          type="undo"
+          disabled={!(undoRedo & CAN_UNDO)}
           aria-label="Undo"
           className="touch-manipulation"
           size="sm">
@@ -148,8 +175,7 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
         </ToolbarButton>
         <ToolbarButton
           onPress={() => editor?.commands.redo()}
-          editor={editor}
-          type="redo"
+          disabled={!(undoRedo & CAN_REDO)}
           aria-label="Redo"
           className="touch-manipulation"
           size="sm">

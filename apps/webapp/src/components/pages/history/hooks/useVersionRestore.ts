@@ -49,20 +49,15 @@ export const useVersionRestore = () => {
   // Set while the confirm this hook opened is up, so only our own confirm is closed.
   const shownRef = useRef(false)
 
-  // A leftover confirm would no-op and look like Restore ran.
-  useEffect(() => {
-    if (allowRestore || !shownRef.current) return
-    shownRef.current = false
-    useStore.getState().closeDialog()
-  }, [allowRestore])
-
+  // Runs when Restore stops being allowed and on unmount. A leftover confirm would
+  // no-op and look like Restore ran.
   useEffect(
     () => () => {
       if (!shownRef.current) return
       shownRef.current = false
       useStore.getState().closeDialog()
     },
-    []
+    [allowRestore]
   )
 
   // `activeHistory` still names the PREVIOUS version while a watch is in flight.

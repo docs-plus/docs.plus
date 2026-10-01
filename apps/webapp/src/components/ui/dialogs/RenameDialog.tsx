@@ -39,7 +39,7 @@ export function RenameDialog({ initialValue, onSave, busy = false, maxLength }: 
         maxLength={maxLength}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') onSave(draft)
+          if (e.key === 'Enter' && !e.nativeEvent.isComposing) onSave(draft)
         }}
         autoComplete="off"
       />

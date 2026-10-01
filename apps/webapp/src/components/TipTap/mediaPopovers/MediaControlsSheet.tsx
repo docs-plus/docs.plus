@@ -93,7 +93,7 @@ function ChoiceGroup({
   )
 }
 
-/** A segment: `segmentClassName`, as in the Documents view toggle. Utilities beat a kept touch hover. */
+/** Same segment as the Documents view toggle. Utilities beat a kept touch hover. */
 function ChoiceButton({
   active,
   onClick,

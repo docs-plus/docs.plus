@@ -47,7 +47,7 @@ export const SuggestionRow = memo(function SuggestionRow({
       <span className="text-base-content/70 shrink-0" aria-hidden>
         {isHeading ? <Icons.heading size={ICON_SIZE} /> : <Icons.bookmark size={ICON_SIZE} />}
       </span>
-      {/* Archived dims by ink, not row opacity: opacity also sank the badge under 4.5:1. */}
+      {/* Archived dims by ink, not row opacity: opacity would sink the badge under 4.5:1. */}
       <span className={twMerge('flex-1 truncate', archived && 'text-base-content/70')}>
         {suggestion.title}
       </span>

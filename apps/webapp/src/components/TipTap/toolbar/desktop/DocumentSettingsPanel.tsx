@@ -12,7 +12,7 @@ import { useDismissPanel } from '@hooks/useDismissPanel'
 import { useDocumentAccessMutation } from '@hooks/useDocumentAccessMutation'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
-import { useAuthStore, useSheetStore, useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { type PanelSurfaceVariant } from '@types'
 import React, { useState } from 'react'
 
@@ -82,8 +82,7 @@ const DocumentSettingsPanel = ({ variant = 'popover' }: DocumentSettingsPanelPro
   // Print snapshots the DOM the moment it is called, so let the surface finish closing first —
   // the sheet's spring runs longer than the popover's fade.
   const handlePrint = () => {
-    if (isSheet) useSheetStore.getState().closeSheet()
-    else dismissPanel()
+    dismissPanel()
     setTimeout(() => window.print(), isSheet ? 320 : 100)
   }
 

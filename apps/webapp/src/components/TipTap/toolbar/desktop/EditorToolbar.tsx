@@ -48,9 +48,10 @@ const DocumentSettingsPanel = dynamic(() => import('./DocumentSettingsPanel'), {
   loading: () => <DocumentSettingsSkeleton />
 })
 
-const BookmarkPanel = dynamic(() => import('./BookmarkPanel'), {
-  loading: () => <BookmarkPanelSkeleton />
-})
+const BookmarkPanel = dynamic(
+  () => import('@components/bookmarkPanel').then((m) => m.BookmarkPanel),
+  { loading: () => <BookmarkPanelSkeleton /> }
+)
 
 const FilterPanel = dynamic(() => import('./FilterPanel'), {
   loading: () => <FilterSkeleton />

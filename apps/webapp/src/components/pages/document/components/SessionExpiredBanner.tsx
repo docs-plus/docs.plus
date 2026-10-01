@@ -5,8 +5,8 @@ import { openInlineSignInDialog } from '@utils/openInlineSignInDialog'
 import { getNeedsAuthCopy } from '@utils/providerCollabStatus'
 
 // Full sheet width: 56rem is the sheet's max width. `100vw - 2rem` keeps a 16px end gap on the
-// phone pad, which has no end padding. The alert role stays: edits stop saving until sign-in.
-const SessionExpiredBanner = ({ onSignIn = openInlineSignInDialog }: { onSignIn?: () => void }) => {
+// phone pad, which has no end padding. It is an alert: edits stop saving until sign-in.
+const SessionExpiredBanner = () => {
   const { banner } = getNeedsAuthCopy()
 
   return (
@@ -16,7 +16,7 @@ const SessionExpiredBanner = ({ onSignIn = openInlineSignInDialog }: { onSignIn?
       icon={Icons.cloudOff}
       className="sticky top-0 z-10 my-4 w-full max-w-[min(56rem,calc(100vw-2rem))]"
       actions={
-        <Button variant="quiet" onClick={onSignIn}>
+        <Button variant="quiet" onClick={() => openInlineSignInDialog()}>
           Sign in
         </Button>
       }>

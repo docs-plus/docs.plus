@@ -3,6 +3,7 @@
  * Shares the prompt-card pattern with PWAInstallPrompt.
  */
 import { showPWAInstallPrompt } from '@components/pwa'
+import { promptCardClassName, PromptHeader } from '@components/pwa/PromptHeader'
 import * as toast from '@components/toast'
 import { useEntryExitTransition } from '@hooks/useEntryExitTransition'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
@@ -11,7 +12,7 @@ import { useAuthStore } from '@stores'
 import { MOTION_PANEL_MS } from '@utils/motion'
 import { twMerge } from '@utils/twMerge'
 import { useCallback, useEffect } from 'react'
-import { LuBell, LuX } from 'react-icons/lu'
+import { LuBell } from 'react-icons/lu'
 
 const STORAGE_KEY = 'notification-prompt-dismissed'
 const PROMPT_COUNT_KEY = 'notification-prompt-count'
@@ -141,32 +142,15 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         shown ? 'translate-x-0 opacity-100' : '-translate-x-2 opacity-0',
         className
       )}>
-      <div
-        className={twMerge(
-          'rounded-box flex flex-col gap-4 px-5 py-4',
-          'surface-inverse',
-          'shadow-xl',
-          'border-base-300 border'
-        )}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="rounded-field bg-current/10 p-2">
-              <LuBell size={24} aria-hidden />
-            </div>
-            <div>
-              <h3 id="notification-prompt-title" className="text-sm font-semibold">
-                Never miss a reply!
-              </h3>
-              <p className="text-xs opacity-60">Stay in the loop</p>
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="hover:bg-base-content/10 rounded-field -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-[opacity,background-color] hover:opacity-100"
-            aria-label="Dismiss permanently">
-            <LuX size={16} />
-          </button>
-        </div>
+      <div className={promptCardClassName}>
+        <PromptHeader
+          icon={LuBell}
+          title="Never miss a reply!"
+          subtitle="Stay in the loop"
+          titleId="notification-prompt-title"
+          closeLabel="Dismiss permanently"
+          onClose={handleClose}
+        />
 
         <p id="notification-prompt-desc" className="text-sm leading-relaxed opacity-70">
           Get instant notifications when someone mentions you or replies to your messages.

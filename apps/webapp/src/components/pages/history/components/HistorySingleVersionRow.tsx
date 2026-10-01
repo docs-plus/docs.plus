@@ -29,7 +29,7 @@ export function HistorySingleVersionRow({
           : 'border-base-300 bg-base-100 hover:border-base-content/20 hover:bg-base-200'
       )}
       data-testid={`history-version-row-${version.version}`}>
-      {/* A plain button with an inset ring: the row clips overflow, which hid a btn outline. */}
+      {/* A plain button with an inset ring: the row clips overflow, so a btn outline would not show. */}
       <button
         type="button"
         onClick={() => onSelectVersion(version.version)}

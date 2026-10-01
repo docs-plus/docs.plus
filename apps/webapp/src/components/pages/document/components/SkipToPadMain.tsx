@@ -1,3 +1,5 @@
+import { skipLinkClassName } from '@components/pages/home/SkipLink'
+
 /** The pad's one `<main>` landmark. Each pad layout renders it as its editor scroll well. */
 export const PAD_MAIN_ID = 'pad-main'
 
@@ -9,7 +11,7 @@ const SkipToPadMain = () => (
   <button
     type="button"
     onClick={() => document.getElementById(PAD_MAIN_ID)?.focus({ preventScroll: true })}
-    className="btn btn-primary btn-sm sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50">
+    className={skipLinkClassName}>
     Skip to main content
   </button>
 )

@@ -28,11 +28,11 @@ export function ProfileDialogShell({
       {/* First in the DOM so the focus manager lands on it, not on a profile link. */}
       <ModalClose className="z-10" aria-label="Close profile" />
 
-      {message !== undefined ? (
+      {message ? (
         <ModalBody>
           <div className="flex flex-col gap-1 pr-10">
             <ModalHeading>{title}</ModalHeading>
-            {message ? <ModalDescription>{message}</ModalDescription> : null}
+            <ModalDescription>{message}</ModalDescription>
           </div>
           {children}
         </ModalBody>

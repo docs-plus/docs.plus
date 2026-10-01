@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { LuDownload, LuSmartphone } from 'react-icons/lu'
 
 import { IOSInstructions } from './IOSInstructions'
-import { PromptHeader } from './PromptHeader'
+import { promptCardClassName, PromptHeader } from './PromptHeader'
 import {
   DISMISSED_KEY,
   PROMPT_COUNT_KEY,
@@ -23,6 +23,14 @@ const SNOOZE_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_PROMPT_COUNT = 3
 const ENGAGEMENT_DELAY_MS = 30_000
 const MIN_SESSION_COUNT = 2
+// Both branches render these ids, so the dialog's label and description always resolve.
+const TITLE_ID = 'pwa-install-title'
+const DESC_ID = 'pwa-install-desc'
+const BENEFITS = [
+  'Push notifications for replies & mentions',
+  PWA_OFFLINE_LINE,
+  'Quick access from your home screen'
+]
 
 interface PWAInstallPromptProps {
   className?: string
@@ -174,8 +182,8 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
     <div
       ref={nodeRef}
       role="dialog"
-      aria-labelledby="pwa-install-title"
-      aria-describedby="pwa-install-desc"
+      aria-labelledby={TITLE_ID}
+      aria-describedby={DESC_ID}
       className={twMerge(
         // Above docked chat / pad sash (z-50) — design-system above-floating tier
         'fixed right-4 bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] left-4 z-[60] mx-auto max-w-md',
@@ -183,45 +191,34 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
         shown ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
         className
       )}>
-      <div
-        className={twMerge(
-          'rounded-box flex flex-col gap-4 px-5 py-4',
-          'surface-inverse',
-          'shadow-xl',
-          'border-base-300 border'
-        )}>
+      <div className={promptCardClassName}>
         {showIOSSteps ? (
-          <IOSInstructions onBack={() => setShowIOSSteps(false)} onClose={handleClose} />
+          <IOSInstructions
+            titleId={TITLE_ID}
+            descId={DESC_ID}
+            onBack={() => setShowIOSSteps(false)}
+            onClose={handleClose}
+          />
         ) : (
           <>
             <PromptHeader
               icon={LuSmartphone}
               title="Install docs.plus"
               subtitle="Get the full app experience"
-              titleId="pwa-install-title"
+              titleId={TITLE_ID}
               closeLabel="Dismiss install prompt permanently"
               onClose={handleClose}
             />
 
-            <ul id="pwa-install-desc" className="flex flex-col gap-2 text-sm">
-              <li className="flex items-baseline gap-2">
-                <span className="opacity-60" aria-hidden="true">
-                  •
-                </span>
-                <span>Push notifications for replies & mentions</span>
-              </li>
-              <li className="flex items-baseline gap-2">
-                <span className="opacity-60" aria-hidden="true">
-                  •
-                </span>
-                <span>{PWA_OFFLINE_LINE}</span>
-              </li>
-              <li className="flex items-baseline gap-2">
-                <span className="opacity-60" aria-hidden="true">
-                  •
-                </span>
-                <span>Quick access from your home screen</span>
-              </li>
+            <ul id={DESC_ID} className="flex flex-col gap-2 text-sm">
+              {BENEFITS.map((benefit) => (
+                <li key={benefit} className="flex items-baseline gap-2">
+                  <span className="opacity-60" aria-hidden="true">
+                    •
+                  </span>
+                  <span>{benefit}</span>
+                </li>
+              ))}
             </ul>
 
             <div className="flex items-center justify-end gap-3 pt-1">

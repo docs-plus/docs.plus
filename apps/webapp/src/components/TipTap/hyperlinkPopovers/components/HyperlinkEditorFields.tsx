@@ -49,7 +49,6 @@ export function HyperlinkEditorUrlField({ form }: FieldProps): ReactNode {
     handleKeyDown
   } = form
 
-  // The outer label names the textarea; the error line describes it only while shown.
   return (
     <label className="flex w-full min-w-0 flex-col gap-1.5">
       <span className={fieldLabelClassName(isDesktop)}>URL</span>

@@ -27,7 +27,7 @@ const sizeAt = (set: DecorationSet, doc: PMNode, pos: number) => {
   const end = pos + doc.nodeAt(pos)!.nodeSize
   const own = set.find(pos, end).filter((d: Decoration) => d.from === pos && d.to === end)
   const styles = own.map(
-    (d) => (d as unknown as { type: { attrs: { style: string } } }).type.attrs.style
+    (d) => (d as Decoration & { type: { attrs: { style: string } } }).type.attrs.style
   )
   return styles.map((s) => s.match(/--hd-size: ([\d.]+)pt/)?.[1])
 }
